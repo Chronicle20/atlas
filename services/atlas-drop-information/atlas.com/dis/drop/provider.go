@@ -29,6 +29,7 @@ func makeDrop(m entity) (Model, error) {
 		SetItemId(m.ItemId).
 		SetMinimumQuantity(m.MinimumQuantity).
 		SetMaximumQuantity(m.MaximumQuantity).
+		SetQuestId(m.QuestId).
 		SetChance(m.Chance).
 		Build()
 	return r, nil

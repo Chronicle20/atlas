@@ -112,6 +112,7 @@ func initializeDrops(l logrus.FieldLogger, db *gorm.DB) {
 			SetItemId(jdo.ItemId).
 			SetMinimumQuantity(jdo.MinimumQuantity).
 			SetMaximumQuantity(jdo.MaximumQuantity).
+			SetQuestId(jdo.QuestId).
 			SetChance(jdo.Chance).
 			Build()
 		monsterDrops = append(monsterDrops, md)

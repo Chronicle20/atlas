@@ -12,6 +12,7 @@ func BulkCreateMonsterDrop(db *gorm.DB, monsterDrops []Model) error {
 			ItemId:          md.ItemId(),
 			MinimumQuantity: md.MinimumQuantity(),
 			MaximumQuantity: md.MaximumQuantity(),
+			QuestId:         md.QuestId(),
 			Chance:          md.Chance(),
 		}
 

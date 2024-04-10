@@ -30,7 +30,8 @@ WORKDIR /
 
 COPY --from=build-env /server /
 COPY --from=build-env /go/bin/dlv /
-COPY /atlas.com/dis/drop_data.json /
+COPY /atlas.com/dis/continent_drop_data.json /
+COPY /atlas.com/dis/monster_drop_data.json /
 
 # Run delve
 CMD ["/dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "exec", "/server"]

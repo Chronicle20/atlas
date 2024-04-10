@@ -5,7 +5,16 @@ import (
 )
 
 func BulkCreateMonsterDrop(db *gorm.DB, monsterDrops []Model) error {
-	//db.Begin()
+	tx := db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	for _, md := range monsterDrops {
 		m := &entity{
 			MonsterId:       md.MonsterId(),
@@ -16,12 +25,11 @@ func BulkCreateMonsterDrop(db *gorm.DB, monsterDrops []Model) error {
 			Chance:          md.Chance(),
 		}
 
-		err := db.Create(m).Error
+		err := tx.Create(m).Error
 		if err != nil {
-			//db.Rollback()
+			tx.Rollback()
 			return err
 		}
 	}
-	//db.Commit()
-	return nil
+	return tx.Commit().Error
 }

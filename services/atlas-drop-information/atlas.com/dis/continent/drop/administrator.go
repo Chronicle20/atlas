@@ -21,6 +21,7 @@ func BulkCreateContinentDrop(db *gorm.DB, continentDrops []Model) error {
 			ItemId:          md.ItemId(),
 			MinimumQuantity: md.MinimumQuantity(),
 			MaximumQuantity: md.MaximumQuantity(),
+			QuestId:         md.QuestId(),
 			Chance:          md.Chance(),
 		}
 

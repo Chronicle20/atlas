@@ -12,6 +12,7 @@ type entity struct {
 	ItemId          uint32 `gorm:"not null;default=0"`
 	MinimumQuantity uint32 `gorm:"not null;default=0"`
 	MaximumQuantity uint32 `gorm:"not null;default=0"`
+	QuestId         uint32 `gorm:"not null;default=0"`
 	Chance          uint32 `gorm:"not null;default=0"`
 }
 

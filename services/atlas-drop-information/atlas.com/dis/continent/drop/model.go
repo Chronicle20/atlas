@@ -6,6 +6,7 @@ type Model struct {
 	itemId          uint32
 	minimumQuantity uint32
 	maximumQuantity uint32
+	questId         uint32
 	chance          uint32
 }
 
@@ -23,6 +24,10 @@ func (d Model) MinimumQuantity() uint32 {
 
 func (d Model) MaximumQuantity() uint32 {
 	return d.maximumQuantity
+}
+
+func (d Model) QuestId() uint32 {
+	return d.questId
 }
 
 func (d Model) Chance() uint32 {
@@ -84,6 +89,7 @@ func (m *builder) Build() Model {
 		itemId:          m.itemId,
 		minimumQuantity: m.minimumQuantity,
 		maximumQuantity: m.maximumQuantity,
+		questId:         m.questId,
 		chance:          m.chance,
 	}
 }

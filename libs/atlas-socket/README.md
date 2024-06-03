@@ -1,2 +1,2 @@
 # atlas-socket
-Maplestory Socket Connection Module
+MapleStory Socket Connection Module

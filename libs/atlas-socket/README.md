@@ -1,2 +1,2 @@
 # atlas-socket
-MapleStory Socket Connection Module
+Mushroom game socket connection module

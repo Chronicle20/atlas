@@ -1,0 +1,66 @@
+{
+  "data": {
+    "type": "configuration",
+    "attributes": {
+      "tasks": [
+        {
+          "type": "timeout",
+          "attributes": {
+            "interval": 10000,
+            "duration": 3600000
+          }
+        }
+      ],
+      "servers": [
+        {
+          "tenant": "083839c6-c47c-42a6-9585-76492795d123",
+          "region": "GMS",
+          "port": "8300",
+          "version": {
+            "major": "83",
+            "minor": "1"
+          },
+          "handlers": [
+            {
+              "opCode": "0x24",
+              "validator": "LoggedInValidator",
+              "handler": "NoOpHandler"
+            }
+          ]
+        },
+        {
+          "tenant": "08724653-ab5d-4a46-9b44-8342d206f2ed",
+          "region": "GMS",
+          "port": "8700",
+          "version": {
+            "major": "87",
+            "minor": "1"
+          },
+          "handlers": [
+            {
+              "opCode": "0x24",
+              "validator": "LoggedInValidator",
+              "handler": "NoOpHandler"
+            }
+          ]
+        },
+        {
+          "tenant": "185577c2-26da-4647-baaf-f31e02542a8a",
+          "region": "JMS",
+          "port": "18500",
+          "version": {
+            "major": "185",
+            "minor": "1"
+          },
+          "handlers": [
+            {
+              "opCode": "0x24",
+              "validator": "LoggedInValidator",
+              "handler": "NoOpHandler"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

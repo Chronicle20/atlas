@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Chronicle20/atlas-socket/crypto"
 	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"net"
 	"os"
@@ -12,20 +13,20 @@ import (
 
 type MessageHandlerProducer func() map[uint16]request.Handler
 
-type SessionCreator func(sessionId uint32, conn net.Conn)
+type SessionCreator func(sessionId uuid.UUID, conn net.Conn)
 
-func defaultSessionCreator(_ uint32, _ net.Conn) {
+func defaultSessionCreator(_ uuid.UUID, _ net.Conn) {
 }
 
-type SessionMessageDecryptor func(sessionId uint32, message []byte) []byte
+type SessionMessageDecryptor func(sessionId uuid.UUID, message []byte) []byte
 
-func defaultSessionMessageDecryptor(_ uint32, message []byte) []byte {
+func defaultSessionMessageDecryptor(_ uuid.UUID, message []byte) []byte {
 	return message
 }
 
-type SessionDestroyer func(sessionId uint32)
+type SessionDestroyer func(sessionId uuid.UUID)
 
-func defaultSessionDestroyer(_ uint32) {
+func defaultSessionDestroyer(_ uuid.UUID) {
 }
 
 type serverConfiguration struct {
@@ -60,8 +61,6 @@ func Run(l logrus.FieldLogger, handlerProducer MessageHandlerProducer, configura
 	}
 	defer lis.Close()
 
-	sessionId := uint32(0)
-
 	for {
 		conn, err := lis.Accept()
 		if err != nil {
@@ -71,14 +70,12 @@ func Run(l logrus.FieldLogger, handlerProducer MessageHandlerProducer, configura
 
 		l.Infof("Client %s connected.", conn.RemoteAddr().String())
 
-		go run(l)(config, conn, sessionId, 4)
-
-		sessionId++
+		go run(l)(config, conn, uuid.New(), 4)
 	}
 }
 
-func run(l logrus.FieldLogger) func(config *serverConfiguration, conn net.Conn, sessionId uint32, headerSize int) {
-	return func(config *serverConfiguration, conn net.Conn, sessionId uint32, headerSize int) {
+func run(l logrus.FieldLogger) func(config *serverConfiguration, conn net.Conn, sessionId uuid.UUID, headerSize int) {
+	return func(config *serverConfiguration, conn net.Conn, sessionId uuid.UUID, headerSize int) {
 
 		defer func(conn net.Conn) {
 			err := conn.Close()
@@ -116,14 +113,14 @@ func run(l logrus.FieldLogger) func(config *serverConfiguration, conn net.Conn, 
 	}
 }
 
-func handle(l logrus.FieldLogger) func(config *serverConfiguration, sessionId uint32, p request.Request) {
-	return func(config *serverConfiguration, sessionId uint32, p request.Request) {
-		go func(sessionId uint32, reader request.Reader) {
+func handle(l logrus.FieldLogger) func(config *serverConfiguration, sessionId uuid.UUID, p request.Request) {
+	return func(config *serverConfiguration, sessionId uuid.UUID, p request.Request) {
+		go func(sessionId uuid.UUID, reader request.Reader) {
 			op := reader.ReadUint16()
 			if h, ok := config.handlers[op]; ok {
 				h(sessionId, reader)
 			} else {
-				l.Infof("Session %d read a unhandled message with op %05X.", sessionId, op&0xFF)
+				l.Infof("Session %d read a unhandled message with op 0x%02X.", sessionId, op&0xFF)
 			}
 		}(sessionId, request.NewRequestReader(&p, time.Now().Unix()))
 	}

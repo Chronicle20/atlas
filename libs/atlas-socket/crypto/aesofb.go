@@ -28,38 +28,46 @@ func PacketLength(encryptedHeader []byte) int {
 		(uint16(encryptedHeader[2]) + uint16(encryptedHeader[3])*0x100))
 }
 
-func (a *AESOFB) Encrypt(input []byte, maple bool, aes bool) []byte {
-	working := make([]byte, len(input))
-	copy(working, input)
+type EncryptFunc func(input []byte) []byte
 
-	a.generateHeader(working)
+func (a *AESOFB) Encrypt(maple bool, aes bool) func(input []byte) []byte {
+	return func(input []byte) []byte {
+		working := make([]byte, len(input))
+		copy(working, input)
 
-	if maple {
-		a.mapleCrypt(working[encryptHeaderSize:])
+		a.generateHeader(working)
+
+		if maple {
+			a.mapleCrypt(working[encryptHeaderSize:])
+		}
+
+		if aes {
+			a.aesCrypt(working[encryptHeaderSize:])
+		}
+
+		a.Shuffle()
+		return working
 	}
-
-	if aes {
-		a.aesCrypt(working[encryptHeaderSize:])
-	}
-
-	a.Shuffle()
-	return working
 }
 
-func (a *AESOFB) Decrypt(input []byte, aes bool, maple bool) []byte {
-	working := make([]byte, len(input))
-	copy(working, input)
+type DecryptFunc func(input []byte) []byte
 
-	if aes {
-		a.aesCrypt(working)
+func (a *AESOFB) Decrypt(aes bool, maple bool) func(input []byte) []byte {
+	return func(input []byte) []byte {
+		working := make([]byte, len(input))
+		copy(working, input)
+
+		if aes {
+			a.aesCrypt(working)
+		}
+
+		if maple {
+			a.mapleDecrypt(working)
+		}
+
+		a.Shuffle()
+		return working
 	}
-
-	if maple {
-		a.mapleDecrypt(working)
-	}
-
-	a.Shuffle()
-	return working
 }
 
 func (a *AESOFB) aesCrypt(input []byte) {

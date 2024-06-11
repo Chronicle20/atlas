@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-login/session"
+	"atlas-login/socket/writer"
 	"atlas-login/tracing"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/google/uuid"
@@ -11,13 +12,17 @@ import (
 
 type MessageValidator func(l logrus.FieldLogger, span opentracing.Span) func(s session.Model) bool
 
-func NoOpValidator(_ logrus.FieldLogger, _ opentracing.Span) func(_ session.Model) bool {
+const NoOpValidator = "NoOpValidator"
+
+func NoOpValidatorFunc(_ logrus.FieldLogger, _ opentracing.Span) func(_ session.Model) bool {
 	return func(_ session.Model) bool {
 		return true
 	}
 }
 
-func LoggedInValidator(l logrus.FieldLogger, span opentracing.Span) func(s session.Model) bool {
+const LoggedInValidator = "LoggedInValidator"
+
+func LoggedInValidatorFunc(_ logrus.FieldLogger, _ opentracing.Span) func(s session.Model) bool {
 	return func(s session.Model) bool {
 		//v := account.IsLoggedIn(l, span)(s.AccountId())
 		//if !v {
@@ -28,25 +33,28 @@ func LoggedInValidator(l logrus.FieldLogger, span opentracing.Span) func(s sessi
 	}
 }
 
-type MessageHandler func(l logrus.FieldLogger, span opentracing.Span) func(s session.Model, r *request.Reader)
+type MessageHandler func(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader)
 
-func NoOpHandler(_ logrus.FieldLogger, _ opentracing.Span) func(_ session.Model, _ *request.Reader) {
+const NoOpHandler = "NoOpHandler"
+
+func NoOpHandlerFunc(_ logrus.FieldLogger, _ opentracing.Span, _ writer.Producer) func(_ session.Model, _ *request.Reader) {
 	return func(_ session.Model, _ *request.Reader) {
 	}
 }
 
-func AdaptHandler(l logrus.FieldLogger, name string, v MessageValidator, h MessageHandler) request.Handler {
+func AdaptHandler(l logrus.FieldLogger, name string, v MessageValidator, h MessageHandler, wp writer.Producer) request.Handler {
 	return func(sessionId uuid.UUID, r request.Reader) {
-		sl, span := tracing.StartSpan(l, name)
+		fl := l.WithField("session", sessionId.String())
+		sl, span := tracing.StartSpan(fl, name)
 
 		s, ok := session.GetRegistry().Get(sessionId)
 		if !ok {
-			l.Errorf("Unable to locate session %d", sessionId)
+			sl.Errorf("Unable to locate session %d", sessionId)
 			return
 		}
 
 		if v(sl, span)(s) {
-			h(sl, span)(s, &r)
+			h(sl, span, wp)(s, &r)
 			s = session.UpdateLastRequest()(s.SessionId())
 		}
 		span.Finish()

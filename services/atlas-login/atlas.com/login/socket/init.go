@@ -4,6 +4,7 @@ import (
 	"atlas-login/configuration"
 	"atlas-login/session"
 	"atlas-login/socket/handler"
+	"atlas-login/socket/writer"
 	"atlas-login/tenant"
 	"context"
 	"fmt"
@@ -14,8 +15,8 @@ import (
 	"sync"
 )
 
-func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGroup) func(config configuration.Server) {
-	return func(config configuration.Server) {
+func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGroup) func(config configuration.Server, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer) {
+	return func(config configuration.Server, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer) {
 		go func() {
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
@@ -31,9 +32,12 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 				return
 			}
 
+			l.Infof("Creating login socket service for [%s] [%d.%d] on port [%d].", t.Region(), t.MajorVersion(), t.MinorVersion(), port)
+
 			hasMapleEncryption := true
 			if config.Region == "JMS" {
 				hasMapleEncryption = false
+				l.Debugf("Service does not expect Maple encryption.")
 			}
 
 			locale := byte(8)
@@ -41,9 +45,7 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 				locale = 3
 			}
 
-			l.Infof("Creating login socket service for [%s] [%d.%d] on port [%d].", t.Region(), t.MajorVersion(), t.MinorVersion(), port)
 			l.Debugf("Service locale [%d].", locale)
-			l.Debugf("Service does not expect Maple encryption.")
 
 			fl := l.WithField("tenant", t.Id()).WithField("region", t.Region()).WithField("ms.version", fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()))
 
@@ -51,7 +53,7 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 				wg.Add(1)
 				defer wg.Done()
 
-				err = socket.Run(fl, handlerProducer(fl),
+				err = socket.Run(fl, handlerProducer(fl)(config.Handlers, vm, hm, wp),
 					socket.SetPort(port),
 					socket.SetSessionCreator(session.Create(fl, session.GetRegistry())(t, locale)),
 					socket.SetSessionMessageDecryptor(session.Decrypt(fl, session.GetRegistry())(hasMapleEncryption)),
@@ -68,12 +70,36 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 	}
 }
 
-func handlerProducer(l logrus.FieldLogger) socket.MessageHandlerProducer {
-	handlers := make(map[uint16]request.Handler)
-	_ = func(op uint16, name string, v handler.MessageValidator, h handler.MessageHandler) {
-		handlers[op] = handler.AdaptHandler(l, name, v, h)
-	}
-	return func() map[uint16]request.Handler {
-		return handlers
+func handlerProducer(l logrus.FieldLogger) func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer) socket.MessageHandlerProducer {
+	return func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer) socket.MessageHandlerProducer {
+		handlers := make(map[uint16]request.Handler)
+
+		for _, hc := range handlerConfig {
+			var v handler.MessageValidator
+			var ok bool
+			if v, ok = vm[hc.Validator]; !ok {
+				l.Warnf("Unable to locate validator [%s] for handler[%s].", hc.Validator, hc.Handler)
+				continue
+			}
+
+			var h handler.MessageHandler
+			if h, ok = hm[hc.Handler]; !ok {
+				l.Warnf("Unable to locate handler [%s].", hc.Handler)
+				continue
+			}
+
+			op, err := strconv.ParseUint(hc.OpCode, 0, 16)
+			if err != nil {
+				l.WithError(err).Warnf("Unable to configure handler [%s] for opcode [%s].", hc.Handler, hc.OpCode)
+				continue
+			}
+
+			l.Debugf("Configuring opcode [%s] with validator [%s] and handler [%s].", hc.OpCode, hc.Validator, hc.Handler)
+			handlers[uint16(op)] = handler.AdaptHandler(l, hc.Handler, v, h, wp)
+		}
+
+		return func() map[uint16]request.Handler {
+			return handlers
+		}
 	}
 }

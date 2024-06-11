@@ -11,13 +11,14 @@ import (
 func Create(l logrus.FieldLogger, r *Registry) func(t tenant.Model, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
 	return func(t tenant.Model, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
 		return func(sessionId uuid.UUID, conn net.Conn) {
-			l.Debugf("Creating session %d.", sessionId)
+			fl := l.WithField("session", sessionId)
+			fl.Debugf("Creating session.")
 			s := NewSession(sessionId, t, locale, conn)
 			r.Add(s)
 
 			err := s.WriteHello()
 			if err != nil {
-				l.WithError(err).Errorf("Unable to write hello packet to session %d.", sessionId)
+				fl.WithError(err).Errorf("Unable to write hello packet.")
 			}
 		}
 	}
@@ -33,7 +34,7 @@ func Decrypt(_ logrus.FieldLogger, r *Registry) func(hasMapleEncryption bool) fu
 			if s.ReceiveAESOFB() == nil {
 				return input
 			}
-			return s.ReceiveAESOFB().Decrypt(input, true, hasMapleEncryption)
+			return s.ReceiveAESOFB().Decrypt(true, hasMapleEncryption)(input)
 		}
 	}
 }

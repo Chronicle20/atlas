@@ -1,19 +1,27 @@
 package session
 
 import (
+	"atlas-login/socket/writer"
 	"errors"
 	"github.com/google/uuid"
 )
 
-func Announce(b []byte) func(s Model) error {
-	return func(s Model) error {
-		if l, ok := GetRegistry().GetLock(s.SessionId()); ok {
-			l.Lock()
-			err := s.announceEncrypted(b)
-			l.Unlock()
-			return err
+func Announce(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
+	return func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
+		return func(s Model, bodyProducer writer.BodyProducer) error {
+			w, err := writerProducer(writerName)
+			if err != nil {
+				return err
+			}
+
+			if lock, ok := GetRegistry().GetLock(s.SessionId()); ok {
+				lock.Lock()
+				err = s.announceEncrypted(w(bodyProducer))
+				lock.Unlock()
+				return err
+			}
+			return errors.New("invalid session")
 		}
-		return errors.New("invalid session")
 	}
 }
 

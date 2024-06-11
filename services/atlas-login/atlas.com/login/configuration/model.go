@@ -46,6 +46,7 @@ type Server struct {
 	Port     string    `json:"port"`
 	Version  Version   `json:"version"`
 	Handlers []Handler `json:"handlers"`
+	Writers  []Writer  `json:"writers"`
 }
 
 // Version represents a server version.
@@ -59,4 +60,10 @@ type Handler struct {
 	OpCode    string `json:"opCode"`
 	Validator string `json:"validator"`
 	Handler   string `json:"handler"`
+}
+
+// Writer represents a server writer.
+type Writer struct {
+	OpCode string `json:"opCode"`
+	Writer string `json:"writer"`
 }

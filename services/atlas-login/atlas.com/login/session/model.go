@@ -10,16 +10,17 @@ import (
 )
 
 type Model struct {
-	id         uuid.UUID
-	accountId  uint32
-	worldId    byte
-	channelId  byte
-	con        net.Conn
-	send       crypto.AESOFB
-	recv       crypto.AESOFB
-	lastPacket time.Time
-	tenant     tenant.Model
-	locale     byte
+	id          uuid.UUID
+	accountId   uint32
+	worldId     byte
+	channelId   byte
+	con         net.Conn
+	send        crypto.AESOFB
+	recv        crypto.AESOFB
+	encryptFunc crypto.EncryptFunc
+	lastPacket  time.Time
+	tenant      tenant.Model
+	locale      byte
 }
 
 func NewSession(id uuid.UUID, t tenant.Model, locale byte, con net.Conn) Model {
@@ -27,14 +28,21 @@ func NewSession(id uuid.UUID, t tenant.Model, locale byte, con net.Conn) Model {
 	sendIv := []byte{82, 48, 120, byte(rand.Float64() * 255)}
 	send := crypto.NewAESOFB(sendIv, uint16(65535)-t.MajorVersion())
 	recv := crypto.NewAESOFB(recvIv, t.MajorVersion())
+
+	hasMapleEncryption := true
+	if t.Region() == "JMS" {
+		hasMapleEncryption = false
+	}
+
 	return Model{
-		id:         id,
-		con:        con,
-		send:       *send,
-		recv:       *recv,
-		lastPacket: time.Now(),
-		tenant:     t,
-		locale:     locale,
+		id:          id,
+		con:         con,
+		send:        *send,
+		recv:        *recv,
+		encryptFunc: send.Encrypt(hasMapleEncryption, true),
+		lastPacket:  time.Now(),
+		tenant:      t,
+		locale:      locale,
 	}
 }
 
@@ -69,7 +77,7 @@ func (s *Model) announceEncrypted(b []byte) error {
 	tmp := make([]byte, len(b)+4)
 	copy(tmp, b)
 	tmp = append([]byte{0, 0, 0, 0}, b...)
-	tmp = s.send.Encrypt(tmp, true, true)
+	tmp = s.encryptFunc(tmp)
 	_, err := s.con.Write(tmp)
 	return err
 }

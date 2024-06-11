@@ -5,12 +5,16 @@ import (
 	"atlas-login/logger"
 	"atlas-login/session"
 	"atlas-login/socket"
+	"atlas-login/socket/handler"
+	"atlas-login/socket/writer"
 	"atlas-login/tasks"
 	"atlas-login/tracing"
 	"context"
+	"github.com/sirupsen/logrus"
 	"io"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -61,8 +65,20 @@ func main() {
 		l.WithError(err).Fatal("Unable to successfully load configuration.")
 	}
 
+	validatorMap := make(map[string]handler.MessageValidator)
+	validatorMap[handler.NoOpValidator] = handler.NoOpValidatorFunc
+	validatorMap[handler.LoggedInValidator] = handler.LoggedInValidatorFunc
+
+	handlerMap := make(map[string]handler.MessageHandler)
+	handlerMap[handler.NoOpHandler] = handler.NoOpHandlerFunc
+	handlerMap[handler.CreateSecurityHandle] = handler.CreateSecurityHandleFunc
+
+	writerMap := make(map[string]writer.HeaderFunc)
+	writerMap[writer.LoginAuth] = writer.MessageGetter
+
 	for _, s := range config.Data.Attributes.Servers {
-		socket.CreateSocketService(l, ctx, wg)(s)
+		wp := getWriterProducer(l)(s.Writers, writerMap)
+		socket.CreateSocketService(l, ctx, wg)(s, validatorMap, handlerMap, wp)
 	}
 
 	tt, err := config.FindTask(session.TimeoutTask)
@@ -81,4 +97,22 @@ func main() {
 	cancel()
 	wg.Wait()
 	l.Infoln("Service shutdown.")
+}
+
+func getWriterProducer(l logrus.FieldLogger) func(writerConfig []configuration.Writer, wm map[string]writer.HeaderFunc) writer.Producer {
+	return func(writerConfig []configuration.Writer, wm map[string]writer.HeaderFunc) writer.Producer {
+		rwm := make(map[string]writer.BodyFunc)
+		for _, wc := range writerConfig {
+			op, err := strconv.ParseUint(wc.OpCode, 0, 16)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to configure writer [%s] for opcode [%s].", wc.Writer, wc.OpCode)
+				continue
+			}
+
+			if w, ok := wm[wc.Writer]; ok {
+				rwm[wc.Writer] = w(uint16(op))
+			}
+		}
+		return writer.ProducerGetter(rwm)
+	}
 }

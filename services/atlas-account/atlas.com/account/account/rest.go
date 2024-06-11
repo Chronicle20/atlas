@@ -5,7 +5,7 @@ import "strconv"
 type RestModel struct {
 	Id             uint32 `json:"-"`
 	Name           string `json:"name"`
-	Password       string `json:"password"`
+	Password       string `json:"-"`
 	Pin            string `json:"pin"`
 	Pic            string `json:"pic"`
 	LoggedIn       byte   `json:"loggedIn"`

@@ -27,7 +27,7 @@ func registerCreateLogin(si jsonapi.ServerInformation) func(l logrus.FieldLogger
 	return func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 		return rest.RetrieveSpan(createLogin, func(span opentracing.Span) http.HandlerFunc {
 			return tenant.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
-				return parseInput(l, func(container RestModel) http.HandlerFunc {
+				return parseInput(l, func(container InputRestModel) http.HandlerFunc {
 					return handleCreateLogin(si)(l, db)(span)(tenant)(container)
 				})
 			})
@@ -35,11 +35,11 @@ func registerCreateLogin(si jsonapi.ServerInformation) func(l logrus.FieldLogger
 	}
 }
 
-type inputHandler func(container RestModel) http.HandlerFunc
+type inputHandler func(container InputRestModel) http.HandlerFunc
 
 func parseInput(l logrus.FieldLogger, next inputHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var login RestModel
+		var login InputRestModel
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -58,36 +58,26 @@ func parseInput(l logrus.FieldLogger, next inputHandler) http.HandlerFunc {
 	}
 }
 
-func handleCreateLogin(si jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(container RestModel) http.HandlerFunc {
-	return func(l logrus.FieldLogger, db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(container RestModel) http.HandlerFunc {
-		return func(span opentracing.Span) func(tenant tenant.Model) func(container RestModel) http.HandlerFunc {
-			return func(tenant tenant.Model) func(container RestModel) http.HandlerFunc {
-				return func(container RestModel) http.HandlerFunc {
-					return func(rw http.ResponseWriter, r *http.Request) {
-						//att := container.Data.Attributes
-						_ = AttemptLogin(l, db, span, tenant)(container.SessionId, container.Name, container.Password)
-						//if err != nil {
-						//	l.WithError(err).Warnf("Login attempt by %s failed. error = %s", att.Name, err.Error())
-						//	rw.WriteHeader(http.StatusForbidden)
-						//	errorData := &errorListDataContainer{
-						//		Errors: []errorData{
-						//			{
-						//				Status: 0,
-						//				Code:   err.Error(),
-						//				Title:  "",
-						//				Detail: "",
-						//				Meta:   nil,
-						//			},
-						//		},
-						//	}
-						//	err = json.ToJSON(errorData, rw)
-						//	if err != nil {
-						//		l.WithError(err).Errorln("Writing error.")
-						//	}
-						//	return
-						//}
+func handleCreateLogin(si jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(container InputRestModel) http.HandlerFunc {
+	return func(l logrus.FieldLogger, db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(container InputRestModel) http.HandlerFunc {
+		return func(span opentracing.Span) func(tenant tenant.Model) func(container InputRestModel) http.HandlerFunc {
+			return func(tenant tenant.Model) func(container InputRestModel) http.HandlerFunc {
+				return func(container InputRestModel) http.HandlerFunc {
+					return func(w http.ResponseWriter, r *http.Request) {
+						resp := AttemptLogin(l, db, span, tenant)(container.SessionId, container.Name, container.Password)
+						res, err := jsonapi.MarshalWithURLs(Transform(resp), si)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to marshal models.")
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
 
-						rw.WriteHeader(http.StatusNoContent)
+						_, err = w.Write(res)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to write response.")
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
 					}
 				}
 			}

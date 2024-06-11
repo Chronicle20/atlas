@@ -4,7 +4,6 @@ import (
 	"atlas-account/account"
 	"atlas-account/configuration"
 	"atlas-account/tenant"
-	"errors"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
@@ -18,49 +17,50 @@ const (
 	DeletedOrBlocked  = "DELETED_OR_BLOCKED"
 	AlreadyLoggedIn   = "ALREADY_LOGGED_IN"
 	IncorrectPassword = "INCORRECT_PASSWORD"
+	TooManyAttempts   = "TOO_MANY_ATTEMPTS"
 )
 
-func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, name string, password string) error {
-	return func(sessionId uuid.UUID, name string, password string) error {
+func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, name string, password string) Model {
+	return func(sessionId uuid.UUID, name string, password string) Model {
 		if checkLoginAttempts(sessionId) > 4 {
-			return errors.New("TOO_MANY_ATTEMPTS")
+			return ErrorModel(TooManyAttempts)
 		}
 
 		c, err := configuration.Get()
 		if err != nil {
 			l.WithError(err).Errorf("Error reading needed configuration.")
-			return errors.New(SystemError)
+			return ErrorModel(SystemError)
 		}
 
 		a, err := account.GetOrCreate(l, db, span)(tenant, name, password, c.AutomaticRegister)
 		if err != nil && !c.AutomaticRegister {
-			return errors.New(NotRegistered)
+			return ErrorModel(NotRegistered)
 		}
 		if err != nil {
-			return errors.New(SystemError)
+			return ErrorModel(SystemError)
 		}
 
 		if a.Banned() {
-			return errors.New(DeletedOrBlocked)
+			return ErrorModel(DeletedOrBlocked)
 		}
 
 		// TODO implement ip, mac, and temporary banning practices
 
 		if a.State() != account.StateNotLoggedIn {
-			return errors.New(AlreadyLoggedIn)
+			return ErrorModel(AlreadyLoggedIn)
 		} else if a.Password()[0] == uint8('$') && a.Password()[1] == uint8('2') && bcrypt.CompareHashAndPassword([]byte(a.Password()), []byte(password)) == nil {
 			// TODO implement tos tracking
 		} else {
-			return errors.New(IncorrectPassword)
+			return ErrorModel(IncorrectPassword)
 		}
 
 		err = account.SetLoggedIn(db)(tenant, a.Id())
 		if err != nil {
 			l.WithError(err).Errorf("Error trying to update logged in state for %s.", name)
-			return errors.New(SystemError)
+			return ErrorModel(SystemError)
 		}
 
-		return nil
+		return OkModel()
 	}
 }
 

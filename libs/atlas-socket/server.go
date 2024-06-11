@@ -88,6 +88,8 @@ func run(l logrus.FieldLogger) func(config *serverConfiguration, conn net.Conn, 
 		header := true
 		readSize := headerSize
 
+		fl := l.WithField("session", sessionId.String())
+
 		for {
 			buffer := make([]byte, readSize)
 
@@ -102,13 +104,13 @@ func run(l logrus.FieldLogger) func(config *serverConfiguration, conn net.Conn, 
 
 				result := buffer
 				result = config.decryptor(sessionId, buffer)
-				handle(l)(config, sessionId, result)
+				handle(fl)(config, sessionId, result)
 			}
 
 			header = !header
 		}
 
-		l.Infof("Session %d exiting read loop.", sessionId)
+		fl.Infof("Exiting read loop.")
 		config.destroyer(sessionId)
 	}
 }
@@ -120,7 +122,7 @@ func handle(l logrus.FieldLogger) func(config *serverConfiguration, sessionId uu
 			if h, ok := config.handlers[op]; ok {
 				h(sessionId, reader)
 			} else {
-				l.Infof("Session %d read a unhandled message with op 0x%02X.", sessionId, op&0xFF)
+				l.Infof("Read a unhandled message with op 0x%02X.", op&0xFF)
 			}
 		}(sessionId, request.NewRequestReader(&p, time.Now().Unix()))
 	}

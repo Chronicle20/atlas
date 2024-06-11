@@ -1,7 +1,7 @@
 package database
 
 import (
-	"atlas-dis/model"
+	"github.com/Chronicle20/atlas-model/model"
 	"gorm.io/gorm"
 )
 

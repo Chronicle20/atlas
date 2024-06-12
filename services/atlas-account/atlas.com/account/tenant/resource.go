@@ -18,8 +18,15 @@ type Handler func(tenant Model) http.HandlerFunc
 
 func ParseTenant(l logrus.FieldLogger, next Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := r.Header.Get(ID)
-		if id == "" {
+		idStr := r.Header.Get(ID)
+		if idStr == "" {
+			l.Errorf("%s is not supplied.", ID)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		id, err := uuid.Parse(idStr)
+		if err != nil {
 			l.Errorf("%s is not supplied.", ID)
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -61,7 +68,7 @@ func ParseTenant(l logrus.FieldLogger, next Handler) http.HandlerFunc {
 		}
 
 		next(Model{
-			id:           uuid.MustParse(id),
+			id:           id,
 			region:       region,
 			majorVersion: uint16(majorVersionVal),
 			minorVersion: uint16(minorVersionVal),

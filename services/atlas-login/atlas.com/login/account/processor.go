@@ -3,9 +3,7 @@ package account
 import (
 	"atlas-login/rest/requests"
 	"atlas-login/tenant"
-	"errors"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"strconv"
@@ -25,9 +23,28 @@ func ByNameModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant ten
 	}
 }
 
-func AttemptLogin(l logrus.FieldLogger, span opentracing.Span) func(t tenant.Model, sessionId uuid.UUID, name string, password string) ([]LoginErr, error) {
-	return func(t tenant.Model, sessionId uuid.UUID, name string, password string) ([]LoginErr, error) {
-		return nil, errors.New("not implemented")
+func ByIdModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) model.Provider[Model] {
+	return func(id uint32) model.Provider[Model] {
+		return requests.Provider[RestModel, Model](l, span, tenant)(requestAccountById(id), makeModel)
+	}
+}
+
+func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) (Model, error) {
+	return func(id uint32) (Model, error) {
+		return ByIdModelProvider(l, span, tenant)(id)()
+	}
+}
+
+func IsLoggedIn(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) bool {
+	return func(id uint32) bool {
+		a, err := GetById(l, span, tenant)(id)
+		if err != nil {
+			return false
+		} else if a.LoggedIn() != 0 {
+			return true
+		} else {
+			return false
+		}
 	}
 }
 

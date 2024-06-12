@@ -27,6 +27,11 @@
               "handler": "LoginHandle"
             },
             {
+              "opCode": "0x05",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterListWorldHandle"
+            },
+            {
               "opCode": "0x06",
               "validator": "LoggedInValidator",
               "handler": "ServerStatusHandle"
@@ -100,6 +105,10 @@
               "writer": "ServerListEnd"
             },
             {
+              "opCode": "0x0B",
+              "writer": "CharacterList"
+            },
+            {
               "opCode": "0x1A",
               "writer": "SelectWorld"
             },
@@ -122,6 +131,11 @@
               "opCode": "0x01",
               "validator": "NoOpValidator",
               "handler": "LoginHandle"
+            },
+            {
+              "opCode": "0x05",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterListWorldHandle"
             },
             {
               "opCode": "0x06",
@@ -192,6 +206,10 @@
               "writer": "ServerListEnd"
             },
             {
+              "opCode": "0x0B",
+              "writer": "CharacterList"
+            },
+            {
               "opCode": "0x1A",
               "writer": "SelectWorld"
             },
@@ -214,6 +232,11 @@
               "opCode": "0x01",
               "validator": "NoOpValidator",
               "handler": "LoginHandle"
+            },
+            {
+              "opCode": "0x04",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterListWorldHandle"
             },
             {
               "opCode": "0x18",
@@ -268,10 +291,6 @@
               }
             },
             {
-              "opCode": "0x18",
-              "writer": "LoginAuth"
-            },
-            {
               "opCode": "0x02",
               "writer": "ServerListEntry"
             },
@@ -280,12 +299,20 @@
               "writer": "ServerListEnd"
             },
             {
+              "opCode": "0x03",
+              "writer": "CharacterList"
+            },
+            {
               "opCode": "0x16",
               "writer": "SelectWorld"
             },
             {
               "opCode": "0x17",
               "writer": "ServerListRecommendations"
+            },
+            {
+              "opCode": "0x18",
+              "writer": "LoginAuth"
             }
           ]
         }

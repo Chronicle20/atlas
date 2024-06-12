@@ -27,7 +27,7 @@ func Provider[A any, M any](l logrus.FieldLogger, span opentracing.Span, tenant 
 	}
 }
 
-func SliceProvider[A any, M any](l logrus.FieldLogger, span opentracing.Span) func(r Request[A], t Transformer[A, M], filters ...model.Filter[M]) model.SliceProvider[M] {
+func SliceProvider[A any, M any](l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(r Request[A], t Transformer[A, M], filters ...model.Filter[M]) model.SliceProvider[M] {
 	return func(r Request[A], t Transformer[A, M], filters ...model.Filter[M]) model.SliceProvider[M] {
 		return func() ([]M, error) {
 			results := make([]M, 0)

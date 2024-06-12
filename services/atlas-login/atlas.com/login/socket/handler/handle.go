@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"atlas-login/account"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"atlas-login/tracing"
@@ -22,14 +23,13 @@ func NoOpValidatorFunc(_ logrus.FieldLogger, _ opentracing.Span) func(_ session.
 
 const LoggedInValidator = "LoggedInValidator"
 
-func LoggedInValidatorFunc(_ logrus.FieldLogger, _ opentracing.Span) func(s session.Model) bool {
+func LoggedInValidatorFunc(l logrus.FieldLogger, span opentracing.Span) func(s session.Model) bool {
 	return func(s session.Model) bool {
-		//v := account.IsLoggedIn(l, span)(s.AccountId())
-		//if !v {
-		//	l.Errorf("Attempting to process a request when the account %d is not logged in.", s.SessionId())
-		//}
-		//return v
-		return true
+		v := account.IsLoggedIn(l, span, s.Tenant())(s.AccountId())
+		if !v {
+			l.Errorf("Attempting to process a request when the account %d is not logged in.", s.SessionId())
+		}
+		return v
 	}
 }
 

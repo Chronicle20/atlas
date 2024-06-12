@@ -47,7 +47,7 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 
 			l.Debugf("Service locale [%d].", locale)
 
-			fl := l.WithField("tenant", t.Id()).WithField("region", t.Region()).WithField("ms.version", fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()))
+			fl := l.WithField("tenant", t.Id().String()).WithField("region", t.Region()).WithField("ms.version", fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()))
 
 			go func() {
 				wg.Add(1)

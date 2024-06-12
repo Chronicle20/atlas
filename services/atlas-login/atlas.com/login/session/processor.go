@@ -25,6 +25,19 @@ func Announce(writerProducer writer.Producer) func(writerName string) func(s Mod
 	}
 }
 
+func SetAccountId(accountId uint32) func(id uuid.UUID) Model {
+	return func(id uuid.UUID) Model {
+		s := Model{}
+		var ok bool
+		if s, ok = GetRegistry().Get(id); ok {
+			s = s.setAccountId(accountId)
+			GetRegistry().Update(s)
+			return s
+		}
+		return s
+	}
+}
+
 func UpdateLastRequest() func(id uuid.UUID) Model {
 	return func(id uuid.UUID) Model {
 		s := Model{}

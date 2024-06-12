@@ -1,13 +1,15 @@
 package tenant
 
+import "github.com/google/uuid"
+
 type Model struct {
-	id           string
+	id           uuid.UUID
 	region       string
 	majorVersion uint16
 	minorVersion uint16
 }
 
-func (m Model) Id() string {
+func (m Model) Id() uuid.UUID {
 	return m.id
 }
 

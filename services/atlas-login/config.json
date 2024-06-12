@@ -22,9 +22,55 @@
           },
           "handlers": [
             {
+              "opCode": "0x01",
+              "validator": "NoOpValidator",
+              "handler": "LoginHandle"
+            },
+            {
               "opCode": "0x24",
               "validator": "LoggedInValidator",
               "handler": "NoOpHandler"
+            }
+          ],
+          "writers": [
+            {
+              "opCode": "0x00",
+              "writer": "AuthSuccess"
+            },
+            {
+              "opCode": "0x00",
+              "writer": "AuthTemporaryBan"
+            },
+            {
+              "opCode": "0x00",
+              "writer": "AuthPermanentBan"
+            },
+            {
+              "opCode": "0x00",
+              "writer": "AuthLoginFailed",
+              "options": {
+                "failedReasonCodes": {
+                  "BANNED": 2,
+                  "DELETED_OR_BLOCKED": 3,
+                  "INCORRECT_PASSWORD": 4,
+                  "NOT_REGISTERED": 5,
+                  "SYSTEM_ERROR_1": 6,
+                  "ALREADY_LOGGED_IN": 7,
+                  "SYSTEM_ERROR_2": 8,
+                  "SYSTEM_ERROR_3": 9,
+                  "TOO_MANY_CONNECTIONS": 10,
+                  "AGE_LIMIT": 11,
+                  "UNABLE_TO_LOG_ON_AS_MASTER_AT_IP": 13,
+                  "WRONG_GATEWAY": 14,
+                  "PROCESSING_REQUEST": 15,
+                  "ACCOUNT_VERIFICATION_NEEDED": 16,
+                  "WRONG_PERSONAL_INFORMATION": 17,
+                  "ACCOUNT_VERIFICATION_NEEDED_2": 21,
+                  "LICENSE_AGREEMENT": 23,
+                  "MAPLE_EUROPE_NOTICE": 25,
+                  "FULL_CLIENT_NOTICE": 27
+                }
+              }
             }
           ]
         },
@@ -38,9 +84,55 @@
           },
           "handlers": [
             {
+              "opCode": "0x01",
+              "validator": "NoOpValidator",
+              "handler": "LoginHandle"
+            },
+            {
               "opCode": "0x24",
               "validator": "LoggedInValidator",
               "handler": "NoOpHandler"
+            }
+          ],
+          "writers": [
+            {
+              "opCode": "0x00",
+              "writer": "AuthSuccess"
+            },
+            {
+              "opCode": "0x00",
+              "writer": "AuthTemporaryBan"
+            },
+            {
+              "opCode": "0x00",
+              "writer": "AuthPermanentBan"
+            },
+            {
+              "opCode": "0x00",
+              "writer": "AuthLoginFailed",
+              "options": {
+                "failedReasonCodes": {
+                  "BANNED": 2,
+                  "DELETED_OR_BLOCKED": 3,
+                  "INCORRECT_PASSWORD": 4,
+                  "NOT_REGISTERED": 5,
+                  "SYSTEM_ERROR_1": 6,
+                  "ALREADY_LOGGED_IN": 7,
+                  "SYSTEM_ERROR_2": 8,
+                  "SYSTEM_ERROR_3": 9,
+                  "TOO_MANY_CONNECTIONS": 10,
+                  "AGE_LIMIT": 11,
+                  "UNABLE_TO_LOG_ON_AS_MASTER_AT_IP": 13,
+                  "WRONG_GATEWAY": 14,
+                  "PROCESSING_REQUEST": 15,
+                  "ACCOUNT_VERIFICATION_NEEDED": 16,
+                  "WRONG_PERSONAL_INFORMATION": 17,
+                  "ACCOUNT_VERIFICATION_NEEDED_2": 21,
+                  "LICENSE_AGREEMENT": 23,
+                  "MAPLE_EUROPE_NOTICE": 25,
+                  "FULL_CLIENT_NOTICE": 27
+                }
+              }
             }
           ]
         },
@@ -53,6 +145,11 @@
             "minor": "1"
           },
           "handlers": [
+            {
+              "opCode": "0x01",
+              "validator": "NoOpValidator",
+              "handler": "LoginHandle"
+            },
             {
               "opCode": "0x18",
               "validator": "NoOpValidator",
@@ -70,6 +167,41 @@
             }
           ],
           "writers": [
+            {
+              "opCode": "0x00",
+              "writer": "AuthSuccess"
+            },
+            {
+              "opCode": "0x00",
+              "writer": "AuthTemporaryBan"
+            },
+            {
+              "opCode": "0x00",
+              "writer": "AuthPermanentBan"
+            },
+            {
+              "opCode": "0x00",
+              "writer": "AuthLoginFailed",
+              "options": {
+                "failedReasonCodes": {
+                  "BANNED": 2,
+                  "DELETED_OR_BLOCKED": 3,
+                  "INCORRECT_PASSWORD": 4,
+                  "NOT_REGISTERED_ID": 5,
+                  "SYSTEM_ERROR_1": 6,
+                  "ALREADY_LOGGED_IN": 7,
+                  "SYSTEM_ERROR_2": 8,
+                  "SYSTEM_ERROR_3": 9,
+                  "CANNOT_PROCESS_SO_MANY_CONNECTIONS": 10,
+                  "ONLY_USERS_OLDER_THAN_20": 11,
+                  "UNABLE_TO_LOG_ON_AS_MASTER": 13,
+                  "WRONG_GATEWAY": 14,
+                  "PROCESSING_REQUEST": 15,
+                  "WRONG_GATEWAY_2": 17,
+                  "LICENSE_AGREEMENT": 23
+                }
+              }
+            },
             {
               "opCode": "0x18",
               "writer": "LoginAuth"

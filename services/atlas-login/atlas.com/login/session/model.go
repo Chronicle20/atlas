@@ -48,14 +48,17 @@ func NewSession(id uuid.UUID, t tenant.Model, locale byte, con net.Conn) Model {
 
 func CloneSession(s Model) Model {
 	return Model{
-		id:         s.id,
-		accountId:  s.accountId,
-		worldId:    s.worldId,
-		channelId:  s.channelId,
-		con:        s.con,
-		send:       s.send,
-		recv:       s.recv,
-		lastPacket: s.lastPacket,
+		id:          s.id,
+		accountId:   s.accountId,
+		worldId:     s.worldId,
+		channelId:   s.channelId,
+		con:         s.con,
+		send:        s.send,
+		recv:        s.recv,
+		encryptFunc: s.encryptFunc,
+		lastPacket:  s.lastPacket,
+		tenant:      s.tenant,
+		locale:      s.locale,
 	}
 }
 
@@ -71,6 +74,10 @@ func (s *Model) SessionId() uuid.UUID {
 
 func (s *Model) AccountId() uint32 {
 	return s.accountId
+}
+
+func (s *Model) Tenant() tenant.Model {
+	return s.tenant
 }
 
 func (s *Model) announceEncrypted(b []byte) error {

@@ -72,9 +72,14 @@ func main() {
 	handlerMap := make(map[string]handler.MessageHandler)
 	handlerMap[handler.NoOpHandler] = handler.NoOpHandlerFunc
 	handlerMap[handler.CreateSecurityHandle] = handler.CreateSecurityHandleFunc
+	handlerMap[handler.LoginHandle] = handler.LoginHandleFunc
 
 	writerMap := make(map[string]writer.HeaderFunc)
 	writerMap[writer.LoginAuth] = writer.MessageGetter
+	writerMap[writer.AuthSuccess] = writer.MessageGetter
+	writerMap[writer.AuthTemporaryBan] = writer.MessageGetter
+	writerMap[writer.AuthPermanentBan] = writer.MessageGetter
+	writerMap[writer.AuthLoginFailed] = writer.MessageGetter
 
 	for _, s := range config.Data.Attributes.Servers {
 		wp := getWriterProducer(l)(s.Writers, writerMap)
@@ -110,7 +115,7 @@ func getWriterProducer(l logrus.FieldLogger) func(writerConfig []configuration.W
 			}
 
 			if w, ok := wm[wc.Writer]; ok {
-				rwm[wc.Writer] = w(uint16(op))
+				rwm[wc.Writer] = w(uint16(op), wc.Options)
 			}
 		}
 		return writer.ProducerGetter(rwm)

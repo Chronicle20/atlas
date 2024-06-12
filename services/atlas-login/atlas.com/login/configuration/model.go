@@ -64,6 +64,7 @@ type Handler struct {
 
 // Writer represents a server writer.
 type Writer struct {
-	OpCode string `json:"opCode"`
-	Writer string `json:"writer"`
+	OpCode  string                 `json:"opCode"`
+	Writer  string                 `json:"writer"`
+	Options map[string]interface{} `json:"options"`
 }

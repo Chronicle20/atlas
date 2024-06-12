@@ -4,15 +4,15 @@ import (
 	"errors"
 )
 
-type BodyProducer func(op uint16) []byte
+type BodyProducer func(op uint16, options map[string]interface{}) []byte
 
-type HeaderFunc func(op uint16) BodyFunc
+type HeaderFunc func(op uint16, options map[string]interface{}) BodyFunc
 
 type BodyFunc func(rem BodyProducer) []byte
 
-func MessageGetter(op uint16) BodyFunc {
+func MessageGetter(op uint16, options map[string]interface{}) BodyFunc {
 	return func(rem BodyProducer) []byte {
-		return rem(op)
+		return rem(op, options)
 	}
 }
 

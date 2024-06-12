@@ -2,6 +2,7 @@ package tenant
 
 import (
 	"atlas-login/configuration"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"strconv"
 )
@@ -21,7 +22,7 @@ func New(l logrus.FieldLogger) func(config configuration.Server) (Model, error) 
 		}
 
 		return Model{
-			id:           config.Tenant,
+			id:           uuid.MustParse(config.Tenant),
 			region:       config.Region,
 			majorVersion: uint16(majorVersion),
 			minorVersion: uint16(minorVersion),

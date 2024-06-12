@@ -72,6 +72,11 @@ func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 
 		if resp.Code == "OK" {
 			account.ForAccountByName(l, span, s.Tenant())(p.Name(), issueSuccess(l, s, wp))
+
+			if s.Tenant().Region() == "JMS" {
+				issueServerInformation(l, span, wp)(s)
+			}
+
 			return
 		}
 
@@ -114,48 +119,5 @@ func announceError(l logrus.FieldLogger, _ opentracing.Span, wp writer.Producer)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue [%s].", writer.AuthLoginFailed)
 		}
-	}
-}
-
-func processFirstError(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, data account.LoginErr) {
-	//authTemporaryBanFunc := session.Announce(wp)(writer.AuthTemporaryBan)
-	//authPermanentBanFunc := session.Announce(wp)(writer.AuthPermanentBan)
-
-	return func(s session.Model, data account.LoginErr) {
-		//r := GetLoginFailedReason(data.Code)
-		//if r == DeletedOrBlocked {
-		//	if data.Detail == "" {
-		//		announceError(l, span, wp)(s, writer.DeletedOrBlocked)
-		//		return
-		//	}
-		//
-		//	reason := data.Meta["reason"]
-		//	rc, err := strconv.ParseUint(reason, 10, 8)
-		//	if err != nil {
-		//		announceError(l, span, wp)(s, writer.SystemError1)
-		//		return
-		//	}
-		//
-		//	if tb, ok := data.Meta["tempBan"]; ok {
-		//		var until uint64
-		//		until, err = strconv.ParseUint(tb, 10, 64)
-		//		if err != nil {
-		//			announceError(l, span, wp)(s, writer.SystemError1)
-		//			return
-		//		}
-		//		err = authTemporaryBanFunc(s, writer.AuthTemporaryBanBody(l)(until, byte(rc)))
-		//		if err != nil {
-		//			l.WithError(err).Errorf("Unable to issue login failed due to temporary ban")
-		//		}
-		//		return
-		//	}
-		//
-		//	err = authPermanentBanFunc(s, writer.AuthPermanentBanBody(l))
-		//	if err != nil {
-		//		l.WithError(err).Errorf("Unable to issue login failed due to permanent ban")
-		//	}
-		//	return
-		//}
-		//announceError(l, span, wp)(s, r)
 	}
 }

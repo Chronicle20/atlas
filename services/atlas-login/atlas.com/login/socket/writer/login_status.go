@@ -38,13 +38,11 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 		return func(op uint16, _ map[string]interface{}) []byte {
 			w := response.NewWriter(l)
 			w.WriteShort(op)
+			w.WriteByte(0) // success
+			w.WriteByte(0)
 
 			if tenant.Region() == "GMS" {
 				w.WriteInt(0)
-				w.WriteShort(0)
-			}
-			if tenant.Region() == "JMS" {
-				w.WriteByte(0)
 			}
 
 			w.WriteInt(accountId)
@@ -75,6 +73,10 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 				w.WriteByte(1)
 				// 0 = Register PIC, 1 = Ask for PIC, 2 = Disabled
 				w.WriteByte(2)
+
+				if tenant.MajorVersion() >= 87 {
+					w.WriteLong(0)
+				}
 			}
 
 			if tenant.Region() == "JMS" {

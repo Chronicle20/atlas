@@ -73,6 +73,8 @@ func main() {
 	handlerMap[handler.NoOpHandler] = handler.NoOpHandlerFunc
 	handlerMap[handler.CreateSecurityHandle] = handler.CreateSecurityHandleFunc
 	handlerMap[handler.LoginHandle] = handler.LoginHandleFunc
+	handlerMap[handler.ServerListRequestHandle] = handler.ServerListRequestHandleFunc
+	handlerMap[handler.ServerStatusHandle] = handler.ServerStatusHandleFunc
 
 	writerMap := make(map[string]writer.HeaderFunc)
 	writerMap[writer.LoginAuth] = writer.MessageGetter
@@ -80,6 +82,11 @@ func main() {
 	writerMap[writer.AuthTemporaryBan] = writer.MessageGetter
 	writerMap[writer.AuthPermanentBan] = writer.MessageGetter
 	writerMap[writer.AuthLoginFailed] = writer.MessageGetter
+	writerMap[writer.ServerListRecommendations] = writer.MessageGetter
+	writerMap[writer.ServerListEntry] = writer.MessageGetter
+	writerMap[writer.ServerListEnd] = writer.MessageGetter
+	writerMap[writer.SelectWorld] = writer.MessageGetter
+	writerMap[writer.ServerStatus] = writer.MessageGetter
 
 	for _, s := range config.Data.Attributes.Servers {
 		wp := getWriterProducer(l)(s.Writers, writerMap)

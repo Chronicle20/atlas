@@ -27,6 +27,21 @@
               "handler": "LoginHandle"
             },
             {
+              "opCode": "0x06",
+              "validator": "LoggedInValidator",
+              "handler": "ServerStatusHandle"
+            },
+            {
+              "opCode": "0x0B",
+              "validator": "LoggedInValidator",
+              "handler": "ServerListRequestHandle"
+            },
+            {
+              "opCode": "0x19",
+              "validator": "NoOpValidator",
+              "handler": "NoOpHandler"
+            },
+            {
               "opCode": "0x24",
               "validator": "LoggedInValidator",
               "handler": "NoOpHandler"
@@ -71,6 +86,26 @@
                   "FULL_CLIENT_NOTICE": 27
                 }
               }
+            },
+            {
+              "opCode": "0x03",
+              "writer": "ServerStatus"
+            },
+            {
+              "opCode": "0x0A",
+              "writer": "ServerListEntry"
+            },
+            {
+              "opCode": "0x0A",
+              "writer": "ServerListEnd"
+            },
+            {
+              "opCode": "0x1A",
+              "writer": "SelectWorld"
+            },
+            {
+              "opCode": "0x1B",
+              "writer": "ServerListRecommendations"
             }
           ]
         },
@@ -89,6 +124,16 @@
               "handler": "LoginHandle"
             },
             {
+              "opCode": "0x06",
+              "validator": "LoggedInValidator",
+              "handler": "ServerStatusHandle"
+            },
+            {
+              "opCode": "0x0B",
+              "validator": "LoggedInValidator",
+              "handler": "ServerListRequestHandle"
+            },
+            {
               "opCode": "0x24",
               "validator": "LoggedInValidator",
               "handler": "NoOpHandler"
@@ -133,6 +178,26 @@
                   "FULL_CLIENT_NOTICE": 27
                 }
               }
+            },
+            {
+              "opCode": "0x03",
+              "writer": "ServerStatus"
+            },
+            {
+              "opCode": "0x0A",
+              "writer": "ServerListEntry"
+            },
+            {
+              "opCode": "0x0A",
+              "writer": "ServerListEnd"
+            },
+            {
+              "opCode": "0x1A",
+              "writer": "SelectWorld"
+            },
+            {
+              "opCode": "0x1B",
+              "writer": "ServerListRecommendations"
             }
           ]
         },
@@ -205,6 +270,22 @@
             {
               "opCode": "0x18",
               "writer": "LoginAuth"
+            },
+            {
+              "opCode": "0x02",
+              "writer": "ServerListEntry"
+            },
+            {
+              "opCode": "0x02",
+              "writer": "ServerListEnd"
+            },
+            {
+              "opCode": "0x16",
+              "writer": "SelectWorld"
+            },
+            {
+              "opCode": "0x17",
+              "writer": "ServerListRecommendations"
             }
           ]
         }

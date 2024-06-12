@@ -1,9 +1,5 @@
 package requests
 
-const (
-	BaseRequest string = "http://atlas-nginx:80"
-)
-
 type configuration struct {
 	retries int
 }

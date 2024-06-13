@@ -1,4 +1,4 @@
-module atlas-rest
+module github.com/Chronicle20/atlas-rest
 
 go 1.21.6
 

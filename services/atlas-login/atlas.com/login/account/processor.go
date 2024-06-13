@@ -1,9 +1,9 @@
 package account
 
 import (
-	"atlas-login/rest/requests"
 	"atlas-login/tenant"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"strconv"
@@ -19,13 +19,13 @@ func ForAccountByName(l logrus.FieldLogger, span opentracing.Span, tenant tenant
 
 func ByNameModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string) model.Provider[Model] {
 	return func(name string) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l, span, tenant)(requestAccountByName(name), makeModel)
+		return requests.Provider[RestModel, Model](l)(requestAccountByName(l, span, tenant)(name), makeModel)
 	}
 }
 
 func ByIdModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) model.Provider[Model] {
 	return func(id uint32) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l, span, tenant)(requestAccountById(id), makeModel)
+		return requests.Provider[RestModel, Model](l)(requestAccountById(l, span, tenant)(id), makeModel)
 	}
 }
 

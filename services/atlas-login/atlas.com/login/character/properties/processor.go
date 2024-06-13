@@ -1,9 +1,9 @@
 package properties
 
 import (
-	"atlas-login/rest/requests"
 	"atlas-login/tenant"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"strconv"
@@ -11,13 +11,13 @@ import (
 
 func GetByName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string) (Model, error) {
 	return func(name string) (Model, error) {
-		return requests.Provider[RestModel, Model](l, span, tenant)(requestPropertiesByName(name), MakeModel)()
+		return requests.Provider[RestModel, Model](l)(requestPropertiesByName(l, span, tenant)(name), MakeModel)()
 	}
 }
 
 func ForWorldProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte) model.SliceProvider[Model] {
 	return func(accountId uint32, worldId byte) model.SliceProvider[Model] {
-		return requests.SliceProvider[RestModel, Model](l, span, tenant)(requestPropertiesByAccountAndWorld(accountId, worldId), MakeModel)
+		return requests.SliceProvider[RestModel, Model](l)(requestPropertiesByAccountAndWorld(l, span, tenant)(accountId, worldId), MakeModel)
 	}
 }
 
@@ -29,7 +29,7 @@ func GetForWorld(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 
 func ByIdModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) model.Provider[Model] {
 	return func(id uint32) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l, span, tenant)(requestPropertiesById(id), MakeModel)
+		return requests.Provider[RestModel, Model](l)(requestPropertiesById(l, span, tenant)(id), MakeModel)
 	}
 }
 

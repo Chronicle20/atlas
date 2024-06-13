@@ -1,8 +1,12 @@
 package account
 
 import (
-	"atlas-login/rest/requests"
+	"atlas-login/rest"
+	"atlas-login/tenant"
 	"fmt"
+	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/opentracing/opentracing-go"
+	"github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -16,10 +20,14 @@ func getBaseRequest() string {
 	return os.Getenv("ACCOUNT_SERVICE_URL")
 }
 
-func requestAccountByName(name string) requests.Request[RestModel] {
-	return requests.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+AccountsByName, name))
+func requestAccountByName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string) requests.Request[RestModel] {
+	return func(name string) requests.Request[RestModel] {
+		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+AccountsByName, name))
+	}
 }
 
-func requestAccountById(id uint32) requests.Request[RestModel] {
-	return requests.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+AccountsById, id))
+func requestAccountById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) requests.Request[RestModel] {
+	return func(id uint32) requests.Request[RestModel] {
+		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+AccountsById, id))
+	}
 }

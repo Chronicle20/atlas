@@ -1,8 +1,12 @@
 package properties
 
 import (
-	"atlas-login/rest/requests"
+	"atlas-login/rest"
+	"atlas-login/tenant"
 	"fmt"
+	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/opentracing/opentracing-go"
+	"github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -17,14 +21,20 @@ func getBaseRequest() string {
 	return os.Getenv("ACCOUNT_SERVICE_URL")
 }
 
-func requestPropertiesByName(name string) requests.Request[RestModel] {
-	return requests.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+CharactersByName, name))
+func requestPropertiesByName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string) requests.Request[RestModel] {
+	return func(name string) requests.Request[RestModel] {
+		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+CharactersByName, name))
+	}
 }
 
-func requestPropertiesByAccountAndWorld(accountId uint32, worldId byte) requests.Request[RestModel] {
-	return requests.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+CharactersForAccountByWorld, accountId, worldId))
+func requestPropertiesByAccountAndWorld(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte) requests.Request[RestModel] {
+	return func(accountId uint32, worldId byte) requests.Request[RestModel] {
+		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+CharactersForAccountByWorld, accountId, worldId))
+	}
 }
 
-func requestPropertiesById(characterId uint32) requests.Request[RestModel] {
-	return requests.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+CharactersById, characterId))
+func requestPropertiesById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32) requests.Request[RestModel] {
+	return func(characterId uint32) requests.Request[RestModel] {
+		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+CharactersById, characterId))
+	}
 }

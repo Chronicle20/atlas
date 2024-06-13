@@ -1,7 +1,7 @@
 package login
 
 import (
-	"atlas-login/rest/requests"
+	"atlas-login/rest"
 	"atlas-login/tenant"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
@@ -27,7 +27,7 @@ func CreateLogin(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 			IpAddress: ipAddress,
 			State:     0,
 		}
-		resp, err := requests.MakePostRequest[OutputRestModel](getBaseRequest()+LoginsResource, i)(l, span, tenant)
+		resp, err := rest.MakePostRequest[OutputRestModel](l, span, tenant)(getBaseRequest()+LoginsResource, i)(l)
 		if err != nil {
 			return Model{}, err
 		}

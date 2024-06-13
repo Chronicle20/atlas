@@ -1,6 +1,7 @@
-package tenant
+package rest
 
 import (
+	"atlas-account/tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -14,9 +15,9 @@ const (
 	MinorVersion = "MINOR_VERSION"
 )
 
-type Handler func(tenant Model) http.HandlerFunc
+type TenantHandler func(tenant tenant.Model) http.HandlerFunc
 
-func ParseTenant(l logrus.FieldLogger, next Handler) http.HandlerFunc {
+func ParseTenant(l logrus.FieldLogger, next TenantHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		idStr := r.Header.Get(ID)
 		if idStr == "" {
@@ -67,11 +68,6 @@ func ParseTenant(l logrus.FieldLogger, next Handler) http.HandlerFunc {
 			return
 		}
 
-		next(Model{
-			id:           id,
-			region:       region,
-			majorVersion: uint16(majorVersionVal),
-			minorVersion: uint16(minorVersionVal),
-		})(w, r)
+		next(tenant.New(id, region, uint16(majorVersionVal), uint16(minorVersionVal)))(w, r)
 	}
 }

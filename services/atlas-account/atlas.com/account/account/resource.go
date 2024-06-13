@@ -3,6 +3,7 @@ package account
 import (
 	"atlas-account/rest"
 	"atlas-account/tenant"
+	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/manyminds/api2go/jsonapi"
 	"github.com/opentracing/opentracing-go"
@@ -17,18 +18,20 @@ const (
 	getAccountById   = "get_account"
 )
 
-func InitResource(si jsonapi.ServerInformation) func(router *mux.Router, l logrus.FieldLogger, db *gorm.DB) {
-	return func(router *mux.Router, l logrus.FieldLogger, db *gorm.DB) {
-		r := router.PathPrefix("/accounts").Subrouter()
-		r.HandleFunc("/", registerGetAccountByName(si)(l, db)).Queries("name", "{name}").Methods(http.MethodGet)
-		r.HandleFunc("/{accountId}", registerGetAccountById(si)(l, db)).Methods(http.MethodGet)
+func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
+	return func(db *gorm.DB) server.RouteInitializer {
+		return func(router *mux.Router, l logrus.FieldLogger) {
+			r := router.PathPrefix("/accounts").Subrouter()
+			r.HandleFunc("/", registerGetAccountByName(si)(l, db)).Queries("name", "{name}").Methods(http.MethodGet)
+			r.HandleFunc("/{accountId}", registerGetAccountById(si)(l, db)).Methods(http.MethodGet)
+		}
 	}
 }
 
 func registerGetAccountByName(si jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 	return func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 		return rest.RetrieveSpan(getAccountByName, func(span opentracing.Span) http.HandlerFunc {
-			return tenant.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
+			return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
 				return parseName(l, func(name string) http.HandlerFunc {
 					return handleGetAccountByName(si)(l, db)(span)(tenant)(name)
 				})
@@ -101,7 +104,7 @@ func parseId(l logrus.FieldLogger, next idHandler) http.HandlerFunc {
 func registerGetAccountById(si jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 	return func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 		return rest.RetrieveSpan(getAccountById, func(span opentracing.Span) http.HandlerFunc {
-			return tenant.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
+			return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
 				return parseId(l, func(id uint32) http.HandlerFunc {
 					return handleGetAccountById(si)(l, db)(span)(tenant)(id)
 				})

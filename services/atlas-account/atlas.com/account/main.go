@@ -5,9 +5,9 @@ import (
 	"atlas-account/database"
 	"atlas-account/logger"
 	"atlas-account/login"
-	"atlas-account/rest"
 	"atlas-account/tracing"
 	"context"
+	"github.com/Chronicle20/atlas-rest/server"
 	"io"
 	"os"
 	"os/signal"
@@ -57,7 +57,7 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(account.Migration))
 
-	rest.CreateService(l, db, ctx, wg, GetServer().GetPrefix(), login.InitResource(GetServer()), account.InitResource(GetServer()))
+	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), login.InitResource(GetServer())(db), account.InitResource(GetServer())(db))
 
 	// trap sigterm or interrupt and gracefully shutdown the server
 	c := make(chan os.Signal, 1)

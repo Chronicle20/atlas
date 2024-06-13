@@ -24,3 +24,12 @@ func (m Model) MajorVersion() uint16 {
 func (m Model) MinorVersion() uint16 {
 	return m.minorVersion
 }
+
+func New(id uuid.UUID, region string, majorVersion uint16, minorVersion uint16) Model {
+	return Model{
+		id:           id,
+		region:       region,
+		majorVersion: majorVersion,
+		minorVersion: minorVersion,
+	}
+}

@@ -2,6 +2,8 @@ dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Chronicle20/atlas-model v0.0.0-20240611171638-929647116e22 h1:vB75ih3/3y2l7NhIkgLhoTiDXlekivdkAR42Ru7g9oM=
 github.com/Chronicle20/atlas-model v0.0.0-20240611171638-929647116e22/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
+github.com/Chronicle20/atlas-rest v0.0.0-20240613153212-c900c3d560f4 h1:ydsFh3I6yqlpvglA5BQw1clSBN3LQJpmCGqQxwe5Cec=
+github.com/Chronicle20/atlas-rest v0.0.0-20240613153212-c900c3d560f4/go.mod h1:IPCC73Rsd2jb/0Ke03QfKpu9GKPGjem9WD2vfmTYwFc=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2 h1:5IcZpTvzydCQeHzK4Ef/D5rrSqwxob0t8PQPMybUNFM=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2/go.mod h1:yDgFjdqOqDEKOvasDdhWNXYg9BVp4O+o5f6V/ehm6Oo=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=

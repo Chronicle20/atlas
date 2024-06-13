@@ -3,6 +3,7 @@ package login
 import (
 	"atlas-account/rest"
 	"atlas-account/tenant"
+	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/manyminds/api2go/jsonapi"
 	"github.com/opentracing/opentracing-go"
@@ -16,17 +17,19 @@ const (
 	createLogin = "create_login"
 )
 
-func InitResource(si jsonapi.ServerInformation) func(router *mux.Router, l logrus.FieldLogger, db *gorm.DB) {
-	return func(router *mux.Router, l logrus.FieldLogger, db *gorm.DB) {
-		r := router.PathPrefix("/logins").Subrouter()
-		r.HandleFunc("/", registerCreateLogin(si)(l, db)).Methods(http.MethodPost)
+func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
+	return func(db *gorm.DB) server.RouteInitializer {
+		return func(router *mux.Router, l logrus.FieldLogger) {
+			r := router.PathPrefix("/logins").Subrouter()
+			r.HandleFunc("/", registerCreateLogin(si)(l, db)).Methods(http.MethodPost)
+		}
 	}
 }
 
 func registerCreateLogin(si jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 	return func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 		return rest.RetrieveSpan(createLogin, func(span opentracing.Span) http.HandlerFunc {
-			return tenant.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
+			return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
 				return parseInput(l, func(container InputRestModel) http.HandlerFunc {
 					return handleCreateLogin(si)(l, db)(span)(tenant)(container)
 				})

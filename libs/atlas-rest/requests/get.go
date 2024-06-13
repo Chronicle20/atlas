@@ -1,7 +1,7 @@
 package requests
 
 import (
-	"atlas-rest/retry"
+	"github.com/Chronicle20/atlas-rest/retry"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )

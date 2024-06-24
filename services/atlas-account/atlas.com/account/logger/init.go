@@ -32,6 +32,6 @@ func (h *ExtraFieldHook) Levels() []logrus.Level {
 }
 
 func (h *ExtraFieldHook) Fire(entry *logrus.Entry) error {
-	entry.Data["service"] = h.service
+	entry.Data["service.name"] = h.service
 	return nil
 }

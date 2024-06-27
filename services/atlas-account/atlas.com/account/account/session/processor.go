@@ -1,4 +1,4 @@
-package login
+package session
 
 import (
 	"atlas-account/account"
@@ -22,6 +22,7 @@ const (
 
 func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, name string, password string) Model {
 	return func(sessionId uuid.UUID, name string, password string) Model {
+		l.Debugf("Attemting login for [%s].", name)
 		if checkLoginAttempts(sessionId) > 4 {
 			return ErrorModel(TooManyAttempts)
 		}
@@ -32,7 +33,7 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 			return ErrorModel(SystemError)
 		}
 
-		a, err := account.GetOrCreate(l, db, span)(tenant, name, password, c.AutomaticRegister)
+		a, err := account.GetOrCreate(l, db, span, tenant)(name, password, c.AutomaticRegister)
 		if err != nil && !c.AutomaticRegister {
 			return ErrorModel(NotRegistered)
 		}
@@ -46,7 +47,7 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 
 		// TODO implement ip, mac, and temporary banning practices
 
-		if a.State() != account.StateNotLoggedIn {
+		if a.State() != account.NotLoggedIn {
 			return ErrorModel(AlreadyLoggedIn)
 		} else if a.Password()[0] == uint8('$') && a.Password()[1] == uint8('2') && bcrypt.CompareHashAndPassword([]byte(a.Password()), []byte(password)) == nil {
 			// TODO implement tos tracking
@@ -59,6 +60,9 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 			l.WithError(err).Errorf("Error trying to update logged in state for %s.", name)
 			return ErrorModel(SystemError)
 		}
+
+		l.Debugf("Login successful for [%s].", name)
+		emitLoggedInEvent(l, span, tenant)
 
 		return OkModel()
 	}

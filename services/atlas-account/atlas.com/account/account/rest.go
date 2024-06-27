@@ -2,6 +2,20 @@ package account
 
 import "strconv"
 
+type CreateRestModel struct {
+	Name     string `json:"name"`
+	Password string `json:"password"`
+	Gender   byte   `json:"gender"`
+}
+
+func (r CreateRestModel) SetID(_ string) error {
+	return nil
+}
+
+func (r CreateRestModel) GetName() string {
+	return "accounts"
+}
+
 type RestModel struct {
 	Id             uint32 `json:"-"`
 	Name           string `json:"name"`
@@ -41,7 +55,7 @@ func Transform(model Model) RestModel {
 		Password:       model.password,
 		Pin:            "",
 		Pic:            "",
-		LoggedIn:       model.state,
+		LoggedIn:       byte(model.state),
 		LastLogin:      0,
 		Gender:         0,
 		Banned:         false,

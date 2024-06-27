@@ -1,4 +1,4 @@
-package login
+package session
 
 import "strconv"
 import "github.com/google/uuid"
@@ -13,7 +13,7 @@ type InputRestModel struct {
 }
 
 func (r InputRestModel) GetName() string {
-	return "logins"
+	return "sessions"
 }
 
 func (r InputRestModel) SetID(id string) error {
@@ -33,7 +33,7 @@ type OutputRestModel struct {
 }
 
 func (r OutputRestModel) GetName() string {
-	return "logins"
+	return "sessions"
 }
 
 func (r OutputRestModel) GetID() string {

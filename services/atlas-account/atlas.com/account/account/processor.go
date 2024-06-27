@@ -28,7 +28,7 @@ func SetLoggedOut(db *gorm.DB) IdOperator {
 func setLoggedIn(db *gorm.DB) func(tenant tenant.Model) model.Operator[Model] {
 	return func(tenant tenant.Model) model.Operator[Model] {
 		return func(m Model) error {
-			return update(db)(updateState(StateLoggedIn))(tenant, m.Id())
+			return update(db)(updateState(LoggedIn))(tenant, m.Id())
 		}
 	}
 }
@@ -36,7 +36,7 @@ func setLoggedIn(db *gorm.DB) func(tenant tenant.Model) model.Operator[Model] {
 func setLoggedOut(db *gorm.DB) func(tenant tenant.Model) model.Operator[Model] {
 	return func(tenant tenant.Model) model.Operator[Model] {
 		return func(m Model) error {
-			return update(db)(updateState(StateNotLoggedIn))(tenant, m.Id())
+			return update(db)(updateState(NotLoggedIn))(tenant, m.Id())
 		}
 	}
 }
@@ -67,7 +67,7 @@ func GetById(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(id uin
 	return func(id uint32) (Model, error) {
 		m, err := byIdProvider(db)(tenant, id)()
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve account by id %d.", id)
+			l.WithError(err).Errorf("Unable to retrieve account by id [%d].", id)
 			return Model{}, err
 		}
 		return m, nil
@@ -78,43 +78,45 @@ func GetByName(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name
 	return func(name string) (Model, error) {
 		m, err := model.First[Model](byNameProvider(db)(tenant, name))
 		if err != nil {
-			l.WithError(err).Errorf("Unable to locate account with name %s.", name)
+			l.WithError(err).Errorf("Unable to locate account with name [%s].", name)
 			return Model{}, err
 		}
 		return m, nil
 	}
 }
 
-func GetOrCreate(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span) func(tenant tenant.Model, name string, password string, automaticRegister bool) (Model, error) {
-	return func(tenant tenant.Model, name string, password string, automaticRegister bool) (Model, error) {
+func GetOrCreate(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(name string, password string, automaticRegister bool) (Model, error) {
+	return func(name string, password string, automaticRegister bool) (Model, error) {
 		m, err := model.First[Model](byNameProvider(db)(tenant, name))
 		if err == nil {
 			return m, nil
 		}
 
 		if !automaticRegister {
-			l.Errorf("Unable to locate account by name %s, and automatic account creation is not enabled.", name)
+			l.Errorf("Unable to locate account by name [%s], and automatic account creation is not enabled.", name)
 			return Model{}, errors.New("account not found")
 		}
 
-		return Create(l, db, span)(tenant, name, password)
+		return Create(l, db, span, tenant)(name, password)
 	}
 }
 
-func Create(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span) func(tenant tenant.Model, name string, password string) (Model, error) {
-	return func(tenant tenant.Model, name string, password string) (Model, error) {
-		l.Debugf("Attempting to create account %s, with password %s.", name, password)
+func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(name string, password string) (Model, error) {
+	return func(name string, password string) (Model, error) {
+		l.Debugf("Attempting to create account [%s] with password [%s].", name, password)
 		hashPass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
-			l.WithError(err).Errorf("Error generating hash when creating account %s.", name)
+			l.WithError(err).Errorf("Error generating hash when creating account [%s].", name)
 			return Model{}, err
 		}
 
 		m, err := create(db)(tenant, name, string(hashPass))
 		if err != nil {
-			l.WithError(err).Errorf("Unable to create account %s.", name)
+			l.WithError(err).Errorf("Unable to create account [%s].", name)
 			return Model{}, err
 		}
+		l.Debugf("Created account [%d] for [%s].", m.Id(), m.Name())
+		emitCreatedEvent(l, span, tenant)(m.Id(), name)
 		return m, nil
 	}
 }

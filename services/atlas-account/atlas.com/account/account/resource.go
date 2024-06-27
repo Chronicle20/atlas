@@ -9,6 +9,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"io"
 	"net/http"
 	"strconv"
 )
@@ -22,8 +23,59 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			r := router.PathPrefix("/accounts").Subrouter()
+			r.HandleFunc("/", registerCreateAccount(si)(l, db)).Methods(http.MethodPost)
 			r.HandleFunc("/", registerGetAccountByName(si)(l, db)).Queries("name", "{name}").Methods(http.MethodGet)
 			r.HandleFunc("/{accountId}", registerGetAccountById(si)(l, db)).Methods(http.MethodGet)
+		}
+	}
+}
+
+func registerCreateAccount(si jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
+	return func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
+		return rest.RetrieveSpan(getAccountByName, func(span opentracing.Span) http.HandlerFunc {
+			return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
+				return parseCreateInput(l, func(input CreateRestModel) http.HandlerFunc {
+					return handleCreateAccount(si)(l, db)(span)(tenant)(input)
+				})
+			})
+		})
+	}
+}
+
+type createInputHandler func(container CreateRestModel) http.HandlerFunc
+
+func parseCreateInput(l logrus.FieldLogger, next createInputHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var model CreateRestModel
+
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		err = jsonapi.Unmarshal(body, &model)
+		if err != nil {
+			l.WithError(err).Errorln("Deserializing input", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(model)(w, r)
+	}
+}
+
+func handleCreateAccount(_ jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) func(span opentracing.Span) func(model tenant.Model) func(input CreateRestModel) http.HandlerFunc {
+	return func(l logrus.FieldLogger, db *gorm.DB) func(span opentracing.Span) func(model tenant.Model) func(input CreateRestModel) http.HandlerFunc {
+		return func(span opentracing.Span) func(model tenant.Model) func(input CreateRestModel) http.HandlerFunc {
+			return func(model tenant.Model) func(input CreateRestModel) http.HandlerFunc {
+				return func(input CreateRestModel) http.HandlerFunc {
+					return func(w http.ResponseWriter, r *http.Request) {
+						emitCreateCommand(l, span, model)(input.Name, input.Password)
+						w.WriteHeader(http.StatusAccepted)
+					}
+				}
+			}
 		}
 	}
 }
@@ -88,7 +140,7 @@ func handleGetAccountByName(si jsonapi.ServerInformation) func(l logrus.FieldLog
 
 type idHandler func(id uint32) http.HandlerFunc
 
-func parseId(l logrus.FieldLogger, next idHandler) http.HandlerFunc {
+func ParseId(l logrus.FieldLogger, next idHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		value, err := strconv.Atoi(vars["accountId"])
@@ -105,7 +157,7 @@ func registerGetAccountById(si jsonapi.ServerInformation) func(l logrus.FieldLog
 	return func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 		return rest.RetrieveSpan(getAccountById, func(span opentracing.Span) http.HandlerFunc {
 			return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
-				return parseId(l, func(id uint32) http.HandlerFunc {
+				return ParseId(l, func(id uint32) http.HandlerFunc {
 					return handleGetAccountById(si)(l, db)(span)(tenant)(id)
 				})
 			})

@@ -2,11 +2,12 @@ package main
 
 import (
 	"atlas-account/account"
+	"atlas-account/account/session"
 	"atlas-account/database"
 	"atlas-account/logger"
-	"atlas-account/login"
 	"atlas-account/tracing"
 	"context"
+	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 	"io"
 	"os"
@@ -16,6 +17,7 @@ import (
 )
 
 const serviceName = "atlas-account"
+const consumerGroupId = "Account Service"
 
 type Server struct {
 	baseUrl string
@@ -57,7 +59,11 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(account.Migration))
 
-	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), login.InitResource(GetServer())(db), account.InitResource(GetServer())(db))
+	consumer.CreateConsumers(l, ctx, wg,
+		account.CreateAccountCommandConsumer(l, db)(consumerGroupId),
+		session.CreateAccountSessionCommandConsumer(l, db)(consumerGroupId))
+
+	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), session.InitResource(GetServer())(db), account.InitResource(GetServer())(db))
 
 	// trap sigterm or interrupt and gracefully shutdown the server
 	c := make(chan os.Signal, 1)

@@ -5,10 +5,12 @@ import (
 	"gorm.io/gorm"
 )
 
+type State byte
+
 const (
-	StateNotLoggedIn       byte = 0
-	StateServerTransistion byte = 1
-	StateLoggedIn          byte = 2
+	NotLoggedIn       State = 0
+	ServerTransistion State = 1
+	LoggedIn          State = 2
 )
 
 func Migration(db *gorm.DB) error {

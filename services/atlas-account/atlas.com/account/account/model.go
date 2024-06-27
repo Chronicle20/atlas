@@ -1,66 +1,66 @@
 package account
 
 type Model struct {
-   id       uint32
-   name     string
-   password string
-   state    byte
-   banned   bool
+	id       uint32
+	name     string
+	password string
+	state    State
+	banned   bool
 }
 
 func (a Model) Id() uint32 {
-   return a.id
+	return a.id
 }
 
 func (a Model) Name() string {
-   return a.name
+	return a.name
 }
 
 func (a Model) Password() string {
-   return a.password
+	return a.password
 }
 
-func (a *Model) Banned() bool {
-   return a.banned
+func (a Model) Banned() bool {
+	return a.banned
 }
 
-func (a Model) State() byte {
-   return a.state
+func (a Model) State() State {
+	return a.state
 }
 
 type builder struct {
-   id       uint32
-   name     string
-   password string
-   state    byte
-   banned   bool
+	id       uint32
+	name     string
+	password string
+	state    State
+	banned   bool
 }
 
 func Builder(id uint32) *builder {
-   return &builder{id: id}
+	return &builder{id: id}
 }
 
 func (a *builder) SetName(name string) *builder {
-   a.name = name
-   return a
+	a.name = name
+	return a
 }
 
 func (a *builder) SetPassword(password string) *builder {
-   a.password = password
-   return a
+	a.password = password
+	return a
 }
 
-func (a *builder) SetState(state byte) *builder {
-   a.state = state
-   return a
+func (a *builder) SetState(state State) *builder {
+	a.state = state
+	return a
 }
 
 func (a *builder) Build() Model {
-   return Model{
-      id:       a.id,
-      name:     a.name,
-      password: a.password,
-      state:    a.state,
-      banned:   a.banned,
-   }
+	return Model{
+		id:       a.id,
+		name:     a.name,
+		password: a.password,
+		state:    a.state,
+		banned:   a.banned,
+	}
 }

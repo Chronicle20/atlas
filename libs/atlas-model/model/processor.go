@@ -43,6 +43,8 @@ type SliceProvider[M any] func() ([]M, error)
 
 type PreciselyOneFilter[M any] func([]M) (M, error)
 
+type Decorator[M any] func(M) M
+
 //goland:noinspection GoUnusedExportedFunction
 func ExecuteForEach[M any](f Operator[M]) SliceOperator[M] {
 	return func(models []M) error {
@@ -212,4 +214,34 @@ func First[M any](provider SliceProvider[M], filters ...Filter[M]) (M, error) {
 		}
 	}
 	return r, errors.New("no result found")
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func ApplyDecorators[M any](provider Provider[M], decorators ...Decorator[M]) Provider[M] {
+	m, err := provider()
+	if err != nil {
+		return ErrorProvider[M](err)
+	}
+	for _, decorator := range decorators {
+		m = decorator(m)
+	}
+	return FixedProvider[M](m)
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func ApplyDecoratorsSlice[M any](provider SliceProvider[M], decorators ...Decorator[M]) SliceProvider[M] {
+	ms, err := provider()
+	if err != nil {
+		return ErrorSliceProvider[M](err)
+	}
+	var results = make([]M, 0)
+
+	for _, m := range ms {
+		var nm = m
+		for _, decorator := range decorators {
+			nm = decorator(nm)
+		}
+		results = append(results, nm)
+	}
+	return FixedSliceProvider[M](results)
 }

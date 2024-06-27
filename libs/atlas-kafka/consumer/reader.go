@@ -1,9 +1,9 @@
 package consumer
 
 import (
-	"atlas-kafka/retry"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas-kafka/retry"
 	"github.com/opentracing/opentracing-go"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"

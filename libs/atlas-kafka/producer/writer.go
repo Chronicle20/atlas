@@ -1,10 +1,10 @@
 package producer
 
 import (
-	"atlas-kafka/retry"
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"github.com/Chronicle20/atlas-kafka/retry"
 	"github.com/opentracing/opentracing-go"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"

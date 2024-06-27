@@ -1,4 +1,4 @@
-module atlas-kafka
+module github.com/Chronicle20/atlas-kafka
 
 go 1.21.6
 

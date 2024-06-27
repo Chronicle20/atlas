@@ -10,6 +10,7 @@ import (
 	"atlas-login/tasks"
 	"atlas-login/tracing"
 	"context"
+	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"io"
 	"os"
@@ -110,6 +111,11 @@ func main() {
 	l.Infof("Initiating shutdown with signal %s.", sig)
 	cancel()
 	wg.Wait()
+
+	span := opentracing.StartSpan("teardown")
+	defer span.Finish()
+	session.DestroyAll(l, span, session.GetRegistry())
+
 	l.Infoln("Service shutdown.")
 }
 

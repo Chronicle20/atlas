@@ -1,4 +1,4 @@
-package login
+package session
 
 type Model struct {
 	Code   string `json:"code"`

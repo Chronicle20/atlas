@@ -1,6 +1,7 @@
 package session
 
 import (
+	as "atlas-login/account/session"
 	"atlas-login/tenant"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
@@ -67,5 +68,6 @@ func Destroy(l logrus.FieldLogger, span opentracing.Span, r *Registry) func(Mode
 	return func(s Model) {
 		l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 		r.Remove(s.SessionId())
+		as.Destroy(l, span, s.Tenant())(s.AccountId())
 	}
 }

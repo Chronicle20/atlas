@@ -1,4 +1,4 @@
-package login
+package session
 
 import (
 	"github.com/google/uuid"
@@ -15,7 +15,7 @@ type InputRestModel struct {
 }
 
 func (r InputRestModel) GetName() string {
-	return "logins"
+	return "sessions"
 }
 
 func (r InputRestModel) GetID() string {
@@ -30,7 +30,7 @@ type OutputRestModel struct {
 }
 
 func (r OutputRestModel) GetName() string {
-	return "logins"
+	return "sessions"
 }
 
 func (r OutputRestModel) SetID(id string) error {

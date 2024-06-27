@@ -2,7 +2,7 @@ package handler
 
 import (
 	"atlas-login/account"
-	"atlas-login/login"
+	as "atlas-login/account/session"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -64,7 +64,7 @@ func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 		p := ReadLoginRequest(r)
 		l.Debugf("Reading [%s] message. body={name=%s, password=%s, gameRoomClient=%d, gameStartMode=%d}", LoginHandle, p.Name(), p.Password(), p.GameRoomClient(), p.GameStartMode())
 
-		resp, err := login.CreateLogin(l, span, s.Tenant())(s.SessionId(), p.Name(), p.Password(), "")
+		resp, err := as.CreateLogin(l, span, s.Tenant())(s.SessionId(), s.AccountId(), p.Name(), p.Password(), "")
 		if err != nil {
 			announceError(l, span, wp)(s, writer.SystemError1)
 			return
@@ -73,7 +73,7 @@ func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 		if resp.Code == "OK" {
 			account.ForAccountByName(l, span, s.Tenant())(p.Name(), issueSuccess(l, s, wp))
 
-			if s.Tenant().Region() == "JMS" {
+			if s.Tenant().Region == "JMS" {
 				issueServerInformation(l, span, wp)(s)
 			}
 

@@ -32,7 +32,7 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 				return
 			}
 
-			l.Infof("Creating login socket service for [%s] [%d.%d] on port [%d].", t.Region(), t.MajorVersion(), t.MinorVersion(), port)
+			l.Infof("Creating login socket service for [%s] [%d.%d] on port [%d].", t.Region, t.MajorVersion, t.MinorVersion, port)
 
 			hasMapleEncryption := true
 			if config.Region == "JMS" {
@@ -47,7 +47,7 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 
 			l.Debugf("Service locale [%d].", locale)
 
-			fl := l.WithField("tenant", t.Id().String()).WithField("region", t.Region()).WithField("ms.version", fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()))
+			fl := l.WithField("tenant", t.Id.String()).WithField("region", t.Region).WithField("ms.version", fmt.Sprintf("%d.%d", t.MajorVersion, t.MinorVersion))
 
 			go func() {
 				wg.Add(1)

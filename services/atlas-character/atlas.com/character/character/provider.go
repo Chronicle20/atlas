@@ -1,0 +1,66 @@
+package character
+
+import (
+	"atlas-character/database"
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+func getById(tenantId uuid.UUID, characterId uint32) database.EntityProvider[entity] {
+	return func(db *gorm.DB) model.Provider[entity] {
+		return database.Query[entity](db, &entity{TenantId: tenantId, ID: characterId})
+	}
+}
+
+func getForAccountInWorld(tenantId uuid.UUID, accountId uint32, worldId byte) database.EntitySliceProvider[entity] {
+	return func(db *gorm.DB) model.SliceProvider[entity] {
+		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, AccountId: accountId, World: worldId})
+	}
+}
+
+func getForMapInWorld(tenantId uuid.UUID, worldId byte, mapId uint32) database.EntitySliceProvider[entity] {
+	return func(db *gorm.DB) model.SliceProvider[entity] {
+		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, World: worldId, MapId: mapId})
+	}
+}
+
+func getForName(tenantId uuid.UUID, name string) database.EntitySliceProvider[entity] {
+	return func(db *gorm.DB) model.SliceProvider[entity] {
+		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, Name: name})
+	}
+}
+
+func makeCharacter(e entity) (Model, error) {
+	r := NewModelBuilder().
+		SetId(e.ID).
+		SetAccountId(e.AccountId).
+		SetWorldId(e.World).
+		SetName(e.Name).
+		SetLevel(e.Level).
+		SetExperience(e.Experience).
+		SetGachaponExperience(e.GachaponExperience).
+		SetStrength(e.Strength).
+		SetDexterity(e.Dexterity).
+		SetLuck(e.Luck).
+		SetIntelligence(e.Intelligence).
+		SetHp(e.HP).
+		SetMp(e.MP).
+		SetMaxHp(e.MaxHP).
+		SetMaxMp(e.MaxMP).
+		SetMeso(e.Meso).
+		SetHpMpUsed(e.HPMPUsed).
+		SetJobId(e.JobId).
+		SetSkinColor(e.SkinColor).
+		SetGender(e.Gender).
+		SetFame(e.Fame).
+		SetHair(e.Hair).
+		SetFace(e.Face).
+		SetAp(e.AP).
+		SetSp(e.SP).
+		SetMapId(e.MapId).
+		SetSpawnPoint(e.SpawnPoint).
+		SetGm(e.GM).
+		Build()
+	return r, nil
+}

@@ -1,0 +1,10 @@
+#Use early-GMS 4/4/4/4 starting stats. To overcome AP shortage, this gives 4AP/5AP at 1st/2nd job advancements.
+useStarting4Ap: false
+#Beginners level 10 or below have their AP autoassigned (they can't choose to levelup a stat). Set true ONLY if the localhost doesn't support AP assigning for beginners level 10 or below.
+useAutoAssignStartersAp: false
+#Max AP allotted on the auto-assigner.
+maxAp: 32767
+#Enables randomizing on MaxHP/MaxMP gains and INT accounting for the MaxMP gain on level up.
+useRandomizeHpMpGain: true
+#Caps the player SP level on the total obtainable by their current jobs. After changing jobs, missing SP will be retrieved.
+useEnforceJobSpRange: false

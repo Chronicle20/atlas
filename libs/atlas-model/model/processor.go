@@ -191,6 +191,30 @@ func SliceMap[M any, N any](provider SliceProvider[M], transformer Transformer[M
 }
 
 //goland:noinspection GoUnusedExportedFunction
+type Folder[M any, N any] func(N, M) (N, error)
+
+//goland:noinspection GoUnusedExportedFunction
+func Fold[M any, N any](provider SliceProvider[M], supplier Provider[N], folder Folder[M, N]) Provider[N] {
+	ms, err := provider()
+	if err != nil {
+		return ErrorProvider[N](err)
+	}
+
+	n, err := supplier()
+	if err != nil {
+		return ErrorProvider[N](err)
+	}
+	
+	for _, wip := range ms {
+		n, err = folder(n, wip)
+		if err != nil {
+			return ErrorProvider[N](err)
+		}
+	}
+	return FixedProvider(n)
+}
+
+//goland:noinspection GoUnusedExportedFunction
 func First[M any](provider SliceProvider[M], filters ...Filter[M]) (M, error) {
 	var r M
 	ms, err := provider()

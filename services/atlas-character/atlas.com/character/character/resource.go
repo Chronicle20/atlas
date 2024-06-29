@@ -103,7 +103,7 @@ func handleGetCharactersByMap(d *handlerDependency, c *handlerContext) http.Hand
 			return
 		}
 
-		cs, err := GetForMapInWorld(d.l, d.db, c.t)(byte(worldId), uint32(mapId))
+		cs, err := GetForMapInWorld(d.l, d.db, c.t)(byte(worldId), uint32(mapId), InventoryModelDecorator(d.l, d.db, c.t))
 		if err != nil {
 			d.l.WithError(err).Errorf("Unable to get characters for map %d in world %d.", mapId, worldId)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -123,7 +123,7 @@ func handleGetCharactersByName(d *handlerDependency, c *handlerContext) http.Han
 			return
 		}
 
-		cs, err := GetForName(d.l, d.db, c.t)(name)
+		cs, err := GetForName(d.l, d.db, c.t)(name, InventoryModelDecorator(d.l, d.db, c.t))
 		if err != nil {
 			d.l.WithError(err).Errorf("Getting character %s.", name)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -142,7 +142,7 @@ func handleGetCharacter(d *handlerDependency, c *handlerContext) http.HandlerFun
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		chr, err := GetById(d.l, d.db, c.t)(uint32(characterId))
+		chr, err := GetById(d.l, d.db, c.t)(uint32(characterId), InventoryModelDecorator(d.l, d.db, c.t))
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return

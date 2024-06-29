@@ -79,15 +79,16 @@ func (w *Writer) WriteBool(val bool) {
 }
 
 func (w *Writer) WriteAsciiString(s string) {
-	w.WriteShort(uint16(len(s)))
 
 	e := japanese.ShiftJIS.NewEncoder()
 	r := strings.NewReader(s)
 	ebs, err := io.ReadAll(transform.NewReader(r, e))
 	if err != nil {
+		w.WriteShort(uint16(len(s)))
 		w.WriteByteArray([]byte(s))
 		return
 	}
+	w.WriteShort(uint16(len(ebs)))
 	w.WriteByteArray(ebs)
 }
 

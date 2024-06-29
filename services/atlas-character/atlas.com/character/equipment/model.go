@@ -149,8 +149,8 @@ func (m Model) SetShoes(e *equipable.Model) Model {
 
 func (m Model) Apply(equips []equipable.Model) Model {
 	var rm = m
-	for _, equip := range equips {
-		e := &equip
+	for i := range equips {
+		e := &equips[i]
 		switch slot.Position(e.Slot()) {
 		case slot.PositionHat:
 			rm = rm.SetHat(e)

@@ -2,7 +2,8 @@ package writer
 
 import (
 	"atlas-login/character"
-	"atlas-login/character/inventory"
+	"atlas-login/character/equipment"
+	"atlas-login/character/equipment/slot"
 	"atlas-login/pet"
 	"atlas-login/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -51,50 +52,50 @@ func WriteCharacter(tenant tenant.Model) func(w *response.Writer, character char
 		if !viewAll {
 			w.WriteByte(0)
 		}
-		if character.Properties().Gm() || character.Properties().GmJob() {
+		if character.Gm() {
 			w.WriteByte(0)
 			return
 		}
 		w.WriteByte(1) // world rank enabled (next 4 int are not sent if disabled) Short??
-		w.WriteInt(uint32(character.Properties().Rank()))
-		w.WriteInt(uint32(character.Properties().RankMove()))
-		w.WriteInt(uint32(character.Properties().JobRank()))
-		w.WriteInt(uint32(character.Properties().JobRankMove()))
+		w.WriteInt(character.Rank())
+		w.WriteInt(character.RankMove())
+		w.WriteInt(character.JobRank())
+		w.WriteInt(character.JobRankMove())
 	}
 }
 
 func WriteCharacterLook(w *response.Writer, character character.Model, mega bool) {
-	w.WriteByte(character.Properties().Gender())
-	w.WriteByte(character.Properties().SkinColor())
-	w.WriteInt(character.Properties().Face())
+	w.WriteByte(character.Gender())
+	w.WriteByte(character.SkinColor())
+	w.WriteInt(character.Face())
 	w.WriteBool(!mega)
-	w.WriteInt(character.Properties().Hair())
+	w.WriteInt(character.Hair())
 	WriteCharacterEquipment(w, character)
 }
 
 func WriteCharacterEquipment(w *response.Writer, character character.Model) {
 
 	var equips = getEquippedItemSlotMap(character.Equipment())
-	var maskedEquips = make(map[int16]uint32)
+	var maskedEquips = make(map[slot.Position]uint32)
 	writeEquips(w, equips, maskedEquips)
 
-	var weapon *inventory.EquippedItem
-	for _, x := range character.Equipment() {
-		if x.InWeaponSlot() {
-			weapon = &x
-			break
-		}
-	}
-	if weapon != nil {
-		w.WriteInt(weapon.ItemId())
-	} else {
-		w.WriteInt(0)
-	}
+	//var weapon *inventory.EquippedItem
+	//for _, x := range character.Equipment() {
+	//	if x.InWeaponSlot() {
+	//		weapon = &x
+	//		break
+	//	}
+	//}
+	//if weapon != nil {
+	//	w.WriteInt(weapon.ItemId())
+	//} else {
+	w.WriteInt(0)
+	//}
 
 	writeForEachPet(w, character.Pets(), writePetItemId, writeEmptyPetItemId)
 }
 
-func writeEquips(w *response.Writer, equips map[int16]uint32, maskedEquips map[int16]uint32) {
+func writeEquips(w *response.Writer, equips map[slot.Position]uint32, maskedEquips map[slot.Position]uint32) {
 	for k, v := range equips {
 		w.WriteKeyValue(byte(k), v)
 	}
@@ -105,15 +106,34 @@ func writeEquips(w *response.Writer, equips map[int16]uint32, maskedEquips map[i
 	w.WriteByte(0xFF)
 }
 
-func getEquippedItemSlotMap(e []inventory.EquippedItem) map[int16]uint32 {
-	var equips = make(map[int16]uint32, 0)
-	for _, x := range e {
-		if x.NotInWeaponSlot() {
-			y := x.InvertSlot()
-			equips[y.Slot()] = y.ItemId()
-		}
-	}
+func getEquippedItemSlotMap(e equipment.Model) map[slot.Position]uint32 {
+	var equips = make(map[slot.Position]uint32)
+	addEquipmentIfPresent(equips, e.Hat())
+	addEquipmentIfPresent(equips, e.Medal())
+	addEquipmentIfPresent(equips, e.Forehead())
+	addEquipmentIfPresent(equips, e.Ring1())
+	addEquipmentIfPresent(equips, e.Ring2())
+	addEquipmentIfPresent(equips, e.Eye())
+	addEquipmentIfPresent(equips, e.Earring())
+	addEquipmentIfPresent(equips, e.Shoulder())
+	addEquipmentIfPresent(equips, e.Cape())
+	addEquipmentIfPresent(equips, e.Top())
+	addEquipmentIfPresent(equips, e.Pendant())
+	addEquipmentIfPresent(equips, e.Weapon())
+	addEquipmentIfPresent(equips, e.Shield())
+	addEquipmentIfPresent(equips, e.Gloves())
+	addEquipmentIfPresent(equips, e.Bottom())
+	addEquipmentIfPresent(equips, e.Belt())
+	addEquipmentIfPresent(equips, e.Ring3())
+	addEquipmentIfPresent(equips, e.Ring4())
+	addEquipmentIfPresent(equips, e.Shoes())
 	return equips
+}
+
+func addEquipmentIfPresent(slotMap map[slot.Position]uint32, pi slot.Model) {
+	if pi.Equipable != nil {
+		slotMap[pi.Position*-1] = pi.Equipable.ItemId()
+	}
 }
 
 func writePetItemId(w *response.Writer, p pet.Model) {
@@ -144,9 +164,9 @@ func writeEmptyPetId(w *response.Writer) {
 
 func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, character character.Model) {
 	return func(w *response.Writer, character character.Model) {
-		w.WriteInt(character.Properties().Id())
+		w.WriteInt(character.Id())
 
-		name := character.Properties().Name()
+		name := character.Name()
 		if len(name) > 13 {
 			name = name[:13]
 		}
@@ -156,34 +176,34 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 			w.WriteByte(0x0)
 		}
 
-		w.WriteByte(character.Properties().Gender())
-		w.WriteByte(character.Properties().SkinColor())
-		w.WriteInt(character.Properties().Face())
-		w.WriteInt(character.Properties().Hair())
+		w.WriteByte(character.Gender())
+		w.WriteByte(character.SkinColor())
+		w.WriteInt(character.Face())
+		w.WriteInt(character.Hair())
 		writeForEachPet(w, character.Pets(), writePetId, writeEmptyPetId)
-		w.WriteByte(character.Properties().Level())
-		w.WriteShort(character.Properties().JobId())
-		w.WriteShort(character.Properties().Strength())
-		w.WriteShort(character.Properties().Dexterity())
-		w.WriteShort(character.Properties().Intelligence())
-		w.WriteShort(character.Properties().Luck())
-		w.WriteShort(character.Properties().Hp())
-		w.WriteShort(character.Properties().MaxHp())
-		w.WriteShort(character.Properties().Mp())
-		w.WriteShort(character.Properties().MaxMp())
-		w.WriteShort(character.Properties().Ap())
+		w.WriteByte(character.Level())
+		w.WriteShort(character.JobId())
+		w.WriteShort(character.Strength())
+		w.WriteShort(character.Dexterity())
+		w.WriteShort(character.Intelligence())
+		w.WriteShort(character.Luck())
+		w.WriteShort(character.Hp())
+		w.WriteShort(character.MaxHp())
+		w.WriteShort(character.Mp())
+		w.WriteShort(character.MaxMp())
+		w.WriteShort(character.Ap())
 
-		if character.Properties().HasSPTable() {
+		if character.HasSPTable() {
 			WriteRemainingSkillInfo(w, character)
 		} else {
-			w.WriteShort(character.Properties().RemainingSp())
+			w.WriteShort(character.RemainingSp())
 		}
 
-		w.WriteInt(character.Properties().Experience())
-		w.WriteShort(uint16(character.Properties().Fame()))
-		w.WriteInt(character.Properties().GachaponExperience())
-		w.WriteInt(character.Properties().MapId())
-		w.WriteByte(character.Properties().SpawnPoint())
+		w.WriteInt(character.Experience())
+		w.WriteInt16(character.Fame())
+		w.WriteInt(character.GachaponExperience())
+		w.WriteInt(character.MapId())
+		w.WriteByte(character.SpawnPoint())
 
 		if tenant.Region == "GMS" {
 			w.WriteInt(0)

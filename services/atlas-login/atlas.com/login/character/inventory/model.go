@@ -1,5 +1,28 @@
 package inventory
 
+import (
+	"atlas-login/character/inventory/equipable"
+	"atlas-login/character/inventory/item"
+)
+
+type Model struct {
+	equipable EquipableModel
+	useable   ItemModel
+	setup     ItemModel
+	etc       ItemModel
+	cash      ItemModel
+}
+
+type EquipableModel struct {
+	capacity uint32
+	items    []equipable.Model
+}
+
+type ItemModel struct {
+	capacity uint32
+	items    []item.Model
+}
+
 type EquippedItem struct {
 	itemId        uint32
 	slot          int16

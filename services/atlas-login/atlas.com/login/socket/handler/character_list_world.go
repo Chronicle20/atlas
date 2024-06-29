@@ -17,8 +17,14 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, span opentracing.Span, w
 	serverStatusFunc := session.Announce(wp)(writer.ServerStatus)
 	characterListFunc := session.Announce(wp)(writer.CharacterList)
 	return func(s session.Model, r *request.Reader) {
+		var gameStartMode = byte(0)
+		if s.Tenant().Region == "GMS" {
+			gameStartMode = r.ReadByte()
+		}
 		worldId := r.ReadByte()
 		channelId := r.ReadByte()
+		socketAddr := r.ReadInt32()
+		l.Debugf("Handling [CharacterListWorld]. gameStartMode=[%d], worldId=[%d], channelId=[%d], socketAddr=[%d]", gameStartMode, worldId, channelId, socketAddr)
 
 		w, err := world.GetById(l, span)(worldId)
 		if err != nil {
@@ -43,13 +49,12 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, span opentracing.Span, w
 			return
 		}
 
-		//cs, err := character.GetForWorld(l, span, s.Tenant())(s.AccountId(), worldId)
-		//if err != nil {
-		//	l.WithError(err).Errorf("Cannot retrieve account characters")
-		//	return
-		//}
+		cs, err := character.GetForWorld(l, span, s.Tenant())(s.AccountId(), worldId)
+		if err != nil {
+			l.WithError(err).Errorf("Cannot retrieve account characters")
+			return
+		}
 
-		var cs []character.Model
 		err = characterListFunc(s, writer.CharacterListBody(l, s.Tenant())(cs, worldId, 0, true, a.PIC(), int16(1), a.CharacterSlots()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show character list")

@@ -1,12 +1,19 @@
 package character
 
 import (
+	"atlas-login/rest"
+	"atlas-login/tenant"
+	"fmt"
+	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/opentracing/opentracing-go"
+	"github.com/sirupsen/logrus"
 	"os"
 )
 
 const (
-	Resource = "characters/"
-	Seeds    = Resource + "seeds"
+	Resource          = "characters/"
+	Seeds             = Resource + "seeds"
+	ByAccountAndWorld = Resource + "?accountId=%d&worldId=%d"
 )
 
 func getBaseRequest() string {
@@ -40,3 +47,9 @@ func getBaseRequest() string {
 //		return r.Data(), err
 //	}
 //}
+
+func requestByAccountAndWorld(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte) requests.Request[[]RestModel] {
+	return func(accountId uint32, worldId byte) requests.Request[[]RestModel] {
+		return rest.MakeGetRequest[[]RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+ByAccountAndWorld, accountId, worldId))
+	}
+}

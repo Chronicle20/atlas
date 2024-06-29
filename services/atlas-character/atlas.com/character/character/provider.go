@@ -27,7 +27,12 @@ func getForMapInWorld(tenantId uuid.UUID, worldId byte, mapId uint32) database.E
 
 func getForName(tenantId uuid.UUID, name string) database.EntitySliceProvider[entity] {
 	return func(db *gorm.DB) model.SliceProvider[entity] {
-		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, Name: name})
+		var results []entity
+		err := db.Where("tenant_id = ? AND LOWER(name) = LOWER(?)", tenantId, name).Find(&results).Error
+		if err != nil {
+			return model.ErrorSliceProvider[entity](err)
+		}
+		return model.FixedSliceProvider(results)
 	}
 }
 

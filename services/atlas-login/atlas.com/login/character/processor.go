@@ -9,31 +9,25 @@ import (
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
+	"regexp"
 )
 
 func IsValidName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string) (bool, error) {
 	return func(name string) (bool, error) {
-		//m, err := regexp.MatchString("[a-zA-Z0-9]{3,12}", name)
-		//if err != nil {
-		//	return false, err
-		//}
-		//if !m {
-		//	return false, nil
-		//}
-		//
-		//_, err = properties.GetByName(l, span, tenant)(name)
-		//if err == nil {
-		//	return false, nil
-		//}
-		//
-		//if errors.Is(err, requests.NoResultError) {
-		//	return true, nil
-		//}
-		//
-		//if err.Error() != "unable to find character by name" {
-		//	return false, nil
-		//}
-		//
+		m, err := regexp.MatchString("[A-Za-z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{3,12}", name)
+		if err != nil {
+			return false, err
+		}
+		if !m {
+			return false, nil
+		}
+
+		cs, err := GetByName(l, span, tenant)(name)
+		if len(cs) != 0 || err != nil {
+			return false, nil
+		}
+
+		//TODO
 		//bn, err := blocked_name.IsBlockedName(l, span)(name)
 		//if bn {
 		//	return false, err
@@ -46,6 +40,24 @@ func IsValidName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 func byAccountAndWorldProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte) model.SliceProvider[Model] {
 	return func(accountId uint32, worldId byte) model.SliceProvider[Model] {
 		return requests.SliceProvider[RestModel, Model](l)(requestByAccountAndWorld(l, span, tenant)(accountId, worldId), makeModel)
+	}
+}
+
+func GetForWorld(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte) ([]Model, error) {
+	return func(accountId uint32, worldId byte) ([]Model, error) {
+		return byAccountAndWorldProvider(l, span, tenant)(accountId, worldId)()
+	}
+}
+
+func byNameProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string) model.SliceProvider[Model] {
+	return func(name string) model.SliceProvider[Model] {
+		return requests.SliceProvider[RestModel, Model](l)(requestByName(l, span, tenant)(name), makeModel)
+	}
+}
+
+func GetByName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string) ([]Model, error) {
+	return func(name string) ([]Model, error) {
+		return byNameProvider(l, span, tenant)(name)()
 	}
 }
 
@@ -85,12 +97,6 @@ func makeModel(rm RestModel) (Model, error) {
 	}, nil
 }
 
-func GetForWorld(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte) ([]Model, error) {
-	return func(accountId uint32, worldId byte) ([]Model, error) {
-		return byAccountAndWorldProvider(l, span, tenant)(accountId, worldId)()
-	}
-}
-
 //func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32) (*Model, error) {
 //	return func(characterId uint32) (*Model, error) {
 //		cs, err := properties.GetById(l, span, tenant)(characterId)
@@ -103,23 +109,6 @@ func GetForWorld(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 //			return nil, err
 //		}
 //		return c, nil
-//	}
-//}
-
-//func fromProperties(l logrus.FieldLogger, span opentracing.Span) func(data properties.Model) (*Model, error) {
-//	return func(data properties.Model) (*Model, error) {
-//		eq, err := inventory.GetEquippedItemsForCharacter(l, span)(data.Id())
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		ps, err := pet.GetForCharacter(nil)(data.Id())
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		c := NewCharacter(data, eq, ps)
-//		return &c, nil
 //	}
 //}
 

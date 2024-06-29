@@ -42,6 +42,11 @@
               "handler": "ServerListRequestHandle"
             },
             {
+              "opCode": "0x15",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterCheckNameHandle"
+            },
+            {
               "opCode": "0x19",
               "validator": "NoOpValidator",
               "handler": "NoOpHandler"
@@ -109,6 +114,18 @@
               "writer": "CharacterList"
             },
             {
+              "opCode": "0x0D",
+              "writer": "CharacterNameResponse",
+              "options": {
+                "codes": {
+                  "OK": 0,
+                  "ALREADY_REGISTERED": 1,
+                  "NOT_ALLOWED": 2,
+                  "SYSTEM_ERROR": 3
+                }
+              }
+            },
+            {
               "opCode": "0x1A",
               "writer": "SelectWorld"
             },
@@ -146,6 +163,11 @@
               "opCode": "0x0B",
               "validator": "LoggedInValidator",
               "handler": "ServerListRequestHandle"
+            },
+            {
+              "opCode": "0x15",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterCheckNameHandle"
             },
             {
               "opCode": "0x24",
@@ -210,6 +232,18 @@
               "writer": "CharacterList"
             },
             {
+              "opCode": "0x0D",
+              "writer": "CharacterNameResponse",
+              "options": {
+                "codes": {
+                  "OK": 0,
+                  "ALREADY_REGISTERED": 1,
+                  "NOT_ALLOWED": 2,
+                  "SYSTEM_ERROR": 3
+                }
+              }
+            },
+            {
               "opCode": "0x1A",
               "writer": "SelectWorld"
             },
@@ -237,6 +271,11 @@
               "opCode": "0x04",
               "validator": "LoggedInValidator",
               "handler": "CharacterListWorldHandle"
+            },
+            {
+              "opCode": "0x08",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterCheckNameHandle"
             },
             {
               "opCode": "0x18",
@@ -301,6 +340,18 @@
             {
               "opCode": "0x03",
               "writer": "CharacterList"
+            },
+            {
+              "opCode": "0x05",
+              "writer": "CharacterNameResponse",
+              "options": {
+                "codes": {
+                  "OK": 0,
+                  "ALREADY_REGISTERED": 1,
+                  "NOT_ALLOWED": 2,
+                  "SYSTEM_ERROR": 3
+                }
+              }
             },
             {
               "opCode": "0x16",

@@ -6,7 +6,7 @@ require (
 	github.com/Chronicle20/atlas-kafka v0.0.0-20240627140949-91f3b00e0da4
 	github.com/Chronicle20/atlas-model v0.0.0-20240628170355-33e9a2cca851
 	github.com/Chronicle20/atlas-rest v0.0.0-20240629173858-9967596e5b47
-	github.com/Chronicle20/atlas-socket v0.0.0-20240611135732-5b94924e7e1f
+	github.com/Chronicle20/atlas-socket v0.0.0-20240629184717-b9628a79e2fe
 	github.com/google/uuid v1.6.0
 	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6
 	github.com/opentracing/opentracing-go v1.2.0
@@ -27,4 +27,5 @@ require (
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 )

@@ -14,6 +14,7 @@ const (
 	Resource          = "characters/"
 	Seeds             = Resource + "seeds"
 	ByAccountAndWorld = Resource + "?accountId=%d&worldId=%d"
+	ByName            = Resource + "?name=%s"
 )
 
 func getBaseRequest() string {
@@ -51,5 +52,11 @@ func getBaseRequest() string {
 func requestByAccountAndWorld(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte) requests.Request[[]RestModel] {
 	return func(accountId uint32, worldId byte) requests.Request[[]RestModel] {
 		return rest.MakeGetRequest[[]RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+ByAccountAndWorld, accountId, worldId))
+	}
+}
+
+func requestByName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string) requests.Request[[]RestModel] {
+	return func(name string) requests.Request[[]RestModel] {
+		return rest.MakeGetRequest[[]RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+ByName, name))
 	}
 }

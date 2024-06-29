@@ -1,6 +1,12 @@
 package request
 
-import "fmt"
+import (
+	"fmt"
+	"golang.org/x/text/transform"
+	"io"
+	"strings"
+)
+import "golang.org/x/text/encoding/japanese"
 
 // Request -
 type Request []byte
@@ -91,5 +97,12 @@ func (p *Request) readUint64(pos *int) uint64 {
 }
 
 func (p *Request) readString(pos *int, length int) string {
-	return string(p.readBytes(pos, length))
+	bytes := p.readBytes(pos, length)
+	d := japanese.ShiftJIS.NewDecoder()
+	r := transform.NewReader(strings.NewReader(string(bytes)), d)
+	dbs, err := io.ReadAll(r)
+	if err != nil {
+		return string(bytes)
+	}
+	return string(dbs)
 }

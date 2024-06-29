@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/transform"
+	"io"
+	"strings"
 )
 
 type Writer struct {
@@ -76,7 +80,15 @@ func (w *Writer) WriteBool(val bool) {
 
 func (w *Writer) WriteAsciiString(s string) {
 	w.WriteShort(uint16(len(s)))
-	w.WriteByteArray([]byte(s))
+
+	e := japanese.ShiftJIS.NewEncoder()
+	r := strings.NewReader(s)
+	ebs, err := io.ReadAll(transform.NewReader(r, e))
+	if err != nil {
+		w.WriteByteArray([]byte(s))
+		return
+	}
+	w.WriteByteArray(ebs)
 }
 
 func (w *Writer) WriteKeyValue(key byte, value uint32) {

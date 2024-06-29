@@ -5,6 +5,7 @@ go 1.21.6
 require (
 	github.com/google/uuid v1.6.0
 	github.com/sirupsen/logrus v1.9.3
+	golang.org/x/text v0.16.0
 )
 
-require golang.org/x/sys v0.20.0 // indirect
+require golang.org/x/sys v0.21.0 // indirect

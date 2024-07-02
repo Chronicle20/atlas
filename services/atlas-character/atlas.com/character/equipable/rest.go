@@ -32,15 +32,7 @@ func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
-func TransformAll(models []Model) []RestModel {
-	rms := make([]RestModel, 0)
-	for _, m := range models {
-		rms = append(rms, Transform(m))
-	}
-	return rms
-}
-
-func Transform(m Model) RestModel {
+func Transform(m Model) (RestModel, error) {
 	rm := RestModel{
 		ItemId:        m.itemId,
 		Slot:          m.slot,
@@ -61,5 +53,29 @@ func Transform(m Model) RestModel {
 		Jump:          m.jump,
 		Slots:         m.slots,
 	}
-	return rm
+	return rm, nil
+}
+
+func Extract(model RestModel) (Model, error) {
+	return Model{
+		id:            model.Id,
+		itemId:        model.ItemId,
+		slot:          model.Slot,
+		strength:      0,
+		dexterity:     0,
+		intelligence:  0,
+		luck:          0,
+		hp:            0,
+		mp:            0,
+		weaponAttack:  0,
+		magicAttack:   0,
+		weaponDefense: 0,
+		magicDefense:  0,
+		accuracy:      0,
+		avoidability:  0,
+		hands:         0,
+		speed:         0,
+		jump:          0,
+		slots:         0,
+	}, nil
 }

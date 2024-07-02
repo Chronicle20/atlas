@@ -84,7 +84,14 @@ func handleGetCharactersForAccountInWorld(d *handlerDependency, c *handlerContex
 			return
 		}
 
-		server.Marshal[[]RestModel](d.l)(w)(c.si)(TransformAll(cs))
+		res, err := model.TransformAll(cs, Transform)
+		if err != nil {
+			d.l.WithError(err).Errorf("Creating REST model.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		server.Marshal[[]RestModel](d.l)(w)(c.si)(res)
 	}
 }
 
@@ -110,7 +117,14 @@ func handleGetCharactersByMap(d *handlerDependency, c *handlerContext) http.Hand
 			return
 		}
 
-		server.Marshal[[]RestModel](d.l)(w)(c.si)(TransformAll(cs))
+		res, err := model.TransformAll(cs, Transform)
+		if err != nil {
+			d.l.WithError(err).Errorf("Creating REST model.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		server.Marshal[[]RestModel](d.l)(w)(c.si)(res)
 	}
 }
 
@@ -130,7 +144,14 @@ func handleGetCharactersByName(d *handlerDependency, c *handlerContext) http.Han
 			return
 		}
 
-		server.Marshal[[]RestModel](d.l)(w)(c.si)(TransformAll(cs))
+		res, err := model.TransformAll(cs, Transform)
+		if err != nil {
+			d.l.WithError(err).Errorf("Creating REST model.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		server.Marshal[[]RestModel](d.l)(w)(c.si)(res)
 	}
 }
 
@@ -142,7 +163,7 @@ func handleGetCharacter(d *handlerDependency, c *handlerContext) http.HandlerFun
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		chr, err := GetById(d.l, d.db, c.t)(uint32(characterId), InventoryModelDecorator(d.l, d.db, c.t))
+		cs, err := GetById(d.l, d.db, c.t)(uint32(characterId), InventoryModelDecorator(d.l, d.db, c.t))
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return
@@ -154,6 +175,15 @@ func handleGetCharacter(d *handlerDependency, c *handlerContext) http.HandlerFun
 			return
 		}
 
-		server.Marshal[RestModel](d.l)(w)(c.si)(Transform(chr))
+		res, err := model.Transform(cs, Transform)
+		if err != nil {
+			d.l.WithError(err).Errorf("Creating REST model.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		server.Marshal[RestModel](d.l)(w)(c.si)(res)
+	}
+}
 	}
 }

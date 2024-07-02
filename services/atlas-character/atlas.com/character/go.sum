@@ -1,9 +1,7 @@
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/Chronicle20/atlas-model v0.0.0-20240627130812-cba200301064 h1:MjBMMLMtTLWsypkDbYVJcggmDC0E7ok64WJ9+RPesA8=
-github.com/Chronicle20/atlas-model v0.0.0-20240627130812-cba200301064/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
-github.com/Chronicle20/atlas-model v0.0.0-20240628170355-33e9a2cca851 h1:SZk2+rmAH7xIRZBmG4y4d6D6F4WAePpRJV421cTuFf4=
-github.com/Chronicle20/atlas-model v0.0.0-20240628170355-33e9a2cca851/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
+github.com/Chronicle20/atlas-model v0.0.0-20240702132802-b719b0ca5d96 h1:VkKGMMtKuFVBr1iVxznrIoH+J9Rl+5grFmElAAuWrPc=
+github.com/Chronicle20/atlas-model v0.0.0-20240702132802-b719b0ca5d96/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
 github.com/Chronicle20/atlas-rest v0.0.0-20240613162124-15e10246a3d3 h1:S/1j4ViF8JnQhuRSqLQ8a5fpO299V2v52BGdtKWycVI=
 github.com/Chronicle20/atlas-rest v0.0.0-20240613162124-15e10246a3d3/go.mod h1:IPCC73Rsd2jb/0Ke03QfKpu9GKPGjem9WD2vfmTYwFc=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2 h1:5IcZpTvzydCQeHzK4Ef/D5rrSqwxob0t8PQPMybUNFM=

@@ -3,6 +3,7 @@ package inventory
 import (
 	"atlas-character/equipable"
 	"atlas-character/inventory/item"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/manyminds/api2go/jsonapi"
 )
 
@@ -102,32 +103,107 @@ func (r ItemRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	return result
 }
 
-func Transform(m Model) RestModel {
+func Transform(m Model) (RestModel, error) {
+	eqps, err := model.TransformAll(m.equipable.items, equipable.Transform)
+	if err != nil {
+		return RestModel{}, err
+	}
+	stps, err := model.TransformAll(m.setup.items, item.Transform)
+	if err != nil {
+		return RestModel{}, err
+	}
+	usps, err := model.TransformAll(m.useable.items, item.Transform)
+	if err != nil {
+		return RestModel{}, err
+	}
+	etcs, err := model.TransformAll(m.etc.items, item.Transform)
+	if err != nil {
+		return RestModel{}, err
+	}
+	cashs, err := model.TransformAll(m.cash.items, item.Transform)
+	if err != nil {
+		return RestModel{}, err
+	}
+
 	return RestModel{
 		Equipable: EquipableRestModel{
 			Type:     TypeEquip,
 			Capacity: m.equipable.capacity,
-			Items:    equipable.TransformAll(m.equipable.items),
+			Items:    eqps,
 		},
 		Setup: ItemRestModel{
 			Type:     TypeSetup,
 			Capacity: m.setup.capacity,
-			Items:    item.TransformAll(m.setup.items),
+			Items:    stps,
 		},
 		Useable: ItemRestModel{
 			Type:     TypeUse,
 			Capacity: m.useable.capacity,
-			Items:    item.TransformAll(m.useable.items),
+			Items:    usps,
 		},
 		Etc: ItemRestModel{
 			Type:     TypeETC,
 			Capacity: m.etc.capacity,
-			Items:    item.TransformAll(m.etc.items),
+			Items:    etcs,
 		},
 		Cash: ItemRestModel{
 			Type:     TypeCash,
 			Capacity: m.cash.capacity,
-			Items:    item.TransformAll(m.cash.items),
+			Items:    cashs,
 		},
+	}, nil
+}
+
+func Extract(m RestModel) (Model, error) {
+	equipable, err := model.Transform(m.Equipable, ExtractEquipable)
+	if err != nil {
+		return Model{}, err
 	}
+	useable, err := model.Transform(m.Useable, ExtractItem)
+	if err != nil {
+		return Model{}, err
+	}
+	setup, err := model.Transform(m.Setup, ExtractItem)
+	if err != nil {
+		return Model{}, err
+	}
+	etc, err := model.Transform(m.Etc, ExtractItem)
+	if err != nil {
+		return Model{}, err
+	}
+	cash, err := model.Transform(m.Cash, ExtractItem)
+	if err != nil {
+		return Model{}, err
+	}
+
+	return Model{
+		equipable: equipable,
+		useable:   useable,
+		setup:     setup,
+		etc:       etc,
+		cash:      cash,
+	}, nil
+}
+
+func ExtractEquipable(m EquipableRestModel) (EquipableModel, error) {
+	items, err := model.TransformAll(m.Items, equipable.Extract)
+	if err != nil {
+		return EquipableModel{}, err
+	}
+
+	return EquipableModel{
+		capacity: m.Capacity,
+		items:    items,
+	}, nil
+}
+
+func ExtractItem(m ItemRestModel) (ItemModel, error) {
+	items, err := model.TransformAll(m.Items, item.Extract)
+	if err != nil {
+		return ItemModel{}, err
+	}
+	return ItemModel{
+		capacity: m.Capacity,
+		items:    items,
+	}, nil
 }

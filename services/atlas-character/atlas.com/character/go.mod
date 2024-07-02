@@ -3,7 +3,7 @@ module atlas-character
 go 1.21.6
 
 require (
-	github.com/Chronicle20/atlas-model v0.0.0-20240628170355-33e9a2cca851
+	github.com/Chronicle20/atlas-model v0.0.0-20240702132802-b719b0ca5d96
 	github.com/Chronicle20/atlas-rest v0.0.0-20240613162124-15e10246a3d3
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1

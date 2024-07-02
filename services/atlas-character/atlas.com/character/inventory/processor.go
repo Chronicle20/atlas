@@ -163,12 +163,11 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 			l.WithError(err).Errorf("Unable to locate inventories for character [%d].", characterId)
 			return err
 		}
-		inv, err := m.GetHolderByType(inventoryType)
+		_, err = m.GetHolderByType(inventoryType)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 			return err
 		}
-		inv.Items()
 
 		return nil
 	}

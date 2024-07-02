@@ -160,6 +160,16 @@ func ForEach[M any](provider SliceProvider[M], operator Operator[M]) {
 type Transformer[M any, N any] func(M) (N, error)
 
 //goland:noinspection GoUnusedExportedFunction
+func Transform[M any, N any](model M, transformer Transformer[M, N]) (N, error) {
+	return Map(FixedProvider(model), transformer)()
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func TransformAll[M any, N any](models []M, transformer Transformer[M, N]) ([]N, error) {
+	return SliceMap(FixedSliceProvider(models), transformer)()
+}
+
+//goland:noinspection GoUnusedExportedFunction
 func Map[M any, N any](provider Provider[M], transformer Transformer[M, N]) Provider[N] {
 	m, err := provider()
 	if err != nil {
@@ -204,7 +214,7 @@ func Fold[M any, N any](provider SliceProvider[M], supplier Provider[N], folder 
 	if err != nil {
 		return ErrorProvider[N](err)
 	}
-	
+
 	for _, wip := range ms {
 		n, err = folder(n, wip)
 		if err != nil {

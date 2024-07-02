@@ -1,6 +1,7 @@
 package character
 
 import (
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"strconv"
 	"strings"
@@ -8,8 +9,9 @@ import (
 
 type EntityUpdateFunction func() ([]string, func(e *entity))
 
-func create(db *gorm.DB, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, maxHP uint16, maxMP uint16, jobId uint16, gender byte, hair uint32, face uint32, skinColor byte, mapId uint32) (Model, error) {
+func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, maxHP uint16, maxMP uint16, jobId uint16, gender byte, hair uint32, face uint32, skinColor byte, mapId uint32) (Model, error) {
 	e := &entity{
+		TenantId:     tenantId,
 		AccountId:    accountId,
 		World:        worldId,
 		Name:         name,

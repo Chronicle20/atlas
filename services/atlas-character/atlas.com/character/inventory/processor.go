@@ -87,12 +87,6 @@ func GetInventories(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func
 	}
 }
 
-//func GetEquipableInventory(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(characterId uint32) (Model, error) {
-//	return func(characterId uint32) (Model, error) {
-//
-//	}
-//}
-
 func GetInventory(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(characterId uint32, inventoryType string, filters ...ItemFilter) (Model, error) {
 	return func(characterId uint32, inventoryType string, filters ...ItemFilter) (Model, error) {
 		//if it, ok := GetTypeFromName(inventoryType); ok {
@@ -148,5 +142,26 @@ func FilterItemId(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, tenant 
 			}
 			return ii.ItemId() == itemId
 		}
+	}
+}
+
+func Create(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(characterId uint32, defaultCapacity uint32) (Model, error) {
+	return func(characterId uint32, defaultCapacity uint32) (Model, error) {
+		err := db.Transaction(func(tx *gorm.DB) error {
+			for _, t := range Types {
+				_, err := create(db, tenant.Id(), characterId, int8(t), defaultCapacity)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to create inventory [%d] for character [%d].", t, characterId)
+					return err
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Unable to create inventory for character [%d]", characterId)
+			return Model{}, err
+		}
+
+		return GetInventories(l, db, tenant)(characterId)
 	}
 }

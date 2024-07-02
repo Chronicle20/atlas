@@ -18,7 +18,7 @@ const (
 	TypeCash            = "CASH"
 )
 
-var Types = []string{TypeEquip, TypeUse, TypeSetup, TypeETC, TypeCash}
+var Types = []Type{TypeValueEquip, TypeValueUse, TypeValueSetup, TypeValueETC, TypeValueCash}
 
 type Type int8
 
@@ -33,6 +33,17 @@ type Model struct {
 func (m Model) Equipable() EquipableModel {
 	return m.equipable
 }
+
+func NewModel(defaultCapacity uint32) Model {
+	return Model{
+		equipable: EquipableModel{capacity: defaultCapacity},
+		useable:   ItemModel{capacity: defaultCapacity},
+		setup:     ItemModel{capacity: defaultCapacity},
+		etc:       ItemModel{capacity: defaultCapacity},
+		cash:      ItemModel{capacity: defaultCapacity},
+	}
+}
+
 type EquipableModel struct {
 	id       uint32
 	capacity uint32

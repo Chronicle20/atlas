@@ -30,12 +30,21 @@ type Model struct {
 	cash      ItemModel
 }
 
+func (m Model) Equipable() EquipableModel {
+	return m.equipable
+}
 type EquipableModel struct {
+	id       uint32
 	capacity uint32
 	items    []equipable.Model
 }
 
+func (m EquipableModel) Id() uint32 {
+	return m.id
+}
+
 type ItemModel struct {
+	id       uint32
 	capacity uint32
 	items    []item.Model
 }

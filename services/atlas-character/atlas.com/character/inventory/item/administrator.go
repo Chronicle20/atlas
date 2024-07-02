@@ -46,11 +46,10 @@ func createItem(db *gorm.DB, t tenant.Model, inventoryId uint32, itemId uint32, 
 
 func makeModel(e entity) (Model, error) {
 	return Model{
-		id:          e.ID,
-		inventoryId: e.InventoryId,
-		itemId:      e.ItemId,
-		slot:        e.Slot,
-		quantity:    e.Quantity,
+		id:       e.ID,
+		itemId:   e.ItemId,
+		slot:     e.Slot,
+		quantity: e.Quantity,
 	}, nil
 }
 

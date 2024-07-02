@@ -32,6 +32,7 @@ func foldInventory(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(
 	return func(ref Model, ent entity) (Model, error) {
 		switch Type(ent.InventoryType) {
 		case TypeValueEquip:
+			ref.equipable.id = ent.ID
 			ref.equipable.capacity = ent.Capacity
 			equipables, err := equipable.GetInInventory(l, db, tenant)(ent.ID)
 			if err != nil {
@@ -40,6 +41,7 @@ func foldInventory(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(
 			ref.equipable.items = equipables
 			return ref, nil
 		case TypeValueUse:
+			ref.useable.id = ent.ID
 			ref.useable.capacity = ent.Capacity
 			items, err := item.GetByInventory(l, db, tenant)(ent.ID)
 			if err != nil {
@@ -48,6 +50,7 @@ func foldInventory(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(
 			ref.useable.items = items
 			return ref, nil
 		case TypeValueSetup:
+			ref.setup.id = ent.ID
 			ref.setup.capacity = ent.Capacity
 			items, err := item.GetByInventory(l, db, tenant)(ent.ID)
 			if err != nil {
@@ -56,6 +59,7 @@ func foldInventory(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(
 			ref.setup.items = items
 			return ref, nil
 		case TypeValueETC:
+			ref.etc.id = ent.ID
 			ref.etc.capacity = ent.Capacity
 			items, err := item.GetByInventory(l, db, tenant)(ent.ID)
 			if err != nil {
@@ -64,6 +68,7 @@ func foldInventory(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(
 			ref.etc.items = items
 			return ref, nil
 		case TypeValueCash:
+			ref.cash.id = ent.ID
 			ref.cash.capacity = ent.Capacity
 			items, err := item.GetByInventory(l, db, tenant)(ent.ID)
 			if err != nil {

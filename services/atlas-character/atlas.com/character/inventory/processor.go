@@ -32,49 +32,39 @@ func foldInventory(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(
 	return func(ref Model, ent entity) (Model, error) {
 		switch Type(ent.InventoryType) {
 		case TypeValueEquip:
-			ref.equipable.id = ent.ID
-			ref.equipable.capacity = ent.Capacity
 			equipables, err := equipable.GetInInventory(l, db, tenant)(ent.ID)
 			if err != nil {
 				return ref, err
 			}
-			ref.equipable.items = equipables
+			ref.equipable = ref.Equipable().SetItems(equipables).SetId(ent.ID).SetCapacity(ent.Capacity)
 			return ref, nil
 		case TypeValueUse:
-			ref.useable.id = ent.ID
-			ref.useable.capacity = ent.Capacity
 			items, err := item.GetByInventory(l, db, tenant)(ent.ID)
 			if err != nil {
 				return ref, err
 			}
-			ref.useable.items = items
+			ref.useable = ref.Useable().SetItems(items).SetId(ent.ID).SetCapacity(ent.Capacity)
 			return ref, nil
 		case TypeValueSetup:
-			ref.setup.id = ent.ID
-			ref.setup.capacity = ent.Capacity
 			items, err := item.GetByInventory(l, db, tenant)(ent.ID)
 			if err != nil {
 				return ref, err
 			}
-			ref.setup.items = items
+			ref.setup = ref.Setup().SetItems(items).SetId(ent.ID).SetCapacity(ent.Capacity)
 			return ref, nil
 		case TypeValueETC:
-			ref.etc.id = ent.ID
-			ref.etc.capacity = ent.Capacity
 			items, err := item.GetByInventory(l, db, tenant)(ent.ID)
 			if err != nil {
 				return ref, err
 			}
-			ref.etc.items = items
+			ref.etc = ref.ETC().SetItems(items).SetId(ent.ID).SetCapacity(ent.Capacity)
 			return ref, nil
 		case TypeValueCash:
-			ref.cash.id = ent.ID
-			ref.cash.capacity = ent.Capacity
 			items, err := item.GetByInventory(l, db, tenant)(ent.ID)
 			if err != nil {
 				return ref, err
 			}
-			ref.cash.items = items
+			ref.cash = ref.Cash().SetItems(items).SetId(ent.ID).SetCapacity(ent.Capacity)
 			return ref, nil
 		}
 		return ref, errors.New("unknown inventory type")
@@ -163,5 +153,23 @@ func Create(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(charact
 		}
 
 		return GetInventories(l, db, tenant)(characterId)
+	}
+}
+
+func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
+	return func(characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
+		m, err := GetInventories(l, db, tenant)(characterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate inventories for character [%d].", characterId)
+			return err
+		}
+		inv, err := m.GetHolderByType(inventoryType)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
+			return err
+		}
+		inv.Items()
+
+		return nil
 	}
 }

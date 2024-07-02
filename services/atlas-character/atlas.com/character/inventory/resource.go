@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"atlas-character/inventory/item"
 	"atlas-character/rest"
 	"atlas-character/tenant"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -24,20 +25,37 @@ const (
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
-			r := router.PathPrefix("/characters").Subrouter()
-			r.HandleFunc("/{characterId}/items", registerGetItemsForCharacter(l, db)).Methods(http.MethodGet).Queries("itemId", "{itemId}")
-			r.HandleFunc("/{characterId}/inventories", registerGetItemForCharacterByType(l, db)).Methods(http.MethodGet).Queries("include", "{include}", "type", "{type}", "slot", "{slot}")
-			r.HandleFunc("/{characterId}/inventories", registerGetItemsForCharacterByType(l, db)).Methods(http.MethodGet).Queries("include", "{include}", "type", "{type}", "itemId", "{itemId}")
-			r.HandleFunc("/{characterId}/inventories", registerGetInventoryForCharacterByType(l, db)).Methods(http.MethodGet).Queries("include", "{include}", "type", "{type}")
+			r := router.PathPrefix("/characters/{characterId}/inventories").Subrouter()
+			//r.HandleFunc("/{characterId}/items", registerGetItemsForCharacter(l, db)).Methods(http.MethodGet).Queries("itemId", "{itemId}")
+			//r.HandleFunc("/{characterId}/inventories", registerGetItemForCharacterByType(l, db)).Methods(http.MethodGet).Queries("include", "{include}", "type", "{type}", "slot", "{slot}")
+			//r.HandleFunc("/{characterId}/inventories", registerGetItemsForCharacterByType(l, db)).Methods(http.MethodGet).Queries("include", "{include}", "type", "{type}", "itemId", "{itemId}")
+			//r.HandleFunc("/{characterId}/inventories", registerGetInventoryForCharacterByType(l, db)).Methods(http.MethodGet).Queries("include", "{include}", "type", "{type}")
+			r.HandleFunc("/{inventoryType}/items", rest.RegisterCreateHandler[item.RestModel](l)(db)(si)(handlerCreateItem, handleCreateItem)).Methods(http.MethodPost)
 		}
 	}
+}
+
+func handleCreateItem(d *rest.HandlerDependency, c *rest.HandlerContext, model item.RestModel) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return rest.ParseInventoryType(d.Logger(), func(inventoryType int8) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				err := CreateItem(d.Logger(), d.DB(), d.Span(), c.Tenant())(characterId, Type(inventoryType), model.ItemId, model.Quantity)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				w.WriteHeader(http.StatusAccepted)
+				return
+			}
+		})
+	})
 }
 
 func registerGetInventoryForCharacterByType(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 	return rest.RetrieveSpan(handlerGetInventoryForCharacterByType, func(span opentracing.Span) http.HandlerFunc {
 		fl := l.WithFields(logrus.Fields{"originator": handlerGetInventoryForCharacterByType, "type": "rest_handler"})
 		return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
-			return parseCharacterId(fl, func(characterId uint32) http.HandlerFunc {
+			return rest.ParseCharacterId(fl, func(characterId uint32) http.HandlerFunc {
 				return handleGetInventoryForCharacterByType(fl, db)(span)(tenant)(characterId)
 			})
 		})
@@ -48,7 +66,7 @@ func registerGetItemsForCharacterByType(l logrus.FieldLogger, db *gorm.DB) http.
 	return rest.RetrieveSpan(handlerGetItemsForCharacterByType, func(span opentracing.Span) http.HandlerFunc {
 		fl := l.WithFields(logrus.Fields{"originator": handlerGetItemsForCharacterByType, "type": "rest_handler"})
 		return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
-			return parseCharacterId(fl, func(characterId uint32) http.HandlerFunc {
+			return rest.ParseCharacterId(fl, func(characterId uint32) http.HandlerFunc {
 				return handleGetItemsForCharacterByType(fl, db)(span)(tenant)(characterId)
 			})
 		})
@@ -59,7 +77,7 @@ func registerGetItemForCharacterByType(l logrus.FieldLogger, db *gorm.DB) http.H
 	return rest.RetrieveSpan(handlerRequestGetItemForCharacterByType, func(span opentracing.Span) http.HandlerFunc {
 		fl := l.WithFields(logrus.Fields{"originator": handlerRequestGetItemForCharacterByType, "type": "rest_handler"})
 		return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
-			return parseCharacterId(fl, func(characterId uint32) http.HandlerFunc {
+			return rest.ParseCharacterId(fl, func(characterId uint32) http.HandlerFunc {
 				return handleGetItemForCharacterByType(fl, db)(span)(tenant)(characterId)
 			})
 		})
@@ -70,25 +88,11 @@ func registerGetItemsForCharacter(l logrus.FieldLogger, db *gorm.DB) http.Handle
 	return rest.RetrieveSpan(handlerGetItemsForCharacter, func(span opentracing.Span) http.HandlerFunc {
 		fl := l.WithFields(logrus.Fields{"originator": handlerGetItemsForCharacter, "type": "rest_handler"})
 		return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
-			return parseCharacterId(fl, func(characterId uint32) http.HandlerFunc {
+			return rest.ParseCharacterId(fl, func(characterId uint32) http.HandlerFunc {
 				return handleGetItemsForCharacter(l, db)(span)(tenant)(characterId)
 			})
 		})
 	})
-}
-
-type characterIdHandler func(characterId uint32) http.HandlerFunc
-
-func parseCharacterId(l logrus.FieldLogger, next characterIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		characterId, err := strconv.Atoi(mux.Vars(r)["characterId"])
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse characterId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(characterId))(w, r)
-	}
 }
 
 func handleGetItemForCharacterByType(l logrus.FieldLogger, db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(characterId uint32) http.HandlerFunc {

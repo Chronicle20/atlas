@@ -104,23 +104,23 @@ func (r ItemRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 }
 
 func Transform(m Model) (RestModel, error) {
-	eqps, err := model.TransformAll(m.equipable.items, equipable.Transform)
+	eqps, err := model.TransformAll(m.Equipable().items, equipable.Transform)
 	if err != nil {
 		return RestModel{}, err
 	}
-	stps, err := model.TransformAll(m.setup.items, item.Transform)
+	stps, err := model.TransformAll(m.Setup().Items(), item.Transform)
 	if err != nil {
 		return RestModel{}, err
 	}
-	usps, err := model.TransformAll(m.useable.items, item.Transform)
+	usps, err := model.TransformAll(m.Useable().Items(), item.Transform)
 	if err != nil {
 		return RestModel{}, err
 	}
-	etcs, err := model.TransformAll(m.etc.items, item.Transform)
+	etcs, err := model.TransformAll(m.ETC().Items(), item.Transform)
 	if err != nil {
 		return RestModel{}, err
 	}
-	cashs, err := model.TransformAll(m.cash.items, item.Transform)
+	cashs, err := model.TransformAll(m.Cash().Items(), item.Transform)
 	if err != nil {
 		return RestModel{}, err
 	}
@@ -128,27 +128,27 @@ func Transform(m Model) (RestModel, error) {
 	return RestModel{
 		Equipable: EquipableRestModel{
 			Type:     TypeEquip,
-			Capacity: m.equipable.capacity,
+			Capacity: m.equipable.Capacity(),
 			Items:    eqps,
 		},
 		Setup: ItemRestModel{
 			Type:     TypeSetup,
-			Capacity: m.setup.capacity,
+			Capacity: m.setup.Capacity(),
 			Items:    stps,
 		},
 		Useable: ItemRestModel{
 			Type:     TypeUse,
-			Capacity: m.useable.capacity,
+			Capacity: m.useable.Capacity(),
 			Items:    usps,
 		},
 		Etc: ItemRestModel{
 			Type:     TypeETC,
-			Capacity: m.etc.capacity,
+			Capacity: m.etc.Capacity(),
 			Items:    etcs,
 		},
 		Cash: ItemRestModel{
 			Type:     TypeCash,
-			Capacity: m.cash.capacity,
+			Capacity: m.cash.Capacity(),
 			Items:    cashs,
 		},
 	}, nil

@@ -98,6 +98,11 @@ func FixedSliceProvider[M any](models []M) SliceProvider[M] {
 }
 
 //goland:noinspection GoUnusedExportedFunction
+func FixedSingleSliceProvider[M any](model M) SliceProvider[M] {
+	return FixedSliceProvider([]M{model})
+}
+
+//goland:noinspection GoUnusedExportedFunction
 func ErrorProvider[M any](err error) Provider[M] {
 	return func() (M, error) {
 		var m M
@@ -251,31 +256,23 @@ func First[M any](provider SliceProvider[M], filters ...Filter[M]) (M, error) {
 }
 
 //goland:noinspection GoUnusedExportedFunction
+// Deprecated: ApplyDecorators is deprecated. Utilize Map and Decorate functions.
 func ApplyDecorators[M any](provider Provider[M], decorators ...Decorator[M]) Provider[M] {
-	m, err := provider()
-	if err != nil {
-		return ErrorProvider[M](err)
+	return Map[M, M](provider, Decorate(decorators...))
+}
+
+func Decorate[M any](decorators ...Decorator[M]) func(m M) (M, error) {
+	return func(m M) (M, error) {
+		var n = m
+		for _, d := range decorators {
+			n = d(n)
+		}
+		return n, nil
 	}
-	for _, decorator := range decorators {
-		m = decorator(m)
-	}
-	return FixedProvider[M](m)
 }
 
 //goland:noinspection GoUnusedExportedFunction
+// Deprecated: ApplyDecorators is deprecated. Utilize Map and Decorate functions.
 func ApplyDecoratorsSlice[M any](provider SliceProvider[M], decorators ...Decorator[M]) SliceProvider[M] {
-	ms, err := provider()
-	if err != nil {
-		return ErrorSliceProvider[M](err)
-	}
-	var results = make([]M, 0)
-
-	for _, m := range ms {
-		var nm = m
-		for _, decorator := range decorators {
-			nm = decorator(nm)
-		}
-		results = append(results, nm)
-	}
-	return FixedSliceProvider[M](results)
+	return SliceMap[M, M](provider, Decorate(decorators...))
 }

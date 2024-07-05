@@ -4,6 +4,8 @@ github.com/Chronicle20/atlas-kafka v0.0.0-20240627140949-91f3b00e0da4 h1:7PFBJas
 github.com/Chronicle20/atlas-kafka v0.0.0-20240627140949-91f3b00e0da4/go.mod h1:erQ822jRg9sg/W4La4TOVJ7nLzRSn3/jOCqWiHEGc0c=
 github.com/Chronicle20/atlas-model v0.0.0-20240628170355-33e9a2cca851 h1:SZk2+rmAH7xIRZBmG4y4d6D6F4WAePpRJV421cTuFf4=
 github.com/Chronicle20/atlas-model v0.0.0-20240628170355-33e9a2cca851/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
+github.com/Chronicle20/atlas-model v0.0.0-20240703011159-db21f076bf95 h1:zQRuH338R7mV4xWedVcxmMxZBNBmb3aI5VritoV38nM=
+github.com/Chronicle20/atlas-model v0.0.0-20240703011159-db21f076bf95/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
 github.com/Chronicle20/atlas-rest v0.0.0-20240629173858-9967596e5b47 h1:8CrXf/j38rdrwEpO9N8W4iGqjnbIA4YdzwnXkPCzRjU=
 github.com/Chronicle20/atlas-rest v0.0.0-20240629173858-9967596e5b47/go.mod h1:IPCC73Rsd2jb/0Ke03QfKpu9GKPGjem9WD2vfmTYwFc=
 github.com/Chronicle20/atlas-socket v0.0.0-20240629184717-b9628a79e2fe h1:NB5de6KcaSWq0urIC8zlp4E9RRDIzyQYGdlLau7Rg6s=

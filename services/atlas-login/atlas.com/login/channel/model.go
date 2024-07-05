@@ -1,19 +1,14 @@
 package channel
 
 type Model struct {
-	worldId   byte
-	channelId byte
+	id        byte
 	capacity  int
 	ipAddress string
 	port      uint16
 }
 
-func (c Model) WorldId() byte {
-	return c.worldId
-}
-
-func (c Model) ChannelId() byte {
-	return c.channelId
+func (c Model) Id() byte {
+	return c.id
 }
 
 func (c Model) Capacity() int {
@@ -67,8 +62,7 @@ func (c *channelBuilder) SetPort(port uint16) *channelBuilder {
 
 func (c *channelBuilder) Build() Model {
 	return Model{
-		worldId:   c.worldId,
-		channelId: c.channelId,
+		id:        c.channelId,
 		capacity:  c.capacity,
 		ipAddress: c.ipAddress,
 		port:      c.port,

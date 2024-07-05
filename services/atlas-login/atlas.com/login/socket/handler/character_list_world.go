@@ -26,7 +26,7 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, span opentracing.Span, w
 		socketAddr := r.ReadInt32()
 		l.Debugf("Handling [CharacterListWorld]. gameStartMode=[%d], worldId=[%d], channelId=[%d], socketAddr=[%d]", gameStartMode, worldId, channelId, socketAddr)
 
-		w, err := world.GetById(l, span)(worldId)
+		w, err := world.GetById(l, span, s.Tenant())(worldId)
 		if err != nil {
 			l.WithError(err).Errorf("Received a character list request for a world we do not have")
 			return

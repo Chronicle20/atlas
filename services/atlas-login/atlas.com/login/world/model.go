@@ -1,6 +1,9 @@
 package world
 
-import "atlas-login/channel"
+import (
+	"atlas-login/channel"
+	"github.com/Chronicle20/atlas-model/model"
+)
 
 type Model struct {
 	id                 byte
@@ -64,6 +67,12 @@ func (w Model) Recommendation() Recommendation {
 
 func (w Model) CapacityStatus() Status {
 	return w.capacityStatus
+}
+
+func Clone(m Model) model.Provider[Model] {
+	return func() (Model, error) {
+		return CloneWorld(m).Build(), nil
+	}
 }
 
 type worldBuilder struct {
@@ -133,6 +142,11 @@ func (w *worldBuilder) SetRecommendedMessage(recommendedMessage string) *worldBu
 
 func (w *worldBuilder) SetCapacityStatus(capacityStatus Status) *worldBuilder {
 	w.capacityStatus = capacityStatus
+	return w
+}
+
+func (w *worldBuilder) AddChannelLoad(channelId byte, capacity int) *worldBuilder {
+	w.channelLoad = append(w.channelLoad, channel.NewChannelLoad(channelId, capacity))
 	return w
 }
 

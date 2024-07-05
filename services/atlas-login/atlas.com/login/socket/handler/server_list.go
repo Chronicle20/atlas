@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"atlas-login/channel"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"atlas-login/world"
@@ -20,35 +19,18 @@ func ServerListRequestHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp
 
 func issueServerInformation(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model) {
 	return func(s session.Model) {
-		ws, err := world.GetAll(l, span)
+		ws, err := world.GetAll(l, span, s.Tenant(), world.ChannelLoadDecorator(l, span, s.Tenant()))
 		if err != nil {
 			l.WithError(err).Errorf("Retrieving worlds")
 			return
 		}
 
-		cls, err := channel.GetChannelLoadByWorld(l, span)
-		if err != nil {
-			l.WithError(err).Errorf("Retrieving channel load")
-			return
+		if len(ws) == 0 {
+			l.Warnf("Responding with no valid worlds.")
 		}
 
-		nws := combine(l, ws, cls)
-		respondToSession(l, wp)(s, nws)
+		respondToSession(l, wp)(s, ws)
 	}
-}
-
-func combine(l logrus.FieldLogger, ws []world.Model, cls map[int][]channel.Load) []world.Model {
-	var nws = make([]world.Model, 0)
-
-	for _, x := range ws {
-		if val, ok := cls[int(x.Id())]; ok {
-			nws = append(nws, x.SetChannelLoad(val))
-		} else {
-			l.Errorf("Processing world without a channel load")
-			nws = append(nws, x)
-		}
-	}
-	return nws
 }
 
 func respondToSession(l logrus.FieldLogger, wp writer.Producer) func(ms session.Model, ws []world.Model) {

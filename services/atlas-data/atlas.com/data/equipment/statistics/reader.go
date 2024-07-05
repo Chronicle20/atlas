@@ -64,13 +64,13 @@ func findItem(tenant tenant.Model, itemId uint32) (*wz.FileEntry, error) {
 	idstr := "0" + strconv.Itoa(int(itemId))
 	runes := []rune(idstr)
 
-	if val, ok := wz.GetFileCache().GetFile(tenant, string(runes[0:4])+".img.xml"); ok == nil {
+	if val, ok := wz.GetFileCache().GetFile(tenant, "Character.wz", string(runes[0:4])+".img.xml"); ok == nil {
 		return val, nil
 	}
-	if val, ok := wz.GetFileCache().GetFile(tenant, string(runes[0:1])+".img.xml"); ok == nil {
+	if val, ok := wz.GetFileCache().GetFile(tenant, "Character.wz", string(runes[0:1])+".img.xml"); ok == nil {
 		return val, nil
 	}
-	if val, ok := wz.GetFileCache().GetFile(tenant, idstr+".img.xml"); ok == nil {
+	if val, ok := wz.GetFileCache().GetFile(tenant, "Character.wz", idstr+".img.xml"); ok == nil {
 		return val, nil
 	}
 	return nil, errors.New(fmt.Sprintf("item %d not found", itemId))

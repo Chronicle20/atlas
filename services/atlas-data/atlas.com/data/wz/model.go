@@ -1,13 +1,18 @@
 package wz
 
 type FileEntry struct {
-	id   string
-	name string
-	path string
+	id     string
+	folder string
+	name   string
+	path   string
 }
 
 func (e FileEntry) Id() string {
 	return e.id
+}
+
+func (e FileEntry) Folder() string {
+	return e.folder
 }
 
 func (e FileEntry) Name() string {
@@ -19,7 +24,11 @@ func (e FileEntry) Path() string {
 }
 
 func (e FileEntry) SetId(id string) FileEntry {
-	return FileEntry{id: id, name: e.name, path: e.path}
+	return FileEntry{id: id, folder: e.folder, name: e.name, path: e.path}
+}
+
+func (e FileEntry) SetFolder(folder string) FileEntry {
+	return FileEntry{id: e.id, folder: folder, name: e.name, path: e.path}
 }
 
 func NewFileEntry(name string, path string) FileEntry {

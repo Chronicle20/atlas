@@ -31,6 +31,7 @@ func handleGetEquipmentStatistics(d *rest.HandlerDependency, c *rest.HandlerCont
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get equipment.")
 				w.WriteHeader(http.StatusInternalServerError)
+				return
 			}
 			res, err := model.Transform(e, Transform)
 			if err != nil {

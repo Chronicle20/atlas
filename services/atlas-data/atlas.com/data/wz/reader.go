@@ -39,7 +39,7 @@ func read(path string) ([]DataWalker, error) {
 			// tenant override
 			nfes, err := readTenantSpecific(tenantId, path+"/"+cf.Name())
 			if err == nil {
-				fes = append(fes, nfes)
+				fes = append(fes, nfes...)
 			}
 			continue
 		}
@@ -81,17 +81,17 @@ func readRegion(region string, path string) ([]DataWalker, error) {
 		if err != nil {
 			return nil, err
 		}
-		fes = append(fes, ces)
+		fes = append(fes, ces...)
 	}
 	return fes, nil
 }
 
-func readVersionFiles(region string, name string, path string) (DataWalker, error) {
+func readVersionFiles(region string, name string, path string) ([]DataWalker, error) {
 	_, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
-	return readFiles(RegionFileEntryDecorator(region, name))(path), nil
+	return readFolders(RegionFileEntryDecorator(region, name))(path)
 }
 
 type DataWalker model.SliceProvider[FileEntry]
@@ -108,7 +108,13 @@ func RegionFileEntryDecorator(region string, version string) model.Decorator[Fil
 	}
 }
 
-func readTenantSpecific(id uuid.UUID, path string) (DataWalker, error) {
+func FolderFileEntryDecorator(folder string) model.Decorator[FileEntry] {
+	return func(entry FileEntry) FileEntry {
+		return entry.SetFolder(folder)
+	}
+}
+
+func readTenantSpecific(id uuid.UUID, path string) ([]DataWalker, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -128,10 +134,43 @@ func readTenantSpecific(id uuid.UUID, path string) (DataWalker, error) {
 	if err != nil {
 		return nil, err
 	}
-	return readFiles(TenantFileEntryDecorator(id))(path), nil
+	return readFolders(TenantFileEntryDecorator(id))(path)
 }
 
-func readFiles(decorator model.Decorator[FileEntry]) func(path string) DataWalker {
+func readFolders(decorator model.Decorator[FileEntry]) func(path string) ([]DataWalker, error) {
+	return func(path string) ([]DataWalker, error) {
+		f, err := os.Open(path)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+
+		stat, err := f.Stat()
+		if err != nil {
+			return nil, err
+		}
+
+		if stat.IsDir() {
+			fs, err := os.ReadDir(path)
+			if err != nil {
+				return nil, err
+			}
+
+			var fes []DataWalker
+			for _, cf := range fs {
+				ces := readFiles([]model.Decorator[FileEntry]{decorator, FolderFileEntryDecorator(cf.Name())}...)(path + "/" + cf.Name())
+				if err != nil {
+					return nil, err
+				}
+				fes = append(fes, ces)
+			}
+			return fes, nil
+		}
+		return nil, nil
+	}
+}
+
+func readFiles(decorator ...model.Decorator[FileEntry]) func(path string) DataWalker {
 	return func(path string) DataWalker {
 		return func() ([]FileEntry, error) {
 			f, err := os.Open(path)
@@ -153,7 +192,7 @@ func readFiles(decorator model.Decorator[FileEntry]) func(path string) DataWalke
 
 				var fes []FileEntry
 				for _, cf := range fs {
-					ces, err := readFiles(decorator)(path + "/" + cf.Name())()
+					ces, err := readFiles(decorator...)(path + "/" + cf.Name())()
 					if err != nil {
 						return nil, err
 					}
@@ -162,7 +201,9 @@ func readFiles(decorator model.Decorator[FileEntry]) func(path string) DataWalke
 				return fes, nil
 			} else {
 				fe := NewFileEntry(stat.Name(), f.Name())
-				fe = decorator(fe)
+				for _, d := range decorator {
+					fe = d(fe)
+				}
 				return []FileEntry{fe}, nil
 			}
 		}

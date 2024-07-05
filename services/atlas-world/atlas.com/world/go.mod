@@ -1,0 +1,32 @@
+module atlas-world
+
+go 1.21.6
+
+require (
+	github.com/Chronicle20/atlas-kafka v0.0.0-20240627140949-91f3b00e0da4
+	github.com/Chronicle20/atlas-model v0.0.0-20240703011159-db21f076bf95
+	github.com/Chronicle20/atlas-rest v0.0.0-20240629173858-9967596e5b47
+	github.com/google/uuid v1.6.0
+	github.com/gorilla/mux v1.8.1
+	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6
+	github.com/opentracing/opentracing-go v1.2.0
+	github.com/sirupsen/logrus v1.9.3
+	github.com/uber/jaeger-client-go v2.30.0+incompatible
+	go.elastic.co/ecslogrus v1.0.0
+	gopkg.in/yaml.v2 v2.3.0
+)
+
+require (
+	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
+	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/magefile/mage v1.9.0 // indirect
+	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
+	github.com/pierrec/lz4/v4 v4.1.21 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/segmentio/kafka-go v0.4.47 // indirect
+	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
+	go.uber.org/atomic v1.11.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
+)

@@ -19,25 +19,3 @@ type Model struct {
 	slots         uint16
 	cash          bool
 }
-
-func Transform(m Model) (RestModel, error) {
-	return RestModel{
-		Id:            m.itemId,
-		Strength:      m.strength,
-		Dexterity:     m.dexterity,
-		Intelligence:  m.intelligence,
-		Luck:          m.luck,
-		HP:            m.hp,
-		MP:            m.mp,
-		WeaponAttack:  m.weaponAttack,
-		MagicAttack:   m.magicAttack,
-		WeaponDefense: m.weaponDefense,
-		MagicDefense:  m.magicDefense,
-		Accuracy:      m.accuracy,
-		Avoidability:  m.avoidability,
-		Speed:         m.speed,
-		Jump:          m.jump,
-		Slots:         m.slots,
-		Cash:          m.cash,
-	}, nil
-}

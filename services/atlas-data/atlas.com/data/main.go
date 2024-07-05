@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-data/equipment/slots"
 	"atlas-data/equipment/statistics"
 	"atlas-data/logger"
 	"atlas-data/tracing"
@@ -60,7 +61,7 @@ func main() {
 	wz.GetFileCache().Init(wzDir)
 	l.Infoln("Completed initializing game data cache.")
 
-	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), statistics.InitResource(GetServer()))
+	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), slots.InitResource(GetServer()), statistics.InitResource(GetServer()))
 
 	// trap sigterm or interrupt and gracefully shutdown the server
 	c := make(chan os.Signal, 1)

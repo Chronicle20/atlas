@@ -41,7 +41,7 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 			w.WriteByte(0) // success
 			w.WriteByte(0)
 
-			if tenant.Region == "GMS" {
+			if tenant.Region() == "GMS" {
 				w.WriteInt(0)
 			}
 
@@ -56,7 +56,7 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 			// Admin Byte. 0x80,0x40,0x20.. Rubbish.
 			w.WriteByte(0)
 
-			if tenant.Region == "GMS" {
+			if tenant.Region() == "GMS" {
 				// country code
 				w.WriteByte(0)
 				w.WriteAsciiString(name)
@@ -74,12 +74,12 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 				// 0 = Register PIC, 1 = Ask for PIC, 2 = Disabled
 				w.WriteByte(2)
 
-				if tenant.MajorVersion >= 87 {
+				if tenant.MajorVersion() >= 87 {
 					w.WriteLong(0)
 				}
 			}
 
-			if tenant.Region == "JMS" {
+			if tenant.Region() == "JMS" {
 				w.WriteAsciiString(name)
 				w.WriteAsciiString(name)
 				w.WriteByte(0)
@@ -106,7 +106,7 @@ func AuthTemporaryBanBody(l logrus.FieldLogger, tenant tenant.Model) func(until 
 			w.WriteByte(code)
 			w.WriteByte(0)
 
-			if tenant.Region == "GMS" {
+			if tenant.Region() == "GMS" {
 				w.WriteInt(0)
 			}
 
@@ -128,7 +128,7 @@ func AuthPermanentBanBody(l logrus.FieldLogger, tenant tenant.Model) BodyProduce
 		w.WriteByte(code)
 		w.WriteByte(0)
 
-		if tenant.Region == "GMS" {
+		if tenant.Region() == "GMS" {
 			w.WriteInt(0)
 		}
 
@@ -150,7 +150,7 @@ func AuthLoginFailedBody(l logrus.FieldLogger, tenant tenant.Model) func(reason 
 			w.WriteByte(code)
 			w.WriteByte(0)
 
-			if tenant.Region == "GMS" {
+			if tenant.Region() == "GMS" {
 				w.WriteInt(0)
 			}
 

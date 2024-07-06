@@ -24,7 +24,7 @@ func ServerListEntryBody(l logrus.FieldLogger, tenant tenant.Model) func(worldId
 			w.WriteShort(100) // eventExpRate 100 = 1x
 			w.WriteShort(100) // eventDropRate 100 = 1x
 
-			if tenant.Region == "GMS" {
+			if tenant.Region() == "GMS" {
 				//support blocking character creation
 				w.WriteByte(0)
 			}

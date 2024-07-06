@@ -22,10 +22,10 @@ func New(l logrus.FieldLogger) func(config configuration.Server) (Model, error) 
 		}
 
 		return Model{
-			Id:           uuid.MustParse(config.Tenant),
-			Region:       config.Region,
-			MajorVersion: uint16(majorVersion),
-			MinorVersion: uint16(minorVersion),
+			id:           uuid.MustParse(config.Tenant),
+			region:       config.Region,
+			majorVersion: uint16(majorVersion),
+			minorVersion: uint16(minorVersion),
 		}, nil
 	}
 }

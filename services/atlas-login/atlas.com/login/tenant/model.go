@@ -3,8 +3,24 @@ package tenant
 import "github.com/google/uuid"
 
 type Model struct {
-	Id           uuid.UUID `json:"id"`
-	Region       string    `json:"region"`
-	MajorVersion uint16    `json:"majorVersion"`
-	MinorVersion uint16    `json:"minorVersion"`
+	id           uuid.UUID
+	region       string
+	majorVersion uint16
+	minorVersion uint16
+}
+
+func (m Model) Id() uuid.UUID {
+	return m.id
+}
+
+func (m Model) Region() string {
+	return m.region
+}
+
+func (m Model) MajorVersion() uint16 {
+	return m.majorVersion
+}
+
+func (m Model) MinorVersion() uint16 {
+	return m.minorVersion
 }

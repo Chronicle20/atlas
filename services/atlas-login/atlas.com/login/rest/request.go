@@ -19,10 +19,10 @@ const (
 func headerDecorator(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) requests.HeaderDecorator {
 	return func(h http.Header) {
 		h.Set("Content-Type", "application/json; charset=utf-8")
-		h.Set(ID, tenant.Id.String())
-		h.Set(Region, tenant.Region)
-		h.Set(MajorVersion, strconv.Itoa(int(tenant.MajorVersion)))
-		h.Set(MinorVersion, strconv.Itoa(int(tenant.MinorVersion)))
+		h.Set(ID, tenant.Id().String())
+		h.Set(Region, tenant.Region())
+		h.Set(MajorVersion, strconv.Itoa(int(tenant.MajorVersion())))
+		h.Set(MinorVersion, strconv.Itoa(int(tenant.MinorVersion())))
 
 		err := opentracing.GlobalTracer().Inject(
 			span.Context(),

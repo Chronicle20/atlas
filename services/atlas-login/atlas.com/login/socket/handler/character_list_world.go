@@ -18,7 +18,7 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, span opentracing.Span, w
 	characterListFunc := session.Announce(wp)(writer.CharacterList)
 	return func(s session.Model, r *request.Reader) {
 		var gameStartMode = byte(0)
-		if s.Tenant().Region == "GMS" {
+		if s.Tenant().Region() == "GMS" {
 			gameStartMode = r.ReadByte()
 		}
 		worldId := r.ReadByte()

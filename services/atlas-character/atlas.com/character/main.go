@@ -9,6 +9,7 @@ import (
 	"atlas-character/logger"
 	"atlas-character/tracing"
 	"context"
+	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 	"io"
 	"os"
@@ -19,6 +20,7 @@ import (
 import _ "net/http/pprof"
 
 const serviceName = "atlas-character"
+const consumerGroupId = "Character Service"
 
 type Server struct {
 	baseUrl string
@@ -59,6 +61,10 @@ func main() {
 	}(tc)
 
 	db := database.Connect(l, database.SetMigrations(character.Migration, inventory.Migration, item.Migration, equipable.Migration))
+
+	consumer.CreateConsumers(l, ctx, wg,
+		inventory.EquipItemCommandConsumer(l, db)(consumerGroupId),
+		inventory.UnequipItemCommandConsumer(l, db)(consumerGroupId))
 
 	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), character.InitResource(GetServer())(db), inventory.InitResource(GetServer())(db))
 

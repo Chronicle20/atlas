@@ -1,16 +1,16 @@
 package statistics
 
 import (
-	"atlas-character/rest/requests"
 	"atlas-character/tenant"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(itemId uint32) (uint32, error) {
 	return func(itemId uint32) (uint32, error) {
-		ro, err := requestCreate(itemId)(l, span, tenant)
+		ro, err := requestCreate(l, span, tenant)(itemId)(l)
 		if err != nil {
 			l.WithError(err).Errorf("Generating equipment item %d, they were not awarded this item. Check request in ESO service.", itemId)
 			return 0, err
@@ -21,11 +21,11 @@ func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 
 func byEquipmentIdModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(equipmentId uint32) model.Provider[Model] {
 	return func(equipmentId uint32) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l, span, tenant)(requestById(equipmentId), makeEquipment)
+		return requests.Provider[RestModel, Model](l)(requestById(l, span, tenant)(equipmentId), makeEquipment)
 	}
 }
 
-func GetEquipmentStatistics(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(equipmentId uint32) (Model, error) {
+func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(equipmentId uint32) (Model, error) {
 	return func(equipmentId uint32) (Model, error) {
 		return byEquipmentIdModelProvider(l, span, tenant)(equipmentId)()
 	}
@@ -51,6 +51,5 @@ func makeEquipment(resp RestModel) (Model, error) {
 		speed:         resp.Speed,
 		jump:          resp.Jump,
 		slots:         resp.Slots,
-		cash:          resp.Cash,
 	}, nil
 }

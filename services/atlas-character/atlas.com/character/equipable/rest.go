@@ -32,6 +32,15 @@ func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
+func (r *RestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
+}
+
 func Transform(m Model) (RestModel, error) {
 	rm := RestModel{
 		ItemId:        m.itemId,
@@ -56,11 +65,11 @@ func Transform(m Model) (RestModel, error) {
 	return rm, nil
 }
 
-func Extract(model RestModel) (Model, error) {
+func Extract(m RestModel) (Model, error) {
 	return Model{
-		id:            model.Id,
-		itemId:        model.ItemId,
-		slot:          model.Slot,
+		id:            m.Id,
+		itemId:        m.ItemId,
+		slot:          m.Slot,
 		strength:      0,
 		dexterity:     0,
 		intelligence:  0,

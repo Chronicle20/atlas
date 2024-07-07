@@ -116,7 +116,7 @@ func Transform(m Model) (RestModel, error) {
 	if err != nil {
 		return RestModel{}, err
 	}
-	etcs, err := model.TransformAll(m.ETC().Items(), item.Transform)
+	etcs, err := model.TransformAll(m.Etc().Items(), item.Transform)
 	if err != nil {
 		return RestModel{}, err
 	}

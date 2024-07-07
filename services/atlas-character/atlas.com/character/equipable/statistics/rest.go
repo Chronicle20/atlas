@@ -1,5 +1,7 @@
 package statistics
 
+import "strconv"
+
 type RestModel struct {
 	Id            uint32 `json:"-"`
 	ItemId        uint32 `json:"itemId"`
@@ -19,5 +21,21 @@ type RestModel struct {
 	Speed         uint16 `json:"speed"`
 	Jump          uint16 `json:"jump"`
 	Slots         uint16 `json:"slots"`
-	Cash          bool   `json:"cash"`
+}
+
+func (r RestModel) GetName() string {
+	return "equipables"
+}
+
+func (r RestModel) GetID() string {
+	return strconv.Itoa(int(r.Id))
+}
+
+func (r *RestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
 }

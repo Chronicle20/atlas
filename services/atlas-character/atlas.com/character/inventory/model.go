@@ -3,6 +3,7 @@ package inventory
 import (
 	"atlas-character/equipable"
 	"atlas-character/inventory/item"
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 const (
@@ -34,20 +35,45 @@ func (m Model) Equipable() EquipableModel {
 	return m.equipable.(EquipableModel)
 }
 
+func (m Model) SetEquipable(em EquipableModel) Model {
+	m.equipable = em
+	return m
+}
+
 func (m Model) Useable() ItemModel {
 	return m.useable.(ItemModel)
+}
+
+func (m Model) SetUseable(um ItemModel) Model {
+	m.useable = um
+	return m
 }
 
 func (m Model) Setup() ItemModel {
 	return m.setup.(ItemModel)
 }
 
-func (m Model) ETC() ItemModel {
+func (m Model) SetSetup(um ItemModel) Model {
+	m.setup = um
+	return m
+}
+
+func (m Model) Etc() ItemModel {
 	return m.etc.(ItemModel)
+}
+
+func (m Model) SetEtc(um ItemModel) Model {
+	m.etc = um
+	return m
 }
 
 func (m Model) Cash() ItemModel {
 	return m.cash.(ItemModel)
+}
+
+func (m Model) SetCash(um ItemModel) Model {
+	m.cash = um
+	return m
 }
 
 func NewModel(defaultCapacity uint32) Model {
@@ -64,6 +90,12 @@ type EquipableModel struct {
 	id       uint32
 	capacity uint32
 	items    []equipable.Model
+}
+
+func NewEquipableModel(id uint32, capacity uint32) model.Provider[EquipableModel] {
+	return func() (EquipableModel, error) {
+		return EquipableModel{id: id, capacity: capacity}, nil
+	}
 }
 
 func (m EquipableModel) Id() uint32 {
@@ -97,6 +129,12 @@ type ItemModel struct {
 	id       uint32
 	capacity uint32
 	items    []item.Model
+}
+
+func NewItemModel(id uint32, capacity uint32) model.Provider[ItemModel] {
+	return func() (ItemModel, error) {
+		return ItemModel{id: id, capacity: capacity}, nil
+	}
 }
 
 func (m ItemModel) Id() uint32 {

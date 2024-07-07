@@ -2,11 +2,11 @@ package item
 
 import (
 	"atlas-character/database"
+	"atlas-character/slottable"
 	"atlas-character/tenant"
-	"github.com/opentracing/opentracing-go"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"sort"
 )
 
 var characterCreationItems = []uint32{
@@ -66,15 +66,21 @@ func invalidCharacterCreationItem(itemId uint32) bool {
 //	}
 //}
 
-func GetByInventory(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(inventoryId uint32) ([]Model, error) {
+func ByInventoryProvider(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(inventoryId uint32) model.SliceProvider[Model] {
+	return func(inventoryId uint32) model.SliceProvider[Model] {
+		return database.ModelSliceProvider[Model, entity](db)(getByInventory(tenant.Id, inventoryId), makeModel)
+	}
+}
+
+func GetByInventory(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(inventoryId uint32) ([]Model, error) {
 	return func(inventoryId uint32) ([]Model, error) {
-		return database.ModelSliceProvider[Model, entity](db)(getByInventory(tenant.Id(), inventoryId), makeModel)()
+		return ByInventoryProvider(l, db, tenant)(inventoryId)()
 	}
 }
 
 func GetBySlot(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(inventoryId uint32, slot int16) (Model, error) {
 	return func(inventoryId uint32, slot int16) (Model, error) {
-		return database.ModelProvider[Model, entity](db)(getBySlot(tenant.Id(), inventoryId, slot), makeModel)()
+		return database.ModelProvider[Model, entity](db)(getBySlot(tenant.Id, inventoryId, slot), makeModel)()
 	}
 }
 
@@ -86,7 +92,7 @@ func GetBySlot(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(inve
 
 func GetById(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(id uint32) (Model, error) {
 	return func(id uint32) (Model, error) {
-		return database.ModelProvider[Model, entity](db)(getById(tenant.Id(), id), makeModel)()
+		return database.ModelProvider[Model, entity](db)(getById(tenant.Id, id), makeModel)()
 	}
 }
 
@@ -98,7 +104,7 @@ func GetById(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(id uin
 
 func GetByItemId(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(inventoryId uint32, itemId uint32) ([]Model, error) {
 	return func(inventoryId uint32, itemId uint32) ([]Model, error) {
-		return database.ModelSliceProvider[Model, entity](db)(getForCharacter(tenant.Id(), inventoryId, itemId), makeModel)()
+		return database.ModelSliceProvider[Model, entity](db)(getForCharacter(tenant.Id, inventoryId, itemId), makeModel)()
 	}
 }
 
@@ -119,41 +125,30 @@ func UpdateQuantity(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func
 }
 
 func MaxInSlot() uint32 {
+	//TODO make this more sophisticated
 	return 200
 }
 
-func GetEquipmentSlotDestination(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(itemId uint32) ([]int16, error) {
-	return func(itemId uint32) ([]int16, error) {
-		_, err := requestEquipmentSlotDestination(itemId)(l)
+func CreateItem(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(characterId uint32, inventoryId uint32, inventoryType int8, itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
+	return func(characterId uint32, inventoryId uint32, inventoryType int8, itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
+		ms, err := GetByInventory(l, db, tenant)(inventoryId)
 		if err != nil {
-			return nil, err
+			return model.ErrorProvider[slottable.Slottable](err)
 		}
-
-		var slots = make([]int16, 0)
-		//TODO
-		//for _, data := range r.DataList() {
-		//	attr := data.Attributes
-		//	slots = append(slots, attr.Slot)
-		//}
-		return slots, nil
+		slot, err := slottable.GetNextFreeSlot(model.SliceMap(model.FixedSliceProvider(ms), slottableTransformer))
+		if err != nil {
+			return model.ErrorProvider[slottable.Slottable](err)
+		}
+		i, err := createItem(db, tenant, inventoryId, itemId, quantity, slot)
+		if err != nil {
+			return model.ErrorProvider[slottable.Slottable](err)
+		}
+		return model.FixedProvider[slottable.Slottable](i)
 	}
 }
 
-func GetNextFreeSlot(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(inventoryId uint32) (int16, error) {
-	return func(inventoryId uint32) (int16, error) {
-		es, err := GetByInventory(l, db, tenant)(inventoryId)
-		if err != nil {
-			return 1, err
-		}
-		if len(es) == 0 {
-			return 1, nil
-		}
-
-		sort.Slice(es, func(i, j int) bool {
-			return es[i].Slot() < es[j].Slot()
-		})
-		return minFreeSlot(es), nil
-	}
+func slottableTransformer(m Model) (slottable.Slottable, error) {
+	return m, nil
 }
 
 func RemoveItem(_ logrus.FieldLogger, db *gorm.DB) func(characterId uint32, id uint32) error {

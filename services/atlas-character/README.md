@@ -14,6 +14,11 @@ A RESTful resource which provides character services.
 - DB_HOST - Postgres Database host
 - DB_PORT - Postgres Database port
 - DB_NAME - Postgres Database name
+- GAME_DATA_SERVICE_URL - [scheme]://[host]:[port]/api/gis/
+- EQUIPABLE_SERVICE_URL - [scheme]://[host]:[port]/api/ess/
+- BOOTSTRAP_SERVERS - Kafka [host]:[port]
+- COMMAND_TOPIC_EQUIP_ITEM - Kafka Topic for transmitting equip item commands
+- COMMAND_TOPIC_UNEQUIP_ITEM - Kafka Topic for transmitting unequip item commands
 
 ## API
 

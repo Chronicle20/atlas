@@ -19,7 +19,7 @@ jobs:
         run: go mod download
       - name: Build the Go Application
         working-directory: atlas.com/character
-        run: go build -v
+        run: go build -v ./...
       - name: Run Tests
         working-directory: atlas.com/character
-        run: go test -v
+        run: go test -v ./...

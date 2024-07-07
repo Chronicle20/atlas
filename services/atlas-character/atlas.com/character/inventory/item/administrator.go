@@ -9,7 +9,7 @@ func createItem(db *gorm.DB, t tenant.Model, inventoryId uint32, itemId uint32, 
 	var im Model
 	txError := db.Transaction(func(tx *gorm.DB) error {
 		eii := &entity{
-			TenantId:    t.Id(),
+			TenantId:    t.Id,
 			InventoryId: inventoryId,
 			ItemId:      itemId,
 			Quantity:    quantity,

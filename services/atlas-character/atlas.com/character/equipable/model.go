@@ -25,3 +25,11 @@ type Model struct {
 func (m Model) Slot() int16 {
 	return m.slot
 }
+
+func (m Model) Id() uint32 {
+	return m.id
+}
+
+func (m Model) ItemId() uint32 {
+	return m.itemId
+}

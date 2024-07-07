@@ -18,60 +18,60 @@ var invalidLevelErr = errors.New("invalid level")
 
 func byIdProvider(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
-		return database.ModelProvider[Model, entity](db)(getById(tenant.Id(), characterId), makeCharacter)
+		return database.ModelProvider[Model, entity](db)(getById(tenant.Id, characterId), makeCharacter)
 	}
 }
 
 func GetById(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(characterId uint32, decorators ...model.Decorator[Model]) (Model, error) {
 	return func(characterId uint32, decorators ...model.Decorator[Model]) (Model, error) {
-		return model.ApplyDecorators(byIdProvider(l, db, tenant)(characterId), decorators...)()
+		return model.Map(byIdProvider(l, db, tenant)(characterId), model.Decorate(decorators...))()
 	}
 }
 
 func byAccountInWorldProvider(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(accountId uint32, worldId byte) model.SliceProvider[Model] {
 	return func(accountId uint32, worldId byte) model.SliceProvider[Model] {
-		return database.ModelSliceProvider[Model, entity](db)(getForAccountInWorld(tenant.Id(), accountId, worldId), makeCharacter)
+		return database.ModelSliceProvider[Model, entity](db)(getForAccountInWorld(tenant.Id, accountId, worldId), makeCharacter)
 	}
 }
 
 func GetForAccountInWorld(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(accountId uint32, worldId byte, decorators ...model.Decorator[Model]) ([]Model, error) {
 	return func(accountId uint32, worldId byte, decorators ...model.Decorator[Model]) ([]Model, error) {
-		return model.ApplyDecoratorsSlice(byAccountInWorldProvider(l, db, tenant)(accountId, worldId), decorators...)()
+		return model.SliceMap(byAccountInWorldProvider(l, db, tenant)(accountId, worldId), model.Decorate(decorators...))()
 	}
 }
 
 func byMapInWorld(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(worldId byte, mapId uint32) model.SliceProvider[Model] {
 	return func(worldId byte, mapId uint32) model.SliceProvider[Model] {
-		return database.ModelSliceProvider[Model, entity](db)(getForMapInWorld(tenant.Id(), worldId, mapId), makeCharacter)
+		return database.ModelSliceProvider[Model, entity](db)(getForMapInWorld(tenant.Id, worldId, mapId), makeCharacter)
 	}
 }
 
 func GetForMapInWorld(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(worldId byte, mapId uint32, decorators ...model.Decorator[Model]) ([]Model, error) {
 	return func(worldId byte, mapId uint32, decorators ...model.Decorator[Model]) ([]Model, error) {
-		return model.ApplyDecoratorsSlice(byMapInWorld(l, db, tenant)(worldId, mapId), decorators...)()
+		return model.SliceMap(byMapInWorld(l, db, tenant)(worldId, mapId), model.Decorate(decorators...))()
 	}
 }
 
 func byName(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name string) model.SliceProvider[Model] {
 	return func(name string) model.SliceProvider[Model] {
-		return database.ModelSliceProvider[Model, entity](db)(getForName(tenant.Id(), name), makeCharacter)
+		return database.ModelSliceProvider[Model, entity](db)(getForName(tenant.Id, name), makeCharacter)
 	}
 }
 
 func GetForName(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name string, decorators ...model.Decorator[Model]) ([]Model, error) {
 	return func(name string, decorators ...model.Decorator[Model]) ([]Model, error) {
-		return model.ApplyDecoratorsSlice(byName(l, db, tenant)(name), decorators...)()
+		return model.SliceMap(byName(l, db, tenant)(name), model.Decorate(decorators...))()
 	}
 }
 
-func InventoryModelDecorator(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) model.Decorator[Model] {
+func InventoryModelDecorator(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) model.Decorator[Model] {
 	return func(m Model) Model {
-		i, err := inventory.GetInventories(l, db, tenant)(m.Id())
+		i, err := inventory.GetInventories(l, db, span, tenant)(m.Id())
 		if err != nil {
 			return m
 		}
 
-		es, err := equipable.GetEquipment(l, db, tenant)(i.Equipable().Id())
+		es, err := equipable.GetEquipment(l, db, span, tenant)(i.Equipable().Id())
 		if err != nil {
 			return m
 		}
@@ -123,14 +123,14 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 
 		var res Model
 		err = db.Transaction(func(tx *gorm.DB) error {
-			res, err = create(tx, tenant.Id(), input.accountId, input.worldId, input.name, input.level, input.strength, input.dexterity, input.intelligence, input.luck, input.maxHp, input.maxMp, input.jobId, input.gender, input.hair, input.face, input.skinColor, input.mapId)
+			res, err = create(tx, tenant.Id, input.accountId, input.worldId, input.name, input.level, input.strength, input.dexterity, input.intelligence, input.luck, input.maxHp, input.maxMp, input.jobId, input.gender, input.hair, input.face, input.skinColor, input.mapId)
 			if err != nil {
 				l.WithError(err).Errorf("Error persisting character in database.")
 				tx.Rollback()
 				return err
 			}
 
-			inv, err := inventory.Create(l, tx, tenant)(res.id, 24)
+			inv, err := inventory.Create(l, tx, span, tenant)(res.id, 24)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to create inventory for character during character creation.")
 				tx.Rollback()

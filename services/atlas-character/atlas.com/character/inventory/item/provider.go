@@ -42,21 +42,3 @@ func getItemAttributes(tenantId uuid.UUID, id uint32) database.EntityProvider[en
 		return database.Query[entity](db, &entity{TenantId: tenantId, ID: id})
 	}
 }
-
-func minFreeSlot(items []Model) int16 {
-	slot := int16(1)
-	i := 0
-
-	for {
-		if i >= len(items) {
-			return slot
-		} else if slot < items[i].Slot() {
-			return slot
-		} else if slot == items[i].Slot() {
-			slot += 1
-			i += 1
-		} else if items[i].Slot() <= 0 {
-			i += 1
-		}
-	}
-}

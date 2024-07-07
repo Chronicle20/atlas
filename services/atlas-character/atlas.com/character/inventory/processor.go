@@ -56,7 +56,7 @@ func foldInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, ten
 	return func(ref Model, ent entity) (Model, error) {
 		switch Type(ent.InventoryType) {
 		case TypeValueEquip:
-			ep := equipable.ByInventoryProvider(l, db, span, tenant)(ent.ID)
+			ep := equipable.InInventoryProvider(l, db, span, tenant)(ent.ID)
 			return model.Map(model.Fold(ep, NewEquipableModel(ent.ID, ent.Capacity), EquipableFolder), foldProperty(ref.SetEquipable))()
 		case TypeValueUse:
 			ip := item.ByInventoryProvider(l, db, tenant)(ent.ID)

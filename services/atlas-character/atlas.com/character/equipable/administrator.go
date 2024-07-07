@@ -31,9 +31,10 @@ func createItem(db *gorm.DB, t tenant.Model, inventoryId uint32, itemId uint32, 
 
 func makeModel(e entity) (Model, error) {
 	return Model{
-		id:     e.ID,
-		itemId: e.ItemId,
-		slot:   e.Slot,
+		id:          e.ID,
+		itemId:      e.ItemId,
+		slot:        e.Slot,
+		referenceId: e.ReferenceId,
 	}, nil
 }
 

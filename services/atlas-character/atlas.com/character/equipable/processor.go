@@ -11,27 +11,35 @@ import (
 	"gorm.io/gorm"
 )
 
-func ByInventoryProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.SliceProvider[Model] {
+func byInventoryProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.SliceProvider[Model] {
 	return func(inventoryId uint32) model.SliceProvider[Model] {
-		return database.ModelSliceProvider[Model, entity](db)(getByInventory(tenant.Id, inventoryId), makeWithStatistics(l, span, tenant))
+		return database.ModelSliceProvider[Model, entity](db)(getByInventory(tenant.Id, inventoryId), makeModel)
 	}
 }
 
 func GetByInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) ([]Model, error) {
 	return func(inventoryId uint32) ([]Model, error) {
-		return ByInventoryProvider(l, db, span, tenant)(inventoryId)()
+		return model.SliceMap(byInventoryProvider(l, db, span, tenant)(inventoryId), decorateWithStatistics(l, span, tenant), model.ParallelMap())()
 	}
 }
 
 func GetEquipment(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) ([]Model, error) {
 	return func(inventoryId uint32) ([]Model, error) {
-		return model.FilteredProvider[Model](ByInventoryProvider(l, db, span, tenant)(inventoryId), FilterOutInventory)()
+		fp := model.FilteredProvider[Model](byInventoryProvider(l, db, span, tenant)(inventoryId), FilterOutInventory)
+		return model.SliceMap(fp, decorateWithStatistics(l, span, tenant), model.ParallelMap())()
+	}
+}
+
+func InInventoryProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.SliceProvider[Model] {
+	return func(inventoryId uint32) model.SliceProvider[Model] {
+		fp := model.FilteredProvider[Model](byInventoryProvider(l, db, span, tenant)(inventoryId), FilterOutEquipment)
+		return model.SliceMap(fp, decorateWithStatistics(l, span, tenant), model.ParallelMap())
 	}
 }
 
 func GetInInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) ([]Model, error) {
 	return func(inventoryId uint32) ([]Model, error) {
-		return model.FilteredProvider[Model](ByInventoryProvider(l, db, span, tenant)(inventoryId), FilterOutEquipment)()
+		return InInventoryProvider(l, db, span, tenant)(inventoryId)()
 	}
 }
 
@@ -105,6 +113,17 @@ func makeWithStatistics(l logrus.FieldLogger, span opentracing.Span, tenant tena
 			return m, nil
 		}
 		return statisticsDecorator(sm)(m), nil
+	}
+}
+
+func decorateWithStatistics(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(e Model) (Model, error) {
+	return func(e Model) (Model, error) {
+		sm, err := statistics.GetById(l, span, tenant)(e.ReferenceId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to retrieve generated equipment [%d] statistics.", e.Id())
+			return e, nil
+		}
+		return statisticsDecorator(sm)(e), nil
 	}
 }
 

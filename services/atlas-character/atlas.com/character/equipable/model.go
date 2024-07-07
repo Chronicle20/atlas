@@ -4,6 +4,7 @@ type Model struct {
 	id            uint32
 	itemId        uint32
 	slot          int16
+	referenceId   uint32
 	strength      uint16
 	dexterity     uint16
 	intelligence  uint16
@@ -32,4 +33,8 @@ func (m Model) Id() uint32 {
 
 func (m Model) ItemId() uint32 {
 	return m.itemId
+}
+
+func (m Model) ReferenceId() uint32 {
+	return m.referenceId
 }

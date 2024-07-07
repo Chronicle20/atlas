@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"math/rand"
+	"sync"
 )
 
 type Number interface {
@@ -187,22 +188,74 @@ func Map[M any, N any](provider Provider[M], transformer Transformer[M, N]) Prov
 	return FixedProvider(n)
 }
 
+type MapFuncConfigurator func(c *MapConfig)
+
+type MapConfig struct {
+	parallel bool
+}
+
 //goland:noinspection GoUnusedExportedFunction
-func SliceMap[M any, N any](provider SliceProvider[M], transformer Transformer[M, N]) SliceProvider[N] {
+func ParallelMap() MapFuncConfigurator {
+	return func(c *MapConfig) {
+		c.parallel = true
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func SliceMap[M any, N any](provider SliceProvider[M], transformer Transformer[M, N], configurators ...MapFuncConfigurator) SliceProvider[N] {
+	c := &MapConfig{parallel: false}
+	for _, configurator := range configurators {
+		configurator(c)
+	}
+
 	models, err := provider()
 	if err != nil {
 		return ErrorSliceProvider[N](err)
 	}
 	var results = make([]N, 0)
-	for _, m := range models {
-		var n N
-		n, err = transformer(m)
-		if err != nil {
-			return ErrorSliceProvider[N](err)
+
+	if c.parallel {
+		var wg sync.WaitGroup
+		var mu sync.Mutex
+
+		errCh := make(chan error, len(models))
+
+		for _, m := range models {
+			wg.Add(1)
+			go parallelTransform(&wg, &mu, transformer, m, &results, errCh)
 		}
-		results = append(results, n)
+		wg.Wait()
+
+		close(errCh)
+		for err = range errCh {
+			if err != nil {
+				return ErrorSliceProvider[N](err)
+			}
+		}
+	} else {
+		for _, m := range models {
+			var n N
+			n, err = transformer(m)
+			if err != nil {
+				return ErrorSliceProvider[N](err)
+			}
+			results = append(results, n)
+		}
 	}
 	return FixedSliceProvider(results)
+}
+
+func parallelTransform[M any, N any](wg *sync.WaitGroup, mu *sync.Mutex, transformer Transformer[M, N], model M, results *[]N, errCh chan<- error) {
+	defer wg.Done()
+	r, err := transformer(model)
+	if err != nil {
+		errCh <- err
+		return
+	}
+	mu.Lock()
+	*results = append(*results, r)
+	mu.Unlock()
+	errCh <- nil
 }
 
 //goland:noinspection GoUnusedExportedFunction

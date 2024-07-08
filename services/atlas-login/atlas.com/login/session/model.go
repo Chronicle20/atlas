@@ -26,11 +26,11 @@ type Model struct {
 func NewSession(id uuid.UUID, t tenant.Model, locale byte, con net.Conn) Model {
 	recvIv := []byte{70, 114, 122, byte(rand.Float64() * 255)}
 	sendIv := []byte{82, 48, 120, byte(rand.Float64() * 255)}
-	send := crypto.NewAESOFB(sendIv, uint16(65535)-t.MajorVersion())
-	recv := crypto.NewAESOFB(recvIv, t.MajorVersion())
+	send := crypto.NewAESOFB(sendIv, uint16(65535)-t.MajorVersion)
+	recv := crypto.NewAESOFB(recvIv, t.MajorVersion)
 
 	hasMapleEncryption := true
-	if t.Region() == "JMS" {
+	if t.Region == "JMS" {
 		hasMapleEncryption = false
 	}
 
@@ -95,7 +95,7 @@ func (s *Model) announce(b []byte) error {
 }
 
 func (s *Model) WriteHello() error {
-	return s.announce(WriteHello(nil)(s.tenant.MajorVersion(), s.tenant.MinorVersion(), s.send.IV(), s.recv.IV(), s.locale))
+	return s.announce(WriteHello(nil)(s.tenant.MajorVersion, s.tenant.MinorVersion, s.send.IV(), s.recv.IV(), s.locale))
 }
 
 func (s *Model) ReceiveAESOFB() *crypto.AESOFB {

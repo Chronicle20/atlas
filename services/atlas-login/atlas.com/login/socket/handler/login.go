@@ -73,7 +73,7 @@ func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 		if resp.Code == "OK" {
 			account.ForAccountByName(l, span, s.Tenant())(p.Name(), issueSuccess(l, s, wp))
 
-			if s.Tenant().Region() == "JMS" {
+			if s.Tenant().Region == "JMS" {
 				issueServerInformation(l, span, wp)(s)
 			}
 

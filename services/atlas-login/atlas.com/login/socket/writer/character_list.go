@@ -19,7 +19,7 @@ func CharacterListBody(l logrus.FieldLogger, tenant tenant.Model) func(character
 			w.WriteShort(op)
 			w.WriteByte(byte(status))
 
-			if tenant.Region() == "JMS" {
+			if tenant.Region == "JMS" {
 				w.WriteAsciiString("")
 			}
 
@@ -29,12 +29,12 @@ func CharacterListBody(l logrus.FieldLogger, tenant tenant.Model) func(character
 			}
 
 			w.WriteByte(2) // 0 is create PIC, 1 is enter PIC, 2 is normal
-			if tenant.Region() == "GMS" {
+			if tenant.Region == "GMS" {
 				w.WriteInt(uint32(characterSlots))
-				if tenant.MajorVersion() > 87 {
+				if tenant.MajorVersion > 87 {
 					w.WriteInt(0) // nBuyCharCount
 				}
-			} else if tenant.Region() == "JMS" {
+			} else if tenant.Region == "JMS" {
 				w.WriteByte(0)
 				w.WriteInt(uint32(characterSlots))
 				w.WriteInt(0)
@@ -205,12 +205,12 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 		w.WriteInt(character.MapId())
 		w.WriteByte(character.SpawnPoint())
 
-		if tenant.Region() == "GMS" {
+		if tenant.Region == "GMS" {
 			w.WriteInt(0)
-			if tenant.MajorVersion() >= 87 {
+			if tenant.MajorVersion >= 87 {
 				w.WriteShort(0) // nSubJob
 			}
-		} else if tenant.Region() == "JMS" {
+		} else if tenant.Region == "JMS" {
 			w.WriteShort(0)
 			w.WriteLong(0)
 			w.WriteInt(0)

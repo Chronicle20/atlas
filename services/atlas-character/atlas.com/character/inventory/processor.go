@@ -160,8 +160,15 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 	}
 }
 
+type adjustmentMode byte
+
+const (
+	adjustmentModeCreate adjustmentMode = 0
+	adjustmentModeUpdate adjustmentMode = 1
+)
+
 type adjustment struct {
-	mode          byte
+	mode          adjustmentMode
 	itemId        uint32
 	inventoryType Type
 	quantity      uint32
@@ -169,7 +176,7 @@ type adjustment struct {
 	oldSlot       int16
 }
 
-func (i adjustment) Mode() byte {
+func (i adjustment) Mode() adjustmentMode {
 	return i.mode
 }
 
@@ -276,7 +283,7 @@ func createItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 						if err != nil {
 							l.WithError(err).Errorf("Updating the quantity of item [%d] to value [%d].", i.Id(), newQuantity)
 						} else {
-							events = append(events, adjustment{mode: 1, itemId: itemId, inventoryType: inventoryType, quantity: newQuantity, slot: i.Slot(), oldSlot: 0})
+							events = append(events, adjustment{mode: adjustmentModeUpdate, itemId: itemId, inventoryType: inventoryType, quantity: newQuantity, slot: i.Slot(), oldSlot: 0})
 						}
 					}
 					index++
@@ -305,7 +312,7 @@ func createNewItem(l logrus.FieldLogger) func(creator itemCreator, characterId u
 			l.WithError(err).Errorf("Unable to create item [%d] for character [%d].", itemId, characterId)
 			return adjustment{}, err
 		}
-		return adjustment{mode: 0, itemId: itemId, inventoryType: inventoryType, quantity: quantity, slot: i.Slot(), oldSlot: 0}, nil
+		return adjustment{mode: adjustmentModeCreate, itemId: itemId, inventoryType: inventoryType, quantity: quantity, slot: i.Slot(), oldSlot: 0}, nil
 	}
 }
 

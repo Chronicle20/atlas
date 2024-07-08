@@ -139,6 +139,10 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 			res = CloneModel(res).SetInventory(inv).Build()
 			return nil
 		})
+
+		if err != nil {
+			emitCreatedEvent(l, span, tenant)(res.Id(), res.WorldId(), res.Name())
+		}
 		return res, err
 	}
 }

@@ -31,3 +31,16 @@ func emitUnequipItemCommand(l logrus.FieldLogger, span opentracing.Span, tenant 
 		p(producer.CreateKey(int(characterId)), event)
 	}
 }
+
+func emitItemGainEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, itemId uint32, quantity uint32) {
+	p := producer.ProduceEvent(l, span, lookupTopic(l)(EnvEventTopicItemGain))
+	return func(characterId uint32, itemId uint32, quantity uint32) {
+		event := &gainItemEvent{
+			Tenant:      tenant,
+			CharacterId: characterId,
+			ItemId:      itemId,
+			Quantity:    quantity,
+		}
+		p(producer.CreateKey(int(characterId)), event)
+	}
+}

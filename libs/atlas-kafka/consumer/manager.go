@@ -42,6 +42,7 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 
 		if _, exists := m.consumers[config.topic]; exists {
 			cl.Infof("Consumer for topic [%s] is already registered.", config.topic)
+			return
 		}
 
 		r := kafka.NewReader(kafka.ReaderConfig{
@@ -83,6 +84,13 @@ func (m *Manager) RegisterHandler(topic string, handler handler.Handler) (string
 	consumer.mu.Unlock()
 
 	return handlerId, nil
+}
+
+func (m *Manager) AddConsumerAndRegister(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(c Config, h handler.Handler) (string, error) {
+	return func(c Config, h handler.Handler) (string, error) {
+		m.AddConsumer(l, ctx, wg)(c)
+		return m.RegisterHandler(c.topic, h)
+	}
 }
 
 type HandlerRemover interface {

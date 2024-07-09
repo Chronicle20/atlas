@@ -1,43 +1,29 @@
 package consumer
 
 import (
-	"encoding/json"
-	"github.com/opentracing/opentracing-go"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
+	"os"
 	"time"
 )
 
-type HandlerFunc[E any] func(logrus.FieldLogger, opentracing.Span, E)
+func NewEnvConfig(name string, topic string, groupId string) Config {
+	brokers := []string{os.Getenv("BOOTSTRAP_SERVERS")}
+	return NewConfig(brokers, name, topic, groupId)
+}
 
-type messageHandler func(l logrus.FieldLogger, span opentracing.Span, msg kafka.Message)
-
-func NewConfig[E any](name string, topic string, groupId string, handler HandlerFunc[E]) Config {
+func NewConfig(brokers []string, name string, topic string, groupId string) Config {
 	return Config{
+		brokers: brokers,
 		name:    name,
 		topic:   topic,
 		groupId: groupId,
 		maxWait: 500 * time.Millisecond,
-		handler: adapt(handler),
 	}
 }
 
 type Config struct {
+	brokers []string
 	name    string
 	topic   string
 	groupId string
 	maxWait time.Duration
-	handler messageHandler
-}
-
-func adapt[E any](eh HandlerFunc[E]) messageHandler {
-	return func(l logrus.FieldLogger, span opentracing.Span, msg kafka.Message) {
-		var event E
-		err := json.Unmarshal(msg.Value, &event)
-		if err != nil {
-			l.WithError(err).Errorf("Could not unmarshal event into %s.", msg.Value)
-		} else {
-			eh(l, span, event)
-		}
-	}
 }

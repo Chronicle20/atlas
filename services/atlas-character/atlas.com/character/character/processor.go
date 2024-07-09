@@ -140,7 +140,7 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 			return nil
 		})
 
-		if err != nil {
+		if err == nil {
 			emitCreatedEvent(l, span, tenant)(res.Id(), res.WorldId(), res.Name())
 		}
 		return res, err

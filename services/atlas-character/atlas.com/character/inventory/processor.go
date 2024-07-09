@@ -168,12 +168,13 @@ const (
 )
 
 type adjustment struct {
-	mode          adjustmentMode
-	itemId        uint32
-	inventoryType Type
-	quantity      uint32
-	slot          int16
-	oldSlot       int16
+	mode            adjustmentMode
+	itemId          uint32
+	inventoryType   Type
+	changedQuantity uint32
+	quantity        uint32
+	slot            int16
+	oldSlot         int16
 }
 
 func (i adjustment) Mode() adjustmentMode {
@@ -190,6 +191,10 @@ func (i adjustment) InventoryType() Type {
 
 func (i adjustment) Quantity() uint32 {
 	return i.quantity
+}
+
+func (i adjustment) ChangedQuantity() uint32 {
+	return i.changedQuantity
 }
 
 func (i adjustment) Slot() int16 {
@@ -239,7 +244,8 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 		if err != nil {
 			return err
 		}
-		for _, _ = range events {
+		for _, event := range events {
+			emitItemGainEvent(l, span, tenant)(characterId, event.ItemId(), event.ChangedQuantity())
 			//emitInventoryModificationEvent(l, span)(characterId, true, e.Mode(), e.ItemId(), e.InventoryType(), e.Quantity(), e.Slot(), e.OldSlot())
 		}
 		return err
@@ -278,12 +284,13 @@ func createItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 
 					if oldQuantity < slotMax {
 						newQuantity := uint32(math.Min(float64(oldQuantity+runningQuantity), float64(slotMax)))
-						runningQuantity = runningQuantity - (newQuantity - oldQuantity)
+						changedQuantity := newQuantity - oldQuantity
+						runningQuantity = runningQuantity - changedQuantity
 						err := item.UpdateQuantity(l, db, tenant)(i.Id(), newQuantity)
 						if err != nil {
 							l.WithError(err).Errorf("Updating the quantity of item [%d] to value [%d].", i.Id(), newQuantity)
 						} else {
-							events = append(events, adjustment{mode: adjustmentModeUpdate, itemId: itemId, inventoryType: inventoryType, quantity: newQuantity, slot: i.Slot(), oldSlot: 0})
+							events = append(events, adjustment{mode: adjustmentModeUpdate, itemId: itemId, inventoryType: inventoryType, changedQuantity: changedQuantity, quantity: newQuantity, slot: i.Slot(), oldSlot: 0})
 						}
 					}
 					index++
@@ -312,7 +319,7 @@ func createNewItem(l logrus.FieldLogger) func(creator itemCreator, characterId u
 			l.WithError(err).Errorf("Unable to create item [%d] for character [%d].", itemId, characterId)
 			return adjustment{}, err
 		}
-		return adjustment{mode: adjustmentModeCreate, itemId: itemId, inventoryType: inventoryType, quantity: quantity, slot: i.Slot(), oldSlot: 0}, nil
+		return adjustment{mode: adjustmentModeCreate, itemId: itemId, inventoryType: inventoryType, changedQuantity: quantity, quantity: quantity, slot: i.Slot(), oldSlot: 0}, nil
 	}
 }
 

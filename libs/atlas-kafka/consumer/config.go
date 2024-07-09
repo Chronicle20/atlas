@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+//goland:noinspection GoUnusedExportedFunction
 func NewConfig(brokers []string, name string, topic string, groupId string) Config {
 	return Config{
 		brokers: brokers,

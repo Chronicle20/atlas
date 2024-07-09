@@ -13,10 +13,6 @@ import (
 	"sync"
 )
 
-type Adder interface {
-	AddConsumer(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(config Config)
-}
-
 type Manager struct {
 	mu        *sync.Mutex
 	consumers map[string]*Consumer
@@ -25,6 +21,7 @@ type Manager struct {
 var manager *Manager
 var once sync.Once
 
+//goland:noinspection GoUnusedExportedFunction
 func GetManager() *Manager {
 	once.Do(func() {
 		manager = &Manager{
@@ -65,10 +62,6 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 	}
 }
 
-type HandlerRegister interface {
-	RegisterHandler(topic string, handler handler.Handler) (string, error)
-}
-
 func (m *Manager) RegisterHandler(topic string, handler handler.Handler) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -91,10 +84,6 @@ func (m *Manager) AddConsumerAndRegister(l logrus.FieldLogger, ctx context.Conte
 		m.AddConsumer(l, ctx, wg)(c)
 		return m.RegisterHandler(c.topic, h)
 	}
-}
-
-type HandlerRemover interface {
-	RemoveHandler(topic string, handlerId string) error
 }
 
 func (m *Manager) RemoveHandler(topic string, handlerId string) error {
@@ -161,12 +150,18 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 					defer span.Finish()
 
 					c.mu.Lock()
+					var nhs = make(map[string]handler.Handler)
 					for id, h := range c.handlers {
-						err = h(l, span, msg)
+						var cont bool
+						cont, err = h(l, span, msg)
+						if cont {
+							nhs[id] = h
+						}
 						if err != nil {
 							l.WithError(err).Errorf("Handler [%s] failed.", id)
 						}
 					}
+					c.handlers = nhs
 					c.mu.Unlock()
 				}()
 			}

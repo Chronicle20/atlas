@@ -6,4 +6,4 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Handler func(l logrus.FieldLogger, span opentracing.Span, msg kafka.Message) error
+type Handler func(l logrus.FieldLogger, span opentracing.Span, msg kafka.Message) (bool, error)

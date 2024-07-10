@@ -62,9 +62,11 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(character.Migration, inventory.Migration, item.Migration, equipable.Migration))
 
-	consumer.CreateConsumers(l, ctx, wg,
-		inventory.EquipItemCommandConsumer(l, db)(consumerGroupId),
-		inventory.UnequipItemCommandConsumer(l, db)(consumerGroupId))
+	cm := consumer.GetManager()
+	cm.AddConsumer(l, ctx, wg)(inventory.EquipItemCommandConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, ctx, wg)(inventory.UnequipItemCommandConsumer(l)(consumerGroupId))
+	_, _ = cm.RegisterHandler(inventory.EquipItemRegister(l, db))
+	_, _ = cm.RegisterHandler(inventory.UnequipItemRegister(l, db))
 
 	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), character.InitResource(GetServer())(db), inventory.InitResource(GetServer())(db))
 

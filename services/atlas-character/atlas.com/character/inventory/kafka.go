@@ -2,8 +2,6 @@ package inventory
 
 import (
 	"atlas-character/tenant"
-	"github.com/sirupsen/logrus"
-	"os"
 )
 
 const (
@@ -30,16 +28,4 @@ type gainItemEvent struct {
 	CharacterId uint32       `json:"characterId"`
 	ItemId      uint32       `json:"itemId"`
 	Quantity    uint32       `json:"quantity"`
-}
-
-func lookupTopic(l logrus.FieldLogger) func(token string) string {
-	return func(token string) string {
-		t, ok := os.LookupEnv(token)
-		if !ok {
-			l.Warnf("%s environment variable not set. Defaulting to env variable.", token)
-			return token
-
-		}
-		return t
-	}
 }

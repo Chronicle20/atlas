@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"atlas-character/kafka"
 	"atlas-character/tenant"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/opentracing/opentracing-go"
@@ -8,7 +9,7 @@ import (
 )
 
 func emitEquipItemCommand(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, source int16, destination int16) {
-	p := producer.ProduceEvent(l, span, lookupTopic(l)(EnvCommandTopicEquipItem))
+	p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvCommandTopicEquipItem))
 	return func(characterId uint32, source int16, destination int16) {
 		event := &equipItemCommand{
 			Tenant:      tenant,
@@ -21,7 +22,7 @@ func emitEquipItemCommand(l logrus.FieldLogger, span opentracing.Span, tenant te
 }
 
 func emitUnequipItemCommand(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, source int16) {
-	p := producer.ProduceEvent(l, span, lookupTopic(l)(EnvCommandTopicUnequipItem))
+	p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvCommandTopicUnequipItem))
 	return func(characterId uint32, source int16) {
 		event := &unequipItemCommand{
 			Tenant:      tenant,
@@ -33,7 +34,7 @@ func emitUnequipItemCommand(l logrus.FieldLogger, span opentracing.Span, tenant 
 }
 
 func emitItemGainEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, itemId uint32, quantity uint32) {
-	p := producer.ProduceEvent(l, span, lookupTopic(l)(EnvEventTopicItemGain))
+	p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvEventTopicItemGain))
 	return func(characterId uint32, itemId uint32, quantity uint32) {
 		event := &gainItemEvent{
 			Tenant:      tenant,

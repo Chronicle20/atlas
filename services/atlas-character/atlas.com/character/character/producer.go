@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-character/kafka"
 	"atlas-character/tenant"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/opentracing/opentracing-go"
@@ -8,7 +9,7 @@ import (
 )
 
 func emitCreatedEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, name string) {
-	p := producer.ProduceEvent(l, span, lookupTopic(l)(EnvEventTopicCharacterCreated))
+	p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvEventTopicCharacterCreated))
 	return func(characterId uint32, worldId byte, name string) {
 		event := &createdEvent{
 			Tenant:      tenant,

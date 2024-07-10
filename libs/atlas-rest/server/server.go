@@ -78,3 +78,12 @@ func CommonHeader(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func LoggingMiddleware(l logrus.FieldLogger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			l.Debugf("Handling [%s] request on [%s]", r.Method, r.RequestURI)
+			next.ServeHTTP(w, r)
+		})
+	}
+}

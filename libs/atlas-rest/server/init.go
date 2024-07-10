@@ -18,6 +18,7 @@ func ProduceRoutes(basePath string, initializers ...RouteInitializer) func(l log
 	return func(l logrus.FieldLogger) http.Handler {
 		router := mux.NewRouter().PathPrefix(basePath).Subrouter().StrictSlash(true)
 		router.Use(CommonHeader)
+		router.Use(LoggingMiddleware(l))
 
 		for _, initializer := range initializers {
 			initializer(router, l)

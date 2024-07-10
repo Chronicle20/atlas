@@ -3,9 +3,9 @@ module atlas-account
 go 1.21.6
 
 require (
-	github.com/Chronicle20/atlas-kafka v0.0.0-20240627140949-91f3b00e0da4
-	github.com/Chronicle20/atlas-model v0.0.0-20240627130812-cba200301064
-	github.com/Chronicle20/atlas-rest v0.0.0-20240613162124-15e10246a3d3
+	github.com/Chronicle20/atlas-kafka v0.0.0-20240709191654-7c3c45514860
+	github.com/Chronicle20/atlas-model v0.0.0-20240707172702-3d0c637b3cb5
+	github.com/Chronicle20/atlas-rest v0.0.0-20240710151733-b8c240525909
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6
@@ -13,7 +13,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	go.elastic.co/ecslogrus v1.0.0
-	golang.org/x/crypto v0.24.0
+	golang.org/x/crypto v0.25.0
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.10
@@ -39,6 +39,6 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 )

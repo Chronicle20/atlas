@@ -31,10 +31,10 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 
 func registerCreateSession(si jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 	return func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
-		return rest.RetrieveSpan(createSession, func(span opentracing.Span) http.HandlerFunc {
-			return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
-				return parseInput(l, func(container InputRestModel) http.HandlerFunc {
-					return handleCreateSession(si)(l, db)(span)(tenant)(container)
+		return rest.RetrieveSpan(l, createSession, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
+			return rest.ParseTenant(sl, func(tenant tenant.Model) http.HandlerFunc {
+				return parseInput(sl, func(container InputRestModel) http.HandlerFunc {
+					return handleCreateSession(si)(sl, db)(span)(tenant)(container)
 				})
 			})
 		})
@@ -43,10 +43,10 @@ func registerCreateSession(si jsonapi.ServerInformation) func(l logrus.FieldLogg
 
 func registerDeleteSession(si jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 	return func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
-		return rest.RetrieveSpan(deleteSession, func(span opentracing.Span) http.HandlerFunc {
-			return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
-				return account.ParseId(l, func(id uint32) http.HandlerFunc {
-					return handleDeleteSession(si)(l, db)(span)(tenant)(id)
+		return rest.RetrieveSpan(l, deleteSession, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
+			return rest.ParseTenant(sl, func(tenant tenant.Model) http.HandlerFunc {
+				return account.ParseId(sl, func(id uint32) http.HandlerFunc {
+					return handleDeleteSession(si)(sl, db)(span)(tenant)(id)
 				})
 			})
 		})

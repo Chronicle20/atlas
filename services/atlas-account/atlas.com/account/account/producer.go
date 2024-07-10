@@ -1,6 +1,7 @@
 package account
 
 import (
+	"atlas-account/kafka"
 	"atlas-account/tenant"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/opentracing/opentracing-go"
@@ -9,7 +10,7 @@ import (
 )
 
 func emitCreateCommand(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string, password string) {
-	p := producer.ProduceEvent(l, span, lookupTopic(l)(EnvCommandTopicCreateAccount))
+	p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvCommandTopicCreateAccount))
 	return func(name string, password string) {
 		command := &createCommand{
 			Tenant:   tenant,
@@ -26,7 +27,7 @@ func emitCreatedEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant
 
 func emitAccountStatusEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(status string) func(accountId uint32, name string) {
 	return func(status string) func(accountId uint32, name string) {
-		p := producer.ProduceEvent(l, span, lookupTopic(l)(EnvEventTopicAccountStatus))
+		p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvEventTopicAccountStatus))
 		return func(accountId uint32, name string) {
 			event := &statusEvent{
 				Tenant:    tenant,

@@ -148,7 +148,7 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 
 					spanContext, _ := opentracing.GlobalTracer().Extract(opentracing.TextMap, opentracing.TextMapCarrier(headers))
 					span := opentracing.StartSpan(c.name, opentracing.FollowsFrom(spanContext))
-					sl := l.WithField("span", fmt.Sprintf("%v", span))
+					sl := l.WithField("span.id", fmt.Sprintf("%v", span))
 					defer span.Finish()
 
 					c.mu.Lock()

@@ -6,17 +6,18 @@ import (
 	"net/http"
 )
 
-func processResponse[A any](r *http.Response, rb *A) error {
+func processResponse[A any](r *http.Response) (A, error) {
+	var result A
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return err
+		return result, err
 	}
 	defer r.Body.Close()
 
-	err = jsonapi.Unmarshal(body, rb)
+	err = jsonapi.Unmarshal(body, &result)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	return nil
+	return result, nil
 }

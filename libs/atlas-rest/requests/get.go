@@ -8,8 +8,8 @@ import (
 
 type Request[A any] func(l logrus.FieldLogger) (A, error)
 
-func get[A any](l logrus.FieldLogger) func(url string, resp *A, configurators ...Configurator) error {
-	return func(url string, resp *A, configurators ...Configurator) error {
+func get[A any](l logrus.FieldLogger) func(url string, configurators ...Configurator) (A, error) {
+	return func(url string, configurators ...Configurator) (A, error) {
 		c := &configuration{retries: 1}
 		for _, configurator := range configurators {
 			configurator(c)
@@ -36,22 +36,23 @@ func get[A any](l logrus.FieldLogger) func(url string, resp *A, configurators ..
 			return false, nil
 		}
 		err := retry.Try(get, c.retries)
+
+		var resp A
 		if err != nil {
 			l.WithError(err).Errorf("Unable to successfully call [%s] on [%s].", http.MethodGet, url)
-			return err
+			return resp, err
 		}
-		err = processResponse(r, resp)
+		resp, err = processResponse[A](r)
 
 		l.WithFields(logrus.Fields{"method": http.MethodGet, "status": r.Status, "path": url, "response": resp}).Debugf("Printing request.")
 
-		return err
+		return resp, err
 	}
 }
 
+//goland:noinspection GoUnusedExportedFunction
 func MakeGetRequest[A any](url string, configurators ...Configurator) Request[A] {
 	return func(l logrus.FieldLogger) (A, error) {
-		var r A
-		err := get[A](l)(url, &r, configurators...)
-		return r, err
+		return get[A](l)(url, configurators...)
 	}
 }

@@ -10,6 +10,7 @@ import (
 
 type RouteInitializer func(*mux.Router, logrus.FieldLogger)
 
+//goland:noinspection GoUnusedExportedFunction
 func CreateService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGroup, basePath string, initializers ...RouteInitializer) {
 	go NewServer(l, ctx, wg, ProduceRoutes(basePath, initializers...))
 }

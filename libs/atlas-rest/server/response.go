@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+//goland:noinspection GoUnusedExportedFunction
 func Marshal[A any](l logrus.FieldLogger) func(w http.ResponseWriter) func(si jsonapi.ServerInformation) func(slice A) {
 	return func(w http.ResponseWriter) func(si jsonapi.ServerInformation) func(slice A) {
 		return func(si jsonapi.ServerInformation) func(slice A) {

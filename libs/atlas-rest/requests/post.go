@@ -10,16 +10,17 @@ import (
 
 type PostRequest[A any] func(l logrus.FieldLogger) (A, error)
 
-func post[A any](l logrus.FieldLogger) func(url string, input interface{}, resp *A, configurators ...Configurator) error {
-	return func(url string, input interface{}, resp *A, configurators ...Configurator) error {
+func post[A any](l logrus.FieldLogger) func(url string, input interface{}, configurators ...Configurator) (A, error) {
+	return func(url string, input interface{}, configurators ...Configurator) (A, error) {
 		c := &configuration{retries: 1}
 		for _, configurator := range configurators {
 			configurator(c)
 		}
 
+		var result A
 		jsonReq, err := jsonapi.Marshal(input)
 		if err != nil {
-			return err
+			return result, err
 		}
 
 		var r *http.Response
@@ -45,27 +46,26 @@ func post[A any](l logrus.FieldLogger) func(url string, input interface{}, resp 
 		err = retry.Try(post, c.retries)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to successfully call [%s] on [%s].", http.MethodPost, url)
-			return err
+			return result, err
 		}
 
 		if r.ContentLength > 0 {
-			err = processResponse(r, resp)
+			result, err = processResponse[A](r)
 			if err != nil {
-				return err
+				return result, err
 			}
-			l.WithFields(logrus.Fields{"method": http.MethodPost, "status": r.Status, "path": url, "input": input, "response": resp}).Debugf("Printing request.")
+			l.WithFields(logrus.Fields{"method": http.MethodPost, "status": r.Status, "path": url, "input": input, "response": result}).Debugf("Printing request.")
 		} else {
 			l.WithFields(logrus.Fields{"method": http.MethodPost, "status": r.Status, "path": url, "input": input, "response": ""}).Debugf("Printing request.")
 		}
 
-		return nil
+		return result, nil
 	}
 }
 
+//goland:noinspection GoUnusedExportedFunction
 func MakePostRequest[A any](url string, i interface{}, configurators ...Configurator) PostRequest[A] {
 	return func(l logrus.FieldLogger) (A, error) {
-		var r A
-		err := post[A](l)(url, i, &r, configurators...)
-		return r, err
+		return post[A](l)(url, i, configurators...)
 	}
 }

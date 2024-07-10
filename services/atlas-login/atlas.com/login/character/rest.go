@@ -62,7 +62,7 @@ func (r *RestModel) GetName() string {
 	return "characters"
 }
 
-func (r *RestModel) GetID() string {
+func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 

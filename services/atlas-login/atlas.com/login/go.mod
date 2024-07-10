@@ -4,8 +4,8 @@ go 1.21.6
 
 require (
 	github.com/Chronicle20/atlas-kafka v0.0.0-20240627140949-91f3b00e0da4
-	github.com/Chronicle20/atlas-model v0.0.0-20240703011159-db21f076bf95
-	github.com/Chronicle20/atlas-rest v0.0.0-20240629173858-9967596e5b47
+	github.com/Chronicle20/atlas-model v0.0.0-20240707172702-3d0c637b3cb5
+	github.com/Chronicle20/atlas-rest v0.0.0-20240710183603-5b17b81f4138
 	github.com/Chronicle20/atlas-socket v0.0.0-20240629184717-b9628a79e2fe
 	github.com/google/uuid v1.6.0
 	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6
@@ -26,6 +26,6 @@ require (
 	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 )

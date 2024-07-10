@@ -56,7 +56,9 @@ func main() {
 		}
 	}(tc)
 
-	consumer.CreateConsumers(l, ctx, wg, channel.StatusConsumer(l)(consumerGroupId))
+	cm := consumer.GetManager()
+	cm.AddConsumer(l, ctx, wg)(channel.StatusConsumer(l)(consumerGroupId))
+	_, _ = cm.RegisterHandler(channel.StatusRegister(l))
 
 	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), channel.InitResource(GetServer()), world.InitResource(GetServer()))
 

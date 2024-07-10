@@ -27,16 +27,17 @@ func get[A any](l logrus.FieldLogger) func(url string, resp *A, configurators ..
 
 			c.headerDecorator(req.Header)
 
+			l.Debugf("Issuing [%s] request to [%s].", req.Method, req.URL)
 			r, err = http.DefaultClient.Do(req)
 			if err != nil {
-				l.Warnf("Failed calling %s on %s, will retry.", http.MethodGet, url)
+				l.Warnf("Failed calling [%s] on [%s], will retry.", http.MethodGet, url)
 				return true, err
 			}
 			return false, nil
 		}
 		err := retry.Try(get, c.retries)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to successfully call %s on %s.", http.MethodGet, url)
+			l.WithError(err).Errorf("Unable to successfully call [%s] on [%s].", http.MethodGet, url)
 			return err
 		}
 		err = processResponse(r, resp)

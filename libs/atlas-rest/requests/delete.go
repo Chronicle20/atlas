@@ -27,16 +27,17 @@ func delete(l logrus.FieldLogger) func(url string, configurators ...Configurator
 
 			c.headerDecorator(req.Header)
 
+			l.Debugf("Issuing [%s] request to [%s].", req.Method, req.URL)
 			r, err = http.DefaultClient.Do(req)
 			if err != nil {
-				l.Warnf("Failed calling %s on %s, will retry.", http.MethodDelete, url)
+				l.Warnf("Failed calling [%s] on [%s], will retry.", http.MethodDelete, url)
 				return true, err
 			}
 			return false, nil
 		}
 		err := retry.Try(get, c.retries)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to successfully call %s on %s.", http.MethodDelete, url)
+			l.WithError(err).Errorf("Unable to successfully call [%s] on [%s].", http.MethodDelete, url)
 			return err
 		}
 		l.WithFields(logrus.Fields{"method": http.MethodDelete, "status": r.Status, "path": url}).Debugf("Printing request.")

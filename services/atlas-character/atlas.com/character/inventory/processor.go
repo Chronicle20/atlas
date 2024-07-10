@@ -184,6 +184,8 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 			return errors.New("invalid inventory type")
 		}
 
+		l.Debugf("Creating [%d] item [%d] for character [%d] in inventory [%d].", quantity, itemId, characterId, inventoryType)
+
 		var events = make([]adjustment, 0)
 		err := db.Transaction(func(tx *gorm.DB) error {
 			m, err := GetInventories(l, tx, span, tenant)(characterId)
@@ -210,6 +212,8 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 					return err
 				}
 			}
+
+			l.Debugf("Successfully finished processing create item for character [%d].", characterId)
 			return nil
 		})
 		if err != nil {
@@ -226,6 +230,7 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 func createEquipable(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32) ([]adjustment, error) {
 	var creator itemCreator = equipable.CreateItem(l, db, span, tenant)
 	return func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32) ([]adjustment, error) {
+		l.Debugf("Creating equipable [%d] for character [%d].", itemId, characterId)
 		event, err := createNewItem(l)(creator, characterId, inventoryId, inventoryType, itemId, 1)
 		if err != nil {
 			return make([]adjustment, 0), nil
@@ -257,6 +262,7 @@ func createItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 						newQuantity := uint32(math.Min(float64(oldQuantity+runningQuantity), float64(slotMax)))
 						changedQuantity := newQuantity - oldQuantity
 						runningQuantity = runningQuantity - changedQuantity
+						l.Debugf("Adding [%d] item [%d] in slot [%d] to make a new quantity of [%d] for character [%d].", changedQuantity, i.ItemId(), i.Slot(), newQuantity, characterId)
 						err := item.UpdateQuantity(l, db, tenant)(i.Id(), newQuantity)
 						if err != nil {
 							l.WithError(err).Errorf("Updating the quantity of item [%d] to value [%d].", i.Id(), newQuantity)
@@ -277,6 +283,7 @@ func createItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 			if err != nil {
 				return events, err
 			}
+			l.Debugf("Creating [%d] item [%d] in slot [%d] for character [%d].", newQuantity, itemId, nes.slot, characterId)
 			events = append(events, nes)
 		}
 		return events, nil

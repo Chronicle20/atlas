@@ -4,8 +4,12 @@ github.com/Chronicle20/atlas-model v0.0.0-20240611171638-929647116e22 h1:vB75ih3
 github.com/Chronicle20/atlas-model v0.0.0-20240611171638-929647116e22/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
 github.com/Chronicle20/atlas-model v0.0.0-20240703011159-db21f076bf95 h1:zQRuH338R7mV4xWedVcxmMxZBNBmb3aI5VritoV38nM=
 github.com/Chronicle20/atlas-model v0.0.0-20240703011159-db21f076bf95/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
+github.com/Chronicle20/atlas-model v0.0.0-20240707172702-3d0c637b3cb5 h1:7hmq/RByMjvfGs+fQ0fwDC3jhTbppXUo0MBCfPH0APQ=
+github.com/Chronicle20/atlas-model v0.0.0-20240707172702-3d0c637b3cb5/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
 github.com/Chronicle20/atlas-rest v0.0.0-20240629173858-9967596e5b47 h1:8CrXf/j38rdrwEpO9N8W4iGqjnbIA4YdzwnXkPCzRjU=
 github.com/Chronicle20/atlas-rest v0.0.0-20240629173858-9967596e5b47/go.mod h1:IPCC73Rsd2jb/0Ke03QfKpu9GKPGjem9WD2vfmTYwFc=
+github.com/Chronicle20/atlas-rest v0.0.0-20240710183603-5b17b81f4138 h1:8Fx9woizpOOekflKEyGPkUcFzzg7LPsSbrWVKBl2OEg=
+github.com/Chronicle20/atlas-rest v0.0.0-20240710183603-5b17b81f4138/go.mod h1:/ct0tbaPuSIjX08t/eMPAx8gP+VeEVBh4sd4jFLjgCc=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2 h1:5IcZpTvzydCQeHzK4Ef/D5rrSqwxob0t8PQPMybUNFM=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2/go.mod h1:yDgFjdqOqDEKOvasDdhWNXYg9BVp4O+o5f6V/ehm6Oo=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
@@ -59,6 +63,8 @@ github.com/labstack/gommon v0.3.0/go.mod h1:MULnywXg0yavhxWKc+lOruYdAhDwPK9wf0OL
 github.com/leodido/go-urn v1.2.0/go.mod h1:+8+nEpDfqqsY+g338gtMEUOtuK+4dEMhiQEgxpxOKII=
 github.com/magefile/mage v1.9.0 h1:t3AU2wNwehMCW97vuqQLtw6puppWXHO+O2MHo5a50XE=
 github.com/magefile/mage v1.9.0/go.mod h1:z5UZb/iS3GoOSn0JgWuiw7dxlurVYTu+/jHXqQg881A=
+github.com/magefile/mage v1.15.0 h1:BvGheCMAsG3bWUDbZ8AyXXpCNwU9u5CB6sM+HNb9HYg=
+github.com/magefile/mage v1.15.0/go.mod h1:z5UZb/iS3GoOSn0JgWuiw7dxlurVYTu+/jHXqQg881A=
 github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6 h1:fHgP0eC80r02MlLtLrIzC876PFi9wKnS5Qe01gcIX34=
 github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6/go.mod h1:Y62+t+qfCBWp/L6QkGmiUpJ5/geF+0ta18XIKp/CVK8=
 github.com/mattn/go-colorable v0.1.2/go.mod h1:U0ppj6V5qS13XJ6of8GYAs25YV2eR4EVcfRqFIhoBtE=
@@ -166,6 +172,8 @@ golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e/go.mod h1:oPkhp1MJrh7nUepCBc
 golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.21.0 h1:rF+pYz3DAGSQAxAu1CbC7catZg4ebC4UIeIhKxBZvws=
 golang.org/x/sys v0.21.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=
+golang.org/x/sys v0.22.0 h1:RI27ohtqKCnwULzJLqkv897zojh5/DwS/ENaMzUOaWI=
+golang.org/x/sys v0.22.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.2/go.mod h1:bEr9sfX3Q8Zfm5fL9x+3itogRgK3+ptLWKqgva+5dAk=

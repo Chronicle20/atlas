@@ -1,10 +1,12 @@
 package main
 
 import (
+	"atlas-character-factory/character"
 	"atlas-character-factory/factory"
 	"atlas-character-factory/logger"
 	"atlas-character-factory/tracing"
 	"context"
+	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 	"io"
 	"os"
@@ -14,6 +16,7 @@ import (
 )
 
 const serviceName = "atlas-character-factory"
+const consumerGroupId = "Character Factory Service"
 
 type Server struct {
 	baseUrl string
@@ -52,6 +55,10 @@ func main() {
 			l.WithError(err).Errorf("Unable to close tracer.")
 		}
 	}(tc)
+
+	cm := consumer.GetManager()
+	cm.AddConsumer(l, ctx, wg)(character.CreatedConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, ctx, wg)(character.ItemGainedConsumer(l)(consumerGroupId))
 
 	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), factory.InitResource(GetServer()))
 

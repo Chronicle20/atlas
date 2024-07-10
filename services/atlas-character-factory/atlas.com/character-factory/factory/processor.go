@@ -5,8 +5,10 @@ import (
 	"atlas-character-factory/configuration"
 	"atlas-character-factory/tenant"
 	"errors"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
+	"sync"
 )
 
 func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte, name string, gender byte, jobIndex uint32, subJobIndex uint32, face uint32, hair uint32, hairColor uint32, skinColor byte, top uint32, bottom uint32, shoes uint32, weapon uint32) (character.Model, error) {
@@ -72,26 +74,51 @@ func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 			return character.Model{}, errors.New("chosen weapon is not valid for job")
 		}
 
+		// create has been issued, wait for notification of completion, then begin processing items.
+		wg := &sync.WaitGroup{}
+		items := []uint32{top, bottom, shoes, weapon}
+		wg.Add(1)
+		character.AwaitCreated(l, tenant)(wg)(name, createItems(l, span, tenant)(wg)(items))
+
 		cm, err := character.Create(l, span, tenant)(accountId, worldId, name, gender, jobIndex, subJobIndex, face, hair, hairColor, skinColor)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to create character from seed.")
 			return character.Model{}, err
 		}
 
-		createItems(l, span, tenant)(cm.Id(), []uint32{top, bottom, shoes, weapon})
-
+		wg.Wait()
 		return character.GetById(l, span, tenant)(cm.Id())
 	}
 }
 
-func createItems(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, items []uint32) {
-	return func(characterId uint32, items []uint32) {
-		for _, i := range items {
-			_, err := character.CreateItem(l, span, tenant)(characterId, i)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to create item [%d] from seed for character [%d].", i, characterId)
+func createItems(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(wg *sync.WaitGroup) func(items []uint32) model.Operator[uint32] {
+	return func(wg *sync.WaitGroup) func(items []uint32) model.Operator[uint32] {
+		return func(items []uint32) model.Operator[uint32] {
+			return func(characterId uint32) error {
+				l.Debugf("Creating items for character [%d].", characterId)
+				for _, i := range items {
+					var itemId = i
+					wg.Add(1)
+					go func() {
+						l.Debugf("Creating item [%d] for character [%d].", itemId, characterId)
+						character.AwaitItemGained(l, tenant)(wg)(itemId, equipItem(l, span, tenant))
+
+						_, err := character.CreateItem(l, span, tenant)(characterId, itemId)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to create item [%d] from seed for character [%d].", itemId, characterId)
+						}
+					}()
+				}
+				return nil
 			}
 		}
+	}
+}
+
+func equipItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) model.Operator[uint32] {
+	return func(u uint32) error {
+		l.Debugf("TODO equip item %d.", u)
+		return nil
 	}
 }
 

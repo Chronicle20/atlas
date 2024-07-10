@@ -9,12 +9,14 @@ import (
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
+	"math"
 	"os"
 )
 
 const (
-	charactersResource = "characters"
-	characterResource  = charactersResource + "/%d"
+	charactersResource     = "characters"
+	characterResource      = charactersResource + "/%d"
+	characterItemsResource = characterResource + "/inventories/%d/items"
 )
 
 func getBaseRequest() string {
@@ -46,7 +48,8 @@ func requestCreate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mo
 
 func requestCreateItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, itemId uint32) requests.PostRequest[item.RestModel] {
 	return func(characterId uint32, itemId uint32) requests.PostRequest[item.RestModel] {
+		inventoryType := uint32(math.Floor(float64(itemId) / 1000000))
 		i := item.RestModel{ItemId: itemId}
-		return rest.MakePostRequest[item.RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+characterResource, characterId), i)
+		return rest.MakePostRequest[item.RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+characterItemsResource, characterId, inventoryType), i)
 	}
 }

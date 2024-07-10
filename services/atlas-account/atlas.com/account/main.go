@@ -59,9 +59,11 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(account.Migration))
 
-	consumer.CreateConsumers(l, ctx, wg,
-		account.CreateAccountCommandConsumer(l, db)(consumerGroupId),
-		session.CreateAccountSessionCommandConsumer(l, db)(consumerGroupId))
+	cm := consumer.GetManager()
+	cm.AddConsumer(l, ctx, wg)(account.CreateAccountCommandConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, ctx, wg)(session.CreateAccountSessionCommandConsumer(l)(consumerGroupId))
+	_, _ = cm.RegisterHandler(account.CreateAccountRegister(l, db))
+	_, _ = cm.RegisterHandler(session.CreateAccountSessionRegister(l, db))
 
 	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), session.InitResource(GetServer())(db), account.InitResource(GetServer())(db))
 

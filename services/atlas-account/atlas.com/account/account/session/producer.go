@@ -1,6 +1,7 @@
 package session
 
 import (
+	"atlas-account/kafka"
 	"atlas-account/tenant"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/opentracing/opentracing-go"
@@ -8,7 +9,7 @@ import (
 )
 
 func emitLogoutCommand(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32) {
-	p := producer.ProduceEvent(l, span, lookupTopic(l)(EnvCommandTopicAccountLogout))
+	p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvCommandTopicAccountLogout))
 	return func(accountId uint32) {
 		command := &logoutCommand{
 			Tenant:    tenant,
@@ -28,7 +29,7 @@ func emitLoggedOutEvent(l logrus.FieldLogger, span opentracing.Span, tenant tena
 
 func emitAccountStatusEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(status string) func(accountId uint32, name string) {
 	return func(status string) func(accountId uint32, name string) {
-		p := producer.ProduceEvent(l, span, lookupTopic(l)(EnvEventTopicAccountStatus))
+		p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvEventTopicAccountStatus))
 		return func(accountId uint32, name string) {
 			event := &statusEvent{
 				Tenant:    tenant,

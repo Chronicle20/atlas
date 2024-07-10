@@ -32,10 +32,10 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 
 func registerCreateAccount(si jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 	return func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
-		return rest.RetrieveSpan(getAccountByName, func(span opentracing.Span) http.HandlerFunc {
-			return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
-				return parseCreateInput(l, func(input CreateRestModel) http.HandlerFunc {
-					return handleCreateAccount(si)(l, db)(span)(tenant)(input)
+		return rest.RetrieveSpan(l, getAccountByName, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
+			return rest.ParseTenant(sl, func(tenant tenant.Model) http.HandlerFunc {
+				return parseCreateInput(sl, func(input CreateRestModel) http.HandlerFunc {
+					return handleCreateAccount(si)(sl, db)(span)(tenant)(input)
 				})
 			})
 		})
@@ -82,10 +82,10 @@ func handleCreateAccount(_ jsonapi.ServerInformation) func(l logrus.FieldLogger,
 
 func registerGetAccountByName(si jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 	return func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
-		return rest.RetrieveSpan(getAccountByName, func(span opentracing.Span) http.HandlerFunc {
-			return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
-				return parseName(l, func(name string) http.HandlerFunc {
-					return handleGetAccountByName(si)(l, db)(span)(tenant)(name)
+		return rest.RetrieveSpan(l, getAccountByName, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
+			return rest.ParseTenant(sl, func(tenant tenant.Model) http.HandlerFunc {
+				return parseName(sl, func(name string) http.HandlerFunc {
+					return handleGetAccountByName(si)(sl, db)(span)(tenant)(name)
 				})
 			})
 		})
@@ -155,10 +155,10 @@ func ParseId(l logrus.FieldLogger, next idHandler) http.HandlerFunc {
 
 func registerGetAccountById(si jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 	return func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
-		return rest.RetrieveSpan(getAccountById, func(span opentracing.Span) http.HandlerFunc {
-			return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
-				return ParseId(l, func(id uint32) http.HandlerFunc {
-					return handleGetAccountById(si)(l, db)(span)(tenant)(id)
+		return rest.RetrieveSpan(l, getAccountById, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
+			return rest.ParseTenant(sl, func(tenant tenant.Model) http.HandlerFunc {
+				return ParseId(sl, func(id uint32) http.HandlerFunc {
+					return handleGetAccountById(si)(sl, db)(span)(tenant)(id)
 				})
 			})
 		})

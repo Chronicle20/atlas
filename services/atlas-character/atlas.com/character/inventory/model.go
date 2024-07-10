@@ -3,6 +3,7 @@ package inventory
 import (
 	"atlas-character/equipable"
 	"atlas-character/inventory/item"
+	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 )
 
@@ -185,7 +186,7 @@ func (m Model) GetHolderByType(inventoryType Type) (ItemHolder, error) {
 	case TypeValueCash:
 		return m.cash, nil
 	}
-	return nil, nil
+	return nil, errors.New("invalid inventory type")
 }
 
 type ItemHolder interface {

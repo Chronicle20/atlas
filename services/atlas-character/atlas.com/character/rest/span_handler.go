@@ -14,7 +14,7 @@ func RetrieveSpan(l logrus.FieldLogger, name string, next SpanHandler) http.Hand
 	return func(w http.ResponseWriter, r *http.Request) {
 		wireCtx, _ := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
 		serverSpan := opentracing.StartSpan(name, ext.RPCServerOption(wireCtx))
-		sl := l.WithField("span", fmt.Sprintf("%v", serverSpan))
+		sl := l.WithField("span.id", fmt.Sprintf("%v", serverSpan))
 		defer serverSpan.Finish()
 		next(sl, serverSpan)(w, r)
 	}

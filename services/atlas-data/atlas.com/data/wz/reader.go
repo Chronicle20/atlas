@@ -1,8 +1,10 @@
 package wz
 
 import (
+	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
+	"golang.org/x/sys/unix"
 	"os"
 )
 
@@ -78,6 +80,9 @@ func readRegion(region string, path string) ([]DataWalker, error) {
 	var fes []DataWalker
 	for _, cf := range fs {
 		ces, err := readVersionFiles(region, cf.Name(), path+"/"+cf.Name())
+		if errors.Is(err, unix.ENOTDIR) {
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}

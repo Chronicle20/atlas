@@ -63,9 +63,9 @@ func handleCreateItem(d *rest.HandlerDependency, c *rest.HandlerContext, model i
 }
 
 func registerGetInventoryForCharacterByType(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
-	return rest.RetrieveSpan(handlerGetInventoryForCharacterByType, func(span opentracing.Span) http.HandlerFunc {
-		fl := l.WithFields(logrus.Fields{"originator": handlerGetInventoryForCharacterByType, "type": "rest_handler"})
-		return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
+	return rest.RetrieveSpan(l, handlerGetInventoryForCharacterByType, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
+		fl := sl.WithFields(logrus.Fields{"originator": handlerGetInventoryForCharacterByType, "type": "rest_handler"})
+		return rest.ParseTenant(fl, func(tenant tenant.Model) http.HandlerFunc {
 			return rest.ParseCharacterId(fl, func(characterId uint32) http.HandlerFunc {
 				return handleGetInventoryForCharacterByType(fl, db)(span)(tenant)(characterId)
 			})
@@ -74,9 +74,9 @@ func registerGetInventoryForCharacterByType(l logrus.FieldLogger, db *gorm.DB) h
 }
 
 func registerGetItemsForCharacterByType(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
-	return rest.RetrieveSpan(handlerGetItemsForCharacterByType, func(span opentracing.Span) http.HandlerFunc {
-		fl := l.WithFields(logrus.Fields{"originator": handlerGetItemsForCharacterByType, "type": "rest_handler"})
-		return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
+	return rest.RetrieveSpan(l, handlerGetItemsForCharacterByType, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
+		fl := sl.WithFields(logrus.Fields{"originator": handlerGetItemsForCharacterByType, "type": "rest_handler"})
+		return rest.ParseTenant(fl, func(tenant tenant.Model) http.HandlerFunc {
 			return rest.ParseCharacterId(fl, func(characterId uint32) http.HandlerFunc {
 				return handleGetItemsForCharacterByType(fl, db)(span)(tenant)(characterId)
 			})
@@ -85,9 +85,9 @@ func registerGetItemsForCharacterByType(l logrus.FieldLogger, db *gorm.DB) http.
 }
 
 func registerGetItemForCharacterByType(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
-	return rest.RetrieveSpan(handlerRequestGetItemForCharacterByType, func(span opentracing.Span) http.HandlerFunc {
-		fl := l.WithFields(logrus.Fields{"originator": handlerRequestGetItemForCharacterByType, "type": "rest_handler"})
-		return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
+	return rest.RetrieveSpan(l, handlerRequestGetItemForCharacterByType, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
+		fl := sl.WithFields(logrus.Fields{"originator": handlerRequestGetItemForCharacterByType, "type": "rest_handler"})
+		return rest.ParseTenant(fl, func(tenant tenant.Model) http.HandlerFunc {
 			return rest.ParseCharacterId(fl, func(characterId uint32) http.HandlerFunc {
 				return handleGetItemForCharacterByType(fl, db)(span)(tenant)(characterId)
 			})
@@ -96,11 +96,11 @@ func registerGetItemForCharacterByType(l logrus.FieldLogger, db *gorm.DB) http.H
 }
 
 func registerGetItemsForCharacter(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
-	return rest.RetrieveSpan(handlerGetItemsForCharacter, func(span opentracing.Span) http.HandlerFunc {
-		fl := l.WithFields(logrus.Fields{"originator": handlerGetItemsForCharacter, "type": "rest_handler"})
-		return rest.ParseTenant(l, func(tenant tenant.Model) http.HandlerFunc {
+	return rest.RetrieveSpan(l, handlerGetItemsForCharacter, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
+		fl := sl.WithFields(logrus.Fields{"originator": handlerGetItemsForCharacter, "type": "rest_handler"})
+		return rest.ParseTenant(fl, func(tenant tenant.Model) http.HandlerFunc {
 			return rest.ParseCharacterId(fl, func(characterId uint32) http.HandlerFunc {
-				return handleGetItemsForCharacter(l, db)(span)(tenant)(characterId)
+				return handleGetItemsForCharacter(fl, db)(span)(tenant)(characterId)
 			})
 		})
 	})

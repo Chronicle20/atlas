@@ -36,7 +36,7 @@ func get[A any](l logrus.FieldLogger) func(url string, resp *A, configurators ..
 		}
 		err := retry.Try(get, c.retries)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to successfully call GET on %s.", url)
+			l.WithError(err).Errorf("Unable to successfully call %s on %s.", http.MethodGet, url)
 			return err
 		}
 		err = processResponse(r, resp)

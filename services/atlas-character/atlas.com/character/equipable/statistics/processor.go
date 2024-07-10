@@ -31,6 +31,12 @@ func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) f
 	}
 }
 
+func Delete(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(equipmentId uint32) error {
+	return func(equipmentId uint32) error {
+		return deleteById(l, span, tenant)(equipmentId)(l)
+	}
+}
+
 func makeEquipment(resp RestModel) (Model, error) {
 	return Model{
 		id:            resp.Id,

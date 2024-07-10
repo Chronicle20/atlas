@@ -5,7 +5,7 @@ go 1.21.6
 require (
 	github.com/Chronicle20/atlas-kafka v0.0.0-20240627140949-91f3b00e0da4
 	github.com/Chronicle20/atlas-model v0.0.0-20240707172702-3d0c637b3cb5
-	github.com/Chronicle20/atlas-rest v0.0.0-20240629173858-9967596e5b47
+	github.com/Chronicle20/atlas-rest v0.0.0-20240710131422-4ef4a4c3d73c
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6

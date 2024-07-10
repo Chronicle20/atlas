@@ -2,6 +2,7 @@ package item
 
 import (
 	"atlas-character/tenant"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -26,6 +27,10 @@ func createItem(db *gorm.DB, t tenant.Model, inventoryId uint32, itemId uint32, 
 		return nil
 	})
 	return im, txError
+}
+
+func deleteBySlot(db *gorm.DB, tenantId uuid.UUID, inventoryId uint32, slot int16) error {
+	return db.Where(&entity{TenantId: tenantId, InventoryId: inventoryId, Slot: slot}).Delete(&entity{}).Error
 }
 
 //func createEquipment(db *gorm.DB, inventoryId uint32, itemId uint32, slot int16, equipmentId uint32) (EquipmentModel, error) {

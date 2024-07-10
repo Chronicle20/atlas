@@ -40,3 +40,10 @@ func MakePostRequest[A any](l logrus.FieldLogger, span opentracing.Span, tenant 
 		return requests.MakePostRequest[A](url, i, hd)
 	}
 }
+
+func MakeDeleteRequest(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(url string) requests.DeleteRequest {
+	hd := requests.SetHeaderDecorator(headerDecorator(l, span, tenant))
+	return func(url string) requests.DeleteRequest {
+		return requests.MakeDeleteRequest(url, hd)
+	}
+}

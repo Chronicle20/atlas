@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-character/database"
 	"atlas-character/equipable"
+	"atlas-character/equipment"
 	"atlas-character/inventory"
 	"atlas-character/tenant"
 	"errors"
@@ -144,5 +145,58 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 			emitCreatedEvent(l, span, tenant)(res.Id(), res.WorldId(), res.Name())
 		}
 		return res, err
+	}
+}
+
+func Delete(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32) error {
+	return func(characterId uint32) error {
+		err := db.Transaction(func(tx *gorm.DB) error {
+			c, err := GetById(l, tx, tenant)(characterId, InventoryModelDecorator(l, tx, span, tenant))
+			if err != nil {
+				return err
+			}
+
+			// delete equipment.
+			err = equipment.Delete(l, tx, span, tenant)(c.equipment)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to delete equipment for character with id [%d].", characterId)
+				return err
+			}
+
+			// delete inventories.
+			err = inventory.DeleteEquipableInventory(l, tx, span, tenant)(c.inventory.Equipable())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
+				return err
+			}
+			err = inventory.DeleteItemInventory(l, tx, span, tenant)(c.inventory.Useable())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
+				return err
+			}
+			err = inventory.DeleteItemInventory(l, tx, span, tenant)(c.inventory.Setup())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
+				return err
+			}
+			err = inventory.DeleteItemInventory(l, tx, span, tenant)(c.inventory.Etc())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
+				return err
+			}
+			err = inventory.DeleteItemInventory(l, tx, span, tenant)(c.inventory.Cash())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
+				return err
+			}
+
+			err = delete(tx, tenant.Id, characterId)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
+		return err
 	}
 }

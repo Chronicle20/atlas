@@ -19,3 +19,7 @@ func create(db *gorm.DB, tenantId uuid.UUID, characterId uint32, inventoryType i
 	}
 	return makeInventory(*e)
 }
+
+func delete(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
+	return db.Where(&entity{TenantId: tenantId, ID: id}).Delete(&entity{}).Error
+}

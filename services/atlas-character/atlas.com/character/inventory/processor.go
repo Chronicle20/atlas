@@ -1,7 +1,6 @@
 package inventory
 
 import (
-	"atlas-character/database"
 	"atlas-character/equipable"
 	"atlas-character/equipment/slot/information"
 	"atlas-character/inventory/item"
@@ -88,34 +87,6 @@ func GetInventory(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(c
 		//}
 		//return nil, errors.New("invalid inventory type")
 		return Model{}, nil
-	}
-}
-
-func GetInventoryByTypeVal(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(characterId uint32, inventoryType Type, filters ...ItemFilter) (Model, error) {
-	return func(characterId uint32, inventoryType Type, filters ...ItemFilter) (Model, error) {
-		inv, err := database.ModelProvider[Model, entity](db)(get(tenant.Id, characterId, inventoryType), makeInventory)()
-		if err != nil {
-			return Model{}, err
-		}
-
-		//items, err := item.GetByInventory(l, db, tenant)(inv.Id())
-		//if err != nil {
-		//	return Model{}, err
-		//}
-		//for _, i := range items {
-		//	ok := true
-		//	for _, filter := range filters {
-		//		if !filter(i) {
-		//			ok = false
-		//			break
-		//		}
-		//	}
-		//	if ok {
-		//		//inv = inv.AddItem(i)
-		//	}
-		//}
-
-		return inv, nil
 	}
 }
 
@@ -422,5 +393,36 @@ func UnequipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing
 		}
 		//emitItemUnequipped(l, span)(characterId)
 		//emitInventoryModificationEvent(l, span)(characterId, true, 2, itemId, TypeValueEquip, 1, newSlot, oldSlot)
+	}
+}
+
+func DeleteEquipableInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(m EquipableModel) error {
+	return func(m EquipableModel) error {
+		return db.Transaction(func(tx *gorm.DB) error {
+			for _, e := range m.Items() {
+				err := equipable.DeleteByReferenceId(l, db, span, tenant)(e.ReferenceId())
+				if err != nil {
+					l.WithError(err).Errorf("Unable to delete equipable in inventory [%d] slot [%d].", m.Id(), e.Slot())
+					return err
+				}
+			}
+			return delete(tx, tenant.Id, m.Id())
+		})
+	}
+}
+
+func DeleteItemInventory(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, tenant tenant.Model) func(m ItemModel) error {
+	return func(m ItemModel) error {
+		return db.Transaction(func(tx *gorm.DB) error {
+			for _, i := range m.Items() {
+				err := item.DeleteBySlot(l, tx, tenant)(m.Id(), i.Slot())
+				if err != nil {
+					l.WithError(err).Errorf("Unable to delete item in inventory [%d] slot [%d].", m.Id(), i.Slot())
+					return err
+				}
+
+			}
+			return delete(tx, tenant.Id, m.Id())
+		})
 	}
 }

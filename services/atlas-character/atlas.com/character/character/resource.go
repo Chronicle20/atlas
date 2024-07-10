@@ -18,6 +18,7 @@ const (
 	GetCharactersByMap             = "get_characters_by_map"
 	GetCharactersByName            = "get_characters_by_name"
 	GetCharacter                   = "get_character"
+	DeleteCharacter                = "delete_character"
 	CreateCharacter                = "create_character"
 )
 
@@ -31,6 +32,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("", registerGet(GetCharactersByName, handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}")
 			r.HandleFunc("", rest.RegisterCreateHandler[RestModel](l)(db)(si)(CreateCharacter, handleCreateCharacter)).Methods(http.MethodPost)
 			r.HandleFunc("/{characterId}", registerGet(GetCharacter, handleGetCharacter)).Methods(http.MethodGet)
+			r.HandleFunc("/{characterId}", rest.RegisterHandler(l)(db)(si)(DeleteCharacter, handleDeleteCharacter)).Methods(http.MethodDelete)
 		}
 	}
 }
@@ -184,4 +186,17 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 
 		server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
 	}
+}
+
+func handleDeleteCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			err := Delete(d.Logger(), d.DB(), d.Span(), c.Tenant())(characterId)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		}
+	})
 }

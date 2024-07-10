@@ -41,3 +41,7 @@ func makeModel(e entity) (Model, error) {
 func updateSlot(db *gorm.DB, tenantId uuid.UUID, id uint32, slot int16) error {
 	return db.Model(&entity{TenantId: tenantId, ID: id}).Select("Slot").Updates(&entity{Slot: slot}).Error
 }
+
+func delete(db *gorm.DB, tenantId uuid.UUID, referenceId uint32) error {
+	return db.Where(&entity{TenantId: tenantId, ReferenceId: referenceId}).Delete(&entity{}).Error
+}

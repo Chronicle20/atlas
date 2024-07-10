@@ -33,3 +33,9 @@ func requestById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+equipResource, equipmentId))
 	}
 }
+
+func deleteById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(equipmentId uint32) requests.DeleteRequest {
+	return func(equipmentId uint32) requests.DeleteRequest {
+		return rest.MakeDeleteRequest(l, span, tenant)(fmt.Sprintf(getBaseRequest()+equipResource, equipmentId))
+	}
+}

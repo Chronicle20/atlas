@@ -3,6 +3,7 @@ package consumer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/retry"
 	"github.com/google/uuid"
@@ -147,18 +148,19 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 
 					spanContext, _ := opentracing.GlobalTracer().Extract(opentracing.TextMap, opentracing.TextMapCarrier(headers))
 					span := opentracing.StartSpan(c.name, opentracing.FollowsFrom(spanContext))
+					sl := l.WithField("span", fmt.Sprintf("%v", span))
 					defer span.Finish()
 
 					c.mu.Lock()
 					var nhs = make(map[string]handler.Handler)
 					for id, h := range c.handlers {
 						var cont bool
-						cont, err = h(l, span, msg)
+						cont, err = h(sl, span, msg)
 						if cont {
 							nhs[id] = h
 						}
 						if err != nil {
-							l.WithError(err).Errorf("Handler [%s] failed.", id)
+							sl.WithError(err).Errorf("Handler [%s] failed.", id)
 						}
 					}
 					c.handlers = nhs

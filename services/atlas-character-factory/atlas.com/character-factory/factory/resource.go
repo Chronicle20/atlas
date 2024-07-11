@@ -39,5 +39,6 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 		}
 
 		server.Marshal[character.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+		w.WriteHeader(http.StatusCreated)
 	}
 }

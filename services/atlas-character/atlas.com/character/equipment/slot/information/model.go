@@ -10,3 +10,7 @@ type Model struct {
 func (m Model) Slot() int16 {
 	return m.slot
 }
+
+func (m Model) Name() string {
+	return m.name
+}

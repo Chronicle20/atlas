@@ -85,7 +85,6 @@ func handleCreateEquipment(d *rest.HandlerDependency, c *rest.HandlerContext, in
 		}
 
 		server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
-		w.WriteHeader(http.StatusCreated)
 	}
 }
 
@@ -106,7 +105,6 @@ func handleGetEquipment(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 			}
 
 			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
-			w.WriteHeader(http.StatusCreated)
 		}
 	})
 }

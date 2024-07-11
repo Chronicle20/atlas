@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"atlas-character/equipable"
+	slot2 "atlas-character/equipment/slot"
 	"atlas-character/equipment/slot/information"
 	"atlas-character/inventory/item"
 	"atlas-character/slottable"
@@ -303,22 +304,22 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 				l.Errorf("Unable to retrieve destination slots for item [%d].", e.ItemId())
 				return err
 			}
-			slot := slots[0]
-			l.Debugf("Equipment [%d] to be equipped in slot [%d] for character [%d].", e.Id(), slot.Slot(), characterId)
+			sh := slots[0]
+			l.Debugf("Equipment [%d] to be equipped in slot [%d] for character [%d].", e.Id(), sh.Slot(), characterId)
 
 			temporarySlot := int16(math.MinInt16)
 
 			existingSlot := e.Slot()
-			if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, slot.Slot()); err == nil && equip.Id() != 0 {
-				l.Debugf("Equipment [%d] already exists in slot [%d], that item will be moved temporarily to [%d] for character [%d].", equip.Id(), slot.Slot(), temporarySlot, characterId)
+			if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, sh.Slot()); err == nil && equip.Id() != 0 {
+				l.Debugf("Equipment [%d] already exists in slot [%d], that item will be moved temporarily to [%d] for character [%d].", equip.Id(), sh.Slot(), temporarySlot, characterId)
 				_ = equipable.UpdateSlot(l, tx, tenant)(equip.Id(), temporarySlot)
 			}
 
-			err = equipable.UpdateSlot(l, tx, tenant)(e.Id(), slot.Slot())
+			err = equipable.UpdateSlot(l, tx, tenant)(e.Id(), sh.Slot())
 			if err != nil {
 				return err
 			}
-			l.Debugf("Moved item [%d] from slot [%d] to [%d] for character [%d].", e.ItemId(), existingSlot, slot.Slot(), characterId)
+			l.Debugf("Moved item [%d] from slot [%d] to [%d] for character [%d].", e.ItemId(), existingSlot, sh.Slot(), characterId)
 
 			if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, temporarySlot); err == nil && equip.Id() != 0 {
 				err := equipable.UpdateSlot(l, tx, tenant)(equip.Id(), existingSlot)
@@ -326,6 +327,56 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 					return err
 				}
 				l.Debugf("Moved item from temporary location [%d] to slot [%d] for character [%d].", temporarySlot, existingSlot, characterId)
+				emitItemUnequipped(l, span, tenant)(characterId, equip.ItemId())
+			}
+
+			l.Debugf("Now verifying other inventory operations that may be necessary.")
+			ci, err := GetInventories(l, tx, span, tenant)(characterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to locate inventories for character [%d].", characterId)
+				return err
+			}
+			inv, err := ci.GetHolderByType(TypeValueEquip)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", TypeValueEquip, characterId)
+				return err
+			}
+
+			if e.ItemId()/10000 == 105 {
+				l.Debugf("Item is an overall, we also need to unequip the bottom.")
+				if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, int16(slot2.PositionBottom)); err == nil && equip.Id() != 0 {
+					newSlot, err := equipable.GetNextFreeSlot(l, tx, span, tenant)(inv.Id())()
+					if err != nil {
+						l.WithError(err).Errorf("Unable to get next free equipment slot")
+						return err
+					}
+
+					err = equipable.UpdateSlot(l, tx, tenant)(equip.Id(), newSlot)
+					if err != nil {
+						return err
+					}
+					l.Debugf("Moved bottom to slot [%d] for character [%d].", newSlot, characterId)
+					emitItemUnequipped(l, span, tenant)(characterId, equip.ItemId())
+				} else {
+					l.Debugf("No bottom to unequip.")
+				}
+			}
+			if destination == int16(slot2.PositionBottom) {
+				l.Debugf("Item is a bottom, need to unequip an overall if its in the top slot.")
+				if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, int16(slot2.PositionBottom)); err == nil && equip.Id() != 0 && equip.ItemId()/10000 == 105 {
+					newSlot, err := equipable.GetNextFreeSlot(l, tx, span, tenant)(inv.Id())()
+					if err != nil {
+						l.WithError(err).Errorf("Unable to get next free equipment slot")
+						return err
+					}
+
+					err = equipable.UpdateSlot(l, tx, tenant)(equip.Id(), newSlot)
+					if err != nil {
+						return err
+					}
+					l.Debugf("Moved overall to slot [%d] for character [%d].", newSlot, characterId)
+					emitItemUnequipped(l, span, tenant)(characterId, equip.ItemId())
+				}
 			}
 			return nil
 		})
@@ -377,7 +428,7 @@ func UnequipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing
 				return err
 			}
 
-			l.Debugf("Unequipped %d for character %d and place it in slot [%d], from [%d].", e.Id(), characterId, newSlot, oldSlot)
+			l.Debugf("Unequipped [%d] for character [%d] and place it in slot [%d], from [%d].", e.Id(), characterId, newSlot, oldSlot)
 			return nil
 		})
 		if txErr != nil {

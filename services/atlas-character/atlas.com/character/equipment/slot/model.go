@@ -16,6 +16,7 @@ const (
 	PositionEarring  Position = -4
 	PositionShoulder Position = 99
 	PositionCape     Position = -9
+	PositionOverall  Position = -5
 	PositionTop      Position = -5
 	PositionPendant  Position = -17
 	PositionWeapon   Position = -11

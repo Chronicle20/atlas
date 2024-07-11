@@ -1,6 +1,9 @@
 package slot
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 const (
 	TypeHat      = "hat"
@@ -22,10 +25,11 @@ const (
 	TypeRing3    = "ring3"
 	TypeRing4    = "ring4"
 	TypeShoes    = "shoes"
+	TypeOverall  = "overall"
 )
 
 func PositionFromType(slotType string) (Position, error) {
-	switch slotType {
+	switch strings.ToLower(slotType) {
 	case TypeHat:
 		return PositionHat, nil
 	case TypeMedal:
@@ -44,6 +48,8 @@ func PositionFromType(slotType string) (Position, error) {
 		return PositionShoulder, nil
 	case TypeCape:
 		return PositionCape, nil
+	case TypeOverall:
+		return PositionOverall, nil
 	case TypeTop:
 		return PositionTop, nil
 	case TypePendant:

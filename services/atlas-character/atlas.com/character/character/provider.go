@@ -15,7 +15,8 @@ func getById(tenantId uuid.UUID, characterId uint32) database.EntityProvider[ent
 
 func getForAccountInWorld(tenantId uuid.UUID, accountId uint32, worldId byte) database.EntitySliceProvider[entity] {
 	return func(db *gorm.DB) model.SliceProvider[entity] {
-		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, AccountId: accountId, World: worldId})
+		where := map[string]interface{}{"tenant_id": tenantId, "account_id": accountId, "world": worldId}
+		return database.SliceQuery[entity](db, where)
 	}
 }
 

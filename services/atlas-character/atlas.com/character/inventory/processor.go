@@ -25,10 +25,10 @@ func byCharacterIdProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 func supplier() (Model, error) {
 	return Model{
 		equipable: EquipableModel{},
-		useable:   ItemModel{},
-		setup:     ItemModel{},
-		etc:       ItemModel{},
-		cash:      ItemModel{},
+		useable:   ItemModel{mType: TypeValueUse},
+		setup:     ItemModel{mType: TypeValueSetup},
+		etc:       ItemModel{mType: TypeValueETC},
+		cash:      ItemModel{mType: TypeValueCash},
 	}, nil
 }
 
@@ -59,16 +59,16 @@ func foldInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, ten
 			return model.Map(model.Fold(ep, NewEquipableModel(ent.ID, ent.Capacity), EquipableFolder), foldProperty(ref.SetEquipable))()
 		case TypeValueUse:
 			ip := item.ByInventoryProvider(l, db, tenant)(ent.ID)
-			return model.Map(model.Fold(ip, NewItemModel(ent.ID, ent.Capacity), ItemFolder), foldProperty(ref.SetUseable))()
+			return model.Map(model.Fold(ip, NewItemModel(ent.ID, TypeValueUse, ent.Capacity), ItemFolder), foldProperty(ref.SetUseable))()
 		case TypeValueSetup:
 			ip := item.ByInventoryProvider(l, db, tenant)(ent.ID)
-			return model.Map(model.Fold(ip, NewItemModel(ent.ID, ent.Capacity), ItemFolder), foldProperty(ref.SetSetup))()
+			return model.Map(model.Fold(ip, NewItemModel(ent.ID, TypeValueSetup, ent.Capacity), ItemFolder), foldProperty(ref.SetSetup))()
 		case TypeValueETC:
 			ip := item.ByInventoryProvider(l, db, tenant)(ent.ID)
-			return model.Map(model.Fold(ip, NewItemModel(ent.ID, ent.Capacity), ItemFolder), foldProperty(ref.SetEtc))()
+			return model.Map(model.Fold(ip, NewItemModel(ent.ID, TypeValueETC, ent.Capacity), ItemFolder), foldProperty(ref.SetEtc))()
 		case TypeValueCash:
 			ip := item.ByInventoryProvider(l, db, tenant)(ent.ID)
-			return model.Map(model.Fold(ip, NewItemModel(ent.ID, ent.Capacity), ItemFolder), foldProperty(ref.SetCash))()
+			return model.Map(model.Fold(ip, NewItemModel(ent.ID, TypeValueCash, ent.Capacity), ItemFolder), foldProperty(ref.SetCash))()
 		}
 		return ref, errors.New("unknown inventory type")
 	}
@@ -185,6 +185,9 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 		}
 
 		l.Debugf("Creating [%d] item [%d] for character [%d] in inventory [%d].", quantity, itemId, characterId, inventoryType)
+		invLock := GetLockRegistry().GetById(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
 
 		var events = make([]adjustment, 0)
 		err := db.Transaction(func(tx *gorm.DB) error {
@@ -309,8 +312,12 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 		var err error
 
 		l.Debugf("Received request to equip item at [%d] for character [%d]. Ideally placing in [%d]", source, characterId, destination)
+		invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
+		invLock.Lock()
+		defer invLock.Unlock()
+
 		err = db.Transaction(func(tx *gorm.DB) error {
-			e, err = equipable.GetBySlot(l, db, tenant)(characterId, source)
+			e, err = equipable.GetBySlot(l, tx, tenant)(characterId, source)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve equipment in slot [%d].", source)
 				return err
@@ -368,6 +375,10 @@ func UnequipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing
 		var err error
 
 		l.Debugf("Received request to unequip item at [%d] for character [%d].", oldSlot, characterId)
+		invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
+		invLock.Lock()
+		defer invLock.Unlock()
+
 		txErr := db.Transaction(func(tx *gorm.DB) error {
 			e, err = equipable.GetBySlot(l, tx, tenant)(characterId, oldSlot)
 			if err != nil {
@@ -408,8 +419,12 @@ func UnequipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing
 	}
 }
 
-func DeleteEquipableInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(m EquipableModel) error {
-	return func(m EquipableModel) error {
+func DeleteEquipableInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, m EquipableModel) error {
+	return func(characterId uint32, m EquipableModel) error {
+		invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
+		invLock.Lock()
+		defer invLock.Unlock()
+
 		return db.Transaction(func(tx *gorm.DB) error {
 			for _, e := range m.Items() {
 				err := equipable.DeleteByReferenceId(l, db, span, tenant)(e.ReferenceId())
@@ -423,8 +438,12 @@ func DeleteEquipableInventory(l logrus.FieldLogger, db *gorm.DB, span opentracin
 	}
 }
 
-func DeleteItemInventory(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, tenant tenant.Model) func(m ItemModel) error {
-	return func(m ItemModel) error {
+func DeleteItemInventory(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, tenant tenant.Model) func(characterId uint32, m ItemModel) error {
+	return func(characterId uint32, m ItemModel) error {
+		invLock := GetLockRegistry().GetById(characterId, m.Type())
+		invLock.Lock()
+		defer invLock.Unlock()
+
 		return db.Transaction(func(tx *gorm.DB) error {
 			for _, i := range m.Items() {
 				err := item.DeleteBySlot(l, tx, tenant)(m.Id(), i.Slot())

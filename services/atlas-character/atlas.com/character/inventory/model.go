@@ -80,10 +80,10 @@ func (m Model) SetCash(um ItemModel) Model {
 func NewModel(defaultCapacity uint32) Model {
 	return Model{
 		equipable: EquipableModel{capacity: defaultCapacity},
-		useable:   ItemModel{capacity: defaultCapacity},
-		setup:     ItemModel{capacity: defaultCapacity},
-		etc:       ItemModel{capacity: defaultCapacity},
-		cash:      ItemModel{capacity: defaultCapacity},
+		useable:   ItemModel{mType: TypeValueUse, capacity: defaultCapacity},
+		setup:     ItemModel{mType: TypeValueSetup, capacity: defaultCapacity},
+		etc:       ItemModel{mType: TypeValueETC, capacity: defaultCapacity},
+		cash:      ItemModel{mType: TypeValueCash, capacity: defaultCapacity},
 	}
 }
 
@@ -128,13 +128,14 @@ func (m EquipableModel) SetItems(items []equipable.Model) ItemHolder {
 
 type ItemModel struct {
 	id       uint32
+	mType    Type
 	capacity uint32
 	items    []item.Model
 }
 
-func NewItemModel(id uint32, capacity uint32) model.Provider[ItemModel] {
+func NewItemModel(id uint32, mType Type, capacity uint32) model.Provider[ItemModel] {
 	return func() (ItemModel, error) {
-		return ItemModel{id: id, capacity: capacity}, nil
+		return ItemModel{id: id, mType: mType, capacity: capacity}, nil
 	}
 }
 
@@ -145,6 +146,10 @@ func (m ItemModel) Id() uint32 {
 func (m ItemModel) SetId(id uint32) ItemHolder {
 	m.id = id
 	return m
+}
+
+func (m ItemModel) Type() Type {
+	return m.mType
 }
 
 func (m ItemModel) Capacity() uint32 {

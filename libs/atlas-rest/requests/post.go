@@ -49,14 +49,14 @@ func post[A any](l logrus.FieldLogger) func(url string, input interface{}, confi
 			return result, err
 		}
 
-		if r.ContentLength > 0 {
+		if r.ContentLength == 0 {
+			l.WithFields(logrus.Fields{"method": http.MethodPost, "status": r.Status, "path": url, "input": input, "response": ""}).Debugf("Printing request.")
+		} else {
 			result, err = processResponse[A](r)
 			if err != nil {
 				return result, err
 			}
 			l.WithFields(logrus.Fields{"method": http.MethodPost, "status": r.Status, "path": url, "input": input, "response": result}).Debugf("Printing request.")
-		} else {
-			l.WithFields(logrus.Fields{"method": http.MethodPost, "status": r.Status, "path": url, "input": input, "response": ""}).Debugf("Printing request.")
 		}
 
 		return result, nil

@@ -20,7 +20,7 @@ const (
 	TypeWeapon   = "weapon"
 	TypeShield   = "shield"
 	TypeGloves   = "gloves"
-	TypeBottom   = "bottom"
+	TypeBottom   = "pants"
 	TypeBelt     = "belt"
 	TypeRing3    = "ring3"
 	TypeRing4    = "ring4"

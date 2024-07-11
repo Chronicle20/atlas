@@ -59,6 +59,7 @@ func main() {
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, ctx, wg)(character.CreatedConsumer(l)(consumerGroupId))
 	cm.AddConsumer(l, ctx, wg)(character.ItemGainedConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, ctx, wg)(character.EquipChangedConsumer(l)(consumerGroupId))
 
 	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), factory.InitResource(GetServer()))
 

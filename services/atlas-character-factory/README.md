@@ -10,7 +10,12 @@ A RESTful resource which provides character-factory services.
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
 - CONFIG_FILE - 
-- CHARACTER_SERVICE_URL - 
+- BOOTSTRAP_SERVERS - 
+- EVENT_TOPIC_CHARACTER_CREATED - 
+- EVENT_TOPIC_ITEM_GAIN - 
+- EVENT_TOPIC_EQUIP_CHANGED - 
+- CHARACTER_SERVICE_URL -
+- GAME_DATA_SERVICE_URL - 
 
 ## API
 

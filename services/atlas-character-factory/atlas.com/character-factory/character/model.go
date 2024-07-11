@@ -41,3 +41,8 @@ type Model struct {
 func (m Model) Id() uint32 {
 	return m.id
 }
+
+type ItemGained struct {
+	ItemId uint32
+	Slot   int16
+}

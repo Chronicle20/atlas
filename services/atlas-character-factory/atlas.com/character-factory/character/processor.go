@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-character-factory/data"
 	"atlas-character-factory/inventory/item"
 	"atlas-character-factory/job"
 	"atlas-character-factory/tenant"
@@ -54,5 +55,24 @@ func CreateItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model
 			return item.Model{}, err
 		}
 		return item.Extract(rm)
+	}
+}
+
+func EquipItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, itemId uint32, slot int16) error {
+	return func(characterId uint32, itemId uint32, slot int16) error {
+		slots, err := data.GetById(l, span, tenant)(itemId)
+		if err != nil || slots == nil || len(slots) == 0 {
+			return err
+		}
+		// TODO special handling for rings, or legit multiple possible slots.
+		destinationSlot := slots[0]
+
+		e, err := requestEquipableItemBySlot(l, span, tenant)(characterId, slot)(l)
+		if err != nil {
+			return err
+		}
+
+		_, err = requestEquipItem(l, span, tenant)(characterId, destinationSlot.Name(), itemId, e.Slot)(l)
+		return err
 	}
 }

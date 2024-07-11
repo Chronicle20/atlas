@@ -1,19 +1,20 @@
 package character
 
 import (
+	"atlas-character-factory/async"
 	"atlas-character-factory/kafka"
 	"atlas-character-factory/tenant"
+	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/message"
-	"github.com/Chronicle20/atlas-model/model"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
-	"sync"
 )
 
 const (
 	consumerCharacterCreated = "character_created"
 	consumerItemGained       = "character_gained_item"
+	consumerEquipChanged     = "character_equip_changed"
 )
 
 func CreatedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
@@ -34,20 +35,18 @@ func createdValidator(tenant tenant.Model, name string) func(event createdEvent)
 	}
 }
 
-func createdHandler(wg *sync.WaitGroup) func(idOperator model.Operator[uint32]) message.Handler[createdEvent] {
-	return func(idOperator model.Operator[uint32]) message.Handler[createdEvent] {
-		return func(l logrus.FieldLogger, span opentracing.Span, m createdEvent) {
-			_ = idOperator(m.CharacterId)
-			wg.Done()
-		}
+func createdHandler(rchan chan uint32, _ chan error) message.Handler[createdEvent] {
+	return func(l logrus.FieldLogger, span opentracing.Span, m createdEvent) {
+		rchan <- m.CharacterId
 	}
 }
 
-func AwaitCreated(l logrus.FieldLogger, tenant tenant.Model) func(wg *sync.WaitGroup) func(name string, idOperator model.Operator[uint32]) {
+func AwaitCreated(l logrus.FieldLogger, tenant tenant.Model) func(name string) async.Provider[uint32] {
 	t := kafka.LookupTopic(l)(EnvEventTopicCharacterCreated)
-	return func(wg *sync.WaitGroup) func(name string, idOperator model.Operator[uint32]) {
-		return func(name string, idOperator model.Operator[uint32]) {
-			_, _ = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(createdValidator(tenant, name), createdHandler(wg)(idOperator))))
+	return func(name string) async.Provider[uint32] {
+		return func(ctx context.Context, rchan chan uint32, echan chan error) {
+			l.Debugf("Creating OneTime topic consumer to await [%s] character creation.", name)
+			_, _ = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(createdValidator(tenant, name), createdHandler(rchan, echan))))
 		}
 	}
 }
@@ -70,20 +69,53 @@ func itemGainedValidator(tenant tenant.Model, itemId uint32) func(event gainItem
 	}
 }
 
-func itemGainedHandler(wg *sync.WaitGroup) func(itemIdOperator model.Operator[uint32]) message.Handler[gainItemEvent] {
-	return func(itemIdOperator model.Operator[uint32]) message.Handler[gainItemEvent] {
-		return func(l logrus.FieldLogger, span opentracing.Span, m gainItemEvent) {
-			_ = itemIdOperator(m.ItemId)
-			wg.Done()
+func itemGainedHandler(rchan chan ItemGained, _ chan error) message.Handler[gainItemEvent] {
+	return func(l logrus.FieldLogger, span opentracing.Span, m gainItemEvent) {
+		rchan <- ItemGained{ItemId: m.ItemId, Slot: m.Slot}
+	}
+}
+
+func AwaitItemGained(l logrus.FieldLogger, tenant tenant.Model) func(itemId uint32) async.Provider[ItemGained] {
+	t := kafka.LookupTopic(l)(EnvEventTopicItemGain)
+	return func(itemId uint32) async.Provider[ItemGained] {
+		return func(ctx context.Context, rchan chan ItemGained, echan chan error) {
+			_, _ = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(itemGainedValidator(tenant, itemId), itemGainedHandler(rchan, echan))))
 		}
 	}
 }
 
-func AwaitItemGained(l logrus.FieldLogger, tenant tenant.Model) func(wg *sync.WaitGroup) func(itemId uint32, itemIdOperator model.Operator[uint32]) {
-	t := kafka.LookupTopic(l)(EnvEventTopicItemGain)
-	return func(wg *sync.WaitGroup) func(itemId uint32, itemIdOperator model.Operator[uint32]) {
-		return func(itemId uint32, itemIdOperator model.Operator[uint32]) {
-			_, _ = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(itemGainedValidator(tenant, itemId), itemGainedHandler(wg)(itemIdOperator))))
+func EquipChangedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
+	return func(groupId string) consumer.Config {
+		return kafka.NewConfig(l)(consumerEquipChanged)(EnvEventTopicEquipChanged)(groupId)
+	}
+}
+
+func equipChangedValidator(tenant tenant.Model, itemId uint32) func(event equipChangedEvent) bool {
+	return func(event equipChangedEvent) bool {
+		if !tenant.Equals(event.Tenant) {
+			return false
+		}
+		if itemId != event.ItemId {
+			return false
+		}
+		if "EQUIPPED" != event.Change {
+			return false
+		}
+		return true
+	}
+}
+
+func equipChangedHandler(rchan chan uint32, _ chan error) message.Handler[equipChangedEvent] {
+	return func(l logrus.FieldLogger, span opentracing.Span, m equipChangedEvent) {
+		rchan <- m.ItemId
+	}
+}
+
+func AwaitEquipChanged(l logrus.FieldLogger, tenant tenant.Model) func(itemId uint32) async.Provider[uint32] {
+	t := kafka.LookupTopic(l)(EnvEventTopicEquipChanged)
+	return func(itemId uint32) async.Provider[uint32] {
+		return func(ctx context.Context, rchan chan uint32, echan chan error) {
+			_, _ = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(equipChangedValidator(tenant, itemId), equipChangedHandler(rchan, echan))))
 		}
 	}
 }

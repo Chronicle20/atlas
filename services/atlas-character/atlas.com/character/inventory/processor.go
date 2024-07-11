@@ -230,7 +230,6 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 func createEquipable(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32) ([]adjustment, error) {
 	var creator itemCreator = equipable.CreateItem(l, db, span, tenant)
 	return func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32) ([]adjustment, error) {
-		l.Debugf("Creating equipable [%d] for character [%d].", itemId, characterId)
 		event, err := createNewItem(l)(creator, characterId, inventoryId, inventoryType, itemId, 1)
 		if err != nil {
 			return make([]adjustment, 0), nil
@@ -297,6 +296,7 @@ func createNewItem(l logrus.FieldLogger) func(creator itemCreator, characterId u
 			l.WithError(err).Errorf("Unable to create item [%d] for character [%d].", itemId, characterId)
 			return adjustment{}, err
 		}
+		l.Debugf("Item created. Creating inventory [%d] adjustment of [%d] item [%d] in slot [%d].", inventoryType, quantity, itemId, i.Slot())
 		return adjustment{mode: adjustmentModeCreate, itemId: itemId, inventoryType: inventoryType, changedQuantity: quantity, quantity: quantity, slot: i.Slot(), oldSlot: 0}, nil
 	}
 }

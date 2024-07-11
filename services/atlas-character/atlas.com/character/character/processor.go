@@ -164,31 +164,33 @@ func Delete(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 			}
 
 			// delete inventories.
-			err = inventory.DeleteEquipableInventory(l, tx, span, tenant)(c.inventory.Equipable())
+			err = inventory.DeleteEquipableInventory(l, tx, span, tenant)(characterId, c.inventory.Equipable())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
 				return err
 			}
-			err = inventory.DeleteItemInventory(l, tx, span, tenant)(c.inventory.Useable())
+			err = inventory.DeleteItemInventory(l, tx, span, tenant)(characterId, c.inventory.Useable())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
 				return err
 			}
-			err = inventory.DeleteItemInventory(l, tx, span, tenant)(c.inventory.Setup())
+			err = inventory.DeleteItemInventory(l, tx, span, tenant)(characterId, c.inventory.Setup())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
 				return err
 			}
-			err = inventory.DeleteItemInventory(l, tx, span, tenant)(c.inventory.Etc())
+			err = inventory.DeleteItemInventory(l, tx, span, tenant)(characterId, c.inventory.Etc())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
 				return err
 			}
-			err = inventory.DeleteItemInventory(l, tx, span, tenant)(c.inventory.Cash())
+			err = inventory.DeleteItemInventory(l, tx, span, tenant)(characterId, c.inventory.Cash())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
 				return err
 			}
+
+			_ = inventory.GetLockRegistry().DeleteForCharacter(characterId)
 
 			err = delete(tx, tenant.Id, characterId)
 			if err != nil {

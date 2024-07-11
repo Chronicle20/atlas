@@ -80,36 +80,6 @@ func GetInventories(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, te
 	}
 }
 
-func GetInventory(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(characterId uint32, inventoryType string, filters ...ItemFilter) (Model, error) {
-	return func(characterId uint32, inventoryType string, filters ...ItemFilter) (Model, error) {
-		//if it, ok := GetTypeFromName(inventoryType); ok {
-		//	return GetInventoryByTypeVal(l, db, tenant)(characterId, it, filters...)
-		//}
-		//return nil, errors.New("invalid inventory type")
-		return Model{}, nil
-	}
-}
-
-type ItemFilter func(i item.Model) bool
-
-func FilterSlot(slot int16) ItemFilter {
-	return func(i item.Model) bool {
-		return i.Slot() == slot
-	}
-}
-
-func FilterItemId(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, tenant tenant.Model) func(itemId uint32) ItemFilter {
-	return func(itemId uint32) ItemFilter {
-		return func(i item.Model) bool {
-			ii, err := item.GetById(l, db, tenant)(i.Id())
-			if err != nil {
-				return false
-			}
-			return ii.ItemId() == itemId
-		}
-	}
-}
-
 func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, defaultCapacity uint32) (Model, error) {
 	return func(characterId uint32, defaultCapacity uint32) (Model, error) {
 		err := db.Transaction(func(tx *gorm.DB) error {
@@ -223,7 +193,7 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 			return err
 		}
 		for _, event := range events {
-			emitItemGainEvent(l, span, tenant)(characterId, event.ItemId(), event.ChangedQuantity())
+			emitItemGainEvent(l, span, tenant)(characterId, event.ItemId(), event.ChangedQuantity(), event.Slot())
 			//emitInventoryModificationEvent(l, span)(characterId, true, e.Mode(), e.ItemId(), e.InventoryType(), e.Quantity(), e.Slot(), e.OldSlot())
 		}
 		return err
@@ -265,7 +235,7 @@ func createItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 						changedQuantity := newQuantity - oldQuantity
 						runningQuantity = runningQuantity - changedQuantity
 						l.Debugf("Adding [%d] item [%d] in slot [%d] to make a new quantity of [%d] for character [%d].", changedQuantity, i.ItemId(), i.Slot(), newQuantity, characterId)
-						err := item.UpdateQuantity(l, db, tenant)(i.Id(), newQuantity)
+						err = item.UpdateQuantity(l, db, tenant)(i.Id(), newQuantity)
 						if err != nil {
 							l.WithError(err).Errorf("Updating the quantity of item [%d] to value [%d].", i.Id(), newQuantity)
 						} else {

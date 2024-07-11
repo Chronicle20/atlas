@@ -193,7 +193,7 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 			return err
 		}
 		for _, event := range events {
-			emitItemGainEvent(l, span, tenant)(characterId, event.ItemId(), event.ChangedQuantity())
+			emitItemGainEvent(l, span, tenant)(characterId, event.ItemId(), event.ChangedQuantity(), event.Slot())
 			//emitInventoryModificationEvent(l, span)(characterId, true, e.Mode(), e.ItemId(), e.InventoryType(), e.Quantity(), e.Slot(), e.OldSlot())
 		}
 		return err

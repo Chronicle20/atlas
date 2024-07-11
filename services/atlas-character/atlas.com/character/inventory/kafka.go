@@ -29,6 +29,7 @@ type gainItemEvent struct {
 	CharacterId uint32       `json:"characterId"`
 	ItemId      uint32       `json:"itemId"`
 	Quantity    uint32       `json:"quantity"`
+	Slot        int16        `json:"slot"`
 }
 
 type equipChangedEvent struct {

@@ -78,6 +78,7 @@ func main() {
 	handlerMap[handler.ServerStatusHandle] = handler.ServerStatusHandleFunc
 	handlerMap[handler.CharacterListWorldHandle] = handler.CharacterListWorldHandleFunc
 	handlerMap[handler.CharacterCheckNameHandle] = handler.CharacterCheckNameHandleFunc
+	handlerMap[handler.CreateCharacterHandle] = handler.CreateCharacterHandleFunc
 
 	writerMap := make(map[string]writer.HeaderFunc)
 	writerMap[writer.LoginAuth] = writer.MessageGetter
@@ -92,6 +93,7 @@ func main() {
 	writerMap[writer.ServerStatus] = writer.MessageGetter
 	writerMap[writer.CharacterList] = writer.MessageGetter
 	writerMap[writer.CharacterNameResponse] = writer.MessageGetter
+	writerMap[writer.AddCharacterEntry] = writer.MessageGetter
 
 	for _, s := range config.Data.Attributes.Servers {
 		wp := getWriterProducer(l)(s.Writers, writerMap)

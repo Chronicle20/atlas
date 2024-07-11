@@ -63,8 +63,8 @@ func ParseInput[M any](d *HandlerDependency, c *HandlerContext, next CreateHandl
 func RegisterHandler(l logrus.FieldLogger) func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
 	return func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
 		return func(handlerName string, handler GetHandler) http.HandlerFunc {
-			return RetrieveSpan(handlerName, func(span opentracing.Span) http.HandlerFunc {
-				fl := l.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
+			return RetrieveSpan(l, handlerName, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
+				fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
 				return ParseTenant(fl, func(tenant tenant.Model) http.HandlerFunc {
 					return handler(&HandlerDependency{l: fl, span: span}, &HandlerContext{si: si, t: tenant})
 				})
@@ -76,8 +76,8 @@ func RegisterHandler(l logrus.FieldLogger) func(si jsonapi.ServerInformation) fu
 func RegisterCreateHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInformation) func(handlerName string, handler CreateHandler[M]) http.HandlerFunc {
 	return func(si jsonapi.ServerInformation) func(handlerName string, handler CreateHandler[M]) http.HandlerFunc {
 		return func(handlerName string, handler CreateHandler[M]) http.HandlerFunc {
-			return RetrieveSpan(handlerName, func(span opentracing.Span) http.HandlerFunc {
-				fl := l.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
+			return RetrieveSpan(l, handlerName, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
+				fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
 				return ParseTenant(fl, func(tenant tenant.Model) http.HandlerFunc {
 					d := &HandlerDependency{l: fl, span: span}
 					c := &HandlerContext{si: si, t: tenant}

@@ -3,9 +3,9 @@ module atlas-character-factory
 go 1.21.6
 
 require (
-	github.com/Chronicle20/atlas-kafka v0.0.0-20240709191654-7c3c45514860
+	github.com/Chronicle20/atlas-kafka v0.0.0-20240710214617-8a7aed20c81d
 	github.com/Chronicle20/atlas-model v0.0.0-20240707172702-3d0c637b3cb5
-	github.com/Chronicle20/atlas-rest v0.0.0-20240710145134-73675d0bdadd
+	github.com/Chronicle20/atlas-rest v0.0.0-20240711014049-9d9e1bb1dd7c
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6

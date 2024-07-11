@@ -33,22 +33,6 @@ func deleteBySlot(db *gorm.DB, tenantId uuid.UUID, inventoryId uint32, slot int1
 	return db.Where(&entity{TenantId: tenantId, InventoryId: inventoryId, Slot: slot}).Delete(&entity{}).Error
 }
 
-//func createEquipment(db *gorm.DB, inventoryId uint32, itemId uint32, slot int16, equipmentId uint32) (EquipmentModel, error) {
-//	e := &entityInventoryItem{
-//		InventoryId: inventoryId,
-//		ItemId:      itemId,
-//		Slot:        slot,
-//		Type:        TypeEquipment,
-//		ReferenceId: equipmentId,
-//	}
-//
-//	err := db.Create(e).Error
-//	if err != nil {
-//		return EquipmentModel{}, err
-//	}
-//	return makeEquipment(*e)
-//}
-
 func makeModel(e entity) (Model, error) {
 	return Model{
 		id:       e.ID,
@@ -57,16 +41,6 @@ func makeModel(e entity) (Model, error) {
 		quantity: e.Quantity,
 	}, nil
 }
-
-//func makeEquipment(item entityInventoryItem) (EquipmentModel, error) {
-//	return EquipmentModel{
-//		id:          item.ID,
-//		inventoryId: item.InventoryId,
-//		itemId:      item.ItemId,
-//		slot:        item.Slot,
-//		equipmentId: item.ReferenceId,
-//	}, nil
-//}
 
 func remove(db *gorm.DB, inventoryId uint32, id uint32) error {
 	return db.Delete(&entity{InventoryId: inventoryId, ID: id}).Error

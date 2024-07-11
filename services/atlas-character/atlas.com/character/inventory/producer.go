@@ -45,3 +45,29 @@ func emitItemGainEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenan
 		p(producer.CreateKey(int(characterId)), event)
 	}
 }
+
+func emitItemEquipped(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, itemId uint32) {
+	p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvEventTopicEquipChanged))
+	return func(characterId uint32, itemId uint32) {
+		e := &equipChangedEvent{
+			Tenant:      tenant,
+			CharacterId: characterId,
+			Change:      "EQUIPPED",
+			ItemId:      itemId,
+		}
+		p(producer.CreateKey(int(characterId)), e)
+	}
+}
+
+func emitItemUnequipped(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, itemId uint32) {
+	p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvEventTopicEquipChanged))
+	return func(characterId uint32, itemId uint32) {
+		e := &equipChangedEvent{
+			Tenant:      tenant,
+			CharacterId: characterId,
+			Change:      "UNEQUIPPED",
+			ItemId:      itemId,
+		}
+		p(producer.CreateKey(int(characterId)), e)
+	}
+}

@@ -21,6 +21,7 @@ A RESTful resource which provides character services.
 - COMMAND_TOPIC_UNEQUIP_ITEM - Kafka Topic for transmitting unequip item commands
 - EVENT_TOPIC_CHARACTER_CREATED - Kafka Topic for transmitting character created events
 - EVENT_TOPIC_ITEM_GAIN - Kafka Topic for transmitting item gain events
+- EVENT_TOPIC_EQUIP_CHANGED - Kafka Topic for transmitting equip changed events
 
 ## API
 

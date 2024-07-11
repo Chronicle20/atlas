@@ -1,10 +1,14 @@
 package requests
 
 import (
+	"errors"
 	"github.com/Chronicle20/atlas-rest/retry"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )
+
+var ErrBadRequest = errors.New("bad request")
+var ErrNotFound = errors.New("not found")
 
 type Request[A any] func(l logrus.FieldLogger) (A, error)
 
@@ -42,11 +46,19 @@ func get[A any](l logrus.FieldLogger) func(url string, configurators ...Configur
 			l.WithError(err).Errorf("Unable to successfully call [%s] on [%s].", http.MethodGet, url)
 			return resp, err
 		}
-		resp, err = processResponse[A](r)
-
-		l.WithFields(logrus.Fields{"method": http.MethodGet, "status": r.Status, "path": url, "response": resp}).Debugf("Printing request.")
-
-		return resp, err
+		if r.StatusCode == http.StatusOK || r.StatusCode == http.StatusAccepted {
+			resp, err = processResponse[A](r)
+			l.WithFields(logrus.Fields{"method": http.MethodGet, "status": r.Status, "path": url, "response": resp}).Debugf("Printing request.")
+			return resp, err
+		}
+		if r.StatusCode == http.StatusBadRequest {
+			return resp, ErrBadRequest
+		}
+		if r.StatusCode == http.StatusNotFound {
+			return resp, ErrNotFound
+		}
+		l.Debugf("Unable to successfully call [%s] on [%s], returned status code [%d].", http.MethodGet, url, r.StatusCode)
+		return resp, errors.New("unknown error")
 	}
 }
 

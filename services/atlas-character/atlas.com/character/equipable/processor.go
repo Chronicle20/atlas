@@ -59,11 +59,14 @@ func FilterOutEquipment(e Model) bool {
 
 func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryId uint32, inventoryType int8, itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
 	return func(characterId uint32, inventoryId uint32, inventoryType int8, itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
+		l.Debugf("Creating equipable [%d] for character [%d].", itemId, characterId)
 		slot, err := GetNextFreeSlot(l, db, span, tenant)(inventoryId)()
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate a free slot to create the item.")
 			return model.ErrorProvider[slottable.Slottable](err)
 		}
+		l.Debugf("Found open slot [%d] in inventory [%d] of type [%d].", slot, inventoryId, itemId)
+		l.Debugf("Generating new equipable statistics for item [%d].", itemId)
 
 		id, err := statistics.Create(l, span, tenant)(itemId)
 		if err != nil {
@@ -81,6 +84,8 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 		if err != nil {
 			return model.ErrorProvider[slottable.Slottable](err)
 		}
+
+		l.Debugf("Equipable [%d] created for character [%d].", id, characterId)
 		rmp := model.Map[Model, Model](model.FixedProvider[Model](i), model.Decorate[Model](statisticsDecorator(sm)))
 		return model.Map(rmp, slottableTransformer)
 	}

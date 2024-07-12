@@ -129,13 +129,25 @@ func Update(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(account
 			return Model{}, err
 		}
 
-		if a.pin != input.pin {
+		var modifiers = make([]EntityUpdateFunction, 0)
+
+		if a.pin != input.pin && input.pin != "" {
 			l.Debugf("Updating PIN [%s] of account [%d].", input.pin, accountId)
-			err = update(db)(updatePin(input.pin))(tenant, accountId)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to update account pin.")
-				return Model{}, err
-			}
+			modifiers = append(modifiers, updatePin(input.pin))
+		}
+		if a.pic != input.pic && input.pic != "" {
+			l.Debugf("Updating PIC [%s] of account [%d].", input.pic, accountId)
+			modifiers = append(modifiers, updatePic(input.pic))
+		}
+
+		if len(modifiers) == 0 {
+			return a, nil
+		}
+
+		err = update(db)(modifiers...)(tenant, accountId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to update account.")
+			return Model{}, err
 		}
 
 		return GetById(l, db, tenant)(accountId)

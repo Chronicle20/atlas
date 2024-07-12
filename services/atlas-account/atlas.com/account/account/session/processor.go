@@ -56,10 +56,6 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 			return ErrorModel(IncorrectPassword)
 		}
 
-		if !a.TOS() && tenant.Region != "JMS" {
-			return ErrorModel(LicenseAgreement)
-		}
-
 		err = account.SetLoggedIn(db)(tenant, a.Id())
 		if err != nil {
 			l.WithError(err).Errorf("Error trying to update logged in state for %s.", name)
@@ -68,7 +64,10 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 
 		l.Debugf("Login successful for [%s].", name)
 		emitLoggedInEvent(l, span, tenant)
-
+		
+		if !a.TOS() && tenant.Region != "JMS" {
+			return ErrorModel(LicenseAgreement)
+		}
 		return OkModel()
 	}
 }

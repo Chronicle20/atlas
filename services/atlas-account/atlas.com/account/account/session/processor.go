@@ -56,7 +56,7 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 			return ErrorModel(IncorrectPassword)
 		}
 
-		if !a.TOS() {
+		if !a.TOS() && tenant.Region != "JMS" {
 			return ErrorModel(LicenseAgreement)
 		}
 

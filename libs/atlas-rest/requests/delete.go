@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-type DeleteRequest func(l logrus.FieldLogger) error
+type EmptyBodyRequest func(l logrus.FieldLogger) error
 
 func delete(l logrus.FieldLogger) func(url string, configurators ...Configurator) error {
 	return func(url string, configurators ...Configurator) error {
@@ -46,7 +46,8 @@ func delete(l logrus.FieldLogger) func(url string, configurators ...Configurator
 	}
 }
 
-func MakeDeleteRequest(url string, configurators ...Configurator) DeleteRequest {
+//goland:noinspection GoUnusedExportedFunction
+func MakeDeleteRequest(url string, configurators ...Configurator) EmptyBodyRequest {
 	return func(l logrus.FieldLogger) error {
 		return delete(l)(url, configurators...)
 	}

@@ -16,6 +16,12 @@ func ForAccountByName(l logrus.FieldLogger, span opentracing.Span, tenant tenant
 	}
 }
 
+func ForAccountById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32, operator model.Operator[Model]) {
+	return func(id uint32, operator model.Operator[Model]) {
+		model.IfPresent[Model](ByIdModelProvider(l, span, tenant)(id), operator)
+	}
+}
+
 func ByNameModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string) model.Provider[Model] {
 	return func(name string) model.Provider[Model] {
 		return requests.Provider[RestModel, Model](l)(requestAccountByName(l, span, tenant)(name), Extract)
@@ -31,6 +37,12 @@ func ByIdModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenan
 func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) (Model, error) {
 	return func(id uint32) (Model, error) {
 		return ByIdModelProvider(l, span, tenant)(id)()
+	}
+}
+
+func GetByName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string) (Model, error) {
+	return func(name string) (Model, error) {
+		return ByNameModelProvider(l, span, tenant)(name)()
 	}
 }
 
@@ -69,6 +81,21 @@ func UpdatePic(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model)
 			return err
 		}
 		a.pic = pic
+		_, err = requestUpdate(l, span, tenant)(a)(l)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
+func UpdateTos(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32, tos bool) error {
+	return func(id uint32, tos bool) error {
+		a, err := GetById(l, span, tenant)(id)
+		if err != nil {
+			return err
+		}
+		a.tos = tos
 		_, err = requestUpdate(l, span, tenant)(a)(l)
 		if err != nil {
 			return err

@@ -43,6 +43,11 @@
               "handler": "ServerStatusHandle"
             },
             {
+              "opCode": "0x07",
+              "validator": "LoggedInValidator",
+              "handler": "AcceptTosHandle"
+            },
+            {
               "opCode": "0x09",
               "validator": "LoggedInValidator",
               "handler": "AfterLoginHandle"
@@ -255,6 +260,11 @@
               "handler": "ServerStatusHandle"
             },
             {
+              "opCode": "0x07",
+              "validator": "LoggedInValidator",
+              "handler": "AcceptTosHandle"
+            },
+            {
               "opCode": "0x09",
               "validator": "LoggedInValidator",
               "handler": "AfterLoginHandle"
@@ -465,6 +475,11 @@
               "opCode": "0x06",
               "validator": "LoggedInValidator",
               "handler": "ServerStatusHandle"
+            },
+            {
+              "opCode": "0x07",
+              "validator": "LoggedInValidator",
+              "handler": "AcceptTosHandle"
             },
             {
               "opCode": "0x09",

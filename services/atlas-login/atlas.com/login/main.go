@@ -83,6 +83,7 @@ func main() {
 	handlerMap[handler.AfterLoginHandle] = handler.AfterLoginHandleFunc
 	handlerMap[handler.RegisterPinHandle] = handler.RegisterPinHandleFunc
 	handlerMap[handler.RegisterPicHandle] = handler.RegisterPicHandleFunc
+	handlerMap[handler.AcceptTosHandle] = handler.AcceptTosHandleFunc
 
 	writerMap := make(map[string]writer.HeaderFunc)
 	writerMap[writer.LoginAuth] = writer.MessageGetter

@@ -40,6 +40,10 @@ func (a Model) LoggedIn() int {
 	return a.loggedIn
 }
 
+func (a Model) PIN() string {
+	return a.pin
+}
+
 type builder struct {
 	id             uint32
 	name           string

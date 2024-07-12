@@ -104,7 +104,7 @@ func issueSuccess(l logrus.FieldLogger, s session.Model, wp writer.Producer) mod
 	authSuccessFunc := session.Announce(wp)(writer.AuthSuccess)
 	return func(a account.Model) error {
 		s = session.SetAccountId(a.Id())(s.SessionId())
-		err := authSuccessFunc(s, writer.AuthSuccessBody(l, s.Tenant())(a.Id(), a.Name(), a.Gender(), a.PIC()))
+		err := authSuccessFunc(s, writer.AuthSuccessBody(l, s.Tenant())(a.Id(), a.Name(), a.Gender(), a.PIN(), a.PIC()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show successful authorization for account %d", a.Id())
 		}

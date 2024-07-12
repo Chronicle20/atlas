@@ -33,8 +33,8 @@ const (
 	FullClientNotice           = "FULL_CLIENT_NOTICE"
 )
 
-func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId uint32, name string, gender byte, pic string) BodyProducer {
-	return func(accountId uint32, name string, gender byte, pic string) BodyProducer {
+func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId uint32, name string, gender byte, pin string, pic string) BodyProducer {
+	return func(accountId uint32, name string, gender byte, pin string, pic string) BodyProducer {
 		return func(op uint16, _ map[string]interface{}) []byte {
 			w := response.NewWriter(l)
 			w.WriteShort(op)
@@ -67,7 +67,7 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 				w.WriteLong(0)
 				// creation timestamp
 				w.WriteLong(0)
-				// 1 : remove the select the world you want to play in
+				// nNumOfCharacter
 				w.WriteInt(1)
 				// 0 = Pin-System Enabled, 1 = Disabled
 				w.WriteByte(1)
@@ -77,9 +77,7 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 				if tenant.MajorVersion >= 87 {
 					w.WriteLong(0)
 				}
-			}
-
-			if tenant.Region == "JMS" {
+			} else if tenant.Region == "JMS" {
 				w.WriteAsciiString(name)
 				w.WriteAsciiString(name)
 				w.WriteByte(0)

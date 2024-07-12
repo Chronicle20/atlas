@@ -12,8 +12,8 @@ import (
 
 const CharacterList = "CharacterList"
 
-func CharacterListBody(l logrus.FieldLogger, tenant tenant.Model) func(characters []character.Model, worldId byte, status int, cannotBypassPic bool, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
-	return func(characters []character.Model, worldId byte, status int, cannotBypassPic bool, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
+func CharacterListBody(l logrus.FieldLogger, tenant tenant.Model) func(characters []character.Model, worldId byte, status int, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
+	return func(characters []character.Model, worldId byte, status int, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
 		return func(op uint16, options map[string]interface{}) []byte {
 			w := response.NewWriter(l)
 			w.WriteShort(op)
@@ -28,13 +28,14 @@ func CharacterListBody(l logrus.FieldLogger, tenant tenant.Model) func(character
 				WriteCharacter(tenant)(w, x, false)
 			}
 
-			w.WriteByte(2) // 0 is create PIC, 1 is enter PIC, 2 is normal
 			if tenant.Region == "GMS" {
+				w.WriteBool(pic != "")
 				w.WriteInt(uint32(characterSlots))
 				if tenant.MajorVersion > 87 {
 					w.WriteInt(0) // nBuyCharCount
 				}
 			} else if tenant.Region == "JMS" {
+				w.WriteByte(0)
 				w.WriteByte(0)
 				w.WriteInt(uint32(characterSlots))
 				w.WriteInt(0)

@@ -18,6 +18,7 @@ const (
 	AlreadyLoggedIn   = "ALREADY_LOGGED_IN"
 	IncorrectPassword = "INCORRECT_PASSWORD"
 	TooManyAttempts   = "TOO_MANY_ATTEMPTS"
+	LicenseAgreement  = "LICENSE_AGREEMENT"
 )
 
 func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, name string, password string) Model {
@@ -53,6 +54,10 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 			// TODO implement tos tracking
 		} else {
 			return ErrorModel(IncorrectPassword)
+		}
+
+		if !a.TOS() {
+			return ErrorModel(LicenseAgreement)
 		}
 
 		err = account.SetLoggedIn(db)(tenant, a.Id())

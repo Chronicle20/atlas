@@ -24,8 +24,9 @@ type entity struct {
 	Password  string    `gorm:"not null"`
 	PIN       string
 	PIC       string
-	Gender    byte
+	Gender    byte `gorm:"not null;default=0"`
 	State     byte `gorm:"not null;default=0"`
+	TOS       bool `gorm:"not null;default=false"`
 	LastLogin int64
 }
 

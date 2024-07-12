@@ -82,6 +82,17 @@ func updatePin(pin string) EntityUpdateFunction {
 	}
 }
 
+func updateTos(tos bool) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		var cs = []string{"tos"}
+
+		uf := func(e *entity) {
+			e.TOS = tos
+		}
+		return cs, uf
+	}
+}
+
 func modelFromEntity(a entity) (Model, error) {
 	r := Model{
 		id:       a.ID,
@@ -92,6 +103,7 @@ func modelFromEntity(a entity) (Model, error) {
 		state:    State(a.State),
 		gender:   a.Gender,
 		banned:   false,
+		tos:      a.TOS,
 	}
 	return r, nil
 }

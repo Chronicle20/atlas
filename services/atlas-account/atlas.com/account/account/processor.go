@@ -139,6 +139,10 @@ func Update(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(account
 			l.Debugf("Updating PIC [%s] of account [%d].", input.pic, accountId)
 			modifiers = append(modifiers, updatePic(input.pic))
 		}
+		if a.tos != input.tos && input.tos != false {
+			l.Debugf("Updating TOS [%s] of account [%d].", input.tos, accountId)
+			modifiers = append(modifiers, updateTos(input.tos))
+		}
 
 		if len(modifiers) == 0 {
 			return a, nil

@@ -60,7 +60,7 @@ func Transform(m Model) (RestModel, error) {
 		LastLogin:      0,
 		Gender:         m.gender,
 		Banned:         false,
-		TOS:            false,
+		TOS:            m.tos,
 		Language:       "en",
 		Country:        "us",
 		CharacterSlots: 4,
@@ -78,6 +78,7 @@ func Extract(rm RestModel) (Model, error) {
 		state:    State(rm.LoggedIn),
 		gender:   rm.Gender,
 		banned:   rm.Banned,
+		tos:      rm.TOS,
 	}
 	return m, nil
 }

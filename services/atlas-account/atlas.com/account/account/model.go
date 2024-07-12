@@ -9,6 +9,7 @@ type Model struct {
 	state    State
 	gender   byte
 	banned   bool
+	tos      bool
 }
 
 func (a Model) Id() uint32 {
@@ -29,4 +30,8 @@ func (a Model) Banned() bool {
 
 func (a Model) State() State {
 	return a.state
+}
+
+func (a Model) TOS() bool {
+	return a.tos
 }

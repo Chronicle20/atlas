@@ -60,6 +60,17 @@ func updateState(state State) EntityUpdateFunction {
 	}
 }
 
+func updatePic(pic string) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		var cs = []string{"pic"}
+
+		uf := func(e *entity) {
+			e.PIC = pic
+		}
+		return cs, uf
+	}
+}
+
 func updatePin(pin string) EntityUpdateFunction {
 	return func() ([]string, func(e *entity)) {
 		var cs = []string{"pin"}

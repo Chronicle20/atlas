@@ -42,6 +42,16 @@
               "handler": "ServerStatusHandle"
             },
             {
+              "opCode": "0x09",
+              "validator": "LoggedInValidator",
+              "handler": "AfterLoginHandle"
+            },
+            {
+              "opCode": "0x0A",
+              "validator": "LoggedInValidator",
+              "handler": "RegisterPinHandle"
+            },
+            {
               "opCode": "0x0B",
               "validator": "LoggedInValidator",
               "handler": "ServerListRequestHandle"
@@ -115,6 +125,30 @@
             {
               "opCode": "0x03",
               "writer": "ServerStatus"
+            },
+            {
+              "opCode": "0x06",
+              "writer": "PinOperation",
+              "options": {
+                "modes": {
+                  "OK": 0,
+                  "REGISTER": 1,
+                  "INVALID": 2,
+                  "CONNECTION_FAILED": 3,
+                  "ENTER_PIN": 4,
+                  "ALREADY_LOGGED_IN": 7
+                }
+              }
+            },
+            {
+              "opCode": "0x07",
+              "writer": "PinUpdate",
+              "options": {
+                "modes": {
+                  "OK": 0,
+                  "ERROR": 1
+                }
+              }
             },
             {
               "opCode": "0x0A",
@@ -210,6 +244,16 @@
               "handler": "ServerStatusHandle"
             },
             {
+              "opCode": "0x09",
+              "validator": "LoggedInValidator",
+              "handler": "AfterLoginHandle"
+            },
+            {
+              "opCode": "0x0A",
+              "validator": "LoggedInValidator",
+              "handler": "RegisterPinHandle"
+            },
+            {
               "opCode": "0x0B",
               "validator": "LoggedInValidator",
               "handler": "ServerListRequestHandle"
@@ -278,6 +322,30 @@
             {
               "opCode": "0x03",
               "writer": "ServerStatus"
+            },
+            {
+              "opCode": "0x06",
+              "writer": "PinOperation",
+              "options": {
+                "modes": {
+                  "OK": 0,
+                  "REGISTER": 1,
+                  "INVALID": 2,
+                  "CONNECTION_FAILED": 3,
+                  "ENTER_PIN": 4,
+                  "ALREADY_LOGGED_IN": 7
+                }
+              }
+            },
+            {
+              "opCode": "0x07",
+              "writer": "PinUpdate",
+              "options": {
+                "modes": {
+                  "OK": 0,
+                  "ERROR": 1
+                }
+              }
             },
             {
               "opCode": "0x0A",
@@ -373,6 +441,16 @@
               "handler": "ServerStatusHandle"
             },
             {
+              "opCode": "0x09",
+              "validator": "LoggedInValidator",
+              "handler": "AfterLoginHandle"
+            },
+            {
+              "opCode": "0x0A",
+              "validator": "LoggedInValidator",
+              "handler": "RegisterPinHandle"
+            },
+            {
               "opCode": "0x0B",
               "validator": "LoggedInValidator",
               "handler": "ServerListRequestHandle"
@@ -441,6 +519,30 @@
             {
               "opCode": "0x03",
               "writer": "ServerStatus"
+            },
+            {
+              "opCode": "0x06",
+              "writer": "PinOperation",
+              "options": {
+                "modes": {
+                  "OK": 0,
+                  "REGISTER": 1,
+                  "INVALID": 2,
+                  "CONNECTION_FAILED": 3,
+                  "ENTER_PIN": 4,
+                  "ALREADY_LOGGED_IN": 7
+                }
+              }
+            },
+            {
+              "opCode": "0x07",
+              "writer": "PinUpdate",
+              "options": {
+                "modes": {
+                  "OK": 0,
+                  "ERROR": 1
+                }
+              }
             },
             {
               "opCode": "0x0A",

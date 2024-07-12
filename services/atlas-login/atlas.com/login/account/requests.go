@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	AccountsResource = "accounts/"
+	AccountsResource = "accounts"
 	AccountsByName   = AccountsResource + "?name=%s"
-	AccountsById     = AccountsResource + "%d"
+	AccountsById     = AccountsResource + "/%d"
+	Update           = AccountsResource + "/%d"
 )
 
 func getBaseRequest() string {
@@ -29,5 +30,12 @@ func requestAccountByName(l logrus.FieldLogger, span opentracing.Span, tenant te
 func requestAccountById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) requests.Request[RestModel] {
 	return func(id uint32) requests.Request[RestModel] {
 		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+AccountsById, id))
+	}
+}
+
+func requestUpdate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(m Model) requests.Request[RestModel] {
+	return func(m Model) requests.Request[RestModel] {
+		im, _ := Transform(m)
+		return rest.MakePatchRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+Update, m.id), im)
 	}
 }

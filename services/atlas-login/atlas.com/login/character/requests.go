@@ -39,8 +39,8 @@ func requestById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 	}
 }
 
-func requestDelete(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) requests.DeleteRequest {
-	return func(id uint32) requests.DeleteRequest {
+func requestDelete(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) requests.EmptyBodyRequest {
+	return func(id uint32) requests.EmptyBodyRequest {
 		return rest.MakeDeleteRequest(l, span, tenant)(fmt.Sprintf(getBaseRequest()+ById, id))
 	}
 }

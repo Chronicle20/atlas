@@ -68,6 +68,7 @@ func Destroy(l logrus.FieldLogger, span opentracing.Span, r *Registry) func(Mode
 	return func(s Model) {
 		l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 		r.Remove(s.SessionId())
+		s.Disconnect()
 		as.Destroy(l, span, s.Tenant())(s.AccountId())
 	}
 }

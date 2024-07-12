@@ -70,7 +70,7 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 				// nNumOfCharacter
 				w.WriteInt(1)
 				// 0 = Pin-System Enabled, 1 = Disabled
-				w.WriteByte(1)
+				w.WriteByte(0)
 				// 0 = Register PIC, 1 = Ask for PIC, 2 = Disabled
 				w.WriteByte(2)
 

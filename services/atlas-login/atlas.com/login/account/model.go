@@ -80,12 +80,12 @@ func (a *builder) SetPassword(password string) *builder {
 }
 
 func (a *builder) SetPin(pin string) *builder {
-	a.pic = pin
+	a.pin = pin
 	return a
 }
 
 func (a *builder) SetPic(pic string) *builder {
-	a.pin = pic
+	a.pic = pic
 	return a
 }
 

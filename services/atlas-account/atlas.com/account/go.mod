@@ -4,8 +4,8 @@ go 1.21.6
 
 require (
 	github.com/Chronicle20/atlas-kafka v0.0.0-20240710214617-8a7aed20c81d
-	github.com/Chronicle20/atlas-model v0.0.0-20240707172702-3d0c637b3cb5
-	github.com/Chronicle20/atlas-rest v0.0.0-20240710183603-5b17b81f4138
+	github.com/Chronicle20/atlas-model v0.0.0-20240712114934-b680d929248b
+	github.com/Chronicle20/atlas-rest v0.0.0-20240711200436-61fd59b3f08e
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6
@@ -16,7 +16,7 @@ require (
 	golang.org/x/crypto v0.25.0
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.5.9
-	gorm.io/gorm v1.25.10
+	gorm.io/gorm v1.25.11
 )
 
 require (

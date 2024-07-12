@@ -40,29 +40,44 @@ func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
-func TransformAll(models []Model) []RestModel {
-	rms := make([]RestModel, 0)
-	for _, m := range models {
-		rms = append(rms, Transform(m))
+func (r *RestModel) SetID(idStr string) error {
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		return err
 	}
-	return rms
+	r.Id = uint32(id)
+	return nil
 }
 
-func Transform(model Model) RestModel {
+func Transform(m Model) (RestModel, error) {
 	rm := RestModel{
-		Id:             model.id,
-		Name:           model.name,
-		Password:       model.password,
-		Pin:            "",
-		Pic:            "",
-		LoggedIn:       byte(model.state),
+		Id:             m.id,
+		Name:           m.name,
+		Password:       m.password,
+		Pin:            m.pin,
+		Pic:            m.pic,
+		LoggedIn:       byte(m.state),
 		LastLogin:      0,
-		Gender:         0,
+		Gender:         m.gender,
 		Banned:         false,
 		TOS:            false,
 		Language:       "en",
 		Country:        "us",
 		CharacterSlots: 4,
 	}
-	return rm
+	return rm, nil
+}
+
+func Extract(rm RestModel) (Model, error) {
+	m := Model{
+		id:       rm.Id,
+		name:     rm.Name,
+		password: rm.Password,
+		pin:      rm.Pin,
+		pic:      rm.Pic,
+		state:    State(rm.LoggedIn),
+		gender:   rm.Gender,
+		banned:   rm.Banned,
+	}
+	return m, nil
 }

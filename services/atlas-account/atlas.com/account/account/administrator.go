@@ -60,11 +60,27 @@ func updateState(state State) EntityUpdateFunction {
 	}
 }
 
+func updatePin(pin string) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		var cs = []string{"pin"}
+
+		uf := func(e *entity) {
+			e.PIN = pin
+		}
+		return cs, uf
+	}
+}
+
 func modelFromEntity(a entity) (Model, error) {
-	r := Builder(a.ID).
-		SetName(a.Name).
-		SetPassword(a.Password).
-		SetState(State(a.State)).
-		Build()
+	r := Model{
+		id:       a.ID,
+		name:     a.Name,
+		password: a.Password,
+		pin:      a.PIN,
+		pic:      a.PIC,
+		state:    State(a.State),
+		gender:   a.Gender,
+		banned:   false,
+	}
 	return r, nil
 }

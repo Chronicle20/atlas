@@ -120,3 +120,24 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 		return m, nil
 	}
 }
+
+func Update(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(accountId uint32, input Model) (Model, error) {
+	return func(accountId uint32, input Model) (Model, error) {
+		a, err := GetById(l, db, tenant)(accountId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate account being updated.")
+			return Model{}, err
+		}
+
+		if a.pin != input.pin {
+			l.Debugf("Updating PIN [%s] of account [%d].", input.pin, accountId)
+			err = update(db)(updatePin(input.pin))(tenant, accountId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to update account pin.")
+				return Model{}, err
+			}
+		}
+
+		return GetById(l, db, tenant)(accountId)
+	}
+}

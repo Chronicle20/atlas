@@ -4,7 +4,10 @@ type Model struct {
 	id       uint32
 	name     string
 	password string
+	pin      string
+	pic      string
 	state    State
+	gender   byte
 	banned   bool
 }
 
@@ -26,41 +29,4 @@ func (a Model) Banned() bool {
 
 func (a Model) State() State {
 	return a.state
-}
-
-type builder struct {
-	id       uint32
-	name     string
-	password string
-	state    State
-	banned   bool
-}
-
-func Builder(id uint32) *builder {
-	return &builder{id: id}
-}
-
-func (a *builder) SetName(name string) *builder {
-	a.name = name
-	return a
-}
-
-func (a *builder) SetPassword(password string) *builder {
-	a.password = password
-	return a
-}
-
-func (a *builder) SetState(state State) *builder {
-	a.state = state
-	return a
-}
-
-func (a *builder) Build() Model {
-	return Model{
-		id:       a.id,
-		name:     a.name,
-		password: a.password,
-		state:    a.state,
-		banned:   a.banned,
-	}
 }

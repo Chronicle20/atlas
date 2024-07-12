@@ -1,7 +1,6 @@
 package session
 
 import (
-	"atlas-account/account"
 	"atlas-account/rest"
 	"atlas-account/tenant"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -45,7 +44,7 @@ func registerDeleteSession(si jsonapi.ServerInformation) func(l logrus.FieldLogg
 	return func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 		return rest.RetrieveSpan(l, deleteSession, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
 			return rest.ParseTenant(sl, func(tenant tenant.Model) http.HandlerFunc {
-				return account.ParseId(sl, func(id uint32) http.HandlerFunc {
+				return rest.ParseAccountId(sl, func(id uint32) http.HandlerFunc {
 					return handleDeleteSession(si)(sl, db)(span)(tenant)(id)
 				})
 			})

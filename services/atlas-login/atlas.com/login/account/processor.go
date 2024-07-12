@@ -61,3 +61,18 @@ func UpdatePin(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model)
 		return nil
 	}
 }
+
+func UpdatePic(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32, pic string) error {
+	return func(id uint32, pic string) error {
+		a, err := GetById(l, span, tenant)(id)
+		if err != nil {
+			return err
+		}
+		a.pic = pic
+		_, err = requestUpdate(l, span, tenant)(a)(l)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}

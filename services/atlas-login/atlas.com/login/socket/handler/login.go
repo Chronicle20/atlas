@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-login/account"
 	as "atlas-login/account/session"
+	"atlas-login/configuration"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -104,7 +105,19 @@ func issueSuccess(l logrus.FieldLogger, s session.Model, wp writer.Producer) mod
 	authSuccessFunc := session.Announce(wp)(writer.AuthSuccess)
 	return func(a account.Model) error {
 		s = session.SetAccountId(a.Id())(s.SessionId())
-		err := authSuccessFunc(s, writer.AuthSuccessBody(l, s.Tenant())(a.Id(), a.Name(), a.Gender(), a.PIN(), a.PIC()))
+
+		c, err := configuration.GetConfiguration()
+		if err != nil {
+			l.WithError(err).Errorf("Unable to get configuration.")
+			return err
+		}
+		sc, err := c.FindServer(s.Tenant().Id.String())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to find server configuration.")
+			return err
+		}
+
+		err = authSuccessFunc(s, writer.AuthSuccessBody(l, s.Tenant())(a.Id(), a.Name(), a.Gender(), sc.UsesPIN, a.PIC()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show successful authorization for account %d", a.Id())
 		}

@@ -33,8 +33,8 @@ const (
 	FullClientNotice           = "FULL_CLIENT_NOTICE"
 )
 
-func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId uint32, name string, gender byte, pin string, pic string) BodyProducer {
-	return func(accountId uint32, name string, gender byte, pin string, pic string) BodyProducer {
+func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId uint32, name string, gender byte, usesPin bool, pic string) BodyProducer {
+	return func(accountId uint32, name string, gender byte, usesPin bool, pic string) BodyProducer {
 		return func(op uint16, _ map[string]interface{}) []byte {
 			w := response.NewWriter(l)
 			w.WriteShort(op)
@@ -70,9 +70,14 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 				// nNumOfCharacter
 				w.WriteInt(1)
 				// 0 = Pin-System Enabled, 1 = Disabled
+				w.WriteBool(!usesPin)
 				w.WriteByte(0)
-				// 0 = Register PIC, 1 = Ask for PIC, 2 = Disabled
-				w.WriteByte(2)
+				// 0 = Register PIC, 1 = Ask for PIC, 2 = Disabled (disables character deletion without client edit).
+				var needsPic = byte(0)
+				if pic != "" {
+					needsPic = byte(1)
+				}
+				w.WriteByte(needsPic)
 
 				if tenant.MajorVersion >= 87 {
 					w.WriteLong(0)
@@ -90,6 +95,7 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 				w.WriteAsciiString(name)
 			}
 
+			l.Debugf("Writing [%s] message. opcode [0x%02X].", AuthSuccess, op&0xFF)
 			return w.Bytes()
 		}
 	}

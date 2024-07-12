@@ -82,6 +82,7 @@ func main() {
 	handlerMap[handler.DeleteCharacterHandle] = handler.DeleteCharacterHandleFunc
 	handlerMap[handler.AfterLoginHandle] = handler.AfterLoginHandleFunc
 	handlerMap[handler.RegisterPinHandle] = handler.RegisterPinHandleFunc
+	handlerMap[handler.RegisterPicHandle] = handler.RegisterPicHandleFunc
 
 	writerMap := make(map[string]writer.HeaderFunc)
 	writerMap[writer.LoginAuth] = writer.MessageGetter
@@ -100,6 +101,7 @@ func main() {
 	writerMap[writer.DeleteCharacterResponse] = writer.MessageGetter
 	writerMap[writer.PinOperation] = writer.MessageGetter
 	writerMap[writer.PinUpdate] = writer.MessageGetter
+	writerMap[writer.PicResult] = writer.MessageGetter
 
 	for _, s := range config.Data.Attributes.Servers {
 		wp := getWriterProducer(l)(s.Writers, writerMap)

@@ -27,6 +27,11 @@
               "handler": "LoginHandle"
             },
             {
+              "opCode": "0x04",
+              "validator": "LoggedInValidator",
+              "handler": "ServerListRequestHandle"
+            },
+            {
               "opCode": "0x05",
               "validator": "LoggedInValidator",
               "handler": "CharacterListWorldHandle"
@@ -168,6 +173,11 @@
               "handler": "LoginHandle"
             },
             {
+              "opCode": "0x04",
+              "validator": "LoggedInValidator",
+              "handler": "ServerListRequestHandle"
+            },
+            {
               "opCode": "0x05",
               "validator": "LoggedInValidator",
               "handler": "CharacterListWorldHandle"
@@ -304,6 +314,11 @@
               "handler": "LoginHandle"
             },
             {
+              "opCode": "0x04",
+              "validator": "LoggedInValidator",
+              "handler": "ServerListRequestHandle"
+            },
+            {
               "opCode": "0x05",
               "validator": "LoggedInValidator",
               "handler": "CharacterListWorldHandle"
@@ -438,6 +453,11 @@
               "opCode": "0x01",
               "validator": "NoOpValidator",
               "handler": "LoginHandle"
+            },
+            {
+              "opCode": "0x03",
+              "validator": "LoggedInValidator",
+              "handler": "ServerListRequestHandle"
             },
             {
               "opCode": "0x04",

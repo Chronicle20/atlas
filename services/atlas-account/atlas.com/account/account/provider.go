@@ -9,8 +9,9 @@ import (
 
 func entityById(tenant tenant.Model, id uint32) database.EntityProvider[entity] {
 	return func(db *gorm.DB) model.Provider[entity] {
-		var result = entity{TenantId: tenant.Id, ID: id}
-		err := db.First(&result).Error
+		where := map[string]interface{}{"tenant_id": tenant.Id, "id": id}
+		var result = entity{}
+		err := db.Where(where).First(&result).Error
 		if err != nil {
 			return model.ErrorProvider[entity](err)
 		}

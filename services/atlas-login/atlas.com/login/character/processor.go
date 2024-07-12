@@ -63,17 +63,14 @@ func GetByName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model)
 	}
 }
 
-//func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32) (*Model, error) {
-//	return func(characterId uint32) (*Model, error) {
-//		cs, err := properties.GetById(l, span, tenant)(characterId)
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		c, err := fromProperties(l, span)(cs)
-//		if err != nil {
-//			return nil, err
-//		}
-//		return c, nil
-//	}
-//}
+func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32) (Model, error) {
+	return func(characterId uint32) (Model, error) {
+		return requests.Provider[RestModel, Model](l)(requestById(l, span, tenant)(characterId), Extract)()
+	}
+}
+
+func DeleteById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32) error {
+	return func(characterId uint32) error {
+		return requestDelete(l, span, tenant)(characterId)(l)
+	}
+}

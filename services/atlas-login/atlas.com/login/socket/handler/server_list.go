@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
+	"sort"
 )
 
 const ServerListRequestHandle = "ServerListRequestHandle"
@@ -24,6 +25,9 @@ func issueServerInformation(l logrus.FieldLogger, span opentracing.Span, wp writ
 			l.WithError(err).Errorf("Retrieving worlds")
 			return
 		}
+		sort.Slice(ws, func(i, j int) bool {
+			return ws[i].Id() < ws[j].Id()
+		})
 
 		if len(ws) == 0 {
 			l.Warnf("Responding with no valid worlds.")

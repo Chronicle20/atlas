@@ -55,7 +55,7 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, span opentracing.Span, w
 			return
 		}
 
-		err = characterListFunc(s, writer.CharacterListBody(l, s.Tenant())(cs, worldId, 0, true, a.PIC(), int16(1), a.CharacterSlots()))
+		err = characterListFunc(s, writer.CharacterListBody(l, s.Tenant())(cs, worldId, 0, a.PIC(), int16(1), a.CharacterSlots()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show character list")
 		}

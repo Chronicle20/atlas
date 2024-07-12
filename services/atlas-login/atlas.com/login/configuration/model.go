@@ -15,6 +15,15 @@ func (d *Model) FindTask(task string) (Task, error) {
 	return Task{}, errors.New("task not found")
 }
 
+func (d *Model) FindServer(tenantId string) (Server, error) {
+	for _, v := range d.Data.Attributes.Servers {
+		if v.Tenant == tenantId {
+			return v, nil
+		}
+	}
+	return Server{}, errors.New("server not found")
+}
+
 // Data contains the main data configuration.
 type Data struct {
 	Type       string     `json:"type"`
@@ -45,6 +54,7 @@ type Server struct {
 	Region   string    `json:"region"`
 	Port     string    `json:"port"`
 	Version  Version   `json:"version"`
+	UsesPIN  bool      `json:"usesPin"`
 	Handlers []Handler `json:"handlers"`
 	Writers  []Writer  `json:"writers"`
 }

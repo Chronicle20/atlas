@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-login/account"
 	as "atlas-login/account/session"
+	"atlas-login/configuration"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -70,14 +71,26 @@ func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 			return
 		}
 
-		if resp.Code == "OK" {
-			account.ForAccountByName(l, span, s.Tenant())(p.Name(), issueSuccess(l, s, wp))
+		if resp.Code == "OK" || resp.Code == writer.LicenseAgreement {
+			var a account.Model
+			a, err = account.GetByName(l, span, s.Tenant())(p.Name())
+			if err != nil {
+				announceError(l, span, wp)(s, writer.SystemError1)
+				return
+			}
+			s = session.SetAccountId(a.Id())(s.SessionId())
 
-			if s.Tenant().Region == "JMS" {
-				issueServerInformation(l, span, wp)(s)
+			if resp.Code == "OK" {
+				err = issueSuccess(l, s, wp)(a)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to issue success to account.")
+					return
+				}
+				if s.Tenant().Region == "JMS" {
+					issueServerInformation(l, span, wp)(s)
+				}
 			}
 
-			return
 		}
 
 		if resp.Code != writer.Banned {
@@ -103,8 +116,18 @@ func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 func issueSuccess(l logrus.FieldLogger, s session.Model, wp writer.Producer) model.Operator[account.Model] {
 	authSuccessFunc := session.Announce(wp)(writer.AuthSuccess)
 	return func(a account.Model) error {
-		s = session.SetAccountId(a.Id())(s.SessionId())
-		err := authSuccessFunc(s, writer.AuthSuccessBody(l, s.Tenant())(a.Id(), a.Name(), a.Gender(), a.PIC()))
+		c, err := configuration.GetConfiguration()
+		if err != nil {
+			l.WithError(err).Errorf("Unable to get configuration.")
+			return err
+		}
+		sc, err := c.FindServer(s.Tenant().Id.String())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to find server configuration.")
+			return err
+		}
+
+		err = authSuccessFunc(s, writer.AuthSuccessBody(l, s.Tenant())(a.Id(), a.Name(), a.Gender(), sc.UsesPIN, a.PIC()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show successful authorization for account %d", a.Id())
 		}

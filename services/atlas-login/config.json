@@ -20,6 +20,7 @@
             "major": "83",
             "minor": "1"
           },
+          "usesPin": false,
           "handlers": [
             {
               "opCode": "0x01",
@@ -42,6 +43,21 @@
               "handler": "ServerStatusHandle"
             },
             {
+              "opCode": "0x07",
+              "validator": "LoggedInValidator",
+              "handler": "AcceptTosHandle"
+            },
+            {
+              "opCode": "0x09",
+              "validator": "LoggedInValidator",
+              "handler": "AfterLoginHandle"
+            },
+            {
+              "opCode": "0x0A",
+              "validator": "LoggedInValidator",
+              "handler": "RegisterPinHandle"
+            },
+            {
               "opCode": "0x0B",
               "validator": "LoggedInValidator",
               "handler": "ServerListRequestHandle"
@@ -57,9 +73,19 @@
               "handler": "CreateCharacterHandle"
             },
             {
+              "opCode": "0x17",
+              "validator": "LoggedInValidator",
+              "handler": "DeleteCharacterHandle"
+            },
+            {
               "opCode": "0x19",
               "validator": "NoOpValidator",
               "handler": "NoOpHandler"
+            },
+            {
+              "opCode": "0x1D",
+              "validator": "LoggedInValidator",
+              "handler": "RegisterPicHandle"
             },
             {
               "opCode": "0x24",
@@ -112,6 +138,30 @@
               "writer": "ServerStatus"
             },
             {
+              "opCode": "0x06",
+              "writer": "PinOperation",
+              "options": {
+                "modes": {
+                  "OK": 0,
+                  "REGISTER": 1,
+                  "INVALID": 2,
+                  "CONNECTION_FAILED": 3,
+                  "ENTER_PIN": 4,
+                  "ALREADY_LOGGED_IN": 7
+                }
+              }
+            },
+            {
+              "opCode": "0x07",
+              "writer": "PinUpdate",
+              "options": {
+                "modes": {
+                  "OK": 0,
+                  "ERROR": 1
+                }
+              }
+            },
+            {
               "opCode": "0x0A",
               "writer": "ServerListEntry"
             },
@@ -149,12 +199,33 @@
               }
             },
             {
+              "opCode": "0x0F",
+              "writer": "DeleteCharacterResponse",
+              "options": {
+                "codes": {
+                  "OK": 0,
+                  "UNABLE_TO_CONNECT_SYSTEM_ERROR": 6,
+                  "UNKNOWN_ERROR": 9,
+                  "TOO_MANY_CONNECTIONS": 10,
+                  "NEXON_ID_DIFFERENT_THEN_REGISTERED": 16,
+                  "CANNOT_DELETE_AS_GUILD_MASTER": 22,
+                  "SECONDARY_PIN_DOES_NOT_MATCH": 20,
+                  "CANNOT_DELETE_WHEN_ENGAGED": 24,
+                  "CANNOT_DELETE_WITH_FAMILY": 29
+                }
+              }
+            },
+            {
               "opCode": "0x1A",
               "writer": "SelectWorld"
             },
             {
               "opCode": "0x1B",
               "writer": "ServerListRecommendations"
+            },
+            {
+              "opCode": "0x1C",
+              "writer": "PicResult"
             }
           ]
         },
@@ -166,6 +237,7 @@
             "major": "87",
             "minor": "1"
           },
+          "usesPin": false,
           "handlers": [
             {
               "opCode": "0x01",
@@ -188,6 +260,21 @@
               "handler": "ServerStatusHandle"
             },
             {
+              "opCode": "0x07",
+              "validator": "LoggedInValidator",
+              "handler": "AcceptTosHandle"
+            },
+            {
+              "opCode": "0x09",
+              "validator": "LoggedInValidator",
+              "handler": "AfterLoginHandle"
+            },
+            {
+              "opCode": "0x0A",
+              "validator": "LoggedInValidator",
+              "handler": "RegisterPinHandle"
+            },
+            {
               "opCode": "0x0B",
               "validator": "LoggedInValidator",
               "handler": "ServerListRequestHandle"
@@ -201,6 +288,21 @@
               "opCode": "0x16",
               "validator": "LoggedInValidator",
               "handler": "CreateCharacterHandle"
+            },
+            {
+              "opCode": "0x17",
+              "validator": "LoggedInValidator",
+              "handler": "DeleteCharacterHandle"
+            },
+            {
+              "opCode": "0x19",
+              "validator": "NoOpValidator",
+              "handler": "NoOpHandler"
+            },
+            {
+              "opCode": "0x1D",
+              "validator": "LoggedInValidator",
+              "handler": "RegisterPicHandle"
             },
             {
               "opCode": "0x24",
@@ -253,6 +355,30 @@
               "writer": "ServerStatus"
             },
             {
+              "opCode": "0x06",
+              "writer": "PinOperation",
+              "options": {
+                "modes": {
+                  "OK": 0,
+                  "REGISTER": 1,
+                  "INVALID": 2,
+                  "CONNECTION_FAILED": 3,
+                  "ENTER_PIN": 4,
+                  "ALREADY_LOGGED_IN": 7
+                }
+              }
+            },
+            {
+              "opCode": "0x07",
+              "writer": "PinUpdate",
+              "options": {
+                "modes": {
+                  "OK": 0,
+                  "ERROR": 1
+                }
+              }
+            },
+            {
               "opCode": "0x0A",
               "writer": "ServerListEntry"
             },
@@ -290,12 +416,33 @@
               }
             },
             {
+              "opCode": "0x0F",
+              "writer": "DeleteCharacterResponse",
+              "options": {
+                "codes": {
+                  "OK": 0,
+                  "UNABLE_TO_CONNECT_SYSTEM_ERROR": 6,
+                  "UNKNOWN_ERROR": 9,
+                  "TOO_MANY_CONNECTIONS": 10,
+                  "NEXON_ID_DIFFERENT_THEN_REGISTERED": 16,
+                  "CANNOT_DELETE_AS_GUILD_MASTER": 22,
+                  "SECONDARY_PIN_DOES_NOT_MATCH": 20,
+                  "CANNOT_DELETE_WHEN_ENGAGED": 24,
+                  "CANNOT_DELETE_WITH_FAMILY": 29
+                }
+              }
+            },
+            {
               "opCode": "0x1A",
               "writer": "SelectWorld"
             },
             {
               "opCode": "0x1B",
               "writer": "ServerListRecommendations"
+            },
+            {
+              "opCode": "0x1C",
+              "writer": "PicResult"
             }
           ]
         },
@@ -307,6 +454,7 @@
             "major": "92",
             "minor": "1"
           },
+          "usesPin": false,
           "handlers": [
             {
               "opCode": "0x01",
@@ -329,6 +477,21 @@
               "handler": "ServerStatusHandle"
             },
             {
+              "opCode": "0x07",
+              "validator": "LoggedInValidator",
+              "handler": "AcceptTosHandle"
+            },
+            {
+              "opCode": "0x09",
+              "validator": "LoggedInValidator",
+              "handler": "AfterLoginHandle"
+            },
+            {
+              "opCode": "0x0A",
+              "validator": "LoggedInValidator",
+              "handler": "RegisterPinHandle"
+            },
+            {
               "opCode": "0x0B",
               "validator": "LoggedInValidator",
               "handler": "ServerListRequestHandle"
@@ -342,6 +505,21 @@
               "opCode": "0x16",
               "validator": "LoggedInValidator",
               "handler": "CreateCharacterHandle"
+            },
+            {
+              "opCode": "0x17",
+              "validator": "LoggedInValidator",
+              "handler": "DeleteCharacterHandle"
+            },
+            {
+              "opCode": "0x19",
+              "validator": "NoOpValidator",
+              "handler": "NoOpHandler"
+            },
+            {
+              "opCode": "0x1D",
+              "validator": "LoggedInValidator",
+              "handler": "RegisterPicHandle"
             },
             {
               "opCode": "0x24",
@@ -394,6 +572,30 @@
               "writer": "ServerStatus"
             },
             {
+              "opCode": "0x06",
+              "writer": "PinOperation",
+              "options": {
+                "modes": {
+                  "OK": 0,
+                  "REGISTER": 1,
+                  "INVALID": 2,
+                  "CONNECTION_FAILED": 3,
+                  "ENTER_PIN": 4,
+                  "ALREADY_LOGGED_IN": 7
+                }
+              }
+            },
+            {
+              "opCode": "0x07",
+              "writer": "PinUpdate",
+              "options": {
+                "modes": {
+                  "OK": 0,
+                  "ERROR": 1
+                }
+              }
+            },
+            {
               "opCode": "0x0A",
               "writer": "ServerListEntry"
             },
@@ -431,12 +633,33 @@
               }
             },
             {
+              "opCode": "0x0F",
+              "writer": "DeleteCharacterResponse",
+              "options": {
+                "codes": {
+                  "OK": 0,
+                  "UNABLE_TO_CONNECT_SYSTEM_ERROR": 6,
+                  "UNKNOWN_ERROR": 9,
+                  "TOO_MANY_CONNECTIONS": 10,
+                  "NEXON_ID_DIFFERENT_THEN_REGISTERED": 16,
+                  "CANNOT_DELETE_AS_GUILD_MASTER": 22,
+                  "SECONDARY_PIN_DOES_NOT_MATCH": 20,
+                  "CANNOT_DELETE_WHEN_ENGAGED": 24,
+                  "CANNOT_DELETE_WITH_FAMILY": 29
+                }
+              }
+            },
+            {
               "opCode": "0x1A",
               "writer": "SelectWorld"
             },
             {
               "opCode": "0x1B",
               "writer": "ServerListRecommendations"
+            },
+            {
+              "opCode": "0x1C",
+              "writer": "PicResult"
             }
           ]
         },
@@ -473,6 +696,11 @@
               "opCode": "0x0B",
               "validator": "LoggedInValidator",
               "handler": "CreateCharacterHandle"
+            },
+            {
+              "opCode": "0x0D",
+              "validator": "LoggedInValidator",
+              "handler": "DeleteCharacterHandle"
             },
             {
               "opCode": "0x18",
@@ -560,6 +788,27 @@
                   "ACCOUNT_REQUESTED_TRANSFER": 26,
                   "CANNOT_USE_NAME": 30,
                   "UNKNOWN_ERROR": 99
+                }
+              }
+            },
+            {
+              "opCode": "0x07",
+              "writer": "DeleteCharacterResponse",
+              "options": {
+                "codes": {
+                  "OK": 0,
+                  "UNABLE_TO_CONNECT_SYSTEM_ERROR": 6,
+                  "UNKNOWN_ERROR": 9,
+                  "TOO_MANY_CONNECTIONS": 10,
+                  "NEXON_ID_DIFFERENT_THEN_REGISTERED": 16,
+                  "CANNOT_DELETE_AS_GUILD_MASTER": 18,
+                  "SECONDARY_PIN_DOES_NOT_MATCH": 20,
+                  "CANNOT_DELETE_WHEN_ENGAGED": 21,
+                  "ONE_TIME_PASSWORD_DOES_NOT_MATCH": 24,
+                  "ONE_TIME_PASSWORD_ATTEMPTS_EXCEEDED": 25,
+                  "ONE_TIME_PASSWORD_SERVICE_NOT_AVAILABLE": 26,
+                  "ONE_TIME_PASSWORD_TRIAL_PERIOD_ENDED": 28,
+                  "CANNOT_DELETE_WITH_FAMILY": 29
                 }
               }
             },

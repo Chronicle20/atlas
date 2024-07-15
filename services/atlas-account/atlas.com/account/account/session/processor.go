@@ -56,7 +56,7 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 			return ErrorModel(IncorrectPassword)
 		}
 
-		err = account.SetLoggedIn(db)(tenant, a.Id())
+		err = account.SetState(db)(account.InLogin)(tenant, a.Id())
 		if err != nil {
 			l.WithError(err).Errorf("Error trying to update logged in state for %s.", name)
 			return ErrorModel(SystemError)
@@ -72,17 +72,17 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 	}
 }
 
-func CreateSession(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32) Model {
-	return func(sessionId uuid.UUID, accountId uint32) Model {
+func ProgressState(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32, state account.State) Model {
+	return func(sessionId uuid.UUID, accountId uint32, state account.State) Model {
 		a, err := account.GetById(l, db, tenant)(accountId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate account a session is being created for.")
 			return ErrorModel(NotRegistered)
 		}
-		if a.State() != account.NotLoggedIn {
-			return ErrorModel(AlreadyLoggedIn)
+		if a.State() == account.NotLoggedIn {
+			return ErrorModel(SystemError)
 		}
-		err = account.SetLoggedIn(db)(tenant, a.Id())
+		err = account.SetState(db)(state)(tenant, a.Id())
 		if err != nil {
 			l.WithError(err).Errorf("Error trying to update logged in state for %d.", accountId)
 			return ErrorModel(SystemError)

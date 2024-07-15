@@ -5,6 +5,7 @@ import (
 	"atlas-account/account/session"
 	"atlas-account/database"
 	"atlas-account/logger"
+	"atlas-account/tasks"
 	"atlas-account/tracing"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -14,6 +15,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 )
 
 const serviceName = "atlas-account"
@@ -66,6 +68,8 @@ func main() {
 	_, _ = cm.RegisterHandler(session.CreateAccountSessionRegister(l, db))
 
 	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), session.InitResource(GetServer())(db), account.InitResource(GetServer())(db))
+
+	go tasks.Register(l, ctx)(account.NewTransitionTimeout(l, db, time.Second*time.Duration(30)))
 
 	// trap sigterm or interrupt and gracefully shutdown the server
 	c := make(chan os.Signal, 1)

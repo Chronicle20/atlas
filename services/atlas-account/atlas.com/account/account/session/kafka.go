@@ -20,5 +20,6 @@ type statusEvent struct {
 
 type logoutCommand struct {
 	Tenant    tenant.Model `json:"tenant"`
+	Issuer    string       `json:"author"`
 	AccountId uint32       `json:"accountId"`
 }

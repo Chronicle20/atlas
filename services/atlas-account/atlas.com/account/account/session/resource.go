@@ -1,6 +1,7 @@
 package session
 
 import (
+	"atlas-account/account"
 	"atlas-account/rest"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -13,6 +14,7 @@ import (
 
 const (
 	createSession = "create_session"
+	updateSession = "update_session"
 	deleteSession = "delete_session"
 )
 
@@ -21,6 +23,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			r := router.PathPrefix("/accounts/{accountId}/sessions").Subrouter()
 			r.HandleFunc("/", rest.RegisterInputHandler[InputRestModel](l)(db)(si)(createSession, handleCreateSession)).Methods(http.MethodPost)
+			r.HandleFunc("/", rest.RegisterInputHandler[InputRestModel](l)(db)(si)(updateSession, handleUpdateSession)).Methods(http.MethodPatch)
 			r.HandleFunc("/", rest.RegisterHandler(l)(db)(si)(deleteSession, handleDeleteSession)).Methods(http.MethodDelete)
 		}
 	}
@@ -29,13 +32,22 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleCreateSession(d *rest.HandlerDependency, c *rest.HandlerContext, input InputRestModel) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			var resp Model
-			if input.Name == "" && input.Password == "" {
-				resp = CreateSession(d.Logger(), d.DB(), d.Span(), c.Tenant())(input.SessionId, accountId)
-			} else {
-				resp = AttemptLogin(d.Logger(), d.DB(), d.Span(), c.Tenant())(input.SessionId, input.Name, input.Password)
+			resp := AttemptLogin(d.Logger(), d.DB(), d.Span(), c.Tenant())(input.SessionId, input.Name, input.Password)
+			res, err := model.Transform(resp, Transform)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
 			}
+			server.Marshal[OutputRestModel](d.Logger())(w)(c.ServerInformation())(res)
+		}
+	})
+}
 
+func handleUpdateSession(d *rest.HandlerDependency, c *rest.HandlerContext, input InputRestModel) http.HandlerFunc {
+	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			resp := ProgressState(d.Logger(), d.DB(), d.Span(), c.Tenant())(input.SessionId, accountId, account.State(input.State))
 			res, err := model.Transform(resp, Transform)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")

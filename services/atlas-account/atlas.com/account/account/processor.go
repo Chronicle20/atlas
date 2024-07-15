@@ -13,30 +13,32 @@ import (
 
 type IdOperator func(tenant.Model, uint32) error
 
-func SetLoggedIn(db *gorm.DB) IdOperator {
-	return func(tenant tenant.Model, id uint32) error {
-		return ForId(db)(tenant, id, setLoggedIn(db)(tenant))
-	}
-}
-
 func SetLoggedOut(db *gorm.DB) IdOperator {
 	return func(tenant tenant.Model, id uint32) error {
 		return ForId(db)(tenant, id, setLoggedOut(db)(tenant))
 	}
 }
 
-func setLoggedIn(db *gorm.DB) func(tenant tenant.Model) model.Operator[Model] {
+func setLoggedOut(db *gorm.DB) func(tenant tenant.Model) model.Operator[Model] {
 	return func(tenant tenant.Model) model.Operator[Model] {
-		return func(m Model) error {
-			return update(db)(updateState(LoggedIn))(tenant, m.Id())
+		return setState(db)(tenant)(NotLoggedIn)
+	}
+}
+
+func SetState(db *gorm.DB) func(state State) IdOperator {
+	return func(state State) IdOperator {
+		return func(t tenant.Model, id uint32) error {
+			return ForId(db)(t, id, setState(db)(t)(state))
 		}
 	}
 }
 
-func setLoggedOut(db *gorm.DB) func(tenant tenant.Model) model.Operator[Model] {
-	return func(tenant tenant.Model) model.Operator[Model] {
-		return func(m Model) error {
-			return update(db)(updateState(NotLoggedIn))(tenant, m.Id())
+func setState(db *gorm.DB) func(tenant tenant.Model) func(state State) model.Operator[Model] {
+	return func(tenant tenant.Model) func(state State) model.Operator[Model] {
+		return func(state State) model.Operator[Model] {
+			return func(m Model) error {
+				return update(db)(updateState(state))(tenant, m.Id())
+			}
 		}
 	}
 }
@@ -83,6 +85,14 @@ func GetByName(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name
 		}
 		return m, nil
 	}
+}
+
+func allInTransitionProvider(db *gorm.DB) model.SliceProvider[Model] {
+	return database.ModelSliceProvider[Model, entity](db)(entitiesInTransition, modelFromEntity)
+}
+
+func GetInTransition(l logrus.FieldLogger, db *gorm.DB) ([]Model, error) {
+	return allInTransitionProvider(db)()
 }
 
 func GetOrCreate(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(name string, password string, automaticRegister bool) (Model, error) {

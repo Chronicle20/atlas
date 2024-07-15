@@ -63,6 +63,11 @@
               "handler": "ServerListRequestHandle"
             },
             {
+              "opCode": "0x13",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterSelectedHandle"
+            },
+            {
               "opCode": "0x15",
               "validator": "LoggedInValidator",
               "handler": "CharacterCheckNameHandle"
@@ -86,6 +91,11 @@
               "opCode": "0x1D",
               "validator": "LoggedInValidator",
               "handler": "RegisterPicHandle"
+            },
+            {
+              "opCode": "0x1E",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterSelectedPicHandle"
             },
             {
               "opCode": "0x24",
@@ -172,6 +182,36 @@
             {
               "opCode": "0x0B",
               "writer": "CharacterList"
+            },
+            {
+              "opCode": "0x0C",
+              "writer": "ServerIP",
+              "options": {
+                "codes": {
+                  "OK": 0,
+                  "ID_DELETED_OR_BLOCKED": 2,
+                  "INCORRECT_PASSWORD": 4,
+                  "NOT_REGISTERED_ID": 5,
+                  "SERVER_UNDER_INSPECTION": 7,
+                  "TOO_MANY_CONNECTION_REQUESTS": 10,
+                  "ADULT_CHANNEL": 11,
+                  "TO_TITLE": 12,
+                  "MASTER_IP": 13,
+                  "WRONG_GATEWAY": 14,
+                  "STILL_PROCESSING": 15,
+                  "ACCOUNT_VERIFICATION": 16,
+                  "MAPLE_EUROPE_REDIRECT": 25
+                },
+                "modes": {
+                  "OK": 0,
+                  "INCORRECT_LOGIN_ID": 1,
+                  "INCORRECT_FORM_OF_ID": 2,
+                  "SEVEN_DAY_UNVERIFIED": 3,
+                  "USED_UP_GAME_TIME": 19,
+                  "THIRTY_DAY_UNVERIFIED": 25,
+                  "PC_ROOM_PREMIUM": 27
+                }
+              }
             },
             {
               "opCode": "0x0D",
@@ -279,6 +319,11 @@
               "handler": "ServerListRequestHandle"
             },
             {
+              "opCode": "0x13",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterSelectedHandle"
+            },
+            {
               "opCode": "0x15",
               "validator": "LoggedInValidator",
               "handler": "CharacterCheckNameHandle"
@@ -302,6 +347,11 @@
               "opCode": "0x1D",
               "validator": "LoggedInValidator",
               "handler": "RegisterPicHandle"
+            },
+            {
+              "opCode": "0x1E",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterSelectedPicHandle"
             },
             {
               "opCode": "0x24",
@@ -388,6 +438,36 @@
             {
               "opCode": "0x0B",
               "writer": "CharacterList"
+            },
+            {
+              "opCode": "0x0C",
+              "writer": "ServerIP",
+              "options": {
+                "codes": {
+                  "OK": 0,
+                  "ID_DELETED_OR_BLOCKED": 2,
+                  "INCORRECT_PASSWORD": 4,
+                  "NOT_REGISTERED_ID": 5,
+                  "SERVER_UNDER_INSPECTION": 7,
+                  "TOO_MANY_CONNECTION_REQUESTS": 10,
+                  "ADULT_CHANNEL": 11,
+                  "TO_TITLE": 12,
+                  "MASTER_IP": 13,
+                  "WRONG_GATEWAY": 14,
+                  "STILL_PROCESSING": 15,
+                  "ACCOUNT_VERIFICATION": 16,
+                  "MAPLE_EUROPE_REDIRECT": 25
+                },
+                "modes": {
+                  "OK": 0,
+                  "INCORRECT_LOGIN_ID": 1,
+                  "INCORRECT_FORM_OF_ID": 2,
+                  "SEVEN_DAY_UNVERIFIED": 3,
+                  "USED_UP_GAME_TIME": 19,
+                  "THIRTY_DAY_UNVERIFIED": 25,
+                  "PC_ROOM_PREMIUM": 27
+                }
+              }
             },
             {
               "opCode": "0x0D",
@@ -496,6 +576,11 @@
               "handler": "ServerListRequestHandle"
             },
             {
+              "opCode": "0x13",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterSelectedHandle"
+            },
+            {
               "opCode": "0x15",
               "validator": "LoggedInValidator",
               "handler": "CharacterCheckNameHandle"
@@ -519,6 +604,11 @@
               "opCode": "0x1D",
               "validator": "LoggedInValidator",
               "handler": "RegisterPicHandle"
+            },
+            {
+              "opCode": "0x1E",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterSelectedPicHandle"
             },
             {
               "opCode": "0x24",
@@ -605,6 +695,36 @@
             {
               "opCode": "0x0B",
               "writer": "CharacterList"
+            },
+            {
+              "opCode": "0x0C",
+              "writer": "ServerIP",
+              "options": {
+                "codes": {
+                  "OK": 0,
+                  "ID_DELETED_OR_BLOCKED": 2,
+                  "INCORRECT_PASSWORD": 4,
+                  "NOT_REGISTERED_ID": 5,
+                  "SERVER_UNDER_INSPECTION": 7,
+                  "TOO_MANY_CONNECTION_REQUESTS": 10,
+                  "ADULT_CHANNEL": 11,
+                  "TO_TITLE": 12,
+                  "MASTER_IP": 13,
+                  "WRONG_GATEWAY": 14,
+                  "STILL_PROCESSING": 15,
+                  "ACCOUNT_VERIFICATION": 16,
+                  "MAPLE_EUROPE_REDIRECT": 25
+                },
+                "modes": {
+                  "OK": 0,
+                  "INCORRECT_LOGIN_ID": 1,
+                  "INCORRECT_FORM_OF_ID": 2,
+                  "SEVEN_DAY_UNVERIFIED": 3,
+                  "USED_UP_GAME_TIME": 19,
+                  "THIRTY_DAY_UNVERIFIED": 25,
+                  "PC_ROOM_PREMIUM": 27
+                }
+              }
             },
             {
               "opCode": "0x0D",
@@ -713,6 +833,11 @@
               "handler": "ServerListRequestHandle"
             },
             {
+              "opCode": "0x13",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterSelectedHandle"
+            },
+            {
               "opCode": "0x15",
               "validator": "LoggedInValidator",
               "handler": "CharacterCheckNameHandle"
@@ -736,6 +861,11 @@
               "opCode": "0x1D",
               "validator": "LoggedInValidator",
               "handler": "RegisterPicHandle"
+            },
+            {
+              "opCode": "0x1E",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterSelectedPicHandle"
             },
             {
               "opCode": "0x24",
@@ -824,6 +954,36 @@
               "writer": "CharacterList"
             },
             {
+              "opCode": "0x0C",
+              "writer": "ServerIP",
+              "options": {
+                "codes": {
+                  "OK": 0,
+                  "ID_DELETED_OR_BLOCKED": 2,
+                  "INCORRECT_PASSWORD": 4,
+                  "NOT_REGISTERED_ID": 5,
+                  "SERVER_UNDER_INSPECTION": 7,
+                  "TOO_MANY_CONNECTION_REQUESTS": 10,
+                  "ADULT_CHANNEL": 11,
+                  "TO_TITLE": 12,
+                  "MASTER_IP": 13,
+                  "WRONG_GATEWAY": 14,
+                  "STILL_PROCESSING": 15,
+                  "ACCOUNT_VERIFICATION": 16,
+                  "MAPLE_EUROPE_REDIRECT": 25
+                },
+                "modes": {
+                  "OK": 0,
+                  "INCORRECT_LOGIN_ID": 1,
+                  "INCORRECT_FORM_OF_ID": 2,
+                  "SEVEN_DAY_UNVERIFIED": 3,
+                  "USED_UP_GAME_TIME": 19,
+                  "THIRTY_DAY_UNVERIFIED": 25,
+                  "PC_ROOM_PREMIUM": 27
+                }
+              }
+            },
+            {
               "opCode": "0x0D",
               "writer": "CharacterNameResponse",
               "options": {
@@ -904,6 +1064,11 @@
               "handler": "CharacterListWorldHandle"
             },
             {
+              "opCode": "0x06",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterSelectedHandle"
+            },
+            {
               "opCode": "0x08",
               "validator": "LoggedInValidator",
               "handler": "CharacterCheckNameHandle"
@@ -981,6 +1146,36 @@
             {
               "opCode": "0x03",
               "writer": "CharacterList"
+            },
+            {
+              "opCode": "0x04",
+              "writer": "ServerIP",
+              "options": {
+                "codes": {
+                  "OK": 0,
+                  "ID_DELETED_OR_BLOCKED": 2,
+                  "INCORRECT_PASSWORD": 4,
+                  "NOT_REGISTERED_ID": 5,
+                  "SERVER_UNDER_INSPECTION": 7,
+                  "TOO_MANY_CONNECTION_REQUESTS": 10,
+                  "ADULT_CHANNEL": 11,
+                  "TO_TITLE": 12,
+                  "MASTER_IP": 13,
+                  "WRONG_GATEWAY": 14,
+                  "STILL_PROCESSING": 15,
+                  "ACCOUNT_VERIFICATION": 16,
+                  "MAPLE_EUROPE_REDIRECT": 25
+                },
+                "modes": {
+                  "OK": 0,
+                  "INCORRECT_LOGIN_ID": 1,
+                  "INCORRECT_FORM_OF_ID": 2,
+                  "SEVEN_DAY_UNVERIFIED": 3,
+                  "USED_UP_GAME_TIME": 19,
+                  "THIRTY_DAY_UNVERIFIED": 25,
+                  "PC_ROOM_PREMIUM": 27
+                }
+              }
             },
             {
               "opCode": "0x05",

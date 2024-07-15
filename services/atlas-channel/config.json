@@ -37,8 +37,19 @@
               ]
             }
           ],
-          "handlers": [],
-          "writers": []
+          "handlers": [
+            {
+              "opCode": "0x14",
+              "validator": "NoOpValidator",
+              "handler": "CharacterLoggedInHandle"
+            }
+          ],
+          "writers": [
+            {
+              "opCode": "0x7D",
+              "writer": "SetField"
+            }
+          ]
         },{
           "tenant": "083839c6-c47c-42a6-9585-76492795d123",
           "region": "GMS",
@@ -63,8 +74,19 @@
               ]
             }
           ],
-          "handlers": [],
-          "writers": []
+          "handlers": [
+            {
+              "opCode": "0x14",
+              "validator": "NoOpValidator",
+              "handler": "CharacterLoggedInHandle"
+            }
+          ],
+          "writers": [
+            {
+              "opCode": "0x7D",
+              "writer": "SetField"
+            }
+          ]
         },
         {
           "tenant": "08724653-ab5d-4a46-9b44-8342d206f2ed",
@@ -90,8 +112,19 @@
               ]
             }
           ],
-          "handlers": [],
-          "writers": []
+          "handlers": [
+            {
+              "opCode": "0x14",
+              "validator": "NoOpValidator",
+              "handler": "CharacterLoggedInHandle"
+            }
+          ],
+          "writers": [
+            {
+              "opCode": "0x85",
+              "writer": "SetField"
+            }
+          ]
         },
         {
           "tenant": "09224653-ab5d-4a46-9b44-8342d206f2ed",
@@ -117,8 +150,19 @@
               ]
             }
           ],
-          "handlers": [],
-          "writers": []
+          "handlers": [
+            {
+              "opCode": "0x14",
+              "validator": "NoOpValidator",
+              "handler": "CharacterLoggedInHandle"
+            }
+          ],
+          "writers": [
+            {
+              "opCode": "0x8C",
+              "writer": "SetField"
+            }
+          ]
         },
         {
           "tenant": "185577c2-26da-4647-baaf-f31e02542a8a",
@@ -144,8 +188,19 @@
               ]
             }
           ],
-          "handlers": [],
-          "writers": []
+          "handlers": [
+            {
+              "opCode": "0x07",
+              "validator": "NoOpValidator",
+              "handler": "CharacterLoggedInHandle"
+            }
+          ],
+          "writers": [
+            {
+              "opCode": "0x7B",
+              "writer": "SetField"
+            }
+          ]
         }
       ]
     }

@@ -72,8 +72,10 @@ func main() {
 
 	handlerMap := make(map[string]handler.MessageHandler)
 	handlerMap[handler.NoOpHandler] = handler.NoOpHandlerFunc
+	handlerMap[handler.CharacterLoggedInHandle] = handler.CharacterLoggedInHandleFunc
 
 	writerMap := make(map[string]writer.HeaderFunc)
+	writerMap[writer.SetField] = writer.MessageGetter
 
 	for _, s := range config.Data.Attributes.Servers {
 		wp := getWriterProducer(l)(s.Writers, writerMap)

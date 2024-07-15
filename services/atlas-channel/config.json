@@ -1,0 +1,153 @@
+{
+  "data": {
+    "type": "configuration",
+    "attributes": {
+      "tasks": [
+        {
+          "type": "timeout",
+          "attributes": {
+            "interval": 10000,
+            "duration": 3600000
+          }
+        }
+      ],
+      "ipAddress": "127.0.0.1",
+      "servers": [
+        {
+          "tenant": "012839c6-c47c-42a6-9585-76492795d123",
+          "region": "GMS",
+          "version": {
+            "major": "12",
+            "minor": "1"
+          },
+          "worlds": [
+            {
+              "id": 0,
+              "channels": [
+                {
+                  "id": 1,
+                  "port": "1201"
+                }, {
+                  "id": 2,
+                  "port": "1202"
+                }, {
+                  "id": 3,
+                  "port": "1203"
+                }
+              ]
+            }
+          ],
+          "handlers": [],
+          "writers": []
+        },{
+          "tenant": "083839c6-c47c-42a6-9585-76492795d123",
+          "region": "GMS",
+          "version": {
+            "major": "83",
+            "minor": "1"
+          },
+          "worlds": [
+            {
+              "id": 0,
+              "channels": [
+                {
+                  "id": 1,
+                  "port": "8301"
+                }, {
+                  "id": 2,
+                  "port": "8302"
+                }, {
+                  "id": 3,
+                  "port": "8303"
+                }
+              ]
+            }
+          ],
+          "handlers": [],
+          "writers": []
+        },
+        {
+          "tenant": "08724653-ab5d-4a46-9b44-8342d206f2ed",
+          "region": "GMS",
+          "version": {
+            "major": "87",
+            "minor": "1"
+          },
+          "worlds": [
+            {
+              "id": 0,
+              "channels": [
+                {
+                  "id": 1,
+                  "port": "8701"
+                }, {
+                  "id": 2,
+                  "port": "8702"
+                }, {
+                  "id": 3,
+                  "port": "8703"
+                }
+              ]
+            }
+          ],
+          "handlers": [],
+          "writers": []
+        },
+        {
+          "tenant": "09224653-ab5d-4a46-9b44-8342d206f2ed",
+          "region": "GMS",
+          "version": {
+            "major": "92",
+            "minor": "1"
+          },
+          "worlds": [
+            {
+              "id": 0,
+              "channels": [
+                {
+                  "id": 1,
+                  "port": "9201"
+                }, {
+                  "id": 2,
+                  "port": "9202"
+                }, {
+                  "id": 3,
+                  "port": "9203"
+                }
+              ]
+            }
+          ],
+          "handlers": [],
+          "writers": []
+        },
+        {
+          "tenant": "185577c2-26da-4647-baaf-f31e02542a8a",
+          "region": "JMS",
+          "version": {
+            "major": "185",
+            "minor": "1"
+          },
+          "worlds": [
+            {
+              "id": 0,
+              "channels": [
+                {
+                  "id": 1,
+                  "port": "18501"
+                }, {
+                  "id": 2,
+                  "port": "18502"
+                }, {
+                  "id": 3,
+                  "port": "18503"
+                }
+              ]
+            }
+          ],
+          "handlers": [],
+          "writers": []
+        }
+      ]
+    }
+  }
+}

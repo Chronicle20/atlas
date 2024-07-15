@@ -45,6 +45,10 @@ func requestCreate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mo
 			Hair:      hair + hairColor,
 			SkinColor: skinColor,
 			Level:     1,
+			Hp:        50,
+			MaxHp:     50,
+			Mp:        5,
+			MaxMp:     5,
 		}
 		return rest.MakePostRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+charactersResource), i)
 	}

@@ -2,14 +2,12 @@ package session
 
 import (
 	"atlas-account/rest"
-	"atlas-account/tenant"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/manyminds/api2go/jsonapi"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"io"
 	"net/http"
 )
 
@@ -22,97 +20,38 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			r := router.PathPrefix("/accounts/{accountId}/sessions").Subrouter()
-			r.HandleFunc("/", registerCreateSession(si)(l, db)).Methods(http.MethodPost)
-			r.HandleFunc("/", registerDeleteSession(si)(l, db)).Methods(http.MethodDelete)
+			r.HandleFunc("/", rest.RegisterInputHandler[InputRestModel](l)(db)(si)(createSession, handleCreateSession)).Methods(http.MethodPost)
+			r.HandleFunc("/", rest.RegisterHandler(l)(db)(si)(deleteSession, handleDeleteSession)).Methods(http.MethodDelete)
 		}
 	}
 }
 
-func registerCreateSession(si jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
-	return func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
-		return rest.RetrieveSpan(l, createSession, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
-			return rest.ParseTenant(sl, func(tenant tenant.Model) http.HandlerFunc {
-				return parseInput(sl, func(container InputRestModel) http.HandlerFunc {
-					return handleCreateSession(si)(sl, db)(span)(tenant)(container)
-				})
-			})
-		})
-	}
-}
-
-func registerDeleteSession(si jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
-	return func(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
-		return rest.RetrieveSpan(l, deleteSession, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
-			return rest.ParseTenant(sl, func(tenant tenant.Model) http.HandlerFunc {
-				return rest.ParseAccountId(sl, func(id uint32) http.HandlerFunc {
-					return handleDeleteSession(si)(sl, db)(span)(tenant)(id)
-				})
-			})
-		})
-	}
-}
-
-type inputHandler func(container InputRestModel) http.HandlerFunc
-
-func parseInput(l logrus.FieldLogger, next inputHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var login InputRestModel
-
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
-
-		err = jsonapi.Unmarshal(body, &login)
-		if err != nil {
-			l.WithError(err).Errorln("Deserializing input", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(login)(w, r)
-	}
-}
-
-func handleCreateSession(si jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(container InputRestModel) http.HandlerFunc {
-	return func(l logrus.FieldLogger, db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(container InputRestModel) http.HandlerFunc {
-		return func(span opentracing.Span) func(tenant tenant.Model) func(container InputRestModel) http.HandlerFunc {
-			return func(tenant tenant.Model) func(container InputRestModel) http.HandlerFunc {
-				return func(container InputRestModel) http.HandlerFunc {
-					return func(w http.ResponseWriter, r *http.Request) {
-						resp := AttemptLogin(l, db, span, tenant)(container.SessionId, container.Name, container.Password)
-						res, err := jsonapi.MarshalWithURLs(Transform(resp), si)
-						if err != nil {
-							l.WithError(err).Errorf("Unable to marshal models.")
-							w.WriteHeader(http.StatusInternalServerError)
-							return
-						}
-
-						_, err = w.Write(res)
-						if err != nil {
-							l.WithError(err).Errorf("Unable to write response.")
-							w.WriteHeader(http.StatusInternalServerError)
-							return
-						}
-					}
-				}
+func handleCreateSession(d *rest.HandlerDependency, c *rest.HandlerContext, input InputRestModel) http.HandlerFunc {
+	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			var resp Model
+			if input.Name == "" && input.Password == "" {
+				resp = CreateSession(d.Logger(), d.DB(), d.Span(), c.Tenant())(input.SessionId, accountId)
+			} else {
+				resp = AttemptLogin(d.Logger(), d.DB(), d.Span(), c.Tenant())(input.SessionId, input.Name, input.Password)
 			}
+
+			res, err := model.Transform(resp, Transform)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			server.Marshal[OutputRestModel](d.Logger())(w)(c.ServerInformation())(res)
 		}
-	}
+	})
 }
 
-func handleDeleteSession(_ jsonapi.ServerInformation) func(l logrus.FieldLogger, db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(accountId uint32) http.HandlerFunc {
-	return func(l logrus.FieldLogger, db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(accountId uint32) http.HandlerFunc {
-		return func(span opentracing.Span) func(tenant tenant.Model) func(accountId uint32) http.HandlerFunc {
-			return func(tenant tenant.Model) func(accountId uint32) http.HandlerFunc {
-				return func(accountId uint32) http.HandlerFunc {
-					return func(w http.ResponseWriter, r *http.Request) {
-						emitLogoutCommand(l, span, tenant)(accountId)
-						w.WriteHeader(http.StatusAccepted)
-					}
-				}
-			}
+func handleDeleteSession(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			emitLogoutCommand(d.Logger(), d.Span(), c.Tenant())(accountId)
+			w.WriteHeader(http.StatusAccepted)
 		}
-	}
+	})
 }

@@ -40,12 +40,12 @@ func (r OutputRestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
-func Transform(model Model) OutputRestModel {
+func Transform(model Model) (OutputRestModel, error) {
 	rm := OutputRestModel{
 		Id:     0,
 		Code:   model.Code,
 		Reason: model.Reason,
 		Until:  model.Until,
 	}
-	return rm
+	return rm, nil
 }

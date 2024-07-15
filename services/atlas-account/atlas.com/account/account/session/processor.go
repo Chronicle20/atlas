@@ -64,9 +64,28 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 
 		l.Debugf("Login successful for [%s].", name)
 		emitLoggedInEvent(l, span, tenant)
-		
+
 		if !a.TOS() && tenant.Region != "JMS" {
 			return ErrorModel(LicenseAgreement)
+		}
+		return OkModel()
+	}
+}
+
+func CreateSession(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32) Model {
+	return func(sessionId uuid.UUID, accountId uint32) Model {
+		a, err := account.GetById(l, db, tenant)(accountId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate account a session is being created for.")
+			return ErrorModel(NotRegistered)
+		}
+		if a.State() != account.NotLoggedIn {
+			return ErrorModel(AlreadyLoggedIn)
+		}
+		err = account.SetLoggedIn(db)(tenant, a.Id())
+		if err != nil {
+			l.WithError(err).Errorf("Error trying to update logged in state for %d.", accountId)
+			return ErrorModel(SystemError)
 		}
 		return OkModel()
 	}

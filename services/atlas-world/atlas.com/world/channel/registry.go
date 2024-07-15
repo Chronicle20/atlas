@@ -7,7 +7,7 @@ import (
 
 type Registry struct {
 	mutex   sync.Mutex
-	servers []Model
+	servers map[string][]Model
 }
 
 var channelRegistry *Registry
@@ -19,18 +19,18 @@ var errChannelNotFound = errors.New("channel not found")
 
 func GetChannelRegistry() *Registry {
 	once.Do(func() {
-		channelRegistry = &Registry{}
+		channelRegistry = &Registry{servers: make(map[string][]Model)}
 	})
 	return channelRegistry
 }
 
-func (c *Registry) Register(worldId byte, channelId byte, ipAddress string, port int) Model {
+func (c *Registry) Register(tenantId string, worldId byte, channelId byte, ipAddress string, port int) Model {
 	c.mutex.Lock()
 
 	var found *Model = nil
 	for i := 0; i < len(c.servers); i++ {
-		if c.servers[i].WorldId() == worldId && c.servers[i].ChannelId() == channelId {
-			found = &c.servers[i]
+		if c.servers[tenantId][i].WorldId() == worldId && c.servers[tenantId][i].ChannelId() == channelId {
+			found = &c.servers[tenantId][i]
 			break
 		}
 	}
@@ -40,7 +40,7 @@ func (c *Registry) Register(worldId byte, channelId byte, ipAddress string, port
 		return *found
 	}
 
-	var existingIds = existingIds(c.servers)
+	var existingIds = existingIds(c.servers[tenantId])
 
 	var currentUniqueId = uniqueId
 	for contains(existingIds, currentUniqueId) {
@@ -52,7 +52,7 @@ func (c *Registry) Register(worldId byte, channelId byte, ipAddress string, port
 	}
 
 	var newChannelServer = NewModel(uniqueId, worldId, channelId, ipAddress, port)
-	c.servers = append(c.servers, newChannelServer)
+	c.servers[tenantId] = append(c.servers[tenantId], newChannelServer)
 	c.mutex.Unlock()
 	return newChannelServer
 }
@@ -74,13 +74,12 @@ func contains(ids []uint32, id uint32) bool {
 	return false
 }
 
-func (c *Registry) ChannelServers() []Model {
-	servers := c.servers
-	return servers
+func (c *Registry) ChannelServers(tenantId string) []Model {
+	return c.servers[tenantId]
 }
 
-func (c *Registry) ChannelServer(worldId byte, channelId byte) (Model, error) {
-	for _, x := range c.ChannelServers() {
+func (c *Registry) ChannelServer(tenantId string, worldId byte, channelId byte) (Model, error) {
+	for _, x := range c.ChannelServers(tenantId) {
 		if x.WorldId() == worldId && x.ChannelId() == channelId {
 			return x, nil
 		}
@@ -88,22 +87,22 @@ func (c *Registry) ChannelServer(worldId byte, channelId byte) (Model, error) {
 	return Model{}, errChannelNotFound
 }
 
-func (c *Registry) Remove(id uint32) {
+func (c *Registry) Remove(tenantId string, id uint32) {
 	c.mutex.Lock()
-	index := indexOf(id, c.servers)
+	index := indexOf(id, c.servers[tenantId])
 	if index >= 0 && index < len(c.servers) {
-		c.servers = remove(c.servers, index)
+		c.servers[tenantId] = remove(c.servers[tenantId], index)
 	}
 	c.mutex.Unlock()
 }
 
-func (c *Registry) RemoveByWorldAndChannel(worldId byte, channelId byte) {
+func (c *Registry) RemoveByWorldAndChannel(tenantId string, worldId byte, channelId byte) {
 	c.mutex.Lock()
-	element, err := c.ChannelServer(worldId, channelId)
+	element, err := c.ChannelServer(tenantId, worldId, channelId)
 	if err == nil {
-		index := indexOf(element.UniqueId(), c.servers)
+		index := indexOf(element.UniqueId(), c.servers[tenantId])
 		if index >= 0 && index < len(c.servers) {
-			c.servers = remove(c.servers, index)
+			c.servers[tenantId] = remove(c.servers[tenantId], index)
 		}
 	}
 	c.mutex.Unlock()

@@ -35,7 +35,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetChannelServers(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cs, err := GetByWorld(d.Logger())(worldId)
+			cs, err := GetByWorld(d.Logger(), c.Tenant())(worldId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get all channel servers.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -72,7 +72,7 @@ func handleUnregisterChannelServer(d *rest.HandlerDependency, c *rest.HandlerCon
 	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				ch, err := GetById(d.Logger())(worldId, channelId)
+				ch, err := GetById(d.Logger(), c.Tenant())(worldId, channelId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Attempting to shutdown a world [%d] channel [%d] that does not exist.", worldId, channelId)
 					w.WriteHeader(http.StatusNotFound)
@@ -89,7 +89,7 @@ func handleGetChannel(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				ch, err := GetById(d.Logger())(worldId, channelId)
+				ch, err := GetById(d.Logger(), c.Tenant())(worldId, channelId)
 				if err != nil {
 					if errors.Is(err, errChannelNotFound) {
 						w.WriteHeader(http.StatusNotFound)

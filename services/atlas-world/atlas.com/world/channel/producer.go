@@ -30,6 +30,6 @@ func emitChannelServerEvent(l logrus.FieldLogger, span opentracing.Span, tenant 
 			IpAddress: ipAddress,
 			Port:      port,
 		}
-		p([]byte(tenant.Id().String()), event)
+		p([]byte(tenant.Id.String()), event)
 	}
 }

@@ -39,3 +39,22 @@ func CreateLogin(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 		}, nil
 	}
 }
+
+func updateState(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32, state int) (Model, error) {
+	return func(sessionId uuid.UUID, accountId uint32, state int) (Model, error) {
+		i := InputRestModel{
+			Id:        0,
+			SessionId: sessionId,
+			State:     state,
+		}
+		resp, err := rest.MakePatchRequest[OutputRestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+LoginsResource, accountId), i)(l)
+		if err != nil {
+			return Model{}, err
+		}
+		return Model{
+			Code:   resp.Code,
+			Reason: resp.Reason,
+			Until:  resp.Until,
+		}, nil
+	}
+}

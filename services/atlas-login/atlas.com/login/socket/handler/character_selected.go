@@ -1,6 +1,7 @@
 package handler
 
 import (
+	as "atlas-login/account/session"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"atlas-login/world/channel"
@@ -27,6 +28,17 @@ func CharacterSelectedHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")
 			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeServerUnderInspection))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write server ip response due to error.")
+				return
+			}
+			return
+		}
+
+		resp, err := as.UpdateState(l, span, s.Tenant())(s.SessionId(), s.AccountId(), 2)
+		if err != nil || resp.Code != "OK" {
+			l.WithError(err).Errorf("Unable to update session for character [%d] attempting to login.", characterId)
+			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeTooManyConnectionRequests))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write server ip response due to error.")
 				return

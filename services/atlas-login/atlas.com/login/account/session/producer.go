@@ -12,6 +12,7 @@ func emitLogoutCommand(l logrus.FieldLogger, span opentracing.Span, tenant tenan
 	return func(accountId uint32) {
 		command := &logoutCommand{
 			Tenant:    tenant,
+			Issuer:    "login",
 			AccountId: accountId,
 		}
 		p(producer.CreateKey(int(accountId)), command)

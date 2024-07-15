@@ -12,7 +12,7 @@ import (
 var errWorldNotFound = errors.New("world not found")
 
 func allWorldProvider(l logrus.FieldLogger, tenant tenant.Model) model.SliceProvider[Model] {
-	worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers())
+	worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(tenant.Id.String()))
 	return model.SliceMap[byte, Model](model.FixedSliceProvider[byte](worldIds), worldTransformer(l, tenant))
 }
 
@@ -28,7 +28,7 @@ func worldTransformer(l logrus.FieldLogger, tenant tenant.Model) func(b byte) (M
 
 func byWorldIdProvider(l logrus.FieldLogger, tenant tenant.Model) func(worldId byte) model.Provider[Model] {
 	return func(worldId byte) model.Provider[Model] {
-		worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers())
+		worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(tenant.Id.String()))
 		var exists = false
 		for _, wid := range worldIds {
 			if wid == worldId {
@@ -44,7 +44,7 @@ func byWorldIdProvider(l logrus.FieldLogger, tenant tenant.Model) func(worldId b
 			return model.ErrorProvider[Model](err)
 		}
 
-		wc, err := c.FindWorld(tenant.Id().String(), worldId)
+		wc, err := c.FindWorld(tenant.Id.String(), worldId)
 		if err != nil {
 			return model.ErrorProvider[Model](err)
 		}

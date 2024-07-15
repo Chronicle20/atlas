@@ -1,19 +1,20 @@
 package channel
 
 import (
+	"atlas-world/tenant"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 )
 
-func allProvider() model.SliceProvider[Model] {
+func allProvider(tenant tenant.Model) model.SliceProvider[Model] {
 	return func() ([]Model, error) {
-		return GetChannelRegistry().ChannelServers(), nil
+		return GetChannelRegistry().ChannelServers(tenant.Id.String()), nil
 	}
 }
 
-func byWorldProvider(_ logrus.FieldLogger) func(worldId byte) model.SliceProvider[Model] {
+func byWorldProvider(_ logrus.FieldLogger, tenant tenant.Model) func(worldId byte) model.SliceProvider[Model] {
 	return func(worldId byte) model.SliceProvider[Model] {
-		return model.FilteredProvider[Model](allProvider(), ByWorldFilter(worldId))
+		return model.FilteredProvider[Model](allProvider(tenant), ByWorldFilter(worldId))
 	}
 }
 
@@ -23,26 +24,35 @@ func ByWorldFilter(id byte) model.Filter[Model] {
 	}
 }
 
-func GetByWorld(l logrus.FieldLogger) func(worldId byte) ([]Model, error) {
+func GetByWorld(l logrus.FieldLogger, tenant tenant.Model) func(worldId byte) ([]Model, error) {
 	return func(worldId byte) ([]Model, error) {
-		return byWorldProvider(l)(worldId)()
+		return byWorldProvider(l, tenant)(worldId)()
 	}
 }
 
-func byIdProvider(_ logrus.FieldLogger) func(worldId byte, channelId byte) model.Provider[Model] {
+func byIdProvider(_ logrus.FieldLogger, tenant tenant.Model) func(worldId byte, channelId byte) model.Provider[Model] {
 	return func(worldId byte, channelId byte) model.Provider[Model] {
 		return func() (Model, error) {
-			return GetChannelRegistry().ChannelServer(worldId, channelId)
+			return GetChannelRegistry().ChannelServer(tenant.Id.String(), worldId, channelId)
 		}
 	}
 }
 
-func GetById(l logrus.FieldLogger) func(worldId byte, channelId byte) (Model, error) {
+func GetById(l logrus.FieldLogger, tenant tenant.Model) func(worldId byte, channelId byte) (Model, error) {
 	return func(worldId byte, channelId byte) (Model, error) {
-		return byIdProvider(l)(worldId, channelId)()
+		return byIdProvider(l, tenant)(worldId, channelId)()
 	}
 }
 
-func Register(worldId byte, channelId byte, ipAddress string, port int) (Model, error) {
-	return GetChannelRegistry().Register(worldId, channelId, ipAddress, port), nil
+func Register(_ logrus.FieldLogger, tenant tenant.Model) func(worldId byte, channelId byte, ipAddress string, port int) (Model, error) {
+	return func(worldId byte, channelId byte, ipAddress string, port int) (Model, error) {
+		return GetChannelRegistry().Register(tenant.Id.String(), worldId, channelId, ipAddress, port), nil
+	}
+}
+
+func Unregister(_ logrus.FieldLogger, tenant tenant.Model) func(worldId byte, channelId byte) error {
+	return func(worldId byte, channelId byte) error {
+		GetChannelRegistry().RemoveByWorldAndChannel(tenant.Id.String(), worldId, channelId)
+		return nil
+	}
 }

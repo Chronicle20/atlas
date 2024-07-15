@@ -23,10 +23,10 @@ func handleStatus() message.Handler[channelServerEvent] {
 	return func(l logrus.FieldLogger, span opentracing.Span, event channelServerEvent) {
 		if event.Status == EventStatusStarted {
 			l.Debugf("Registering channel [%d] for world [%d] at [%s:%d].", event.ChannelId, event.WorldId, event.IpAddress, event.Port)
-			GetChannelRegistry().Register(event.WorldId, event.ChannelId, event.IpAddress, event.Port)
+			_, _ = Register(l, event.Tenant)(event.WorldId, event.ChannelId, event.IpAddress, event.Port)
 		} else if event.Status == EventStatusShutdown {
 			l.Debugf("Unregistering channel [%d] for world [%d] at [%s:%d].", event.ChannelId, event.WorldId, event.IpAddress, event.Port)
-			GetChannelRegistry().RemoveByWorldAndChannel(event.WorldId, event.ChannelId)
+			_ = Unregister(l, event.Tenant)(event.WorldId, event.ChannelId)
 		} else {
 			l.Errorf("Unhandled event status [%s].", event.Status)
 		}

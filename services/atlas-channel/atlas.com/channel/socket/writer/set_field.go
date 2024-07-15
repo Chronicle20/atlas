@@ -2,6 +2,8 @@ package writer
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/equipment/slot"
+	"atlas-channel/character/inventory/equipable"
 	"atlas-channel/pet"
 	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -186,6 +188,25 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 		w.WriteLong(uint64(getTime(-2)))
 
 		// regular equipment
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Hat())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Medal())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Forehead())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Ring1())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Ring2())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Eye())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Earring())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Shoulder())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Cape())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Top())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Pendant())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Weapon())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Shield())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Gloves())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Bottom())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Belt())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Ring3())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Ring4())
+		WriteEquipableIfPresent(tenant)(w, character.Equipment().Shoes())
 		w.WriteShort(0)
 		// cash equipment
 		w.WriteShort(0)
@@ -199,6 +220,76 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 		w.WriteByte(0)
 		// cash inventory
 		w.WriteByte(0)
+	}
+}
+
+func WriteEquipableIfPresent(tenant tenant.Model) func(w *response.Writer, model slot.Model) {
+	return func(w *response.Writer, model slot.Model) {
+		if model.Equipable != nil {
+			WriteEquipableInfo(tenant)(w, *model.Equipable, false)
+		}
+	}
+}
+
+func WriteEquipableInfo(tenant tenant.Model) func(w *response.Writer, e equipable.Model, zeroPosition bool) {
+	return func(w *response.Writer, e equipable.Model, zeroPosition bool) {
+		slot := e.Slot()
+		if !zeroPosition {
+			if slot < 0 {
+				slot *= -1
+			}
+			if slot > 100 {
+				w.WriteShort(uint16(slot - 100))
+			} else {
+				w.WriteShort(uint16(slot))
+			}
+		}
+
+		w.WriteByte(1)
+		w.WriteInt(e.ItemId())
+		w.WriteBool(false)
+		w.WriteLong(uint64(getTime(e.Expiration())))
+		w.WriteByte(byte(e.Slots()))
+		w.WriteByte(e.Level())
+		if tenant.Region == "JMS" {
+			w.WriteByte(0)
+		}
+		w.WriteShort(e.Strength())
+		w.WriteShort(e.Dexterity())
+		w.WriteShort(e.Intelligence())
+		w.WriteShort(e.Luck())
+		w.WriteShort(e.HP())
+		w.WriteShort(e.MP())
+		w.WriteShort(e.WeaponAttack())
+		w.WriteShort(e.MagicAttack())
+		w.WriteShort(e.WeaponDefense())
+		w.WriteShort(e.MagicDefense())
+		w.WriteShort(e.Accuracy())
+		w.WriteShort(e.Avoidability())
+		w.WriteShort(e.Hands())
+		w.WriteShort(e.Speed())
+		w.WriteShort(e.Jump())
+		w.WriteAsciiString(e.OwnerName())
+		w.WriteShort(e.Flags())
+
+		w.WriteByte(0)
+		w.WriteByte(0)   // item level
+		w.WriteInt(0)    // expNibble
+		w.WriteInt32(-1) // durability
+
+		if tenant.Region == "JMS" {
+			w.WriteByte(0)
+			w.WriteShort(0)
+			w.WriteShort(0)
+			w.WriteShort(0)
+			w.WriteShort(0)
+			w.WriteShort(0)
+			w.WriteInt(0)
+		}
+
+		w.WriteLong(0)
+		w.WriteLong(uint64(getTime(-2)))
+		w.WriteInt32(-1)
 	}
 }
 

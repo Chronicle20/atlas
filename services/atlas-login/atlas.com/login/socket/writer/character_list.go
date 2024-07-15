@@ -28,14 +28,13 @@ func CharacterListBody(l logrus.FieldLogger, tenant tenant.Model) func(character
 				WriteCharacter(tenant)(w, x, false)
 			}
 
+			w.WriteBool(pic != "")
 			if tenant.Region == "GMS" {
-				w.WriteBool(pic != "")
 				w.WriteInt(uint32(characterSlots))
 				if tenant.MajorVersion > 87 {
 					w.WriteInt(0) // nBuyCharCount
 				}
 			} else if tenant.Region == "JMS" {
-				w.WriteByte(0)
 				w.WriteByte(0)
 				w.WriteInt(uint32(characterSlots))
 				w.WriteInt(0)

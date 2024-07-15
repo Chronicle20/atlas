@@ -1084,6 +1084,16 @@
               "handler": "DeleteCharacterHandle"
             },
             {
+              "opCode": "0x13",
+              "validator": "LoggedInValidator",
+              "handler": "RegisterPicHandle"
+            },
+            {
+              "opCode": "0x14",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterSelectedPicHandle"
+            },
+            {
               "opCode": "0x18",
               "validator": "NoOpValidator",
               "handler": "NoOpHandler"

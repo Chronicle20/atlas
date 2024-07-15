@@ -27,8 +27,13 @@ func GetChannelRegistry() *Registry {
 func (c *Registry) Register(tenantId string, worldId byte, channelId byte, ipAddress string, port int) Model {
 	c.mutex.Lock()
 
+	if _, ok := c.servers[tenantId]; !ok {
+		c.servers[tenantId] = make([]Model, 0)
+	}
+
 	var found *Model = nil
-	for i := 0; i < len(c.servers); i++ {
+	for i := 0; i < len(c.servers[tenantId]); i++ {
+
 		if c.servers[tenantId][i].WorldId() == worldId && c.servers[tenantId][i].ChannelId() == channelId {
 			found = &c.servers[tenantId][i]
 			break

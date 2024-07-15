@@ -38,6 +38,32 @@ func SetAccountId(accountId uint32) func(id uuid.UUID) Model {
 	}
 }
 
+func SetCharacterId(characterId uint32) func(id uuid.UUID) Model {
+	return func(id uuid.UUID) Model {
+		s := Model{}
+		var ok bool
+		if s, ok = GetRegistry().Get(id); ok {
+			s = s.setCharacterId(characterId)
+			GetRegistry().Update(s)
+			return s
+		}
+		return s
+	}
+}
+
+func SetGm(gm bool) func(id uuid.UUID) Model {
+	return func(id uuid.UUID) Model {
+		s := Model{}
+		var ok bool
+		if s, ok = GetRegistry().Get(id); ok {
+			s = s.setGm(gm)
+			GetRegistry().Update(s)
+			return s
+		}
+		return s
+	}
+}
+
 func UpdateLastRequest() func(id uuid.UUID) Model {
 	return func(id uuid.UUID) Model {
 		s := Model{}

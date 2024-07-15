@@ -14,6 +14,8 @@ type Model struct {
 	accountId   uint32
 	worldId     byte
 	channelId   byte
+	characterId uint32
+	gm          bool
 	con         net.Conn
 	send        crypto.AESOFB
 	recv        crypto.AESOFB
@@ -65,6 +67,18 @@ func CloneSession(s Model) Model {
 func (s *Model) setAccountId(accountId uint32) Model {
 	ns := CloneSession(*s)
 	ns.accountId = accountId
+	return ns
+}
+
+func (s *Model) setCharacterId(id uint32) Model {
+	ns := CloneSession(*s)
+	ns.characterId = id
+	return ns
+}
+
+func (s *Model) setGm(gm bool) Model {
+	ns := CloneSession(*s)
+	ns.gm = gm
 	return ns
 }
 

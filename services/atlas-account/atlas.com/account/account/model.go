@@ -1,15 +1,22 @@
 package account
 
+import (
+	"github.com/google/uuid"
+	"time"
+)
+
 type Model struct {
-	id       uint32
-	name     string
-	password string
-	pin      string
-	pic      string
-	state    State
-	gender   byte
-	banned   bool
-	tos      bool
+	tenantId  uuid.UUID
+	id        uint32
+	name      string
+	password  string
+	pin       string
+	pic       string
+	state     State
+	gender    byte
+	banned    bool
+	tos       bool
+	updatedAt time.Time
 }
 
 func (a Model) Id() uint32 {
@@ -34,4 +41,12 @@ func (a Model) State() State {
 
 func (a Model) TOS() bool {
 	return a.tos
+}
+
+func (a Model) UpdatedAt() time.Time {
+	return a.updatedAt
+}
+
+func (a Model) TenantId() uuid.UUID {
+	return a.tenantId
 }

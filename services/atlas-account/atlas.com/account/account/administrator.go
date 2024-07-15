@@ -95,15 +95,17 @@ func updateTos(tos bool) EntityUpdateFunction {
 
 func modelFromEntity(a entity) (Model, error) {
 	r := Model{
-		id:       a.ID,
-		name:     a.Name,
-		password: a.Password,
-		pin:      a.PIN,
-		pic:      a.PIC,
-		state:    State(a.State),
-		gender:   a.Gender,
-		banned:   false,
-		tos:      a.TOS,
+		tenantId:  a.TenantId,
+		id:        a.ID,
+		name:      a.Name,
+		password:  a.Password,
+		pin:       a.PIN,
+		pic:       a.PIC,
+		state:     State(a.State),
+		gender:    a.Gender,
+		banned:    false,
+		tos:       a.TOS,
+		updatedAt: a.UpdatedAt,
 	}
 	return r, nil
 }

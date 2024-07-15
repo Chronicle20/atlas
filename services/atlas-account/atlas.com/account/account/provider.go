@@ -29,3 +29,12 @@ func entitiesByName(tenant tenant.Model, name string) database.EntitySliceProvid
 		return model.FixedSliceProvider[entity](results)
 	}
 }
+
+func entitiesInTransition(db *gorm.DB) model.SliceProvider[entity] {
+	var results []entity
+	err := db.Where(&entity{State: byte(ServerTransistion)}).Find(&results).Error
+	if err != nil {
+		return model.ErrorSliceProvider[entity](err)
+	}
+	return model.FixedSliceProvider[entity](results)
+}

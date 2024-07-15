@@ -3,14 +3,16 @@ package account
 import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"time"
 )
 
 type State byte
 
 const (
 	NotLoggedIn       State = 0
-	ServerTransistion State = 1
-	LoggedIn          State = 2
+	InLogin           State = 1
+	ServerTransistion State = 2
+	LoggedIn          State = 3
 )
 
 func Migration(db *gorm.DB) error {
@@ -28,6 +30,8 @@ type entity struct {
 	State     byte `gorm:"not null;default=0"`
 	TOS       bool `gorm:"not null;default=false"`
 	LastLogin int64
+	CreatedAt time.Time // Automatically managed by GORM for creation time
+	UpdatedAt time.Time // Automatically managed by GORM for update time
 }
 
 func (e entity) TableName() string {

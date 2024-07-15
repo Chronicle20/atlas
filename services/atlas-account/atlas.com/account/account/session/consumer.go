@@ -23,13 +23,34 @@ func CreateAccountSessionCommandConsumer(l logrus.FieldLogger) func(groupId stri
 
 func handleLogoutAccountCommand(db *gorm.DB) message.Handler[logoutCommand] {
 	return func(l logrus.FieldLogger, span opentracing.Span, command logoutCommand) {
-		l.Debugf("Received logout account command account [%d].", command.AccountId)
-		err := account.SetLoggedOut(db)(command.Tenant, command.AccountId)
+		l.Debugf("Received logout account command account [%d] from [%s].", command.AccountId, command.Issuer)
+		a, err := account.GetById(l, db, command.Tenant)(command.AccountId)
 		if err != nil {
-			l.WithError(err).Errorf("Error processing command to logout account [%d].", command.AccountId)
+			l.WithError(err).Errorf("Unable to locate account [%d].", command.AccountId)
 			return
 		}
-		emitLoggedOutEvent(l, span, command.Tenant)
+
+		if command.Issuer == "login" && a.State() <= 1 {
+			err = account.SetLoggedOut(db)(command.Tenant, command.AccountId)
+			if err != nil {
+				l.WithError(err).Errorf("Error processing command to logout account [%d].", command.AccountId)
+				return
+			}
+			emitLoggedOutEvent(l, span, command.Tenant)
+			return
+		}
+
+		if command.Issuer == "channel" && a.State() >= 2 {
+			err = account.SetLoggedOut(db)(command.Tenant, command.AccountId)
+			if err != nil {
+				l.WithError(err).Errorf("Error processing command to logout account [%d].", command.AccountId)
+				return
+			}
+			emitLoggedOutEvent(l, span, command.Tenant)
+			return
+		}
+
+		l.Debugf("Ignoring logout command from [%s] as account [%d] is not in correct state.", command.Issuer, command.AccountId)
 	}
 }
 

@@ -42,12 +42,12 @@ func NoOpHandlerFunc(_ logrus.FieldLogger, _ opentracing.Span, _ writer.Producer
 	}
 }
 
-func AdaptHandler(l logrus.FieldLogger, name string, v MessageValidator, h MessageHandler, wp writer.Producer) request.Handler {
+func AdaptHandler(l logrus.FieldLogger, name string, v MessageValidator, h MessageHandler, wp writer.Producer, tenantId uuid.UUID) request.Handler {
 	return func(sessionId uuid.UUID, r request.Reader) {
 		fl := l.WithField("session", sessionId.String())
 		sl, span := tracing.StartSpan(fl, name)
 
-		s, ok := session.GetRegistry().Get(sessionId)
+		s, ok := session.GetRegistry().Get(tenantId, sessionId)
 		if !ok {
 			sl.Errorf("Unable to locate session %d", sessionId)
 			return
@@ -55,7 +55,7 @@ func AdaptHandler(l logrus.FieldLogger, name string, v MessageValidator, h Messa
 
 		if v(sl, span)(s) {
 			h(sl, span, wp)(s, &r)
-			s = session.UpdateLastRequest()(s.SessionId())
+			s = session.UpdateLastRequest()(tenantId, s.SessionId())
 		}
 		span.Finish()
 	}

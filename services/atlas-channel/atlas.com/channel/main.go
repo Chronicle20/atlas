@@ -3,13 +3,17 @@ package main
 import (
 	"atlas-channel/configuration"
 	"atlas-channel/logger"
+	_map "atlas-channel/map"
+	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket"
 	"atlas-channel/socket/handler"
 	"atlas-channel/socket/writer"
 	"atlas-channel/tasks"
+	"atlas-channel/tenant"
 	"atlas-channel/tracing"
 	"context"
+	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -22,6 +26,7 @@ import (
 )
 
 const serviceName = "atlas-channel"
+const consumerGroupId = "Channel Service - %s"
 
 type Server struct {
 	baseUrl string
@@ -76,12 +81,32 @@ func main() {
 
 	writerMap := make(map[string]writer.HeaderFunc)
 	writerMap[writer.SetField] = writer.MessageGetter
+	writerMap[writer.SpawnNPC] = writer.MessageGetter
+	writerMap[writer.SpawnNPCRequestController] = writer.MessageGetter
+
+	cm := consumer.GetManager()
+	cm.AddConsumer(l, ctx, wg)(_map.StatusEventConsumer(l)(consumerGroupId))
 
 	for _, s := range config.Data.Attributes.Servers {
 		wp := getWriterProducer(l)(s.Writers, writerMap)
+
 		for _, w := range s.Worlds {
 			for _, c := range w.Channels {
-				socket.CreateSocketService(l, ctx, wg)(s, validatorMap, handlerMap, wp, w.Id, c.Id, config.Data.Attributes.IPAddress, c.Port)
+				var t tenant.Model
+				t, err = tenant.NewFromConfiguration(l)(s)
+				if err != nil {
+					continue
+				}
+				var sc server.Model
+				sc, err = server.New(t, w.Id, c.Id)
+				if err != nil {
+					continue
+				}
+
+				_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(sc, wp)(l))
+
+				socket.CreateSocketService(l, ctx, wg)(s, validatorMap, handlerMap, wp, sc, config.Data.Attributes.IPAddress, c.Port)
 			}
 		}
 	}
@@ -104,7 +129,7 @@ func main() {
 
 	span := opentracing.StartSpan("teardown")
 	defer span.Finish()
-	session.DestroyAll(l, span, session.GetRegistry())
+	tenant.ForAll(session.DestroyAll(l, span, session.GetRegistry()))
 
 	l.Infoln("Service shutdown.")
 }

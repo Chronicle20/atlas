@@ -3,30 +3,26 @@ package socket
 import (
 	"atlas-channel/channel"
 	"atlas-channel/configuration"
+	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/handler"
 	"atlas-channel/socket/writer"
-	"atlas-channel/tenant"
 	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"strconv"
 	"sync"
 )
 
-func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGroup) func(config configuration.Server, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer, wid byte, cid byte, ipAddress string, port string) {
-	return func(config configuration.Server, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer, wid byte, cid byte, ipAddress string, portStr string) {
+func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGroup) func(config configuration.Server, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer, sc server.Model, ipAddress string, port string) {
+	return func(config configuration.Server, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer, sc server.Model, ipAddress string, portStr string) {
 		go func() {
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
-
-			t, err := tenant.New(l)(config)
-			if err != nil {
-				return
-			}
 
 			port, err := strconv.Atoi(portStr)
 			if err != nil {
@@ -34,7 +30,7 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 				return
 			}
 
-			l.Infof("Creating channel socket service for [%s] [%d.%d] world [%d] channel [%d] on port [%d].", t.Region, t.MajorVersion, t.MinorVersion, wid, cid, port)
+			l.Infof("Creating channel socket service for [%s] on port [%d].", sc.String(), port)
 
 			hasMapleEncryption := true
 			if config.Region == "JMS" {
@@ -50,21 +46,21 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 			l.Debugf("Service locale [%d].", locale)
 
 			fl := l.
-				WithField("tenant", t.Id.String()).
-				WithField("region", t.Region).
-				WithField("ms.version", fmt.Sprintf("%d.%d", t.MajorVersion, t.MinorVersion)).
-				WithField("world.id", wid).
-				WithField("channel.id", cid)
+				WithField("tenant", sc.Tenant().Id.String()).
+				WithField("region", sc.Tenant().Region).
+				WithField("ms.version", fmt.Sprintf("%d.%d", sc.Tenant().MajorVersion, sc.Tenant().MinorVersion)).
+				WithField("world.id", sc.WorldId()).
+				WithField("channel.id", sc.ChannelId())
 
 			go func() {
 				wg.Add(1)
 				defer wg.Done()
 
-				err = socket.Run(fl, handlerProducer(fl)(config.Handlers, vm, hm, wp),
+				err = socket.Run(fl, handlerProducer(fl)(config.Handlers, vm, hm, wp, sc.Tenant().Id),
 					socket.SetPort(port),
-					socket.SetSessionCreator(session.Create(fl, session.GetRegistry())(t, locale)),
-					socket.SetSessionMessageDecryptor(session.Decrypt(fl, session.GetRegistry())(hasMapleEncryption)),
-					socket.SetSessionDestroyer(session.DestroyByIdWithSpan(fl, session.GetRegistry())),
+					socket.SetSessionCreator(session.Create(fl, session.GetRegistry(), sc.Tenant())(locale)),
+					socket.SetSessionMessageDecryptor(session.Decrypt(fl, session.GetRegistry(), sc.Tenant())(hasMapleEncryption)),
+					socket.SetSessionDestroyer(session.DestroyByIdWithSpan(fl, session.GetRegistry(), sc.Tenant().Id)),
 				)
 				if err != nil {
 					l.WithError(err).Errorf("Socket service encountered error")
@@ -73,7 +69,7 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 
 			span := opentracing.StartSpan("startup")
 			defer span.Finish()
-			err = channel.Register(l, span, t)(wid, cid, ipAddress, portStr)
+			err = channel.Register(l, span, sc.Tenant())(sc.WorldId(), sc.ChannelId(), ipAddress, portStr)
 			if err != nil {
 				l.WithError(err).Errorf("Socket service registration error.")
 			}
@@ -83,7 +79,7 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 
 			span = opentracing.StartSpan("teardown")
 			defer span.Finish()
-			err = channel.Unregister(l, span, t)(wid, cid)
+			err = channel.Unregister(l, span, sc.Tenant())(sc.WorldId(), sc.ChannelId())
 			if err != nil {
 				l.WithError(err).Errorf("Socket service unregistration error.")
 			}
@@ -91,8 +87,8 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 	}
 }
 
-func handlerProducer(l logrus.FieldLogger) func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer) socket.MessageHandlerProducer {
-	return func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer) socket.MessageHandlerProducer {
+func handlerProducer(l logrus.FieldLogger) func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer, tenantId uuid.UUID) socket.MessageHandlerProducer {
+	return func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer, tenantId uuid.UUID) socket.MessageHandlerProducer {
 		handlers := make(map[uint16]request.Handler)
 
 		for _, hc := range handlerConfig {
@@ -116,7 +112,7 @@ func handlerProducer(l logrus.FieldLogger) func(handlerConfig []configuration.Ha
 			}
 
 			l.Debugf("Configuring opcode [%s] with validator [%s] and handler [%s].", hc.OpCode, hc.Validator, hc.Handler)
-			handlers[uint16(op)] = handler.AdaptHandler(l, hc.Handler, v, h, wp)
+			handlers[uint16(op)] = handler.AdaptHandler(l, hc.Handler, v, h, wp, tenantId)
 		}
 
 		return func() map[uint16]request.Handler {

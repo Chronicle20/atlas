@@ -48,6 +48,12 @@
             {
               "opCode": "0x7D",
               "writer": "SetField"
+            }, {
+              "opCode": "0x101",
+              "writer": "SpawnNPC"
+            }, {
+              "opCode": "0x103",
+              "writer": "SpawnNPCRequestController"
             }
           ]
         },{
@@ -85,6 +91,12 @@
             {
               "opCode": "0x7D",
               "writer": "SetField"
+            }, {
+              "opCode": "0x101",
+              "writer": "SpawnNPC"
+            }, {
+              "opCode": "0x103",
+              "writer": "SpawnNPCRequestController"
             }
           ]
         },
@@ -123,6 +135,12 @@
             {
               "opCode": "0x85",
               "writer": "SetField"
+            }, {
+              "opCode": "0x112",
+              "writer": "SpawnNPC"
+            }, {
+              "opCode": "0x114",
+              "writer": "SpawnNPCRequestController"
             }
           ]
         },
@@ -161,6 +179,12 @@
             {
               "opCode": "0x8C",
               "writer": "SetField"
+            }, {
+              "opCode": "0x12F",
+              "writer": "SpawnNPC"
+            }, {
+              "opCode": "0x131",
+              "writer": "SpawnNPCRequestController"
             }
           ]
         },
@@ -199,6 +223,12 @@
             {
               "opCode": "0x7B",
               "writer": "SetField"
+            }, {
+              "opCode": "0x116",
+              "writer": "SpawnNPC"
+            }, {
+              "opCode": "0x118",
+              "writer": "SpawnNPCRequestController"
             }
           ]
         }

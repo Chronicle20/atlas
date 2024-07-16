@@ -29,3 +29,15 @@ func emitCreatedEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant
 		emitStatusEvent(l, span, tenant)(characterId, name, worldId, 0, 0, EventCharacterStatusTypeCreated)
 	}
 }
+
+func emitLoginEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte, mapId uint32, name string) {
+	return func(characterId uint32, worldId byte, channelId byte, mapId uint32, name string) {
+		emitStatusEvent(l, span, tenant)(characterId, name, worldId, channelId, mapId, EventCharacterStatusTypeLogin)
+	}
+}
+
+func emitLogoutEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte, mapId uint32, name string) {
+	return func(characterId uint32, worldId byte, channelId byte, mapId uint32, name string) {
+		emitStatusEvent(l, span, tenant)(characterId, name, worldId, channelId, mapId, EventCharacterStatusTypeLogout)
+	}
+}

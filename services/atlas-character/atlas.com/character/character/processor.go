@@ -202,3 +202,25 @@ func Delete(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 		return err
 	}
 }
+
+func Login(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte) {
+	return func(characterId uint32, worldId byte, channelId byte) {
+		c, err := GetById(l, db, tenant)(characterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate character [%d] whose session was created.", characterId)
+			return
+		}
+		emitLoginEvent(l, span, tenant)(characterId, worldId, channelId, c.MapId(), c.Name())
+	}
+}
+
+func Logout(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte) {
+	return func(characterId uint32, worldId byte, channelId byte) {
+		c, err := GetById(l, db, tenant)(characterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate character [%d] whose session was destroyed.", characterId)
+			return
+		}
+		emitLogoutEvent(l, span, tenant)(characterId, worldId, channelId, c.MapId(), c.Name())
+	}
+}

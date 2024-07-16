@@ -7,6 +7,7 @@ import (
 	"atlas-character/inventory"
 	"atlas-character/inventory/item"
 	"atlas-character/logger"
+	"atlas-character/session"
 	"atlas-character/tracing"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -65,8 +66,10 @@ func main() {
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, ctx, wg)(inventory.EquipItemCommandConsumer(l)(consumerGroupId))
 	cm.AddConsumer(l, ctx, wg)(inventory.UnequipItemCommandConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, ctx, wg)(session.StatusEventConsumer(l)(consumerGroupId))
 	_, _ = cm.RegisterHandler(inventory.EquipItemRegister(l, db))
 	_, _ = cm.RegisterHandler(inventory.UnequipItemRegister(l, db))
+	_, _ = cm.RegisterHandler(session.StatusEventRegister(l, db))
 
 	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), character.InitResource(GetServer())(db), inventory.InitResource(GetServer())(db))
 

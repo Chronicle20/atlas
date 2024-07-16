@@ -15,4 +15,4 @@ A RESTful resource which provides Channel services.
 - CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
 - WORLD_SERVICE_URL - [scheme]://[host]:[port]/api/wrg/
 - TOPIC_CHANNEL_SERVICE - Kafka Topic for transmitting Channel Status Events
-
+- EVENT_TOPIC_SESSION_STATUS - Kafka Topic for capturing session events.

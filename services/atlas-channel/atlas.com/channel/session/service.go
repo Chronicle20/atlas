@@ -70,5 +70,6 @@ func Destroy(l logrus.FieldLogger, span opentracing.Span, r *Registry) func(Mode
 		r.Remove(s.SessionId())
 		s.Disconnect()
 		as.Destroy(l, span, s.Tenant())(s.AccountId())
+		emitDestroyedStatusEvent(l, span, s.tenant)(s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId())
 	}
 }

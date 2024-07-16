@@ -27,6 +27,6 @@ func requestNPCsInMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant
 
 func requestNPCsInMapByObjectId(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32, objectId uint32) requests.Request[[]RestModel] {
 	return func(mapId uint32, objectId uint32) requests.Request[[]RestModel] {
-		return rest.MakeGetRequest[[]RestModel](l, span, tenant)(fmt.Sprintf(npcsInMapByObjectId, mapId, objectId))
+		return rest.MakeGetRequest[[]RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+npcsInMapByObjectId, mapId, objectId))
 	}
 }

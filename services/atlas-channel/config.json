@@ -42,6 +42,10 @@
               "opCode": "0x14",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
+            }, {
+              "opCode": "0xC5",
+              "validator": "LoggedInValidator",
+              "handler": "NPCActionHandle"
             }
           ],
           "writers": [
@@ -54,6 +58,9 @@
             }, {
               "opCode": "0x103",
               "writer": "SpawnNPCRequestController"
+            }, {
+              "opCode": "0x104",
+              "writer": "NPCAction"
             }
           ]
         },{
@@ -85,6 +92,10 @@
               "opCode": "0x14",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
+            }, {
+              "opCode": "0xC5",
+              "validator": "LoggedInValidator",
+              "handler": "NPCActionHandle"
             }
           ],
           "writers": [
@@ -97,6 +108,9 @@
             }, {
               "opCode": "0x103",
               "writer": "SpawnNPCRequestController"
+            }, {
+              "opCode": "0x104",
+              "writer": "NPCAction"
             }
           ]
         },
@@ -129,6 +143,10 @@
               "opCode": "0x14",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
+            }, {
+              "opCode": "0xD2",
+              "validator": "LoggedInValidator",
+              "handler": "NPCActionHandle"
             }
           ],
           "writers": [
@@ -141,6 +159,9 @@
             }, {
               "opCode": "0x114",
               "writer": "SpawnNPCRequestController"
+            }, {
+              "opCode": "0x115",
+              "writer": "NPCAction"
             }
           ]
         },
@@ -173,6 +194,10 @@
               "opCode": "0x14",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
+            }, {
+              "opCode": "0xEA",
+              "validator": "LoggedInValidator",
+              "handler": "NPCActionHandle"
             }
           ],
           "writers": [
@@ -185,6 +210,9 @@
             }, {
               "opCode": "0x131",
               "writer": "SpawnNPCRequestController"
+            }, {
+              "opCode": "0x132",
+              "writer": "NPCAction"
             }
           ]
         },
@@ -217,6 +245,10 @@
               "opCode": "0x07",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
+            }, {
+              "opCode": "0xD0",
+              "validator": "LoggedInValidator",
+              "handler": "NPCActionHandle"
             }
           ],
           "writers": [
@@ -229,6 +261,9 @@
             }, {
               "opCode": "0x118",
               "writer": "SpawnNPCRequestController"
+            }, {
+              "opCode": "0x119",
+              "writer": "NPCAction"
             }
           ]
         }

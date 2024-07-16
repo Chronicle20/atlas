@@ -26,8 +26,9 @@ func InMapByObjectIdModelProvider(l logrus.FieldLogger, span opentracing.Span, t
 	}
 }
 
-func GetInMapByObjectId(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32, objectId uint32) ([]Model, error) {
-	return func(mapId uint32, objectId uint32) ([]Model, error) {
-		return InMapByObjectIdModelProvider(l, span, tenant)(mapId, objectId)()
+func GetInMapByObjectId(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32, objectId uint32) (Model, error) {
+	return func(mapId uint32, objectId uint32) (Model, error) {
+		p := InMapByObjectIdModelProvider(l, span, tenant)(mapId, objectId)
+		return model.First[Model](p)
 	}
 }

@@ -78,11 +78,13 @@ func main() {
 	handlerMap := make(map[string]handler.MessageHandler)
 	handlerMap[handler.NoOpHandler] = handler.NoOpHandlerFunc
 	handlerMap[handler.CharacterLoggedInHandle] = handler.CharacterLoggedInHandleFunc
+	handlerMap[handler.NPCActionHandle] = handler.NPCActionHandleFunc
 
 	writerMap := make(map[string]writer.HeaderFunc)
 	writerMap[writer.SetField] = writer.MessageGetter
 	writerMap[writer.SpawnNPC] = writer.MessageGetter
 	writerMap[writer.SpawnNPCRequestController] = writer.MessageGetter
+	writerMap[writer.NPCAction] = writer.MessageGetter
 
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, ctx, wg)(_map.StatusEventConsumer(l)(consumerGroupId))

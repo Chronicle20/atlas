@@ -8,15 +8,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func emitCreatedEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, name string) {
-	p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvEventTopicCharacterCreated))
-	return func(characterId uint32, worldId byte, name string) {
-		event := &createdEvent{
+func emitStatusEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, name string, worldId byte, channelId byte, mapId uint32, eventType string) {
+	p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvEventTopicCharacterStatus))
+	return func(characterId uint32, name string, worldId byte, channelId byte, mapId uint32, eventType string) {
+		event := &statusEvent{
 			Tenant:      tenant,
 			CharacterId: characterId,
-			WorldId:     worldId,
 			Name:        name,
+			WorldId:     worldId,
+			ChannelId:   channelId,
+			MapId:       mapId,
+			Type:        eventType,
 		}
 		p(producer.CreateKey(int(characterId)), event)
+	}
+}
+
+func emitCreatedEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, name string) {
+	return func(characterId uint32, worldId byte, name string) {
+		emitStatusEvent(l, span, tenant)(characterId, name, worldId, 0, 0, EventCharacterStatusTypeCreated)
 	}
 }

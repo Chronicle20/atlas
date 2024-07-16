@@ -29,3 +29,55 @@ MINOR_VERSION:1
 #### [GET] Get Default Equipment Statistics
 
 ```/api/gis/equipment/{itemId}```
+
+#### [GET] Get Expected Equipment Slots
+
+```/api/gis/equipment/{itemId}/slots```
+
+#### [GET] Get Map Information
+
+```/api/gis/maps/{mapId}```
+
+#### [GET] Get Portal Information In Map
+
+```/api/gis/maps/{mapId}/portals```
+
+#### [GET] Get Portal Information In Map By Portal Name
+
+```/api/gis/maps/{mapId}/portals?name={name}```
+
+#### [GET] Get Specific Portal Information In Map
+
+```/api/gis/maps/{mapId}/portals/{portalId}```
+
+#### [GET] Get Reactor Information In Map
+
+```/api/gis/maps/{mapId}/reactors```
+
+#### [GET] Get NPC Information In Map
+
+```/api/gis/maps/{mapId}/npcs```
+
+#### [GET] Get Specific NPC Information In Map
+
+```/api/gis/maps/{mapId}/npcs/{npcId}```
+
+#### [GET] Get NPC Information In Map By Object Id
+
+```/api/gis/maps/{mapId}/npcs?objectId={objectId}```
+
+#### [GET] Get Monster Information In Map
+
+```/api/gis/maps/{mapId}/monsters```
+
+#### [POST] Get Drop Position In Map
+
+```/api/gis/maps/{mapId}/dropPosition```
+
+#### [GET] Get Monster Information
+
+```/api/gis/monsters/{monsterId}```
+
+#### [GET] Get Lose Items For Monster
+
+```/api/gis/monsters/{monsterId}/loseItems```

@@ -19,13 +19,16 @@ const (
 
 func CreatedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return kafka.NewConfig(l)(consumerCharacterCreated)(EnvEventTopicCharacterCreated)(groupId)
+		return kafka.NewConfig(l)(consumerCharacterCreated)(EnvEventTopicCharacterStatus)(groupId)
 	}
 }
 
-func createdValidator(tenant tenant.Model, name string) func(event createdEvent) bool {
-	return func(event createdEvent) bool {
+func createdValidator(tenant tenant.Model, name string) func(event statusEvent) bool {
+	return func(event statusEvent) bool {
 		if !tenant.Equals(event.Tenant) {
+			return false
+		}
+		if event.Type != EventCharacterStatusTypeCreated {
 			return false
 		}
 		if name != event.Name {
@@ -35,14 +38,14 @@ func createdValidator(tenant tenant.Model, name string) func(event createdEvent)
 	}
 }
 
-func createdHandler(rchan chan uint32, _ chan error) message.Handler[createdEvent] {
-	return func(l logrus.FieldLogger, span opentracing.Span, m createdEvent) {
+func createdHandler(rchan chan uint32, _ chan error) message.Handler[statusEvent] {
+	return func(l logrus.FieldLogger, span opentracing.Span, m statusEvent) {
 		rchan <- m.CharacterId
 	}
 }
 
 func AwaitCreated(l logrus.FieldLogger, tenant tenant.Model) func(name string) async.Provider[uint32] {
-	t := kafka.LookupTopic(l)(EnvEventTopicCharacterCreated)
+	t := kafka.LookupTopic(l)(EnvEventTopicCharacterStatus)
 	return func(name string) async.Provider[uint32] {
 		return func(ctx context.Context, rchan chan uint32, echan chan error) {
 			l.Debugf("Creating OneTime topic consumer to await [%s] character creation.", name)

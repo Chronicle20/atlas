@@ -23,23 +23,23 @@ func CreatedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config 
 	}
 }
 
-func createdValidator(tenant tenant.Model, name string) func(event statusEvent) bool {
-	return func(event statusEvent) bool {
+func createdValidator(tenant tenant.Model, name string) func(event statusEvent[statusEventCreatedBody]) bool {
+	return func(event statusEvent[statusEventCreatedBody]) bool {
 		if !tenant.Equals(event.Tenant) {
 			return false
 		}
 		if event.Type != EventCharacterStatusTypeCreated {
 			return false
 		}
-		if name != event.Name {
+		if name != event.Body.Name {
 			return false
 		}
 		return true
 	}
 }
 
-func createdHandler(rchan chan uint32, _ chan error) message.Handler[statusEvent] {
-	return func(l logrus.FieldLogger, span opentracing.Span, m statusEvent) {
+func createdHandler(rchan chan uint32, _ chan error) message.Handler[statusEvent[statusEventCreatedBody]] {
+	return func(l logrus.FieldLogger, span opentracing.Span, m statusEvent[statusEventCreatedBody]) {
 		rchan <- m.CharacterId
 	}
 }

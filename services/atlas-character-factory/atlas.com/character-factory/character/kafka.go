@@ -12,14 +12,16 @@ const (
 	EnvEventTopicEquipChanged = "EVENT_TOPIC_EQUIP_CHANGED"
 )
 
-type statusEvent struct {
+type statusEvent[E any] struct {
 	Tenant      tenant.Model `json:"tenant"`
 	CharacterId uint32       `json:"characterId"`
-	Name        string       `json:"name"`
-	WorldId     byte         `json:"worldId"`
-	ChannelId   byte         `json:"channelId"`
-	MapId       uint32       `json:"mapId"`
 	Type        string       `json:"type"`
+	WorldId     byte         `json:"worldId"`
+	Body        E            `json:"body"`
+}
+
+type statusEventCreatedBody struct {
+	Name string `json:"name"`
 }
 
 type gainItemEvent struct {

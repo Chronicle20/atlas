@@ -2,8 +2,11 @@ package session
 
 import (
 	"atlas-channel/socket/writer"
+	"atlas-channel/tenant"
 	"errors"
 	"github.com/google/uuid"
+	"github.com/opentracing/opentracing-go"
+	"github.com/sirupsen/logrus"
 )
 
 func Announce(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
@@ -100,5 +103,11 @@ func SetChannelId(channelId byte) func(id uuid.UUID) Model {
 			return s
 		}
 		return s
+	}
+}
+
+func SessionCreated(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(s Model) {
+	return func(s Model) {
+		emitCreatedStatusEvent(l, span, tenant)(s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId())
 	}
 }

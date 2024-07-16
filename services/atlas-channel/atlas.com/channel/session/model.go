@@ -153,3 +153,7 @@ func (s *Model) LastRequest() time.Time {
 func (s *Model) Disconnect() {
 	_ = s.con.Close()
 }
+
+func (s *Model) CharacterId() uint32 {
+	return s.characterId
+}

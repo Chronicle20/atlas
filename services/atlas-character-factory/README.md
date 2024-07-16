@@ -9,13 +9,13 @@ A RESTful resource which provides character-factory services.
 
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
-- CONFIG_FILE - 
-- BOOTSTRAP_SERVERS - 
-- EVENT_TOPIC_CHARACTER_CREATED - 
-- EVENT_TOPIC_ITEM_GAIN - 
-- EVENT_TOPIC_EQUIP_CHANGED - 
-- CHARACTER_SERVICE_URL -
-- GAME_DATA_SERVICE_URL - 
+- CONFIG_FILE - Location of service configuration file.
+- BOOTSTRAP_SERVERS - Kafka [host]:[port]
+- EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for transmitting character status events
+- EVENT_TOPIC_ITEM_GAIN - Kafka Topic for transmitting item gain events
+- EVENT_TOPIC_EQUIP_CHANGED - Kafka Topic for transmitting equip changed events
+- CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
+- GAME_DATA_SERVICE_URL - [scheme]://[host]:[port]/api/gis/
 
 ## API
 

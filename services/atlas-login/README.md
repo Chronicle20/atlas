@@ -11,8 +11,9 @@ A stateful, multi-tenant, multi-version login service for a mushroom game.
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
 - CONFIG_FILE - Location of service configuration file.
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
-- COMMAND_TOPIC_ACCOUNT_LOGOUT - Kafka Topic for transmitting Account Logout Commands
 - ACCOUNT_SERVICE_URL - [scheme]://[host]:[port]/api/aos/
 - CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
 - CHARACTER_FACTORY_SERVICE_URL - [scheme]://[host]:[port]/api/cfs/
 - WORLD_SERVICE_URL - [scheme]://[host]:[port]/api/wrg/
+- COMMAND_TOPIC_ACCOUNT_LOGOUT - Kafka Topic for transmitting Account Logout Commands
+- EVENT_TOPIC_SESSION_STATUS - Kafka Topic for capturing session events.

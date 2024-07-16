@@ -79,6 +79,7 @@ func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 				return
 			}
 			s = session.SetAccountId(a.Id())(s.SessionId())
+			session.SessionCreated(l, span, s.Tenant())(s.SessionId(), a.Id())
 
 			if resp.Code == "OK" {
 				err = issueSuccess(l, s, wp)(a)
@@ -89,6 +90,7 @@ func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 				if s.Tenant().Region == "JMS" {
 					issueServerInformation(l, span, wp)(s)
 				}
+				return
 			}
 
 		}

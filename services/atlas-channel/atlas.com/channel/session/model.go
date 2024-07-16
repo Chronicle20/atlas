@@ -54,6 +54,7 @@ func CloneSession(s Model) Model {
 		accountId:   s.accountId,
 		worldId:     s.worldId,
 		channelId:   s.channelId,
+		characterId: s.characterId,
 		con:         s.con,
 		send:        s.send,
 		recv:        s.recv,

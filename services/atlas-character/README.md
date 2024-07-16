@@ -22,6 +22,7 @@ A RESTful resource which provides character services.
 - EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for transmitting character status events
 - EVENT_TOPIC_ITEM_GAIN - Kafka Topic for transmitting item gain events
 - EVENT_TOPIC_EQUIP_CHANGED - Kafka Topic for transmitting equip changed events
+- EVENT_TOPIC_SESSION_STATUS - Kafka Topic for capturing session events
 
 ## API
 

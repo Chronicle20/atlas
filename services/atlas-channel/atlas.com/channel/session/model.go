@@ -31,6 +31,10 @@ func NewSession(id uuid.UUID, t tenant.Model, locale byte, con net.Conn) Model {
 	send := crypto.NewAESOFB(sendIv, uint16(65535)-t.MajorVersion)
 	recv := crypto.NewAESOFB(recvIv, t.MajorVersion)
 
+	hasAes := true
+	if t.Region == "GMS" && t.MajorVersion <= 28 {
+		hasAes = false
+	}
 	hasMapleEncryption := true
 	if t.Region == "JMS" {
 		hasMapleEncryption = false
@@ -41,7 +45,7 @@ func NewSession(id uuid.UUID, t tenant.Model, locale byte, con net.Conn) Model {
 		con:         con,
 		send:        *send,
 		recv:        *recv,
-		encryptFunc: send.Encrypt(hasMapleEncryption, true),
+		encryptFunc: send.Encrypt(hasMapleEncryption, hasAes),
 		lastPacket:  time.Now(),
 		tenant:      t,
 		locale:      locale,

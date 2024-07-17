@@ -56,12 +56,24 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 				wg.Add(1)
 				defer wg.Done()
 
-				err = socket.Run(fl, handlerProducer(fl)(config.Handlers, vm, hm, wp, sc.Tenant().Id),
-					socket.SetPort(port),
-					socket.SetSessionCreator(session.Create(fl, session.GetRegistry(), sc.Tenant())(locale)),
-					socket.SetSessionMessageDecryptor(session.Decrypt(fl, session.GetRegistry(), sc.Tenant())(hasMapleEncryption)),
-					socket.SetSessionDestroyer(session.DestroyByIdWithSpan(fl, session.GetRegistry(), sc.Tenant().Id)),
-				)
+				if sc.Tenant().Region == "GMS" && sc.Tenant().MajorVersion <= 28 {
+					err = socket.Run(fl, handlerProducer[uint8](fl)(config.Handlers, vm, hm, wp, sc.Tenant().Id),
+						socket.SetPort[uint8](port),
+						socket.SetSessionCreator[uint8](session.Create(fl, session.GetRegistry(), sc.Tenant())(locale)),
+						socket.SetSessionMessageDecryptor[uint8](session.Decrypt(fl, session.GetRegistry(), sc.Tenant())(hasAes, hasMapleEncryption)),
+						socket.SetSessionDestroyer[uint8](session.DestroyByIdWithSpan(fl, session.GetRegistry(), sc.Tenant().Id)),
+						socket.SetOpReader[uint8](socket.ByteOpReader),
+					)
+				} else {
+					err = socket.Run(fl, handlerProducer[uint16](fl)(config.Handlers, vm, hm, wp, sc.Tenant().Id),
+						socket.SetPort[uint16](port),
+						socket.SetSessionCreator[uint16](session.Create(fl, session.GetRegistry(), sc.Tenant())(locale)),
+						socket.SetSessionMessageDecryptor[uint16](session.Decrypt(fl, session.GetRegistry(), sc.Tenant())(hasAes, hasMapleEncryption)),
+						socket.SetSessionDestroyer[uint16](session.DestroyByIdWithSpan(fl, session.GetRegistry(), sc.Tenant().Id)),
+						socket.SetOpReader[uint16](socket.ShortOpReader),
+					)
+				}
+
 				if err != nil {
 					l.WithError(err).Errorf("Socket service encountered error")
 				}
@@ -87,9 +99,9 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 	}
 }
 
-func handlerProducer(l logrus.FieldLogger) func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer, tenantId uuid.UUID) socket.MessageHandlerProducer {
-	return func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer, tenantId uuid.UUID) socket.MessageHandlerProducer {
-		handlers := make(map[uint16]request.Handler)
+func handlerProducer[E uint8 | uint16](l logrus.FieldLogger) func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer, tenantId uuid.UUID) socket.MessageHandlerProducer[E] {
+	return func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer, tenantId uuid.UUID) socket.MessageHandlerProducer[E] {
+		handlers := make(map[E]request.Handler)
 
 		for _, hc := range handlerConfig {
 			var v handler.MessageValidator
@@ -112,10 +124,10 @@ func handlerProducer(l logrus.FieldLogger) func(handlerConfig []configuration.Ha
 			}
 
 			l.Debugf("Configuring opcode [%s] with validator [%s] and handler [%s].", hc.OpCode, hc.Validator, hc.Handler)
-			handlers[uint16(op)] = handler.AdaptHandler(l, hc.Handler, v, h, wp, tenantId)
+			handlers[E(op)] = handler.AdaptHandler(l, hc.Handler, v, h, wp, tenantId)
 		}
 
-		return func() map[uint16]request.Handler {
+		return func() map[E]request.Handler {
 			return handlers
 		}
 	}

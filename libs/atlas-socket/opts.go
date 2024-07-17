@@ -1,38 +1,44 @@
 package socket
 
-type ServerConfigurator func(s *serverConfiguration)
+type ServerConfigurator[E uint8 | uint16] func(s *serverConfiguration[E])
 
 //goland:noinspection GoUnusedExportedFunction
-func SetIpAddress(ipAddress string) func(*serverConfiguration) {
-	return func(s *serverConfiguration) {
+func SetIpAddress[E uint8 | uint16](ipAddress string) func(*serverConfiguration[E]) {
+	return func(s *serverConfiguration[E]) {
 		s.ipAddress = ipAddress
 	}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SetPort(port int) func(*serverConfiguration) {
-	return func(s *serverConfiguration) {
+func SetPort[E uint8 | uint16](port int) func(*serverConfiguration[E]) {
+	return func(s *serverConfiguration[E]) {
 		s.port = port
 	}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SetSessionCreator(creator SessionCreator) ServerConfigurator {
-	return func(s *serverConfiguration) {
+func SetSessionCreator[E uint8 | uint16](creator SessionCreator) ServerConfigurator[E] {
+	return func(s *serverConfiguration[E]) {
 		s.creator = creator
 	}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SetSessionDestroyer(destroyer SessionDestroyer) ServerConfigurator {
-	return func(s *serverConfiguration) {
+func SetSessionDestroyer[E uint8 | uint16](destroyer SessionDestroyer) ServerConfigurator[E] {
+	return func(s *serverConfiguration[E]) {
 		s.destroyer = destroyer
 	}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SetSessionMessageDecryptor(decryptor SessionMessageDecryptor) ServerConfigurator {
-	return func(s *serverConfiguration) {
+func SetSessionMessageDecryptor[E uint8 | uint16](decryptor SessionMessageDecryptor) ServerConfigurator[E] {
+	return func(s *serverConfiguration[E]) {
 		s.decryptor = decryptor
+	}
+}
+
+func SetOpReader[E uint8 | uint16](reader OpReader[E]) ServerConfigurator[E] {
+	return func(s *serverConfiguration[E]) {
+		s.opReader = reader
 	}
 }

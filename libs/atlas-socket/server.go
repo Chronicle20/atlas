@@ -11,7 +11,17 @@ import (
 	"time"
 )
 
-type MessageHandlerProducer func() map[uint16]request.Handler
+type OpReader[E uint8 | uint16] func(r request.Reader) E
+
+func ByteOpReader(r request.Reader) uint8 {
+	return r.ReadByte()
+}
+
+func ShortOpReader(r request.Reader) uint16 {
+	return r.ReadUint16()
+}
+
+type MessageHandlerProducer[E uint8 | uint16] func() map[E]request.Handler
 
 type SessionCreator func(sessionId uuid.UUID, conn net.Conn)
 
@@ -29,18 +39,19 @@ type SessionDestroyer func(sessionId uuid.UUID)
 func defaultSessionDestroyer(_ uuid.UUID) {
 }
 
-type serverConfiguration struct {
+type serverConfiguration[E uint8 | uint16] struct {
+	opReader  OpReader[E]
 	creator   SessionCreator
 	decryptor SessionMessageDecryptor
 	destroyer SessionDestroyer
 	ipAddress string
 	port      int
-	handlers  map[uint16]request.Handler
+	handlers  map[E]request.Handler
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func Run(l logrus.FieldLogger, handlerProducer MessageHandlerProducer, configurators ...ServerConfigurator) error {
-	config := &serverConfiguration{
+func Run[E uint8 | uint16](l logrus.FieldLogger, handlerProducer MessageHandlerProducer[E], configurators ...ServerConfigurator[E]) error {
+	config := &serverConfiguration[E]{
 		creator:   defaultSessionCreator,
 		decryptor: defaultSessionMessageDecryptor,
 		destroyer: defaultSessionDestroyer,
@@ -70,12 +81,12 @@ func Run(l logrus.FieldLogger, handlerProducer MessageHandlerProducer, configura
 
 		l.Infof("Client %s connected.", conn.RemoteAddr().String())
 
-		go run(l)(config, conn, uuid.New(), 4)
+		go run[E](l)(config, conn, uuid.New(), 4)
 	}
 }
 
-func run(l logrus.FieldLogger) func(config *serverConfiguration, conn net.Conn, sessionId uuid.UUID, headerSize int) {
-	return func(config *serverConfiguration, conn net.Conn, sessionId uuid.UUID, headerSize int) {
+func run[E uint8 | uint16](l logrus.FieldLogger) func(config *serverConfiguration[E], conn net.Conn, sessionId uuid.UUID, headerSize int) {
+	return func(config *serverConfiguration[E], conn net.Conn, sessionId uuid.UUID, headerSize int) {
 
 		defer func(conn net.Conn) {
 			err := conn.Close()
@@ -104,7 +115,7 @@ func run(l logrus.FieldLogger) func(config *serverConfiguration, conn net.Conn, 
 
 				result := buffer
 				result = config.decryptor(sessionId, buffer)
-				handle(fl)(config, sessionId, result)
+				handle[E](fl)(config, sessionId, result)
 			}
 
 			header = !header
@@ -115,10 +126,10 @@ func run(l logrus.FieldLogger) func(config *serverConfiguration, conn net.Conn, 
 	}
 }
 
-func handle(l logrus.FieldLogger) func(config *serverConfiguration, sessionId uuid.UUID, p request.Request) {
-	return func(config *serverConfiguration, sessionId uuid.UUID, p request.Request) {
+func handle[E uint8 | uint16](l logrus.FieldLogger) func(config *serverConfiguration[E], sessionId uuid.UUID, p request.Request) {
+	return func(config *serverConfiguration[E], sessionId uuid.UUID, p request.Request) {
 		go func(sessionId uuid.UUID, reader request.Reader) {
-			op := reader.ReadUint16()
+			op := config.opReader(reader)
 			if h, ok := config.handlers[op]; ok {
 				h(sessionId, reader)
 			} else {

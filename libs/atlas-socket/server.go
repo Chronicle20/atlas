@@ -11,13 +11,13 @@ import (
 	"time"
 )
 
-type OpReader[E uint8 | uint16] func(r request.Reader) E
+type OpReader[E uint8 | uint16] func(r *request.Reader) E
 
-func ByteOpReader(r request.Reader) uint8 {
+func ByteOpReader(r *request.Reader) uint8 {
 	return r.ReadByte()
 }
 
-func ShortOpReader(r request.Reader) uint16 {
+func ShortOpReader(r *request.Reader) uint16 {
 	return r.ReadUint16()
 }
 
@@ -129,7 +129,7 @@ func run[E uint8 | uint16](l logrus.FieldLogger) func(config *serverConfiguratio
 func handle[E uint8 | uint16](l logrus.FieldLogger) func(config *serverConfiguration[E], sessionId uuid.UUID, p request.Request) {
 	return func(config *serverConfiguration[E], sessionId uuid.UUID, p request.Request) {
 		go func(sessionId uuid.UUID, reader request.Reader) {
-			op := config.opReader(reader)
+			op := config.opReader(&reader)
 			if h, ok := config.handlers[op]; ok {
 				h(sessionId, reader)
 			} else {

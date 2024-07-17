@@ -4,9 +4,9 @@ go 1.21.6
 
 require (
 	github.com/Chronicle20/atlas-kafka v0.0.0-20240710214617-8a7aed20c81d
-	github.com/Chronicle20/atlas-model v0.0.0-20240707172702-3d0c637b3cb5
+	github.com/Chronicle20/atlas-model v0.0.0-20240712114934-b680d929248b
 	github.com/Chronicle20/atlas-rest v0.0.0-20240712172338-ed16b47e5616
-	github.com/Chronicle20/atlas-socket v0.0.0-20240629184717-b9628a79e2fe
+	github.com/Chronicle20/atlas-socket v0.0.0-20240717134810-551b06d17e33
 	github.com/google/uuid v1.6.0
 	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6
 	github.com/opentracing/opentracing-go v1.2.0

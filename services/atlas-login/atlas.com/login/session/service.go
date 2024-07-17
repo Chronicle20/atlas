@@ -25,8 +25,8 @@ func Create(l logrus.FieldLogger, r *Registry) func(t tenant.Model, locale byte)
 	}
 }
 
-func Decrypt(_ logrus.FieldLogger, r *Registry) func(hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
-	return func(hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
+func Decrypt(_ logrus.FieldLogger, r *Registry) func(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
+	return func(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
 		return func(sessionId uuid.UUID, input []byte) []byte {
 			s, ok := r.Get(sessionId)
 			if !ok {
@@ -35,7 +35,7 @@ func Decrypt(_ logrus.FieldLogger, r *Registry) func(hasMapleEncryption bool) fu
 			if s.ReceiveAESOFB() == nil {
 				return input
 			}
-			return s.ReceiveAESOFB().Decrypt(true, hasMapleEncryption)(input)
+			return s.ReceiveAESOFB().Decrypt(hasAes, hasMapleEncryption)(input)
 		}
 	}
 }

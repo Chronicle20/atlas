@@ -34,6 +34,10 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 
 			l.Infof("Creating login socket service for [%s] [%d.%d] on port [%d].", t.Region, t.MajorVersion, t.MinorVersion, port)
 
+			hasAes := true
+			if t.Region == "GMS" && t.MajorVersion <= 28 {
+				hasAes = false
+			}
 			hasMapleEncryption := true
 			if config.Region == "JMS" {
 				hasMapleEncryption = false
@@ -53,12 +57,23 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 				wg.Add(1)
 				defer wg.Done()
 
-				err = socket.Run(fl, handlerProducer(fl)(config.Handlers, vm, hm, wp),
-					socket.SetPort(port),
-					socket.SetSessionCreator(session.Create(fl, session.GetRegistry())(t, locale)),
-					socket.SetSessionMessageDecryptor(session.Decrypt(fl, session.GetRegistry())(hasMapleEncryption)),
-					socket.SetSessionDestroyer(session.DestroyByIdWithSpan(fl, session.GetRegistry())),
-				)
+				if t.Region == "GMS" && t.MajorVersion <= 28 {
+					err = socket.Run(fl, handlerProducer[uint8](fl)(config.Handlers, vm, hm, wp),
+						socket.SetPort[uint8](port),
+						socket.SetSessionCreator[uint8](session.Create(fl, session.GetRegistry())(t, locale)),
+						socket.SetSessionMessageDecryptor[uint8](session.Decrypt(fl, session.GetRegistry())(hasAes, hasMapleEncryption)),
+						socket.SetSessionDestroyer[uint8](session.DestroyByIdWithSpan(fl, session.GetRegistry())),
+						socket.SetOpReader[uint8](socket.ByteOpReader),
+					)
+				} else {
+					err = socket.Run(fl, handlerProducer[uint16](fl)(config.Handlers, vm, hm, wp),
+						socket.SetPort[uint16](port),
+						socket.SetSessionCreator[uint16](session.Create(fl, session.GetRegistry())(t, locale)),
+						socket.SetSessionMessageDecryptor[uint16](session.Decrypt(fl, session.GetRegistry())(hasAes, hasMapleEncryption)),
+						socket.SetSessionDestroyer[uint16](session.DestroyByIdWithSpan(fl, session.GetRegistry())),
+						socket.SetOpReader[uint16](socket.ShortOpReader),
+					)
+				}
 				if err != nil {
 					l.WithError(err).Errorf("Socket service encountered error")
 				}
@@ -70,9 +85,9 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 	}
 }
 
-func handlerProducer(l logrus.FieldLogger) func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer) socket.MessageHandlerProducer {
-	return func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer) socket.MessageHandlerProducer {
-		handlers := make(map[uint16]request.Handler)
+func handlerProducer[E uint8 | uint16](l logrus.FieldLogger) func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer) socket.MessageHandlerProducer[E] {
+	return func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler, wp writer.Producer) socket.MessageHandlerProducer[E] {
+		handlers := make(map[E]request.Handler)
 
 		for _, hc := range handlerConfig {
 			var v handler.MessageValidator
@@ -95,10 +110,10 @@ func handlerProducer(l logrus.FieldLogger) func(handlerConfig []configuration.Ha
 			}
 
 			l.Debugf("Configuring opcode [%s] with validator [%s] and handler [%s].", hc.OpCode, hc.Validator, hc.Handler)
-			handlers[uint16(op)] = handler.AdaptHandler(l, hc.Handler, v, h, wp)
+			handlers[E(op)] = handler.AdaptHandler(l, hc.Handler, v, h, wp)
 		}
 
-		return func() map[uint16]request.Handler {
+		return func() map[E]request.Handler {
 			return handlers
 		}
 	}

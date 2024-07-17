@@ -33,16 +33,16 @@ func LoggedInValidatorFunc(l logrus.FieldLogger, span opentracing.Span) func(s s
 	}
 }
 
-type MessageHandler func(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader)
+type MessageHandler func(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{})
 
 const NoOpHandler = "NoOpHandler"
 
-func NoOpHandlerFunc(_ logrus.FieldLogger, _ opentracing.Span, _ writer.Producer) func(_ session.Model, _ *request.Reader) {
-	return func(_ session.Model, _ *request.Reader) {
+func NoOpHandlerFunc(_ logrus.FieldLogger, _ opentracing.Span, _ writer.Producer) func(_ session.Model, _ *request.Reader, _ map[string]interface{}) {
+	return func(_ session.Model, _ *request.Reader, _ map[string]interface{}) {
 	}
 }
 
-func AdaptHandler(l logrus.FieldLogger, name string, v MessageValidator, h MessageHandler, wp writer.Producer, tenantId uuid.UUID) request.Handler {
+func AdaptHandler(l logrus.FieldLogger, name string, v MessageValidator, h MessageHandler, wp writer.Producer, tenantId uuid.UUID, readerOptions map[string]interface{}) request.Handler {
 	return func(sessionId uuid.UUID, r request.Reader) {
 		fl := l.WithField("session", sessionId.String())
 		sl, span := tracing.StartSpan(fl, name)
@@ -54,7 +54,7 @@ func AdaptHandler(l logrus.FieldLogger, name string, v MessageValidator, h Messa
 		}
 
 		if v(sl, span)(s) {
-			h(sl, span, wp)(s, &r)
+			h(sl, span, wp)(s, &r, readerOptions)
 			s = session.UpdateLastRequest()(tenantId, s.SessionId())
 		}
 		span.Finish()

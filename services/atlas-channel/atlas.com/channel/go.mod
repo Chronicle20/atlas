@@ -8,6 +8,7 @@ require (
 	github.com/Chronicle20/atlas-rest v0.0.0-20240712172338-ed16b47e5616
 	github.com/Chronicle20/atlas-socket v0.0.0-20240717134810-551b06d17e33
 	github.com/google/uuid v1.6.0
+	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
@@ -19,7 +20,6 @@ require (
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
-	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/segmentio/kafka-go v0.4.47 // indirect

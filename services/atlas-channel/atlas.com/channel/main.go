@@ -13,7 +13,9 @@ import (
 	"atlas-channel/tenant"
 	"atlas-channel/tracing"
 	"context"
+	"fmt"
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -87,7 +89,7 @@ func main() {
 	writerMap[writer.NPCAction] = writer.MessageGetter
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, ctx, wg)(_map.StatusEventConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, ctx, wg)(_map.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, uuid.New().String())))
 
 	for _, s := range config.Data.Attributes.Servers {
 		wp := getWriterProducer(l)(s.Writers, writerMap)

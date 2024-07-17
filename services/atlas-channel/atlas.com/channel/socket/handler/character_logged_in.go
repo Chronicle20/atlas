@@ -12,9 +12,9 @@ import (
 
 const CharacterLoggedInHandle = "CharacterLoggedInHandle"
 
-func CharacterLoggedInHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func CharacterLoggedInHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader, _ map[string]interface{}) {
 	setFieldFunc := session.Announce(wp)(writer.SetField)
-	return func(s session.Model, r *request.Reader) {
+	return func(s session.Model, r *request.Reader, _ map[string]interface{}) {
 		characterId := r.ReadUint32()
 		buffer := r.GetRestAsBytes()
 		l.Debugf("Handling login for character [%d]. buffer: %s", characterId, buffer)

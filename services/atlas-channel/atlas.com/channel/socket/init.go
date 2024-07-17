@@ -32,6 +32,10 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 
 			l.Infof("Creating channel socket service for [%s] on port [%d].", sc.String(), port)
 
+			hasAes := true
+			if sc.Tenant().Region == "GMS" && sc.Tenant().MajorVersion <= 28 {
+				hasAes = false
+			}
 			hasMapleEncryption := true
 			if config.Region == "JMS" {
 				hasMapleEncryption = false
@@ -124,7 +128,7 @@ func handlerProducer[E uint8 | uint16](l logrus.FieldLogger) func(handlerConfig 
 			}
 
 			l.Debugf("Configuring opcode [%s] with validator [%s] and handler [%s].", hc.OpCode, hc.Validator, hc.Handler)
-			handlers[E(op)] = handler.AdaptHandler(l, hc.Handler, v, h, wp, tenantId)
+			handlers[E(op)] = handler.AdaptHandler(l, hc.Handler, v, h, wp, tenantId, hc.Options)
 		}
 
 		return func() map[E]request.Handler {

@@ -12,18 +12,7 @@ const ()
 type Movement struct {
 	StartX   int16
 	StartY   int16
-	Elements []Element
-}
-
-func (m *Movement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		w.WriteInt16(m.StartX)
-		w.WriteInt16(m.StartY)
-		w.WriteByte(byte(len(m.Elements)))
-		for _, element := range m.Elements {
-			element.Encode(l, tenant, options)(w)
-		}
-	}
+	Elements []EncoderDecoder
 }
 
 func (m *Movement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
@@ -32,11 +21,26 @@ func (m *Movement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map
 		m.StartY = r.ReadInt16()
 
 		numElems := r.ReadByte()
-		var elems = make([]Element, numElems)
+		var elems = make([]EncoderDecoder, numElems)
 		for i := byte(0); i < numElems; i++ {
-			elem := Element{}
-			elem.StartX = m.StartX
-			elem.StartY = m.StartY
+			var elem EncoderDecoder
+			var elemType = r.ReadByte()
+
+			if isMovementType(l)(elemType, options, "NORMAL") {
+				elem = &NormalElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}
+			} else if isMovementType(l)(elemType, options, "TELEPORT") {
+				elem = &TeleportElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}
+			} else if isMovementType(l)(elemType, options, "START_FALL_DOWN") {
+				elem = &StartFallDownElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}
+			} else if isMovementType(l)(elemType, options, "FLYING_BLOCK") {
+				elem = &FlyingBlockElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}
+			} else if isMovementType(l)(elemType, options, "JUMP") {
+				elem = &JumpElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}
+			} else if isMovementType(l)(elemType, options, "STAT_CHANGE") {
+				elem = &StatChangeElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}
+			} else {
+				elem = &Element{ElemType: elemType}
+			}
 			elem.Decode(l, tenant, options)(r)
 			elems[i] = elem
 		}
@@ -61,206 +65,181 @@ type Element struct {
 	ElemType    byte
 }
 
-func (m *Element) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		var elemType = m.ElemType
-		w.WriteByte(m.ElemType)
-		if isMovementType(l)(elemType, options, "NORMAL") {
-			m.EncodeNormal(l, tenant, options)(w, elemType)
-			return
-		}
-
-		if isMovementType(l)(elemType, options, "TELEPORT") {
-			m.EncodeTeleport(l, tenant, options)(w, elemType)
-			return
-		}
-
-		if isMovementType(l)(elemType, options, "START_FALL_DOWN") {
-			m.EncodeStartFallDown(l, tenant, options)(w, elemType)
-			return
-		}
-		if isMovementType(l)(elemType, options, "FLYING_BLOCK") {
-			m.EncodeFlyingBlock(l, tenant, options)(w, elemType)
-			return
-		}
-		if isMovementType(l)(elemType, options, "JUMP") {
-			m.EncodeJump(l, tenant, options)(w, elemType)
-			return
-		}
-		if isMovementType(l)(elemType, options, "STAT_CHANGE") {
-			m.EncodeStatChange(l, tenant, options)(w, elemType)
-			return
-		}
-		w.WriteByte(m.BMoveAction)
-		w.WriteInt16(m.TElapse)
-	}
-}
-
-func (m *Element) EncodeNormal(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer, elemType byte) {
-	return func(w *response.Writer, elemType byte) {
-		w.WriteInt16(m.X)
-		w.WriteInt16(m.Y)
-		w.WriteInt16(m.Vx)
-		w.WriteInt16(m.Vy)
-		w.WriteInt16(m.Fh)
-		if isMovementName(l)(elemType, options, "FALL_DOWN") {
-			w.WriteInt16(m.FhFallStart)
-		}
-		if tenant.Region != "GMS" || tenant.MajorVersion > 87 {
-			w.WriteInt16(m.XOffset)
-			w.WriteInt16(m.YOffset)
-		}
-		w.WriteByte(m.BMoveAction)
-		w.WriteInt16(m.TElapse)
-	}
-}
-
-func (m *Element) EncodeTeleport(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer, elemType byte) {
-	return func(w *response.Writer, elemType byte) {
-		w.WriteInt16(m.X)
-		w.WriteInt16(m.Y)
-		w.WriteInt16(m.Fh)
-		w.WriteByte(m.BMoveAction)
-		w.WriteInt16(m.TElapse)
-	}
-}
-
-func (m *Element) EncodeStartFallDown(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer, elemType byte) {
-	return func(w *response.Writer, elemType byte) {
-		w.WriteInt16(m.Vx)
-		w.WriteInt16(m.Vy)
-		w.WriteInt16(m.FhFallStart)
-		w.WriteByte(m.BMoveAction)
-		w.WriteInt16(m.TElapse)
-	}
-}
-
-func (m *Element) EncodeFlyingBlock(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer, elemType byte) {
-	return func(w *response.Writer, elemType byte) {
-		w.WriteInt16(m.X)
-		w.WriteInt16(m.Y)
-		w.WriteInt16(m.Vx)
-		w.WriteInt16(m.Vy)
-		w.WriteByte(m.BMoveAction)
-		w.WriteInt16(m.TElapse)
-	}
-}
-
-func (m *Element) EncodeJump(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer, elemType byte) {
-	return func(w *response.Writer, elemType byte) {
-		w.WriteInt16(m.Vx)
-		w.WriteInt16(m.Vy)
-		w.WriteByte(m.BMoveAction)
-		w.WriteInt16(m.TElapse)
-	}
-}
-
-func (m *Element) EncodeStatChange(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer, elemType byte) {
-	return func(w *response.Writer, elemType byte) {
-		w.WriteByte(m.BStat)
-	}
-}
-
-func (m *Element) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
+func (m *Element) Decode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(r *request.Reader) {
 	return func(r *request.Reader) {
-
-		var elemType = r.ReadByte()
-		m.ElemType = elemType
-		if isMovementType(l)(elemType, options, "NORMAL") {
-			m.DecodeNormal(l, tenant, options)(r, elemType)
-			return
-		}
-		if isMovementType(l)(elemType, options, "TELEPORT") {
-			m.DecodeTeleport(l, tenant, options)(r, elemType)
-			return
-		}
-		if isMovementType(l)(elemType, options, "START_FALL_DOWN") {
-			m.DecodeStartFallDown(l, tenant, options)(r, elemType)
-			return
-		}
-		if isMovementType(l)(elemType, options, "FLYING_BLOCK") {
-			m.DecodeFlyingBlock(l, tenant, options)(r, elemType)
-			return
-		}
-		if isMovementType(l)(elemType, options, "JUMP") {
-			m.DecodeJump(l, tenant, options)(r, elemType)
-			return
-		}
-		if isMovementType(l)(elemType, options, "STAT_CHANGE") {
-			m.DecodeStatChange(l, tenant, options)(r, elemType)
-			return
-		}
 		m.BMoveAction = r.ReadByte()
 		m.TElapse = r.ReadInt16()
 	}
 }
 
-func (m *Element) DecodeNormal(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader, elemType byte) {
-	return func(r *request.Reader, elemType byte) {
+func (m *Element) EncodeType(w *response.Writer) {
+	w.WriteByte(m.ElemType)
+}
+
+type NormalElement struct {
+	Element
+}
+
+type TeleportElement struct {
+	Element
+}
+
+type StartFallDownElement struct {
+	Element
+}
+
+type FlyingBlockElement struct {
+	Element
+}
+
+type JumpElement struct {
+	Element
+}
+
+type StatChangeElement struct {
+	Element
+}
+
+func (m *NormalElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
+	return func(r *request.Reader) {
 		m.X = r.ReadInt16()
 		m.Y = r.ReadInt16()
 		m.Vx = r.ReadInt16()
 		m.Vy = r.ReadInt16()
 		m.Fh = r.ReadInt16()
-		if isMovementName(l)(elemType, options, "FALL_DOWN") {
+		if isMovementName(l)(m.ElemType, options, "FALL_DOWN") {
 			m.FhFallStart = r.ReadInt16()
 		}
 		if tenant.Region != "GMS" || tenant.MajorVersion > 83 {
 			m.XOffset = r.ReadInt16()
 			m.YOffset = r.ReadInt16()
 		}
-		m.BMoveAction = r.ReadByte()
-		m.TElapse = r.ReadInt16()
+		m.Element.Decode(l, tenant, options)(r)
 	}
 }
 
-func (m *Element) DecodeTeleport(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader, elemType byte) {
-	return func(r *request.Reader, elemType byte) {
+func (m *TeleportElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
+	return func(r *request.Reader) {
 		m.X = r.ReadInt16()
 		m.Y = r.ReadInt16()
 		m.Fh = r.ReadInt16()
-		m.BMoveAction = r.ReadByte()
-		m.TElapse = r.ReadInt16()
+		m.Element.Decode(l, tenant, options)(r)
 	}
 }
 
-func (m *Element) DecodeStartFallDown(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader, elemType byte) {
-	return func(r *request.Reader, elemType byte) {
+func (m *StartFallDownElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
+	return func(r *request.Reader) {
 		m.X = m.StartX
 		m.Y = m.StartY
 		m.Vx = r.ReadInt16()
 		m.Vy = r.ReadInt16()
 		m.FhFallStart = r.ReadInt16()
-		m.BMoveAction = r.ReadByte()
-		m.TElapse = r.ReadInt16()
+		m.Element.Decode(l, tenant, options)(r)
 	}
 }
 
-func (m *Element) DecodeFlyingBlock(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader, elemType byte) {
-	return func(r *request.Reader, elemType byte) {
+func (m *FlyingBlockElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
+	return func(r *request.Reader) {
 		m.X = r.ReadInt16()
 		m.Y = r.ReadInt16()
 		m.Vx = r.ReadInt16()
 		m.Vy = r.ReadInt16()
-		m.BMoveAction = r.ReadByte()
-		m.TElapse = r.ReadInt16()
+		m.Element.Decode(l, tenant, options)(r)
 	}
 }
 
-func (m *Element) DecodeJump(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader, elemType byte) {
-	return func(r *request.Reader, elemType byte) {
+func (m *JumpElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
+	return func(r *request.Reader) {
 		m.X = m.StartX
 		m.Y = m.StartY
 		m.Vx = r.ReadInt16()
 		m.Vy = r.ReadInt16()
-		m.BMoveAction = r.ReadByte()
-		m.TElapse = r.ReadInt16()
+		m.Element.Decode(l, tenant, options)(r)
 	}
 }
 
-func (m *Element) DecodeStatChange(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader, elemType byte) {
-	return func(r *request.Reader, elemType byte) {
+func (m *StatChangeElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
+	return func(r *request.Reader) {
 		m.BStat = r.ReadByte()
+	}
+}
+
+func (m *Movement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+	return func(w *response.Writer) {
+		w.WriteInt16(m.StartX)
+		w.WriteInt16(m.StartY)
+		w.WriteByte(byte(len(m.Elements)))
+		for _, element := range m.Elements {
+			element.EncodeType(w)
+			element.Encode(l, tenant, options)(w)
+		}
+	}
+}
+
+func (m *Element) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+	return func(w *response.Writer) {
+		w.WriteByte(m.BMoveAction)
+		w.WriteInt16(m.TElapse)
+	}
+}
+
+func (m *NormalElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+	return func(w *response.Writer) {
+		w.WriteInt16(m.X)
+		w.WriteInt16(m.Y)
+		w.WriteInt16(m.Vx)
+		w.WriteInt16(m.Vy)
+		w.WriteInt16(m.Fh)
+		if isMovementName(l)(m.ElemType, options, "FALL_DOWN") {
+			w.WriteInt16(m.FhFallStart)
+		}
+		if tenant.Region != "GMS" || tenant.MajorVersion > 87 {
+			w.WriteInt16(m.XOffset)
+			w.WriteInt16(m.YOffset)
+		}
+		m.Element.Encode(l, tenant, options)(w)
+	}
+}
+
+func (m *TeleportElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+	return func(w *response.Writer) {
+		w.WriteInt16(m.X)
+		w.WriteInt16(m.Y)
+		w.WriteInt16(m.Fh)
+		m.Element.Encode(l, tenant, options)(w)
+	}
+}
+
+func (m *StartFallDownElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+	return func(w *response.Writer) {
+		w.WriteInt16(m.Vx)
+		w.WriteInt16(m.Vy)
+		w.WriteInt16(m.FhFallStart)
+		m.Element.Encode(l, tenant, options)(w)
+	}
+}
+
+func (m *FlyingBlockElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+	return func(w *response.Writer) {
+		w.WriteInt16(m.X)
+		w.WriteInt16(m.Y)
+		w.WriteInt16(m.Vx)
+		w.WriteInt16(m.Vy)
+		m.Element.Encode(l, tenant, options)(w)
+	}
+}
+
+func (m *JumpElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+	return func(w *response.Writer) {
+		w.WriteInt16(m.Vx)
+		w.WriteInt16(m.Vy)
+		m.Element.Encode(l, tenant, options)(w)
+	}
+}
+
+func (m *StatChangeElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+	return func(w *response.Writer) {
+		w.WriteByte(m.BStat)
 	}
 }
 

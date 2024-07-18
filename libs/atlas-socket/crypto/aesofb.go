@@ -277,10 +277,15 @@ var ivShiftKey = [...]byte{
 
 //goland:noinspection GoUnusedExportedFunction
 func NewAESOFB(iv []byte, version uint16) *AESOFB {
+	return NewAESOFBWithKey(iv, version, key)
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func NewAESOFBWithKey(iv []byte, version uint16, ckey []byte) *AESOFB {
 	var a AESOFB
 	a.version = version>>8&255 | version<<8&uint16(uint32('\uff00'))
 
-	c, err := aes.NewCipher(key)
+	c, err := aes.NewCipher(ckey)
 	if err != nil {
 		os.Exit(0)
 	}

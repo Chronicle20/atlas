@@ -18,9 +18,12 @@ func CharacterSelectedHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp
 		characterId := r.ReadUint32()
 		var sMacAddressWithHDDSerial = ""
 		var sMacAddressWithHDDSerial2 = ""
+
 		if s.Tenant().Region == "GMS" {
-			sMacAddressWithHDDSerial = r.ReadAsciiString()
-			sMacAddressWithHDDSerial2 = r.ReadAsciiString()
+			if s.Tenant().MajorVersion > 12 {
+				sMacAddressWithHDDSerial = r.ReadAsciiString()
+				sMacAddressWithHDDSerial2 = r.ReadAsciiString()
+			}
 		}
 		l.Debugf("Character [%d] selected for login to channel [%d:%d]. hwid [%s] hwid [%s].", characterId, s.WorldId(), s.ChannelId(), sMacAddressWithHDDSerial, sMacAddressWithHDDSerial2)
 
@@ -46,7 +49,7 @@ func CharacterSelectedHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp
 			return
 		}
 
-		err = serverIpFunc(s, writer.ServerIPBody(l)(c.IpAddress(), uint16(c.Port()), characterId))
+		err = serverIpFunc(s, writer.ServerIPBody(l, s.Tenant())(c.IpAddress(), uint16(c.Port()), characterId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write server ip response due to error.")
 			return

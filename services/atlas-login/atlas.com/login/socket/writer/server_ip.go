@@ -1,6 +1,7 @@
 package writer
 
 import (
+	"atlas-login/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 	"strconv"
@@ -36,7 +37,7 @@ const (
 	ServerIPModePCRoomPremium       ServerIPMode = "PC_ROOM_PREMIUM"
 )
 
-func ServerIPBody(l logrus.FieldLogger) func(ipAddr string, port uint16, clientId uint32) BodyProducer {
+func ServerIPBody(l logrus.FieldLogger, tenant tenant.Model) func(ipAddr string, port uint16, clientId uint32) BodyProducer {
 	return func(ipAddr string, port uint16, clientId uint32) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getCode(l)(ServerIP, string(ServerIPCodeOk), "codes", options))
@@ -45,7 +46,9 @@ func ServerIPBody(l logrus.FieldLogger) func(ipAddr string, port uint16, clientI
 			w.WriteShort(port)
 			w.WriteInt(clientId)
 			w.WriteByte(0) // bAuthenCode
-			w.WriteInt(0)  // ulPremiumArgument
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+				w.WriteInt(0) // ulPremiumArgument
+			}
 			return w.Bytes()
 		}
 	}

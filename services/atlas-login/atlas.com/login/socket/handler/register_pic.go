@@ -66,7 +66,7 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp write
 			return
 		}
 
-		err = serverIpFunc(s, writer.ServerIPBody(l)(c.IpAddress(), uint16(c.Port()), characterId))
+		err = serverIpFunc(s, writer.ServerIPBody(l, s.Tenant())(c.IpAddress(), uint16(c.Port()), characterId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write server ip response due to error.")
 			return

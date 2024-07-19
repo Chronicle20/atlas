@@ -13,7 +13,7 @@ import (
 const CharacterSelectedHandle = "CharacterSelectedHandle"
 
 func CharacterSelectedHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	serverIpFunc := session.Announce(wp)(writer.ServerIP)
+	serverIpFunc := session.Announce(l)(wp)(writer.ServerIP)
 	return func(s session.Model, r *request.Reader) {
 		characterId := r.ReadUint32()
 		var sMacAddressWithHDDSerial = ""

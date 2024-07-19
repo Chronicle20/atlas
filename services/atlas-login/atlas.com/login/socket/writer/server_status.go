@@ -10,9 +10,7 @@ const ServerStatus = "ServerStatus"
 
 func ServerStatusBody(l logrus.FieldLogger) func(status world.Status) BodyProducer {
 	return func(status world.Status) BodyProducer {
-		return func(op uint16, options map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteShort(op)
+		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteShort(uint16(status))
 			return w.Bytes()
 		}

@@ -38,11 +38,9 @@ const (
 
 func ServerIPBody(l logrus.FieldLogger) func(ipAddr string, port uint16, clientId uint32) BodyProducer {
 	return func(ipAddr string, port uint16, clientId uint32) BodyProducer {
-		return func(op uint16, options map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteShort(op)
-			w.WriteByte(getServerIPCode(l)(ServerIPCodeOk, options))
-			w.WriteByte(getServerIPMode(l)(ServerIPModeOk, options))
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCode(l)(ServerIP, string(ServerIPCodeOk), "codes", options))
+			w.WriteByte(getCode(l)(ServerIP, string(ServerIPModeOk), "modes", options))
 			w.WriteByteArray(ipAsByteArray(ipAddr))
 			w.WriteShort(port)
 			w.WriteInt(clientId)
@@ -73,64 +71,10 @@ func ServerIPBodySimpleError(l logrus.FieldLogger) func(code ServerIPCode) BodyP
 
 func ServerIPBodyError(l logrus.FieldLogger) func(code ServerIPCode, mode ServerIPMode) BodyProducer {
 	return func(code ServerIPCode, mode ServerIPMode) BodyProducer {
-		return func(op uint16, options map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteShort(op)
-			w.WriteByte(getServerIPCode(l)(code, options))
-			w.WriteByte(getServerIPMode(l)(mode, options))
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCode(l)(ServerIP, string(code), "codes", options))
+			w.WriteByte(getCode(l)(ServerIP, string(mode), "modes", options))
 			return w.Bytes()
 		}
-	}
-}
-
-const serverIPCodeProperty = "codes"
-
-const serverIPModeProperty = "modes"
-
-func getServerIPCode(l logrus.FieldLogger) func(code ServerIPCode, options map[string]interface{}) byte {
-	return func(codeString ServerIPCode, options map[string]interface{}) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options[serverIPCodeProperty]; !ok {
-			l.Errorf("Reason code [%s] not configured for use in [%s]. Defaulting to 99 which will likely cause a client crash.", codeString, AddCharacterEntry)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Reason code [%s] not configured for use in [%s]. Defaulting to 99 which will likely cause a client crash.", codeString, AddCharacterEntry)
-			return 99
-		}
-
-		code, ok := codes[string(codeString)].(float64)
-		if !ok {
-			l.Errorf("Reason code [%s] not configured for use in [%s]. Defaulting to 99 which will likely cause a client crash.", codeString, AddCharacterEntry)
-			return 99
-		}
-		return byte(code)
-	}
-}
-
-func getServerIPMode(l logrus.FieldLogger) func(code ServerIPMode, options map[string]interface{}) byte {
-	return func(codeString ServerIPMode, options map[string]interface{}) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options[serverIPCodeProperty]; !ok {
-			l.Errorf("Reason code [%s] not configured for use in [%s]. Defaulting to 99 which will likely cause a client crash.", codeString, AddCharacterEntry)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Reason code [%s] not configured for use in [%s]. Defaulting to 99 which will likely cause a client crash.", codeString, AddCharacterEntry)
-			return 99
-		}
-
-		code, ok := codes[string(codeString)].(float64)
-		if !ok {
-			l.Errorf("Reason code [%s] not configured for use in [%s]. Defaulting to 99 which will likely cause a client crash.", codeString, AddCharacterEntry)
-			return 99
-		}
-		return byte(code)
 	}
 }

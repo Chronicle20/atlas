@@ -13,8 +13,8 @@ import (
 const RegisterPinHandle = "RegisterPinHandle"
 
 func RegisterPinHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	pinOperationFunc := session.Announce(wp)(writer.PinOperation)
-	pinUpdateFunc := session.Announce(wp)(writer.PinUpdate)
+	pinOperationFunc := session.Announce(l)(wp)(writer.PinOperation)
+	pinUpdateFunc := session.Announce(l)(wp)(writer.PinUpdate)
 	return func(s session.Model, r *request.Reader) {
 		opt := r.ReadByte()
 		if opt == 0 {
@@ -24,6 +24,21 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp write
 
 		if opt == 1 {
 			pin := r.ReadAsciiString()
+			if len(pin) < 4 {
+				l.Warnf("Read an invalid length pin. Possibly just the bug with inputting pins with leading zeros")
+				err := pinOperationFunc(s, writer.PinConnectionFailedBody(l))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to write pin operation response due to error.")
+					return
+				}
+				return
+			}
+
+			if len(pin) > 4 {
+				l.Warnf("Read an invalid length pin. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
+				session.Destroy(l, span, session.GetRegistry())(s)
+			}
+
 			l.Debugf("Registering PIN [%s] for account [%d].", pin, s.AccountId())
 			err := account.UpdatePin(l, span, s.Tenant())(s.AccountId(), pin)
 			if err != nil {

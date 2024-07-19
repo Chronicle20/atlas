@@ -13,7 +13,7 @@ import (
 const CharacterSelectedPicHandle = "CharacterSelectedPicHandle"
 
 func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	serverIpFunc := session.Announce(wp)(writer.ServerIP)
+	serverIpFunc := session.Announce(l)(wp)(writer.ServerIP)
 	return func(s session.Model, r *request.Reader) {
 		pic := r.ReadAsciiString()
 		characterId := r.ReadUint32()

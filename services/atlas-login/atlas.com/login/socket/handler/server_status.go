@@ -12,7 +12,7 @@ import (
 const ServerStatusHandle = "ServerStatusHandle"
 
 func ServerStatusHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	serverStatusFunc := session.Announce(wp)(writer.ServerStatus)
+	serverStatusFunc := session.Announce(l)(wp)(writer.ServerStatus)
 	return func(s session.Model, r *request.Reader) {
 		worldId := byte(r.ReadUint16())
 

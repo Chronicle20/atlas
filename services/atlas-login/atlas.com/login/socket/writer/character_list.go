@@ -14,9 +14,7 @@ const CharacterList = "CharacterList"
 
 func CharacterListBody(l logrus.FieldLogger, tenant tenant.Model) func(characters []character.Model, worldId byte, status int, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
 	return func(characters []character.Model, worldId byte, status int, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
-		return func(op uint16, options map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteShort(op)
+		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(byte(status))
 
 			if tenant.Region == "JMS" {
@@ -26,6 +24,10 @@ func CharacterListBody(l logrus.FieldLogger, tenant tenant.Model) func(character
 			w.WriteByte(byte(len(characters)))
 			for _, x := range characters {
 				WriteCharacter(tenant)(w, x, false)
+			}
+			if tenant.Region == "GMS" && tenant.MajorVersion <= 28 {
+				// no trailing information
+				return w.Bytes()
 			}
 
 			w.WriteBool(pic != "")
@@ -48,7 +50,7 @@ func CharacterListBody(l logrus.FieldLogger, tenant tenant.Model) func(character
 func WriteCharacter(tenant tenant.Model) func(w *response.Writer, character character.Model, viewAll bool) {
 	return func(w *response.Writer, character character.Model, viewAll bool) {
 		WriteCharacterStatistics(tenant)(w, character)
-		WriteCharacterLook(w, character, false)
+		WriteCharacterLook(tenant)(w, character, false)
 		if !viewAll {
 			w.WriteByte(0)
 		}
@@ -56,6 +58,11 @@ func WriteCharacter(tenant tenant.Model) func(w *response.Writer, character char
 			w.WriteByte(0)
 			return
 		}
+
+		if tenant.Region == "GMS" && tenant.MajorVersion <= 28 {
+			w.WriteInt(1) // auto select first character
+		}
+
 		w.WriteByte(1) // world rank enabled (next 4 int are not sent if disabled) Short??
 		w.WriteInt(character.Rank())
 		w.WriteInt(character.RankMove())
@@ -64,46 +71,65 @@ func WriteCharacter(tenant tenant.Model) func(w *response.Writer, character char
 	}
 }
 
-func WriteCharacterLook(w *response.Writer, character character.Model, mega bool) {
-	w.WriteByte(character.Gender())
-	w.WriteByte(character.SkinColor())
-	w.WriteInt(character.Face())
-	w.WriteBool(!mega)
-	w.WriteInt(character.Hair())
-	WriteCharacterEquipment(w, character)
+func WriteCharacterLook(tenant tenant.Model) func(w *response.Writer, character character.Model, mega bool) {
+	return func(w *response.Writer, character character.Model, mega bool) {
+		if tenant.Region == "GMS" && tenant.MajorVersion <= 28 {
+			// older versions don't write gender / skin color / face / mega / hair a second time
+		} else {
+			w.WriteByte(character.Gender())
+			w.WriteByte(character.SkinColor())
+			w.WriteInt(character.Face())
+			w.WriteBool(!mega)
+			w.WriteInt(character.Hair())
+		}
+		WriteCharacterEquipment(tenant)(w, character)
+	}
 }
 
-func WriteCharacterEquipment(w *response.Writer, character character.Model) {
+func WriteCharacterEquipment(tenant tenant.Model) func(w *response.Writer, character character.Model) {
+	return func(w *response.Writer, character character.Model) {
+		var equips = getEquippedItemSlotMap(character.Equipment())
+		var maskedEquips = make(map[slot.Position]uint32)
+		writeEquips(tenant)(w, equips, maskedEquips)
 
-	var equips = getEquippedItemSlotMap(character.Equipment())
-	var maskedEquips = make(map[slot.Position]uint32)
-	writeEquips(w, equips, maskedEquips)
+		//var weapon *inventory.EquippedItem
+		//for _, x := range character.Equipment() {
+		//	if x.InWeaponSlot() {
+		//		weapon = &x
+		//		break
+		//	}
+		//}
+		//if weapon != nil {
+		//	w.WriteInt(weapon.ItemId())
+		//} else {
+		w.WriteInt(0)
+		//}
 
-	//var weapon *inventory.EquippedItem
-	//for _, x := range character.Equipment() {
-	//	if x.InWeaponSlot() {
-	//		weapon = &x
-	//		break
-	//	}
-	//}
-	//if weapon != nil {
-	//	w.WriteInt(weapon.ItemId())
-	//} else {
-	w.WriteInt(0)
-	//}
-
-	writeForEachPet(w, character.Pets(), writePetItemId, writeEmptyPetItemId)
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+			writeForEachPet(w, character.Pets(), writePetItemId, writeEmptyPetItemId)
+		}
+	}
 }
 
-func writeEquips(w *response.Writer, equips map[slot.Position]uint32, maskedEquips map[slot.Position]uint32) {
-	for k, v := range equips {
-		w.WriteKeyValue(byte(k), v)
+func writeEquips(tenant tenant.Model) func(w *response.Writer, equips map[slot.Position]uint32, maskedEquips map[slot.Position]uint32) {
+	return func(w *response.Writer, equips map[slot.Position]uint32, maskedEquips map[slot.Position]uint32) {
+		for k, v := range equips {
+			w.WriteKeyValue(byte(k), v)
+		}
+		if tenant.Region == "GMS" && tenant.MajorVersion <= 28 {
+			w.WriteByte(0)
+		} else {
+			w.WriteByte(0xFF)
+		}
+		for k, v := range maskedEquips {
+			w.WriteKeyValue(byte(k), v)
+		}
+		if tenant.Region == "GMS" && tenant.MajorVersion <= 28 {
+			w.WriteByte(0)
+		} else {
+			w.WriteByte(0xFF)
+		}
 	}
-	w.WriteByte(0xFF)
-	for k, v := range maskedEquips {
-		w.WriteKeyValue(byte(k), v)
-	}
-	w.WriteByte(0xFF)
 }
 
 func getEquippedItemSlotMap(e equipment.Model) map[slot.Position]uint32 {
@@ -180,7 +206,11 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 		w.WriteByte(character.SkinColor())
 		w.WriteInt(character.Face())
 		w.WriteInt(character.Hair())
-		writeForEachPet(w, character.Pets(), writePetId, writeEmptyPetId)
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+			writeForEachPet(w, character.Pets(), writePetId, writeEmptyPetId)
+		} else {
+			w.WriteInt64(0) // pet cash id
+		}
 		w.WriteByte(character.Level())
 		w.WriteShort(character.JobId())
 		w.WriteShort(character.Strength())
@@ -201,12 +231,22 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 
 		w.WriteInt(character.Experience())
 		w.WriteInt16(character.Fame())
-		w.WriteInt(character.GachaponExperience())
+		if tenant.Region == "GMS" && tenant.MajorVersion > 12 {
+			w.WriteInt(character.GachaponExperience())
+		} else if tenant.Region == "JMS" {
+			w.WriteInt(character.GachaponExperience())
+		}
 		w.WriteInt(character.MapId())
 		w.WriteByte(character.SpawnPoint())
 
 		if tenant.Region == "GMS" {
-			w.WriteInt(0)
+			if tenant.MajorVersion > 12 {
+				w.WriteInt(0)
+			} else {
+				w.WriteInt64(0)
+				w.WriteInt(0)
+				w.WriteInt(0)
+			}
 			if tenant.MajorVersion >= 87 {
 				w.WriteShort(0) // nSubJob
 			}

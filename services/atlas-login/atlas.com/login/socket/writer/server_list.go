@@ -14,19 +14,25 @@ const ServerListEnd = "ServerListEnd"
 
 func ServerListEntryBody(l logrus.FieldLogger, tenant tenant.Model) func(worldId byte, worldName string, state world.State, eventMessage string, channelLoad []channel.Load) BodyProducer {
 	return func(worldId byte, worldName string, state world.State, eventMessage string, channelLoad []channel.Load) BodyProducer {
-		return func(op uint16, options map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteShort(op)
+		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(worldId)
 			w.WriteAsciiString(worldName)
-			w.WriteByte(byte(state))
-			w.WriteAsciiString(eventMessage)
-			w.WriteShort(100) // eventExpRate 100 = 1x
-			w.WriteShort(100) // eventDropRate 100 = 1x
 
 			if tenant.Region == "GMS" {
-				//support blocking character creation
-				w.WriteByte(0)
+				if tenant.MajorVersion > 12 {
+					w.WriteByte(byte(state))
+					w.WriteAsciiString(eventMessage)
+					w.WriteShort(100) // eventExpRate 100 = 1x
+					w.WriteShort(100) // eventDropRate 100 = 1x
+
+					//support blocking character creation
+					w.WriteByte(0)
+				}
+			} else if tenant.Region == "JMS" {
+				w.WriteByte(byte(state))
+				w.WriteAsciiString(eventMessage)
+				w.WriteShort(100) // eventExpRate 100 = 1x
+				w.WriteShort(100) // eventDropRate 100 = 1x
 			}
 
 			w.WriteByte(byte(len(channelLoad)))
@@ -39,7 +45,14 @@ func ServerListEntryBody(l logrus.FieldLogger, tenant tenant.Model) func(worldId
 			}
 
 			//balloon size
-			w.WriteShort(0)
+			if tenant.Region == "GMS" {
+				if tenant.MajorVersion > 12 {
+					w.WriteShort(0)
+				}
+			} else if tenant.Region == "JMS" {
+				w.WriteShort(0)
+			}
+
 			// for loop
 			// w.WriteShort // x
 			// w.WriteShort // y
@@ -50,9 +63,7 @@ func ServerListEntryBody(l logrus.FieldLogger, tenant tenant.Model) func(worldId
 }
 
 func ServerListEndBody(l logrus.FieldLogger) BodyProducer {
-	return func(op uint16, options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteShort(op)
+	return func(w *response.Writer, options map[string]interface{}) []byte {
 		w.WriteByte(byte(0xFF))
 		return w.Bytes()
 	}

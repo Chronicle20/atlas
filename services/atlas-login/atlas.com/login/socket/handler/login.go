@@ -58,8 +58,8 @@ func ReadLoginRequest(reader *request.Reader) *LoginRequest {
 }
 
 func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	authTemporaryBanFunc := session.Announce(wp)(writer.AuthTemporaryBan)
-	authPermanentBanFunc := session.Announce(wp)(writer.AuthPermanentBan)
+	authTemporaryBanFunc := session.Announce(l)(wp)(writer.AuthTemporaryBan)
+	authPermanentBanFunc := session.Announce(l)(wp)(writer.AuthPermanentBan)
 
 	return func(s session.Model, r *request.Reader) {
 		p := ReadLoginRequest(r)
@@ -116,7 +116,7 @@ func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 }
 
 func issueSuccess(l logrus.FieldLogger, s session.Model, wp writer.Producer) model.Operator[account.Model] {
-	authSuccessFunc := session.Announce(wp)(writer.AuthSuccess)
+	authSuccessFunc := session.Announce(l)(wp)(writer.AuthSuccess)
 	return func(a account.Model) error {
 		c, err := configuration.GetConfiguration()
 		if err != nil {
@@ -138,7 +138,7 @@ func issueSuccess(l logrus.FieldLogger, s session.Model, wp writer.Producer) mod
 }
 
 func announceError(l logrus.FieldLogger, _ opentracing.Span, wp writer.Producer) func(s session.Model, reason string) {
-	authLoginFailedFunc := session.Announce(wp)(writer.AuthLoginFailed)
+	authLoginFailedFunc := session.Announce(l)(wp)(writer.AuthLoginFailed)
 	return func(s session.Model, reason string) {
 		err := authLoginFailedFunc(s, writer.AuthLoginFailedBody(l, s.Tenant())(reason))
 		if err != nil {

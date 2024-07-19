@@ -14,16 +14,24 @@ import (
 const CharacterListWorldHandle = "CharacterListWorldHandle"
 
 func CharacterListWorldHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	serverStatusFunc := session.Announce(wp)(writer.ServerStatus)
-	characterListFunc := session.Announce(wp)(writer.CharacterList)
+	serverStatusFunc := session.Announce(l)(wp)(writer.ServerStatus)
+	characterListFunc := session.Announce(l)(wp)(writer.CharacterList)
 	return func(s session.Model, r *request.Reader) {
 		var gameStartMode = byte(0)
-		if s.Tenant().Region == "GMS" {
+		if s.Tenant().Region == "GMS" && s.Tenant().MajorVersion > 28 {
+			// GMS v28 is not definite here, but this is not present in 28.
 			gameStartMode = r.ReadByte()
 		}
 		worldId := r.ReadByte()
 		channelId := r.ReadByte()
-		socketAddr := r.ReadInt32()
+
+		var socketAddr int32
+		if s.Tenant().Region == "GMS" && s.Tenant().MajorVersion > 12 {
+			socketAddr = r.ReadInt32()
+		} else if s.Tenant().Region == "JMS" {
+			socketAddr = r.ReadInt32()
+		}
+
 		l.Debugf("Handling [CharacterListWorld]. gameStartMode=[%d], worldId=[%d], channelId=[%d], socketAddr=[%d]", gameStartMode, worldId, channelId, socketAddr)
 
 		w, err := world.GetById(l, span, s.Tenant())(worldId)

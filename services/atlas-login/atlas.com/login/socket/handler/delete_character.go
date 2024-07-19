@@ -13,17 +13,20 @@ import (
 const DeleteCharacterHandle = "DeleteCharacterHandle"
 
 func DeleteCharacterHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	deleteCharacterResponseFunc := session.Announce(wp)(writer.DeleteCharacterResponse)
+	deleteCharacterResponseFunc := session.Announce(l)(wp)(writer.DeleteCharacterResponse)
 	return func(s session.Model, r *request.Reader) {
 		var verifyPic = false
 		var pic string
+		var dob uint32
 
-		if s.Tenant().Region == "GMS" {
+		if s.Tenant().Region == "GMS" && s.Tenant().MajorVersion > 82 {
 			verifyPic = true
 			pic = r.ReadAsciiString()
+		} else if s.Tenant().Region == "GMS" {
+			dob = r.ReadUint32()
 		}
 		characterId := r.ReadUint32()
-		l.Debugf("Handling delete character [%d] for account [%d]. verifyPic [%t] pic [%s].", characterId, s.AccountId(), verifyPic, pic)
+		l.Debugf("Handling delete character [%d] for account [%d]. verifyPic [%t] pic [%s]. verifyDob [%t] dob [%d]", characterId, s.AccountId(), verifyPic, pic, dob != 0, dob)
 
 		if verifyPic {
 			a, err := account.GetById(l, span, s.Tenant())(s.AccountId())

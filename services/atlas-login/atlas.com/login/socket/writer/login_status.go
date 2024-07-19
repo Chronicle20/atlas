@@ -35,9 +35,7 @@ const (
 
 func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId uint32, name string, gender byte, usesPin bool, pic string) BodyProducer {
 	return func(accountId uint32, name string, gender byte, usesPin bool, pic string) BodyProducer {
-		return func(op uint16, _ map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteShort(op)
+		return func(w *response.Writer, _ map[string]interface{}) []byte {
 			w.WriteByte(0) // success
 			w.WriteByte(0)
 
@@ -58,26 +56,35 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 
 			if tenant.Region == "GMS" {
 				// country code
-				w.WriteByte(0)
-				w.WriteAsciiString(name)
-				w.WriteByte(0)
-				// quiet ban
-				w.WriteByte(0)
-				// quiet ban timestamp
-				w.WriteLong(0)
-				// creation timestamp
-				w.WriteLong(0)
-				// nNumOfCharacter
-				w.WriteInt(1)
-				// 0 = Pin-System Enabled, 1 = Disabled
-				w.WriteBool(!usesPin)
-				w.WriteByte(0)
-				// 0 = Register PIC, 1 = Ask for PIC, 2 = Disabled (disables character deletion without client edit).
-				var needsPic = byte(0)
-				if pic != "" {
-					needsPic = byte(1)
+				if tenant.MajorVersion > 12 {
+					w.WriteByte(0)
 				}
-				w.WriteByte(needsPic)
+				w.WriteAsciiString(name)
+
+				if tenant.MajorVersion > 12 {
+					w.WriteByte(0)
+					// quiet ban
+					w.WriteByte(0)
+					// quiet ban timestamp
+					w.WriteLong(0)
+					// creation timestamp
+					w.WriteLong(0)
+					// nNumOfCharacter
+					w.WriteInt(1)
+					// 0 = Pin-System Enabled, 1 = Disabled
+					w.WriteBool(!usesPin)
+					w.WriteByte(0)
+					// 0 = Register PIC, 1 = Ask for PIC, 2 = Disabled (disables character deletion without client edit).
+					var needsPic = byte(0)
+					if pic != "" {
+						needsPic = byte(1)
+					}
+					w.WriteByte(needsPic)
+				} else {
+					w.WriteLong(0)
+					w.WriteLong(0)
+					w.WriteLong(0)
+				}
 
 				if tenant.MajorVersion >= 87 {
 					w.WriteLong(0)
@@ -95,7 +102,7 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 				w.WriteAsciiString(name)
 			}
 
-			l.Debugf("Writing [%s] message. opcode [0x%02X].", AuthSuccess, op&0xFF)
+			//l.Debugf("Writing [%s] message. opcode [0x%02X].", AuthSuccess, op&0xFF)
 			return w.Bytes()
 		}
 	}
@@ -103,10 +110,8 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 
 func AuthTemporaryBanBody(l logrus.FieldLogger, tenant tenant.Model) func(until uint64, reason byte) BodyProducer {
 	return func(until uint64, reason byte) BodyProducer {
-		return func(op uint16, options map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteShort(op)
-			code := getFailedReason(l)(Banned, options)
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			code := getCode(l)(AuthLoginFailed, Banned, "failedReasonCodes", options)
 			w.WriteByte(code)
 			w.WriteByte(0)
 
@@ -118,17 +123,15 @@ func AuthTemporaryBanBody(l logrus.FieldLogger, tenant tenant.Model) func(until 
 			w.WriteLong(until) // Temp ban date is handled as a 64-bit long, number of 100NS intervals since 1/1/1601.
 
 			rtn := w.Bytes()
-			l.Debugf("Writing [%s] message. opcode [0x%02X]. body={reason=%d, until=%d}.", AuthTemporaryBan, op&0xFF, reason, until)
+			//l.Debugf("Writing [%s] message. opcode [0x%02X]. body={reason=%d, until=%d}.", AuthTemporaryBan, op&0xFF, reason, until)
 			return rtn
 		}
 	}
 }
 
 func AuthPermanentBanBody(l logrus.FieldLogger, tenant tenant.Model) BodyProducer {
-	return func(op uint16, options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteShort(op)
-		code := getFailedReason(l)(Banned, options)
+	return func(w *response.Writer, options map[string]interface{}) []byte {
+		code := getCode(l)(AuthLoginFailed, Banned, "failedReasonCodes", options)
 		w.WriteByte(code)
 		w.WriteByte(0)
 
@@ -140,17 +143,15 @@ func AuthPermanentBanBody(l logrus.FieldLogger, tenant tenant.Model) BodyProduce
 		w.WriteLong(0)
 
 		rtn := w.Bytes()
-		l.Debugf("Writing [%s] message. opcode [0x%02X].", AuthPermanentBan, op&0xFF)
+		//l.Debugf("Writing [%s] message. opcode [0x%02X].", AuthPermanentBan, op&0xFF)
 		return rtn
 	}
 }
 
 func AuthLoginFailedBody(l logrus.FieldLogger, tenant tenant.Model) func(reason string) BodyProducer {
 	return func(reason string) BodyProducer {
-		return func(op uint16, options map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteShort(op)
-			code := getFailedReason(l)(reason, options)
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			code := getCode(l)(AuthLoginFailed, reason, "failedReasonCodes", options)
 			w.WriteByte(code)
 			w.WriteByte(0)
 
@@ -159,34 +160,8 @@ func AuthLoginFailedBody(l logrus.FieldLogger, tenant tenant.Model) func(reason 
 			}
 
 			rtn := w.Bytes()
-			l.Debugf("Writing [%s] message. opcode [0x%02X]. reason=[%s]. body={reason=%d}.", AuthLoginFailed, op&0xFF, reason, code)
+			//l.Debugf("Writing [%s] message. opcode [0x%02X]. reason=[%s]. body={reason=%d}.", AuthLoginFailed, op&0xFF, reason, code)
 			return rtn
 		}
-	}
-}
-
-const failedReasonCodeProperty = "failedReasonCodes"
-
-func getFailedReason(l logrus.FieldLogger) func(reason string, options map[string]interface{}) byte {
-	return func(reason string, options map[string]interface{}) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options[failedReasonCodeProperty]; !ok {
-			l.Errorf("Reason code [%s] not configured for use in [%s]. Defaulting to 99 which will likely cause a client crash.", reason, AuthLoginFailed)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Reason code [%s] not configured for use in [%s]. Defaulting to 99 which will likely cause a client crash.", reason, AuthLoginFailed)
-			return 99
-		}
-
-		code, ok := codes[reason].(float64)
-		if !ok {
-			l.Errorf("Reason code [%s] not configured for use in [%s]. Defaulting to 99 which will likely cause a client crash.", reason, AuthLoginFailed)
-			return 99
-		}
-		return byte(code)
 	}
 }

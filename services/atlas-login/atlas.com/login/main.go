@@ -11,11 +11,9 @@ import (
 	"atlas-login/tracing"
 	"context"
 	"github.com/opentracing/opentracing-go"
-	"github.com/sirupsen/logrus"
 	"io"
 	"os"
 	"os/signal"
-	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -72,6 +70,7 @@ func main() {
 
 	handlerMap := make(map[string]handler.MessageHandler)
 	handlerMap[handler.NoOpHandler] = handler.NoOpHandlerFunc
+	handlerMap[handler.DebugHandle] = handler.DebugHandleFunc
 	handlerMap[handler.CreateSecurityHandle] = handler.CreateSecurityHandleFunc
 	handlerMap[handler.LoginHandle] = handler.LoginHandleFunc
 	handlerMap[handler.ServerListRequestHandle] = handler.ServerListRequestHandleFunc
@@ -86,30 +85,34 @@ func main() {
 	handlerMap[handler.AcceptTosHandle] = handler.AcceptTosHandleFunc
 	handlerMap[handler.CharacterSelectedHandle] = handler.CharacterSelectedHandleFunc
 	handlerMap[handler.CharacterSelectedPicHandle] = handler.CharacterSelectedPicHandleFunc
+	handlerMap[handler.WorldSelectHandle] = handler.WorldSelectHandleFunc
+	handlerMap[handler.SetGenderHandle] = handler.SetGenderHandleFunc
 
-	writerMap := make(map[string]writer.HeaderFunc)
-	writerMap[writer.LoginAuth] = writer.MessageGetter
-	writerMap[writer.AuthSuccess] = writer.MessageGetter
-	writerMap[writer.AuthTemporaryBan] = writer.MessageGetter
-	writerMap[writer.AuthPermanentBan] = writer.MessageGetter
-	writerMap[writer.AuthLoginFailed] = writer.MessageGetter
-	writerMap[writer.ServerListRecommendations] = writer.MessageGetter
-	writerMap[writer.ServerListEntry] = writer.MessageGetter
-	writerMap[writer.ServerListEnd] = writer.MessageGetter
-	writerMap[writer.SelectWorld] = writer.MessageGetter
-	writerMap[writer.ServerStatus] = writer.MessageGetter
-	writerMap[writer.CharacterList] = writer.MessageGetter
-	writerMap[writer.CharacterNameResponse] = writer.MessageGetter
-	writerMap[writer.AddCharacterEntry] = writer.MessageGetter
-	writerMap[writer.DeleteCharacterResponse] = writer.MessageGetter
-	writerMap[writer.PinOperation] = writer.MessageGetter
-	writerMap[writer.PinUpdate] = writer.MessageGetter
-	writerMap[writer.PicResult] = writer.MessageGetter
-	writerMap[writer.ServerIP] = writer.MessageGetter
+	writerList := []string{
+		writer.LoginAuth,
+		writer.AuthSuccess,
+		writer.AuthTemporaryBan,
+		writer.AuthPermanentBan,
+		writer.AuthLoginFailed,
+		writer.ServerListRecommendations,
+		writer.ServerListEntry,
+		writer.ServerListEnd,
+		writer.SelectWorld,
+		writer.ServerStatus,
+		writer.CharacterList,
+		writer.CharacterNameResponse,
+		writer.AddCharacterEntry,
+		writer.DeleteCharacterResponse,
+		writer.PinOperation,
+		writer.PinUpdate,
+		writer.PicResult,
+		writer.ServerIP,
+		writer.ServerLoad,
+		writer.SetAccountResult,
+	}
 
 	for _, s := range config.Data.Attributes.Servers {
-		wp := getWriterProducer(l)(s.Writers, writerMap)
-		socket.CreateSocketService(l, ctx, wg)(s, validatorMap, handlerMap, wp)
+		socket.CreateSocketService(l, ctx, wg)(s, validatorMap, handlerMap, writerList)
 	}
 
 	tt, err := config.FindTask(session.TimeoutTask)
@@ -133,22 +136,4 @@ func main() {
 	session.DestroyAll(l, span, session.GetRegistry())
 
 	l.Infoln("Service shutdown.")
-}
-
-func getWriterProducer(l logrus.FieldLogger) func(writerConfig []configuration.Writer, wm map[string]writer.HeaderFunc) writer.Producer {
-	return func(writerConfig []configuration.Writer, wm map[string]writer.HeaderFunc) writer.Producer {
-		rwm := make(map[string]writer.BodyFunc)
-		for _, wc := range writerConfig {
-			op, err := strconv.ParseUint(wc.OpCode, 0, 16)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to configure writer [%s] for opcode [%s].", wc.Writer, wc.OpCode)
-				continue
-			}
-
-			if w, ok := wm[wc.Writer]; ok {
-				rwm[wc.Writer] = w(uint16(op), wc.Options)
-			}
-		}
-		return writer.ProducerGetter(rwm)
-	}
 }

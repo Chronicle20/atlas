@@ -13,7 +13,7 @@ import (
 const ServerListRequestHandle = "ServerListRequestHandle"
 
 func ServerListRequestHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	return func(s session.Model, _ *request.Reader) {
+	return func(s session.Model, r *request.Reader) {
 		issueServerInformation(l, span, wp)(s)
 	}
 }
@@ -40,13 +40,13 @@ func issueServerInformation(l logrus.FieldLogger, span opentracing.Span, wp writ
 func respondToSession(l logrus.FieldLogger, wp writer.Producer) func(ms session.Model, ws []world.Model) {
 	return func(ms session.Model, ws []world.Model) {
 		announceServerList(l, wp)(ws, ms)
-		announceLastWorld(l, wp)(ms)
-		announceRecommendedWorlds(l, wp)(ws, ms)
+		//announceLastWorld(l, wp)(ms)
+		//announceRecommendedWorlds(l, wp)(ws, ms)
 	}
 }
 
 func announceRecommendedWorlds(l logrus.FieldLogger, wp writer.Producer) func(ws []world.Model, ms session.Model) {
-	serverListRecommendationFunc := session.Announce(wp)(writer.ServerListRecommendations)
+	serverListRecommendationFunc := session.Announce(l)(wp)(writer.ServerListRecommendations)
 
 	return func(ws []world.Model, ms session.Model) {
 		var rs = make([]world.Recommendation, 0)
@@ -63,7 +63,7 @@ func announceRecommendedWorlds(l logrus.FieldLogger, wp writer.Producer) func(ws
 }
 
 func announceLastWorld(l logrus.FieldLogger, wp writer.Producer) func(ms session.Model) {
-	selectWorldFunc := session.Announce(wp)(writer.SelectWorld)
+	selectWorldFunc := session.Announce(l)(wp)(writer.SelectWorld)
 	return func(ms session.Model) {
 		err := selectWorldFunc(ms, writer.SelectWorldBody(l)(0))
 		if err != nil {
@@ -73,8 +73,8 @@ func announceLastWorld(l logrus.FieldLogger, wp writer.Producer) func(ms session
 }
 
 func announceServerList(l logrus.FieldLogger, wp writer.Producer) func(ws []world.Model, ms session.Model) {
-	serverListEntryFunc := session.Announce(wp)(writer.ServerListEntry)
-	serverListEndFunc := session.Announce(wp)(writer.ServerListEnd)
+	serverListEntryFunc := session.Announce(l)(wp)(writer.ServerListEntry)
+	serverListEndFunc := session.Announce(l)(wp)(writer.ServerListEnd)
 	return func(ws []world.Model, ms session.Model) {
 		for _, x := range ws {
 			err := serverListEntryFunc(ms, writer.ServerListEntryBody(l, ms.Tenant())(x.Id(), x.Name(), x.State(), x.EventMessage(), x.ChannelLoad()))

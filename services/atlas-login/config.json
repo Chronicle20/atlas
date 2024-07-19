@@ -28,96 +28,66 @@
               "handler": "LoginHandle"
             },
             {
-              "opCode": "0x04",
-              "validator": "LoggedInValidator",
-              "handler": "ServerListRequestHandle"
-            },
-            {
-              "opCode": "0x05",
+              "opCode": "0x02",
               "validator": "LoggedInValidator",
               "handler": "CharacterListWorldHandle"
             },
             {
+              "opCode": "0x03",
+              "validator": "LoggedInValidator",
+              "handler": "WorldSelectHandle"
+            },
+            {
+              "opCode": "0x05",
+              "validator": "LoggedInValidator",
+              "handler": "SetGenderHandle"
+            },
+            {
               "opCode": "0x06",
-              "validator": "LoggedInValidator",
-              "handler": "ServerStatusHandle"
-            },
-            {
-              "opCode": "0x07",
-              "validator": "LoggedInValidator",
-              "handler": "AcceptTosHandle"
-            },
-            {
-              "opCode": "0x09",
               "validator": "LoggedInValidator",
               "handler": "AfterLoginHandle"
             },
             {
-              "opCode": "0x0A",
+              "opCode": "0x07",
               "validator": "LoggedInValidator",
               "handler": "RegisterPinHandle"
             },
             {
-              "opCode": "0x0B",
+              "opCode": "0x08",
               "validator": "LoggedInValidator",
               "handler": "ServerListRequestHandle"
             },
             {
-              "opCode": "0x13",
-              "validator": "LoggedInValidator",
-              "handler": "CharacterSelectedHandle"
-            },
-            {
-              "opCode": "0x15",
+              "opCode": "0x0B",
               "validator": "LoggedInValidator",
               "handler": "CharacterCheckNameHandle"
             },
             {
-              "opCode": "0x16",
+              "opCode": "0x0C",
               "validator": "LoggedInValidator",
               "handler": "CreateCharacterHandle"
             },
             {
-              "opCode": "0x17",
+              "opCode": "0x0D",
               "validator": "LoggedInValidator",
               "handler": "DeleteCharacterHandle"
-            },
-            {
-              "opCode": "0x19",
-              "validator": "NoOpValidator",
-              "handler": "NoOpHandler"
-            },
-            {
-              "opCode": "0x1D",
-              "validator": "LoggedInValidator",
-              "handler": "RegisterPicHandle"
-            },
-            {
-              "opCode": "0x1E",
-              "validator": "LoggedInValidator",
-              "handler": "CharacterSelectedPicHandle"
-            },
-            {
-              "opCode": "0x24",
-              "validator": "LoggedInValidator",
-              "handler": "NoOpHandler"
             }
           ],
           "writers": [
             {
-              "opCode": "0x00",
+              "opCode": "0x01",
               "writer": "AuthSuccess"
             },
             {
-              "opCode": "0x00",
+              "opCode": "0x01",
               "writer": "AuthTemporaryBan"
             },
             {
-              "opCode": "0x00",
+              "opCode": "0x01",
               "writer": "AuthPermanentBan"
             },
             {
-              "opCode": "0x00",
+              "opCode": "0x01",
               "writer": "AuthLoginFailed",
               "options": {
                 "failedReasonCodes": {
@@ -144,8 +114,19 @@
               }
             },
             {
+              "opCode": "0x02",
+              "writer": "ServerLoad",
+              "options": {
+                "codes": {
+                  "OK": 0,
+                  "HIGH_POPULATION": 1,
+                  "OVER_POPULATED": 2
+                }
+              }
+            },
+            {
               "opCode": "0x03",
-              "writer": "ServerStatus"
+              "writer": "SetAccountResult"
             },
             {
               "opCode": "0x06",
@@ -172,15 +153,15 @@
               }
             },
             {
-              "opCode": "0x0A",
+              "opCode": "0x08",
               "writer": "ServerListEntry"
             },
             {
-              "opCode": "0x0A",
+              "opCode": "0x08",
               "writer": "ServerListEnd"
             },
             {
-              "opCode": "0x0B",
+              "opCode": "0x09",
               "writer": "CharacterList"
             },
             {
@@ -214,7 +195,7 @@
               }
             },
             {
-              "opCode": "0x0D",
+              "opCode": "0x0B",
               "writer": "CharacterNameResponse",
               "options": {
                 "codes": {
@@ -226,7 +207,7 @@
               }
             },
             {
-              "opCode": "0x0E",
+              "opCode": "0x0C",
               "writer": "AddCharacterEntry",
               "options": {
                 "codes": {
@@ -239,7 +220,7 @@
               }
             },
             {
-              "opCode": "0x0F",
+              "opCode": "0x0D",
               "writer": "DeleteCharacterResponse",
               "options": {
                 "codes": {
@@ -254,21 +235,10 @@
                   "CANNOT_DELETE_WITH_FAMILY": 29
                 }
               }
-            },
-            {
-              "opCode": "0x1A",
-              "writer": "SelectWorld"
-            },
-            {
-              "opCode": "0x1B",
-              "writer": "ServerListRecommendations"
-            },
-            {
-              "opCode": "0x1C",
-              "writer": "PicResult"
             }
           ]
-        },{
+        },
+        {
           "tenant": "083839c6-c47c-42a6-9585-76492795d123",
           "region": "GMS",
           "port": "8300",

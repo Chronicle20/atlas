@@ -12,7 +12,7 @@ import (
 const AfterLoginHandle = "AfterLoginHandle"
 
 func AfterLoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	pinOperationFunc := session.Announce(wp)(writer.PinOperation)
+	pinOperationFunc := session.Announce(l)(wp)(writer.PinOperation)
 	return func(s session.Model, r *request.Reader) {
 		opt1 := r.ReadByte()
 		opt2 := byte(0)

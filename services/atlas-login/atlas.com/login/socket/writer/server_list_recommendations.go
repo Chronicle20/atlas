@@ -10,9 +10,7 @@ const ServerListRecommendations = "ServerListRecommendations"
 
 func ServerListRecommendationsBody(l logrus.FieldLogger) func(wrs []world.Recommendation) BodyProducer {
 	return func(wrs []world.Recommendation) BodyProducer {
-		return func(op uint16, _ map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteShort(op)
+		return func(w *response.Writer, _ map[string]interface{}) []byte {
 			w.WriteByte(byte(len(wrs)))
 			for _, x := range wrs {
 				w.WriteInt(uint32(x.WorldId()))

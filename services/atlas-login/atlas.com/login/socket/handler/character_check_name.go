@@ -12,7 +12,7 @@ import (
 const CharacterCheckNameHandle = "CharacterCheckNameHandle"
 
 func CharacterCheckNameHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	characterNameResponseFunc := session.Announce(wp)(writer.CharacterNameResponse)
+	characterNameResponseFunc := session.Announce(l)(wp)(writer.CharacterNameResponse)
 	return func(s session.Model, r *request.Reader) {
 		name := r.ReadAsciiString()
 		ok, err := character.IsValidName(l, span, s.Tenant())(name)

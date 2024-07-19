@@ -14,9 +14,11 @@ const (
 var key = []byte{0x13, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0xB4, 0x00, 0x00, 0x00, 0x1B, 0x00, 0x00, 0x00, 0x0F, 0x00, 0x00, 0x00, 0x33, 0x00, 0x00, 0x00, 0x52, 0x00, 0x00, 0x00}
 
 type AESOFB struct {
-	iv      []byte
-	version uint16
-	cipher  cipher.Block
+	key         []byte
+	iv          []byte
+	ivGenerator IvGenerator
+	version     uint16
+	cipher      cipher.Block
 }
 
 func (a *AESOFB) IV() []byte {
@@ -29,6 +31,22 @@ func PacketLength(encryptedHeader []byte) int {
 }
 
 type EncryptFunc func(input []byte) []byte
+
+type IvGenerator func(input []byte) []byte
+
+// DefaultIvGenerator the default iv generator. This is post 2008 IV generation and default for comment source versions.
+func DefaultIvGenerator(input []byte) []byte {
+	return multiplyBytes(input, 4, 4)
+}
+
+// FillIvZeroGenerator fills the iv with the first byte repeated. This is useful in GMS v12 era.
+func FillIvZeroGenerator(input []byte) []byte {
+	myIv := make([]byte, 16)
+	for x := 0; x < 16; x++ {
+		myIv[x] = input[0]
+	}
+	return myIv
+}
 
 func (a *AESOFB) Encrypt(maple bool, aes bool) func(input []byte) []byte {
 	return func(input []byte) []byte {
@@ -89,7 +107,7 @@ func (a *AESOFB) aesCrypt(input []byte) {
 			cbwrite = cb - pos
 		}
 
-		myIv := multiplyBytes(a.iv[:], 4, 4)
+		myIv := a.ivGenerator(a.iv)
 		stream := cipher.NewOFB(a.cipher, myIv[:])
 		stream.XORKeyStream(input[pos:pos+cbwrite], input[pos:pos+cbwrite])
 
@@ -275,21 +293,38 @@ var ivShiftKey = [...]byte{
 	0x96, 0x41, 0x74, 0xAC, 0x52, 0x33, 0xF0, 0xD9, 0x29, 0x80, 0xB1, 0x16, 0xD3, 0xAB, 0x91, 0xB9,
 	0x84, 0x7F, 0x61, 0x1E, 0xCF, 0xC5, 0xD1, 0x56, 0x3D, 0xCA, 0xF4, 0x05, 0xC6, 0xE5, 0x08, 0x49}
 
-//goland:noinspection GoUnusedExportedFunction
-func NewAESOFB(iv []byte, version uint16) *AESOFB {
-	return NewAESOFBWithKey(iv, version, key)
+type Configurator func(a *AESOFB)
+
+func SetKey(nk []byte) Configurator {
+	return func(a *AESOFB) {
+		a.key = nk
+	}
+}
+
+func SetIvGenerator(generator IvGenerator) Configurator {
+	return func(a *AESOFB) {
+		a.ivGenerator = generator
+	}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func NewAESOFBWithKey(iv []byte, version uint16, ckey []byte) *AESOFB {
-	var a AESOFB
-	a.version = version>>8&255 | version<<8&uint16(uint32('\uff00'))
+func NewAESOFB(iv []byte, version uint16, configurators ...Configurator) *AESOFB {
+	a := &AESOFB{
+		key:         key,
+		iv:          iv,
+		ivGenerator: DefaultIvGenerator,
+		version:     version>>8&255 | version<<8&uint16(uint32('\uff00')),
+	}
 
-	c, err := aes.NewCipher(ckey)
+	for _, configure := range configurators {
+		configure(a)
+	}
+
+	var err error
+	a.cipher, err = aes.NewCipher(a.key)
 	if err != nil {
 		os.Exit(0)
 	}
-	a.cipher = c
-	a.iv = iv
-	return &a
+
+	return a
 }

@@ -4,6 +4,32 @@
     "attributes": {
       "servers": [
         {
+          "tenant": "012839c6-c47c-42a6-9585-76492795d123",
+          "worlds": [
+            {
+              "Name": "Scania",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Scania!",
+              "EventMessage": "Scania!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Bera",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Bera!",
+              "EventMessage": "Bera!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Broa",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Broa!",
+              "EventMessage": "Broa!",
+              "WhyAmIRecommended": ""
+            }
+          ]
+        },
+        {
           "tenant": "083839c6-c47c-42a6-9585-76492795d123",
           "worlds": [
             {
@@ -157,6 +183,158 @@
         },
         {
           "tenant": "08724653-ab5d-4a46-9b44-8342d206f2ed",
+          "worlds": [
+            {
+              "Name": "Scania",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Scania!",
+              "EventMessage": "Scania!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Bera",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Bera!",
+              "EventMessage": "Bera!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Broa",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Broa!",
+              "EventMessage": "Broa!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Windia",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Windia!",
+              "EventMessage": "Windia!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Khaini",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Khaini!",
+              "EventMessage": "Khaini!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Bellocan",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Bellocan!",
+              "EventMessage": "Bellocan!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Mardia",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Mardia!",
+              "EventMessage": "Mardia!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Kradia",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Kradia!",
+              "EventMessage": "Kradia!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Yellonde",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Yellonde!",
+              "EventMessage": "Yellonde!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Demethos",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Demethos!",
+              "EventMessage": "Demethos!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Galicia",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Galicia!",
+              "EventMessage": "Galicia!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "El Nido",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to El Nido!",
+              "EventMessage": "El Nido!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Zenith",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Zenith!",
+              "EventMessage": "Zenith!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Arcenia",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Arcenia!",
+              "EventMessage": "Arcenia!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Kastia",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Kastia!",
+              "EventMessage": "Kastia!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Judis",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Judis!",
+              "EventMessage": "Judis!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Plana",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Plana!",
+              "EventMessage": "Plana!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Kalluna",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Kalluna!",
+              "EventMessage": "Kalluna!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Stius",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Stius!",
+              "EventMessage": "Stius!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Croa",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Croa!",
+              "EventMessage": "Croa!",
+              "WhyAmIRecommended": ""
+            },
+            {
+              "Name": "Medere",
+              "Flag": "Nothing",
+              "ServerMessage": "Welcome to Medere!",
+              "EventMessage": "Medere!",
+              "WhyAmIRecommended": ""
+            }
+          ]
+        },
+        {
+          "tenant": "09224653-ab5d-4a46-9b44-8342d206f2ed",
           "worlds": [
             {
               "Name": "Scania",

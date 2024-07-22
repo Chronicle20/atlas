@@ -8,6 +8,7 @@ import (
 	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
+	"math"
 	"math/rand"
 	"time"
 )
@@ -16,9 +17,7 @@ const SetField = "SetField"
 
 func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byte, c character.Model) BodyProducer {
 	return func(channelId byte, c character.Model) BodyProducer {
-		return func(op uint16, options map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteShort(op)
+		return func(w *response.Writer, options map[string]interface{}) []byte {
 			if (tenant.Region == "GMS" && tenant.MajorVersion > 83) || tenant.Region == "JMS" {
 				w.WriteShort(0) // decode opt, loop with 2 decode 4s
 			}
@@ -27,14 +26,21 @@ func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byte
 				w.WriteByte(0)
 				w.WriteInt(0)
 			}
-			w.WriteByte(1)  // sNotifierMessage
-			w.WriteByte(1)  // bCharacterData
-			w.WriteShort(0) // nNotifierCheck, if non zero STRs are encoded
+			w.WriteByte(1) // sNotifierMessage
+			w.WriteByte(1) // bCharacterData
+
+			var seedSize = 3
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+				w.WriteShort(0) // nNotifierCheck, if non zero STRs are encoded
+			} else {
+				seedSize = 4
+			}
 
 			// damage seed
-			for i := 0; i < 3; i++ {
+			for i := 0; i < seedSize; i++ {
 				w.WriteInt(rand.Uint32())
 			}
+
 			WriteCharacterInfo(tenant)(w)(c)
 			if (tenant.Region == "GMS" && tenant.MajorVersion > 83) || tenant.Region == "JMS" {
 				w.WriteInt(0) // logout gifts
@@ -51,18 +57,25 @@ func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byte
 func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(m character.Model) {
 	return func(w *response.Writer) func(m character.Model) {
 		return func(m character.Model) {
-			w.WriteInt64(-1) // dbcharFlag
-			w.WriteByte(0)   // something about SN, I believe this is size of list
-			WriteCharacterStatistics(tenant)(w, m)
-			w.WriteByte(0) // buddy list capacity
-
-			if true {
-				w.WriteByte(0)
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+				w.WriteInt64(-1) // dbcharFlag
+				w.WriteByte(0)   // something about SN, I believe this is size of list
 			} else {
-				w.WriteByte(1)
-				w.WriteAsciiString("") // linked name
+				w.WriteInt16(-1) // dbcharFlag
 			}
-			w.WriteInt(m.Meso())
+
+			WriteCharacterStatistics(tenant)(w, m)
+			w.WriteByte(15) // buddy list capacity
+
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+				if true {
+					w.WriteByte(0)
+				} else {
+					w.WriteByte(1)
+					w.WriteAsciiString("") // linked name
+				}
+			}
+			w.WriteInt(24)
 
 			if tenant.Region == "JMS" {
 				w.WriteInt(m.Id())
@@ -78,14 +91,17 @@ func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(m cha
 			if tenant.Region == "JMS" {
 				w.WriteShort(0)
 			}
-			WriteMonsterBookInfo(tenant)(w, m)
-			if tenant.Region == "GMS" {
-				WriteNewYearInfo(tenant)(w, m)
-				WriteAreaInfo(tenant)(w, m)
-			} else if tenant.Region == "JMS" {
+
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+				WriteMonsterBookInfo(tenant)(w, m)
+				if tenant.Region == "GMS" {
+					WriteNewYearInfo(tenant)(w, m)
+					WriteAreaInfo(tenant)(w, m)
+				} else if tenant.Region == "JMS" {
+					w.WriteShort(0)
+				}
 				w.WriteShort(0)
 			}
-			w.WriteShort(0)
 		}
 	}
 }
@@ -115,8 +131,11 @@ func WriteTeleportInfo(tenant tenant.Model) func(w *response.Writer, character c
 		for i := 0; i < 5; i++ {
 			w.WriteInt(999999999)
 		}
-		for j := 0; j < 10; j++ {
-			w.WriteInt(999999999)
+
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+			for j := 0; j < 10; j++ {
+				w.WriteInt(999999999)
+			}
 		}
 	}
 }
@@ -124,8 +143,11 @@ func WriteTeleportInfo(tenant tenant.Model) func(w *response.Writer, character c
 func WriteRingInfo(tenant tenant.Model) func(w *response.Writer, character character.Model) {
 	return func(w *response.Writer, character character.Model) {
 		w.WriteShort(0) // crush rings
-		w.WriteShort(0) // friendship rings
-		w.WriteShort(0) // partner
+
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+			w.WriteShort(0) // friendship rings
+			w.WriteShort(0) // partner
+		}
 	}
 }
 
@@ -141,14 +163,20 @@ func WriteQuestInfo(tenant tenant.Model) func(w *response.Writer, character char
 		if tenant.Region == "JMS" {
 			w.WriteShort(0)
 		}
-		w.WriteShort(0) // completed size
+
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+			w.WriteShort(0) // completed size
+		}
 	}
 }
 
 func WriteSkillInfo(tenant tenant.Model) func(w *response.Writer, character character.Model) {
 	return func(w *response.Writer, character character.Model) {
 		w.WriteShort(0) // skill size
-		w.WriteShort(0) // cooldowns
+
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+			w.WriteShort(0) // cooldowns
+		}
 	}
 }
 
@@ -179,13 +207,18 @@ func timeNow() int64 {
 
 func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character character.Model) {
 	return func(w *response.Writer, character character.Model) {
-		w.WriteByte(byte(character.Inventory().Equipable().Capacity()))
-		w.WriteByte(byte(character.Inventory().Use().Capacity()))
-		w.WriteByte(byte(character.Inventory().Setup().Capacity()))
-		w.WriteByte(byte(character.Inventory().Etc().Capacity()))
-		w.WriteByte(byte(character.Inventory().Cash().Capacity()))
 
-		w.WriteLong(uint64(getTime(-2)))
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+			w.WriteByte(byte(character.Inventory().Equipable().Capacity()))
+			w.WriteByte(byte(character.Inventory().Use().Capacity()))
+			w.WriteByte(byte(character.Inventory().Setup().Capacity()))
+			w.WriteByte(byte(character.Inventory().Etc().Capacity()))
+			w.WriteByte(byte(character.Inventory().Cash().Capacity()))
+		}
+
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+			w.WriteLong(uint64(getTime(-2)))
+		}
 
 		// regular equipment
 		WriteEquipableIfPresent(tenant)(w, character.Equipment().Hat())
@@ -207,18 +240,50 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 		WriteEquipableIfPresent(tenant)(w, character.Equipment().Ring3())
 		WriteEquipableIfPresent(tenant)(w, character.Equipment().Ring4())
 		WriteEquipableIfPresent(tenant)(w, character.Equipment().Shoes())
-		w.WriteShort(0)
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+			w.WriteShort(0)
+		} else {
+			w.WriteByte(0)
+		}
 		// cash equipment
-		w.WriteShort(0)
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+			w.WriteShort(0)
+		} else {
+			w.WriteByte(0)
+		}
+
 		// equipable inventory
-		w.WriteInt(0)
+		if tenant.Region == "GMS" && tenant.MajorVersion < 28 {
+			w.WriteByte(byte(character.Inventory().Equipable().Capacity()))
+		}
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+			w.WriteInt(0)
+		} else {
+			w.WriteByte(0)
+		}
+
 		// use inventory
+		if tenant.Region == "GMS" && tenant.MajorVersion < 28 {
+			w.WriteByte(byte(character.Inventory().Use().Capacity()))
+		}
 		w.WriteByte(0)
+
 		// setup inventory
+		if tenant.Region == "GMS" && tenant.MajorVersion < 28 {
+			w.WriteByte(byte(character.Inventory().Setup().Capacity()))
+		}
 		w.WriteByte(0)
+
 		// etc inventory
+		if tenant.Region == "GMS" && tenant.MajorVersion < 28 {
+			w.WriteByte(byte(character.Inventory().Etc().Capacity()))
+		}
 		w.WriteByte(0)
+
 		// cash inventory
+		if tenant.Region == "GMS" && tenant.MajorVersion < 28 {
+			w.WriteByte(byte(character.Inventory().Cash().Capacity()))
+		}
 		w.WriteByte(0)
 	}
 }
@@ -235,19 +300,25 @@ func WriteEquipableInfo(tenant tenant.Model) func(w *response.Writer, e equipabl
 	return func(w *response.Writer, e equipable.Model, zeroPosition bool) {
 		slot := e.Slot()
 		if !zeroPosition {
-			if slot < 0 {
-				slot *= -1
-			}
+			slot = int16(math.Abs(float64(slot)))
 			if slot > 100 {
-				w.WriteShort(uint16(slot - 100))
-			} else {
+				slot -= 100
+			}
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
 				w.WriteShort(uint16(slot))
+			} else {
+				w.WriteByte(byte(slot))
 			}
 		}
 
-		w.WriteByte(1)
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+			w.WriteByte(1)
+		}
 		w.WriteInt(e.ItemId())
 		w.WriteBool(false)
+		if false {
+			w.WriteLong(0) // cash sn
+		}
 		w.WriteLong(uint64(getTime(e.Expiration())))
 		w.WriteByte(byte(e.Slots()))
 		w.WriteByte(e.Level())
@@ -269,27 +340,32 @@ func WriteEquipableInfo(tenant tenant.Model) func(w *response.Writer, e equipabl
 		w.WriteShort(e.Hands())
 		w.WriteShort(e.Speed())
 		w.WriteShort(e.Jump())
-		w.WriteAsciiString(e.OwnerName())
-		w.WriteShort(e.Flags())
 
-		w.WriteByte(0)
-		w.WriteByte(0)   // item level
-		w.WriteInt(0)    // expNibble
-		w.WriteInt32(-1) // durability
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+			w.WriteAsciiString(e.OwnerName())
+			w.WriteShort(e.Flags())
 
-		if tenant.Region == "JMS" {
-			w.WriteByte(0)
-			w.WriteShort(0)
-			w.WriteShort(0)
-			w.WriteShort(0)
-			w.WriteShort(0)
-			w.WriteShort(0)
-			w.WriteInt(0)
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+				w.WriteByte(0)
+				w.WriteByte(0)   // item level
+				w.WriteInt(0)    // expNibble
+				w.WriteInt32(-1) // durability
+
+				if tenant.Region == "JMS" {
+					w.WriteByte(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteInt(0)
+				}
+
+				w.WriteLong(0)
+				w.WriteLong(uint64(getTime(-2)))
+				w.WriteInt32(-1)
+			}
 		}
-
-		w.WriteLong(0)
-		w.WriteLong(uint64(getTime(-2)))
-		w.WriteInt32(-1)
 	}
 }
 
@@ -311,7 +387,16 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 		w.WriteByte(character.SkinColor())
 		w.WriteInt(character.Face())
 		w.WriteInt(character.Hair())
-		writeForEachPet(w, character.Pets(), writePetId, writeEmptyPetId)
+
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+			writeForEachPet(w, character.Pets(), writePetId, writeEmptyPetId)
+		} else {
+			if len(character.Pets()) > 0 {
+				w.WriteLong(character.Pets()[0].Id()) // pet cash id
+			} else {
+				w.WriteLong(0)
+			}
+		}
 		w.WriteByte(character.Level())
 		w.WriteShort(character.JobId())
 		w.WriteShort(character.Strength())
@@ -332,12 +417,20 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 
 		w.WriteInt(character.Experience())
 		w.WriteInt16(character.Fame())
-		w.WriteInt(character.GachaponExperience())
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+			w.WriteInt(character.GachaponExperience())
+		}
 		w.WriteInt(character.MapId())
 		w.WriteByte(character.SpawnPoint())
 
 		if tenant.Region == "GMS" {
-			w.WriteInt(0)
+			if tenant.MajorVersion > 12 {
+				w.WriteInt(0)
+			} else {
+				w.WriteInt64(0)
+				w.WriteInt(0)
+				w.WriteInt(0)
+			}
 			if tenant.MajorVersion >= 87 {
 				w.WriteShort(0) // nSubJob
 			}

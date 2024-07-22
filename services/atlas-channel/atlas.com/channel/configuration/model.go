@@ -77,9 +77,10 @@ type Channel struct {
 
 // Handler represents a server handler.
 type Handler struct {
-	OpCode    string `json:"opCode"`
-	Validator string `json:"validator"`
-	Handler   string `json:"handler"`
+	OpCode    string                 `json:"opCode"`
+	Validator string                 `json:"validator"`
+	Handler   string                 `json:"handler"`
+	Options   map[string]interface{} `json:"options"`
 }
 
 // Writer represents a server writer.

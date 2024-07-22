@@ -12,9 +12,9 @@ import (
 
 const CharacterLoggedInHandle = "CharacterLoggedInHandle"
 
-func CharacterLoggedInHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	setFieldFunc := session.Announce(wp)(writer.SetField)
-	return func(s session.Model, r *request.Reader) {
+func CharacterLoggedInHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader, _ map[string]interface{}) {
+	setFieldFunc := session.Announce(l)(wp)(writer.SetField)
+	return func(s session.Model, r *request.Reader, _ map[string]interface{}) {
 		characterId := r.ReadUint32()
 		buffer := r.GetRestAsBytes()
 		l.Debugf("Handling login for character [%d]. buffer: %s", characterId, buffer)
@@ -22,18 +22,18 @@ func CharacterLoggedInHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp
 		c, err := character.GetById(l, span, s.Tenant())(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate character [%d] attempting to login.", characterId)
-			session.Destroy(l, span, session.GetRegistry())(s)
+			session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
 			return
 		}
 
-		s = session.SetAccountId(c.AccountId())(s.SessionId())
-		s = session.SetCharacterId(c.Id())(s.SessionId())
-		s = session.SetGm(c.Gm())(s.SessionId())
+		s = session.SetAccountId(c.AccountId())(s.Tenant().Id, s.SessionId())
+		s = session.SetCharacterId(c.Id())(s.Tenant().Id, s.SessionId())
+		s = session.SetGm(c.Gm())(s.Tenant().Id, s.SessionId())
 
 		resp, err := as.UpdateState(l, span, s.Tenant())(s.SessionId(), s.AccountId(), 3)
 		if err != nil || resp.Code != "OK" {
 			l.WithError(err).Errorf("Unable to update session for character [%d] attempting to switch to channel.", characterId)
-			session.Destroy(l, span, session.GetRegistry())(s)
+			session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
 			return
 		}
 

@@ -11,9 +11,7 @@ const NPCAction = "NPCAction"
 
 func NPCActionAnimationBody(l logrus.FieldLogger) func(objectId uint32, unk byte, unk2 byte) BodyProducer {
 	return func(objectId uint32, unk byte, unk2 byte) BodyProducer {
-		return func(op uint16, options map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteShort(op)
+		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(objectId)
 			w.WriteByte(unk)
 			w.WriteByte(unk2)
@@ -24,9 +22,7 @@ func NPCActionAnimationBody(l logrus.FieldLogger) func(objectId uint32, unk byte
 
 func NPCActionMoveBody(l logrus.FieldLogger, tenant tenant.Model) func(objectId uint32, unk byte, unk2 byte, movePath model.Movement) BodyProducer {
 	return func(objectId uint32, unk byte, unk2 byte, movePath model.Movement) BodyProducer {
-		return func(op uint16, options map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteShort(op)
+		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(objectId)
 			w.WriteByte(unk)
 			w.WriteByte(unk2)

@@ -26,15 +26,19 @@ type Model struct {
 }
 
 func NewSession(id uuid.UUID, t tenant.Model, locale byte, con net.Conn) Model {
-	recvIv := []byte{70, 114, 122, byte(rand.Float64() * 255)}
-	sendIv := []byte{82, 48, 120, byte(rand.Float64() * 255)}
-	send := crypto.NewAESOFB(sendIv, uint16(65535)-t.MajorVersion)
-	recv := crypto.NewAESOFB(recvIv, t.MajorVersion)
+	recvIv := []byte{byte(rand.Float64() * 255), byte(rand.Float64() * 255), byte(rand.Float64() * 255), byte(rand.Float64() * 255)}
+	sendIv := []byte{byte(rand.Float64() * 255), byte(rand.Float64() * 255), byte(rand.Float64() * 255), byte(rand.Float64() * 255)}
 
-	hasAes := true
-	if t.Region == "GMS" && t.MajorVersion <= 28 {
-		hasAes = false
+	var send *crypto.AESOFB
+	var recv *crypto.AESOFB
+	if t.Region == "GMS" && t.MajorVersion <= 12 {
+		send = crypto.NewAESOFB(sendIv, uint16(65535)-t.MajorVersion, crypto.SetIvGenerator(crypto.FillIvZeroGenerator))
+		recv = crypto.NewAESOFB(recvIv, t.MajorVersion, crypto.SetIvGenerator(crypto.FillIvZeroGenerator))
+	} else {
+		send = crypto.NewAESOFB(sendIv, uint16(65535)-t.MajorVersion)
+		recv = crypto.NewAESOFB(recvIv, t.MajorVersion)
 	}
+
 	hasMapleEncryption := true
 	if t.Region == "JMS" {
 		hasMapleEncryption = false
@@ -45,7 +49,7 @@ func NewSession(id uuid.UUID, t tenant.Model, locale byte, con net.Conn) Model {
 		con:         con,
 		send:        *send,
 		recv:        *recv,
-		encryptFunc: send.Encrypt(hasMapleEncryption, hasAes),
+		encryptFunc: send.Encrypt(hasMapleEncryption, true),
 		lastPacket:  time.Now(),
 		tenant:      t,
 		locale:      locale,

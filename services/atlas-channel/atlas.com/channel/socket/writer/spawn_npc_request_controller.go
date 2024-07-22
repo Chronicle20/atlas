@@ -10,9 +10,7 @@ const SpawnNPCRequestController = "SpawnNPCRequestController"
 
 func SpawnNPCRequestControllerBody(l logrus.FieldLogger) func(npc npc.Model, miniMap bool) BodyProducer {
 	return func(npc npc.Model, miniMap bool) BodyProducer {
-		return func(op uint16, options map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteShort(op)
+		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(1)
 			w.WriteInt(npc.Id())
 			w.WriteInt(npc.Template())

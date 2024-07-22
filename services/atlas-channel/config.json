@@ -39,28 +39,54 @@
           ],
           "handlers": [
             {
-              "opCode": "0x14",
+              "opCode": "0x0A",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
             }, {
-              "opCode": "0xC5",
+              "opCode": "0x5D",
               "validator": "LoggedInValidator",
-              "handler": "NPCActionHandle"
+              "handler": "NPCActionHandle",
+              "options": {
+                "types": [
+                  {"Name": "NORMAL", "Type": "NORMAL"},
+                  {"Name": "JUMP", "Type": "JUMP"},
+                  {"Name": "IMPACT", "Type": "JUMP"},
+                  {"Name": "IMMEDIATE", "Type": "TELEPORT"},
+                  {"Name": "TELEPORT", "Type": "TELEPORT"},
+                  {"Name": "HANG_ON_BACK", "Type": "NORMAL"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "ASSAULTER", "Type": "TELEPORT"},
+                  {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"}
+                ]
+              }
             }
           ],
           "writers": [
             {
-              "opCode": "0x7D",
+              "opCode": "0x29",
               "writer": "SetField"
             }, {
-              "opCode": "0x101",
+              "opCode": "0x7E",
               "writer": "SpawnNPC"
             }, {
-              "opCode": "0x103",
+              "opCode": "0x80",
               "writer": "SpawnNPCRequestController"
             }, {
-              "opCode": "0x104",
-              "writer": "NPCAction"
+              "opCode": "0x82",
+              "writer": "NPCAction",
+              "options": {
+                "types": [
+                  {"Name": "NORMAL", "Type": "NORMAL"},
+                  {"Name": "JUMP", "Type": "JUMP"},
+                  {"Name": "IMPACT", "Type": "JUMP"},
+                  {"Name": "IMMEDIATE", "Type": "TELEPORT"},
+                  {"Name": "TELEPORT", "Type": "TELEPORT"},
+                  {"Name": "HANG_ON_BACK", "Type": "NORMAL"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "ASSAULTER", "Type": "TELEPORT"},
+                  {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"}
+                ]
+              }
             }
           ]
         },

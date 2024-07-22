@@ -42,21 +42,23 @@ func CharacterIdPreciselyOneFilter(characterId uint32) model.PreciselyOneFilter[
 	}
 }
 
-func Announce(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
-	return func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
-		return func(s Model, bodyProducer writer.BodyProducer) error {
-			w, err := writerProducer(writerName)
-			if err != nil {
-				return err
-			}
+func Announce(l logrus.FieldLogger) func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
+	return func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
+		return func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
+			return func(s Model, bodyProducer writer.BodyProducer) error {
+				w, err := writerProducer(l, writerName)
+				if err != nil {
+					return err
+				}
 
-			if lock, ok := GetRegistry().GetLock(s.Tenant().Id, s.SessionId()); ok {
-				lock.Lock()
-				err = s.announceEncrypted(w(bodyProducer))
-				lock.Unlock()
-				return err
+				if lock, ok := GetRegistry().GetLock(s.Tenant().Id, s.SessionId()); ok {
+					lock.Lock()
+					err = s.announceEncrypted(w(l)(bodyProducer))
+					lock.Unlock()
+					return err
+				}
+				return errors.New("invalid session")
 			}
-			return errors.New("invalid session")
 		}
 	}
 }

@@ -14,7 +14,7 @@ import (
 const NPCActionHandle = "NPCActionHandle"
 
 func NPCActionHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	npcActionFunc := session.Announce(wp)(writer.NPCAction)
+	npcActionFunc := session.Announce(l)(wp)(writer.NPCAction)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		objectId := r.ReadUint32()
 		unk := r.ReadByte()

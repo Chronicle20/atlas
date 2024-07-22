@@ -10,9 +10,7 @@ const SpawnNPC = "SpawnNPC"
 
 func SpawnNPCBody(l logrus.FieldLogger) func(npc npc.Model) BodyProducer {
 	return func(npc npc.Model) BodyProducer {
-		return func(op uint16, options map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteShort(op)
+		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(npc.Id())
 			w.WriteInt(npc.Template())
 			w.WriteInt16(npc.X())

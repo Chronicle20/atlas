@@ -84,8 +84,8 @@ func handleStatusEventCharacterExit(sc server.Model, _ writer.Producer) func(l l
 }
 
 func spawnNPCForSession(l logrus.FieldLogger, wp writer.Producer) func(s session.Model) model.Operator[npc.Model] {
-	spawnNPCFunc := session.Announce(wp)(writer.SpawnNPC)
-	spawnNPCRequestControllerFunc := session.Announce(wp)(writer.SpawnNPCRequestController)
+	spawnNPCFunc := session.Announce(l)(wp)(writer.SpawnNPC)
+	spawnNPCRequestControllerFunc := session.Announce(l)(wp)(writer.SpawnNPCRequestController)
 	return func(s session.Model) model.Operator[npc.Model] {
 		return func(n npc.Model) error {
 			err := spawnNPCFunc(s, writer.SpawnNPCBody(l)(n))

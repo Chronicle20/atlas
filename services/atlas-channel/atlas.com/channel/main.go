@@ -15,6 +15,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
@@ -82,18 +83,17 @@ func main() {
 	handlerMap[handler.CharacterLoggedInHandle] = handler.CharacterLoggedInHandleFunc
 	handlerMap[handler.NPCActionHandle] = handler.NPCActionHandleFunc
 
-	writerMap := make(map[string]writer.HeaderFunc)
-	writerMap[writer.SetField] = writer.MessageGetter
-	writerMap[writer.SpawnNPC] = writer.MessageGetter
-	writerMap[writer.SpawnNPCRequestController] = writer.MessageGetter
-	writerMap[writer.NPCAction] = writer.MessageGetter
+	writerList := []string{
+		writer.SetField,
+		writer.SpawnNPC,
+		writer.SpawnNPCRequestController,
+		writer.NPCAction,
+	}
 
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, ctx, wg)(_map.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, uuid.New().String())))
 
 	for _, s := range config.Data.Attributes.Servers {
-		wp := getWriterProducer(l)(s.Writers, writerMap)
-
 		for _, w := range s.Worlds {
 			for _, c := range w.Channels {
 				var t tenant.Model
@@ -107,10 +107,29 @@ func main() {
 					continue
 				}
 
-				_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(sc, wp)(l))
+				// TODO this needs refactoring.
+				if sc.Tenant().Region == "GMS" && sc.Tenant().MajorVersion <= 28 {
+					owp := func(op uint8) writer.OpWriter {
+						return func(w *response.Writer) {
+							w.WriteByte(op)
+						}
+					}
+					wp := getWriterProducer[uint8](l)(s.Writers, writerList, owp)
+					_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(sc, wp)(l))
+					_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(sc, wp)(l))
+				} else {
+					owp := func(op uint16) writer.OpWriter {
+						return func(w *response.Writer) {
+							w.WriteShort(op)
+						}
+					}
+					wp := getWriterProducer[uint16](l)(s.Writers, writerList, owp)
 
-				socket.CreateSocketService(l, ctx, wg)(s, validatorMap, handlerMap, wp, sc, config.Data.Attributes.IPAddress, c.Port)
+					_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(sc, wp)(l))
+					_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(sc, wp)(l))
+				}
+
+				socket.CreateSocketService(l, ctx, wg)(s, validatorMap, handlerMap, writerList, sc, config.Data.Attributes.IPAddress, c.Port)
 			}
 		}
 	}
@@ -138,8 +157,8 @@ func main() {
 	l.Infoln("Service shutdown.")
 }
 
-func getWriterProducer(l logrus.FieldLogger) func(writerConfig []configuration.Writer, wm map[string]writer.HeaderFunc) writer.Producer {
-	return func(writerConfig []configuration.Writer, wm map[string]writer.HeaderFunc) writer.Producer {
+func getWriterProducer[E uint8 | uint16](l logrus.FieldLogger) func(writerConfig []configuration.Writer, wl []string, opwp writer.OpWriterProducer[E]) writer.Producer {
+	return func(writerConfig []configuration.Writer, wl []string, opwp writer.OpWriterProducer[E]) writer.Producer {
 		rwm := make(map[string]writer.BodyFunc)
 		for _, wc := range writerConfig {
 			op, err := strconv.ParseUint(wc.OpCode, 0, 16)
@@ -148,8 +167,10 @@ func getWriterProducer(l logrus.FieldLogger) func(writerConfig []configuration.W
 				continue
 			}
 
-			if w, ok := wm[wc.Writer]; ok {
-				rwm[wc.Writer] = w(uint16(op), wc.Options)
+			for _, wn := range wl {
+				if wn == wc.Writer {
+					rwm[wc.Writer] = writer.MessageGetter(opwp(E(op)), wc.Options)
+				}
 			}
 		}
 		return writer.ProducerGetter(rwm)

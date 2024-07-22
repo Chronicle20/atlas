@@ -58,6 +58,11 @@
               "handler": "ServerListRequestHandle"
             },
             {
+              "opCode": "0x09",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterSelectedHandle"
+            },
+            {
               "opCode": "0x0B",
               "validator": "LoggedInValidator",
               "handler": "CharacterCheckNameHandle"
@@ -165,7 +170,7 @@
               "writer": "CharacterList"
             },
             {
-              "opCode": "0x0C",
+              "opCode": "0x0A",
               "writer": "ServerIP",
               "options": {
                 "codes": {

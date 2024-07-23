@@ -32,3 +32,11 @@ func (m Model) HasTargetMap() bool {
 func (m Model) TargetMapId() uint32 {
 	return m.targetMapId
 }
+
+func (m Model) Target() string {
+	return m.target
+}
+
+func (m Model) Id() uint32 {
+	return m.id
+}

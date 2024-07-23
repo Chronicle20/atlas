@@ -7,7 +7,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func logoutCommandProvider(tenant tenant.Model, accountId uint32) model.SliceProvider[kafka.Message] {
+func logoutCommandProvider(tenant tenant.Model, accountId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &logoutCommand{
 		Tenant:    tenant,

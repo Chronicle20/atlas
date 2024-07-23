@@ -3,9 +3,9 @@ module atlas-channel
 go 1.21.6
 
 require (
-	github.com/Chronicle20/atlas-kafka v0.0.0-20240723173243-ba827d941bea
-	github.com/Chronicle20/atlas-model v0.0.0-20240723030619-8c2052cb70a9
-	github.com/Chronicle20/atlas-rest v0.0.0-20240712172338-ed16b47e5616
+	github.com/Chronicle20/atlas-kafka v0.0.0-20240723203010-bba2d9451460
+	github.com/Chronicle20/atlas-model v0.0.0-20240723201222-905024c17a7e
+	github.com/Chronicle20/atlas-rest v0.0.0-20240723203319-7d81b01598b5
 	github.com/Chronicle20/atlas-socket v0.0.0-20240719142204-93c67fe6baaf
 	github.com/google/uuid v1.6.0
 	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6

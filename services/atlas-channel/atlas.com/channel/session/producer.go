@@ -8,7 +8,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func statusEventProvider(tenant tenant.Model, sessionId uuid.UUID, accountId uint32, characterId uint32, worldId byte, channelId byte, eventType string) model.SliceProvider[kafka.Message] {
+func statusEventProvider(tenant tenant.Model, sessionId uuid.UUID, accountId uint32, characterId uint32, worldId byte, channelId byte, eventType string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &statusEvent{
 		Tenant:      tenant,
@@ -23,10 +23,10 @@ func statusEventProvider(tenant tenant.Model, sessionId uuid.UUID, accountId uin
 	return producer.SingleMessageProvider(key, value)
 }
 
-func createdStatusEventProvider(tenant tenant.Model, sessionId uuid.UUID, accountId uint32, characterId uint32, worldId byte, channelId byte) model.SliceProvider[kafka.Message] {
+func createdStatusEventProvider(tenant tenant.Model, sessionId uuid.UUID, accountId uint32, characterId uint32, worldId byte, channelId byte) model.Provider[[]kafka.Message] {
 	return statusEventProvider(tenant, sessionId, accountId, characterId, worldId, channelId, EventSessionStatusTypeCreated)
 }
 
-func destroyedStatusEventProvider(tenant tenant.Model, sessionId uuid.UUID, accountId uint32, characterId uint32, worldId byte, channelId byte) model.SliceProvider[kafka.Message] {
+func destroyedStatusEventProvider(tenant tenant.Model, sessionId uuid.UUID, accountId uint32, characterId uint32, worldId byte, channelId byte) model.Provider[[]kafka.Message] {
 	return statusEventProvider(tenant, sessionId, accountId, characterId, worldId, channelId, EventSessionStatusTypeDestroyed)
 }

@@ -10,18 +10,18 @@ import (
 
 func ForEachInMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32, f model.Operator[Model]) {
 	return func(mapId uint32, f model.Operator[Model]) {
-		model.ForEach(InMapModelProvider(l, span, tenant)(mapId), f)
+		_ = model.ForEach(InMapModelProvider(l, span, tenant)(mapId), f)
 	}
 }
 
-func InMapModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.SliceProvider[Model] {
-	return func(mapId uint32) model.SliceProvider[Model] {
+func InMapModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.Provider[[]Model] {
+	return func(mapId uint32) model.Provider[[]Model] {
 		return requests.SliceProvider[RestModel, Model](l)(requestNPCsInMap(l, span, tenant)(mapId), Extract)
 	}
 }
 
-func InMapByObjectIdModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32, objectId uint32) model.SliceProvider[Model] {
-	return func(mapId uint32, objectId uint32) model.SliceProvider[Model] {
+func InMapByObjectIdModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32, objectId uint32) model.Provider[[]Model] {
+	return func(mapId uint32, objectId uint32) model.Provider[[]Model] {
 		return requests.SliceProvider[RestModel, Model](l)(requestNPCsInMapByObjectId(l, span, tenant)(mapId, objectId), Extract)
 	}
 }

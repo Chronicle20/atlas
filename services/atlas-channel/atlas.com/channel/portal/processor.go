@@ -9,8 +9,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func inMapByNameModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32, name string) model.SliceProvider[Model] {
-	return func(mapId uint32, name string) model.SliceProvider[Model] {
+func inMapByNameModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32, name string) model.Provider[[]Model] {
+	return func(mapId uint32, name string) model.Provider[[]Model] {
 		return requests.SliceProvider[RestModel, Model](l)(requestInMapByName(l, span, tenant)(mapId, name), Extract)
 	}
 }

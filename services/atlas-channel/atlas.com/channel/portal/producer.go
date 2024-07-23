@@ -7,8 +7,8 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func enterCommandProvider(tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, portalId uint32, characterId uint32) model.SliceProvider[kafka.Message] {
-	return func(worldId byte, channelId byte, mapId uint32, portalId uint32, characterId uint32) model.SliceProvider[kafka.Message] {
+func enterCommandProvider(tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, portalId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+	return func(worldId byte, channelId byte, mapId uint32, portalId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 		key := producer.CreateKey(int(portalId))
 		value := commandEvent[enterBody]{
 			Tenant:    tenant,

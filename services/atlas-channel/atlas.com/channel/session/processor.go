@@ -18,27 +18,20 @@ func AllInTenantProvider(tenant tenant.Model) func() ([]Model, error) {
 
 func ByCharacterIdModelProvider(tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
-		return model.SliceProviderToProviderAdapter[Model](AllInTenantProvider(tenant), CharacterIdPreciselyOneFilter(characterId))
+		return model.FirstProvider[Model](AllInTenantProvider(tenant), CharacterIdFilter(characterId))
 	}
 }
 
 // IfPresentByCharacterId executes an Operator if a session exists for the characterId
 func IfPresentByCharacterId(tenant tenant.Model) func(characterId uint32, f model.Operator[Model]) {
 	return func(characterId uint32, f model.Operator[Model]) {
-		model.IfPresent(ByCharacterIdModelProvider(tenant)(characterId), f)
+		_ = model.For(ByCharacterIdModelProvider(tenant)(characterId), f)
 	}
 }
 
 func CharacterIdFilter(referenceId uint32) model.Filter[Model] {
 	return func(model Model) bool {
 		return model.CharacterId() == referenceId
-	}
-}
-
-// CharacterIdPreciselyOneFilter a filter which yields true when the characterId matches the one in the session
-func CharacterIdPreciselyOneFilter(characterId uint32) model.PreciselyOneFilter[Model] {
-	return func(models []Model) (Model, error) {
-		return model.First(model.FixedSliceProvider(models), CharacterIdFilter(characterId))
 	}
 }
 

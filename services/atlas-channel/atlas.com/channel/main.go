@@ -2,8 +2,9 @@ package main
 
 import (
 	"atlas-channel/configuration"
+	"atlas-channel/kafka/consumer/character"
+	"atlas-channel/kafka/consumer/map"
 	"atlas-channel/logger"
-	_map "atlas-channel/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket"
@@ -16,7 +17,6 @@ import (
 	"fmt"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -82,16 +82,19 @@ func main() {
 	handlerMap[handler.NoOpHandler] = handler.NoOpHandlerFunc
 	handlerMap[handler.CharacterLoggedInHandle] = handler.CharacterLoggedInHandleFunc
 	handlerMap[handler.NPCActionHandle] = handler.NPCActionHandleFunc
+	handlerMap[handler.PortalScriptHandle] = handler.PortalScriptHandleFunc
 
 	writerList := []string{
 		writer.SetField,
 		writer.SpawnNPC,
 		writer.SpawnNPCRequestController,
 		writer.NPCAction,
+		writer.StatChanged,
 	}
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, ctx, wg)(_map.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, uuid.New().String())))
+	cm.AddConsumer(l, ctx, wg)(_map.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, ctx, wg)(character.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 
 	for _, s := range config.Data.Attributes.Servers {
 		for _, w := range s.Worlds {
@@ -108,26 +111,25 @@ func main() {
 				}
 
 				// TODO this needs refactoring.
+				var wp writer.Producer
 				if sc.Tenant().Region == "GMS" && sc.Tenant().MajorVersion <= 28 {
 					owp := func(op uint8) writer.OpWriter {
 						return func(w *response.Writer) {
 							w.WriteByte(op)
 						}
 					}
-					wp := getWriterProducer[uint8](l)(s.Writers, writerList, owp)
-					_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(sc, wp)(l))
-					_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(sc, wp)(l))
+					wp = getWriterProducer[uint8](l)(s.Writers, writerList, owp)
 				} else {
 					owp := func(op uint16) writer.OpWriter {
 						return func(w *response.Writer) {
 							w.WriteShort(op)
 						}
 					}
-					wp := getWriterProducer[uint16](l)(s.Writers, writerList, owp)
-
-					_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(sc, wp)(l))
-					_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(sc, wp)(l))
+					wp = getWriterProducer[uint16](l)(s.Writers, writerList, owp)
 				}
+				_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(character.StatusEventStatChangedRegister(sc, wp)(l))
 
 				socket.CreateSocketService(l, ctx, wg)(s, validatorMap, handlerMap, writerList, sc, config.Data.Attributes.IPAddress, c.Port)
 			}

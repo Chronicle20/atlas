@@ -2,34 +2,28 @@ package channel
 
 import (
 	"atlas-world/tenant"
-	"github.com/sirupsen/logrus"
-	"os"
 )
 
 const (
-	topicTokenStatus = "TOPIC_CHANNEL_SERVICE"
+	EnvEventTopicChannelStatus = "EVENT_TOPIC_CHANNEL_STATUS"
 
-	EventStatusStarted  = "STARTED"
-	EventStatusShutdown = "SHUTDOWN"
+	EventChannelStatusType         = "STARTED"
+	EventChannelStatusTypeShutdown = "SHUTDOWN"
+
+	EnvCommandTopicChannelStatus = "COMMAND_TOPIC_CHANNEL_STATUS"
+	CommandChannelStatusType     = "STATUS_REQUEST"
 )
 
-type channelServerEvent struct {
+type channelStatusEvent struct {
 	Tenant    tenant.Model `json:"tenant"`
-	Status    string       `json:"status"`
+	Type      string       `json:"type"`
 	WorldId   byte         `json:"worldId"`
 	ChannelId byte         `json:"channelId"`
 	IpAddress string       `json:"ipAddress"`
 	Port      int          `json:"port"`
 }
 
-func lookupTopic(l logrus.FieldLogger) func(token string) string {
-	return func(token string) string {
-		t, ok := os.LookupEnv(token)
-		if !ok {
-			l.Warnf("%s environment variable not set. Defaulting to env variable.", token)
-			return token
-
-		}
-		return t
-	}
+type channelStatusCommand struct {
+	Tenant tenant.Model `json:"tenant"`
+	Type   string       `json:"type"`
 }

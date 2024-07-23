@@ -10,7 +10,7 @@ import (
 var once sync.Once
 var config *Model
 
-func GetConfiguration() (*Model, error) {
+func GetConfiguration() (Model, error) {
 	once.Do(func() {
 		filePath := os.Getenv("CONFIG_FILE")
 		file, err := os.ReadFile(filePath)
@@ -24,5 +24,5 @@ func GetConfiguration() (*Model, error) {
 		}
 	})
 
-	return config, nil
+	return *config, nil
 }

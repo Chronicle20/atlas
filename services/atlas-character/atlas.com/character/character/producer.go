@@ -65,7 +65,7 @@ func emitMapChangedEvent(l logrus.FieldLogger, span opentracing.Span, tenant ten
 			Tenant:      tenant,
 			CharacterId: characterId,
 			WorldId:     worldId,
-			Type:        EventCharacterStatusTypeLogout,
+			Type:        EventCharacterStatusTypeMapChanged,
 			Body: statusEventMapChangedBody{
 				ChannelId:      channelId,
 				OldMapId:       oldMapId,

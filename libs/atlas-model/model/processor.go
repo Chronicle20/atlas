@@ -290,6 +290,10 @@ func First[M any](provider SliceProvider[M], filters ...Filter[M]) (M, error) {
 		return r, err
 	}
 
+	if len(ms) == 0 {
+		return r, errors.New("no model found")
+	}
+
 	if len(filters) == 0 {
 		return ms[0], nil
 	}
@@ -308,8 +312,9 @@ func First[M any](provider SliceProvider[M], filters ...Filter[M]) (M, error) {
 	return r, errors.New("no result found")
 }
 
-//goland:noinspection GoUnusedExportedFunction
 // Deprecated: ApplyDecorators is deprecated. Utilize Map and Decorate functions.
+//
+//goland:noinspection GoUnusedExportedFunction
 func ApplyDecorators[M any](provider Provider[M], decorators ...Decorator[M]) Provider[M] {
 	return Map[M, M](provider, Decorate(decorators...))
 }
@@ -324,8 +329,9 @@ func Decorate[M any](decorators ...Decorator[M]) func(m M) (M, error) {
 	}
 }
 
-//goland:noinspection GoUnusedExportedFunction
 // Deprecated: ApplyDecorators is deprecated. Utilize Map and Decorate functions.
+//
+//goland:noinspection GoUnusedExportedFunction
 func ApplyDecoratorsSlice[M any](provider SliceProvider[M], decorators ...Decorator[M]) SliceProvider[M] {
 	return SliceMap[M, M](provider, Decorate(decorators...))
 }

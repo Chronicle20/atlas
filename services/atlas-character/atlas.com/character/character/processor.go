@@ -5,6 +5,7 @@ import (
 	"atlas-character/equipable"
 	"atlas-character/equipment"
 	"atlas-character/inventory"
+	"atlas-character/portal"
 	"atlas-character/tenant"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
@@ -222,5 +223,64 @@ func Logout(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 			return
 		}
 		emitLogoutEvent(l, span, tenant)(characterId, worldId, channelId, c.MapId(), c.Name())
+	}
+}
+
+func ChangeMap(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte, mapId uint32, portalId uint32) {
+	return func(characterId uint32, worldId byte, channelId byte, mapId uint32, portalId uint32) {
+		c, err := GetById(l, db, tenant)(characterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate character [%d] for update.", characterId)
+			return
+		}
+		err = performChangeMap(l, db, span, tenant)(mapId, portalId)(c)
+		if err != nil {
+			l.WithError(err).Errorf("Error updating characters [%d] map.", characterId)
+			return
+		}
+		changeMapSuccess(l, span, tenant)(worldId, channelId, mapId, portalId)
+	}
+}
+
+func changeMapSuccess(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, oldMapId uint32, newMapId uint32) model.Operator[Model] {
+	return func(worldId byte, channelId byte, oldMapId uint32, newMapId uint32) model.Operator[Model] {
+		return func(m Model) error {
+			emitMapChangedEvent(l, span, tenant)(m.Id(), worldId, channelId, oldMapId, newMapId)
+			return nil
+		}
+	}
+}
+
+// Produces a function which persists a character map update, then updates the temporal position.
+func performChangeMap(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(mapId uint32, portalId uint32) model.Operator[Model] {
+	return func(mapId uint32, portalId uint32) model.Operator[Model] {
+		return func(c Model) error {
+			err := characterDatabaseUpdate(l, db, tenant)(SetMapId(mapId))(c)
+			if err != nil {
+				return err
+			}
+			por, err := portal.GetInMapById(l, span, tenant)(mapId, portalId)
+			if err != nil {
+				return err
+			}
+			GetTemporalRegistry().UpdatePosition(c.Id(), por.X(), por.Y())
+			return nil
+		}
+	}
+}
+
+// Returns a function which accepts a character model,and updates the persisted state of the character given a set of
+// modifying functions.
+func characterDatabaseUpdate(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(modifiers ...EntityUpdateFunction) model.Operator[Model] {
+	return func(modifiers ...EntityUpdateFunction) model.Operator[Model] {
+		return func(c Model) error {
+			if len(modifiers) > 0 {
+				err := update(db, tenant.Id, c.Id(), modifiers...)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
 	}
 }

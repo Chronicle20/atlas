@@ -57,3 +57,21 @@ func emitLogoutEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant.
 		p(producer.CreateKey(int(characterId)), event)
 	}
 }
+
+func emitMapChangedEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte, oldMapId uint32, newMapId uint32) {
+	p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvEventTopicCharacterStatus))
+	return func(characterId uint32, worldId byte, channelId byte, oldMapId uint32, newMapId uint32) {
+		event := &statusEvent[statusEventMapChangedBody]{
+			Tenant:      tenant,
+			CharacterId: characterId,
+			WorldId:     worldId,
+			Type:        EventCharacterStatusTypeLogout,
+			Body: statusEventMapChangedBody{
+				ChannelId: channelId,
+				OldMapId:  oldMapId,
+				NewMapId:  newMapId,
+			},
+		}
+		p(producer.CreateKey(int(characterId)), event)
+	}
+}

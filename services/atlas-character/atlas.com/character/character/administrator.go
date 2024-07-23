@@ -44,7 +44,7 @@ func delete(db *gorm.DB, tenantId uuid.UUID, characterId uint32) error {
 	return db.Where(&entity{TenantId: tenantId, ID: characterId}).Delete(&entity{}).Error
 }
 
-func update(db *gorm.DB, characterId uint32, modifiers ...EntityUpdateFunction) error {
+func update(db *gorm.DB, tenantId uuid.UUID, characterId uint32, modifiers ...EntityUpdateFunction) error {
 	e := &entity{}
 
 	var columns []string
@@ -53,7 +53,7 @@ func update(db *gorm.DB, characterId uint32, modifiers ...EntityUpdateFunction) 
 		columns = append(columns, c...)
 		u(e)
 	}
-	return db.Model(&entity{ID: characterId}).Select(columns).Updates(e).Error
+	return db.Model(&entity{TenantId: tenantId, ID: characterId}).Select(columns).Updates(e).Error
 }
 
 func SetLevel(level byte) EntityUpdateFunction {

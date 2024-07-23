@@ -67,9 +67,11 @@ func main() {
 	cm.AddConsumer(l, ctx, wg)(inventory.EquipItemCommandConsumer(l)(consumerGroupId))
 	cm.AddConsumer(l, ctx, wg)(inventory.UnequipItemCommandConsumer(l)(consumerGroupId))
 	cm.AddConsumer(l, ctx, wg)(session.StatusEventConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, ctx, wg)(character.CommandConsumer(l)(consumerGroupId))
 	_, _ = cm.RegisterHandler(inventory.EquipItemRegister(l, db))
 	_, _ = cm.RegisterHandler(inventory.UnequipItemRegister(l, db))
 	_, _ = cm.RegisterHandler(session.StatusEventRegister(l, db))
+	_, _ = cm.RegisterHandler(character.ChangeMapCommandRegister(l, db))
 
 	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), character.InitResource(GetServer())(db), inventory.InitResource(GetServer())(db))
 

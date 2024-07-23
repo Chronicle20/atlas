@@ -70,7 +70,7 @@ func Produce(l logrus.FieldLogger) func(provider model.Provider[Writer]) func(de
 				return ErrMessageProducer(err)
 			}
 
-			return func(provider model.SliceProvider[kafka.Message]) error {
+			return func(provider model.Provider[[]kafka.Message]) error {
 				var ms []kafka.Message
 				ms, err = model.SliceMap(provider, decorateHeaders(decorators...))()
 				if err != nil {

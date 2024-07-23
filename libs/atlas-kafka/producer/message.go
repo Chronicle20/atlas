@@ -22,7 +22,7 @@ func headerFolder(headers []kafka.Header, decorator HeaderDecorator) ([]kafka.He
 }
 
 func produceHeaders(decorators ...HeaderDecorator) ([]kafka.Header, error) {
-	return model.Fold(model.FixedSliceProvider(decorators), emptyHeaders, headerFolder)()
+	return model.Fold[HeaderDecorator, []kafka.Header](model.FixedProvider(decorators), emptyHeaders, headerFolder)()
 }
 
 type RawMessage struct {
@@ -30,12 +30,12 @@ type RawMessage struct {
 	Value interface{}
 }
 
-func MessageProvider(mp model.SliceProvider[RawMessage]) model.SliceProvider[kafka.Message] {
+func MessageProvider(mp model.Provider[[]RawMessage]) model.Provider[[]kafka.Message] {
 	return model.SliceMap(mp, transformer, model.ParallelMap())
 }
 
-func SingleMessageProvider(key []byte, value interface{}) model.SliceProvider[kafka.Message] {
-	return MessageProvider(model.FixedSingleSliceProvider(RawMessage{Key: key, Value: value}))
+func SingleMessageProvider(key []byte, value interface{}) model.Provider[[]kafka.Message] {
+	return MessageProvider(model.AsSliceProvider(RawMessage{Key: key, Value: value}))
 }
 
 func transformer(rm RawMessage) (kafka.Message, error) {
@@ -50,10 +50,10 @@ func transformer(rm RawMessage) (kafka.Message, error) {
 	return m, nil
 }
 
-type MessageProducer func(provider model.SliceProvider[kafka.Message]) error
+type MessageProducer func(provider model.Provider[[]kafka.Message]) error
 
 func ErrMessageProducer(err error) MessageProducer {
-	return func(provider model.SliceProvider[kafka.Message]) error {
+	return func(provider model.Provider[[]kafka.Message]) error {
 		return err
 	}
 }

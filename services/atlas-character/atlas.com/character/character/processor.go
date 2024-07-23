@@ -238,14 +238,14 @@ func ChangeMap(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant 
 			l.WithError(err).Errorf("Error updating characters [%d] map.", characterId)
 			return
 		}
-		changeMapSuccess(l, span, tenant)(worldId, channelId, mapId, portalId)
+		changeMapSuccess(l, span, tenant)(worldId, channelId, c.MapId(), mapId, portalId)
 	}
 }
 
-func changeMapSuccess(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, oldMapId uint32, newMapId uint32) model.Operator[Model] {
-	return func(worldId byte, channelId byte, oldMapId uint32, newMapId uint32) model.Operator[Model] {
+func changeMapSuccess(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, oldMapId uint32, targetMapId uint32, targetPortalId uint32) model.Operator[Model] {
+	return func(worldId byte, channelId byte, oldMapId uint32, targetMapId uint32, targetPortalId uint32) model.Operator[Model] {
 		return func(m Model) error {
-			emitMapChangedEvent(l, span, tenant)(m.Id(), worldId, channelId, oldMapId, newMapId)
+			emitMapChangedEvent(l, span, tenant)(m.Id(), worldId, channelId, oldMapId, targetMapId, targetPortalId)
 			return nil
 		}
 	}

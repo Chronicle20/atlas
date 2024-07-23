@@ -1,7 +1,7 @@
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/Chronicle20/atlas-kafka v0.0.0-20240710214617-8a7aed20c81d h1:wLPGMfCSRiVI98YmpUt/gc3W8dtb1KqUTd/GQoaZPa4=
-github.com/Chronicle20/atlas-kafka v0.0.0-20240710214617-8a7aed20c81d/go.mod h1:2fnQ/pnT6Vo46HfjcF4meFGfPlls2EaqOQUc9vWwFkQ=
+github.com/Chronicle20/atlas-kafka v0.0.0-20240723173243-ba827d941bea h1:1VExxobTNmFpMi40Dx+IQybLRbLdXxOKKWu5YLMd6do=
+github.com/Chronicle20/atlas-kafka v0.0.0-20240723173243-ba827d941bea/go.mod h1:/apy/P7AgJ3jDGRxYmAurCe4SnP3OfvqmcoHDSZ7AaQ=
 github.com/Chronicle20/atlas-model v0.0.0-20240723030619-8c2052cb70a9 h1:GJ+ehmm2NFM5Mt/rQ2SZf1+jrxdoQPibpJ0EhyoEucg=
 github.com/Chronicle20/atlas-model v0.0.0-20240723030619-8c2052cb70a9/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
 github.com/Chronicle20/atlas-rest v0.0.0-20240712172338-ed16b47e5616 h1:GROhApm8q+gdik4FwcJpuT2iJ2opZ9EPSFtlJDYe2ec=

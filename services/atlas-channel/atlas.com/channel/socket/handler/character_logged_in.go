@@ -3,6 +3,7 @@ package handler
 import (
 	as "atlas-channel/account/session"
 	"atlas-channel/character"
+	"atlas-channel/kafka/producer"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"github.com/Chronicle20/atlas-socket/request"
@@ -37,7 +38,7 @@ func CharacterLoggedInHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp
 			return
 		}
 
-		session.SessionCreated(l, span, s.Tenant())(s)
+		session.SessionCreated(producer.ProviderImpl(l)(span), s.Tenant())(s)
 
 		l.Debugf("Writing SetField for character [%d].", c.Id())
 		err = setFieldFunc(s, writer.SetFieldBody(l, s.Tenant())(s.ChannelId(), c))

@@ -1,6 +1,7 @@
 package portal
 
 import (
+	"atlas-channel/kafka/producer"
 	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -20,14 +21,14 @@ func GetInMapByName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.M
 	}
 }
 
-func Enter(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, portalName string, characterId uint32) error {
-	return func(worldId byte, channelId byte, mapId uint32, portalName string, characterId uint32) error {
+func Enter(l logrus.FieldLogger, span opentracing.Span, kp producer.Provider) func(tenant tenant.Model, worldId byte, channelId byte, mapId uint32, portalName string, characterId uint32) error {
+	return func(tenant tenant.Model, worldId byte, channelId byte, mapId uint32, portalName string, characterId uint32) error {
 		p, err := GetInMapByName(l, span, tenant)(mapId, portalName)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate portal [%s] in map [%d].", portalName, mapId)
 			return err
 		}
-		emitEnterCommand(l, span, tenant)(worldId, channelId, mapId, p.id, characterId)
-		return nil
+		err = kp(EnvPortalCommandTopic)(enterCommandProvider(tenant)(worldId, channelId, mapId, p.id, characterId))
+		return err
 	}
 }

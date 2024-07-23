@@ -8,10 +8,6 @@ import (
 	"strconv"
 )
 
-func IsServiced(id uuid.UUID) bool {
-	return getRegistry().Contains(id)
-}
-
 func Create(id uuid.UUID, region string, major uint16, minor uint16) Model {
 	getRegistry().Add(id)
 	return Model{

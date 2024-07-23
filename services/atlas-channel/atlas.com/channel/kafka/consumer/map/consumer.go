@@ -1,7 +1,7 @@
 package _map
 
 import (
-	"atlas-channel/kafka"
+	consumer2 "atlas-channel/kafka/consumer"
 	"atlas-channel/npc"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -10,6 +10,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
+	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
@@ -19,19 +20,21 @@ const consumerStatusEvent = "status_event"
 
 func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return kafka.NewConfig(l)(consumerStatusEvent)(EnvEventTopicMapStatus)(groupId)
+		return consumer2.NewConfig(l)(consumerStatusEvent)(EnvEventTopicMapStatus)(groupId)
 	}
 }
 
 func StatusEventCharacterEnterRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
 	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		return kafka.LookupTopic(l)(EnvEventTopicMapStatus), message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterEnter(sc, wp)))
+		t, _ := topic.EnvProvider(l)(EnvEventTopicMapStatus)()
+		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterEnter(sc, wp)))
 	}
 }
 
 func StatusEventCharacterExitRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
 	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		return kafka.LookupTopic(l)(EnvEventTopicMapStatus), message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterExit(sc, wp)))
+		t, _ := topic.EnvProvider(l)(EnvEventTopicMapStatus)()
+		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterExit(sc, wp)))
 	}
 }
 

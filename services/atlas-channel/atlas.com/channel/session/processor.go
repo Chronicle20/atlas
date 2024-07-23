@@ -1,12 +1,12 @@
 package session
 
 import (
+	"atlas-channel/kafka/producer"
 	"atlas-channel/socket/writer"
 	"atlas-channel/tenant"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -116,19 +116,6 @@ func UpdateLastRequest() func(tenantId uuid.UUID, id uuid.UUID) Model {
 }
 
 //
-//func SetWorldId(worldId byte) func(id uuid.UUID) Model {
-//	return func(id uuid.UUID) Model {
-//		s := Model{}
-//		var ok bool
-//		if s, ok = GetRegistry().Get(id); ok {
-//			s = s.setWorldId(worldId)
-//			GetRegistry().Update(s)
-//			return s
-//		}
-//		return s
-//	}
-//}
-//
 //func SetChannelId(channelId byte) func(id uuid.UUID) Model {
 //	return func(id uuid.UUID) Model {
 //		s := Model{}
@@ -142,8 +129,8 @@ func UpdateLastRequest() func(tenantId uuid.UUID, id uuid.UUID) Model {
 //	}
 //}
 
-func SessionCreated(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(s Model) {
+func SessionCreated(kp producer.Provider, tenant tenant.Model) func(s Model) {
 	return func(s Model) {
-		emitCreatedStatusEvent(l, span, tenant)(s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId())
+		_ = kp(EnvEventTopicSessionStatus)(createdStatusEventProvider(tenant, s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
 	}
 }

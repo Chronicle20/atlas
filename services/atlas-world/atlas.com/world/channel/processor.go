@@ -1,8 +1,11 @@
 package channel
 
 import (
+	"atlas-world/configuration"
 	"atlas-world/tenant"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
+	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -54,5 +57,12 @@ func Unregister(_ logrus.FieldLogger, tenant tenant.Model) func(worldId byte, ch
 	return func(worldId byte, channelId byte) error {
 		GetChannelRegistry().RemoveByWorldAndChannel(tenant.Id.String(), worldId, channelId)
 		return nil
+	}
+}
+
+func RequestStatus(l logrus.FieldLogger, span opentracing.Span, c configuration.Model) {
+	for _, sc := range c.Data.Attributes.Servers {
+		t := tenant.New(uuid.MustParse(sc.Tenant), "", 0, 0)
+		emitChannelServerStatusCommand(l, span, t)
 	}
 }

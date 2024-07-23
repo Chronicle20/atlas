@@ -2,12 +2,14 @@ package main
 
 import (
 	"atlas-world/channel"
+	"atlas-world/configuration"
 	"atlas-world/logger"
 	"atlas-world/tracing"
 	"atlas-world/world"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/opentracing/opentracing-go"
 	"io"
 	"os"
 	"os/signal"
@@ -57,10 +59,19 @@ func main() {
 	}(tc)
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, ctx, wg)(channel.StatusConsumer(l)(consumerGroupId))
-	_, _ = cm.RegisterHandler(channel.StatusRegister(l))
+	cm.AddConsumer(l, ctx, wg)(channel.EventStatusConsumer(l)(consumerGroupId))
+	_, _ = cm.RegisterHandler(channel.EventStatusRegister(l))
 
 	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), channel.InitResource(GetServer()), world.InitResource(GetServer()))
+
+	l.Infof("Service started.")
+	config, err := configuration.GetConfiguration()
+	if err != nil {
+		l.WithError(err).Fatal("Unable to load configuration.")
+	}
+	span := opentracing.StartSpan("startup")
+	defer span.Finish()
+	channel.RequestStatus(l, span, config)
 
 	// trap sigterm or interrupt and gracefully shutdown the server
 	c := make(chan os.Signal, 1)

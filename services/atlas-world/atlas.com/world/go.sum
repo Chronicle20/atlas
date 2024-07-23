@@ -6,6 +6,8 @@ github.com/Chronicle20/atlas-model v0.0.0-20240707172702-3d0c637b3cb5 h1:7hmq/RB
 github.com/Chronicle20/atlas-model v0.0.0-20240707172702-3d0c637b3cb5/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
 github.com/Chronicle20/atlas-model v0.0.0-20240712114934-b680d929248b h1:Wsswxhd3Pu8s0LTVy7MlbqeqePbTXQrb2A6pKnbWGDU=
 github.com/Chronicle20/atlas-model v0.0.0-20240712114934-b680d929248b/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
+github.com/Chronicle20/atlas-model v0.0.0-20240723030619-8c2052cb70a9 h1:GJ+ehmm2NFM5Mt/rQ2SZf1+jrxdoQPibpJ0EhyoEucg=
+github.com/Chronicle20/atlas-model v0.0.0-20240723030619-8c2052cb70a9/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
 github.com/Chronicle20/atlas-rest v0.0.0-20240710183603-5b17b81f4138 h1:8Fx9woizpOOekflKEyGPkUcFzzg7LPsSbrWVKBl2OEg=
 github.com/Chronicle20/atlas-rest v0.0.0-20240710183603-5b17b81f4138/go.mod h1:/ct0tbaPuSIjX08t/eMPAx8gP+VeEVBh4sd4jFLjgCc=
 github.com/Chronicle20/atlas-rest v0.0.0-20240712172338-ed16b47e5616 h1:GROhApm8q+gdik4FwcJpuT2iJ2opZ9EPSFtlJDYe2ec=

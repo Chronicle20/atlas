@@ -6,48 +6,22 @@ import (
 	"sync"
 )
 
-type Number interface {
-	uint | uint8 | uint16 | uint32 | uint64
-}
-
-type IdProvider[M Number] func() M
-
-//goland:noinspection GoUnusedExportedFunction
-func FixedIdProvider[M Number](val M) IdProvider[M] {
-	return func() M {
-		return val
-	}
-}
-
-//goland:noinspection GoUnusedExportedFunction
-func ProviderToIdProviderAdapter[M any, N Number](provider Provider[M], transformer Transformer[M, N]) IdProvider[N] {
-	return func() N {
-		m, err := provider()
-		if err != nil {
-			return 0
-		}
-		n, err := transformer(m)
-		if err != nil {
-			return 0
-		}
-		return n
-	}
-}
-
 type Operator[M any] func(M) error
 
 type Provider[M any] func() (M, error)
 
-type SliceOperator[M any] func([]M) error
-
-type SliceProvider[M any] func() ([]M, error)
-
-type PreciselyOneFilter[M any] func([]M) (M, error)
-
 type Decorator[M any] func(M) M
 
 //goland:noinspection GoUnusedExportedFunction
-func ExecuteForEach[M any](f Operator[M]) SliceOperator[M] {
+func Flip[A any, B any, C any](f func(A) func(B) C) func(B) func(A) C {
+	return func(b B) func(A) C {
+		return func(a A) C {
+			return f(a)(b)
+		}
+	}
+}
+
+func ExecuteForEach[M any](f Operator[M]) Operator[[]M] {
 	return func(models []M) error {
 		for _, m := range models {
 			err := f(m)
@@ -62,10 +36,10 @@ func ExecuteForEach[M any](f Operator[M]) SliceOperator[M] {
 type Filter[M any] func(M) bool
 
 //goland:noinspection GoUnusedExportedFunction
-func FilteredProvider[M any](provider SliceProvider[M], filters ...Filter[M]) SliceProvider[M] {
+func FilteredProvider[M any](provider Provider[[]M], filters ...Filter[M]) Provider[[]M] {
 	models, err := provider()
 	if err != nil {
-		return ErrorSliceProvider[M](err)
+		return ErrorProvider[[]M](err)
 	}
 
 	var results []M
@@ -81,7 +55,7 @@ func FilteredProvider[M any](provider SliceProvider[M], filters ...Filter[M]) Sl
 			results = append(results, m)
 		}
 	}
-	return FixedSliceProvider(results)
+	return FixedProvider(results)
 }
 
 //goland:noinspection GoUnusedExportedFunction
@@ -92,15 +66,24 @@ func FixedProvider[M any](model M) Provider[M] {
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func FixedSliceProvider[M any](models []M) SliceProvider[M] {
-	return func() ([]M, error) {
-		return models, nil
-	}
+func AsSliceProvider[M any](model M) Provider[[]M] {
+	return FixedProvider([]M{model})
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func FixedSingleSliceProvider[M any](model M) SliceProvider[M] {
-	return FixedSliceProvider([]M{model})
+func ToSliceProvider[M any](provider Provider[M]) Provider[[]M] {
+	m, err := provider()
+	if err != nil {
+		return ErrorProvider[[]M](err)
+	}
+	return AsSliceProvider(m)
+}
+
+// Deprecated: use AsSliceProvider
+//
+//goland:noinspection GoUnusedExportedFunction
+func FixedSliceProvider[M any](model M) Provider[[]M] {
+	return FixedProvider([]M{model})
 }
 
 //goland:noinspection GoUnusedExportedFunction
@@ -108,13 +91,6 @@ func ErrorProvider[M any](err error) Provider[M] {
 	return func() (M, error) {
 		var m M
 		return m, err
-	}
-}
-
-//goland:noinspection GoUnusedExportedFunction
-func ErrorSliceProvider[M any](err error) SliceProvider[M] {
-	return func() ([]M, error) {
-		return nil, err
 	}
 }
 
@@ -127,18 +103,8 @@ func RandomPreciselyOneFilter[M any](ms []M) (M, error) {
 	return ms[rand.Intn(len(ms))], nil
 }
 
-//goland:noinspection GoUnusedExportedFunction
-func SliceProviderToProviderAdapter[M any](provider SliceProvider[M], preciselyOneFilter PreciselyOneFilter[M]) Provider[M] {
-	return func() (M, error) {
-		ps, err := provider()
-		if err != nil {
-			var result M
-			return result, err
-		}
-		return preciselyOneFilter(ps)
-	}
-}
-
+// Deprecated: use For
+//
 //goland:noinspection GoUnusedExportedFunction
 func IfPresent[M any](provider Provider[M], operator Operator[M]) {
 	model, err := provider()
@@ -149,30 +115,27 @@ func IfPresent[M any](provider Provider[M], operator Operator[M]) {
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func For[M any](provider SliceProvider[M], operator SliceOperator[M]) {
+func For[M any](provider Provider[M], operator Operator[M]) error {
 	models, err := provider()
 	if err != nil {
-		return
+		return err
 	}
-	_ = operator(models)
+	return operator(models)
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func ForEach[M any](provider SliceProvider[M], operator Operator[M]) {
-	For(provider, ExecuteForEach(operator))
+func ForEach[M any](provider Provider[[]M], operator Operator[M]) error {
+	return For(provider, ExecuteForEach(operator))
 }
 
 //goland:noinspection GoUnusedExportedFunction
 type Transformer[M any, N any] func(M) (N, error)
 
+// Deprecated: just use Map
+//
 //goland:noinspection GoUnusedExportedFunction
 func Transform[M any, N any](model M, transformer Transformer[M, N]) (N, error) {
 	return Map(FixedProvider(model), transformer)()
-}
-
-//goland:noinspection GoUnusedExportedFunction
-func TransformAll[M any, N any](models []M, transformer Transformer[M, N]) ([]N, error) {
-	return SliceMap(FixedSliceProvider(models), transformer)()
 }
 
 //goland:noinspection GoUnusedExportedFunction
@@ -188,81 +151,88 @@ func Map[M any, N any](provider Provider[M], transformer Transformer[M, N]) Prov
 	return FixedProvider(n)
 }
 
-type MapFuncConfigurator func(c *MapConfig)
+type MapFuncConfigurator Decorator[MapConfig]
 
 type MapConfig struct {
 	parallel bool
 }
 
-//goland:noinspection GoUnusedExportedFunction
-func ParallelMap() MapFuncConfigurator {
-	return func(c *MapConfig) {
-		c.parallel = true
-	}
+func (c MapConfig) SetParallel(val bool) MapConfig {
+	return MapConfig{parallel: val}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SliceMap[M any, N any](provider SliceProvider[M], transformer Transformer[M, N], configurators ...MapFuncConfigurator) SliceProvider[N] {
-	c := &MapConfig{parallel: false}
+func ParallelMap() MapFuncConfigurator {
+	return func(config MapConfig) MapConfig {
+		return config.SetParallel(true)
+	}
+}
+
+type mapResult[E any] struct {
+	index int
+	value E
+	err   error
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func SliceMap[M any, N any](provider Provider[[]M], transformer Transformer[M, N], configurators ...MapFuncConfigurator) Provider[[]N] {
+	c := MapConfig{parallel: false}
 	for _, configurator := range configurators {
-		configurator(c)
+		c = configurator(c)
 	}
 
 	models, err := provider()
 	if err != nil {
-		return ErrorSliceProvider[N](err)
+		return ErrorProvider[[]N](err)
 	}
-	var results = make([]N, 0)
+	var results = make([]N, len(models))
 
 	if c.parallel {
 		var wg sync.WaitGroup
-		var mu sync.Mutex
 
-		errCh := make(chan error, len(models))
+		resCh := make(chan mapResult[N], len(models))
 
-		for _, m := range models {
+		for i, m := range models {
 			wg.Add(1)
-			go parallelTransform(&wg, &mu, transformer, m, &results, errCh)
+			go parallelTransform(&wg, transformer, i, m, resCh)
 		}
 		wg.Wait()
 
-		close(errCh)
-		for err = range errCh {
-			if err != nil {
-				return ErrorSliceProvider[N](err)
+		close(resCh)
+		for res := range resCh {
+			if res.err != nil {
+				return ErrorProvider[[]N](res.err)
 			}
+			results[res.index] = res.value
 		}
 	} else {
-		for _, m := range models {
+		for i, m := range models {
 			var n N
 			n, err = transformer(m)
 			if err != nil {
-				return ErrorSliceProvider[N](err)
+				return ErrorProvider[[]N](err)
 			}
-			results = append(results, n)
+			results[i] = n
 		}
 	}
-	return FixedSliceProvider(results)
+	return FixedProvider(results)
 }
 
-func parallelTransform[M any, N any](wg *sync.WaitGroup, mu *sync.Mutex, transformer Transformer[M, N], model M, results *[]N, errCh chan<- error) {
+func parallelTransform[M any, N any](wg *sync.WaitGroup, transformer Transformer[M, N], index int, model M, resCh chan<- mapResult[N]) {
 	defer wg.Done()
 	r, err := transformer(model)
 	if err != nil {
-		errCh <- err
+		resCh <- mapResult[N]{index: index, err: err}
 		return
 	}
-	mu.Lock()
-	*results = append(*results, r)
-	mu.Unlock()
-	errCh <- nil
+	resCh <- mapResult[N]{index: index, value: r}
 }
 
 //goland:noinspection GoUnusedExportedFunction
 type Folder[M any, N any] func(N, M) (N, error)
 
 //goland:noinspection GoUnusedExportedFunction
-func Fold[M any, N any](provider SliceProvider[M], supplier Provider[N], folder Folder[M, N]) Provider[N] {
+func Fold[M any, N any](provider Provider[[]M], supplier Provider[N], folder Folder[M, N]) Provider[N] {
 	ms, err := provider()
 	if err != nil {
 		return ErrorProvider[N](err)
@@ -282,20 +252,18 @@ func Fold[M any, N any](provider SliceProvider[M], supplier Provider[N], folder 
 	return FixedProvider(n)
 }
 
-//goland:noinspection GoUnusedExportedFunction
-func First[M any](provider SliceProvider[M], filters ...Filter[M]) (M, error) {
-	var r M
+func FirstProvider[M any](provider Provider[[]M], filters ...Filter[M]) Provider[M] {
 	ms, err := provider()
 	if err != nil {
-		return r, err
+		return ErrorProvider[M](err)
 	}
 
 	if len(ms) == 0 {
-		return r, errors.New("no model found")
+		return ErrorProvider[M](errors.New("empty slice"))
 	}
 
 	if len(filters) == 0 {
-		return ms[0], nil
+		return FixedProvider[M](ms[0])
 	}
 
 	for _, m := range ms {
@@ -306,32 +274,13 @@ func First[M any](provider SliceProvider[M], filters ...Filter[M]) (M, error) {
 			}
 		}
 		if ok {
-			return m, nil
+			return FixedProvider[M](m)
 		}
 	}
-	return r, errors.New("no result found")
+	return ErrorProvider[M](errors.New("no result found"))
 }
 
-// Deprecated: ApplyDecorators is deprecated. Utilize Map and Decorate functions.
-//
 //goland:noinspection GoUnusedExportedFunction
-func ApplyDecorators[M any](provider Provider[M], decorators ...Decorator[M]) Provider[M] {
-	return Map[M, M](provider, Decorate(decorators...))
-}
-
-func Decorate[M any](decorators ...Decorator[M]) func(m M) (M, error) {
-	return func(m M) (M, error) {
-		var n = m
-		for _, d := range decorators {
-			n = d(n)
-		}
-		return n, nil
-	}
-}
-
-// Deprecated: ApplyDecorators is deprecated. Utilize Map and Decorate functions.
-//
-//goland:noinspection GoUnusedExportedFunction
-func ApplyDecoratorsSlice[M any](provider SliceProvider[M], decorators ...Decorator[M]) SliceProvider[M] {
-	return SliceMap[M, M](provider, Decorate(decorators...))
+func First[M any](provider Provider[[]M], filters ...Filter[M]) (M, error) {
+	return FirstProvider(provider, filters...)()
 }

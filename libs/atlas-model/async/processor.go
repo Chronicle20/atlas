@@ -30,26 +30,17 @@ func SingleProvider[M any](p Provider[M]) model.Provider[Provider[M]] {
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func FixedProvider[M any](ps []Provider[M]) model.SliceProvider[Provider[M]] {
-	return model.FixedSliceProvider[Provider[M]](ps)
+func FixedProvider[M any](ps []Provider[M]) model.Provider[[]Provider[M]] {
+	return model.FixedProvider[[]Provider[M]](ps)
 }
 
 //goland:noinspection GoUnusedExportedFunction
 func Await[M any](provider model.Provider[Provider[M]], configurators ...Configurator) model.Provider[M] {
-	p, err := provider()
-	if err != nil {
-		return model.ErrorProvider[M](err)
-	}
-
-	m, err := model.First(AwaitSlice(model.FixedSingleSliceProvider(p), configurators...))
-	if err != nil {
-		return model.ErrorProvider[M](err)
-	}
-	return model.FixedProvider[M](m)
+	return model.FirstProvider(AwaitSlice(model.ToSliceProvider(provider), configurators...))
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func AwaitSlice[M any](provider model.SliceProvider[Provider[M]], configurators ...Configurator) model.SliceProvider[M] {
+func AwaitSlice[M any](provider model.Provider[[]Provider[M]], configurators ...Configurator) model.Provider[[]M] {
 	c := &Config{timeout: 500 * time.Millisecond}
 	for _, configurator := range configurators {
 		configurator(c)
@@ -60,7 +51,7 @@ func AwaitSlice[M any](provider model.SliceProvider[Provider[M]], configurators 
 
 	providers, err := provider()
 	if err != nil {
-		return model.ErrorSliceProvider[M](err)
+		return model.ErrorProvider[[]M](err)
 	}
 
 	resultChannels := make(chan M, len(providers))

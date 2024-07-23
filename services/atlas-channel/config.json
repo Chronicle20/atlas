@@ -1,5 +1,6 @@
 {
   "data": {
+    "id": "e7fb1d7e-47b8-46bd-97dc-867d93530856",
     "type": "configuration",
     "attributes": {
       "tasks": [
@@ -27,10 +28,12 @@
                 {
                   "id": 0,
                   "port": "1201"
-                }, {
+                },
+                {
                   "id": 1,
                   "port": "1202"
-                }, {
+                },
+                {
                   "id": 2,
                   "port": "1203"
                 }
@@ -42,7 +45,13 @@
               "opCode": "0x0A",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
-            }, {
+            },
+            {
+              "opCode": "0x13",
+              "validator": "LoggedInValidator",
+              "handler": "MapChangeHandle"
+            },
+            {
               "opCode": "0x5D",
               "validator": "LoggedInValidator",
               "handler": "NPCActionHandle",
@@ -63,15 +72,22 @@
           ],
           "writers": [
             {
+              "opCode": "0x16",
+              "writer": "StatChanged"
+            },
+            {
               "opCode": "0x29",
               "writer": "SetField"
-            }, {
+            },
+            {
               "opCode": "0x7E",
               "writer": "SpawnNPC"
-            }, {
+            },
+            {
               "opCode": "0x80",
               "writer": "SpawnNPCRequestController"
-            }, {
+            },
+            {
               "opCode": "0x82",
               "writer": "NPCAction",
               "options": {
@@ -104,10 +120,12 @@
                 {
                   "id": 0,
                   "port": "8301"
-                }, {
+                },
+                {
                   "id": 1,
                   "port": "8302"
-                }, {
+                },
+                {
                   "id": 2,
                   "port": "8303"
                 }
@@ -119,7 +137,18 @@
               "opCode": "0x14",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
-            }, {
+            },
+            {
+              "opCode": "0x26",
+              "validator": "LoggedInValidator",
+              "handler": "MapChangeHandle"
+            },
+            {
+              "opCode": "0x64",
+              "validator": "LoggedInValidator",
+              "handler": "PortalScriptHandle"
+            },
+            {
               "opCode": "0xC5",
               "validator": "LoggedInValidator",
               "handler": "NPCActionHandle",
@@ -154,15 +183,22 @@
           ],
           "writers": [
             {
+              "opCode": "0x1F",
+              "writer": "StatChanged"
+            },
+            {
               "opCode": "0x7D",
               "writer": "SetField"
-            }, {
+            },
+            {
               "opCode": "0x101",
               "writer": "SpawnNPC"
-            }, {
+            },
+            {
               "opCode": "0x103",
               "writer": "SpawnNPCRequestController"
-            }, {
+            },
+            {
               "opCode": "0x104",
               "writer": "NPCAction",
               "options": {
@@ -209,10 +245,12 @@
                 {
                   "id": 0,
                   "port": "8701"
-                }, {
+                },
+                {
                   "id": 1,
                   "port": "8702"
-                }, {
+                },
+                {
                   "id": 2,
                   "port": "8703"
                 }
@@ -224,7 +262,18 @@
               "opCode": "0x14",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
-            }, {
+            },
+            {
+              "opCode": "0x28",
+              "validator": "LoggedInValidator",
+              "handler": "MapChangeHandle"
+            },
+            {
+              "opCode": "0x67",
+              "validator": "LoggedInValidator",
+              "handler": "PortalScriptHandle"
+            },
+            {
               "opCode": "0xD2",
               "validator": "LoggedInValidator",
               "handler": "NPCActionHandle",
@@ -261,15 +310,22 @@
           ],
           "writers": [
             {
+              "opCode": "0x1F",
+              "writer": "StatChanged"
+            },
+            {
               "opCode": "0x85",
               "writer": "SetField"
-            }, {
+            },
+            {
               "opCode": "0x112",
               "writer": "SpawnNPC"
-            }, {
+            },
+            {
               "opCode": "0x114",
               "writer": "SpawnNPCRequestController"
-            }, {
+            },
+            {
               "opCode": "0x115",
               "writer": "NPCAction",
               "options": {
@@ -318,10 +374,12 @@
                 {
                   "id": 0,
                   "port": "9201"
-                }, {
+                },
+                {
                   "id": 1,
                   "port": "9202"
-                }, {
+                },
+                {
                   "id": 2,
                   "port": "9203"
                 }
@@ -333,7 +391,18 @@
               "opCode": "0x14",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
-            }, {
+            },
+            {
+              "opCode": "0x2B",
+              "validator": "LoggedInValidator",
+              "handler": "MapChangeHandle"
+            },
+            {
+              "opCode": "0x6F",
+              "validator": "LoggedInValidator",
+              "handler": "PortalScriptHandle"
+            },
+            {
               "opCode": "0xEA",
               "validator": "LoggedInValidator",
               "handler": "NPCActionHandle"
@@ -341,15 +410,22 @@
           ],
           "writers": [
             {
+              "opCode": "0x20",
+              "writer": "StatChanged"
+            },
+            {
               "opCode": "0x8C",
               "writer": "SetField"
-            }, {
+            },
+            {
               "opCode": "0x12F",
               "writer": "SpawnNPC"
-            }, {
+            },
+            {
               "opCode": "0x131",
               "writer": "SpawnNPCRequestController"
-            }, {
+            },
+            {
               "opCode": "0x132",
               "writer": "NPCAction"
             }
@@ -369,10 +445,12 @@
                 {
                   "id": 0,
                   "port": "18501"
-                }, {
+                },
+                {
                   "id": 1,
                   "port": "18502"
-                }, {
+                },
+                {
                   "id": 2,
                   "port": "18503"
                 }
@@ -384,7 +462,18 @@
               "opCode": "0x07",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
-            }, {
+            },
+            {
+              "opCode": "0x1D",
+              "validator": "LoggedInValidator",
+              "handler": "MapChangeHandle"
+            },
+            {
+              "opCode": "0x5F",
+              "validator": "LoggedInValidator",
+              "handler": "PortalScriptHandle"
+            },
+            {
               "opCode": "0xD0",
               "validator": "LoggedInValidator",
               "handler": "NPCActionHandle",
@@ -429,15 +518,22 @@
           ],
           "writers": [
             {
+              "opCode": "0x1D",
+              "writer": "StatChanged"
+            },
+            {
               "opCode": "0x7B",
               "writer": "SetField"
-            }, {
+            },
+            {
               "opCode": "0x116",
               "writer": "SpawnNPC"
-            }, {
+            },
+            {
               "opCode": "0x118",
               "writer": "SpawnNPCRequestController"
-            }, {
+            },
+            {
               "opCode": "0x119",
               "writer": "NPCAction",
               "options": {

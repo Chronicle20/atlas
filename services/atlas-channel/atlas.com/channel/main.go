@@ -83,6 +83,7 @@ func main() {
 	handlerMap[handler.CharacterLoggedInHandle] = handler.CharacterLoggedInHandleFunc
 	handlerMap[handler.NPCActionHandle] = handler.NPCActionHandleFunc
 	handlerMap[handler.PortalScriptHandle] = handler.PortalScriptHandleFunc
+	handlerMap[handler.MapChangeHandle] = handler.MapChangeHandleFunc
 
 	writerList := []string{
 		writer.SetField,
@@ -130,6 +131,7 @@ func main() {
 				_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(character.StatusEventStatChangedRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(character.StatusEventMapChangedRegister(sc, wp)(l))
 
 				socket.CreateSocketService(l, ctx, wg)(s, validatorMap, handlerMap, writerList, sc, config.Data.Attributes.IPAddress, c.Port)
 			}

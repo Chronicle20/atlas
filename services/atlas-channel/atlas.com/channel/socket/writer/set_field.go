@@ -15,6 +15,39 @@ import (
 
 const SetField = "SetField"
 
+func WarpToMapBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byte, mapId uint32, portalId uint32, hp uint16) BodyProducer {
+	return func(channelId byte, mapId uint32, portalId uint32, hp uint16) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 83) || tenant.Region == "JMS" {
+				w.WriteShort(0) // decode opt, loop with 2 decode 4s
+			}
+			w.WriteInt(uint32(channelId))
+			if tenant.Region == "JMS" {
+				w.WriteByte(0)
+				w.WriteInt(0)
+			}
+			w.WriteByte(0) // sNotifierMessage
+			w.WriteByte(0) // bCharacterData
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+				w.WriteShort(0) // nNotifierCheck
+				w.WriteByte(0)  // revive
+			}
+			w.WriteInt(mapId)
+			w.WriteByte(byte(portalId))
+			w.WriteShort(hp)
+			if tenant.Region == "GMS" && tenant.MajorVersion > 28 {
+				w.WriteBool(false) // Chasing?
+				if false {
+					w.WriteInt(0)
+					w.WriteInt(0)
+				}
+			}
+			w.WriteLong(uint64(getTime(timeNow())))
+			return w.Bytes()
+		}
+	}
+}
+
 func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byte, c character.Model) BodyProducer {
 	return func(channelId byte, c character.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
@@ -65,7 +98,7 @@ func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(m cha
 			}
 
 			WriteCharacterStatistics(tenant)(w, m)
-			w.WriteByte(15) // buddy list capacity
+			w.WriteByte(0) // buddy list capacity
 
 			if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
 				if true {
@@ -75,7 +108,7 @@ func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(m cha
 					w.WriteAsciiString("") // linked name
 				}
 			}
-			w.WriteInt(24)
+			w.WriteInt(m.Meso())
 
 			if tenant.Region == "JMS" {
 				w.WriteInt(m.Id())

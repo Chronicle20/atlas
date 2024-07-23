@@ -45,7 +45,13 @@
               "opCode": "0x0A",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
-            }, {
+            },
+            {
+              "opCode": "0x13",
+              "validator": "LoggedInValidator",
+              "handler": "MapChangeHandle"
+            },
+            {
               "opCode": "0x5D",
               "validator": "LoggedInValidator",
               "handler": "NPCActionHandle",
@@ -131,6 +137,11 @@
               "opCode": "0x14",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
+            },
+            {
+              "opCode": "0x26",
+              "validator": "LoggedInValidator",
+              "handler": "MapChangeHandle"
             },
             {
               "opCode": "0x64",
@@ -251,6 +262,11 @@
               "opCode": "0x14",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
+            },
+            {
+              "opCode": "0x28",
+              "validator": "LoggedInValidator",
+              "handler": "MapChangeHandle"
             },
             {
               "opCode": "0x67",
@@ -377,6 +393,11 @@
               "handler": "CharacterLoggedInHandle"
             },
             {
+              "opCode": "0x2B",
+              "validator": "LoggedInValidator",
+              "handler": "MapChangeHandle"
+            },
+            {
               "opCode": "0x6F",
               "validator": "LoggedInValidator",
               "handler": "PortalScriptHandle"
@@ -441,6 +462,11 @@
               "opCode": "0x07",
               "validator": "NoOpValidator",
               "handler": "CharacterLoggedInHandle"
+            },
+            {
+              "opCode": "0x1D",
+              "validator": "LoggedInValidator",
+              "handler": "MapChangeHandle"
             },
             {
               "opCode": "0x5F",

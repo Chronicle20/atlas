@@ -47,7 +47,7 @@ func TestProducer(t *testing.T) {
 
 	key := []byte{0, 0, 0}
 	e := &testEvent{}
-	err := Produce(l)(model.FixedProvider[Writer](mw))(SingleMessageProvider()(key, e))
+	err := Produce(l)(model.FixedProvider[Writer](mw))()(SingleMessageProvider(key, e))
 	if err != nil {
 		t.Fatalf("Error producing event: %s", err)
 	}
@@ -63,7 +63,7 @@ func TestProducer2(t *testing.T) {
 
 	key := []byte{0, 0, 0}
 	e := &testEvent{}
-	err := Produce(l)(model.FixedProvider[Writer](mw))(MessageProvider()([]RawMessage{{Key: key, Value: e}, {Key: key, Value: e}}))
+	err := Produce(l)(model.FixedProvider[Writer](mw))()(MessageProvider(model.FixedSliceProvider([]RawMessage{{Key: key, Value: e}, {Key: key, Value: e}})))
 	if err != nil {
 		t.Fatalf("Error producing event: %s", err)
 	}

@@ -62,32 +62,45 @@ func WriterProvider(provider topic.Provider) model.Provider[Writer] {
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func Produce(l logrus.FieldLogger) func(provider model.Provider[Writer]) MessageProducer {
-	return func(provider model.Provider[Writer]) MessageProducer {
-		w, err := provider()
-		if err != nil {
-			return ErrMessageProducer(err)
-		}
-		defer func(w Writer) {
-			_ = w.Close()
-		}(w)
-
-		return func(provider model.SliceProvider[kafka.Message]) error {
-			var ms []kafka.Message
-			ms, err = provider()
+func Produce(l logrus.FieldLogger) func(provider model.Provider[Writer]) func(decorators ...HeaderDecorator) MessageProducer {
+	return func(provider model.Provider[Writer]) func(decorators ...HeaderDecorator) MessageProducer {
+		return func(decorators ...HeaderDecorator) MessageProducer {
+			w, err := provider()
 			if err != nil {
-				return err
+				return ErrMessageProducer(err)
 			}
+			defer func(w Writer) {
+				_ = w.Close()
+			}(w)
 
-			for _, m := range ms {
-				err = retry.Try(tryMessage(l, w)(m), 10)
+			return func(provider model.SliceProvider[kafka.Message]) error {
+				var ms []kafka.Message
+				ms, err = model.SliceMap(provider, decorateHeaders(decorators...))()
 				if err != nil {
-					l.WithError(err).Errorf("Unable to emit event on topic [%s].", w.Topic())
 					return err
 				}
+
+				for _, m := range ms {
+					err = retry.Try(tryMessage(l, w)(m), 10)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to emit event on topic [%s].", w.Topic())
+						return err
+					}
+				}
+				return nil
 			}
-			return nil
 		}
+	}
+}
+
+func decorateHeaders(decorators ...HeaderDecorator) model.Transformer[kafka.Message, kafka.Message] {
+	return func(m kafka.Message) (kafka.Message, error) {
+		var err error
+		m.Headers, err = produceHeaders(decorators...)
+		if err != nil {
+			return m, err
+		}
+		return m, nil
 	}
 }
 

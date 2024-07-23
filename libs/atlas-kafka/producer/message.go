@@ -30,33 +30,24 @@ type RawMessage struct {
 	Value interface{}
 }
 
-func MessageProvider(decorators ...HeaderDecorator) func(messages []RawMessage) model.SliceProvider[kafka.Message] {
-	return func(messages []RawMessage) model.SliceProvider[kafka.Message] {
-		return model.SliceMap(model.FixedSliceProvider(messages), transformer(decorators...), model.ParallelMap())
-	}
+func MessageProvider(mp model.SliceProvider[RawMessage]) model.SliceProvider[kafka.Message] {
+	return model.SliceMap(mp, transformer, model.ParallelMap())
 }
 
-func SingleMessageProvider(decorators ...HeaderDecorator) func(key []byte, value interface{}) model.SliceProvider[kafka.Message] {
-	return func(key []byte, value interface{}) model.SliceProvider[kafka.Message] {
-		return MessageProvider(decorators...)([]RawMessage{{Key: key, Value: value}})
-	}
+func SingleMessageProvider(key []byte, value interface{}) model.SliceProvider[kafka.Message] {
+	return MessageProvider(model.FixedSingleSliceProvider(RawMessage{Key: key, Value: value}))
 }
 
-func transformer(decorators ...HeaderDecorator) func(m RawMessage) (kafka.Message, error) {
-	return func(rm RawMessage) (kafka.Message, error) {
-		var value []byte
-		value, err := json.Marshal(rm.Value)
-		if err != nil {
-			return kafka.Message{}, err
-		}
-
-		m := kafka.Message{Key: rm.Key, Value: value}
-		m.Headers, err = produceHeaders(decorators...)
-		if err != nil {
-			return kafka.Message{}, err
-		}
-		return m, nil
+func transformer(rm RawMessage) (kafka.Message, error) {
+	var value []byte
+	value, err := json.Marshal(rm.Value)
+	if err != nil {
+		return kafka.Message{}, err
 	}
+
+	m := kafka.Message{Key: rm.Key, Value: value}
+	//m.Headers, err = produceHeaders(decorators...)
+	return m, nil
 }
 
 type MessageProducer func(provider model.SliceProvider[kafka.Message]) error

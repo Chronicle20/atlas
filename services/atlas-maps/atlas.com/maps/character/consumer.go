@@ -26,9 +26,13 @@ func StatusEventLogoutRegister(l logrus.FieldLogger) (string, handler.Handler) {
 	return kafka.LookupTopic(l)(EnvEventTopicCharacterStatus), message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout))
 }
 
+func StatusEventMapChangedRegister(l logrus.FieldLogger) (string, handler.Handler) {
+	return kafka.LookupTopic(l)(EnvEventTopicCharacterStatus), message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged))
+}
+
 func handleStatusEventLogin(l logrus.FieldLogger, span opentracing.Span, event statusEvent[statusEventLoginBody]) {
 	if event.Type == EventCharacterStatusTypeLogin {
-		l.Debugf("Received CharacterStatus [%s] Event. characterId [%d] worldId [%d] channelId [%d] mapId [%d].", event.Type, event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.MapId)
+		l.Debugf("Character [%d] has logged in. worldId [%d] channelId [%d] mapId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.MapId)
 		_map.Enter(l, span, event.Tenant)(event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
 		return
 	}
@@ -36,8 +40,15 @@ func handleStatusEventLogin(l logrus.FieldLogger, span opentracing.Span, event s
 
 func handleStatusEventLogout(l logrus.FieldLogger, span opentracing.Span, event statusEvent[statusEventLogoutBody]) {
 	if event.Type == EventCharacterStatusTypeLogout {
-		l.Debugf("Received CharacterStatus [%s] Event. characterId [%d] worldId [%d] channelId [%d] mapId [%d].", event.Type, event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.MapId)
+		l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.MapId)
 		_map.Exit(l, span, event.Tenant)(event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
 		return
+	}
+}
+
+func handleStatusEventMapChanged(l logrus.FieldLogger, span opentracing.Span, event statusEvent[statusEventMapChangedBody]) {
+	if event.Type == EventCharacterStatusTypeMapChanged {
+		l.Debugf("Character [%d] has changed maps. worldId [%d] channelId [%d] oldMapId [%d] newMapId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.OldMapId, event.Body.TargetMapId)
+		_map.Transition(l, span, event.Tenant)(event.WorldId, event.Body.ChannelId, event.Body.TargetMapId, event.CharacterId, event.Body.OldMapId)
 	}
 }

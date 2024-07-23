@@ -6,7 +6,6 @@ import (
 	"atlas-maps/tracing"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-rest/server"
 	"io"
 	"os"
 	"os/signal"
@@ -55,12 +54,11 @@ func main() {
 		}
 	}(tc)
 
-	server.CreateService(l, ctx, wg, GetServer().GetPrefix())
-
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, ctx, wg)(character.StatusEventConsumer(l)(consumerGroupId))
 	_, _ = cm.RegisterHandler(character.StatusEventLoginRegister(l))
 	_, _ = cm.RegisterHandler(character.StatusEventLogoutRegister(l))
+	_, _ = cm.RegisterHandler(character.StatusEventMapChangedRegister(l))
 
 	// trap sigterm or interrupt and gracefully shutdown the server
 	c := make(chan os.Signal, 1)

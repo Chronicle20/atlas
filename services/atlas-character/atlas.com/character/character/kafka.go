@@ -38,9 +38,10 @@ type statusEventLogoutBody struct {
 }
 
 type statusEventMapChangedBody struct {
-	ChannelId byte   `json:"channelId"`
-	OldMapId  uint32 `json:"oldMapId"`
-	NewMapId  uint32 `json:"newMapId"`
+	ChannelId      byte   `json:"channelId"`
+	OldMapId       uint32 `json:"oldMapId"`
+	TargetMapId    uint32 `json:"targetMapId"`
+	TargetPortalId uint32 `json:"targetPortalId"`
 }
 
 type commandEvent[E any] struct {

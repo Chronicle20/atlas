@@ -238,7 +238,7 @@ func ChangeMap(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant 
 			l.WithError(err).Errorf("Error updating characters [%d] map.", characterId)
 			return
 		}
-		changeMapSuccess(l, span, tenant)(worldId, channelId, c.MapId(), mapId, portalId)
+		_ = changeMapSuccess(l, span, tenant)(worldId, channelId, c.MapId(), mapId, portalId)(c)
 	}
 }
 

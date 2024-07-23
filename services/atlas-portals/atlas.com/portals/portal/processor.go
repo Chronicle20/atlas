@@ -50,10 +50,34 @@ func Enter(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fun
 
 		if p.HasTargetMap() {
 			l.Debugf("Portal [%s] has target. Transfering character [%d] to [%d].", p.String(), characterId, p.TargetMapId())
-			character.EnableActions(l, span, tenant)(worldId, channelId, characterId)
+
+			var tp Model
+			tp, err = GetInMapByName(l, span, tenant)(p.TargetMapId(), p.Target())
+			if err != nil {
+				l.WithError(err).Warnf("Unable to locate portal target [%s] for map [%d]. Defaulting to portal 0.", p.Target(), p.TargetMapId())
+				tp, err = GetInMapById(l, span, tenant)(p.TargetMapId(), 0)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to locate portal 0 for map [%d]. Is there invalid wz data?", p.TargetMapId())
+					character.EnableActions(l, span, tenant)(worldId, channelId, characterId)
+					return
+				}
+			}
+			WarpById(l, span, tenant)(worldId, channelId, characterId, p.TargetMapId(), tp.Id())
 			return
 		}
 
 		character.EnableActions(l, span, tenant)(worldId, channelId, characterId)
+	}
+}
+
+func WarpById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, characterId uint32, mapId uint32, portalId uint32) {
+	return func(worldId byte, channelId byte, characterId uint32, mapId uint32, portalId uint32) {
+		WarpToPortal(l, span, tenant)(worldId, channelId, characterId, mapId, model.FixedIdProvider(portalId))
+	}
+}
+
+func WarpToPortal(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, characterId uint32, mapId uint32, p model.IdProvider[uint32]) {
+	return func(worldId byte, channelId byte, characterId uint32, mapId uint32, p model.IdProvider[uint32]) {
+		character.EmitChangeMap(l, span, tenant)(worldId, channelId, characterId, mapId, p())
 	}
 }

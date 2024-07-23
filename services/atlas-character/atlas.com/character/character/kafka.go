@@ -5,17 +5,21 @@ import (
 )
 
 const (
-	EnvEventTopicCharacterStatus    = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeCreated = "CREATED"
-	EventCharacterStatusTypeLogin   = "LOGIN"
-	EventCharacterStatusTypeLogout  = "LOGOUT"
+	EnvEventTopicCharacterStatus       = "EVENT_TOPIC_CHARACTER_STATUS"
+	EventCharacterStatusTypeCreated    = "CREATED"
+	EventCharacterStatusTypeLogin      = "LOGIN"
+	EventCharacterStatusTypeLogout     = "LOGOUT"
+	EventCharacterStatusTypeMapChanged = "MAP_CHANGED"
+
+	EnvCommandTopic           = "COMMAND_TOPIC_CHARACTER"
+	CommandCharacterChangeMap = "CHANGE_MAP"
 )
 
 type statusEvent[E any] struct {
 	Tenant      tenant.Model `json:"tenant"`
+	WorldId     byte         `json:"worldId"`
 	CharacterId uint32       `json:"characterId"`
 	Type        string       `json:"type"`
-	WorldId     byte         `json:"worldId"`
 	Body        E            `json:"body"`
 }
 
@@ -31,4 +35,24 @@ type statusEventLoginBody struct {
 type statusEventLogoutBody struct {
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
+}
+
+type statusEventMapChangedBody struct {
+	ChannelId byte   `json:"channelId"`
+	OldMapId  uint32 `json:"oldMapId"`
+	NewMapId  uint32 `json:"newMapId"`
+}
+
+type commandEvent[E any] struct {
+	Tenant      tenant.Model `json:"tenant"`
+	WorldId     byte         `json:"worldId"`
+	CharacterId uint32       `json:"characterId"`
+	Type        string       `json:"type"`
+	Body        E            `json:"body"`
+}
+
+type changeMapBody struct {
+	ChannelId byte   `json:"channelId"`
+	MapId     uint32 `json:"mapId"`
+	PortalId  uint32 `json:"portalId"`
 }

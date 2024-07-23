@@ -17,6 +17,7 @@ A RESTful resource which provides character services.
 - GAME_DATA_SERVICE_URL - [scheme]://[host]:[port]/api/gis/
 - EQUIPABLE_SERVICE_URL - [scheme]://[host]:[port]/api/ess/
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
+- COMMAND_TOPIC_CHARACTER - Kafka Topic for transmitting character commands
 - COMMAND_TOPIC_EQUIP_ITEM - Kafka Topic for transmitting equip item commands
 - COMMAND_TOPIC_UNEQUIP_ITEM - Kafka Topic for transmitting unequip item commands
 - EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for transmitting character status events

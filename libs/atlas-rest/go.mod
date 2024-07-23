@@ -3,7 +3,7 @@ module github.com/Chronicle20/atlas-rest
 go 1.21.6
 
 require (
-	github.com/Chronicle20/atlas-model v0.0.0-20240707172702-3d0c637b3cb5
+	github.com/Chronicle20/atlas-model v0.0.0-20240723201222-905024c17a7e
 	github.com/gorilla/mux v1.8.1
 	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6
 	github.com/sirupsen/logrus v1.9.3

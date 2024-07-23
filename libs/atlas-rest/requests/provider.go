@@ -17,13 +17,13 @@ func Provider[A any, M any](l logrus.FieldLogger) func(r Request[A], t model.Tra
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SliceProvider[A any, M any](l logrus.FieldLogger) func(r Request[[]A], t model.Transformer[A, M], filters ...model.Filter[M]) model.SliceProvider[M] {
-	return func(r Request[[]A], t model.Transformer[A, M], filters ...model.Filter[M]) model.SliceProvider[M] {
+func SliceProvider[A any, M any](l logrus.FieldLogger) func(r Request[[]A], t model.Transformer[A, M], filters ...model.Filter[M]) model.Provider[[]M] {
+	return func(r Request[[]A], t model.Transformer[A, M], filters ...model.Filter[M]) model.Provider[[]M] {
 		resp, err := r(l)
 		if err != nil {
-			return model.ErrorSliceProvider[M](err)
+			return model.ErrorProvider[[]M](err)
 		}
-		sm := model.SliceMap[A, M](model.FixedSliceProvider(resp), t)
+		sm := model.SliceMap[A, M](model.FixedProvider(resp), t)
 		return model.FilteredProvider[M](sm, filters...)
 	}
 }

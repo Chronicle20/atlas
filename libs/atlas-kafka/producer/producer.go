@@ -69,9 +69,6 @@ func Produce(l logrus.FieldLogger) func(provider model.Provider[Writer]) func(de
 			if err != nil {
 				return ErrMessageProducer(err)
 			}
-			defer func(w Writer) {
-				_ = w.Close()
-			}(w)
 
 			return func(provider model.SliceProvider[kafka.Message]) error {
 				var ms []kafka.Message

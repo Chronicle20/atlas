@@ -6,7 +6,7 @@ require (
 	github.com/Chronicle20/atlas-kafka v1.0.0
 	github.com/Chronicle20/atlas-model v1.0.0
 	github.com/Chronicle20/atlas-rest v1.0.0
-	github.com/Chronicle20/atlas-socket v1.0.0
+	github.com/Chronicle20/atlas-socket v1.1.0
 	github.com/google/uuid v1.6.0
 	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6
 	github.com/opentracing/opentracing-go v1.2.0

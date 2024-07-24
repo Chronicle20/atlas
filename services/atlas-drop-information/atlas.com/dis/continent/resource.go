@@ -2,6 +2,8 @@ package continent
 
 import (
 	"atlas-dis/rest"
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/manyminds/api2go/jsonapi"
 	"github.com/opentracing/opentracing-go"
@@ -33,19 +35,15 @@ func handleGetContinents(si jsonapi.ServerInformation) func(l logrus.FieldLogger
 	return func(l logrus.FieldLogger, db *gorm.DB) func(span opentracing.Span) http.HandlerFunc {
 		return func(span opentracing.Span) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				res, err := jsonapi.MarshalWithURLs(TransformAll(GetAll(l, db)), si)
+				cs := GetAll(l, db)
+				res, err := model.SliceMap(model.FixedProvider(cs), Transform)()
 				if err != nil {
 					l.WithError(err).Errorf("Unable to marshal models.")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 
-				_, err = w.Write(res)
-				if err != nil {
-					l.WithError(err).Errorf("Unable to write response.")
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
+				server.Marshal[[]RestModel](l)(w)(si)(res)
 			}
 		}
 	}

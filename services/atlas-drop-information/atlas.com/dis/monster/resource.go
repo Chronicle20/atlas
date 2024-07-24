@@ -2,6 +2,8 @@ package monster
 
 import (
 	"atlas-dis/rest"
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/manyminds/api2go/jsonapi"
 	"github.com/opentracing/opentracing-go"
@@ -52,37 +54,35 @@ func handleGetMonsters(si jsonapi.ServerInformation) func(l logrus.FieldLogger, 
 		return func(span opentracing.Span) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				vars := mux.Vars(r)
-				var res []byte
-				var err error
 
 				if val, ok := vars["item_id"]; ok {
 					var itemId uint64
-					itemId, err = strconv.ParseUint(val, 10, 32)
+					itemId, err := strconv.ParseUint(val, 10, 32)
 					if err != nil {
 						w.WriteHeader(http.StatusBadRequest)
 						return
 					}
 
-					res, err = jsonapi.MarshalWithURLs(TransformAll(GetWhoDropItem(l, db)(uint32(itemId))), si)
+					ms := GetWhoDropItem(l, db)(uint32(itemId))
+
+					res, err := model.SliceMap(model.FixedProvider(ms), Transform)()
 					if err != nil {
+						l.WithError(err).Errorf("Creating REST model.")
 						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
-				} else {
-					res, err = jsonapi.MarshalWithURLs(TransformAll(GetAll(l, db)), si)
-					if err != nil {
-						l.WithError(err).Errorf("Unable to marshal models.")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
+					server.Marshal[[]RestModel](l)(w)(si)(res)
+					return
 				}
 
-				_, err = w.Write(res)
+				ms := GetAll(l, db)
+				res, err := model.SliceMap(model.FixedProvider(ms), Transform)()
 				if err != nil {
-					l.WithError(err).Errorf("Unable to write response.")
+					l.WithError(err).Errorf("Creating REST model.")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
+				server.Marshal[[]RestModel](l)(w)(si)(res)
 			}
 		}
 	}
@@ -110,18 +110,13 @@ func handleGetMonster(si jsonapi.ServerInformation) func(l logrus.FieldLogger, d
 						return
 					}
 
-					res, err := jsonapi.MarshalWithURLs(Transform(m), si)
+					res, err := model.Map(model.FixedProvider(m), Transform)()
 					if err != nil {
-						l.WithError(err).Errorf("Unable to marshal models.")
+						l.WithError(err).Errorf("Creating REST model.")
 						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
-					_, err = w.Write(res)
-					if err != nil {
-						l.WithError(err).Errorf("Unable to write response.")
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
+					server.Marshal[RestModel](l)(w)(si)(res)
 				}
 			}
 		}

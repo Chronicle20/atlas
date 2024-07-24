@@ -2,6 +2,7 @@ package monster
 
 import (
 	"atlas-dis/monster/drop"
+	model2 "github.com/Chronicle20/atlas-model/model"
 	"github.com/manyminds/api2go/jsonapi"
 	"strconv"
 )
@@ -45,21 +46,15 @@ func (p RestModel) GetID() string {
 	return p.ID
 }
 
-func TransformAll(models []Model) []RestModel {
-	rms := make([]RestModel, 0)
-	for _, m := range models {
-		rms = append(rms, Transform(m))
-	}
-	return rms
-}
-
-func Transform(model Model) RestModel {
+func Transform(model Model) (RestModel, error) {
 	rm := RestModel{
 		ID:    strconv.Itoa(int(model.id)),
 		Drops: make([]drop.RestModel, 0),
 	}
-	for _, m := range model.drops {
-		rm.Drops = append(rm.Drops, drop.Transform(m))
+	ds, err := model2.SliceMap(model2.FixedProvider(model.drops), drop.Transform)()
+	if err != nil {
+		return RestModel{}, err
 	}
-	return rm
+	rm.Drops = ds
+	return rm, nil
 }

@@ -19,15 +19,7 @@ func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
-func TransformAll(models []Model) []RestModel {
-	rms := make([]RestModel, 0)
-	for _, m := range models {
-		rms = append(rms, Transform(m))
-	}
-	return rms
-}
-
-func Transform(model Model) RestModel {
+func Transform(model Model) (RestModel, error) {
 	rm := RestModel{
 		Id:              model.id,
 		ItemId:          model.itemId,
@@ -36,5 +28,5 @@ func Transform(model Model) RestModel {
 		QuestId:         model.questId,
 		Chance:          model.chance,
 	}
-	return rm
+	return rm, nil
 }

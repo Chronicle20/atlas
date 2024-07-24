@@ -7,19 +7,19 @@ import (
 	"gorm.io/gorm"
 )
 
-func getAll() database.EntitySliceProvider[entity] {
-	return func(db *gorm.DB) model.SliceProvider[entity] {
+func getAll() database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
 		var results []entity
 		err := db.Find(&results).Error
 		if err != nil {
-			return model.ErrorSliceProvider[entity](err)
+			return model.ErrorProvider[[]entity](err)
 		}
-		return model.FixedSliceProvider(results)
+		return model.FixedProvider(results)
 	}
 }
 
-func getByMonsterId(monsterId uint32) database.EntitySliceProvider[entity] {
-	return func(db *gorm.DB) model.SliceProvider[entity] {
+func getByMonsterId(monsterId uint32) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
 		return database.SliceQuery[entity](db, &entity{MonsterId: monsterId})
 	}
 }

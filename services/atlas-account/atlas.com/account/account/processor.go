@@ -2,6 +2,7 @@ package account
 
 import (
 	"atlas-account/database"
+	"atlas-account/kafka/producer"
 	"atlas-account/tenant"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
@@ -59,8 +60,8 @@ func byIdProvider(db *gorm.DB) func(tenant tenant.Model, id uint32) model.Provid
 	}
 }
 
-func byNameProvider(db *gorm.DB) func(tenant tenant.Model, name string) model.SliceProvider[Model] {
-	return func(tenant tenant.Model, name string) model.SliceProvider[Model] {
+func byNameProvider(db *gorm.DB) func(tenant tenant.Model, name string) model.Provider[[]Model] {
+	return func(tenant tenant.Model, name string) model.Provider[[]Model] {
 		return database.ModelSliceProvider[Model, entity](db)(entitiesByName(tenant, name), modelFromEntity)
 	}
 }
@@ -87,7 +88,7 @@ func GetByName(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name
 	}
 }
 
-func allInTransitionProvider(db *gorm.DB) model.SliceProvider[Model] {
+func allInTransitionProvider(db *gorm.DB) model.Provider[[]Model] {
 	return database.ModelSliceProvider[Model, entity](db)(entitiesInTransition, modelFromEntity)
 }
 
@@ -126,7 +127,7 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 			return Model{}, err
 		}
 		l.Debugf("Created account [%d] for [%s].", m.Id(), m.Name())
-		emitCreatedEvent(l, span, tenant)(m.Id(), name)
+		_ = producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(createdEventProvider()(tenant, m.Id(), name))
 		return m, nil
 	}
 }
@@ -150,7 +151,7 @@ func Update(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(account
 			modifiers = append(modifiers, updatePic(input.pic))
 		}
 		if a.tos != input.tos && input.tos != false {
-			l.Debugf("Updating TOS [%s] of account [%d].", input.tos, accountId)
+			l.Debugf("Updating TOS [%t] of account [%d].", input.tos, accountId)
 			modifiers = append(modifiers, updateTos(input.tos))
 		}
 

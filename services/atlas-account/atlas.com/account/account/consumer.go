@@ -1,10 +1,11 @@
 package account
 
 import (
-	"atlas-account/kafka"
+	consumer2 "atlas-account/kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
+	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -16,7 +17,7 @@ const (
 
 func CreateAccountCommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return kafka.NewConfig(l)(consumerNameCreate)(EnvCommandTopicCreateAccount)(groupId)
+		return consumer2.NewConfig(l)(consumerNameCreate)(EnvCommandTopicCreateAccount)(groupId)
 	}
 }
 
@@ -32,5 +33,6 @@ func handleCreateAccountCommand(db *gorm.DB) message.Handler[createCommand] {
 }
 
 func CreateAccountRegister(l *logrus.Logger, db *gorm.DB) (string, handler.Handler) {
-	return kafka.LookupTopic(l)(EnvCommandTopicCreateAccount), message.AdaptHandler(message.PersistentConfig(handleCreateAccountCommand(db)))
+	t, _ := topic.EnvProvider(l)(EnvCommandTopicCreateAccount)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleCreateAccountCommand(db)))
 }

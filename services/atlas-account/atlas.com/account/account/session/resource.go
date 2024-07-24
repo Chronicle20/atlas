@@ -2,6 +2,7 @@ package session
 
 import (
 	"atlas-account/account"
+	"atlas-account/kafka/producer"
 	"atlas-account/rest"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -33,7 +34,7 @@ func handleCreateSession(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			resp := AttemptLogin(d.Logger(), d.DB(), d.Span(), c.Tenant())(input.SessionId, input.Name, input.Password)
-			res, err := model.Transform(resp, Transform)
+			res, err := model.Map(model.FixedProvider(resp), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -48,7 +49,7 @@ func handleUpdateSession(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			resp := ProgressState(d.Logger(), d.DB(), d.Span(), c.Tenant())(input.SessionId, accountId, account.State(input.State))
-			res, err := model.Transform(resp, Transform)
+			res, err := model.Map(model.FixedProvider(resp), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -62,7 +63,7 @@ func handleUpdateSession(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 func handleDeleteSession(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			emitLogoutCommand(d.Logger(), d.Span(), c.Tenant())(accountId)
+			_ = producer.ProviderImpl(d.Logger())(d.Span())(EnvCommandTopicAccountLogout)(logoutCommandProvider(c.Tenant(), accountId))
 			w.WriteHeader(http.StatusAccepted)
 		}
 	})

@@ -3,6 +3,7 @@ package session
 import (
 	"atlas-account/account"
 	"atlas-account/configuration"
+	"atlas-account/kafka/producer"
 	"atlas-account/tenant"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
@@ -63,7 +64,7 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 		}
 
 		l.Debugf("Login successful for [%s].", name)
-		emitLoggedInEvent(l, span, tenant)
+		_ = producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedInEventProvider()(tenant, a.Id(), name))
 
 		if !a.TOS() && tenant.Region != "JMS" {
 			return ErrorModel(LicenseAgreement)

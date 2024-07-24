@@ -175,13 +175,13 @@ func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) f
 	}
 }
 
-func portalProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.SliceProvider[portal.Model] {
-	return func(mapId uint32) model.SliceProvider[portal.Model] {
+func portalProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.Provider[[]portal.Model] {
+	return func(mapId uint32) model.Provider[[]portal.Model] {
 		m, err := byIdProvider(l, span, tenant)(mapId)()
 		if err != nil {
-			return model.ErrorSliceProvider[portal.Model](err)
+			return model.ErrorProvider[[]portal.Model](err)
 		}
-		return model.FixedSliceProvider(m.portals)
+		return model.FixedProvider(m.portals)
 	}
 }
 
@@ -215,13 +215,13 @@ func PortalIdFilter(portalId uint32) model.Filter[portal.Model] {
 	}
 }
 
-func reactorProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.SliceProvider[reactor.Model] {
-	return func(mapId uint32) model.SliceProvider[reactor.Model] {
+func reactorProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.Provider[[]reactor.Model] {
+	return func(mapId uint32) model.Provider[[]reactor.Model] {
 		m, err := byIdProvider(l, span, tenant)(mapId)()
 		if err != nil {
-			return model.ErrorSliceProvider[reactor.Model](err)
+			return model.ErrorProvider[[]reactor.Model](err)
 		}
-		return model.FixedSliceProvider(m.reactors)
+		return model.FixedProvider(m.reactors)
 	}
 }
 
@@ -231,13 +231,13 @@ func GetReactors(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 	}
 }
 
-func npcProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.SliceProvider[npc.Model] {
-	return func(mapId uint32) model.SliceProvider[npc.Model] {
+func npcProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.Provider[[]npc.Model] {
+	return func(mapId uint32) model.Provider[[]npc.Model] {
 		m, err := byIdProvider(l, span, tenant)(mapId)()
 		if err != nil {
-			return model.ErrorSliceProvider[npc.Model](err)
+			return model.ErrorProvider[[]npc.Model](err)
 		}
-		return model.FixedSliceProvider(m.npcs)
+		return model.FixedProvider(m.npcs)
 	}
 }
 
@@ -271,13 +271,13 @@ func NPCObjectIdFilter(id uint32) model.Filter[npc.Model] {
 	}
 }
 
-func monsterProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.SliceProvider[monster.Model] {
-	return func(mapId uint32) model.SliceProvider[monster.Model] {
+func monsterProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.Provider[[]monster.Model] {
+	return func(mapId uint32) model.Provider[[]monster.Model] {
 		m, err := byIdProvider(l, span, tenant)(mapId)()
 		if err != nil {
-			return model.ErrorSliceProvider[monster.Model](err)
+			return model.ErrorProvider[[]monster.Model](err)
 		}
-		return model.FixedSliceProvider(m.monsters)
+		return model.FixedProvider(m.monsters)
 	}
 }
 

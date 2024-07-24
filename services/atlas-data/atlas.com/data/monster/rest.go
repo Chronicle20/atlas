@@ -50,32 +50,32 @@ func (r RestModel) GetID() string {
 }
 
 func Transform(m Model) (RestModel, error) {
-	lis, err := model.TransformAll(m.loseItems, TransformLoseItem)
+	lis, err := model.SliceMap(model.FixedProvider(m.loseItems), TransformLoseItem)()
 	if err != nil {
 		return RestModel{}, err
 	}
-	ss, err := model.TransformAll(m.skills, TransformSkill)
+	ss, err := model.SliceMap(model.FixedProvider(m.skills), TransformSkill)()
 	if err != nil {
 		return RestModel{}, err
 	}
 
 	var b banish = banish{}
 	if m.banish != nil {
-		b, err = model.Transform(*m.banish, TransformBanish)
+		b, err = model.Map(model.FixedProvider(*m.banish), TransformBanish)()
 		if err != nil {
 			return RestModel{}, err
 		}
 	}
 	var sd selfDestruction = selfDestruction{}
 	if m.selfDestruction != nil {
-		sd, err = model.Transform(*m.selfDestruction, TransformSelfDestruction)
+		sd, err = model.Map(model.FixedProvider(*m.selfDestruction), TransformSelfDestruction)()
 		if err != nil {
 			return RestModel{}, err
 		}
 	}
 	var cd coolDamage = coolDamage{}
 	if m.coolDamage != nil {
-		cd, err = model.Transform(*m.coolDamage, TransformCoolDamage)
+		cd, err = model.Map(model.FixedProvider(*m.coolDamage), TransformCoolDamage)()
 		if err != nil {
 			return RestModel{}, err
 		}

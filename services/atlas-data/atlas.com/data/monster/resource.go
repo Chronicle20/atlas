@@ -35,7 +35,7 @@ func handleGetMonsterRequest(d *rest.HandlerDependency, c *rest.HandlerContext) 
 				return
 			}
 
-			res, err := model.Transform(m, Transform)
+			res, err := model.Map(model.FixedProvider(m), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -57,7 +57,7 @@ func handleGetMonsterLoseItemsRequest(d *rest.HandlerDependency, c *rest.Handler
 				return
 			}
 
-			res, err := model.TransformAll(m.loseItems, TransformLoseItem)
+			res, err := model.SliceMap(model.FixedProvider(m.loseItems), TransformLoseItem)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)

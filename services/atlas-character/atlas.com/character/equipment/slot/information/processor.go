@@ -8,8 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ByIdModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) model.SliceProvider[Model] {
-	return func(id uint32) model.SliceProvider[Model] {
+func ByIdModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) model.Provider[[]Model] {
+	return func(id uint32) model.Provider[[]Model] {
 		return requests.SliceProvider[RestModel, Model](l)(requestEquipmentSlotDestination(l, span, tenant)(id), Extract)
 	}
 }

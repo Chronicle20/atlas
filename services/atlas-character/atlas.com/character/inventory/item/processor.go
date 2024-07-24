@@ -9,8 +9,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func ByInventoryProvider(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(inventoryId uint32) model.SliceProvider[Model] {
-	return func(inventoryId uint32) model.SliceProvider[Model] {
+func ByInventoryProvider(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(inventoryId uint32) model.Provider[[]Model] {
+	return func(inventoryId uint32) model.Provider[[]Model] {
 		return database.ModelSliceProvider[Model, entity](db)(getByInventory(tenant.Id, inventoryId), makeModel)
 	}
 }
@@ -66,7 +66,7 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(cha
 		if err != nil {
 			return model.ErrorProvider[slottable.Slottable](err)
 		}
-		slot, err := slottable.GetNextFreeSlot(model.SliceMap(model.FixedSliceProvider(ms), slottableTransformer))
+		slot, err := slottable.GetNextFreeSlot(model.SliceMap(model.FixedProvider(ms), slottableTransformer))
 		if err != nil {
 			return model.ErrorProvider[slottable.Slottable](err)
 		}

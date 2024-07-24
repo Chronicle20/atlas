@@ -5,6 +5,7 @@ import (
 	slot2 "atlas-character/equipment/slot"
 	"atlas-character/equipment/slot/information"
 	"atlas-character/inventory/item"
+	"atlas-character/kafka/producer"
 	"atlas-character/slottable"
 	"atlas-character/tenant"
 	"errors"
@@ -14,8 +15,6 @@ import (
 	"gorm.io/gorm"
 	"math"
 )
-
-type ItemProvider[M any] func(inventoryId uint32) model.SliceProvider[M]
 
 func byCharacterIdProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
@@ -194,7 +193,7 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 			return err
 		}
 		for _, event := range events {
-			emitItemGainEvent(l, span, tenant)(characterId, event.ItemId(), event.ChangedQuantity(), event.Slot())
+			_ = producer.ProviderImpl(l)(span)(EnvEventTopicItemGain)(itemGainEventProvider(tenant, characterId, event.ItemId(), event.ChangedQuantity(), event.Slot()))
 			//emitInventoryModificationEvent(l, span)(characterId, true, e.Mode(), e.ItemId(), e.InventoryType(), e.Quantity(), e.Slot(), e.OldSlot())
 		}
 		return err
@@ -327,7 +326,7 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 					return err
 				}
 				l.Debugf("Moved item from temporary location [%d] to slot [%d] for character [%d].", temporarySlot, existingSlot, characterId)
-				emitItemUnequipped(l, span, tenant)(characterId, equip.ItemId())
+				_ = producer.ProviderImpl(l)(span)(EnvEventTopicEquipChanged)(itemUnequippedProvider(tenant, characterId, equip.ItemId()))
 			}
 
 			l.Debugf("Now verifying other inventory operations that may be necessary.")
@@ -356,7 +355,7 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 						return err
 					}
 					l.Debugf("Moved bottom to slot [%d] for character [%d].", newSlot, characterId)
-					emitItemUnequipped(l, span, tenant)(characterId, equip.ItemId())
+					_ = producer.ProviderImpl(l)(span)(EnvEventTopicEquipChanged)(itemUnequippedProvider(tenant, characterId, equip.ItemId()))
 				} else {
 					l.Debugf("No bottom to unequip.")
 				}
@@ -375,7 +374,7 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 						return err
 					}
 					l.Debugf("Moved overall to slot [%d] for character [%d].", newSlot, characterId)
-					emitItemUnequipped(l, span, tenant)(characterId, equip.ItemId())
+					_ = producer.ProviderImpl(l)(span)(EnvEventTopicEquipChanged)(itemUnequippedProvider(tenant, characterId, equip.ItemId()))
 				}
 			}
 			return nil
@@ -385,7 +384,7 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 			return
 		}
 
-		emitItemEquipped(l, span, tenant)(characterId, e.ItemId())
+		_ = producer.ProviderImpl(l)(span)(EnvEventTopicEquipChanged)(itemEquippedProvider(tenant, characterId, e.ItemId()))
 		//emitInventoryModificationEvent(l, span)(characterId, true, 2, e.ItemId(), TypeValueEquip, 1, slot, existingSlot)
 	}
 }
@@ -435,7 +434,7 @@ func UnequipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing
 			l.WithError(txErr).Errorf("Unable to complete unequiping item at [%d] for character [%d].", oldSlot, characterId)
 			return
 		}
-		emitItemUnequipped(l, span, tenant)(characterId, e.ItemId())
+		_ = producer.ProviderImpl(l)(span)(EnvEventTopicEquipChanged)(itemUnequippedProvider(tenant, characterId, e.ItemId()))
 		//emitInventoryModificationEvent(l, span)(characterId, true, 2, itemId, TypeValueEquip, 1, newSlot, oldSlot)
 	}
 }

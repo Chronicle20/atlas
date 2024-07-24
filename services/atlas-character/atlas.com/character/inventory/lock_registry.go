@@ -9,14 +9,14 @@ type lockRegistry struct {
 	locks sync.Map
 }
 
-var t *lockRegistry
+var lr *lockRegistry
 var once sync.Once
 
 func GetLockRegistry() *lockRegistry {
 	once.Do(func() {
-		t = &lockRegistry{}
+		lr = &lockRegistry{}
 	})
-	return t
+	return lr
 }
 
 // lockKey is a helper function to generate a unique key for each inventory lock

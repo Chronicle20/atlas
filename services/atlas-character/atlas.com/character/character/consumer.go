@@ -1,10 +1,11 @@
 package character
 
 import (
-	"atlas-character/kafka"
+	consumer2 "atlas-character/kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
+	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -14,12 +15,13 @@ const consumerCommand = "character_command"
 
 func CommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return kafka.NewConfig(l)(consumerCommand)(EnvCommandTopic)(groupId)
+		return consumer2.NewConfig(l)(consumerCommand)(EnvCommandTopic)(groupId)
 	}
 }
 
 func ChangeMapCommandRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handler) {
-	return kafka.LookupTopic(l)(EnvCommandTopic), message.AdaptHandler(message.PersistentConfig(handleChangeMap(db)))
+	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleChangeMap(db)))
 }
 
 func handleChangeMap(db *gorm.DB) func(l logrus.FieldLogger, span opentracing.Span, command commandEvent[changeMapBody]) {

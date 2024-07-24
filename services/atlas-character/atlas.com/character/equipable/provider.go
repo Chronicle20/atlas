@@ -7,8 +7,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func getByInventory(tenantId uuid.UUID, inventoryId uint32) database.EntitySliceProvider[entity] {
-	return func(db *gorm.DB) model.SliceProvider[entity] {
+func getByInventory(tenantId uuid.UUID, inventoryId uint32) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
 		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, InventoryId: inventoryId})
 	}
 }

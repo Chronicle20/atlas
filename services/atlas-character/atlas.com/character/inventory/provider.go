@@ -13,8 +13,8 @@ func get(tenantId uuid.UUID, characterId uint32, inventoryType Type) database.En
 	}
 }
 
-func getByCharacter(tenantId uuid.UUID, characterId uint32) database.EntitySliceProvider[entity] {
-	return func(db *gorm.DB) model.SliceProvider[entity] {
+func getByCharacter(tenantId uuid.UUID, characterId uint32) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
 		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, CharacterId: characterId})
 	}
 }

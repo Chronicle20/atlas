@@ -11,8 +11,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func byInventoryProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.SliceProvider[Model] {
-	return func(inventoryId uint32) model.SliceProvider[Model] {
+func byInventoryProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.Provider[[]Model] {
+	return func(inventoryId uint32) model.Provider[[]Model] {
 		return database.ModelSliceProvider[Model, entity](db)(getByInventory(tenant.Id, inventoryId), makeModel)
 	}
 }
@@ -30,8 +30,8 @@ func GetEquipment(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 	}
 }
 
-func InInventoryProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.SliceProvider[Model] {
-	return func(inventoryId uint32) model.SliceProvider[Model] {
+func InInventoryProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.Provider[[]Model] {
+	return func(inventoryId uint32) model.Provider[[]Model] {
 		fp := model.FilteredProvider[Model](byInventoryProvider(l, db, span, tenant)(inventoryId), FilterOutEquipment)
 		return model.SliceMap(fp, decorateWithStatistics(l, span, tenant), model.ParallelMap())
 	}
@@ -97,7 +97,7 @@ func GetNextFreeSlot(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, t
 		if err != nil {
 			return model.ErrorProvider[int16](err)
 		}
-		slot, err := slottable.GetNextFreeSlot(model.SliceMap(model.FixedSliceProvider(ms), slottableTransformer))
+		slot, err := slottable.GetNextFreeSlot(model.SliceMap(model.FixedProvider(ms), slottableTransformer))
 		if err != nil {
 			return model.ErrorProvider[int16](err)
 		}

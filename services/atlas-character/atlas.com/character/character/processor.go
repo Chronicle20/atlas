@@ -5,6 +5,7 @@ import (
 	"atlas-character/equipable"
 	"atlas-character/equipment"
 	"atlas-character/inventory"
+	"atlas-character/kafka/producer"
 	"atlas-character/portal"
 	"atlas-character/tenant"
 	"errors"
@@ -30,8 +31,8 @@ func GetById(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(charac
 	}
 }
 
-func byAccountInWorldProvider(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(accountId uint32, worldId byte) model.SliceProvider[Model] {
-	return func(accountId uint32, worldId byte) model.SliceProvider[Model] {
+func byAccountInWorldProvider(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(accountId uint32, worldId byte) model.Provider[[]Model] {
+	return func(accountId uint32, worldId byte) model.Provider[[]Model] {
 		return database.ModelSliceProvider[Model, entity](db)(getForAccountInWorld(tenant.Id, accountId, worldId), makeCharacter)
 	}
 }
@@ -42,8 +43,8 @@ func GetForAccountInWorld(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model
 	}
 }
 
-func byMapInWorld(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(worldId byte, mapId uint32) model.SliceProvider[Model] {
-	return func(worldId byte, mapId uint32) model.SliceProvider[Model] {
+func byMapInWorld(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(worldId byte, mapId uint32) model.Provider[[]Model] {
+	return func(worldId byte, mapId uint32) model.Provider[[]Model] {
 		return database.ModelSliceProvider[Model, entity](db)(getForMapInWorld(tenant.Id, worldId, mapId), makeCharacter)
 	}
 }
@@ -54,8 +55,8 @@ func GetForMapInWorld(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) fu
 	}
 }
 
-func byName(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name string) model.SliceProvider[Model] {
-	return func(name string) model.SliceProvider[Model] {
+func byName(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name string) model.Provider[[]Model] {
+	return func(name string) model.Provider[[]Model] {
 		return database.ModelSliceProvider[Model, entity](db)(getForName(tenant.Id, name), makeCharacter)
 	}
 }
@@ -143,7 +144,7 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 		})
 
 		if err == nil {
-			emitCreatedEvent(l, span, tenant)(res.Id(), res.WorldId(), res.Name())
+			err = producer.ProviderImpl(l)(span)(EnvEventTopicCharacterStatus)(createdEventProvider(tenant, res.Id(), res.WorldId(), res.Name()))
 		}
 		return res, err
 	}
@@ -211,7 +212,7 @@ func Login(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tena
 			l.WithError(err).Errorf("Unable to locate character [%d] whose session was created.", characterId)
 			return
 		}
-		emitLoginEvent(l, span, tenant)(characterId, worldId, channelId, c.MapId(), c.Name())
+		_ = producer.ProviderImpl(l)(span)(EnvEventTopicCharacterStatus)(loginEventProvider(tenant, characterId, worldId, channelId, c.MapId()))
 	}
 }
 
@@ -222,7 +223,7 @@ func Logout(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 			l.WithError(err).Errorf("Unable to locate character [%d] whose session was destroyed.", characterId)
 			return
 		}
-		emitLogoutEvent(l, span, tenant)(characterId, worldId, channelId, c.MapId(), c.Name())
+		_ = producer.ProviderImpl(l)(span)(EnvEventTopicCharacterStatus)(logoutEventProvider(tenant, characterId, worldId, channelId, c.MapId()))
 	}
 }
 
@@ -245,8 +246,7 @@ func ChangeMap(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant 
 func changeMapSuccess(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, oldMapId uint32, targetMapId uint32, targetPortalId uint32) model.Operator[Model] {
 	return func(worldId byte, channelId byte, oldMapId uint32, targetMapId uint32, targetPortalId uint32) model.Operator[Model] {
 		return func(m Model) error {
-			emitMapChangedEvent(l, span, tenant)(m.Id(), worldId, channelId, oldMapId, targetMapId, targetPortalId)
-			return nil
+			return producer.ProviderImpl(l)(span)(EnvEventTopicCharacterStatus)(mapChangedEventProvider(tenant, m.Id(), worldId, channelId, oldMapId, targetMapId, targetPortalId))
 		}
 	}
 }

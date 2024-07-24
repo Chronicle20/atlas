@@ -146,6 +146,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.NPCActionHandle] = handler.NPCActionHandleFunc
 	handlerMap[handler.PortalScriptHandle] = handler.PortalScriptHandleFunc
 	handlerMap[handler.MapChangeHandle] = handler.MapChangeHandleFunc
+	handlerMap[handler.CharacterMoveHandle] = handler.CharacterMoveHandleFunc
 	return handlerMap
 }
 

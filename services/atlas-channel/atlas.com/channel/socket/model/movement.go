@@ -7,8 +7,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const ()
-
 type Movement struct {
 	StartX   int16
 	StartY   int16

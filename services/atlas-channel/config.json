@@ -52,6 +52,24 @@
               "handler": "MapChangeHandle"
             },
             {
+              "opCode": "0x16",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterMoveHandle",
+              "options": {
+                "types": [
+                  {"Name": "NORMAL", "Type": "NORMAL"},
+                  {"Name": "JUMP", "Type": "JUMP"},
+                  {"Name": "IMPACT", "Type": "JUMP"},
+                  {"Name": "IMMEDIATE", "Type": "TELEPORT"},
+                  {"Name": "TELEPORT", "Type": "TELEPORT"},
+                  {"Name": "HANG_ON_BACK", "Type": "NORMAL"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "ASSAULTER", "Type": "TELEPORT"},
+                  {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"}
+                ]
+              }
+            },
+            {
               "opCode": "0x5D",
               "validator": "LoggedInValidator",
               "handler": "NPCActionHandle",
@@ -142,6 +160,38 @@
               "opCode": "0x26",
               "validator": "LoggedInValidator",
               "handler": "MapChangeHandle"
+            },
+            {
+              "opCode": "0x29",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterMoveHandle",
+              "options": {
+                "types": [
+                  {"Name": "NORMAL", "Type": "NORMAL"},
+                  {"Name": "JUMP", "Type": "JUMP"},
+                  {"Name": "IMPACT", "Type": "JUMP"},
+                  {"Name": "IMMEDIATE", "Type": "TELEPORT"},
+                  {"Name": "TELEPORT", "Type": "TELEPORT"},
+                  {"Name": "HANG_ON_BACK", "Type": "NORMAL"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "ASSAULTER", "Type": "TELEPORT"},
+                  {"Name": "ASSASSINATION", "Type": "TELEPORT"},
+                  {"Name": "RUSH", "Type": "TELEPORT"},
+                  {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"},
+                  {"Name": "SIT_DOWN", "Type": "TELEPORT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "START_FALL_DOWN", "Type": "START_FALL_DOWN"},
+                  {"Name": "FALL_DOWN", "Type": "NORMAL"},
+                  {"Name": "START_WINGS", "Type": "JUMP"},
+                  {"Name": "WINGS", "Type": "NORMAL"},
+                  {"Name": "ARAN_ADJUST", "Type": "JUMP"},
+                  {"Name": "MOB_TOSS", "Type": "JUMP"},
+                  {"Name": "DASH_SLIDE", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"}
+                ]
+              }
             },
             {
               "opCode": "0x64",
@@ -267,6 +317,40 @@
               "opCode": "0x28",
               "validator": "LoggedInValidator",
               "handler": "MapChangeHandle"
+            },
+            {
+              "opCode": "0x2B",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterMoveHandle",
+              "options": {
+                "types": [
+                  {"Name": "NORMAL", "Type": "NORMAL"},
+                  {"Name": "JUMP", "Type": "JUMP"},
+                  {"Name": "IMPACT", "Type": "JUMP"},
+                  {"Name": "IMMEDIATE", "Type": "TELEPORT"},
+                  {"Name": "TELEPORT", "Type": "TELEPORT"},
+                  {"Name": "HANG_ON_BACK", "Type": "NORMAL"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "ASSAULTER", "Type": "TELEPORT"},
+                  {"Name": "ASSASSINATION", "Type": "TELEPORT"},
+                  {"Name": "RUSH", "Type": "TELEPORT"},
+                  {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"},
+                  {"Name": "SIT_DOWN", "Type": "TELEPORT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "START_FALL_DOWN", "Type": "START_FALL_DOWN"},
+                  {"Name": "FALL_DOWN", "Type": "NORMAL"},
+                  {"Name": "START_WINGS", "Type": "JUMP"},
+                  {"Name": "WINGS", "Type": "NORMAL"},
+                  {"Name": "ARAN_ADJUST", "Type": "JUMP"},
+                  {"Name": "MOB_TOSS", "Type": "JUMP"},
+                  {"Name": "DASH_SLIDE", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "FLYING_BLOCK", "Type": "FLYING_BLOCK"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"}
+                ]
+              }
             },
             {
               "opCode": "0x67",
@@ -398,6 +482,11 @@
               "handler": "MapChangeHandle"
             },
             {
+              "opCode": "0x2E",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterMoveHandle"
+            },
+            {
               "opCode": "0x6F",
               "validator": "LoggedInValidator",
               "handler": "PortalScriptHandle"
@@ -467,6 +556,48 @@
               "opCode": "0x1D",
               "validator": "LoggedInValidator",
               "handler": "MapChangeHandle"
+            },
+            {
+              "opCode": "0x20",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterMoveHandle",
+              "options": {
+                "types": [
+                  {"Name": "NORMAL", "Type": "NORMAL"},
+                  {"Name": "JUMP", "Type": "JUMP"},
+                  {"Name": "IMPACT", "Type": "JUMP"},
+                  {"Name": "IMMEDIATE", "Type": "TELEPORT"},
+                  {"Name": "TELEPORT", "Type": "TELEPORT"},
+                  {"Name": "HANG_ON_BACK", "Type": "NORMAL"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "ASSAULTER", "Type": "TELEPORT"},
+                  {"Name": "ASSASSINATION", "Type": "TELEPORT"},
+                  {"Name": "RUSH", "Type": "TELEPORT"},
+                  {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"},
+                  {"Name": "SIT_DOWN", "Type": "TELEPORT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "START_FALL_DOWN", "Type": "START_FALL_DOWN"},
+                  {"Name": "FALL_DOWN", "Type": "NORMAL"},
+                  {"Name": "START_WINGS", "Type": "JUMP"},
+                  {"Name": "WINGS", "Type": "NORMAL"},
+                  {"Name": "ARAN_ADJUST", "Type": "JUMP"},
+                  {"Name": "MOB_TOSS", "Type": "JUMP"},
+                  {"Name": "DASH_SLIDE", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "FLYING_BLOCK", "Type": "FLYING_BLOCK"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "MOB_ATK_RUSH", "Type": "NORMAL"},
+                  {"Name": "MOB_ATK_RUSH_STOP", "Type": "NORMAL"}
+                ]
+              }
             },
             {
               "opCode": "0x5F",

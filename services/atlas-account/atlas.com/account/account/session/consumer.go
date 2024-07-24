@@ -43,7 +43,7 @@ func handleLogoutAccountCommand(db *gorm.DB) message.Handler[logoutCommand] {
 			return
 		}
 
-		if command.Issuer == "channel" && a.State() >= 2 {
+		if command.Issuer == "channel" && a.State() > 2 {
 			err = account.SetLoggedOut(db)(command.Tenant, command.AccountId)
 			if err != nil {
 				l.WithError(err).Errorf("Error processing command to logout account [%d].", command.AccountId)

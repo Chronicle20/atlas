@@ -33,8 +33,8 @@ func requestById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 	}
 }
 
-func requestCreate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte, name string, gender byte, jobId job.Id, face uint32, hair uint32, hairColor uint32, skinColor byte) requests.PostRequest[RestModel] {
-	return func(accountId uint32, worldId byte, name string, gender byte, jobId job.Id, face uint32, hair uint32, hairColor uint32, skinColor byte) requests.PostRequest[RestModel] {
+func requestCreate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte, name string, gender byte, jobId job.Id, face uint32, hair uint32, hairColor uint32, skinColor byte) requests.Request[RestModel] {
+	return func(accountId uint32, worldId byte, name string, gender byte, jobId job.Id, face uint32, hair uint32, hairColor uint32, skinColor byte) requests.Request[RestModel] {
 		i := RestModel{
 			AccountId: accountId,
 			WorldId:   worldId,
@@ -54,16 +54,16 @@ func requestCreate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mo
 	}
 }
 
-func requestCreateItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, itemId uint32) requests.PostRequest[item.RestModel] {
-	return func(characterId uint32, itemId uint32) requests.PostRequest[item.RestModel] {
+func requestCreateItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, itemId uint32) requests.Request[item.RestModel] {
+	return func(characterId uint32, itemId uint32) requests.Request[item.RestModel] {
 		inventoryType := uint32(math.Floor(float64(itemId) / 1000000))
 		i := item.RestModel{ItemId: itemId}
 		return rest.MakePostRequest[item.RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+characterItemsResource, characterId, inventoryType), i)
 	}
 }
 
-func requestEquipItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, slotName string, itemId uint32, slot int16) requests.PostRequest[equipable.RestModel] {
-	return func(characterId uint32, slotName string, itemId uint32, slot int16) requests.PostRequest[equipable.RestModel] {
+func requestEquipItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, slotName string, itemId uint32, slot int16) requests.Request[equipable.RestModel] {
+	return func(characterId uint32, slotName string, itemId uint32, slot int16) requests.Request[equipable.RestModel] {
 		e := equipable.RestModel{ItemId: itemId, Slot: slot}
 		return rest.MakePostRequest[equipable.RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+characterEquipmentResource, characterId, strings.ToLower(slotName)), e)
 	}

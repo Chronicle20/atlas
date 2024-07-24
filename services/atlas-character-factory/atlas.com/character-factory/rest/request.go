@@ -34,9 +34,9 @@ func MakeGetRequest[A any](l logrus.FieldLogger, span opentracing.Span, tenant t
 	}
 }
 
-func MakePostRequest[A any](l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(url string, i interface{}) requests.PostRequest[A] {
+func MakePostRequest[A any](l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(url string, i interface{}) requests.Request[A] {
 	hd := requests.SetHeaderDecorator(headerDecorator(l, span, tenant))
-	return func(url string, i interface{}) requests.PostRequest[A] {
+	return func(url string, i interface{}) requests.Request[A] {
 		return requests.MakePostRequest[A](url, i, hd)
 	}
 }

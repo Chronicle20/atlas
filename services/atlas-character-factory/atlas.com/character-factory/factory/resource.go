@@ -31,7 +31,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			return
 		}
 
-		res, err := model.Transform(cm, character.Transform)
+		res, err := model.Map(model.FixedProvider(cm), character.Transform)()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)

@@ -48,8 +48,8 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, span opentracing.Span, w
 			return
 		}
 
-		s = session.SetWorldId(worldId)(s.SessionId())
-		s = session.SetChannelId(channelId)(s.SessionId())
+		s = session.SetWorldId(worldId)(s.Tenant().Id, s.SessionId())
+		s = session.SetChannelId(channelId)(s.Tenant().Id, s.SessionId())
 
 		a, err := account.GetById(l, span, s.Tenant())(s.AccountId())
 		if err != nil {

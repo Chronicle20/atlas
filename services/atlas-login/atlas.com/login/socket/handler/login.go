@@ -79,7 +79,7 @@ func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 				announceError(l, span, wp)(s, writer.SystemError1)
 				return
 			}
-			s = session.SetAccountId(a.Id())(s.SessionId())
+			s = session.SetAccountId(a.Id())(s.Tenant().Id, s.SessionId())
 			session.SessionCreated(producer.ProviderImpl(l)(span), s.Tenant())(s)
 
 			if resp.Code == "OK" {

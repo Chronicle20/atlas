@@ -206,11 +206,14 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 		w.WriteByte(character.SkinColor())
 		w.WriteInt(character.Face())
 		w.WriteInt(character.Hair())
+
 		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
 			writeForEachPet(w, character.Pets(), writePetId, writeEmptyPetId)
 		} else {
 			if len(character.Pets()) > 0 {
 				w.WriteLong(character.Pets()[0].Id()) // pet cash id
+			} else {
+				w.WriteLong(0)
 			}
 		}
 		w.WriteByte(character.Level())
@@ -233,9 +236,7 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 
 		w.WriteInt(character.Experience())
 		w.WriteInt16(character.Fame())
-		if tenant.Region == "GMS" && tenant.MajorVersion > 12 {
-			w.WriteInt(character.GachaponExperience())
-		} else if tenant.Region == "JMS" {
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
 			w.WriteInt(character.GachaponExperience())
 		}
 		w.WriteInt(character.MapId())

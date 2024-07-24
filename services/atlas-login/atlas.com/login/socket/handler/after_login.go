@@ -24,7 +24,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer
 		l.Debugf("AfterLogin handling opt1 [%d] opt2 [%d] pin [%s].", opt1, opt2, pin)
 		if opt1 == 0 && opt2 == 0 {
 			l.Debugf("Account [%d] has chosen not to input PIN. Terminating session.", s.AccountId())
-			session.Destroy(l, span, session.GetRegistry())(s)
+			session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
 			return
 		}
 
@@ -90,7 +90,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer
 		}
 
 		l.Warnf("Client should not have gotten here. Terminating session.")
-		session.Destroy(l, span, session.GetRegistry())(s)
+		session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
 	}
 }
 

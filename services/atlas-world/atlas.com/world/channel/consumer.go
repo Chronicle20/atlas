@@ -1,10 +1,11 @@
 package channel
 
 import (
-	"atlas-world/kafka"
+	consumer2 "atlas-world/kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
+	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
@@ -15,7 +16,7 @@ const (
 
 func EventStatusConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return kafka.NewConfig(l)(consumerNameStatus)(EnvEventTopicChannelStatus)(groupId)
+		return consumer2.NewConfig(l)(consumerNameStatus)(EnvEventTopicChannelStatus)(groupId)
 	}
 }
 
@@ -34,5 +35,6 @@ func handleEventStatus() message.Handler[channelStatusEvent] {
 }
 
 func EventStatusRegister(l *logrus.Logger) (string, handler.Handler) {
-	return kafka.LookupTopic(l)(EnvEventTopicChannelStatus), message.AdaptHandler(message.PersistentConfig(handleEventStatus()))
+	t, _ := topic.EnvProvider(l)(EnvCommandTopicChannelStatus)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleEventStatus()))
 }

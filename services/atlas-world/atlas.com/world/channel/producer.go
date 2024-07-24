@@ -1,45 +1,38 @@
 package channel
 
 import (
-	"atlas-world/kafka"
 	"atlas-world/tenant"
 	"github.com/Chronicle20/atlas-kafka/producer"
-	"github.com/opentracing/opentracing-go"
-	"github.com/sirupsen/logrus"
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/segmentio/kafka-go"
 )
 
-func emitChannelServerStarted(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, ipAddress string, port int) {
-	return func(worldId byte, channelId byte, ipAddress string, port int) {
-		emitChannelServerEvent(l, span, tenant)(worldId, channelId, EventChannelStatusType, ipAddress, port)
-	}
+func emitChannelServerStarted(tenant tenant.Model, worldId byte, channelId byte, ipAddress string, port int) model.Provider[[]kafka.Message] {
+	return emitChannelServerEvent(tenant, worldId, channelId, EventChannelStatusType, ipAddress, port)
 }
 
-func emitChannelServerShutdown(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, ipAddress string, port int) {
-	return func(worldId byte, channelId byte, ipAddress string, port int) {
-		emitChannelServerEvent(l, span, tenant)(worldId, channelId, EventChannelStatusTypeShutdown, ipAddress, port)
-	}
+func emitChannelServerShutdown(tenant tenant.Model, worldId byte, channelId byte, ipAddress string, port int) model.Provider[[]kafka.Message] {
+	return emitChannelServerEvent(tenant, worldId, channelId, EventChannelStatusTypeShutdown, ipAddress, port)
 }
 
-func emitChannelServerEvent(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, status string, ipAddress string, port int) {
-	p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvEventTopicChannelStatus))
-	return func(worldId byte, channelId byte, status string, ipAddress string, port int) {
-		event := &channelStatusEvent{
-			Tenant:    tenant,
-			WorldId:   worldId,
-			ChannelId: channelId,
-			Type:      status,
-			IpAddress: ipAddress,
-			Port:      port,
-		}
-		p([]byte(tenant.Id.String()), event)
+func emitChannelServerEvent(tenant tenant.Model, worldId byte, channelId byte, status string, ipAddress string, port int) model.Provider[[]kafka.Message] {
+	key := []byte(tenant.Id.String())
+	value := &channelStatusEvent{
+		Tenant:    tenant,
+		WorldId:   worldId,
+		ChannelId: channelId,
+		Type:      status,
+		IpAddress: ipAddress,
+		Port:      port,
 	}
+	return producer.SingleMessageProvider(key, value)
 }
 
-func emitChannelServerStatusCommand(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) {
-	p := producer.ProduceEvent(l, span, kafka.LookupTopic(l)(EnvCommandTopicChannelStatus))
-	c := &channelStatusCommand{
+func emitChannelServerStatusCommand(tenant tenant.Model) model.Provider[[]kafka.Message] {
+	key := []byte(tenant.Id.String())
+	value := &channelStatusCommand{
 		Tenant: tenant,
 		Type:   CommandChannelStatusType,
 	}
-	p([]byte(tenant.Id.String()), c)
+	return producer.SingleMessageProvider(key, value)
 }

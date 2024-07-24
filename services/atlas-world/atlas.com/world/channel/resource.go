@@ -1,6 +1,7 @@
 package channel
 
 import (
+	"atlas-world/kafka/producer"
 	"atlas-world/rest"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
@@ -41,7 +42,7 @@ func handleGetChannelServers(d *rest.HandlerDependency, c *rest.HandlerContext) 
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			res, err := model.TransformAll(cs, Transform)
+			res, err := model.SliceMap(model.FixedProvider(cs), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -62,7 +63,7 @@ func handleRegisterChannelServer(d *rest.HandlerDependency, c *rest.HandlerConte
 				return
 			}
 
-			emitChannelServerStarted(d.Logger(), d.Span(), c.Tenant())(worldId, byte(id), input.IpAddress, input.Port)
+			_ = producer.ProviderImpl(d.Logger())(d.Span())(EnvEventTopicChannelStatus)(emitChannelServerStarted(c.Tenant(), worldId, byte(id), input.IpAddress, input.Port))
 			w.WriteHeader(http.StatusAccepted)
 		}
 	})
@@ -78,7 +79,7 @@ func handleUnregisterChannelServer(d *rest.HandlerDependency, c *rest.HandlerCon
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
-				emitChannelServerShutdown(d.Logger(), d.Span(), c.Tenant())(worldId, channelId, ch.IpAddress(), ch.Port())
+				_ = producer.ProviderImpl(d.Logger())(d.Span())(EnvEventTopicChannelStatus)(emitChannelServerShutdown(c.Tenant(), worldId, channelId, ch.IpAddress(), ch.Port()))
 				w.WriteHeader(http.StatusAccepted)
 			}
 		})
@@ -100,7 +101,7 @@ func handleGetChannel(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
-				res, err := model.Transform(ch, Transform)
+				res, err := model.Map(model.FixedProvider(ch), Transform)()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					w.WriteHeader(http.StatusInternalServerError)

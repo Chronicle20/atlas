@@ -63,7 +63,7 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 		}
 
 		l.Debugf("Login successful for [%s].", name)
-		emitLoggedInEvent(l, span, tenant)
+		loggedInEventProvider(l, span, tenant)
 
 		if !a.TOS() && tenant.Region != "JMS" {
 			return ErrorModel(LicenseAgreement)

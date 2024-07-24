@@ -1,6 +1,7 @@
 package account
 
 import (
+	"atlas-account/kafka/producer"
 	"atlas-account/rest"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -36,7 +37,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			im, err := model.Transform(input, Extract)
+			im, err := model.Map(model.FixedProvider(input), Extract)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Invalid input.")
 				w.WriteHeader(http.StatusBadRequest)
@@ -49,7 +50,7 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 				return
 			}
 
-			res, err := model.Transform(a, Transform)
+			res, err := model.Map(model.FixedProvider(a), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -62,7 +63,7 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 
 func handleCreateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		emitCreateCommand(d.Logger(), d.Span(), c.Tenant())(input.Name, input.Password)
+		_ = producer.ProviderImpl(d.Logger())(d.Span())(EnvCommandTopicCreateAccount)(createCommandProvider(c.Tenant(), input.Name, input.Password))
 		w.WriteHeader(http.StatusAccepted)
 	}
 }
@@ -90,7 +91,7 @@ func handleGetAccountByName(d *rest.HandlerDependency, c *rest.HandlerContext) h
 				return
 			}
 
-			res, err := model.Transform(a, Transform)
+			res, err := model.Map(model.FixedProvider(a), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -111,7 +112,7 @@ func handleGetAccountById(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 				return
 			}
 
-			res, err := model.Transform(a, Transform)
+			res, err := model.Map(model.FixedProvider(a), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)

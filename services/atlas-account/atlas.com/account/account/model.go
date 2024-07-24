@@ -50,3 +50,11 @@ func (a Model) UpdatedAt() time.Time {
 func (a Model) TenantId() uuid.UUID {
 	return a.tenantId
 }
+
+func (a Model) Pin() string {
+	return a.pin
+}
+
+func (a Model) Pic() string {
+	return a.pic
+}

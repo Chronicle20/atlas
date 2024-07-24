@@ -3,9 +3,9 @@ module atlas-account
 go 1.21.6
 
 require (
-	github.com/Chronicle20/atlas-kafka v0.0.0-20240710214617-8a7aed20c81d
-	github.com/Chronicle20/atlas-model v0.0.0-20240712114934-b680d929248b
-	github.com/Chronicle20/atlas-rest v0.0.0-20240712172338-ed16b47e5616
+	github.com/Chronicle20/atlas-kafka v0.0.0-20240723203010-bba2d9451460
+	github.com/Chronicle20/atlas-model v0.0.0-20240723201222-905024c17a7e
+	github.com/Chronicle20/atlas-rest v0.0.0-20240723203319-7d81b01598b5
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6
@@ -16,6 +16,7 @@ require (
 	golang.org/x/crypto v0.25.0
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.5.9
+	gorm.io/driver/sqlite v1.5.6
 	gorm.io/gorm v1.25.11
 )
 
@@ -30,6 +31,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
+	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect

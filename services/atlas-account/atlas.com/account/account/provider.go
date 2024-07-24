@@ -19,22 +19,22 @@ func entityById(tenant tenant.Model, id uint32) database.EntityProvider[entity] 
 	}
 }
 
-func entitiesByName(tenant tenant.Model, name string) database.EntitySliceProvider[entity] {
-	return func(db *gorm.DB) model.SliceProvider[entity] {
+func entitiesByName(tenant tenant.Model, name string) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
 		var results []entity
 		err := db.Where(&entity{TenantId: tenant.Id, Name: name}).First(&results).Error
 		if err != nil {
-			return model.ErrorSliceProvider[entity](err)
+			return model.ErrorProvider[[]entity](err)
 		}
-		return model.FixedSliceProvider[entity](results)
+		return model.FixedProvider[[]entity](results)
 	}
 }
 
-func entitiesInTransition(db *gorm.DB) model.SliceProvider[entity] {
+func entitiesInTransition(db *gorm.DB) model.Provider[[]entity] {
 	var results []entity
 	err := db.Where(&entity{State: byte(ServerTransistion)}).Find(&results).Error
 	if err != nil {
-		return model.ErrorSliceProvider[entity](err)
+		return model.ErrorProvider[[]entity](err)
 	}
-	return model.FixedSliceProvider[entity](results)
+	return model.FixedProvider[[]entity](results)
 }

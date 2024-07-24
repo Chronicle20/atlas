@@ -55,7 +55,7 @@ func handleCreateRandomEquipment(d *rest.HandlerDependency, c *rest.HandlerConte
 			return
 		}
 
-		res, err := model.Transform(e, Transform)
+		res, err := model.Map(model.FixedProvider(e), Transform)()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -77,7 +77,7 @@ func handleCreateEquipment(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			return
 		}
 
-		res, err := model.Transform(e, Transform)
+		res, err := model.Map(model.FixedProvider(e), Transform)()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -97,7 +97,7 @@ func handleGetEquipment(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			res, err := model.Transform(e, Transform)
+			res, err := model.Map(model.FixedProvider(e), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)

@@ -1,11 +1,12 @@
 package character
 
 import (
-	"atlas-maps/kafka"
+	consumer2 "atlas-maps/kafka/consumer"
 	_map "atlas-maps/map"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
+	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
@@ -14,20 +15,23 @@ const consumerStatusEvent = "status_event"
 
 func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return kafka.NewConfig(l)(consumerStatusEvent)(EnvEventTopicCharacterStatus)(groupId)
+		return consumer2.NewConfig(l)(consumerStatusEvent)(EnvEventTopicCharacterStatus)(groupId)
 	}
 }
 
 func StatusEventLoginRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	return kafka.LookupTopic(l)(EnvEventTopicCharacterStatus), message.AdaptHandler(message.PersistentConfig(handleStatusEventLogin))
+	t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogin))
 }
 
 func StatusEventLogoutRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	return kafka.LookupTopic(l)(EnvEventTopicCharacterStatus), message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout))
+	t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout))
 }
 
 func StatusEventMapChangedRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	return kafka.LookupTopic(l)(EnvEventTopicCharacterStatus), message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged))
+	t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged))
 }
 
 func handleStatusEventLogin(l logrus.FieldLogger, span opentracing.Span, event statusEvent[statusEventLoginBody]) {

@@ -35,6 +35,6 @@ func handleEventStatus() message.Handler[channelStatusEvent] {
 }
 
 func EventStatusRegister(l *logrus.Logger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopicChannelStatus)()
+	t, _ := topic.EnvProvider(l)(EnvEventTopicChannelStatus)()
 	return t, message.AdaptHandler(message.PersistentConfig(handleEventStatus()))
 }

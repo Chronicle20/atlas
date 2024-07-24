@@ -252,6 +252,18 @@ func Fold[M any, N any](provider Provider[[]M], supplier Provider[N], folder Fol
 	return FixedProvider(n)
 }
 
+//goland:noinspection GoUnusedExportedFunction
+func Decorate[M any](decorators ...Decorator[M]) func(m M) (M, error) {
+	return func(m M) (M, error) {
+		var n = m
+		for _, d := range decorators {
+			n = d(n)
+		}
+		return n, nil
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
 func FirstProvider[M any](provider Provider[[]M], filters ...Filter[M]) Provider[M] {
 	ms, err := provider()
 	if err != nil {

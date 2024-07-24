@@ -1,11 +1,11 @@
 package session
 
 import (
+	"atlas-login/kafka/producer"
 	"atlas-login/socket/writer"
 	"atlas-login/tenant"
 	"errors"
 	"github.com/google/uuid"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -82,8 +82,8 @@ func SetChannelId(channelId byte) func(id uuid.UUID) Model {
 	}
 }
 
-func SessionCreated(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32) {
-	return func(sessionId uuid.UUID, accountId uint32) {
-		emitCreatedStatusEvent(l, span, tenant)(sessionId, accountId)
+func SessionCreated(kp producer.Provider, tenant tenant.Model) func(s Model) {
+	return func(s Model) {
+		_ = kp(EnvEventTopicSessionStatus)(createdStatusEventProvider(tenant, s.SessionId(), s.AccountId()))
 	}
 }

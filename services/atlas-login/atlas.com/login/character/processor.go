@@ -35,8 +35,8 @@ func IsValidName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 	}
 }
 
-func byAccountAndWorldProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte) model.SliceProvider[Model] {
-	return func(accountId uint32, worldId byte) model.SliceProvider[Model] {
+func byAccountAndWorldProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte) model.Provider[[]Model] {
+	return func(accountId uint32, worldId byte) model.Provider[[]Model] {
 		return requests.SliceProvider[RestModel, Model](l)(requestByAccountAndWorld(l, span, tenant)(accountId, worldId), Extract)
 	}
 }
@@ -51,8 +51,8 @@ func GetForWorld(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 	}
 }
 
-func byNameProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string) model.SliceProvider[Model] {
-	return func(name string) model.SliceProvider[Model] {
+func byNameProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string) model.Provider[[]Model] {
+	return func(name string) model.Provider[[]Model] {
 		return requests.SliceProvider[RestModel, Model](l)(requestByName(l, span, tenant)(name), Extract)
 	}
 }

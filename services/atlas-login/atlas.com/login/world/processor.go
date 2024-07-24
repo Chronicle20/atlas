@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func AllProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) model.SliceProvider[Model] {
+func AllProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](l)(requestWorlds(l, span, tenant), Extract)
 }
 

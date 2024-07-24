@@ -2,6 +2,7 @@ package session
 
 import (
 	as "atlas-login/account/session"
+	"atlas-login/kafka/producer"
 	"atlas-login/tenant"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
@@ -70,6 +71,6 @@ func Destroy(l logrus.FieldLogger, span opentracing.Span, r *Registry) func(Mode
 		r.Remove(s.SessionId())
 		s.Disconnect()
 		as.Destroy(l, span, s.Tenant())(s.AccountId())
-		emitDestroyedStatusEvent(l, span, s.tenant)(s.SessionId(), s.AccountId())
+		_ = producer.ProviderImpl(l)(span)(EnvEventTopicSessionStatus)(destroyedStatusEventProvider(s.tenant, s.SessionId(), s.AccountId()))
 	}
 }

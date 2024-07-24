@@ -104,23 +104,23 @@ func (r ItemRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 }
 
 func Transform(m Model) (RestModel, error) {
-	eqps, err := model.TransformAll(m.Equipable().items, equipable.Transform)
+	eqps, err := model.SliceMap(model.FixedProvider(m.Equipable().items), equipable.Transform)()
 	if err != nil {
 		return RestModel{}, err
 	}
-	stps, err := model.TransformAll(m.Setup().Items(), item.Transform)
+	stps, err := model.SliceMap(model.FixedProvider(m.Setup().Items()), item.Transform)()
 	if err != nil {
 		return RestModel{}, err
 	}
-	usps, err := model.TransformAll(m.Useable().Items(), item.Transform)
+	usps, err := model.SliceMap(model.FixedProvider(m.Useable().Items()), item.Transform)()
 	if err != nil {
 		return RestModel{}, err
 	}
-	etcs, err := model.TransformAll(m.Etc().Items(), item.Transform)
+	etcs, err := model.SliceMap(model.FixedProvider(m.Etc().Items()), item.Transform)()
 	if err != nil {
 		return RestModel{}, err
 	}
-	cashs, err := model.TransformAll(m.Cash().Items(), item.Transform)
+	cashs, err := model.SliceMap(model.FixedProvider(m.Cash().Items()), item.Transform)()
 	if err != nil {
 		return RestModel{}, err
 	}
@@ -155,23 +155,23 @@ func Transform(m Model) (RestModel, error) {
 }
 
 func Extract(m RestModel) (Model, error) {
-	equipable, err := model.Transform(m.Equipable, ExtractEquipable)
+	equipable, err := model.Map(model.FixedProvider(m.Equipable), ExtractEquipable)()
 	if err != nil {
 		return Model{}, err
 	}
-	useable, err := model.Transform(m.Useable, ExtractItem)
+	useable, err := model.Map(model.FixedProvider(m.Useable), ExtractItem)()
 	if err != nil {
 		return Model{}, err
 	}
-	setup, err := model.Transform(m.Setup, ExtractItem)
+	setup, err := model.Map(model.FixedProvider(m.Setup), ExtractItem)()
 	if err != nil {
 		return Model{}, err
 	}
-	etc, err := model.Transform(m.Etc, ExtractItem)
+	etc, err := model.Map(model.FixedProvider(m.Etc), ExtractItem)()
 	if err != nil {
 		return Model{}, err
 	}
-	cash, err := model.Transform(m.Cash, ExtractItem)
+	cash, err := model.Map(model.FixedProvider(m.Cash), ExtractItem)()
 	if err != nil {
 		return Model{}, err
 	}
@@ -186,7 +186,7 @@ func Extract(m RestModel) (Model, error) {
 }
 
 func ExtractEquipable(m EquipableRestModel) (EquipableModel, error) {
-	items, err := model.TransformAll(m.Items, equipable.Extract)
+	items, err := model.SliceMap(model.FixedProvider(m.Items), equipable.Extract)()
 	if err != nil {
 		return EquipableModel{}, err
 	}
@@ -198,7 +198,7 @@ func ExtractEquipable(m EquipableRestModel) (EquipableModel, error) {
 }
 
 func ExtractItem(m ItemRestModel) (ItemModel, error) {
-	items, err := model.TransformAll(m.Items, item.Extract)
+	items, err := model.SliceMap(model.FixedProvider(m.Items), item.Extract)()
 	if err != nil {
 		return ItemModel{}, err
 	}

@@ -4,8 +4,12 @@ github.com/Chronicle20/atlas-kafka v0.0.0-20240709191654-7c3c45514860 h1:bi1OSxE
 github.com/Chronicle20/atlas-kafka v0.0.0-20240709191654-7c3c45514860/go.mod h1:2fnQ/pnT6Vo46HfjcF4meFGfPlls2EaqOQUc9vWwFkQ=
 github.com/Chronicle20/atlas-kafka v0.0.0-20240710214617-8a7aed20c81d h1:wLPGMfCSRiVI98YmpUt/gc3W8dtb1KqUTd/GQoaZPa4=
 github.com/Chronicle20/atlas-kafka v0.0.0-20240710214617-8a7aed20c81d/go.mod h1:2fnQ/pnT6Vo46HfjcF4meFGfPlls2EaqOQUc9vWwFkQ=
+github.com/Chronicle20/atlas-kafka v0.0.0-20240724124113-005f51decf9a h1:qW8hy8LllWcsK9Z+PCBtAjKiSahE/6JPivet4ZxGFRQ=
+github.com/Chronicle20/atlas-kafka v0.0.0-20240724124113-005f51decf9a/go.mod h1:wIv4Dc2oIgDKsVwvCfu9f5KAtH1zKDxlKxDx3rMzGO8=
 github.com/Chronicle20/atlas-model v0.0.0-20240707172702-3d0c637b3cb5 h1:7hmq/RByMjvfGs+fQ0fwDC3jhTbppXUo0MBCfPH0APQ=
 github.com/Chronicle20/atlas-model v0.0.0-20240707172702-3d0c637b3cb5/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
+github.com/Chronicle20/atlas-model v0.0.0-20240724125124-7952fe30f754 h1:vR6WNiZMOGcUPKDRGGsq7k96dwUWtx8JBhS2ntWsdb4=
+github.com/Chronicle20/atlas-model v0.0.0-20240724125124-7952fe30f754/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
 github.com/Chronicle20/atlas-rest v0.0.0-20240710145134-73675d0bdadd h1:/ogIDd0iTtzmH3Yq2LOOeaFCd8jvldS9bkf9YWixCgU=
 github.com/Chronicle20/atlas-rest v0.0.0-20240710145134-73675d0bdadd/go.mod h1:IPCC73Rsd2jb/0Ke03QfKpu9GKPGjem9WD2vfmTYwFc=
 github.com/Chronicle20/atlas-rest v0.0.0-20240710151733-b8c240525909 h1:HTRpIsJ3pNSGqTB4V1iXA5eNqZR6czhif2s13ang1b4=
@@ -14,6 +18,8 @@ github.com/Chronicle20/atlas-rest v0.0.0-20240710183603-5b17b81f4138 h1:8Fx9woiz
 github.com/Chronicle20/atlas-rest v0.0.0-20240710183603-5b17b81f4138/go.mod h1:/ct0tbaPuSIjX08t/eMPAx8gP+VeEVBh4sd4jFLjgCc=
 github.com/Chronicle20/atlas-rest v0.0.0-20240711014049-9d9e1bb1dd7c h1:2XcCQTInpfq49+ohLvp62fusLibCG/9j5XdDn+tJ5nM=
 github.com/Chronicle20/atlas-rest v0.0.0-20240711014049-9d9e1bb1dd7c/go.mod h1:/ct0tbaPuSIjX08t/eMPAx8gP+VeEVBh4sd4jFLjgCc=
+github.com/Chronicle20/atlas-rest v0.0.0-20240723203319-7d81b01598b5 h1:xWqiSJ0Eyyzm+OI4iwaJ54Aq/ydwR+84TgvE8QZGUT0=
+github.com/Chronicle20/atlas-rest v0.0.0-20240723203319-7d81b01598b5/go.mod h1:77IkwcbBc0JKzbHFycb3a4BrkAzvlVHdo9Cl/ckZ7Pk=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2 h1:5IcZpTvzydCQeHzK4Ef/D5rrSqwxob0t8PQPMybUNFM=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2/go.mod h1:yDgFjdqOqDEKOvasDdhWNXYg9BVp4O+o5f6V/ehm6Oo=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=

@@ -1,12 +1,12 @@
 package factory
 
 import (
-	"atlas-character-factory/async"
 	"atlas-character-factory/character"
 	"atlas-character-factory/configuration"
 	"atlas-character-factory/tenant"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas-model/async"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
@@ -92,14 +92,14 @@ func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 			return character.Model{}, err
 		}
 
-		ip := model.FixedSliceProvider([]uint32{top, bottom, shoes, weapon})
+		ip := model.FixedProvider([]uint32{top, bottom, shoes, weapon})
 		l.Debugf("Beginning item creation for character [%d].", cid)
 		items, err := async.AwaitSlice[character.ItemGained](model.SliceMap(ip, asyncItemCreate(l, span, tenant)(cid)), async.SetTimeout(1*time.Second))()
 		if err != nil {
 			l.WithError(err).Errorf("Error creating an item for character [%d].", cid)
 		}
 
-		_, err = async.AwaitSlice[uint32](model.SliceMap(model.FixedSliceProvider(items), asyncEquipItem(l, span, tenant)(cid)), async.SetTimeout(1*time.Second))()
+		_, err = async.AwaitSlice[uint32](model.SliceMap(model.FixedProvider(items), asyncEquipItem(l, span, tenant)(cid)), async.SetTimeout(1*time.Second))()
 		if err != nil {
 			l.WithError(err).Errorf("Error equipping an item for character [%d].", cid)
 		}
@@ -134,13 +134,6 @@ func asyncEquipItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.M
 				}
 			}, nil
 		}
-	}
-}
-
-func equipItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) model.Operator[uint32] {
-	return func(u uint32) error {
-		l.Debugf("TODO equip item %d.", u)
-		return nil
 	}
 }
 

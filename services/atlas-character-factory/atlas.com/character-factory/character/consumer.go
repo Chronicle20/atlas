@@ -1,12 +1,13 @@
 package character
 
 import (
-	"atlas-character-factory/async"
-	"atlas-character-factory/kafka"
+	consumer2 "atlas-character-factory/kafka/consumer"
 	"atlas-character-factory/tenant"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/message"
+	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/async"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
@@ -19,7 +20,7 @@ const (
 
 func CreatedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return kafka.NewConfig(l)(consumerCharacterCreated)(EnvEventTopicCharacterStatus)(groupId)
+		return consumer2.NewConfig(l)(consumerCharacterCreated)(EnvEventTopicCharacterStatus)(groupId)
 	}
 }
 
@@ -45,7 +46,7 @@ func createdHandler(rchan chan uint32, _ chan error) message.Handler[statusEvent
 }
 
 func AwaitCreated(l logrus.FieldLogger, tenant tenant.Model) func(name string) async.Provider[uint32] {
-	t := kafka.LookupTopic(l)(EnvEventTopicCharacterStatus)
+	t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
 	return func(name string) async.Provider[uint32] {
 		return func(ctx context.Context, rchan chan uint32, echan chan error) {
 			l.Debugf("Creating OneTime topic consumer to await [%s] character creation.", name)
@@ -56,7 +57,7 @@ func AwaitCreated(l logrus.FieldLogger, tenant tenant.Model) func(name string) a
 
 func ItemGainedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return kafka.NewConfig(l)(consumerItemGained)(EnvEventTopicItemGain)(groupId)
+		return consumer2.NewConfig(l)(consumerItemGained)(EnvEventTopicItemGain)(groupId)
 	}
 }
 
@@ -79,7 +80,7 @@ func itemGainedHandler(rchan chan ItemGained, _ chan error) message.Handler[gain
 }
 
 func AwaitItemGained(l logrus.FieldLogger, tenant tenant.Model) func(itemId uint32) async.Provider[ItemGained] {
-	t := kafka.LookupTopic(l)(EnvEventTopicItemGain)
+	t, _ := topic.EnvProvider(l)(EnvEventTopicItemGain)()
 	return func(itemId uint32) async.Provider[ItemGained] {
 		return func(ctx context.Context, rchan chan ItemGained, echan chan error) {
 			_, _ = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(itemGainedValidator(tenant, itemId), itemGainedHandler(rchan, echan))))
@@ -89,7 +90,7 @@ func AwaitItemGained(l logrus.FieldLogger, tenant tenant.Model) func(itemId uint
 
 func EquipChangedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return kafka.NewConfig(l)(consumerEquipChanged)(EnvEventTopicEquipChanged)(groupId)
+		return consumer2.NewConfig(l)(consumerEquipChanged)(EnvEventTopicEquipChanged)(groupId)
 	}
 }
 
@@ -115,7 +116,7 @@ func equipChangedHandler(rchan chan uint32, _ chan error) message.Handler[equipC
 }
 
 func AwaitEquipChanged(l logrus.FieldLogger, tenant tenant.Model) func(itemId uint32) async.Provider[uint32] {
-	t := kafka.LookupTopic(l)(EnvEventTopicEquipChanged)
+	t, _ := topic.EnvProvider(l)(EnvEventTopicEquipChanged)()
 	return func(itemId uint32) async.Provider[uint32] {
 		return func(ctx context.Context, rchan chan uint32, echan chan error) {
 			_, _ = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(equipChangedValidator(tenant, itemId), equipChangedHandler(rchan, echan))))

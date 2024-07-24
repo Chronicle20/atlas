@@ -40,7 +40,7 @@ func handleGetWorld(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			res, err := model.Transform(ws, Transform)
+			res, err := model.Map(model.FixedProvider(ws), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -60,7 +60,7 @@ func handleGetWorlds(d *rest.HandlerDependency, c *rest.HandlerContext) http.Han
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		res, err := model.TransformAll(ws, Transform)
+		res, err := model.SliceMap(model.FixedProvider(ws), Transform)()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)

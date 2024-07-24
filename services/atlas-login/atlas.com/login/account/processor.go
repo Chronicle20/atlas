@@ -12,13 +12,13 @@ type LoginErr string
 
 func ForAccountByName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string, operator model.Operator[Model]) {
 	return func(name string, operator model.Operator[Model]) {
-		model.IfPresent[Model](ByNameModelProvider(l, span, tenant)(name), operator)
+		_ = model.For[Model](ByNameModelProvider(l, span, tenant)(name), operator)
 	}
 }
 
 func ForAccountById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32, operator model.Operator[Model]) {
 	return func(id uint32, operator model.Operator[Model]) {
-		model.IfPresent[Model](ByIdModelProvider(l, span, tenant)(id), operator)
+		_ = model.For[Model](ByIdModelProvider(l, span, tenant)(id), operator)
 	}
 }
 

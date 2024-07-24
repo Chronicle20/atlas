@@ -8,8 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ByWorldModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte) model.SliceProvider[Model] {
-	return func(worldId byte) model.SliceProvider[Model] {
+func ByWorldModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte) model.Provider[[]Model] {
+	return func(worldId byte) model.Provider[[]Model] {
 		return requests.SliceProvider[RestModel, Model](l)(requestChannelsForWorld(l, span, tenant)(worldId), Extract)
 	}
 }

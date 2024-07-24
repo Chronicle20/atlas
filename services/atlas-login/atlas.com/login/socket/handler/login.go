@@ -4,6 +4,7 @@ import (
 	"atlas-login/account"
 	as "atlas-login/account/session"
 	"atlas-login/configuration"
+	"atlas-login/kafka/producer"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -79,7 +80,7 @@ func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 				return
 			}
 			s = session.SetAccountId(a.Id())(s.SessionId())
-			session.SessionCreated(l, span, s.Tenant())(s.SessionId(), a.Id())
+			session.SessionCreated(producer.ProviderImpl(l)(span), s.Tenant())(s)
 
 			if resp.Code == "OK" {
 				err = issueSuccess(l, s, wp)(a)

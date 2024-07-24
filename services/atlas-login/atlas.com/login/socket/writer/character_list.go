@@ -209,7 +209,9 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
 			writeForEachPet(w, character.Pets(), writePetId, writeEmptyPetId)
 		} else {
-			w.WriteInt64(0) // pet cash id
+			if len(character.Pets()) > 0 {
+				w.WriteLong(character.Pets()[0].Id()) // pet cash id
+			}
 		}
 		w.WriteByte(character.Level())
 		w.WriteShort(character.JobId())

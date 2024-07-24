@@ -27,7 +27,7 @@ func MinFreeSlot(items []Slottable) int16 {
 	}
 }
 
-func GetNextFreeSlot(provider model.SliceProvider[Slottable]) (int16, error) {
+func GetNextFreeSlot(provider model.Provider[[]Slottable]) (int16, error) {
 	es, err := provider()
 	if err != nil {
 		return 1, err

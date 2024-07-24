@@ -19,8 +19,8 @@ func getBaseRequest() string {
 	return os.Getenv("EQUIPABLE_SERVICE_URL")
 }
 
-func requestCreate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(itemId uint32) requests.PostRequest[RestModel] {
-	return func(itemId uint32) requests.PostRequest[RestModel] {
+func requestCreate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(itemId uint32) requests.Request[RestModel] {
+	return func(itemId uint32) requests.Request[RestModel] {
 		input := &RestModel{
 			ItemId: itemId,
 		}
@@ -34,8 +34,8 @@ func requestById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 	}
 }
 
-func deleteById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(equipmentId uint32) requests.DeleteRequest {
-	return func(equipmentId uint32) requests.DeleteRequest {
+func deleteById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(equipmentId uint32) requests.EmptyBodyRequest {
+	return func(equipmentId uint32) requests.EmptyBodyRequest {
 		return rest.MakeDeleteRequest(l, span, tenant)(fmt.Sprintf(getBaseRequest()+equipResource, equipmentId))
 	}
 }

@@ -59,7 +59,7 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 			return
 		}
 
-		res, err := model.TransformAll(cs, Transform)
+		res, err := model.SliceMap(model.FixedProvider(cs), Transform)()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -92,7 +92,7 @@ func handleGetCharactersByMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 			return
 		}
 
-		res, err := model.TransformAll(cs, Transform)
+		res, err := model.SliceMap(model.FixedProvider(cs), Transform)()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -119,7 +119,7 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 			return
 		}
 
-		res, err := model.TransformAll(cs, Transform)
+		res, err := model.SliceMap(model.FixedProvider(cs), Transform)()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -145,7 +145,7 @@ func handleGetCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 				return
 			}
 
-			res, err := model.Transform(cs, Transform)
+			res, err := model.Map(model.FixedProvider(cs), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -177,7 +177,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			return
 		}
 
-		res, err := model.Transform(cs, Transform)
+		res, err := model.Map(model.FixedProvider(cs), Transform)()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)

@@ -13,27 +13,27 @@ func getById(tenantId uuid.UUID, characterId uint32) database.EntityProvider[ent
 	}
 }
 
-func getForAccountInWorld(tenantId uuid.UUID, accountId uint32, worldId byte) database.EntitySliceProvider[entity] {
-	return func(db *gorm.DB) model.SliceProvider[entity] {
+func getForAccountInWorld(tenantId uuid.UUID, accountId uint32, worldId byte) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
 		where := map[string]interface{}{"tenant_id": tenantId, "account_id": accountId, "world": worldId}
 		return database.SliceQuery[entity](db, where)
 	}
 }
 
-func getForMapInWorld(tenantId uuid.UUID, worldId byte, mapId uint32) database.EntitySliceProvider[entity] {
-	return func(db *gorm.DB) model.SliceProvider[entity] {
+func getForMapInWorld(tenantId uuid.UUID, worldId byte, mapId uint32) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
 		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, World: worldId, MapId: mapId})
 	}
 }
 
-func getForName(tenantId uuid.UUID, name string) database.EntitySliceProvider[entity] {
-	return func(db *gorm.DB) model.SliceProvider[entity] {
+func getForName(tenantId uuid.UUID, name string) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
 		var results []entity
 		err := db.Where("tenant_id = ? AND LOWER(name) = LOWER(?)", tenantId, name).Find(&results).Error
 		if err != nil {
-			return model.ErrorSliceProvider[entity](err)
+			return model.ErrorProvider[[]entity](err)
 		}
-		return model.FixedSliceProvider(results)
+		return model.FixedProvider(results)
 	}
 }
 

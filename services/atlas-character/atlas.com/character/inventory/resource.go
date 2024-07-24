@@ -4,6 +4,7 @@ import (
 	"atlas-character/equipable"
 	"atlas-character/equipment/slot"
 	"atlas-character/inventory/item"
+	"atlas-character/kafka/producer"
 	"atlas-character/rest"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -59,7 +60,7 @@ func handleGetItemBySlot(d *rest.HandlerDependency, c *rest.HandlerContext) http
 				if Type(inventoryType) == TypeValueEquip {
 					for _, i := range inv.Equipable().Items() {
 						if i.Slot() == int16(slot) {
-							res, err := model.Transform(i, equipable.Transform)
+							res, err := model.Map(model.FixedProvider(i), equipable.Transform)()
 							if err != nil {
 								d.Logger().WithError(err).Errorf("Creating REST model.")
 								w.WriteHeader(http.StatusInternalServerError)
@@ -92,7 +93,7 @@ func handleGetItemBySlot(d *rest.HandlerDependency, c *rest.HandlerContext) http
 
 				for _, i := range m.Items() {
 					if i.Slot() == int16(slot) {
-						res, err := model.Transform(i, item.Transform)
+						res, err := model.Map(model.FixedProvider(i), item.Transform)()
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")
 							w.WriteHeader(http.StatusInternalServerError)
@@ -150,7 +151,7 @@ func handleEquipItem(d *rest.HandlerDependency, c *rest.HandlerContext, input eq
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				emitEquipItemCommand(d.Logger(), d.Span(), c.Tenant())(characterId, input.Slot, int16(des))
+				_ = producer.ProviderImpl(d.Logger())(d.Span())(EnvCommandTopicEquipItem)(equipItemCommandProvider(c.Tenant(), characterId, input.Slot, int16(des)))
 				w.WriteHeader(http.StatusAccepted)
 			}
 		})
@@ -167,7 +168,7 @@ func handleUnequipItem(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				emitUnequipItemCommand(d.Logger(), d.Span(), c.Tenant())(characterId, int16(des))
+				_ = producer.ProviderImpl(d.Logger())(d.Span())(EnvCommandTopicUnequipItem)(unequipItemCommandProvider(c.Tenant(), characterId, int16(des)))
 				w.WriteHeader(http.StatusAccepted)
 			}
 		})

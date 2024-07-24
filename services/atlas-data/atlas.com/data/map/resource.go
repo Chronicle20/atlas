@@ -59,7 +59,7 @@ func handleGetMapRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http
 				return
 			}
 
-			res, err := model.Transform(m, Transform)
+			res, err := model.Map(model.FixedProvider(m), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -81,7 +81,7 @@ func handleGetMapPortalsRequest(d *rest.HandlerDependency, c *rest.HandlerContex
 				return
 			}
 
-			res, err := model.TransformAll(ps, portal.Transform)
+			res, err := model.SliceMap(model.FixedProvider(ps), portal.Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -106,7 +106,7 @@ func handleGetMapPortalsByNameRequest(d *rest.HandlerDependency, c *rest.Handler
 				return
 			}
 
-			res, err := model.TransformAll(ps, portal.Transform)
+			res, err := model.SliceMap(model.FixedProvider(ps), portal.Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -129,7 +129,7 @@ func handleGetMapPortalRequest(d *rest.HandlerDependency, c *rest.HandlerContext
 					return
 				}
 
-				res, err := model.Transform(p, portal.Transform)
+				res, err := model.Map(model.FixedProvider(p), portal.Transform)()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					w.WriteHeader(http.StatusInternalServerError)
@@ -152,7 +152,7 @@ func handleGetMapReactorsRequest(d *rest.HandlerDependency, c *rest.HandlerConte
 				return
 			}
 
-			res, err := model.TransformAll(rs, reactor.Transform)
+			res, err := model.SliceMap(model.FixedProvider(rs), reactor.Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -176,7 +176,7 @@ func handleGetMapNPCsByObjectIdRequest(d *rest.HandlerDependency, c *rest.Handle
 			}
 
 			ns, err := GetNpcsByObjectId(d.Logger(), d.Span(), c.Tenant())(mapId, uint32(objectId))
-			res, err := model.TransformAll(ns, npc.Transform)
+			res, err := model.SliceMap(model.FixedProvider(ns), npc.Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -192,7 +192,7 @@ func handleGetMapNPCsRequest(d *rest.HandlerDependency, c *rest.HandlerContext) 
 	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			ns, err := GetNpcs(d.Logger(), d.Span(), c.Tenant())(mapId)
-			res, err := model.TransformAll(ns, npc.Transform)
+			res, err := model.SliceMap(model.FixedProvider(ns), npc.Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -209,7 +209,7 @@ func handleGetMapNPCRequest(d *rest.HandlerDependency, c *rest.HandlerContext) h
 		return rest.ParseNPC(d.Logger(), func(npcId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				ns, err := GetNpc(d.Logger(), d.Span(), c.Tenant())(mapId, npcId)
-				res, err := model.Transform(ns, npc.Transform)
+				res, err := model.Map(model.FixedProvider(ns), npc.Transform)()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					w.WriteHeader(http.StatusInternalServerError)
@@ -226,7 +226,7 @@ func handleGetMapMonstersRequest(d *rest.HandlerDependency, c *rest.HandlerConte
 	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			ms, err := GetMonsters(d.Logger(), d.Span(), c.Tenant())(mapId)
-			res, err := model.TransformAll(ms, monster.Transform)
+			res, err := model.SliceMap(model.FixedProvider(ms), monster.Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -242,7 +242,7 @@ func handleGetMapDropPositionRequest(d *rest.HandlerDependency, c *rest.HandlerC
 	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			p := calcDropPos(c.Tenant(), mapId, point.NewModel(input.InitialX, input.InitialY), point.NewModel(input.FallbackX, input.FallbackY))
-			res, err := model.Transform(*p, point2.Transform)
+			res, err := model.Map(model.FixedProvider(*p), point2.Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)

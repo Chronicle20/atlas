@@ -32,7 +32,7 @@ func handleGetEquipmentStatistics(d *rest.HandlerDependency, c *rest.HandlerCont
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			res, err := model.Transform(e, Transform)
+			res, err := model.Map(model.FixedProvider(e), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)

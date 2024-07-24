@@ -45,12 +45,12 @@ func Transform(m Model) (RestModel, error) {
 		return RestModel{}, err
 	}
 
-	as, err := model.TransformAll(m.areas, TransformRectangle)
+	as, err := model.SliceMap(model.FixedProvider(m.areas), TransformRectangle)()
 	if err != nil {
 		return RestModel{}, err
 	}
 
-	bt, err := model.TransformAll(m.backgroundTypes, TransformBackgroundType)
+	bt, err := model.SliceMap(model.FixedProvider(m.backgroundTypes), TransformBackgroundType)()
 	if err != nil {
 		return RestModel{}, err
 	}

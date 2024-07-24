@@ -20,3 +20,5 @@ A RESTful resource which provides Channel services.
 - EVENT_TOPIC_SESSION_STATUS - Kafka Topic for capturing session events.
 - EVENT_TOPIC_MAP_STATUS - Kafka Topic for transmitting map status events
 - COMMAND_TOPIC_PORTAL - Kafka Topic for transmitting portal commands.
+- COMMAND_TOPIC_CHANNEL_STATUS - Kafka Topic for issuing Channel Service commands.
+  - Used for requesting started channel services to identify status.

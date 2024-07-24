@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-channel/channel"
 	"atlas-channel/configuration"
 	"atlas-channel/kafka/consumer/character"
 	"atlas-channel/kafka/consumer/map"
@@ -96,6 +97,7 @@ func main() {
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, ctx, wg)(_map.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, ctx, wg)(character.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, ctx, wg)(channel.CommandStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 
 	for _, s := range config.Data.Attributes.Servers {
 		for _, w := range s.Worlds {
@@ -132,6 +134,7 @@ func main() {
 				_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(character.StatusEventStatChangedRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(character.StatusEventMapChangedRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(channel.CommandStatusRegister(sc, config.Data.Attributes.IPAddress, c.Port)(l))
 
 				socket.CreateSocketService(l, ctx, wg)(s, validatorMap, handlerMap, writerList, sc, config.Data.Attributes.IPAddress, c.Port)
 			}

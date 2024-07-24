@@ -31,23 +31,6 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
-func Transform(m Model) (RestModel, error) {
-	return RestModel{
-		Id:             strconv.Itoa(int(m.id)),
-		Name:           m.name,
-		Pin:            m.pin,
-		Pic:            m.pic,
-		LoggedIn:       byte(m.loggedIn),
-		LastLogin:      m.lastLogin,
-		Gender:         m.gender,
-		Banned:         m.banned,
-		TOS:            m.tos,
-		Language:       m.language,
-		Country:        m.country,
-		CharacterSlots: m.characterSlots,
-	}, nil
-}
-
 func Extract(body RestModel) (Model, error) {
 	id, err := strconv.ParseUint(body.Id, 10, 32)
 	if err != nil {

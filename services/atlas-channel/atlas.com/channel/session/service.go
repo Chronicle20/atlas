@@ -2,6 +2,7 @@ package session
 
 import (
 	as "atlas-channel/account/session"
+	"atlas-channel/kafka/producer"
 	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
@@ -69,11 +70,13 @@ func DestroyById(l logrus.FieldLogger, span opentracing.Span, r *Registry, tenan
 }
 
 func Destroy(l logrus.FieldLogger, span opentracing.Span, r *Registry, tenantId uuid.UUID) func(Model) {
+	pi := producer.ProviderImpl(l)(span)
 	return func(s Model) {
 		l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 		r.Remove(tenantId, s.SessionId())
 		s.Disconnect()
-		as.Destroy(l, span, s.Tenant())(s.AccountId())
-		emitDestroyedStatusEvent(l, span, s.tenant)(s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId())
+		as.Destroy(l, pi)(s.Tenant(), s.AccountId())
+
+		_ = pi(EnvEventTopicSessionStatus)(destroyedStatusEventProvider(s.tenant, s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
 	}
 }

@@ -2,6 +2,7 @@ package portal
 
 import (
 	"atlas-portals/character"
+	"atlas-portals/kafka/producer"
 	"atlas-portals/tenant"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -9,8 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func inMapByNameModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32, name string) model.SliceProvider[Model] {
-	return func(mapId uint32, name string) model.SliceProvider[Model] {
+func inMapByNameModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32, name string) model.Provider[[]Model] {
+	return func(mapId uint32, name string) model.Provider[[]Model] {
 		return requests.SliceProvider[RestModel, Model](l)(requestInMapByName(l, span, tenant)(mapId, name), Extract)
 	}
 }
@@ -72,12 +73,15 @@ func Enter(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fun
 
 func WarpById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, characterId uint32, mapId uint32, portalId uint32) {
 	return func(worldId byte, channelId byte, characterId uint32, mapId uint32, portalId uint32) {
-		WarpToPortal(l, span, tenant)(worldId, channelId, characterId, mapId, model.FixedIdProvider(portalId))
+		WarpToPortal(l, span, tenant)(worldId, channelId, characterId, mapId, model.FixedProvider(portalId))
 	}
 }
 
-func WarpToPortal(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, characterId uint32, mapId uint32, p model.IdProvider[uint32]) {
-	return func(worldId byte, channelId byte, characterId uint32, mapId uint32, p model.IdProvider[uint32]) {
-		character.EmitChangeMap(l, span, tenant)(worldId, channelId, characterId, mapId, p())
+func WarpToPortal(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, characterId uint32, mapId uint32, p model.Provider[uint32]) {
+	return func(worldId byte, channelId byte, characterId uint32, mapId uint32, p model.Provider[uint32]) {
+		id, err := p()
+		if err == nil {
+			_ = producer.ProviderImpl(l)(span)(character.EnvCommandTopic)(character.ChangeMapProvider(tenant, worldId, channelId, characterId, mapId, id))
+		}
 	}
 }

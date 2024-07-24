@@ -1,44 +1,45 @@
 package socket
 
-type ServerConfigurator[E uint8 | uint16] func(s *serverConfiguration[E])
+type ServerConfigurator func(s *serverConfiguration)
 
 //goland:noinspection GoUnusedExportedFunction
-func SetIpAddress[E uint8 | uint16](ipAddress string) func(*serverConfiguration[E]) {
-	return func(s *serverConfiguration[E]) {
+func SetIpAddress(ipAddress string) func(*serverConfiguration) {
+	return func(s *serverConfiguration) {
 		s.ipAddress = ipAddress
 	}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SetPort[E uint8 | uint16](port int) func(*serverConfiguration[E]) {
-	return func(s *serverConfiguration[E]) {
+func SetPort(port int) func(*serverConfiguration) {
+	return func(s *serverConfiguration) {
 		s.port = port
 	}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SetSessionCreator[E uint8 | uint16](creator SessionCreator) ServerConfigurator[E] {
-	return func(s *serverConfiguration[E]) {
+func SetSessionCreator(creator SessionCreator) ServerConfigurator {
+	return func(s *serverConfiguration) {
 		s.creator = creator
 	}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SetSessionDestroyer[E uint8 | uint16](destroyer SessionDestroyer) ServerConfigurator[E] {
-	return func(s *serverConfiguration[E]) {
+func SetSessionDestroyer(destroyer SessionDestroyer) ServerConfigurator {
+	return func(s *serverConfiguration) {
 		s.destroyer = destroyer
 	}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SetSessionMessageDecryptor[E uint8 | uint16](decryptor SessionMessageDecryptor) ServerConfigurator[E] {
-	return func(s *serverConfiguration[E]) {
+func SetSessionMessageDecryptor(decryptor SessionMessageDecryptor) ServerConfigurator {
+	return func(s *serverConfiguration) {
 		s.decryptor = decryptor
 	}
 }
 
-func SetOpReader[E uint8 | uint16](reader OpReader[E]) ServerConfigurator[E] {
-	return func(s *serverConfiguration[E]) {
-		s.opReader = reader
+//goland:noinspection GoUnusedExportedFunction
+func SetReadWriter(rw OpReadWriter) ServerConfigurator {
+	return func(s *serverConfiguration) {
+		s.rw = rw
 	}
 }

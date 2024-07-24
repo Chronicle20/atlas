@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Chronicle20/atlas-socket/crypto"
 	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"net"
@@ -11,17 +12,46 @@ import (
 	"time"
 )
 
-type OpReader[E uint8 | uint16] func(r *request.Reader) E
-
-func ByteOpReader(r *request.Reader) uint8 {
-	return r.ReadByte()
+type OpReader interface {
+	Read(r *request.Reader) uint16
 }
 
-func ShortOpReader(r *request.Reader) uint16 {
+type OpWriter interface {
+	Write(op uint16) func(w *response.Writer)
+}
+
+type OpReadWriter interface {
+	OpReader
+	OpWriter
+}
+
+type ByteReadWriter struct {
+}
+
+func (b ByteReadWriter) Read(r *request.Reader) uint16 {
+	return uint16(r.ReadByte())
+}
+
+func (b ByteReadWriter) Write(op uint16) func(w *response.Writer) {
+	return func(w *response.Writer) {
+		w.WriteByte(byte(op))
+	}
+}
+
+type ShortReadWriter struct {
+}
+
+func (s ShortReadWriter) Read(r *request.Reader) uint16 {
 	return r.ReadUint16()
 }
 
-type MessageHandlerProducer[E uint8 | uint16] func() map[E]request.Handler
+func (s ShortReadWriter) Write(op uint16) func(w *response.Writer) {
+	return func(w *response.Writer) {
+		w.WriteShort(op)
+	}
+}
+
+type HandlerProducer func() map[uint16]request.Handler
 
 type SessionCreator func(sessionId uuid.UUID, conn net.Conn)
 
@@ -39,19 +69,19 @@ type SessionDestroyer func(sessionId uuid.UUID)
 func defaultSessionDestroyer(_ uuid.UUID) {
 }
 
-type serverConfiguration[E uint8 | uint16] struct {
-	opReader  OpReader[E]
+type serverConfiguration struct {
+	rw        OpReadWriter
 	creator   SessionCreator
 	decryptor SessionMessageDecryptor
 	destroyer SessionDestroyer
 	ipAddress string
 	port      int
-	handlers  map[E]request.Handler
+	handlers  map[uint16]request.Handler
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func Run[E uint8 | uint16](l logrus.FieldLogger, handlerProducer MessageHandlerProducer[E], configurators ...ServerConfigurator[E]) error {
-	config := &serverConfiguration[E]{
+func Run(l logrus.FieldLogger, handlerProducer HandlerProducer, configurators ...ServerConfigurator) error {
+	config := &serverConfiguration{
 		creator:   defaultSessionCreator,
 		decryptor: defaultSessionMessageDecryptor,
 		destroyer: defaultSessionDestroyer,
@@ -81,12 +111,12 @@ func Run[E uint8 | uint16](l logrus.FieldLogger, handlerProducer MessageHandlerP
 
 		l.Infof("Client %s connected.", conn.RemoteAddr().String())
 
-		go run[E](l)(config, conn, uuid.New(), 4)
+		go run(l)(config, conn, uuid.New(), 4)
 	}
 }
 
-func run[E uint8 | uint16](l logrus.FieldLogger) func(config *serverConfiguration[E], conn net.Conn, sessionId uuid.UUID, headerSize int) {
-	return func(config *serverConfiguration[E], conn net.Conn, sessionId uuid.UUID, headerSize int) {
+func run(l logrus.FieldLogger) func(config *serverConfiguration, conn net.Conn, sessionId uuid.UUID, headerSize int) {
+	return func(config *serverConfiguration, conn net.Conn, sessionId uuid.UUID, headerSize int) {
 
 		defer func(conn net.Conn) {
 			err := conn.Close()
@@ -115,7 +145,7 @@ func run[E uint8 | uint16](l logrus.FieldLogger) func(config *serverConfiguratio
 
 				result := buffer
 				result = config.decryptor(sessionId, buffer)
-				handle[E](fl)(config, sessionId, result)
+				go handle(fl)(config, sessionId, result)
 			}
 
 			header = !header
@@ -126,15 +156,14 @@ func run[E uint8 | uint16](l logrus.FieldLogger) func(config *serverConfiguratio
 	}
 }
 
-func handle[E uint8 | uint16](l logrus.FieldLogger) func(config *serverConfiguration[E], sessionId uuid.UUID, p request.Request) {
-	return func(config *serverConfiguration[E], sessionId uuid.UUID, p request.Request) {
-		go func(sessionId uuid.UUID, reader request.Reader) {
-			op := config.opReader(&reader)
-			if h, ok := config.handlers[op]; ok {
-				h(sessionId, reader)
-			} else {
-				l.Infof("Read a unhandled message with op 0x%02X.", op&0xFF)
-			}
-		}(sessionId, request.NewRequestReader(&p, time.Now().Unix()))
+func handle(l logrus.FieldLogger) func(config *serverConfiguration, sessionId uuid.UUID, p request.Request) {
+	return func(config *serverConfiguration, sessionId uuid.UUID, p request.Request) {
+		reader := request.NewRequestReader(&p, time.Now().Unix())
+		op := config.rw.Read(&reader)
+		if h, ok := config.handlers[op]; ok {
+			h(sessionId, reader)
+		} else {
+			l.Infof("Read a unhandled message with op 0x%02X.", op&0xFF)
+		}
 	}
 }

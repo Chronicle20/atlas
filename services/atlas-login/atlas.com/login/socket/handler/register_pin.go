@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-login/account"
 	as "atlas-login/account/session"
+	"atlas-login/kafka/producer"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"github.com/Chronicle20/atlas-socket/request"
@@ -19,7 +20,7 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp write
 		opt := r.ReadByte()
 		if opt == 0 {
 			l.Debugf("Account [%d] opted out of PIN registration. Terminating session.", s.AccountId())
-			session.Destroy(l, span, session.GetRegistry())(s)
+			session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
 		}
 
 		if opt == 1 {
@@ -36,7 +37,7 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp write
 
 			if len(pin) > 4 {
 				l.Warnf("Read an invalid length pin. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-				session.Destroy(l, span, session.GetRegistry())(s)
+				session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
 			}
 
 			l.Debugf("Registering PIN [%s] for account [%d].", pin, s.AccountId())
@@ -58,10 +59,10 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp write
 			}
 
 			l.Debugf("Logging account out, as they are still at login screen and need to issue a new request.")
-			as.Destroy(l, span, s.Tenant())(s.AccountId())
+			as.Destroy(l, producer.ProviderImpl(l)(span))(s.Tenant(), s.AccountId())
 			return
 		}
 		l.Warnf("Unhandled opt [%d] for PIN registration. Terminating session.", opt)
-		session.Destroy(l, span, session.GetRegistry())(s)
+		session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
 	}
 }

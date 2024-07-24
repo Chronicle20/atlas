@@ -4,6 +4,7 @@ import (
 	as "atlas-login/account/session"
 	"atlas-login/kafka/producer"
 	"atlas-login/tenant"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
@@ -26,10 +27,10 @@ func Create(l logrus.FieldLogger, r *Registry) func(t tenant.Model, locale byte)
 	}
 }
 
-func Decrypt(_ logrus.FieldLogger, r *Registry) func(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
+func Decrypt(_ logrus.FieldLogger, r *Registry, tenant tenant.Model) func(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
 	return func(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
 		return func(sessionId uuid.UUID, input []byte) []byte {
-			s, ok := r.Get(sessionId)
+			s, ok := r.Get(tenant.Id, sessionId)
 			if !ok {
 				return input
 			}
@@ -41,36 +42,40 @@ func Decrypt(_ logrus.FieldLogger, r *Registry) func(hasAes bool, hasMapleEncryp
 	}
 }
 
-func DestroyAll(l logrus.FieldLogger, span opentracing.Span, r *Registry) {
-	for _, s := range r.GetAll() {
-		Destroy(l, span, r)(s)
+func DestroyAll(l logrus.FieldLogger, span opentracing.Span, r *Registry) model.Operator[uuid.UUID] {
+	return func(tenantId uuid.UUID) error {
+		for _, s := range r.GetAll() {
+			Destroy(l, span, r, tenantId)(s)
+		}
+		return nil
 	}
 }
 
-func DestroyByIdWithSpan(l logrus.FieldLogger, r *Registry) func(sessionId uuid.UUID) {
+func DestroyByIdWithSpan(l logrus.FieldLogger, r *Registry, tenantId uuid.UUID) func(sessionId uuid.UUID) {
 	return func(sessionId uuid.UUID) {
 		span := opentracing.StartSpan("session_destroy")
 		defer span.Finish()
-		DestroyById(l, span, r)(sessionId)
+		DestroyById(l, span, r, tenantId)(sessionId)
 	}
 }
 
-func DestroyById(l logrus.FieldLogger, span opentracing.Span, r *Registry) func(sessionId uuid.UUID) {
+func DestroyById(l logrus.FieldLogger, span opentracing.Span, r *Registry, tenantId uuid.UUID) func(sessionId uuid.UUID) {
 	return func(sessionId uuid.UUID) {
-		s, ok := r.Get(sessionId)
+		s, ok := r.Get(tenantId, sessionId)
 		if !ok {
 			return
 		}
-		Destroy(l, span, r)(s)
+		Destroy(l, span, r, tenantId)(s)
 	}
 }
 
-func Destroy(l logrus.FieldLogger, span opentracing.Span, r *Registry) func(Model) {
+func Destroy(l logrus.FieldLogger, span opentracing.Span, r *Registry, tenantId uuid.UUID) func(Model) {
+	pi := producer.ProviderImpl(l)(span)
 	return func(s Model) {
 		l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
-		r.Remove(s.SessionId())
+		r.Remove(tenantId, s.SessionId())
 		s.Disconnect()
-		as.Destroy(l, span, s.Tenant())(s.AccountId())
-		_ = producer.ProviderImpl(l)(span)(EnvEventTopicSessionStatus)(destroyedStatusEventProvider(s.tenant, s.SessionId(), s.AccountId()))
+		as.Destroy(l, pi)(s.Tenant(), s.AccountId())
+		_ = pi(EnvEventTopicSessionStatus)(destroyedStatusEventProvider(s.tenant, s.SessionId(), s.AccountId()))
 	}
 }

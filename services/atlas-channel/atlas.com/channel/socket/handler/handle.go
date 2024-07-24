@@ -42,21 +42,27 @@ func NoOpHandlerFunc(_ logrus.FieldLogger, _ opentracing.Span, _ writer.Producer
 	}
 }
 
-func AdaptHandler(l logrus.FieldLogger, name string, v MessageValidator, h MessageHandler, wp writer.Producer, tenantId uuid.UUID, readerOptions map[string]interface{}) request.Handler {
-	return func(sessionId uuid.UUID, r request.Reader) {
-		fl := l.WithField("session", sessionId.String())
-		sl, span := tracing.StartSpan(fl, name)
+type Adapter func(name string, v MessageValidator, h MessageHandler, readerOptions map[string]interface{}) request.Handler
 
-		s, ok := session.GetRegistry().Get(tenantId, sessionId)
-		if !ok {
-			sl.Errorf("Unable to locate session %d", sessionId)
-			return
-		}
+func AdaptHandler(l logrus.FieldLogger) func(tenantId uuid.UUID, wp writer.Producer) Adapter {
+	return func(tenantId uuid.UUID, wp writer.Producer) Adapter {
+		return func(name string, v MessageValidator, h MessageHandler, readerOptions map[string]interface{}) request.Handler {
+			return func(sessionId uuid.UUID, r request.Reader) {
+				fl := l.WithField("session", sessionId.String())
+				sl, span := tracing.StartSpan(fl, name)
 
-		if v(sl, span)(s) {
-			h(sl, span, wp)(s, &r, readerOptions)
-			s = session.UpdateLastRequest()(tenantId, s.SessionId())
+				s, ok := session.GetRegistry().Get(tenantId, sessionId)
+				if !ok {
+					sl.Errorf("Unable to locate session %d", sessionId)
+					return
+				}
+
+				if v(sl, span)(s) {
+					h(sl, span, wp)(s, &r, readerOptions)
+					s = session.UpdateLastRequest()(tenantId, s.SessionId())
+				}
+				span.Finish()
+			}
 		}
-		span.Finish()
 	}
 }

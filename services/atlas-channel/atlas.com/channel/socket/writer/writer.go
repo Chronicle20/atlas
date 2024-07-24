@@ -6,17 +6,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type OpWriterProducer[E uint8 | uint16] func(op E) OpWriter
-
-type OpWriter func(w *response.Writer)
-
 type BodyProducer func(w *response.Writer, options map[string]interface{}) []byte
 
 type BodyFunc func(l logrus.FieldLogger) func(rem BodyProducer) []byte
 
-type HeaderFunc func(opWriter OpWriter, options map[string]interface{}) BodyFunc
+type HeaderFunc func(opWriter func(w *response.Writer), options map[string]interface{}) BodyFunc
 
-func MessageGetter(opWriter OpWriter, options map[string]interface{}) BodyFunc {
+func MessageGetter(opWriter func(w *response.Writer), options map[string]interface{}) BodyFunc {
 	return func(l logrus.FieldLogger) func(rem BodyProducer) []byte {
 		return func(rem BodyProducer) []byte {
 			w := response.NewWriter(l)

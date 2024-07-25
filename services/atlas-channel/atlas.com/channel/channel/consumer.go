@@ -21,8 +21,8 @@ func CommandStatusConsumer(l logrus.FieldLogger) func(groupId string) consumer.C
 	}
 }
 
-func CommandStatusRegister(sc server.Model, ipAddress string, port string) func(l *logrus.Logger) (string, handler.Handler) {
-	return func(l *logrus.Logger) (string, handler.Handler) {
+func CommandStatusRegister(sc server.Model, ipAddress string, port string) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
 		t, _ := topic.EnvProvider(l)(EnvCommandTopicChannelStatus)()
 		return t, message.AdaptHandler(message.PersistentConfig(handleCommandStatus(sc, ipAddress, port)))
 	}

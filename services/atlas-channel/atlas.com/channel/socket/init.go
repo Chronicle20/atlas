@@ -5,7 +5,6 @@ import (
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"context"
-	"fmt"
 	"github.com/Chronicle20/atlas-socket"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
@@ -13,7 +12,7 @@ import (
 	"sync"
 )
 
-func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, sc server.Model, ipAddress string, port string) {
+func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, sc server.Model, ipAddress string, port string) {
 	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, sc server.Model, ipAddress string, portStr string) {
 		go func() {
 			ctx, cancel := context.WithCancel(ctx)
@@ -40,22 +39,15 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 
 			l.Debugf("Service locale [%d].", locale)
 
-			fl := l.
-				WithField("tenant", sc.Tenant().Id.String()).
-				WithField("region", sc.Tenant().Region).
-				WithField("ms.version", fmt.Sprintf("%d.%d", sc.Tenant().MajorVersion, sc.Tenant().MinorVersion)).
-				WithField("world.id", sc.WorldId()).
-				WithField("channel.id", sc.ChannelId())
-
 			go func() {
 				wg.Add(1)
 				defer wg.Done()
 
-				err = socket.Run(fl, hp,
+				err = socket.Run(l, hp,
 					socket.SetPort(port),
-					socket.SetSessionCreator(session.Create(fl, session.GetRegistry(), sc.Tenant())(locale)),
-					socket.SetSessionMessageDecryptor(session.Decrypt(fl, session.GetRegistry(), sc.Tenant())(true, hasMapleEncryption)),
-					socket.SetSessionDestroyer(session.DestroyByIdWithSpan(fl, session.GetRegistry(), sc.Tenant().Id)),
+					socket.SetSessionCreator(session.Create(l, session.GetRegistry(), sc.Tenant())(sc.WorldId(), sc.ChannelId(), locale)),
+					socket.SetSessionMessageDecryptor(session.Decrypt(l, session.GetRegistry(), sc.Tenant())(true, hasMapleEncryption)),
+					socket.SetSessionDestroyer(session.DestroyByIdWithSpan(l, session.GetRegistry(), sc.Tenant().Id)),
 					socket.SetReadWriter(rw),
 				)
 

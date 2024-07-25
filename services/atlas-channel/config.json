@@ -52,6 +52,11 @@
               "handler": "MapChangeHandle"
             },
             {
+              "opCode": "0x14",
+              "validator": "LoggedInValidator",
+              "handler": "ChannelChangeHandle"
+            },
+            {
               "opCode": "0x16",
               "validator": "LoggedInValidator",
               "handler": "CharacterMoveHandle",
@@ -89,6 +94,10 @@
             }
           ],
           "writers": [
+            {
+              "opCode": "0x0E",
+              "writer": "ChannelChange"
+            },
             {
               "opCode": "0x16",
               "writer": "StatChanged"
@@ -162,6 +171,11 @@
               "handler": "MapChangeHandle"
             },
             {
+              "opCode": "0x27",
+              "validator": "LoggedInValidator",
+              "handler": "ChannelChangeHandle"
+            },
+            {
               "opCode": "0x29",
               "validator": "LoggedInValidator",
               "handler": "CharacterMoveHandle",
@@ -232,6 +246,10 @@
             }
           ],
           "writers": [
+            {
+              "opCode": "0x10",
+              "writer": "ChannelChange"
+            },
             {
               "opCode": "0x1F",
               "writer": "StatChanged"
@@ -319,6 +337,11 @@
               "handler": "MapChangeHandle"
             },
             {
+              "opCode": "0x29",
+              "validator": "LoggedInValidator",
+              "handler": "ChannelChangeHandle"
+            },
+            {
               "opCode": "0x2B",
               "validator": "LoggedInValidator",
               "handler": "CharacterMoveHandle",
@@ -393,6 +416,10 @@
             }
           ],
           "writers": [
+            {
+              "opCode": "0x10",
+              "writer": "ChannelChange"
+            },
             {
               "opCode": "0x1F",
               "writer": "StatChanged"
@@ -482,6 +509,11 @@
               "handler": "MapChangeHandle"
             },
             {
+              "opCode": "0x2C",
+              "validator": "LoggedInValidator",
+              "handler": "ChannelChangeHandle"
+            },
+            {
               "opCode": "0x2E",
               "validator": "LoggedInValidator",
               "handler": "CharacterMoveHandle"
@@ -498,6 +530,10 @@
             }
           ],
           "writers": [
+            {
+              "opCode": "0x10",
+              "writer": "ChannelChange"
+            },
             {
               "opCode": "0x20",
               "writer": "StatChanged"
@@ -556,6 +592,11 @@
               "opCode": "0x1D",
               "validator": "LoggedInValidator",
               "handler": "MapChangeHandle"
+            },
+            {
+              "opCode": "0x1E",
+              "validator": "LoggedInValidator",
+              "handler": "ChannelChangeHandle"
             },
             {
               "opCode": "0x20",
@@ -648,6 +689,10 @@
             }
           ],
           "writers": [
+            {
+              "opCode": "0x08",
+              "writer": "ChannelChange"
+            },
             {
               "opCode": "0x1D",
               "writer": "StatChanged"

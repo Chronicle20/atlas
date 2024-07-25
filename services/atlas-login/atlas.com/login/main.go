@@ -11,6 +11,7 @@ import (
 	"atlas-login/tenant"
 	"atlas-login/tracing"
 	"context"
+	"fmt"
 	socket2 "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/opentracing/opentracing-go"
@@ -60,15 +61,20 @@ func main() {
 			continue
 		}
 
+		fl := l.
+			WithField("tenant", t.Id.String()).
+			WithField("region", t.Region).
+			WithField("ms.version", fmt.Sprintf("%d.%d", t.MajorVersion, t.MinorVersion))
+
 		var rw socket2.OpReadWriter = socket2.ShortReadWriter{}
 		if t.Region == "GMS" && t.MajorVersion <= 28 {
 			rw = socket2.ByteReadWriter{}
 		}
 
-		wp := produceWriterProducer(l)(s.Writers, writerList, rw)
-		hp := handlerProducer(l)(handler.AdaptHandler(l)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
+		wp := produceWriterProducer(fl)(s.Writers, writerList, rw)
+		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
 
-		socket.CreateSocketService(l, ctx, wg)(hp, rw, t, s.Port)
+		socket.CreateSocketService(fl, ctx, wg)(hp, rw, t, s.Port)
 	}
 
 	tt, err := config.FindTask(session.TimeoutTask)
@@ -94,7 +100,7 @@ func main() {
 	l.Infoln("Service shutdown.")
 }
 
-func produceWriterProducer(l *logrus.Logger) func(writers []configuration.Writer, writerList []string, w socket2.OpWriter) writer.Producer {
+func produceWriterProducer(l logrus.FieldLogger) func(writers []configuration.Writer, writerList []string, w socket2.OpWriter) writer.Producer {
 	return func(writers []configuration.Writer, writerList []string, w socket2.OpWriter) writer.Producer {
 		return getWriterProducer(l)(writers, writerList, w)
 	}

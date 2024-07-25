@@ -59,7 +59,7 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp write
 			}
 
 			l.Debugf("Logging account out, as they are still at login screen and need to issue a new request.")
-			as.Destroy(l, producer.ProviderImpl(l)(span))(s.Tenant(), s.AccountId())
+			as.Destroy(l, producer.ProviderImpl(l)(span))(s.Tenant(), s.SessionId(), s.AccountId())
 			return
 		}
 		l.Warnf("Unhandled opt [%d] for PIN registration. Terminating session.", opt)

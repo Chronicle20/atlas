@@ -11,12 +11,14 @@ import (
 	"net"
 )
 
-func Create(l logrus.FieldLogger, r *Registry, tenant tenant.Model) func(locale byte) func(sessionId uuid.UUID, conn net.Conn) {
-	return func(locale byte) func(sessionId uuid.UUID, conn net.Conn) {
+func Create(l logrus.FieldLogger, r *Registry, tenant tenant.Model) func(worldId byte, channelId byte, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
+	return func(worldId byte, channelId byte, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
 		return func(sessionId uuid.UUID, conn net.Conn) {
 			fl := l.WithField("session", sessionId)
 			fl.Debugf("Creating session.")
 			s := NewSession(sessionId, tenant, locale, conn)
+			s = s.setWorldId(worldId)
+			s = s.setChannelId(channelId)
 			r.Add(s)
 
 			err := s.WriteHello()
@@ -75,7 +77,7 @@ func Destroy(l logrus.FieldLogger, span opentracing.Span, r *Registry, tenantId 
 		l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 		r.Remove(tenantId, s.SessionId())
 		s.Disconnect()
-		as.Destroy(l, pi)(s.Tenant(), s.AccountId())
+		as.Destroy(l, pi)(s.Tenant(), s.SessionId(), s.AccountId())
 
 		_ = pi(EnvEventTopicSessionStatus)(destroyedStatusEventProvider(s.tenant, s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
 	}

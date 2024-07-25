@@ -22,6 +22,7 @@ func updateState(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 	return func(sessionId uuid.UUID, accountId uint32, state int) (Model, error) {
 		i := InputRestModel{
 			Id:        0,
+			Issuer:    "CHANNEL",
 			SessionId: sessionId,
 			State:     state,
 		}

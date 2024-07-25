@@ -31,7 +31,7 @@ func CharacterLoggedInHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp
 		s = session.SetCharacterId(c.Id())(s.Tenant().Id, s.SessionId())
 		s = session.SetGm(c.Gm())(s.Tenant().Id, s.SessionId())
 
-		resp, err := as.UpdateState(l, span, s.Tenant())(s.SessionId(), s.AccountId(), 3)
+		resp, err := as.UpdateState(l, span, s.Tenant())(s.SessionId(), s.AccountId(), 1)
 		if err != nil || resp.Code != "OK" {
 			l.WithError(err).Errorf("Unable to update session for character [%d] attempting to switch to channel.", characterId)
 			session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)

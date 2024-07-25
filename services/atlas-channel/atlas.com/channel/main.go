@@ -77,9 +77,6 @@ func main() {
 			rw = socket2.ByteReadWriter{}
 		}
 
-		wp := produceWriterProducer(l)(s.Writers, writerList, rw)
-		hp := handlerProducer(l)(handler.AdaptHandler(l)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
-
 		for _, w := range s.Worlds {
 			for _, c := range w.Channels {
 				var sc server.Model
@@ -88,14 +85,22 @@ func main() {
 					continue
 				}
 
-				// TODO this needs refactoring.
-				_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(character.StatusEventStatChangedRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(character.StatusEventMapChangedRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(channel.CommandStatusRegister(sc, config.Data.Attributes.IPAddress, c.Port)(l))
+				fl := l.
+					WithField("tenant", sc.Tenant().Id.String()).
+					WithField("region", sc.Tenant().Region).
+					WithField("ms.version", fmt.Sprintf("%d.%d", sc.Tenant().MajorVersion, sc.Tenant().MinorVersion)).
+					WithField("world.id", sc.WorldId()).
+					WithField("channel.id", sc.ChannelId())
 
-				socket.CreateSocketService(l, ctx, wg)(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
+				wp := produceWriterProducer(fl)(s.Writers, writerList, rw)
+				_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(character.StatusEventStatChangedRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(character.StatusEventMapChangedRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(channel.CommandStatusRegister(sc, config.Data.Attributes.IPAddress, c.Port)(fl))
+
+				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
+				socket.CreateSocketService(fl, ctx, wg)(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
 			}
 		}
 	}
@@ -123,7 +128,7 @@ func main() {
 	l.Infoln("Service shutdown.")
 }
 
-func produceWriterProducer(l *logrus.Logger) func(writers []configuration.Writer, writerList []string, w socket2.OpWriter) writer.Producer {
+func produceWriterProducer(l logrus.FieldLogger) func(writers []configuration.Writer, writerList []string, w socket2.OpWriter) writer.Producer {
 	return func(writers []configuration.Writer, writerList []string, w socket2.OpWriter) writer.Producer {
 		return getWriterProducer(l)(writers, writerList, w)
 	}
@@ -136,6 +141,7 @@ func produceWriters() []string {
 		writer.SpawnNPCRequestController,
 		writer.NPCAction,
 		writer.StatChanged,
+		writer.ChannelChange,
 	}
 }
 
@@ -146,6 +152,8 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.NPCActionHandle] = handler.NPCActionHandleFunc
 	handlerMap[handler.PortalScriptHandle] = handler.PortalScriptHandleFunc
 	handlerMap[handler.MapChangeHandle] = handler.MapChangeHandleFunc
+	handlerMap[handler.CharacterMoveHandle] = handler.CharacterMoveHandleFunc
+	handlerMap[handler.ChannelChangeHandle] = handler.ChannelChangeHandleFunc
 	return handlerMap
 }
 

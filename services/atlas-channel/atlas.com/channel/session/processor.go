@@ -108,20 +108,6 @@ func UpdateLastRequest() func(tenantId uuid.UUID, id uuid.UUID) Model {
 	}
 }
 
-//
-//func SetChannelId(channelId byte) func(id uuid.UUID) Model {
-//	return func(id uuid.UUID) Model {
-//		s := Model{}
-//		var ok bool
-//		if s, ok = GetRegistry().Get(id); ok {
-//			s = s.setChannelId(channelId)
-//			GetRegistry().Update(s)
-//			return s
-//		}
-//		return s
-//	}
-//}
-
 func SessionCreated(kp producer.Provider, tenant tenant.Model) func(s Model) {
 	return func(s Model) {
 		_ = kp(EnvEventTopicSessionStatus)(createdStatusEventProvider(tenant, s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))

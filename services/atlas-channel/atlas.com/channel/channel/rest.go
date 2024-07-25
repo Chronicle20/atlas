@@ -24,3 +24,11 @@ func (r *RestModel) SetID(strId string) error {
 	r.Id = uint32(id)
 	return nil
 }
+
+func Extract(m RestModel) (Model, error) {
+	return Model{
+		id:        byte(m.Id),
+		ipAddress: m.IpAddress,
+		port:      m.Port,
+	}, nil
+}

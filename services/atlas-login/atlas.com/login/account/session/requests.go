@@ -23,6 +23,7 @@ func CreateLogin(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 		i := InputRestModel{
 			Id:        0,
 			SessionId: sessionId,
+			Issuer:    "LOGIN",
 			Name:      name,
 			Password:  password,
 			IpAddress: ipAddress,
@@ -45,6 +46,7 @@ func updateState(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 		i := InputRestModel{
 			Id:        0,
 			SessionId: sessionId,
+			Issuer:    "LOGIN",
 			State:     state,
 		}
 		resp, err := rest.MakePatchRequest[OutputRestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+LoginsResource, accountId), i)(l)

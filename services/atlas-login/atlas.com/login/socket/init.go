@@ -4,14 +4,13 @@ import (
 	"atlas-login/session"
 	"atlas-login/tenant"
 	"context"
-	"fmt"
 	"github.com/Chronicle20/atlas-socket"
 	"github.com/sirupsen/logrus"
 	"strconv"
 	"sync"
 )
 
-func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, t tenant.Model, port string) {
+func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, t tenant.Model, port string) {
 	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, t tenant.Model, portStr string) {
 		go func() {
 			ctx, cancel := context.WithCancel(ctx)
@@ -38,17 +37,15 @@ func CreateSocketService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGro
 
 			l.Debugf("Service locale [%d].", locale)
 
-			fl := l.WithField("tenant", t.Id.String()).WithField("region", t.Region).WithField("ms.version", fmt.Sprintf("%d.%d", t.MajorVersion, t.MinorVersion))
-
 			go func() {
 				wg.Add(1)
 				defer wg.Done()
 
-				err = socket.Run(fl, hp,
+				err = socket.Run(l, hp,
 					socket.SetPort(port),
-					socket.SetSessionCreator(session.Create(fl, session.GetRegistry())(t, locale)),
-					socket.SetSessionMessageDecryptor(session.Decrypt(fl, session.GetRegistry(), t)(true, hasMapleEncryption)),
-					socket.SetSessionDestroyer(session.DestroyByIdWithSpan(fl, session.GetRegistry(), t.Id)),
+					socket.SetSessionCreator(session.Create(l, session.GetRegistry())(t, locale)),
+					socket.SetSessionMessageDecryptor(session.Decrypt(l, session.GetRegistry(), t)(true, hasMapleEncryption)),
+					socket.SetSessionDestroyer(session.DestroyByIdWithSpan(l, session.GetRegistry(), t.Id)),
 					socket.SetReadWriter(rw),
 				)
 

@@ -75,7 +75,7 @@ func Destroy(l logrus.FieldLogger, span opentracing.Span, r *Registry, tenantId 
 		l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 		r.Remove(tenantId, s.SessionId())
 		s.Disconnect()
-		as.Destroy(l, pi)(s.Tenant(), s.AccountId())
+		as.Destroy(l, pi)(s.Tenant(), s.SessionId(), s.AccountId())
 		_ = pi(EnvEventTopicSessionStatus)(destroyedStatusEventProvider(s.tenant, s.SessionId(), s.AccountId()))
 	}
 }

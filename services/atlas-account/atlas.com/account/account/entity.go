@@ -6,15 +6,6 @@ import (
 	"time"
 )
 
-type State byte
-
-const (
-	NotLoggedIn       State = 0
-	InLogin           State = 1
-	ServerTransistion State = 2
-	LoggedIn          State = 3
-)
-
 func Migration(db *gorm.DB) error {
 	return db.AutoMigrate(&entity{})
 }
@@ -27,7 +18,6 @@ type entity struct {
 	PIN       string
 	PIC       string
 	Gender    byte `gorm:"not null;default=0"`
-	State     byte `gorm:"not null;default=0"`
 	TOS       bool `gorm:"not null;default=false"`
 	LastLogin int64
 	CreatedAt time.Time // Automatically managed by GORM for creation time

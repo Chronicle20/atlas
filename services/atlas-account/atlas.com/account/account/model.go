@@ -5,6 +5,14 @@ import (
 	"time"
 )
 
+type State uint8
+
+const (
+	StateNotLoggedIn = 0
+	StateLoggedIn    = 1
+	StateTransition  = 2
+)
+
 type Model struct {
 	tenantId  uuid.UUID
 	id        uint32

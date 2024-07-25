@@ -10,39 +10,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"time"
 )
 
 type IdOperator func(tenant.Model, uint32) error
-
-func SetLoggedOut(db *gorm.DB) IdOperator {
-	return func(tenant tenant.Model, id uint32) error {
-		return ForId(db)(tenant, id, setLoggedOut(db)(tenant))
-	}
-}
-
-func setLoggedOut(db *gorm.DB) func(tenant tenant.Model) model.Operator[Model] {
-	return func(tenant tenant.Model) model.Operator[Model] {
-		return setState(db)(tenant)(NotLoggedIn)
-	}
-}
-
-func SetState(db *gorm.DB) func(state State) IdOperator {
-	return func(state State) IdOperator {
-		return func(t tenant.Model, id uint32) error {
-			return ForId(db)(t, id, setState(db)(t)(state))
-		}
-	}
-}
-
-func setState(db *gorm.DB) func(tenant tenant.Model) func(state State) model.Operator[Model] {
-	return func(tenant tenant.Model) func(state State) model.Operator[Model] {
-		return func(state State) model.Operator[Model] {
-			return func(m Model) error {
-				return update(db)(updateState(state))(tenant, m.Id())
-			}
-		}
-	}
-}
 
 func ForId(db *gorm.DB) func(tenant tenant.Model, id uint32, operator model.Operator[Model]) error {
 	return func(tenant tenant.Model, id uint32, operator model.Operator[Model]) error {
@@ -56,13 +27,23 @@ func ForId(db *gorm.DB) func(tenant tenant.Model, id uint32, operator model.Oper
 
 func byIdProvider(db *gorm.DB) func(tenant tenant.Model, id uint32) model.Provider[Model] {
 	return func(tenant tenant.Model, id uint32) model.Provider[Model] {
-		return database.ModelProvider[Model, entity](db)(entityById(tenant, id), modelFromEntity)
+		mp := database.ModelProvider[Model, entity](db)(entityById(tenant, id), modelFromEntity)
+		return model.Map(mp, decorateState(tenant))
 	}
 }
 
 func byNameProvider(db *gorm.DB) func(tenant tenant.Model, name string) model.Provider[[]Model] {
 	return func(tenant tenant.Model, name string) model.Provider[[]Model] {
-		return database.ModelSliceProvider[Model, entity](db)(entitiesByName(tenant, name), modelFromEntity)
+		mp := database.ModelSliceProvider[Model, entity](db)(entitiesByName(tenant, name), modelFromEntity)
+		return model.SliceMap(mp, decorateState(tenant))
+	}
+}
+
+func decorateState(tenant tenant.Model) func(m Model) (Model, error) {
+	return func(m Model) (Model, error) {
+		st := Get().MaximalState(AccountKey{TenantId: tenant.Id, AccountId: m.Id()})
+		m.state = st
+		return m, nil
 	}
 }
 
@@ -88,12 +69,8 @@ func GetByName(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name
 	}
 }
 
-func allInTransitionProvider(db *gorm.DB) model.Provider[[]Model] {
-	return database.ModelSliceProvider[Model, entity](db)(entitiesInTransition, modelFromEntity)
-}
-
-func GetInTransition(l logrus.FieldLogger, db *gorm.DB) ([]Model, error) {
-	return allInTransitionProvider(db)()
+func GetInTransition(timeout time.Duration) ([]AccountKey, error) {
+	return model.FixedProvider(Get().GetExpiredInTransition(timeout))()
 }
 
 func GetOrCreate(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(name string, password string, automaticRegister bool) (Model, error) {

@@ -65,11 +65,11 @@ func main() {
 	cm.AddConsumer(l, ctx, wg)(account.CreateAccountCommandConsumer(l)(consumerGroupId))
 	cm.AddConsumer(l, ctx, wg)(session.CreateAccountSessionCommandConsumer(l)(consumerGroupId))
 	_, _ = cm.RegisterHandler(account.CreateAccountRegister(l, db))
-	_, _ = cm.RegisterHandler(session.CreateAccountSessionRegister(l, db))
+	_, _ = cm.RegisterHandler(session.CreateAccountSessionRegister(l))
 
 	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), session.InitResource(GetServer())(db), account.InitResource(GetServer())(db))
 
-	go tasks.Register(l, ctx)(account.NewTransitionTimeout(l, db, time.Second*time.Duration(30)))
+	go tasks.Register(l, ctx)(account.NewTransitionTimeout(l, db, time.Second*time.Duration(5)))
 
 	// trap sigterm or interrupt and gracefully shutdown the server
 	c := make(chan os.Signal, 1)

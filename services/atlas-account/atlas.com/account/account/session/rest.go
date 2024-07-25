@@ -5,6 +5,7 @@ import "github.com/google/uuid"
 
 type InputRestModel struct {
 	Id        uint32    `json:"-"`
+	Issuer    string    `json:"issuer"`
 	SessionId uuid.UUID `json:"sessionId"`
 	Name      string    `json:"name"`
 	Password  string    `json:"password"`

@@ -48,7 +48,7 @@ func handleCreateSession(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 func handleUpdateSession(d *rest.HandlerDependency, c *rest.HandlerContext, input InputRestModel) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			resp := ProgressState(d.Logger(), d.DB(), d.Span(), c.Tenant())(input.SessionId, accountId, account.State(input.State))
+			resp := ProgressState(d.Logger(), d.DB(), d.Span(), c.Tenant())(input.SessionId, input.Issuer, accountId, account.State(input.State))
 			res, err := model.Map(model.FixedProvider(resp), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")

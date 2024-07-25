@@ -67,7 +67,7 @@ func TestInternalUpdate(t *testing.T) {
 		t.Fatalf("Failed to create account: %v", err)
 	}
 
-	err = update(db)(updateState(LoggedIn), updatePin(testPin), updatePic(testPic), updateTos(true))(st, a.Id())
+	err = update(db)(updatePin(testPin), updatePic(testPic), updateTos(true))(st, a.Id())
 	if err != nil {
 		t.Fatalf("Failed to update account: %v", err)
 	}
@@ -87,10 +87,6 @@ func TestInternalUpdate(t *testing.T) {
 
 	if r.Password() != testPassword {
 		t.Fatalf("Password mismatch. Expected %v, got %v", testName, r.Password())
-	}
-
-	if r.State() != LoggedIn {
-		t.Fatalf("State mismatch. Expected %v, got %v", LoggedIn, r.State())
 	}
 
 	if r.Pin() != testPin {
@@ -131,61 +127,6 @@ func TestInternalGetByName(t *testing.T) {
 	}
 
 	re, err := entitiesByName(st, testName)(db)()
-	if err != nil {
-		t.Fatalf("Failed to retrieve updated account: %v", err)
-	}
-
-	if len(re) != 1 {
-		t.Fatalf("Number of records mismatch. Expected %v, got %v", 1, len(re))
-	}
-
-	r, err := modelFromEntity(re[0])
-	if err != nil {
-		t.Fatalf("Failed to retrieve account: %v", err)
-	}
-
-	if r.Name() != testName {
-		t.Fatalf("Name mismatch. Expected %v, got %v", testName, r.Name())
-	}
-
-	if r.Password() != testPassword {
-		t.Fatalf("Password mismatch. Expected %v, got %v", testName, r.Password())
-	}
-}
-
-func TestInternalGetInTransition(t *testing.T) {
-	db := setupTestDatabase(t)
-
-	testName := "name"
-	testPassword := "password"
-
-	st := sampleTenant()
-	te, err := create(db)(st, testName, testPassword)
-	if err != nil {
-		t.Fatalf("Failed to create account: %v", err)
-	}
-	err = update(db)(updateState(ServerTransistion))(st, te.Id())
-	if err != nil {
-		t.Fatalf("Failed to update account: %v", err)
-	}
-	oe1, err := create(db)(st, "other1", testPassword)
-	if err != nil {
-		t.Fatalf("Failed to create account: %v", err)
-	}
-	err = update(db)(updateState(LoggedIn))(st, oe1.Id())
-	if err != nil {
-		t.Fatalf("Failed to update account: %v", err)
-	}
-	_, err = create(db)(st, "other2", testPassword)
-	if err != nil {
-		t.Fatalf("Failed to create account: %v", err)
-	}
-	_, err = create(db)(st, "other3", testPassword)
-	if err != nil {
-		t.Fatalf("Failed to create account: %v", err)
-	}
-
-	re, err := entitiesInTransition(db)()
 	if err != nil {
 		t.Fatalf("Failed to retrieve updated account: %v", err)
 	}

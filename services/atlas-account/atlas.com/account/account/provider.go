@@ -29,12 +29,3 @@ func entitiesByName(tenant tenant.Model, name string) database.EntityProvider[[]
 		return model.FixedProvider[[]entity](results)
 	}
 }
-
-func entitiesInTransition(db *gorm.DB) model.Provider[[]entity] {
-	var results []entity
-	err := db.Where(&entity{State: byte(ServerTransistion)}).Find(&results).Error
-	if err != nil {
-		return model.ErrorProvider[[]entity](err)
-	}
-	return model.FixedProvider[[]entity](results)
-}

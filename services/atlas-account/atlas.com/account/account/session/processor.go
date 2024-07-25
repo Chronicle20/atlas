@@ -49,7 +49,7 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 
 		// TODO implement ip, mac, and temporary banning practices
 
-		if a.State() != account.NotLoggedIn {
+		if a.State() != account.StateNotLoggedIn {
 			return ErrorModel(AlreadyLoggedIn)
 		} else if a.Password()[0] == uint8('$') && a.Password()[1] == uint8('2') && bcrypt.CompareHashAndPassword([]byte(a.Password()), []byte(password)) == nil {
 			// TODO implement tos tracking
@@ -57,7 +57,7 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 			return ErrorModel(IncorrectPassword)
 		}
 
-		err = account.SetState(db)(account.InLogin)(tenant, a.Id())
+		err = account.Get().Login(account.AccountKey{TenantId: tenant.Id, AccountId: a.Id()}, account.ServiceKey{SessionId: sessionId, Service: account.ServiceLogin})
 		if err != nil {
 			l.WithError(err).Errorf("Error trying to update logged in state for %s.", name)
 			return ErrorModel(SystemError)
@@ -73,22 +73,42 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 	}
 }
 
-func ProgressState(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32, state account.State) Model {
-	return func(sessionId uuid.UUID, accountId uint32, state account.State) Model {
+func ProgressState(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, issuer string, accountId uint32, state account.State) Model {
+	return func(sessionId uuid.UUID, issuer string, accountId uint32, state account.State) Model {
 		a, err := account.GetById(l, db, tenant)(accountId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate account a session is being created for.")
 			return ErrorModel(NotRegistered)
 		}
-		if a.State() == account.NotLoggedIn {
+
+		l.Debugf("Received request to progress state for account [%d] to state [%d] from state [%d].", accountId, state, a.State())
+		if a.State() == account.StateNotLoggedIn {
 			return ErrorModel(SystemError)
 		}
-		err = account.SetState(db)(state)(tenant, a.Id())
-		if err != nil {
-			l.WithError(err).Errorf("Error trying to update logged in state for %d.", accountId)
-			return ErrorModel(SystemError)
+		if state == account.StateNotLoggedIn {
+			ok := account.Get().Logout(account.AccountKey{TenantId: tenant.Id, AccountId: accountId}, account.ServiceKey{SessionId: sessionId, Service: account.Service(issuer)})
+			if ok {
+				l.Debugf("State transition triggered a logout.")
+				_ = producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedOutEventProvider()(tenant, a.Id(), ""))
+			}
+			return OkModel()
 		}
-		return OkModel()
+		if state == account.StateLoggedIn {
+			err = account.Get().Login(account.AccountKey{TenantId: tenant.Id, AccountId: accountId}, account.ServiceKey{SessionId: sessionId, Service: account.Service(issuer)})
+			if err == nil {
+				l.Debugf("State transition triggered a login.")
+				_ = producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedInEventProvider()(tenant, a.Id(), ""))
+			}
+			return OkModel()
+		}
+		if state == account.StateTransition {
+			err = account.Get().Transition(account.AccountKey{TenantId: tenant.Id, AccountId: accountId}, account.ServiceKey{SessionId: sessionId, Service: account.Service(issuer)})
+			if err == nil {
+				l.Debugf("State transition triggered a transition.")
+			}
+			return OkModel()
+		}
+		return ErrorModel(SystemError)
 	}
 }
 

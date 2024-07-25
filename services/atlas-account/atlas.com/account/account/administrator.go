@@ -3,7 +3,6 @@ package account
 import (
 	"atlas-account/tenant"
 	"gorm.io/gorm"
-	"time"
 )
 
 type EntityUpdateFunction func() ([]string, func(e *entity))
@@ -38,25 +37,6 @@ func update(db *gorm.DB) func(modifiers ...EntityUpdateFunction) IdOperator {
 			return db.Model(&entity{TenantId: tenant.Id, ID: id}).Select(columns).Updates(e).Error
 
 		}
-	}
-}
-
-func updateState(state State) EntityUpdateFunction {
-	return func() ([]string, func(e *entity)) {
-		var cs []string
-		if state == LoggedIn {
-			cs = []string{"State", "LastLogin"}
-		} else {
-			cs = []string{"State"}
-		}
-
-		uf := func(e *entity) {
-			e.State = byte(state)
-			if state == LoggedIn {
-				e.LastLogin = time.Now().UnixNano()
-			}
-		}
-		return cs, uf
 	}
 }
 
@@ -101,7 +81,6 @@ func modelFromEntity(a entity) (Model, error) {
 		password:  a.Password,
 		pin:       a.PIN,
 		pic:       a.PIC,
-		state:     State(a.State),
 		gender:    a.Gender,
 		banned:    false,
 		tos:       a.TOS,

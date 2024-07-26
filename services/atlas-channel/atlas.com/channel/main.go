@@ -142,6 +142,9 @@ func produceWriters() []string {
 		writer.NPCAction,
 		writer.StatChanged,
 		writer.ChannelChange,
+		writer.CashShopOpen,
+		writer.CashShopOperation,
+		writer.CashShopCashQueryResult,
 	}
 }
 
@@ -154,6 +157,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.MapChangeHandle] = handler.MapChangeHandleFunc
 	handlerMap[handler.CharacterMoveHandle] = handler.CharacterMoveHandleFunc
 	handlerMap[handler.ChannelChangeHandle] = handler.ChannelChangeHandleFunc
+	handlerMap[handler.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
 	return handlerMap
 }
 

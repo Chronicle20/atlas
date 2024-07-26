@@ -2,22 +2,19 @@ package writer
 
 import (
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 )
 
 const ChannelChange = "ChannelChange"
 
-func ChannelChangeBody(l logrus.FieldLogger) func(ipAddr string, port uint16) BodyProducer {
-	return func(ipAddr string, port uint16) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(1)
-			ob := ipAsByteArray(ipAddr)
-			w.WriteByteArray(ob)
-			w.WriteShort(port)
-			return w.Bytes()
-		}
+func ChannelChangeBody(ipAddr string, port uint16) BodyProducer {
+	return func(w *response.Writer, options map[string]interface{}) []byte {
+		w.WriteByte(1)
+		ob := ipAsByteArray(ipAddr)
+		w.WriteByteArray(ob)
+		w.WriteShort(port)
+		return w.Bytes()
 	}
 }
 

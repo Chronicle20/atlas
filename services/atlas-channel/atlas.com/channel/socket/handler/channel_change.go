@@ -36,7 +36,7 @@ func ChannelChangeHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp wri
 			return
 		}
 
-		err = channelChangeFunc(s, writer.ChannelChangeBody(l)(c.IpAddress(), uint16(c.Port())))
+		err = channelChangeFunc(s, writer.ChannelChangeBody(c.IpAddress(), uint16(c.Port())))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write change channel.")
 			return

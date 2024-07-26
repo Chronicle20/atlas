@@ -57,6 +57,11 @@
               "handler": "ChannelChangeHandle"
             },
             {
+              "opCode": "0x15",
+              "validator": "LoggedInValidator",
+              "handler": "CashShopEntryHandle"
+            },
+            {
               "opCode": "0x16",
               "validator": "LoggedInValidator",
               "handler": "CharacterMoveHandle",
@@ -107,6 +112,10 @@
               "writer": "SetField"
             },
             {
+              "opCode": "0x2A",
+              "writer": "CashShopOpen"
+            },
+            {
               "opCode": "0x7E",
               "writer": "SpawnNPC"
             },
@@ -130,6 +139,14 @@
                   {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"}
                 ]
               }
+            },
+            {
+              "opCode": "0xBD",
+              "writer": "CashShopCashQueryResult"
+            },
+            {
+              "opCode": "0xBE",
+              "writer": "CashShopOperation"
             }
           ]
         },
@@ -174,6 +191,11 @@
               "opCode": "0x27",
               "validator": "LoggedInValidator",
               "handler": "ChannelChangeHandle"
+            },
+            {
+              "opCode": "0x28",
+              "validator": "LoggedInValidator",
+              "handler": "CashShopEntryHandle"
             },
             {
               "opCode": "0x29",
@@ -259,6 +281,10 @@
               "writer": "SetField"
             },
             {
+              "opCode": "0x7F",
+              "writer": "CashShopOpen"
+            },
+            {
               "opCode": "0x101",
               "writer": "SpawnNPC"
             },
@@ -296,6 +322,14 @@
                   {"Name": "UNKNOWN", "Type": "JUMP"}
                 ]
               }
+            },
+            {
+              "opCode": "0x144",
+              "writer": "CashShopCashQueryResult"
+            },
+            {
+              "opCode": "0x145",
+              "writer": "CashShopOperation"
             }
           ]
         },
@@ -340,6 +374,11 @@
               "opCode": "0x29",
               "validator": "LoggedInValidator",
               "handler": "ChannelChangeHandle"
+            },
+            {
+              "opCode": "0x2A",
+              "validator": "LoggedInValidator",
+              "handler": "CashShopEntryHandle"
             },
             {
               "opCode": "0x2B",
@@ -429,6 +468,10 @@
               "writer": "SetField"
             },
             {
+              "opCode": "0x87",
+              "writer": "CashShopOpen"
+            },
+            {
               "opCode": "0x112",
               "writer": "SpawnNPC"
             },
@@ -468,6 +511,14 @@
                   {"Name": "UNKNOWN", "Type": "JUMP"}
                 ]
               }
+            },
+            {
+              "opCode": "0x155",
+              "writer": "CashShopCashQueryResult"
+            },
+            {
+              "opCode": "0x156",
+              "writer": "CashShopOperation"
             }
           ]
         },
@@ -514,6 +565,11 @@
               "handler": "ChannelChangeHandle"
             },
             {
+              "opCode": "0x2D",
+              "validator": "LoggedInValidator",
+              "handler": "CashShopEntryHandle"
+            },
+            {
               "opCode": "0x2E",
               "validator": "LoggedInValidator",
               "handler": "CharacterMoveHandle"
@@ -543,6 +599,10 @@
               "writer": "SetField"
             },
             {
+              "opCode": "0x8E",
+              "writer": "CashShopOpen"
+            },
+            {
               "opCode": "0x12F",
               "writer": "SpawnNPC"
             },
@@ -553,6 +613,14 @@
             {
               "opCode": "0x132",
               "writer": "NPCAction"
+            },
+            {
+              "opCode": "0x177",
+              "writer": "CashShopCashQueryResult"
+            },
+            {
+              "opCode": "0x178",
+              "writer": "CashShopOperation"
             }
           ]
         },
@@ -597,6 +665,11 @@
               "opCode": "0x1E",
               "validator": "LoggedInValidator",
               "handler": "ChannelChangeHandle"
+            },
+            {
+              "opCode": "0x1F",
+              "validator": "LoggedInValidator",
+              "handler": "CashShopEntryHandle"
             },
             {
               "opCode": "0x20",
@@ -702,6 +775,10 @@
               "writer": "SetField"
             },
             {
+              "opCode": "0x7D",
+              "writer": "CashShopOpen"
+            },
+            {
               "opCode": "0x116",
               "writer": "SpawnNPC"
             },
@@ -749,6 +826,14 @@
                   {"Name": "MOB_ATK_RUSH_STOP", "Type": "NORMAL"}
                 ]
               }
+            },
+            {
+              "opCode": "0x163",
+              "writer": "CashShopCashQueryResult"
+            },
+            {
+              "opCode": "0x164",
+              "writer": "CashShopOperation"
             }
           ]
         }

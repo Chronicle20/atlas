@@ -103,3 +103,18 @@ func UpdateTos(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model)
 		return nil
 	}
 }
+
+func UpdateGender(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32, gender byte) error {
+	return func(id uint32, gender byte) error {
+		a, err := GetById(l, span, tenant)(id)
+		if err != nil {
+			return err
+		}
+		a.gender = gender
+		_, err = requestUpdate(l, span, tenant)(a)(l)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}

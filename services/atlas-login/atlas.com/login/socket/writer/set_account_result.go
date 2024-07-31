@@ -7,11 +7,11 @@ import (
 
 const SetAccountResult = "SetAccountResult"
 
-func SetAccountResultBody(l logrus.FieldLogger) func(gender byte) BodyProducer {
-	return func(gender byte) BodyProducer {
+func SetAccountResultBody(l logrus.FieldLogger) func(gender byte, success bool) BodyProducer {
+	return func(gender byte, success bool) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(gender)
-			w.WriteByte(1) // 0 gives you a try again
+			w.WriteBool(success)
 			return w.Bytes()
 		}
 	}

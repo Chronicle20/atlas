@@ -98,7 +98,13 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 			return Model{}, err
 		}
 
-		m, err := create(db)(tenant, name, string(hashPass))
+		gender := byte(0)
+		if tenant.Region == "GMS" && tenant.MajorVersion > 83 {
+			gender = byte(10)
+		}
+		l.Debugf("Defaulting gender to [%d]. 0 = Male, 1 = Female, 10 = UI Choose. This is determined by Region and Version capabilities.", gender)
+
+		m, err := create(db)(tenant, name, string(hashPass), gender)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to create account [%s].", name)
 			return Model{}, err

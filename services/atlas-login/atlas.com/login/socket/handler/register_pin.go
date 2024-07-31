@@ -38,6 +38,7 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp write
 			if len(pin) > 4 {
 				l.Warnf("Read an invalid length pin. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
 				session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
+				return
 			}
 
 			l.Debugf("Registering PIN [%s] for account [%d].", pin, s.AccountId())

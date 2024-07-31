@@ -299,6 +299,11 @@
               "handler": "CharacterViewAllHandle"
             },
             {
+              "opCode": "0x0E",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedHandle"
+            },
+            {
               "opCode": "0x13",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedHandle"
@@ -332,6 +337,16 @@
               "opCode": "0x1E",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedPicHandle"
+            },
+            {
+              "opCode": "0x1F",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedPicRegisterHandle"
+            },
+            {
+              "opCode": "0x20",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedPicHandle"
             },
             {
               "opCode": "0x24",
@@ -575,6 +590,11 @@
               "handler": "CharacterViewAllHandle"
             },
             {
+              "opCode": "0x0E",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedHandle"
+            },
+            {
               "opCode": "0x13",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedHandle"
@@ -608,6 +628,16 @@
               "opCode": "0x1E",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedPicHandle"
+            },
+            {
+              "opCode": "0x1F",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedPicRegisterHandle"
+            },
+            {
+              "opCode": "0x20",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedPicHandle"
             },
             {
               "opCode": "0x24",
@@ -851,6 +881,11 @@
               "handler": "CharacterViewAllHandle"
             },
             {
+              "opCode": "0x0E",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedHandle"
+            },
+            {
               "opCode": "0x13",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedHandle"
@@ -884,6 +919,16 @@
               "opCode": "0x1E",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedPicHandle"
+            },
+            {
+              "opCode": "0x1F",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedPicRegisterHandle"
+            },
+            {
+              "opCode": "0x20",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedPicHandle"
             },
             {
               "opCode": "0x24",

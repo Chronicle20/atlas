@@ -6,6 +6,10 @@ type Model struct {
 	port      int
 }
 
+func (c Model) Id() byte {
+	return c.id
+}
+
 func (c Model) IpAddress() string {
 	return c.ipAddress
 }

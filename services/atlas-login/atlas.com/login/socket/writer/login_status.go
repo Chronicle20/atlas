@@ -96,7 +96,7 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 				w.WriteByte(0)
 				w.WriteByte(0)
 				w.WriteByte(0)
-				w.WriteByte(0)
+				w.WriteByte(0) // enables secure password
 				w.WriteByte(0)
 				w.WriteLong(0)
 				w.WriteAsciiString(name)

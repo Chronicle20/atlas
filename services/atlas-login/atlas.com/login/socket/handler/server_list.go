@@ -40,8 +40,8 @@ func issueServerInformation(l logrus.FieldLogger, span opentracing.Span, wp writ
 func respondToSession(l logrus.FieldLogger, wp writer.Producer) func(ms session.Model, ws []world.Model) {
 	return func(ms session.Model, ws []world.Model) {
 		announceServerList(l, wp)(ws, ms)
-		//announceLastWorld(l, wp)(ms)
-		//announceRecommendedWorlds(l, wp)(ws, ms)
+		announceLastWorld(l, wp)(ms)
+		announceRecommendedWorlds(l, wp)(ws, ms)
 	}
 }
 

@@ -1077,11 +1077,6 @@
               "opCode": "0x1A",
               "validator": "NoOpValidator",
               "handler": "CreateSecurityHandle"
-            },
-            {
-              "opCode": "0x24",
-              "validator": "LoggedInValidator",
-              "handler": "NoOpHandler"
             }
           ],
           "writers": [

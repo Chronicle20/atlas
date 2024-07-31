@@ -294,6 +294,11 @@
               "handler": "ServerListRequestHandle"
             },
             {
+              "opCode": "0x0D",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllHandle"
+            },
+            {
               "opCode": "0x13",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedHandle"
@@ -399,6 +404,20 @@
                 "modes": {
                   "OK": 0,
                   "ERROR": 1
+                }
+              }
+            },
+            {
+              "opCode": "0x08",
+              "writer": "CharacterViewAll",
+              "options": {
+                "codes": {
+                  "NORMAL": 0,
+                  "CHARACTER_COUNT": 1,
+                  "ERROR_VIEW_ALL": 2,
+                  "SEARCH_FAILED": 3,
+                  "SEARCH_FAILED_2": 4,
+                  "ERROR_VIEW_ALL_2": 5
                 }
               }
             },
@@ -551,6 +570,11 @@
               "handler": "ServerListRequestHandle"
             },
             {
+              "opCode": "0x0D",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllHandle"
+            },
+            {
               "opCode": "0x13",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedHandle"
@@ -656,6 +680,20 @@
                 "modes": {
                   "OK": 0,
                   "ERROR": 1
+                }
+              }
+            },
+            {
+              "opCode": "0x08",
+              "writer": "CharacterViewAll",
+              "options": {
+                "codes": {
+                  "NORMAL": 0,
+                  "CHARACTER_COUNT": 1,
+                  "ERROR_VIEW_ALL": 2,
+                  "SEARCH_FAILED": 3,
+                  "SEARCH_FAILED_2": 4,
+                  "ERROR_VIEW_ALL_2": 5
                 }
               }
             },
@@ -808,6 +846,11 @@
               "handler": "ServerListRequestHandle"
             },
             {
+              "opCode": "0x0D",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllHandle"
+            },
+            {
               "opCode": "0x13",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedHandle"
@@ -913,6 +956,20 @@
                 "modes": {
                   "OK": 0,
                   "ERROR": 1
+                }
+              }
+            },
+            {
+              "opCode": "0x08",
+              "writer": "CharacterViewAll",
+              "options": {
+                "codes": {
+                  "NORMAL": 0,
+                  "CHARACTER_COUNT": 1,
+                  "ERROR_VIEW_ALL": 2,
+                  "SEARCH_FAILED": 3,
+                  "SEARCH_FAILED_2": 4,
+                  "ERROR_VIEW_ALL_2": 5
                 }
               }
             },
@@ -1047,6 +1104,11 @@
               "opCode": "0x08",
               "validator": "LoggedInValidator",
               "handler": "CharacterCheckNameHandle"
+            },
+            {
+              "opCode": "0x0A",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllHandle"
             },
             {
               "opCode": "0x0B",
@@ -1200,6 +1262,20 @@
                   "ONE_TIME_PASSWORD_SERVICE_NOT_AVAILABLE": 26,
                   "ONE_TIME_PASSWORD_TRIAL_PERIOD_ENDED": 28,
                   "CANNOT_DELETE_WITH_FAMILY": 29
+                }
+              }
+            },
+            {
+              "opCode": "0x14",
+              "writer": "CharacterViewAll",
+              "options": {
+                "codes": {
+                  "NORMAL": 0,
+                  "CHARACTER_COUNT": 1,
+                  "ERROR_VIEW_ALL": 2,
+                  "SEARCH_FAILED": 3,
+                  "SEARCH_FAILED_2": 4,
+                  "ERROR_VIEW_ALL_2": 5
                 }
               }
             },

@@ -128,6 +128,7 @@ func produceWriters() []string {
 		writer.ServerIP,
 		writer.ServerLoad,
 		writer.SetAccountResult,
+		writer.CharacterViewAll,
 	}
 }
 
@@ -151,6 +152,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterSelectedPicHandle] = handler.CharacterSelectedPicHandleFunc
 	handlerMap[handler.WorldSelectHandle] = handler.WorldSelectHandleFunc
 	handlerMap[handler.SetGenderHandle] = handler.SetGenderHandleFunc
+	handlerMap[handler.CharacterViewAllHandle] = handler.CharacterViewAllHandleFunc
 	return handlerMap
 }
 

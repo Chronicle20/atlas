@@ -73,7 +73,6 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 					w.WriteInt(1)
 					// 0 = Pin-System Enabled, 1 = Disabled
 					w.WriteBool(!usesPin)
-					w.WriteByte(0)
 					// 0 = Register PIC, 1 = Ask for PIC, 2 = Disabled (disables character deletion without client edit).
 					var needsPic = byte(0)
 					if pic != "" {
@@ -96,7 +95,7 @@ func AuthSuccessBody(l logrus.FieldLogger, tenant tenant.Model) func(accountId u
 				w.WriteByte(0)
 				w.WriteByte(0)
 				w.WriteByte(0)
-				w.WriteByte(0)
+				w.WriteByte(0) // enables secure password
 				w.WriteByte(0)
 				w.WriteLong(0)
 				w.WriteAsciiString(name)

@@ -107,6 +107,12 @@ func WriteCharacterEquipment(tenant tenant.Model) func(w *response.Writer, chara
 
 		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
 			writeForEachPet(w, character.Pets(), writePetItemId, writeEmptyPetItemId)
+		} else {
+			if len(character.Pets()) > 0 {
+				w.WriteLong(character.Pets()[0].Id()) // pet cash id
+			} else {
+				w.WriteLong(0)
+			}
 		}
 	}
 }

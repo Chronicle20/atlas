@@ -294,6 +294,21 @@
               "handler": "ServerListRequestHandle"
             },
             {
+              "opCode": "0x0D",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllHandle"
+            },
+            {
+              "opCode": "0x0E",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedHandle"
+            },
+            {
+              "opCode": "0x0F",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllPongHandle"
+            },
+            {
               "opCode": "0x13",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedHandle"
@@ -327,6 +342,16 @@
               "opCode": "0x1E",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedPicHandle"
+            },
+            {
+              "opCode": "0x1F",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedPicRegisterHandle"
+            },
+            {
+              "opCode": "0x20",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedPicHandle"
             },
             {
               "opCode": "0x24",
@@ -399,6 +424,20 @@
                 "modes": {
                   "OK": 0,
                   "ERROR": 1
+                }
+              }
+            },
+            {
+              "opCode": "0x08",
+              "writer": "CharacterViewAll",
+              "options": {
+                "codes": {
+                  "NORMAL": 0,
+                  "CHARACTER_COUNT": 1,
+                  "ERROR_VIEW_ALL": 2,
+                  "SEARCH_FAILED": 3,
+                  "SEARCH_FAILED_2": 4,
+                  "ERROR_VIEW_ALL_2": 5
                 }
               }
             },
@@ -551,6 +590,21 @@
               "handler": "ServerListRequestHandle"
             },
             {
+              "opCode": "0x0D",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllHandle"
+            },
+            {
+              "opCode": "0x0E",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedHandle"
+            },
+            {
+              "opCode": "0x0F",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllPongHandle"
+            },
+            {
               "opCode": "0x13",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedHandle"
@@ -584,6 +638,16 @@
               "opCode": "0x1E",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedPicHandle"
+            },
+            {
+              "opCode": "0x1F",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedPicRegisterHandle"
+            },
+            {
+              "opCode": "0x20",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedPicHandle"
             },
             {
               "opCode": "0x24",
@@ -656,6 +720,20 @@
                 "modes": {
                   "OK": 0,
                   "ERROR": 1
+                }
+              }
+            },
+            {
+              "opCode": "0x08",
+              "writer": "CharacterViewAll",
+              "options": {
+                "codes": {
+                  "NORMAL": 0,
+                  "CHARACTER_COUNT": 1,
+                  "ERROR_VIEW_ALL": 2,
+                  "SEARCH_FAILED": 3,
+                  "SEARCH_FAILED_2": 4,
+                  "ERROR_VIEW_ALL_2": 5
                 }
               }
             },
@@ -808,6 +886,21 @@
               "handler": "ServerListRequestHandle"
             },
             {
+              "opCode": "0x0D",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllHandle"
+            },
+            {
+              "opCode": "0x0E",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedHandle"
+            },
+            {
+              "opCode": "0x0F",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllPongHandle"
+            },
+            {
               "opCode": "0x13",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedHandle"
@@ -841,6 +934,16 @@
               "opCode": "0x1E",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedPicHandle"
+            },
+            {
+              "opCode": "0x1F",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedPicRegisterHandle"
+            },
+            {
+              "opCode": "0x20",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllSelectedPicHandle"
             },
             {
               "opCode": "0x24",
@@ -913,6 +1016,20 @@
                 "modes": {
                   "OK": 0,
                   "ERROR": 1
+                }
+              }
+            },
+            {
+              "opCode": "0x08",
+              "writer": "CharacterViewAll",
+              "options": {
+                "codes": {
+                  "NORMAL": 0,
+                  "CHARACTER_COUNT": 1,
+                  "ERROR_VIEW_ALL": 2,
+                  "SEARCH_FAILED": 3,
+                  "SEARCH_FAILED_2": 4,
+                  "ERROR_VIEW_ALL_2": 5
                 }
               }
             },
@@ -1049,6 +1166,11 @@
               "handler": "CharacterCheckNameHandle"
             },
             {
+              "opCode": "0x0A",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllHandle"
+            },
+            {
               "opCode": "0x0B",
               "validator": "LoggedInValidator",
               "handler": "CreateCharacterHandle"
@@ -1077,11 +1199,6 @@
               "opCode": "0x1A",
               "validator": "NoOpValidator",
               "handler": "CreateSecurityHandle"
-            },
-            {
-              "opCode": "0x24",
-              "validator": "LoggedInValidator",
-              "handler": "NoOpHandler"
             }
           ],
           "writers": [
@@ -1205,6 +1322,20 @@
                   "ONE_TIME_PASSWORD_SERVICE_NOT_AVAILABLE": 26,
                   "ONE_TIME_PASSWORD_TRIAL_PERIOD_ENDED": 28,
                   "CANNOT_DELETE_WITH_FAMILY": 29
+                }
+              }
+            },
+            {
+              "opCode": "0x14",
+              "writer": "CharacterViewAll",
+              "options": {
+                "codes": {
+                  "NORMAL": 0,
+                  "CHARACTER_COUNT": 1,
+                  "ERROR_VIEW_ALL": 2,
+                  "SEARCH_FAILED": 3,
+                  "SEARCH_FAILED_2": 4,
+                  "ERROR_VIEW_ALL_2": 5
                 }
               }
             },

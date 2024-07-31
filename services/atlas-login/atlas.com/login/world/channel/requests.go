@@ -13,6 +13,7 @@ import (
 const (
 	WorldsResource  = "worlds/"
 	WorldResource   = WorldsResource + "%d"
+	ForWorld        = WorldResource + "/channels"
 	ChannelResource = WorldsResource + "%d/channels/%d"
 )
 
@@ -23,5 +24,11 @@ func getBaseRequest() string {
 func requestChannel(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte) requests.Request[RestModel] {
 	return func(worldId byte, channelId byte) requests.Request[RestModel] {
 		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+ChannelResource, worldId, channelId))
+	}
+}
+
+func requestChannels(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte) requests.Request[[]RestModel] {
+	return func(worldId byte) requests.Request[[]RestModel] {
+		return rest.MakeGetRequest[[]RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+ForWorld, worldId))
 	}
 }

@@ -209,3 +209,11 @@ func (m Model) Equipment() equipment.Model {
 func (m Model) Pets() []pet.Model {
 	return m.pets
 }
+
+func (m Model) WorldId() byte {
+	return m.worldId
+}
+
+func (m Model) AccountId() uint32 {
+	return m.accountId
+}

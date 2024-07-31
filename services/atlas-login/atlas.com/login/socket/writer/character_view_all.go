@@ -20,11 +20,11 @@ const (
 	CharacterViewAllCodeErrorViewAll2  CharacterViewAllCode = "ERROR_VIEW_ALL_2"
 )
 
-func CharacterViewAllCountBody(l logrus.FieldLogger) func(count uint32, unk uint32) BodyProducer {
-	return func(count uint32, unk uint32) BodyProducer {
+func CharacterViewAllCountBody(l logrus.FieldLogger) func(worldCount uint32, unk uint32) BodyProducer {
+	return func(worldCount uint32, unk uint32) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getCode(l)(CharacterViewAll, string(CharacterViewAllCodeCharacterCount), "codes", options))
-			w.WriteInt(count)
+			w.WriteInt(worldCount)
 			w.WriteInt(unk)
 			return w.Bytes()
 		}

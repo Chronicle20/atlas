@@ -61,7 +61,7 @@ func CharacterViewAllHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp 
 			return
 		}
 
-		err = viewAllFunc(s, writer.CharacterViewAllCountBody(l)(uint32(count), uint32(count+(3-count%3))))
+		err = viewAllFunc(s, writer.CharacterViewAllCountBody(l)(uint32(len(ws)), uint32(count)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write count.")
 			return

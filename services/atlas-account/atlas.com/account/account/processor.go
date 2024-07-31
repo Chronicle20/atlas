@@ -98,7 +98,13 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 			return Model{}, err
 		}
 
-		m, err := create(db)(tenant, name, string(hashPass))
+		gender := byte(0)
+		if tenant.Region == "GMS" && tenant.MajorVersion > 83 {
+			gender = byte(10)
+		}
+		l.Debugf("Defaulting gender to [%d]. 0 = Male, 1 = Female, 10 = UI Choose. This is determined by Region and Version capabilities.", gender)
+
+		m, err := create(db)(tenant, name, string(hashPass), gender)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to create account [%s].", name)
 			return Model{}, err
@@ -130,6 +136,10 @@ func Update(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(account
 		if a.tos != input.tos && input.tos != false {
 			l.Debugf("Updating TOS [%t] of account [%d].", input.tos, accountId)
 			modifiers = append(modifiers, updateTos(input.tos))
+		}
+		if a.gender != input.gender {
+			l.Debugf("Updating Gender [%d] of account [%d].", input.gender, accountId)
+			modifiers = append(modifiers, updateGender(input.gender))
 		}
 
 		if len(modifiers) == 0 {

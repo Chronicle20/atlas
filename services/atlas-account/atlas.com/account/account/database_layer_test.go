@@ -35,7 +35,7 @@ func TestInternalCreate(t *testing.T) {
 	testPassword := "password"
 
 	st := sampleTenant()
-	a, err := create(db)(st, testName, testPassword)
+	a, err := create(db)(st, testName, testPassword, 0)
 	if err != nil {
 		t.Fatalf("Failed to create account: %v", err)
 	}
@@ -62,12 +62,12 @@ func TestInternalUpdate(t *testing.T) {
 	testPic := "4567"
 
 	st := sampleTenant()
-	a, err := create(db)(st, testName, testPassword)
+	a, err := create(db)(st, testName, testPassword, 0)
 	if err != nil {
 		t.Fatalf("Failed to create account: %v", err)
 	}
 
-	err = update(db)(updatePin(testPin), updatePic(testPic), updateTos(true))(st, a.Id())
+	err = update(db)(updatePin(testPin), updatePic(testPic), updateTos(true), updateGender(1))(st, a.Id())
 	if err != nil {
 		t.Fatalf("Failed to update account: %v", err)
 	}
@@ -100,6 +100,10 @@ func TestInternalUpdate(t *testing.T) {
 	if r.TOS() != true {
 		t.Fatalf("TOS mismatch. Expected %v, got %v", true, r.TOS())
 	}
+
+	if r.gender != 1 {
+		t.Fatalf("Gender mismatch. Expected %v, got %v", 1, r.gender)
+	}
 }
 
 func TestInternalGetByName(t *testing.T) {
@@ -109,19 +113,19 @@ func TestInternalGetByName(t *testing.T) {
 	testPassword := "password"
 
 	st := sampleTenant()
-	_, err := create(db)(st, testName, testPassword)
+	_, err := create(db)(st, testName, testPassword, 0)
 	if err != nil {
 		t.Fatalf("Failed to create account: %v", err)
 	}
-	_, err = create(db)(st, "other1", testPassword)
+	_, err = create(db)(st, "other1", testPassword, 0)
 	if err != nil {
 		t.Fatalf("Failed to create account: %v", err)
 	}
-	_, err = create(db)(st, "other2", testPassword)
+	_, err = create(db)(st, "other2", testPassword, 0)
 	if err != nil {
 		t.Fatalf("Failed to create account: %v", err)
 	}
-	_, err = create(db)(st, "other3", testPassword)
+	_, err = create(db)(st, "other3", testPassword, 0)
 	if err != nil {
 		t.Fatalf("Failed to create account: %v", err)
 	}

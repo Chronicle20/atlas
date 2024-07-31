@@ -7,12 +7,13 @@ import (
 
 type EntityUpdateFunction func() ([]string, func(e *entity))
 
-func create(db *gorm.DB) func(tenant tenant.Model, name string, password string) (Model, error) {
-	return func(tenant tenant.Model, name string, password string) (Model, error) {
+func create(db *gorm.DB) func(tenant tenant.Model, name string, password string, gender byte) (Model, error) {
+	return func(tenant tenant.Model, name string, password string, gender byte) (Model, error) {
 		a := &entity{
 			TenantId: tenant.Id,
 			Name:     name,
 			Password: password,
+			Gender:   gender,
 		}
 
 		err := db.Create(a).Error
@@ -68,6 +69,17 @@ func updateTos(tos bool) EntityUpdateFunction {
 
 		uf := func(e *entity) {
 			e.TOS = tos
+		}
+		return cs, uf
+	}
+}
+
+func updateGender(gender byte) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		var cs = []string{"gender"}
+
+		uf := func(e *entity) {
+			e.Gender = gender
 		}
 		return cs, uf
 	}

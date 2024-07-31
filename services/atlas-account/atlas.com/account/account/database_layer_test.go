@@ -67,7 +67,7 @@ func TestInternalUpdate(t *testing.T) {
 		t.Fatalf("Failed to create account: %v", err)
 	}
 
-	err = update(db)(updatePin(testPin), updatePic(testPic), updateTos(true))(st, a.Id())
+	err = update(db)(updatePin(testPin), updatePic(testPic), updateTos(true), updateGender(1))(st, a.Id())
 	if err != nil {
 		t.Fatalf("Failed to update account: %v", err)
 	}
@@ -99,6 +99,10 @@ func TestInternalUpdate(t *testing.T) {
 
 	if r.TOS() != true {
 		t.Fatalf("TOS mismatch. Expected %v, got %v", true, r.TOS())
+	}
+
+	if r.gender != 1 {
+		t.Fatalf("Gender mismatch. Expected %v, got %v", 1, r.gender)
 	}
 }
 

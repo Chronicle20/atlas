@@ -137,6 +137,10 @@ func Update(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(account
 			l.Debugf("Updating TOS [%t] of account [%d].", input.tos, accountId)
 			modifiers = append(modifiers, updateTos(input.tos))
 		}
+		if a.gender != input.gender {
+			l.Debugf("Updating Gender [%d] of account [%d].", input.gender, accountId)
+			modifiers = append(modifiers, updateGender(input.gender))
+		}
 
 		if len(modifiers) == 0 {
 			return a, nil

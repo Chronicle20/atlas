@@ -74,6 +74,17 @@ func updateTos(tos bool) EntityUpdateFunction {
 	}
 }
 
+func updateGender(gender byte) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		var cs = []string{"gender"}
+
+		uf := func(e *entity) {
+			e.Gender = gender
+		}
+		return cs, uf
+	}
+}
+
 func modelFromEntity(a entity) (Model, error) {
 	r := Model{
 		tenantId:  a.TenantId,

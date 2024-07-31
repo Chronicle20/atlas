@@ -304,6 +304,11 @@
               "handler": "CharacterViewAllSelectedHandle"
             },
             {
+              "opCode": "0x0F",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllPongHandle"
+            },
+            {
               "opCode": "0x13",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedHandle"
@@ -595,6 +600,11 @@
               "handler": "CharacterViewAllSelectedHandle"
             },
             {
+              "opCode": "0x0F",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllPongHandle"
+            },
+            {
               "opCode": "0x13",
               "validator": "LoggedInValidator",
               "handler": "CharacterSelectedHandle"
@@ -884,6 +894,11 @@
               "opCode": "0x0E",
               "validator": "LoggedInValidator",
               "handler": "CharacterViewAllSelectedHandle"
+            },
+            {
+              "opCode": "0x0F",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterViewAllPongHandle"
             },
             {
               "opCode": "0x13",

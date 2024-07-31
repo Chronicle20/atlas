@@ -156,6 +156,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterViewAllSelectedHandle] = handler.CharacterViewAllSelectedHandleFunc
 	handlerMap[handler.CharacterViewAllSelectedPicRegisterHandle] = handler.CharacterViewAllSelectedPicRegisterHandleFunc
 	handlerMap[handler.CharacterViewAllSelectedPicHandle] = handler.CharacterViewAllSelectedPicHandleFunc
+	handlerMap[handler.CharacterViewAllPongHandle] = handler.CharacterViewAllPongHandleFunc
 	return handlerMap
 }
 

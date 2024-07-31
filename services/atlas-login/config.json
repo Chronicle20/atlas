@@ -279,6 +279,11 @@
               "handler": "AcceptTosHandle"
             },
             {
+              "opCode": "0x08",
+              "validator": "LoggedInValidator",
+              "handler": "SetGenderHandle"
+            },
+            {
               "opCode": "0x09",
               "validator": "LoggedInValidator",
               "handler": "AfterLoginHandle"
@@ -354,6 +359,11 @@
               "handler": "CharacterViewAllSelectedPicHandle"
             },
             {
+              "opCode": "0x23",
+              "validator": "NoOpValidator",
+              "handler": "ClientStartHandle"
+            },
+            {
               "opCode": "0x24",
               "validator": "LoggedInValidator",
               "handler": "NoOpHandler"
@@ -402,6 +412,10 @@
             {
               "opCode": "0x03",
               "writer": "ServerStatus"
+            },
+            {
+              "opCode": "0x04",
+              "writer": "SetAccountResult"
             },
             {
               "opCode": "0x06",
@@ -575,6 +589,11 @@
               "handler": "AcceptTosHandle"
             },
             {
+              "opCode": "0x08",
+              "validator": "LoggedInValidator",
+              "handler": "SetGenderHandle"
+            },
+            {
               "opCode": "0x09",
               "validator": "LoggedInValidator",
               "handler": "AfterLoginHandle"
@@ -650,6 +669,11 @@
               "handler": "CharacterViewAllSelectedPicHandle"
             },
             {
+              "opCode": "0x23",
+              "validator": "NoOpValidator",
+              "handler": "ClientStartHandle"
+            },
+            {
               "opCode": "0x24",
               "validator": "LoggedInValidator",
               "handler": "NoOpHandler"
@@ -698,6 +722,10 @@
             {
               "opCode": "0x03",
               "writer": "ServerStatus"
+            },
+            {
+              "opCode": "0x04",
+              "writer": "SetAccountResult"
             },
             {
               "opCode": "0x06",
@@ -871,6 +899,11 @@
               "handler": "AcceptTosHandle"
             },
             {
+              "opCode": "0x08",
+              "validator": "LoggedInValidator",
+              "handler": "SetGenderHandle"
+            },
+            {
               "opCode": "0x09",
               "validator": "LoggedInValidator",
               "handler": "AfterLoginHandle"
@@ -946,6 +979,11 @@
               "handler": "CharacterViewAllSelectedPicHandle"
             },
             {
+              "opCode": "0x23",
+              "validator": "NoOpValidator",
+              "handler": "ClientStartHandle"
+            },
+            {
               "opCode": "0x24",
               "validator": "LoggedInValidator",
               "handler": "NoOpHandler"
@@ -994,6 +1032,10 @@
             {
               "opCode": "0x03",
               "writer": "ServerStatus"
+            },
+            {
+              "opCode": "0x04",
+              "writer": "SetAccountResult"
             },
             {
               "opCode": "0x06",
@@ -1193,7 +1235,7 @@
             {
               "opCode": "0x18",
               "validator": "NoOpValidator",
-              "handler": "NoOpHandler"
+              "handler": "ClientStartHandle"
             },
             {
               "opCode": "0x1A",

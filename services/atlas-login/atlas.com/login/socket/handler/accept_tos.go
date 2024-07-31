@@ -23,7 +23,7 @@ func AcceptTosHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.
 
 		err := account.UpdateTos(l, span, s.Tenant())(s.AccountId(), accepted)
 		if err != nil {
-
+			// TODO
 		}
 		account.ForAccountById(l, span, s.Tenant())(s.AccountId(), issueSuccess(l, s, wp))
 	}

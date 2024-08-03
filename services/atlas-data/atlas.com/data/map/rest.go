@@ -79,6 +79,7 @@ func Transform(m Model) (RestModel, error) {
 	}
 
 	return RestModel{
+		Id:                strconv.Itoa(int(m.id)),
 		Name:              m.name,
 		StreetName:        m.streetName,
 		ReturnMapId:       m.returnMapId,

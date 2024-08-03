@@ -1,7 +1,10 @@
 package _map
 
 import (
+	"strconv"
+
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/manyminds/api2go/jsonapi"
 )
 
 type RestModel struct {
@@ -39,6 +42,26 @@ func (r RestModel) GetID() string {
 	return r.Id
 }
 
+func (r RestModel) GetCustomLinks(url string) jsonapi.Links {
+	lnks := make(map[string]jsonapi.Link)
+	lnks["self"] = jsonapi.Link{Href: url}
+	return lnks
+}
+
+func (r RestModel) GetReferences() []jsonapi.Reference {
+	rfs := make([]jsonapi.Reference, 0)
+	rfs = append(rfs, jsonapi.Reference{Type: "portals", Name: "portals", IsNotLoaded: true})
+	rfs = append(rfs, jsonapi.Reference{Type: "reactors", Name: "reactors", IsNotLoaded: true})
+	rfs = append(rfs, jsonapi.Reference{Type: "npcs", Name: "npcs", IsNotLoaded: true})
+	rfs = append(rfs, jsonapi.Reference{Type: "monsters", Name: "monsters", IsNotLoaded: true})
+	return rfs
+}
+
+func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
+	rfs := make([]jsonapi.ReferenceID, 0)
+	return rfs
+}
+
 func Transform(m Model) (RestModel, error) {
 	ma, err := TransformRectangle(m.mapArea)
 	if err != nil {
@@ -56,6 +79,7 @@ func Transform(m Model) (RestModel, error) {
 	}
 
 	return RestModel{
+		Id:                strconv.Itoa(int(m.id)),
 		Name:              m.name,
 		StreetName:        m.streetName,
 		ReturnMapId:       m.returnMapId,

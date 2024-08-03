@@ -48,7 +48,11 @@ func readMapNameData(tenant tenant.Model, mapId uint32) (*xml.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return exml.ChildByName(getMapStringName(mapId))
+	mxml, err := exml.ChildByName(getMapStringName(mapId))
+	if err != nil {
+		return nil, err
+	}
+	return mxml.ChildByName(strconv.Itoa(int(mapId)))
 }
 
 func readNPCNameData(tenant tenant.Model) (*xml.Node, error) {
@@ -95,8 +99,6 @@ func getMapStringName(mapId uint32) string {
 	} else {
 		b.WriteString("etc")
 	}
-	b.WriteString("/")
-	b.WriteString(strconv.Itoa(int(mapId)))
 	return b.String()
 }
 

@@ -20,6 +20,15 @@ func (rm RestModel) GetID() string {
 	return strconv.Itoa(int(rm.Id))
 }
 
+func (rm RestModel) SetID(idStr string) error {
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return err
+	}
+	rm.Id = uint32(id)
+	return nil
+}
+
 func (rm RestModel) GetName() string {
 	return "monsters"
 }

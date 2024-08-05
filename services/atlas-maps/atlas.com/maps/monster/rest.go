@@ -25,6 +25,11 @@ func (m RestModel) GetID() string {
 	return m.Id
 }
 
+func (m RestModel) SetID(idStr string) error {
+	m.Id = idStr
+	return nil
+}
+
 func (m RestModel) GetName() string {
 	return "monsters"
 }

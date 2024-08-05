@@ -3,6 +3,7 @@ package monster
 import "github.com/Chronicle20/atlas-model/model"
 
 type RestModel struct {
+	Id                 string        `json:"-"`
 	WorldId            byte          `json:"worldId"`
 	ChannelId          byte          `json:"channelId"`
 	MapId              uint32        `json:"mapId"`
@@ -23,6 +24,19 @@ type RestModel struct {
 type DamageEntry struct {
 	CharacterId uint32 `json:"characterId"`
 	Damage      int64  `json:"damage"`
+}
+
+func (m RestModel) GetID() string {
+	return m.Id
+}
+
+func (m RestModel) SetID(idStr string) error {
+	m.Id = idStr
+	return nil
+}
+
+func (m RestModel) GetName() string {
+	return "monsters"
 }
 
 func Transform(m Model) (RestModel, error) {

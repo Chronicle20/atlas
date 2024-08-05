@@ -14,7 +14,7 @@ import (
 func byIdProvider(_ logrus.FieldLogger, _ opentracing.Span, tenant tenant.Model) func(monsterId uint32) model.Provider[Model] {
 	return func(monsterId uint32) model.Provider[Model] {
 		return func() (Model, error) {
-			return GetMonsterRegistry().GetMonster(tenant.Id, monsterId)
+			return GetMonsterRegistry().GetMonster(tenant, monsterId)
 		}
 	}
 }
@@ -27,20 +27,24 @@ func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) f
 
 func CreateMonster(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, input RestModel) (Model, error) {
 	return func(worldId byte, channelId byte, mapId uint32, input RestModel) (Model, error) {
+		l.Debugf("Attempting to create monster [%d] in world [%d] channel [%d] map [%d].", input.MonsterId, worldId, channelId, mapId)
 		ma, err := information.GetById(l, span, tenant)(input.MonsterId)
 		if err != nil {
+			l.WithError(err).Errorf("Unable to retrieve information necessary to create monster [%d].", input.MonsterId)
 			return Model{}, err
 		}
-		m := GetMonsterRegistry().CreateMonster(tenant.Id, worldId, channelId, mapId, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.HP(), ma.MP())
+		m := GetMonsterRegistry().CreateMonster(tenant, worldId, channelId, mapId, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.HP(), ma.MP())
 
 		cid, err := GetControllerCandidate(l, span, tenant)(worldId, channelId, mapId)
 		if err == nil {
+			l.Debugf("Created monster [%d] with id [%d] will be controlled by [%d].", m.MonsterId(), m.UniqueId(), cid)
 			m, err = StartControl(l, span, tenant)(m.UniqueId(), cid)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in world [%d] channel [%d] map [%d].", cid, m.UniqueId(), m.WorldId(), m.ChannelId(), m.MapId())
 			}
 		}
 
+		l.Debugf("Created monster [%d] in world [%d] channel [%d] map [%d]. Emitting Monster Status.", input.MonsterId, worldId, channelId, mapId)
 		_ = producer.ProviderImpl(l)(span)(EnvEventTopicMonsterStatus)(emitCreated(tenant, m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId()))
 		return m, nil
 	}
@@ -65,8 +69,10 @@ func FindNextController(l logrus.FieldLogger, span opentracing.Span, tenant tena
 
 func GetControllerCandidate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32) (uint32, error) {
 	return func(worldId byte, channelId byte, mapId uint32) (uint32, error) {
+		l.Debugf("Identifying controller candidate for monsters in world [%d] channel [%d] map [%d].", worldId, channelId, mapId)
 		ids, err := _map.GetCharacterIdsInMap(l, span, tenant)(worldId, channelId, mapId)
 		if err != nil {
+			l.Debugf("No characters are found in this map. No controller to assign.")
 			return 0, err
 		}
 
@@ -77,7 +83,7 @@ func GetControllerCandidate(l logrus.FieldLogger, span opentracing.Span, tenant 
 			controlCounts[id] = 0
 		}
 
-		ms := GetMonsterRegistry().GetMonstersInMap(tenant.Id, worldId, channelId, mapId)
+		ms := GetMonsterRegistry().GetMonstersInMap(tenant, worldId, channelId, mapId)
 		for _, m := range ms {
 			if m.ControlCharacterId() != 0 {
 				controlCounts[m.ControlCharacterId()] += 1
@@ -96,6 +102,7 @@ func GetControllerCandidate(l logrus.FieldLogger, span opentracing.Span, tenant 
 		if index == 0 {
 			return 0, errors.New("should not get here")
 		} else {
+			l.Debugf("Controller candidate has been determined. Character [%d].", index)
 			return index, nil
 		}
 	}
@@ -114,7 +121,7 @@ func StartControl(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mod
 				return Model{}, err
 			}
 		}
-		m, err = GetMonsterRegistry().ControlMonster(tenant.Id, m.UniqueId(), controllerId)
+		m, err = GetMonsterRegistry().ControlMonster(tenant, m.UniqueId(), controllerId)
 		if err == nil {
 			_ = producer.ProviderImpl(l)(span)(EnvEventTopicMonsterStatus)(emitStartControl(tenant, m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId(), m.ControlCharacterId()))
 		}
@@ -129,7 +136,7 @@ func StopControl(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 			return Model{}, err
 		}
 
-		m, err = GetMonsterRegistry().ClearControl(tenant.Id, m.UniqueId())
+		m, err = GetMonsterRegistry().ClearControl(tenant, m.UniqueId())
 		if err == nil {
 			_ = producer.ProviderImpl(l)(span)(EnvEventTopicMonsterStatus)(emitStopControl(tenant, m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId(), m.ControlCharacterId()))
 		}
@@ -138,7 +145,7 @@ func StopControl(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 }
 
 func DestroyAll(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) {
-	ms := GetMonsterRegistry().GetMonsters(tenant.Id)
+	ms := GetMonsterRegistry().GetMonsters()
 	for _, x := range ms {
 		Destroy(l, span, tenant)(x.UniqueId())
 	}
@@ -146,7 +153,7 @@ func DestroyAll(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model
 
 func Destroy(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(uniqueId uint32) {
 	return func(uniqueId uint32) {
-		m, err := GetMonsterRegistry().RemoveMonster(tenant.Id, uniqueId)
+		m, err := GetMonsterRegistry().RemoveMonster(tenant, uniqueId)
 		if err == nil {
 			_ = producer.ProviderImpl(l)(span)(EnvEventTopicMonsterStatus)(emitDestroyed(tenant, m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId()))
 		}
@@ -155,13 +162,13 @@ func Destroy(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) f
 
 func Move(_ logrus.FieldLogger, _ opentracing.Span, tenant tenant.Model) func(id uint32, x int, y int, stance int) {
 	return func(id uint32, x int, y int, stance int) {
-		GetMonsterRegistry().MoveMonster(tenant.Id, id, x, y, stance)
+		GetMonsterRegistry().MoveMonster(tenant, id, x, y, stance)
 	}
 }
 
 func Damage(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32, characterId uint32, damage int64) {
 	return func(id uint32, characterId uint32, damage int64) {
-		m, err := GetMonsterRegistry().GetMonster(tenant.Id, id)
+		m, err := GetMonsterRegistry().GetMonster(tenant, id)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get monster [%d].", id)
 			return
@@ -171,7 +178,7 @@ func Damage(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 			return
 		}
 
-		s, err := GetMonsterRegistry().ApplyDamage(tenant.Id, characterId, damage, m.UniqueId())
+		s, err := GetMonsterRegistry().ApplyDamage(tenant, characterId, damage, m.UniqueId())
 		if err != nil {
 			l.WithError(err).Errorf("Error applying damage to monster %d from character %d.", m.UniqueId(), characterId)
 			return
@@ -182,7 +189,7 @@ func Damage(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 			if err != nil {
 				l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the map.", s.Monster.UniqueId())
 			}
-			_, err = GetMonsterRegistry().RemoveMonster(tenant.Id, s.Monster.UniqueId())
+			_, err = GetMonsterRegistry().RemoveMonster(tenant, s.Monster.UniqueId())
 			if err != nil {
 				l.WithError(err).Errorf("Monster [%d] killed, but not removed from registry.", s.Monster.UniqueId())
 			}

@@ -52,6 +52,7 @@ func handleCreateMonsterInMap(d *rest.HandlerDependency, c *rest.HandlerContext,
 				return func(w http.ResponseWriter, r *http.Request) {
 					m, err := monster.CreateMonster(d.Logger(), d.Span(), c.Tenant())(worldId, channelId, mapId, input)
 					if err != nil {
+						d.Logger().WithError(err).Errorf("Unable to create monsters.")
 						w.WriteHeader(http.StatusBadRequest)
 						return
 					}

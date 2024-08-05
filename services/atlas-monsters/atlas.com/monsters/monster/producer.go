@@ -38,7 +38,7 @@ func emitStopControl(tenant tenant.Model, worldId byte, channelId byte, mapId ui
 	return emitEvent(tenant, worldId, channelId, mapId, uniqueId, monsterId, EventMonsterStatusStopControl, statusEventStopControlBody{ActorId: characterId})
 }
 
-func emitKilled(tenant tenant.Model, worldId byte, channelId byte, mapId uint32, uniqueId uint32, monsterId uint32, x int, y int, killerId uint32, damageSummary []entry) model.Provider[[]kafka.Message] {
+func emitKilled(tenant tenant.Model, worldId byte, channelId byte, mapId uint32, uniqueId uint32, monsterId uint32, x int16, y int16, killerId uint32, damageSummary []entry) model.Provider[[]kafka.Message] {
 	var damageEntries []damageEntry
 	for _, e := range damageSummary {
 		damageEntries = append(damageEntries, damageEntry{

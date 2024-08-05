@@ -74,7 +74,7 @@ func contains(ids []uint32, id uint32) bool {
 	return false
 }
 
-func (r *Registry) CreateMonster(tenant tenant.Model, worldId byte, channelId byte, mapId uint32, monsterId uint32, x int, y int, fh int, stance int, team int, hp uint32, mp uint32) Model {
+func (r *Registry) CreateMonster(tenant tenant.Model, worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
 	mapKey := MapKey{Tenant: tenant, WorldId: worldId, ChannelId: channelId, MapId: mapId}
 
 	mapLock := r.getMapLock(mapKey)
@@ -135,7 +135,7 @@ func (r *Registry) GetMonstersInMap(tenant tenant.Model, worldId byte, channelId
 	return result
 }
 
-func (r *Registry) MoveMonster(tenant tenant.Model, uniqueId uint32, endX int, endY int, stance int) {
+func (r *Registry) MoveMonster(tenant tenant.Model, uniqueId uint32, endX int16, endY int16, stance byte) {
 	monKey := MonsterKey{Tenant: tenant, MonsterId: uniqueId}
 	monLock := r.getMonsterLock(monKey)
 	monLock.Lock()

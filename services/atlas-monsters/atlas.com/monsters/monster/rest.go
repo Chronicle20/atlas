@@ -12,11 +12,11 @@ type RestModel struct {
 	MapId              uint32        `json:"mapId"`
 	MonsterId          uint32        `json:"monsterId"`
 	ControlCharacterId uint32        `json:"controlCharacterId"`
-	X                  int           `json:"x"`
-	Y                  int           `json:"y"`
-	Fh                 int           `json:"fh"`
-	Stance             int           `json:"stance"`
-	Team               int           `json:"team"`
+	X                  int16         `json:"x"`
+	Y                  int16         `json:"y"`
+	Fh                 int16         `json:"fh"`
+	Stance             byte          `json:"stance"`
+	Team               int8          `json:"team"`
 	MaxHp              uint32        `json:"maxHp"`
 	Hp                 uint32        `json:"hp"`
 	MaxMp              uint32        `json:"maxMp"`

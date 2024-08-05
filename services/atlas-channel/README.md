@@ -14,6 +14,7 @@ A RESTful resource which provides Channel services.
 - ACCOUNT_SERVICE_URL - [scheme]://[host]:[port]/api/aos/
 - CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
 - GAME_DATA_SERVICE_URL - [scheme]://[host]:[port]/api/gis/
+- MONSTER_SERVICE_URL - [scheme]://[host]:[port]/api/mos/
 - WORLD_SERVICE_URL - [scheme]://[host]:[port]/api/wrg/
 - TOPIC_CHANNEL_SERVICE - Kafka Topic for transmitting Channel Status Events
 - EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for transmitting character status events

@@ -1,6 +1,8 @@
 package handler
 
 import (
+	as "atlas-channel/account/session"
+	"atlas-channel/channel"
 	"atlas-channel/character"
 	"atlas-channel/kafka/producer"
 	"atlas-channel/portal"
@@ -13,7 +15,8 @@ import (
 
 const MapChangeHandle = "MapChangeHandle"
 
-func MapChangeHandleFunc(l logrus.FieldLogger, span opentracing.Span, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func MapChangeHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	channelChangeFunc := session.Announce(l)(wp)(writer.ChannelChange)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		cs := r.Available() == 0
 		var fieldKey byte
@@ -27,21 +30,43 @@ func MapChangeHandleFunc(l logrus.FieldLogger, span opentracing.Span, _ writer.P
 		var targetX int32
 		var targetY int32
 
-		if !cs {
-			fieldKey = r.ReadByte()
-			targetId = r.ReadUint32()
-			portalName = r.ReadAsciiString()
-			x = r.ReadInt16()
-			y = r.ReadInt16()
-			unused = r.ReadByte()
-			premium = r.ReadByte()
-			if s.Tenant().Region == "GMS" && s.Tenant().MajorVersion >= 83 {
-				chase = r.ReadBool()
+		if cs {
+			l.Debugf("Character [%d] returning from cash shop.", s.CharacterId())
+			c, err := channel.GetById(l, span, s.Tenant())(s.WorldId(), s.ChannelId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve channel information being returned in to.")
+				// TODO send server notice.
+				return
 			}
-			if chase {
-				targetX = r.ReadInt32()
-				targetY = r.ReadInt32()
+
+			resp, err := as.UpdateState(l, span, s.Tenant())(s.SessionId(), s.AccountId(), 2)
+			if err != nil || resp.Code != "OK" {
+				l.WithError(err).Errorf("Unable to update session for character [%d] attempting to switch to channel.", s.CharacterId())
+				session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
+				return
 			}
+
+			err = channelChangeFunc(s, writer.ChannelChangeBody(c.IpAddress(), uint16(c.Port())))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write change channel.")
+				return
+			}
+			return
+		}
+
+		fieldKey = r.ReadByte()
+		targetId = r.ReadUint32()
+		portalName = r.ReadAsciiString()
+		x = r.ReadInt16()
+		y = r.ReadInt16()
+		unused = r.ReadByte()
+		premium = r.ReadByte()
+		if s.Tenant().Region == "GMS" && s.Tenant().MajorVersion >= 83 {
+			chase = r.ReadBool()
+		}
+		if chase {
+			targetX = r.ReadInt32()
+			targetY = r.ReadInt32()
 		}
 
 		l.Debugf("Character [%d] attempting to enter portal [%s] at [%d,%d] heading to [%d]. FieldKey [%d].", s.CharacterId(), portalName, x, y, targetId, fieldKey)

@@ -116,6 +116,10 @@
               "writer": "CashShopOpen"
             },
             {
+              "opCode": "0x6D",
+              "writer": "SpawnMonster"
+            },
+            {
               "opCode": "0x7E",
               "writer": "SpawnNPC"
             },
@@ -283,6 +287,10 @@
             {
               "opCode": "0x7F",
               "writer": "CashShopOpen"
+            },
+            {
+              "opCode": "0xEC",
+              "writer": "SpawnMonster"
             },
             {
               "opCode": "0x101",
@@ -472,6 +480,10 @@
               "writer": "CashShopOpen"
             },
             {
+              "opCode": "0xFC",
+              "writer": "SpawnMonster"
+            },
+            {
               "opCode": "0x112",
               "writer": "SpawnNPC"
             },
@@ -601,6 +613,10 @@
             {
               "opCode": "0x8E",
               "writer": "CashShopOpen"
+            },
+            {
+              "opCode": "0x114",
+              "writer": "SpawnMonster"
             },
             {
               "opCode": "0x12F",
@@ -777,6 +793,10 @@
             {
               "opCode": "0x7D",
               "writer": "CashShopOpen"
+            },
+            {
+              "opCode": "0xFD",
+              "writer": "SpawnMonster"
             },
             {
               "opCode": "0x116",

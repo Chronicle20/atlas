@@ -145,6 +145,7 @@ func produceWriters() []string {
 		writer.CashShopOpen,
 		writer.CashShopOperation,
 		writer.CashShopCashQueryResult,
+		writer.SpawnMonster,
 	}
 }
 

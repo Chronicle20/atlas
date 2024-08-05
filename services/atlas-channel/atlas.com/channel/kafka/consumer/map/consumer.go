@@ -2,6 +2,7 @@ package _map
 
 import (
 	consumer2 "atlas-channel/kafka/consumer"
+	"atlas-channel/monster"
 	"atlas-channel/npc"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -63,7 +64,7 @@ func enterMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model, 
 
 			go npc.ForEachInMap(l, span, tenant)(mapId, spawnNPCForSession(l, wp)(s))
 
-			// fetch monsters in map
+			go monster.ForEachInMap(l, span, tenant)(s.WorldId(), s.ChannelId(), mapId, spawnMonsterForSession(l, wp)(s))
 
 			// fetch drops in map
 
@@ -99,6 +100,19 @@ func spawnNPCForSession(l logrus.FieldLogger, wp writer.Producer) func(s session
 			err = spawnNPCRequestControllerFunc(s, writer.SpawnNPCRequestControllerBody(l)(n, true))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to spawn npc [%d] for character [%d].", n.Template(), s.CharacterId())
+			}
+			return err
+		}
+	}
+}
+
+func spawnMonsterForSession(l logrus.FieldLogger, wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
+	spawnMonsterFunc := session.Announce(l)(wp)(writer.SpawnMonster)
+	return func(s session.Model) model.Operator[monster.Model] {
+		return func(m monster.Model) error {
+			err := spawnMonsterFunc(s, writer.SpawnMonsterBody(l)(m, false))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to spawn monster [%d] for character [%d].", m.UniqueId(), s.CharacterId())
 			}
 			return err
 		}

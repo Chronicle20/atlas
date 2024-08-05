@@ -7,6 +7,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func GetCharactersInMap(_ logrus.FieldLogger, _ opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32) ([]uint32, error) {
+	return func(worldId byte, channelId byte, mapId uint32) ([]uint32, error) {
+		return getRegistry().GetInMap(MapKey{TenantId: tenant.Id, WorldId: worldId, ChannelId: channelId, MapId: mapId}), nil
+	}
+}
+
 func Transition(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, characterId uint32, oldMapId uint32) {
 	return func(worldId byte, channelId byte, mapId uint32, characterId uint32, oldMapId uint32) {
 		Exit(l, span, tenant)(worldId, channelId, oldMapId, characterId)
@@ -16,17 +22,14 @@ func Transition(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model
 
 func Enter(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
 	return func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
-		//character.GetRegistry().AddToMap(worldId, channelId, mapId, characterId)
+		getRegistry().AddCharacter(MapKey{TenantId: tenant.Id, WorldId: worldId, ChannelId: channelId, MapId: mapId}, characterId)
 		_ = producer.ProviderImpl(l)(span)(EnvEventTopicMapStatus)(enterMapProvider(tenant, worldId, channelId, mapId, characterId))
 	}
 }
 
 func Exit(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
 	return func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
-		//mk, err := character.GetRegistry().GetMapId(characterId)
-		//if err == nil {
-		//	character.GetRegistry().RemoveFromMap(characterId)
+		getRegistry().RemoveCharacter(MapKey{TenantId: tenant.Id, WorldId: worldId, ChannelId: channelId, MapId: mapId}, characterId)
 		_ = producer.ProviderImpl(l)(span)(EnvEventTopicMapStatus)(exitMapProvider(tenant, worldId, channelId, mapId, characterId))
-		//}
 	}
 }

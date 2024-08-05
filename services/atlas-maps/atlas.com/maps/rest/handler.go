@@ -2,11 +2,13 @@ package rest
 
 import (
 	"atlas-maps/tenant"
+	"github.com/gorilla/mux"
 	"github.com/manyminds/api2go/jsonapi"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 type HandlerDependency struct {
@@ -85,5 +87,49 @@ func RegisterCreateHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerIn
 				})
 			})
 		}
+	}
+}
+
+type ChannelIdHandler func(channelId byte) http.HandlerFunc
+
+func ParseChannelId(l logrus.FieldLogger, next ChannelIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		channelId, err := strconv.Atoi(mux.Vars(r)["channelId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse channelId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(byte(channelId))(w, r)
+	}
+}
+
+type WorldIdHandler func(worldId byte) http.HandlerFunc
+
+func ParseWorldId(l logrus.FieldLogger, next WorldIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		worldId, err := strconv.Atoi(vars["worldId"])
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing worldId as byte")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(byte(worldId))(w, r)
+	}
+}
+
+type MapIdHandler func(mapId uint32) http.HandlerFunc
+
+func ParseMapId(l logrus.FieldLogger, next MapIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		mapId, err := strconv.Atoi(vars["mapId"])
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing mapId as uint32")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint32(mapId))(w, r)
 	}
 }

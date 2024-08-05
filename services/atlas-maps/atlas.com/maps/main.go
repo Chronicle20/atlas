@@ -3,9 +3,11 @@ package main
 import (
 	"atlas-maps/character"
 	"atlas-maps/logger"
+	_map "atlas-maps/map"
 	"atlas-maps/tracing"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas-rest/server"
 	"io"
 	"os"
 	"os/signal"
@@ -60,6 +62,8 @@ func main() {
 	_, _ = cm.RegisterHandler(character.StatusEventLogoutRegister(l))
 	_, _ = cm.RegisterHandler(character.StatusEventMapChangedRegister(l))
 
+	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), _map.InitResource(GetServer()))
+
 	// trap sigterm or interrupt and gracefully shutdown the server
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
@@ -70,20 +74,4 @@ func main() {
 	cancel()
 	wg.Wait()
 	l.Infoln("Service shutdown.")
-}
-
-type statusEvent[E any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
-}
-
-type createBody struct {
-	Name string `json:"name"`
-}
-
-type mapBody struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
 }

@@ -1,6 +1,9 @@
 package monster
 
-import "github.com/Chronicle20/atlas-model/model"
+import (
+	"github.com/Chronicle20/atlas-model/model"
+	"strconv"
+)
 
 type RestModel struct {
 	Id                 string        `json:"-"`
@@ -46,6 +49,7 @@ func Transform(m Model) (RestModel, error) {
 	}
 
 	return RestModel{
+		Id:                 strconv.Itoa(int(m.UniqueId())),
 		WorldId:            m.worldId,
 		ChannelId:          m.channelId,
 		MapId:              m.mapId,

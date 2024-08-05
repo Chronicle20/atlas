@@ -1,9 +1,11 @@
-package _map
+package character
 
-import "github.com/google/uuid"
+import (
+	"atlas-maps/tenant"
+)
 
 type MapKey struct {
-	TenantId  uuid.UUID
+	Tenant    tenant.Model
 	WorldId   byte
 	ChannelId byte
 	MapId     uint32

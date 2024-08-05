@@ -1,6 +1,7 @@
 package _map
 
 import (
+	"atlas-maps/map/character"
 	"atlas-maps/rest"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -26,7 +27,7 @@ func handleGetCharactersInMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					ids, err := GetCharactersInMap(d.Logger(), d.Span(), c.Tenant())(worldId, channelId, mapId)
+					ids, err := character.GetCharactersInMap(d.Logger(), d.Span(), c.Tenant())(worldId, channelId, mapId)
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						return

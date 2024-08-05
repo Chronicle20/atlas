@@ -12,7 +12,6 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	go.elastic.co/ecslogrus v1.0.0
-	golang.org/x/sys v0.22.0
 )
 
 require (
@@ -22,4 +21,5 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.uber.org/atomic v1.11.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
 )

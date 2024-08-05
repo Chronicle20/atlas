@@ -4,6 +4,7 @@ import (
 	"atlas-maps/character"
 	"atlas-maps/logger"
 	_map "atlas-maps/map"
+	"atlas-maps/tasks"
 	"atlas-maps/tracing"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -61,6 +62,8 @@ func main() {
 	_, _ = cm.RegisterHandler(character.StatusEventLoginRegister(l))
 	_, _ = cm.RegisterHandler(character.StatusEventLogoutRegister(l))
 	_, _ = cm.RegisterHandler(character.StatusEventMapChangedRegister(l))
+
+	go tasks.Register(tasks.NewRespawn(l, 10000))
 
 	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), _map.InitResource(GetServer()))
 

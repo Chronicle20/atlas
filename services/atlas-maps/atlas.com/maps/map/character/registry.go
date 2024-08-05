@@ -1,4 +1,4 @@
-package _map
+package character
 
 import (
 	"sync"
@@ -80,4 +80,18 @@ func (r *Registry) GetInMap(key MapKey) []uint32 {
 	ml.RLock()
 	defer ml.RUnlock()
 	return r.characterRegister[key]
+}
+
+func (r *Registry) GetMapsWithCharacters() []MapKey {
+	var result = make([]MapKey, 0)
+	for mk, ml := range r.mapLocks {
+		ml.RLock()
+		if mc, ok := r.characterRegister[mk]; ok {
+			if len(mc) > 0 {
+				result = append(result, mk)
+			}
+		}
+		ml.RUnlock()
+	}
+	return result
 }

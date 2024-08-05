@@ -27,3 +27,5 @@ MINOR_VERSION:1
 ```
 
 ### Requests
+
+Requests are documented via Bruno collection.

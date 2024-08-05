@@ -45,8 +45,8 @@ type statusEventStopControlBody struct {
 }
 
 type statusEventKilledBody struct {
-	X             int           `json:"x"`
-	Y             int           `json:"y"`
+	X             int16         `json:"x"`
+	Y             int16         `json:"y"`
 	ActorId       uint32        `json:"actorId"`
 	DamageEntries []damageEntry `json:"damageEntries"`
 }
@@ -77,8 +77,8 @@ type movementCommand struct {
 	Option        int          `json:"option"`
 	StartX        int          `json:"startX"`
 	StartY        int          `json:"startY"`
-	EndX          int          `json:"endX"`
-	EndY          int          `json:"endY"`
-	Stance        int          `json:"stance"`
+	EndX          int16        `json:"endX"`
+	EndY          int16        `json:"endY"`
+	Stance        byte         `json:"stance"`
 	RawMovement   []int        `json:"rawMovement"`
 }

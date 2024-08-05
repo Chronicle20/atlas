@@ -160,8 +160,8 @@ func Destroy(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) f
 	}
 }
 
-func Move(_ logrus.FieldLogger, _ opentracing.Span, tenant tenant.Model) func(id uint32, x int, y int, stance int) {
-	return func(id uint32, x int, y int, stance int) {
+func Move(_ logrus.FieldLogger, _ opentracing.Span, tenant tenant.Model) func(id uint32, x int16, y int16, stance byte) {
+	return func(id uint32, x int16, y int16, stance byte) {
 		GetMonsterRegistry().MoveMonster(tenant, id, x, y, stance)
 	}
 }

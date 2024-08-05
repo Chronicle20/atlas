@@ -13,11 +13,11 @@ func TestSunnyDay(t *testing.T) {
 	channelId := byte(0)
 	mapId := uint32(40000)
 	monsterId := uint32(9300018)
-	x := 0
-	y := 0
-	fh := 0
-	stance := 0
-	team := 0
+	x := int16(0)
+	y := int16(0)
+	fh := int16(0)
+	stance := byte(0)
+	team := int8(0)
 	hp := uint32(50)
 	mp := uint32(50)
 
@@ -103,7 +103,7 @@ func TestSunnyDay(t *testing.T) {
 	}
 }
 
-func valid(worldId byte, channelId byte, mapId uint32, monsterId uint32, x int, y int, fh int, stance int, team int, hp uint32, mp uint32) func(m Model) bool {
+func valid(worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) func(m Model) bool {
 	return func(m Model) bool {
 		if m.WorldId() != worldId {
 			return false

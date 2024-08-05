@@ -23,11 +23,11 @@ type Model struct {
 	mp                 uint32
 	monsterId          uint32
 	controlCharacterId uint32
-	x                  int
-	y                  int
-	fh                 int
-	stance             int
-	team               int
+	x                  int16
+	y                  int16
+	fh                 int16
+	stance             byte
+	team               int8
 	damageEntries      []entry
 }
 
@@ -36,7 +36,7 @@ type entry struct {
 	Damage      int64
 }
 
-func NewMonster(worldId byte, channelId byte, mapId uint32, uniqueId uint32, monsterId uint32, x int, y int, fh int, stance int, team int, hp uint32, mp uint32) Model {
+func NewMonster(worldId byte, channelId byte, mapId uint32, uniqueId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
 	return Model{
 		uniqueId:           uniqueId,
 		worldId:            worldId,
@@ -85,23 +85,23 @@ func (m *Model) ControlCharacterId() uint32 {
 	return m.controlCharacterId
 }
 
-func (m *Model) Fh() int {
+func (m *Model) Fh() int16 {
 	return m.fh
 }
 
-func (m *Model) Team() int {
+func (m *Model) Team() int8 {
 	return m.team
 }
 
-func (m *Model) X() int {
+func (m *Model) X() int16 {
 	return m.x
 }
 
-func (m *Model) Y() int {
+func (m *Model) Y() int16 {
 	return m.y
 }
 
-func (m *Model) Stance() int {
+func (m *Model) Stance() byte {
 	return m.stance
 }
 
@@ -129,7 +129,7 @@ func (m *Model) DamageSummary() []entry {
 	return results
 }
 
-func (m *Model) Move(x int, y int, stance int) Model {
+func (m *Model) Move(x int16, y int16, stance byte) Model {
 	return Model{
 		uniqueId:           m.UniqueId(),
 		worldId:            m.WorldId(),

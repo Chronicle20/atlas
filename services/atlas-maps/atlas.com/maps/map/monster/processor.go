@@ -49,7 +49,7 @@ func Spawn(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fun
 				result := shuffle(ableSps)
 				for i := 0; i < toSpawn; i++ {
 					x := result[i]
-					monster.CreateMonster(l, span, tenant)(worldId, channelId, mapId, x.Id, x.X, x.Y, x.Fh, x.Team)
+					monster.CreateMonster(l, span, tenant)(worldId, channelId, mapId, x.Template, x.X, x.Y, x.Fh, x.Team)
 				}
 			}
 		}

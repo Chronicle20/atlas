@@ -1,52 +1,66 @@
 package monster
 
 import (
+	"atlas-monsters/tenant"
 	"errors"
-	"github.com/google/uuid"
 	"sync"
 )
 
 type Registry struct {
-	mutex                 sync.Mutex
-	monsterRegisterRWLock sync.RWMutex
-	monsterRegister       map[uuid.UUID]map[uint32]Model
-	mapMonsters           map[MapKey][]uint32
-	mapLocks              map[MapKey]*sync.Mutex
+	mutex sync.Mutex
+
+	mapIds        map[MapKey]uint32
+	mapMonsterReg map[MapKey][]MonsterKey
+	mapLocks      map[MapKey]*sync.RWMutex
+
+	monsterReg   map[MonsterKey]Model
+	monsterLocks map[MonsterKey]*sync.RWMutex
 }
 
-var monsterRegistry *Registry
+var registry *Registry
 var once sync.Once
-
-var uniqueId = uint32(1000000001)
 
 func GetMonsterRegistry() *Registry {
 	once.Do(func() {
-		monsterRegistry = &Registry{}
+		registry = &Registry{}
+		registry.mapIds = make(map[MapKey]uint32)
+		registry.mapMonsterReg = make(map[MapKey][]MonsterKey)
+		registry.mapLocks = make(map[MapKey]*sync.RWMutex)
 
-		monsterRegistry.monsterRegister = make(map[uuid.UUID]map[uint32]Model)
-		monsterRegistry.mapMonsters = make(map[MapKey][]uint32)
-
-		monsterRegistry.mapLocks = make(map[MapKey]*sync.Mutex)
+		registry.monsterReg = make(map[MonsterKey]Model)
+		registry.monsterLocks = make(map[MonsterKey]*sync.RWMutex)
 	})
-	return monsterRegistry
+	return registry
 }
 
-func (r *Registry) getMapLock(key MapKey) *sync.Mutex {
+func (r *Registry) getMapLock(key MapKey) *sync.RWMutex {
 	if val, ok := r.mapLocks[key]; ok {
 		return val
-	} else {
-		var cm = &sync.Mutex{}
-		r.mutex.Lock()
-		r.mapLocks[key] = cm
-		r.mutex.Unlock()
-		return cm
 	}
+	var cm = &sync.RWMutex{}
+	r.mutex.Lock()
+	r.mapLocks[key] = cm
+	r.mapMonsterReg[key] = make([]MonsterKey, 0)
+	r.mapIds[key] = uint32(1000000001)
+	r.mutex.Unlock()
+	return cm
 }
 
-func existingIds(monsters map[uint32]Model) []uint32 {
+func (r *Registry) getMonsterLock(key MonsterKey) *sync.RWMutex {
+	if val, ok := r.monsterLocks[key]; ok {
+		return val
+	}
+	var cm = &sync.RWMutex{}
+	r.mutex.Lock()
+	r.monsterLocks[key] = cm
+	r.mutex.Unlock()
+	return cm
+}
+
+func existingIds(monsters []MonsterKey) []uint32 {
 	var ids []uint32
 	for _, x := range monsters {
-		ids = append(ids, x.UniqueId())
+		ids = append(ids, x.MonsterId)
 	}
 	return ids
 }
@@ -60,152 +74,165 @@ func contains(ids []uint32, id uint32) bool {
 	return false
 }
 
-func (r *Registry) CreateMonster(tenantId uuid.UUID, worldId byte, channelId byte, mapId uint32, monsterId uint32, x int, y int, fh int, stance int, team int, hp uint32, mp uint32) Model {
-	r.monsterRegisterRWLock.Lock()
-	var existingIds = existingIds(r.monsterRegister[tenantId])
+func (r *Registry) CreateMonster(tenant tenant.Model, worldId byte, channelId byte, mapId uint32, monsterId uint32, x int, y int, fh int, stance int, team int, hp uint32, mp uint32) Model {
+	mapKey := MapKey{Tenant: tenant, WorldId: worldId, ChannelId: channelId, MapId: mapId}
 
-	var currentUniqueId = uniqueId
+	mapLock := r.getMapLock(mapKey)
+	mapLock.Lock()
+	defer mapLock.Unlock()
+
+	var existingIds = existingIds(r.mapMonsterReg[mapKey])
+
+	var currentUniqueId = r.mapIds[mapKey]
 	for contains(existingIds, currentUniqueId) {
 		currentUniqueId = currentUniqueId + 1
 		if currentUniqueId > 2000000000 {
 			currentUniqueId = 1000000001
 		}
-		uniqueId = currentUniqueId
+		r.mapIds[mapKey] = currentUniqueId
 	}
 
 	m := NewMonster(worldId, channelId, mapId, currentUniqueId, monsterId, x, y, fh, stance, team, hp, mp)
 
-	r.monsterRegister[tenantId][uniqueId] = m
-	r.monsterRegisterRWLock.Unlock()
+	monKey := MonsterKey{Tenant: tenant, MonsterId: m.UniqueId()}
+	r.mapMonsterReg[mapKey] = append(r.mapMonsterReg[mapKey], monKey)
 
-	mk := NewMapKey(tenantId, worldId, channelId, mapId)
-	r.getMapLock(mk).Lock()
-	if om, ok := r.mapMonsters[mk]; ok {
-		r.mapMonsters[mk] = append(om, m.UniqueId())
-	} else {
-		r.mapMonsters[mk] = append([]uint32{}, m.UniqueId())
-	}
-	r.getMapLock(mk).Unlock()
+	monLock := r.getMonsterLock(monKey)
+	monLock.Lock()
+	defer monLock.Unlock()
 
+	r.monsterReg[monKey] = m
 	return m
 }
 
-func (r *Registry) GetMonster(tenantId uuid.UUID, uniqueId uint32) (Model, error) {
-	r.monsterRegisterRWLock.RLock()
-	if val, ok := r.monsterRegister[tenantId][uniqueId]; ok {
-		r.monsterRegisterRWLock.RUnlock()
-		return val, nil
+func (r *Registry) GetMonster(tenant tenant.Model, uniqueId uint32) (Model, error) {
+	monKey := MonsterKey{Tenant: tenant, MonsterId: uniqueId}
+	monLock := r.getMonsterLock(monKey)
+	monLock.RLock()
+	defer monLock.RUnlock()
+
+	if m, ok := r.monsterReg[monKey]; ok {
+		return m, nil
+	}
+	return Model{}, errors.New("monster not found")
+}
+
+func (r *Registry) GetMonstersInMap(tenant tenant.Model, worldId byte, channelId byte, mapId uint32) []Model {
+	mapKey := NewMapKey(tenant, worldId, channelId, mapId)
+	mapLock := r.getMapLock(mapKey)
+	mapLock.RLock()
+	defer mapLock.RUnlock()
+
+	var result []Model
+	for _, monKey := range r.mapMonsterReg[mapKey] {
+		monLock := r.getMonsterLock(monKey)
+		monLock.RLock()
+		if m, ok := r.monsterReg[monKey]; ok {
+			result = append(result, m)
+		}
+		monLock.RUnlock()
+	}
+	return result
+}
+
+func (r *Registry) MoveMonster(tenant tenant.Model, uniqueId uint32, endX int, endY int, stance int) {
+	monKey := MonsterKey{Tenant: tenant, MonsterId: uniqueId}
+	monLock := r.getMonsterLock(monKey)
+	monLock.Lock()
+	defer monLock.Unlock()
+	if val, ok := r.monsterReg[monKey]; ok {
+		r.monsterReg[monKey] = val.Move(endX, endY, stance)
+	}
+}
+
+func (r *Registry) ControlMonster(tenant tenant.Model, uniqueId uint32, characterId uint32) (Model, error) {
+	monKey := MonsterKey{Tenant: tenant, MonsterId: uniqueId}
+	monLock := r.getMonsterLock(monKey)
+	monLock.Lock()
+	defer monLock.Unlock()
+	if val, ok := r.monsterReg[monKey]; ok {
+		r.monsterReg[monKey] = val.Control(characterId)
+		return r.monsterReg[monKey], nil
 	} else {
-		r.monsterRegisterRWLock.RUnlock()
 		return Model{}, errors.New("monster not found")
 	}
 }
 
-func (r *Registry) GetMonstersInMap(tenantId uuid.UUID, worldId byte, channelId byte, mapId uint32) []Model {
-	mk := NewMapKey(tenantId, worldId, channelId, mapId)
-	r.getMapLock(mk).Lock()
-	r.monsterRegisterRWLock.RLock()
-	var result []Model
-	for _, x := range r.mapMonsters[mk] {
-		result = append(result, r.monsterRegister[tenantId][x])
-	}
-	r.monsterRegisterRWLock.RUnlock()
-	r.getMapLock(mk).Unlock()
-	return result
-}
-
-func (r *Registry) MoveMonster(tenantId uuid.UUID, uniqueId uint32, endX int, endY int, stance int) {
-	r.monsterRegisterRWLock.Lock()
-	if m, ok := r.monsterRegister[tenantId][uniqueId]; ok {
-		um := m.Move(endX, endY, stance)
-		r.monsterRegister[tenantId][uniqueId] = um
-	}
-	r.monsterRegisterRWLock.Unlock()
-}
-
-func (r *Registry) ControlMonster(tenantId uuid.UUID, uniqueId uint32, characterId uint32) (Model, error) {
-	r.monsterRegisterRWLock.Lock()
-	if m, ok := r.monsterRegister[tenantId][uniqueId]; ok {
-		um := m.Control(characterId)
-		r.monsterRegister[tenantId][uniqueId] = um
-		r.monsterRegisterRWLock.Unlock()
-		return um, nil
+func (r *Registry) ClearControl(tenant tenant.Model, uniqueId uint32) (Model, error) {
+	monKey := MonsterKey{Tenant: tenant, MonsterId: uniqueId}
+	monLock := r.getMonsterLock(monKey)
+	monLock.Lock()
+	defer monLock.Unlock()
+	if val, ok := r.monsterReg[monKey]; ok {
+		r.monsterReg[monKey] = val.ClearControl()
+		return r.monsterReg[monKey], nil
 	} else {
-		r.monsterRegisterRWLock.Unlock()
-		return m, errors.New("monster not found")
+		return Model{}, errors.New("monster not found")
 	}
 }
 
-func (r *Registry) ClearControl(tenantId uuid.UUID, uniqueId uint32) (Model, error) {
-	r.monsterRegisterRWLock.Lock()
-	if m, ok := r.monsterRegister[tenantId][uniqueId]; ok {
-		um := m.ClearControl()
-		r.monsterRegister[tenantId][uniqueId] = um
-		r.monsterRegisterRWLock.Unlock()
-		return um, nil
-	} else {
-		r.monsterRegisterRWLock.Unlock()
-		return m, errors.New("monster not found")
-	}
-}
-
-func (r *Registry) ApplyDamage(tenantId uuid.UUID, characterId uint32, damage int64, uniqueId uint32) (*DamageSummary, error) {
-	r.monsterRegisterRWLock.Lock()
-	if m, ok := r.monsterRegister[tenantId][uniqueId]; ok {
-		um := m.Damage(characterId, damage)
-		r.monsterRegister[tenantId][uniqueId] = um
-		r.monsterRegisterRWLock.Unlock()
-		return &DamageSummary{
+func (r *Registry) ApplyDamage(tenant tenant.Model, characterId uint32, damage int64, uniqueId uint32) (DamageSummary, error) {
+	monKey := MonsterKey{Tenant: tenant, MonsterId: uniqueId}
+	monLock := r.getMonsterLock(monKey)
+	monLock.Lock()
+	defer monLock.Unlock()
+	if val, ok := r.monsterReg[monKey]; ok {
+		m := val.Damage(characterId, damage)
+		r.monsterReg[monKey] = m
+		return DamageSummary{
 			CharacterId:   characterId,
-			Monster:       um,
+			Monster:       m,
 			VisibleDamage: damage,
-			ActualDamage:  int64(m.Hp() - um.Hp()),
-			Killed:        um.Hp() == 0,
+			ActualDamage:  int64(m.Hp() - m.Hp()),
+			Killed:        m.Hp() == 0,
 		}, nil
 	} else {
-		r.monsterRegisterRWLock.Unlock()
-		return nil, errors.New("monster not found")
+		return DamageSummary{}, errors.New("monster not found")
 	}
 }
 
-func (r *Registry) RemoveMonster(tenantId uuid.UUID, uniqueId uint32) (Model, error) {
-	r.monsterRegisterRWLock.Lock()
-	if m, ok := r.monsterRegister[tenantId][uniqueId]; ok {
-		mk := NewMapKey(tenantId, m.WorldId(), m.ChannelId(), m.MapId())
-		r.removeMonster(mk, uniqueId)
-		return m, nil
+func (r *Registry) RemoveMonster(tenant tenant.Model, uniqueId uint32) (Model, error) {
+	monKey := MonsterKey{Tenant: tenant, MonsterId: uniqueId}
+	monLock := r.getMonsterLock(monKey)
+	monLock.Lock()
+	defer monLock.Unlock()
+
+	if val, ok := r.monsterReg[monKey]; ok {
+		mapKey := NewMapKey(tenant, val.WorldId(), val.ChannelId(), val.MapId())
+		mapLock := r.getMapLock(mapKey)
+		mapLock.Lock()
+		defer mapLock.Unlock()
+
+		if mapMons, ok := r.mapMonsterReg[mapKey]; ok {
+			r.mapMonsterReg[mapKey] = removeIfExists(mapMons, val)
+		}
+
+		delete(r.monsterReg, monKey)
+		delete(r.monsterLocks, monKey)
+		return val, nil
 	}
-	r.monsterRegisterRWLock.Unlock()
 	return Model{}, errors.New("monster not found")
 }
 
-func remove(c []uint32, i int) []uint32 {
-	c[i] = c[len(c)-1]
-	return c[:len(c)-1]
-}
-
-func indexOf(id uint32, data []uint32) int {
-	for k, v := range data {
-		if id == v {
-			return k
+func removeIfExists(slice []MonsterKey, value Model) []MonsterKey {
+	for i, v := range slice {
+		if v.MonsterId == value.UniqueId() {
+			return append(slice[:i], slice[i+1:]...)
 		}
 	}
-	return -1 //not found.
+	return slice
 }
 
-func (r *Registry) removeMonster(mapId MapKey, uniqueId uint32) {
-	index := indexOf(uniqueId, r.mapMonsters[mapId])
-	if index >= 0 && index < len(r.mapMonsters[mapId]) {
-		r.mapMonsters[mapId] = remove(r.mapMonsters[mapId], index)
+func (r *Registry) GetMonsters() []Model {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	mons := make([]Model, 0)
+	for monKey, monLock := range r.monsterLocks {
+		monLock.RLock()
+		if m, ok := r.monsterReg[monKey]; ok {
+			mons = append(mons, m)
+		}
+		monLock.RUnlock()
 	}
-}
-
-func (r *Registry) GetMonsters(tenantId uuid.UUID) []Model {
-	r.monsterRegisterRWLock.RLock()
-	ms := make([]Model, len(r.monsterRegister[tenantId]))
-	for _, x := range r.monsterRegister[tenantId] {
-		ms = append(ms, x)
-	}
-	r.monsterRegisterRWLock.RUnlock()
-	return ms
+	return mons
 }

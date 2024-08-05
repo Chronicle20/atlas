@@ -29,7 +29,7 @@ func handleGetMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext) h
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					ms := monster.GetMonsterRegistry().GetMonstersInMap(c.Tenant().Id, worldId, channelId, mapId)
+					ms := monster.GetMonsterRegistry().GetMonstersInMap(c.Tenant(), worldId, channelId, mapId)
 
 					res, err := model.SliceMap(model.FixedProvider(ms), monster.Transform)()
 					if err != nil {
@@ -52,6 +52,7 @@ func handleCreateMonsterInMap(d *rest.HandlerDependency, c *rest.HandlerContext,
 				return func(w http.ResponseWriter, r *http.Request) {
 					m, err := monster.CreateMonster(d.Logger(), d.Span(), c.Tenant())(worldId, channelId, mapId, input)
 					if err != nil {
+						d.Logger().WithError(err).Errorf("Unable to create monsters.")
 						w.WriteHeader(http.StatusBadRequest)
 						return
 					}

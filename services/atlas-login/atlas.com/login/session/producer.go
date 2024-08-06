@@ -17,7 +17,7 @@ func statusEventProvider(tenant tenant.Model, sessionId uuid.UUID, accountId uin
 		CharacterId: characterId,
 		WorldId:     worldId,
 		ChannelId:   channelId,
-		Issuer:      EventSessionStatusIssuerChannel,
+		Issuer:      EventSessionStatusIssuerLogin,
 		Type:        eventType,
 	}
 	return producer.SingleMessageProvider(key, value)

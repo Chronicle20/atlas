@@ -12,6 +12,7 @@ import (
 
 const (
 	mapMonstersResource = "worlds/%d/channels/%d/maps/%d/monsters"
+	monstersResource    = "monsters/%d"
 )
 
 func getBaseRequest() string {
@@ -21,5 +22,11 @@ func getBaseRequest() string {
 func requestInMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32) requests.Request[[]RestModel] {
 	return func(worldId byte, channelId byte, mapId uint32) requests.Request[[]RestModel] {
 		return rest.MakeGetRequest[[]RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+mapMonstersResource, worldId, channelId, mapId))
+	}
+}
+
+func requestById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(uniqueId uint32) requests.Request[RestModel] {
+	return func(uniqueId uint32) requests.Request[RestModel] {
+		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+monstersResource, uniqueId))
 	}
 }

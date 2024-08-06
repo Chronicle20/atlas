@@ -5,6 +5,7 @@ import (
 	"atlas-channel/configuration"
 	"atlas-channel/kafka/consumer/character"
 	"atlas-channel/kafka/consumer/map"
+	"atlas-channel/kafka/consumer/monster"
 	"atlas-channel/logger"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -64,6 +65,7 @@ func main() {
 	cm.AddConsumer(l, ctx, wg)(_map.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, ctx, wg)(character.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, ctx, wg)(channel.CommandStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, ctx, wg)(monster.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 
 	for _, s := range config.Data.Attributes.Servers {
 		var t tenant.Model
@@ -98,6 +100,7 @@ func main() {
 				_, _ = cm.RegisterHandler(character.StatusEventStatChangedRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(character.StatusEventMapChangedRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(channel.CommandStatusRegister(sc, config.Data.Attributes.IPAddress, c.Port)(fl))
+				_, _ = cm.RegisterHandler(monster.StatusEventCreatedRegister(sc, wp)(fl))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, ctx, wg)(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)

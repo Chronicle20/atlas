@@ -35,6 +35,19 @@ func CharacterIdFilter(referenceId uint32) model.Filter[Model] {
 	}
 }
 
+// GetByCharacterId gets a session (if one exists) for the given characterId
+func GetByCharacterId(tenant tenant.Model) func(characterId uint32) (Model, error) {
+	return func(characterId uint32) (Model, error) {
+		return ByCharacterIdModelProvider(tenant)(characterId)()
+	}
+}
+
+func ForEachByCharacterId(tenant tenant.Model) func(provider model.Provider[[]uint32], f model.Operator[Model]) {
+	return func(provider model.Provider[[]uint32], f model.Operator[Model]) {
+		_ = model.ForEach(model.SliceMap[uint32, Model](provider, GetByCharacterId(tenant)), f)
+	}
+}
+
 func Announce(l logrus.FieldLogger) func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
 	return func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
 		return func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {

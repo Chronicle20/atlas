@@ -186,7 +186,9 @@ func NewMonster(m monster.Model) Monster {
 
 func (m *Monster) Encode(l logrus.FieldLogger, tenant tenant.Model, ops map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
-		m.monsterTemporaryStat.Encode(l, tenant, ops)(w)
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+			m.monsterTemporaryStat.Encode(l, tenant, ops)(w)
+		}
 		w.WriteInt16(m.x)
 		w.WriteInt16(m.y)
 		w.WriteByte(m.moveAction)
@@ -196,8 +198,13 @@ func (m *Monster) Encode(l logrus.FieldLogger, tenant tenant.Model, ops map[stri
 		if m.appearType == MonsterAppearTypeRevived || m.appearType >= 0 {
 			w.WriteInt(m.appearTypeOption)
 		}
-		w.WriteInt8(m.team)
-		w.WriteInt(m.effectItemId)
-		w.WriteInt(m.phase)
+		if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+			w.WriteInt8(m.team)
+			w.WriteInt(m.effectItemId)
+			w.WriteInt(m.phase)
+		} else {
+			// TODO proper temp stat encoding for GMS v12
+			w.WriteInt(0)
+		}
 	}
 }

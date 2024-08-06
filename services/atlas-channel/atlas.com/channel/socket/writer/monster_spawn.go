@@ -20,10 +20,12 @@ func SpawnMonsterWithEffectBody(l logrus.FieldLogger, t tenant.Model) func(m mon
 	return func(m monster.Model, newSpawn bool, effect byte) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(m.UniqueId())
-			if m.Controlled() {
-				w.WriteByte(1)
-			} else {
-				w.WriteByte(5)
+			if (t.Region == "GMS" && t.MajorVersion > 12) || t.Region == "JMS" {
+				if m.Controlled() {
+					w.WriteByte(1)
+				} else {
+					w.WriteByte(5)
+				}
 			}
 			w.WriteInt(m.MonsterId())
 			mem := model.NewMonster(m)

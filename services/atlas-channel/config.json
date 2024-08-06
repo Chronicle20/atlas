@@ -120,6 +120,14 @@
               "writer": "SpawnMonster"
             },
             {
+              "opCode": "0x6E",
+              "writer": "DestroyMonster"
+            },
+            {
+              "opCode": "0x6F",
+              "writer": "ControlMonster"
+            },
+            {
               "opCode": "0x7E",
               "writer": "SpawnNPC"
             },
@@ -291,6 +299,14 @@
             {
               "opCode": "0xEC",
               "writer": "SpawnMonster"
+            },
+            {
+              "opCode": "0xED",
+              "writer": "DestroyMonster"
+            },
+            {
+              "opCode": "0xEE",
+              "writer": "ControlMonster"
             },
             {
               "opCode": "0x101",
@@ -484,6 +500,14 @@
               "writer": "SpawnMonster"
             },
             {
+              "opCode": "0xFD",
+              "writer": "DestroyMonster"
+            },
+            {
+              "opCode": "0xFE",
+              "writer": "ControlMonster"
+            },
+            {
               "opCode": "0x112",
               "writer": "SpawnNPC"
             },
@@ -617,6 +641,14 @@
             {
               "opCode": "0x114",
               "writer": "SpawnMonster"
+            },
+            {
+              "opCode": "0x115",
+              "writer": "DestroyMonster"
+            },
+            {
+              "opCode": "0x116",
+              "writer": "ControlMonster"
             },
             {
               "opCode": "0x12F",
@@ -797,6 +829,14 @@
             {
               "opCode": "0xFD",
               "writer": "SpawnMonster"
+            },
+            {
+              "opCode": "0xFE",
+              "writer": "DestroyMonster"
+            },
+            {
+              "opCode": "0xFF",
+              "writer": "ControlMonster"
             },
             {
               "opCode": "0x116",

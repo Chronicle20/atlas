@@ -101,6 +101,10 @@ func main() {
 				_, _ = cm.RegisterHandler(character.StatusEventMapChangedRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(channel.CommandStatusRegister(sc, config.Data.Attributes.IPAddress, c.Port)(fl))
 				_, _ = cm.RegisterHandler(monster.StatusEventCreatedRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(monster.StatusEventDestroyedRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(monster.StatusEventKilledRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(monster.StatusEventStartControlRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(monster.StatusEventStopControlRegister(sc, wp)(fl))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, ctx, wg)(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
@@ -149,6 +153,8 @@ func produceWriters() []string {
 		writer.CashShopOperation,
 		writer.CashShopCashQueryResult,
 		writer.SpawnMonster,
+		writer.DestroyMonster,
+		writer.ControlMonster,
 	}
 }
 

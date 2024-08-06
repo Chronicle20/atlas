@@ -13,6 +13,7 @@ A RESTful resource which provides monsters services.
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
 - GAME_DATA_SERVICE_URL - [scheme]://[host]:[port]/api/gis/
 - MAP_SERVICE_URL - [scheme]://[host]:[port]/api/mas/
+- EVENT_TOPIC_MAP_STATUS - Kafka Topic for transmitting Map Status events.
 - EVENT_TOPIC_MONSTER_STATUS - Kafka Topic for transmitting Monster Status events.
 - COMMAND_TOPIC_MONSTER_DAMAGE - Kafka Topic for issuing Monster Damage commands.
 - COMMAND_TOPIC_MONSTER_MOVEMENT - Kafka Topic for issuing Monster Movement commands.

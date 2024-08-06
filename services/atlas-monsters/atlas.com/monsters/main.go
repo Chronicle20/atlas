@@ -1,6 +1,7 @@
 package main
 
 import (
+	_map "atlas-monsters/kafka/consumer/map"
 	"atlas-monsters/logger"
 	"atlas-monsters/monster"
 	"atlas-monsters/tracing"
@@ -59,8 +60,11 @@ func main() {
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, ctx, wg)(monster.DamageConsumer(l)(consumerGroupId))
 	cm.AddConsumer(l, ctx, wg)(monster.MovementConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, ctx, wg)(_map.StatusEventConsumer(l)(consumerGroupId))
 	_, _ = cm.RegisterHandler(monster.DamageCommandRegister(l))
 	_, _ = cm.RegisterHandler(monster.MovementCommandRegister(l))
+	_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(l))
+	_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(l))
 
 	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), monster.InitResource(GetServer()), world.InitResource(GetServer()))
 

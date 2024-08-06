@@ -80,6 +80,24 @@
               }
             },
             {
+              "opCode": "0x58",
+              "validator": "LoggedInValidator",
+              "handler": "MonsterMovementHandle",
+              "options": {
+                "types": [
+                  {"Name": "NORMAL", "Type": "NORMAL"},
+                  {"Name": "JUMP", "Type": "JUMP"},
+                  {"Name": "IMPACT", "Type": "JUMP"},
+                  {"Name": "IMMEDIATE", "Type": "TELEPORT"},
+                  {"Name": "TELEPORT", "Type": "TELEPORT"},
+                  {"Name": "HANG_ON_BACK", "Type": "NORMAL"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "ASSAULTER", "Type": "TELEPORT"},
+                  {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"}
+                ]
+              }
+            },
+            {
               "opCode": "0x5D",
               "validator": "LoggedInValidator",
               "handler": "NPCActionHandle",
@@ -126,6 +144,10 @@
             {
               "opCode": "0x6F",
               "writer": "ControlMonster"
+            },
+            {
+              "opCode": "0x72",
+              "writer": "MoveMonsterAck"
             },
             {
               "opCode": "0x7E",
@@ -247,6 +269,38 @@
               "handler": "PortalScriptHandle"
             },
             {
+              "opCode": "0xBC",
+              "validator": "LoggedInValidator",
+              "handler": "MonsterMovementHandle",
+              "options": {
+                "types": [
+                  {"Name": "NORMAL", "Type": "NORMAL"},
+                  {"Name": "JUMP", "Type": "JUMP"},
+                  {"Name": "IMPACT", "Type": "JUMP"},
+                  {"Name": "IMMEDIATE", "Type": "TELEPORT"},
+                  {"Name": "TELEPORT", "Type": "TELEPORT"},
+                  {"Name": "HANG_ON_BACK", "Type": "NORMAL"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "ASSAULTER", "Type": "TELEPORT"},
+                  {"Name": "ASSASSINATION", "Type": "TELEPORT"},
+                  {"Name": "RUSH", "Type": "TELEPORT"},
+                  {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"},
+                  {"Name": "SIT_DOWN", "Type": "TELEPORT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "START_FALL_DOWN", "Type": "START_FALL_DOWN"},
+                  {"Name": "FALL_DOWN", "Type": "NORMAL"},
+                  {"Name": "START_WINGS", "Type": "JUMP"},
+                  {"Name": "WINGS", "Type": "NORMAL"},
+                  {"Name": "ARAN_ADJUST", "Type": "JUMP"},
+                  {"Name": "MOB_TOSS", "Type": "JUMP"},
+                  {"Name": "DASH_SLIDE", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"}
+                ]
+              }
+            },
+            {
               "opCode": "0xC5",
               "validator": "LoggedInValidator",
               "handler": "NPCActionHandle",
@@ -307,6 +361,10 @@
             {
               "opCode": "0xEE",
               "writer": "ControlMonster"
+            },
+            {
+              "opCode": "0xF0",
+              "writer": "MoveMonsterAck"
             },
             {
               "opCode": "0x101",
@@ -444,6 +502,40 @@
               "handler": "PortalScriptHandle"
             },
             {
+              "opCode": "0xC8",
+              "validator": "LoggedInValidator",
+              "handler": "MonsterMovementHandle",
+              "options": {
+                "types": [
+                  {"Name": "NORMAL", "Type": "NORMAL"},
+                  {"Name": "JUMP", "Type": "JUMP"},
+                  {"Name": "IMPACT", "Type": "JUMP"},
+                  {"Name": "IMMEDIATE", "Type": "TELEPORT"},
+                  {"Name": "TELEPORT", "Type": "TELEPORT"},
+                  {"Name": "HANG_ON_BACK", "Type": "NORMAL"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "ASSAULTER", "Type": "TELEPORT"},
+                  {"Name": "ASSASSINATION", "Type": "TELEPORT"},
+                  {"Name": "RUSH", "Type": "TELEPORT"},
+                  {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"},
+                  {"Name": "SIT_DOWN", "Type": "TELEPORT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "START_FALL_DOWN", "Type": "START_FALL_DOWN"},
+                  {"Name": "FALL_DOWN", "Type": "NORMAL"},
+                  {"Name": "START_WINGS", "Type": "JUMP"},
+                  {"Name": "WINGS", "Type": "NORMAL"},
+                  {"Name": "ARAN_ADJUST", "Type": "JUMP"},
+                  {"Name": "MOB_TOSS", "Type": "JUMP"},
+                  {"Name": "DASH_SLIDE", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "FLYING_BLOCK", "Type": "FLYING_BLOCK"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"}
+                ]
+              }
+            },
+            {
               "opCode": "0xD2",
               "validator": "LoggedInValidator",
               "handler": "NPCActionHandle",
@@ -506,6 +598,10 @@
             {
               "opCode": "0xFE",
               "writer": "ControlMonster"
+            },
+            {
+              "opCode": "0x100",
+              "writer": "MoveMonsterAck"
             },
             {
               "opCode": "0x112",
@@ -616,6 +712,11 @@
               "handler": "PortalScriptHandle"
             },
             {
+              "opCode": "0xDC",
+              "validator": "LoggedInValidator",
+              "handler": "MonsterMovementHandle"
+            },
+            {
               "opCode": "0xEA",
               "validator": "LoggedInValidator",
               "handler": "NPCActionHandle"
@@ -649,6 +750,10 @@
             {
               "opCode": "0x116",
               "writer": "ControlMonster"
+            },
+            {
+              "opCode": "0x118",
+              "writer": "MoveMonsterAck"
             },
             {
               "opCode": "0x12F",
@@ -767,6 +872,48 @@
               "handler": "PortalScriptHandle"
             },
             {
+              "opCode": "0xC2",
+              "validator": "LoggedInValidator",
+              "handler": "MonsterMovementHandle",
+              "options": {
+                "types": [
+                  {"Name": "NORMAL", "Type": "NORMAL"},
+                  {"Name": "JUMP", "Type": "JUMP"},
+                  {"Name": "IMPACT", "Type": "JUMP"},
+                  {"Name": "IMMEDIATE", "Type": "TELEPORT"},
+                  {"Name": "TELEPORT", "Type": "TELEPORT"},
+                  {"Name": "HANG_ON_BACK", "Type": "NORMAL"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "ASSAULTER", "Type": "TELEPORT"},
+                  {"Name": "ASSASSINATION", "Type": "TELEPORT"},
+                  {"Name": "RUSH", "Type": "TELEPORT"},
+                  {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"},
+                  {"Name": "SIT_DOWN", "Type": "TELEPORT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "START_FALL_DOWN", "Type": "START_FALL_DOWN"},
+                  {"Name": "FALL_DOWN", "Type": "NORMAL"},
+                  {"Name": "START_WINGS", "Type": "JUMP"},
+                  {"Name": "WINGS", "Type": "NORMAL"},
+                  {"Name": "ARAN_ADJUST", "Type": "JUMP"},
+                  {"Name": "MOB_TOSS", "Type": "JUMP"},
+                  {"Name": "DASH_SLIDE", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "FLYING_BLOCK", "Type": "FLYING_BLOCK"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "MOB_ATK_RUSH", "Type": "NORMAL"},
+                  {"Name": "MOB_ATK_RUSH_STOP", "Type": "NORMAL"}
+                ]
+              }
+            },
+            {
               "opCode": "0xD0",
               "validator": "LoggedInValidator",
               "handler": "NPCActionHandle",
@@ -837,6 +984,10 @@
             {
               "opCode": "0xFF",
               "writer": "ControlMonster"
+            },
+            {
+              "opCode": "0x101",
+              "writer": "MoveMonsterAck"
             },
             {
               "opCode": "0x116",

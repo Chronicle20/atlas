@@ -47,6 +47,9 @@ func Extract(m RestModel) (Model, error) {
 
 	return Model{
 		uniqueId:           uint32(id),
+		worldId:            m.WorldId,
+		channelId:          m.ChannelId,
+		mapId:              m.MapId,
 		hp:                 m.Hp,
 		mp:                 m.Mp,
 		monsterId:          m.MonsterId,

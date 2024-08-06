@@ -155,6 +155,7 @@ func produceWriters() []string {
 		writer.SpawnMonster,
 		writer.DestroyMonster,
 		writer.ControlMonster,
+		writer.MoveMonsterAck,
 	}
 }
 
@@ -168,6 +169,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterMoveHandle] = handler.CharacterMoveHandleFunc
 	handlerMap[handler.ChannelChangeHandle] = handler.ChannelChangeHandleFunc
 	handlerMap[handler.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
+	handlerMap[handler.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
 	return handlerMap
 }
 

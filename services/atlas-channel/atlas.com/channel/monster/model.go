@@ -1,6 +1,9 @@
 package monster
 
 type Model struct {
+	worldId            byte
+	channelId          byte
+	mapId              uint32
 	uniqueId           uint32
 	hp                 uint32
 	mp                 uint32
@@ -43,4 +46,20 @@ func (m Model) Fh() int16 {
 
 func (m Model) Team() int8 {
 	return m.team
+}
+
+func (m Model) WorldId() byte {
+	return m.worldId
+}
+
+func (m Model) ChannelId() byte {
+	return m.channelId
+}
+
+func (m Model) MapId() uint32 {
+	return m.mapId
+}
+
+func (m Model) MP() uint32 {
+	return m.mp
 }

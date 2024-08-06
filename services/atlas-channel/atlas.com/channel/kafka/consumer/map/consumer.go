@@ -110,7 +110,7 @@ func spawnMonsterForSession(l logrus.FieldLogger, wp writer.Producer) func(s ses
 	spawnMonsterFunc := session.Announce(l)(wp)(writer.SpawnMonster)
 	return func(s session.Model) model.Operator[monster.Model] {
 		return func(m monster.Model) error {
-			err := spawnMonsterFunc(s, writer.SpawnMonsterBody(l)(m, false))
+			err := spawnMonsterFunc(s, writer.SpawnMonsterBody(l, s.Tenant())(m, false))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to spawn monster [%d] for character [%d].", m.UniqueId(), s.CharacterId())
 			}

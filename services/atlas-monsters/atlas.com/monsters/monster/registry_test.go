@@ -103,6 +103,47 @@ func TestSunnyDay(t *testing.T) {
 	}
 }
 
+func TestIdReuse(t *testing.T) {
+	r := GetMonsterRegistry()
+	tenant1 := tenant.New(uuid.New(), "GMS", 83, 1)
+	tenant2 := tenant.New(uuid.New(), "GMS", 87, 1)
+	worldId := byte(0)
+	channelId := byte(0)
+	mapId := uint32(40000)
+	monsterId := uint32(9300018)
+	x := int16(0)
+	y := int16(0)
+	fh := int16(0)
+	stance := byte(0)
+	team := int8(0)
+	hp := uint32(50)
+	mp := uint32(50)
+
+	m := r.CreateMonster(tenant1, worldId, channelId, mapId, monsterId, x, y, fh, stance, team, hp, mp)
+	if !valid(worldId, channelId, mapId, monsterId, x, y, fh, stance, team, hp, mp)(m) {
+		t.Fatal("Monster created with incorrect properties.")
+	}
+	if m.UniqueId() != 1000000000 {
+		t.Fatal("Unexpected Unique Id.")
+	}
+
+	m2 := r.CreateMonster(tenant2, worldId, channelId, mapId, monsterId, x, y, fh, stance, team, hp, mp)
+	if !valid(worldId, channelId, mapId, monsterId, x, y, fh, stance, team, hp, mp)(m) {
+		t.Fatal("Monster created with incorrect properties.")
+	}
+	if m2.UniqueId() != 1000000000 {
+		t.Fatal("Unexpected Unique Id.")
+	}
+
+	m3 := r.CreateMonster(tenant1, worldId, channelId, mapId, monsterId, x, y, fh, stance, team, hp, mp)
+	if !valid(worldId, channelId, mapId, monsterId, x, y, fh, stance, team, hp, mp)(m) {
+		t.Fatal("Monster created with incorrect properties.")
+	}
+	if m3.UniqueId() != 1000000001 {
+		t.Fatal("Unexpected Unique Id.")
+	}
+}
+
 func valid(worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) func(m Model) bool {
 	return func(m Model) bool {
 		if m.WorldId() != worldId {

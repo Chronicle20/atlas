@@ -1,7 +1,6 @@
 package model
 
 import (
-	"atlas-channel/monster"
 	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
@@ -168,17 +167,17 @@ type Monster struct {
 	phase                uint32
 }
 
-func NewMonster(m monster.Model) Monster {
+func NewMonster(x int16, y int16, stance byte, fh int16, team int8) Monster {
 	return Monster{
 		monsterTemporaryStat: MonsterTemporaryStat{},
-		x:                    m.X(),
-		y:                    m.Y(),
-		moveAction:           m.Stance(),
+		x:                    x,
+		y:                    y,
+		moveAction:           stance,
 		foothold:             0,
-		homeFoothold:         m.Fh(),
+		homeFoothold:         fh,
 		appearType:           MonsterAppearTypeNormal,
 		appearTypeOption:     0,
-		team:                 m.Team(),
+		team:                 team,
 		effectItemId:         0,
 		phase:                0,
 	}

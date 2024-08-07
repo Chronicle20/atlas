@@ -146,6 +146,23 @@
               "writer": "ControlMonster"
             },
             {
+              "opCode": "0x71",
+              "writer": "MoveMonster",
+              "options": {
+                "types": [
+                  {"Name": "NORMAL", "Type": "NORMAL"},
+                  {"Name": "JUMP", "Type": "JUMP"},
+                  {"Name": "IMPACT", "Type": "JUMP"},
+                  {"Name": "IMMEDIATE", "Type": "TELEPORT"},
+                  {"Name": "TELEPORT", "Type": "TELEPORT"},
+                  {"Name": "HANG_ON_BACK", "Type": "NORMAL"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "ASSAULTER", "Type": "TELEPORT"},
+                  {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"}
+                ]
+              }
+            },
+            {
               "opCode": "0x72",
               "writer": "MoveMonsterAck"
             },
@@ -361,6 +378,37 @@
             {
               "opCode": "0xEE",
               "writer": "ControlMonster"
+            },
+            {
+              "opCode": "0xEF",
+              "writer": "MoveMonster",
+              "options": {
+                "types": [
+                  {"Name": "NORMAL", "Type": "NORMAL"},
+                  {"Name": "JUMP", "Type": "JUMP"},
+                  {"Name": "IMPACT", "Type": "JUMP"},
+                  {"Name": "IMMEDIATE", "Type": "TELEPORT"},
+                  {"Name": "TELEPORT", "Type": "TELEPORT"},
+                  {"Name": "HANG_ON_BACK", "Type": "NORMAL"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "ASSAULTER", "Type": "TELEPORT"},
+                  {"Name": "ASSASSINATION", "Type": "TELEPORT"},
+                  {"Name": "RUSH", "Type": "TELEPORT"},
+                  {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"},
+                  {"Name": "SIT_DOWN", "Type": "TELEPORT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "START_FALL_DOWN", "Type": "START_FALL_DOWN"},
+                  {"Name": "FALL_DOWN", "Type": "NORMAL"},
+                  {"Name": "START_WINGS", "Type": "JUMP"},
+                  {"Name": "WINGS", "Type": "NORMAL"},
+                  {"Name": "ARAN_ADJUST", "Type": "JUMP"},
+                  {"Name": "MOB_TOSS", "Type": "JUMP"},
+                  {"Name": "DASH_SLIDE", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"}
+                ]
+              }
             },
             {
               "opCode": "0xF0",
@@ -600,6 +648,39 @@
               "writer": "ControlMonster"
             },
             {
+              "opCode": "0xFF",
+              "writer": "MoveMonster",
+              "options": {
+                "types": [
+                  {"Name": "NORMAL", "Type": "NORMAL"},
+                  {"Name": "JUMP", "Type": "JUMP"},
+                  {"Name": "IMPACT", "Type": "JUMP"},
+                  {"Name": "IMMEDIATE", "Type": "TELEPORT"},
+                  {"Name": "TELEPORT", "Type": "TELEPORT"},
+                  {"Name": "HANG_ON_BACK", "Type": "NORMAL"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "ASSAULTER", "Type": "TELEPORT"},
+                  {"Name": "ASSASSINATION", "Type": "TELEPORT"},
+                  {"Name": "RUSH", "Type": "TELEPORT"},
+                  {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"},
+                  {"Name": "SIT_DOWN", "Type": "TELEPORT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "START_FALL_DOWN", "Type": "START_FALL_DOWN"},
+                  {"Name": "FALL_DOWN", "Type": "NORMAL"},
+                  {"Name": "START_WINGS", "Type": "JUMP"},
+                  {"Name": "WINGS", "Type": "NORMAL"},
+                  {"Name": "ARAN_ADJUST", "Type": "JUMP"},
+                  {"Name": "MOB_TOSS", "Type": "JUMP"},
+                  {"Name": "DASH_SLIDE", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "FLYING_BLOCK", "Type": "FLYING_BLOCK"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"}
+                ]
+              }
+            },
+            {
               "opCode": "0x100",
               "writer": "MoveMonsterAck"
             },
@@ -750,6 +831,10 @@
             {
               "opCode": "0x116",
               "writer": "ControlMonster"
+            },
+            {
+              "opCode": "0x117",
+              "writer": "MoveMonster"
             },
             {
               "opCode": "0x118",
@@ -984,6 +1069,47 @@
             {
               "opCode": "0xFF",
               "writer": "ControlMonster"
+            },
+            {
+              "opCode": "0x100",
+              "writer": "MoveMonster",
+              "options": {
+                "types": [
+                  {"Name": "NORMAL", "Type": "NORMAL"},
+                  {"Name": "JUMP", "Type": "JUMP"},
+                  {"Name": "IMPACT", "Type": "JUMP"},
+                  {"Name": "IMMEDIATE", "Type": "TELEPORT"},
+                  {"Name": "TELEPORT", "Type": "TELEPORT"},
+                  {"Name": "HANG_ON_BACK", "Type": "NORMAL"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "ASSAULTER", "Type": "TELEPORT"},
+                  {"Name": "ASSASSINATION", "Type": "TELEPORT"},
+                  {"Name": "RUSH", "Type": "TELEPORT"},
+                  {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"},
+                  {"Name": "SIT_DOWN", "Type": "TELEPORT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "START_FALL_DOWN", "Type": "START_FALL_DOWN"},
+                  {"Name": "FALL_DOWN", "Type": "NORMAL"},
+                  {"Name": "START_WINGS", "Type": "JUMP"},
+                  {"Name": "WINGS", "Type": "NORMAL"},
+                  {"Name": "ARAN_ADJUST", "Type": "JUMP"},
+                  {"Name": "MOB_TOSS", "Type": "JUMP"},
+                  {"Name": "DASH_SLIDE", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "FLYING_BLOCK", "Type": "FLYING_BLOCK"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "DEFAULT"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "UNKNOWN", "Type": "JUMP"},
+                  {"Name": "MOB_ATK_RUSH", "Type": "NORMAL"},
+                  {"Name": "MOB_ATK_RUSH_STOP", "Type": "NORMAL"}
+                ]
+              }
             },
             {
               "opCode": "0x101",

@@ -28,7 +28,7 @@ func SpawnMonsterWithEffectBody(l logrus.FieldLogger, t tenant.Model) func(m mon
 				}
 			}
 			w.WriteInt(m.MonsterId())
-			mem := model.NewMonster(m)
+			mem := model.NewMonster(m.X(), m.Y(), m.Stance(), m.Fh(), m.Team())
 			mem.Encode(l, t, options)(w)
 			return w.Bytes()
 		}

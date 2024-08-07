@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/kafka/producer"
 	"atlas-channel/monster"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
@@ -15,6 +16,7 @@ const MonsterMovementHandle = "MonsterMovementHandle"
 
 func MonsterMovementHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	moveMonsterAckFunc := session.Announce(l)(wp)(writer.MoveMonsterAck)
+	moveMonsterCommandFunc := producer.ProviderImpl(l)(span)(monster.EnvCommandMovement)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		uniqueId := r.ReadUint32()
 
@@ -35,19 +37,16 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp w
 
 		moveId := r.ReadInt16()
 		dwFlag := r.ReadByte()
-		nActionAndDir := r.ReadByte()
+		nActionAndDir := r.ReadInt8()
 		skillData := r.ReadUint32()
-		if (s.Tenant().Region == "GMS" && s.Tenant().MajorVersion > 83) || s.Tenant().Region == "JMS" {
-			nMultiTargetSize := r.ReadUint32()
-			for i := 0; i < int(nMultiTargetSize); i++ {
-				r.ReadUint32() // x
-				r.ReadUint32() // y
-			}
+		skillId := int16(skillData & 0xFF)
+		skillLevel := int16(skillData >> 8 & 0xFF)
 
-			nRandTimeSize := r.ReadUint32()
-			for i := 0; i < int(nRandTimeSize); i++ {
-				r.ReadUint32()
-			}
+		multiTargetForBall := model.MultiTargetForBall{}
+		randTimeForAreaAttack := model.RandTimeForAreaAttack{}
+		if (s.Tenant().Region == "GMS" && s.Tenant().MajorVersion > 83) || s.Tenant().Region == "JMS" {
+			multiTargetForBall.Decode(l, s.Tenant(), readerOptions)(r)
+			randTimeForAreaAttack.Decode(l, s.Tenant(), readerOptions)(r)
 		}
 
 		r.ReadByte()   // moveFlags
@@ -58,8 +57,12 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp w
 			r.ReadUint32() // dwHackedCodeCRC
 		}
 
+		ms := r.Position()
 		mp := model.Movement{}
 		mp.Decode(l, s.Tenant(), readerOptions)(r)
+		me := r.Position()
+		r.Seek(ms)
+		rawMov := r.ReadBytes(me - ms)
 
 		if (s.Tenant().Region == "GMS" && s.Tenant().MajorVersion > 83) || s.Tenant().Region == "JMS" {
 			r.ReadByte()   // bChasing
@@ -73,6 +76,13 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp w
 		err = moveMonsterAckFunc(s, writer.MoveMonsterAckBody(l, s.Tenant())(uniqueId, moveId, uint16(m.MP()), false, 0, 0))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to ack monster [%d] movement for character [%d].", m.UniqueId(), s.CharacterId())
+		}
+
+		monsterMoveStartResult := dwFlag > 0
+
+		err = moveMonsterCommandFunc(monster.Move(s.Tenant(), s.WorldId(), s.ChannelId(), m.UniqueId(), s.CharacterId(), monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, rawMov))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to distribute monster movement to other services.")
 		}
 	}
 }

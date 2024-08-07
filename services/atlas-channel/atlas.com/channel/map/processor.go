@@ -20,3 +20,22 @@ func ForSessionsInMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant
 		session.ForEachByCharacterId(tenant)(CharacterIdsInMapModelProvider(l, span, tenant)(worldId, channelId, mapId), o)
 	}
 }
+
+func NotCharacterIdFilter(referenceCharacterId uint32) func(characterId uint32) bool {
+	return func(characterId uint32) bool {
+		return referenceCharacterId != characterId
+	}
+}
+
+func OtherCharacterIdsInMapModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, referenceCharacterId uint32) model.Provider[[]uint32] {
+	return func(worldId byte, channelId byte, mapId uint32, referenceCharacterId uint32) model.Provider[[]uint32] {
+		return model.FilteredProvider(CharacterIdsInMapModelProvider(l, span, tenant)(worldId, channelId, mapId), NotCharacterIdFilter(referenceCharacterId))
+	}
+}
+
+func ForOtherSessionsInMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, referenceCharacterId uint32, o model.Operator[session.Model]) {
+	return func(worldId byte, channelId byte, mapId uint32, referenceCharacterId uint32, o model.Operator[session.Model]) {
+		p := OtherCharacterIdsInMapModelProvider(l, span, tenant)(worldId, channelId, mapId, referenceCharacterId)
+		session.ForEachByCharacterId(tenant)(p, o)
+	}
+}

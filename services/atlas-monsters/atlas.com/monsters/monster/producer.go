@@ -54,3 +54,26 @@ func emitKilled(tenant tenant.Model, worldId byte, channelId byte, mapId uint32,
 		DamageEntries: damageEntries,
 	})
 }
+
+func emitMove(tenant tenant.Model, worldId byte, channelId byte, uniqueId uint32, observerId uint32,
+	skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []position,
+	randTimes []int32, movement movement) model.Provider[[]kafka.Message] {
+
+	key := producer.CreateKey(int(uniqueId))
+
+	value := &movementEvent{
+		Tenant:        tenant,
+		WorldId:       worldId,
+		ChannelId:     channelId,
+		UniqueId:      uniqueId,
+		ObserverId:    observerId,
+		SkillPossible: skillPossible,
+		Skill:         skill,
+		SkillId:       skillId,
+		SkillLevel:    skillLevel,
+		MultiTarget:   multiTarget,
+		RandomTimes:   randTimes,
+		Movement:      movement,
+	}
+	return producer.SingleMessageProvider(key, value)
+}

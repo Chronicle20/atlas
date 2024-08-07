@@ -43,7 +43,7 @@ func handleStatusEventCharacterEnter(l logrus.FieldLogger, span opentracing.Span
 }
 
 func handleStatusEventCharacterExit(l logrus.FieldLogger, span opentracing.Span, event statusEvent[characterExit]) {
-	if event.Type == EventTopicMapStatusTypeCharacterExit {
+	if event.Type != EventTopicMapStatusTypeCharacterExit {
 		return
 	}
 

@@ -25,7 +25,7 @@ func TestSunnyDay(t *testing.T) {
 	if !valid(worldId, channelId, mapId, monsterId, x, y, fh, stance, team, hp, mp)(m) {
 		t.Fatal("Monster created with incorrect properties.")
 	}
-	if m.UniqueId() != 1000000001 {
+	if m.UniqueId() != 1000000000 {
 		t.Fatal("Unexpected Unique Id.")
 	}
 	if m.ControlCharacterId() != 0 {

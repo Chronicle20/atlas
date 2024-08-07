@@ -9,7 +9,7 @@ import (
 type Registry struct {
 	mutex sync.Mutex
 
-	mapIds        map[MapKey]uint32
+	mapIds        map[tenant.Model]uint32
 	mapMonsterReg map[MapKey][]MonsterKey
 	mapLocks      map[MapKey]*sync.RWMutex
 
@@ -23,7 +23,7 @@ var once sync.Once
 func GetMonsterRegistry() *Registry {
 	once.Do(func() {
 		registry = &Registry{}
-		registry.mapIds = make(map[MapKey]uint32)
+		registry.mapIds = make(map[tenant.Model]uint32)
 		registry.mapMonsterReg = make(map[MapKey][]MonsterKey)
 		registry.mapLocks = make(map[MapKey]*sync.RWMutex)
 
@@ -41,7 +41,7 @@ func (r *Registry) getMapLock(key MapKey) *sync.RWMutex {
 	r.mutex.Lock()
 	r.mapLocks[key] = cm
 	r.mapMonsterReg[key] = make([]MonsterKey, 0)
-	r.mapIds[key] = uint32(1000000001)
+	r.mapIds[key.Tenant] = uint32(1000000000)
 	r.mutex.Unlock()
 	return cm
 }
@@ -81,15 +81,27 @@ func (r *Registry) CreateMonster(tenant tenant.Model, worldId byte, channelId by
 	mapLock.Lock()
 	defer mapLock.Unlock()
 
-	var existingIds = existingIds(r.mapMonsterReg[mapKey])
+	// TODO need a more efficient mechanism for ID reuse.
+	var currentUniqueId = r.mapIds[tenant]
 
-	var currentUniqueId = r.mapIds[mapKey]
-	for contains(existingIds, currentUniqueId) {
+	var ids = make(map[uint32]bool)
+	for mk := range r.mapMonsterReg {
+		if mk.Tenant == tenant {
+			for _, id := range r.mapMonsterReg[mk] {
+				ids[id.MonsterId] = true
+			}
+		}
+	}
+
+	for {
+		if _, ok := ids[currentUniqueId]; !ok {
+			break
+		}
 		currentUniqueId = currentUniqueId + 1
 		if currentUniqueId > 2000000000 {
-			currentUniqueId = 1000000001
+			currentUniqueId = 1000000000
 		}
-		r.mapIds[mapKey] = currentUniqueId
+		r.mapIds[tenant] = currentUniqueId
 	}
 
 	m := NewMonster(worldId, channelId, mapId, currentUniqueId, monsterId, x, y, fh, stance, team, hp, mp)

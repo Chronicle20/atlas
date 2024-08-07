@@ -54,6 +54,7 @@ func spawnForSession(l logrus.FieldLogger, wp writer.Producer) func(m monster.Mo
 	spawnMonsterFunc := session.Announce(l)(wp)(writer.SpawnMonster)
 	return func(m monster.Model) model.Operator[session.Model] {
 		return func(s session.Model) error {
+			l.Debugf("Spawning [%d] monster [%d] for character [%d].", m.MonsterId(), m.UniqueId(), s.CharacterId())
 			err := spawnMonsterFunc(s, writer.SpawnMonsterBody(l, s.Tenant())(m, false))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to spawn monster [%d] for character [%d].", m.UniqueId(), s.CharacterId())
@@ -258,6 +259,7 @@ func showMovementForSession(l logrus.FieldLogger, wp writer.Producer) func(event
 	moveMonsterFunc := session.Announce(l)(wp)(writer.MoveMonster)
 	return func(event movementEvent) model.Operator[session.Model] {
 		return func(s session.Model) error {
+			l.Debugf("Writing monster [%d] movement for session [%s].", event.UniqueId, s.SessionId().String())
 			mt := model2.MultiTargetForBall{}
 			for _, t := range event.MultiTarget {
 				mt.Targets = append(mt.Targets, model2.NewPosition(t.X, t.Y))
@@ -267,7 +269,145 @@ func showMovementForSession(l logrus.FieldLogger, wp writer.Producer) func(event
 				ra.Times = append(ra.Times, t)
 			}
 
-			err := moveMonsterFunc(s, writer.MoveMonsterBody(l, s.Tenant())(event.UniqueId, false, event.SkillPossible, false, event.Skill, event.SkillId, event.SkillLevel, mt, ra, event.RawMovement))
+			mv := model2.Movement{StartX: event.Movement.StartX, StartY: event.Movement.StartY}
+			for _, elem := range event.Movement.Elements {
+				if elem.TypeStr == MovementTypeNormal {
+					mv.Elements = append(mv.Elements, &model2.NormalElement{
+						Element: model2.Element{
+							StartX:      elem.StartX,
+							StartY:      elem.StartY,
+							BMoveAction: elem.MoveAction,
+							BStat:       elem.Stat,
+							X:           elem.X,
+							Y:           elem.Y,
+							Vx:          elem.VX,
+							Vy:          elem.VY,
+							Fh:          elem.FH,
+							FhFallStart: elem.FHFallStart,
+							XOffset:     elem.XOffset,
+							YOffset:     elem.YOffset,
+							TElapse:     elem.TimeElapsed,
+							ElemType:    elem.TypeVal,
+						},
+					})
+				} else if elem.TypeStr == MovementTypeTeleport {
+					mv.Elements = append(mv.Elements, &model2.TeleportElement{
+						Element: model2.Element{
+							StartX:      elem.StartX,
+							StartY:      elem.StartY,
+							BMoveAction: elem.MoveAction,
+							BStat:       elem.Stat,
+							X:           elem.X,
+							Y:           elem.Y,
+							Vx:          elem.VX,
+							Vy:          elem.VY,
+							Fh:          elem.FH,
+							FhFallStart: elem.FHFallStart,
+							XOffset:     elem.XOffset,
+							YOffset:     elem.YOffset,
+							TElapse:     elem.TimeElapsed,
+							ElemType:    elem.TypeVal,
+						},
+					})
+				} else if elem.TypeStr == MovementTypeStartFallDown {
+					mv.Elements = append(mv.Elements, &model2.StartFallDownElement{
+						Element: model2.Element{
+							StartX:      elem.StartX,
+							StartY:      elem.StartY,
+							BMoveAction: elem.MoveAction,
+							BStat:       elem.Stat,
+							X:           elem.X,
+							Y:           elem.Y,
+							Vx:          elem.VX,
+							Vy:          elem.VY,
+							Fh:          elem.FH,
+							FhFallStart: elem.FHFallStart,
+							XOffset:     elem.XOffset,
+							YOffset:     elem.YOffset,
+							TElapse:     elem.TimeElapsed,
+							ElemType:    elem.TypeVal,
+						},
+					})
+				} else if elem.TypeStr == MovementTypeFlyingBlock {
+					mv.Elements = append(mv.Elements, &model2.FlyingBlockElement{
+						Element: model2.Element{
+							StartX:      elem.StartX,
+							StartY:      elem.StartY,
+							BMoveAction: elem.MoveAction,
+							BStat:       elem.Stat,
+							X:           elem.X,
+							Y:           elem.Y,
+							Vx:          elem.VX,
+							Vy:          elem.VY,
+							Fh:          elem.FH,
+							FhFallStart: elem.FHFallStart,
+							XOffset:     elem.XOffset,
+							YOffset:     elem.YOffset,
+							TElapse:     elem.TimeElapsed,
+							ElemType:    elem.TypeVal,
+						},
+					})
+				} else if elem.TypeStr == MovementTypeJump {
+					mv.Elements = append(mv.Elements, &model2.JumpElement{
+						Element: model2.Element{
+							StartX:      elem.StartX,
+							StartY:      elem.StartY,
+							BMoveAction: elem.MoveAction,
+							BStat:       elem.Stat,
+							X:           elem.X,
+							Y:           elem.Y,
+							Vx:          elem.VX,
+							Vy:          elem.VY,
+							Fh:          elem.FH,
+							FhFallStart: elem.FHFallStart,
+							XOffset:     elem.XOffset,
+							YOffset:     elem.YOffset,
+							TElapse:     elem.TimeElapsed,
+							ElemType:    elem.TypeVal,
+						},
+					})
+				} else if elem.TypeStr == MovementTypeStatChange {
+					mv.Elements = append(mv.Elements, &model2.StatChangeElement{
+						Element: model2.Element{
+							StartX:      elem.StartX,
+							StartY:      elem.StartY,
+							BMoveAction: elem.MoveAction,
+							BStat:       elem.Stat,
+							X:           elem.X,
+							Y:           elem.Y,
+							Vx:          elem.VX,
+							Vy:          elem.VY,
+							Fh:          elem.FH,
+							FhFallStart: elem.FHFallStart,
+							XOffset:     elem.XOffset,
+							YOffset:     elem.YOffset,
+							TElapse:     elem.TimeElapsed,
+							ElemType:    elem.TypeVal,
+						},
+					})
+				} else {
+					mv.Elements = append(mv.Elements, &model2.Element{
+						StartX:      elem.StartX,
+						StartY:      elem.StartY,
+						BMoveAction: elem.MoveAction,
+						BStat:       elem.Stat,
+						X:           elem.X,
+						Y:           elem.Y,
+						Vx:          elem.VX,
+						Vy:          elem.VY,
+						Fh:          elem.FH,
+						FhFallStart: elem.FHFallStart,
+						XOffset:     elem.XOffset,
+						YOffset:     elem.YOffset,
+						TElapse:     elem.TimeElapsed,
+						ElemType:    elem.TypeVal,
+					})
+				}
+			}
+
+			err := moveMonsterFunc(s, writer.MoveMonsterBody(l, s.Tenant())(event.UniqueId,
+				false, event.SkillPossible, false, event.Skill, event.SkillId,
+				event.SkillLevel, mt, ra, mv))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to move monster [%d] for character [%d].", event.UniqueId, s.CharacterId())
 			}

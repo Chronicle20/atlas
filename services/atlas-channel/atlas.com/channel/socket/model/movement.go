@@ -156,7 +156,7 @@ func (m *JumpElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options 
 	}
 }
 
-func (m *StatChangeElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
+func (m *StatChangeElement) Decode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(r *request.Reader) {
 	return func(r *request.Reader) {
 		m.BStat = r.ReadByte()
 	}
@@ -174,7 +174,7 @@ func (m *Movement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map
 	}
 }
 
-func (m *Element) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+func (m *Element) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		w.WriteByte(m.BMoveAction)
 		w.WriteInt16(m.TElapse)
@@ -235,7 +235,7 @@ func (m *JumpElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options 
 	}
 }
 
-func (m *StatChangeElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+func (m *StatChangeElement) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		w.WriteByte(m.BStat)
 	}

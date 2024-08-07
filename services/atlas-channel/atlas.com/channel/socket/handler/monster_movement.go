@@ -57,12 +57,8 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp w
 			r.ReadUint32() // dwHackedCodeCRC
 		}
 
-		ms := r.Position()
 		mp := model.Movement{}
 		mp.Decode(l, s.Tenant(), readerOptions)(r)
-		me := r.Position()
-		r.Seek(ms)
-		rawMov := r.ReadBytes(me - ms)
 
 		if (s.Tenant().Region == "GMS" && s.Tenant().MajorVersion > 83) || s.Tenant().Region == "JMS" {
 			r.ReadByte()   // bChasing
@@ -80,7 +76,7 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp w
 
 		monsterMoveStartResult := dwFlag > 0
 
-		err = moveMonsterCommandFunc(monster.Move(s.Tenant(), s.WorldId(), s.ChannelId(), m.UniqueId(), s.CharacterId(), monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, rawMov))
+		err = moveMonsterCommandFunc(monster.Move(s.Tenant(), s.WorldId(), s.ChannelId(), m.UniqueId(), s.CharacterId(), monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, mp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to distribute monster movement to other services.")
 		}

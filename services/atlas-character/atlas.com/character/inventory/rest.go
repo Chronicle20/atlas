@@ -128,27 +128,27 @@ func Transform(m Model) (RestModel, error) {
 	return RestModel{
 		Equipable: EquipableRestModel{
 			Type:     TypeEquip,
-			Capacity: m.equipable.Capacity(),
+			Capacity: m.Equipable().Capacity(),
 			Items:    eqps,
 		},
 		Setup: ItemRestModel{
 			Type:     TypeSetup,
-			Capacity: m.setup.Capacity(),
+			Capacity: m.Setup().Capacity(),
 			Items:    stps,
 		},
 		Useable: ItemRestModel{
 			Type:     TypeUse,
-			Capacity: m.useable.Capacity(),
+			Capacity: m.Useable().Capacity(),
 			Items:    usps,
 		},
 		Etc: ItemRestModel{
 			Type:     TypeETC,
-			Capacity: m.etc.Capacity(),
+			Capacity: m.Etc().Capacity(),
 			Items:    etcs,
 		},
 		Cash: ItemRestModel{
 			Type:     TypeCash,
-			Capacity: m.cash.Capacity(),
+			Capacity: m.Cash().Capacity(),
 			Items:    cashs,
 		},
 	}, nil

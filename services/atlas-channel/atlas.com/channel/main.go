@@ -159,6 +159,7 @@ func produceWriters() []string {
 		writer.ControlMonster,
 		writer.MoveMonster,
 		writer.MoveMonsterAck,
+		writer.CharacterSpawn,
 	}
 }
 

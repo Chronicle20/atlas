@@ -84,6 +84,12 @@ func Produce(l logrus.FieldLogger) func(provider model.Provider[Writer]) func(de
 						return err
 					}
 				}
+
+				err = w.Close()
+				if err != nil {
+					return err
+				}
+
 				return nil
 			}
 		}

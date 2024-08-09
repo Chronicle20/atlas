@@ -246,24 +246,24 @@ func movementPathAttrFromOptions(l logrus.FieldLogger) func(attr byte, options m
 		var genericCodes interface{}
 		var ok bool
 		if genericCodes, ok = options["types"]; !ok {
-			l.Errorf("Code [%d] not configured. Defaulting to 99 which will likely cause a client crash.", attr)
+			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
 			return "NOT_FOUND", "DEFAULT"
 		}
 
 		var codes []interface{}
 		if codes, ok = genericCodes.([]interface{}); !ok {
-			l.Errorf("Code [%d] not configured. Defaulting to 99 which will likely cause a client crash.", attr)
+			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
 			return "NOT_FOUND", "DEFAULT"
 		}
 
 		if len(codes) == 0 || attr < 0 || attr >= byte(len(codes)) {
-			l.Errorf("Code [%d] not configured. Defaulting to 99 which will likely cause a client crash.", attr)
+			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
 			return "NOT_FOUND", "DEFAULT"
 		}
 
 		var theType map[string]interface{}
 		if theType, ok = codes[attr].(map[string]interface{}); !ok {
-			l.Errorf("Code [%d] not configured. Defaulting to 99 which will likely cause a client crash.", attr)
+			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
 			return "NOT_FOUND", "DEFAULT"
 		}
 

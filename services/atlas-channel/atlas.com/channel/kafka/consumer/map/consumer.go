@@ -84,7 +84,7 @@ func enterMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model, 
 				return err
 			}
 
-			cp := model.SliceMap(model.FixedProvider(ids), character.GetById(l, span, tenant), model.ParallelMap())
+			cp := model.SliceMap(model.FixedProvider(ids), character.GetByIdWithInventory(l, span, tenant), model.ParallelMap())
 			cms, err := MapProvider[character.Model, uint32, character.Model](cp, GetId, GetModel)()
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve character details for characters in map.")

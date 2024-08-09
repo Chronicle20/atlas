@@ -12,3 +12,9 @@ func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) f
 		return requests.Provider[RestModel, Model](l)(requestById(l, span, tenant)(characterId), Extract)()
 	}
 }
+
+func GetByIdWithInventory(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32) (Model, error) {
+	return func(characterId uint32) (Model, error) {
+		return requests.Provider[RestModel, Model](l)(requestByIdWithInventory(l, span, tenant)(characterId), Extract)()
+	}
+}

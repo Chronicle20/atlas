@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	Resource = "characters"
-	ById     = Resource + "/%d"
+	Resource          = "characters"
+	ById              = Resource + "/%d"
+	ByIdWithInventory = Resource + "/%d?include=inventory"
 )
 
 func getBaseRequest() string {
@@ -22,5 +23,11 @@ func getBaseRequest() string {
 func requestById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) requests.Request[RestModel] {
 	return func(id uint32) requests.Request[RestModel] {
 		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+ById, id))
+	}
+}
+
+func requestByIdWithInventory(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) requests.Request[RestModel] {
+	return func(id uint32) requests.Request[RestModel] {
+		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+ByIdWithInventory, id))
 	}
 }

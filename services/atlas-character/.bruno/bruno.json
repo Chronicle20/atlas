@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "atlas-characters",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

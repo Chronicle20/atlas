@@ -177,7 +177,6 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 							}
 						}()
 					}
-					c.mu.Unlock()
 				}()
 			}
 		}

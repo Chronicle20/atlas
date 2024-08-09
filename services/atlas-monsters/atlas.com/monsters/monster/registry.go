@@ -14,7 +14,7 @@ type Registry struct {
 	mapMonsterReg   map[MapKey][]MonsterKey
 	mapLocks        map[MapKey]*sync.RWMutex
 
-	monsterReg  map[MonsterKey]*Model
+	monsterReg  map[MonsterKey]Model
 	monsterLock *sync.RWMutex
 }
 
@@ -29,7 +29,7 @@ func GetMonsterRegistry() *Registry {
 		registry.mapMonsterReg = make(map[MapKey][]MonsterKey)
 		registry.mapLocks = make(map[MapKey]*sync.RWMutex)
 
-		registry.monsterReg = make(map[MonsterKey]*Model)
+		registry.monsterReg = make(map[MonsterKey]Model)
 		registry.monsterLock = &sync.RWMutex{}
 	})
 	return registry
@@ -108,7 +108,7 @@ func (r *Registry) CreateMonster(tenant tenant.Model, worldId byte, channelId by
 	r.monsterLock.Lock()
 	defer r.monsterLock.Unlock()
 
-	r.monsterReg[monKey] = &m
+	r.monsterReg[monKey] = m
 	return m
 }
 
@@ -118,7 +118,7 @@ func (r *Registry) GetMonster(tenant tenant.Model, uniqueId uint32) (Model, erro
 	defer r.monsterLock.RUnlock()
 
 	if m, ok := r.monsterReg[monKey]; ok {
-		return *m, nil
+		return m, nil
 	}
 	return Model{}, errors.New("monster not found")
 }
@@ -134,7 +134,7 @@ func (r *Registry) GetMonstersInMap(tenant tenant.Model, worldId byte, channelId
 	defer r.monsterLock.Unlock()
 	for _, monKey := range r.mapMonsterReg[mapKey] {
 		if m, ok := r.monsterReg[monKey]; ok {
-			result = append(result, *m)
+			result = append(result, m)
 		}
 	}
 	return result
@@ -148,7 +148,7 @@ func (r *Registry) MoveMonster(tenant tenant.Model, uniqueId uint32, endX int16,
 
 	if val, ok := r.monsterReg[monKey]; ok {
 		m := val.Move(endX, endY, stance)
-		r.monsterReg[monKey] = &m
+		r.monsterReg[monKey] = m
 	}
 }
 
@@ -160,7 +160,7 @@ func (r *Registry) ControlMonster(tenant tenant.Model, uniqueId uint32, characte
 
 	if val, ok := r.monsterReg[monKey]; ok {
 		m := val.Control(characterId)
-		r.monsterReg[monKey] = &m
+		r.monsterReg[monKey] = m
 		return m, nil
 	} else {
 		return Model{}, errors.New("monster not found")
@@ -175,7 +175,7 @@ func (r *Registry) ClearControl(tenant tenant.Model, uniqueId uint32) (Model, er
 
 	if val, ok := r.monsterReg[monKey]; ok {
 		m := val.ClearControl()
-		r.monsterReg[monKey] = &m
+		r.monsterReg[monKey] = m
 		return m, nil
 	} else {
 		return Model{}, errors.New("monster not found")
@@ -190,7 +190,7 @@ func (r *Registry) ApplyDamage(tenant tenant.Model, characterId uint32, damage i
 
 	if val, ok := r.monsterReg[monKey]; ok {
 		m := val.Damage(characterId, damage)
-		r.monsterReg[monKey] = &m
+		r.monsterReg[monKey] = m
 		return DamageSummary{
 			CharacterId:   characterId,
 			Monster:       m,
@@ -216,11 +216,11 @@ func (r *Registry) RemoveMonster(tenant tenant.Model, uniqueId uint32) (Model, e
 		defer mapLock.Unlock()
 
 		if mapMons, ok := r.mapMonsterReg[mapKey]; ok {
-			r.mapMonsterReg[mapKey] = removeIfExists(mapMons, *val)
+			r.mapMonsterReg[mapKey] = removeIfExists(mapMons, val)
 		}
 
 		delete(r.monsterReg, monKey)
-		return *val, nil
+		return val, nil
 	}
 	return Model{}, errors.New("monster not found")
 }

@@ -152,18 +152,31 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 					defer span.Finish()
 
 					c.mu.Lock()
-					var nhs = make(map[string]handler.Handler)
-					for id, h := range c.handlers {
-						var cont bool
-						cont, err = h(sl, span, msg)
-						if cont {
-							nhs[id] = h
-						}
-						if err != nil {
-							sl.WithError(err).Errorf("Handler [%s] failed.", id)
-						}
+					handlers := c.handlers
+					c.mu.Unlock()
+
+					for id, h := range handlers {
+						var handle = h
+						var handleId = id
+						go func() {
+							var cont bool
+							cont, err = handle(sl, span, msg)
+							if !cont {
+								c.mu.Lock()
+								var nh = make(map[string]handler.Handler)
+								for tid, th := range c.handlers {
+									if handleId != tid {
+										nh[tid] = th
+									}
+								}
+								c.handlers = nh
+								c.mu.Unlock()
+							}
+							if err != nil {
+								sl.WithError(err).Errorf("Handler [%s] failed.", handleId)
+							}
+						}()
 					}
-					c.handlers = nhs
 					c.mu.Unlock()
 				}()
 			}

@@ -7,11 +7,12 @@ import (
 )
 
 type Registry struct {
-	mutex sync.Mutex
+	mutex  sync.Mutex
+	idLock sync.Mutex
 
-	mapIds        map[tenant.Model]uint32
-	mapMonsterReg map[MapKey][]MonsterKey
-	mapLocks      map[MapKey]*sync.RWMutex
+	tenantMonsterId map[tenant.Model]uint32
+	mapMonsterReg   map[MapKey][]MonsterKey
+	mapLocks        map[MapKey]*sync.RWMutex
 
 	monsterReg   map[MonsterKey]*Model
 	monsterLocks map[MonsterKey]*sync.RWMutex
@@ -23,7 +24,8 @@ var once sync.Once
 func GetMonsterRegistry() *Registry {
 	once.Do(func() {
 		registry = &Registry{}
-		registry.mapIds = make(map[tenant.Model]uint32)
+
+		registry.tenantMonsterId = make(map[tenant.Model]uint32)
 		registry.mapMonsterReg = make(map[MapKey][]MonsterKey)
 		registry.mapLocks = make(map[MapKey]*sync.RWMutex)
 
@@ -43,7 +45,6 @@ func (r *Registry) getMapLock(key MapKey) *sync.RWMutex {
 	var cm = &sync.RWMutex{}
 	r.mapLocks[key] = cm
 	r.mapMonsterReg[key] = make([]MonsterKey, 0)
-	r.mapIds[key.Tenant] = uint32(1000000000)
 	return cm
 }
 
@@ -59,22 +60,22 @@ func (r *Registry) getMonsterLock(key MonsterKey) *sync.RWMutex {
 	return cm
 }
 
-func existingIds(monsters []MonsterKey) []uint32 {
-	var ids []uint32
-	for _, x := range monsters {
-		ids = append(ids, x.MonsterId)
-	}
-	return ids
-}
-
-func contains(ids []uint32, id uint32) bool {
-	for _, element := range ids {
-		if element == id {
-			return true
-		}
-	}
-	return false
-}
+//func existingIds(monsters []MonsterKey) []uint32 {
+//	var ids []uint32
+//	for _, x := range monsters {
+//		ids = append(ids, x.MonsterId)
+//	}
+//	return ids
+//}
+//
+//func contains(ids []uint32, id uint32) bool {
+//	for _, element := range ids {
+//		if element == id {
+//			return true
+//		}
+//	}
+//	return false
+//}
 
 func (r *Registry) CreateMonster(tenant tenant.Model, worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
 	mapKey := MapKey{Tenant: tenant, WorldId: worldId, ChannelId: channelId, MapId: mapId}
@@ -83,8 +84,12 @@ func (r *Registry) CreateMonster(tenant tenant.Model, worldId byte, channelId by
 	mapLock.Lock()
 	defer mapLock.Unlock()
 
+	r.idLock.Lock()
 	// TODO need a more efficient mechanism for ID reuse.
-	var currentUniqueId = r.mapIds[tenant]
+	var currentUniqueId = uint32(1000000000)
+	if val, ok := r.tenantMonsterId[tenant]; ok {
+		currentUniqueId = val
+	}
 
 	var ids = make(map[uint32]bool)
 	for mk := range r.mapMonsterReg {
@@ -103,8 +108,9 @@ func (r *Registry) CreateMonster(tenant tenant.Model, worldId byte, channelId by
 		if currentUniqueId > 2000000000 {
 			currentUniqueId = 1000000000
 		}
-		r.mapIds[tenant] = currentUniqueId
+		r.tenantMonsterId[tenant] = currentUniqueId
 	}
+	r.idLock.Unlock()
 
 	m := NewMonster(worldId, channelId, mapId, currentUniqueId, monsterId, x, y, fh, stance, team, hp, mp)
 
@@ -240,16 +246,16 @@ func removeIfExists(slice []MonsterKey, value Model) []MonsterKey {
 	return slice
 }
 
-func (r *Registry) GetMonsters() []Model {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	mons := make([]Model, 0)
-	for monKey, monLock := range r.monsterLocks {
-		monLock.RLock()
-		if m, ok := r.monsterReg[monKey]; ok {
-			mons = append(mons, *m)
-		}
-		monLock.RUnlock()
-	}
-	return mons
-}
+//func (r *Registry) GetMonsters() []Model {
+//	r.mutex.Lock()
+//	defer r.mutex.Unlock()
+//	mons := make([]Model, 0)
+//	for monKey, monLock := range r.monsterLocks {
+//		monLock.RLock()
+//		if m, ok := r.monsterReg[monKey]; ok {
+//			mons = append(mons, *m)
+//		}
+//		monLock.RUnlock()
+//	}
+//	return mons
+//}

@@ -13,7 +13,7 @@ type Registry struct {
 	mapMonsterReg map[MapKey][]MonsterKey
 	mapLocks      map[MapKey]*sync.RWMutex
 
-	monsterReg   map[MonsterKey]Model
+	monsterReg   map[MonsterKey]*Model
 	monsterLocks map[MonsterKey]*sync.RWMutex
 }
 
@@ -27,33 +27,35 @@ func GetMonsterRegistry() *Registry {
 		registry.mapMonsterReg = make(map[MapKey][]MonsterKey)
 		registry.mapLocks = make(map[MapKey]*sync.RWMutex)
 
-		registry.monsterReg = make(map[MonsterKey]Model)
+		registry.monsterReg = make(map[MonsterKey]*Model)
 		registry.monsterLocks = make(map[MonsterKey]*sync.RWMutex)
 	})
 	return registry
 }
 
 func (r *Registry) getMapLock(key MapKey) *sync.RWMutex {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
 	if val, ok := r.mapLocks[key]; ok {
 		return val
 	}
 	var cm = &sync.RWMutex{}
-	r.mutex.Lock()
 	r.mapLocks[key] = cm
 	r.mapMonsterReg[key] = make([]MonsterKey, 0)
 	r.mapIds[key.Tenant] = uint32(1000000000)
-	r.mutex.Unlock()
 	return cm
 }
 
 func (r *Registry) getMonsterLock(key MonsterKey) *sync.RWMutex {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
 	if val, ok := r.monsterLocks[key]; ok {
 		return val
 	}
 	var cm = &sync.RWMutex{}
-	r.mutex.Lock()
 	r.monsterLocks[key] = cm
-	r.mutex.Unlock()
 	return cm
 }
 
@@ -113,7 +115,7 @@ func (r *Registry) CreateMonster(tenant tenant.Model, worldId byte, channelId by
 	monLock.Lock()
 	defer monLock.Unlock()
 
-	r.monsterReg[monKey] = m
+	r.monsterReg[monKey] = &m
 	return m
 }
 
@@ -124,7 +126,7 @@ func (r *Registry) GetMonster(tenant tenant.Model, uniqueId uint32) (Model, erro
 	defer monLock.RUnlock()
 
 	if m, ok := r.monsterReg[monKey]; ok {
-		return m, nil
+		return *m, nil
 	}
 	return Model{}, errors.New("monster not found")
 }
@@ -140,7 +142,7 @@ func (r *Registry) GetMonstersInMap(tenant tenant.Model, worldId byte, channelId
 		monLock := r.getMonsterLock(monKey)
 		monLock.RLock()
 		if m, ok := r.monsterReg[monKey]; ok {
-			result = append(result, m)
+			result = append(result, *m)
 		}
 		monLock.RUnlock()
 	}
@@ -153,7 +155,8 @@ func (r *Registry) MoveMonster(tenant tenant.Model, uniqueId uint32, endX int16,
 	monLock.Lock()
 	defer monLock.Unlock()
 	if val, ok := r.monsterReg[monKey]; ok {
-		r.monsterReg[monKey] = val.Move(endX, endY, stance)
+		m := val.Move(endX, endY, stance)
+		r.monsterReg[monKey] = &m
 	}
 }
 
@@ -163,8 +166,9 @@ func (r *Registry) ControlMonster(tenant tenant.Model, uniqueId uint32, characte
 	monLock.Lock()
 	defer monLock.Unlock()
 	if val, ok := r.monsterReg[monKey]; ok {
-		r.monsterReg[monKey] = val.Control(characterId)
-		return r.monsterReg[monKey], nil
+		m := val.Control(characterId)
+		r.monsterReg[monKey] = &m
+		return m, nil
 	} else {
 		return Model{}, errors.New("monster not found")
 	}
@@ -176,8 +180,9 @@ func (r *Registry) ClearControl(tenant tenant.Model, uniqueId uint32) (Model, er
 	monLock.Lock()
 	defer monLock.Unlock()
 	if val, ok := r.monsterReg[monKey]; ok {
-		r.monsterReg[monKey] = val.ClearControl()
-		return r.monsterReg[monKey], nil
+		m := val.ClearControl()
+		r.monsterReg[monKey] = &m
+		return m, nil
 	} else {
 		return Model{}, errors.New("monster not found")
 	}
@@ -190,7 +195,7 @@ func (r *Registry) ApplyDamage(tenant tenant.Model, characterId uint32, damage i
 	defer monLock.Unlock()
 	if val, ok := r.monsterReg[monKey]; ok {
 		m := val.Damage(characterId, damage)
-		r.monsterReg[monKey] = m
+		r.monsterReg[monKey] = &m
 		return DamageSummary{
 			CharacterId:   characterId,
 			Monster:       m,
@@ -216,12 +221,12 @@ func (r *Registry) RemoveMonster(tenant tenant.Model, uniqueId uint32) (Model, e
 		defer mapLock.Unlock()
 
 		if mapMons, ok := r.mapMonsterReg[mapKey]; ok {
-			r.mapMonsterReg[mapKey] = removeIfExists(mapMons, val)
+			r.mapMonsterReg[mapKey] = removeIfExists(mapMons, *val)
 		}
 
 		delete(r.monsterReg, monKey)
 		delete(r.monsterLocks, monKey)
-		return val, nil
+		return *val, nil
 	}
 	return Model{}, errors.New("monster not found")
 }
@@ -242,7 +247,7 @@ func (r *Registry) GetMonsters() []Model {
 	for monKey, monLock := range r.monsterLocks {
 		monLock.RLock()
 		if m, ok := r.monsterReg[monKey]; ok {
-			mons = append(mons, m)
+			mons = append(mons, *m)
 		}
 		monLock.RUnlock()
 	}

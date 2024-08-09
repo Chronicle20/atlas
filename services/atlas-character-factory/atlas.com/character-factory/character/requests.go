@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	charactersResource         = "characters"
-	characterResource          = charactersResource + "/%d"
+	resource                   = "characters"
+	characterResource          = resource + "/%d"
+	byIdResource               = characterResource + "?include=inventory"
 	characterItemsResource     = characterResource + "/inventories/%d/items"
 	getItemBySlot              = characterItemsResource + "?slot=%d"
 	characterEquipmentResource = characterResource + "/equipment/%s/equipable"
@@ -29,7 +30,7 @@ func getBaseRequest() string {
 
 func requestById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) requests.Request[RestModel] {
 	return func(id uint32) requests.Request[RestModel] {
-		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+characterResource, id))
+		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+byIdResource, id))
 	}
 }
 
@@ -50,7 +51,7 @@ func requestCreate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mo
 			Mp:        5,
 			MaxMp:     5,
 		}
-		return rest.MakePostRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+charactersResource), i)
+		return rest.MakePostRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+resource), i)
 	}
 }
 

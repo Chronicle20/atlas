@@ -4,6 +4,7 @@ import (
 	_map "atlas-monsters/kafka/consumer/map"
 	"atlas-monsters/logger"
 	"atlas-monsters/monster"
+	"atlas-monsters/tasks"
 	"atlas-monsters/tracing"
 	"atlas-monsters/world"
 	"context"
@@ -14,6 +15,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 )
 
 const serviceName = "atlas-monsters"
@@ -67,6 +69,8 @@ func main() {
 	_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(l))
 
 	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), monster.InitResource(GetServer()), world.InitResource(GetServer()))
+
+	tasks.Register(l, ctx)(monster.NewRegistryAudit(l, time.Second*30))
 
 	// trap sigterm or interrupt and gracefully shutdown the server
 	c := make(chan os.Signal, 1)

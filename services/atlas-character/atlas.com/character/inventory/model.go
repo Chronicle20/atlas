@@ -33,6 +33,9 @@ type Model struct {
 }
 
 func (m Model) Equipable() EquipableModel {
+	if m.equipable == nil {
+		return EquipableModel{}
+	}
 	return m.equipable.(EquipableModel)
 }
 
@@ -42,6 +45,9 @@ func (m Model) SetEquipable(em EquipableModel) Model {
 }
 
 func (m Model) Useable() ItemModel {
+	if m.useable == nil {
+		return ItemModel{}
+	}
 	return m.useable.(ItemModel)
 }
 
@@ -51,6 +57,9 @@ func (m Model) SetUseable(um ItemModel) Model {
 }
 
 func (m Model) Setup() ItemModel {
+	if m.setup == nil {
+		return ItemModel{}
+	}
 	return m.setup.(ItemModel)
 }
 
@@ -60,6 +69,9 @@ func (m Model) SetSetup(um ItemModel) Model {
 }
 
 func (m Model) Etc() ItemModel {
+	if m.etc == nil {
+		return ItemModel{}
+	}
 	return m.etc.(ItemModel)
 }
 
@@ -69,6 +81,9 @@ func (m Model) SetEtc(um ItemModel) Model {
 }
 
 func (m Model) Cash() ItemModel {
+	if m.cash == nil {
+		return ItemModel{}
+	}
 	return m.cash.(ItemModel)
 }
 

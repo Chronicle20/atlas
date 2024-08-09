@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -27,10 +28,14 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerGet := rest.RegisterHandler(l)(db)(si)
 			r := router.PathPrefix("/characters").Subrouter()
+			r.HandleFunc("", registerGet(GetCharactersForAccountInWorld, handleGetCharactersForAccountInWorld)).Methods(http.MethodGet).Queries("accountId", "{accountId}", "worldId", "{worldId}", "include", "{include}")
 			r.HandleFunc("", registerGet(GetCharactersForAccountInWorld, handleGetCharactersForAccountInWorld)).Methods(http.MethodGet).Queries("accountId", "{accountId}", "worldId", "{worldId}")
+			r.HandleFunc("", registerGet(GetCharactersByMap, handleGetCharactersByMap)).Methods(http.MethodGet).Queries("worldId", "{worldId}", "mapId", "{mapId}", "include", "{include}")
 			r.HandleFunc("", registerGet(GetCharactersByMap, handleGetCharactersByMap)).Methods(http.MethodGet).Queries("worldId", "{worldId}", "mapId", "{mapId}")
+			r.HandleFunc("", registerGet(GetCharactersByName, handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}", "include", "{include}")
 			r.HandleFunc("", registerGet(GetCharactersByName, handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}")
 			r.HandleFunc("", rest.RegisterCreateHandler[RestModel](l)(db)(si)(CreateCharacter, handleCreateCharacter)).Methods(http.MethodPost)
+			r.HandleFunc("/{characterId}", registerGet(GetCharacter, handleGetCharacter)).Methods(http.MethodGet).Queries("include", "{include}")
 			r.HandleFunc("/{characterId}", registerGet(GetCharacter, handleGetCharacter)).Methods(http.MethodGet)
 			r.HandleFunc("/{characterId}", rest.RegisterHandler(l)(db)(si)(DeleteCharacter, handleDeleteCharacter)).Methods(http.MethodDelete)
 		}
@@ -52,7 +57,13 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 			return
 		}
 
-		cs, err := GetForAccountInWorld(d.Logger(), d.DB(), c.Tenant())(uint32(accountId), byte(worldId), InventoryModelDecorator(d.Logger(), d.DB(), d.Span(), c.Tenant()))
+		var decorators = make([]model.Decorator[Model], 0)
+		include := mux.Vars(r)["include"]
+		if strings.Contains(include, "inventory") {
+			decorators = append(decorators, InventoryModelDecorator(d.Logger(), d.DB(), d.Span(), c.Tenant()))
+		}
+
+		cs, err := GetForAccountInWorld(d.Logger(), d.DB(), c.Tenant())(uint32(accountId), byte(worldId), decorators...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to get characters for account %d in world %d.", accountId, worldId)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -85,7 +96,13 @@ func handleGetCharactersByMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 			return
 		}
 
-		cs, err := GetForMapInWorld(d.Logger(), d.DB(), c.Tenant())(byte(worldId), uint32(mapId), InventoryModelDecorator(d.Logger(), d.DB(), d.Span(), c.Tenant()))
+		var decorators = make([]model.Decorator[Model], 0)
+		include := mux.Vars(r)["include"]
+		if strings.Contains(include, "inventory") {
+			decorators = append(decorators, InventoryModelDecorator(d.Logger(), d.DB(), d.Span(), c.Tenant()))
+		}
+
+		cs, err := GetForMapInWorld(d.Logger(), d.DB(), c.Tenant())(byte(worldId), uint32(mapId), decorators...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to get characters for map %d in world %d.", mapId, worldId)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -112,7 +129,13 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 			return
 		}
 
-		cs, err := GetForName(d.Logger(), d.DB(), c.Tenant())(name, InventoryModelDecorator(d.Logger(), d.DB(), d.Span(), c.Tenant()))
+		var decorators = make([]model.Decorator[Model], 0)
+		include := mux.Vars(r)["include"]
+		if strings.Contains(include, "inventory") {
+			decorators = append(decorators, InventoryModelDecorator(d.Logger(), d.DB(), d.Span(), c.Tenant()))
+		}
+
+		cs, err := GetForName(d.Logger(), d.DB(), c.Tenant())(name, decorators...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Getting character %s.", name)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -133,7 +156,13 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 func handleGetCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cs, err := GetById(d.Logger(), d.DB(), c.Tenant())(characterId, InventoryModelDecorator(d.Logger(), d.DB(), d.Span(), c.Tenant()))
+			var decorators = make([]model.Decorator[Model], 0)
+			include := mux.Vars(r)["include"]
+			if strings.Contains(include, "inventory") {
+				decorators = append(decorators, InventoryModelDecorator(d.Logger(), d.DB(), d.Span(), c.Tenant()))
+			}
+
+			cs, err := GetById(d.Logger(), d.DB(), c.Tenant())(characterId, decorators...)
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 				return

@@ -3,7 +3,7 @@ module atlas-login
 go 1.21.6
 
 require (
-	github.com/Chronicle20/atlas-kafka v1.0.1
+	github.com/Chronicle20/atlas-kafka v1.0.4
 	github.com/Chronicle20/atlas-model v1.0.0
 	github.com/Chronicle20/atlas-rest v1.0.0
 	github.com/Chronicle20/atlas-socket v1.1.0
@@ -26,6 +26,6 @@ require (
 	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/sys v0.23.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/sys v0.24.0 // indirect
+	golang.org/x/text v0.17.0 // indirect
 )

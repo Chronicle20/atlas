@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-login/account"
 	"atlas-login/configuration"
 	"atlas-login/logger"
 	"atlas-login/session"
@@ -12,6 +13,7 @@ import (
 	"atlas-login/tracing"
 	"context"
 	"fmt"
+	"github.com/Chronicle20/atlas-kafka/consumer"
 	socket2 "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/opentracing/opentracing-go"
@@ -26,6 +28,7 @@ import (
 )
 
 const serviceName = "atlas-login"
+const consumerGroupId = "Login Service - %s"
 
 func main() {
 	l := logger.CreateLogger(serviceName)
@@ -54,6 +57,9 @@ func main() {
 	handlerMap := produceHandlers()
 	writerList := produceWriters()
 
+	cm := consumer.GetManager()
+	cm.AddConsumer(l, ctx, wg)(account.AccountStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+
 	for _, s := range config.Data.Attributes.Servers {
 		var t tenant.Model
 		t, err = tenant.NewFromConfiguration(l)(s)
@@ -73,6 +79,8 @@ func main() {
 
 		wp := produceWriterProducer(fl)(s.Writers, writerList, rw)
 		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
+
+		_, _ = cm.RegisterHandler(account.AccountStatusRegister(l, t))
 
 		socket.CreateSocketService(fl, ctx, wg)(hp, rw, t, s.Port)
 	}

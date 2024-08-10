@@ -46,16 +46,9 @@ func GetByName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model)
 	}
 }
 
-func IsLoggedIn(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) bool {
+func IsLoggedIn(_ logrus.FieldLogger, _ opentracing.Span, tenant tenant.Model) func(id uint32) bool {
 	return func(id uint32) bool {
-		a, err := GetById(l, span, tenant)(id)
-		if err != nil {
-			return false
-		} else if a.LoggedIn() != 0 {
-			return true
-		} else {
-			return false
-		}
+		return getRegistry().LoggedIn(Key{Tenant: tenant, Id: id})
 	}
 }
 

@@ -26,7 +26,7 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp wri
 		// TODO block when already in cash shop
 
 		a, err := account.GetById(l, span, s.Tenant())(s.AccountId())
-		c, err := character.GetById(l, span, s.Tenant())(s.CharacterId())
+		c, err := character.GetByIdWithInventory(l, span, s.Tenant())(s.CharacterId())
 
 		err = cashShopOpenFunc(s, writer.CashShopOpenBody(l)(s.Tenant(), a, c))
 		if err != nil {

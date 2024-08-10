@@ -20,7 +20,7 @@ func CharacterLoggedInHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp
 		buffer := r.GetRestAsBytes()
 		l.Debugf("Handling login for character [%d]. buffer: %s", characterId, buffer)
 
-		c, err := character.GetById(l, span, s.Tenant())(characterId)
+		c, err := character.GetByIdWithInventory(l, span, s.Tenant())(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate character [%d] attempting to login.", characterId)
 			session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)

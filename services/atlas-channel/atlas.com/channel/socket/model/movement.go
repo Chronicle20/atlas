@@ -156,7 +156,7 @@ func (m *JumpElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options 
 	}
 }
 
-func (m *StatChangeElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
+func (m *StatChangeElement) Decode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(r *request.Reader) {
 	return func(r *request.Reader) {
 		m.BStat = r.ReadByte()
 	}
@@ -174,7 +174,7 @@ func (m *Movement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map
 	}
 }
 
-func (m *Element) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+func (m *Element) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		w.WriteByte(m.BMoveAction)
 		w.WriteInt16(m.TElapse)
@@ -235,7 +235,7 @@ func (m *JumpElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options 
 	}
 }
 
-func (m *StatChangeElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+func (m *StatChangeElement) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		w.WriteByte(m.BStat)
 	}
@@ -246,24 +246,24 @@ func movementPathAttrFromOptions(l logrus.FieldLogger) func(attr byte, options m
 		var genericCodes interface{}
 		var ok bool
 		if genericCodes, ok = options["types"]; !ok {
-			l.Errorf("Code [%d] not configured. Defaulting to 99 which will likely cause a client crash.", attr)
+			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
 			return "NOT_FOUND", "DEFAULT"
 		}
 
 		var codes []interface{}
 		if codes, ok = genericCodes.([]interface{}); !ok {
-			l.Errorf("Code [%d] not configured. Defaulting to 99 which will likely cause a client crash.", attr)
+			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
 			return "NOT_FOUND", "DEFAULT"
 		}
 
 		if len(codes) == 0 || attr < 0 || attr >= byte(len(codes)) {
-			l.Errorf("Code [%d] not configured. Defaulting to 99 which will likely cause a client crash.", attr)
+			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
 			return "NOT_FOUND", "DEFAULT"
 		}
 
 		var theType map[string]interface{}
 		if theType, ok = codes[attr].(map[string]interface{}); !ok {
-			l.Errorf("Code [%d] not configured. Defaulting to 99 which will likely cause a client crash.", attr)
+			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
 			return "NOT_FOUND", "DEFAULT"
 		}
 

@@ -1,4 +1,5 @@
 # atlas-channel
+
 Mushroom game Channel Service
 
 ## Overview
@@ -14,6 +15,7 @@ A RESTful resource which provides Channel services.
 - ACCOUNT_SERVICE_URL - [scheme]://[host]:[port]/api/aos/
 - CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
 - GAME_DATA_SERVICE_URL - [scheme]://[host]:[port]/api/gis/
+- MAP_SERVICE_URL - [scheme]://[host]:[port]/api/mas/
 - MONSTER_SERVICE_URL - [scheme]://[host]:[port]/api/mos/
 - WORLD_SERVICE_URL - [scheme]://[host]:[port]/api/wrg/
 - TOPIC_CHANNEL_SERVICE - Kafka Topic for transmitting Channel Status Events
@@ -22,4 +24,4 @@ A RESTful resource which provides Channel services.
 - EVENT_TOPIC_MAP_STATUS - Kafka Topic for transmitting map status events
 - COMMAND_TOPIC_PORTAL - Kafka Topic for transmitting portal commands.
 - COMMAND_TOPIC_CHANNEL_STATUS - Kafka Topic for issuing Channel Service commands.
-  - Used for requesting started channel services to identify status.
+    - Used for requesting started channel services to identify status.

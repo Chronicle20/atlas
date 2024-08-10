@@ -4,7 +4,6 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/character/equipment/slot"
 	"atlas-channel/character/inventory/equipable"
-	"atlas-channel/pet"
 	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
@@ -475,24 +474,6 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 			w.WriteInt(0)
 		}
 	}
-}
-
-func writeForEachPet(w *response.Writer, ps []pet.Model, pe func(w *response.Writer, p pet.Model), pne func(w *response.Writer)) {
-	for i := 0; i < 3; i++ {
-		if ps != nil && len(ps) > i {
-			pe(w, ps[i])
-		} else {
-			pne(w)
-		}
-	}
-}
-
-func writePetId(w *response.Writer, pet pet.Model) {
-	w.WriteLong(pet.Id())
-}
-
-func writeEmptyPetId(w *response.Writer) {
-	w.WriteLong(0)
 }
 
 func WriteRemainingSkillInfo(w *response.Writer, character character.Model) {

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"atlas-channel/account"
 	"atlas-channel/channel"
 	"atlas-channel/configuration"
 	"atlas-channel/kafka/consumer/character"
 	"atlas-channel/kafka/consumer/map"
+	"atlas-channel/kafka/consumer/monster"
 	"atlas-channel/logger"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -64,6 +66,9 @@ func main() {
 	cm.AddConsumer(l, ctx, wg)(_map.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, ctx, wg)(character.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, ctx, wg)(channel.CommandStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, ctx, wg)(monster.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, ctx, wg)(monster.MovementEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, ctx, wg)(account.AccountStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 
 	for _, s := range config.Data.Attributes.Servers {
 		var t tenant.Model
@@ -98,6 +103,13 @@ func main() {
 				_, _ = cm.RegisterHandler(character.StatusEventStatChangedRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(character.StatusEventMapChangedRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(channel.CommandStatusRegister(sc, config.Data.Attributes.IPAddress, c.Port)(fl))
+				_, _ = cm.RegisterHandler(monster.StatusEventCreatedRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(monster.StatusEventDestroyedRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(monster.StatusEventKilledRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(monster.StatusEventStartControlRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(monster.StatusEventStopControlRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(monster.MovementEventRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(account.AccountStatusRegister(l, sc))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, ctx, wg)(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
@@ -146,6 +158,11 @@ func produceWriters() []string {
 		writer.CashShopOperation,
 		writer.CashShopCashQueryResult,
 		writer.SpawnMonster,
+		writer.DestroyMonster,
+		writer.ControlMonster,
+		writer.MoveMonster,
+		writer.MoveMonsterAck,
+		writer.CharacterSpawn,
 	}
 }
 
@@ -159,6 +176,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterMoveHandle] = handler.CharacterMoveHandleFunc
 	handlerMap[handler.ChannelChangeHandle] = handler.ChannelChangeHandleFunc
 	handlerMap[handler.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
+	handlerMap[handler.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
 	return handlerMap
 }
 

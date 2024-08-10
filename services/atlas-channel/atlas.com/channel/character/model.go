@@ -221,3 +221,15 @@ func (m Model) Meso() uint32 {
 func (m Model) Inventory() inventory.Model {
 	return m.inventory
 }
+
+func (m Model) X() int16 {
+	return 0
+}
+
+func (m Model) Y() int16 {
+	return 0
+}
+
+func (m Model) Stance() byte {
+	return 0
+}

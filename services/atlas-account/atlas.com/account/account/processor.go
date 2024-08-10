@@ -5,12 +5,14 @@ import (
 	"atlas-account/kafka/producer"
 	"atlas-account/tenant"
 	"errors"
+	"time"
+
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"time"
 )
 
 type IdOperator func(tenant.Model, uint32) error
@@ -153,5 +155,41 @@ func Update(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(account
 		}
 
 		return GetById(l, db, tenant)(accountId)
+	}
+}
+
+func Login(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32, issuer string) error {
+	return func(sessionId uuid.UUID, accountId uint32, issuer string) error {
+		a, err := GetById(l, db, tenant)(accountId)
+		if err != nil {
+			return err
+		}
+
+		ak := AccountKey{TenantId: tenant.Id, AccountId: accountId}
+		sk := ServiceKey{SessionId: sessionId, Service: Service(issuer)}
+		err = Get().Login(ak, sk)
+		if err == nil {
+			l.Debugf("State transition triggered a login.")
+			err = producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedInEventProvider()(tenant, a.Id(), a.Name()))
+			return err
+		}
+		return err
+	}
+}
+
+func Logout(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32, issuer string) error {
+	return func(sessionId uuid.UUID, accountId uint32, issuer string) error {
+		a, err := GetById(l, db, tenant)(accountId)
+		if err != nil {
+			return err
+		}
+
+		ok := Get().Logout(AccountKey{TenantId: tenant.Id, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
+		if ok {
+			l.Debugf("State transition triggered a logout.")
+			err = producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedOutEventProvider()(tenant, a.Id(), a.Name()))
+			return err
+		}
+		return errors.New("error while logging out")
 	}
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-channel/account"
 	"atlas-channel/channel"
 	"atlas-channel/configuration"
 	"atlas-channel/kafka/consumer/character"
@@ -67,6 +68,7 @@ func main() {
 	cm.AddConsumer(l, ctx, wg)(channel.CommandStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, ctx, wg)(monster.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, ctx, wg)(monster.MovementEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, ctx, wg)(account.AccountStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 
 	for _, s := range config.Data.Attributes.Servers {
 		var t tenant.Model
@@ -107,6 +109,7 @@ func main() {
 				_, _ = cm.RegisterHandler(monster.StatusEventStartControlRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(monster.StatusEventStopControlRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(monster.MovementEventRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(account.AccountStatusRegister(l, sc))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, ctx, wg)(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)

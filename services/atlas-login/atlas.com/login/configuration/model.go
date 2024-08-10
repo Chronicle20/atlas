@@ -26,6 +26,7 @@ func (d *Model) FindServer(tenantId string) (Server, error) {
 
 // Data contains the main data configuration.
 type Data struct {
+	Id         string     `json:"id"`
 	Type       string     `json:"type"`
 	Attributes Attributes `json:"attributes"`
 }

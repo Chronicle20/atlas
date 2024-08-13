@@ -29,3 +29,14 @@ func entitiesByName(tenant tenant.Model, name string) database.EntityProvider[[]
 		return model.FixedProvider[[]entity](results)
 	}
 }
+
+func allEntities(tenant tenant.Model) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
+		var results []entity
+		err := db.Where(&entity{TenantId: tenant.Id}).First(&results).Error
+		if err != nil {
+			return model.ErrorProvider[[]entity](err)
+		}
+		return model.FixedProvider[[]entity](results)
+	}
+}

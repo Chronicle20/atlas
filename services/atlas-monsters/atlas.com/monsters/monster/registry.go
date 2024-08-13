@@ -48,23 +48,6 @@ func (r *Registry) getMapLock(key MapKey) *sync.RWMutex {
 	return cm
 }
 
-//func existingIds(monsters []MonsterKey) []uint32 {
-//	var ids []uint32
-//	for _, x := range monsters {
-//		ids = append(ids, x.MonsterId)
-//	}
-//	return ids
-//}
-//
-//func contains(ids []uint32, id uint32) bool {
-//	for _, element := range ids {
-//		if element == id {
-//			return true
-//		}
-//	}
-//	return false
-//}
-
 func (r *Registry) CreateMonster(tenant tenant.Model, worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
 	mapKey := MapKey{Tenant: tenant, WorldId: worldId, ChannelId: channelId, MapId: mapId}
 
@@ -248,4 +231,12 @@ func (r *Registry) GetMonsters() map[tenant.Model][]Model {
 		mons[key.Tenant] = val
 	}
 	return mons
+}
+
+func (r *Registry) Clear() {
+	r.tenantMonsterId = make(map[tenant.Model]uint32)
+	r.mapMonsterReg = make(map[MapKey][]MonsterKey)
+	r.mapLocks = make(map[MapKey]*sync.RWMutex)
+	r.monsterReg = make(map[MonsterKey]Model)
+	r.monsterLock = &sync.RWMutex{}
 }

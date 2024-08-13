@@ -8,6 +8,7 @@ import (
 
 func TestSunnyDay(t *testing.T) {
 	r := GetMonsterRegistry()
+	r.Clear()
 	tenant := tenant.New(uuid.New(), "GMS", 83, 1)
 	worldId := byte(0)
 	channelId := byte(0)
@@ -105,6 +106,7 @@ func TestSunnyDay(t *testing.T) {
 
 func TestIdReuse(t *testing.T) {
 	r := GetMonsterRegistry()
+	r.Clear()
 	tenant1 := tenant.New(uuid.New(), "GMS", 83, 1)
 	tenant2 := tenant.New(uuid.New(), "GMS", 87, 1)
 	worldId := byte(0)
@@ -221,6 +223,7 @@ func compare(m Model) func(o Model) bool {
 
 func TestDestroyAll(t *testing.T) {
 	r := GetMonsterRegistry()
+	r.Clear()
 	tenant1 := tenant.New(uuid.New(), "GMS", 83, 1)
 	tenant2 := tenant.New(uuid.New(), "GMS", 87, 1)
 	worldId := byte(0)

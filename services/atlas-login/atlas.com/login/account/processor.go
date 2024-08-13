@@ -34,6 +34,10 @@ func ByIdModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenan
 	}
 }
 
+func allProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](l)(requestAccounts(l, span, tenant), Extract)
+}
+
 func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) (Model, error) {
 	return func(id uint32) (Model, error) {
 		return ByIdModelProvider(l, span, tenant)(id)()
@@ -50,6 +54,19 @@ func IsLoggedIn(_ logrus.FieldLogger, _ opentracing.Span, tenant tenant.Model) f
 	return func(id uint32) bool {
 		return getRegistry().LoggedIn(Key{Tenant: tenant, Id: id})
 	}
+}
+
+func InitializeRegistry(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) error {
+	as, err := model.CollectToMap[Model, Key, bool](allProvider(l, span, tenant), KeyForTenantFunc(tenant), IsLogged)()
+	if err != nil {
+		return err
+	}
+	getRegistry().Init(as)
+	return nil
+}
+
+func IsLogged(m Model) bool {
+	return m.LoggedIn() > 0
 }
 
 func UpdatePin(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32, pin string) error {

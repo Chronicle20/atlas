@@ -21,6 +21,10 @@ func getBaseRequest() string {
 	return os.Getenv("ACCOUNT_SERVICE_URL")
 }
 
+func requestAccounts(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) requests.Request[[]RestModel] {
+	return rest.MakeGetRequest[[]RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest() + AccountsResource))
+}
+
 func requestAccountByName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string) requests.Request[RestModel] {
 	return func(name string) requests.Request[RestModel] {
 		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+AccountsByName, name))

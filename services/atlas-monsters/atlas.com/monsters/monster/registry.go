@@ -234,16 +234,18 @@ func removeIfExists(slice []MonsterKey, value Model) []MonsterKey {
 	return slice
 }
 
-//func (r *Registry) GetMonsters() []Model {
-//	r.mutex.Lock()
-//	defer r.mutex.Unlock()
-//	mons := make([]Model, 0)
-//	for monKey, monLock := range r.monsterLocks {
-//		monLock.RLock()
-//		if m, ok := r.monsterReg[monKey]; ok {
-//			mons = append(mons, *m)
-//		}
-//		monLock.RUnlock()
-//	}
-//	return mons
-//}
+func (r *Registry) GetMonsters() map[tenant.Model][]Model {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	mons := make(map[tenant.Model][]Model)
+	for key, monster := range r.monsterReg {
+		var val []Model
+		var ok bool
+		if val, ok = mons[key.Tenant]; !ok {
+			val = make([]Model, 0)
+		}
+		val = append(val, monster)
+		mons[key.Tenant] = val
+	}
+	return mons
+}

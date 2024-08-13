@@ -10,6 +10,7 @@ import (
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/opentracing/opentracing-go"
 	"io"
 	"os"
 	"os/signal"
@@ -81,5 +82,10 @@ func main() {
 	l.Infof("Initiating shutdown with signal %s.", sig)
 	cancel()
 	wg.Wait()
+
+	span := opentracing.StartSpan("shutdown")
+	monster.DestroyAll(l, span)
+	span.Finish()
+
 	l.Infoln("Service shutdown.")
 }

@@ -144,12 +144,18 @@ func StopControl(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 	}
 }
 
-//func DestroyAll(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) {
-//	ms := GetMonsterRegistry().GetMonsters()
-//	for _, x := range ms {
-//		Destroy(l, span, tenant)(x.UniqueId())
-//	}
-//}
+func DestroyAll(l logrus.FieldLogger, span opentracing.Span) {
+	ms := GetMonsterRegistry().GetMonsters()
+	for t, mons := range ms {
+		var ten = t
+		var monsters = mons
+		go func() {
+			for _, x := range monsters {
+				Destroy(l, span, ten)(x.UniqueId())
+			}
+		}()
+	}
+}
 
 func Destroy(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(uniqueId uint32) {
 	return func(uniqueId uint32) {

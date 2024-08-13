@@ -1,45 +1,51 @@
 package socket
 
-type ServerConfigurator func(s *serverConfiguration)
+type Configurator func(s *config)
 
 //goland:noinspection GoUnusedExportedFunction
-func SetIpAddress(ipAddress string) func(*serverConfiguration) {
-	return func(s *serverConfiguration) {
+func SetIpAddress(ipAddress string) func(*config) {
+	return func(s *config) {
 		s.ipAddress = ipAddress
 	}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SetPort(port int) func(*serverConfiguration) {
-	return func(s *serverConfiguration) {
+func SetPort(port int) func(*config) {
+	return func(s *config) {
 		s.port = port
 	}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SetSessionCreator(creator SessionCreator) ServerConfigurator {
-	return func(s *serverConfiguration) {
+func SetCreator(creator Creator) Configurator {
+	return func(s *config) {
 		s.creator = creator
 	}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SetSessionDestroyer(destroyer SessionDestroyer) ServerConfigurator {
-	return func(s *serverConfiguration) {
+func SetDestroyer(destroyer Destroyer) Configurator {
+	return func(s *config) {
 		s.destroyer = destroyer
 	}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SetSessionMessageDecryptor(decryptor SessionMessageDecryptor) ServerConfigurator {
-	return func(s *serverConfiguration) {
+func SetMessageDecryptor(decryptor MessageDecryptor) Configurator {
+	return func(s *config) {
 		s.decryptor = decryptor
 	}
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SetReadWriter(rw OpReadWriter) ServerConfigurator {
-	return func(s *serverConfiguration) {
+func SetReadWriter(rw OpReadWriter) Configurator {
+	return func(s *config) {
 		s.rw = rw
+	}
+}
+
+func SetHandlers(producer HandlerProducer) Configurator {
+	return func(s *config) {
+		s.handlers = producer()
 	}
 }

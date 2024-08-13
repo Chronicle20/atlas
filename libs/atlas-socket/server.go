@@ -1,14 +1,18 @@
 package socket
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"github.com/Chronicle20/atlas-socket/crypto"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"io"
 	"net"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -53,76 +57,120 @@ func (s ShortReadWriter) Write(op uint16) func(w *response.Writer) {
 
 type HandlerProducer func() map[uint16]request.Handler
 
-type SessionCreator func(sessionId uuid.UUID, conn net.Conn)
+type Creator func(sessionId uuid.UUID, conn net.Conn)
 
-func defaultSessionCreator(_ uuid.UUID, _ net.Conn) {
+func defaultCreator(_ uuid.UUID, _ net.Conn) {
 }
 
-type SessionMessageDecryptor func(sessionId uuid.UUID, message []byte) []byte
+type MessageDecryptor func(sessionId uuid.UUID, message []byte) []byte
 
-func defaultSessionMessageDecryptor(_ uuid.UUID, message []byte) []byte {
+func defaultMessageDecryptor(_ uuid.UUID, message []byte) []byte {
 	return message
 }
 
-type SessionDestroyer func(sessionId uuid.UUID)
+type Destroyer func(sessionId uuid.UUID)
 
-func defaultSessionDestroyer(_ uuid.UUID) {
+func defaultDestroyer(_ uuid.UUID) {
 }
 
-type serverConfiguration struct {
+type config struct {
 	rw        OpReadWriter
-	creator   SessionCreator
-	decryptor SessionMessageDecryptor
-	destroyer SessionDestroyer
+	creator   Creator
+	decryptor MessageDecryptor
+	destroyer Destroyer
 	ipAddress string
 	port      int
 	handlers  map[uint16]request.Handler
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func Run(l logrus.FieldLogger, handlerProducer HandlerProducer, configurators ...ServerConfigurator) error {
-	config := &serverConfiguration{
-		creator:   defaultSessionCreator,
-		decryptor: defaultSessionMessageDecryptor,
-		destroyer: defaultSessionDestroyer,
+func Run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup, configurators ...Configurator) error {
+	wg.Add(1)
+	defer wg.Done()
+
+	c := &config{
+		creator:   defaultCreator,
+		decryptor: defaultMessageDecryptor,
+		destroyer: defaultDestroyer,
 		ipAddress: "0.0.0.0",
 		port:      5000,
-		handlers:  handlerProducer(),
+		handlers:  make(map[uint16]request.Handler),
 	}
 
 	for _, configurator := range configurators {
-		configurator(config)
+		configurator(c)
 	}
 
-	l.Infof("Starting tcp server on %s:%d", config.ipAddress, config.port)
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", config.ipAddress, config.port))
+	l.Infof("Starting tcp server on [%s:%d]", c.ipAddress, c.port)
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", c.ipAddress, c.port))
 	if err != nil {
 		l.WithError(err).Errorln("Error listening:", err.Error())
-		os.Exit(1)
+		return err
 	}
-	defer lis.Close()
+
+	defer func(lis net.Listener) {
+		err := lis.Close()
+		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return
+			}
+			l.WithError(err).Error("Error closing listener")
+		}
+	}(lis)
+
+	go func() {
+		<-ctx.Done()
+		l.Infof("Closing listener.")
+		err := lis.Close()
+		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return
+			}
+			l.WithError(err).Errorf("Error closing listener.")
+		}
+	}()
 
 	for {
 		conn, err := lis.Accept()
 		if err != nil {
-			l.WithError(err).Errorln("Error connecting:", err.Error())
-			return err
+			select {
+			case <-ctx.Done():
+				l.Infof("Listener stopped accepting new connections.")
+				return err
+			default:
+				l.WithError(err).Infof("Error accepting connection.")
+				continue
+			}
 		}
 
-		l.Infof("Client %s connected.", conn.RemoteAddr().String())
+		l.Infof("Client [%s] connected.", conn.RemoteAddr())
 
-		go run(l)(config, conn, uuid.New(), 4)
+		go run(l, ctx, wg)(c, conn, uuid.New(), 4)
 	}
 }
 
-func run(l logrus.FieldLogger) func(config *serverConfiguration, conn net.Conn, sessionId uuid.UUID, headerSize int) {
-	return func(config *serverConfiguration, conn net.Conn, sessionId uuid.UUID, headerSize int) {
+func run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(config *config, conn net.Conn, sessionId uuid.UUID, headerSize int) {
+	return func(config *config, conn net.Conn, sessionId uuid.UUID, headerSize int) {
+		wg.Add(1)
+		defer wg.Done()
 
 		defer func(conn net.Conn) {
 			err := conn.Close()
 			if err != nil {
+				if errors.Is(err, net.ErrClosed) {
+					return
+				}
+				l.WithError(err).Errorf("Error closing connection.")
+			} else {
+				l.Infof("Closing connection from [%s].", conn.RemoteAddr())
 			}
 		}(conn)
+
+		go func() {
+			<-ctx.Done()
+			l.Infof("Closing connection from [%s].", conn.RemoteAddr())
+			conn.Close()
+		}()
 
 		config.creator(sessionId, conn)
 
@@ -134,8 +182,19 @@ func run(l logrus.FieldLogger) func(config *serverConfiguration, conn net.Conn, 
 		for {
 			buffer := make([]byte, readSize)
 
-			if _, err := conn.Read(buffer); err != nil {
-				break
+			_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+			_, err := conn.Read(buffer)
+			if err != nil {
+				if os.IsTimeout(err) {
+					continue
+				}
+				if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
+					l.Infof("Connection ended.")
+				} else {
+					l.WithError(err).Errorf("Error reading from connection.")
+				}
+				config.destroyer(sessionId)
+				return
 			}
 
 			if header {
@@ -150,14 +209,11 @@ func run(l logrus.FieldLogger) func(config *serverConfiguration, conn net.Conn, 
 
 			header = !header
 		}
-
-		fl.Infof("Exiting read loop.")
-		config.destroyer(sessionId)
 	}
 }
 
-func handle(l logrus.FieldLogger) func(config *serverConfiguration, sessionId uuid.UUID, p request.Request) {
-	return func(config *serverConfiguration, sessionId uuid.UUID, p request.Request) {
+func handle(l logrus.FieldLogger) func(config *config, sessionId uuid.UUID, p request.Request) {
+	return func(config *config, sessionId uuid.UUID, p request.Request) {
 		reader := request.NewRequestReader(&p, time.Now().Unix())
 		op := config.rw.Read(&reader)
 		if h, ok := config.handlers[op]; ok {

@@ -4,8 +4,10 @@ import (
 	"atlas-login/session"
 	"atlas-login/tenant"
 	"context"
+	"errors"
 	"github.com/Chronicle20/atlas-socket"
 	"github.com/sirupsen/logrus"
+	"net"
 	"strconv"
 	"sync"
 )
@@ -13,9 +15,6 @@ import (
 func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, t tenant.Model, port string) {
 	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, t tenant.Model, portStr string) {
 		go func() {
-			ctx, cancel := context.WithCancel(ctx)
-			defer cancel()
-
 			port, err := strconv.Atoi(portStr)
 			if err != nil {
 				l.WithError(err).Errorf("Socket service [port] is configured incorrectly")
@@ -41,15 +40,19 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 				wg.Add(1)
 				defer wg.Done()
 
-				err = socket.Run(l, hp,
+				err = socket.Run(l, ctx, wg,
+					socket.SetHandlers(hp),
 					socket.SetPort(port),
-					socket.SetSessionCreator(session.Create(l, session.GetRegistry())(t, locale)),
-					socket.SetSessionMessageDecryptor(session.Decrypt(l, session.GetRegistry(), t)(true, hasMapleEncryption)),
-					socket.SetSessionDestroyer(session.DestroyByIdWithSpan(l, session.GetRegistry(), t.Id)),
+					socket.SetCreator(session.Create(l, session.GetRegistry())(t, locale)),
+					socket.SetMessageDecryptor(session.Decrypt(l, session.GetRegistry(), t)(true, hasMapleEncryption)),
+					socket.SetDestroyer(session.DestroyByIdWithSpan(l, session.GetRegistry(), t.Id)),
 					socket.SetReadWriter(rw),
 				)
 
 				if err != nil {
+					if errors.Is(err, net.ErrClosed) {
+						return
+					}
 					l.WithError(err).Errorf("Socket service encountered error")
 				}
 			}()

@@ -18,7 +18,6 @@ import (
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
-	"io"
 	"os"
 	"os/signal"
 	"strconv"
@@ -41,12 +40,6 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
-	defer func(tc io.Closer) {
-		err := tc.Close()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to close tracer.")
-		}
-	}(tc)
 
 	config, err := configuration.GetConfiguration()
 	if err != nil {
@@ -102,16 +95,37 @@ func main() {
 	// trap sigterm or interrupt and gracefully shutdown the server
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
+	doneChan := make(chan struct{})
+
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+		<-doneChan
+
+		l.Debugf("Starting teardown.")
+		span = opentracing.StartSpan("teardown")
+		defer span.Finish()
+		tenant.ForAll(session.DestroyAll(l, span, session.GetRegistry()))
+	}()
+
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+		<-doneChan
+
+		l.Debugf("Closing jaeger client.")
+		err := tc.Close()
+		if err != nil {
+			l.WithError(err).Errorf("Unable to close tracer.")
+		}
+	}()
 
 	// Block until a signal is received.
 	sig := <-c
 	l.Infof("Initiating shutdown with signal %s.", sig)
+	close(doneChan)
 	cancel()
 	wg.Wait()
-
-	span = opentracing.StartSpan("teardown")
-	defer span.Finish()
-	tenant.ForAll(session.DestroyAll(l, span, session.GetRegistry()))
 
 	l.Infoln("Service shutdown.")
 }

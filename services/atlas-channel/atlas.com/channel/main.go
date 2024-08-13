@@ -70,11 +70,18 @@ func main() {
 	cm.AddConsumer(l, ctx, wg)(monster.MovementEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, ctx, wg)(account.AccountStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 
+	span := opentracing.StartSpan("startup")
+
 	for _, s := range config.Data.Attributes.Servers {
 		var t tenant.Model
 		t, err = tenant.NewFromConfiguration(l)(s)
 		if err != nil {
 			continue
+		}
+
+		err = account.InitializeRegistry(l, span, t)
+		if err != nil {
+			l.WithError(err).Error("Unable to initialize account registry for tenant [%s].", t.String())
 		}
 
 		var rw socket2.OpReadWriter = socket2.ShortReadWriter{}
@@ -116,6 +123,7 @@ func main() {
 			}
 		}
 	}
+	span.Finish()
 
 	tt, err := config.FindTask(session.TimeoutTask)
 	if err != nil {
@@ -133,7 +141,7 @@ func main() {
 	cancel()
 	wg.Wait()
 
-	span := opentracing.StartSpan("teardown")
+	span = opentracing.StartSpan("teardown")
 	defer span.Finish()
 	tenant.ForAll(session.DestroyAll(l, span, session.GetRegistry()))
 

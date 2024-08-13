@@ -71,7 +71,7 @@ func main() {
 
 		err = account.InitializeRegistry(l, span, t)
 		if err != nil {
-			l.WithError(err).Error("Unable to initialize account registry for tenant [%s].", t.String())
+			l.WithError(err).Errorf("Unable to initialize account registry for tenant [%s].", t.String())
 		}
 
 		fl := l.

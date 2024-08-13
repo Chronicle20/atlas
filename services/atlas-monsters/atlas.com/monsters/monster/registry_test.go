@@ -218,3 +218,33 @@ func compare(m Model) func(o Model) bool {
 		return true
 	}
 }
+
+func TestDestroyAll(t *testing.T) {
+	r := GetMonsterRegistry()
+	tenant1 := tenant.New(uuid.New(), "GMS", 83, 1)
+	tenant2 := tenant.New(uuid.New(), "GMS", 87, 1)
+	worldId := byte(0)
+	channelId := byte(0)
+	mapId := uint32(40000)
+	monsterId := uint32(9300018)
+	x := int16(0)
+	y := int16(0)
+	fh := int16(0)
+	stance := byte(0)
+	team := int8(0)
+	hp := uint32(50)
+	mp := uint32(50)
+
+	_ = r.CreateMonster(tenant1, worldId, channelId, mapId, monsterId, x, y, fh, stance, team, hp, mp)
+	_ = r.CreateMonster(tenant2, worldId, channelId, mapId, monsterId, x, y, fh, stance, team, hp, mp)
+	_ = r.CreateMonster(tenant1, worldId, channelId, mapId, monsterId, x, y, fh, stance, team, hp, mp)
+
+	ms := r.GetMonsters()
+	count := 0
+	for _, v := range ms {
+		count += len(v)
+	}
+	if count != 3 {
+		t.Fatal("Expected 3 Monsters, got ", count)
+	}
+}

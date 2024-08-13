@@ -10,6 +10,12 @@ type Key struct {
 	Id     uint32
 }
 
+func KeyForTenantFunc(t tenant.Model) func(m Model) Key {
+	return func(m Model) Key {
+		return Key{Tenant: t, Id: m.Id()}
+	}
+}
+
 type Registry struct {
 	mutex    sync.RWMutex
 	accounts map[Key]bool
@@ -24,6 +30,14 @@ func getRegistry() *Registry {
 		registry.accounts = make(map[Key]bool)
 	})
 	return registry
+}
+
+func (r *Registry) Init(as map[Key]bool) {
+	r.mutex.Lock()
+	for k, b := range as {
+		r.accounts[k] = b
+	}
+	r.mutex.Unlock()
 }
 
 func (r *Registry) Login(Key Key) {

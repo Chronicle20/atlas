@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
+	"sync"
 )
 
 func byIdProvider(_ logrus.FieldLogger, _ opentracing.Span, tenant tenant.Model) func(monsterId uint32) model.Provider[Model] {
@@ -146,15 +147,20 @@ func StopControl(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 
 func DestroyAll(l logrus.FieldLogger, span opentracing.Span) {
 	ms := GetMonsterRegistry().GetMonsters()
+	wg := &sync.WaitGroup{}
+
 	for t, mons := range ms {
 		var ten = t
 		var monsters = mons
 		go func() {
+			wg.Add(1)
+			defer wg.Done()
 			for _, x := range monsters {
 				Destroy(l, span, ten)(x.UniqueId())
 			}
 		}()
 	}
+	wg.Wait()
 }
 
 func Destroy(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(uniqueId uint32) {

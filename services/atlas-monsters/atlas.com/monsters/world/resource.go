@@ -20,6 +20,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(router *mux.Router, l logrus.FieldLogger) {
 		r := router.PathPrefix("/worlds").Subrouter()
 		r.HandleFunc("/{worldId}/channels/{channelId}/maps/{mapId}/monsters", rest.RegisterHandler(l)(si)(getMonstersInMap, handleGetMonstersInMap)).Methods(http.MethodGet)
+		r.HandleFunc("/{worldId}/channels/{channelId}/maps/{mapId}/monsters", rest.RegisterHandler(l)(si)(getMonstersInMap, handleDeleteMonstersInMap)).Methods(http.MethodDelete)
 		r.HandleFunc("/{worldId}/channels/{channelId}/maps/{mapId}/monsters", rest.RegisterInputHandler[monster.RestModel](l)(si)(createMonsterInMap, handleCreateMonsterInMap)).Methods(http.MethodPost)
 	}
 }
@@ -29,7 +30,12 @@ func handleGetMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext) h
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					ms := monster.GetMonsterRegistry().GetMonstersInMap(c.Tenant(), worldId, channelId, mapId)
+					ms, err := monster.GetInMap(d.Logger(), d.Span(), c.Tenant())(worldId, channelId, mapId)
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Unable to retrieve monsters in map.")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
 
 					res, err := model.SliceMap(model.FixedProvider(ms), monster.Transform)()
 					if err != nil {
@@ -39,6 +45,24 @@ func handleGetMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext) h
 					}
 
 					server.Marshal[[]monster.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				}
+			})
+		})
+	})
+}
+
+func handleDeleteMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
+		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
+			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					err := monster.DestroyInMap(d.Logger(), d.Span(), c.Tenant())(worldId, channelId, mapId)
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Unable to remove monsters in map.")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					w.WriteHeader(http.StatusAccepted)
 				}
 			})
 		})

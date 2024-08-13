@@ -28,6 +28,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r := router.PathPrefix("/accounts").Subrouter()
 			r.HandleFunc("/", registerInput(createAccount, handleCreateAccount)).Methods(http.MethodPost)
 			r.HandleFunc("/", register(getAccountByName, handleGetAccountByName)).Queries("name", "{name}").Methods(http.MethodGet)
+			r.HandleFunc("/", register(getAccountByName, handleGetAccounts)).Methods(http.MethodGet)
 			r.HandleFunc("/{accountId}", register(getAccountById, handleGetAccountById)).Methods(http.MethodGet)
 			r.HandleFunc("/{accountId}", registerInput(updateAccount, handleUpdateAccount)).Methods(http.MethodPatch)
 		}
@@ -100,6 +101,25 @@ func handleGetAccountByName(d *rest.HandlerDependency, c *rest.HandlerContext) h
 			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
 		}
 	})
+}
+
+func handleGetAccounts(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		as, err := GetAll(d.Logger(), d.DB(), c.Tenant())
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Unable to locate accounts.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		res, err := model.SliceMap(model.FixedProvider(as), Transform)()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Creating REST model.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+	}
 }
 
 func handleGetAccountById(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {

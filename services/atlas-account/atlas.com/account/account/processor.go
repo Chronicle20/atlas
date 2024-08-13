@@ -39,6 +39,13 @@ func byNameProvider(db *gorm.DB) func(tenant tenant.Model, name string) model.Pr
 	}
 }
 
+func allProvider(db *gorm.DB) func(tenant tenant.Model) model.Provider[[]Model] {
+	return func(tenant tenant.Model) model.Provider[[]Model] {
+		mp := database.ModelSliceProvider[Model, entity](db)(allEntities(tenant), modelFromEntity)
+		return model.SliceMap(mp, decorateState(tenant))
+	}
+}
+
 func decorateState(tenant tenant.Model) func(m Model) (Model, error) {
 	return func(m Model) (Model, error) {
 		st := Get().MaximalState(AccountKey{TenantId: tenant.Id, AccountId: m.Id()})
@@ -67,6 +74,10 @@ func GetByName(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name
 		}
 		return m, nil
 	}
+}
+
+func GetAll(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) ([]Model, error) {
+	return allProvider(db)(tenant)()
 }
 
 func GetInTransition(timeout time.Duration) ([]AccountKey, error) {

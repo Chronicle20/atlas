@@ -296,3 +296,24 @@ func FirstProvider[M any](provider Provider[[]M], filters ...Filter[M]) Provider
 func First[M any](provider Provider[[]M], filters ...Filter[M]) (M, error) {
 	return FirstProvider(provider, filters...)()
 }
+
+//goland:noinspection GoUnusedExportedFunction
+type KeyProvider[M any, K comparable] func(m M) K
+
+//goland:noinspection GoUnusedExportedFunction
+type ValueProvider[M any, V any] func(m M) V
+
+//goland:noinspection GoUnusedExportedFunction
+func CollectToMap[M any, K comparable, V any](mp Provider[[]M], kp KeyProvider[M, K], vp ValueProvider[M, V]) Provider[map[K]V] {
+	ms, err := mp()
+	if err != nil {
+		return ErrorProvider[map[K]V](err)
+	}
+	return func() (map[K]V, error) {
+		var result = make(map[K]V)
+		for _, m := range ms {
+			result[kp(m)] = vp(m)
+		}
+		return result, nil
+	}
+}

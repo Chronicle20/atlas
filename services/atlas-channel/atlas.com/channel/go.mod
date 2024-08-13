@@ -4,7 +4,7 @@ go 1.21.6
 
 require (
 	github.com/Chronicle20/atlas-kafka v1.0.4
-	github.com/Chronicle20/atlas-model v1.0.0
+	github.com/Chronicle20/atlas-model v1.0.1
 	github.com/Chronicle20/atlas-rest v1.0.0
 	github.com/Chronicle20/atlas-socket v1.1.0
 	github.com/google/uuid v1.6.0

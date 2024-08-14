@@ -48,6 +48,19 @@ type Registry struct {
 	sessions map[AccountKey]map[ServiceKey]StateValue
 }
 
+func (l *Registry) GetStates(key AccountKey) map[ServiceKey]StateValue {
+	l.lock.RLock()
+	defer l.lock.RUnlock()
+
+	var states map[ServiceKey]StateValue
+	var ok bool
+	if states, ok = l.sessions[key]; !ok {
+		return map[ServiceKey]StateValue{}
+	}
+
+	return states
+}
+
 func (l *Registry) MaximalState(key AccountKey) State {
 	l.lock.RLock()
 	defer l.lock.RUnlock()

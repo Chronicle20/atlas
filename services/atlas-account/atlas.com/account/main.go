@@ -51,9 +51,9 @@ func main() {
 
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.CreateAccountCommandConsumer(l)(consumerGroupId))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(session.CreateAccountSessionCommandConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.CreateAccountSessionCommandConsumer(l)(consumerGroupId))
 	_, _ = cm.RegisterHandler(account.CreateAccountRegister(l, db))
-	_, _ = cm.RegisterHandler(session.CreateAccountSessionRegister(l))
+	_, _ = cm.RegisterHandler(account.CreateAccountSessionRegister(l, db))
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), session.InitResource(GetServer())(db), account.InitResource(GetServer())(db))
 

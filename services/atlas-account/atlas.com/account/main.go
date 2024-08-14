@@ -59,6 +59,7 @@ func main() {
 
 	go tasks.Register(l, tdm.Context())(account.NewTransitionTimeout(l, db, time.Second*time.Duration(5)))
 
+	tdm.TeardownFunc(account.Teardown(l, db))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
 	tdm.Wait()

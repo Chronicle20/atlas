@@ -31,16 +31,27 @@ func byNameProvider(db *gorm.DB) func(tenant tenant.Model, name string) model.Pr
 	}
 }
 
-func allProvider(db *gorm.DB) func(tenant tenant.Model) model.Provider[[]Model] {
+func allByTenantProvider(db *gorm.DB) func(tenant tenant.Model) model.Provider[[]Model] {
 	return func(tenant tenant.Model) model.Provider[[]Model] {
-		mp := database.ModelSliceProvider[Model, entity](db)(allEntities(tenant), modelFromEntity)
+		mp := database.ModelSliceProvider[Model, entity](db)(allInTenant(tenant), modelFromEntity)
 		return model.SliceMap(mp, decorateState(tenant))
 	}
 }
 
+func allProvider(db *gorm.DB) model.Provider[[]Model] {
+	tenants := Get().Tenants()
+	mp := database.ModelSliceProvider[Model, entity](db)(allEntities, modelFromEntity)
+	return model.SliceMap(mp, func(m Model) (Model, error) {
+		if t, ok := tenants[m.TenantId()]; ok {
+			return decorateState(t)(m)
+		}
+		return m, nil
+	})
+}
+
 func decorateState(tenant tenant.Model) func(m Model) (Model, error) {
 	return func(m Model) (Model, error) {
-		st := Get().MaximalState(AccountKey{TenantId: tenant.Id, AccountId: m.Id()})
+		st := Get().MaximalState(AccountKey{Tenant: tenant, AccountId: m.Id()})
 		m.state = st
 		return m, nil
 	}
@@ -69,7 +80,7 @@ func GetByName(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name
 }
 
 func GetAll(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) ([]Model, error) {
-	return allProvider(db)(tenant)()
+	return allByTenantProvider(db)(tenant)()
 }
 
 func GetInTransition(timeout time.Duration) ([]AccountKey, error) {
@@ -166,7 +177,7 @@ func Login(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tena
 			return err
 		}
 
-		ak := AccountKey{TenantId: tenant.Id, AccountId: accountId}
+		ak := AccountKey{Tenant: tenant, AccountId: accountId}
 		sk := ServiceKey{SessionId: sessionId, Service: Service(issuer)}
 		err = Get().Login(ak, sk)
 		if err == nil {
@@ -185,7 +196,7 @@ func Logout(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 			return err
 		}
 
-		ok := Get().Logout(AccountKey{TenantId: tenant.Id, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
+		ok := Get().Logout(AccountKey{Tenant: tenant, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
 		if ok {
 			l.Debugf("State transition triggered a logout.")
 			err = producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedOutEventProvider()(tenant, a.Id(), a.Name()))
@@ -193,4 +204,27 @@ func Logout(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 		}
 		return errors.New("error while logging out")
 	}
+}
+
+func Teardown(l logrus.FieldLogger, db *gorm.DB) func() {
+	return func() {
+		span := opentracing.StartSpan("teardown")
+		defer span.Finish()
+
+		logoutForModel := func(m Model) error {
+			l.Debugf("Logging out [%d] [%s] on service shutdown.", m.Id(), m.Name())
+			t := tenant.New(m.TenantId(), "", 0, 0)
+			return producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedOutEventProvider()(t, m.Id(), m.Name()))
+		}
+
+		lmp := model.FilteredProvider(allProvider(db), LoggedIn)
+		err := model.ForEachSlice(lmp, logoutForModel, model.ParallelExecute())
+		if err != nil {
+			l.WithError(err).Errorf("Error destroying all monsters on teardown.")
+		}
+	}
+}
+
+func LoggedIn(m Model) bool {
+	return m.state != StateNotLoggedIn
 }

@@ -1,6 +1,7 @@
 package account
 
 import (
+	"atlas-account/tenant"
 	"github.com/google/uuid"
 	"testing"
 )
@@ -8,7 +9,7 @@ import (
 func TestCoordinator(t *testing.T) {
 	c := Get()
 
-	ak := AccountKey{TenantId: uuid.New(), AccountId: 1}
+	ak := AccountKey{Tenant: tenant.Model{Id: uuid.New(), Region: "GMS", MajorVersion: 83, MinorVersion: 1}, AccountId: 1}
 	s1 := ServiceKey{SessionId: uuid.New(), Service: ServiceLogin}
 	s2 := ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
 	_ = ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
@@ -58,7 +59,7 @@ func TestCoordinator(t *testing.T) {
 func TestHappyPath(t *testing.T) {
 	c := Get()
 
-	ak := AccountKey{TenantId: uuid.New(), AccountId: 1}
+	ak := AccountKey{Tenant: tenant.Model{Id: uuid.New(), Region: "GMS", MajorVersion: 83, MinorVersion: 1}, AccountId: 1}
 	s1 := ServiceKey{SessionId: uuid.New(), Service: ServiceLogin}
 	s2 := ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
 
@@ -85,7 +86,7 @@ func TestHappyPath(t *testing.T) {
 func TestUnhappyPath(t *testing.T) {
 	c := Get()
 
-	ak := AccountKey{TenantId: uuid.New(), AccountId: 1}
+	ak := AccountKey{Tenant: tenant.Model{Id: uuid.New(), Region: "GMS", MajorVersion: 83, MinorVersion: 1}, AccountId: 1}
 	s1 := ServiceKey{SessionId: uuid.New(), Service: ServiceLogin}
 	s2 := ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
 
@@ -112,7 +113,7 @@ func TestUnhappyPath(t *testing.T) {
 func TestChangeChannelHappy(t *testing.T) {
 	c := Get()
 
-	ak := AccountKey{TenantId: uuid.New(), AccountId: 1}
+	ak := AccountKey{Tenant: tenant.Model{Id: uuid.New(), Region: "GMS", MajorVersion: 83, MinorVersion: 1}, AccountId: 1}
 	s1 := ServiceKey{SessionId: uuid.New(), Service: ServiceLogin}
 	s2 := ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
 	s3 := ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
@@ -150,7 +151,7 @@ func TestChangeChannelHappy(t *testing.T) {
 func TestChangeChannelUnhappy(t *testing.T) {
 	c := Get()
 
-	ak := AccountKey{TenantId: uuid.New(), AccountId: 1}
+	ak := AccountKey{Tenant: tenant.Model{Id: uuid.New(), Region: "GMS", MajorVersion: 83, MinorVersion: 1}, AccountId: 1}
 	s1 := ServiceKey{SessionId: uuid.New(), Service: ServiceLogin}
 	s2 := ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
 	s3 := ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
@@ -187,7 +188,7 @@ func TestChangeChannelUnhappy(t *testing.T) {
 func TestDoubleLogin(t *testing.T) {
 	c := Get()
 
-	ak := AccountKey{TenantId: uuid.New(), AccountId: 1}
+	ak := AccountKey{Tenant: tenant.Model{Id: uuid.New(), Region: "GMS", MajorVersion: 83, MinorVersion: 1}, AccountId: 1}
 	s1 := ServiceKey{SessionId: uuid.New(), Service: ServiceLogin}
 
 	var err error

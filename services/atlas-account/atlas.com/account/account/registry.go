@@ -1,6 +1,7 @@
 package account
 
 import (
+	"atlas-account/tenant"
 	"errors"
 	"github.com/google/uuid"
 	"sync"
@@ -13,16 +14,15 @@ var once sync.Once
 func Get() *Registry {
 	once.Do(func() {
 		instance = &Registry{
-			lock:         sync.RWMutex{},
-			sessions:     make(map[AccountKey]map[ServiceKey]StateValue),
-			sessionLocks: map[AccountKey]sync.RWMutex{},
+			lock:     sync.RWMutex{},
+			sessions: make(map[AccountKey]map[ServiceKey]StateValue),
 		}
 	})
 	return instance
 }
 
 type AccountKey struct {
-	TenantId  uuid.UUID
+	Tenant    tenant.Model
 	AccountId uint32
 }
 
@@ -44,33 +44,28 @@ type ServiceKey struct {
 }
 
 type Registry struct {
-	lock         sync.RWMutex
-	sessions     map[AccountKey]map[ServiceKey]StateValue
-	sessionLocks map[AccountKey]sync.RWMutex
+	lock     sync.RWMutex
+	sessions map[AccountKey]map[ServiceKey]StateValue
 }
 
 func (l *Registry) MaximalState(key AccountKey) State {
-	var sl sync.RWMutex
+	l.lock.RLock()
+	defer l.lock.RUnlock()
+
+	var states map[ServiceKey]StateValue
 	var ok bool
-	if sl, ok = l.sessionLocks[key]; !ok {
-		l.lock.Lock()
-		l.sessionLocks[key] = sync.RWMutex{}
-		l.sessions[key] = make(map[ServiceKey]StateValue)
-		l.lock.Unlock()
-		return 0
-	}
-	sl.RLock()
-	defer sl.RUnlock()
-	var maximalState = uint8(99)
-	if len(l.sessions[key]) == 0 {
-		return 0
+	if states, ok = l.sessions[key]; !ok {
+		return StateNotLoggedIn
 	}
 
-	if states, ok := l.sessions[key]; ok {
-		for _, state := range states {
-			if uint8(state.State) < maximalState {
-				maximalState = uint8(state.State)
-			}
+	var maximalState = uint8(99)
+	if len(states) == 0 {
+		return StateNotLoggedIn
+	}
+
+	for _, state := range states {
+		if uint8(state.State) < maximalState {
+			maximalState = uint8(state.State)
 		}
 	}
 	return State(maximalState)
@@ -81,100 +76,96 @@ func (l *Registry) IsLoggedIn(key AccountKey) bool {
 }
 
 func (l *Registry) Login(key AccountKey, sk ServiceKey) error {
-	var sl sync.RWMutex
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	var states map[ServiceKey]StateValue
 	var ok bool
-	if sl, ok = l.sessionLocks[key]; !ok {
-		l.lock.Lock()
-		l.sessionLocks[key] = sync.RWMutex{}
+	if states, ok = l.sessions[key]; !ok {
 		l.sessions[key] = make(map[ServiceKey]StateValue)
-		l.lock.Unlock()
-		//sl = l.sessionLocks[key]
+		states = l.sessions[key]
 	}
-	sl.Lock()
-	defer sl.Unlock()
-	if states, ok := l.sessions[key]; ok {
-		if sk.Service == ServiceLogin {
-			for _, state := range states {
-				if state.State > 0 {
-					return errors.New("already logged in")
-				}
+
+	if sk.Service == ServiceLogin {
+		for _, state := range states {
+			if state.State > 0 {
+				return errors.New("already logged in")
 			}
-			states[sk] = StateValue{State: StateLoggedIn, UpdatedAt: time.Now()}
-			return nil
-		} else if sk.Service == ServiceChannel {
-			for _, state := range states {
-				if state.State > 1 {
-					l.sessions[key][sk] = StateValue{State: StateLoggedIn, UpdatedAt: time.Now()}
-					return nil
-				}
-			}
-			return errors.New("no other service transitioning")
 		}
-		return errors.New("undefined service")
+		states[sk] = StateValue{State: StateLoggedIn, UpdatedAt: time.Now()}
+		return nil
+	} else if sk.Service == ServiceChannel {
+		for _, state := range states {
+			if state.State > 1 {
+				l.sessions[key][sk] = StateValue{State: StateLoggedIn, UpdatedAt: time.Now()}
+				return nil
+			}
+		}
+		return errors.New("no other service transitioning")
 	}
-	return errors.New("unexpected error")
+	return errors.New("undefined service")
 }
 
 func (l *Registry) Transition(key AccountKey, sk ServiceKey) error {
-	var sl sync.RWMutex
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	var states map[ServiceKey]StateValue
 	var ok bool
-	if sl, ok = l.sessionLocks[key]; !ok {
-		l.lock.Lock()
-		l.sessionLocks[key] = sync.RWMutex{}
+	if states, ok = l.sessions[key]; !ok {
 		l.sessions[key] = make(map[ServiceKey]StateValue)
-		l.lock.Unlock()
-		//sl = l.sessionLocks[key]
+		states = l.sessions[key]
 	}
-	sl.Lock()
-	defer sl.Unlock()
-	if states, ok := l.sessions[key]; ok {
-		if state, ok := states[sk]; ok {
-			if state.State > 0 {
-				l.sessions[key][sk] = StateValue{State: StateTransition, UpdatedAt: time.Now()}
-				return nil
-			}
+
+	if state, ok := states[sk]; ok {
+		if state.State > 0 {
+			l.sessions[key][sk] = StateValue{State: StateTransition, UpdatedAt: time.Now()}
+			return nil
 		}
 	}
 	return errors.New("not logged in")
 }
 
 func (l *Registry) ExpireTransition(key AccountKey) {
-	var sl sync.RWMutex
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	var states map[ServiceKey]StateValue
 	var ok bool
-	if sl, ok = l.sessionLocks[key]; !ok {
-		return
+	if states, ok = l.sessions[key]; !ok {
+		l.sessions[key] = make(map[ServiceKey]StateValue)
+		states = l.sessions[key]
 	}
-	sl.Lock()
-	defer sl.Unlock()
-	if states, ok := l.sessions[key]; ok {
-		for sk, state := range states {
-			if state.State == 2 {
-				delete(states, sk)
-			}
+
+	for sk, state := range states {
+		if state.State == 2 {
+			delete(states, sk)
 		}
 	}
 }
 
 func (l *Registry) Logout(key AccountKey, sk ServiceKey) bool {
-	var sl sync.RWMutex
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	var states map[ServiceKey]StateValue
 	var ok bool
-	if sl, ok = l.sessionLocks[key]; !ok {
-		return false
+	if states, ok = l.sessions[key]; !ok {
+		l.sessions[key] = make(map[ServiceKey]StateValue)
+		states = l.sessions[key]
 	}
-	sl.Lock()
-	defer sl.Unlock()
-	if states, ok := l.sessions[key]; ok {
-		if states[sk].State != 2 {
-			delete(states, sk)
-			return true
-		}
+
+	if states[sk].State != 2 {
+		delete(states, sk)
+		return true
 	}
 	return false
 }
 
 func (l *Registry) GetExpiredInTransition(timeout time.Duration) []AccountKey {
-	l.lock.Lock()
-	defer l.lock.Unlock()
+	l.lock.RLock()
+	defer l.lock.RUnlock()
+
 	accounts := make([]AccountKey, 0)
 	for account, session := range l.sessions {
 		for _, state := range session {
@@ -184,4 +175,14 @@ func (l *Registry) GetExpiredInTransition(timeout time.Duration) []AccountKey {
 		}
 	}
 	return accounts
+}
+
+func (l *Registry) Tenants() map[uuid.UUID]tenant.Model {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+	var tenants map[uuid.UUID]tenant.Model
+	for ak := range l.sessions {
+		tenants[ak.Tenant.Id] = ak.Tenant
+	}
+	return tenants
 }

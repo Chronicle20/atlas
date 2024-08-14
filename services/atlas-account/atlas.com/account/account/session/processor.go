@@ -3,8 +3,8 @@ package session
 import (
 	"atlas-account/account"
 	"atlas-account/configuration"
-	"atlas-account/kafka/producer"
 	"atlas-account/tenant"
+
 	"github.com/google/uuid"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
@@ -57,14 +57,9 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 			return ErrorModel(IncorrectPassword)
 		}
 
-		err = account.Get().Login(account.AccountKey{TenantId: tenant.Id, AccountId: a.Id()}, account.ServiceKey{SessionId: sessionId, Service: account.ServiceLogin})
-		if err != nil {
-			l.WithError(err).Errorf("Error trying to update logged in state for %s.", name)
-			return ErrorModel(SystemError)
-		}
+		account.Login(l, db, span, tenant)(sessionId, a.Id(), account.ServiceLogin)
 
 		l.Debugf("Login successful for [%s].", name)
-		_ = producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedInEventProvider()(tenant, a.Id(), name))
 
 		if !a.TOS() && tenant.Region != "JMS" {
 			return ErrorModel(LicenseAgreement)
@@ -86,23 +81,15 @@ func ProgressState(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, ten
 			return ErrorModel(SystemError)
 		}
 		if state == account.StateNotLoggedIn {
-			ok := account.Get().Logout(account.AccountKey{TenantId: tenant.Id, AccountId: accountId}, account.ServiceKey{SessionId: sessionId, Service: account.Service(issuer)})
-			if ok {
-				l.Debugf("State transition triggered a logout.")
-				_ = producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedOutEventProvider()(tenant, a.Id(), ""))
-			}
+			account.Logout(l, db, span, tenant)(sessionId, accountId, issuer)
 			return OkModel()
 		}
 		if state == account.StateLoggedIn {
-			err = account.Get().Login(account.AccountKey{TenantId: tenant.Id, AccountId: accountId}, account.ServiceKey{SessionId: sessionId, Service: account.Service(issuer)})
-			if err == nil {
-				l.Debugf("State transition triggered a login.")
-				_ = producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedInEventProvider()(tenant, a.Id(), ""))
-			}
+			account.Login(l, db, span, tenant)(sessionId, accountId, issuer)
 			return OkModel()
 		}
 		if state == account.StateTransition {
-			err = account.Get().Transition(account.AccountKey{TenantId: tenant.Id, AccountId: accountId}, account.ServiceKey{SessionId: sessionId, Service: account.Service(issuer)})
+			err = account.Get().Transition(account.AccountKey{Tenant: tenant, AccountId: accountId}, account.ServiceKey{SessionId: sessionId, Service: account.Service(issuer)})
 			if err == nil {
 				l.Debugf("State transition triggered a transition.")
 			}

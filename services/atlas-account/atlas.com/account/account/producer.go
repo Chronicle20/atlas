@@ -22,6 +22,14 @@ func createdEventProvider() func(tenant tenant.Model, accountId uint32, name str
 	return accountStatusEventProvider(EventAccountStatusCreated)
 }
 
+func loggedInEventProvider() func(tenant tenant.Model, accountId uint32, name string) model.Provider[[]kafka.Message] {
+	return accountStatusEventProvider(EventAccountStatusLoggedIn)
+}
+
+func loggedOutEventProvider() func(tenant tenant.Model, accountId uint32, name string) model.Provider[[]kafka.Message] {
+	return accountStatusEventProvider(EventAccountStatusLoggedOut)
+}
+
 func accountStatusEventProvider(status string) func(tenant tenant.Model, accountId uint32, name string) model.Provider[[]kafka.Message] {
 	return func(tenant tenant.Model, accountId uint32, name string) model.Provider[[]kafka.Message] {
 		key := producer.CreateKey(int(accountId))

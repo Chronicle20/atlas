@@ -15,16 +15,6 @@ import (
 
 type IdOperator func(tenant.Model, uint32) error
 
-func ForId(db *gorm.DB) func(tenant tenant.Model, id uint32, operator model.Operator[Model]) error {
-	return func(tenant tenant.Model, id uint32, operator model.Operator[Model]) error {
-		m, err := byIdProvider(db)(tenant, id)()
-		if err != nil {
-			return err
-		}
-		return operator(m)
-	}
-}
-
 func byIdProvider(db *gorm.DB) func(tenant tenant.Model, id uint32) model.Provider[Model] {
 	return func(tenant tenant.Model, id uint32) model.Provider[Model] {
 		mp := database.ModelProvider[Model, entity](db)(entityById(tenant, id), modelFromEntity)

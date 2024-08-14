@@ -8,6 +8,8 @@ import (
 
 type Operator[M any] func(M) error
 
+type KeyValueOperator[K any, V any] func(K) Operator[V]
+
 type Provider[M any] func() (M, error)
 
 type Decorator[M any] func(M) M
@@ -21,15 +23,103 @@ func Flip[A any, B any, C any](f func(A) func(B) C) func(B) func(A) C {
 	}
 }
 
+type ExecuteFuncConfigurator Decorator[ExecuteConfig]
+
+type ExecuteConfig struct {
+	parallel bool
+}
+
+func (c ExecuteConfig) SetParallel(val bool) ExecuteConfig {
+	return ExecuteConfig{parallel: val}
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func ParallelExecute() ExecuteFuncConfigurator {
+	return func(config ExecuteConfig) ExecuteConfig {
+		return config.SetParallel(true)
+	}
+}
+
+// Deprecated: use ExecuteForEachSlice
+//
+//goland:noinspection GoUnusedExportedFunction
 func ExecuteForEach[M any](f Operator[M]) Operator[[]M] {
+	return ExecuteForEachSlice(f)
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func ExecuteForEachSlice[M any](f Operator[M], configurators ...ExecuteFuncConfigurator) Operator[[]M] {
+	c := ExecuteConfig{parallel: false}
+	for _, configurator := range configurators {
+		c = configurator(c)
+	}
+
 	return func(models []M) error {
-		for _, m := range models {
-			err := f(m)
-			if err != nil {
-				return err
+		if c.parallel {
+			wg := &sync.WaitGroup{}
+			errChannels := make(chan error, len(models))
+			for _, m := range models {
+				var model = m
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					err := f(model)
+					errChannels <- err
+				}()
 			}
+			wg.Wait()
+			var err error
+			for i := 0; i < len(models); i++ {
+				err = <-errChannels
+			}
+			return err
+		} else {
+			for _, m := range models {
+				err := f(m)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
 		}
-		return nil
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func ExecuteForEachMap[K comparable, V any](f KeyValueOperator[K, V], configurators ...ExecuteFuncConfigurator) Operator[map[K]V] {
+	c := ExecuteConfig{parallel: false}
+	for _, configurator := range configurators {
+		c = configurator(c)
+	}
+
+	return func(m map[K]V) error {
+		if c.parallel {
+			wg := &sync.WaitGroup{}
+			errChannels := make(chan error, len(m))
+			for k, v := range m {
+				var key, value = k, v
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					err := f(key)(value)
+					errChannels <- err
+				}()
+			}
+			wg.Wait()
+			var err error
+			for i := 0; i < len(m); i++ {
+				err = <-errChannels
+			}
+			return err
+		} else {
+			for k, v := range m {
+				err := f(k)(v)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
 	}
 }
 
@@ -79,13 +169,6 @@ func ToSliceProvider[M any](provider Provider[M]) Provider[[]M] {
 	return AsSliceProvider(m)
 }
 
-// Deprecated: use AsSliceProvider
-//
-//goland:noinspection GoUnusedExportedFunction
-func FixedSliceProvider[M any](model M) Provider[[]M] {
-	return FixedProvider([]M{model})
-}
-
 //goland:noinspection GoUnusedExportedFunction
 func ErrorProvider[M any](err error) Provider[M] {
 	return func() (M, error) {
@@ -103,17 +186,6 @@ func RandomPreciselyOneFilter[M any](ms []M) (M, error) {
 	return ms[rand.Intn(len(ms))], nil
 }
 
-// Deprecated: use For
-//
-//goland:noinspection GoUnusedExportedFunction
-func IfPresent[M any](provider Provider[M], operator Operator[M]) {
-	model, err := provider()
-	if err != nil {
-		return
-	}
-	_ = operator(model)
-}
-
 //goland:noinspection GoUnusedExportedFunction
 func For[M any](provider Provider[M], operator Operator[M]) error {
 	models, err := provider()
@@ -123,20 +195,25 @@ func For[M any](provider Provider[M], operator Operator[M]) error {
 	return operator(models)
 }
 
+// Deprecated: just use ForEachSlice
+//
 //goland:noinspection GoUnusedExportedFunction
 func ForEach[M any](provider Provider[[]M], operator Operator[M]) error {
-	return For(provider, ExecuteForEach(operator))
+	return ForEachSlice(provider, operator)
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func ForEachSlice[M any](provider Provider[[]M], operator Operator[M], configurators ...ExecuteFuncConfigurator) error {
+	return For(provider, ExecuteForEachSlice(operator, configurators...))
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func ForEachMap[K comparable, V any](provider Provider[map[K]V], operator KeyValueOperator[K, V], configurators ...ExecuteFuncConfigurator) error {
+	return For(provider, ExecuteForEachMap(operator, configurators...))
 }
 
 //goland:noinspection GoUnusedExportedFunction
 type Transformer[M any, N any] func(M) (N, error)
-
-// Deprecated: just use Map
-//
-//goland:noinspection GoUnusedExportedFunction
-func Transform[M any, N any](model M, transformer Transformer[M, N]) (N, error) {
-	return Map(FixedProvider(model), transformer)()
-}
 
 //goland:noinspection GoUnusedExportedFunction
 func Map[M any, N any](provider Provider[M], transformer Transformer[M, N]) Provider[N] {

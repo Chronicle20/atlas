@@ -211,10 +211,11 @@ func Teardown(l logrus.FieldLogger, db *gorm.DB) func() {
 		span := opentracing.StartSpan("teardown")
 		defer span.Finish()
 
+		tenants := Get().Tenants()
+
 		logoutForModel := func(m Model) error {
 			l.Debugf("Logging out [%d] [%s] on service shutdown.", m.Id(), m.Name())
-			t := tenant.New(m.TenantId(), "", 0, 0)
-			return producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedOutEventProvider()(t, m.Id(), m.Name()))
+			return producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedOutEventProvider()(tenants[m.TenantId()], m.Id(), m.Name()))
 		}
 
 		lmp := model.FilteredProvider(allProvider(db), LoggedIn)

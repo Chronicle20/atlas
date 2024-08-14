@@ -77,6 +77,9 @@ func ProgressState(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, ten
 		}
 
 		l.Debugf("Received request to progress state for account [%d] to state [%d] from state [%d].", accountId, state, a.State())
+		for k, v := range account.Get().GetStates(account.AccountKey{Tenant: tenant, AccountId: accountId}) {
+			l.Debugf("Has state [%d] for [%s].", v.State, k.Service)
+		}
 		if a.State() == account.StateNotLoggedIn {
 			return ErrorModel(SystemError)
 		}

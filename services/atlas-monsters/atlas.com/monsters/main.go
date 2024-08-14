@@ -4,17 +4,12 @@ import (
 	_map "atlas-monsters/kafka/consumer/map"
 	"atlas-monsters/logger"
 	"atlas-monsters/monster"
+	"atlas-monsters/service"
 	"atlas-monsters/tasks"
 	"atlas-monsters/tracing"
 	"atlas-monsters/world"
-	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"github.com/opentracing/opentracing-go"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 	"time"
 )
 
@@ -45,8 +40,7 @@ func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
 
-	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	tdm := service.GetTeardownManager()
 
 	tc, err := tracing.InitTracer(l)(serviceName)
 	if err != nil {
@@ -54,52 +48,22 @@ func main() {
 	}
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, ctx, wg)(monster.DamageConsumer(l)(consumerGroupId))
-	cm.AddConsumer(l, ctx, wg)(monster.MovementConsumer(l)(consumerGroupId))
-	cm.AddConsumer(l, ctx, wg)(_map.StatusEventConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.DamageConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.MovementConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(_map.StatusEventConsumer(l)(consumerGroupId))
 	_, _ = cm.RegisterHandler(monster.DamageCommandRegister(l))
 	_, _ = cm.RegisterHandler(monster.MovementCommandRegister(l))
 	_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(l))
 	_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(l))
 
-	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), monster.InitResource(GetServer()), world.InitResource(GetServer()))
+	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), monster.InitResource(GetServer()), world.InitResource(GetServer()))
 
-	tasks.Register(l, ctx)(monster.NewRegistryAudit(l, time.Second*30))
+	tasks.Register(l, tdm.Context())(monster.NewRegistryAudit(l, time.Second*30))
 
-	// trap sigterm or interrupt and gracefully shutdown the server
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
-	doneChan := make(chan struct{})
+	tdm.TeardownFunc(monster.Teardown(l))
+	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
-	go func() {
-		wg.Add(1)
-		defer wg.Done()
-		<-doneChan
-
-		l.Debugf("Starting teardown.")
-		span := opentracing.StartSpan("teardown")
-		defer span.Finish()
-		monster.DestroyAll(l, span)
-	}()
-
-	go func() {
-		wg.Add(1)
-		defer wg.Done()
-		<-doneChan
-
-		l.Debugf("Closing jaeger client.")
-		err := tc.Close()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to close tracer.")
-		}
-	}()
-
-	// Block until a signal is received.
-	sig := <-c
-	l.Infof("Initiating shutdown with signal %s.", sig)
-	close(doneChan)
-	cancel()
-	wg.Wait()
+	tdm.Wait()
 
 	l.Infoln("Service shutdown.")
 }

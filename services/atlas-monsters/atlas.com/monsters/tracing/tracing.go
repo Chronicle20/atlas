@@ -25,6 +25,17 @@ func InitTracer(l logrus.FieldLogger) func(serviceName string) (io.Closer, error
 	}
 }
 
+func Teardown(l logrus.FieldLogger) func(tc io.Closer) func() {
+	return func(tc io.Closer) func() {
+		return func() {
+			err := tc.Close()
+			if err != nil {
+				l.WithError(err).Errorf("Unable to close tracer.")
+			}
+		}
+	}
+}
+
 type LogrusAdapter struct {
 	logger logrus.FieldLogger
 }

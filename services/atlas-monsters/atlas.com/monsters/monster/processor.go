@@ -257,3 +257,11 @@ func DestroyInMap(l logrus.FieldLogger, span opentracing.Span, t tenant.Model) f
 func IdTransformer(m Model) (uint32, error) {
 	return m.UniqueId(), nil
 }
+
+func Teardown(l logrus.FieldLogger) func() {
+	return func() {
+		span := opentracing.StartSpan("teardown")
+		defer span.Finish()
+		DestroyAll(l, span)
+	}
+}

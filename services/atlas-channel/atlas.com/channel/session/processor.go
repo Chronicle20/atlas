@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
+	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -121,8 +122,16 @@ func UpdateLastRequest() func(tenantId uuid.UUID, id uuid.UUID) Model {
 	}
 }
 
-func SessionCreated(kp producer.Provider, tenant tenant.Model) func(s Model) {
+func EmitCreated(kp producer.Provider, tenant tenant.Model) func(s Model) {
 	return func(s Model) {
 		_ = kp(EnvEventTopicSessionStatus)(createdStatusEventProvider(tenant, s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
+	}
+}
+
+func Teardown(l logrus.FieldLogger) func() {
+	return func() {
+		span := opentracing.StartSpan("teardown")
+		defer span.Finish()
+		tenant.ForAll(DestroyAll(l, span, GetRegistry()))
 	}
 }

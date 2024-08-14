@@ -252,7 +252,7 @@ func Damage(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 
 func DestroyInMap(l logrus.FieldLogger, span opentracing.Span, t tenant.Model) func(worldId byte, channelId byte, mapId uint32) error {
 	return func(worldId byte, channelId byte, mapId uint32) error {
-		return model.ForEachSlice(model.SliceMap[Model, uint32](byMapProvider(l, span, t)(worldId, channelId, mapId), IdTransformer), Destroy(l, span, t))
+		return model.ForEachSlice(model.SliceMap[Model, uint32](byMapProvider(l, span, t)(worldId, channelId, mapId), IdTransformer), Destroy(l, span, t), model.ParallelExecute())
 	}
 }
 

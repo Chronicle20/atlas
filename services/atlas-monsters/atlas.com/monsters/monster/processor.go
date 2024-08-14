@@ -9,7 +9,6 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
-	"sync"
 )
 
 func byIdProvider(_ logrus.FieldLogger, _ opentracing.Span, tenant tenant.Model) func(monsterId uint32) model.Provider[Model] {
@@ -25,6 +24,12 @@ func byMapProvider(_ logrus.FieldLogger, _ opentracing.Span, t tenant.Model) fun
 		return func() ([]Model, error) {
 			return GetMonsterRegistry().GetMonstersInMap(t, worldId, channelId, mapId), nil
 		}
+	}
+}
+
+func allByTenantProvider(_ logrus.FieldLogger, _ opentracing.Span) model.Provider[map[tenant.Model][]Model] {
+	return func() (map[tenant.Model][]Model, error) {
+		return GetMonsterRegistry().GetMonsters(), nil
 	}
 }
 
@@ -163,22 +168,19 @@ func StopControl(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 	}
 }
 
-func DestroyAll(l logrus.FieldLogger, span opentracing.Span) {
-	ms := GetMonsterRegistry().GetMonsters()
-	wg := &sync.WaitGroup{}
-
-	for t, mons := range ms {
-		var ten = t
-		var monsters = mons
-		go func() {
-			wg.Add(1)
-			defer wg.Done()
-			for _, x := range monsters {
-				Destroy(l, span, ten)(x.UniqueId())
+func DestroyInTenant(l logrus.FieldLogger) func(span opentracing.Span) func(tenant tenant.Model) model.Operator[[]Model] {
+	return func(span opentracing.Span) func(tenant tenant.Model) model.Operator[[]Model] {
+		return func(tenant tenant.Model) model.Operator[[]Model] {
+			return func(models []Model) error {
+				idp := model.SliceMap(model.FixedProvider(models), IdTransformer, model.ParallelMap())
+				return model.ForEachSlice(idp, Destroy(l, span, tenant), model.ParallelExecute())
 			}
-		}()
+		}
 	}
-	wg.Wait()
+}
+
+func DestroyAll(l logrus.FieldLogger, span opentracing.Span) error {
+	return model.ForEachMap(allByTenantProvider(l, span), DestroyInTenant(l)(span), model.ParallelExecute())
 }
 
 func Destroy(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(uniqueId uint32) error {
@@ -250,7 +252,7 @@ func Damage(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 
 func DestroyInMap(l logrus.FieldLogger, span opentracing.Span, t tenant.Model) func(worldId byte, channelId byte, mapId uint32) error {
 	return func(worldId byte, channelId byte, mapId uint32) error {
-		return model.ForEach(model.SliceMap[Model, uint32](byMapProvider(l, span, t)(worldId, channelId, mapId), IdTransformer), Destroy(l, span, t))
+		return model.ForEachSlice(model.SliceMap[Model, uint32](byMapProvider(l, span, t)(worldId, channelId, mapId), IdTransformer), Destroy(l, span, t))
 	}
 }
 
@@ -262,6 +264,9 @@ func Teardown(l logrus.FieldLogger) func() {
 	return func() {
 		span := opentracing.StartSpan("teardown")
 		defer span.Finish()
-		DestroyAll(l, span)
+		err := DestroyAll(l, span)
+		if err != nil {
+			l.WithError(err).Errorf("Error destroying all monsters on teardown.")
+		}
 	}
 }

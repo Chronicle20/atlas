@@ -8,9 +8,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ForEachInMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32, f model.Operator[Model]) {
-	return func(mapId uint32, f model.Operator[Model]) {
-		_ = model.ForEach(InMapModelProvider(l, span, tenant)(mapId), f)
+func ForEachInMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32, f model.Operator[Model]) error {
+	return func(mapId uint32, f model.Operator[Model]) error {
+		return model.ForEachSlice(InMapModelProvider(l, span, tenant)(mapId), f, model.ParallelExecute())
 	}
 }
 

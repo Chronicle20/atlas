@@ -15,13 +15,13 @@ const (
 	consumerNameAccountStatus = "account-status"
 )
 
-func AccountStatusConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
+func StatusConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
 		return consumer2.NewConfig(l)(consumerNameAccountStatus)(EnvEventTopicAccountStatus)(groupId)
 	}
 }
 
-func AccountStatusRegister(l logrus.FieldLogger, sc server.Model) (string, handler.Handler) {
+func StatusRegister(l logrus.FieldLogger, sc server.Model) (string, handler.Handler) {
 	t, _ := topic.EnvProvider(l)(EnvEventTopicAccountStatus)()
 	return t, message.AdaptHandler(message.PersistentConfig(handleAccountStatusEvent(sc)))
 }

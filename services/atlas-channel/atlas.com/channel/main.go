@@ -56,7 +56,7 @@ func main() {
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(channel.CommandStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.MovementEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.AccountStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.StatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 
 	span := opentracing.StartSpan("startup")
 
@@ -104,7 +104,7 @@ func main() {
 				_, _ = cm.RegisterHandler(monster.StatusEventStartControlRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(monster.StatusEventStopControlRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(monster.MovementEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(account.AccountStatusRegister(l, sc))
+				_, _ = cm.RegisterHandler(account.StatusRegister(l, sc))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tdm.Context(), tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)

@@ -43,9 +43,9 @@ func GetByCharacterId(tenant tenant.Model) func(characterId uint32) (Model, erro
 	}
 }
 
-func ForEachByCharacterId(tenant tenant.Model) func(provider model.Provider[[]uint32], f model.Operator[Model]) {
-	return func(provider model.Provider[[]uint32], f model.Operator[Model]) {
-		_ = model.ForEach(model.SliceMap[uint32, Model](provider, GetByCharacterId(tenant)), f)
+func ForEachByCharacterId(tenant tenant.Model) func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
+	return func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
+		return model.ForEachSlice(model.SliceMap[uint32, Model](provider, GetByCharacterId(tenant)), f, model.ParallelExecute())
 	}
 }
 

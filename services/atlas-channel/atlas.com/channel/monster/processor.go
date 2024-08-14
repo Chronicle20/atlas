@@ -20,9 +20,9 @@ func InMapModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tena
 	}
 }
 
-func ForEachInMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, f model.Operator[Model]) {
-	return func(worldId byte, channelId byte, mapId uint32, f model.Operator[Model]) {
-		_ = model.ForEach(InMapModelProvider(l, span, tenant)(worldId, channelId, mapId), f)
+func ForEachInMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, f model.Operator[Model]) error {
+	return func(worldId byte, channelId byte, mapId uint32, f model.Operator[Model]) error {
+		return model.ForEachSlice(InMapModelProvider(l, span, tenant)(worldId, channelId, mapId), f, model.ParallelExecute())
 	}
 }
 

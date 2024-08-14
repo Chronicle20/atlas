@@ -180,7 +180,7 @@ func (l *Registry) GetExpiredInTransition(timeout time.Duration) []AccountKey {
 func (l *Registry) Tenants() map[uuid.UUID]tenant.Model {
 	l.lock.Lock()
 	defer l.lock.Unlock()
-	var tenants map[uuid.UUID]tenant.Model
+	var tenants = make(map[uuid.UUID]tenant.Model)
 	for ak := range l.sessions {
 		tenants[ak.Tenant.Id] = ak.Tenant
 	}

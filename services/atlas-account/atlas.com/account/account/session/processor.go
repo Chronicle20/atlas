@@ -89,7 +89,7 @@ func ProgressState(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, ten
 			return OkModel()
 		}
 		if state == account.StateTransition {
-			err = account.Get().Transition(account.AccountKey{TenantId: tenant.Id, AccountId: accountId}, account.ServiceKey{SessionId: sessionId, Service: account.Service(issuer)})
+			err = account.Get().Transition(account.AccountKey{Tenant: tenant, AccountId: accountId}, account.ServiceKey{SessionId: sessionId, Service: account.Service(issuer)})
 			if err == nil {
 				l.Debugf("State transition triggered a transition.")
 			}

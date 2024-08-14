@@ -27,7 +27,8 @@ func LoggedInValidatorFunc(l logrus.FieldLogger, span opentracing.Span) func(s s
 	return func(s session.Model) bool {
 		v := account.IsLoggedIn(l, span, s.Tenant())(s.AccountId())
 		if !v {
-			l.Errorf("Attempting to process a request when the account [%d] is not logged in.", s.AccountId())
+			l.Errorf("Attempting to process a request when the account [%d] is not logged in. Terminating session.", s.AccountId())
+			session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
 		}
 		return v
 	}

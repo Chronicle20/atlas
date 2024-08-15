@@ -85,6 +85,11 @@
               "handler": "CharacterGeneralChatHandle"
             },
             {
+              "opCode": "0x35",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInfoRequestHandle"
+            },
+            {
               "opCode": "0x58",
               "validator": "LoggedInValidator",
               "handler": "MonsterMovementHandle",
@@ -129,6 +134,10 @@
             {
               "opCode": "0x16",
               "writer": "StatChanged"
+            },
+            {
+              "opCode": "0x22",
+              "writer": "CharacterInfo"
             },
             {
               "opCode": "0x29",
@@ -316,6 +325,11 @@
               "handler": "CharacterGeneralChatHandle"
             },
             {
+              "opCode": "0x61",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInfoRequestHandle"
+            },
+            {
               "opCode": "0x64",
               "validator": "LoggedInValidator",
               "handler": "PortalScriptHandle"
@@ -393,6 +407,10 @@
             {
               "opCode": "0x1F",
               "writer": "StatChanged"
+            },
+            {
+              "opCode": "0x3D",
+              "writer": "CharacterInfo"
             },
             {
               "opCode": "0x7D",
@@ -624,6 +642,11 @@
               "handler": "CharacterGeneralChatHandle"
             },
             {
+              "opCode": "0x64",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInfoRequestHandle"
+            },
+            {
               "opCode": "0x67",
               "validator": "LoggedInValidator",
               "handler": "PortalScriptHandle"
@@ -705,6 +728,10 @@
             {
               "opCode": "0x1F",
               "writer": "StatChanged"
+            },
+            {
+              "opCode": "0x3D",
+              "writer": "CharacterInfo"
             },
             {
               "opCode": "0x85",
@@ -913,6 +940,11 @@
               "handler": "CharacterGeneralChatHandle"
             },
             {
+              "opCode": "0x6C",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInfoRequestHandle"
+            },
+            {
               "opCode": "0x6F",
               "validator": "LoggedInValidator",
               "handler": "PortalScriptHandle"
@@ -936,6 +968,10 @@
             {
               "opCode": "0x20",
               "writer": "StatChanged"
+            },
+            {
+              "opCode": "0x3E",
+              "writer": "CharacterInfo"
             },
             {
               "opCode": "0x8C",
@@ -1094,6 +1130,11 @@
               "handler": "CharacterGeneralChatHandle"
             },
             {
+              "opCode": "0x5C",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInfoRequestHandle"
+            },
+            {
               "opCode": "0x5F",
               "validator": "LoggedInValidator",
               "handler": "PortalScriptHandle"
@@ -1191,6 +1232,10 @@
             {
               "opCode": "0x1D",
               "writer": "StatChanged"
+            },
+            {
+              "opCode": "0x35",
+              "writer": "CharacterInfo"
             },
             {
               "opCode": "0x7B",

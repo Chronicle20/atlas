@@ -80,6 +80,11 @@
               }
             },
             {
+              "opCode": "0x1D",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterGeneralChatHandle"
+            },
+            {
               "opCode": "0x58",
               "validator": "LoggedInValidator",
               "handler": "MonsterMovementHandle",
@@ -136,6 +141,10 @@
             {
               "opCode": "0x3F",
               "writer": "CharacterSpawn"
+            },
+            {
+              "opCode": "0x41",
+              "writer": "CharacterGeneralChat"
             },
             {
               "opCode": "0x6D",
@@ -285,6 +294,11 @@
               }
             },
             {
+              "opCode": "0x31",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterGeneralChatHandle"
+            },
+            {
               "opCode": "0x64",
               "validator": "LoggedInValidator",
               "handler": "PortalScriptHandle"
@@ -374,6 +388,10 @@
             {
               "opCode": "0xA0",
               "writer": "CharacterSpawn"
+            },
+            {
+              "opCode": "0xA2",
+              "writer": "CharacterGeneralChat"
             },
             {
               "opCode": "0xEC",
@@ -553,6 +571,11 @@
               }
             },
             {
+              "opCode": "0x34",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterGeneralChatHandle"
+            },
+            {
               "opCode": "0x67",
               "validator": "LoggedInValidator",
               "handler": "PortalScriptHandle"
@@ -646,6 +669,10 @@
             {
               "opCode": "0xAB",
               "writer": "CharacterSpawn"
+            },
+            {
+              "opCode": "0xAD",
+              "writer": "CharacterGeneralChat"
             },
             {
               "opCode": "0xFC",
@@ -800,6 +827,11 @@
               "handler": "CharacterMoveHandle"
             },
             {
+              "opCode": "0x37",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterGeneralChatHandle"
+            },
+            {
               "opCode": "0x6F",
               "validator": "LoggedInValidator",
               "handler": "PortalScriptHandle"
@@ -835,6 +867,10 @@
             {
               "opCode": "0xB1",
               "writer": "CharacterSpawn"
+            },
+            {
+              "opCode": "0xB3",
+              "writer": "CharacterGeneralChat"
             },
             {
               "opCode": "0x114",
@@ -968,6 +1004,11 @@
               }
             },
             {
+              "opCode": "0x29",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterGeneralChatHandle"
+            },
+            {
               "opCode": "0x5F",
               "validator": "LoggedInValidator",
               "handler": "PortalScriptHandle"
@@ -1077,6 +1118,10 @@
             {
               "opCode": "0x9E",
               "writer": "CharacterSpawn"
+            },
+            {
+              "opCode": "0xA0",
+              "writer": "CharacterGeneralChat"
             },
             {
               "opCode": "0xFD",

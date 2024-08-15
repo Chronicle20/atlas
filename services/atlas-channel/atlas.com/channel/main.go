@@ -8,6 +8,7 @@ import (
 	"atlas-channel/kafka/consumer/map"
 	"atlas-channel/kafka/consumer/monster"
 	"atlas-channel/logger"
+	"atlas-channel/message"
 	"atlas-channel/server"
 	"atlas-channel/service"
 	"atlas-channel/session"
@@ -57,6 +58,7 @@ func main() {
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.MovementEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.StatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.GeneralChatEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 
 	span := opentracing.StartSpan("startup")
 
@@ -104,7 +106,8 @@ func main() {
 				_, _ = cm.RegisterHandler(monster.StatusEventStartControlRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(monster.StatusEventStopControlRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(monster.MovementEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(account.StatusRegister(l, sc))
+				_, _ = cm.RegisterHandler(account.StatusRegister(fl, sc))
+				_, _ = cm.RegisterHandler(message.GeneralChatEventRegister(sc, wp)(fl))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tdm.Context(), tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
@@ -149,6 +152,7 @@ func produceWriters() []string {
 		writer.MoveMonster,
 		writer.MoveMonsterAck,
 		writer.CharacterSpawn,
+		writer.CharacterGeneralChat,
 	}
 }
 
@@ -163,6 +167,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.ChannelChangeHandle] = handler.ChannelChangeHandleFunc
 	handlerMap[handler.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
 	handlerMap[handler.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
+	handlerMap[handler.CharacterGeneralChatHandle] = handler.CharacterGeneralChatHandleFunc
 	return handlerMap
 }
 

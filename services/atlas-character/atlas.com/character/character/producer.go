@@ -67,3 +67,16 @@ func mapChangedEventProvider(tenant tenant.Model, characterId uint32, worldId by
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func move(tenant tenant.Model, worldId byte, channelId byte, mapId uint32, characterId uint32, m movement) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &movementCommand{
+		Tenant:      tenant,
+		WorldId:     worldId,
+		ChannelId:   channelId,
+		MapId:       mapId,
+		CharacterId: characterId,
+		Movement:    m,
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"atlas-messages/command"
 	"atlas-messages/logger"
+	_map "atlas-messages/map"
 	"atlas-messages/message"
 	"atlas-messages/service"
 	"atlas-messages/tracing"
@@ -21,6 +23,8 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
+
+	command.Registry().Add(_map.WarpMapCommandProducer)
 
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.GeneralChatCommandConsumer(l)(consumerGroupId))

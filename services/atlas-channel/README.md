@@ -18,10 +18,17 @@ A RESTful resource which provides Channel services.
 - MAP_SERVICE_URL - [scheme]://[host]:[port]/api/mas/
 - MONSTER_SERVICE_URL - [scheme]://[host]:[port]/api/mos/
 - WORLD_SERVICE_URL - [scheme]://[host]:[port]/api/wrg/
-- TOPIC_CHANNEL_SERVICE - Kafka Topic for transmitting Channel Status Events
-- EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for transmitting character status events
-- EVENT_TOPIC_SESSION_STATUS - Kafka Topic for capturing session events.
-- EVENT_TOPIC_MAP_STATUS - Kafka Topic for transmitting map status events
-- COMMAND_TOPIC_PORTAL - Kafka Topic for transmitting portal commands.
-- COMMAND_TOPIC_CHANNEL_STATUS - Kafka Topic for issuing Channel Service commands.
-    - Used for requesting started channel services to identify status.
+- EVENT_TOPIC_ACCOUNT_STATUS - Kafka Topic for receiving account status events
+- EVENT_TOPIC_CHARACTER_GENERAL_CHAT - Kafka Topic for receiving character general chat events
+- EVENT_TOPIC_CHARACTER_MOVEMENT - Kafka Topic for receiving character movement events
+- EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for receiving character status events
+- EVENT_TOPIC_MAP_STATUS - Kafka Topic for receiving map status events
+- EVENT_TOPIC_SESSION_STATUS - Kafka Topic for receiving session events
+- COMMAND_TOPIC_ACCOUNT_LOGOUT - Kafka Topic for transmitting account logout commands
+- COMMAND_TOPIC_CHANNEL_STATUS - Kafka Topic for issuing Channel Service commands
+    - Used for requesting started channel services to identify status
+- COMMAND_TOPIC_CHARACTER_GENERAL_CHAT - Kafka Topic for issuing general chat commands
+- COMMAND_TOPIC_CHARACTER_MOVEMENT - Kafka Topic for issuing character movement commands
+- COMMAND_TOPIC_MONSTER_MOVEMENT - Kafka Topic for issuing monster movement commands
+- COMMAND_TOPIC_PORTAL - Kafka Topic for transmitting portal commands
+- 

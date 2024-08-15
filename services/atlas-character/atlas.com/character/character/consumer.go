@@ -12,6 +12,7 @@ import (
 )
 
 const consumerCommand = "character_command"
+const consumerMovementEvent = "character_movement"
 
 func CommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
@@ -28,4 +29,19 @@ func handleChangeMap(db *gorm.DB) func(l logrus.FieldLogger, span opentracing.Sp
 	return func(l logrus.FieldLogger, span opentracing.Span, command commandEvent[changeMapBody]) {
 		ChangeMap(l, db, span, command.Tenant)(command.CharacterId, command.WorldId, command.Body.ChannelId, command.Body.MapId, command.Body.PortalId)
 	}
+}
+
+func MovementEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
+	return func(groupId string) consumer.Config {
+		return consumer2.NewConfig(l)(consumerMovementEvent)(EnvCommandTopicMovement)(groupId)
+	}
+}
+
+func MovementEventRegister(l logrus.FieldLogger) (string, handler.Handler) {
+	t, _ := topic.EnvProvider(l)(EnvCommandTopicMovement)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent))
+}
+
+func handleMovementEvent(l logrus.FieldLogger, span opentracing.Span, command movementCommand) {
+	Move(l, span, command.Tenant)(command.CharacterId, command.WorldId, command.ChannelId, command.MapId, command.Movement)
 }

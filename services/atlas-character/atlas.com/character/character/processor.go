@@ -284,3 +284,23 @@ func characterDatabaseUpdate(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Mo
 		}
 	}
 }
+
+func Move(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte, mapId uint32, movement movement) {
+	return func(characterId uint32, worldId byte, channelId byte, mapId uint32, movement movement) {
+		var x = movement.StartX
+		var y = movement.StartY
+		var stance = GetTemporalRegistry().GetById(characterId).Stance()
+		for _, m := range movement.Elements {
+			if m.TypeStr == MovementTypeNormal {
+				x = m.X
+				y = m.Y
+				stance = m.MoveAction
+			} else if m.TypeStr == MovementTypeJump || m.TypeStr == MovementTypeTeleport || m.TypeStr == MovementTypeStartFallDown {
+				stance = m.MoveAction
+			}
+		}
+		GetTemporalRegistry().Update(characterId, x, y, stance)
+
+		_ = producer.ProviderImpl(l)(span)(EnvEventTopicMovement)(move(tenant, worldId, channelId, mapId, characterId, movement))
+	}
+}

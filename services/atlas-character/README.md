@@ -20,10 +20,12 @@ A RESTful resource which provides character services.
 - COMMAND_TOPIC_CHARACTER - Kafka Topic for transmitting character commands
 - COMMAND_TOPIC_EQUIP_ITEM - Kafka Topic for transmitting equip item commands
 - COMMAND_TOPIC_UNEQUIP_ITEM - Kafka Topic for transmitting unequip item commands
+- COMMAND_TOPIC_CHARACTER_MOVEMENT - Kafka Topic for transmitting character movement commands
 - EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for transmitting character status events
 - EVENT_TOPIC_ITEM_GAIN - Kafka Topic for transmitting item gain events
 - EVENT_TOPIC_EQUIP_CHANGED - Kafka Topic for transmitting equip changed events
 - EVENT_TOPIC_SESSION_STATUS - Kafka Topic for capturing session events
+- EVENT_TOPIC_CHARACTER_MOVEMENT - Kafka Topic for transmitting character movement events
 
 ## API
 

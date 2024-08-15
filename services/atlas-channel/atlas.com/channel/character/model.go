@@ -36,6 +36,9 @@ type Model struct {
 	mapId              uint32
 	spawnPoint         uint32
 	gm                 int
+	x                  int16
+	y                  int16
+	stance             byte
 	meso               uint32
 	pets               []pet.Model
 	equipment          equipment.Model
@@ -223,13 +226,13 @@ func (m Model) Inventory() inventory.Model {
 }
 
 func (m Model) X() int16 {
-	return 0
+	return m.x
 }
 
 func (m Model) Y() int16 {
-	return 0
+	return m.y
 }
 
 func (m Model) Stance() byte {
-	return 0
+	return m.stance
 }

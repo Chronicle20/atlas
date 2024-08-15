@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"atlas-channel/character"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
@@ -42,9 +43,13 @@ func CharacterMoveHandleFunc(l logrus.FieldLogger, span opentracing.Span, _ writ
 
 		l.Debugf("Character [%d] has moved. dr0 [%d], dr1 [%d], fieldKey [%d], dr2 [%d], dr3 [%d], crc [%d], dwKey [%d], crc32 [%d].", s.CharacterId(), dr0, dr1, fieldKey, dr2, dr3, crc, dwKey, crc32)
 
+		c, err := character.GetById(l, span, s.Tenant())(s.CharacterId())
+		if err != nil {
+			return
+		}
+
 		mp := model.Movement{}
 		mp.Decode(l, s.Tenant(), readerOptions)(r)
-		// TODO update player position
-		// TODO rebroadcast to other characters in map.
+		character.Move(l, span, s.Tenant())(s.WorldId(), s.ChannelId(), c.MapId(), s.CharacterId(), mp)
 	}
 }

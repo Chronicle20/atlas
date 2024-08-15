@@ -3,11 +3,7 @@ package character
 import "atlas-channel/tenant"
 
 const (
-	EnvEventTopicCharacterStatus        = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeStatChanged = "STAT_CHANGED"
-	EventCharacterStatusTypeMapChanged  = "MAP_CHANGED"
-
-	EnvEventTopicMovement = "EVENT_TOPIC_CHARACTER_MOVEMENT"
+	EnvCommandTopicMovement = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
 
 	MovementTypeNormal        = "NORMAL"
 	MovementTypeTeleport      = "TELEPORT"
@@ -17,28 +13,7 @@ const (
 	MovementTypeStatChange    = "STAT_CHANGE"
 )
 
-type statusEvent[E any] struct {
-	Tenant      tenant.Model `json:"tenant"`
-	CharacterId uint32       `json:"characterId"`
-	Type        string       `json:"type"`
-	WorldId     byte         `json:"worldId"`
-	Body        E            `json:"body"`
-}
-
-// TODO this should transmit stats
-type statusEventStatChangedBody struct {
-	ChannelId       byte `json:"channelId"`
-	ExclRequestSent bool `json:"exclRequestSent"`
-}
-
-type statusEventMapChangedBody struct {
-	ChannelId      byte   `json:"channelId"`
-	OldMapId       uint32 `json:"oldMapId"`
-	TargetMapId    uint32 `json:"targetMapId"`
-	TargetPortalId uint32 `json:"targetPortalId"`
-}
-
-type movementEvent struct {
+type movementCommand struct {
 	Tenant      tenant.Model `json:"tenant"`
 	WorldId     byte         `json:"worldId"`
 	ChannelId   byte         `json:"channelId"`

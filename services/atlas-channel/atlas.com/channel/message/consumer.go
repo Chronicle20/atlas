@@ -45,7 +45,7 @@ func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[gene
 			return
 		}
 
-		_ = _map.ForOtherSessionsInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, event.CharacterId, showGeneralChatForSession(l, wp)(event, c.Gm()))
+		_ = _map.ForSessionsInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, showGeneralChatForSession(l, wp)(event, c.Gm()))
 	}
 }
 

@@ -34,32 +34,32 @@ func (i Uint128) ShiftRight(bits uint) Uint128 {
 	return i
 }
 
-func (x Uint128) And(y Uint128) Uint128 {
-	x.H &= y.H
-	x.L &= y.L
-	return x
+func (i Uint128) And(y Uint128) Uint128 {
+	i.H &= y.H
+	i.L &= y.L
+	return i
 }
 
-func (x Uint128) Xor(y Uint128) Uint128 {
-	x.H ^= y.H
-	x.L ^= y.L
-	return x
+func (i Uint128) Xor(y Uint128) Uint128 {
+	i.H ^= y.H
+	i.L ^= y.L
+	return i
 }
 
-func (x Uint128) Or(y Uint128) Uint128 {
-	x.H |= y.H
-	x.L |= y.L
-	return x
+func (i Uint128) Or(y Uint128) Uint128 {
+	i.H |= y.H
+	i.L |= y.L
+	return i
 }
 
-func (augend Uint128) Add(addend Uint128) Uint128 {
-	origlow := augend.L
-	augend.L += addend.L
-	augend.H += addend.H
-	if augend.L < origlow { // wrapping occurred, so carry the 1
-		augend.H += 1
+func (i Uint128) Add(addend Uint128) Uint128 {
+	origlow := i.L
+	i.L += addend.L
+	i.H += addend.H
+	if i.L < origlow { // wrapping occurred, so carry the 1
+		i.H += 1
 	}
-	return augend
+	return i
 }
 
 // (Adapted from go's math/big)
@@ -82,9 +82,9 @@ func mult(x, y uint64) (z1, z0 uint64) {
 	return
 }
 
-func (multiplicand Uint128) Mult(multiplier Uint128) Uint128 {
-	hl := multiplicand.H*multiplier.L + multiplicand.L*multiplier.H
-	multiplicand.H, multiplicand.L = mult(multiplicand.L, multiplier.L)
-	multiplicand.H += hl
-	return multiplicand
+func (i Uint128) Mult(multiplier Uint128) Uint128 {
+	hl := i.H*multiplier.L + i.L*multiplier.H
+	i.H, i.L = mult(i.L, multiplier.L)
+	i.H += hl
+	return i
 }

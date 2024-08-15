@@ -21,9 +21,9 @@ func GetCharacterIdsInMap(l logrus.FieldLogger, span opentracing.Span, tenant te
 	}
 }
 
-func ForSessionsInMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, o model.Operator[session.Model]) {
-	return func(worldId byte, channelId byte, mapId uint32, o model.Operator[session.Model]) {
-		session.ForEachByCharacterId(tenant)(CharacterIdsInMapModelProvider(l, span, tenant)(worldId, channelId, mapId), o)
+func ForSessionsInMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, o model.Operator[session.Model]) error {
+	return func(worldId byte, channelId byte, mapId uint32, o model.Operator[session.Model]) error {
+		return session.ForEachByCharacterId(tenant)(CharacterIdsInMapModelProvider(l, span, tenant)(worldId, channelId, mapId), o)
 	}
 }
 
@@ -39,9 +39,9 @@ func OtherCharacterIdsInMapModelProvider(l logrus.FieldLogger, span opentracing.
 	}
 }
 
-func ForOtherSessionsInMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, referenceCharacterId uint32, o model.Operator[session.Model]) {
-	return func(worldId byte, channelId byte, mapId uint32, referenceCharacterId uint32, o model.Operator[session.Model]) {
+func ForOtherSessionsInMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, referenceCharacterId uint32, o model.Operator[session.Model]) error {
+	return func(worldId byte, channelId byte, mapId uint32, referenceCharacterId uint32, o model.Operator[session.Model]) error {
 		p := OtherCharacterIdsInMapModelProvider(l, span, tenant)(worldId, channelId, mapId, referenceCharacterId)
-		session.ForEachByCharacterId(tenant)(p, o)
+		return session.ForEachByCharacterId(tenant)(p, o)
 	}
 }

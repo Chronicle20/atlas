@@ -9,6 +9,7 @@ import (
 	"atlas-channel/kafka/consumer/monster"
 	"atlas-channel/logger"
 	"atlas-channel/server"
+	"atlas-channel/service"
 	"atlas-channel/session"
 	"atlas-channel/socket"
 	"atlas-channel/socket/handler"
@@ -16,18 +17,13 @@ import (
 	"atlas-channel/tasks"
 	"atlas-channel/tenant"
 	"atlas-channel/tracing"
-	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	socket2 "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
-	"os"
-	"os/signal"
 	"strconv"
-	"sync"
-	"syscall"
 	"time"
 )
 
@@ -38,8 +34,7 @@ func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
 
-	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	tdm := service.GetTeardownManager()
 
 	tc, err := tracing.InitTracer(l)(serviceName)
 	if err != nil {
@@ -56,12 +51,12 @@ func main() {
 	writerList := produceWriters()
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, ctx, wg)(_map.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
-	cm.AddConsumer(l, ctx, wg)(character.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
-	cm.AddConsumer(l, ctx, wg)(channel.CommandStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
-	cm.AddConsumer(l, ctx, wg)(monster.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
-	cm.AddConsumer(l, ctx, wg)(monster.MovementEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
-	cm.AddConsumer(l, ctx, wg)(account.AccountStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(_map.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(channel.CommandStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.MovementEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.StatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 
 	span := opentracing.StartSpan("startup")
 
@@ -109,10 +104,10 @@ func main() {
 				_, _ = cm.RegisterHandler(monster.StatusEventStartControlRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(monster.StatusEventStopControlRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(monster.MovementEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(account.AccountStatusRegister(l, sc))
+				_, _ = cm.RegisterHandler(account.StatusRegister(l, sc))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
-				socket.CreateSocketService(fl, ctx, wg)(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
+				socket.CreateSocketService(fl, tdm.Context(), tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
 			}
 		}
 	}
@@ -122,43 +117,12 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatalf("Unable to find task [%s].", session.TimeoutTask)
 	}
-	go tasks.Register(l, ctx)(session.NewTimeout(l, time.Millisecond*time.Duration(tt.Attributes.Interval)))
+	go tasks.Register(l, tdm.Context())(session.NewTimeout(l, time.Millisecond*time.Duration(tt.Attributes.Interval)))
 
-	// trap sigterm or interrupt and gracefully shutdown the server
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
-	doneChan := make(chan struct{})
+	tdm.TeardownFunc(session.Teardown(l))
+	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
-	go func() {
-		wg.Add(1)
-		defer wg.Done()
-		<-doneChan
-
-		l.Debugf("Starting teardown.")
-		span = opentracing.StartSpan("teardown")
-		defer span.Finish()
-		tenant.ForAll(session.DestroyAll(l, span, session.GetRegistry()))
-	}()
-
-	go func() {
-		wg.Add(1)
-		defer wg.Done()
-		<-doneChan
-
-		l.Debugf("Closing jaeger client.")
-		err := tc.Close()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to close tracer.")
-		}
-	}()
-
-	// Block until a signal is received.
-	sig := <-c
-	l.Infof("Initiating shutdown with signal %s.", sig)
-	close(doneChan)
-	cancel()
-	wg.Wait()
-
+	tdm.Wait()
 	l.Infoln("Service shutdown.")
 }
 

@@ -81,23 +81,17 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		m, err := monster.GetById(l, span, event.Tenant)(event.UniqueId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being destroyed.", event.UniqueId)
-			return
-		}
-
-		_map.ForSessionsInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, destroyForSession(l, wp)(m))
+		_map.ForSessionsInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, destroyForSession(l, wp)(event.UniqueId))
 	}
 }
 
-func destroyForSession(l logrus.FieldLogger, wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
+func destroyForSession(l logrus.FieldLogger, wp writer.Producer) func(uniqueId uint32) model.Operator[session.Model] {
 	destroyMonsterFunc := session.Announce(l)(wp)(writer.DestroyMonster)
-	return func(m monster.Model) model.Operator[session.Model] {
+	return func(uniqueId uint32) model.Operator[session.Model] {
 		return func(s session.Model) error {
-			err := destroyMonsterFunc(s, writer.DestroyMonsterBody(l, s.Tenant())(m, writer.DestroyMonsterTypeDissapear))
+			err := destroyMonsterFunc(s, writer.DestroyMonsterBody(l, s.Tenant())(uniqueId, writer.DestroyMonsterTypeFadeOut))
 			if err != nil {
-				l.WithError(err).Errorf("Unable to destroy monster [%d] for character [%d].", m.UniqueId(), s.CharacterId())
+				l.WithError(err).Errorf("Unable to destroy monster [%d] for character [%d].", uniqueId, s.CharacterId())
 			}
 			return err
 		}
@@ -121,23 +115,17 @@ func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		m, err := monster.GetById(l, span, event.Tenant)(event.UniqueId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being destroyed.", event.UniqueId)
-			return
-		}
-
-		_map.ForSessionsInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, killForSession(l, wp)(m))
+		_map.ForSessionsInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, killForSession(l, wp)(event.UniqueId))
 	}
 }
 
-func killForSession(l logrus.FieldLogger, wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
+func killForSession(l logrus.FieldLogger, wp writer.Producer) func(uniqueId uint32) model.Operator[session.Model] {
 	destroyMonsterFunc := session.Announce(l)(wp)(writer.DestroyMonster)
-	return func(m monster.Model) model.Operator[session.Model] {
+	return func(uniqueId uint32) model.Operator[session.Model] {
 		return func(s session.Model) error {
-			err := destroyMonsterFunc(s, writer.DestroyMonsterBody(l, s.Tenant())(m, writer.DestroyMonsterTypeFadeOut))
+			err := destroyMonsterFunc(s, writer.DestroyMonsterBody(l, s.Tenant())(uniqueId, writer.DestroyMonsterTypeFadeOut))
 			if err != nil {
-				l.WithError(err).Errorf("Unable to kill monster [%d] for character [%d].", m.UniqueId(), s.CharacterId())
+				l.WithError(err).Errorf("Unable to kill monster [%d] for character [%d].", uniqueId, s.CharacterId())
 			}
 			return err
 		}

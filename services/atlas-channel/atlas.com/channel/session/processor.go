@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
+	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -42,9 +43,9 @@ func GetByCharacterId(tenant tenant.Model) func(characterId uint32) (Model, erro
 	}
 }
 
-func ForEachByCharacterId(tenant tenant.Model) func(provider model.Provider[[]uint32], f model.Operator[Model]) {
-	return func(provider model.Provider[[]uint32], f model.Operator[Model]) {
-		_ = model.ForEach(model.SliceMap[uint32, Model](provider, GetByCharacterId(tenant)), f)
+func ForEachByCharacterId(tenant tenant.Model) func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
+	return func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
+		return model.ForEachSlice(model.SliceMap[uint32, Model](provider, GetByCharacterId(tenant)), f, model.ParallelExecute())
 	}
 }
 
@@ -121,8 +122,16 @@ func UpdateLastRequest() func(tenantId uuid.UUID, id uuid.UUID) Model {
 	}
 }
 
-func SessionCreated(kp producer.Provider, tenant tenant.Model) func(s Model) {
+func EmitCreated(kp producer.Provider, tenant tenant.Model) func(s Model) {
 	return func(s Model) {
 		_ = kp(EnvEventTopicSessionStatus)(createdStatusEventProvider(tenant, s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
+	}
+}
+
+func Teardown(l logrus.FieldLogger) func() {
+	return func() {
+		span := opentracing.StartSpan("teardown")
+		defer span.Finish()
+		tenant.ForAll(DestroyAll(l, span, GetRegistry()))
 	}
 }

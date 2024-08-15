@@ -93,6 +93,8 @@ func warpCharacter(l logrus.FieldLogger, span opentracing.Span, t tenant.Model, 
 				return err
 			}
 
+			s = session.SetMapId(event.Body.TargetMapId)(s.Tenant().Id, s.SessionId())
+
 			err = setFieldFunc(s, writer.WarpToMapBody(l, s.Tenant())(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())

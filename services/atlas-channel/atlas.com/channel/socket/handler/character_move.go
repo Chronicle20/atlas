@@ -43,13 +43,8 @@ func CharacterMoveHandleFunc(l logrus.FieldLogger, span opentracing.Span, _ writ
 
 		l.Debugf("Character [%d] has moved. dr0 [%d], dr1 [%d], fieldKey [%d], dr2 [%d], dr3 [%d], crc [%d], dwKey [%d], crc32 [%d].", s.CharacterId(), dr0, dr1, fieldKey, dr2, dr3, crc, dwKey, crc32)
 
-		c, err := character.GetById(l, span, s.Tenant())(s.CharacterId())
-		if err != nil {
-			return
-		}
-
 		mp := model.Movement{}
 		mp.Decode(l, s.Tenant(), readerOptions)(r)
-		character.Move(l, span, s.Tenant())(s.WorldId(), s.ChannelId(), c.MapId(), s.CharacterId(), mp)
+		character.Move(l, span, s.Tenant())(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), mp)
 	}
 }

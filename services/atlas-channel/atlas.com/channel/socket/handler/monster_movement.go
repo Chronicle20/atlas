@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"atlas-channel/character"
 	"atlas-channel/kafka/producer"
 	"atlas-channel/monster"
 	"atlas-channel/session"
@@ -25,12 +24,8 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp w
 			l.WithError(err).Errorf("Unable to locate monster [%d] moving.", uniqueId)
 			return
 		}
-		c, err := character.GetById(l, span, s.Tenant())(s.CharacterId())
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate character [%d] issuing the movement.", s.CharacterId())
-			return
-		}
-		if m.WorldId() != s.WorldId() || m.ChannelId() != s.ChannelId() || m.MapId() != c.MapId() {
+
+		if m.WorldId() != s.WorldId() || m.ChannelId() != s.ChannelId() || m.MapId() != s.MapId() {
 			l.Errorf("Monster [%d] movement issued by [%d] does not have consistent map data.", m.UniqueId(), s.CharacterId())
 			return
 		}

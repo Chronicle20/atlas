@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"atlas-channel/character"
 	"atlas-channel/npc"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
@@ -20,12 +19,7 @@ func NPCActionHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.
 		unk := r.ReadByte()
 		unk2 := r.ReadByte()
 
-		c, err := character.GetById(l, span, s.Tenant())(s.CharacterId())
-		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve character seeing npc movement.")
-			return
-		}
-		n, err := npc.GetInMapByObjectId(l, span, s.Tenant())(c.MapId(), objectId)
+		n, err := npc.GetInMapByObjectId(l, span, s.Tenant())(s.MapId(), objectId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve npc moving.")
 			return

@@ -3,7 +3,6 @@ package handler
 import (
 	as "atlas-channel/account/session"
 	"atlas-channel/channel"
-	"atlas-channel/character"
 	"atlas-channel/kafka/producer"
 	"atlas-channel/portal"
 	"atlas-channel/session"
@@ -71,11 +70,6 @@ func MapChangeHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.
 
 		l.Debugf("Character [%d] attempting to enter portal [%s] at [%d,%d] heading to [%d]. FieldKey [%d].", s.CharacterId(), portalName, x, y, targetId, fieldKey)
 		l.Debugf("Unused [%d], Premium [%d], Chase [%t], TargetX [%d], TargetY [%d]", unused, premium, chase, targetX, targetY)
-		c, err := character.GetById(l, span, s.Tenant())(s.CharacterId())
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate character [%d].", s.CharacterId())
-			return
-		}
-		_ = portal.Enter(l, span, producer.ProviderImpl(l)(span))(s.Tenant(), s.WorldId(), s.ChannelId(), c.MapId(), portalName, s.CharacterId())
+		_ = portal.Enter(l, span, producer.ProviderImpl(l)(span))(s.Tenant(), s.WorldId(), s.ChannelId(), s.MapId(), portalName, s.CharacterId())
 	}
 }

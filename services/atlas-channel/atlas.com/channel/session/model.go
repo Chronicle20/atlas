@@ -15,6 +15,7 @@ type Model struct {
 	worldId     byte
 	channelId   byte
 	characterId uint32
+	mapId       uint32
 	gm          bool
 	con         net.Conn
 	send        crypto.AESOFB
@@ -62,6 +63,7 @@ func CloneSession(s Model) Model {
 		accountId:   s.accountId,
 		worldId:     s.worldId,
 		channelId:   s.channelId,
+		mapId:       s.mapId,
 		characterId: s.characterId,
 		con:         s.con,
 		send:        s.send,
@@ -85,6 +87,12 @@ func (s *Model) setCharacterId(id uint32) Model {
 	return ns
 }
 
+func (s *Model) setMapId(id uint32) Model {
+	ns := CloneSession(*s)
+	ns.mapId = id
+	return ns
+}
+
 func (s *Model) setGm(gm bool) Model {
 	ns := CloneSession(*s)
 	ns.gm = gm
@@ -97,6 +105,10 @@ func (s *Model) SessionId() uuid.UUID {
 
 func (s *Model) AccountId() uint32 {
 	return s.accountId
+}
+
+func (s *Model) MapId() uint32 {
+	return s.mapId
 }
 
 func (s *Model) Tenant() tenant.Model {

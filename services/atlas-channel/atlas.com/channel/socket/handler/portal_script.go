@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"atlas-channel/character"
 	"atlas-channel/kafka/producer"
 	"atlas-channel/portal"
 	"atlas-channel/session"
@@ -20,12 +19,7 @@ func PortalScriptHandleFunc(l logrus.FieldLogger, span opentracing.Span, _ write
 		x := r.ReadInt16()
 		y := r.ReadInt16()
 		l.Debugf("Character [%d] attempting to execute portal script for [%s] at [%d,%d]. FieldKey [%d].", s.CharacterId(), portalName, x, y, fieldKey)
-		c, err := character.GetById(l, span, s.Tenant())(s.CharacterId())
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate character [%d].", s.CharacterId())
-			return
-		}
 
-		_ = portal.Enter(l, span, producer.ProviderImpl(l)(span))(s.Tenant(), s.WorldId(), s.ChannelId(), c.MapId(), portalName, s.CharacterId())
+		_ = portal.Enter(l, span, producer.ProviderImpl(l)(span))(s.Tenant(), s.WorldId(), s.ChannelId(), s.MapId(), portalName, s.CharacterId())
 	}
 }

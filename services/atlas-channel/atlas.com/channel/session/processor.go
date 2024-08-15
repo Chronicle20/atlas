@@ -96,6 +96,19 @@ func SetCharacterId(characterId uint32) func(tenantId uuid.UUID, id uuid.UUID) M
 	}
 }
 
+func SetMapId(mapId uint32) func(tenantId uuid.UUID, id uuid.UUID) Model {
+	return func(tenantId uuid.UUID, id uuid.UUID) Model {
+		s := Model{}
+		var ok bool
+		if s, ok = GetRegistry().Get(tenantId, id); ok {
+			s = s.setMapId(mapId)
+			GetRegistry().Update(s)
+			return s
+		}
+		return s
+	}
+}
+
 func SetGm(gm bool) func(tenantId uuid.UUID, id uuid.UUID) Model {
 	return func(tenantId uuid.UUID, id uuid.UUID) Model {
 		s := Model{}

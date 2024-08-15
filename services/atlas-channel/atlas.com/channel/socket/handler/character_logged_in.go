@@ -30,6 +30,7 @@ func CharacterLoggedInHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp
 		s = session.SetAccountId(c.AccountId())(s.Tenant().Id, s.SessionId())
 		s = session.SetCharacterId(c.Id())(s.Tenant().Id, s.SessionId())
 		s = session.SetGm(c.Gm())(s.Tenant().Id, s.SessionId())
+		s = session.SetMapId(c.MapId())(s.Tenant().Id, s.SessionId())
 
 		resp, err := as.UpdateState(l, span, s.Tenant())(s.SessionId(), s.AccountId(), 1)
 		if err != nil || resp.Code != "OK" {

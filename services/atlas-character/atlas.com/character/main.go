@@ -7,16 +7,11 @@ import (
 	"atlas-character/inventory"
 	"atlas-character/inventory/item"
 	"atlas-character/logger"
+	"atlas-character/service"
 	"atlas-character/session"
 	"atlas-character/tracing"
-	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"io"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 )
 import _ "net/http/pprof"
 
@@ -47,44 +42,31 @@ func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
 
-	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	tdm := service.GetTeardownManager()
 
 	tc, err := tracing.InitTracer(l)(serviceName)
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
-	defer func(tc io.Closer) {
-		err := tc.Close()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to close tracer.")
-		}
-	}(tc)
 
 	db := database.Connect(l, database.SetMigrations(character.Migration, inventory.Migration, item.Migration, equipable.Migration))
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, ctx, wg)(inventory.EquipItemCommandConsumer(l)(consumerGroupId))
-	cm.AddConsumer(l, ctx, wg)(inventory.UnequipItemCommandConsumer(l)(consumerGroupId))
-	cm.AddConsumer(l, ctx, wg)(session.StatusEventConsumer(l)(consumerGroupId))
-	cm.AddConsumer(l, ctx, wg)(character.CommandConsumer(l)(consumerGroupId))
-	cm.AddConsumer(l, ctx, wg)(character.MovementEventConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(inventory.EquipItemCommandConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(inventory.UnequipItemCommandConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(session.StatusEventConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.CommandConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.MovementEventConsumer(l)(consumerGroupId))
 	_, _ = cm.RegisterHandler(inventory.EquipItemRegister(l, db))
 	_, _ = cm.RegisterHandler(inventory.UnequipItemRegister(l, db))
 	_, _ = cm.RegisterHandler(session.StatusEventRegister(l, db))
 	_, _ = cm.RegisterHandler(character.ChangeMapCommandRegister(l, db))
 	_, _ = cm.RegisterHandler(character.MovementEventRegister(l))
 
-	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), character.InitResource(GetServer())(db), inventory.InitResource(GetServer())(db))
+	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), character.InitResource(GetServer())(db), inventory.InitResource(GetServer())(db))
 
-	// trap sigterm or interrupt and gracefully shutdown the server
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
+	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
-	// Block until a signal is received.
-	sig := <-c
-	l.Infof("Initiating shutdown with signal %s.", sig)
-	cancel()
-	wg.Wait()
+	tdm.Wait()
 	l.Infoln("Service shutdown.")
 }

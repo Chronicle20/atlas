@@ -3,8 +3,10 @@ package character
 import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
+	_map "atlas-channel/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -17,6 +19,7 @@ import (
 )
 
 const consumerStatusEvent = "character_status"
+const consumerMovementEvent = "character_movement"
 
 func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
@@ -96,6 +99,178 @@ func warpCharacter(l logrus.FieldLogger, span opentracing.Span, t tenant.Model, 
 				return err
 			}
 			return nil
+		}
+	}
+}
+
+func MovementEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
+	return func(groupId string) consumer.Config {
+		return consumer2.NewConfig(l)(consumerMovementEvent)(EnvEventTopicMovement)(groupId)
+	}
+}
+
+func MovementEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvEventTopicMovement)()
+		return t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp)))
+	}
+}
+
+func handleMovementEvent(sc server.Model, wp writer.Producer) message.Handler[movementEvent] {
+	return func(l logrus.FieldLogger, span opentracing.Span, event movementEvent) {
+		if !sc.Is(event.Tenant, event.WorldId, event.ChannelId) {
+			return
+		}
+
+		mv := model2.Movement{StartX: event.Movement.StartX, StartY: event.Movement.StartY}
+		for _, elem := range event.Movement.Elements {
+			if elem.TypeStr == MovementTypeNormal {
+				mv.Elements = append(mv.Elements, &model2.NormalElement{
+					Element: model2.Element{
+						StartX:      elem.StartX,
+						StartY:      elem.StartY,
+						BMoveAction: elem.MoveAction,
+						BStat:       elem.Stat,
+						X:           elem.X,
+						Y:           elem.Y,
+						Vx:          elem.VX,
+						Vy:          elem.VY,
+						Fh:          elem.FH,
+						FhFallStart: elem.FHFallStart,
+						XOffset:     elem.XOffset,
+						YOffset:     elem.YOffset,
+						TElapse:     elem.TimeElapsed,
+						ElemType:    elem.TypeVal,
+					},
+				})
+			} else if elem.TypeStr == MovementTypeTeleport {
+				mv.Elements = append(mv.Elements, &model2.TeleportElement{
+					Element: model2.Element{
+						StartX:      elem.StartX,
+						StartY:      elem.StartY,
+						BMoveAction: elem.MoveAction,
+						BStat:       elem.Stat,
+						X:           elem.X,
+						Y:           elem.Y,
+						Vx:          elem.VX,
+						Vy:          elem.VY,
+						Fh:          elem.FH,
+						FhFallStart: elem.FHFallStart,
+						XOffset:     elem.XOffset,
+						YOffset:     elem.YOffset,
+						TElapse:     elem.TimeElapsed,
+						ElemType:    elem.TypeVal,
+					},
+				})
+			} else if elem.TypeStr == MovementTypeStartFallDown {
+				mv.Elements = append(mv.Elements, &model2.StartFallDownElement{
+					Element: model2.Element{
+						StartX:      elem.StartX,
+						StartY:      elem.StartY,
+						BMoveAction: elem.MoveAction,
+						BStat:       elem.Stat,
+						X:           elem.X,
+						Y:           elem.Y,
+						Vx:          elem.VX,
+						Vy:          elem.VY,
+						Fh:          elem.FH,
+						FhFallStart: elem.FHFallStart,
+						XOffset:     elem.XOffset,
+						YOffset:     elem.YOffset,
+						TElapse:     elem.TimeElapsed,
+						ElemType:    elem.TypeVal,
+					},
+				})
+			} else if elem.TypeStr == MovementTypeFlyingBlock {
+				mv.Elements = append(mv.Elements, &model2.FlyingBlockElement{
+					Element: model2.Element{
+						StartX:      elem.StartX,
+						StartY:      elem.StartY,
+						BMoveAction: elem.MoveAction,
+						BStat:       elem.Stat,
+						X:           elem.X,
+						Y:           elem.Y,
+						Vx:          elem.VX,
+						Vy:          elem.VY,
+						Fh:          elem.FH,
+						FhFallStart: elem.FHFallStart,
+						XOffset:     elem.XOffset,
+						YOffset:     elem.YOffset,
+						TElapse:     elem.TimeElapsed,
+						ElemType:    elem.TypeVal,
+					},
+				})
+			} else if elem.TypeStr == MovementTypeJump {
+				mv.Elements = append(mv.Elements, &model2.JumpElement{
+					Element: model2.Element{
+						StartX:      elem.StartX,
+						StartY:      elem.StartY,
+						BMoveAction: elem.MoveAction,
+						BStat:       elem.Stat,
+						X:           elem.X,
+						Y:           elem.Y,
+						Vx:          elem.VX,
+						Vy:          elem.VY,
+						Fh:          elem.FH,
+						FhFallStart: elem.FHFallStart,
+						XOffset:     elem.XOffset,
+						YOffset:     elem.YOffset,
+						TElapse:     elem.TimeElapsed,
+						ElemType:    elem.TypeVal,
+					},
+				})
+			} else if elem.TypeStr == MovementTypeStatChange {
+				mv.Elements = append(mv.Elements, &model2.StatChangeElement{
+					Element: model2.Element{
+						StartX:      elem.StartX,
+						StartY:      elem.StartY,
+						BMoveAction: elem.MoveAction,
+						BStat:       elem.Stat,
+						X:           elem.X,
+						Y:           elem.Y,
+						Vx:          elem.VX,
+						Vy:          elem.VY,
+						Fh:          elem.FH,
+						FhFallStart: elem.FHFallStart,
+						XOffset:     elem.XOffset,
+						YOffset:     elem.YOffset,
+						TElapse:     elem.TimeElapsed,
+						ElemType:    elem.TypeVal,
+					},
+				})
+			} else {
+				mv.Elements = append(mv.Elements, &model2.Element{
+					StartX:      elem.StartX,
+					StartY:      elem.StartY,
+					BMoveAction: elem.MoveAction,
+					BStat:       elem.Stat,
+					X:           elem.X,
+					Y:           elem.Y,
+					Vx:          elem.VX,
+					Vy:          elem.VY,
+					Fh:          elem.FH,
+					FhFallStart: elem.FHFallStart,
+					XOffset:     elem.XOffset,
+					YOffset:     elem.YOffset,
+					TElapse:     elem.TimeElapsed,
+					ElemType:    elem.TypeVal,
+				})
+			}
+		}
+
+		_map.ForOtherSessionsInMap(l, span, sc.Tenant())(sc.WorldId(), sc.ChannelId(), event.MapId, event.CharacterId, showMovementForSession(l, wp)(event.CharacterId, mv))
+	}
+}
+
+func showMovementForSession(l logrus.FieldLogger, wp writer.Producer) func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
+	moveCharacterFunc := session.Announce(l)(wp)(writer.CharacterMovement)
+	return func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
+		return func(s session.Model) error {
+			err := moveCharacterFunc(s, writer.CharacterMovementBody(l, s.Tenant())(characterId, m))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to move character [%d] for character [%d].", characterId, s.CharacterId())
+			}
+			return err
 		}
 	}
 }

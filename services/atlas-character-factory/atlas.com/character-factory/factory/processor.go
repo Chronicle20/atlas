@@ -78,7 +78,7 @@ func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 
 		asyncCreate := func(ctx context.Context, rchan chan uint32, echan chan error) {
 			character.AwaitCreated(l, tenant)(name)(ctx, rchan, echan)
-			_, err = character.Create(l, span, tenant)(accountId, worldId, name, gender, jobIndex, subJobIndex, face, hair, hairColor, skinColor)
+			_, err = character.Create(l, span, tenant)(accountId, worldId, name, gender, tc.MapId, jobIndex, subJobIndex, face, hair, hairColor, skinColor)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to create character from seed.")
 				echan <- err

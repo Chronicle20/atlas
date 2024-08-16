@@ -40,6 +40,7 @@ type Server struct {
 type Template struct {
 	JobIndex    uint32   `json:"jobIndex"`
 	SubJobIndex uint32   `json:"subJobIndex"`
+	MapId       uint32   `json:"mapId"`
 	Gender      byte     `json:"gender"`
 	Face        []uint32 `json:"face"`
 	Hair        []uint32 `json:"hair"`

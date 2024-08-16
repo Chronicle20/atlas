@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
@@ -34,17 +35,8 @@ func handleStatusEventCharacterEnter(l logrus.FieldLogger, span opentracing.Span
 		return
 	}
 
-	ms, err := monster.GetInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId)
-	if err != nil {
-		l.WithError(err).Errorf("Unable to retrieve monsters in map.")
-		return
-	}
-
-	for _, m := range ms {
-		if m.ControlCharacterId() == 0 {
-			monster.FindNextController(l, span, event.Tenant)(m.UniqueId())
-		}
-	}
+	provider := monster.NotControlledInMapProvider(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId)
+	_ = model.ForEachSlice(provider, monster.FindNextController(l, span, event.Tenant), model.ParallelExecute())
 }
 
 func handleStatusEventCharacterExit(l logrus.FieldLogger, span opentracing.Span, event statusEvent[characterExit]) {
@@ -52,19 +44,7 @@ func handleStatusEventCharacterExit(l logrus.FieldLogger, span opentracing.Span,
 		return
 	}
 
-	ms, err := monster.GetInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId)
-	if err != nil {
-		l.WithError(err).Errorf("Unable to retrieve monsters in map.")
-		return
-	}
-	for _, m := range ms {
-		if m.ControlCharacterId() == event.Body.CharacterId {
-			_, _ = monster.StopControl(l, span, event.Tenant)(m.UniqueId())
-		}
-	}
-	for _, m := range ms {
-		if m.ControlCharacterId() == event.Body.CharacterId {
-			monster.FindNextController(l, span, event.Tenant)(m.UniqueId())
-		}
-	}
+	provider := monster.ControlledByCharacterInMapProvider(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, event.Body.CharacterId)
+	_ = model.ForEachSlice(provider, monster.StopControl(l, span, event.Tenant), model.ParallelExecute())
+	_ = model.ForEachSlice(provider, monster.FindNextController(l, span, event.Tenant))
 }

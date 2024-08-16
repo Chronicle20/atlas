@@ -4,6 +4,7 @@ import (
 	"atlas-maps/map/character"
 	"atlas-maps/monster"
 	"atlas-maps/tenant"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
@@ -23,35 +24,33 @@ func Spawn(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fun
 		}
 
 		c := len(cs)
-		if c > 0 {
-			sps, err := GetSpawnPoints(l, span, tenant)(mapId)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to get spawn points for map %d.", mapId)
-				return
-			}
+		if c < 0 {
+			return
+		}
 
-			var ableSps []SpawnPoint
-			for _, x := range sps {
-				if x.MobTime >= 0 {
-					ableSps = append(ableSps, x)
-				}
-			}
+		ableSps, err := SpawnableSpawnPointProvider(l, span, tenant)(mapId)()
+		if err != nil {
+			return
+		}
 
-			monstersInMap, err := monster.CountInMap(l, span, tenant)(worldId, channelId, mapId)
-			if err != nil {
-				l.WithError(err).Warnf("Assuming no monsters in map.")
-			}
+		monstersInMap, err := monster.CountInMap(l, span, tenant)(worldId, channelId, mapId)
+		if err != nil {
+			l.WithError(err).Warnf("Assuming no monsters in map.")
+		}
 
-			monstersMax := getMonsterMax(c, len(ableSps))
+		monstersMax := getMonsterMax(c, len(ableSps))
 
-			toSpawn := monstersMax - monstersInMap
-			if toSpawn > 0 {
-				result := shuffle(ableSps)
-				for i := 0; i < toSpawn; i++ {
-					x := result[i]
-					monster.CreateMonster(l, span, tenant)(worldId, channelId, mapId, x.Template, x.X, x.Y, x.Fh, x.Team)
-				}
-			}
+		toSpawn := monstersMax - monstersInMap
+		if toSpawn <= 0 {
+			return
+		}
+
+		ableSps = shuffle(ableSps)
+		for i := 0; i < toSpawn; i++ {
+			sp := ableSps[i]
+			go func() {
+				monster.CreateMonster(l, span, tenant)(worldId, channelId, mapId, sp.Template, sp.X, sp.Y, sp.Fh, sp.Team)
+			}()
 		}
 	}
 }
@@ -71,8 +70,18 @@ func getMonsterMax(characterCount int, spawnPointCount int) int {
 	return int(math.Ceil(spawnRate * float64(spawnPointCount)))
 }
 
-func GetSpawnPoints(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) ([]SpawnPoint, error) {
-	return func(mapId uint32) ([]SpawnPoint, error) {
-		return requests.SliceProvider[RestModel, SpawnPoint](l)(requestSpawnPoints(l, span, tenant)(mapId), Extract)()
+func SpawnableSpawnPointProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.Provider[[]SpawnPoint] {
+	return func(mapId uint32) model.Provider[[]SpawnPoint] {
+		return model.FilteredProvider(SpawnPointProvider(l, span, tenant)(mapId), Spawnable)
+	}
+}
+
+func Spawnable(point SpawnPoint) bool {
+	return point.MobTime >= 0
+}
+
+func SpawnPointProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.Provider[[]SpawnPoint] {
+	return func(mapId uint32) model.Provider[[]SpawnPoint] {
+		return requests.SliceProvider[RestModel, SpawnPoint](l)(requestSpawnPoints(l, span, tenant)(mapId), Extract)
 	}
 }

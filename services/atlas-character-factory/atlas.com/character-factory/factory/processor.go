@@ -94,13 +94,13 @@ func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 		}
 
 		wg := sync.WaitGroup{}
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			defer wg.Done()
 			createEquippedItems(l, span, tenant)(cid, input)
 		}()
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			defer wg.Done()
 			createInventoryItems(l, span, tenant)(cid, tc.StartingInventory)
 		}()

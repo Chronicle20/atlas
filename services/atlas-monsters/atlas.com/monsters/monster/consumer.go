@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
@@ -37,21 +38,39 @@ func MovementCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
 	return t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand))
 }
 
+type MovementSummary struct {
+	X      int16
+	Y      int16
+	Stance byte
+}
+
+func MovementSummaryProvider() (MovementSummary, error) {
+	return MovementSummary{}, nil
+}
+
+func FoldMovement(summary MovementSummary, e element) (MovementSummary, error) {
+	res := MovementSummary{
+		X:      summary.X,
+		Y:      summary.Y,
+		Stance: summary.Stance,
+	}
+	if e.TypeStr == MovementTypeNormal {
+		res.X = e.X
+		res.Y = e.Y
+		res.Stance = e.MoveAction
+	}
+	return res, nil
+}
+
 func handleMovementCommand(l logrus.FieldLogger, span opentracing.Span, command movementCommand) {
-	endX := int16(0)
-	endY := int16(0)
-	stance := byte(0)
-	for _, m := range command.Movement.Elements {
-		if m.TypeStr == MovementTypeNormal {
-			endX = m.X
-			endY = m.Y
-			stance = m.MoveAction
-		}
+	ms, err := model.Fold(model.FixedProvider(command.Movement.Elements), MovementSummaryProvider, FoldMovement)()
+	if err != nil {
+		return
 	}
 
-	Move(l, span, command.Tenant)(command.UniqueId, endX, endY, stance)
+	Move(l, span, command.Tenant)(command.UniqueId, ms.X, ms.Y, ms.Stance)
 
-	err := producer.ProviderImpl(l)(span)(EnvEventTopicMovement)(emitMove(command.Tenant, command.WorldId, command.ChannelId, command.UniqueId, command.ObserverId, command.SkillPossible, command.Skill, command.SkillId, command.SkillLevel, command.MultiTarget, command.RandomTimes, command.Movement))
+	err = producer.ProviderImpl(l)(span)(EnvEventTopicMovement)(emitMove(command.Tenant, command.WorldId, command.ChannelId, command.UniqueId, command.ObserverId, command.SkillPossible, command.Skill, command.SkillId, command.SkillLevel, command.MultiTarget, command.RandomTimes, command.Movement))
 	if err != nil {
 		l.WithError(err).Errorf("Unable to relay monster [%d] movement to other characters in map.", command.UniqueId)
 	}

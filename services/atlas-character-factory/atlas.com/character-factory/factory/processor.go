@@ -10,18 +10,19 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
+	"sync"
 	"time"
 )
 
-func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte, name string, gender byte, jobIndex uint32, subJobIndex uint32, face uint32, hair uint32, hairColor uint32, skinColor byte, top uint32, bottom uint32, shoes uint32, weapon uint32) (character.Model, error) {
-	return func(accountId uint32, worldId byte, name string, gender byte, jobIndex uint32, subJobIndex uint32, face uint32, hair uint32, hairColor uint32, skinColor byte, top uint32, bottom uint32, shoes uint32, weapon uint32) (character.Model, error) {
+func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(input RestModel) (character.Model, error) {
+	return func(input RestModel) (character.Model, error) {
 		// TODO validate name again.
 
-		if !validGender(gender) {
+		if !validGender(input.Gender) {
 			return character.Model{}, errors.New("gender must be 0 or 1")
 		}
 
-		if !validJob(jobIndex, subJobIndex) {
+		if !validJob(input.JobIndex, input.SubJobIndex) {
 			return character.Model{}, errors.New("must provide valid job index")
 		}
 
@@ -30,80 +31,110 @@ func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 			l.WithError(err).Errorf("Unable to find template validation configuration")
 			return character.Model{}, err
 		}
-		tc, err := c.FindTemplate(tenant.Id.String(), jobIndex, subJobIndex, gender)
+		tc, err := c.FindTemplate(tenant.Id.String(), input.JobIndex, input.SubJobIndex, input.Gender)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to find template validation configuration")
 			return character.Model{}, err
 		}
 
-		if !validFace(tc.Face, face) {
-			l.Errorf("Chosen face [%d] is not valid for job [%d].", face, jobIndex)
+		if !validFace(tc.Face, input.Face) {
+			l.Errorf("Chosen face [%d] is not valid for job [%d].", input.Face, input.JobIndex)
 			return character.Model{}, errors.New("chosen face is not valid for job")
 		}
 
-		if !validHair(tc.Hair, hair) {
-			l.Errorf("Chosen hair [%d] is not valid for job [%d].", hair, jobIndex)
+		if !validHair(tc.Hair, input.Hair) {
+			l.Errorf("Chosen hair [%d] is not valid for job [%d].", input.Hair, input.JobIndex)
 			return character.Model{}, errors.New("chosen hair is not valid for job")
 		}
 
-		if !validHairColor(tc.HairColor, hairColor) {
-			l.Errorf("Chosen hair color [%d] is not valid for job [%d].", hairColor, jobIndex)
+		if !validHairColor(tc.HairColor, input.HairColor) {
+			l.Errorf("Chosen hair color [%d] is not valid for job [%d].", input.HairColor, input.JobIndex)
 			return character.Model{}, errors.New("chosen hair color is not valid for job")
 		}
 
-		if !validSkinColor(tc.SkinColor, uint32(skinColor)) {
-			l.Errorf("Chosen skin color [%d] is not valid for job [%d]", skinColor, jobIndex)
+		if !validSkinColor(tc.SkinColor, uint32(input.SkinColor)) {
+			l.Errorf("Chosen skin color [%d] is not valid for job [%d]", input.SkinColor, input.JobIndex)
 			return character.Model{}, errors.New("chosen skin color is not valid for job")
 		}
 
-		if !validTop(tc.Top, top) {
-			l.Errorf("Chosen top [%d] is not valid for job [%d]", top, jobIndex)
+		if !validTop(tc.Top, input.Top) {
+			l.Errorf("Chosen top [%d] is not valid for job [%d]", input.Top, input.JobIndex)
 			return character.Model{}, errors.New("chosen top is not valid for job")
 		}
 
-		if !validBottom(tc.Bottom, bottom) {
-			l.Errorf("Chosen bottom [%d] is not valid for job [%d]", bottom, jobIndex)
+		if !validBottom(tc.Bottom, input.Bottom) {
+			l.Errorf("Chosen bottom [%d] is not valid for job [%d]", input.Bottom, input.JobIndex)
 			return character.Model{}, errors.New("chosen bottom is not valid for job")
 		}
 
-		if !validShoes(tc.Shoes, shoes) {
-			l.Errorf("Chosen shoes [%d] is not valid for job [%d]", shoes, jobIndex)
+		if !validShoes(tc.Shoes, input.Shoes) {
+			l.Errorf("Chosen shoes [%d] is not valid for job [%d]", input.Shoes, input.JobIndex)
 			return character.Model{}, errors.New("chosen shoes is not valid for job")
 		}
 
-		if !validWeapon(tc.Weapon, weapon) {
-			l.Errorf("Chosen weapon [%d] is not valid for job [%d]", weapon, jobIndex)
+		if !validWeapon(tc.Weapon, input.Weapon) {
+			l.Errorf("Chosen weapon [%d] is not valid for job [%d]", input.Weapon, input.JobIndex)
 			return character.Model{}, errors.New("chosen weapon is not valid for job")
 		}
 
 		asyncCreate := func(ctx context.Context, rchan chan uint32, echan chan error) {
-			character.AwaitCreated(l, tenant)(name)(ctx, rchan, echan)
-			_, err = character.Create(l, span, tenant)(accountId, worldId, name, gender, jobIndex, subJobIndex, face, hair, hairColor, skinColor)
+			character.AwaitCreated(l, tenant)(input.Name)(ctx, rchan, echan)
+			_, err = character.Create(l, span, tenant)(input.AccountId, input.WorldId, input.Name, input.Gender, tc.MapId, input.JobIndex, input.SubJobIndex, input.Face, input.Hair, input.HairColor, input.SkinColor)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to create character from seed.")
 				echan <- err
 			}
 		}
 
-		l.Debugf("Beginning character creation for account [%d] in world [%d].", accountId, worldId)
+		l.Debugf("Beginning character creation for account [%d] in world [%d].", input.AccountId, input.WorldId)
 		cid, err := async.Await[uint32](model.FixedProvider[async.Provider[uint32]](asyncCreate), async.SetTimeout(500*time.Millisecond))()
 		if err != nil {
-			l.WithError(err).Errorf("Unable to create character [%s].", name)
+			l.WithError(err).Errorf("Unable to create character [%s].", input.Name)
 			return character.Model{}, err
 		}
 
-		ip := model.FixedProvider([]uint32{top, bottom, shoes, weapon})
-		l.Debugf("Beginning item creation for character [%d].", cid)
-		items, err := async.AwaitSlice[character.ItemGained](model.SliceMap(ip, asyncItemCreate(l, span, tenant)(cid)), async.SetTimeout(1*time.Second))()
+		wg := sync.WaitGroup{}
+		go func() {
+			wg.Add(1)
+			defer wg.Done()
+			createEquippedItems(l, span, tenant)(cid, input)
+		}()
+		go func() {
+			wg.Add(1)
+			defer wg.Done()
+			createInventoryItems(l, span, tenant)(cid, tc.StartingInventory)
+		}()
+
+		wg.Wait()
+
+		return character.GetById(l, span, tenant)(cid)
+	}
+}
+
+func createInventoryItems(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, items []uint32) {
+	return func(characterId uint32, items []uint32) {
+		l.Debugf("Beginning inventory item creation for character [%d].", characterId)
+		ip := model.FixedProvider(items)
+		_, err := async.AwaitSlice[character.ItemGained](model.SliceMap(ip, asyncItemCreate(l, span, tenant)(characterId)), async.SetTimeout(1*time.Second))()
 		if err != nil {
-			l.WithError(err).Errorf("Error creating an item for character [%d].", cid)
+			l.WithError(err).Errorf("Error creating an item for character [%d].", characterId)
+		}
+	}
+}
+
+func createEquippedItems(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, input RestModel) {
+	return func(characterId uint32, input RestModel) {
+		l.Debugf("Beginning equipped item creation for character [%d].", characterId)
+		ip := model.FixedProvider([]uint32{input.Top, input.Bottom, input.Shoes, input.Weapon})
+		items, err := async.AwaitSlice[character.ItemGained](model.SliceMap(ip, asyncItemCreate(l, span, tenant)(characterId)), async.SetTimeout(1*time.Second))()
+		if err != nil {
+			l.WithError(err).Errorf("Error creating an item for character [%d].", characterId)
 		}
 
-		_, err = async.AwaitSlice[uint32](model.SliceMap(model.FixedProvider(items), asyncEquipItem(l, span, tenant)(cid)), async.SetTimeout(1*time.Second))()
+		_, err = async.AwaitSlice[uint32](model.SliceMap(model.FixedProvider(items), asyncEquipItem(l, span, tenant)(characterId)), async.SetTimeout(1*time.Second))()
 		if err != nil {
-			l.WithError(err).Errorf("Error equipping an item for character [%d].", cid)
+			l.WithError(err).Errorf("Error equipping an item for character [%d].", characterId)
 		}
-		return character.GetById(l, span, tenant)(cid)
 	}
 }
 

@@ -23,8 +23,8 @@ func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) f
 	}
 }
 
-func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte, name string, gender byte, jobIndex uint32, subJobIndex uint32, face uint32, hair uint32, hairColor uint32, skinColor byte) (Model, error) {
-	return func(accountId uint32, worldId byte, name string, gender byte, jobIndex uint32, subJobIndex uint32, face uint32, hair uint32, hairColor uint32, skinColor byte) (Model, error) {
+func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte, name string, gender byte, mapId uint32, jobIndex uint32, subJobIndex uint32, face uint32, hair uint32, hairColor uint32, skinColor byte) (Model, error) {
+	return func(accountId uint32, worldId byte, name string, gender byte, mapId uint32, jobIndex uint32, subJobIndex uint32, face uint32, hair uint32, hairColor uint32, skinColor byte) (Model, error) {
 		jobId := job.Beginner
 		if jobIndex == 0 {
 			jobId = job.Noblesse
@@ -40,7 +40,7 @@ func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 			jobId = job.Evan
 		}
 
-		rm, err := requestCreate(l, span, tenant)(accountId, worldId, name, gender, jobId, face, hair, hairColor, skinColor)(l)
+		rm, err := requestCreate(l, span, tenant)(accountId, worldId, name, gender, mapId, jobId, face, hair, hairColor, skinColor)(l)
 		if err != nil {
 			return Model{}, err
 		}

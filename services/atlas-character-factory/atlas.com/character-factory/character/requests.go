@@ -34,13 +34,14 @@ func requestById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 	}
 }
 
-func requestCreate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte, name string, gender byte, jobId job.Id, face uint32, hair uint32, hairColor uint32, skinColor byte) requests.Request[RestModel] {
-	return func(accountId uint32, worldId byte, name string, gender byte, jobId job.Id, face uint32, hair uint32, hairColor uint32, skinColor byte) requests.Request[RestModel] {
+func requestCreate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte, name string, gender byte, mapId uint32, jobId job.Id, face uint32, hair uint32, hairColor uint32, skinColor byte) requests.Request[RestModel] {
+	return func(accountId uint32, worldId byte, name string, gender byte, mapId uint32, jobId job.Id, face uint32, hair uint32, hairColor uint32, skinColor byte) requests.Request[RestModel] {
 		i := RestModel{
 			AccountId: accountId,
 			WorldId:   worldId,
 			Name:      name,
 			Gender:    gender,
+			MapId:     mapId,
 			JobId:     uint16(jobId),
 			Face:      face,
 			Hair:      hair + hairColor,

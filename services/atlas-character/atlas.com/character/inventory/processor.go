@@ -154,6 +154,10 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 			return errors.New("invalid inventory type")
 		}
 
+		if quantity == 0 {
+			quantity = 1
+		}
+
 		l.Debugf("Creating [%d] item [%d] for character [%d] in inventory [%d].", quantity, itemId, characterId, inventoryType)
 		invLock := GetLockRegistry().GetById(characterId, inventoryType)
 		invLock.Lock()

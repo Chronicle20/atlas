@@ -4,15 +4,10 @@ import (
 	"atlas-character-factory/character"
 	"atlas-character-factory/factory"
 	"atlas-character-factory/logger"
+	"atlas-character-factory/service"
 	"atlas-character-factory/tracing"
-	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"io"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 )
 
 const serviceName = "atlas-character-factory"
@@ -42,35 +37,22 @@ func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
 
-	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	tdm := service.GetTeardownManager()
 
 	tc, err := tracing.InitTracer(l)(serviceName)
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
-	defer func(tc io.Closer) {
-		err := tc.Close()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to close tracer.")
-		}
-	}(tc)
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, ctx, wg)(character.CreatedConsumer(l)(consumerGroupId))
-	cm.AddConsumer(l, ctx, wg)(character.ItemGainedConsumer(l)(consumerGroupId))
-	cm.AddConsumer(l, ctx, wg)(character.EquipChangedConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.CreatedConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.ItemGainedConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.EquipChangedConsumer(l)(consumerGroupId))
 
-	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), factory.InitResource(GetServer()))
+	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), factory.InitResource(GetServer()))
 
-	// trap sigterm or interrupt and gracefully shutdown the server
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
+	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
-	// Block until a signal is received.
-	sig := <-c
-	l.Infof("Initiating shutdown with signal %s.", sig)
-	cancel()
-	wg.Wait()
+	tdm.Wait()
 	l.Infoln("Service shutdown.")
 }

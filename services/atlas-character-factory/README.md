@@ -1,4 +1,5 @@
 # atlas-character-factory
+
 Mushroom game character-factory Service
 
 ## Overview
@@ -31,3 +32,48 @@ MINOR_VERSION:1
 ```
 
 ### Requests
+
+## Configuration Notes
+
+### GMS v12
+
+| Job Index | Sub Job Index |        Job |
+|-----------|:-------------:|-----------:|
+| 1         |       0       | Adventurer |
+
+### GMS v83
+
+| Job Index | Sub Job Index |        Job |
+|-----------|:-------------:|-----------:|
+| 0         |       0       |     Cygnus |
+| 1         |       0       | Adventurer |
+| 2         |       0       |       Aran |
+
+### GMS v87
+
+| Job Index | Sub Job Index |        Job |
+|-----------|:-------------:|-----------:|
+| 0         |       0       |     Cygnus |
+| 1         |       0       | Adventurer |
+| 2         |       0       |       Aran |
+| 3         |       0       |       Evan |
+
+### GMS v92
+
+| Job Index | Sub Job Index |        Job |
+|-----------|:-------------:|-----------:|
+| 0         |       0       |     Cygnus |
+| 1         |       0       | Adventurer |
+| 1         |       1       | Dual Blade |
+| 2         |       0       |       Aran |
+| 3         |       0       |       Evan |
+
+### JMS v185
+
+| Job Index | Sub Job Index |        Job |
+|-----------|:-------------:|-----------:|
+| 0         |       0       |     Cygnus |
+| 1         |       0       | Adventurer |
+| 1         |       1       | Dual Blade |
+| 2         |       0       |       Aran |
+| 3         |       0       |       Evan |

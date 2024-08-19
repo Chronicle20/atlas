@@ -3,7 +3,7 @@ package equipable
 import "strconv"
 
 type RestModel struct {
-	Id            uint32 `json:"-"`
+	Id            uint32 `json:"id"`
 	ItemId        uint32 `json:"itemId"`
 	Slot          int16  `json:"slot"`
 	Strength      uint16 `json:"strength"`
@@ -32,14 +32,6 @@ func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
-func TransformAll(models []Model) []RestModel {
-	rms := make([]RestModel, 0)
-	for _, m := range models {
-		rms = append(rms, Transform(m))
-	}
-	return rms
-}
-
 func Transform(m Model) RestModel {
 	rm := RestModel{
 		ItemId:        m.itemId,
@@ -64,7 +56,7 @@ func Transform(m Model) RestModel {
 	return rm
 }
 
-func Extract(model RestModel) Model {
+func Extract(model RestModel) (Model, error) {
 	return Model{
 		id:            model.Id,
 		itemId:        model.ItemId,
@@ -85,13 +77,5 @@ func Extract(model RestModel) Model {
 		speed:         model.Speed,
 		jump:          model.Jump,
 		slots:         model.Slots,
-	}
-}
-
-func ExtractAll(items []RestModel) []Model {
-	results := make([]Model, len(items))
-	for i, item := range items {
-		results[i] = Extract(item)
-	}
-	return results
+	}, nil
 }

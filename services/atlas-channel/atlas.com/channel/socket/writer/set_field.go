@@ -280,6 +280,25 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 			w.WriteByte(0)
 		}
 		// cash equipment
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Hat())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Medal())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Forehead())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Ring1())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Ring2())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Eye())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Earring())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Shoulder())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Cape())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Top())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Pendant())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Weapon())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Shield())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Gloves())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Bottom())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Belt())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Ring3())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Ring4())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Shoes())
 		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
 			w.WriteShort(0)
 		} else {
@@ -327,7 +346,78 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 	}
 }
 
-func WriteCashItemInfo(t tenant.Model) func(w *response.Writer, zeroPosition bool) model.Operator[item.Model] {
+func WriteCashEquipableIfPresent(tenant tenant.Model) func(w *response.Writer, model slot.Model) {
+	return func(w *response.Writer, model slot.Model) {
+		if model.CashEquipable != nil {
+			_ = WriteCashEquipableInfo(tenant)(w, false)(*model.CashEquipable)
+		}
+	}
+}
+
+func WriteCashEquipableInfo(tenant tenant.Model) func(w *response.Writer, zeroPosition bool) model.Operator[equipable.Model] {
+	return func(w *response.Writer, zeroPosition bool) model.Operator[equipable.Model] {
+		return func(e equipable.Model) error {
+			slot := e.Slot()
+			if !zeroPosition {
+				slot = int16(math.Abs(float64(slot)))
+				if slot > 100 {
+					slot -= 100
+				}
+				if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+					w.WriteShort(uint16(slot))
+				} else {
+					w.WriteByte(byte(slot))
+				}
+			}
+
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+				w.WriteByte(1)
+			}
+			w.WriteInt(e.ItemId())
+			w.WriteBool(true)
+			if true {
+				w.WriteLong(uint64(e.Id())) // cash sn
+			}
+			w.WriteLong(uint64(getTime(e.Expiration())))
+			w.WriteByte(byte(e.Slots()))
+			w.WriteByte(e.Level())
+			if tenant.Region == "JMS" {
+				w.WriteByte(0)
+			}
+			w.WriteShort(e.Strength())
+			w.WriteShort(e.Dexterity())
+			w.WriteShort(e.Intelligence())
+			w.WriteShort(e.Luck())
+			w.WriteShort(e.HP())
+			w.WriteShort(e.MP())
+			w.WriteShort(e.WeaponAttack())
+			w.WriteShort(e.MagicAttack())
+			w.WriteShort(e.WeaponDefense())
+			w.WriteShort(e.MagicDefense())
+			w.WriteShort(e.Accuracy())
+			w.WriteShort(e.Avoidability())
+			w.WriteShort(e.Hands())
+			w.WriteShort(e.Speed())
+			w.WriteShort(e.Jump())
+
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+				w.WriteAsciiString(e.OwnerName())
+				w.WriteShort(e.Flags())
+
+				if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+					for i := 0; i < 10; i++ {
+						w.WriteByte(0x40)
+					}
+					w.WriteLong(uint64(getTime(-2)))
+					w.WriteInt32(-1)
+				}
+			}
+			return nil
+		}
+	}
+}
+
+func WriteCashItemInfo(_ tenant.Model) func(w *response.Writer, zeroPosition bool) model.Operator[item.Model] {
 	return func(w *response.Writer, zeroPosition bool) model.Operator[item.Model] {
 		return func(i item.Model) error {
 			if !zeroPosition {
@@ -346,7 +436,7 @@ func WriteCashItemInfo(t tenant.Model) func(w *response.Writer, zeroPosition boo
 	}
 }
 
-func WriteItemInfo(t tenant.Model) func(w *response.Writer, zeroPosition bool) model.Operator[item.Model] {
+func WriteItemInfo(_ tenant.Model) func(w *response.Writer, zeroPosition bool) model.Operator[item.Model] {
 	return func(w *response.Writer, zeroPosition bool) model.Operator[item.Model] {
 		return func(i item.Model) error {
 			if !zeroPosition {

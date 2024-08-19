@@ -109,3 +109,7 @@ func (m Model) Flags() uint16 {
 func (m Model) Slot() int16 {
 	return m.slot
 }
+
+func (m Model) Id() uint32 {
+	return m.id
+}

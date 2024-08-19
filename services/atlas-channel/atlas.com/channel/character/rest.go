@@ -62,6 +62,16 @@ func (r *RestModel) SetID(idStr string) error {
 }
 
 func Extract(rm RestModel) (Model, error) {
+	eqp, err := equipment.Extract(rm.Equipment)
+	if err != nil {
+		return Model{}, err
+	}
+
+	inv, err := inventory.Extract(rm.Inventory)
+	if err != nil {
+		return Model{}, err
+	}
+
 	return Model{
 		id:                 rm.Id,
 		accountId:          rm.AccountId,
@@ -95,7 +105,7 @@ func Extract(rm RestModel) (Model, error) {
 		stance:             rm.Stance,
 		meso:               rm.Meso,
 		pets:               make([]pet.Model, 0),
-		equipment:          equipment.Extract(rm.Equipment),
-		inventory:          inventory.Extract(rm.Inventory),
+		equipment:          eqp,
+		inventory:          inv,
 	}, nil
 }

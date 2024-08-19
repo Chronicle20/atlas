@@ -89,7 +89,7 @@ func WriteCharacterLook(tenant tenant.Model) func(w *response.Writer, character 
 func WriteCharacterEquipment(tenant tenant.Model) func(w *response.Writer, character character.Model) {
 	return func(w *response.Writer, character character.Model) {
 		var equips = getEquippedItemSlotMap(character.Equipment())
-		var maskedEquips = make(map[slot.Position]uint32)
+		var maskedEquips = getMaskedEquippedItemSlotMap(character.Equipment())
 		writeEquips(tenant)(w, equips, maskedEquips)
 
 		//var weapon *inventory.EquippedItem
@@ -163,8 +163,44 @@ func getEquippedItemSlotMap(e equipment.Model) map[slot.Position]uint32 {
 }
 
 func addEquipmentIfPresent(slotMap map[slot.Position]uint32, pi slot.Model) {
+	if pi.CashEquipable != nil {
+		slotMap[pi.Position*-1] = pi.CashEquipable.ItemId()
+		return
+	}
 	if pi.Equipable != nil {
 		slotMap[pi.Position*-1] = pi.Equipable.ItemId()
+	}
+}
+
+func getMaskedEquippedItemSlotMap(e equipment.Model) map[slot.Position]uint32 {
+	var equips = make(map[slot.Position]uint32)
+	addMaskedEquippedItemIfPresent(equips, e.Hat())
+	addMaskedEquippedItemIfPresent(equips, e.Medal())
+	addMaskedEquippedItemIfPresent(equips, e.Forehead())
+	addMaskedEquippedItemIfPresent(equips, e.Ring1())
+	addMaskedEquippedItemIfPresent(equips, e.Ring2())
+	addMaskedEquippedItemIfPresent(equips, e.Eye())
+	addMaskedEquippedItemIfPresent(equips, e.Earring())
+	addMaskedEquippedItemIfPresent(equips, e.Shoulder())
+	addMaskedEquippedItemIfPresent(equips, e.Cape())
+	addMaskedEquippedItemIfPresent(equips, e.Top())
+	addMaskedEquippedItemIfPresent(equips, e.Pendant())
+	addMaskedEquippedItemIfPresent(equips, e.Weapon())
+	addMaskedEquippedItemIfPresent(equips, e.Shield())
+	addMaskedEquippedItemIfPresent(equips, e.Gloves())
+	addMaskedEquippedItemIfPresent(equips, e.Bottom())
+	addMaskedEquippedItemIfPresent(equips, e.Belt())
+	addMaskedEquippedItemIfPresent(equips, e.Ring3())
+	addMaskedEquippedItemIfPresent(equips, e.Ring4())
+	addMaskedEquippedItemIfPresent(equips, e.Shoes())
+	return equips
+}
+
+func addMaskedEquippedItemIfPresent(slotMap map[slot.Position]uint32, pi slot.Model) {
+	if pi.CashEquipable != nil {
+		if pi.Equipable != nil {
+			slotMap[pi.Position*-1] = pi.Equipable.ItemId()
+		}
 	}
 }
 

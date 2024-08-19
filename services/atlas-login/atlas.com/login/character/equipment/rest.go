@@ -26,51 +26,102 @@ type RestModel struct {
 	Shoes    slot.RestModel `json:"shoes"`
 }
 
-func Transform(model Model) RestModel {
-	rm := RestModel{
-		Hat:      slot.Transform(model.hat),
-		Medal:    slot.Transform(model.medal),
-		Forehead: slot.Transform(model.forehead),
-		Ring1:    slot.Transform(model.ring1),
-		Ring2:    slot.Transform(model.ring2),
-		Eye:      slot.Transform(model.eye),
-		Earring:  slot.Transform(model.earring),
-		Shoulder: slot.Transform(model.shoulder),
-		Cape:     slot.Transform(model.cape),
-		Top:      slot.Transform(model.top),
-		Pendant:  slot.Transform(model.pendant),
-		Weapon:   slot.Transform(model.weapon),
-		Shield:   slot.Transform(model.shield),
-		Gloves:   slot.Transform(model.gloves),
-		Bottom:   slot.Transform(model.bottom),
-		Belt:     slot.Transform(model.belt),
-		Ring3:    slot.Transform(model.ring3),
-		Ring4:    slot.Transform(model.ring4),
-		Shoes:    slot.Transform(model.shoes),
+func Extract(m RestModel) (Model, error) {
+	hat, err := slot.Extract(m.Hat)
+	if err != nil {
+		return Model{}, err
 	}
-	return rm
-}
-
-func Extract(model RestModel) Model {
+	medal, err := slot.Extract(m.Medal)
+	if err != nil {
+		return Model{}, err
+	}
+	forehead, err := slot.Extract(m.Forehead)
+	if err != nil {
+		return Model{}, err
+	}
+	ring1, err := slot.Extract(m.Ring1)
+	if err != nil {
+		return Model{}, err
+	}
+	ring2, err := slot.Extract(m.Ring2)
+	if err != nil {
+		return Model{}, err
+	}
+	eye, err := slot.Extract(m.Eye)
+	if err != nil {
+		return Model{}, err
+	}
+	earring, err := slot.Extract(m.Earring)
+	if err != nil {
+		return Model{}, err
+	}
+	shoulder, err := slot.Extract(m.Shoulder)
+	if err != nil {
+		return Model{}, err
+	}
+	cape, err := slot.Extract(m.Cape)
+	if err != nil {
+		return Model{}, err
+	}
+	top, err := slot.Extract(m.Top)
+	if err != nil {
+		return Model{}, err
+	}
+	pendant, err := slot.Extract(m.Pendant)
+	if err != nil {
+		return Model{}, err
+	}
+	weapon, err := slot.Extract(m.Weapon)
+	if err != nil {
+		return Model{}, err
+	}
+	shield, err := slot.Extract(m.Shield)
+	if err != nil {
+		return Model{}, err
+	}
+	gloves, err := slot.Extract(m.Gloves)
+	if err != nil {
+		return Model{}, err
+	}
+	bottom, err := slot.Extract(m.Bottom)
+	if err != nil {
+		return Model{}, err
+	}
+	belt, err := slot.Extract(m.Belt)
+	if err != nil {
+		return Model{}, err
+	}
+	ring3, err := slot.Extract(m.Ring3)
+	if err != nil {
+		return Model{}, err
+	}
+	ring4, err := slot.Extract(m.Ring4)
+	if err != nil {
+		return Model{}, err
+	}
+	shoes, err := slot.Extract(m.Shoes)
+	if err != nil {
+		return Model{}, err
+	}
 	return Model{
-		hat:      slot.Extract(model.Hat),
-		medal:    slot.Extract(model.Medal),
-		forehead: slot.Extract(model.Forehead),
-		ring1:    slot.Extract(model.Ring1),
-		ring2:    slot.Extract(model.Ring2),
-		eye:      slot.Extract(model.Eye),
-		earring:  slot.Extract(model.Earring),
-		shoulder: slot.Extract(model.Shoulder),
-		cape:     slot.Extract(model.Cape),
-		top:      slot.Extract(model.Top),
-		pendant:  slot.Extract(model.Pendant),
-		weapon:   slot.Extract(model.Weapon),
-		shield:   slot.Extract(model.Shield),
-		gloves:   slot.Extract(model.Gloves),
-		bottom:   slot.Extract(model.Bottom),
-		belt:     slot.Extract(model.Belt),
-		ring3:    slot.Extract(model.Ring3),
-		ring4:    slot.Extract(model.Ring4),
-		shoes:    slot.Extract(model.Shoes),
-	}
+		hat:      hat,
+		medal:    medal,
+		forehead: forehead,
+		ring1:    ring1,
+		ring2:    ring2,
+		eye:      eye,
+		earring:  earring,
+		shoulder: shoulder,
+		cape:     cape,
+		top:      top,
+		pendant:  pendant,
+		weapon:   weapon,
+		shield:   shield,
+		gloves:   gloves,
+		bottom:   bottom,
+		belt:     belt,
+		ring3:    ring3,
+		ring4:    ring4,
+		shoes:    shoes,
+	}, nil
 }

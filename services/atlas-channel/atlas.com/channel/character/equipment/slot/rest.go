@@ -5,8 +5,9 @@ import (
 )
 
 type RestModel struct {
-	Position  Position             `json:"position"`
-	Equipable *equipable.RestModel `json:"equipable"`
+	Position      Position             `json:"position"`
+	Equipable     *equipable.RestModel `json:"equipable"`
+	CashEquipable *equipable.RestModel `json:"cashEquipable"`
 }
 
 func Transform(model Model) RestModel {
@@ -23,14 +24,21 @@ func Transform(model Model) RestModel {
 	return rm
 }
 
-func Extract(model RestModel) Model {
+func Extract(model RestModel) (Model, error) {
+	m := Model{Position: model.Position}
 	if model.Equipable != nil {
-		e := equipable.Extract(*model.Equipable)
-		return Model{
-			Position:  model.Position,
-			Equipable: &e,
+		e, err := equipable.Extract(*model.Equipable)
+		if err != nil {
+			return m, err
 		}
-	} else {
-		return Model{Position: model.Position}
+		m.Equipable = &e
 	}
+	if model.CashEquipable != nil {
+		e, err := equipable.Extract(*model.CashEquipable)
+		if err != nil {
+			return m, err
+		}
+		m.CashEquipable = &e
+	}
+	return m, nil
 }

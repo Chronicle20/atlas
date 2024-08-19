@@ -3,6 +3,7 @@ package inventory
 import (
 	"atlas-channel/character/inventory/equipable"
 	"atlas-channel/character/inventory/item"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/manyminds/api2go/jsonapi"
 )
 
@@ -102,14 +103,19 @@ func (r ItemRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	return result
 }
 
-func Extract(model RestModel) Model {
+func Extract(model RestModel) (Model, error) {
+	e, err := ExtractEquipable(model.Equipable)
+	if err != nil {
+		return Model{}, err
+	}
+
 	return Model{
-		equipable: ExtractEquipable(model.Equipable),
+		equipable: e,
 		useable:   ExtractItem(model.Useable),
 		setup:     ExtractItem(model.Setup),
 		etc:       ExtractItem(model.Etc),
 		cash:      ExtractItem(model.Cash),
-	}
+	}, nil
 }
 
 func ExtractItem(rm ItemRestModel) ItemModel {
@@ -119,9 +125,14 @@ func ExtractItem(rm ItemRestModel) ItemModel {
 	}
 }
 
-func ExtractEquipable(rm EquipableRestModel) EquipableModel {
+func ExtractEquipable(rm EquipableRestModel) (EquipableModel, error) {
+	es, err := model.SliceMap(model.FixedProvider(rm.Items), equipable.Extract)()
+	if err != nil {
+		return EquipableModel{}, err
+	}
+
 	return EquipableModel{
 		capacity: rm.Capacity,
-		items:    equipable.ExtractAll(rm.Items),
-	}
+		items:    es,
+	}, nil
 }

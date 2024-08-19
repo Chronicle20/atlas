@@ -42,6 +42,10 @@ func (m EquipableModel) Capacity() uint32 {
 	return m.capacity
 }
 
+func (m EquipableModel) Items() []equipable.Model {
+	return m.items
+}
+
 type ItemModel struct {
 	capacity uint32
 	items    []item.Model
@@ -49,6 +53,10 @@ type ItemModel struct {
 
 func (m ItemModel) Capacity() uint32 {
 	return m.capacity
+}
+
+func (m ItemModel) Items() []item.Model {
+	return m.items
 }
 
 type EquippedItem struct {

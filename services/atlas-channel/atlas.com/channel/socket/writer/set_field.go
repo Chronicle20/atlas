@@ -4,7 +4,9 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/character/equipment/slot"
 	"atlas-channel/character/inventory/equipable"
+	"atlas-channel/character/inventory/item"
 	"atlas-channel/tenant"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 	"math"
@@ -86,8 +88,8 @@ func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byte
 	}
 }
 
-func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(m character.Model) {
-	return func(w *response.Writer) func(m character.Model) {
+func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(c character.Model) {
+	return func(w *response.Writer) func(c character.Model) {
 		return func(m character.Model) {
 			if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
 				w.WriteInt64(-1) // dbcharFlag
@@ -278,6 +280,25 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 			w.WriteByte(0)
 		}
 		// cash equipment
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Hat())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Medal())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Forehead())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Ring1())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Ring2())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Eye())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Earring())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Shoulder())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Cape())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Top())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Pendant())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Weapon())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Shield())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Gloves())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Bottom())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Belt())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Ring3())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Ring4())
+		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Shoes())
 		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
 			w.WriteShort(0)
 		} else {
@@ -288,6 +309,7 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 		if tenant.Region == "GMS" && tenant.MajorVersion < 28 {
 			w.WriteByte(byte(character.Inventory().Equipable().Capacity()))
 		}
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Equipable().Items()), WriteEquipableInfo(tenant)(w, false))
 		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
 			w.WriteInt(0)
 		} else {
@@ -298,105 +320,220 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 		if tenant.Region == "GMS" && tenant.MajorVersion < 28 {
 			w.WriteByte(byte(character.Inventory().Use().Capacity()))
 		}
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Use().Items()), WriteItemInfo(tenant)(w, false))
 		w.WriteByte(0)
 
 		// setup inventory
 		if tenant.Region == "GMS" && tenant.MajorVersion < 28 {
 			w.WriteByte(byte(character.Inventory().Setup().Capacity()))
 		}
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Setup().Items()), WriteItemInfo(tenant)(w, false))
 		w.WriteByte(0)
 
 		// etc inventory
 		if tenant.Region == "GMS" && tenant.MajorVersion < 28 {
 			w.WriteByte(byte(character.Inventory().Etc().Capacity()))
 		}
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Etc().Items()), WriteItemInfo(tenant)(w, false))
 		w.WriteByte(0)
 
 		// cash inventory
 		if tenant.Region == "GMS" && tenant.MajorVersion < 28 {
 			w.WriteByte(byte(character.Inventory().Cash().Capacity()))
 		}
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Cash().Items()), WriteCashItemInfo(tenant)(w, false))
 		w.WriteByte(0)
+	}
+}
+
+func WriteCashEquipableIfPresent(tenant tenant.Model) func(w *response.Writer, model slot.Model) {
+	return func(w *response.Writer, model slot.Model) {
+		if model.CashEquipable != nil {
+			_ = WriteCashEquipableInfo(tenant)(w, false)(*model.CashEquipable)
+		}
+	}
+}
+
+func WriteCashEquipableInfo(tenant tenant.Model) func(w *response.Writer, zeroPosition bool) model.Operator[equipable.Model] {
+	return func(w *response.Writer, zeroPosition bool) model.Operator[equipable.Model] {
+		return func(e equipable.Model) error {
+			slot := e.Slot()
+			if !zeroPosition {
+				slot = int16(math.Abs(float64(slot)))
+				if slot > 100 {
+					slot -= 100
+				}
+				if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+					w.WriteShort(uint16(slot))
+				} else {
+					w.WriteByte(byte(slot))
+				}
+			}
+
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+				w.WriteByte(1)
+			}
+			w.WriteInt(e.ItemId())
+			w.WriteBool(true)
+			if true {
+				w.WriteLong(uint64(e.Id())) // cash sn
+			}
+			w.WriteLong(uint64(getTime(e.Expiration())))
+			w.WriteByte(byte(e.Slots()))
+			w.WriteByte(e.Level())
+			if tenant.Region == "JMS" {
+				w.WriteByte(0)
+			}
+			w.WriteShort(e.Strength())
+			w.WriteShort(e.Dexterity())
+			w.WriteShort(e.Intelligence())
+			w.WriteShort(e.Luck())
+			w.WriteShort(e.HP())
+			w.WriteShort(e.MP())
+			w.WriteShort(e.WeaponAttack())
+			w.WriteShort(e.MagicAttack())
+			w.WriteShort(e.WeaponDefense())
+			w.WriteShort(e.MagicDefense())
+			w.WriteShort(e.Accuracy())
+			w.WriteShort(e.Avoidability())
+			w.WriteShort(e.Hands())
+			w.WriteShort(e.Speed())
+			w.WriteShort(e.Jump())
+
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+				w.WriteAsciiString(e.OwnerName())
+				w.WriteShort(e.Flags())
+
+				if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+					for i := 0; i < 10; i++ {
+						w.WriteByte(0x40)
+					}
+					w.WriteLong(uint64(getTime(-2)))
+					w.WriteInt32(-1)
+				}
+			}
+			return nil
+		}
+	}
+}
+
+func WriteCashItemInfo(_ tenant.Model) func(w *response.Writer, zeroPosition bool) model.Operator[item.Model] {
+	return func(w *response.Writer, zeroPosition bool) model.Operator[item.Model] {
+		return func(i item.Model) error {
+			if !zeroPosition {
+				w.WriteInt8(int8(i.Slot()))
+			}
+			w.WriteByte(2)
+			w.WriteInt(i.ItemId())
+			w.WriteBool(true)
+			w.WriteLong(777000000) // pet id, ring id, or incremental number
+			w.WriteLong(uint64(getTime(i.Expiration())))
+			w.WriteShort(uint16(i.Quantity()))
+			w.WriteAsciiString(i.Owner())
+			w.WriteShort(i.Flag())
+			return nil
+		}
+	}
+}
+
+func WriteItemInfo(_ tenant.Model) func(w *response.Writer, zeroPosition bool) model.Operator[item.Model] {
+	return func(w *response.Writer, zeroPosition bool) model.Operator[item.Model] {
+		return func(i item.Model) error {
+			if !zeroPosition {
+				w.WriteInt8(int8(i.Slot()))
+			}
+			w.WriteByte(2)
+			w.WriteInt(i.ItemId())
+			w.WriteBool(false)
+			w.WriteLong(uint64(getTime(i.Expiration())))
+			w.WriteShort(uint16(i.Quantity()))
+			w.WriteAsciiString(i.Owner())
+			w.WriteShort(i.Flag())
+			return nil
+		}
 	}
 }
 
 func WriteEquipableIfPresent(tenant tenant.Model) func(w *response.Writer, model slot.Model) {
 	return func(w *response.Writer, model slot.Model) {
 		if model.Equipable != nil {
-			WriteEquipableInfo(tenant)(w, *model.Equipable, false)
+			_ = WriteEquipableInfo(tenant)(w, false)(*model.Equipable)
 		}
 	}
 }
 
-func WriteEquipableInfo(tenant tenant.Model) func(w *response.Writer, e equipable.Model, zeroPosition bool) {
-	return func(w *response.Writer, e equipable.Model, zeroPosition bool) {
-		slot := e.Slot()
-		if !zeroPosition {
-			slot = int16(math.Abs(float64(slot)))
-			if slot > 100 {
-				slot -= 100
-			}
-			if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
-				w.WriteShort(uint16(slot))
-			} else {
-				w.WriteByte(byte(slot))
-			}
-		}
-
-		if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
-			w.WriteByte(1)
-		}
-		w.WriteInt(e.ItemId())
-		w.WriteBool(false)
-		if false {
-			w.WriteLong(0) // cash sn
-		}
-		w.WriteLong(uint64(getTime(e.Expiration())))
-		w.WriteByte(byte(e.Slots()))
-		w.WriteByte(e.Level())
-		if tenant.Region == "JMS" {
-			w.WriteByte(0)
-		}
-		w.WriteShort(e.Strength())
-		w.WriteShort(e.Dexterity())
-		w.WriteShort(e.Intelligence())
-		w.WriteShort(e.Luck())
-		w.WriteShort(e.HP())
-		w.WriteShort(e.MP())
-		w.WriteShort(e.WeaponAttack())
-		w.WriteShort(e.MagicAttack())
-		w.WriteShort(e.WeaponDefense())
-		w.WriteShort(e.MagicDefense())
-		w.WriteShort(e.Accuracy())
-		w.WriteShort(e.Avoidability())
-		w.WriteShort(e.Hands())
-		w.WriteShort(e.Speed())
-		w.WriteShort(e.Jump())
-
-		if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
-			w.WriteAsciiString(e.OwnerName())
-			w.WriteShort(e.Flags())
-
-			if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
-				w.WriteByte(0)
-				w.WriteByte(0)   // item level
-				w.WriteInt(0)    // expNibble
-				w.WriteInt32(-1) // durability
-
-				if tenant.Region == "JMS" {
-					w.WriteByte(0)
-					w.WriteShort(0)
-					w.WriteShort(0)
-					w.WriteShort(0)
-					w.WriteShort(0)
-					w.WriteShort(0)
-					w.WriteInt(0)
+func WriteEquipableInfo(tenant tenant.Model) func(w *response.Writer, zeroPosition bool) model.Operator[equipable.Model] {
+	return func(w *response.Writer, zeroPosition bool) model.Operator[equipable.Model] {
+		return func(e equipable.Model) error {
+			slot := e.Slot()
+			if !zeroPosition {
+				slot = int16(math.Abs(float64(slot)))
+				if slot > 100 {
+					slot -= 100
 				}
-
-				w.WriteLong(0)
-				w.WriteLong(uint64(getTime(-2)))
-				w.WriteInt32(-1)
+				if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+					w.WriteShort(uint16(slot))
+				} else {
+					w.WriteByte(byte(slot))
+				}
 			}
+
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+				w.WriteByte(1)
+			}
+			w.WriteInt(e.ItemId())
+			w.WriteBool(false)
+			if false {
+				w.WriteLong(0) // cash sn
+			}
+			w.WriteLong(uint64(getTime(e.Expiration())))
+			w.WriteByte(byte(e.Slots()))
+			w.WriteByte(e.Level())
+			if tenant.Region == "JMS" {
+				w.WriteByte(0)
+			}
+			w.WriteShort(e.Strength())
+			w.WriteShort(e.Dexterity())
+			w.WriteShort(e.Intelligence())
+			w.WriteShort(e.Luck())
+			w.WriteShort(e.HP())
+			w.WriteShort(e.MP())
+			w.WriteShort(e.WeaponAttack())
+			w.WriteShort(e.MagicAttack())
+			w.WriteShort(e.WeaponDefense())
+			w.WriteShort(e.MagicDefense())
+			w.WriteShort(e.Accuracy())
+			w.WriteShort(e.Avoidability())
+			w.WriteShort(e.Hands())
+			w.WriteShort(e.Speed())
+			w.WriteShort(e.Jump())
+
+			if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+				w.WriteAsciiString(e.OwnerName())
+				w.WriteShort(e.Flags())
+
+				if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+					w.WriteByte(0)
+					w.WriteByte(0)   // item level
+					w.WriteInt(0)    // expNibble
+					w.WriteInt32(-1) // durability
+
+					if tenant.Region == "JMS" {
+						w.WriteByte(0)
+						w.WriteShort(0)
+						w.WriteShort(0)
+						w.WriteShort(0)
+						w.WriteShort(0)
+						w.WriteShort(0)
+						w.WriteInt(0)
+					}
+
+					w.WriteLong(0)
+					w.WriteLong(uint64(getTime(-2)))
+					w.WriteInt32(-1)
+				}
+			}
+			return nil
 		}
 	}
 }

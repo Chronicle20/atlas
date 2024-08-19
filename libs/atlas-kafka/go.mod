@@ -3,7 +3,7 @@ module github.com/Chronicle20/atlas-kafka
 go 1.21.6
 
 require (
-	github.com/Chronicle20/atlas-model v1.0.0
+	github.com/Chronicle20/atlas-model v1.0.2
 	github.com/google/uuid v1.6.0
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/segmentio/kafka-go v0.4.47

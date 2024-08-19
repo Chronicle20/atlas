@@ -23,6 +23,13 @@ func GetByInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, te
 	}
 }
 
+func EquipmentProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.Provider[[]Model] {
+	return func(inventoryId uint32) model.Provider[[]Model] {
+		fp := model.FilteredProvider[Model](byInventoryProvider(l, db, span, tenant)(inventoryId), FilterOutInventory)
+		return model.SliceMap(fp, decorateWithStatistics(l, span, tenant), model.ParallelMap())
+	}
+}
+
 func GetEquipment(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) ([]Model, error) {
 	return func(inventoryId uint32) ([]Model, error) {
 		fp := model.FilteredProvider[Model](byInventoryProvider(l, db, span, tenant)(inventoryId), FilterOutInventory)

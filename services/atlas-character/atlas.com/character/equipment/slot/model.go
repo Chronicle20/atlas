@@ -30,6 +30,27 @@ const (
 )
 
 type Model struct {
-	Position  Position
-	Equipable *equipable.Model
+	Position      Position
+	Equipable     *equipable.Model
+	CashEquipable *equipable.Model
+}
+
+func (m Model) Clone() Model {
+	return Model{
+		Position:      m.Position,
+		Equipable:     m.Equipable,
+		CashEquipable: m.CashEquipable,
+	}
+}
+
+func (m Model) SetEquipable(e *equipable.Model) Model {
+	rm := m.Clone()
+	rm.Equipable = e
+	return rm
+}
+
+func (m Model) SetCashEquipable(e *equipable.Model) Model {
+	rm := m.Clone()
+	rm.CashEquipable = e
+	return rm
 }

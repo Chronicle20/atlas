@@ -4,6 +4,7 @@ import (
 	"atlas-character/database"
 	"atlas-character/equipable"
 	"atlas-character/equipment"
+	"atlas-character/equipment/slot"
 	"atlas-character/inventory"
 	"atlas-character/kafka/producer"
 	"atlas-character/portal"
@@ -74,13 +75,101 @@ func InventoryModelDecorator(l logrus.FieldLogger, db *gorm.DB, span opentracing
 			return m
 		}
 
-		es, err := equipable.GetEquipment(l, db, span, tenant)(i.Equipable().Id())
+		es, err := model.Fold(equipable.EquipmentProvider(l, db, span, tenant)(i.Equipable().Id()), model.FixedProvider(m.GetEquipment()), FoldEquipable)()
 		if err != nil {
-			return m
+			return CloneModel(m).SetInventory(i).Build()
 		}
 
-		return CloneModel(m).SetEquipment(m.GetEquipment().Apply(es)).SetInventory(i).Build()
+		return CloneModel(m).SetEquipment(es).SetInventory(i).Build()
 	}
+}
+
+func FoldEquipable(m equipment.Model, e equipable.Model) (equipment.Model, error) {
+	var setter equipment.SlotSetter
+	if e.Slot() > -100 {
+		switch slot.Position(e.Slot()) {
+		case slot.PositionHat:
+			setter = m.SetHat
+		case slot.PositionMedal:
+			setter = m.SetMedal
+		case slot.PositionForehead:
+			setter = m.SetForehead
+		case slot.PositionRing1:
+			setter = m.SetRing1
+		case slot.PositionRing2:
+			setter = m.SetRing2
+		case slot.PositionEye:
+			setter = m.SetEye
+		case slot.PositionEarring:
+			setter = m.SetEarring
+		case slot.PositionShoulder:
+			setter = m.SetShoulder
+		case slot.PositionCape:
+			setter = m.SetCape
+		case slot.PositionTop:
+			setter = m.SetTop
+		case slot.PositionPendant:
+			setter = m.SetPendant
+		case slot.PositionWeapon:
+			setter = m.SetWeapon
+		case slot.PositionShield:
+			setter = m.SetShield
+		case slot.PositionGloves:
+			setter = m.SetGloves
+		case slot.PositionBottom:
+			setter = m.SetBottom
+		case slot.PositionBelt:
+			setter = m.SetBelt
+		case slot.PositionRing3:
+			setter = m.SetRing3
+		case slot.PositionRing4:
+			setter = m.SetRing4
+		case slot.PositionShoes:
+			setter = m.SetShoes
+		}
+	} else {
+		switch slot.Position(e.Slot() + 100) {
+		case slot.PositionHat:
+			setter = m.SetCashHat
+		case slot.PositionMedal:
+			setter = m.SetCashMedal
+		case slot.PositionForehead:
+			setter = m.SetCashForehead
+		case slot.PositionRing1:
+			setter = m.SetCashRing1
+		case slot.PositionRing2:
+			setter = m.SetCashRing2
+		case slot.PositionEye:
+			setter = m.SetCashEye
+		case slot.PositionEarring:
+			setter = m.SetCashEarring
+		case slot.PositionShoulder:
+			setter = m.SetCashShoulder
+		case slot.PositionCape:
+			setter = m.SetCashCape
+		case slot.PositionTop:
+			setter = m.SetCashTop
+		case slot.PositionPendant:
+			setter = m.SetCashPendant
+		case slot.PositionWeapon:
+			setter = m.SetCashWeapon
+		case slot.PositionShield:
+			setter = m.SetCashShield
+		case slot.PositionGloves:
+			setter = m.SetCashGloves
+		case slot.PositionBottom:
+			setter = m.SetCashBottom
+		case slot.PositionBelt:
+			setter = m.SetCashBelt
+		case slot.PositionRing3:
+			setter = m.SetCashRing3
+		case slot.PositionRing4:
+			setter = m.SetCashRing4
+		case slot.PositionShoes:
+			setter = m.SetCashShoes
+		}
+	}
+	return setter(&e), nil
 }
 
 func IsValidName(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name string) (bool, error) {

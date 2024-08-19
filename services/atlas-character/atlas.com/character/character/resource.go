@@ -57,13 +57,7 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 			return
 		}
 
-		var decorators = make([]model.Decorator[Model], 0)
-		include := mux.Vars(r)["include"]
-		if strings.Contains(include, "inventory") {
-			decorators = append(decorators, InventoryModelDecorator(d.Logger(), d.DB(), d.Span(), c.Tenant()))
-		}
-
-		cs, err := GetForAccountInWorld(d.Logger(), d.DB(), c.Tenant())(uint32(accountId), byte(worldId), decorators...)
+		cs, err := GetForAccountInWorld(d.Logger(), d.DB(), c.Tenant())(uint32(accountId), byte(worldId), decoratorsFromInclude(r, d, c)...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to get characters for account %d in world %d.", accountId, worldId)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -81,6 +75,15 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 	}
 }
 
+func decoratorsFromInclude(r *http.Request, d *rest.HandlerDependency, c *rest.HandlerContext) []model.Decorator[Model] {
+	var decorators = make([]model.Decorator[Model], 0)
+	include := mux.Vars(r)["include"]
+	if strings.Contains(include, "inventory") {
+		decorators = append(decorators, InventoryModelDecorator(d.Logger(), d.DB(), d.Span(), c.Tenant()))
+	}
+	return decorators
+}
+
 func handleGetCharactersByMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		worldId, err := strconv.Atoi(mux.Vars(r)["worldId"])
@@ -96,13 +99,7 @@ func handleGetCharactersByMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 			return
 		}
 
-		var decorators = make([]model.Decorator[Model], 0)
-		include := mux.Vars(r)["include"]
-		if strings.Contains(include, "inventory") {
-			decorators = append(decorators, InventoryModelDecorator(d.Logger(), d.DB(), d.Span(), c.Tenant()))
-		}
-
-		cs, err := GetForMapInWorld(d.Logger(), d.DB(), c.Tenant())(byte(worldId), uint32(mapId), decorators...)
+		cs, err := GetForMapInWorld(d.Logger(), d.DB(), c.Tenant())(byte(worldId), uint32(mapId), decoratorsFromInclude(r, d, c)...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to get characters for map %d in world %d.", mapId, worldId)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -129,13 +126,7 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 			return
 		}
 
-		var decorators = make([]model.Decorator[Model], 0)
-		include := mux.Vars(r)["include"]
-		if strings.Contains(include, "inventory") {
-			decorators = append(decorators, InventoryModelDecorator(d.Logger(), d.DB(), d.Span(), c.Tenant()))
-		}
-
-		cs, err := GetForName(d.Logger(), d.DB(), c.Tenant())(name, decorators...)
+		cs, err := GetForName(d.Logger(), d.DB(), c.Tenant())(name, decoratorsFromInclude(r, d, c)...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Getting character %s.", name)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -156,13 +147,7 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 func handleGetCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			var decorators = make([]model.Decorator[Model], 0)
-			include := mux.Vars(r)["include"]
-			if strings.Contains(include, "inventory") {
-				decorators = append(decorators, InventoryModelDecorator(d.Logger(), d.DB(), d.Span(), c.Tenant()))
-			}
-
-			cs, err := GetById(d.Logger(), d.DB(), c.Tenant())(characterId, decorators...)
+			cs, err := GetById(d.Logger(), d.DB(), c.Tenant())(characterId, decoratorsFromInclude(r, d, c)...)
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 				return

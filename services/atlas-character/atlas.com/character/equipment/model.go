@@ -52,145 +52,194 @@ func NewModel() Model {
 	return m
 }
 
+type SlotSetter func(model *equipable.Model) Model
+
 func (m Model) SetHat(e *equipable.Model) Model {
-	m.hat = slot.Model{Position: slot.PositionHat, Equipable: e}
+	m.hat = m.hat.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashHat(e *equipable.Model) Model {
+	m.hat = m.hat.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetMedal(e *equipable.Model) Model {
-	m.medal = slot.Model{Position: slot.PositionMedal, Equipable: e}
+	m.medal = m.medal.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashMedal(e *equipable.Model) Model {
+	m.medal = m.medal.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetForehead(e *equipable.Model) Model {
-	m.forehead = slot.Model{Position: slot.PositionForehead, Equipable: e}
+	m.forehead = m.forehead.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashForehead(e *equipable.Model) Model {
+	m.forehead = m.forehead.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetRing1(e *equipable.Model) Model {
-	m.ring1 = slot.Model{Position: slot.PositionRing1, Equipable: e}
+	m.ring1 = m.ring1.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashRing1(e *equipable.Model) Model {
+	m.ring1 = m.ring1.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetRing2(e *equipable.Model) Model {
-	m.ring2 = slot.Model{Position: slot.PositionRing2, Equipable: e}
+	m.ring2 = m.ring2.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashRing2(e *equipable.Model) Model {
+	m.ring2 = m.ring2.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetEye(e *equipable.Model) Model {
-	m.eye = slot.Model{Position: slot.PositionEye, Equipable: e}
+	m.eye = m.eye.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashEye(e *equipable.Model) Model {
+	m.eye = m.eye.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetEarring(e *equipable.Model) Model {
-	m.earring = slot.Model{Position: slot.PositionEarring, Equipable: e}
+	m.earring = m.earring.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashEarring(e *equipable.Model) Model {
+	m.earring = m.earring.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetShoulder(e *equipable.Model) Model {
-	m.shoulder = slot.Model{Position: slot.PositionShoulder, Equipable: e}
+	m.shoulder = m.shoulder.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashShoulder(e *equipable.Model) Model {
+	m.shoulder = m.shoulder.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetCape(e *equipable.Model) Model {
-	m.cape = slot.Model{Position: slot.PositionCape, Equipable: e}
+	m.cape = m.cape.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashCape(e *equipable.Model) Model {
+	m.cape = m.cape.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetTop(e *equipable.Model) Model {
-	m.top = slot.Model{Position: slot.PositionTop, Equipable: e}
+	m.top = m.top.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashTop(e *equipable.Model) Model {
+	m.top = m.top.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetPendant(e *equipable.Model) Model {
-	m.pendant = slot.Model{Position: slot.PositionPendant, Equipable: e}
+	m.pendant = m.pendant.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashPendant(e *equipable.Model) Model {
+	m.pendant = m.pendant.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetWeapon(e *equipable.Model) Model {
-	m.weapon = slot.Model{Position: slot.PositionWeapon, Equipable: e}
+	m.weapon = m.weapon.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashWeapon(e *equipable.Model) Model {
+	m.weapon = m.weapon.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetShield(e *equipable.Model) Model {
-	m.shield = slot.Model{Position: slot.PositionShield, Equipable: e}
+	m.shield = m.shield.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashShield(e *equipable.Model) Model {
+	m.shield = m.shield.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetGloves(e *equipable.Model) Model {
-	m.gloves = slot.Model{Position: slot.PositionGloves, Equipable: e}
+	m.gloves = m.gloves.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashGloves(e *equipable.Model) Model {
+	m.gloves = m.gloves.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetBottom(e *equipable.Model) Model {
-	m.bottom = slot.Model{Position: slot.PositionBottom, Equipable: e}
+	m.bottom = m.bottom.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashBottom(e *equipable.Model) Model {
+	m.bottom = m.bottom.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetBelt(e *equipable.Model) Model {
-	m.belt = slot.Model{Position: slot.PositionBelt, Equipable: e}
+	m.belt = m.belt.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashBelt(e *equipable.Model) Model {
+	m.belt = m.belt.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetRing3(e *equipable.Model) Model {
-	m.ring3 = slot.Model{Position: slot.PositionRing3, Equipable: e}
+	m.ring3 = m.ring3.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashRing3(e *equipable.Model) Model {
+	m.ring3 = m.ring3.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetRing4(e *equipable.Model) Model {
-	m.ring4 = slot.Model{Position: slot.PositionRing4, Equipable: e}
+	m.ring4 = m.ring4.SetEquipable(e)
+	return m
+}
+
+func (m Model) SetCashRing4(e *equipable.Model) Model {
+	m.ring4 = m.ring4.SetCashEquipable(e)
 	return m
 }
 
 func (m Model) SetShoes(e *equipable.Model) Model {
-	m.shoes = slot.Model{Position: slot.PositionShoes, Equipable: e}
+	m.shoes = m.shoes.SetEquipable(e)
 	return m
 }
 
-func (m Model) Apply(equips []equipable.Model) Model {
-	var rm = m
-	for i := range equips {
-		e := &equips[i]
-		switch slot.Position(e.Slot()) {
-		case slot.PositionHat:
-			rm = rm.SetHat(e)
-		case slot.PositionMedal:
-			rm = rm.SetMedal(e)
-		case slot.PositionForehead:
-			rm = rm.SetForehead(e)
-		case slot.PositionRing1:
-			rm = rm.SetRing1(e)
-		case slot.PositionRing2:
-			rm = rm.SetRing2(e)
-		case slot.PositionEye:
-			rm = rm.SetEye(e)
-		case slot.PositionEarring:
-			rm = rm.SetEarring(e)
-		case slot.PositionShoulder:
-			rm = rm.SetShoulder(e)
-		case slot.PositionCape:
-			rm = rm.SetCape(e)
-		case slot.PositionTop:
-			rm = rm.SetTop(e)
-		case slot.PositionPendant:
-			rm = rm.SetPendant(e)
-		case slot.PositionWeapon:
-			rm = rm.SetWeapon(e)
-		case slot.PositionShield:
-			rm = rm.SetShield(e)
-		case slot.PositionGloves:
-			rm = rm.SetGloves(e)
-		case slot.PositionBottom:
-			rm = rm.SetBottom(e)
-		case slot.PositionBelt:
-			rm = rm.SetBelt(e)
-		case slot.PositionRing3:
-			rm = rm.SetRing3(e)
-		case slot.PositionRing4:
-			rm = rm.SetRing4(e)
-		case slot.PositionShoes:
-			rm = rm.SetShoes(e)
-		}
-	}
-	return rm
+func (m Model) SetCashShoes(e *equipable.Model) Model {
+	m.shoes = m.shoes.SetCashEquipable(e)
+	return m
 }

@@ -3,7 +3,7 @@ package equipable
 import "strconv"
 
 type RestModel struct {
-	Id            uint32 `json:"-"`
+	Id            uint32 `json:"id"`
 	ItemId        uint32 `json:"itemId"`
 	Slot          int16  `json:"slot"`
 	Strength      uint16 `json:"strength"`
@@ -43,6 +43,7 @@ func (r *RestModel) SetID(strId string) error {
 
 func Transform(m Model) (RestModel, error) {
 	rm := RestModel{
+		Id:            m.id,
 		ItemId:        m.itemId,
 		Slot:          m.slot,
 		Strength:      m.strength,

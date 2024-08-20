@@ -336,6 +336,7 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 				return err
 			}
 			l.Debugf("Moved item [%d] from slot [%d] to [%d] for character [%d].", e.ItemId(), existingSlot, actualDestination, characterId)
+			events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, e.ItemId(), destination, source))
 
 			if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, temporarySlot); err == nil && equip.Id() != 0 {
 				err := equipable.UpdateSlot(l, tx, tenant)(equip.Id(), existingSlot)
@@ -400,8 +401,6 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 			l.WithError(err).Errorf("Unable to complete the equipment of item [%d] for character [%d].", e.Id(), characterId)
 			return
 		}
-
-		events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, e.ItemId(), destination, source))
 
 		err = producer.ProviderImpl(l)(span)(EnvEventInventoryChanged)(events)
 		if err != nil {
@@ -545,6 +544,7 @@ func moveItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 				return err
 			}
 			l.Debugf("Moved item [%d] from slot [%d] to [%d] for character [%d].", movingItem.ItemId(), source, destination, characterId)
+			events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, movingItem.ItemId(), destination, source))
 
 			if otherItem, err := item.GetBySlot(l, tx, tenant)(characterId, temporarySlot); err == nil && otherItem.Id() != 0 {
 				err := item.UpdateSlot(l, tx, tenant)(otherItem.Id(), source)
@@ -595,6 +595,7 @@ func moveEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant 
 				return err
 			}
 			l.Debugf("Moved item [%d] from slot [%d] to [%d] for character [%d].", e.ItemId(), source, destination, characterId)
+			events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, e.ItemId(), destination, source))
 
 			if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, temporarySlot); err == nil && equip.Id() != 0 {
 				err := equipable.UpdateSlot(l, tx, tenant)(equip.Id(), source)

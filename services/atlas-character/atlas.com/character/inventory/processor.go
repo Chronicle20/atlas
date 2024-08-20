@@ -4,6 +4,7 @@ import (
 	"atlas-character/equipable"
 	slot2 "atlas-character/equipment/slot"
 	"atlas-character/equipment/slot/information"
+	"atlas-character/equipment/statistics"
 	"atlas-character/inventory/item"
 	"atlas-character/kafka/producer"
 	"atlas-character/slottable"
@@ -308,22 +309,33 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 				l.Errorf("Unable to retrieve destination slots for item [%d].", e.ItemId())
 				return err
 			}
-			sh := slots[0]
-			l.Debugf("Equipment [%d] to be equipped in slot [%d] for character [%d].", e.Id(), sh.Slot(), characterId)
+			is, err := statistics.GetById(l, span, tenant)(e.ItemId())
+			if err != nil {
+				return err
+			}
+
+			actualDestination := int16(0)
+			if is.Cash() {
+				actualDestination = slots[0].Slot() - 100
+			} else {
+				actualDestination = slots[0].Slot()
+			}
+
+			l.Debugf("Equipment [%d] to be equipped in slot [%d] for character [%d].", e.Id(), actualDestination, characterId)
 
 			temporarySlot := int16(math.MinInt16)
 
 			existingSlot := e.Slot()
-			if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, sh.Slot()); err == nil && equip.Id() != 0 {
-				l.Debugf("Equipment [%d] already exists in slot [%d], that item will be moved temporarily to [%d] for character [%d].", equip.Id(), sh.Slot(), temporarySlot, characterId)
+			if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, actualDestination); err == nil && equip.Id() != 0 {
+				l.Debugf("Equipment [%d] already exists in slot [%d], that item will be moved temporarily to [%d] for character [%d].", equip.Id(), actualDestination, temporarySlot, characterId)
 				_ = equipable.UpdateSlot(l, tx, tenant)(equip.Id(), temporarySlot)
 			}
 
-			err = equipable.UpdateSlot(l, tx, tenant)(e.Id(), sh.Slot())
+			err = equipable.UpdateSlot(l, tx, tenant)(e.Id(), actualDestination)
 			if err != nil {
 				return err
 			}
-			l.Debugf("Moved item [%d] from slot [%d] to [%d] for character [%d].", e.ItemId(), existingSlot, sh.Slot(), characterId)
+			l.Debugf("Moved item [%d] from slot [%d] to [%d] for character [%d].", e.ItemId(), existingSlot, actualDestination, characterId)
 
 			if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, temporarySlot); err == nil && equip.Id() != 0 {
 				err := equipable.UpdateSlot(l, tx, tenant)(equip.Id(), existingSlot)

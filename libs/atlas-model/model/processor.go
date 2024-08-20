@@ -40,13 +40,6 @@ func ParallelExecute() ExecuteFuncConfigurator {
 	}
 }
 
-// Deprecated: use ExecuteForEachSlice
-//
-//goland:noinspection GoUnusedExportedFunction
-func ExecuteForEach[M any](f Operator[M]) Operator[[]M] {
-	return ExecuteForEachSlice(f)
-}
-
 //goland:noinspection GoUnusedExportedFunction
 func ExecuteForEachSlice[M any](f Operator[M], configurators ...ExecuteFuncConfigurator) Operator[[]M] {
 	c := ExecuteConfig{parallel: false}
@@ -193,13 +186,6 @@ func For[M any](provider Provider[M], operator Operator[M]) error {
 		return err
 	}
 	return operator(models)
-}
-
-// Deprecated: just use ForEachSlice
-//
-//goland:noinspection GoUnusedExportedFunction
-func ForEach[M any](provider Provider[[]M], operator Operator[M]) error {
-	return ForEachSlice(provider, operator)
 }
 
 //goland:noinspection GoUnusedExportedFunction

@@ -72,3 +72,17 @@ func inventoryItemMoveProvider(tenant tenant.Model, characterId uint32, itemId u
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func inventoryItemRemoveProvider(tenant tenant.Model, characterId uint32, itemId uint32, slot int16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &inventoryChangedEvent[inventoryChangedItemRemoveBody]{
+		Tenant:      tenant,
+		CharacterId: characterId,
+		Slot:        slot,
+		Type:        ChangedTypeRemove,
+		Body: inventoryChangedItemRemoveBody{
+			ItemId: itemId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

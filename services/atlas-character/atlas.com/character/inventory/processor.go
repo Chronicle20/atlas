@@ -546,7 +546,7 @@ func moveItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 			l.Debugf("Moved item [%d] from slot [%d] to [%d] for character [%d].", movingItem.ItemId(), source, destination, characterId)
 			events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, movingItem.ItemId(), destination, source))
 
-			if otherItem, err := item.GetBySlot(l, tx, tenant)(characterId, temporarySlot); err == nil && otherItem.Id() != 0 {
+			if otherItem, err := item.GetBySlot(l, tx, tenant)(inv.Id(), temporarySlot); err == nil && otherItem.Id() != 0 {
 				err := item.UpdateSlot(l, tx, tenant)(otherItem.Id(), source)
 				if err != nil {
 					return err

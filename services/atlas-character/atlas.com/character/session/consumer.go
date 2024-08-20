@@ -27,7 +27,7 @@ func StatusEventRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Han
 
 func handleStatusEvent(db *gorm.DB) message.Handler[statusEvent] {
 	return func(l logrus.FieldLogger, span opentracing.Span, event statusEvent) {
-		l.Debugf("Received session status event. sessionId [%d] accountId [%d] characterId [%d] worldId [%d] channelId [%d] issuer [%s] type [%s].", event.SessionId, event.AccountId, event.CharacterId, event.WorldId, event.ChannelId, event.Issuer, event.Type)
+		l.Debugf("Received session status event. sessionId [%s] accountId [%d] characterId [%d] worldId [%d] channelId [%d] issuer [%s] type [%s].", event.SessionId.String(), event.AccountId, event.CharacterId, event.WorldId, event.ChannelId, event.Issuer, event.Type)
 		if event.Issuer != EventSessionStatusIssuerChannel {
 			return
 		}

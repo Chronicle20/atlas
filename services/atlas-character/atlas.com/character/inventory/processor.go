@@ -11,12 +11,13 @@ import (
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/opentracing/opentracing-go"
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"math"
 )
 
-func byCharacterIdProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
+func ByCharacterIdProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
 		return model.Fold[entity, Model](getByCharacter(tenant.Id, characterId)(db), supplier, foldInventory(l, db, span, tenant))
 	}
@@ -76,7 +77,7 @@ func foldInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, ten
 
 func GetInventories(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
-		return byCharacterIdProvider(l, db, span, tenant)(characterId)()
+		return ByCharacterIdProvider(l, db, span, tenant)(characterId)()
 	}
 }
 
@@ -163,27 +164,22 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 		invLock.Lock()
 		defer invLock.Unlock()
 
-		var events = make([]adjustment, 0)
+		var events model.Provider[[]kafka.Message]
 		err := db.Transaction(func(tx *gorm.DB) error {
-			m, err := GetInventories(l, tx, span, tenant)(characterId)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to locate inventories for character [%d].", characterId)
-				return err
-			}
-			inv, err := m.GetHolderByType(inventoryType)
+			inv, err := GetInventoryByType(l, tx, span, tenant)(characterId, inventoryType)()
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 				return err
 			}
 
 			if inventoryType == TypeValueEquip {
-				events, err = createEquipable(l, tx, span, tenant)(characterId, inv.Id(), inventoryType, itemId)
+				events = createEquipable(l, tx, span, tenant)(characterId, inv.Id(), inventoryType, itemId)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to create [%d] equipable [%d] for character [%d].", quantity, itemId, characterId)
 					return err
 				}
 			} else {
-				events, err = createItem(l, tx, span, tenant)(characterId, inv.Id(), inventoryType, itemId, quantity)
+				events = createItem(l, tx, span, tenant)(characterId, inv.Id(), inventoryType, itemId, quantity)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to create [%d] items [%d] for character [%d].", quantity, itemId, characterId)
 					return err
@@ -196,36 +192,40 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 		if err != nil {
 			return err
 		}
-		for _, event := range events {
-			_ = producer.ProviderImpl(l)(span)(EnvEventTopicItemGain)(itemGainEventProvider(tenant, characterId, event.ItemId(), event.ChangedQuantity(), event.Slot()))
-			//emitInventoryModificationEvent(l, span)(characterId, true, e.Mode(), e.ItemId(), e.InventoryType(), e.Quantity(), e.Slot(), e.OldSlot())
-		}
-		return err
+		return producer.ProviderImpl(l)(span)(EnvEventInventoryChanged)(events)
 	}
 }
 
-func createEquipable(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32) ([]adjustment, error) {
+func GetInventoryByType(l logrus.FieldLogger, tx *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType Type) model.Provider[ItemHolder] {
+	return func(characterId uint32, inventoryType Type) model.Provider[ItemHolder] {
+		return model.Map(ByCharacterIdProvider(l, tx, span, tenant)(characterId), getInventoryByType(inventoryType))
+	}
+}
+
+func getInventoryByType(inventoryType Type) model.Transformer[Model, ItemHolder] {
+	return func(m Model) (ItemHolder, error) {
+		return m.GetHolderByType(inventoryType)
+	}
+}
+
+func createEquipable(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32) model.Provider[[]kafka.Message] {
 	var creator itemCreator = equipable.CreateItem(l, db, span, tenant)
-	return func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32) ([]adjustment, error) {
-		event, err := createNewItem(l)(creator, characterId, inventoryId, inventoryType, itemId, 1)
-		if err != nil {
-			return make([]adjustment, 0), nil
-		}
-		return []adjustment{event}, nil
+	return func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32) model.Provider[[]kafka.Message] {
+		return createNewItem(l, tenant)(creator, characterId, inventoryId, inventoryType, itemId, 1)
 	}
 }
 
-func createItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32, quantity uint32) ([]adjustment, error) {
+func createItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32, quantity uint32) model.Provider[[]kafka.Message] {
 	var creator itemCreator = item.CreateItem(l, db, tenant)
-	return func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32, quantity uint32) ([]adjustment, error) {
+	return func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32, quantity uint32) model.Provider[[]kafka.Message] {
 		runningQuantity := quantity
 		slotMax := item.MaxInSlot()
-		var events = make([]adjustment, 0)
+		var result = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
 
 		existingItems, err := item.GetByItemId(l, db, tenant)(inventoryId, itemId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate items [%d] in inventory [%d] for character [%d].", itemId, inventoryType, characterId)
-			return events, err
+			return model.ErrorProvider[[]kafka.Message](err)
 		}
 		if len(existingItems) > 0 {
 			index := 0
@@ -243,7 +243,7 @@ func createItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 						if err != nil {
 							l.WithError(err).Errorf("Updating the quantity of item [%d] to value [%d].", i.Id(), newQuantity)
 						} else {
-							events = append(events, adjustment{mode: adjustmentModeUpdate, itemId: itemId, inventoryType: inventoryType, changedQuantity: changedQuantity, quantity: newQuantity, slot: i.Slot(), oldSlot: 0})
+							result = model.MergeSliceProvider(result, inventoryItemUpdateProvider(tenant, characterId, itemId, quantity, i.Slot()))
 						}
 					}
 					index++
@@ -255,26 +255,25 @@ func createItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 		for runningQuantity > 0 {
 			newQuantity := uint32(math.Min(float64(runningQuantity), float64(slotMax)))
 			runningQuantity = runningQuantity - newQuantity
-			nes, err := createNewItem(l)(creator, characterId, inventoryId, inventoryType, itemId, newQuantity)
+			nes, err := createNewItem(l, tenant)(creator, characterId, inventoryId, inventoryType, itemId, newQuantity)()
 			if err != nil {
-				return events, err
+				return model.ErrorProvider[[]kafka.Message](err)
 			}
-			l.Debugf("Creating [%d] item [%d] in slot [%d] for character [%d].", newQuantity, itemId, nes.slot, characterId)
-			events = append(events, nes)
+			result = model.MergeSliceProvider(result, model.FixedProvider[[]kafka.Message](nes))
 		}
-		return events, nil
+		return result
 	}
 }
 
-func createNewItem(l logrus.FieldLogger) func(creator itemCreator, characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32, quantity uint32) (adjustment, error) {
-	return func(creator itemCreator, characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32, quantity uint32) (adjustment, error) {
+func createNewItem(l logrus.FieldLogger, tenant tenant.Model) func(creator itemCreator, characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32, quantity uint32) model.Provider[[]kafka.Message] {
+	return func(creator itemCreator, characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32, quantity uint32) model.Provider[[]kafka.Message] {
 		i, err := creator(characterId, inventoryId, int8(inventoryType), itemId, quantity)()
 		if err != nil {
 			l.WithError(err).Errorf("Unable to create item [%d] for character [%d].", itemId, characterId)
-			return adjustment{}, err
+			return model.ErrorProvider[[]kafka.Message](err)
 		}
 		l.Debugf("Item created. Creating inventory [%d] adjustment of [%d] item [%d] in slot [%d].", inventoryType, quantity, itemId, i.Slot())
-		return adjustment{mode: adjustmentModeCreate, itemId: itemId, inventoryType: inventoryType, changedQuantity: quantity, quantity: quantity, slot: i.Slot(), oldSlot: 0}, nil
+		return inventoryItemAddProvider(tenant, characterId, itemId, quantity, i.Slot())
 	}
 }
 
@@ -289,6 +288,8 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 		invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
 		invLock.Lock()
 		defer invLock.Unlock()
+
+		var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
 
 		err = db.Transaction(func(tx *gorm.DB) error {
 			e, err = equipable.GetBySlot(l, tx, tenant)(characterId, source)
@@ -330,7 +331,7 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 					return err
 				}
 				l.Debugf("Moved item from temporary location [%d] to slot [%d] for character [%d].", temporarySlot, existingSlot, characterId)
-				_ = producer.ProviderImpl(l)(span)(EnvEventTopicEquipChanged)(itemUnequippedProvider(tenant, characterId, equip.ItemId()))
+				events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, equip.ItemId(), existingSlot, equip.Slot()))
 			}
 
 			l.Debugf("Now verifying other inventory operations that may be necessary.")
@@ -359,7 +360,7 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 						return err
 					}
 					l.Debugf("Moved bottom to slot [%d] for character [%d].", newSlot, characterId)
-					_ = producer.ProviderImpl(l)(span)(EnvEventTopicEquipChanged)(itemUnequippedProvider(tenant, characterId, equip.ItemId()))
+					events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, e.ItemId(), newSlot, int16(slot2.PositionBottom)))
 				} else {
 					l.Debugf("No bottom to unequip.")
 				}
@@ -378,7 +379,7 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 						return err
 					}
 					l.Debugf("Moved overall to slot [%d] for character [%d].", newSlot, characterId)
-					_ = producer.ProviderImpl(l)(span)(EnvEventTopicEquipChanged)(itemUnequippedProvider(tenant, characterId, equip.ItemId()))
+					events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, e.ItemId(), newSlot, int16(slot2.PositionOverall)))
 				}
 			}
 			return nil
@@ -388,8 +389,12 @@ func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.S
 			return
 		}
 
-		_ = producer.ProviderImpl(l)(span)(EnvEventTopicEquipChanged)(itemEquippedProvider(tenant, characterId, e.ItemId()))
-		//emitInventoryModificationEvent(l, span)(characterId, true, 2, e.ItemId(), TypeValueEquip, 1, slot, existingSlot)
+		events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, e.ItemId(), destination, source))
+
+		err = producer.ProviderImpl(l)(span)(EnvEventInventoryChanged)(events)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
+		}
 	}
 }
 
@@ -403,6 +408,7 @@ func UnequipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing
 		invLock.Lock()
 		defer invLock.Unlock()
 
+		var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
 		txErr := db.Transaction(func(tx *gorm.DB) error {
 			e, err = equipable.GetBySlot(l, tx, tenant)(characterId, oldSlot)
 			if err != nil {
@@ -410,12 +416,7 @@ func UnequipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing
 				return err
 			}
 
-			ci, err := GetInventories(l, tx, span, tenant)(characterId)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to locate inventories for character [%d].", characterId)
-				return err
-			}
-			inv, err := ci.GetHolderByType(TypeValueEquip)
+			inv, err := GetInventoryByType(l, tx, span, tenant)(characterId, TypeValueEquip)()
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", TypeValueEquip, characterId)
 				return err
@@ -432,14 +433,17 @@ func UnequipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing
 			}
 
 			l.Debugf("Unequipped [%d] for character [%d] and place it in slot [%d], from [%d].", e.Id(), characterId, newSlot, oldSlot)
+			events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, e.ItemId(), newSlot, oldSlot))
 			return nil
 		})
 		if txErr != nil {
 			l.WithError(txErr).Errorf("Unable to complete unequiping item at [%d] for character [%d].", oldSlot, characterId)
 			return
 		}
-		_ = producer.ProviderImpl(l)(span)(EnvEventTopicEquipChanged)(itemUnequippedProvider(tenant, characterId, e.ItemId()))
-		//emitInventoryModificationEvent(l, span)(characterId, true, 2, itemId, TypeValueEquip, 1, newSlot, oldSlot)
+		err = producer.ProviderImpl(l)(span)(EnvEventInventoryChanged)(events)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
+		}
 	}
 }
 

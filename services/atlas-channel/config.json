@@ -182,6 +182,10 @@
               }
             },
             {
+              "opCode": "0x5D",
+              "writer": "CharacterAppearanceUpdate"
+            },
+            {
               "opCode": "0x6D",
               "writer": "SpawnMonster"
             },
@@ -476,6 +480,10 @@
                   {"Name": "UNKNOWN", "Type": "JUMP"}
                 ]
               }
+            },
+            {
+              "opCode": "0xC5",
+              "writer": "CharacterAppearanceUpdate"
             },
             {
               "opCode": "0xEC",
@@ -810,6 +818,10 @@
               }
             },
             {
+              "opCode": "0xD2",
+              "writer": "CharacterAppearanceUpdate"
+            },
+            {
               "opCode": "0xFC",
               "writer": "SpawnMonster"
             },
@@ -1028,6 +1040,10 @@
             {
               "opCode": "0xD5",
               "writer": "CharacterMovement"
+            },
+            {
+              "opCode": "0xE1",
+              "writer": "CharacterAppearanceUpdate"
             },
             {
               "opCode": "0x114",
@@ -1338,6 +1354,10 @@
                   {"Name": "MOB_ATK_RUSH_STOP", "Type": "NORMAL"}
                 ]
               }
+            },
+            {
+              "opCode": "0xCB",
+              "writer": "CharacterAppearanceUpdate"
             },
             {
               "opCode": "0xFD",

@@ -3,6 +3,7 @@ package inventory
 import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
+	_map "atlas-channel/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -138,14 +139,47 @@ func handleInventoryMoveEvent(sc server.Model, wp writer.Producer) message.Handl
 	}
 }
 
-func moveInInventory(l logrus.FieldLogger, _ opentracing.Span, wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
+func moveInInventory(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 	inventoryChangeFunc := session.Announce(l)(wp)(writer.CharacterInventoryChange)
 	return func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 		return func(s session.Model) error {
-			inventoryType := byte(math.Floor(float64(event.Body.ItemId) / 1000000))
-			err := inventoryChangeFunc(s, writer.CharacterInventoryMoveBody(s.Tenant())(inventoryType, event.Slot, event.Body.OldSlot, false))
+			errChannels := make(chan error, 2)
+			go func() {
+				inventoryType := byte(math.Floor(float64(event.Body.ItemId) / 1000000))
+				err := inventoryChangeFunc(s, writer.CharacterInventoryMoveBody(s.Tenant())(inventoryType, event.Slot, event.Body.OldSlot, false))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to move [%d] in slot [%d] to [%d] for character [%d].", event.Body.ItemId, event.Body.OldSlot, event.Slot, s.CharacterId())
+				}
+				errChannels <- err
+			}()
+			go func() {
+				c, err := character.GetByIdWithInventory(l, span, s.Tenant())(s.CharacterId())
+				if err != nil {
+					l.WithError(err).Errorf("Unable to issue appearance update for character [%d] to others in map.", s.CharacterId())
+					errChannels <- err
+				}
+				errChannels <- _map.ForSessionsInMap(l, span, s.Tenant())(s.WorldId(), s.ChannelId(), s.MapId(), updateAppearance(l, wp)(c))
+			}()
+
+			var err error
+			for i := 0; i < 2; i++ {
+				select {
+				case <-errChannels:
+					err = <-errChannels
+				}
+			}
+			return err
+		}
+	}
+}
+
+func updateAppearance(l logrus.FieldLogger, wp writer.Producer) func(c character.Model) model.Operator[session.Model] {
+	appearanceUpdateFunc := session.Announce(l)(wp)(writer.CharacterAppearanceUpdate)
+	return func(c character.Model) model.Operator[session.Model] {
+		return func(s session.Model) error {
+			err := appearanceUpdateFunc(s, writer.CharacterAppearanceUpdateBody(s.Tenant())(c))
 			if err != nil {
-				l.WithError(err).Errorf("Unable to move [%d] in slot [%d] to [%d] for character [%d].", event.Body.ItemId, event.Body.OldSlot, event.Slot, s.CharacterId())
+				l.WithError(err).Errorf("Unable to issue appearance update for character [%d] to others in map.", s.CharacterId())
 			}
 			return err
 		}

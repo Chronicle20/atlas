@@ -163,6 +163,7 @@ func produceWriters() []string {
 		writer.CharacterMovement,
 		writer.CharacterInfo,
 		writer.CharacterInventoryChange,
+		writer.CharacterAppearanceUpdate,
 	}
 }
 

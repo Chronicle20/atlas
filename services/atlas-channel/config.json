@@ -161,6 +161,10 @@
               "writer": "CharacterSpawn"
             },
             {
+              "opCode": "0x40",
+              "writer": "CharacterDespawn"
+            },
+            {
               "opCode": "0x41",
               "writer": "CharacterGeneralChat"
             },
@@ -445,6 +449,10 @@
             {
               "opCode": "0xA0",
               "writer": "CharacterSpawn"
+            },
+            {
+              "opCode": "0xA1",
+              "writer": "CharacterDespawn"
             },
             {
               "opCode": "0xA2",
@@ -781,6 +789,10 @@
               "writer": "CharacterSpawn"
             },
             {
+              "opCode": "0xAC",
+              "writer": "CharacterDespawn"
+            },
+            {
               "opCode": "0xAD",
               "writer": "CharacterGeneralChat"
             },
@@ -1032,6 +1044,10 @@
             {
               "opCode": "0xB1",
               "writer": "CharacterSpawn"
+            },
+            {
+              "opCode": "0xB2",
+              "writer": "CharacterDespawn"
             },
             {
               "opCode": "0xB3",
@@ -1309,6 +1325,10 @@
             {
               "opCode": "0x9E",
               "writer": "CharacterSpawn"
+            },
+            {
+              "opCode": "0x9F",
+              "writer": "CharacterDespawn"
             },
             {
               "opCode": "0xA0",

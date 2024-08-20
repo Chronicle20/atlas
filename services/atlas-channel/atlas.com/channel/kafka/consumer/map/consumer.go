@@ -51,7 +51,7 @@ func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l
 			return
 		}
 
-		l.Debugf("Received MapStatus [%s] Event. characterId [%d] worldId [%d] channelId [%d] mapId [%d].", event.Type, event.Body.CharacterId, event.WorldId, event.ChannelId, event.MapId)
+		l.Debugf("Character [%d] has entered map [%d] in worldId [%d] channelId [%d].", event.Body.CharacterId, event.MapId, event.WorldId, event.ChannelId)
 		session.IfPresentByCharacterId(event.Tenant, sc.WorldId(), sc.ChannelId())(event.Body.CharacterId, enterMap(l, span, event.Tenant, wp)(event.MapId))
 	}
 }
@@ -121,15 +121,29 @@ func GetId(m character.Model) uint32 {
 	return m.Id()
 }
 
-func handleStatusEventCharacterExit(sc server.Model, _ writer.Producer) func(l logrus.FieldLogger, span opentracing.Span, event statusEvent[characterExit]) {
+func handleStatusEventCharacterExit(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, span opentracing.Span, event statusEvent[characterExit]) {
 	return func(l logrus.FieldLogger, span opentracing.Span, event statusEvent[characterExit]) {
 		if !sc.Is(event.Tenant, event.WorldId, event.ChannelId) {
 			return
 		}
 
 		if event.Type == EventTopicMapStatusTypeCharacterExit {
-			l.Debugf("Received MapStatus [%s] Event. characterId [%d] worldId [%d] channelId [%d] mapId [%d].", event.Type, event.Body.CharacterId, event.WorldId, event.ChannelId, event.MapId)
+			l.Debugf("Character [%d] has left map [%d] in worldId [%d] channelId [%d].", event.Body.CharacterId, event.MapId, event.WorldId, event.ChannelId)
+			_ = _map.ForOtherSessionsInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, event.Body.CharacterId, despawnForSession(l, event.Tenant, wp)(event.Body.CharacterId))
 			return
+		}
+	}
+}
+
+func despawnForSession(l logrus.FieldLogger, tenant tenant.Model, wp writer.Producer) func(id uint32) model.Operator[session.Model] {
+	despawnCharacterFunc := session.Announce(l)(wp)(writer.CharacterDespawn)
+	return func(id uint32) model.Operator[session.Model] {
+		return func(s session.Model) error {
+			err := despawnCharacterFunc(s, writer.CharacterDespawnBody(l, tenant)(id))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to despawn character [%d] for character [%d].", id, s.CharacterId())
+			}
+			return err
 		}
 	}
 }

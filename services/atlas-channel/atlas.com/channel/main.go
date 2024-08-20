@@ -164,6 +164,7 @@ func produceWriters() []string {
 		writer.CharacterInfo,
 		writer.CharacterInventoryChange,
 		writer.CharacterAppearanceUpdate,
+		writer.CharacterDespawn,
 	}
 }
 

@@ -14,8 +14,7 @@ import (
 
 const (
 	consumerCharacterCreated = "character_created"
-	consumerItemGained       = "character_gained_item"
-	consumerEquipChanged     = "character_equip_changed"
+	consumerInventoryChanged = "character_inventory_changed"
 )
 
 func CreatedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
@@ -57,7 +56,7 @@ func AwaitCreated(l logrus.FieldLogger, tenant tenant.Model) func(name string) a
 
 func ItemGainedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerItemGained)(EnvEventInventoryChanged)(groupId)
+		return consumer2.NewConfig(l)(consumerInventoryChanged)(EnvEventInventoryChanged)(groupId)
 	}
 }
 
@@ -90,7 +89,7 @@ func AwaitItemGained(l logrus.FieldLogger, tenant tenant.Model) func(itemId uint
 
 func EquipChangedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerEquipChanged)(EnvEventInventoryChanged)(groupId)
+		return consumer2.NewConfig(l)(consumerInventoryChanged)(EnvEventInventoryChanged)(groupId)
 	}
 }
 

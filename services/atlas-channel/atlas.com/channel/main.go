@@ -5,6 +5,7 @@ import (
 	"atlas-channel/channel"
 	"atlas-channel/configuration"
 	"atlas-channel/kafka/consumer/character"
+	"atlas-channel/kafka/consumer/inventory"
 	"atlas-channel/kafka/consumer/map"
 	"atlas-channel/kafka/consumer/monster"
 	"atlas-channel/logger"
@@ -60,6 +61,7 @@ func main() {
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.StatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.GeneralChatEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(inventory.ChangedConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 
 	span := opentracing.StartSpan("startup")
 
@@ -110,6 +112,10 @@ func main() {
 				_, _ = cm.RegisterHandler(account.StatusRegister(fl, sc))
 				_, _ = cm.RegisterHandler(message.GeneralChatEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(character.MovementEventRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(inventory.ChangeEventAddRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(inventory.ChangeEventUpdateRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(inventory.ChangeEventMoveRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(inventory.ChangeEventRemoveRegister(sc, wp)(fl))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tdm.Context(), tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
@@ -157,6 +163,9 @@ func produceWriters() []string {
 		writer.CharacterGeneralChat,
 		writer.CharacterMovement,
 		writer.CharacterInfo,
+		writer.CharacterInventoryChange,
+		writer.CharacterAppearanceUpdate,
+		writer.CharacterDespawn,
 	}
 }
 
@@ -173,6 +182,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
 	handlerMap[handler.CharacterGeneralChatHandle] = handler.CharacterGeneralChatHandleFunc
 	handlerMap[handler.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
+	handlerMap[handler.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
 	return handlerMap
 }
 

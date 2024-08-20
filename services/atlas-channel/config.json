@@ -85,6 +85,11 @@
               "handler": "CharacterGeneralChatHandle"
             },
             {
+              "opCode": "0x25",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInventoryMoveHandle"
+            },
+            {
               "opCode": "0x35",
               "validator": "LoggedInValidator",
               "handler": "CharacterInfoRequestHandle"
@@ -132,6 +137,10 @@
               "writer": "ChannelChange"
             },
             {
+              "opCode": "0x14",
+              "writer": "CharacterInventoryChange"
+            },
+            {
               "opCode": "0x16",
               "writer": "StatChanged"
             },
@@ -150,6 +159,10 @@
             {
               "opCode": "0x3F",
               "writer": "CharacterSpawn"
+            },
+            {
+              "opCode": "0x40",
+              "writer": "CharacterDespawn"
             },
             {
               "opCode": "0x41",
@@ -171,6 +184,10 @@
                   {"Name": "STAT_CHANGE", "Type": "STAT_CHANGE"}
                 ]
               }
+            },
+            {
+              "opCode": "0x5D",
+              "writer": "CharacterAppearanceUpdate"
             },
             {
               "opCode": "0x6D",
@@ -325,6 +342,11 @@
               "handler": "CharacterGeneralChatHandle"
             },
             {
+              "opCode": "0x47",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInventoryMoveHandle"
+            },
+            {
               "opCode": "0x61",
               "validator": "LoggedInValidator",
               "handler": "CharacterInfoRequestHandle"
@@ -405,6 +427,10 @@
               "writer": "ChannelChange"
             },
             {
+              "opCode": "0x1D",
+              "writer": "CharacterInventoryChange"
+            },
+            {
               "opCode": "0x1F",
               "writer": "StatChanged"
             },
@@ -423,6 +449,10 @@
             {
               "opCode": "0xA0",
               "writer": "CharacterSpawn"
+            },
+            {
+              "opCode": "0xA1",
+              "writer": "CharacterDespawn"
             },
             {
               "opCode": "0xA2",
@@ -458,6 +488,10 @@
                   {"Name": "UNKNOWN", "Type": "JUMP"}
                 ]
               }
+            },
+            {
+              "opCode": "0xC5",
+              "writer": "CharacterAppearanceUpdate"
             },
             {
               "opCode": "0xEC",
@@ -642,6 +676,11 @@
               "handler": "CharacterGeneralChatHandle"
             },
             {
+              "opCode": "0x4A",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInventoryMoveHandle"
+            },
+            {
               "opCode": "0x64",
               "validator": "LoggedInValidator",
               "handler": "CharacterInfoRequestHandle"
@@ -726,6 +765,10 @@
               "writer": "ChannelChange"
             },
             {
+              "opCode": "0x1D",
+              "writer": "CharacterInventoryChange"
+            },
+            {
               "opCode": "0x1F",
               "writer": "StatChanged"
             },
@@ -744,6 +787,10 @@
             {
               "opCode": "0xAB",
               "writer": "CharacterSpawn"
+            },
+            {
+              "opCode": "0xAC",
+              "writer": "CharacterDespawn"
             },
             {
               "opCode": "0xAD",
@@ -781,6 +828,10 @@
                   {"Name": "UNKNOWN", "Type": "JUMP"}
                 ]
               }
+            },
+            {
+              "opCode": "0xD2",
+              "writer": "CharacterAppearanceUpdate"
             },
             {
               "opCode": "0xFC",
@@ -940,6 +991,11 @@
               "handler": "CharacterGeneralChatHandle"
             },
             {
+              "opCode": "0x4E",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInventoryMoveHandle"
+            },
+            {
               "opCode": "0x6C",
               "validator": "LoggedInValidator",
               "handler": "CharacterInfoRequestHandle"
@@ -966,6 +1022,10 @@
               "writer": "ChannelChange"
             },
             {
+              "opCode": "0x1E",
+              "writer": "CharacterInventoryChange"
+            },
+            {
               "opCode": "0x20",
               "writer": "StatChanged"
             },
@@ -986,12 +1046,20 @@
               "writer": "CharacterSpawn"
             },
             {
+              "opCode": "0xB2",
+              "writer": "CharacterDespawn"
+            },
+            {
               "opCode": "0xB3",
               "writer": "CharacterGeneralChat"
             },
             {
               "opCode": "0xD5",
               "writer": "CharacterMovement"
+            },
+            {
+              "opCode": "0xE1",
+              "writer": "CharacterAppearanceUpdate"
             },
             {
               "opCode": "0x114",
@@ -1130,6 +1198,11 @@
               "handler": "CharacterGeneralChatHandle"
             },
             {
+              "opCode": "0x3F",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInventoryMoveHandle"
+            },
+            {
               "opCode": "0x5C",
               "validator": "LoggedInValidator",
               "handler": "CharacterInfoRequestHandle"
@@ -1230,6 +1303,10 @@
               "writer": "ChannelChange"
             },
             {
+              "opCode": "0x1B",
+              "writer": "CharacterInventoryChange"
+            },
+            {
               "opCode": "0x1D",
               "writer": "StatChanged"
             },
@@ -1248,6 +1325,10 @@
             {
               "opCode": "0x9E",
               "writer": "CharacterSpawn"
+            },
+            {
+              "opCode": "0x9F",
+              "writer": "CharacterDespawn"
             },
             {
               "opCode": "0xA0",
@@ -1293,6 +1374,10 @@
                   {"Name": "MOB_ATK_RUSH_STOP", "Type": "NORMAL"}
                 ]
               }
+            },
+            {
+              "opCode": "0xCB",
+              "writer": "CharacterAppearanceUpdate"
             },
             {
               "opCode": "0xFD",

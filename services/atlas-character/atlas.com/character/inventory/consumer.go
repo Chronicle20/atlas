@@ -14,6 +14,8 @@ import (
 const (
 	consumerEquipItem   = "equip_item_command"
 	consumerUnequipItem = "unequip_item_command"
+	consumerMoveItem    = "move_item_command"
+	consumerDropItem    = "drop_item_command"
 )
 
 func EquipItemCommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
@@ -49,5 +51,39 @@ func handleUnequipItemCommand(db *gorm.DB) message.Handler[unequipItemCommand] {
 	return func(l logrus.FieldLogger, span opentracing.Span, command unequipItemCommand) {
 		l.Debugf("Received unequip item command. characterId [%d] source [%d].", command.CharacterId, command.Source)
 		UnequipItemForCharacter(l, db, span, command.Tenant)(command.CharacterId, command.Source)
+	}
+}
+
+func MoveItemCommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
+	return func(groupId string) consumer.Config {
+		return consumer2.NewConfig(l)(consumerMoveItem)(EnvCommandTopicMoveItem)(groupId)
+	}
+}
+
+func MoveItemRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handler) {
+	t, _ := topic.EnvProvider(l)(EnvCommandTopicMoveItem)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleMoveItemCommand(db)))
+}
+
+func handleMoveItemCommand(db *gorm.DB) message.Handler[moveItemCommand] {
+	return func(l logrus.FieldLogger, span opentracing.Span, command moveItemCommand) {
+		_ = Move(l, db, span, command.Tenant)(command.CharacterId, command.InventoryType, command.Source, command.Destination)
+	}
+}
+
+func DropItemCommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
+	return func(groupId string) consumer.Config {
+		return consumer2.NewConfig(l)(consumerDropItem)(EnvCommandTopicDropItem)(groupId)
+	}
+}
+
+func DropItemRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handler) {
+	t, _ := topic.EnvProvider(l)(EnvCommandTopicDropItem)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleDropItemCommand(db)))
+}
+
+func handleDropItemCommand(db *gorm.DB) message.Handler[dropItemCommand] {
+	return func(l logrus.FieldLogger, span opentracing.Span, command dropItemCommand) {
+		_ = Drop(l, db, span, command.Tenant)(command.CharacterId, command.InventoryType, command.Source, command.Quantity)
 	}
 }

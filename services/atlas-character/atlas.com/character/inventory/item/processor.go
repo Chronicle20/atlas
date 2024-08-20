@@ -39,7 +39,7 @@ func GetByItemId(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(in
 	}
 }
 
-func UpdateSlot(_ logrus.FieldLogger, db *gorm.DB) func(id uint32, slot int16) error {
+func UpdateSlot(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(id uint32, slot int16) error {
 	return func(id uint32, slot int16) error {
 		return updateSlot(db, id, slot)
 	}

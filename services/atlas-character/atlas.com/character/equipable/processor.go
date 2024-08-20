@@ -152,3 +152,10 @@ func DeleteByReferenceId(l logrus.FieldLogger, db *gorm.DB, span opentracing.Spa
 		return delete(db, tenant.Id, referenceId)
 	}
 }
+
+func DropByReferenceId(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(referenceId uint32) error {
+	return func(referenceId uint32) error {
+		l.Debugf("Attempting to drop equipment referencing [%d].", referenceId)
+		return delete(db, tenant.Id, referenceId)
+	}
+}

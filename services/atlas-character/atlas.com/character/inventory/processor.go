@@ -243,7 +243,7 @@ func createItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 						if err != nil {
 							l.WithError(err).Errorf("Updating the quantity of item [%d] to value [%d].", i.Id(), newQuantity)
 						} else {
-							result = model.MergeSliceProvider(result, inventoryItemUpdateProvider(tenant, characterId, itemId, quantity, i.Slot()))
+							result = model.MergeSliceProvider(result, inventoryItemUpdateProvider(tenant, characterId, itemId, newQuantity, i.Slot()))
 						}
 					}
 					index++

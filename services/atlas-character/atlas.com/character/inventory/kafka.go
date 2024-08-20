@@ -26,6 +26,7 @@ type unequipItemCommand struct {
 	Tenant      tenant.Model `json:"tenant"`
 	CharacterId uint32       `json:"characterId"`
 	Source      int16        `json:"source"`
+	Destination int16        `json:"destination"`
 }
 
 type inventoryChangedEvent[M any] struct {

@@ -7,8 +7,12 @@ import (
 const (
 	EnvCommandTopicEquipItem   = "COMMAND_TOPIC_EQUIP_ITEM"
 	EnvCommandTopicUnequipItem = "COMMAND_TOPIC_UNEQUIP_ITEM"
-	EnvEventTopicItemGain      = "EVENT_TOPIC_ITEM_GAIN"
-	EnvEventTopicEquipChanged  = "EVENT_TOPIC_EQUIP_CHANGED"
+	EnvEventInventoryChanged   = "EVENT_TOPIC_INVENTORY_CHANGED"
+
+	ChangedTypeAdd    = "INVENTORY_CHANGED_TYPE_ADD"
+	ChangedTypeUpdate = "INVENTORY_CHANGED_TYPE_UPDATE"
+	ChangedTypeRemove = "INVENTORY_CHANGED_TYPE_REMOVE"
+	ChangedTypeMove   = "INVENTORY_CHANGED_TYPE_MOVE"
 )
 
 type equipItemCommand struct {
@@ -24,17 +28,26 @@ type unequipItemCommand struct {
 	Source      int16        `json:"source"`
 }
 
-type gainItemEvent struct {
+type inventoryChangedEvent[M any] struct {
 	Tenant      tenant.Model `json:"tenant"`
 	CharacterId uint32       `json:"characterId"`
-	ItemId      uint32       `json:"itemId"`
-	Quantity    uint32       `json:"quantity"`
 	Slot        int16        `json:"slot"`
+	Type        string       `json:"type"`
+	Body        M            `json:"body"`
+	Silent      bool         `json:"silent"`
 }
 
-type equipChangedEvent struct {
-	Tenant      tenant.Model `json:"tenant"`
-	CharacterId uint32       `json:"characterId"`
-	Change      string       `json:"change"`
-	ItemId      uint32       `json:"itemId"`
+type inventoryChangedItemAddBody struct {
+	ItemId   uint32 `json:"itemId"`
+	Quantity uint32 `json:"quantity"`
+}
+
+type inventoryChangedItemUpdateBody struct {
+	ItemId   uint32 `json:"itemId"`
+	Quantity uint32 `json:"quantity"`
+}
+
+type inventoryChangedItemMoveBody struct {
+	ItemId  uint32 `json:"itemId"`
+	OldSlot int16  `json:"oldSlot"`
 }

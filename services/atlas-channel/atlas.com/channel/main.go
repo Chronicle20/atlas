@@ -179,6 +179,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
 	handlerMap[handler.CharacterGeneralChatHandle] = handler.CharacterGeneralChatHandleFunc
 	handlerMap[handler.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
+	handlerMap[handler.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
 	return handlerMap
 }
 

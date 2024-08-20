@@ -85,6 +85,11 @@
               "handler": "CharacterGeneralChatHandle"
             },
             {
+              "opCode": "0x25",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInventoryMoveHandle"
+            },
+            {
               "opCode": "0x35",
               "validator": "LoggedInValidator",
               "handler": "CharacterInfoRequestHandle"
@@ -327,6 +332,11 @@
               "opCode": "0x31",
               "validator": "LoggedInValidator",
               "handler": "CharacterGeneralChatHandle"
+            },
+            {
+              "opCode": "0x47",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInventoryMoveHandle"
             },
             {
               "opCode": "0x61",
@@ -650,6 +660,11 @@
               "handler": "CharacterGeneralChatHandle"
             },
             {
+              "opCode": "0x4A",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInventoryMoveHandle"
+            },
+            {
               "opCode": "0x64",
               "validator": "LoggedInValidator",
               "handler": "CharacterInfoRequestHandle"
@@ -952,6 +967,11 @@
               "handler": "CharacterGeneralChatHandle"
             },
             {
+              "opCode": "0x4E",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInventoryMoveHandle"
+            },
+            {
               "opCode": "0x6C",
               "validator": "LoggedInValidator",
               "handler": "CharacterInfoRequestHandle"
@@ -1144,6 +1164,11 @@
               "opCode": "0x29",
               "validator": "LoggedInValidator",
               "handler": "CharacterGeneralChatHandle"
+            },
+            {
+              "opCode": "0x3F",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterInventoryMoveHandle"
             },
             {
               "opCode": "0x5C",

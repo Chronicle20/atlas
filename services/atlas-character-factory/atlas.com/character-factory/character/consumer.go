@@ -57,30 +57,30 @@ func AwaitCreated(l logrus.FieldLogger, tenant tenant.Model) func(name string) a
 
 func ItemGainedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerItemGained)(EnvEventTopicItemGain)(groupId)
+		return consumer2.NewConfig(l)(consumerItemGained)(EnvEventInventoryChanged)(groupId)
 	}
 }
 
-func itemGainedValidator(tenant tenant.Model, itemId uint32) func(event gainItemEvent) bool {
-	return func(event gainItemEvent) bool {
+func itemGainedValidator(tenant tenant.Model, itemId uint32) func(event inventoryChangedEvent[inventoryChangedItemAddBody]) bool {
+	return func(event inventoryChangedEvent[inventoryChangedItemAddBody]) bool {
 		if !tenant.Equals(event.Tenant) {
 			return false
 		}
-		if itemId != event.ItemId {
+		if itemId != event.Body.ItemId {
 			return false
 		}
 		return true
 	}
 }
 
-func itemGainedHandler(rchan chan ItemGained, _ chan error) message.Handler[gainItemEvent] {
-	return func(l logrus.FieldLogger, span opentracing.Span, m gainItemEvent) {
-		rchan <- ItemGained{ItemId: m.ItemId, Slot: m.Slot}
+func itemGainedHandler(rchan chan ItemGained, _ chan error) message.Handler[inventoryChangedEvent[inventoryChangedItemAddBody]] {
+	return func(l logrus.FieldLogger, span opentracing.Span, m inventoryChangedEvent[inventoryChangedItemAddBody]) {
+		rchan <- ItemGained{ItemId: m.Body.ItemId, Slot: m.Slot}
 	}
 }
 
 func AwaitItemGained(l logrus.FieldLogger, tenant tenant.Model) func(itemId uint32) async.Provider[ItemGained] {
-	t, _ := topic.EnvProvider(l)(EnvEventTopicItemGain)()
+	t, _ := topic.EnvProvider(l)(EnvEventInventoryChanged)()
 	return func(itemId uint32) async.Provider[ItemGained] {
 		return func(ctx context.Context, rchan chan ItemGained, echan chan error) {
 			_, _ = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(itemGainedValidator(tenant, itemId), itemGainedHandler(rchan, echan))))
@@ -90,33 +90,33 @@ func AwaitItemGained(l logrus.FieldLogger, tenant tenant.Model) func(itemId uint
 
 func EquipChangedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerEquipChanged)(EnvEventTopicEquipChanged)(groupId)
+		return consumer2.NewConfig(l)(consumerEquipChanged)(EnvEventInventoryChanged)(groupId)
 	}
 }
 
-func equipChangedValidator(tenant tenant.Model, itemId uint32) func(event equipChangedEvent) bool {
-	return func(event equipChangedEvent) bool {
+func equipChangedValidator(tenant tenant.Model, itemId uint32) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) bool {
+	return func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) bool {
 		if !tenant.Equals(event.Tenant) {
 			return false
 		}
-		if itemId != event.ItemId {
+		if itemId != event.Body.ItemId {
 			return false
 		}
-		if "EQUIPPED" != event.Change {
+		if event.Slot < 0 {
 			return false
 		}
 		return true
 	}
 }
 
-func equipChangedHandler(rchan chan uint32, _ chan error) message.Handler[equipChangedEvent] {
-	return func(l logrus.FieldLogger, span opentracing.Span, m equipChangedEvent) {
-		rchan <- m.ItemId
+func equipChangedHandler(rchan chan uint32, _ chan error) message.Handler[inventoryChangedEvent[inventoryChangedItemMoveBody]] {
+	return func(l logrus.FieldLogger, span opentracing.Span, m inventoryChangedEvent[inventoryChangedItemMoveBody]) {
+		rchan <- m.Body.ItemId
 	}
 }
 
 func AwaitEquipChanged(l logrus.FieldLogger, tenant tenant.Model) func(itemId uint32) async.Provider[uint32] {
-	t, _ := topic.EnvProvider(l)(EnvEventTopicEquipChanged)()
+	t, _ := topic.EnvProvider(l)(EnvEventInventoryChanged)()
 	return func(itemId uint32) async.Provider[uint32] {
 		return func(ctx context.Context, rchan chan uint32, echan chan error) {
 			_, _ = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(equipChangedValidator(tenant, itemId), equipChangedHandler(rchan, echan))))

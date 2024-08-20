@@ -394,3 +394,18 @@ func CollectToMap[M any, K comparable, V any](mp Provider[[]M], kp KeyProvider[M
 		return result, nil
 	}
 }
+
+//goland:noinspection GoUnusedExportedFunction
+func MergeSliceProvider[M any](provider Provider[[]M], other Provider[[]M]) Provider[[]M] {
+	return func() ([]M, error) {
+		r1, err := provider()
+		if err != nil {
+			return nil, err
+		}
+		r2, err := other()
+		if err != nil {
+			return nil, err
+		}
+		return append(r1, r2...), nil
+	}
+}

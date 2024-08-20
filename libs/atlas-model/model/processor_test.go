@@ -162,3 +162,17 @@ func TestForEachMapParallel(t *testing.T) {
 		t.Errorf("Expected 6, got %d", counts[2])
 	}
 }
+
+func TestMerge(t *testing.T) {
+	p1 := FixedProvider([]uint32{1, 2, 3, 4, 5})
+	p2 := FixedProvider([]uint32{1, 2, 3, 4, 5})
+	rp := MergeSliceProvider(p1, p2)
+
+	rs, err := rp()
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	if len(rs) != 10 {
+		t.Errorf("Expected 10, got %d", len(rs))
+	}
+}

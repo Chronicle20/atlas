@@ -552,7 +552,7 @@ func moveItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 					return err
 				}
 				l.Debugf("Moved item from temporary location [%d] to slot [%d] for character [%d].", temporarySlot, source, characterId)
-				events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, otherItem.ItemId(), source, otherItem.Slot()))
+				events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, otherItem.ItemId(), source, destination))
 			}
 			return nil
 		})
@@ -603,7 +603,7 @@ func moveEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant 
 					return err
 				}
 				l.Debugf("Moved item from temporary location [%d] to slot [%d] for character [%d].", temporarySlot, source, characterId)
-				events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, equip.ItemId(), source, equip.Slot()))
+				events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, equip.ItemId(), source, destination))
 			}
 			return nil
 		})

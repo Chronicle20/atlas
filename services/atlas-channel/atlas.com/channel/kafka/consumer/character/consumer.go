@@ -51,7 +51,7 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			return
 		}
 
-		session.IfPresentByCharacterId(event.Tenant)(event.CharacterId, statChanged(l, span, event.Tenant, wp)(event.Body.ExclRequestSent))
+		session.IfPresentByCharacterId(event.Tenant, sc.WorldId(), sc.ChannelId())(event.CharacterId, statChanged(l, span, event.Tenant, wp)(event.Body.ExclRequestSent))
 	}
 }
 
@@ -79,7 +79,7 @@ func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l log
 			return
 		}
 
-		session.IfPresentByCharacterId(event.Tenant)(event.CharacterId, warpCharacter(l, span, event.Tenant, wp)(event))
+		session.IfPresentByCharacterId(event.Tenant, sc.WorldId(), sc.ChannelId())(event.CharacterId, warpCharacter(l, span, event.Tenant, wp)(event))
 	}
 }
 

@@ -24,9 +24,16 @@ func ByCharacterIdModelProvider(tenant tenant.Model) func(characterId uint32) mo
 }
 
 // IfPresentByCharacterId executes an Operator if a session exists for the characterId
-func IfPresentByCharacterId(tenant tenant.Model) func(characterId uint32, f model.Operator[Model]) {
+func IfPresentByCharacterId(tenant tenant.Model, worldId byte, channelId byte) func(characterId uint32, f model.Operator[Model]) {
 	return func(characterId uint32, f model.Operator[Model]) {
-		_ = model.For(ByCharacterIdModelProvider(tenant)(characterId), f)
+		s, err := ByCharacterIdModelProvider(tenant)(characterId)()
+		if err != nil {
+			return
+		}
+		if s.WorldId() != worldId || s.ChannelId() != channelId {
+			return
+		}
+		_ = f(s)
 	}
 }
 

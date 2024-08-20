@@ -155,7 +155,7 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		session.IfPresentByCharacterId(event.Tenant)(event.Body.ActorId, startControlForSession(l, wp)(m))
+		session.IfPresentByCharacterId(event.Tenant, sc.WorldId(), sc.ChannelId())(event.Body.ActorId, startControlForSession(l, wp)(m))
 	}
 }
 
@@ -196,7 +196,7 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		session.IfPresentByCharacterId(event.Tenant)(event.Body.ActorId, stopControlForSession(l, wp)(m))
+		session.IfPresentByCharacterId(event.Tenant, sc.WorldId(), sc.ChannelId())(event.Body.ActorId, stopControlForSession(l, wp)(m))
 	}
 }
 

@@ -52,7 +52,7 @@ func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l
 		}
 
 		l.Debugf("Received MapStatus [%s] Event. characterId [%d] worldId [%d] channelId [%d] mapId [%d].", event.Type, event.Body.CharacterId, event.WorldId, event.ChannelId, event.MapId)
-		session.IfPresentByCharacterId(event.Tenant)(event.Body.CharacterId, enterMap(l, span, event.Tenant, wp)(event.MapId))
+		session.IfPresentByCharacterId(event.Tenant, sc.WorldId(), sc.ChannelId())(event.Body.CharacterId, enterMap(l, span, event.Tenant, wp)(event.MapId))
 	}
 }
 
@@ -76,7 +76,7 @@ func enterMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model, 
 			// spawn new character for others
 			for k := range cms {
 				if k != s.CharacterId() {
-					session.IfPresentByCharacterId(s.Tenant())(k, spawnCharacterForSession(l, wp)(cms[s.CharacterId()], true))
+					session.IfPresentByCharacterId(s.Tenant(), s.WorldId(), s.ChannelId())(k, spawnCharacterForSession(l, wp)(cms[s.CharacterId()], true))
 				}
 			}
 

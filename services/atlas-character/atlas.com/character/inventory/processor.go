@@ -652,7 +652,7 @@ func dropItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 			initialQuantity := i.Quantity()
 
 			if initialQuantity <= uint32(quantity) {
-				err = item.DeleteBySlot(l, db, tenant)(inv.Id(), source)
+				err = item.DeleteBySlot(l, tx, tenant)(inv.Id(), source)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to drop item in slot [%d].", source)
 					return err
@@ -662,9 +662,9 @@ func dropItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 			}
 
 			newQuantity := initialQuantity - uint32(quantity)
-			err = item.UpdateQuantity(l, db, tenant)(inv.Id(), newQuantity)
+			err = item.UpdateQuantity(l, tx, tenant)(i.Id(), newQuantity)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to drop item in slot [%d].", source)
+				l.WithError(err).Errorf("Unable to drop [%d] item in slot [%d].", quantity, source)
 				return err
 			}
 			events = model.MergeSliceProvider(events, inventoryItemUpdateProvider(tenant, characterId, i.ItemId(), newQuantity, i.Slot()))
@@ -696,7 +696,7 @@ func dropEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant 
 				l.WithError(err).Errorf("Unable to retrieve equipment in slot [%d].", source)
 				return err
 			}
-			err = equipable.DropByReferenceId(l, db, tenant)(e.ReferenceId())
+			err = equipable.DropByReferenceId(l, tx, tenant)(e.ReferenceId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to drop equipment in slot [%d].", source)
 				return err

@@ -197,8 +197,8 @@ func IsValidName(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(na
 	}
 }
 
-func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(input Model) (Model, error) {
-	return func(input Model) (Model, error) {
+func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, input Model) (Model, error) {
+	return func(tenant tenant.Model, input Model) (Model, error) {
 		ok, err := IsValidName(l, db, tenant)(input.Name())
 		if err != nil {
 			l.WithError(err).Errorf("Error validating name [%s] during character creation.", input.Name())
@@ -233,7 +233,7 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 		})
 
 		if err == nil {
-			err = producer.ProviderImpl(l)(span)(EnvEventTopicCharacterStatus)(createdEventProvider(tenant, res.Id(), res.WorldId(), res.Name()))
+			err = eventProducer(EnvEventTopicCharacterStatus)(createdEventProvider(tenant, res.Id(), res.WorldId(), res.Name()))
 		}
 		return res, err
 	}

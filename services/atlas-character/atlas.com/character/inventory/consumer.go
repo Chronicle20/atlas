@@ -2,6 +2,7 @@ package inventory
 
 import (
 	consumer2 "atlas-character/kafka/consumer"
+	"atlas-character/kafka/producer"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -67,7 +68,7 @@ func MoveItemRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handle
 
 func handleMoveItemCommand(db *gorm.DB) message.Handler[moveItemCommand] {
 	return func(l logrus.FieldLogger, span opentracing.Span, command moveItemCommand) {
-		_ = Move(l, db, span, command.Tenant)(command.CharacterId, command.InventoryType, command.Source, command.Destination)
+		_ = Move(l, db, span, producer.ProviderImpl(l)(span))(command.Tenant, command.CharacterId, command.InventoryType, command.Source, command.Destination)
 	}
 }
 

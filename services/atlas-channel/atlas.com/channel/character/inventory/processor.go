@@ -18,3 +18,15 @@ func Equip(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fun
 		return producer.ProviderImpl(l)(span)(EnvCommandTopicEquipItem)(equipItemCommandProvider(tenant, characterId, source, destination))
 	}
 }
+
+func Move(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType byte, source int16, destination int16) error {
+	return func(characterId uint32, inventoryType byte, source int16, destination int16) error {
+		return producer.ProviderImpl(l)(span)(EnvCommandTopicMoveItem)(moveItemCommandProvider(tenant, characterId, inventoryType, source, destination))
+	}
+}
+
+func Drop(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
+	return func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
+		return producer.ProviderImpl(l)(span)(EnvCommandTopicDropItem)(dropItemCommandProvider(tenant, characterId, inventoryType, source, quantity))
+	}
+}

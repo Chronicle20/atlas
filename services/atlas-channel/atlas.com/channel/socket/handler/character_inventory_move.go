@@ -34,9 +34,16 @@ func CharacterInventoryMoveHandleFunc(l logrus.FieldLogger, span opentracing.Spa
 			return
 		}
 		if destination == 0 {
-			// drop
+			err := inventory.Drop(l, span, s.Tenant())(s.CharacterId(), inventoryType, source, count)
+			if err != nil {
+				l.WithError(err).Errorf("Error dropping [%d] item from slot [%d] for character [%d].", count, source, s.CharacterId())
+			}
 			return
 		}
-		// move
+
+		err := inventory.Move(l, span, s.Tenant())(s.CharacterId(), inventoryType, source, destination)
+		if err != nil {
+			l.WithError(err).Errorf("Error moving item from slot [%d] to slot [%d] for character [%d].", source, destination, s.CharacterId())
+		}
 	}
 }

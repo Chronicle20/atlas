@@ -115,6 +115,7 @@ func main() {
 				_, _ = cm.RegisterHandler(inventory.ChangeEventAddRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(inventory.ChangeEventUpdateRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(inventory.ChangeEventMoveRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(inventory.ChangeEventRemoveRegister(sc, wp)(fl))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tdm.Context(), tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)

@@ -34,3 +34,7 @@ type inventoryChangedItemMoveBody struct {
 	ItemId  uint32 `json:"itemId"`
 	OldSlot int16  `json:"oldSlot"`
 }
+
+type inventoryChangedItemRemoveBody struct {
+	ItemId uint32 `json:"itemId"`
+}

@@ -185,3 +185,38 @@ func updateAppearance(l logrus.FieldLogger, wp writer.Producer) func(c character
 		}
 	}
 }
+
+func ChangeEventRemoveRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvEventInventoryChanged)()
+		return t, message.AdaptHandler(message.PersistentConfig(handleInventoryRemoveEvent(sc, wp)))
+	}
+}
+
+func handleInventoryRemoveEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemRemoveBody]] {
+	return func(l logrus.FieldLogger, span opentracing.Span, event inventoryChangedEvent[inventoryChangedItemRemoveBody]) {
+		if !sc.Tenant().Is(event.Tenant) {
+			return
+		}
+
+		if event.Type != ChangedTypeRemove {
+			return
+		}
+
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, removeFromInventory(l, span, wp)(event))
+	}
+}
+
+func removeFromInventory(l logrus.FieldLogger, _ opentracing.Span, wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemRemoveBody]) model.Operator[session.Model] {
+	inventoryChangeFunc := session.Announce(l)(wp)(writer.CharacterInventoryChange)
+	return func(event inventoryChangedEvent[inventoryChangedItemRemoveBody]) model.Operator[session.Model] {
+		return func(s session.Model) error {
+			inventoryType := byte(math.Floor(float64(event.Body.ItemId) / 1000000))
+			err := inventoryChangeFunc(s, writer.CharacterInventoryRemoveBody(s.Tenant())(inventoryType, event.Slot, false))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to remove [%d] in slot [%d] for character [%d].", event.Body.ItemId, event.Slot, s.CharacterId())
+			}
+			return err
+		}
+	}
+}

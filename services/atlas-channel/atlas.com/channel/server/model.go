@@ -36,16 +36,8 @@ func New(tenant tenant.Model, worldId byte, channelId byte) (Model, error) {
 }
 
 func (m Model) Is(tenant tenant.Model, worldId byte, channelId byte) bool {
-	if tenant.Id != m.tenant.Id {
-		return false
-	}
-	if tenant.Region != m.tenant.Region {
-		return false
-	}
-	if tenant.MajorVersion != m.tenant.MajorVersion {
-		return false
-	}
-	if tenant.MinorVersion != m.tenant.MinorVersion {
+	is := m.Tenant().Is(tenant)
+	if !is {
 		return false
 	}
 	if worldId != m.worldId {

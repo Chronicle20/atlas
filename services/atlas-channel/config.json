@@ -132,6 +132,10 @@
               "writer": "ChannelChange"
             },
             {
+              "opCode": "0x14",
+              "writer": "CharacterInventoryChange"
+            },
+            {
               "opCode": "0x16",
               "writer": "StatChanged"
             },
@@ -403,6 +407,10 @@
             {
               "opCode": "0x10",
               "writer": "ChannelChange"
+            },
+            {
+              "opCode": "0x1D",
+              "writer": "CharacterInventoryChange"
             },
             {
               "opCode": "0x1F",
@@ -726,6 +734,10 @@
               "writer": "ChannelChange"
             },
             {
+              "opCode": "0x1D",
+              "writer": "CharacterInventoryChange"
+            },
+            {
               "opCode": "0x1F",
               "writer": "StatChanged"
             },
@@ -964,6 +976,10 @@
             {
               "opCode": "0x10",
               "writer": "ChannelChange"
+            },
+            {
+              "opCode": "0x1E",
+              "writer": "CharacterInventoryChange"
             },
             {
               "opCode": "0x20",
@@ -1228,6 +1244,10 @@
             {
               "opCode": "0x08",
               "writer": "ChannelChange"
+            },
+            {
+              "opCode": "0x1B",
+              "writer": "CharacterInventoryChange"
             },
             {
               "opCode": "0x1D",

@@ -115,7 +115,7 @@ func handleCreateItem(d *rest.HandlerDependency, c *rest.HandlerContext, model i
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return rest.ParseInventoryType(d.Logger(), func(inventoryType int8) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				err := CreateItem(d.Logger(), d.DB(), d.Span(), c.Tenant())(characterId, Type(inventoryType), model.ItemId, model.Quantity)
+				err := CreateItem(d.Logger(), d.DB(), d.Span(), producer.ProviderImpl(d.Logger())(d.Span()))(c.Tenant(), characterId, Type(inventoryType), model.ItemId, model.Quantity)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return

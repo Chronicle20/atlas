@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-character/kafka/producer"
 	"atlas-character/rest"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
@@ -179,7 +180,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		cs, err := Create(d.Logger(), d.DB(), d.Span(), c.Tenant())(m)
+		cs, err := Create(d.Logger(), d.DB(), d.Span(), producer.ProviderImpl(d.Logger())(d.Span()))(c.Tenant(), m)
 		if err != nil {
 			if errors.Is(err, blockedNameErr) || errors.Is(err, invalidLevelErr) {
 				w.WriteHeader(http.StatusBadRequest)

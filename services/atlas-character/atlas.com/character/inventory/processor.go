@@ -148,8 +148,8 @@ func (i adjustment) OldSlot() int16 {
 	return i.oldSlot
 }
 
-func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
-	return func(characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
+func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
+	return func(tenant tenant.Model, characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
 		expectedInventoryType := math.Floor(float64(itemId) / 1000000)
 		if expectedInventoryType != float64(inventoryType) {
 			l.Errorf("Provided inventoryType [%d] does not match expected one [%d] for itemId [%d].", inventoryType, uint32(expectedInventoryType), itemId)
@@ -193,13 +193,13 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 		if err != nil {
 			return err
 		}
-		return producer.ProviderImpl(l)(span)(EnvEventInventoryChanged)(events)
+		return eventProducer(EnvEventInventoryChanged)(events)
 	}
 }
 
-func GetInventoryByType(l logrus.FieldLogger, tx *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType Type) model.Provider[ItemHolder] {
+func GetInventoryByType(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType Type) model.Provider[ItemHolder] {
 	return func(characterId uint32, inventoryType Type) model.Provider[ItemHolder] {
-		return model.Map(ByCharacterIdProvider(l, tx, span, tenant)(characterId), getInventoryByType(inventoryType))
+		return model.Map(ByCharacterIdProvider(l, db, span, tenant)(characterId), getInventoryByType(inventoryType))
 	}
 }
 
@@ -499,18 +499,18 @@ func DeleteItemInventory(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, 
 
 type SlotGetter[E any] func(inventoryId uint32, source int16) (E, error)
 
-func Move(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType byte, source int16, destination int16) error {
-	return func(characterId uint32, inventoryType byte, source int16, destination int16) error {
+func Move(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
+	return func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
 		if inventoryType == 1 {
-			return moveEquip(l, db, span, tenant)(characterId, source, destination)
+			return moveEquip(l, db, span, eventProducer)(tenant, characterId, source, destination)
 		} else {
-			return moveItem(l, db, span, tenant)(characterId, inventoryType, source, destination)
+			return moveItem(l, db, span, eventProducer)(tenant, characterId, inventoryType, source, destination)
 		}
 	}
 }
 
-func moveItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType byte, source int16, destination int16) error {
-	return func(characterId uint32, inventoryType byte, source int16, destination int16) error {
+func moveItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
+	return func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
 		l.Debugf("Received request to move item at [%d] to [%d] for character [%d].", source, destination, characterId)
 		invLock := GetLockRegistry().GetById(characterId, Type(inventoryType))
 		invLock.Lock()
@@ -552,7 +552,7 @@ func moveItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 					return err
 				}
 				l.Debugf("Moved item from temporary location [%d] to slot [%d] for character [%d].", temporarySlot, source, characterId)
-				events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, otherItem.ItemId(), source, destination))
+				//events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, otherItem.ItemId(), source, destination))
 			}
 			return nil
 		})
@@ -560,7 +560,7 @@ func moveItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 			l.WithError(txErr).Errorf("Unable to complete moving item for character [%d].", characterId)
 			return txErr
 		}
-		err := producer.ProviderImpl(l)(span)(EnvEventInventoryChanged)(events)
+		err := eventProducer(EnvEventInventoryChanged)(events)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
 		}
@@ -568,8 +568,8 @@ func moveItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 	}
 }
 
-func moveEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, source int16, destination int16) error {
-	return func(characterId uint32, source int16, destination int16) error {
+func moveEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, source int16, destination int16) error {
+	return func(tenant tenant.Model, characterId uint32, source int16, destination int16) error {
 		l.Debugf("Received request to move item at [%d] to [%d] for character [%d].", source, destination, characterId)
 		invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
 		invLock.Lock()
@@ -603,7 +603,7 @@ func moveEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant 
 					return err
 				}
 				l.Debugf("Moved item from temporary location [%d] to slot [%d] for character [%d].", temporarySlot, source, characterId)
-				events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, equip.ItemId(), source, destination))
+				//events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, equip.ItemId(), source, destination))
 			}
 			return nil
 		})
@@ -611,7 +611,7 @@ func moveEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant 
 			l.WithError(txErr).Errorf("Unable to complete moving item for character [%d].", characterId)
 			return txErr
 		}
-		err := producer.ProviderImpl(l)(span)(EnvEventInventoryChanged)(events)
+		err := eventProducer(EnvEventInventoryChanged)(events)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
 		}

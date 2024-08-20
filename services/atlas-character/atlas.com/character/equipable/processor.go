@@ -30,23 +30,10 @@ func EquipmentProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span,
 	}
 }
 
-func GetEquipment(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) ([]Model, error) {
-	return func(inventoryId uint32) ([]Model, error) {
-		fp := model.FilteredProvider[Model](byInventoryProvider(l, db, span, tenant)(inventoryId), FilterOutInventory)
-		return model.SliceMap(fp, decorateWithStatistics(l, span, tenant), model.ParallelMap())()
-	}
-}
-
 func InInventoryProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.Provider[[]Model] {
 	return func(inventoryId uint32) model.Provider[[]Model] {
 		fp := model.FilteredProvider[Model](byInventoryProvider(l, db, span, tenant)(inventoryId), FilterOutEquipment)
 		return model.SliceMap(fp, decorateWithStatistics(l, span, tenant), model.ParallelMap())
-	}
-}
-
-func GetInInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) ([]Model, error) {
-	return func(inventoryId uint32) ([]Model, error) {
-		return InInventoryProvider(l, db, span, tenant)(inventoryId)()
 	}
 }
 
@@ -109,22 +96,6 @@ func GetNextFreeSlot(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, t
 			return model.ErrorProvider[int16](err)
 		}
 		return model.FixedProvider[int16](slot)
-	}
-}
-
-func makeWithStatistics(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(e entity) (Model, error) {
-	return func(e entity) (Model, error) {
-		m, err := makeModel(e)
-		if err != nil {
-			return Model{}, err
-		}
-
-		sm, err := statistics.GetById(l, span, tenant)(e.ReferenceId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve generated equipment [%d] statistics.", e.ID)
-			return m, nil
-		}
-		return statisticsDecorator(sm)(m), nil
 	}
 }
 

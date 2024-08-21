@@ -58,19 +58,35 @@ func inventoryItemUpdateProvider(tenant tenant.Model, characterId uint32, itemId
 	return producer.SingleMessageProvider(key, value)
 }
 
-func inventoryItemMoveProvider(tenant tenant.Model, characterId uint32, itemId uint32, slot int16, oldSlot int16) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &inventoryChangedEvent[inventoryChangedItemMoveBody]{
-		Tenant:      tenant,
-		CharacterId: characterId,
-		Slot:        slot,
-		Type:        ChangedTypeMove,
-		Body: inventoryChangedItemMoveBody{
-			ItemId:  itemId,
-			OldSlot: oldSlot,
-		},
+func noOpInventoryItemMoveProvider(_ uint32) func(slot int16) model.Provider[[]kafka.Message] {
+	return func(_ int16) model.Provider[[]kafka.Message] {
+		return func() ([]kafka.Message, error) {
+			return nil, nil
+		}
 	}
-	return producer.SingleMessageProvider(key, value)
+}
+
+func inventoryItemMoveProvider(tenant tenant.Model) func(characterId uint32) func(oldSlot int16) func(itemId uint32) func(slot int16) model.Provider[[]kafka.Message] {
+	return func(characterId uint32) func(oldSlot int16) func(itemId uint32) func(slot int16) model.Provider[[]kafka.Message] {
+		return func(oldSlot int16) func(itemId uint32) func(slot int16) model.Provider[[]kafka.Message] {
+			return func(itemId uint32) func(slot int16) model.Provider[[]kafka.Message] {
+				return func(slot int16) model.Provider[[]kafka.Message] {
+					key := producer.CreateKey(int(characterId))
+					value := &inventoryChangedEvent[inventoryChangedItemMoveBody]{
+						Tenant:      tenant,
+						CharacterId: characterId,
+						Slot:        slot,
+						Type:        ChangedTypeMove,
+						Body: inventoryChangedItemMoveBody{
+							ItemId:  itemId,
+							OldSlot: oldSlot,
+						},
+					}
+					return producer.SingleMessageProvider(key, value)
+				}
+			}
+		}
+	}
 }
 
 func inventoryItemRemoveProvider(tenant tenant.Model, characterId uint32, itemId uint32, slot int16) model.Provider[[]kafka.Message] {

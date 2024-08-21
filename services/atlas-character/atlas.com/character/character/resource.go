@@ -58,7 +58,7 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 			return
 		}
 
-		cs, err := GetForAccountInWorld(d.Logger(), d.DB(), c.Tenant())(uint32(accountId), byte(worldId), decoratorsFromInclude(r, d, c)...)
+		cs, err := GetForAccountInWorld(d.DB(), c.Tenant())(uint32(accountId), byte(worldId), decoratorsFromInclude(r, d, c)...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to get characters for account %d in world %d.", accountId, worldId)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -100,7 +100,7 @@ func handleGetCharactersByMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 			return
 		}
 
-		cs, err := GetForMapInWorld(d.Logger(), d.DB(), c.Tenant())(byte(worldId), uint32(mapId), decoratorsFromInclude(r, d, c)...)
+		cs, err := GetForMapInWorld(d.DB(), c.Tenant())(byte(worldId), uint32(mapId), decoratorsFromInclude(r, d, c)...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to get characters for map %d in world %d.", mapId, worldId)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -127,7 +127,7 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 			return
 		}
 
-		cs, err := GetForName(d.Logger(), d.DB(), c.Tenant())(name, decoratorsFromInclude(r, d, c)...)
+		cs, err := GetForName(d.DB(), c.Tenant())(name, decoratorsFromInclude(r, d, c)...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Getting character %s.", name)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -148,7 +148,7 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 func handleGetCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cs, err := GetById(d.Logger(), d.DB(), c.Tenant())(characterId, decoratorsFromInclude(r, d, c)...)
+			cs, err := GetById(d.DB(), c.Tenant())(characterId, decoratorsFromInclude(r, d, c)...)
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 				return

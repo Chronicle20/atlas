@@ -20,51 +20,51 @@ import (
 var blockedNameErr = errors.New("blocked name")
 var invalidLevelErr = errors.New("invalid level")
 
-func byIdProvider(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
+func byIdProvider(db *gorm.DB, tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
 		return database.ModelProvider[Model, entity](db)(getById(tenant.Id, characterId), makeCharacter)
 	}
 }
 
-func GetById(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(characterId uint32, decorators ...model.Decorator[Model]) (Model, error) {
+func GetById(db *gorm.DB, tenant tenant.Model) func(characterId uint32, decorators ...model.Decorator[Model]) (Model, error) {
 	return func(characterId uint32, decorators ...model.Decorator[Model]) (Model, error) {
-		return model.Map(byIdProvider(l, db, tenant)(characterId), model.Decorate(decorators...))()
+		return model.Map(byIdProvider(db, tenant)(characterId), model.Decorate(decorators...))()
 	}
 }
 
-func byAccountInWorldProvider(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(accountId uint32, worldId byte) model.Provider[[]Model] {
+func byAccountInWorldProvider(db *gorm.DB, tenant tenant.Model) func(accountId uint32, worldId byte) model.Provider[[]Model] {
 	return func(accountId uint32, worldId byte) model.Provider[[]Model] {
 		return database.ModelSliceProvider[Model, entity](db)(getForAccountInWorld(tenant.Id, accountId, worldId), makeCharacter)
 	}
 }
 
-func GetForAccountInWorld(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(accountId uint32, worldId byte, decorators ...model.Decorator[Model]) ([]Model, error) {
+func GetForAccountInWorld(db *gorm.DB, tenant tenant.Model) func(accountId uint32, worldId byte, decorators ...model.Decorator[Model]) ([]Model, error) {
 	return func(accountId uint32, worldId byte, decorators ...model.Decorator[Model]) ([]Model, error) {
-		return model.SliceMap(byAccountInWorldProvider(l, db, tenant)(accountId, worldId), model.Decorate(decorators...))()
+		return model.SliceMap(byAccountInWorldProvider(db, tenant)(accountId, worldId), model.Decorate(decorators...))()
 	}
 }
 
-func byMapInWorld(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(worldId byte, mapId uint32) model.Provider[[]Model] {
+func byMapInWorld(db *gorm.DB, tenant tenant.Model) func(worldId byte, mapId uint32) model.Provider[[]Model] {
 	return func(worldId byte, mapId uint32) model.Provider[[]Model] {
 		return database.ModelSliceProvider[Model, entity](db)(getForMapInWorld(tenant.Id, worldId, mapId), makeCharacter)
 	}
 }
 
-func GetForMapInWorld(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(worldId byte, mapId uint32, decorators ...model.Decorator[Model]) ([]Model, error) {
+func GetForMapInWorld(db *gorm.DB, tenant tenant.Model) func(worldId byte, mapId uint32, decorators ...model.Decorator[Model]) ([]Model, error) {
 	return func(worldId byte, mapId uint32, decorators ...model.Decorator[Model]) ([]Model, error) {
-		return model.SliceMap(byMapInWorld(l, db, tenant)(worldId, mapId), model.Decorate(decorators...))()
+		return model.SliceMap(byMapInWorld(db, tenant)(worldId, mapId), model.Decorate(decorators...))()
 	}
 }
 
-func byName(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name string) model.Provider[[]Model] {
+func byName(db *gorm.DB, tenant tenant.Model) func(name string) model.Provider[[]Model] {
 	return func(name string) model.Provider[[]Model] {
 		return database.ModelSliceProvider[Model, entity](db)(getForName(tenant.Id, name), makeCharacter)
 	}
 }
 
-func GetForName(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name string, decorators ...model.Decorator[Model]) ([]Model, error) {
+func GetForName(db *gorm.DB, tenant tenant.Model) func(name string, decorators ...model.Decorator[Model]) ([]Model, error) {
 	return func(name string, decorators ...model.Decorator[Model]) ([]Model, error) {
-		return model.SliceMap(byName(l, db, tenant)(name), model.Decorate(decorators...))()
+		return model.SliceMap(byName(db, tenant)(name), model.Decorate(decorators...))()
 	}
 }
 
@@ -182,7 +182,7 @@ func IsValidName(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(na
 			return false, nil
 		}
 
-		cs, err := GetForName(l, db, tenant)(name)
+		cs, err := GetForName(db, tenant)(name)
 		if len(cs) != 0 || err != nil {
 			return false, nil
 		}
@@ -242,7 +242,7 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProdu
 func Delete(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32) error {
 	return func(characterId uint32) error {
 		err := db.Transaction(func(tx *gorm.DB) error {
-			c, err := GetById(l, tx, tenant)(characterId, InventoryModelDecorator(l, tx, span, tenant))
+			c, err := GetById(tx, tenant)(characterId, InventoryModelDecorator(l, tx, span, tenant))
 			if err != nil {
 				return err
 			}
@@ -297,7 +297,7 @@ func Delete(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 func Login(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte) error {
 	return func(characterId uint32, worldId byte, channelId byte) error {
 		alf := announceLogin(producer.ProviderImpl(l)(span))(tenant)(worldId, channelId)
-		return model.For(byIdProvider(l, db, tenant)(characterId), alf)
+		return model.For(byIdProvider(db, tenant)(characterId), alf)
 	}
 }
 
@@ -314,7 +314,7 @@ func announceLogin(provider producer.Provider) func(tenant tenant.Model) func(wo
 func Logout(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte) error {
 	return func(characterId uint32, worldId byte, channelId byte) error {
 		alf := announceLogout(producer.ProviderImpl(l)(span))(tenant)(worldId, channelId)
-		return model.For(byIdProvider(l, db, tenant)(characterId), alf)
+		return model.For(byIdProvider(db, tenant)(characterId), alf)
 	}
 }
 
@@ -333,7 +333,7 @@ func ChangeMap(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant 
 		cmf := changeMap(db)(tenant)(mapId)
 		papf := positionAtPortal(l)(span)(tenant)(mapId, portalId)
 		amcf := announceMapChanged(producer.ProviderImpl(l)(span))(tenant)(worldId, channelId, mapId, portalId)
-		return model.For(byIdProvider(l, db, tenant)(characterId), model.ThenOperator(cmf, papf, amcf))
+		return model.For(byIdProvider(db, tenant)(characterId), model.ThenOperator(cmf, papf, amcf))
 	}
 }
 

@@ -5,7 +5,18 @@ import (
 	"sort"
 )
 
+type Identifier interface {
+	Id() uint32
+}
+
+type Templater interface {
+	Identifier
+	ItemId() uint32
+}
+
 type Slottable interface {
+	Identifier
+	Templater
 	Slot() int16
 }
 

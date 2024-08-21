@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func byInventoryProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.Provider[[]Model] {
+func byInventoryProvider(db *gorm.DB, tenant tenant.Model) func(inventoryId uint32) model.Provider[[]Model] {
 	return func(inventoryId uint32) model.Provider[[]Model] {
 		return database.ModelSliceProvider[Model, entity](db)(getByInventory(tenant.Id, inventoryId), makeModel)
 	}
@@ -19,27 +19,41 @@ func byInventoryProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Spa
 
 func GetByInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) ([]Model, error) {
 	return func(inventoryId uint32) ([]Model, error) {
-		return model.SliceMap(byInventoryProvider(l, db, span, tenant)(inventoryId), decorateWithStatistics(l, span, tenant), model.ParallelMap())()
+		return model.SliceMap(byInventoryProvider(db, tenant)(inventoryId), decorateWithStatistics(l, span, tenant), model.ParallelMap())()
 	}
 }
 
 func EquipmentProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.Provider[[]Model] {
 	return func(inventoryId uint32) model.Provider[[]Model] {
-		fp := model.FilteredProvider[Model](byInventoryProvider(l, db, span, tenant)(inventoryId), FilterOutInventory)
+		fp := model.FilteredProvider[Model](byInventoryProvider(db, tenant)(inventoryId), FilterOutInventory)
 		return model.SliceMap(fp, decorateWithStatistics(l, span, tenant), model.ParallelMap())
 	}
 }
 
 func InInventoryProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.Provider[[]Model] {
 	return func(inventoryId uint32) model.Provider[[]Model] {
-		fp := model.FilteredProvider[Model](byInventoryProvider(l, db, span, tenant)(inventoryId), FilterOutEquipment)
+		fp := model.FilteredProvider[Model](byInventoryProvider(db, tenant)(inventoryId), FilterOutEquipment)
 		return model.SliceMap(fp, decorateWithStatistics(l, span, tenant), model.ParallelMap())
 	}
 }
 
-func GetBySlot(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(characterId uint32, slot int16) (Model, error) {
+func ToSlottable(m Model) (slottable.Slottable, error) {
+	return m, nil
+}
+
+func BySlotProvider(db *gorm.DB) func(tenant tenant.Model) func(characterId uint32) func(slot int16) model.Provider[Model] {
+	return func(tenant tenant.Model) func(characterId uint32) func(slot int16) model.Provider[Model] {
+		return func(characterId uint32) func(slot int16) model.Provider[Model] {
+			return func(slot int16) model.Provider[Model] {
+				return database.ModelProvider[Model, entity](db)(getBySlot(tenant.Id, characterId, slot), makeModel)
+			}
+		}
+	}
+}
+
+func GetBySlot(db *gorm.DB, tenant tenant.Model) func(characterId uint32, slot int16) (Model, error) {
 	return func(characterId uint32, slot int16) (Model, error) {
-		return database.ModelProvider[Model, entity](db)(getBySlot(tenant.Id, characterId, slot), makeModel)()
+		return BySlotProvider(db)(tenant)(characterId)(slot)()
 	}
 }
 
@@ -51,37 +65,35 @@ func FilterOutEquipment(e Model) bool {
 	return e.Slot() > 0
 }
 
-func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryId uint32, inventoryType int8, itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
-	return func(characterId uint32, inventoryId uint32, inventoryType int8, itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
-		l.Debugf("Creating equipable [%d] for character [%d].", itemId, characterId)
-		slot, err := GetNextFreeSlot(l, db, span, tenant)(inventoryId)()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate a free slot to create the item.")
-			return model.ErrorProvider[slottable.Slottable](err)
-		}
-		l.Debugf("Found open slot [%d] in inventory [%d] of type [%d].", slot, inventoryId, itemId)
-		l.Debugf("Generating new equipable statistics for item [%d].", itemId)
+func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model, statCreator statistics.Creator) func(characterId uint32) func(inventoryId uint32, inventoryType int8) func(itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
+	return func(characterId uint32) func(inventoryId uint32, inventoryType int8) func(itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
+		return func(inventoryId uint32, inventoryType int8) func(itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
+			return func(itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
+				l.Debugf("Creating equipable [%d] for character [%d].", itemId, characterId)
+				slot, err := GetNextFreeSlot(l, db, span, tenant)(inventoryId)()
+				if err != nil {
+					l.WithError(err).Errorf("Unable to locate a free slot to create the item.")
+					return model.ErrorProvider[slottable.Slottable](err)
+				}
+				l.Debugf("Found open slot [%d] in inventory [%d] of type [%d].", slot, inventoryId, itemId)
+				l.Debugf("Generating new equipable statistics for item [%d].", itemId)
 
-		id, err := statistics.Create(l, span, tenant)(itemId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to generate equipment [%d] in equipable storage service for character [%d].", itemId, characterId)
-			return model.ErrorProvider[slottable.Slottable](err)
-		}
+				sm, err := statCreator(itemId)()
+				if err != nil {
+					l.WithError(err).Errorf("Unable to generate equipment [%d] in equipable storage service for character [%d].", itemId, characterId)
+					return model.ErrorProvider[slottable.Slottable](err)
+				}
 
-		sm, err := statistics.GetById(l, span, tenant)(id)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve generated equipment statistics for character [%d] new item [%d].", characterId, itemId)
-			return model.ErrorProvider[slottable.Slottable](err)
-		}
+				i, err := createItem(db, tenant, inventoryId, itemId, slot, sm.Id())
+				if err != nil {
+					return model.ErrorProvider[slottable.Slottable](err)
+				}
 
-		i, err := createItem(db, tenant, inventoryId, itemId, slot, sm.Id())
-		if err != nil {
-			return model.ErrorProvider[slottable.Slottable](err)
+				l.Debugf("Equipable [%d] created for character [%d].", sm.Id(), characterId)
+				rmp := model.Map[Model, Model](model.FixedProvider[Model](i), model.Decorate[Model](statisticsDecorator(sm)))
+				return model.Map(rmp, ToSlottable)
+			}
 		}
-
-		l.Debugf("Equipable [%d] created for character [%d].", id, characterId)
-		rmp := model.Map[Model, Model](model.FixedProvider[Model](i), model.Decorate[Model](statisticsDecorator(sm)))
-		return model.Map(rmp, slottableTransformer)
 	}
 }
 
@@ -91,11 +103,11 @@ func GetNextFreeSlot(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, t
 		if err != nil {
 			return model.ErrorProvider[int16](err)
 		}
-		slot, err := slottable.GetNextFreeSlot(model.SliceMap(model.FixedProvider(ms), slottableTransformer))
+		slot, err := slottable.GetNextFreeSlot(model.SliceMap(model.FixedProvider(ms), ToSlottable))
 		if err != nil {
 			return model.ErrorProvider[int16](err)
 		}
-		return model.FixedProvider[int16](slot)
+		return model.FixedProvider(slot)
 	}
 }
 
@@ -132,13 +144,11 @@ func statisticsDecorator(sm statistics.Model) model.Decorator[Model] {
 	}
 }
 
-func slottableTransformer(m Model) (slottable.Slottable, error) {
-	return m, nil
-}
-
-func UpdateSlot(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(id uint32, slot int16) error {
-	return func(id uint32, slot int16) error {
-		return updateSlot(db, tenant.Id, id, slot)
+func UpdateSlot(db *gorm.DB) func(tenant tenant.Model) func(id uint32, slot int16) error {
+	return func(tenant tenant.Model) func(id uint32, slot int16) error {
+		return func(id uint32, slot int16) error {
+			return updateSlot(db, tenant.Id, id, slot)
+		}
 	}
 }
 

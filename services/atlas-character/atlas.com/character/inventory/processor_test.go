@@ -107,7 +107,7 @@ func TestMove(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get inventory: %v", err)
 	}
-	i1, err := item.GetBySlot(l, db, tenant)(inv.Id(), 1)
+	i1, err := item.GetBySlot(db, tenant)(inv.Id(), 1)
 	if err != nil {
 		t.Fatalf("Failed to get inventory: %v", err)
 	}
@@ -117,7 +117,7 @@ func TestMove(t *testing.T) {
 	if i1.Quantity() != 100 {
 		t.Fatalf("Inventory quantity should be 100, got: %d", i1.Quantity())
 	}
-	i2, err := item.GetBySlot(l, db, tenant)(inv.Id(), 2)
+	i2, err := item.GetBySlot(db, tenant)(inv.Id(), 2)
 	if err != nil {
 		t.Fatalf("Failed to get inventory: %v", err)
 	}
@@ -137,7 +137,7 @@ func TestMove(t *testing.T) {
 	if len(moveItemMessages) != 1 {
 		t.Fatalf("Failed to move item: %v", moveItemMessages)
 	}
-	i3, err := item.GetBySlot(l, db, tenant)(inv.Id(), 1)
+	i3, err := item.GetBySlot(db, tenant)(inv.Id(), 1)
 	if err != nil {
 		t.Fatalf("Failed to get inventory: %v", err)
 	}
@@ -147,7 +147,7 @@ func TestMove(t *testing.T) {
 	if i3.Quantity() != 150 {
 		t.Fatalf("Inventory quantity should be 150, got: %d", i2.Quantity())
 	}
-	i4, err := item.GetBySlot(l, db, tenant)(inv.Id(), 2)
+	i4, err := item.GetBySlot(db, tenant)(inv.Id(), 2)
 	if err != nil {
 		t.Fatalf("Failed to get inventory: %v", err)
 	}

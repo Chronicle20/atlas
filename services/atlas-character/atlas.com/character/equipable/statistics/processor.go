@@ -8,14 +8,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(itemId uint32) (uint32, error) {
-	return func(itemId uint32) (uint32, error) {
+type Creator func(itemId uint32) model.Provider[Model]
+
+func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) Creator {
+	return func(itemId uint32) model.Provider[Model] {
 		ro, err := requestCreate(l, span, tenant)(itemId)(l)
 		if err != nil {
 			l.WithError(err).Errorf("Generating equipment item %d, they were not awarded this item. Check request in ESO service.", itemId)
-			return 0, err
+			return model.ErrorProvider[Model](err)
 		}
-		return ro.Id, nil
+		return model.Map(model.FixedProvider(ro), makeEquipment)
 	}
 }
 

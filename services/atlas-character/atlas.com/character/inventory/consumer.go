@@ -33,7 +33,7 @@ func EquipItemRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handl
 func handleEquipItemCommand(db *gorm.DB) message.Handler[equipItemCommand] {
 	return func(l logrus.FieldLogger, span opentracing.Span, command equipItemCommand) {
 		l.Debugf("Received equip item command. characterId [%d] source [%d] destination [%d]", command.CharacterId, command.Source, command.Destination)
-		EquipItemForCharacter(l, db, span, command.Tenant)(command.CharacterId, command.Source, command.Destination)
+		EquipItemForCharacter(l)(db)(span)(command.Tenant)(command.CharacterId)(command.Source, command.Destination)
 	}
 }
 

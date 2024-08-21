@@ -62,11 +62,7 @@ func MaxInSlot() uint32 {
 
 func CreateItem(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(characterId uint32, inventoryId uint32, inventoryType int8, itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
 	return func(characterId uint32, inventoryId uint32, inventoryType int8, itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
-		ms, err := GetByInventory(l, db, tenant)(inventoryId)
-		if err != nil {
-			return model.ErrorProvider[slottable.Slottable](err)
-		}
-		slot, err := slottable.GetNextFreeSlot(model.SliceMap(model.FixedProvider(ms), slottableTransformer))
+		slot, err := slottable.GetNextFreeSlot(model.SliceMap(ByInventoryProvider(l, db, tenant)(inventoryId), slottableTransformer))
 		if err != nil {
 			return model.ErrorProvider[slottable.Slottable](err)
 		}

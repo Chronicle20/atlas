@@ -103,51 +103,6 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 	}
 }
 
-type adjustmentMode byte
-
-const (
-	adjustmentModeCreate adjustmentMode = 0
-	adjustmentModeUpdate adjustmentMode = 1
-)
-
-type adjustment struct {
-	mode            adjustmentMode
-	itemId          uint32
-	inventoryType   Type
-	changedQuantity uint32
-	quantity        uint32
-	slot            int16
-	oldSlot         int16
-}
-
-func (i adjustment) Mode() adjustmentMode {
-	return i.mode
-}
-
-func (i adjustment) ItemId() uint32 {
-	return i.itemId
-}
-
-func (i adjustment) InventoryType() Type {
-	return i.inventoryType
-}
-
-func (i adjustment) Quantity() uint32 {
-	return i.quantity
-}
-
-func (i adjustment) ChangedQuantity() uint32 {
-	return i.changedQuantity
-}
-
-func (i adjustment) Slot() int16 {
-	return i.slot
-}
-
-func (i adjustment) OldSlot() int16 {
-	return i.oldSlot
-}
-
 func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
 	return func(tenant tenant.Model, characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
 		expectedInventoryType := math.Floor(float64(itemId) / 1000000)
@@ -497,8 +452,6 @@ func DeleteItemInventory(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, 
 	}
 }
 
-type SlotGetter[E any] func(inventoryId uint32, source int16) (E, error)
-
 func Move(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
 	return func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
 		if inventoryType == 1 {
@@ -552,7 +505,6 @@ func moveItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventPro
 					return err
 				}
 				l.Debugf("Moved item from temporary location [%d] to slot [%d] for character [%d].", temporarySlot, source, characterId)
-				//events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, otherItem.ItemId(), source, destination))
 			}
 			return nil
 		})
@@ -603,7 +555,6 @@ func moveEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventPr
 					return err
 				}
 				l.Debugf("Moved item from temporary location [%d] to slot [%d] for character [%d].", temporarySlot, source, characterId)
-				//events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, equip.ItemId(), source, destination))
 			}
 			return nil
 		})

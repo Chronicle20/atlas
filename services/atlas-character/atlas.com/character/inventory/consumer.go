@@ -57,7 +57,9 @@ func UnequipItemRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Han
 func handleUnequipItemCommand(db *gorm.DB) message.Handler[unequipItemCommand] {
 	return func(l logrus.FieldLogger, span opentracing.Span, command unequipItemCommand) {
 		l.Debugf("Received unequip item command. characterId [%d] source [%d].", command.CharacterId, command.Source)
-		UnequipItemForCharacter(l, db, span, command.Tenant)(command.CharacterId, command.Source)
+		fsp := model.Flip(model.Flip(equipable.GetNextFreeSlot(l))(span))(command.Tenant)
+		ep := producer.ProviderImpl(l)(span)
+		UnequipItemForCharacter(l)(db)(command.Tenant)(fsp)(ep)(command.CharacterId)(command.Source)
 	}
 }
 

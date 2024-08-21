@@ -208,6 +208,35 @@ func TestAdjustingEquipment(t *testing.T) {
 	if !validateEquipable(equippedOverall, EquipableItemIdValidator(1050018)) {
 		t.Fatalf("Equiping of Bottom failed validation.")
 	}
+
+	// Equip Top next.
+	equipFunc(3)(equipment.FixedDestinationProvider(int16(slot.PositionTop)))
+	equippedTop, err = equipable.GetBySlot(db, tenant)(c.Id(), int16(slot.PositionTop))
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedTop, EquipableItemIdValidator(1040010)) {
+		t.Fatalf("Equiping of Top failed validation.")
+	}
+
+	var unequipMessages = make([]kafka.Message, 0)
+	unequipFunc := inventory.UnequipItemForCharacter(l)(db)(tenant)(model.Flip(model.Flip(equipable.GetNextFreeSlot(l))(span))(tenant))(testProducer(&unequipMessages))(c.Id())
+	unequipFunc(int16(slot.PositionTop))
+	equippedTop, err = equipable.GetBySlot(db, tenant)(c.Id(), 2)
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedTop, EquipableItemIdValidator(1040010)) {
+		t.Fatalf("Unequiping of Top failed validation.")
+	}
+	unequipFunc(int16(slot.PositionBottom))
+	equippedBottom, err = equipable.GetBySlot(db, tenant)(c.Id(), 3)
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedBottom, EquipableItemIdValidator(1060002)) {
+		t.Fatalf("Unequiping of Bottom failed validation.")
+	}
 }
 
 type EquipableValidator func(equipable.Model) bool

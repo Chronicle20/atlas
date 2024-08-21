@@ -365,41 +365,50 @@ func moveFromSlotToSlot(l logrus.FieldLogger) func(modelProvider model.Provider[
 	}
 }
 
-func UnequipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, oldSlot int16) {
-	return func(characterId uint32, oldSlot int16) {
-		l.Debugf("Received request to unequip item at [%d] for character [%d].", oldSlot, characterId)
-		invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
-		invLock.Lock()
-		defer invLock.Unlock()
+func UnequipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(tenant tenant.Model) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
+	return func(db *gorm.DB) func(tenant tenant.Model) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
+		return func(tenant tenant.Model) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
+			return func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
+				return func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
+					return func(characterId uint32) func(oldSlot int16) {
+						return func(oldSlot int16) {
+							l.Debugf("Received request to unequip item at [%d] for character [%d].", oldSlot, characterId)
+							invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
+							invLock.Lock()
+							defer invLock.Unlock()
 
-		var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
-		txErr := db.Transaction(func(tx *gorm.DB) error {
-			inSlotProvider := model.Flip(model.Flip(equipable.BySlotProvider)(tenant))(characterId)(tx)
-			slotUpdater := model.Flip(equipable.UpdateSlot)(tenant)(tx)
-			characterInventoryMoveProvider := inventoryItemMoveProvider(tenant)(characterId)
+							var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+							txErr := db.Transaction(func(tx *gorm.DB) error {
+								inSlotProvider := model.Flip(model.Flip(equipable.BySlotProvider)(tenant))(characterId)(tx)
+								slotUpdater := model.Flip(equipable.UpdateSlot)(tenant)(tx)
+								characterInventoryMoveProvider := inventoryItemMoveProvider(tenant)(characterId)
 
-			invId, err := GetInventoryIdByType(tx, tenant)(characterId, TypeValueEquip)()
-			if err != nil {
-				l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", TypeValueEquip, characterId)
-				return err
+								invId, err := GetInventoryIdByType(tx, tenant)(characterId, TypeValueEquip)()
+								if err != nil {
+									l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", TypeValueEquip, characterId)
+									return err
+								}
+
+								resp, err := moveFromSlotToSlot(l)(model.Map(inSlotProvider(oldSlot), equipable.ToAsset), freeSlotProvider(tx)(invId), slotUpdater, characterInventoryMoveProvider(oldSlot))()
+								if err != nil {
+									l.WithError(err).Errorf("Unable to move overall out of its slot.")
+									return err
+								}
+								events = model.MergeSliceProvider(events, model.FixedProvider(resp))
+								return nil
+							})
+							if txErr != nil {
+								l.WithError(txErr).Errorf("Unable to complete unequiping item at [%d] for character [%d].", oldSlot, characterId)
+								return
+							}
+							err := eventProducer(EnvEventInventoryChanged)(events)
+							if err != nil {
+								l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
+							}
+						}
+					}
+				}
 			}
-			nextFreeSlotProvider := equipable.GetNextFreeSlot(l)(tx)(span)(tenant)(invId)
-
-			resp, err := moveFromSlotToSlot(l)(model.Map(inSlotProvider(oldSlot), equipable.ToAsset), nextFreeSlotProvider, slotUpdater, characterInventoryMoveProvider(oldSlot))()
-			if err != nil {
-				l.WithError(err).Errorf("Unable to move overall out of its slot.")
-				return err
-			}
-			events = model.MergeSliceProvider(events, model.FixedProvider(resp))
-			return nil
-		})
-		if txErr != nil {
-			l.WithError(txErr).Errorf("Unable to complete unequiping item at [%d] for character [%d].", oldSlot, characterId)
-			return
-		}
-		err := producer.ProviderImpl(l)(span)(EnvEventInventoryChanged)(events)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
 		}
 	}
 }

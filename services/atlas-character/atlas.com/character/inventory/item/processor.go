@@ -84,8 +84,10 @@ func RemoveItem(_ logrus.FieldLogger, db *gorm.DB) func(characterId uint32, id u
 	}
 }
 
-func DeleteBySlot(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(inventoryId uint32, slot int16) error {
-	return func(inventoryId uint32, slot int16) error {
-		return deleteBySlot(db, tenant.Id, inventoryId, slot)
+func DeleteById(db *gorm.DB) func(tenant tenant.Model) model.Operator[uint32] {
+	return func(tenant tenant.Model) model.Operator[uint32] {
+		return func(id uint32) error {
+			return deleteById(db, tenant.Id, id)
+		}
 	}
 }

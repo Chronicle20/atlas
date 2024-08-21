@@ -28,6 +28,6 @@ func deleteBySlot(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 		if e == nil {
 			return nil
 		}
-		return equipable.DeleteByReferenceId(l, db, span, tenant)(e.ReferenceId())
+		return equipable.DeleteByReferenceId(l)(span)(db)(tenant)(e.ReferenceId())
 	}
 }

@@ -2,8 +2,8 @@ dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Chronicle20/atlas-kafka v1.0.4 h1:N87hNXlN3mnZU32et5zWyMjtQ4lgt49N3CpUKlkDIK0=
 github.com/Chronicle20/atlas-kafka v1.0.4/go.mod h1:Ihm0NB4MfFx+4aqF6gp0BQ2f+0haM+bGimXbKN+z7LA=
-github.com/Chronicle20/atlas-model v1.0.3 h1:EbdUD9GU1IsuxfhsY791A4+xy2ydLt0vcGZE8yefYN8=
-github.com/Chronicle20/atlas-model v1.0.3/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
+github.com/Chronicle20/atlas-model v1.0.4 h1:e54nQ0HrYjCRg7rN4xAPZuUvPXB7ycARktfecQGwd30=
+github.com/Chronicle20/atlas-model v1.0.4/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
 github.com/Chronicle20/atlas-rest v1.0.0 h1:xPlwWah2uUUFDutFiFogCX9e3QLNn12vUqFiWXQhED8=
 github.com/Chronicle20/atlas-rest v1.0.0/go.mod h1:apd34gn88KqSYeybCb/P5AjNGTHAE48RN3fAcSa9Crc=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2 h1:5IcZpTvzydCQeHzK4Ef/D5rrSqwxob0t8PQPMybUNFM=

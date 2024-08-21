@@ -142,14 +142,20 @@ func UpdateSlot(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(id 
 	}
 }
 
-func DeleteByReferenceId(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(referenceId uint32) error {
-	return func(referenceId uint32) error {
-		l.Debugf("Attempting to delete equipment referencing [%d].", referenceId)
-		err := statistics.Delete(l, span, tenant)(referenceId)
-		if err != nil {
-			return err
+func DeleteByReferenceId(l logrus.FieldLogger) func(span opentracing.Span) func(db *gorm.DB) func(tenant tenant.Model) model.Operator[uint32] {
+	return func(span opentracing.Span) func(db *gorm.DB) func(tenant tenant.Model) model.Operator[uint32] {
+		return func(db *gorm.DB) func(tenant tenant.Model) model.Operator[uint32] {
+			return func(tenant tenant.Model) model.Operator[uint32] {
+				return func(referenceId uint32) error {
+					l.Debugf("Attempting to delete equipment referencing [%d].", referenceId)
+					err := statistics.Delete(l, span, tenant)(referenceId)
+					if err != nil {
+						return err
+					}
+					return delete(db, tenant.Id, referenceId)
+				}
+			}
 		}
-		return delete(db, tenant.Id, referenceId)
 	}
 }
 

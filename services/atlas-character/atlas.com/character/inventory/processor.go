@@ -413,42 +413,33 @@ func UnequipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing
 	}
 }
 
-func DeleteEquipableInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, m EquipableModel) error {
-	return func(characterId uint32, m EquipableModel) error {
-		invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
+func DeleteInventory(l logrus.FieldLogger, db *gorm.DB) func(tenant tenant.Model, characterId uint32, inventoryType Type, itemIdProvider model.Provider[[]uint32], itemDeleter func(db *gorm.DB) func(tenant tenant.Model) model.Operator[uint32]) error {
+	return func(tenant tenant.Model, characterId uint32, inventoryType Type, itemIdProvider model.Provider[[]uint32], itemDeleter func(db *gorm.DB) func(tenant tenant.Model) model.Operator[uint32]) error {
+		invLock := GetLockRegistry().GetById(characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
-
 		return db.Transaction(func(tx *gorm.DB) error {
-			for _, e := range m.Items() {
-				err := equipable.DeleteByReferenceId(l, db, span, tenant)(e.ReferenceId())
-				if err != nil {
-					l.WithError(err).Errorf("Unable to delete equipable in inventory [%d] slot [%d].", m.Id(), e.Slot())
-					return err
-				}
+			err := model.ForEachSlice[uint32](itemIdProvider, itemDeleter(tx)(tenant))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to delete items in inventory.")
+				return err
 			}
-			return delete(tx, tenant.Id, m.Id())
+			return deleteByType(tx, tenant.Id, characterId, int8(inventoryType))
 		})
+	}
+}
+
+func DeleteEquipableInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, m EquipableModel) error {
+	return func(characterId uint32, m EquipableModel) error {
+		idp := model.SliceMap(model.FixedProvider(m.Items()), equipable.ReferenceId)
+		return DeleteInventory(l, db)(tenant, characterId, TypeValueEquip, idp, equipable.DeleteByReferenceId(l)(span))
 	}
 }
 
 func DeleteItemInventory(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, tenant tenant.Model) func(characterId uint32, m ItemModel) error {
 	return func(characterId uint32, m ItemModel) error {
-		invLock := GetLockRegistry().GetById(characterId, m.Type())
-		invLock.Lock()
-		defer invLock.Unlock()
-
-		return db.Transaction(func(tx *gorm.DB) error {
-			for _, i := range m.Items() {
-				err := item.DeleteBySlot(l, tx, tenant)(m.Id(), i.Slot())
-				if err != nil {
-					l.WithError(err).Errorf("Unable to delete item in inventory [%d] slot [%d].", m.Id(), i.Slot())
-					return err
-				}
-
-			}
-			return delete(tx, tenant.Id, m.Id())
-		})
+		idp := model.SliceMap(model.FixedProvider(m.Items()), item.Id)
+		return DeleteInventory(l, db)(tenant, characterId, m.mType, idp, item.DeleteById)
 	}
 }
 
@@ -604,7 +595,7 @@ func dropItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 			initialQuantity := i.Quantity()
 
 			if initialQuantity <= uint32(quantity) {
-				err = item.DeleteBySlot(l, tx, tenant)(inv.Id(), source)
+				err = item.DeleteById(tx)(tenant)(i.Id())
 				if err != nil {
 					l.WithError(err).Errorf("Unable to drop item in slot [%d].", source)
 					return err

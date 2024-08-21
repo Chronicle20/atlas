@@ -27,7 +27,10 @@ func ChangeMapCommandRegister(l logrus.FieldLogger, db *gorm.DB) (string, handle
 
 func handleChangeMap(db *gorm.DB) func(l logrus.FieldLogger, span opentracing.Span, command commandEvent[changeMapBody]) {
 	return func(l logrus.FieldLogger, span opentracing.Span, command commandEvent[changeMapBody]) {
-		ChangeMap(l, db, span, command.Tenant)(command.CharacterId, command.WorldId, command.Body.ChannelId, command.Body.MapId, command.Body.PortalId)
+		err := ChangeMap(l, db, span, command.Tenant)(command.CharacterId, command.WorldId, command.Body.ChannelId, command.Body.MapId, command.Body.PortalId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to change character [%d] map.", command.CharacterId)
+		}
 	}
 }
 
@@ -43,5 +46,8 @@ func MovementEventRegister(l logrus.FieldLogger) (string, handler.Handler) {
 }
 
 func handleMovementEvent(l logrus.FieldLogger, span opentracing.Span, command movementCommand) {
-	Move(l, span, command.Tenant)(command.CharacterId, command.WorldId, command.ChannelId, command.MapId, command.Movement)
+	err := Move(l, span, command.Tenant)(command.CharacterId, command.WorldId, command.ChannelId, command.MapId, command.Movement)
+	if err != nil {
+		l.WithError(err).Errorf("Error processing movement for character [%d].", command.CharacterId)
+	}
 }

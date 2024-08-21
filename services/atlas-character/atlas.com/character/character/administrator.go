@@ -1,6 +1,8 @@
 package character
 
 import (
+	"atlas-character/tenant"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"strconv"
@@ -42,6 +44,22 @@ func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId byte, nam
 
 func delete(db *gorm.DB, tenantId uuid.UUID, characterId uint32) error {
 	return db.Where(&entity{TenantId: tenantId, ID: characterId}).Delete(&entity{}).Error
+}
+
+// Returns a function which accepts a character model,and updates the persisted state of the character given a set of
+// modifying functions.
+func dynamicUpdate(db *gorm.DB, tenant tenant.Model) func(modifiers ...EntityUpdateFunction) model.Operator[Model] {
+	return func(modifiers ...EntityUpdateFunction) model.Operator[Model] {
+		return func(c Model) error {
+			if len(modifiers) > 0 {
+				err := update(db, tenant.Id, c.Id(), modifiers...)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}
 }
 
 func update(db *gorm.DB, tenantId uuid.UUID, characterId uint32, modifiers ...EntityUpdateFunction) error {

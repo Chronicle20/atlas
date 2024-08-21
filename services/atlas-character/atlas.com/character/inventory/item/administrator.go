@@ -29,8 +29,8 @@ func createItem(db *gorm.DB, t tenant.Model, inventoryId uint32, itemId uint32, 
 	return im, txError
 }
 
-func deleteBySlot(db *gorm.DB, tenantId uuid.UUID, inventoryId uint32, slot int16) error {
-	return db.Where(&entity{TenantId: tenantId, InventoryId: inventoryId, Slot: slot}).Delete(&entity{}).Error
+func deleteById(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
+	return db.Where(&entity{TenantId: tenantId, ID: id}).Delete(&entity{}).Error
 }
 
 func makeModel(e entity) (Model, error) {

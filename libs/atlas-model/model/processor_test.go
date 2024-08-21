@@ -81,6 +81,28 @@ func TestFirst(t *testing.T) {
 	}
 }
 
+func TestThenOperator(t *testing.T) {
+	p := FixedProvider(uint32(1))
+	count := uint32(0)
+
+	op1 := func(u uint32) error {
+		count += u
+		return nil
+	}
+	op2 := func(u uint32) error {
+		count += u
+		return nil
+	}
+
+	err := For(p, ThenOperator(op1, op2))
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	if count != 2 {
+		t.Errorf("Expected 2, got %d", count)
+	}
+}
+
 func TestForEachSlice(t *testing.T) {
 	p := FixedProvider([]uint32{1, 2, 3, 4, 5})
 	count := uint32(0)

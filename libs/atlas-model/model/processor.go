@@ -8,6 +8,23 @@ import (
 
 type Operator[M any] func(M) error
 
+//goland:noinspection GoUnusedExportedFunction
+func ThenOperator[M any](first Operator[M], others ...Operator[M]) Operator[M] {
+	return func(m M) error {
+		err := first(m)
+		if err != nil {
+			return err
+		}
+		for _, other := range others {
+			err = other(m)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
 type KeyValueOperator[K any, V any] func(K) Operator[V]
 
 type Provider[M any] func() (M, error)

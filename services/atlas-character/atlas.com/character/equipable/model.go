@@ -35,6 +35,10 @@ func (m Model) ItemId() uint32 {
 	return m.itemId
 }
 
+func (m Model) Quantity() uint32 {
+	return 1
+}
+
 func (m Model) ReferenceId() uint32 {
 	return m.referenceId
 }

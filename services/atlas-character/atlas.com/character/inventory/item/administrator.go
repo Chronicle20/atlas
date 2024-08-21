@@ -7,26 +7,18 @@ import (
 )
 
 func createItem(db *gorm.DB, t tenant.Model, inventoryId uint32, itemId uint32, quantity uint32, slot int16) (Model, error) {
-	var im Model
-	txError := db.Transaction(func(tx *gorm.DB) error {
-		eii := &entity{
-			TenantId:    t.Id,
-			InventoryId: inventoryId,
-			ItemId:      itemId,
-			Quantity:    quantity,
-			Slot:        slot,
-		}
-		err := db.Create(eii).Error
-		if err != nil {
-			return err
-		}
-		im, err = makeModel(*eii)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	return im, txError
+	eii := &entity{
+		TenantId:    t.Id,
+		InventoryId: inventoryId,
+		ItemId:      itemId,
+		Quantity:    quantity,
+		Slot:        slot,
+	}
+	err := db.Create(eii).Error
+	if err != nil {
+		return Model{}, err
+	}
+	return makeModel(*eii)
 }
 
 func deleteById(db *gorm.DB, tenantId uuid.UUID, id uint32) error {

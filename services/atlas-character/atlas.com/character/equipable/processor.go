@@ -1,6 +1,7 @@
 package equipable
 
 import (
+	"atlas-character/asset"
 	"atlas-character/database"
 	"atlas-character/equipable/statistics"
 	"atlas-character/slottable"
@@ -37,7 +38,11 @@ func InInventoryProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Spa
 	}
 }
 
-func ToSlottable(m Model) (slottable.Slottable, error) {
+func ToAsset(m Model) (asset.Asset, error) {
+	return m, nil
+}
+
+func ToSlottable(m Model) (asset.Slottable, error) {
 	return m, nil
 }
 
@@ -65,33 +70,35 @@ func FilterOutEquipment(e Model) bool {
 	return e.Slot() > 0
 }
 
-func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model, statCreator statistics.Creator) func(characterId uint32) func(inventoryId uint32, inventoryType int8) func(itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
-	return func(characterId uint32) func(inventoryId uint32, inventoryType int8) func(itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
-		return func(inventoryId uint32, inventoryType int8) func(itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
-			return func(itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
-				l.Debugf("Creating equipable [%d] for character [%d].", itemId, characterId)
-				slot, err := GetNextFreeSlot(l, db, span, tenant)(inventoryId)()
-				if err != nil {
-					l.WithError(err).Errorf("Unable to locate a free slot to create the item.")
-					return model.ErrorProvider[slottable.Slottable](err)
-				}
-				l.Debugf("Found open slot [%d] in inventory [%d] of type [%d].", slot, inventoryId, itemId)
-				l.Debugf("Generating new equipable statistics for item [%d].", itemId)
+func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model, statCreator statistics.Creator) asset.CharacterAssetCreator {
+	return func(characterId uint32) asset.InventoryAssetCreator {
+		return func(inventoryId uint32, inventoryType int8) asset.ItemCreator {
+			return func(itemId uint32) asset.Creator {
+				return func(quantity uint32) model.Provider[asset.Asset] {
+					l.Debugf("Creating equipable [%d] for character [%d].", itemId, characterId)
+					slot, err := GetNextFreeSlot(l, db, span, tenant)(inventoryId)()
+					if err != nil {
+						l.WithError(err).Errorf("Unable to locate a free slot to create the item.")
+						return model.ErrorProvider[asset.Asset](err)
+					}
+					l.Debugf("Found open slot [%d] in inventory [%d] of type [%d].", slot, inventoryId, itemId)
+					l.Debugf("Generating new equipable statistics for item [%d].", itemId)
 
-				sm, err := statCreator(itemId)()
-				if err != nil {
-					l.WithError(err).Errorf("Unable to generate equipment [%d] in equipable storage service for character [%d].", itemId, characterId)
-					return model.ErrorProvider[slottable.Slottable](err)
-				}
+					sm, err := statCreator(itemId)()
+					if err != nil {
+						l.WithError(err).Errorf("Unable to generate equipment [%d] in equipable storage service for character [%d].", itemId, characterId)
+						return model.ErrorProvider[asset.Asset](err)
+					}
 
-				i, err := createItem(db, tenant, inventoryId, itemId, slot, sm.Id())
-				if err != nil {
-					return model.ErrorProvider[slottable.Slottable](err)
-				}
+					i, err := createItem(db, tenant, inventoryId, itemId, slot, sm.Id())
+					if err != nil {
+						return model.ErrorProvider[asset.Asset](err)
+					}
 
-				l.Debugf("Equipable [%d] created for character [%d].", sm.Id(), characterId)
-				rmp := model.Map[Model, Model](model.FixedProvider[Model](i), model.Decorate[Model](statisticsDecorator(sm)))
-				return model.Map(rmp, ToSlottable)
+					l.Debugf("Equipable [%d] created for character [%d].", sm.Id(), characterId)
+					rmp := model.Map[Model, Model](model.FixedProvider[Model](i), model.Decorate[Model](statisticsDecorator(sm)))
+					return model.Map(rmp, ToAsset)
+				}
 			}
 		}
 	}

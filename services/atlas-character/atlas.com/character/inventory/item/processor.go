@@ -1,6 +1,7 @@
 package item
 
 import (
+	"atlas-character/asset"
 	"atlas-character/database"
 	"atlas-character/slottable"
 	"atlas-character/tenant"
@@ -42,9 +43,19 @@ func GetById(db *gorm.DB, tenant tenant.Model) func(id uint32) (Model, error) {
 	}
 }
 
+func ByItemIdProvider(db *gorm.DB) func(tenant tenant.Model) func(inventoryId uint32) func(itemId uint32) model.Provider[[]Model] {
+	return func(tenant tenant.Model) func(inventoryId uint32) func(itemId uint32) model.Provider[[]Model] {
+		return func(inventoryId uint32) func(itemId uint32) model.Provider[[]Model] {
+			return func(itemId uint32) model.Provider[[]Model] {
+				return database.ModelSliceProvider[Model, entity](db)(getForCharacter(tenant.Id, inventoryId, itemId), makeModel)
+			}
+		}
+	}
+}
+
 func GetByItemId(db *gorm.DB, tenant tenant.Model) func(inventoryId uint32, itemId uint32) ([]Model, error) {
 	return func(inventoryId uint32, itemId uint32) ([]Model, error) {
-		return database.ModelSliceProvider[Model, entity](db)(getForCharacter(tenant.Id, inventoryId, itemId), makeModel)()
+		return ByItemIdProvider(db)(tenant)(inventoryId)(itemId)()
 	}
 }
 
@@ -66,30 +77,31 @@ func UpdateQuantity(db *gorm.DB, tenant tenant.Model) func(id uint32, quantity u
 	}
 }
 
-func MaxInSlot() uint32 {
-	//TODO make this more sophisticated
-	return 200
-}
-
-func CreateItem(db *gorm.DB, tenant tenant.Model) func(characterId uint32) func(inventoryId uint32, inventoryType int8) func(itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
-	return func(characterId uint32) func(inventoryId uint32, inventoryType int8) func(itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
-		return func(inventoryId uint32, inventoryType int8) func(itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
-			return func(itemId uint32, quantity uint32) model.Provider[slottable.Slottable] {
-				slot, err := slottable.GetNextFreeSlot(model.SliceMap(ByInventoryProvider(db, tenant)(inventoryId), ToSlottable))
-				if err != nil {
-					return model.ErrorProvider[slottable.Slottable](err)
+func CreateItem(db *gorm.DB, tenant tenant.Model) asset.CharacterAssetCreator {
+	return func(characterId uint32) asset.InventoryAssetCreator {
+		return func(inventoryId uint32, inventoryType int8) asset.ItemCreator {
+			return func(itemId uint32) asset.Creator {
+				return func(quantity uint32) model.Provider[asset.Asset] {
+					slot, err := slottable.GetNextFreeSlot(model.SliceMap(ByInventoryProvider(db, tenant)(inventoryId), ToSlottable))
+					if err != nil {
+						return model.ErrorProvider[asset.Asset](err)
+					}
+					i, err := createItem(db, tenant, inventoryId, itemId, quantity, slot)
+					if err != nil {
+						return model.ErrorProvider[asset.Asset](err)
+					}
+					return model.FixedProvider[asset.Asset](i)
 				}
-				i, err := createItem(db, tenant, inventoryId, itemId, quantity, slot)
-				if err != nil {
-					return model.ErrorProvider[slottable.Slottable](err)
-				}
-				return model.FixedProvider[slottable.Slottable](i)
 			}
 		}
 	}
 }
 
-func ToSlottable(m Model) (slottable.Slottable, error) {
+func ToAsset(m Model) (asset.Asset, error) {
+	return m, nil
+}
+
+func ToSlottable(m Model) (asset.Slottable, error) {
 	return m, nil
 }
 

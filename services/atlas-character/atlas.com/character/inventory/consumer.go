@@ -1,12 +1,15 @@
 package inventory
 
 import (
+	"atlas-character/equipable"
+	"atlas-character/equipment"
 	consumer2 "atlas-character/kafka/consumer"
 	"atlas-character/kafka/producer"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -33,7 +36,10 @@ func EquipItemRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handl
 func handleEquipItemCommand(db *gorm.DB) message.Handler[equipItemCommand] {
 	return func(l logrus.FieldLogger, span opentracing.Span, command equipItemCommand) {
 		l.Debugf("Received equip item command. characterId [%d] source [%d] destination [%d]", command.CharacterId, command.Source, command.Destination)
-		EquipItemForCharacter(l)(db)(span)(command.Tenant)(command.CharacterId)(command.Source, command.Destination)
+		fsp := model.Flip(model.Flip(equipable.GetNextFreeSlot(l))(span))(command.Tenant)
+		ep := producer.ProviderImpl(l)(span)
+		dp := equipment.GetEquipmentDestination(l)(span)(command.Tenant)
+		EquipItemForCharacter(l)(db)(command.Tenant)(fsp)(ep)(command.CharacterId)(command.Source)(dp)
 	}
 }
 

@@ -76,7 +76,7 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 			return func(itemId uint32) asset.Creator {
 				return func(quantity uint32) model.Provider[asset.Asset] {
 					l.Debugf("Creating equipable [%d] for character [%d].", itemId, characterId)
-					slot, err := GetNextFreeSlot(l, db, span, tenant)(inventoryId)()
+					slot, err := GetNextFreeSlot(l)(db)(span)(tenant)(inventoryId)()
 					if err != nil {
 						l.WithError(err).Errorf("Unable to locate a free slot to create the item.")
 						return model.ErrorProvider[asset.Asset](err)
@@ -104,17 +104,23 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 	}
 }
 
-func GetNextFreeSlot(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.Provider[int16] {
-	return func(inventoryId uint32) model.Provider[int16] {
-		ms, err := GetByInventory(l, db, span, tenant)(inventoryId)
-		if err != nil {
-			return model.ErrorProvider[int16](err)
+func GetNextFreeSlot(l logrus.FieldLogger) func(db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(inventoryId uint32) model.Provider[int16] {
+	return func(db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(inventoryId uint32) model.Provider[int16] {
+		return func(span opentracing.Span) func(tenant tenant.Model) func(inventoryId uint32) model.Provider[int16] {
+			return func(tenant tenant.Model) func(inventoryId uint32) model.Provider[int16] {
+				return func(inventoryId uint32) model.Provider[int16] {
+					ms, err := GetByInventory(l, db, span, tenant)(inventoryId)
+					if err != nil {
+						return model.ErrorProvider[int16](err)
+					}
+					slot, err := slottable.GetNextFreeSlot(model.SliceMap(model.FixedProvider(ms), ToSlottable))
+					if err != nil {
+						return model.ErrorProvider[int16](err)
+					}
+					return model.FixedProvider(slot)
+				}
+			}
 		}
-		slot, err := slottable.GetNextFreeSlot(model.SliceMap(model.FixedProvider(ms), ToSlottable))
-		if err != nil {
-			return model.ErrorProvider[int16](err)
-		}
-		return model.FixedProvider(slot)
 	}
 }
 

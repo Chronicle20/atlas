@@ -14,6 +14,8 @@ type Creator func(quantity uint32) model.Provider[Asset]
 
 type QuantityUpdater func(id uint32, quantity uint32) error
 
+type SlotProvider model.Provider[int16]
+
 type Asset interface {
 	Identifier
 	Template

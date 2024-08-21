@@ -5,6 +5,8 @@ import (
 	"atlas-character/character"
 	"atlas-character/equipable"
 	statistics2 "atlas-character/equipable/statistics"
+	"atlas-character/equipment"
+	"atlas-character/equipment/slot"
 	"atlas-character/inventory"
 	"atlas-character/inventory/item"
 	"atlas-character/kafka/producer"
@@ -92,7 +94,120 @@ func TestAdjustingEquipment(t *testing.T) {
 	overall := createAndVerifyMockEquip(t, l, db, span)(tenant)(c.Id())(1050018)
 	t.Logf("Top [%d], Bottom [%d], Overall [%d].", top.Slot(), bottom.Slot(), overall.Slot())
 
-	//inventory.EquipItemForCharacter()
+	var equipMessages = make([]kafka.Message, 0)
+	equipFunc := inventory.EquipItemForCharacter(l)(db)(tenant)(model.Flip(model.Flip(equipable.GetNextFreeSlot(l))(span))(tenant))(testProducer(&equipMessages))(c.Id())
+
+	// Equip Top to start.
+	equipFunc(top.Slot())(equipment.FixedDestinationProvider(int16(slot.PositionTop)))
+	equippedTop, err := equipable.GetBySlot(db, tenant)(c.Id(), int16(slot.PositionTop))
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedTop, EquipableItemIdValidator(1040010)) {
+		t.Fatalf("Equiping of Top failed validation.")
+	}
+
+	// Equip Bottom to start.
+	equipFunc(bottom.Slot())(equipment.FixedDestinationProvider(int16(slot.PositionBottom)))
+	equippedBottom, err := equipable.GetBySlot(db, tenant)(c.Id(), int16(slot.PositionBottom))
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedBottom, EquipableItemIdValidator(1060002)) {
+		t.Fatalf("Equiping of Bottom failed validation.")
+	}
+
+	// Equip Overall. This should take tops place, and unequip bottom. Top should be in overall slot, bottom should be in first available.
+	equipFunc(overall.Slot())(equipment.FixedDestinationProvider(int16(slot.PositionOverall)))
+	equippedOverall, err := equipable.GetBySlot(db, tenant)(c.Id(), int16(slot.PositionOverall))
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedOverall, EquipableItemIdValidator(1050018)) {
+		t.Fatalf("Equiping of Bottom failed validation.")
+	}
+	equippedTop, err = equipable.GetBySlot(db, tenant)(c.Id(), 3)
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedTop, EquipableItemIdValidator(1040010)) {
+		t.Fatalf("Unequiping of Top failed validation.")
+	}
+	equippedBottom, err = equipable.GetBySlot(db, tenant)(c.Id(), 1)
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedBottom, EquipableItemIdValidator(1060002)) {
+		t.Fatalf("Unequiping of Bottom failed validation.")
+	}
+
+	// Equip Top next. Overall should take tops place, top should be equipped.
+	equipFunc(3)(equipment.FixedDestinationProvider(int16(slot.PositionTop)))
+	equippedTop, err = equipable.GetBySlot(db, tenant)(c.Id(), int16(slot.PositionTop))
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedTop, EquipableItemIdValidator(1040010)) {
+		t.Fatalf("Equiping of Top failed validation.")
+	}
+	equippedOverall, err = equipable.GetBySlot(db, tenant)(c.Id(), 3)
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedOverall, EquipableItemIdValidator(1050018)) {
+		t.Fatalf("Equiping of Bottom failed validation.")
+	}
+
+	// Equip Bottom again.
+	equipFunc(1)(equipment.FixedDestinationProvider(int16(slot.PositionBottom)))
+	equippedBottom, err = equipable.GetBySlot(db, tenant)(c.Id(), int16(slot.PositionBottom))
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedBottom, EquipableItemIdValidator(1060002)) {
+		t.Fatalf("Equiping of Bottom failed validation.")
+	}
+
+	// Equip Overall. This should take tops place, and unequip bottom. Top should be in overall slot, bottom should be in first available.
+	equipFunc(3)(equipment.FixedDestinationProvider(int16(slot.PositionOverall)))
+	equippedOverall, err = equipable.GetBySlot(db, tenant)(c.Id(), int16(slot.PositionOverall))
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedOverall, EquipableItemIdValidator(1050018)) {
+		t.Fatalf("Equiping of Bottom failed validation.")
+	}
+	equippedTop, err = equipable.GetBySlot(db, tenant)(c.Id(), 3)
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedTop, EquipableItemIdValidator(1040010)) {
+		t.Fatalf("Unequiping of Top failed validation.")
+	}
+	equippedBottom, err = equipable.GetBySlot(db, tenant)(c.Id(), 1)
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedBottom, EquipableItemIdValidator(1060002)) {
+		t.Fatalf("Unequiping of Bottom failed validation.")
+	}
+
+	// Equip Bottom again, overall should go to next free slot.
+	equipFunc(1)(equipment.FixedDestinationProvider(int16(slot.PositionBottom)))
+	equippedBottom, err = equipable.GetBySlot(db, tenant)(c.Id(), int16(slot.PositionBottom))
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedBottom, EquipableItemIdValidator(1060002)) {
+		t.Fatalf("Equiping of Bottom failed validation.")
+	}
+	equippedOverall, err = equipable.GetBySlot(db, tenant)(c.Id(), 1)
+	if err != nil {
+		t.Fatalf("Failed to retreive created item.")
+	}
+	if !validateEquipable(equippedOverall, EquipableItemIdValidator(1050018)) {
+		t.Fatalf("Equiping of Bottom failed validation.")
+	}
 }
 
 type EquipableValidator func(equipable.Model) bool
@@ -101,6 +216,15 @@ func EquipableItemIdValidator(itemId uint32) EquipableValidator {
 	return func(e equipable.Model) bool {
 		return e.ItemId() == itemId
 	}
+}
+
+func validateEquipable(e equipable.Model, validators ...EquipableValidator) bool {
+	for _, validate := range validators {
+		if !validate(e) {
+			return false
+		}
+	}
+	return true
 }
 
 func createAndVerifyMockEquip(t *testing.T, l logrus.FieldLogger, db *gorm.DB, span opentracing.Span) func(tenant tenant.Model) func(characterId uint32) func(itemId uint32) equipable.Model {
@@ -141,7 +265,7 @@ func createMockEquipAsset(l logrus.FieldLogger, db *gorm.DB, span opentracing.Sp
 		return func(characterId uint32) func(inventoryType int8) func(itemId uint32) error {
 			return func(inventoryType int8) func(itemId uint32) error {
 				return func(itemId uint32) error {
-					inv, err := inventory.GetInventoryByType(l, db, span, tenant)(characterId, inventory.Type(inventoryType))()
+					invId, err := inventory.GetInventoryIdByType(db, tenant)(characterId, inventory.Type(inventoryType))()
 					if err != nil {
 						l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 						return err
@@ -158,7 +282,7 @@ func createMockEquipAsset(l logrus.FieldLogger, db *gorm.DB, span opentracing.Sp
 							return statistics2.Model{}, nil
 						}
 					}
-					nac := equipable.CreateItem(l, db, span, tenant, esc)(characterId)(inv.Id(), inventoryType)(itemId)
+					nac := equipable.CreateItem(l, db, span, tenant, esc)(characterId)(invId, inventoryType)(itemId)
 					aqu := asset.NoOpQuantityUpdater
 
 					_, err = inventory.CreateAsset(l)(eap, smp, nac, aqu, iap, iup, 1)()
@@ -180,7 +304,7 @@ func createMockItemAsset(l logrus.FieldLogger) func(db *gorm.DB) func(span opent
 					return func(inventoryType int8) func(itemId uint32) func(quantity uint32) error {
 						return func(itemId uint32) func(quantity uint32) error {
 							return func(quantity uint32) error {
-								inv, err := inventory.GetInventoryByType(l, db, span, tenant)(characterId, inventory.Type(inventoryType))()
+								invId, err := inventory.GetInventoryIdByType(db, tenant)(characterId, inventory.Type(inventoryType))()
 								if err != nil {
 									l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 									return err
@@ -196,12 +320,12 @@ func createMockItemAsset(l logrus.FieldLogger) func(db *gorm.DB) func(span opent
 										return make([]kafka.Message, 0), nil
 									}
 								}
-								eap := model.SliceMap(item.ByItemIdProvider(db)(tenant)(inv.Id())(itemId), item.ToAsset)
+								eap := model.SliceMap(item.ByItemIdProvider(db)(tenant)(invId)(itemId), item.ToAsset)
 								smp := func() (uint32, error) {
 									// TODO properly look this up.
 									return 200, nil
 								}
-								nac := item.CreateItem(db, tenant)(characterId)(inv.Id(), inventoryType)(itemId)
+								nac := item.CreateItem(db, tenant)(characterId)(invId, inventoryType)(itemId)
 								aqu := item.UpdateQuantity(db, tenant)
 
 								_, err = inventory.CreateAsset(l)(eap, smp, nac, aqu, iap, iup, quantity)()
@@ -244,11 +368,11 @@ func TestMove(t *testing.T) {
 	}
 
 	// validate inventory items
-	inv, err := inventory.GetInventoryByType(l, db, span, tenant)(c.Id(), 2)()
+	invId, err := inventory.GetInventoryIdByType(db, tenant)(c.Id(), 2)()
 	if err != nil {
 		t.Fatalf("Failed to get inventory: %v", err)
 	}
-	i1, err := item.GetBySlot(db, tenant)(inv.Id(), 1)
+	i1, err := item.GetBySlot(db, tenant)(invId, 1)
 	if err != nil {
 		t.Fatalf("Failed to get inventory: %v", err)
 	}
@@ -256,7 +380,7 @@ func TestMove(t *testing.T) {
 		t.Fatalf("Item failed validation.")
 	}
 
-	i2, err := item.GetBySlot(db, tenant)(inv.Id(), 2)
+	i2, err := item.GetBySlot(db, tenant)(invId, 2)
 	if err != nil {
 		t.Fatalf("Failed to get inventory: %v", err)
 	}
@@ -273,7 +397,7 @@ func TestMove(t *testing.T) {
 	if len(moveItemMessages) != 1 {
 		t.Fatalf("Failed to move item: %v", moveItemMessages)
 	}
-	i3, err := item.GetBySlot(db, tenant)(inv.Id(), 1)
+	i3, err := item.GetBySlot(db, tenant)(invId, 1)
 	if err != nil {
 		t.Fatalf("Failed to get inventory: %v", err)
 	}
@@ -281,7 +405,7 @@ func TestMove(t *testing.T) {
 		t.Fatalf("Item failed validation.")
 	}
 
-	i4, err := item.GetBySlot(db, tenant)(inv.Id(), 2)
+	i4, err := item.GetBySlot(db, tenant)(invId, 2)
 	if err != nil {
 		t.Fatalf("Failed to get inventory: %v", err)
 	}

@@ -19,25 +19,11 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
-	"log"
-	"os"
 	"testing"
-	"time"
 )
 
 func testDatabase(t *testing.T) *gorm.DB {
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
-		logger.Config{
-			SlowThreshold:             time.Second, // Slow SQL threshold
-			LogLevel:                  logger.Info, // Log level
-			IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
-			//ParameterizedQueries:      true,        // Don't include params in the SQL log
-			//Colorful:                  false,       // Disable color
-		},
-	)
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: newLogger})
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -91,7 +77,6 @@ func TestAdjustingEquipment(t *testing.T) {
 	db := testDatabase(t)
 	span := testSpan()
 	tenant := testTenant()
-	t.Logf("TenantId [%s]", tenant.Id.String())
 
 	// Create character
 	var createMessages = make([]kafka.Message, 0)
@@ -108,6 +93,14 @@ func TestAdjustingEquipment(t *testing.T) {
 	t.Logf("Top [%d], Bottom [%d], Overall [%d].", top.Slot(), bottom.Slot(), overall.Slot())
 
 	//inventory.EquipItemForCharacter()
+}
+
+type EquipableValidator func(equipable.Model) bool
+
+func EquipableItemIdValidator(itemId uint32) EquipableValidator {
+	return func(e equipable.Model) bool {
+		return e.ItemId() == itemId
+	}
 }
 
 func createAndVerifyMockEquip(t *testing.T, l logrus.FieldLogger, db *gorm.DB, span opentracing.Span) func(tenant tenant.Model) func(characterId uint32) func(itemId uint32) equipable.Model {
@@ -130,8 +123,12 @@ func createAndVerifyMockEquip(t *testing.T, l logrus.FieldLogger, db *gorm.DB, s
 				if err != nil {
 					t.Fatalf("Failed to retreive created item.")
 				}
-				if wipE.ItemId() != itemId {
-					t.Fatalf("Newly created item is not valid.")
+
+				validators := []EquipableValidator{EquipableItemIdValidator(itemId)}
+				for _, validator := range validators {
+					if !validator(wipE) {
+						t.Fatalf("Equipable failed validation.")
+					}
 				}
 				return wipE
 			}
@@ -230,7 +227,7 @@ func TestMove(t *testing.T) {
 	// Create character
 	var createMessages = make([]kafka.Message, 0)
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("Atlas").SetLevel(1).SetExperience(0).Build()
-	c, err := character.Create(l, db, span, testProducer(&createMessages))(testTenant(), input)
+	c, err := character.Create(l, db, span, testProducer(&createMessages))(tenant, input)
 	if err != nil {
 		t.Fatalf("Failed to create model: %v", err)
 	}
@@ -255,21 +252,16 @@ func TestMove(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get inventory: %v", err)
 	}
-	if i1.ItemId() != 2000000 {
-		t.Fatalf("Inventory item id should be 2000000, got: %d", i1.ItemId())
+	if !validateItem(i1, ItemIdItemValidator(2000000), QuantityItemValidator(100)) {
+		t.Fatalf("Item failed validation.")
 	}
-	if i1.Quantity() != 100 {
-		t.Fatalf("Inventory quantity should be 100, got: %d", i1.Quantity())
-	}
+
 	i2, err := item.GetBySlot(db, tenant)(inv.Id(), 2)
 	if err != nil {
 		t.Fatalf("Failed to get inventory: %v", err)
 	}
-	if i2.ItemId() != 2000001 {
-		t.Fatalf("Inventory item id should be 2000001, got: %d", i2.ItemId())
-	}
-	if i2.Quantity() != 150 {
-		t.Fatalf("Inventory quantity should be 150, got: %d", i2.Quantity())
+	if !validateItem(i2, ItemIdItemValidator(2000001), QuantityItemValidator(150)) {
+		t.Fatalf("Item failed validation.")
 	}
 
 	// test move
@@ -285,20 +277,38 @@ func TestMove(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get inventory: %v", err)
 	}
-	if i3.ItemId() != 2000001 {
-		t.Fatalf("Inventory item id should be 2000001, got: %d", i2.ItemId())
+	if !validateItem(i3, ItemIdItemValidator(2000001), QuantityItemValidator(150)) {
+		t.Fatalf("Item failed validation.")
 	}
-	if i3.Quantity() != 150 {
-		t.Fatalf("Inventory quantity should be 150, got: %d", i2.Quantity())
-	}
+
 	i4, err := item.GetBySlot(db, tenant)(inv.Id(), 2)
 	if err != nil {
 		t.Fatalf("Failed to get inventory: %v", err)
 	}
-	if i4.ItemId() != 2000000 {
-		t.Fatalf("Inventory item id should be 2000000, got: %d", i1.ItemId())
+	if !validateItem(i4, ItemIdItemValidator(2000000), QuantityItemValidator(100)) {
+		t.Fatalf("Item failed validation.")
 	}
-	if i4.Quantity() != 100 {
-		t.Fatalf("Inventory quantity should be 100, got: %d", i1.Quantity())
+}
+
+type ItemValidator func(item.Model) bool
+
+func ItemIdItemValidator(itemId uint32) ItemValidator {
+	return func(i item.Model) bool {
+		return i.ItemId() == itemId
 	}
+}
+
+func QuantityItemValidator(quantity uint32) ItemValidator {
+	return func(i item.Model) bool {
+		return i.Quantity() == quantity
+	}
+}
+
+func validateItem(i item.Model, validators ...ItemValidator) bool {
+	for _, validate := range validators {
+		if !validate(i) {
+			return false
+		}
+	}
+	return true
 }

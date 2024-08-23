@@ -4,9 +4,9 @@ import (
 	"atlas-account/account"
 	"atlas-account/configuration"
 	"atlas-account/tenant"
+	"context"
 
 	"github.com/google/uuid"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -22,7 +22,7 @@ const (
 	LicenseAgreement  = "LICENSE_AGREEMENT"
 )
 
-func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, name string, password string) Model {
+func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(sessionId uuid.UUID, name string, password string) Model {
 	return func(sessionId uuid.UUID, name string, password string) Model {
 		l.Debugf("Attemting login for [%s].", name)
 		if checkLoginAttempts(sessionId) > 4 {
@@ -35,7 +35,7 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 			return ErrorModel(SystemError)
 		}
 
-		a, err := account.GetOrCreate(l, db, span, tenant)(name, password, c.AutomaticRegister)
+		a, err := account.GetOrCreate(l, db, ctx, tenant)(name, password, c.AutomaticRegister)
 		if err != nil && !c.AutomaticRegister {
 			return ErrorModel(NotRegistered)
 		}
@@ -57,7 +57,7 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 			return ErrorModel(IncorrectPassword)
 		}
 
-		account.Login(l, db, span, tenant)(sessionId, a.Id(), account.ServiceLogin)
+		account.Login(l, db, ctx, tenant)(sessionId, a.Id(), account.ServiceLogin)
 
 		l.Debugf("Login successful for [%s].", name)
 
@@ -68,7 +68,7 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tena
 	}
 }
 
-func ProgressState(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, issuer string, accountId uint32, state account.State) Model {
+func ProgressState(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(sessionId uuid.UUID, issuer string, accountId uint32, state account.State) Model {
 	return func(sessionId uuid.UUID, issuer string, accountId uint32, state account.State) Model {
 		a, err := account.GetById(l, db, tenant)(accountId)
 		if err != nil {
@@ -84,11 +84,11 @@ func ProgressState(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, ten
 			return ErrorModel(SystemError)
 		}
 		if state == account.StateNotLoggedIn {
-			account.Logout(l, db, span, tenant)(sessionId, accountId, issuer)
+			account.Logout(l, db, ctx, tenant)(sessionId, accountId, issuer)
 			return OkModel()
 		}
 		if state == account.StateLoggedIn {
-			account.Login(l, db, span, tenant)(sessionId, accountId, issuer)
+			account.Login(l, db, ctx, tenant)(sessionId, accountId, issuer)
 			return OkModel()
 		}
 		if state == account.StateTransition {

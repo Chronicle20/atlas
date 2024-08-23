@@ -4,9 +4,9 @@ import (
 	"atlas-world/configuration"
 	"atlas-world/kafka/producer"
 	"atlas-world/tenant"
+	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -61,9 +61,9 @@ func Unregister(_ logrus.FieldLogger, tenant tenant.Model) func(worldId byte, ch
 	}
 }
 
-func RequestStatus(l logrus.FieldLogger, span opentracing.Span, c configuration.Model) {
+func RequestStatus(l logrus.FieldLogger, ctx context.Context, c configuration.Model) {
 	for _, sc := range c.Data.Attributes.Servers {
 		t := tenant.New(uuid.MustParse(sc.Tenant), "", 0, 0)
-		_ = producer.ProviderImpl(l)(span)(EnvCommandTopicChannelStatus)(emitChannelServerStatusCommand(t))
+		_ = producer.ProviderImpl(l)(ctx)(EnvCommandTopicChannelStatus)(emitChannelServerStatusCommand(t))
 	}
 }

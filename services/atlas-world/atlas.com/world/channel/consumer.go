@@ -2,11 +2,11 @@ package channel
 
 import (
 	consumer2 "atlas-world/kafka/consumer"
+	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,7 +21,7 @@ func EventStatusConsumer(l logrus.FieldLogger) func(groupId string) consumer.Con
 }
 
 func handleEventStatus() message.Handler[channelStatusEvent] {
-	return func(l logrus.FieldLogger, span opentracing.Span, event channelStatusEvent) {
+	return func(l logrus.FieldLogger, ctx context.Context, event channelStatusEvent) {
 		if event.Type == EventChannelStatusType {
 			l.Debugf("Registering channel [%d] for world [%d] at [%s:%d].", event.ChannelId, event.WorldId, event.IpAddress, event.Port)
 			_, _ = Register(l, event.Tenant)(event.WorldId, event.ChannelId, event.IpAddress, event.Port)

@@ -419,7 +419,7 @@ func TestMove(t *testing.T) {
 
 	// test move
 	var moveItemMessages = make([]kafka.Message, 0)
-	err = inventory.Move(l, db, span, testProducer(&moveItemMessages))(tenant, c.Id(), 2, 2, 1)
+	err = inventory.Move(l, db, testProducer(&moveItemMessages))(tenant, c.Id(), 2, 2, 1)
 	if err != nil {
 		t.Fatalf("Failed to move item: %v", err)
 	}

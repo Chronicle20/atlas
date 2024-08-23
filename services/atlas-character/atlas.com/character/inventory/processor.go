@@ -443,17 +443,17 @@ func DeleteItemInventory(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, 
 	}
 }
 
-func Move(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
+func Move(l logrus.FieldLogger, db *gorm.DB, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
 	return func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
 		if inventoryType == 1 {
-			return moveEquip(l, db, span, eventProducer)(tenant, characterId, source, destination)
+			return moveEquip(l, db, eventProducer)(tenant, characterId, source, destination)
 		} else {
-			return moveItem(l, db, span, eventProducer)(tenant, characterId, inventoryType, source, destination)
+			return moveItem(l, db, eventProducer)(tenant, characterId, inventoryType, source, destination)
 		}
 	}
 }
 
-func moveItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
+func moveItem(l logrus.FieldLogger, db *gorm.DB, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
 	return func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
 		characterInventoryMoveProvider := inventoryItemMoveProvider(tenant)(characterId)
 
@@ -508,7 +508,7 @@ func temporarySlotProvider() (int16, error) {
 	return temporarySlot(), nil
 }
 
-func moveEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, source int16, destination int16) error {
+func moveEquip(l logrus.FieldLogger, db *gorm.DB, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, source int16, destination int16) error {
 	return func(tenant tenant.Model, characterId uint32, source int16, destination int16) error {
 		l.Debugf("Received request to move item at [%d] to [%d] for character [%d].", source, destination, characterId)
 		invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)

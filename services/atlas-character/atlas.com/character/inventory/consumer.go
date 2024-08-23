@@ -76,7 +76,7 @@ func MoveItemRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handle
 
 func handleMoveItemCommand(db *gorm.DB) message.Handler[moveItemCommand] {
 	return func(l logrus.FieldLogger, span opentracing.Span, command moveItemCommand) {
-		_ = Move(l, db, span, producer.ProviderImpl(l)(span))(command.Tenant, command.CharacterId, command.InventoryType, command.Source, command.Destination)
+		_ = Move(l, db, producer.ProviderImpl(l)(span))(command.Tenant, command.CharacterId, command.InventoryType, command.Source, command.Destination)
 	}
 }
 

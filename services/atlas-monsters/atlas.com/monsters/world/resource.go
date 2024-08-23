@@ -30,7 +30,7 @@ func handleGetMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext) h
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					ms, err := monster.GetInMap(d.Logger(), d.Span(), c.Tenant())(worldId, channelId, mapId)
+					ms, err := monster.GetInMap(c.Tenant())(worldId, channelId, mapId)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to retrieve monsters in map.")
 						w.WriteHeader(http.StatusInternalServerError)

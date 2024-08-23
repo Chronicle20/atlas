@@ -4,14 +4,14 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	"atlas-messages/tenant"
-	"github.com/opentracing/opentracing-go"
+	"context"
 	"github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
-func AwardItemCommandProducer(l logrus.FieldLogger, span opentracing.Span, t tenant.Model, c character.Model, m string) (command.Executor, bool) {
+func AwardItemCommandProducer(l logrus.FieldLogger, ctx context.Context, t tenant.Model, c character.Model, m string) (command.Executor, bool) {
 	if !c.Gm() {
 		l.Debugf("Ignoring character [%d] command [%s], because they are not a gm.", c.Id(), m)
 		return nil, false
@@ -52,18 +52,18 @@ func AwardItemCommandProducer(l logrus.FieldLogger, span opentracing.Span, t ten
 		return nil, false
 	}
 
-	exists := Exists(l, span, t)(itemId)
+	exists := Exists(l, ctx, t)(itemId)
 	if !exists {
 		l.Debugf("Ignoring character [%d] command [%s], because they did not input a valid item.", c.Id(), m)
 		return nil, false
 	}
 
-	return func(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) error {
-		return GainItem(l, span, tenant)(c.Id(), itemId, quantity)
+	return func(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) error {
+		return GainItem(l, ctx, tenant)(c.Id(), itemId, quantity)
 	}, true
 }
 
-func GainItem(l logrus.FieldLogger, span opentracing.Span, model tenant.Model) func(characterId uint32, itemId uint32, quantity int16) error {
+func GainItem(l logrus.FieldLogger, ctx context.Context, model tenant.Model) func(characterId uint32, itemId uint32, quantity int16) error {
 	return func(characterId uint32, itemId uint32, quantity int16) error {
 		return nil
 	}

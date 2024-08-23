@@ -1,8 +1,8 @@
 package server
 
 import (
-	"atlas-channel/tenant"
 	"fmt"
+	tenant "github.com/Chronicle20/atlas-tenant"
 )
 
 type Model struct {
@@ -36,7 +36,8 @@ func New(tenant tenant.Model, worldId byte, channelId byte) (Model, error) {
 }
 
 func (m Model) Is(tenant tenant.Model, worldId byte, channelId byte) bool {
-	is := m.Tenant().Is(tenant)
+	t := m.Tenant()
+	is := t.Is(tenant)
 	if !is {
 		return false
 	}

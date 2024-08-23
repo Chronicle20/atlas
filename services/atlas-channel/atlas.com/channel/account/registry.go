@@ -1,7 +1,7 @@
 package account
 
 import (
-	"atlas-channel/tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"sync"
 )
 

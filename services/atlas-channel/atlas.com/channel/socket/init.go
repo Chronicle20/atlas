@@ -26,13 +26,14 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 			l.Infof("Creating channel socket service for [%s] on port [%d].", sc.String(), port)
 
 			hasMapleEncryption := true
-			if sc.Tenant().Region == "JMS" {
+			t := sc.Tenant()
+			if t.Region() == "JMS" {
 				hasMapleEncryption = false
 				l.Debugf("Service does not expect Maple encryption.")
 			}
 
 			locale := byte(8)
-			if sc.Tenant().Region == "JMS" {
+			if t.Region() == "JMS" {
 				locale = 3
 			}
 
@@ -42,9 +43,9 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 				err = socket.Run(l, ctx, wg,
 					socket.SetHandlers(hp),
 					socket.SetPort(port),
-					socket.SetCreator(session.Create(l, session.GetRegistry(), sc.Tenant())(sc.WorldId(), sc.ChannelId(), locale)),
-					socket.SetMessageDecryptor(session.Decrypt(l, session.GetRegistry(), sc.Tenant())(true, hasMapleEncryption)),
-					socket.SetDestroyer(session.DestroyByIdWithSpan(l, session.GetRegistry(), sc.Tenant().Id)),
+					socket.SetCreator(session.Create(l, session.GetRegistry(), t)(sc.WorldId(), sc.ChannelId(), locale)),
+					socket.SetMessageDecryptor(session.Decrypt(l, session.GetRegistry(), t)(true, hasMapleEncryption)),
+					socket.SetDestroyer(session.DestroyByIdWithSpan(l, session.GetRegistry(), t.Id())),
 					socket.SetReadWriter(rw),
 				)
 
@@ -58,7 +59,7 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 
 			sctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), "startup")
 
-			err = channel.Register(l, sctx, sc.Tenant())(sc.WorldId(), sc.ChannelId(), ipAddress, portStr)
+			err = channel.Register(l, sctx, t)(sc.WorldId(), sc.ChannelId(), ipAddress, portStr)
 			if err != nil {
 				l.WithError(err).Errorf("Socket service registration error.")
 			}
@@ -70,8 +71,8 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 
 			sctx, span = otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), "teardown")
 			defer span.End()
-			
-			err = channel.Unregister(l, sctx, sc.Tenant())(sc.WorldId(), sc.ChannelId())
+
+			err = channel.Unregister(l, sctx, t)(sc.WorldId(), sc.ChannelId())
 			if err != nil {
 				l.WithError(err).Errorf("Socket service unregistration error.")
 			}

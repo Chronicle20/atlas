@@ -50,7 +50,8 @@ func ChangeEventMoveRegister(sc server.Model, wp writer.Producer) func(l logrus.
 
 func handleInventoryAddEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemAddBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemAddBody]) {
-		if !sc.Tenant().Is(event.Tenant) {
+		t := sc.Tenant()
+		if !t.Is(event.Tenant) {
 			return
 		}
 
@@ -58,7 +59,7 @@ func handleInventoryAddEvent(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, addToInventory(l, ctx, wp)(event))
+		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(event.CharacterId, addToInventory(l, ctx, wp)(event))
 
 	}
 }
@@ -99,7 +100,8 @@ func addToInventory(l logrus.FieldLogger, ctx context.Context, wp writer.Produce
 
 func handleInventoryUpdateEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemUpdateBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemUpdateBody]) {
-		if !sc.Tenant().Is(event.Tenant) {
+		t := sc.Tenant()
+		if !t.Is(event.Tenant) {
 			return
 		}
 
@@ -107,7 +109,7 @@ func handleInventoryUpdateEvent(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, updateInInventory(l, ctx, wp)(event))
+		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(event.CharacterId, updateInInventory(l, ctx, wp)(event))
 	}
 }
 
@@ -127,7 +129,8 @@ func updateInInventory(l logrus.FieldLogger, _ context.Context, wp writer.Produc
 
 func handleInventoryMoveEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemMoveBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemMoveBody]) {
-		if !sc.Tenant().Is(event.Tenant) {
+		t := sc.Tenant()
+		if !t.Is(event.Tenant) {
 			return
 		}
 
@@ -135,7 +138,7 @@ func handleInventoryMoveEvent(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, moveInInventory(l, ctx, wp)(event))
+		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(event.CharacterId, moveInInventory(l, ctx, wp)(event))
 	}
 }
 
@@ -195,7 +198,8 @@ func ChangeEventRemoveRegister(sc server.Model, wp writer.Producer) func(l logru
 
 func handleInventoryRemoveEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemRemoveBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemRemoveBody]) {
-		if !sc.Tenant().Is(event.Tenant) {
+		t := sc.Tenant()
+		if !t.Is(event.Tenant) {
 			return
 		}
 
@@ -203,7 +207,7 @@ func handleInventoryRemoveEvent(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, removeFromInventory(l, ctx, wp)(event))
+		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(event.CharacterId, removeFromInventory(l, ctx, wp)(event))
 	}
 }
 

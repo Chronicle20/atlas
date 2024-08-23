@@ -2,10 +2,10 @@ package portal
 
 import (
 	"atlas-channel/kafka/producer"
-	"atlas-channel/tenant"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 

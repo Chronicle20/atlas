@@ -2,10 +2,10 @@ package channel
 
 import (
 	"atlas-channel/rest"
-	"atlas-channel/tenant"
 	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"os"
 )

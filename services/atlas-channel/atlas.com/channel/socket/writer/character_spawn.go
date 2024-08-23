@@ -6,8 +6,8 @@ import (
 	"atlas-channel/character/equipment/slot"
 	"atlas-channel/pet"
 	"atlas-channel/socket/model"
-	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,13 +34,13 @@ func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.M
 
 			WriteCharacterLook(t)(w, c, false)
 
-			if (t.Region == "GMS" && t.MajorVersion > 87) || t.Region == "JMS" {
+			if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
 				w.WriteInt(0) // driver id
 				w.WriteInt(0) // passenger id
 			}
 			w.WriteInt(0) // choco count
 			w.WriteInt(0) // item effect
-			if t.Region == "GMS" && t.MajorVersion > 83 {
+			if t.Region() == "GMS" && t.MajorVersion() > 83 {
 				w.WriteInt(0) // nCompletedSetItemID
 			}
 			w.WriteInt(0) // chair
@@ -69,21 +69,21 @@ func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.M
 			w.WriteByte(0) // friendship ring
 			w.WriteByte(0) // marriage ring
 
-			if t.Region == "GMS" && t.MajorVersion < 95 {
+			if t.Region() == "GMS" && t.MajorVersion() < 95 {
 				w.WriteByte(0) // new year card
 			}
 
 			w.WriteByte(0) // berserk
 
-			if t.Region == "GMS" {
-				if t.MajorVersion <= 87 {
+			if t.Region() == "GMS" {
+				if t.MajorVersion() <= 87 {
 					w.WriteByte(0) // unknown (same as JMS unknown)
 				}
-				if t.MajorVersion > 87 {
+				if t.MajorVersion() > 87 {
 					w.WriteByte(0) // new year card
 					w.WriteInt(0)  // nPhase
 				}
-			} else if t.Region == "JMS" {
+			} else if t.Region() == "JMS" {
 				w.WriteByte(0) // unknown
 			}
 			w.WriteByte(0) // team
@@ -94,7 +94,7 @@ func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.M
 
 func WriteCharacterLook(tenant tenant.Model) func(w *response.Writer, character character.Model, mega bool) {
 	return func(w *response.Writer, character character.Model, mega bool) {
-		if tenant.Region == "GMS" && tenant.MajorVersion <= 28 {
+		if tenant.Region() == "GMS" && tenant.MajorVersion() <= 28 {
 			// older versions don't write gender / skin color / face / mega / hair a second time
 		} else {
 			w.WriteByte(character.Gender())
@@ -125,7 +125,7 @@ func WriteCharacterEquipment(tenant tenant.Model) func(w *response.Writer, chara
 		w.WriteInt(0)
 		//}
 
-		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 			writeForEachPet(w, character.Pets(), writePetItemId, writeEmptyPetItemId)
 		} else {
 			if len(character.Pets()) > 0 {
@@ -142,7 +142,7 @@ func writeEquips(tenant tenant.Model) func(w *response.Writer, equips map[slot.P
 		for k, v := range equips {
 			w.WriteKeyValue(byte(k), v)
 		}
-		if tenant.Region == "GMS" && tenant.MajorVersion <= 28 {
+		if tenant.Region() == "GMS" && tenant.MajorVersion() <= 28 {
 			w.WriteByte(0)
 		} else {
 			w.WriteByte(0xFF)
@@ -150,7 +150,7 @@ func writeEquips(tenant tenant.Model) func(w *response.Writer, equips map[slot.P
 		for k, v := range maskedEquips {
 			w.WriteKeyValue(byte(k), v)
 		}
-		if tenant.Region == "GMS" && tenant.MajorVersion <= 28 {
+		if tenant.Region() == "GMS" && tenant.MajorVersion() <= 28 {
 			w.WriteByte(0)
 		} else {
 			w.WriteByte(0xFF)

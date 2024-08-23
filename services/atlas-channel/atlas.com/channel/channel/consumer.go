@@ -30,7 +30,8 @@ func CommandStatusRegister(sc server.Model, ipAddress string, port string) func(
 
 func handleCommandStatus(sc server.Model, ipAddress string, port string) message.Handler[channelStatusCommand] {
 	return func(l logrus.FieldLogger, ctx context.Context, c channelStatusCommand) {
-		if c.Tenant.Id == sc.Tenant().Id {
+		t := sc.Tenant()
+		if c.Tenant.Id() == t.Id() {
 			err := Register(l, ctx, c.Tenant)(sc.WorldId(), sc.ChannelId(), ipAddress, port)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to respond to world service status command. World service will not know about this channel.")

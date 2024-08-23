@@ -1,6 +1,6 @@
 package character
 
-import "atlas-channel/tenant"
+import "github.com/Chronicle20/atlas-tenant"
 
 const (
 	EnvCommandTopicMovement = "COMMAND_TOPIC_CHARACTER_MOVEMENT"

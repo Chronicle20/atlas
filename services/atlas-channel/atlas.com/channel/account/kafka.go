@@ -1,6 +1,6 @@
 package account
 
-import "atlas-channel/tenant"
+import tenant "github.com/Chronicle20/atlas-tenant"
 
 const (
 	EnvEventTopicAccountStatus  = "EVENT_TOPIC_ACCOUNT_STATUS"

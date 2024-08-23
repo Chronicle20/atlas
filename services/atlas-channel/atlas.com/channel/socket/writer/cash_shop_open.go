@@ -4,8 +4,8 @@ import (
 	"atlas-channel/account"
 	"atlas-channel/character"
 	"atlas-channel/socket/model"
-	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,20 +26,20 @@ func CashShopOpenBody(l logrus.FieldLogger) func(tenant tenant.Model, a account.
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			WriteCharacterInfo(tenant)(w)(c)
 
-			if tenant.Region == "GMS" {
+			if tenant.Region() == "GMS" {
 				var bCashShopAuthorized = true
 				w.WriteBool(bCashShopAuthorized)
 				if bCashShopAuthorized {
 					w.WriteAsciiString(a.Name())
 				}
-			} else if tenant.Region == "JMS" {
+			} else if tenant.Region() == "JMS" {
 				w.WriteAsciiString(a.Name())
 			}
 
 			// CWvsContext::SetSaleInfo
-			if tenant.Region == "GMS" {
+			if tenant.Region() == "GMS" {
 				var nNotSaleCount = uint32(0)
-				if tenant.MajorVersion <= 12 {
+				if tenant.MajorVersion() <= 12 {
 					w.WriteShort(uint16(nNotSaleCount)) // nNotSaleCount
 					for i := uint32(0); i < nNotSaleCount; i++ {
 						w.WriteInt(0)
@@ -52,7 +52,7 @@ func CashShopOpenBody(l logrus.FieldLogger) func(tenant tenant.Model, a account.
 				}
 			}
 
-			if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
 				var scis []model.SpecialCashItem
 				w.WriteShort(uint16(len(scis)))
 				for _, sci := range scis {
@@ -60,13 +60,13 @@ func CashShopOpenBody(l logrus.FieldLogger) func(tenant tenant.Model, a account.
 				}
 			}
 
-			if tenant.Region == "JMS" {
+			if tenant.Region() == "JMS" {
 				w.WriteShort(0)
 				//w.WriteInt(0)
 				//w.WriteAsciiString("")
 			}
 
-			if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
 				var cds []model.CategoryDiscount
 				w.WriteByte(byte(len(cds)))
 				for _, cd := range cds {
@@ -77,7 +77,7 @@ func CashShopOpenBody(l logrus.FieldLogger) func(tenant tenant.Model, a account.
 			// Decode Best
 			// TODO figure out why this does this so many times
 			var categories uint32 = 8
-			if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
 				categories = 9
 			}
 
@@ -96,19 +96,19 @@ func CashShopOpenBody(l logrus.FieldLogger) func(tenant tenant.Model, a account.
 			w.WriteShort(0)
 
 			// CCashShop::DecodeLimitGoods
-			if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
 				w.WriteShort(0)
 			}
 
 			// CCashShop::DecodeZeroGoods
-			if tenant.Region == "GMS" && tenant.MajorVersion > 12 {
+			if tenant.Region() == "GMS" && tenant.MajorVersion() > 12 {
 				w.WriteShort(0)
 			}
 
-			if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
 				w.WriteBool(false) // bEventOn
 
-				if tenant.Region == "GMS" {
+				if tenant.Region() == "GMS" {
 					w.WriteInt(200) // nHighestCharacterLevelInThisAccount
 				}
 			}

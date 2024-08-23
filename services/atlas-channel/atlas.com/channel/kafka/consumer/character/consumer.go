@@ -8,13 +8,13 @@ import (
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
-	"atlas-channel/tenant"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -93,9 +93,10 @@ func warpCharacter(l logrus.FieldLogger, ctx context.Context, t tenant.Model, wp
 				return err
 			}
 
-			s = session.SetMapId(event.Body.TargetMapId)(s.Tenant().Id, s.SessionId())
+			t := s.Tenant()
+			s = session.SetMapId(event.Body.TargetMapId)(t.Id(), s.SessionId())
 
-			err = setFieldFunc(s, writer.WarpToMapBody(l, s.Tenant())(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp()))
+			err = setFieldFunc(s, writer.WarpToMapBody(l, t)(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 				return err

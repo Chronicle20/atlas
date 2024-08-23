@@ -1,6 +1,6 @@
 package inventory
 
-import "atlas-channel/tenant"
+import "github.com/Chronicle20/atlas-tenant"
 
 const (
 	EnvEventInventoryChanged = "EVENT_TOPIC_INVENTORY_CHANGED"

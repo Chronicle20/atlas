@@ -3,8 +3,8 @@ package writer
 import (
 	"atlas-channel/character/inventory/equipable"
 	"atlas-channel/character/inventory/item"
-	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 const CharacterInventoryChange = "CharacterInventoryChange"

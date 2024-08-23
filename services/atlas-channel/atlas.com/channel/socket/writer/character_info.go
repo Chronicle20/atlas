@@ -2,8 +2,8 @@ package writer
 
 import (
 	"atlas-channel/character"
-	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 const CharacterInfo = "CharacterInfo"
@@ -22,7 +22,7 @@ func CharacterInfoBody(tenant tenant.Model) func(c character.Model) BodyProducer
 			w.WriteByte(0)         // pet activated, followed by pet info
 			w.WriteByte(0)         // mount, followed by mount info
 			w.WriteByte(0)         // wish list size
-			if (tenant.Region == "GMS" && tenant.MajorVersion < 87) || tenant.Region == "JMS" {
+			if (tenant.Region() == "GMS" && tenant.MajorVersion() < 87) || tenant.Region() == "JMS" {
 				w.WriteInt(0) // monster book level
 				w.WriteInt(0) // normal card
 				w.WriteInt(0) // special card
@@ -35,7 +35,7 @@ func CharacterInfoBody(tenant tenant.Model) func(c character.Model) BodyProducer
 				w.WriteInt(0)
 			}
 			w.WriteShort(0) // medal quests
-			if (tenant.Region == "GMS" && tenant.MajorVersion > 83) || tenant.Region == "JMS" {
+			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
 				w.WriteInt(0) // chair
 			}
 			return w.Bytes()

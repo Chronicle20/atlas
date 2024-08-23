@@ -1,8 +1,8 @@
 package writer
 
 import (
-	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 

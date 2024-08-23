@@ -1,9 +1,9 @@
 package model
 
 import (
-	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -108,7 +108,7 @@ func (m *NormalElement) Decode(l logrus.FieldLogger, tenant tenant.Model, option
 		if isMovementName(l)(m.ElemType, options, "FALL_DOWN") {
 			m.FhFallStart = r.ReadInt16()
 		}
-		if tenant.Region != "GMS" || tenant.MajorVersion > 83 {
+		if tenant.Region() != "GMS" || tenant.MajorVersion() > 83 {
 			m.XOffset = r.ReadInt16()
 			m.YOffset = r.ReadInt16()
 		}
@@ -191,7 +191,7 @@ func (m *NormalElement) Encode(l logrus.FieldLogger, tenant tenant.Model, option
 		if isMovementName(l)(m.ElemType, options, "FALL_DOWN") {
 			w.WriteInt16(m.FhFallStart)
 		}
-		if tenant.Region != "GMS" || tenant.MajorVersion > 87 {
+		if tenant.Region() != "GMS" || tenant.MajorVersion() > 87 {
 			w.WriteInt16(m.XOffset)
 			w.WriteInt16(m.YOffset)
 		}

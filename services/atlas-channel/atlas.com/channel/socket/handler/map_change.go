@@ -29,19 +29,20 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 		var targetX int32
 		var targetY int32
 
+		t := s.Tenant()
 		if cs {
 			l.Debugf("Character [%d] returning from cash shop.", s.CharacterId())
-			c, err := channel.GetById(l, ctx, s.Tenant())(s.WorldId(), s.ChannelId())
+			c, err := channel.GetById(l, ctx, t)(s.WorldId(), s.ChannelId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve channel information being returned in to.")
 				// TODO send server notice.
 				return
 			}
 
-			resp, err := as.UpdateState(l, ctx, s.Tenant())(s.SessionId(), s.AccountId(), 2)
+			resp, err := as.UpdateState(l, ctx, t)(s.SessionId(), s.AccountId(), 2)
 			if err != nil || resp.Code != "OK" {
 				l.WithError(err).Errorf("Unable to update session for character [%d] attempting to switch to channel.", s.CharacterId())
-				session.Destroy(l, ctx, session.GetRegistry(), s.Tenant().Id)(s)
+				session.Destroy(l, ctx, session.GetRegistry(), t.Id())(s)
 				return
 			}
 
@@ -60,7 +61,7 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 		y = r.ReadInt16()
 		unused = r.ReadByte()
 		premium = r.ReadByte()
-		if s.Tenant().Region == "GMS" && s.Tenant().MajorVersion >= 83 {
+		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
 			chase = r.ReadBool()
 		}
 		if chase {
@@ -70,6 +71,6 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 
 		l.Debugf("Character [%d] attempting to enter portal [%s] at [%d,%d] heading to [%d]. FieldKey [%d].", s.CharacterId(), portalName, x, y, targetId, fieldKey)
 		l.Debugf("Unused [%d], Premium [%d], Chase [%t], TargetX [%d], TargetY [%d]", unused, premium, chase, targetX, targetY)
-		_ = portal.Enter(l, ctx, producer.ProviderImpl(l)(ctx))(s.Tenant(), s.WorldId(), s.ChannelId(), s.MapId(), portalName, s.CharacterId())
+		_ = portal.Enter(l, ctx, producer.ProviderImpl(l)(ctx))(t, s.WorldId(), s.ChannelId(), s.MapId(), portalName, s.CharacterId())
 	}
 }

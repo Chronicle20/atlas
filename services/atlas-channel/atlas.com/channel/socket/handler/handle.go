@@ -25,10 +25,11 @@ const LoggedInValidator = "LoggedInValidator"
 
 func LoggedInValidatorFunc(l logrus.FieldLogger, ctx context.Context) func(s session.Model) bool {
 	return func(s session.Model) bool {
-		v := account.IsLoggedIn(l, ctx, s.Tenant())(s.AccountId())
+		t := s.Tenant()
+		v := account.IsLoggedIn(l, ctx, t)(s.AccountId())
 		if !v {
 			l.Errorf("Attempting to process a request when the account [%d] is not logged in. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry(), s.Tenant().Id)(s)
+			session.Destroy(l, ctx, session.GetRegistry(), t.Id())(s)
 		}
 		return v
 	}
@@ -51,7 +52,7 @@ func AdaptHandler(l logrus.FieldLogger) func(tenantId uuid.UUID, wp writer.Produ
 			return func(sessionId uuid.UUID, r request.Reader) {
 				fl := l.WithField("session", sessionId.String())
 
-				ctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), "socket_handler")
+				ctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), name)
 				sl := fl.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
 				defer span.End()
 

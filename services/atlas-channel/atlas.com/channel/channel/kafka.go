@@ -1,6 +1,6 @@
 package channel
 
-import "atlas-channel/tenant"
+import "github.com/Chronicle20/atlas-tenant"
 
 const (
 	EnvCommandTopicChannelStatus = "COMMAND_TOPIC_CHANNEL_STATUS"

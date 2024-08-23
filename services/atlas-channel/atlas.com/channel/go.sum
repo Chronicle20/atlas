@@ -6,6 +6,8 @@ github.com/Chronicle20/atlas-rest v1.0.0 h1:xPlwWah2uUUFDutFiFogCX9e3QLNn12vUqFi
 github.com/Chronicle20/atlas-rest v1.0.0/go.mod h1:apd34gn88KqSYeybCb/P5AjNGTHAE48RN3fAcSa9Crc=
 github.com/Chronicle20/atlas-socket v1.2.0 h1:1ecfWr/ylPQr9KeZHHIMhJzyPJHIoZIPmyC2JgzM6tg=
 github.com/Chronicle20/atlas-socket v1.2.0/go.mod h1:aj7sgiWBcwTFEnVjJObtIgmvhJqXbK0y7krjg1u+/nI=
+github.com/Chronicle20/atlas-tenant v1.0.0 h1:RNCoXRJEPgDkLquIjezW2IYDxUilPLVNDphUnQf6hn4=
+github.com/Chronicle20/atlas-tenant v1.0.0/go.mod h1:FaJiMT0rNdFLY1Qshve0ggjCYTeGImK/XClb0eteB+E=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

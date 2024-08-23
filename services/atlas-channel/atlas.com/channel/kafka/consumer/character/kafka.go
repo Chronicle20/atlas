@@ -1,6 +1,6 @@
 package character
 
-import "atlas-channel/tenant"
+import "github.com/Chronicle20/atlas-tenant"
 
 const (
 	EnvEventTopicCharacterStatus        = "EVENT_TOPIC_CHARACTER_STATUS"

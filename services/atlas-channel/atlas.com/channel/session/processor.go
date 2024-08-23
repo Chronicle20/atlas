@@ -3,10 +3,10 @@ package session
 import (
 	"atlas-channel/kafka/producer"
 	"atlas-channel/socket/writer"
-	"atlas-channel/tenant"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -14,7 +14,7 @@ import (
 
 func AllInTenantProvider(tenant tenant.Model) func() ([]Model, error) {
 	return func() ([]Model, error) {
-		return GetRegistry().GetInTenant(tenant.Id), nil
+		return GetRegistry().GetInTenant(tenant.Id()), nil
 	}
 }
 
@@ -66,7 +66,8 @@ func Announce(l logrus.FieldLogger) func(writerProducer writer.Producer) func(wr
 					return err
 				}
 
-				if lock, ok := GetRegistry().GetLock(s.Tenant().Id, s.SessionId()); ok {
+				t := s.Tenant()
+				if lock, ok := GetRegistry().GetLock(t.Id(), s.SessionId()); ok {
 					lock.Lock()
 					err = s.announceEncrypted(w(l)(bodyProducer))
 					lock.Unlock()
@@ -153,6 +154,10 @@ func Teardown(l logrus.FieldLogger) func() {
 	return func() {
 		ctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), "teardown")
 		defer span.End()
-		tenant.ForAll(DestroyAll(l, ctx, GetRegistry()))
+		model.ForEachSlice(model.SliceMap(tenant.AllProvider(), GetId), DestroyAll(l, ctx, GetRegistry()))
 	}
+}
+
+func GetId(m tenant.Model) (uuid.UUID, error) {
+	return m.Id(), nil
 }

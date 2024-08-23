@@ -3,12 +3,12 @@ package _map
 import (
 	consumer2 "atlas-monsters/kafka/consumer"
 	"atlas-monsters/monster"
+	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,21 +30,21 @@ func StatusEventCharacterExitRegister(l logrus.FieldLogger) (string, handler.Han
 	return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterExit))
 }
 
-func handleStatusEventCharacterEnter(l logrus.FieldLogger, span opentracing.Span, event statusEvent[characterEnter]) {
+func handleStatusEventCharacterEnter(l logrus.FieldLogger, ctx context.Context, event statusEvent[characterEnter]) {
 	if event.Type != EventTopicMapStatusTypeCharacterEnter {
 		return
 	}
 
-	provider := monster.NotControlledInMapProvider(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId)
-	_ = model.ForEachSlice(provider, monster.FindNextController(l, span, event.Tenant), model.ParallelExecute())
+	provider := monster.NotControlledInMapProvider(event.Tenant)(event.WorldId, event.ChannelId, event.MapId)
+	_ = model.ForEachSlice(provider, monster.FindNextController(l, ctx, event.Tenant), model.ParallelExecute())
 }
 
-func handleStatusEventCharacterExit(l logrus.FieldLogger, span opentracing.Span, event statusEvent[characterExit]) {
+func handleStatusEventCharacterExit(l logrus.FieldLogger, ctx context.Context, event statusEvent[characterExit]) {
 	if event.Type != EventTopicMapStatusTypeCharacterExit {
 		return
 	}
 
-	provider := monster.ControlledByCharacterInMapProvider(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, event.Body.CharacterId)
-	_ = model.ForEachSlice(provider, monster.StopControl(l, span, event.Tenant), model.ParallelExecute())
-	_ = model.ForEachSlice(provider, monster.FindNextController(l, span, event.Tenant))
+	provider := monster.ControlledByCharacterInMapProvider(event.Tenant)(event.WorldId, event.ChannelId, event.MapId, event.Body.CharacterId)
+	_ = model.ForEachSlice(provider, monster.StopControl(l, ctx, event.Tenant), model.ParallelExecute())
+	_ = model.ForEachSlice(provider, monster.FindNextController(l, ctx, event.Tenant))
 }

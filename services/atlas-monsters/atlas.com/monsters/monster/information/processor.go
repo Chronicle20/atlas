@@ -2,13 +2,13 @@ package information
 
 import (
 	"atlas-monsters/tenant"
+	"context"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
-func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(monsterId uint32) (Model, error) {
+func GetById(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(monsterId uint32) (Model, error) {
 	return func(monsterId uint32) (Model, error) {
-		return requests.Provider[RestModel, Model](l)(requestById(l, span, tenant)(monsterId), Extract)()
+		return requests.Provider[RestModel, Model](l)(requestById(ctx, tenant)(monsterId), Extract)()
 	}
 }

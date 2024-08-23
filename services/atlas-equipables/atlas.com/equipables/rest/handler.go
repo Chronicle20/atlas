@@ -2,9 +2,9 @@ package rest
 
 import (
 	"atlas-equipables/tenant"
+	"context"
 	"github.com/gorilla/mux"
 	"github.com/manyminds/api2go/jsonapi"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"io"
@@ -13,21 +13,21 @@ import (
 )
 
 type HandlerDependency struct {
-	l    logrus.FieldLogger
-	span opentracing.Span
-	db   *gorm.DB
+	l   logrus.FieldLogger
+	db  *gorm.DB
+	ctx context.Context
 }
 
 func (h HandlerDependency) Logger() logrus.FieldLogger {
 	return h.l
 }
 
-func (h HandlerDependency) Span() opentracing.Span {
-	return h.span
-}
-
 func (h HandlerDependency) DB() *gorm.DB {
 	return h.db
+}
+
+func (h HandlerDependency) Context() context.Context {
+	return h.ctx
 }
 
 type HandlerContext struct {
@@ -43,11 +43,11 @@ func (h HandlerContext) Tenant() tenant.Model {
 	return h.t
 }
 
-type Handler func(d *HandlerDependency, c *HandlerContext) http.HandlerFunc
+type GetHandler func(d *HandlerDependency, c *HandlerContext) http.HandlerFunc
 
-type CreateHandler[M any] func(d *HandlerDependency, c *HandlerContext, model M) http.HandlerFunc
+type InputHandler[M any] func(d *HandlerDependency, c *HandlerContext, model M) http.HandlerFunc
 
-func ParseInput[M any](d *HandlerDependency, c *HandlerContext, next CreateHandler[M]) http.HandlerFunc {
+func ParseInput[M any](d *HandlerDependency, c *HandlerContext, next InputHandler[M]) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var model M
 
@@ -68,14 +68,14 @@ func ParseInput[M any](d *HandlerDependency, c *HandlerContext, next CreateHandl
 	}
 }
 
-func RegisterHandler(l logrus.FieldLogger) func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler Handler) http.HandlerFunc {
-	return func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler Handler) http.HandlerFunc {
-		return func(si jsonapi.ServerInformation) func(handlerName string, handler Handler) http.HandlerFunc {
-			return func(handlerName string, handler Handler) http.HandlerFunc {
-				return RetrieveSpan(l, handlerName, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
+func RegisterHandler(l logrus.FieldLogger) func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
+	return func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
+		return func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
+			return func(handlerName string, handler GetHandler) http.HandlerFunc {
+				return RetrieveSpan(l, handlerName, func(sl logrus.FieldLogger, ctx context.Context) http.HandlerFunc {
 					fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
-					return ParseTenant(fl, func(tenant tenant.Model) http.HandlerFunc {
-						return handler(&HandlerDependency{l: fl, span: span, db: db}, &HandlerContext{si: si, t: tenant})
+					return ParseTenant(fl, func(tl logrus.FieldLogger, tenant tenant.Model) http.HandlerFunc {
+						return handler(&HandlerDependency{l: tl, db: db, ctx: ctx}, &HandlerContext{si: si, t: tenant})
 					})
 				})
 			}
@@ -83,14 +83,14 @@ func RegisterHandler(l logrus.FieldLogger) func(db *gorm.DB) func(si jsonapi.Ser
 	}
 }
 
-func RegisterCreateHandler[M any](l logrus.FieldLogger) func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler CreateHandler[M]) http.HandlerFunc {
-	return func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler CreateHandler[M]) http.HandlerFunc {
-		return func(si jsonapi.ServerInformation) func(handlerName string, handler CreateHandler[M]) http.HandlerFunc {
-			return func(handlerName string, handler CreateHandler[M]) http.HandlerFunc {
-				return RetrieveSpan(l, handlerName, func(sl logrus.FieldLogger, span opentracing.Span) http.HandlerFunc {
+func RegisterInputHandler[M any](l logrus.FieldLogger) func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
+	return func(db *gorm.DB) func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
+		return func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
+			return func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
+				return RetrieveSpan(l, handlerName, func(sl logrus.FieldLogger, ctx context.Context) http.HandlerFunc {
 					fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
-					return ParseTenant(fl, func(tenant tenant.Model) http.HandlerFunc {
-						d := &HandlerDependency{l: fl, db: db, span: span}
+					return ParseTenant(fl, func(tl logrus.FieldLogger, tenant tenant.Model) http.HandlerFunc {
+						d := &HandlerDependency{l: tl, db: db, ctx: ctx}
 						c := &HandlerContext{si: si, t: tenant}
 						return ParseInput[M](d, c, handler)
 					})

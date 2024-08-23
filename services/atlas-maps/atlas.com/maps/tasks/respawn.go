@@ -3,8 +3,9 @@ package tasks
 import (
 	"atlas-maps/map/character"
 	"atlas-maps/map/monster"
-	"github.com/opentracing/opentracing-go"
+	"context"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 	"time"
 )
 
@@ -22,12 +23,13 @@ func NewRespawn(l logrus.FieldLogger, interval int) *Respawn {
 func (r *Respawn) Run() {
 	r.l.Debugf("Executing spawn task.")
 
-	span := opentracing.StartSpan(RespawnTask)
-	mks := character.GetMapsWithCharacters(r.l, span)
+	ctx, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(context.Background(), RespawnTask)
+	defer span.End()
+
+	mks := character.GetMapsWithCharacters()
 	for _, mk := range mks {
-		go monster.Spawn(r.l, span, mk.Tenant)(mk.WorldId, mk.ChannelId, mk.MapId)
+		go monster.Spawn(r.l, ctx, mk.Tenant)(mk.WorldId, mk.ChannelId, mk.MapId)
 	}
-	span.Finish()
 }
 
 func (r *Respawn) SleepTime() time.Duration {

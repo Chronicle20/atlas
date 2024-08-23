@@ -4,16 +4,11 @@ import (
 	"atlas-maps/character"
 	"atlas-maps/logger"
 	_map "atlas-maps/map"
+	"atlas-maps/service"
 	"atlas-maps/tasks"
 	"atlas-maps/tracing"
-	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"io"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 )
 
 const serviceName = "atlas-maps"
@@ -43,38 +38,25 @@ func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
 
-	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	tdm := service.GetTeardownManager()
 
-	tc, err := tracing.InitTracer(l)(serviceName)
+	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
-	defer func(tc io.Closer) {
-		err := tc.Close()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to close tracer.")
-		}
-	}(tc)
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, ctx, wg)(character.StatusEventConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.StatusEventConsumer(l)(consumerGroupId))
 	_, _ = cm.RegisterHandler(character.StatusEventLoginRegister(l))
 	_, _ = cm.RegisterHandler(character.StatusEventLogoutRegister(l))
 	_, _ = cm.RegisterHandler(character.StatusEventMapChangedRegister(l))
 
 	go tasks.Register(tasks.NewRespawn(l, 10000))
 
-	server.CreateService(l, ctx, wg, GetServer().GetPrefix(), _map.InitResource(GetServer()))
+	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), _map.InitResource(GetServer()))
 
-	// trap sigterm or interrupt and gracefully shutdown the server
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
+	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
-	// Block until a signal is received.
-	sig := <-c
-	l.Infof("Initiating shutdown with signal %s.", sig)
-	cancel()
-	wg.Wait()
+	tdm.Wait()
 	l.Infoln("Service shutdown.")
 }

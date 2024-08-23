@@ -18,13 +18,13 @@ const (
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(router *mux.Router, l logrus.FieldLogger) {
 		r := router.PathPrefix("/characters").Subrouter()
-		r.HandleFunc("", rest.RegisterCreateHandler[RestModel](l)(si)(CreateCharacter, handleCreateCharacter)).Methods(http.MethodPost)
+		r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)(CreateCharacter, handleCreateCharacter)).Methods(http.MethodPost)
 	}
 }
 
 func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cm, err := Create(d.Logger(), d.Span(), c.Tenant())(input)
+		cm, err := Create(d.Logger(), d.Context(), c.Tenant())(input)
 		if err != nil {
 			d.Logger().WithError(err).Error("Error creating character from seed.")
 			w.WriteHeader(http.StatusBadRequest)

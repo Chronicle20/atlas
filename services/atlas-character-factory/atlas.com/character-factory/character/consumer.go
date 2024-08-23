@@ -8,7 +8,6 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/async"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -39,7 +38,7 @@ func createdValidator(tenant tenant.Model, name string) func(event statusEvent[s
 }
 
 func createdHandler(rchan chan uint32, _ chan error) message.Handler[statusEvent[statusEventCreatedBody]] {
-	return func(l logrus.FieldLogger, span opentracing.Span, m statusEvent[statusEventCreatedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, m statusEvent[statusEventCreatedBody]) {
 		rchan <- m.CharacterId
 	}
 }
@@ -73,7 +72,7 @@ func itemGainedValidator(tenant tenant.Model, itemId uint32) func(event inventor
 }
 
 func itemGainedHandler(rchan chan ItemGained, _ chan error) message.Handler[inventoryChangedEvent[inventoryChangedItemAddBody]] {
-	return func(l logrus.FieldLogger, span opentracing.Span, m inventoryChangedEvent[inventoryChangedItemAddBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, m inventoryChangedEvent[inventoryChangedItemAddBody]) {
 		rchan <- ItemGained{ItemId: m.Body.ItemId, Slot: m.Slot}
 	}
 }
@@ -109,7 +108,7 @@ func equipChangedValidator(tenant tenant.Model, itemId uint32) func(event invent
 }
 
 func equipChangedHandler(rchan chan uint32, _ chan error) message.Handler[inventoryChangedEvent[inventoryChangedItemMoveBody]] {
-	return func(l logrus.FieldLogger, span opentracing.Span, m inventoryChangedEvent[inventoryChangedItemMoveBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, m inventoryChangedEvent[inventoryChangedItemMoveBody]) {
 		rchan <- m.Body.ItemId
 	}
 }

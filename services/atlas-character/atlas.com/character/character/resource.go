@@ -35,7 +35,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("", registerGet(GetCharactersByMap, handleGetCharactersByMap)).Methods(http.MethodGet).Queries("worldId", "{worldId}", "mapId", "{mapId}")
 			r.HandleFunc("", registerGet(GetCharactersByName, handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}", "include", "{include}")
 			r.HandleFunc("", registerGet(GetCharactersByName, handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}")
-			r.HandleFunc("", rest.RegisterCreateHandler[RestModel](l)(db)(si)(CreateCharacter, handleCreateCharacter)).Methods(http.MethodPost)
+			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)(CreateCharacter, handleCreateCharacter)).Methods(http.MethodPost)
 			r.HandleFunc("/{characterId}", registerGet(GetCharacter, handleGetCharacter)).Methods(http.MethodGet).Queries("include", "{include}")
 			r.HandleFunc("/{characterId}", registerGet(GetCharacter, handleGetCharacter)).Methods(http.MethodGet)
 			r.HandleFunc("/{characterId}", rest.RegisterHandler(l)(db)(si)(DeleteCharacter, handleDeleteCharacter)).Methods(http.MethodDelete)
@@ -80,7 +80,7 @@ func decoratorsFromInclude(r *http.Request, d *rest.HandlerDependency, c *rest.H
 	var decorators = make([]model.Decorator[Model], 0)
 	include := mux.Vars(r)["include"]
 	if strings.Contains(include, "inventory") {
-		decorators = append(decorators, InventoryModelDecorator(d.Logger(), d.DB(), d.Span(), c.Tenant()))
+		decorators = append(decorators, InventoryModelDecorator(d.Logger(), d.DB(), d.Context(), c.Tenant()))
 	}
 	return decorators
 }
@@ -180,7 +180,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		cs, err := Create(d.Logger(), d.DB(), d.Span(), producer.ProviderImpl(d.Logger())(d.Span()))(c.Tenant(), m)
+		cs, err := Create(d.Logger(), d.DB(), d.Context(), producer.ProviderImpl(d.Logger())(d.Context()))(c.Tenant(), m)
 		if err != nil {
 			if errors.Is(err, blockedNameErr) || errors.Is(err, invalidLevelErr) {
 				w.WriteHeader(http.StatusBadRequest)
@@ -206,7 +206,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 func handleDeleteCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			err := Delete(d.Logger(), d.DB(), d.Span(), c.Tenant())(characterId)
+			err := Delete(d.Logger(), d.DB(), d.Context(), c.Tenant())(characterId)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return

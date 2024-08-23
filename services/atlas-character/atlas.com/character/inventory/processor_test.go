@@ -11,11 +11,10 @@ import (
 	"atlas-character/inventory/item"
 	"atlas-character/kafka/producer"
 	"atlas-character/tenant"
+	"context"
 	producer2 "github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
-	"github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -55,10 +54,6 @@ func testLogger() logrus.FieldLogger {
 	return l
 }
 
-func testSpan() opentracing.Span {
-	return mocktracer.New().StartSpan("test")
-}
-
 func testProducer(output *[]kafka.Message) producer.Provider {
 	return func(token string) producer2.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
@@ -77,25 +72,24 @@ func testProducer(output *[]kafka.Message) producer.Provider {
 func TestAdjustingEquipment(t *testing.T) {
 	l := testLogger()
 	db := testDatabase(t)
-	span := testSpan()
 	tenant := testTenant()
 
 	// Create character
 	var createMessages = make([]kafka.Message, 0)
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("Atlas").SetLevel(1).SetExperience(0).Build()
-	c, err := character.Create(l, db, span, testProducer(&createMessages))(tenant, input)
+	c, err := character.Create(l, db, context.Background(), testProducer(&createMessages))(tenant, input)
 	if err != nil {
 		t.Fatalf("Failed to create model: %v", err)
 	}
 
 	// Create inventory items
-	top := createAndVerifyMockEquip(t, l, db, span)(tenant)(c.Id())(1040010)
-	bottom := createAndVerifyMockEquip(t, l, db, span)(tenant)(c.Id())(1060002)
-	overall := createAndVerifyMockEquip(t, l, db, span)(tenant)(c.Id())(1050018)
+	top := createAndVerifyMockEquip(t, l, db, context.Background())(tenant)(c.Id())(1040010)
+	bottom := createAndVerifyMockEquip(t, l, db, context.Background())(tenant)(c.Id())(1060002)
+	overall := createAndVerifyMockEquip(t, l, db, context.Background())(tenant)(c.Id())(1050018)
 	t.Logf("Top [%d], Bottom [%d], Overall [%d].", top.Slot(), bottom.Slot(), overall.Slot())
 
 	var equipMessages = make([]kafka.Message, 0)
-	equipFunc := inventory.EquipItemForCharacter(l)(db)(tenant)(model.Flip(model.Flip(equipable.GetNextFreeSlot(l))(span))(tenant))(testProducer(&equipMessages))(c.Id())
+	equipFunc := inventory.EquipItemForCharacter(l)(db)(tenant)(model.Flip(model.Flip(equipable.GetNextFreeSlot(l))(context.Background()))(tenant))(testProducer(&equipMessages))(c.Id())
 
 	// Equip Top to start.
 	equipFunc(top.Slot())(equipment.FixedDestinationProvider(int16(slot.PositionTop)))
@@ -220,7 +214,7 @@ func TestAdjustingEquipment(t *testing.T) {
 	}
 
 	var unequipMessages = make([]kafka.Message, 0)
-	unequipFunc := inventory.UnequipItemForCharacter(l)(db)(tenant)(model.Flip(model.Flip(equipable.GetNextFreeSlot(l))(span))(tenant))(testProducer(&unequipMessages))(c.Id())
+	unequipFunc := inventory.UnequipItemForCharacter(l)(db)(tenant)(model.Flip(model.Flip(equipable.GetNextFreeSlot(l))(context.Background()))(tenant))(testProducer(&unequipMessages))(c.Id())
 	unequipFunc(int16(slot.PositionTop))
 	equippedTop, err = equipable.GetBySlot(db, tenant)(c.Id(), 2)
 	if err != nil {
@@ -256,7 +250,7 @@ func validateEquipable(e equipable.Model, validators ...EquipableValidator) bool
 	return true
 }
 
-func createAndVerifyMockEquip(t *testing.T, l logrus.FieldLogger, db *gorm.DB, span opentracing.Span) func(tenant tenant.Model) func(characterId uint32) func(itemId uint32) equipable.Model {
+func createAndVerifyMockEquip(t *testing.T, l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(tenant tenant.Model) func(characterId uint32) func(itemId uint32) equipable.Model {
 	return func(tenant tenant.Model) func(characterId uint32) func(itemId uint32) equipable.Model {
 		return func(characterId uint32) func(itemId uint32) equipable.Model {
 			return func(itemId uint32) equipable.Model {
@@ -267,7 +261,7 @@ func createAndVerifyMockEquip(t *testing.T, l logrus.FieldLogger, db *gorm.DB, s
 						return make([]kafka.Message, 0), nil
 					}
 				}
-				err := createMockEquipAsset(l, db, span, iap)(tenant)(characterId)(int8(inventory.TypeValueEquip))(itemId)
+				err := createMockEquipAsset(l, db, ctx, iap)(tenant)(characterId)(int8(inventory.TypeValueEquip))(itemId)
 				if err != nil {
 					t.Fatalf("Failed to create item: %v", err)
 				}
@@ -289,7 +283,7 @@ func createAndVerifyMockEquip(t *testing.T, l logrus.FieldLogger, db *gorm.DB, s
 	}
 }
 
-func createMockEquipAsset(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, iap inventory.ItemAddProvider) func(tenant tenant.Model) func(characterId uint32) func(inventoryType int8) func(itemId uint32) error {
+func createMockEquipAsset(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, iap inventory.ItemAddProvider) func(tenant tenant.Model) func(characterId uint32) func(inventoryType int8) func(itemId uint32) error {
 	return func(tenant tenant.Model) func(characterId uint32) func(inventoryType int8) func(itemId uint32) error {
 		return func(characterId uint32) func(inventoryType int8) func(itemId uint32) error {
 			return func(inventoryType int8) func(itemId uint32) error {
@@ -311,7 +305,7 @@ func createMockEquipAsset(l logrus.FieldLogger, db *gorm.DB, span opentracing.Sp
 							return statistics2.Model{}, nil
 						}
 					}
-					nac := equipable.CreateItem(l, db, span, tenant, esc)(characterId)(invId, inventoryType)(itemId)
+					nac := equipable.CreateItem(l, db, ctx, tenant, esc)(characterId)(invId, inventoryType)(itemId)
 					aqu := asset.NoOpQuantityUpdater
 
 					_, err = inventory.CreateAsset(l)(eap, smp, nac, aqu, iap, iup, 1)()
@@ -325,9 +319,9 @@ func createMockEquipAsset(l logrus.FieldLogger, db *gorm.DB, span opentracing.Sp
 	}
 }
 
-func createMockItemAsset(l logrus.FieldLogger) func(db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(characterId uint32) func(inventoryType int8) func(itemId uint32) func(quantity uint32) error {
-	return func(db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(characterId uint32) func(inventoryType int8) func(itemId uint32) func(quantity uint32) error {
-		return func(span opentracing.Span) func(tenant tenant.Model) func(characterId uint32) func(inventoryType int8) func(itemId uint32) func(quantity uint32) error {
+func createMockItemAsset(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(tenant tenant.Model) func(characterId uint32) func(inventoryType int8) func(itemId uint32) func(quantity uint32) error {
+	return func(db *gorm.DB) func(ctx context.Context) func(tenant tenant.Model) func(characterId uint32) func(inventoryType int8) func(itemId uint32) func(quantity uint32) error {
+		return func(ctx context.Context) func(tenant tenant.Model) func(characterId uint32) func(inventoryType int8) func(itemId uint32) func(quantity uint32) error {
 			return func(tenant tenant.Model) func(characterId uint32) func(inventoryType int8) func(itemId uint32) func(quantity uint32) error {
 				return func(characterId uint32) func(inventoryType int8) func(itemId uint32) func(quantity uint32) error {
 					return func(inventoryType int8) func(itemId uint32) func(quantity uint32) error {
@@ -374,24 +368,23 @@ func createMockItemAsset(l logrus.FieldLogger) func(db *gorm.DB) func(span opent
 func TestMove(t *testing.T) {
 	l := testLogger()
 	db := testDatabase(t)
-	span := testSpan()
 	tenant := testTenant()
 
 	// Create character
 	var createMessages = make([]kafka.Message, 0)
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("Atlas").SetLevel(1).SetExperience(0).Build()
-	c, err := character.Create(l, db, span, testProducer(&createMessages))(tenant, input)
+	c, err := character.Create(l, db, context.Background(), testProducer(&createMessages))(tenant, input)
 	if err != nil {
 		t.Fatalf("Failed to create model: %v", err)
 	}
 
 	// Create inventory items
-	err = createMockItemAsset(l)(db)(span)(tenant)(c.Id())(2)(2000000)(100)
+	err = createMockItemAsset(l)(db)(context.Background())(tenant)(c.Id())(2)(2000000)(100)
 	if err != nil {
 		t.Fatalf("Failed to create item: %v", err)
 	}
 
-	err = createMockItemAsset(l)(db)(span)(tenant)(c.Id())(2)(2000001)(150)
+	err = createMockItemAsset(l)(db)(context.Background())(tenant)(c.Id())(2)(2000001)(150)
 	if err != nil {
 		t.Fatalf("Failed to create item: %v", err)
 	}

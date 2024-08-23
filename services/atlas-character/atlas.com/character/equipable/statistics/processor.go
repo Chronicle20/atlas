@@ -2,17 +2,17 @@ package statistics
 
 import (
 	"atlas-character/tenant"
+	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 type Creator func(itemId uint32) model.Provider[Model]
 
-func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) Creator {
+func Create(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) Creator {
 	return func(itemId uint32) model.Provider[Model] {
-		ro, err := requestCreate(l, span, tenant)(itemId)(l)
+		ro, err := requestCreate(ctx, tenant)(itemId)(l)
 		if err != nil {
 			l.WithError(err).Errorf("Generating equipment item %d, they were not awarded this item. Check request in ESO service.", itemId)
 			return model.ErrorProvider[Model](err)
@@ -21,21 +21,21 @@ func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) Cr
 	}
 }
 
-func byEquipmentIdModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(equipmentId uint32) model.Provider[Model] {
+func byEquipmentIdModelProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(equipmentId uint32) model.Provider[Model] {
 	return func(equipmentId uint32) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l)(requestById(l, span, tenant)(equipmentId), makeEquipment)
+		return requests.Provider[RestModel, Model](l)(requestById(ctx, tenant)(equipmentId), makeEquipment)
 	}
 }
 
-func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(equipmentId uint32) (Model, error) {
+func GetById(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(equipmentId uint32) (Model, error) {
 	return func(equipmentId uint32) (Model, error) {
-		return byEquipmentIdModelProvider(l, span, tenant)(equipmentId)()
+		return byEquipmentIdModelProvider(l, ctx, tenant)(equipmentId)()
 	}
 }
 
-func Delete(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(equipmentId uint32) error {
+func Delete(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(equipmentId uint32) error {
 	return func(equipmentId uint32) error {
-		return deleteById(l, span, tenant)(equipmentId)(l)
+		return deleteById(ctx, tenant)(equipmentId)(l)
 	}
 }
 

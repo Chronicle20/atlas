@@ -6,8 +6,8 @@ import (
 	"atlas-character/equipable/statistics"
 	"atlas-character/slottable"
 	"atlas-character/tenant"
+	"context"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -18,23 +18,23 @@ func byInventoryProvider(db *gorm.DB, tenant tenant.Model) func(inventoryId uint
 	}
 }
 
-func GetByInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) ([]Model, error) {
+func GetByInventory(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(inventoryId uint32) ([]Model, error) {
 	return func(inventoryId uint32) ([]Model, error) {
-		return model.SliceMap(byInventoryProvider(db, tenant)(inventoryId), decorateWithStatistics(l, span, tenant), model.ParallelMap())()
+		return model.SliceMap(byInventoryProvider(db, tenant)(inventoryId), decorateWithStatistics(l, ctx, tenant), model.ParallelMap())()
 	}
 }
 
-func EquipmentProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.Provider[[]Model] {
+func EquipmentProvider(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(inventoryId uint32) model.Provider[[]Model] {
 	return func(inventoryId uint32) model.Provider[[]Model] {
 		fp := model.FilteredProvider[Model](byInventoryProvider(db, tenant)(inventoryId), FilterOutInventory)
-		return model.SliceMap(fp, decorateWithStatistics(l, span, tenant), model.ParallelMap())
+		return model.SliceMap(fp, decorateWithStatistics(l, ctx, tenant), model.ParallelMap())
 	}
 }
 
-func InInventoryProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(inventoryId uint32) model.Provider[[]Model] {
+func InInventoryProvider(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(inventoryId uint32) model.Provider[[]Model] {
 	return func(inventoryId uint32) model.Provider[[]Model] {
 		fp := model.FilteredProvider[Model](byInventoryProvider(db, tenant)(inventoryId), FilterOutEquipment)
-		return model.SliceMap(fp, decorateWithStatistics(l, span, tenant), model.ParallelMap())
+		return model.SliceMap(fp, decorateWithStatistics(l, ctx, tenant), model.ParallelMap())
 	}
 }
 
@@ -70,13 +70,13 @@ func FilterOutEquipment(e Model) bool {
 	return e.Slot() > 0
 }
 
-func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model, statCreator statistics.Creator) asset.CharacterAssetCreator {
+func CreateItem(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model, statCreator statistics.Creator) asset.CharacterAssetCreator {
 	return func(characterId uint32) asset.InventoryAssetCreator {
 		return func(inventoryId uint32, inventoryType int8) asset.ItemCreator {
 			return func(itemId uint32) asset.Creator {
 				return func(quantity uint32) model.Provider[asset.Asset] {
 					l.Debugf("Creating equipable [%d] for character [%d].", itemId, characterId)
-					slot, err := GetNextFreeSlot(l)(db)(span)(tenant)(inventoryId)()
+					slot, err := GetNextFreeSlot(l)(db)(ctx)(tenant)(inventoryId)()
 					if err != nil {
 						l.WithError(err).Errorf("Unable to locate a free slot to create the item.")
 						return model.ErrorProvider[asset.Asset](err)
@@ -104,12 +104,12 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 	}
 }
 
-func GetNextFreeSlot(l logrus.FieldLogger) func(db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(inventoryId uint32) model.Provider[int16] {
-	return func(db *gorm.DB) func(span opentracing.Span) func(tenant tenant.Model) func(inventoryId uint32) model.Provider[int16] {
-		return func(span opentracing.Span) func(tenant tenant.Model) func(inventoryId uint32) model.Provider[int16] {
+func GetNextFreeSlot(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(tenant tenant.Model) func(inventoryId uint32) model.Provider[int16] {
+	return func(db *gorm.DB) func(ctx context.Context) func(tenant tenant.Model) func(inventoryId uint32) model.Provider[int16] {
+		return func(ctx context.Context) func(tenant tenant.Model) func(inventoryId uint32) model.Provider[int16] {
 			return func(tenant tenant.Model) func(inventoryId uint32) model.Provider[int16] {
 				return func(inventoryId uint32) model.Provider[int16] {
-					ms, err := GetByInventory(l, db, span, tenant)(inventoryId)
+					ms, err := GetByInventory(l, db, ctx, tenant)(inventoryId)
 					if err != nil {
 						return model.ErrorProvider[int16](err)
 					}
@@ -124,9 +124,9 @@ func GetNextFreeSlot(l logrus.FieldLogger) func(db *gorm.DB) func(span opentraci
 	}
 }
 
-func decorateWithStatistics(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(e Model) (Model, error) {
+func decorateWithStatistics(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(e Model) (Model, error) {
 	return func(e Model) (Model, error) {
-		sm, err := statistics.GetById(l, span, tenant)(e.ReferenceId())
+		sm, err := statistics.GetById(l, ctx, tenant)(e.ReferenceId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve generated equipment [%d] statistics.", e.Id())
 			return e, nil
@@ -165,13 +165,13 @@ func UpdateSlot(db *gorm.DB) func(tenant tenant.Model) func(id uint32, slot int1
 	}
 }
 
-func DeleteByReferenceId(l logrus.FieldLogger) func(span opentracing.Span) func(db *gorm.DB) func(tenant tenant.Model) model.Operator[uint32] {
-	return func(span opentracing.Span) func(db *gorm.DB) func(tenant tenant.Model) model.Operator[uint32] {
+func DeleteByReferenceId(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(tenant tenant.Model) model.Operator[uint32] {
+	return func(ctx context.Context) func(db *gorm.DB) func(tenant tenant.Model) model.Operator[uint32] {
 		return func(db *gorm.DB) func(tenant tenant.Model) model.Operator[uint32] {
 			return func(tenant tenant.Model) model.Operator[uint32] {
 				return func(referenceId uint32) error {
 					l.Debugf("Attempting to delete equipment referencing [%d].", referenceId)
-					err := statistics.Delete(l, span, tenant)(referenceId)
+					err := statistics.Delete(l, ctx, tenant)(referenceId)
 					if err != nil {
 						return err
 					}

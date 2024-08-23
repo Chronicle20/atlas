@@ -9,18 +9,18 @@ import (
 	"atlas-character/inventory/item"
 	"atlas-character/kafka/producer"
 	"atlas-character/tenant"
+	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/opentracing/opentracing-go"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"math"
 )
 
-func ByCharacterIdProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
+func ByCharacterIdProvider(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
-		return model.Fold[entity, Model](getByCharacter(tenant.Id, characterId)(db), supplier, foldInventory(l, db, span, tenant))
+		return model.Fold[entity, Model](getByCharacter(tenant.Id, characterId)(db), supplier, foldInventory(l, db, ctx, tenant))
 	}
 }
 
@@ -53,11 +53,11 @@ func ItemFolder(m ItemModel, em item.Model) (ItemModel, error) {
 	return m, nil
 }
 
-func foldInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(ref Model, ent entity) (Model, error) {
+func foldInventory(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(ref Model, ent entity) (Model, error) {
 	return func(ref Model, ent entity) (Model, error) {
 		switch Type(ent.InventoryType) {
 		case TypeValueEquip:
-			ep := equipable.InInventoryProvider(l, db, span, tenant)(ent.ID)
+			ep := equipable.InInventoryProvider(l, db, ctx, tenant)(ent.ID)
 			return model.Map(model.Fold(ep, NewEquipableModel(ent.ID, ent.Capacity), EquipableFolder), foldProperty(ref.SetEquipable))()
 		case TypeValueUse:
 			ip := item.ByInventoryProvider(db, tenant)(ent.ID)
@@ -76,13 +76,13 @@ func foldInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, ten
 	}
 }
 
-func GetInventories(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32) (Model, error) {
+func GetInventories(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
-		return ByCharacterIdProvider(l, db, span, tenant)(characterId)()
+		return ByCharacterIdProvider(l, db, ctx, tenant)(characterId)()
 	}
 }
 
-func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, defaultCapacity uint32) (Model, error) {
+func Create(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32, defaultCapacity uint32) (Model, error) {
 	return func(characterId uint32, defaultCapacity uint32) (Model, error) {
 		err := db.Transaction(func(tx *gorm.DB) error {
 			for _, t := range Types {
@@ -99,11 +99,11 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 			return Model{}, err
 		}
 
-		return GetInventories(l, db, span, tenant)(characterId)
+		return GetInventories(l, db, ctx, tenant)(characterId)
 	}
 }
 
-func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
+func CreateItem(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
 	return func(tenant tenant.Model, characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
 		expectedInventoryType := math.Floor(float64(itemId) / 1000000)
 		if expectedInventoryType != float64(inventoryType) {
@@ -138,7 +138,7 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventP
 			if inventoryType == TypeValueEquip {
 				eap = asset.NoOpSliceProvider
 				smp = OfOneSlotMaxProvider
-				nac = equipable.CreateItem(l, tx, span, tenant, statistics2.Create(l, span, tenant))(characterId)(invId, int8(inventoryType))(itemId)
+				nac = equipable.CreateItem(l, tx, ctx, tenant, statistics2.Create(l, ctx, tenant))(characterId)(invId, int8(inventoryType))(itemId)
 				aqu = asset.NoOpQuantityUpdater
 			} else {
 				eap = model.SliceMap(item.ByItemIdProvider(tx)(tenant)(invId)(itemId), item.ToAsset)
@@ -429,14 +429,14 @@ func DeleteInventory(l logrus.FieldLogger, db *gorm.DB) func(tenant tenant.Model
 	}
 }
 
-func DeleteEquipableInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, m EquipableModel) error {
+func DeleteEquipableInventory(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32, m EquipableModel) error {
 	return func(characterId uint32, m EquipableModel) error {
 		idp := model.SliceMap(model.FixedProvider(m.Items()), equipable.ReferenceId)
-		return DeleteInventory(l, db)(tenant, characterId, TypeValueEquip, idp, equipable.DeleteByReferenceId(l)(span))
+		return DeleteInventory(l, db)(tenant, characterId, TypeValueEquip, idp, equipable.DeleteByReferenceId(l)(ctx))
 	}
 }
 
-func DeleteItemInventory(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, tenant tenant.Model) func(characterId uint32, m ItemModel) error {
+func DeleteItemInventory(l logrus.FieldLogger, db *gorm.DB, _ context.Context, tenant tenant.Model) func(characterId uint32, m ItemModel) error {
 	return func(characterId uint32, m ItemModel) error {
 		idp := model.SliceMap(model.FixedProvider(m.Items()), item.Id)
 		return DeleteInventory(l, db)(tenant, characterId, m.mType, idp, item.DeleteById)
@@ -546,17 +546,17 @@ func moveEquip(l logrus.FieldLogger, db *gorm.DB, eventProducer producer.Provide
 	}
 }
 
-func Drop(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
+func Drop(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
 	return func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
 		if inventoryType == 1 {
-			return dropEquip(l, db, span, tenant)(characterId, source, quantity)
+			return dropEquip(l, db, ctx, tenant)(characterId, source, quantity)
 		} else {
-			return dropItem(l, db, span, tenant)(characterId, inventoryType, source, quantity)
+			return dropItem(l, db, ctx, tenant)(characterId, inventoryType, source, quantity)
 		}
 	}
 }
 
-func dropItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
+func dropItem(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
 	return func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
 		l.Debugf("Received request to drop item at [%d] for character [%d].", source, characterId)
 		invLock := GetLockRegistry().GetById(characterId, Type(inventoryType))
@@ -602,7 +602,7 @@ func dropItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 			l.WithError(txErr).Errorf("Unable to complete dropping item for character [%d].", characterId)
 			return txErr
 		}
-		err := producer.ProviderImpl(l)(span)(EnvEventInventoryChanged)(events)
+		err := producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(events)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
 		}
@@ -610,7 +610,7 @@ func dropItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 	}
 }
 
-func dropEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, source int16, quantity int16) error {
+func dropEquip(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32, source int16, quantity int16) error {
 	return func(characterId uint32, source int16, quantity int16) error {
 		l.Debugf("Received request to drop item at [%d] for character [%d].", source, characterId)
 		invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
@@ -636,7 +636,7 @@ func dropEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant 
 			l.WithError(txErr).Errorf("Unable to complete dropping item for character [%d].", characterId)
 			return txErr
 		}
-		err := producer.ProviderImpl(l)(span)(EnvEventInventoryChanged)(events)
+		err := producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(events)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
 		}

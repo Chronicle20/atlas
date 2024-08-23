@@ -29,11 +29,11 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			register := rest.RegisterHandler(l)(db)(si)
 
 			r := router.PathPrefix("/characters/{characterId}/inventories").Subrouter()
-			r.HandleFunc("/{inventoryType}/items", rest.RegisterCreateHandler[item.RestModel](l)(db)(si)(handlerCreateItem, handleCreateItem)).Methods(http.MethodPost)
+			r.HandleFunc("/{inventoryType}/items", rest.RegisterInputHandler[item.RestModel](l)(db)(si)(handlerCreateItem, handleCreateItem)).Methods(http.MethodPost)
 			r.HandleFunc("/{inventoryType}/items", register(getItemBySlot, handleGetItemBySlot)).Methods(http.MethodGet).Queries("slot", "{slot}")
 
 			er := router.PathPrefix("/characters/{characterId}/equipment").Subrouter()
-			er.HandleFunc("/{slotType}/equipable", rest.RegisterCreateHandler[equipable.RestModel](l)(db)(si)(EquipItem, handleEquipItem)).Methods(http.MethodPost)
+			er.HandleFunc("/{slotType}/equipable", rest.RegisterInputHandler[equipable.RestModel](l)(db)(si)(EquipItem, handleEquipItem)).Methods(http.MethodPost)
 			er.HandleFunc("/{slotType}/equipable", register(UnequipItem, handleUnequipItem)).Methods(http.MethodDelete)
 		}
 	}
@@ -50,7 +50,7 @@ func handleGetItemBySlot(d *rest.HandlerDependency, c *rest.HandlerContext) http
 					return
 				}
 
-				inv, err := GetInventories(d.Logger(), d.DB(), d.Span(), c.Tenant())(characterId)
+				inv, err := GetInventories(d.Logger(), d.DB(), d.Context(), c.Tenant())(characterId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get inventory for character [%d].", characterId)
 					w.WriteHeader(http.StatusBadRequest)
@@ -115,7 +115,7 @@ func handleCreateItem(d *rest.HandlerDependency, c *rest.HandlerContext, model i
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return rest.ParseInventoryType(d.Logger(), func(inventoryType int8) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				err := CreateItem(d.Logger(), d.DB(), d.Span(), producer.ProviderImpl(d.Logger())(d.Span()))(c.Tenant(), characterId, Type(inventoryType), model.ItemId, model.Quantity)
+				err := CreateItem(d.Logger(), d.DB(), d.Context(), producer.ProviderImpl(d.Logger())(d.Context()))(c.Tenant(), characterId, Type(inventoryType), model.ItemId, model.Quantity)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -151,7 +151,7 @@ func handleEquipItem(d *rest.HandlerDependency, c *rest.HandlerContext, input eq
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				_ = producer.ProviderImpl(d.Logger())(d.Span())(EnvCommandTopicEquipItem)(equipItemCommandProvider(c.Tenant(), characterId, input.Slot, int16(des)))
+				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicEquipItem)(equipItemCommandProvider(c.Tenant(), characterId, input.Slot, int16(des)))
 				w.WriteHeader(http.StatusAccepted)
 			}
 		})
@@ -168,7 +168,7 @@ func handleUnequipItem(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				_ = producer.ProviderImpl(d.Logger())(d.Span())(EnvCommandTopicUnequipItem)(unequipItemCommandProvider(c.Tenant(), characterId, int16(des)))
+				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicUnequipItem)(unequipItemCommandProvider(c.Tenant(), characterId, int16(des)))
 				w.WriteHeader(http.StatusAccepted)
 			}
 		})

@@ -9,7 +9,6 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"io"
 	"sync"
@@ -52,9 +51,10 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 		})
 
 		c := &Consumer{
-			name:     config.name,
-			reader:   r,
-			handlers: make(map[string]handler.Handler),
+			name:          config.name,
+			reader:        r,
+			handlers:      make(map[string]handler.Handler),
+			headerParsers: config.headerParsers,
 		}
 
 		m.consumers[config.topic] = c
@@ -104,10 +104,11 @@ func (m *Manager) RemoveHandler(topic string, handlerId string) error {
 }
 
 type Consumer struct {
-	name     string
-	reader   *kafka.Reader
-	handlers map[string]handler.Handler
-	mu       sync.Mutex
+	name          string
+	reader        *kafka.Reader
+	handlers      map[string]handler.Handler
+	headerParsers []HeaderParser
+	mu            sync.Mutex
 }
 
 func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) {
@@ -143,14 +144,13 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 			} else {
 				l.Debugf("Message received %s.", string(msg.Value))
 				go func() {
-					carrier := propagation.MapCarrier{}
-					for _, header := range msg.Headers {
-						carrier[header.Key] = string(header.Value)
+					wctx := ctx
+					for _, p := range c.headerParsers {
+						wctx = p(wctx, msg.Headers)
 					}
-					propagator := otel.GetTextMapPropagator()
-					sctx := propagator.Extract(ctx, carrier)
+
 					var span trace.Span
-					sctx, span = otel.GetTracerProvider().Tracer("atlas-kafka").Start(sctx, "kafka_consumer")
+					wctx, span = otel.GetTracerProvider().Tracer("atlas-kafka").Start(wctx, c.name)
 					l = l.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
 					defer span.End()
 
@@ -163,7 +163,7 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 						var handleId = id
 						go func() {
 							var cont bool
-							cont, err = handle(l, sctx, msg)
+							cont, err = handle(l, wctx, msg)
 							if !cont {
 								c.mu.Lock()
 								var nh = make(map[string]handler.Handler)

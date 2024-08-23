@@ -5,14 +5,14 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const CashShopEntryHandle = "CashShopEntryHandle"
 
-func CashShopEntryHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	cashShopOpenFunc := session.Announce(l)(wp)(writer.CashShopOpen)
 	//cashShopOperationFunc := session.Announce(l)(wp)(writer.CashShopOperation)
 	cashShopCashQueryResultFunc := session.Announce(l)(wp)(writer.CashShopCashQueryResult)
@@ -25,8 +25,8 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp wri
 		// TODO block when in mini dungeon
 		// TODO block when already in cash shop
 
-		a, err := account.GetById(l, span, s.Tenant())(s.AccountId())
-		c, err := character.GetByIdWithInventory(l, span, s.Tenant())(s.CharacterId())
+		a, err := account.GetById(l, ctx, s.Tenant())(s.AccountId())
+		c, err := character.GetByIdWithInventory(l, ctx, s.Tenant())(s.CharacterId())
 
 		err = cashShopOpenFunc(s, writer.CashShopOpenBody(l)(s.Tenant(), a, c))
 		if err != nil {

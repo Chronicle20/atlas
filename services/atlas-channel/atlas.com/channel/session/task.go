@@ -2,8 +2,9 @@ package session
 
 import (
 	"atlas-channel/configuration"
-	"github.com/opentracing/opentracing-go"
+	"context"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 	"time"
 )
 
@@ -36,7 +37,9 @@ func NewTimeout(l logrus.FieldLogger, interval time.Duration) *Timeout {
 }
 
 func (t *Timeout) Run() {
-	span := opentracing.StartSpan(TimeoutTask)
+	ctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), TimeoutTask)
+	defer span.End()
+
 	sessions := GetRegistry().GetAll()
 	cur := time.Now()
 
@@ -44,10 +47,9 @@ func (t *Timeout) Run() {
 	for _, s := range sessions {
 		if cur.Sub(s.LastRequest()) > t.timeout {
 			t.l.Infof("Account [%d] was auto-disconnected due to inactivity.", s.AccountId())
-			DestroyById(t.l, span, GetRegistry(), s.Tenant().Id)(s.SessionId())
+			DestroyById(t.l, ctx, GetRegistry(), s.Tenant().Id)(s.SessionId())
 		}
 	}
-	span.Finish()
 }
 
 func (t *Timeout) SleepTime() time.Duration {

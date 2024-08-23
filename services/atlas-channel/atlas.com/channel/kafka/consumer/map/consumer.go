@@ -10,12 +10,12 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"atlas-channel/tenant"
+	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -41,8 +41,8 @@ func StatusEventCharacterExitRegister(sc server.Model, wp writer.Producer) func(
 	}
 }
 
-func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, span opentracing.Span, event statusEvent[characterEnter]) {
-	return func(l logrus.FieldLogger, span opentracing.Span, event statusEvent[characterEnter]) {
+func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[characterEnter]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[characterEnter]) {
 		if !sc.Is(event.Tenant, event.WorldId, event.ChannelId) {
 			return
 		}
@@ -52,21 +52,21 @@ func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l
 		}
 
 		l.Debugf("Character [%d] has entered map [%d] in worldId [%d] channelId [%d].", event.Body.CharacterId, event.MapId, event.WorldId, event.ChannelId)
-		session.IfPresentByCharacterId(event.Tenant, sc.WorldId(), sc.ChannelId())(event.Body.CharacterId, enterMap(l, span, event.Tenant, wp)(event.MapId))
+		session.IfPresentByCharacterId(event.Tenant, sc.WorldId(), sc.ChannelId())(event.Body.CharacterId, enterMap(l, ctx, event.Tenant, wp)(event.MapId))
 	}
 }
 
-func enterMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model, wp writer.Producer) func(mapId uint32) model.Operator[session.Model] {
+func enterMap(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model, wp writer.Producer) func(mapId uint32) model.Operator[session.Model] {
 	return func(mapId uint32) model.Operator[session.Model] {
 		return func(s session.Model) error {
 			l.Debugf("Processing character [%d] entering map [%d].", s.CharacterId(), mapId)
-			ids, err := _map.GetCharacterIdsInMap(l, span, s.Tenant())(s.WorldId(), s.ChannelId(), mapId)
+			ids, err := _map.GetCharacterIdsInMap(l, ctx, s.Tenant())(s.WorldId(), s.ChannelId(), mapId)
 			if err != nil {
 				l.WithError(err).Errorf("No characters found in map [%d] for world [%d] and channel [%d].", mapId, s.WorldId(), s.ChannelId())
 				return err
 			}
 
-			cp := model.SliceMap(model.FixedProvider(ids), character.GetByIdWithInventory(l, span, tenant), model.ParallelMap())
+			cp := model.SliceMap(model.FixedProvider(ids), character.GetByIdWithInventory(l, ctx, tenant), model.ParallelMap())
 			cms, err := model.CollectToMap(cp, GetId, GetModel)()
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve character details for characters in map.")
@@ -87,9 +87,9 @@ func enterMap(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model, 
 				}
 			}
 
-			go npc.ForEachInMap(l, span, tenant)(mapId, spawnNPCForSession(l, wp)(s))
+			go npc.ForEachInMap(l, ctx, tenant)(mapId, spawnNPCForSession(l, wp)(s))
 
-			go monster.ForEachInMap(l, span, tenant)(s.WorldId(), s.ChannelId(), mapId, spawnMonsterForSession(l, wp)(s))
+			go monster.ForEachInMap(l, ctx, tenant)(s.WorldId(), s.ChannelId(), mapId, spawnMonsterForSession(l, wp)(s))
 
 			// fetch drops in map
 
@@ -121,15 +121,15 @@ func GetId(m character.Model) uint32 {
 	return m.Id()
 }
 
-func handleStatusEventCharacterExit(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, span opentracing.Span, event statusEvent[characterExit]) {
-	return func(l logrus.FieldLogger, span opentracing.Span, event statusEvent[characterExit]) {
+func handleStatusEventCharacterExit(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[characterExit]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[characterExit]) {
 		if !sc.Is(event.Tenant, event.WorldId, event.ChannelId) {
 			return
 		}
 
 		if event.Type == EventTopicMapStatusTypeCharacterExit {
 			l.Debugf("Character [%d] has left map [%d] in worldId [%d] channelId [%d].", event.Body.CharacterId, event.MapId, event.WorldId, event.ChannelId)
-			_ = _map.ForOtherSessionsInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, event.Body.CharacterId, despawnForSession(l, event.Tenant, wp)(event.Body.CharacterId))
+			_ = _map.ForOtherSessionsInMap(l, ctx, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, event.Body.CharacterId, despawnForSession(l, event.Tenant, wp)(event.Body.CharacterId))
 			return
 		}
 	}

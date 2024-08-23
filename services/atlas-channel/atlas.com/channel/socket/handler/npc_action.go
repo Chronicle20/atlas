@@ -5,21 +5,21 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const NPCActionHandle = "NPCActionHandle"
 
-func NPCActionHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func NPCActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	npcActionFunc := session.Announce(l)(wp)(writer.NPCAction)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		objectId := r.ReadUint32()
 		unk := r.ReadByte()
 		unk2 := r.ReadByte()
 
-		n, err := npc.GetInMapByObjectId(l, span, s.Tenant())(s.MapId(), objectId)
+		n, err := npc.GetInMapByObjectId(l, ctx, s.Tenant())(s.MapId(), objectId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve npc moving.")
 			return

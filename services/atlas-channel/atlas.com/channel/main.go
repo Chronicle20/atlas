@@ -19,12 +19,13 @@ import (
 	"atlas-channel/tasks"
 	"atlas-channel/tenant"
 	"atlas-channel/tracing"
+	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	socket2 "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 	"strconv"
 	"time"
 )
@@ -38,7 +39,7 @@ func main() {
 
 	tdm := service.GetTeardownManager()
 
-	tc, err := tracing.InitTracer(l)(serviceName)
+	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
@@ -63,7 +64,7 @@ func main() {
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.GeneralChatEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(inventory.ChangedConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 
-	span := opentracing.StartSpan("startup")
+	ctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
 	for _, s := range config.Data.Attributes.Servers {
 		var t tenant.Model
@@ -72,7 +73,7 @@ func main() {
 			continue
 		}
 
-		err = account.InitializeRegistry(l, span, t)
+		err = account.InitializeRegistry(l, ctx, t)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to initialize account registry for tenant [%s].", t.String())
 		}
@@ -122,7 +123,7 @@ func main() {
 			}
 		}
 	}
-	span.Finish()
+	span.End()
 
 	tt, err := config.FindTask(session.TimeoutTask)
 	if err != nil {

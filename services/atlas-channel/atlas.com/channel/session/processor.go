@@ -4,11 +4,12 @@ import (
 	"atlas-channel/kafka/producer"
 	"atlas-channel/socket/writer"
 	"atlas-channel/tenant"
+	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 )
 
 func AllInTenantProvider(tenant tenant.Model) func() ([]Model, error) {
@@ -150,8 +151,8 @@ func EmitCreated(kp producer.Provider, tenant tenant.Model) func(s Model) {
 
 func Teardown(l logrus.FieldLogger) func() {
 	return func() {
-		span := opentracing.StartSpan("teardown")
-		defer span.Finish()
-		tenant.ForAll(DestroyAll(l, span, GetRegistry()))
+		ctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), "teardown")
+		defer span.End()
+		tenant.ForAll(DestroyAll(l, ctx, GetRegistry()))
 	}
 }

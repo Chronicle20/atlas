@@ -2,22 +2,22 @@ package portal
 
 import (
 	"atlas-messages/tenant"
+	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
-func InMapProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.Provider[[]Model] {
+func InMapProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32) model.Provider[[]Model] {
 	return func(mapId uint32) model.Provider[[]Model] {
-		return requests.SliceProvider[RestModel, Model](l)(requestAll(l, span, tenant)(mapId), Extract)
+		return requests.SliceProvider[RestModel, Model](l)(requestAll(ctx, tenant)(mapId), Extract)
 	}
 }
 
-func RandomPortalProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.Provider[Model] {
+func RandomPortalProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32) model.Provider[Model] {
 	return func(mapId uint32) model.Provider[Model] {
 		return func() (Model, error) {
-			ps, err := InMapProvider(l, span, tenant)(mapId)()
+			ps, err := InMapProvider(l, ctx, tenant)(mapId)()
 			if err != nil {
 				return Model{}, err
 			}
@@ -26,9 +26,9 @@ func RandomPortalProvider(l logrus.FieldLogger, span opentracing.Span, tenant te
 	}
 }
 
-func RandomPortalIdProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(mapId uint32) model.Provider[uint32] {
+func RandomPortalIdProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32) model.Provider[uint32] {
 	return func(mapId uint32) model.Provider[uint32] {
-		return model.Map(RandomPortalProvider(l, span, tenant)(mapId), getId)
+		return model.Map(RandomPortalProvider(l, ctx, tenant)(mapId), getId)
 	}
 }
 

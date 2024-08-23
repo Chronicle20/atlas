@@ -2,11 +2,11 @@ package message
 
 import (
 	consumer2 "atlas-messages/kafka/consumer"
+	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,6 +25,6 @@ func GeneralChatCommandRegister(l logrus.FieldLogger) (string, handler.Handler) 
 	return t, message.AdaptHandler(message.PersistentConfig(handleGeneralChat))
 }
 
-func handleGeneralChat(l logrus.FieldLogger, span opentracing.Span, event generalChatCommand) {
-	_ = Handle(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, event.CharacterId, event.Message, event.BalloonOnly)
+func handleGeneralChat(l logrus.FieldLogger, ctx context.Context, event generalChatCommand) {
+	_ = Handle(l, ctx, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, event.CharacterId, event.Message, event.BalloonOnly)
 }

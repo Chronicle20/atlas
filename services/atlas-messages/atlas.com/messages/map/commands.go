@@ -4,14 +4,14 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	"atlas-messages/tenant"
-	"github.com/opentracing/opentracing-go"
+	"context"
 	"github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
-func WarpMapCommandProducer(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model, worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+func WarpMapCommandProducer(l logrus.FieldLogger, ctx context.Context, t tenant.Model, worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	if !c.Gm() {
 		l.Debugf("Ignoring character [%d] command [%s], because they are not a gm.", c.Id(), m)
 		return nil, false
@@ -31,17 +31,13 @@ func WarpMapCommandProducer(l logrus.FieldLogger, span opentracing.Span, tenant 
 		return nil, false
 	}
 
-	exists := Exists(l, span, tenant)(uint32(mapId))
+	exists := Exists(l, ctx, t)(uint32(mapId))
 	if !exists {
 		l.Debugf("Ignoring character [%d] command [%s], because they did not input a valid map.", c.Id(), m)
 		return nil, false
 	}
 
-	return WarpMapCommandExecutor(worldId, channelId, c, uint32(mapId)), true
-}
-
-func WarpMapCommandExecutor(worldId byte, channelId byte, c character.Model, mapId uint32) command.Executor {
-	return func(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) error {
-		return WarpRandom(l, span, tenant)(worldId, channelId, c.Id(), mapId)
-	}
+	return func(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) error {
+		return WarpRandom(l, ctx, tenant)(worldId, channelId, c.Id(), uint32(mapId))
+	}, true
 }

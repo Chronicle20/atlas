@@ -1,4 +1,4 @@
-package character
+package statistics
 
 import (
 	"atlas-messages/rest"
@@ -10,16 +10,16 @@ import (
 )
 
 const (
-	Resource = "characters"
-	ById     = Resource + "/%d"
+	itemInformationResource = "equipment/"
+	itemInformationById     = itemInformationResource + "%d"
 )
 
 func getBaseRequest() string {
-	return os.Getenv("CHARACTER_SERVICE_URL")
+	return os.Getenv("GAME_DATA_SERVICE_URL")
 }
 
 func requestById(ctx context.Context, tenant tenant.Model) func(id uint32) requests.Request[RestModel] {
 	return func(id uint32) requests.Request[RestModel] {
-		return rest.MakeGetRequest[RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+ById, id))
+		return rest.MakeGetRequest[RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+itemInformationById, id))
 	}
 }

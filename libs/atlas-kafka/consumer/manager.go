@@ -3,13 +3,14 @@ package consumer
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/retry"
 	"github.com/google/uuid"
-	"github.com/opentracing/opentracing-go"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"io"
 	"sync"
 )
@@ -116,7 +117,8 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 	l.Infof("Creating topic consumer.")
 
 	go func() {
-		ctx, cancel := context.WithCancel(ctx)
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithCancel(ctx)
 		defer cancel()
 		for {
 			var msg kafka.Message
@@ -141,15 +143,16 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 			} else {
 				l.Debugf("Message received %s.", string(msg.Value))
 				go func() {
-					headers := make(map[string]string)
+					carrier := propagation.MapCarrier{}
 					for _, header := range msg.Headers {
-						headers[header.Key] = string(header.Value)
+						carrier[header.Key] = string(header.Value)
 					}
-
-					spanContext, _ := opentracing.GlobalTracer().Extract(opentracing.TextMap, opentracing.TextMapCarrier(headers))
-					span := opentracing.StartSpan(c.name, opentracing.FollowsFrom(spanContext))
-					sl := l.WithField("span.id", fmt.Sprintf("%v", span))
-					defer span.Finish()
+					propagator := otel.GetTextMapPropagator()
+					ctx = propagator.Extract(ctx, carrier)
+					var span trace.Span
+					ctx, span = otel.GetTracerProvider().Tracer("atlas-kafka").Start(ctx, "kafka_consumer")
+					l = l.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
+					defer span.End()
 
 					c.mu.Lock()
 					handlers := c.handlers
@@ -160,7 +163,7 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 						var handleId = id
 						go func() {
 							var cont bool
-							cont, err = handle(sl, span, msg)
+							cont, err = handle(l, ctx, msg)
 							if !cont {
 								c.mu.Lock()
 								var nh = make(map[string]handler.Handler)
@@ -173,7 +176,7 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 								c.mu.Unlock()
 							}
 							if err != nil {
-								sl.WithError(err).Errorf("Handler [%s] failed.", handleId)
+								l.WithError(err).Errorf("Handler [%s] failed.", handleId)
 							}
 						}()
 					}

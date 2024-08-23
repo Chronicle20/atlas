@@ -1,17 +1,17 @@
 package message
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/opentracing/opentracing-go"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
 
 type Validator[M any] func(m M) bool
 
-type Handler[M any] func(l logrus.FieldLogger, span opentracing.Span, m M)
+type Handler[M any] func(l logrus.FieldLogger, ctx context.Context, m M)
 
 type Config[M any] struct {
 	persistent bool
@@ -39,7 +39,7 @@ func OneTimeConfig[M any](validator Validator[M], handler Handler[M]) Config[M] 
 
 //goland:noinspection GoUnusedExportedFunction
 func AdaptHandler[M any](config Config[M]) handler.Handler {
-	h := func(l logrus.FieldLogger, span opentracing.Span, msg kafka.Message) (bool, error) {
+	h := func(l logrus.FieldLogger, ctx context.Context, msg kafka.Message) (bool, error) {
 		tem := model.Map[kafka.Message, M](model.FixedProvider(msg), adapt[M])
 		m, err := tem()
 		if err != nil {
@@ -51,7 +51,7 @@ func AdaptHandler[M any](config Config[M]) handler.Handler {
 			return true, nil
 		}
 
-		config.handler(l, span, m)
+		config.handler(l, ctx, m)
 		return config.persistent, nil
 	}
 	return h

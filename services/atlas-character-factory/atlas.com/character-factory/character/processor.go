@@ -5,25 +5,25 @@ import (
 	"atlas-character-factory/inventory/item"
 	"atlas-character-factory/job"
 	"atlas-character-factory/tenant"
+	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
-func byIdProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
+func byIdProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l)(requestById(l, span, tenant)(characterId), Extract)
+		return requests.Provider[RestModel, Model](l)(requestById(ctx, tenant)(characterId), Extract)
 	}
 }
 
-func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32) (Model, error) {
+func GetById(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
-		return byIdProvider(l, span, tenant)(characterId)()
+		return byIdProvider(l, ctx, tenant)(characterId)()
 	}
 }
 
-func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte, name string, gender byte, mapId uint32, jobIndex uint32, subJobIndex uint32, face uint32, hair uint32, hairColor uint32, skinColor byte) (Model, error) {
+func Create(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(accountId uint32, worldId byte, name string, gender byte, mapId uint32, jobIndex uint32, subJobIndex uint32, face uint32, hair uint32, hairColor uint32, skinColor byte) (Model, error) {
 	return func(accountId uint32, worldId byte, name string, gender byte, mapId uint32, jobIndex uint32, subJobIndex uint32, face uint32, hair uint32, hairColor uint32, skinColor byte) (Model, error) {
 		jobId := job.Beginner
 		if jobIndex == 0 {
@@ -40,7 +40,7 @@ func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 			jobId = job.Evan
 		}
 
-		rm, err := requestCreate(l, span, tenant)(accountId, worldId, name, gender, mapId, jobId, face, hair, hairColor, skinColor)(l)
+		rm, err := requestCreate(ctx, tenant)(accountId, worldId, name, gender, mapId, jobId, face, hair, hairColor, skinColor)(l)
 		if err != nil {
 			return Model{}, err
 		}
@@ -48,9 +48,9 @@ func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 	}
 }
 
-func CreateItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, itemId uint32) (item.Model, error) {
+func CreateItem(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32, itemId uint32) (item.Model, error) {
 	return func(characterId uint32, itemId uint32) (item.Model, error) {
-		rm, err := requestCreateItem(l, span, tenant)(characterId, itemId)(l)
+		rm, err := requestCreateItem(ctx, tenant)(characterId, itemId)(l)
 		if err != nil {
 			return item.Model{}, err
 		}
@@ -58,21 +58,21 @@ func CreateItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model
 	}
 }
 
-func EquipItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, itemId uint32, slot int16) error {
+func EquipItem(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32, itemId uint32, slot int16) error {
 	return func(characterId uint32, itemId uint32, slot int16) error {
-		slots, err := data.GetById(l, span, tenant)(itemId)
+		slots, err := data.GetById(l, ctx, tenant)(itemId)
 		if err != nil || slots == nil || len(slots) == 0 {
 			return err
 		}
 		// TODO special handling for rings, or legit multiple possible slots.
 		destinationSlot := slots[0]
 
-		e, err := requestEquipableItemBySlot(l, span, tenant)(characterId, slot)(l)
+		e, err := requestEquipableItemBySlot(ctx, tenant)(characterId, slot)(l)
 		if err != nil {
 			return err
 		}
 
-		_, err = requestEquipItem(l, span, tenant)(characterId, destinationSlot.Name(), itemId, e.Slot)(l)
+		_, err = requestEquipItem(ctx, tenant)(characterId, destinationSlot.Name(), itemId, e.Slot)(l)
 		return err
 	}
 }

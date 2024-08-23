@@ -8,13 +8,12 @@ import (
 	"errors"
 	"github.com/Chronicle20/atlas-model/async"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"sync"
 	"time"
 )
 
-func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(input RestModel) (character.Model, error) {
+func Create(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(input RestModel) (character.Model, error) {
 	return func(input RestModel) (character.Model, error) {
 		// TODO validate name again.
 
@@ -79,7 +78,7 @@ func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 
 		asyncCreate := func(ctx context.Context, rchan chan uint32, echan chan error) {
 			character.AwaitCreated(l, tenant)(input.Name)(ctx, rchan, echan)
-			_, err = character.Create(l, span, tenant)(input.AccountId, input.WorldId, input.Name, input.Gender, tc.MapId, input.JobIndex, input.SubJobIndex, input.Face, input.Hair, input.HairColor, input.SkinColor)
+			_, err = character.Create(l, ctx, tenant)(input.AccountId, input.WorldId, input.Name, input.Gender, tc.MapId, input.JobIndex, input.SubJobIndex, input.Face, input.Hair, input.HairColor, input.SkinColor)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to create character from seed.")
 				echan <- err
@@ -97,53 +96,53 @@ func Create(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) fu
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			createEquippedItems(l, span, tenant)(cid, input)
+			createEquippedItems(l, ctx, tenant)(cid, input)
 		}()
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			createInventoryItems(l, span, tenant)(cid, tc.StartingInventory)
+			createInventoryItems(l, ctx, tenant)(cid, tc.StartingInventory)
 		}()
 
 		wg.Wait()
 
-		return character.GetById(l, span, tenant)(cid)
+		return character.GetById(l, ctx, tenant)(cid)
 	}
 }
 
-func createInventoryItems(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, items []uint32) {
+func createInventoryItems(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32, items []uint32) {
 	return func(characterId uint32, items []uint32) {
 		l.Debugf("Beginning inventory item creation for character [%d].", characterId)
 		ip := model.FixedProvider(items)
-		_, err := async.AwaitSlice[character.ItemGained](model.SliceMap(ip, asyncItemCreate(l, span, tenant)(characterId)), async.SetTimeout(1*time.Second))()
+		_, err := async.AwaitSlice[character.ItemGained](model.SliceMap(ip, asyncItemCreate(l, ctx, tenant)(characterId)), async.SetTimeout(1*time.Second))()
 		if err != nil {
 			l.WithError(err).Errorf("Error creating an item for character [%d].", characterId)
 		}
 	}
 }
 
-func createEquippedItems(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, input RestModel) {
+func createEquippedItems(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32, input RestModel) {
 	return func(characterId uint32, input RestModel) {
 		l.Debugf("Beginning equipped item creation for character [%d].", characterId)
 		ip := model.FixedProvider([]uint32{input.Top, input.Bottom, input.Shoes, input.Weapon})
-		items, err := async.AwaitSlice[character.ItemGained](model.SliceMap(ip, asyncItemCreate(l, span, tenant)(characterId)), async.SetTimeout(1*time.Second))()
+		items, err := async.AwaitSlice[character.ItemGained](model.SliceMap(ip, asyncItemCreate(l, ctx, tenant)(characterId)), async.SetTimeout(1*time.Second))()
 		if err != nil {
 			l.WithError(err).Errorf("Error creating an item for character [%d].", characterId)
 		}
 
-		_, err = async.AwaitSlice[uint32](model.SliceMap(model.FixedProvider(items), asyncEquipItem(l, span, tenant)(characterId)), async.SetTimeout(1*time.Second))()
+		_, err = async.AwaitSlice[uint32](model.SliceMap(model.FixedProvider(items), asyncEquipItem(l, ctx, tenant)(characterId)), async.SetTimeout(1*time.Second))()
 		if err != nil {
 			l.WithError(err).Errorf("Error equipping an item for character [%d].", characterId)
 		}
 	}
 }
 
-func asyncItemCreate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32) func(itemId uint32) (async.Provider[character.ItemGained], error) {
+func asyncItemCreate(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32) func(itemId uint32) (async.Provider[character.ItemGained], error) {
 	return func(characterId uint32) func(itemId uint32) (async.Provider[character.ItemGained], error) {
 		return func(itemId uint32) (async.Provider[character.ItemGained], error) {
 			return func(ctx context.Context, rchan chan character.ItemGained, echan chan error) {
 				character.AwaitItemGained(l, tenant)(itemId)(ctx, rchan, echan)
-				_, err := character.CreateItem(l, span, tenant)(characterId, itemId)
+				_, err := character.CreateItem(l, ctx, tenant)(characterId, itemId)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to create item [%d] from seed for character [%d].", itemId, characterId)
 					echan <- err
@@ -153,12 +152,12 @@ func asyncItemCreate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.
 	}
 }
 
-func asyncEquipItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32) func(character.ItemGained) (async.Provider[uint32], error) {
+func asyncEquipItem(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32) func(character.ItemGained) (async.Provider[uint32], error) {
 	return func(characterId uint32) func(character.ItemGained) (async.Provider[uint32], error) {
 		return func(ig character.ItemGained) (async.Provider[uint32], error) {
 			return func(ctx context.Context, rchan chan uint32, echan chan error) {
 				character.AwaitEquipChanged(l, tenant)(ig.ItemId)(ctx, rchan, echan)
-				err := character.EquipItem(l, span, tenant)(characterId, ig.ItemId, ig.Slot)
+				err := character.EquipItem(l, ctx, tenant)(characterId, ig.ItemId, ig.Slot)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to equip item [%d] for character [%d].", ig.ItemId, characterId)
 					echan <- err

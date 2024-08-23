@@ -39,7 +39,7 @@ func main() {
 
 	tdm := service.GetTeardownManager()
 
-	tc, err := tracing.InitTracer(l)(serviceName)
+	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}

@@ -6,10 +6,9 @@ import (
 	"atlas-character-factory/job"
 	"atlas-character-factory/rest"
 	"atlas-character-factory/tenant"
+	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/opentracing/opentracing-go"
-	"github.com/sirupsen/logrus"
 	"math"
 	"os"
 	"strings"
@@ -28,13 +27,13 @@ func getBaseRequest() string {
 	return os.Getenv("CHARACTER_SERVICE_URL")
 }
 
-func requestById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) requests.Request[RestModel] {
+func requestById(ctx context.Context, tenant tenant.Model) func(id uint32) requests.Request[RestModel] {
 	return func(id uint32) requests.Request[RestModel] {
-		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+byIdResource, id))
+		return rest.MakeGetRequest[RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+byIdResource, id))
 	}
 }
 
-func requestCreate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(accountId uint32, worldId byte, name string, gender byte, mapId uint32, jobId job.Id, face uint32, hair uint32, hairColor uint32, skinColor byte) requests.Request[RestModel] {
+func requestCreate(ctx context.Context, tenant tenant.Model) func(accountId uint32, worldId byte, name string, gender byte, mapId uint32, jobId job.Id, face uint32, hair uint32, hairColor uint32, skinColor byte) requests.Request[RestModel] {
 	return func(accountId uint32, worldId byte, name string, gender byte, mapId uint32, jobId job.Id, face uint32, hair uint32, hairColor uint32, skinColor byte) requests.Request[RestModel] {
 		i := RestModel{
 			AccountId: accountId,
@@ -52,33 +51,33 @@ func requestCreate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mo
 			Mp:        5,
 			MaxMp:     5,
 		}
-		return rest.MakePostRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+resource), i)
+		return rest.MakePostRequest[RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+resource), i)
 	}
 }
 
-func requestCreateItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, itemId uint32) requests.Request[item.RestModel] {
+func requestCreateItem(ctx context.Context, tenant tenant.Model) func(characterId uint32, itemId uint32) requests.Request[item.RestModel] {
 	return func(characterId uint32, itemId uint32) requests.Request[item.RestModel] {
 		inventoryType := uint32(math.Floor(float64(itemId) / 1000000))
 		i := item.RestModel{ItemId: itemId}
-		return rest.MakePostRequest[item.RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+characterItemsResource, characterId, inventoryType), i)
+		return rest.MakePostRequest[item.RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+characterItemsResource, characterId, inventoryType), i)
 	}
 }
 
-func requestEquipItem(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, slotName string, itemId uint32, slot int16) requests.Request[equipable.RestModel] {
+func requestEquipItem(ctx context.Context, tenant tenant.Model) func(characterId uint32, slotName string, itemId uint32, slot int16) requests.Request[equipable.RestModel] {
 	return func(characterId uint32, slotName string, itemId uint32, slot int16) requests.Request[equipable.RestModel] {
 		e := equipable.RestModel{ItemId: itemId, Slot: slot}
-		return rest.MakePostRequest[equipable.RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+characterEquipmentResource, characterId, strings.ToLower(slotName)), e)
+		return rest.MakePostRequest[equipable.RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+characterEquipmentResource, characterId, strings.ToLower(slotName)), e)
 	}
 }
 
-func requestEquipableItemBySlot(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, slot int16) requests.Request[equipable.RestModel] {
+func requestEquipableItemBySlot(ctx context.Context, tenant tenant.Model) func(characterId uint32, slot int16) requests.Request[equipable.RestModel] {
 	return func(characterId uint32, slot int16) requests.Request[equipable.RestModel] {
-		return rest.MakeGetRequest[equipable.RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+getItemBySlot, characterId, 1, slot))
+		return rest.MakeGetRequest[equipable.RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+getItemBySlot, characterId, 1, slot))
 	}
 }
 
-func requestItemBySlot(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType int8, slot int16) requests.Request[item.RestModel] {
+func requestItemBySlot(ctx context.Context, tenant tenant.Model) func(characterId uint32, inventoryType int8, slot int16) requests.Request[item.RestModel] {
 	return func(characterId uint32, inventoryType int8, slot int16) requests.Request[item.RestModel] {
-		return rest.MakeGetRequest[item.RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+getItemBySlot, characterId, inventoryType, slot))
+		return rest.MakeGetRequest[item.RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+getItemBySlot, characterId, inventoryType, slot))
 	}
 }

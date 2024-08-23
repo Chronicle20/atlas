@@ -3,14 +3,9 @@ package main
 import (
 	"atlas-portals/logger"
 	"atlas-portals/portal"
+	"atlas-portals/service"
 	"atlas-portals/tracing"
-	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
-	"io"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 )
 
 const serviceName = "atlas-portals"
@@ -40,32 +35,19 @@ func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
 
-	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	tdm := service.GetTeardownManager()
 
-	tc, err := tracing.InitTracer(l)(serviceName)
+	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
-	defer func(tc io.Closer) {
-		err := tc.Close()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to close tracer.")
-		}
-	}(tc)
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, ctx, wg)(portal.CommandConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(portal.CommandConsumer(l)(consumerGroupId))
 	_, _ = cm.RegisterHandler(portal.EnterCommandRegister(l))
 
-	// trap sigterm or interrupt and gracefully shutdown the server
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
+	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
-	// Block until a signal is received.
-	sig := <-c
-	l.Infof("Initiating shutdown with signal %s.", sig)
-	cancel()
-	wg.Wait()
+	tdm.Wait()
 	l.Infoln("Service shutdown.")
 }

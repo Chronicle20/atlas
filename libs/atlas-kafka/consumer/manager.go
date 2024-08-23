@@ -148,9 +148,9 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 						carrier[header.Key] = string(header.Value)
 					}
 					propagator := otel.GetTextMapPropagator()
-					ctx = propagator.Extract(ctx, carrier)
+					sctx := propagator.Extract(ctx, carrier)
 					var span trace.Span
-					ctx, span = otel.GetTracerProvider().Tracer("atlas-kafka").Start(ctx, "kafka_consumer")
+					sctx, span = otel.GetTracerProvider().Tracer("atlas-kafka").Start(sctx, "kafka_consumer")
 					l = l.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
 					defer span.End()
 
@@ -163,7 +163,7 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 						var handleId = id
 						go func() {
 							var cont bool
-							cont, err = handle(l, ctx, msg)
+							cont, err = handle(l, sctx, msg)
 							if !cont {
 								c.mu.Lock()
 								var nh = make(map[string]handler.Handler)

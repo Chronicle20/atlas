@@ -3,10 +3,9 @@ package account
 import (
 	"atlas-login/rest"
 	"atlas-login/tenant"
+	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/opentracing/opentracing-go"
-	"github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -21,25 +20,25 @@ func getBaseRequest() string {
 	return os.Getenv("ACCOUNT_SERVICE_URL")
 }
 
-func requestAccounts(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest() + AccountsResource))
+func requestAccounts(ctx context.Context, tenant tenant.Model) requests.Request[[]RestModel] {
+	return rest.MakeGetRequest[[]RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest() + AccountsResource))
 }
 
-func requestAccountByName(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(name string) requests.Request[RestModel] {
+func requestAccountByName(ctx context.Context, tenant tenant.Model) func(name string) requests.Request[RestModel] {
 	return func(name string) requests.Request[RestModel] {
-		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+AccountsByName, name))
+		return rest.MakeGetRequest[RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+AccountsByName, name))
 	}
 }
 
-func requestAccountById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(id uint32) requests.Request[RestModel] {
+func requestAccountById(ctx context.Context, tenant tenant.Model) func(id uint32) requests.Request[RestModel] {
 	return func(id uint32) requests.Request[RestModel] {
-		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+AccountsById, id))
+		return rest.MakeGetRequest[RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+AccountsById, id))
 	}
 }
 
-func requestUpdate(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(m Model) requests.Request[RestModel] {
+func requestUpdate(ctx context.Context, tenant tenant.Model) func(m Model) requests.Request[RestModel] {
 	return func(m Model) requests.Request[RestModel] {
 		im, _ := Transform(m)
-		return rest.MakePatchRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+Update, m.id), im)
+		return rest.MakePatchRequest[RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+Update, m.id), im)
 	}
 }

@@ -6,14 +6,14 @@ import (
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"atlas-login/world"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const CharacterListWorldHandle = "CharacterListWorldHandle"
 
-func CharacterListWorldHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	serverStatusFunc := session.Announce(l)(wp)(writer.ServerStatus)
 	characterListFunc := session.Announce(l)(wp)(writer.CharacterList)
 	return func(s session.Model, r *request.Reader) {
@@ -34,7 +34,7 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, span opentracing.Span, w
 
 		l.Debugf("Handling [CharacterListWorld]. gameStartMode=[%d], worldId=[%d], channelId=[%d], socketAddr=[%d]", gameStartMode, worldId, channelId, socketAddr)
 
-		w, err := world.GetById(l, span, s.Tenant())(worldId)
+		w, err := world.GetById(l, ctx, s.Tenant())(worldId)
 		if err != nil {
 			l.WithError(err).Errorf("Received a character list request for a world we do not have")
 			return
@@ -51,13 +51,13 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, span opentracing.Span, w
 		s = session.SetWorldId(worldId)(s.Tenant().Id, s.SessionId())
 		s = session.SetChannelId(channelId)(s.Tenant().Id, s.SessionId())
 
-		a, err := account.GetById(l, span, s.Tenant())(s.AccountId())
+		a, err := account.GetById(l, ctx, s.Tenant())(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Cannot retrieve account")
 			return
 		}
 
-		cs, err := character.GetForWorld(l, span, s.Tenant())(s.AccountId(), worldId)
+		cs, err := character.GetForWorld(l, ctx, s.Tenant())(s.AccountId(), worldId)
 		if err != nil {
 			l.WithError(err).Errorf("Cannot retrieve account characters")
 			return

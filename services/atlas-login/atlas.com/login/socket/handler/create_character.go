@@ -4,14 +4,14 @@ import (
 	"atlas-login/character/factory"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const CreateCharacterHandle = "CreateCharacterHandle"
 
-func CreateCharacterHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func CreateCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	addCharacterEntryFunc := session.Announce(l)(wp)(writer.AddCharacterEntry)
 	return func(s session.Model, r *request.Reader) {
 		name := r.ReadAsciiString()
@@ -68,7 +68,7 @@ func CreateCharacterHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp w
 			luck = r.ReadByte()
 		}
 
-		m, err := factory.SeedCharacter(l, span, s.Tenant())(s.AccountId(), s.WorldId(), name, jobIndex, subJobIndex, face, hair, hairColor, skinColor, gender, top, bottom, shoes, weapon, strength, dexterity, intelligence, luck)
+		m, err := factory.SeedCharacter(l, ctx, s.Tenant())(s.AccountId(), s.WorldId(), name, jobIndex, subJobIndex, face, hair, hairColor, skinColor, gender, top, bottom, shoes, weapon, strength, dexterity, intelligence, luck)
 		if err != nil {
 			l.WithError(err).Errorf("Error creating character from seed.")
 			err = addCharacterEntryFunc(s, writer.AddCharacterErrorBody(l, s.Tenant())(writer.AddCharacterCodeUnknownError))

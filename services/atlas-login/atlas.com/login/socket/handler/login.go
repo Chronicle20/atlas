@@ -7,9 +7,9 @@ import (
 	"atlas-login/kafka/producer"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -58,7 +58,7 @@ func ReadLoginRequest(reader *request.Reader) *LoginRequest {
 	}
 }
 
-func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func LoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	authTemporaryBanFunc := session.Announce(l)(wp)(writer.AuthTemporaryBan)
 	authPermanentBanFunc := session.Announce(l)(wp)(writer.AuthPermanentBan)
 
@@ -66,21 +66,21 @@ func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 		p := ReadLoginRequest(r)
 		l.Debugf("Reading [%s] message. body={name=%s, password=%s, gameRoomClient=%d, gameStartMode=%d}", LoginHandle, p.Name(), p.Password(), p.GameRoomClient(), p.GameStartMode())
 
-		resp, err := as.CreateLogin(l, span, s.Tenant())(s.SessionId(), s.AccountId(), p.Name(), p.Password(), "")
+		resp, err := as.CreateLogin(l, ctx, s.Tenant())(s.SessionId(), s.AccountId(), p.Name(), p.Password(), "")
 		if err != nil {
-			announceError(l, span, wp)(s, writer.SystemError1)
+			announceError(l, ctx, wp)(s, writer.SystemError1)
 			return
 		}
 
 		if resp.Code == "OK" || resp.Code == writer.LicenseAgreement {
 			var a account.Model
-			a, err = account.GetByName(l, span, s.Tenant())(p.Name())
+			a, err = account.GetByName(l, ctx, s.Tenant())(p.Name())
 			if err != nil {
-				announceError(l, span, wp)(s, writer.SystemError1)
+				announceError(l, ctx, wp)(s, writer.SystemError1)
 				return
 			}
 			s = session.SetAccountId(a.Id())(s.Tenant().Id, s.SessionId())
-			session.SessionCreated(producer.ProviderImpl(l)(span), s.Tenant())(s)
+			session.SessionCreated(producer.ProviderImpl(l)(ctx), s.Tenant())(s)
 
 			if resp.Code == "OK" {
 				err = issueSuccess(l, s, wp)(a)
@@ -89,7 +89,7 @@ func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 					return
 				}
 				if s.Tenant().Region == "JMS" {
-					issueServerInformation(l, span, wp)(s)
+					issueServerInformation(l, ctx, wp)(s)
 				}
 				return
 			}
@@ -97,7 +97,7 @@ func LoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 		}
 
 		if resp.Code != writer.Banned {
-			announceError(l, span, wp)(s, resp.Code)
+			announceError(l, ctx, wp)(s, resp.Code)
 			return
 		}
 
@@ -138,7 +138,7 @@ func issueSuccess(l logrus.FieldLogger, s session.Model, wp writer.Producer) mod
 	}
 }
 
-func announceError(l logrus.FieldLogger, _ opentracing.Span, wp writer.Producer) func(s session.Model, reason string) {
+func announceError(l logrus.FieldLogger, _ context.Context, wp writer.Producer) func(s session.Model, reason string) {
 	authLoginFailedFunc := session.Announce(l)(wp)(writer.AuthLoginFailed)
 	return func(s session.Model, reason string) {
 		err := authLoginFailedFunc(s, writer.AuthLoginFailedBody(l, s.Tenant())(reason))

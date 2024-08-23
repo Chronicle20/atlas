@@ -5,14 +5,14 @@ import (
 	"atlas-login/character"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const DeleteCharacterHandle = "DeleteCharacterHandle"
 
-func DeleteCharacterHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	deleteCharacterResponseFunc := session.Announce(l)(wp)(writer.DeleteCharacterResponse)
 	return func(s session.Model, r *request.Reader) {
 		var verifyPic = false
@@ -29,7 +29,7 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp w
 		l.Debugf("Handling delete character [%d] for account [%d]. verifyPic [%t] pic [%s]. verifyDob [%t] dob [%d]", characterId, s.AccountId(), verifyPic, pic, dob != 0, dob)
 
 		if verifyPic {
-			a, err := account.GetById(l, span, s.Tenant())(s.AccountId())
+			a, err := account.GetById(l, ctx, s.Tenant())(s.AccountId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve account performing deletion.")
 				err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, s.Tenant())(characterId, writer.DeleteCharacterCodeUnknownError))
@@ -49,7 +49,7 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp w
 			}
 		}
 
-		_, err := character.GetById(l, span, s.Tenant())(characterId)
+		_, err := character.GetById(l, ctx, s.Tenant())(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] being deleted.", characterId)
 			err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, s.Tenant())(characterId, writer.DeleteCharacterCodeUnknownError))
@@ -63,7 +63,7 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp w
 		// TODO - verify the character is not engaged.
 		// TODO - verify the character is not part of a family.
 
-		err = character.DeleteById(l, span, s.Tenant())(characterId)
+		err = character.DeleteById(l, ctx, s.Tenant())(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to delete character [%d].", characterId)
 			err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, s.Tenant())(characterId, writer.DeleteCharacterCodeUnknownError))

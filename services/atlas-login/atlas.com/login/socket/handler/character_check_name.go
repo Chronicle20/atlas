@@ -4,18 +4,18 @@ import (
 	"atlas-login/character"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const CharacterCheckNameHandle = "CharacterCheckNameHandle"
 
-func CharacterCheckNameHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func CharacterCheckNameHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	characterNameResponseFunc := session.Announce(l)(wp)(writer.CharacterNameResponse)
 	return func(s session.Model, r *request.Reader) {
 		name := r.ReadAsciiString()
-		ok, err := character.IsValidName(l, span, s.Tenant())(name)
+		ok, err := character.IsValidName(l, ctx, s.Tenant())(name)
 		if err != nil {
 			l.Debugf("Error determining if name [%s] is valid.", name)
 			err = characterNameResponseFunc(s, writer.CharacterNameResponseBody(l)(name, writer.CharacterNameResponseCodeSystemError))

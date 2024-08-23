@@ -3,14 +3,14 @@ package handler
 import (
 	"atlas-login/session"
 	"atlas-login/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const WorldSelectHandle = "WorldSelectHandle"
 
-func WorldSelectHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func WorldSelectHandleFunc(l logrus.FieldLogger, _ context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	serverLoadFunc := session.Announce(l)(wp)(writer.ServerLoad)
 	return func(s session.Model, r *request.Reader) {
 		worldId := r.ReadByte()

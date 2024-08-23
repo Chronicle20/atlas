@@ -1,21 +1,22 @@
 package rest
 
 import (
-	"fmt"
-	"github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/ext"
+	"context"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"net/http"
 )
 
-type SpanHandler func(logrus.FieldLogger, opentracing.Span) http.HandlerFunc
+type SpanHandler func(logrus.FieldLogger, context.Context) http.HandlerFunc
 
 func RetrieveSpan(l logrus.FieldLogger, name string, next SpanHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wireCtx, _ := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
-		serverSpan := opentracing.StartSpan(name, ext.RPCServerOption(wireCtx))
-		sl := l.WithField("span.id", fmt.Sprintf("%v", serverSpan))
-		defer serverSpan.Finish()
-		next(sl, serverSpan)(w, r)
+		propagator := otel.GetTextMapPropagator()
+		sctx := propagator.Extract(context.Background(), propagation.HeaderCarrier(r.Header))
+		sctx, span := otel.GetTracerProvider().Tracer("atlas-rest").Start(sctx, name)
+		sl := l.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
+		defer span.End()
+		next(sl, sctx)(w, r)
 	}
 }

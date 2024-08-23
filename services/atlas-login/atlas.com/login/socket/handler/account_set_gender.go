@@ -6,14 +6,14 @@ import (
 	"atlas-login/kafka/producer"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const SetGenderHandle = "SetGenderHandle"
 
-func SetGenderHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func SetGenderHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	setAccountResultFunc := session.Announce(l)(wp)(writer.SetAccountResult)
 	return func(s session.Model, r *request.Reader) {
 		confirmed := r.ReadBool()
@@ -22,7 +22,7 @@ func SetGenderHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.
 
 		var success = confirmed
 		if confirmed {
-			err := account.UpdateGender(l, span, s.Tenant())(s.AccountId(), gender)
+			err := account.UpdateGender(l, ctx, s.Tenant())(s.AccountId(), gender)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to update the gender of account [%d].", s.AccountId())
 				success = false
@@ -31,7 +31,7 @@ func SetGenderHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.
 
 		if !success {
 			l.Debugf("Logging account out, as they are still at login screen and need to issue a new request.")
-			as.Destroy(l, producer.ProviderImpl(l)(span))(s.Tenant(), s.SessionId(), s.AccountId())
+			as.Destroy(l, producer.ProviderImpl(l)(ctx))(s.Tenant(), s.SessionId(), s.AccountId())
 		}
 
 		err := setAccountResultFunc(s, writer.SetAccountResultBody(l)(gender, success))

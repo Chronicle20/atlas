@@ -4,27 +4,27 @@ import (
 	"atlas-login/account"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const AcceptTosHandle = "AcceptTosHandle"
 
-func AcceptTosHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func AcceptTosHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	return func(s session.Model, r *request.Reader) {
 		accepted := r.ReadBool()
 		l.Debugf("Account [%d] responded to the TOS dialog with [%t].", s.AccountId(), accepted)
 		if !accepted {
 			l.Debugf("Account [%d] has chosen not to accept TOS. Terminating session.", s.AccountId())
-			session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
+			session.Destroy(l, ctx, session.GetRegistry(), s.Tenant().Id)(s)
 			return
 		}
 
-		err := account.UpdateTos(l, span, s.Tenant())(s.AccountId(), accepted)
+		err := account.UpdateTos(l, ctx, s.Tenant())(s.AccountId(), accepted)
 		if err != nil {
 			// TODO
 		}
-		account.ForAccountById(l, span, s.Tenant())(s.AccountId(), issueSuccess(l, s, wp))
+		account.ForAccountById(l, ctx, s.Tenant())(s.AccountId(), issueSuccess(l, s, wp))
 	}
 }

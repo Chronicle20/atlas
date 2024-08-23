@@ -3,10 +3,9 @@ package channel
 import (
 	"atlas-login/rest"
 	"atlas-login/tenant"
+	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/opentracing/opentracing-go"
-	"github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -21,14 +20,14 @@ func getBaseRequest() string {
 	return os.Getenv("WORLD_SERVICE_URL")
 }
 
-func requestChannel(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte) requests.Request[RestModel] {
+func requestChannel(ctx context.Context, tenant tenant.Model) func(worldId byte, channelId byte) requests.Request[RestModel] {
 	return func(worldId byte, channelId byte) requests.Request[RestModel] {
-		return rest.MakeGetRequest[RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+ChannelResource, worldId, channelId))
+		return rest.MakeGetRequest[RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+ChannelResource, worldId, channelId))
 	}
 }
 
-func requestChannels(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte) requests.Request[[]RestModel] {
+func requestChannels(ctx context.Context, tenant tenant.Model) func(worldId byte) requests.Request[[]RestModel] {
 	return func(worldId byte) requests.Request[[]RestModel] {
-		return rest.MakeGetRequest[[]RestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+ForWorld, worldId))
+		return rest.MakeGetRequest[[]RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+ForWorld, worldId))
 	}
 }

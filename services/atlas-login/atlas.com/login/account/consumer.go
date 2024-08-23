@@ -3,11 +3,11 @@ package account
 import (
 	consumer2 "atlas-login/kafka/consumer"
 	"atlas-login/tenant"
+	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,8 +26,8 @@ func AccountStatusRegister(l logrus.FieldLogger, tenant tenant.Model) (string, h
 	return t, message.AdaptHandler(message.PersistentConfig(handleAccountStatusEvent(tenant)))
 }
 
-func handleAccountStatusEvent(tenant tenant.Model) func(l logrus.FieldLogger, span opentracing.Span, event statusEvent) {
-	return func(l logrus.FieldLogger, span opentracing.Span, event statusEvent) {
+func handleAccountStatusEvent(tenant tenant.Model) func(l logrus.FieldLogger, ctx context.Context, event statusEvent) {
+	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent) {
 		if tenant.Id != event.Tenant.Id {
 			return
 		}

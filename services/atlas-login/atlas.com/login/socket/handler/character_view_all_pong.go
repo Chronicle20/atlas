@@ -3,14 +3,14 @@ package handler
 import (
 	"atlas-login/session"
 	"atlas-login/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const CharacterViewAllPongHandle = "CharacterViewAllPongHandle"
 
-func CharacterViewAllPongHandleFunc(l logrus.FieldLogger, _ opentracing.Span, _ writer.Producer) func(s session.Model, r *request.Reader) {
+func CharacterViewAllPongHandleFunc(l logrus.FieldLogger, _ context.Context, _ writer.Producer) func(s session.Model, r *request.Reader) {
 	return func(s session.Model, r *request.Reader) {
 		var opt = r.ReadBool()
 		var mode = "RESET"

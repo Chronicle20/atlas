@@ -2,41 +2,41 @@ package channel
 
 import (
 	"atlas-login/tenant"
+	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"math/rand"
 )
 
-func byIdModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte) model.Provider[Model] {
+func byIdModelProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(worldId byte, channelId byte) model.Provider[Model] {
 	return func(worldId byte, channelId byte) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l)(requestChannel(l, span, tenant)(worldId, channelId), Extract)
+		return requests.Provider[RestModel, Model](l)(requestChannel(ctx, tenant)(worldId, channelId), Extract)
 	}
 }
 
-func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte) (Model, error) {
+func GetById(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(worldId byte, channelId byte) (Model, error) {
 	return func(worldId byte, channelId byte) (Model, error) {
-		return byIdModelProvider(l, span, tenant)(worldId, channelId)()
+		return byIdModelProvider(l, ctx, tenant)(worldId, channelId)()
 	}
 }
 
-func byWorldModelProvider(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte) model.Provider[[]Model] {
+func byWorldModelProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(worldId byte) model.Provider[[]Model] {
 	return func(worldId byte) model.Provider[[]Model] {
-		return requests.SliceProvider[RestModel, Model](l)(requestChannels(l, span, tenant)(worldId), Extract)
+		return requests.SliceProvider[RestModel, Model](l)(requestChannels(ctx, tenant)(worldId), Extract)
 	}
 }
 
-func GetForWorld(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte) ([]Model, error) {
+func GetForWorld(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(worldId byte) ([]Model, error) {
 	return func(worldId byte) ([]Model, error) {
-		return byWorldModelProvider(l, span, tenant)(worldId)()
+		return byWorldModelProvider(l, ctx, tenant)(worldId)()
 	}
 }
 
-func GetRandomInWorld(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte) (Model, error) {
+func GetRandomInWorld(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(worldId byte) (Model, error) {
 	return func(worldId byte) (Model, error) {
-		cs, err := GetForWorld(l, span, tenant)(worldId)
+		cs, err := GetForWorld(l, ctx, tenant)(worldId)
 		if err != nil {
 			return Model{}, err
 		}

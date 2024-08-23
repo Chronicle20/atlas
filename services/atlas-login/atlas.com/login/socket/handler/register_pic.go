@@ -6,14 +6,14 @@ import (
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"atlas-login/world/channel"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const RegisterPicHandle = "RegisterPicHandle"
 
-func RegisterPicHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	serverIpFunc := session.Announce(l)(wp)(writer.ServerIP)
 	return func(s session.Model, r *request.Reader) {
 		opt := r.ReadByte()
@@ -28,7 +28,7 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp write
 
 		l.Debugf("Attempting to register PIC [%s]. opt [%d], character [%d], hwid [%s] hwid [%s].", pic, opt, characterId, sMacAddressWithHDDSerial, sMacAddressWithHDDSerial2)
 
-		a, err := account.GetById(l, span, s.Tenant())(s.AccountId())
+		a, err := account.GetById(l, ctx, s.Tenant())(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Failed to get account by id [%d].", s.AccountId())
 			//TODO
@@ -39,12 +39,12 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp write
 			//TODO
 			return
 		}
-		err = account.UpdatePic(l, span, s.Tenant())(s.AccountId(), pic)
+		err = account.UpdatePic(l, ctx, s.Tenant())(s.AccountId(), pic)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to register PIC [%s] for account [%d].", pic, s.AccountId())
 		}
 
-		c, err := channel.GetById(l, span, s.Tenant())(s.WorldId(), s.ChannelId())
+		c, err := channel.GetById(l, ctx, s.Tenant())(s.WorldId(), s.ChannelId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")
 			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeServerUnderInspection))
@@ -55,7 +55,7 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp write
 			return
 		}
 
-		resp, err := as.UpdateState(l, span, s.Tenant())(s.SessionId(), s.AccountId(), 2)
+		resp, err := as.UpdateState(l, ctx, s.Tenant())(s.SessionId(), s.AccountId(), 2)
 		if err != nil || resp.Code != "OK" {
 			l.WithError(err).Errorf("Unable to update session for character [%d] attempting to login.", characterId)
 			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeTooManyConnectionRequests))

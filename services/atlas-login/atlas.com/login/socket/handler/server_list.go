@@ -4,23 +4,23 @@ import (
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"atlas-login/world"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"sort"
 )
 
 const ServerListRequestHandle = "ServerListRequestHandle"
 
-func ServerListRequestHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func ServerListRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	return func(s session.Model, r *request.Reader) {
-		issueServerInformation(l, span, wp)(s)
+		issueServerInformation(l, ctx, wp)(s)
 	}
 }
 
-func issueServerInformation(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model) {
+func issueServerInformation(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model) {
 	return func(s session.Model) {
-		ws, err := world.GetAll(l, span, s.Tenant(), world.ChannelLoadDecorator(l, span, s.Tenant()))
+		ws, err := world.GetAll(l, ctx, s.Tenant(), world.ChannelLoadDecorator(l, ctx, s.Tenant()))
 		if err != nil {
 			l.WithError(err).Errorf("Retrieving worlds")
 			return

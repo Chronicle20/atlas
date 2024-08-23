@@ -4,9 +4,11 @@ import (
 	"atlas-login/kafka/producer"
 	"atlas-login/socket/writer"
 	"atlas-login/tenant"
+	"context"
 	"errors"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 )
 
 func Announce(l logrus.FieldLogger) func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
@@ -85,5 +87,14 @@ func SetChannelId(channelId byte) func(tenantId uuid.UUID, id uuid.UUID) Model {
 func SessionCreated(kp producer.Provider, tenant tenant.Model) func(s Model) {
 	return func(s Model) {
 		_ = kp(EnvEventTopicSessionStatus)(createdStatusEventProvider(tenant, s.SessionId(), s.AccountId()))
+	}
+}
+
+func Teardown(l logrus.FieldLogger) func() {
+	return func() {
+		ctx, span := otel.GetTracerProvider().Tracer("atlas-login").Start(context.Background(), "teardown")
+		defer span.End()
+
+		tenant.ForAll(DestroyAll(l, ctx, GetRegistry()))
 	}
 }

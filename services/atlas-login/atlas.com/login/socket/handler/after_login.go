@@ -4,14 +4,14 @@ import (
 	"atlas-login/account"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const AfterLoginHandle = "AfterLoginHandle"
 
-func AfterLoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	pinOperationFunc := session.Announce(l)(wp)(writer.PinOperation)
 	return func(s session.Model, r *request.Reader) {
 		opt1 := r.ReadByte()
@@ -24,11 +24,11 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer
 		l.Debugf("AfterLogin handling opt1 [%d] opt2 [%d] pin [%s].", opt1, opt2, pin)
 		if opt1 == 0 && opt2 == 0 {
 			l.Debugf("Account [%d] has chosen not to input PIN. Terminating session.", s.AccountId())
-			session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
+			session.Destroy(l, ctx, session.GetRegistry(), s.Tenant().Id)(s)
 			return
 		}
 
-		a, err := account.GetById(l, span, s.Tenant())(s.AccountId())
+		a, err := account.GetById(l, ctx, s.Tenant())(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get account [%d] being acted upon.", s.AccountId())
 			return
@@ -90,7 +90,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer
 		}
 
 		l.Warnf("Client should not have gotten here. Terminating session.")
-		session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
+		session.Destroy(l, ctx, session.GetRegistry(), s.Tenant().Id)(s)
 	}
 }
 

@@ -1,8 +1,9 @@
 package account
 
 import (
-	"github.com/opentracing/opentracing-go"
+	"context"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
 	"time"
 )
@@ -24,8 +25,8 @@ func NewTransitionTimeout(l logrus.FieldLogger, db *gorm.DB, interval time.Durat
 }
 
 func (t *Timeout) Run() {
-	span := opentracing.StartSpan(TimeoutTask)
-	defer span.Finish()
+	_, span := otel.GetTracerProvider().Tracer("atlas-account").Start(context.Background(), TimeoutTask)
+	defer span.End()
 
 	as, err := GetInTransition(t.timeout)
 	if err != nil {

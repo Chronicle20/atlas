@@ -4,12 +4,13 @@ import (
 	"atlas-account/database"
 	"atlas-account/kafka/producer"
 	"atlas-account/tenant"
+	"context"
 	"errors"
+	"go.opentelemetry.io/otel"
 	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -87,7 +88,7 @@ func GetInTransition(timeout time.Duration) ([]AccountKey, error) {
 	return model.FixedProvider(Get().GetExpiredInTransition(timeout))()
 }
 
-func GetOrCreate(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(name string, password string, automaticRegister bool) (Model, error) {
+func GetOrCreate(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(name string, password string, automaticRegister bool) (Model, error) {
 	return func(name string, password string, automaticRegister bool) (Model, error) {
 		m, err := model.First[Model](byNameProvider(db)(tenant, name))
 		if err == nil {
@@ -99,11 +100,11 @@ func GetOrCreate(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenan
 			return Model{}, errors.New("account not found")
 		}
 
-		return Create(l, db, span, tenant)(name, password)
+		return Create(l, db, ctx, tenant)(name, password)
 	}
 }
 
-func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(name string, password string) (Model, error) {
+func Create(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(name string, password string) (Model, error) {
 	return func(name string, password string) (Model, error) {
 		l.Debugf("Attempting to create account [%s] with password [%s].", name, password)
 		hashPass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -124,7 +125,7 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 			return Model{}, err
 		}
 		l.Debugf("Created account [%d] for [%s].", m.Id(), m.Name())
-		_ = producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(createdEventProvider()(tenant, m.Id(), name))
+		_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicAccountStatus)(createdEventProvider()(tenant, m.Id(), name))
 		return m, nil
 	}
 }
@@ -170,7 +171,7 @@ func Update(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(account
 	}
 }
 
-func Login(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32, issuer string) error {
+func Login(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32, issuer string) error {
 	return func(sessionId uuid.UUID, accountId uint32, issuer string) error {
 		a, err := GetById(l, db, tenant)(accountId)
 		if err != nil {
@@ -182,14 +183,14 @@ func Login(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tena
 		err = Get().Login(ak, sk)
 		if err == nil {
 			l.Debugf("State transition triggered a login.")
-			err = producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedInEventProvider()(tenant, a.Id(), a.Name()))
+			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicAccountStatus)(loggedInEventProvider()(tenant, a.Id(), a.Name()))
 			return err
 		}
 		return err
 	}
 }
 
-func Logout(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32, issuer string) error {
+func Logout(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32, issuer string) error {
 	return func(sessionId uuid.UUID, accountId uint32, issuer string) error {
 		a, err := GetById(l, db, tenant)(accountId)
 		if err != nil {
@@ -199,7 +200,7 @@ func Logout(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 		ok := Get().Logout(AccountKey{Tenant: tenant, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
 		if ok {
 			l.Debugf("State transition triggered a logout.")
-			err = producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedOutEventProvider()(tenant, a.Id(), a.Name()))
+			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicAccountStatus)(loggedOutEventProvider()(tenant, a.Id(), a.Name()))
 			return err
 		}
 		return errors.New("error while logging out")
@@ -208,14 +209,14 @@ func Logout(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 
 func Teardown(l logrus.FieldLogger, db *gorm.DB) func() {
 	return func() {
-		span := opentracing.StartSpan("teardown")
-		defer span.Finish()
+		sctx, span := otel.GetTracerProvider().Tracer("atlas-account").Start(context.Background(), "teardown")
+		defer span.End()
 
 		tenants := Get().Tenants()
 
 		logoutForModel := func(m Model) error {
 			l.Debugf("Logging out [%d] [%s] on service shutdown.", m.Id(), m.Name())
-			return producer.ProviderImpl(l)(span)(EnvEventTopicAccountStatus)(loggedOutEventProvider()(tenants[m.TenantId()], m.Id(), m.Name()))
+			return producer.ProviderImpl(l)(sctx)(EnvEventTopicAccountStatus)(loggedOutEventProvider()(tenants[m.TenantId()], m.Id(), m.Name()))
 		}
 
 		lmp := model.FilteredProvider(allProvider(db), LoggedIn)

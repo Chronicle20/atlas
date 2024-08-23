@@ -1,7 +1,7 @@
 package account
 
 import (
-	"github.com/opentracing/opentracing-go/mocktracer"
+	"context"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/crypto/bcrypt"
 	"testing"
@@ -10,13 +10,12 @@ import (
 func TestCreate(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
-	span := mocktracer.New().StartSpan("test")
 	st := sampleTenant()
 
 	testName := "name"
 	testPassword := "password"
 
-	m, err := Create(l, db, span, st)(testName, testPassword)
+	m, err := Create(l, db, context.Background(), st)(testName, testPassword)
 	if err != nil {
 		t.Fatalf("Unable to create account: %v", err)
 	}

@@ -64,7 +64,7 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 
 func handleCreateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_ = producer.ProviderImpl(d.Logger())(d.Span())(EnvCommandTopicCreateAccount)(createCommandProvider(c.Tenant(), input.Name, input.Password))
+		_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicCreateAccount)(createCommandProvider(c.Tenant(), input.Name, input.Password))
 		w.WriteHeader(http.StatusAccepted)
 	}
 }

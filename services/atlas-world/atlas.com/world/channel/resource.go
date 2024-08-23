@@ -27,7 +27,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 
 		r := router.PathPrefix("/worlds/{worldId}/channels").Subrouter()
 		r.HandleFunc("", registerGet(GetChannelServers, handleGetChannelServers)).Methods(http.MethodGet)
-		r.HandleFunc("", rest.RegisterCreateHandler[RestModel](l)(si)(RegisterChannelServer, handleRegisterChannelServer)).Methods(http.MethodPost)
+		r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)(RegisterChannelServer, handleRegisterChannelServer)).Methods(http.MethodPost)
 		r.HandleFunc("/{channelId}", registerDelete(UnregisterChannelServer, handleUnregisterChannelServer)).Methods(http.MethodDelete)
 		r.HandleFunc("/{channelId}", registerGet(getChannel, handleGetChannel)).Methods(http.MethodGet)
 	}
@@ -63,7 +63,7 @@ func handleRegisterChannelServer(d *rest.HandlerDependency, c *rest.HandlerConte
 				return
 			}
 
-			_ = producer.ProviderImpl(d.Logger())(d.Span())(EnvEventTopicChannelStatus)(emitChannelServerStarted(c.Tenant(), worldId, byte(id), input.IpAddress, input.Port))
+			_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvEventTopicChannelStatus)(emitChannelServerStarted(c.Tenant(), worldId, byte(id), input.IpAddress, input.Port))
 			w.WriteHeader(http.StatusAccepted)
 		}
 	})
@@ -79,7 +79,7 @@ func handleUnregisterChannelServer(d *rest.HandlerDependency, c *rest.HandlerCon
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
-				_ = producer.ProviderImpl(d.Logger())(d.Span())(EnvEventTopicChannelStatus)(emitChannelServerShutdown(c.Tenant(), worldId, channelId, ch.IpAddress(), ch.Port()))
+				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvEventTopicChannelStatus)(emitChannelServerShutdown(c.Tenant(), worldId, channelId, ch.IpAddress(), ch.Port()))
 				w.WriteHeader(http.StatusAccepted)
 			}
 		})

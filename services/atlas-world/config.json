@@ -11,7 +11,7 @@
               "Flag": "Nothing",
               "ServerMessage": "Welcome to Scania!",
               "EventMessage": "Scania!",
-              "WhyAmIRecommended": ""
+              "WhyAmIRecommended": "Most Populated!"
             },
             {
               "Name": "Bera",
@@ -37,7 +37,7 @@
               "Flag": "Nothing",
               "ServerMessage": "Welcome to Scania!",
               "EventMessage": "Scania!",
-              "WhyAmIRecommended": ""
+              "WhyAmIRecommended": "Most Populated!"
             },
             {
               "Name": "Bera",
@@ -189,7 +189,7 @@
               "Flag": "Nothing",
               "ServerMessage": "Welcome to Scania!",
               "EventMessage": "Scania!",
-              "WhyAmIRecommended": ""
+              "WhyAmIRecommended": "Most Populated!"
             },
             {
               "Name": "Bera",
@@ -341,7 +341,7 @@
               "Flag": "Nothing",
               "ServerMessage": "Welcome to Scania!",
               "EventMessage": "Scania!",
-              "WhyAmIRecommended": ""
+              "WhyAmIRecommended": "Most Populated!"
             },
             {
               "Name": "Bera",
@@ -493,7 +493,7 @@
               "Flag": "Nothing",
               "ServerMessage": "かえでへようこそ！",
               "EventMessage": "かえで!",
-              "WhyAmIRecommended": ""
+              "WhyAmIRecommended": "人口が多い!"
             },
             {
               "Name": "もみじ",

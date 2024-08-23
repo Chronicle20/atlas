@@ -9,9 +9,9 @@ import (
 	"atlas-character/kafka/producer"
 	"atlas-character/portal"
 	"atlas-character/tenant"
+	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"regexp"
@@ -20,62 +20,62 @@ import (
 var blockedNameErr = errors.New("blocked name")
 var invalidLevelErr = errors.New("invalid level")
 
-func byIdProvider(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
+func byIdProvider(db *gorm.DB, tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
 		return database.ModelProvider[Model, entity](db)(getById(tenant.Id, characterId), makeCharacter)
 	}
 }
 
-func GetById(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(characterId uint32, decorators ...model.Decorator[Model]) (Model, error) {
+func GetById(db *gorm.DB, tenant tenant.Model) func(characterId uint32, decorators ...model.Decorator[Model]) (Model, error) {
 	return func(characterId uint32, decorators ...model.Decorator[Model]) (Model, error) {
-		return model.Map(byIdProvider(l, db, tenant)(characterId), model.Decorate(decorators...))()
+		return model.Map(byIdProvider(db, tenant)(characterId), model.Decorate(decorators...))()
 	}
 }
 
-func byAccountInWorldProvider(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(accountId uint32, worldId byte) model.Provider[[]Model] {
+func byAccountInWorldProvider(db *gorm.DB, tenant tenant.Model) func(accountId uint32, worldId byte) model.Provider[[]Model] {
 	return func(accountId uint32, worldId byte) model.Provider[[]Model] {
 		return database.ModelSliceProvider[Model, entity](db)(getForAccountInWorld(tenant.Id, accountId, worldId), makeCharacter)
 	}
 }
 
-func GetForAccountInWorld(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(accountId uint32, worldId byte, decorators ...model.Decorator[Model]) ([]Model, error) {
+func GetForAccountInWorld(db *gorm.DB, tenant tenant.Model) func(accountId uint32, worldId byte, decorators ...model.Decorator[Model]) ([]Model, error) {
 	return func(accountId uint32, worldId byte, decorators ...model.Decorator[Model]) ([]Model, error) {
-		return model.SliceMap(byAccountInWorldProvider(l, db, tenant)(accountId, worldId), model.Decorate(decorators...))()
+		return model.SliceMap(byAccountInWorldProvider(db, tenant)(accountId, worldId), model.Decorate(decorators...))()
 	}
 }
 
-func byMapInWorld(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(worldId byte, mapId uint32) model.Provider[[]Model] {
+func byMapInWorld(db *gorm.DB, tenant tenant.Model) func(worldId byte, mapId uint32) model.Provider[[]Model] {
 	return func(worldId byte, mapId uint32) model.Provider[[]Model] {
 		return database.ModelSliceProvider[Model, entity](db)(getForMapInWorld(tenant.Id, worldId, mapId), makeCharacter)
 	}
 }
 
-func GetForMapInWorld(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(worldId byte, mapId uint32, decorators ...model.Decorator[Model]) ([]Model, error) {
+func GetForMapInWorld(db *gorm.DB, tenant tenant.Model) func(worldId byte, mapId uint32, decorators ...model.Decorator[Model]) ([]Model, error) {
 	return func(worldId byte, mapId uint32, decorators ...model.Decorator[Model]) ([]Model, error) {
-		return model.SliceMap(byMapInWorld(l, db, tenant)(worldId, mapId), model.Decorate(decorators...))()
+		return model.SliceMap(byMapInWorld(db, tenant)(worldId, mapId), model.Decorate(decorators...))()
 	}
 }
 
-func byName(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name string) model.Provider[[]Model] {
+func byName(db *gorm.DB, tenant tenant.Model) func(name string) model.Provider[[]Model] {
 	return func(name string) model.Provider[[]Model] {
 		return database.ModelSliceProvider[Model, entity](db)(getForName(tenant.Id, name), makeCharacter)
 	}
 }
 
-func GetForName(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(name string, decorators ...model.Decorator[Model]) ([]Model, error) {
+func GetForName(db *gorm.DB, tenant tenant.Model) func(name string, decorators ...model.Decorator[Model]) ([]Model, error) {
 	return func(name string, decorators ...model.Decorator[Model]) ([]Model, error) {
-		return model.SliceMap(byName(l, db, tenant)(name), model.Decorate(decorators...))()
+		return model.SliceMap(byName(db, tenant)(name), model.Decorate(decorators...))()
 	}
 }
 
-func InventoryModelDecorator(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) model.Decorator[Model] {
+func InventoryModelDecorator(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) model.Decorator[Model] {
 	return func(m Model) Model {
-		i, err := inventory.GetInventories(l, db, span, tenant)(m.Id())
+		i, err := inventory.GetInventories(l, db, ctx, tenant)(m.Id())
 		if err != nil {
 			return m
 		}
 
-		es, err := model.Fold(equipable.EquipmentProvider(l, db, span, tenant)(i.Equipable().Id()), model.FixedProvider(m.GetEquipment()), FoldEquipable)()
+		es, err := model.Fold(equipable.EquipmentProvider(l, db, ctx, tenant)(i.Equipable().Id()), model.FixedProvider(m.GetEquipment()), FoldEquipable)()
 		if err != nil {
 			return CloneModel(m).SetInventory(i).Build()
 		}
@@ -182,13 +182,13 @@ func IsValidName(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(na
 			return false, nil
 		}
 
-		cs, err := GetForName(l, db, tenant)(name)
+		cs, err := GetForName(db, tenant)(name)
 		if len(cs) != 0 || err != nil {
 			return false, nil
 		}
 
 		//TODO
-		//bn, err := blocked_name.IsBlockedName(l, span)(name)
+		//bn, err := blocked_name.IsBlockedName(l, ctx)(name)
 		//if bn {
 		//	return false, err
 		//}
@@ -197,7 +197,7 @@ func IsValidName(l logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(na
 	}
 }
 
-func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, input Model) (Model, error) {
+func Create(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, eventProducer producer.Provider) func(tenant tenant.Model, input Model) (Model, error) {
 	return func(tenant tenant.Model, input Model) (Model, error) {
 		ok, err := IsValidName(l, db, tenant)(input.Name())
 		if err != nil {
@@ -222,7 +222,7 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProdu
 				return err
 			}
 
-			inv, err := inventory.Create(l, tx, span, tenant)(res.id, 24)
+			inv, err := inventory.Create(l, tx, ctx, tenant)(res.id, 24)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to create inventory for character during character creation.")
 				tx.Rollback()
@@ -239,43 +239,43 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProdu
 	}
 }
 
-func Delete(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32) error {
+func Delete(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32) error {
 	return func(characterId uint32) error {
 		err := db.Transaction(func(tx *gorm.DB) error {
-			c, err := GetById(l, tx, tenant)(characterId, InventoryModelDecorator(l, tx, span, tenant))
+			c, err := GetById(tx, tenant)(characterId, InventoryModelDecorator(l, tx, ctx, tenant))
 			if err != nil {
 				return err
 			}
 
 			// delete equipment.
-			err = equipment.Delete(l, tx, span, tenant)(c.equipment)
+			err = equipment.Delete(l, tx, ctx, tenant)(c.equipment)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to delete equipment for character with id [%d].", characterId)
 				return err
 			}
 
 			// delete inventories.
-			err = inventory.DeleteEquipableInventory(l, tx, span, tenant)(characterId, c.inventory.Equipable())
+			err = inventory.DeleteEquipableInventory(l, tx, ctx, tenant)(characterId, c.inventory.Equipable())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
 				return err
 			}
-			err = inventory.DeleteItemInventory(l, tx, span, tenant)(characterId, c.inventory.Useable())
+			err = inventory.DeleteItemInventory(l, tx, ctx, tenant)(characterId, c.inventory.Useable())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
 				return err
 			}
-			err = inventory.DeleteItemInventory(l, tx, span, tenant)(characterId, c.inventory.Setup())
+			err = inventory.DeleteItemInventory(l, tx, ctx, tenant)(characterId, c.inventory.Setup())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
 				return err
 			}
-			err = inventory.DeleteItemInventory(l, tx, span, tenant)(characterId, c.inventory.Etc())
+			err = inventory.DeleteItemInventory(l, tx, ctx, tenant)(characterId, c.inventory.Etc())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
 				return err
 			}
-			err = inventory.DeleteItemInventory(l, tx, span, tenant)(characterId, c.inventory.Cash())
+			err = inventory.DeleteItemInventory(l, tx, ctx, tenant)(characterId, c.inventory.Cash())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
 				return err
@@ -294,102 +294,128 @@ func Delete(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 	}
 }
 
-func Login(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte) {
-	return func(characterId uint32, worldId byte, channelId byte) {
-		c, err := GetById(l, db, tenant)(characterId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate character [%d] whose session was created.", characterId)
-			return
-		}
-		_ = producer.ProviderImpl(l)(span)(EnvEventTopicCharacterStatus)(loginEventProvider(tenant, characterId, worldId, channelId, c.MapId()))
+func Login(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte) error {
+	return func(characterId uint32, worldId byte, channelId byte) error {
+		alf := announceLogin(producer.ProviderImpl(l)(ctx))(tenant)(worldId, channelId)
+		return model.For(byIdProvider(db, tenant)(characterId), alf)
 	}
 }
 
-func Logout(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte) {
-	return func(characterId uint32, worldId byte, channelId byte) {
-		c, err := GetById(l, db, tenant)(characterId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate character [%d] whose session was destroyed.", characterId)
-			return
-		}
-		_ = producer.ProviderImpl(l)(span)(EnvEventTopicCharacterStatus)(logoutEventProvider(tenant, characterId, worldId, channelId, c.MapId()))
-	}
-}
-
-func ChangeMap(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte, mapId uint32, portalId uint32) {
-	return func(characterId uint32, worldId byte, channelId byte, mapId uint32, portalId uint32) {
-		c, err := GetById(l, db, tenant)(characterId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate character [%d] for update.", characterId)
-			return
-		}
-		err = performChangeMap(l, db, span, tenant)(mapId, portalId)(c)
-		if err != nil {
-			l.WithError(err).Errorf("Error updating characters [%d] map.", characterId)
-			return
-		}
-		_ = changeMapSuccess(l, span, tenant)(worldId, channelId, c.MapId(), mapId, portalId)(c)
-	}
-}
-
-func changeMapSuccess(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, oldMapId uint32, targetMapId uint32, targetPortalId uint32) model.Operator[Model] {
-	return func(worldId byte, channelId byte, oldMapId uint32, targetMapId uint32, targetPortalId uint32) model.Operator[Model] {
-		return func(m Model) error {
-			return producer.ProviderImpl(l)(span)(EnvEventTopicCharacterStatus)(mapChangedEventProvider(tenant, m.Id(), worldId, channelId, oldMapId, targetMapId, targetPortalId))
-		}
-	}
-}
-
-// Produces a function which persists a character map update, then updates the temporal position.
-func performChangeMap(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(mapId uint32, portalId uint32) model.Operator[Model] {
-	return func(mapId uint32, portalId uint32) model.Operator[Model] {
-		return func(c Model) error {
-			err := characterDatabaseUpdate(l, db, tenant)(SetMapId(mapId))(c)
-			if err != nil {
-				return err
+func announceLogin(provider producer.Provider) func(tenant tenant.Model) func(worldId byte, channelId byte) model.Operator[Model] {
+	return func(tenant tenant.Model) func(worldId byte, channelId byte) model.Operator[Model] {
+		return func(worldId byte, channelId byte) model.Operator[Model] {
+			return func(c Model) error {
+				return provider(EnvEventTopicCharacterStatus)(loginEventProvider(tenant, c.Id(), worldId, channelId, c.MapId()))
 			}
-			por, err := portal.GetInMapById(l, span, tenant)(mapId, portalId)
-			if err != nil {
-				return err
-			}
-			GetTemporalRegistry().UpdatePosition(c.Id(), por.X(), por.Y())
-			return nil
 		}
 	}
 }
 
-// Returns a function which accepts a character model,and updates the persisted state of the character given a set of
-// modifying functions.
-func characterDatabaseUpdate(_ logrus.FieldLogger, db *gorm.DB, tenant tenant.Model) func(modifiers ...EntityUpdateFunction) model.Operator[Model] {
-	return func(modifiers ...EntityUpdateFunction) model.Operator[Model] {
-		return func(c Model) error {
-			if len(modifiers) > 0 {
-				err := update(db, tenant.Id, c.Id(), modifiers...)
-				if err != nil {
-					return err
+func Logout(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte) error {
+	return func(characterId uint32, worldId byte, channelId byte) error {
+		alf := announceLogout(producer.ProviderImpl(l)(ctx))(tenant)(worldId, channelId)
+		return model.For(byIdProvider(db, tenant)(characterId), alf)
+	}
+}
+
+func announceLogout(provider producer.Provider) func(tenant tenant.Model) func(worldId byte, channelId byte) model.Operator[Model] {
+	return func(tenant tenant.Model) func(worldId byte, channelId byte) model.Operator[Model] {
+		return func(worldId byte, channelId byte) model.Operator[Model] {
+			return func(c Model) error {
+				return provider(EnvEventTopicCharacterStatus)(logoutEventProvider(tenant, c.Id(), worldId, channelId, c.MapId()))
+			}
+		}
+	}
+}
+
+func ChangeMap(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte, mapId uint32, portalId uint32) error {
+	return func(characterId uint32, worldId byte, channelId byte, mapId uint32, portalId uint32) error {
+		cmf := changeMap(db)(tenant)(mapId)
+		papf := positionAtPortal(l)(ctx)(tenant)(mapId, portalId)
+		amcf := announceMapChanged(producer.ProviderImpl(l)(ctx))(tenant)(worldId, channelId, mapId, portalId)
+		return model.For(byIdProvider(db, tenant)(characterId), model.ThenOperator(cmf, papf, amcf))
+	}
+}
+
+func changeMap(db *gorm.DB) func(tenant tenant.Model) func(mapId uint32) model.Operator[Model] {
+	return func(tenant tenant.Model) func(mapId uint32) model.Operator[Model] {
+		return func(mapId uint32) model.Operator[Model] {
+			return func(c Model) error {
+				return dynamicUpdate(db, tenant)(SetMapId(mapId))(c)
+			}
+		}
+	}
+}
+
+func positionAtPortal(l logrus.FieldLogger) func(ctx context.Context) func(tenant tenant.Model) func(mapId uint32, portalId uint32) model.Operator[Model] {
+	return func(ctx context.Context) func(tenant tenant.Model) func(mapId uint32, portalId uint32) model.Operator[Model] {
+		return func(tenant tenant.Model) func(mapId uint32, portalId uint32) model.Operator[Model] {
+			return func(mapId uint32, portalId uint32) model.Operator[Model] {
+				return func(c Model) error {
+					por, err := portal.GetInMapById(l, ctx, tenant)(mapId, portalId)
+					if err != nil {
+						return err
+					}
+					GetTemporalRegistry().UpdatePosition(c.Id(), por.X(), por.Y())
+					return nil
 				}
 			}
-			return nil
 		}
 	}
 }
 
-func Move(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte, mapId uint32, movement movement) {
-	return func(characterId uint32, worldId byte, channelId byte, mapId uint32, movement movement) {
-		var x = movement.StartX
-		var y = movement.StartY
-		var stance = GetTemporalRegistry().GetById(characterId).Stance()
-		for _, m := range movement.Elements {
-			if m.TypeStr == MovementTypeNormal {
-				x = m.X
-				y = m.Y
-				stance = m.MoveAction
-			} else if m.TypeStr == MovementTypeJump || m.TypeStr == MovementTypeTeleport || m.TypeStr == MovementTypeStartFallDown {
-				stance = m.MoveAction
+func announceMapChanged(provider producer.Provider) func(tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, portalId uint32) model.Operator[Model] {
+	return func(tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, portalId uint32) model.Operator[Model] {
+		return func(worldId byte, channelId byte, mapId uint32, portalId uint32) model.Operator[Model] {
+			return func(c Model) error {
+				return provider(EnvEventTopicCharacterStatus)(mapChangedEventProvider(tenant, c.Id(), worldId, channelId, c.MapId(), mapId, portalId))
 			}
 		}
-		GetTemporalRegistry().Update(characterId, x, y, stance)
+	}
+}
 
-		_ = producer.ProviderImpl(l)(span)(EnvEventTopicMovement)(move(tenant, worldId, channelId, mapId, characterId, movement))
+type MovementSummary struct {
+	X      int16
+	Y      int16
+	Stance byte
+}
+
+func MovementSummaryProvider(x int16, y int16, stance byte) model.Provider[MovementSummary] {
+	return func() (MovementSummary, error) {
+		return MovementSummary{
+			X:      x,
+			Y:      y,
+			Stance: stance,
+		}, nil
+	}
+}
+
+func FoldMovementSummary(summary MovementSummary, e element) (MovementSummary, error) {
+	ms := MovementSummary{X: summary.X, Y: summary.Y, Stance: summary.Stance}
+	if e.TypeStr == MovementTypeNormal {
+		ms.X = e.X
+		ms.Y = e.Y
+		ms.Stance = e.MoveAction
+	} else if e.TypeStr == MovementTypeJump || e.TypeStr == MovementTypeTeleport || e.TypeStr == MovementTypeStartFallDown {
+		ms.Stance = e.MoveAction
+	}
+	return ms, nil
+}
+
+func Move(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32, worldId byte, channelId byte, mapId uint32, movement movement) error {
+	return func(characterId uint32, worldId byte, channelId byte, mapId uint32, movement movement) error {
+		msp := model.Fold(model.FixedProvider(movement.Elements), MovementSummaryProvider(movement.StartX, movement.StartY, GetTemporalRegistry().GetById(characterId).Stance()), FoldMovementSummary)
+		err := model.For(msp, updateTemporal(characterId))
+		if err != nil {
+			return err
+		}
+		return producer.ProviderImpl(l)(ctx)(EnvEventTopicMovement)(move(tenant, worldId, channelId, mapId, characterId, movement))
+	}
+}
+
+func updateTemporal(characterId uint32) model.Operator[MovementSummary] {
+	return func(ms MovementSummary) error {
+		GetTemporalRegistry().Update(characterId, ms.X, ms.Y, ms.Stance)
+		return nil
 	}
 }

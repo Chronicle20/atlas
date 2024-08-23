@@ -22,3 +22,7 @@ func (m Model) Slot() int16 {
 func (m Model) Quantity() uint32 {
 	return m.quantity
 }
+
+func Id(m Model) (uint32, error) {
+	return m.Id(), nil
+}

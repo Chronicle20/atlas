@@ -1,26 +1,26 @@
 package inventory
 
 import (
+	"atlas-character/asset"
 	"atlas-character/equipable"
+	statistics2 "atlas-character/equipable/statistics"
+	"atlas-character/equipment"
 	slot2 "atlas-character/equipment/slot"
-	"atlas-character/equipment/slot/information"
-	"atlas-character/equipment/statistics"
 	"atlas-character/inventory/item"
 	"atlas-character/kafka/producer"
-	"atlas-character/slottable"
 	"atlas-character/tenant"
+	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/opentracing/opentracing-go"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"math"
 )
 
-func ByCharacterIdProvider(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
+func ByCharacterIdProvider(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
-		return model.Fold[entity, Model](getByCharacter(tenant.Id, characterId)(db), supplier, foldInventory(l, db, span, tenant))
+		return model.Fold[entity, Model](getByCharacter(tenant.Id, characterId)(db), supplier, foldInventory(l, db, ctx, tenant))
 	}
 }
 
@@ -53,36 +53,36 @@ func ItemFolder(m ItemModel, em item.Model) (ItemModel, error) {
 	return m, nil
 }
 
-func foldInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(ref Model, ent entity) (Model, error) {
+func foldInventory(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(ref Model, ent entity) (Model, error) {
 	return func(ref Model, ent entity) (Model, error) {
 		switch Type(ent.InventoryType) {
 		case TypeValueEquip:
-			ep := equipable.InInventoryProvider(l, db, span, tenant)(ent.ID)
+			ep := equipable.InInventoryProvider(l, db, ctx, tenant)(ent.ID)
 			return model.Map(model.Fold(ep, NewEquipableModel(ent.ID, ent.Capacity), EquipableFolder), foldProperty(ref.SetEquipable))()
 		case TypeValueUse:
-			ip := item.ByInventoryProvider(l, db, tenant)(ent.ID)
+			ip := item.ByInventoryProvider(db, tenant)(ent.ID)
 			return model.Map(model.Fold(ip, NewItemModel(ent.ID, TypeValueUse, ent.Capacity), ItemFolder), foldProperty(ref.SetUseable))()
 		case TypeValueSetup:
-			ip := item.ByInventoryProvider(l, db, tenant)(ent.ID)
+			ip := item.ByInventoryProvider(db, tenant)(ent.ID)
 			return model.Map(model.Fold(ip, NewItemModel(ent.ID, TypeValueSetup, ent.Capacity), ItemFolder), foldProperty(ref.SetSetup))()
 		case TypeValueETC:
-			ip := item.ByInventoryProvider(l, db, tenant)(ent.ID)
+			ip := item.ByInventoryProvider(db, tenant)(ent.ID)
 			return model.Map(model.Fold(ip, NewItemModel(ent.ID, TypeValueETC, ent.Capacity), ItemFolder), foldProperty(ref.SetEtc))()
 		case TypeValueCash:
-			ip := item.ByInventoryProvider(l, db, tenant)(ent.ID)
+			ip := item.ByInventoryProvider(db, tenant)(ent.ID)
 			return model.Map(model.Fold(ip, NewItemModel(ent.ID, TypeValueCash, ent.Capacity), ItemFolder), foldProperty(ref.SetCash))()
 		}
 		return ref, errors.New("unknown inventory type")
 	}
 }
 
-func GetInventories(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32) (Model, error) {
+func GetInventories(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
-		return ByCharacterIdProvider(l, db, span, tenant)(characterId)()
+		return ByCharacterIdProvider(l, db, ctx, tenant)(characterId)()
 	}
 }
 
-func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, defaultCapacity uint32) (Model, error) {
+func Create(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32, defaultCapacity uint32) (Model, error) {
 	return func(characterId uint32, defaultCapacity uint32) (Model, error) {
 		err := db.Transaction(func(tx *gorm.DB) error {
 			for _, t := range Types {
@@ -99,56 +99,11 @@ func Create(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant ten
 			return Model{}, err
 		}
 
-		return GetInventories(l, db, span, tenant)(characterId)
+		return GetInventories(l, db, ctx, tenant)(characterId)
 	}
 }
 
-type adjustmentMode byte
-
-const (
-	adjustmentModeCreate adjustmentMode = 0
-	adjustmentModeUpdate adjustmentMode = 1
-)
-
-type adjustment struct {
-	mode            adjustmentMode
-	itemId          uint32
-	inventoryType   Type
-	changedQuantity uint32
-	quantity        uint32
-	slot            int16
-	oldSlot         int16
-}
-
-func (i adjustment) Mode() adjustmentMode {
-	return i.mode
-}
-
-func (i adjustment) ItemId() uint32 {
-	return i.itemId
-}
-
-func (i adjustment) InventoryType() Type {
-	return i.inventoryType
-}
-
-func (i adjustment) Quantity() uint32 {
-	return i.quantity
-}
-
-func (i adjustment) ChangedQuantity() uint32 {
-	return i.changedQuantity
-}
-
-func (i adjustment) Slot() int16 {
-	return i.slot
-}
-
-func (i adjustment) OldSlot() int16 {
-	return i.oldSlot
-}
-
-func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
+func CreateItem(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
 	return func(tenant tenant.Model, characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
 		expectedInventoryType := math.Floor(float64(itemId) / 1000000)
 		if expectedInventoryType != float64(inventoryType) {
@@ -165,30 +120,43 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventP
 		invLock.Lock()
 		defer invLock.Unlock()
 
-		var events model.Provider[[]kafka.Message]
+		var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
 		err := db.Transaction(func(tx *gorm.DB) error {
-			inv, err := GetInventoryByType(l, tx, span, tenant)(characterId, inventoryType)()
+			invId, err := GetInventoryIdByType(tx, tenant)(characterId, inventoryType)()
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 				return err
 			}
 
+			iap := inventoryItemAddProvider(tenant)(characterId)(itemId)
+			iup := inventoryItemUpdateProvider(tenant)(characterId)(itemId)
+			var eap model.Provider[[]asset.Asset]
+			var smp SlotMaxProvider
+			var nac asset.Creator
+			var aqu asset.QuantityUpdater
+
 			if inventoryType == TypeValueEquip {
-				events = createEquipable(l, tx, span, tenant)(characterId, inv.Id(), inventoryType, itemId)
-				if err != nil {
-					l.WithError(err).Errorf("Unable to create [%d] equipable [%d] for character [%d].", quantity, itemId, characterId)
-					return err
-				}
+				eap = asset.NoOpSliceProvider
+				smp = OfOneSlotMaxProvider
+				nac = equipable.CreateItem(l, tx, ctx, tenant, statistics2.Create(l, ctx, tenant))(characterId)(invId, int8(inventoryType))(itemId)
+				aqu = asset.NoOpQuantityUpdater
 			} else {
-				events = createItem(l, tx, span, tenant)(characterId, inv.Id(), inventoryType, itemId, quantity)
-				if err != nil {
-					l.WithError(err).Errorf("Unable to create [%d] items [%d] for character [%d].", quantity, itemId, characterId)
-					return err
+				eap = model.SliceMap(item.ByItemIdProvider(tx)(tenant)(invId)(itemId), item.ToAsset)
+				smp = func() (uint32, error) {
+					// TODO properly look this up.
+					return 200, nil
 				}
+				nac = item.CreateItem(tx, tenant)(characterId)(invId, int8(inventoryType))(itemId)
+				aqu = item.UpdateQuantity(tx, tenant)
 			}
 
-			l.Debugf("Successfully finished processing create item for character [%d].", characterId)
-			return nil
+			res, err := CreateAsset(l)(eap, smp, nac, aqu, iap, iup, quantity)()
+			if err != nil {
+				l.WithError(err).Errorf("Unable to create [%d] equipable [%d] for character [%d].", quantity, itemId, characterId)
+				return err
+			}
+			events = model.MergeSliceProvider(events, model.FixedProvider(res))
+			return err
 		})
 		if err != nil {
 			return err
@@ -197,35 +165,35 @@ func CreateItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventP
 	}
 }
 
-func GetInventoryByType(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType Type) model.Provider[ItemHolder] {
-	return func(characterId uint32, inventoryType Type) model.Provider[ItemHolder] {
-		return model.Map(ByCharacterIdProvider(l, db, span, tenant)(characterId), getInventoryByType(inventoryType))
+func GetInventoryIdByType(db *gorm.DB, tenant tenant.Model) func(characterId uint32, inventoryType Type) model.Provider[uint32] {
+	return func(characterId uint32, inventoryType Type) model.Provider[uint32] {
+		e, err := get(tenant.Id, characterId, inventoryType)(db)()
+		if err != nil {
+			return model.ErrorProvider[uint32](err)
+		}
+		return model.FixedProvider(e.ID)
 	}
 }
 
-func getInventoryByType(inventoryType Type) model.Transformer[Model, ItemHolder] {
-	return func(m Model) (ItemHolder, error) {
-		return m.GetHolderByType(inventoryType)
-	}
+type SlotMaxProvider model.Provider[uint32]
+
+func OfOneSlotMaxProvider() (uint32, error) {
+	return 1, nil
 }
 
-func createEquipable(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32) model.Provider[[]kafka.Message] {
-	var creator itemCreator = equipable.CreateItem(l, db, span, tenant)
-	return func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32) model.Provider[[]kafka.Message] {
-		return createNewItem(l, tenant)(creator, characterId, inventoryId, inventoryType, itemId, 1)
-	}
-}
-
-func createItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32, quantity uint32) model.Provider[[]kafka.Message] {
-	var creator itemCreator = item.CreateItem(l, db, tenant)
-	return func(characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32, quantity uint32) model.Provider[[]kafka.Message] {
+func CreateAsset(l logrus.FieldLogger) func(existingAssetProvider model.Provider[[]asset.Asset], slotMaxProvider SlotMaxProvider, newAssetCreator asset.Creator, assetQuantityUpdater asset.QuantityUpdater, addEventProvider ItemAddProvider, updateEventProvider ItemUpdateProvider, quantity uint32) model.Provider[[]kafka.Message] {
+	return func(existingAssetProvider model.Provider[[]asset.Asset], slotMaxProvider SlotMaxProvider, newAssetCreator asset.Creator, assetQuantityUpdater asset.QuantityUpdater, addEventProvider ItemAddProvider, updateEventProvider ItemUpdateProvider, quantity uint32) model.Provider[[]kafka.Message] {
 		runningQuantity := quantity
-		slotMax := item.MaxInSlot()
+		slotMax, err := slotMaxProvider()
+		if err != nil {
+			return model.ErrorProvider[[]kafka.Message](err)
+		}
+
 		var result = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
 
-		existingItems, err := item.GetByItemId(l, db, tenant)(inventoryId, itemId)
+		existingItems, err := existingAssetProvider()
 		if err != nil {
-			l.WithError(err).Errorf("Unable to locate items [%d] in inventory [%d] for character [%d].", itemId, inventoryType, characterId)
+			l.WithError(err).Errorf("Unable to locate existing items in inventory for character.")
 			return model.ErrorProvider[[]kafka.Message](err)
 		}
 		if len(existingItems) > 0 {
@@ -239,12 +207,12 @@ func createItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 						newQuantity := uint32(math.Min(float64(oldQuantity+runningQuantity), float64(slotMax)))
 						changedQuantity := newQuantity - oldQuantity
 						runningQuantity = runningQuantity - changedQuantity
-						l.Debugf("Adding [%d] item [%d] in slot [%d] to make a new quantity of [%d] for character [%d].", changedQuantity, i.ItemId(), i.Slot(), newQuantity, characterId)
-						err = item.UpdateQuantity(l, db, tenant)(i.Id(), newQuantity)
+						l.Debugf("Updating existing asset [%d] of item [%d] in slot [%d] to have a quantity of [%d].", i.Id(), i.ItemId(), i.Slot(), i.Quantity())
+						err = assetQuantityUpdater(i.Id(), newQuantity)
 						if err != nil {
 							l.WithError(err).Errorf("Updating the quantity of item [%d] to value [%d].", i.Id(), newQuantity)
 						} else {
-							result = model.MergeSliceProvider(result, inventoryItemUpdateProvider(tenant, characterId, itemId, newQuantity, i.Slot()))
+							result = model.MergeSliceProvider(result, updateEventProvider(newQuantity, i.Slot()))
 						}
 					}
 					index++
@@ -256,261 +224,239 @@ func createItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant
 		for runningQuantity > 0 {
 			newQuantity := uint32(math.Min(float64(runningQuantity), float64(slotMax)))
 			runningQuantity = runningQuantity - newQuantity
-			nes, err := createNewItem(l, tenant)(creator, characterId, inventoryId, inventoryType, itemId, newQuantity)()
+			as, err := newAssetCreator(newQuantity)()
 			if err != nil {
 				return model.ErrorProvider[[]kafka.Message](err)
 			}
-			result = model.MergeSliceProvider(result, model.FixedProvider[[]kafka.Message](nes))
+			l.Debugf("Creating new asset [%d] of item [%d] in slot [%d] with quantity [%d].", as.Id(), as.ItemId(), as.Slot(), as.Quantity())
+			result = model.MergeSliceProvider(result, addEventProvider(as.Quantity(), as.Slot()))
 		}
 		return result
 	}
 }
 
-func createNewItem(l logrus.FieldLogger, tenant tenant.Model) func(creator itemCreator, characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32, quantity uint32) model.Provider[[]kafka.Message] {
-	return func(creator itemCreator, characterId uint32, inventoryId uint32, inventoryType Type, itemId uint32, quantity uint32) model.Provider[[]kafka.Message] {
-		i, err := creator(characterId, inventoryId, int8(inventoryType), itemId, quantity)()
+func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(tenant tenant.Model) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(source int16) func(destinationProvider equipment.DestinationProvider) {
+	return func(db *gorm.DB) func(tenant tenant.Model) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(source int16) func(destinationProvider equipment.DestinationProvider) {
+		return func(tenant tenant.Model) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(source int16) func(destinationProvider equipment.DestinationProvider) {
+			return func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(source int16) func(destinationProvider equipment.DestinationProvider) {
+				return func(eventProducer producer.Provider) func(characterId uint32) func(source int16) func(destinationProvider equipment.DestinationProvider) {
+					return func(characterId uint32) func(source int16) func(destinationProvider equipment.DestinationProvider) {
+						characterInventoryMoveProvider := inventoryItemMoveProvider(tenant)(characterId)
+						return func(source int16) func(destinationProvider equipment.DestinationProvider) {
+							return func(destinationProvider equipment.DestinationProvider) {
+								var e equipable.Model
+								var err error
+
+								l.Debugf("Received request to equip item at [%d] for character [%d].", source, characterId)
+								invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
+								invLock.Lock()
+								defer invLock.Unlock()
+
+								var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+
+								err = db.Transaction(func(tx *gorm.DB) error {
+									inSlotProvider := model.Flip(model.Flip(equipable.BySlotProvider)(tenant))(characterId)(tx)
+									slotUpdater := model.Flip(equipable.UpdateSlot)(tenant)(tx)
+
+									e, err = equipable.GetBySlot(tx, tenant)(characterId, source)
+									if err != nil {
+										l.WithError(err).Errorf("Unable to retrieve equipment in slot [%d].", source)
+										return err
+									}
+
+									l.Debugf("Equipment [%d] is item [%d] for character [%d].", e.Id(), e.ItemId(), characterId)
+
+									actualDestination, err := destinationProvider(e.ItemId())()
+									if err != nil {
+										l.WithError(err).Errorf("Unable to determine actual destination for item being equipped.")
+										return err
+									}
+
+									l.Debugf("Equipment [%d] to be equipped in slot [%d] for character [%d].", e.Id(), actualDestination, characterId)
+
+									l.Debugf("Attempting to move item that is currently occupying the destination to a temporary position.")
+									resp, _ := moveFromSlotToSlot(l)(model.Map(inSlotProvider(actualDestination), equipable.ToAsset), temporarySlotProvider, slotUpdater, noOpInventoryItemMoveProvider)()
+									events = model.MergeSliceProvider(events, model.FixedProvider(resp))
+
+									l.Debugf("Attempting to move item that is being equipped to its final destination.")
+									resp, _ = moveFromSlotToSlot(l)(model.Map(inSlotProvider(source), equipable.ToAsset), model.FixedProvider(actualDestination), slotUpdater, characterInventoryMoveProvider(source))()
+									events = model.MergeSliceProvider(events, model.FixedProvider(resp))
+
+									l.Debugf("Attempting to move item that is in the temporary position to where the item that was just equipped was.")
+									resp, _ = moveFromSlotToSlot(l)(model.Map(inSlotProvider(temporarySlot()), equipable.ToAsset), model.FixedProvider(source), slotUpdater, noOpInventoryItemMoveProvider)()
+									events = model.MergeSliceProvider(events, model.FixedProvider(resp))
+
+									l.Debugf("Now verifying other inventory operations that may be necessary.")
+
+									invId, err := GetInventoryIdByType(tx, tenant)(characterId, TypeValueEquip)()
+									if err != nil {
+										l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", TypeValueEquip, characterId)
+										return err
+									}
+									nextFreeSlotProvider := freeSlotProvider(tx)(invId)
+
+									if e.ItemId()/10000 == 105 {
+										l.Debugf("Item is an overall, we also need to unequip the bottom.")
+										resp, err = moveFromSlotToSlot(l)(model.Map(inSlotProvider(int16(slot2.PositionBottom)), equipable.ToAsset), nextFreeSlotProvider, slotUpdater, characterInventoryMoveProvider(int16(slot2.PositionBottom)))()
+										if err != nil {
+											l.WithError(err).Errorf("Unable to move bottom out of its slot.")
+											return err
+										}
+										events = model.MergeSliceProvider(events, model.FixedProvider(resp))
+									}
+									if actualDestination == int16(slot2.PositionBottom) {
+										l.Debugf("Item is a bottom, need to unequip an overall if its in the top slot.")
+										ip := model.Map(model.Map(inSlotProvider(int16(slot2.PositionOverall)), equipable.ToAsset), IsOverall)
+										resp, err = moveFromSlotToSlot(l)(ip, nextFreeSlotProvider, slotUpdater, characterInventoryMoveProvider(int16(slot2.PositionOverall)))()
+										if err != nil && !errors.Is(err, notOverall) {
+											l.WithError(err).Errorf("Unable to move overall out of its slot.")
+											return err
+										}
+										events = model.MergeSliceProvider(events, model.FixedProvider(resp))
+									}
+									return nil
+								})
+								if err != nil {
+									l.WithError(err).Errorf("Unable to complete the equipment of item [%d] for character [%d].", e.Id(), characterId)
+									return
+								}
+
+								err = eventProducer(EnvEventInventoryChanged)(events)
+								if err != nil {
+									l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+var notOverall = errors.New("not an overall")
+
+func IsOverall(m asset.Asset) (asset.Asset, error) {
+	if m.ItemId()/10000 == 105 {
+		return m, nil
+	}
+	return nil, notOverall
+}
+
+func moveFromSlotToSlot(l logrus.FieldLogger) func(modelProvider model.Provider[asset.Asset], newSlotProvider model.Provider[int16], slotUpdater func(id uint32, slot int16) error, moveEventProvider func(itemId uint32) func(slot int16) model.Provider[[]kafka.Message]) model.Provider[[]kafka.Message] {
+	return func(modelProvider model.Provider[asset.Asset], newSlotProvider model.Provider[int16], slotUpdater func(id uint32, slot int16) error, moveEventProvider func(itemId uint32) func(slot int16) model.Provider[[]kafka.Message]) model.Provider[[]kafka.Message] {
+		m, err := modelProvider()
 		if err != nil {
-			l.WithError(err).Errorf("Unable to create item [%d] for character [%d].", itemId, characterId)
 			return model.ErrorProvider[[]kafka.Message](err)
 		}
-		l.Debugf("Item created. Creating inventory [%d] adjustment of [%d] item [%d] in slot [%d].", inventoryType, quantity, itemId, i.Slot())
-		return inventoryItemAddProvider(tenant, characterId, itemId, quantity, i.Slot())
+		if m.Id() == 0 {
+			return model.ErrorProvider[[]kafka.Message](errors.New("item not found"))
+		}
+		newSlot, err := newSlotProvider()
+		if err != nil {
+			return model.ErrorProvider[[]kafka.Message](err)
+		}
+		err = slotUpdater(m.Id(), newSlot)
+		if err != nil {
+			return model.ErrorProvider[[]kafka.Message](err)
+		}
+		l.Debugf("Moved [%d] of template [%d] to slot [%d] from [%d].", m.Id(), m.ItemId(), newSlot, m.Slot())
+		return moveEventProvider(m.ItemId())(newSlot)
 	}
 }
 
-type itemCreator func(characterId uint32, inventoryId uint32, inventoryType int8, itemId uint32, quantity uint32) model.Provider[slottable.Slottable]
+func UnequipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(tenant tenant.Model) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
+	return func(db *gorm.DB) func(tenant tenant.Model) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
+		return func(tenant tenant.Model) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
+			return func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
+				return func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
+					return func(characterId uint32) func(oldSlot int16) {
+						return func(oldSlot int16) {
+							l.Debugf("Received request to unequip item at [%d] for character [%d].", oldSlot, characterId)
+							invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
+							invLock.Lock()
+							defer invLock.Unlock()
 
-func EquipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, source int16, destination int16) {
-	return func(characterId uint32, source int16, destination int16) {
-		var e equipable.Model
-		var err error
+							var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+							txErr := db.Transaction(func(tx *gorm.DB) error {
+								inSlotProvider := model.Flip(model.Flip(equipable.BySlotProvider)(tenant))(characterId)(tx)
+								slotUpdater := model.Flip(equipable.UpdateSlot)(tenant)(tx)
+								characterInventoryMoveProvider := inventoryItemMoveProvider(tenant)(characterId)
 
-		l.Debugf("Received request to equip item at [%d] for character [%d]. Ideally placing in [%d]", source, characterId, destination)
-		invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
+								invId, err := GetInventoryIdByType(tx, tenant)(characterId, TypeValueEquip)()
+								if err != nil {
+									l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", TypeValueEquip, characterId)
+									return err
+								}
+
+								resp, err := moveFromSlotToSlot(l)(model.Map(inSlotProvider(oldSlot), equipable.ToAsset), freeSlotProvider(tx)(invId), slotUpdater, characterInventoryMoveProvider(oldSlot))()
+								if err != nil {
+									l.WithError(err).Errorf("Unable to move overall out of its slot.")
+									return err
+								}
+								events = model.MergeSliceProvider(events, model.FixedProvider(resp))
+								return nil
+							})
+							if txErr != nil {
+								l.WithError(txErr).Errorf("Unable to complete unequiping item at [%d] for character [%d].", oldSlot, characterId)
+								return
+							}
+							err := eventProducer(EnvEventInventoryChanged)(events)
+							if err != nil {
+								l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func DeleteInventory(l logrus.FieldLogger, db *gorm.DB) func(tenant tenant.Model, characterId uint32, inventoryType Type, itemIdProvider model.Provider[[]uint32], itemDeleter func(db *gorm.DB) func(tenant tenant.Model) model.Operator[uint32]) error {
+	return func(tenant tenant.Model, characterId uint32, inventoryType Type, itemIdProvider model.Provider[[]uint32], itemDeleter func(db *gorm.DB) func(tenant tenant.Model) model.Operator[uint32]) error {
+		invLock := GetLockRegistry().GetById(characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
-
-		var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
-
-		err = db.Transaction(func(tx *gorm.DB) error {
-			e, err = equipable.GetBySlot(l, tx, tenant)(characterId, source)
+		return db.Transaction(func(tx *gorm.DB) error {
+			err := model.ForEachSlice[uint32](itemIdProvider, itemDeleter(tx)(tenant))
 			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve equipment in slot [%d].", source)
+				l.WithError(err).Errorf("Unable to delete items in inventory.")
 				return err
 			}
-
-			l.Debugf("Equipment [%d] is item [%d] for character [%d].", e.Id(), e.ItemId(), characterId)
-
-			slots, err := information.GetById(l, span, tenant)(e.ItemId())
-			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve destination slots for item [%d].", e.ItemId())
-				return err
-			} else if len(slots) <= 0 {
-				l.Errorf("Unable to retrieve destination slots for item [%d].", e.ItemId())
-				return err
-			}
-			is, err := statistics.GetById(l, span, tenant)(e.ItemId())
-			if err != nil {
-				return err
-			}
-
-			actualDestination := int16(0)
-			if is.Cash() {
-				actualDestination = slots[0].Slot() - 100
-			} else {
-				actualDestination = slots[0].Slot()
-			}
-
-			l.Debugf("Equipment [%d] to be equipped in slot [%d] for character [%d].", e.Id(), actualDestination, characterId)
-
-			temporarySlot := int16(math.MinInt16)
-
-			existingSlot := e.Slot()
-			if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, actualDestination); err == nil && equip.Id() != 0 {
-				l.Debugf("Equipment [%d] already exists in slot [%d], that item will be moved temporarily to [%d] for character [%d].", equip.Id(), actualDestination, temporarySlot, characterId)
-				_ = equipable.UpdateSlot(l, tx, tenant)(equip.Id(), temporarySlot)
-			}
-
-			err = equipable.UpdateSlot(l, tx, tenant)(e.Id(), actualDestination)
-			if err != nil {
-				return err
-			}
-			l.Debugf("Moved item [%d] from slot [%d] to [%d] for character [%d].", e.ItemId(), existingSlot, actualDestination, characterId)
-			events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, e.ItemId(), destination, source))
-
-			if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, temporarySlot); err == nil && equip.Id() != 0 {
-				err := equipable.UpdateSlot(l, tx, tenant)(equip.Id(), existingSlot)
-				if err != nil {
-					return err
-				}
-				l.Debugf("Moved item from temporary location [%d] to slot [%d] for character [%d].", temporarySlot, existingSlot, characterId)
-				events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, equip.ItemId(), existingSlot, equip.Slot()))
-			}
-
-			l.Debugf("Now verifying other inventory operations that may be necessary.")
-			ci, err := GetInventories(l, tx, span, tenant)(characterId)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to locate inventories for character [%d].", characterId)
-				return err
-			}
-			inv, err := ci.GetHolderByType(TypeValueEquip)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", TypeValueEquip, characterId)
-				return err
-			}
-
-			if e.ItemId()/10000 == 105 {
-				l.Debugf("Item is an overall, we also need to unequip the bottom.")
-				if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, int16(slot2.PositionBottom)); err == nil && equip.Id() != 0 {
-					newSlot, err := equipable.GetNextFreeSlot(l, tx, span, tenant)(inv.Id())()
-					if err != nil {
-						l.WithError(err).Errorf("Unable to get next free equipment slot")
-						return err
-					}
-
-					err = equipable.UpdateSlot(l, tx, tenant)(equip.Id(), newSlot)
-					if err != nil {
-						return err
-					}
-					l.Debugf("Moved bottom to slot [%d] for character [%d].", newSlot, characterId)
-					events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, e.ItemId(), newSlot, int16(slot2.PositionBottom)))
-				} else {
-					l.Debugf("No bottom to unequip.")
-				}
-			}
-			if destination == int16(slot2.PositionBottom) {
-				l.Debugf("Item is a bottom, need to unequip an overall if its in the top slot.")
-				if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, int16(slot2.PositionBottom)); err == nil && equip.Id() != 0 && equip.ItemId()/10000 == 105 {
-					newSlot, err := equipable.GetNextFreeSlot(l, tx, span, tenant)(inv.Id())()
-					if err != nil {
-						l.WithError(err).Errorf("Unable to get next free equipment slot")
-						return err
-					}
-
-					err = equipable.UpdateSlot(l, tx, tenant)(equip.Id(), newSlot)
-					if err != nil {
-						return err
-					}
-					l.Debugf("Moved overall to slot [%d] for character [%d].", newSlot, characterId)
-					events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, e.ItemId(), newSlot, int16(slot2.PositionOverall)))
-				}
-			}
-			return nil
+			return deleteByType(tx, tenant.Id, characterId, int8(inventoryType))
 		})
-		if err != nil {
-			l.WithError(err).Errorf("Unable to complete the equipment of item [%d] for character [%d].", e.Id(), characterId)
-			return
-		}
-
-		err = producer.ProviderImpl(l)(span)(EnvEventInventoryChanged)(events)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
-		}
 	}
 }
 
-func UnequipItemForCharacter(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, oldSlot int16) {
-	return func(characterId uint32, oldSlot int16) {
-		var e equipable.Model
-		var err error
-
-		l.Debugf("Received request to unequip item at [%d] for character [%d].", oldSlot, characterId)
-		invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
-		invLock.Lock()
-		defer invLock.Unlock()
-
-		var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
-		txErr := db.Transaction(func(tx *gorm.DB) error {
-			e, err = equipable.GetBySlot(l, tx, tenant)(characterId, oldSlot)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve equipment in slot [%d].", oldSlot)
-				return err
-			}
-
-			inv, err := GetInventoryByType(l, tx, span, tenant)(characterId, TypeValueEquip)()
-			if err != nil {
-				l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", TypeValueEquip, characterId)
-				return err
-			}
-			newSlot, err := equipable.GetNextFreeSlot(l, tx, span, tenant)(inv.Id())()
-			if err != nil {
-				l.WithError(err).Errorf("Unable to get next free equipment slot")
-				return err
-			}
-
-			err = equipable.UpdateSlot(l, tx, tenant)(e.Id(), newSlot)
-			if err != nil {
-				return err
-			}
-
-			l.Debugf("Unequipped [%d] for character [%d] and place it in slot [%d], from [%d].", e.Id(), characterId, newSlot, oldSlot)
-			events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, e.ItemId(), newSlot, oldSlot))
-			return nil
-		})
-		if txErr != nil {
-			l.WithError(txErr).Errorf("Unable to complete unequiping item at [%d] for character [%d].", oldSlot, characterId)
-			return
-		}
-		err = producer.ProviderImpl(l)(span)(EnvEventInventoryChanged)(events)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
-		}
-	}
-}
-
-func DeleteEquipableInventory(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, m EquipableModel) error {
+func DeleteEquipableInventory(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32, m EquipableModel) error {
 	return func(characterId uint32, m EquipableModel) error {
-		invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
-		invLock.Lock()
-		defer invLock.Unlock()
-
-		return db.Transaction(func(tx *gorm.DB) error {
-			for _, e := range m.Items() {
-				err := equipable.DeleteByReferenceId(l, db, span, tenant)(e.ReferenceId())
-				if err != nil {
-					l.WithError(err).Errorf("Unable to delete equipable in inventory [%d] slot [%d].", m.Id(), e.Slot())
-					return err
-				}
-			}
-			return delete(tx, tenant.Id, m.Id())
-		})
+		idp := model.SliceMap(model.FixedProvider(m.Items()), equipable.ReferenceId)
+		return DeleteInventory(l, db)(tenant, characterId, TypeValueEquip, idp, equipable.DeleteByReferenceId(l)(ctx))
 	}
 }
 
-func DeleteItemInventory(l logrus.FieldLogger, db *gorm.DB, _ opentracing.Span, tenant tenant.Model) func(characterId uint32, m ItemModel) error {
+func DeleteItemInventory(l logrus.FieldLogger, db *gorm.DB, _ context.Context, tenant tenant.Model) func(characterId uint32, m ItemModel) error {
 	return func(characterId uint32, m ItemModel) error {
-		invLock := GetLockRegistry().GetById(characterId, m.Type())
-		invLock.Lock()
-		defer invLock.Unlock()
-
-		return db.Transaction(func(tx *gorm.DB) error {
-			for _, i := range m.Items() {
-				err := item.DeleteBySlot(l, tx, tenant)(m.Id(), i.Slot())
-				if err != nil {
-					l.WithError(err).Errorf("Unable to delete item in inventory [%d] slot [%d].", m.Id(), i.Slot())
-					return err
-				}
-
-			}
-			return delete(tx, tenant.Id, m.Id())
-		})
+		idp := model.SliceMap(model.FixedProvider(m.Items()), item.Id)
+		return DeleteInventory(l, db)(tenant, characterId, m.mType, idp, item.DeleteById)
 	}
 }
 
-type SlotGetter[E any] func(inventoryId uint32, source int16) (E, error)
-
-func Move(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
+func Move(l logrus.FieldLogger, db *gorm.DB, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
 	return func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
 		if inventoryType == 1 {
-			return moveEquip(l, db, span, eventProducer)(tenant, characterId, source, destination)
+			return moveEquip(l, db, eventProducer)(tenant, characterId, source, destination)
 		} else {
-			return moveItem(l, db, span, eventProducer)(tenant, characterId, inventoryType, source, destination)
+			return moveItem(l, db, eventProducer)(tenant, characterId, inventoryType, source, destination)
 		}
 	}
 }
 
-func moveItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
+func moveItem(l logrus.FieldLogger, db *gorm.DB, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
 	return func(tenant tenant.Model, characterId uint32, inventoryType byte, source int16, destination int16) error {
+		characterInventoryMoveProvider := inventoryItemMoveProvider(tenant)(characterId)
+
 		l.Debugf("Received request to move item at [%d] to [%d] for character [%d].", source, destination, characterId)
 		invLock := GetLockRegistry().GetById(characterId, Type(inventoryType))
 		invLock.Lock()
@@ -520,40 +466,26 @@ func moveItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventPro
 
 		var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
 		txErr := db.Transaction(func(tx *gorm.DB) error {
-			inv, err := GetInventoryByType(l, tx, span, tenant)(characterId, Type(inventoryType))()
+			slotUpdater := model.Flip(item.UpdateSlot)(tenant)(tx)
+
+			invId, err := GetInventoryIdByType(tx, tenant)(characterId, Type(inventoryType))()
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 				return err
 			}
+			inSlotProvider := model.Flip(model.Flip(item.BySlotProvider)(tenant))(invId)(tx)
 
-			movingItem, err := item.GetBySlot(l, tx, tenant)(inv.Id(), source)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve item in slot [%d].", source)
-				return err
-			}
-			l.Debugf("Item [%d] is item [%d] for character [%d].", movingItem.Id(), movingItem.ItemId(), characterId)
+			l.Debugf("Attempting to move item that is currently occupying the destination to a temporary position.")
+			resp, _ := moveFromSlotToSlot(l)(model.Map(inSlotProvider(destination), item.ToAsset), temporarySlotProvider, slotUpdater, noOpInventoryItemMoveProvider)()
+			events = model.MergeSliceProvider(events, model.FixedProvider(resp))
 
-			temporarySlot := int16(math.MinInt16)
-			if otherItem, err := item.GetBySlot(l, tx, tenant)(inv.Id(), destination); err == nil && otherItem.Id() != 0 {
-				l.Debugf("Item [%d] already exists in slot [%d], that item will be moved temporarily to [%d] for character [%d].", otherItem.Id(), destination, temporarySlot, characterId)
-				_ = item.UpdateSlot(l, tx, tenant)(otherItem.Id(), temporarySlot)
-			}
+			l.Debugf("Attempting to move item that is being moved to its final destination.")
+			resp, _ = moveFromSlotToSlot(l)(model.Map(inSlotProvider(source), item.ToAsset), model.FixedProvider(destination), slotUpdater, characterInventoryMoveProvider(source))()
+			events = model.MergeSliceProvider(events, model.FixedProvider(resp))
 
-			err = item.UpdateSlot(l, tx, tenant)(movingItem.Id(), destination)
-			if err != nil {
-				return err
-			}
-			l.Debugf("Moved item [%d] from slot [%d] to [%d] for character [%d].", movingItem.ItemId(), source, destination, characterId)
-			events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, movingItem.ItemId(), destination, source))
-
-			if otherItem, err := item.GetBySlot(l, tx, tenant)(inv.Id(), temporarySlot); err == nil && otherItem.Id() != 0 {
-				err := item.UpdateSlot(l, tx, tenant)(otherItem.Id(), source)
-				if err != nil {
-					return err
-				}
-				l.Debugf("Moved item from temporary location [%d] to slot [%d] for character [%d].", temporarySlot, source, characterId)
-				//events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, otherItem.ItemId(), source, destination))
-			}
+			l.Debugf("Attempting to move item that is in the temporary position to where the item that was just equipped was.")
+			resp, _ = moveFromSlotToSlot(l)(model.Map(inSlotProvider(temporarySlot()), item.ToAsset), model.FixedProvider(source), slotUpdater, noOpInventoryItemMoveProvider)()
+			events = model.MergeSliceProvider(events, model.FixedProvider(resp))
 			return nil
 		})
 		if txErr != nil {
@@ -568,7 +500,15 @@ func moveItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventPro
 	}
 }
 
-func moveEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, source int16, destination int16) error {
+func temporarySlot() int16 {
+	return int16(math.MinInt16)
+}
+
+func temporarySlotProvider() (int16, error) {
+	return temporarySlot(), nil
+}
+
+func moveEquip(l logrus.FieldLogger, db *gorm.DB, eventProducer producer.Provider) func(tenant tenant.Model, characterId uint32, source int16, destination int16) error {
 	return func(tenant tenant.Model, characterId uint32, source int16, destination int16) error {
 		l.Debugf("Received request to move item at [%d] to [%d] for character [%d].", source, destination, characterId)
 		invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
@@ -577,34 +517,21 @@ func moveEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventPr
 
 		var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
 		txErr := db.Transaction(func(tx *gorm.DB) error {
-			e, err := equipable.GetBySlot(l, tx, tenant)(characterId, source)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve equipment in slot [%d].", source)
-				return err
-			}
-			l.Debugf("Equipment [%d] is item [%d] for character [%d].", e.Id(), e.ItemId(), characterId)
+			inSlotProvider := model.Flip(model.Flip(equipable.BySlotProvider)(tenant))(characterId)(tx)
+			slotUpdater := model.Flip(equipable.UpdateSlot)(tenant)(tx)
+			characterInventoryMoveProvider := inventoryItemMoveProvider(tenant)(characterId)
 
-			temporarySlot := int16(math.MinInt16)
-			if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, destination); err == nil && equip.Id() != 0 {
-				l.Debugf("Equipment [%d] already exists in slot [%d], that item will be moved temporarily to [%d] for character [%d].", equip.Id(), destination, temporarySlot, characterId)
-				_ = equipable.UpdateSlot(l, tx, tenant)(equip.Id(), temporarySlot)
-			}
+			l.Debugf("Attempting to move item that is currently occupying the destination to a temporary position.")
+			resp, _ := moveFromSlotToSlot(l)(model.Map(inSlotProvider(destination), equipable.ToAsset), temporarySlotProvider, slotUpdater, noOpInventoryItemMoveProvider)()
+			events = model.MergeSliceProvider(events, model.FixedProvider(resp))
 
-			err = equipable.UpdateSlot(l, tx, tenant)(e.Id(), destination)
-			if err != nil {
-				return err
-			}
-			l.Debugf("Moved item [%d] from slot [%d] to [%d] for character [%d].", e.ItemId(), source, destination, characterId)
-			events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, e.ItemId(), destination, source))
+			l.Debugf("Attempting to move item that is being moved to its final destination.")
+			resp, _ = moveFromSlotToSlot(l)(model.Map(inSlotProvider(source), equipable.ToAsset), model.FixedProvider(destination), slotUpdater, characterInventoryMoveProvider(source))()
+			events = model.MergeSliceProvider(events, model.FixedProvider(resp))
 
-			if equip, err := equipable.GetBySlot(l, tx, tenant)(characterId, temporarySlot); err == nil && equip.Id() != 0 {
-				err := equipable.UpdateSlot(l, tx, tenant)(equip.Id(), source)
-				if err != nil {
-					return err
-				}
-				l.Debugf("Moved item from temporary location [%d] to slot [%d] for character [%d].", temporarySlot, source, characterId)
-				//events = model.MergeSliceProvider(events, inventoryItemMoveProvider(tenant, characterId, equip.ItemId(), source, destination))
-			}
+			l.Debugf("Attempting to move item that is in the temporary position to where the item that was just equipped was.")
+			resp, _ = moveFromSlotToSlot(l)(model.Map(inSlotProvider(temporarySlot()), equipable.ToAsset), model.FixedProvider(source), slotUpdater, noOpInventoryItemMoveProvider)()
+			events = model.MergeSliceProvider(events, model.FixedProvider(resp))
 			return nil
 		})
 		if txErr != nil {
@@ -619,17 +546,17 @@ func moveEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, eventPr
 	}
 }
 
-func Drop(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
+func Drop(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
 	return func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
 		if inventoryType == 1 {
-			return dropEquip(l, db, span, tenant)(characterId, source, quantity)
+			return dropEquip(l, db, ctx, tenant)(characterId, source, quantity)
 		} else {
-			return dropItem(l, db, span, tenant)(characterId, inventoryType, source, quantity)
+			return dropItem(l, db, ctx, tenant)(characterId, inventoryType, source, quantity)
 		}
 	}
 }
 
-func dropItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
+func dropItem(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
 	return func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
 		l.Debugf("Received request to drop item at [%d] for character [%d].", source, characterId)
 		invLock := GetLockRegistry().GetById(characterId, Type(inventoryType))
@@ -638,13 +565,13 @@ func dropItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 
 		var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
 		txErr := db.Transaction(func(tx *gorm.DB) error {
-			inv, err := GetInventoryByType(l, tx, span, tenant)(characterId, Type(inventoryType))()
+			invId, err := GetInventoryIdByType(tx, tenant)(characterId, Type(inventoryType))()
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 				return err
 			}
 
-			i, err := item.GetBySlot(l, tx, tenant)(inv.Id(), source)
+			i, err := item.GetBySlot(tx, tenant)(invId, source)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve item in slot [%d].", source)
 				return err
@@ -653,7 +580,7 @@ func dropItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 			initialQuantity := i.Quantity()
 
 			if initialQuantity <= uint32(quantity) {
-				err = item.DeleteBySlot(l, tx, tenant)(inv.Id(), source)
+				err = item.DeleteById(tx)(tenant)(i.Id())
 				if err != nil {
 					l.WithError(err).Errorf("Unable to drop item in slot [%d].", source)
 					return err
@@ -663,19 +590,19 @@ func dropItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 			}
 
 			newQuantity := initialQuantity - uint32(quantity)
-			err = item.UpdateQuantity(l, tx, tenant)(i.Id(), newQuantity)
+			err = item.UpdateQuantity(tx, tenant)(i.Id(), newQuantity)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to drop [%d] item in slot [%d].", quantity, source)
 				return err
 			}
-			events = model.MergeSliceProvider(events, inventoryItemUpdateProvider(tenant, characterId, i.ItemId(), newQuantity, i.Slot()))
+			events = model.MergeSliceProvider(events, inventoryItemUpdateProvider(tenant)(characterId)(i.ItemId())(newQuantity, i.Slot()))
 			return nil
 		})
 		if txErr != nil {
 			l.WithError(txErr).Errorf("Unable to complete dropping item for character [%d].", characterId)
 			return txErr
 		}
-		err := producer.ProviderImpl(l)(span)(EnvEventInventoryChanged)(events)
+		err := producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(events)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
 		}
@@ -683,7 +610,7 @@ func dropItem(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant t
 	}
 }
 
-func dropEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant tenant.Model) func(characterId uint32, source int16, quantity int16) error {
+func dropEquip(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(characterId uint32, source int16, quantity int16) error {
 	return func(characterId uint32, source int16, quantity int16) error {
 		l.Debugf("Received request to drop item at [%d] for character [%d].", source, characterId)
 		invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
@@ -692,7 +619,7 @@ func dropEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant 
 
 		var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
 		txErr := db.Transaction(func(tx *gorm.DB) error {
-			e, err := equipable.GetBySlot(l, tx, tenant)(characterId, source)
+			e, err := equipable.GetBySlot(tx, tenant)(characterId, source)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve equipment in slot [%d].", source)
 				return err
@@ -709,7 +636,7 @@ func dropEquip(l logrus.FieldLogger, db *gorm.DB, span opentracing.Span, tenant 
 			l.WithError(txErr).Errorf("Unable to complete dropping item for character [%d].", characterId)
 			return txErr
 		}
-		err := producer.ProviderImpl(l)(span)(EnvEventInventoryChanged)(events)
+		err := producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(events)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
 		}

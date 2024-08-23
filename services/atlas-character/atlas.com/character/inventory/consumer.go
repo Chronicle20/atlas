@@ -1,13 +1,16 @@
 package inventory
 
 import (
+	"atlas-character/equipable"
+	"atlas-character/equipment"
 	consumer2 "atlas-character/kafka/consumer"
 	"atlas-character/kafka/producer"
+	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
-	"github.com/opentracing/opentracing-go"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -31,9 +34,12 @@ func EquipItemRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handl
 }
 
 func handleEquipItemCommand(db *gorm.DB) message.Handler[equipItemCommand] {
-	return func(l logrus.FieldLogger, span opentracing.Span, command equipItemCommand) {
+	return func(l logrus.FieldLogger, ctx context.Context, command equipItemCommand) {
 		l.Debugf("Received equip item command. characterId [%d] source [%d] destination [%d]", command.CharacterId, command.Source, command.Destination)
-		EquipItemForCharacter(l, db, span, command.Tenant)(command.CharacterId, command.Source, command.Destination)
+		fsp := model.Flip(model.Flip(equipable.GetNextFreeSlot(l))(ctx))(command.Tenant)
+		ep := producer.ProviderImpl(l)(ctx)
+		dp := equipment.GetEquipmentDestination(l)(ctx)(command.Tenant)
+		EquipItemForCharacter(l)(db)(command.Tenant)(fsp)(ep)(command.CharacterId)(command.Source)(dp)
 	}
 }
 
@@ -49,9 +55,11 @@ func UnequipItemRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Han
 }
 
 func handleUnequipItemCommand(db *gorm.DB) message.Handler[unequipItemCommand] {
-	return func(l logrus.FieldLogger, span opentracing.Span, command unequipItemCommand) {
+	return func(l logrus.FieldLogger, ctx context.Context, command unequipItemCommand) {
 		l.Debugf("Received unequip item command. characterId [%d] source [%d].", command.CharacterId, command.Source)
-		UnequipItemForCharacter(l, db, span, command.Tenant)(command.CharacterId, command.Source)
+		fsp := model.Flip(model.Flip(equipable.GetNextFreeSlot(l))(ctx))(command.Tenant)
+		ep := producer.ProviderImpl(l)(ctx)
+		UnequipItemForCharacter(l)(db)(command.Tenant)(fsp)(ep)(command.CharacterId)(command.Source)
 	}
 }
 
@@ -67,8 +75,8 @@ func MoveItemRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handle
 }
 
 func handleMoveItemCommand(db *gorm.DB) message.Handler[moveItemCommand] {
-	return func(l logrus.FieldLogger, span opentracing.Span, command moveItemCommand) {
-		_ = Move(l, db, span, producer.ProviderImpl(l)(span))(command.Tenant, command.CharacterId, command.InventoryType, command.Source, command.Destination)
+	return func(l logrus.FieldLogger, ctx context.Context, command moveItemCommand) {
+		_ = Move(l, db, producer.ProviderImpl(l)(ctx))(command.Tenant, command.CharacterId, command.InventoryType, command.Source, command.Destination)
 	}
 }
 
@@ -84,7 +92,7 @@ func DropItemRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handle
 }
 
 func handleDropItemCommand(db *gorm.DB) message.Handler[dropItemCommand] {
-	return func(l logrus.FieldLogger, span opentracing.Span, command dropItemCommand) {
-		_ = Drop(l, db, span, command.Tenant)(command.CharacterId, command.InventoryType, command.Source, command.Quantity)
+	return func(l logrus.FieldLogger, ctx context.Context, command dropItemCommand) {
+		_ = Drop(l, db, ctx, command.Tenant)(command.CharacterId, command.InventoryType, command.Source, command.Quantity)
 	}
 }

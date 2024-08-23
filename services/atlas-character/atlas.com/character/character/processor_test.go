@@ -7,11 +7,10 @@ import (
 	"atlas-character/inventory/item"
 	"atlas-character/kafka/producer"
 	"atlas-character/tenant"
+	"context"
 	producer2 "github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
-	"github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -51,10 +50,6 @@ func testLogger() logrus.FieldLogger {
 	return l
 }
 
-func testSpan() opentracing.Span {
-	return mocktracer.New().StartSpan("test")
-}
-
 func testProducer(output *[]kafka.Message) producer.Provider {
 	return func(token string) producer2.MessageProducer {
 		return func(provider model.Provider[[]kafka.Message]) error {
@@ -75,7 +70,7 @@ func TestCreateSunny(t *testing.T) {
 
 	var outputMessages = make([]kafka.Message, 0)
 
-	c, err := character.Create(testLogger(), testDatabase(t), testSpan(), testProducer(&outputMessages))(testTenant(), input)
+	c, err := character.Create(testLogger(), testDatabase(t), context.Background(), testProducer(&outputMessages))(testTenant(), input)
 	if err != nil {
 		t.Fatalf("Failed to create model: %v", err)
 	}

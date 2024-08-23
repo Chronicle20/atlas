@@ -1,15 +1,12 @@
 package slottable
 
 import (
+	"atlas-character/asset"
 	"github.com/Chronicle20/atlas-model/model"
 	"sort"
 )
 
-type Slottable interface {
-	Slot() int16
-}
-
-func MinFreeSlot(items []Slottable) int16 {
+func MinFreeSlot(items []asset.Slottable) int16 {
 	slot := int16(1)
 	i := 0
 
@@ -27,7 +24,7 @@ func MinFreeSlot(items []Slottable) int16 {
 	}
 }
 
-func GetNextFreeSlot(provider model.Provider[[]Slottable]) (int16, error) {
+func GetNextFreeSlot(provider model.Provider[[]asset.Slottable]) (int16, error) {
 	es, err := provider()
 	if err != nil {
 		return 1, err

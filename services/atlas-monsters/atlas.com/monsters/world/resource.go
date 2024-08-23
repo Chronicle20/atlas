@@ -56,7 +56,7 @@ func handleDeleteMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					err := monster.DestroyInMap(d.Logger(), d.Span(), c.Tenant())(worldId, channelId, mapId)
+					err := monster.DestroyInMap(d.Logger(), d.Context(), c.Tenant())(worldId, channelId, mapId)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to remove monsters in map.")
 						w.WriteHeader(http.StatusInternalServerError)
@@ -74,7 +74,7 @@ func handleCreateMonsterInMap(d *rest.HandlerDependency, c *rest.HandlerContext,
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					m, err := monster.CreateMonster(d.Logger(), d.Span(), c.Tenant())(worldId, channelId, mapId, input)
+					m, err := monster.CreateMonster(d.Logger(), d.Context(), c.Tenant())(worldId, channelId, mapId, input)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to create monsters.")
 						w.WriteHeader(http.StatusBadRequest)

@@ -7,14 +7,14 @@ import (
 	"atlas-channel/portal"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const MapChangeHandle = "MapChangeHandle"
 
-func MapChangeHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	channelChangeFunc := session.Announce(l)(wp)(writer.ChannelChange)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		cs := r.Available() == 0
@@ -31,17 +31,17 @@ func MapChangeHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.
 
 		if cs {
 			l.Debugf("Character [%d] returning from cash shop.", s.CharacterId())
-			c, err := channel.GetById(l, span, s.Tenant())(s.WorldId(), s.ChannelId())
+			c, err := channel.GetById(l, ctx, s.Tenant())(s.WorldId(), s.ChannelId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve channel information being returned in to.")
 				// TODO send server notice.
 				return
 			}
 
-			resp, err := as.UpdateState(l, span, s.Tenant())(s.SessionId(), s.AccountId(), 2)
+			resp, err := as.UpdateState(l, ctx, s.Tenant())(s.SessionId(), s.AccountId(), 2)
 			if err != nil || resp.Code != "OK" {
 				l.WithError(err).Errorf("Unable to update session for character [%d] attempting to switch to channel.", s.CharacterId())
-				session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
+				session.Destroy(l, ctx, session.GetRegistry(), s.Tenant().Id)(s)
 				return
 			}
 
@@ -70,6 +70,6 @@ func MapChangeHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.
 
 		l.Debugf("Character [%d] attempting to enter portal [%s] at [%d,%d] heading to [%d]. FieldKey [%d].", s.CharacterId(), portalName, x, y, targetId, fieldKey)
 		l.Debugf("Unused [%d], Premium [%d], Chase [%t], TargetX [%d], TargetY [%d]", unused, premium, chase, targetX, targetY)
-		_ = portal.Enter(l, span, producer.ProviderImpl(l)(span))(s.Tenant(), s.WorldId(), s.ChannelId(), s.MapId(), portalName, s.CharacterId())
+		_ = portal.Enter(l, ctx, producer.ProviderImpl(l)(ctx))(s.Tenant(), s.WorldId(), s.ChannelId(), s.MapId(), portalName, s.CharacterId())
 	}
 }

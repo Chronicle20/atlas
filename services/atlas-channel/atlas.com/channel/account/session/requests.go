@@ -3,9 +3,9 @@ package session
 import (
 	"atlas-channel/rest"
 	"atlas-channel/tenant"
+	"context"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"os"
 )
@@ -18,7 +18,7 @@ func getBaseRequest() string {
 	return os.Getenv("ACCOUNT_SERVICE_URL")
 }
 
-func updateState(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32, state int) (Model, error) {
+func updateState(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32, state int) (Model, error) {
 	return func(sessionId uuid.UUID, accountId uint32, state int) (Model, error) {
 		i := InputRestModel{
 			Id:        0,
@@ -26,7 +26,7 @@ func updateState(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Mode
 			SessionId: sessionId,
 			State:     state,
 		}
-		resp, err := rest.MakePatchRequest[OutputRestModel](l, span, tenant)(fmt.Sprintf(getBaseRequest()+LoginsResource, accountId), i)(l)
+		resp, err := rest.MakePatchRequest[OutputRestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+LoginsResource, accountId), i)(l)
 		if err != nil {
 			return Model{}, err
 		}

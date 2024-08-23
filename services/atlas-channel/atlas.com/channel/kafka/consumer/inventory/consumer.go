@@ -7,12 +7,12 @@ import (
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"math"
 )
@@ -49,7 +49,7 @@ func ChangeEventMoveRegister(sc server.Model, wp writer.Producer) func(l logrus.
 }
 
 func handleInventoryAddEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemAddBody]] {
-	return func(l logrus.FieldLogger, span opentracing.Span, event inventoryChangedEvent[inventoryChangedItemAddBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemAddBody]) {
 		if !sc.Tenant().Is(event.Tenant) {
 			return
 		}
@@ -58,31 +58,31 @@ func handleInventoryAddEvent(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, addToInventory(l, span, wp)(event))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, addToInventory(l, ctx, wp)(event))
 
 	}
 }
 
-func addToInventory(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
+func addToInventory(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
 	inventoryChangeFunc := session.Announce(l)(wp)(writer.CharacterInventoryChange)
 	return func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
 		return func(s session.Model) error {
 			var bp writer.BodyProducer
 			inventoryType := byte(math.Floor(float64(event.Body.ItemId) / 1000000))
 			if inventoryType == 1 {
-				e, err := character.GetEquipableInSlot(l, span, s.Tenant())(s.CharacterId(), event.Slot)()
+				e, err := character.GetEquipableInSlot(l, ctx, s.Tenant())(s.CharacterId(), event.Slot)()
 				if err != nil {
 					return err
 				}
 				bp = writer.CharacterInventoryAddEquipableBody(s.Tenant())(inventoryType, event.Slot, e, false)
 			} else if inventoryType == 2 || inventoryType == 3 || inventoryType == 4 {
-				i, err := character.GetItemInSlot(l, span, s.Tenant())(s.CharacterId(), inventoryType, event.Slot)()
+				i, err := character.GetItemInSlot(l, ctx, s.Tenant())(s.CharacterId(), inventoryType, event.Slot)()
 				if err != nil {
 					return err
 				}
 				bp = writer.CharacterInventoryAddItemBody(s.Tenant())(inventoryType, event.Slot, i, false)
 			} else if inventoryType == 5 {
-				i, err := character.GetItemInSlot(l, span, s.Tenant())(s.CharacterId(), inventoryType, event.Slot)()
+				i, err := character.GetItemInSlot(l, ctx, s.Tenant())(s.CharacterId(), inventoryType, event.Slot)()
 				if err != nil {
 					return err
 				}
@@ -98,7 +98,7 @@ func addToInventory(l logrus.FieldLogger, span opentracing.Span, wp writer.Produ
 }
 
 func handleInventoryUpdateEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemUpdateBody]] {
-	return func(l logrus.FieldLogger, span opentracing.Span, event inventoryChangedEvent[inventoryChangedItemUpdateBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemUpdateBody]) {
 		if !sc.Tenant().Is(event.Tenant) {
 			return
 		}
@@ -107,11 +107,11 @@ func handleInventoryUpdateEvent(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, updateInInventory(l, span, wp)(event))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, updateInInventory(l, ctx, wp)(event))
 	}
 }
 
-func updateInInventory(l logrus.FieldLogger, _ opentracing.Span, wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemUpdateBody]) model.Operator[session.Model] {
+func updateInInventory(l logrus.FieldLogger, _ context.Context, wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemUpdateBody]) model.Operator[session.Model] {
 	inventoryChangeFunc := session.Announce(l)(wp)(writer.CharacterInventoryChange)
 	return func(event inventoryChangedEvent[inventoryChangedItemUpdateBody]) model.Operator[session.Model] {
 		return func(s session.Model) error {
@@ -126,7 +126,7 @@ func updateInInventory(l logrus.FieldLogger, _ opentracing.Span, wp writer.Produ
 }
 
 func handleInventoryMoveEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemMoveBody]] {
-	return func(l logrus.FieldLogger, span opentracing.Span, event inventoryChangedEvent[inventoryChangedItemMoveBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemMoveBody]) {
 		if !sc.Tenant().Is(event.Tenant) {
 			return
 		}
@@ -135,11 +135,11 @@ func handleInventoryMoveEvent(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, moveInInventory(l, span, wp)(event))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, moveInInventory(l, ctx, wp)(event))
 	}
 }
 
-func moveInInventory(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
+func moveInInventory(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 	inventoryChangeFunc := session.Announce(l)(wp)(writer.CharacterInventoryChange)
 	return func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 		return func(s session.Model) error {
@@ -153,12 +153,12 @@ func moveInInventory(l logrus.FieldLogger, span opentracing.Span, wp writer.Prod
 				errChannels <- err
 			}()
 			go func() {
-				c, err := character.GetByIdWithInventory(l, span, s.Tenant())(s.CharacterId())
+				c, err := character.GetByIdWithInventory(l, ctx, s.Tenant())(s.CharacterId())
 				if err != nil {
 					l.WithError(err).Errorf("Unable to issue appearance update for character [%d] to others in map.", s.CharacterId())
 					errChannels <- err
 				}
-				errChannels <- _map.ForSessionsInMap(l, span, s.Tenant())(s.WorldId(), s.ChannelId(), s.MapId(), updateAppearance(l, wp)(c))
+				errChannels <- _map.ForSessionsInMap(l, ctx, s.Tenant())(s.WorldId(), s.ChannelId(), s.MapId(), updateAppearance(l, wp)(c))
 			}()
 
 			var err error
@@ -194,7 +194,7 @@ func ChangeEventRemoveRegister(sc server.Model, wp writer.Producer) func(l logru
 }
 
 func handleInventoryRemoveEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemRemoveBody]] {
-	return func(l logrus.FieldLogger, span opentracing.Span, event inventoryChangedEvent[inventoryChangedItemRemoveBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemRemoveBody]) {
 		if !sc.Tenant().Is(event.Tenant) {
 			return
 		}
@@ -203,11 +203,11 @@ func handleInventoryRemoveEvent(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, removeFromInventory(l, span, wp)(event))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, removeFromInventory(l, ctx, wp)(event))
 	}
 }
 
-func removeFromInventory(l logrus.FieldLogger, _ opentracing.Span, wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemRemoveBody]) model.Operator[session.Model] {
+func removeFromInventory(l logrus.FieldLogger, _ context.Context, wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemRemoveBody]) model.Operator[session.Model] {
 	inventoryChangeFunc := session.Announce(l)(wp)(writer.CharacterInventoryChange)
 	return func(event inventoryChangedEvent[inventoryChangedItemRemoveBody]) model.Operator[session.Model] {
 		return func(s session.Model) error {

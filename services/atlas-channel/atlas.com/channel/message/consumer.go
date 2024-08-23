@@ -7,12 +7,12 @@ import (
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,18 +34,18 @@ func GeneralChatEventRegister(sc server.Model, wp writer.Producer) func(l logrus
 }
 
 func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[generalChatEvent] {
-	return func(l logrus.FieldLogger, span opentracing.Span, event generalChatEvent) {
+	return func(l logrus.FieldLogger, ctx context.Context, event generalChatEvent) {
 		if !sc.Is(event.Tenant, event.WorldId, event.ChannelId) {
 			return
 		}
 
-		c, err := character.GetById(l, span, event.Tenant)(event.CharacterId)
+		c, err := character.GetById(l, ctx, event.Tenant)(event.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] chatting.", event.CharacterId)
 			return
 		}
 
-		_ = _map.ForSessionsInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, showGeneralChatForSession(l, wp)(event, c.Gm()))
+		_ = _map.ForSessionsInMap(l, ctx, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, showGeneralChatForSession(l, wp)(event, c.Gm()))
 	}
 }
 

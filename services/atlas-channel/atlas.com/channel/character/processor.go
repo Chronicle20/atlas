@@ -7,27 +7,27 @@ import (
 	"atlas-channel/kafka/producer"
 	"atlas-channel/socket/model"
 	"atlas-channel/tenant"
+	"context"
 	"errors"
 	model2 "github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
-func GetById(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32) (Model, error) {
+func GetById(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
-		return requests.Provider[RestModel, Model](l)(requestById(l, span, tenant)(characterId), Extract)()
+		return requests.Provider[RestModel, Model](l)(requestById(ctx, tenant)(characterId), Extract)()
 	}
 }
 
-func GetByIdWithInventory(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32) (Model, error) {
+func GetByIdWithInventory(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
-		return requests.Provider[RestModel, Model](l)(requestByIdWithInventory(l, span, tenant)(characterId), Extract)()
+		return requests.Provider[RestModel, Model](l)(requestByIdWithInventory(ctx, tenant)(characterId), Extract)()
 	}
 }
 
-func Move(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, characterId uint32, mm model.Movement) {
-	moveCharacterCommandFunc := producer.ProviderImpl(l)(span)(EnvCommandTopicMovement)
+func Move(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, characterId uint32, mm model.Movement) {
+	moveCharacterCommandFunc := producer.ProviderImpl(l)(ctx)(EnvCommandTopicMovement)
 	return func(worldId byte, channelId byte, mapId uint32, characterId uint32, mm model.Movement) {
 		err := moveCharacterCommandFunc(move(tenant, worldId, channelId, mapId, characterId, mm))
 		if err != nil {
@@ -36,10 +36,10 @@ func Move(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func
 	}
 }
 
-func GetEquipableInSlot(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, slot int16) model2.Provider[equipable.Model] {
+func GetEquipableInSlot(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32, slot int16) model2.Provider[equipable.Model] {
 	return func(characterId uint32, slot int16) model2.Provider[equipable.Model] {
 		// TODO this needs to be more performant
-		c, err := GetByIdWithInventory(l, span, tenant)(characterId)
+		c, err := GetByIdWithInventory(l, ctx, tenant)(characterId)
 		if err != nil {
 			return model2.ErrorProvider[equipable.Model](err)
 		}
@@ -52,10 +52,10 @@ func GetEquipableInSlot(l logrus.FieldLogger, span opentracing.Span, tenant tena
 	}
 }
 
-func GetItemInSlot(l logrus.FieldLogger, span opentracing.Span, tenant tenant.Model) func(characterId uint32, inventoryType byte, slot int16) model2.Provider[item.Model] {
+func GetItemInSlot(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32, inventoryType byte, slot int16) model2.Provider[item.Model] {
 	return func(characterId uint32, inventoryType byte, slot int16) model2.Provider[item.Model] {
 		// TODO this needs to be more performant
-		c, err := GetByIdWithInventory(l, span, tenant)(characterId)
+		c, err := GetByIdWithInventory(l, ctx, tenant)(characterId)
 		if err != nil {
 			return model2.ErrorProvider[item.Model](err)
 		}

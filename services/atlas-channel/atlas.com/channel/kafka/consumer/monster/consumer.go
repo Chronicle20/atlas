@@ -8,12 +8,12 @@ import (
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,7 +31,7 @@ func StatusEventCreatedRegister(sc server.Model, wp writer.Producer) func(l logr
 }
 
 func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventCreatedBody]] {
-	return func(l logrus.FieldLogger, span opentracing.Span, event statusEvent[statusEventCreatedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventCreatedBody]) {
 		if !sc.Is(event.Tenant, event.WorldId, event.ChannelId) {
 			return
 		}
@@ -40,13 +40,13 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		m, err := monster.GetById(l, span, event.Tenant)(event.UniqueId)
+		m, err := monster.GetById(l, ctx, event.Tenant)(event.UniqueId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being spawned.", event.UniqueId)
 			return
 		}
 
-		_map.ForSessionsInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, spawnForSession(l, wp)(m))
+		_map.ForSessionsInMap(l, ctx, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, spawnForSession(l, wp)(m))
 	}
 }
 
@@ -72,7 +72,7 @@ func StatusEventDestroyedRegister(sc server.Model, wp writer.Producer) func(l lo
 }
 
 func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventDestroyedBody]] {
-	return func(l logrus.FieldLogger, span opentracing.Span, event statusEvent[statusEventDestroyedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventDestroyedBody]) {
 		if !sc.Is(event.Tenant, event.WorldId, event.ChannelId) {
 			return
 		}
@@ -81,7 +81,7 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		_map.ForSessionsInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, destroyForSession(l, wp)(event.UniqueId))
+		_map.ForSessionsInMap(l, ctx, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, destroyForSession(l, wp)(event.UniqueId))
 	}
 }
 
@@ -106,7 +106,7 @@ func StatusEventKilledRegister(sc server.Model, wp writer.Producer) func(l logru
 }
 
 func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventKilledBody]] {
-	return func(l logrus.FieldLogger, span opentracing.Span, event statusEvent[statusEventKilledBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventKilledBody]) {
 		if !sc.Is(event.Tenant, event.WorldId, event.ChannelId) {
 			return
 		}
@@ -115,7 +115,7 @@ func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		_map.ForSessionsInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, killForSession(l, wp)(event.UniqueId))
+		_map.ForSessionsInMap(l, ctx, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, killForSession(l, wp)(event.UniqueId))
 	}
 }
 
@@ -140,7 +140,7 @@ func StatusEventStartControlRegister(sc server.Model, wp writer.Producer) func(l
 }
 
 func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventStartControlBody]] {
-	return func(l logrus.FieldLogger, span opentracing.Span, event statusEvent[statusEventStartControlBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventStartControlBody]) {
 		if !sc.Is(event.Tenant, event.WorldId, event.ChannelId) {
 			return
 		}
@@ -149,7 +149,7 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		m, err := monster.GetById(l, span, event.Tenant)(event.UniqueId)
+		m, err := monster.GetById(l, ctx, event.Tenant)(event.UniqueId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being controlled.", event.UniqueId)
 			return
@@ -181,7 +181,7 @@ func StatusEventStopControlRegister(sc server.Model, wp writer.Producer) func(l 
 }
 
 func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventStopControlBody]] {
-	return func(l logrus.FieldLogger, span opentracing.Span, event statusEvent[statusEventStopControlBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventStopControlBody]) {
 		if !sc.Is(event.Tenant, event.WorldId, event.ChannelId) {
 			return
 		}
@@ -190,7 +190,7 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		m, err := monster.GetById(l, span, event.Tenant)(event.UniqueId)
+		m, err := monster.GetById(l, ctx, event.Tenant)(event.UniqueId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being controlled.", event.UniqueId)
 			return
@@ -228,18 +228,18 @@ func MovementEventRegister(sc server.Model, wp writer.Producer) func(l logrus.Fi
 }
 
 func handleMovementEvent(sc server.Model, wp writer.Producer) message.Handler[movementEvent] {
-	return func(l logrus.FieldLogger, span opentracing.Span, event movementEvent) {
+	return func(l logrus.FieldLogger, ctx context.Context, event movementEvent) {
 		if !sc.Is(event.Tenant, event.WorldId, event.ChannelId) {
 			return
 		}
 
-		m, err := monster.GetById(l, span, event.Tenant)(event.UniqueId)
+		m, err := monster.GetById(l, ctx, event.Tenant)(event.UniqueId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve the monster [%d] moving.", event.UniqueId)
 			return
 		}
 
-		_map.ForOtherSessionsInMap(l, span, event.Tenant)(event.WorldId, event.ChannelId, m.MapId(), event.ObserverId, showMovementForSession(l, wp)(event))
+		_map.ForOtherSessionsInMap(l, ctx, event.Tenant)(event.WorldId, event.ChannelId, m.MapId(), event.ObserverId, showMovementForSession(l, wp)(event))
 	}
 }
 

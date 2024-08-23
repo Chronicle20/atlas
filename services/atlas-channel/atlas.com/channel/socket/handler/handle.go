@@ -4,18 +4,18 @@ import (
 	"atlas-channel/account"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
-	"atlas-channel/tracing"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/google/uuid"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 )
 
-type MessageValidator func(l logrus.FieldLogger, span opentracing.Span) func(s session.Model) bool
+type MessageValidator func(l logrus.FieldLogger, ctx context.Context) func(s session.Model) bool
 
 const NoOpValidator = "NoOpValidator"
 
-func NoOpValidatorFunc(_ logrus.FieldLogger, _ opentracing.Span) func(_ session.Model) bool {
+func NoOpValidatorFunc(_ logrus.FieldLogger, _ context.Context) func(_ session.Model) bool {
 	return func(_ session.Model) bool {
 		return true
 	}
@@ -23,22 +23,22 @@ func NoOpValidatorFunc(_ logrus.FieldLogger, _ opentracing.Span) func(_ session.
 
 const LoggedInValidator = "LoggedInValidator"
 
-func LoggedInValidatorFunc(l logrus.FieldLogger, span opentracing.Span) func(s session.Model) bool {
+func LoggedInValidatorFunc(l logrus.FieldLogger, ctx context.Context) func(s session.Model) bool {
 	return func(s session.Model) bool {
-		v := account.IsLoggedIn(l, span, s.Tenant())(s.AccountId())
+		v := account.IsLoggedIn(l, ctx, s.Tenant())(s.AccountId())
 		if !v {
 			l.Errorf("Attempting to process a request when the account [%d] is not logged in. Terminating session.", s.AccountId())
-			session.Destroy(l, span, session.GetRegistry(), s.Tenant().Id)(s)
+			session.Destroy(l, ctx, session.GetRegistry(), s.Tenant().Id)(s)
 		}
 		return v
 	}
 }
 
-type MessageHandler func(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{})
+type MessageHandler func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{})
 
 const NoOpHandler = "NoOpHandler"
 
-func NoOpHandlerFunc(_ logrus.FieldLogger, _ opentracing.Span, _ writer.Producer) func(_ session.Model, _ *request.Reader, _ map[string]interface{}) {
+func NoOpHandlerFunc(_ logrus.FieldLogger, _ context.Context, _ writer.Producer) func(_ session.Model, _ *request.Reader, _ map[string]interface{}) {
 	return func(_ session.Model, _ *request.Reader, _ map[string]interface{}) {
 	}
 }
@@ -50,7 +50,10 @@ func AdaptHandler(l logrus.FieldLogger) func(tenantId uuid.UUID, wp writer.Produ
 		return func(name string, v MessageValidator, h MessageHandler, readerOptions map[string]interface{}) request.Handler {
 			return func(sessionId uuid.UUID, r request.Reader) {
 				fl := l.WithField("session", sessionId.String())
-				sl, span := tracing.StartSpan(fl, name)
+
+				ctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), "socket_handler")
+				sl := fl.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
+				defer span.End()
 
 				s, ok := session.GetRegistry().Get(tenantId, sessionId)
 				if !ok {
@@ -58,11 +61,10 @@ func AdaptHandler(l logrus.FieldLogger) func(tenantId uuid.UUID, wp writer.Produ
 					return
 				}
 
-				if v(sl, span)(s) {
-					h(sl, span, wp)(s, &r, readerOptions)
+				if v(sl, ctx)(s) {
+					h(sl, ctx, wp)(s, &r, readerOptions)
 					s = session.UpdateLastRequest()(tenantId, s.SessionId())
 				}
-				span.Finish()
 			}
 		}
 	}

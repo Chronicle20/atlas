@@ -6,20 +6,20 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const MonsterMovementHandle = "MonsterMovementHandle"
 
-func MonsterMovementHandleFunc(l logrus.FieldLogger, span opentracing.Span, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func MonsterMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	moveMonsterAckFunc := session.Announce(l)(wp)(writer.MoveMonsterAck)
-	moveMonsterCommandFunc := producer.ProviderImpl(l)(span)(monster.EnvCommandMovement)
+	moveMonsterCommandFunc := producer.ProviderImpl(l)(ctx)(monster.EnvCommandMovement)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		uniqueId := r.ReadUint32()
 
-		m, err := monster.GetById(l, span, s.Tenant())(uniqueId)
+		m, err := monster.GetById(l, ctx, s.Tenant())(uniqueId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate monster [%d] moving.", uniqueId)
 			return

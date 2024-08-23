@@ -5,14 +5,14 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
+	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 )
 
 const CharacterMoveHandle = "CharacterMoveHandle"
 
-func CharacterMoveHandleFunc(l logrus.FieldLogger, span opentracing.Span, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func CharacterMoveHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		var dr0 uint32
 		var dr1 uint32
@@ -45,6 +45,6 @@ func CharacterMoveHandleFunc(l logrus.FieldLogger, span opentracing.Span, _ writ
 
 		mp := model.Movement{}
 		mp.Decode(l, s.Tenant(), readerOptions)(r)
-		character.Move(l, span, s.Tenant())(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), mp)
+		character.Move(l, ctx, s.Tenant())(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), mp)
 	}
 }

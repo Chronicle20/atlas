@@ -12,7 +12,7 @@ func TestSerialization(t *testing.T) {
 	majorVersion := uint16(83)
 	minorVersion := uint16(1)
 
-	tenant, err := Create(id, region, majorVersion, minorVersion)
+	tenant, err := Register(id, region, majorVersion, minorVersion)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

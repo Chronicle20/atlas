@@ -22,13 +22,22 @@ func Creator(id uuid.UUID, region string, majorVersion uint16, minorVersion uint
 		majorVersion: majorVersion,
 		minorVersion: minorVersion,
 	}
-	getRegistry().Add(t)
 	return model.FixedProvider(t)
 }
 
 //goland:noinspection GoUnusedExportedFunction
 func Create(id uuid.UUID, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
 	return Creator(id, region, majorVersion, minorVersion)()
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func Register(id uuid.UUID, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
+	t, err := Create(id, region, majorVersion, minorVersion)
+	if err != nil {
+		return Model{}, err
+	}
+	getRegistry().Add(t)
+	return t, nil
 }
 
 //goland:noinspection GoUnusedExportedFunction

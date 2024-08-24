@@ -1,8 +1,17 @@
 package tenant
 
 import (
+	"context"
+	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
+)
+
+const (
+	ID           = "TENANT_ID"
+	Region       = "REGION"
+	MajorVersion = "MAJOR_VERSION"
+	MinorVersion = "MINOR_VERSION"
 )
 
 //goland:noinspection GoUnusedExportedFunction
@@ -30,4 +39,39 @@ func AllProvider() model.Provider[[]Model] {
 //goland:noinspection GoUnusedExportedFunction
 func ForAll(operator model.Operator[Model]) error {
 	return model.ForEachSlice(AllProvider(), operator)
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func FromContext(ctx context.Context) model.Provider[Model] {
+	var ok bool
+	var id uuid.UUID
+	var region string
+	var majorVersion uint16
+	var minorVersion uint16
+
+	if id, ok = ctx.Value(ID).(uuid.UUID); !ok {
+		return model.ErrorProvider[Model](errors.New("unable to retrieve id from context"))
+	}
+	if region, ok = ctx.Value(Region).(string); !ok {
+		return model.ErrorProvider[Model](errors.New("unable to retrieve region from context"))
+	}
+	if majorVersion, ok = ctx.Value(MajorVersion).(uint16); !ok {
+		return model.ErrorProvider[Model](errors.New("unable to retrieve majorVersion from context"))
+	}
+	if minorVersion, ok = ctx.Value(MinorVersion).(uint16); !ok {
+		return model.ErrorProvider[Model](errors.New("unable to retrieve minorVersion from context"))
+	}
+	return func() (Model, error) {
+		return Model{id: id, region: region, majorVersion: majorVersion, minorVersion: minorVersion}, nil
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func WithContext(ctx context.Context, tenant Model) context.Context {
+	var wctx = ctx
+	wctx = context.WithValue(wctx, ID, tenant.Id())
+	wctx = context.WithValue(wctx, Region, tenant.Region())
+	wctx = context.WithValue(wctx, MajorVersion, tenant.MajorVersion())
+	wctx = context.WithValue(wctx, MinorVersion, tenant.MinorVersion())
+	return wctx
 }

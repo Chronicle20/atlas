@@ -3,7 +3,7 @@ module atlas-data
 go 1.21.6
 
 require (
-	github.com/Chronicle20/atlas-model v1.0.2
+	github.com/Chronicle20/atlas-model v1.0.4
 	github.com/Chronicle20/atlas-rest v1.0.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1

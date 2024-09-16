@@ -80,7 +80,7 @@ func TestSpanPropagation(t *testing.T) {
 
 	requests.SpanHeaderDecorator(ictx)(req.Header)
 
-	server.RetrieveSpan(l, "test-handler", func(l logrus.FieldLogger, ctx context.Context) http.HandlerFunc {
+	server.RetrieveSpan(l, "test-handler", context.Background(), func(l logrus.FieldLogger, ctx context.Context) http.HandlerFunc {
 		span := trace.SpanFromContext(ctx)
 		if !span.SpanContext().TraceID().IsValid() {
 			t.Fatalf(errors.New("invalid trace id").Error())
@@ -109,7 +109,12 @@ func TestTenantPropagation(t *testing.T) {
 
 	requests.TenantHeaderDecorator(ictx)(req.Header)
 
-	server.ParseTenant(l, func(l logrus.FieldLogger, ot tenant.Model) http.HandlerFunc {
+	server.ParseTenant(l, context.Background(), func(l logrus.FieldLogger, tctx context.Context) http.HandlerFunc {
+		ot, err := tenant.FromContext(tctx)()
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+
 		if !it.Is(ot) {
 			t.Fatalf(errors.New("invalid tenant").Error())
 		}

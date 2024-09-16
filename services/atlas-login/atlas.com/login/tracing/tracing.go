@@ -14,30 +14,28 @@ import (
 	"time"
 )
 
-func InitTracer(l logrus.FieldLogger) func(serviceName string) (*trace.TracerProvider, error) {
-	return func(serviceName string) (*trace.TracerProvider, error) {
-		exporter, err := otlptrace.New(
-			context.Background(),
-			otlptracegrpc.NewClient(
-				otlptracegrpc.WithInsecure(),
-				otlptracegrpc.WithEndpoint(os.Getenv("JAEGER_HOST_PORT")),
-			),
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		tp := trace.NewTracerProvider(
-			trace.WithBatcher(exporter),
-			trace.WithResource(resource.NewWithAttributes(
-				semconv.SchemaURL,
-				semconv.ServiceNameKey.String(serviceName),
-			)),
-		)
-		otel.SetTracerProvider(tp)
-		otel.SetTextMapPropagator(propagation.TraceContext{})
-		return tp, nil
+func InitTracer(serviceName string) (*trace.TracerProvider, error) {
+	exporter, err := otlptrace.New(
+		context.Background(),
+		otlptracegrpc.NewClient(
+			otlptracegrpc.WithInsecure(),
+			otlptracegrpc.WithEndpoint(os.Getenv("JAEGER_HOST_PORT")),
+		),
+	)
+	if err != nil {
+		return nil, err
 	}
+
+	tp := trace.NewTracerProvider(
+		trace.WithBatcher(exporter),
+		trace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String(serviceName),
+		)),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	return tp, nil
 }
 
 func Teardown(l logrus.FieldLogger) func(tp *trace.TracerProvider) func() {
@@ -50,16 +48,4 @@ func Teardown(l logrus.FieldLogger) func(tp *trace.TracerProvider) func() {
 			}
 		}
 	}
-}
-
-type LogrusAdapter struct {
-	logger logrus.FieldLogger
-}
-
-func (l LogrusAdapter) Error(msg string) {
-	l.logger.Error(msg)
-}
-
-func (l LogrusAdapter) Infof(msg string, args ...interface{}) {
-	l.logger.Infof(msg, args)
 }

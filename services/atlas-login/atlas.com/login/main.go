@@ -32,7 +32,7 @@ func main() {
 
 	tdm := service.GetTeardownManager()
 
-	tc, err := tracing.InitTracer(l)(serviceName)
+	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
@@ -49,7 +49,7 @@ func main() {
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.AccountStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
 
-	ctx, span := otel.GetTracerProvider().Tracer("atlas-login").Start(context.Background(), "startup")
+	ctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
 	for _, s := range config.Data.Attributes.Servers {
 		var t tenant.Model

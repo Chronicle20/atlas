@@ -72,7 +72,7 @@ func Produce(l logrus.FieldLogger) func(provider model.Provider[Writer]) func(de
 
 			return func(provider model.Provider[[]kafka.Message]) error {
 				var ms []kafka.Message
-				ms, err = model.SliceMap(provider, decorateHeaders(decorators...))()
+				ms, err = model.SliceMap(provider, DecorateHeaders(decorators...))()
 				if err != nil {
 					return err
 				}
@@ -96,7 +96,7 @@ func Produce(l logrus.FieldLogger) func(provider model.Provider[Writer]) func(de
 	}
 }
 
-func decorateHeaders(decorators ...HeaderDecorator) model.Transformer[kafka.Message, kafka.Message] {
+func DecorateHeaders(decorators ...HeaderDecorator) model.Transformer[kafka.Message, kafka.Message] {
 	return func(m kafka.Message) (kafka.Message, error) {
 		var err error
 		m.Headers, err = produceHeaders(decorators...)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/retry"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -14,53 +15,90 @@ import (
 	"sync"
 )
 
+type KafkaReader interface {
+	MessageReader
+	io.Closer
+}
+
+type MessageReader interface {
+	ReadMessage(ctx context.Context) (kafka.Message, error)
+}
+
+type ReaderProducer func(config kafka.ReaderConfig) KafkaReader
+
+type ManagerConfig func(m *Manager)
+
+//goland:noinspection GoUnusedExportedFunction
+func ConfigReaderProducer(rp ReaderProducer) ManagerConfig {
+	return func(m *Manager) {
+		m.rp = rp
+	}
+}
+
 type Manager struct {
 	mu        *sync.Mutex
 	consumers map[string]*Consumer
+	rp        ReaderProducer
 }
 
 var manager *Manager
 var once sync.Once
 
+func ResetInstance() {
+	manager = nil
+	once = sync.Once{}
+}
+
 //goland:noinspection GoUnusedExportedFunction
-func GetManager() *Manager {
+func GetManager(configurators ...ManagerConfig) *Manager {
 	once.Do(func() {
 		manager = &Manager{
 			mu:        &sync.Mutex{},
 			consumers: make(map[string]*Consumer),
+			rp: func(config kafka.ReaderConfig) KafkaReader {
+				return kafka.NewReader(config)
+			},
+		}
+		for _, configurator := range configurators {
+			configurator(manager)
 		}
 	})
 	return manager
 }
 
-func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(config Config) {
-	return func(config Config) {
+func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(config Config, decorators ...model.Decorator[Config]) {
+	return func(config Config, decorators ...model.Decorator[Config]) {
 		m.mu.Lock()
 		defer m.mu.Unlock()
 
-		if _, exists := m.consumers[config.topic]; exists {
-			cl.Infof("Consumer for topic [%s] is already registered.", config.topic)
+		c := config
+		for _, d := range decorators {
+			c = d(c)
+		}
+
+		if _, exists := m.consumers[c.topic]; exists {
+			cl.Infof("Consumer for topic [%s] is already registered.", c.topic)
 			return
 		}
 
-		r := kafka.NewReader(kafka.ReaderConfig{
-			Brokers: config.brokers,
-			Topic:   config.topic,
-			GroupID: config.groupId,
-			MaxWait: config.maxWait,
+		r := m.rp(kafka.ReaderConfig{
+			Brokers: c.brokers,
+			Topic:   c.topic,
+			GroupID: c.groupId,
+			MaxWait: c.maxWait,
 		})
 
-		c := &Consumer{
-			name:          config.name,
+		con := &Consumer{
+			name:          c.name,
 			reader:        r,
 			handlers:      make(map[string]handler.Handler),
-			headerParsers: config.headerParsers,
+			headerParsers: c.headerParsers,
 		}
 
-		m.consumers[config.topic] = c
+		m.consumers[c.topic] = con
 
-		l := cl.WithFields(logrus.Fields{"originator": config.topic, "type": "kafka_consumer"})
-		go c.start(l, ctx, wg)
+		l := cl.WithFields(logrus.Fields{"originator": c.topic, "type": "kafka_consumer"})
+		go con.start(l, ctx, wg)
 	}
 }
 
@@ -105,7 +143,7 @@ func (m *Manager) RemoveHandler(topic string, handlerId string) error {
 
 type Consumer struct {
 	name          string
-	reader        *kafka.Reader
+	reader        KafkaReader
 	handlers      map[string]handler.Handler
 	headerParsers []HeaderParser
 	mu            sync.Mutex

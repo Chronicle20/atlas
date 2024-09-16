@@ -2,10 +2,10 @@ package producer
 
 import (
 	"context"
-	"github.com/google/uuid"
+	"encoding/binary"
+	"github.com/Chronicle20/atlas-tenant"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
-	"strconv"
 )
 
 type HeaderDecorator func() (map[string]string, error)
@@ -25,29 +25,18 @@ func SpanHeaderDecorator(ctx context.Context) HeaderDecorator {
 	}
 }
 
-const (
-	ID           = "TENANT_ID"
-	Region       = "REGION"
-	MajorVersion = "MAJOR_VERSION"
-	MinorVersion = "MINOR_VERSION"
-)
-
 //goland:noinspection GoUnusedExportedFunction
 func TenantHeaderDecorator(ctx context.Context) HeaderDecorator {
 	return func() (map[string]string, error) {
 		headers := make(map[string]string)
-		if val, ok := ctx.Value(ID).(uuid.UUID); ok {
-			headers[ID] = val.String()
+		t, err := tenant.FromContext(ctx)()
+		if err != nil {
+			return headers, nil
 		}
-		if val, ok := ctx.Value(Region).(string); ok {
-			headers[Region] = val
-		}
-		if val, ok := ctx.Value(MajorVersion).(uint16); ok {
-			headers[MajorVersion] = strconv.Itoa(int(val))
-		}
-		if val, ok := ctx.Value(MinorVersion).(uint16); ok {
-			headers[MinorVersion] = strconv.Itoa(int(val))
-		}
+		headers[tenant.ID] = t.Id().String()
+		headers[tenant.Region] = t.Region()
+		headers[tenant.MajorVersion] = string(binary.BigEndian.AppendUint16(make([]byte, 0), t.MajorVersion()))
+		headers[tenant.MinorVersion] = string(binary.BigEndian.AppendUint16(make([]byte, 0), t.MinorVersion()))
 		return headers, nil
 	}
 }

@@ -3,6 +3,7 @@ package consumer
 import (
 	"context"
 	"encoding/binary"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"go.opentelemetry.io/otel"
@@ -21,42 +22,43 @@ func SpanHeaderParser(ctx context.Context, headers []kafka.Header) context.Conte
 	return propagator.Extract(ctx, carrier)
 }
 
-const (
-	ID           = "TENANT_ID"
-	Region       = "REGION"
-	MajorVersion = "MAJOR_VERSION"
-	MinorVersion = "MINOR_VERSION"
-)
-
 //goland:noinspection GoUnusedExportedFunction
 func TenantHeaderParser(ctx context.Context, headers []kafka.Header) context.Context {
-	var wctx = ctx
+	var id uuid.UUID
+	var region string
+	var majorVersion uint16
+	var minorVersion uint16
+
 	for _, header := range headers {
-		if header.Key == ID {
-			if len(header.Value) == 16 {
-				val, err := uuid.FromBytes(header.Value)
+		if header.Key == tenant.ID {
+			if len(header.Value) == 36 {
+				val, err := uuid.Parse(string(header.Value))
 				if err == nil {
-					wctx = context.WithValue(wctx, ID, val)
+					id = val
 				}
 			}
 			continue
 		}
-		if header.Key == Region {
-			wctx = context.WithValue(wctx, Region, string(header.Value))
+		if header.Key == tenant.Region {
+			region = string(header.Value)
 			continue
 		}
-		if header.Key == MajorVersion {
+		if header.Key == tenant.MajorVersion {
 			if len(header.Value) == 2 {
-				wctx = context.WithValue(wctx, MajorVersion, binary.BigEndian.Uint16(header.Value))
+				majorVersion = binary.BigEndian.Uint16(header.Value)
 				continue
 			}
 		}
-		if header.Key == MinorVersion {
+		if header.Key == tenant.MinorVersion {
 			if len(header.Value) == 2 {
-				wctx = context.WithValue(wctx, MinorVersion, binary.BigEndian.Uint16(header.Value))
+				minorVersion = binary.BigEndian.Uint16(header.Value)
 				continue
 			}
 		}
 	}
-	return wctx
+	t, err := tenant.Create(id, region, majorVersion, minorVersion)
+	if err != nil {
+		return ctx
+	}
+	return tenant.WithContext(ctx, t)
 }

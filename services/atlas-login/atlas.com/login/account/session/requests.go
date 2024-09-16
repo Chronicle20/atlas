@@ -2,7 +2,6 @@ package session
 
 import (
 	"atlas-login/rest"
-	"atlas-login/tenant"
 	"context"
 	"fmt"
 	"github.com/google/uuid"
@@ -18,7 +17,7 @@ func getBaseRequest() string {
 	return os.Getenv("ACCOUNT_SERVICE_URL")
 }
 
-func CreateLogin(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32, name string, password string, ipAddress string) (Model, error) {
+func CreateLogin(l logrus.FieldLogger, ctx context.Context) func(sessionId uuid.UUID, accountId uint32, name string, password string, ipAddress string) (Model, error) {
 	return func(sessionId uuid.UUID, accountId uint32, name string, password string, ipAddress string) (Model, error) {
 		i := InputRestModel{
 			Id:        0,
@@ -29,7 +28,7 @@ func CreateLogin(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model)
 			IpAddress: ipAddress,
 			State:     0,
 		}
-		resp, err := rest.MakePostRequest[OutputRestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+LoginsResource, accountId), i)(l)
+		resp, err := rest.MakePostRequest[OutputRestModel](fmt.Sprintf(getBaseRequest()+LoginsResource, accountId), i)(l, ctx)
 		if err != nil {
 			return Model{}, err
 		}
@@ -41,7 +40,7 @@ func CreateLogin(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model)
 	}
 }
 
-func updateState(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32, state int) (Model, error) {
+func updateState(l logrus.FieldLogger, ctx context.Context) func(sessionId uuid.UUID, accountId uint32, state int) (Model, error) {
 	return func(sessionId uuid.UUID, accountId uint32, state int) (Model, error) {
 		i := InputRestModel{
 			Id:        0,
@@ -49,7 +48,7 @@ func updateState(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model)
 			Issuer:    "LOGIN",
 			State:     state,
 		}
-		resp, err := rest.MakePatchRequest[OutputRestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+LoginsResource, accountId), i)(l)
+		resp, err := rest.MakePatchRequest[OutputRestModel](fmt.Sprintf(getBaseRequest()+LoginsResource, accountId), i)(l, ctx)
 		if err != nil {
 			return Model{}, err
 		}

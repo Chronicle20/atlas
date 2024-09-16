@@ -1,7 +1,7 @@
 package session
 
 import (
-	"atlas-login/tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 )
 

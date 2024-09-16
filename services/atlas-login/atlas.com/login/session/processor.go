@@ -3,9 +3,9 @@ package session
 import (
 	"atlas-login/kafka/producer"
 	"atlas-login/socket/writer"
-	"atlas-login/tenant"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -20,7 +20,8 @@ func Announce(l logrus.FieldLogger) func(writerProducer writer.Producer) func(wr
 					return err
 				}
 
-				if lock, ok := GetRegistry().GetLock(s.Tenant().Id, s.SessionId()); ok {
+				t := s.Tenant()
+				if lock, ok := GetRegistry().GetLock(t.Id(), s.SessionId()); ok {
 					lock.Lock()
 					err = s.announceEncrypted(w(l)(bodyProducer))
 					lock.Unlock()

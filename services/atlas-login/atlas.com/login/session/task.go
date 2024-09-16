@@ -47,7 +47,8 @@ func (t *Timeout) Run() {
 	for _, s := range sessions {
 		if cur.Sub(s.LastRequest()) > t.timeout {
 			t.l.Infof("Account [%d] was auto-disconnected due to inactivity.", s.AccountId())
-			DestroyById(t.l, ctx, GetRegistry(), s.Tenant().Id)(s.SessionId())
+			tenant := s.Tenant()
+			DestroyById(t.l, ctx, GetRegistry(), tenant.Id())(s.SessionId())
 		}
 	}
 }

@@ -22,7 +22,7 @@ func SetGenderHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 
 		var success = confirmed
 		if confirmed {
-			err := account.UpdateGender(l, ctx, s.Tenant())(s.AccountId(), gender)
+			err := account.UpdateGender(l, ctx)(s.AccountId(), gender)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to update the gender of account [%d].", s.AccountId())
 				success = false
@@ -34,7 +34,7 @@ func SetGenderHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			as.Destroy(l, producer.ProviderImpl(l)(ctx))(s.Tenant(), s.SessionId(), s.AccountId())
 		}
 
-		err := setAccountResultFunc(s, writer.SetAccountResultBody(l)(gender, success))
+		err := setAccountResultFunc(s, writer.SetAccountResultBody(gender, success))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue set account result")
 		}

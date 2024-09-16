@@ -1,6 +1,6 @@
 package account
 
-import "atlas-login/tenant"
+import "github.com/Chronicle20/atlas-tenant"
 
 const (
 	EnvEventTopicAccountStatus  = "EVENT_TOPIC_ACCOUNT_STATUS"

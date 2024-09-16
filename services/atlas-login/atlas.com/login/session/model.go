@@ -1,8 +1,8 @@
 package session
 
 import (
-	"atlas-login/tenant"
 	"github.com/Chronicle20/atlas-socket/crypto"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"math/rand"
 	"net"
@@ -29,16 +29,16 @@ func NewSession(id uuid.UUID, t tenant.Model, locale byte, con net.Conn) Model {
 
 	var send *crypto.AESOFB
 	var recv *crypto.AESOFB
-	if t.Region == "GMS" && t.MajorVersion <= 12 {
-		send = crypto.NewAESOFB(sendIv, uint16(65535)-t.MajorVersion, crypto.SetIvGenerator(crypto.FillIvZeroGenerator))
-		recv = crypto.NewAESOFB(recvIv, t.MajorVersion, crypto.SetIvGenerator(crypto.FillIvZeroGenerator))
+	if t.Region() == "GMS" && t.MajorVersion() <= 12 {
+		send = crypto.NewAESOFB(sendIv, uint16(65535)-t.MajorVersion(), crypto.SetIvGenerator(crypto.FillIvZeroGenerator))
+		recv = crypto.NewAESOFB(recvIv, t.MajorVersion(), crypto.SetIvGenerator(crypto.FillIvZeroGenerator))
 	} else {
-		send = crypto.NewAESOFB(sendIv, uint16(65535)-t.MajorVersion)
-		recv = crypto.NewAESOFB(recvIv, t.MajorVersion)
+		send = crypto.NewAESOFB(sendIv, uint16(65535)-t.MajorVersion())
+		recv = crypto.NewAESOFB(recvIv, t.MajorVersion())
 	}
 
 	hasMapleEncryption := true
-	if t.Region == "JMS" {
+	if t.Region() == "JMS" {
 		hasMapleEncryption = false
 	}
 
@@ -103,7 +103,7 @@ func (s *Model) announce(b []byte) error {
 }
 
 func (s *Model) WriteHello() error {
-	return s.announce(WriteHello(nil)(s.tenant.MajorVersion, s.tenant.MinorVersion, s.send.IV(), s.recv.IV(), s.locale))
+	return s.announce(WriteHello(nil)(s.tenant.MajorVersion(), s.tenant.MinorVersion(), s.send.IV(), s.recv.IV(), s.locale))
 }
 
 func (s *Model) ReceiveAESOFB() *crypto.AESOFB {

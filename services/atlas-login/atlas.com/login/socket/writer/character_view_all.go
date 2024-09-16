@@ -2,8 +2,8 @@ package writer
 
 import (
 	"atlas-login/character"
-	"atlas-login/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -59,7 +59,7 @@ func CharacterViewAllCharacterBody(l logrus.FieldLogger, tenant tenant.Model) fu
 				WriteCharacter(tenant)(w, c, true)
 			}
 
-			if tenant.Region == "GMS" && tenant.MajorVersion > 87 {
+			if tenant.Region() == "GMS" && tenant.MajorVersion() > 87 {
 				w.WriteByte(1) // PIC handling
 			}
 			return w.Bytes()

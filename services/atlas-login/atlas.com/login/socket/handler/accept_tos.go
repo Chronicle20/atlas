@@ -17,14 +17,15 @@ func AcceptTosHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 		l.Debugf("Account [%d] responded to the TOS dialog with [%t].", s.AccountId(), accepted)
 		if !accepted {
 			l.Debugf("Account [%d] has chosen not to accept TOS. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry(), s.Tenant().Id)(s)
+			t := s.Tenant()
+			session.Destroy(l, ctx, session.GetRegistry(), t.Id())(s)
 			return
 		}
 
-		err := account.UpdateTos(l, ctx, s.Tenant())(s.AccountId(), accepted)
+		err := account.UpdateTos(l, ctx)(s.AccountId(), accepted)
 		if err != nil {
 			// TODO
 		}
-		account.ForAccountById(l, ctx, s.Tenant())(s.AccountId(), issueSuccess(l, s, wp))
+		account.ForAccountById(l, ctx)(s.AccountId(), issueSuccess(l, s, wp))
 	}
 }

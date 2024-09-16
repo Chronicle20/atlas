@@ -6,6 +6,7 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -15,7 +16,7 @@ type MessageValidator func(l logrus.FieldLogger, ctx context.Context) func(s ses
 
 const NoOpValidator = "NoOpValidator"
 
-func NoOpValidatorFunc(_ logrus.FieldLogger, ctx context.Context) func(_ session.Model) bool {
+func NoOpValidatorFunc(_ logrus.FieldLogger, _ context.Context) func(_ session.Model) bool {
 	return func(_ session.Model) bool {
 		return true
 	}
@@ -23,9 +24,9 @@ func NoOpValidatorFunc(_ logrus.FieldLogger, ctx context.Context) func(_ session
 
 const LoggedInValidator = "LoggedInValidator"
 
-func LoggedInValidatorFunc(l logrus.FieldLogger, ctx context.Context) func(s session.Model) bool {
+func LoggedInValidatorFunc(l logrus.FieldLogger, _ context.Context) func(s session.Model) bool {
 	return func(s session.Model) bool {
-		v := account.IsLoggedIn(l, ctx, s.Tenant())(s.AccountId())
+		v := account.IsLoggedIn(l, s.Tenant())(s.AccountId())
 		if !v {
 			l.Errorf("Attempting to process a request when the account [%d] is not logged in.", s.AccountId())
 		}
@@ -37,32 +38,34 @@ type MessageHandler func(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 
 const NoOpHandler = "NoOpHandler"
 
-func NoOpHandlerFunc(_ logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(_ session.Model, _ *request.Reader) {
+func NoOpHandlerFunc(_ logrus.FieldLogger, _ context.Context, _ writer.Producer) func(_ session.Model, _ *request.Reader) {
 	return func(_ session.Model, _ *request.Reader) {
 	}
 }
 
 type Adapter func(name string, v MessageValidator, h MessageHandler, readerOptions map[string]interface{}) request.Handler
 
-func AdaptHandler(l logrus.FieldLogger) func(tenantId uuid.UUID, wp writer.Producer) Adapter {
-	return func(tenantId uuid.UUID, wp writer.Producer) Adapter {
+func AdaptHandler(l logrus.FieldLogger) func(t tenant.Model, wp writer.Producer) Adapter {
+	return func(t tenant.Model, wp writer.Producer) Adapter {
 		return func(name string, v MessageValidator, h MessageHandler, readerOptions map[string]interface{}) request.Handler {
 			return func(sessionId uuid.UUID, r request.Reader) {
 				fl := l.WithField("session", sessionId.String())
 
-				ctx, span := otel.GetTracerProvider().Tracer("atlas-login").Start(context.Background(), "socket_handler")
+				sctx, span := otel.GetTracerProvider().Tracer("atlas-login").Start(context.Background(), "socket_handler")
 				sl := fl.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
 				defer span.End()
 
-				s, ok := session.GetRegistry().Get(tenantId, sessionId)
+				tctx := tenant.WithContext(sctx, t)
+
+				s, ok := session.GetRegistry().Get(t.Id(), sessionId)
 				if !ok {
 					sl.Errorf("Unable to locate session %d", sessionId)
 					return
 				}
 
-				if v(sl, ctx)(s) {
-					h(sl, ctx, wp)(s, &r)
-					s = session.UpdateLastRequest()(tenantId, s.SessionId())
+				if v(sl, tctx)(s) {
+					h(sl, tctx, wp)(s, &r)
+					s = session.UpdateLastRequest()(t.Id(), s.SessionId())
 				}
 			}
 		}

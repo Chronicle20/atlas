@@ -1,63 +1,63 @@
 package account
 
 import (
-	"atlas-login/tenant"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 type LoginErr string
 
-func ForAccountByName(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(name string, operator model.Operator[Model]) {
+func ForAccountByName(l logrus.FieldLogger, ctx context.Context) func(name string, operator model.Operator[Model]) {
 	return func(name string, operator model.Operator[Model]) {
-		_ = model.For[Model](ByNameModelProvider(l, ctx, tenant)(name), operator)
+		_ = model.For[Model](ByNameModelProvider(l, ctx)(name), operator)
 	}
 }
 
-func ForAccountById(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(id uint32, operator model.Operator[Model]) {
+func ForAccountById(l logrus.FieldLogger, ctx context.Context) func(id uint32, operator model.Operator[Model]) {
 	return func(id uint32, operator model.Operator[Model]) {
-		_ = model.For[Model](ByIdModelProvider(l, ctx, tenant)(id), operator)
+		_ = model.For[Model](ByIdModelProvider(l, ctx)(id), operator)
 	}
 }
 
-func ByNameModelProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(name string) model.Provider[Model] {
+func ByNameModelProvider(l logrus.FieldLogger, ctx context.Context) func(name string) model.Provider[Model] {
 	return func(name string) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l)(requestAccountByName(ctx, tenant)(name), Extract)
+		return requests.Provider[RestModel, Model](l, ctx)(requestAccountByName(name), Extract)
 	}
 }
 
-func ByIdModelProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(id uint32) model.Provider[Model] {
+func ByIdModelProvider(l logrus.FieldLogger, ctx context.Context) func(id uint32) model.Provider[Model] {
 	return func(id uint32) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l)(requestAccountById(ctx, tenant)(id), Extract)
+		return requests.Provider[RestModel, Model](l, ctx)(requestAccountById(id), Extract)
 	}
 }
 
-func allProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](l)(requestAccounts(ctx, tenant), Extract)
+func allProvider(l logrus.FieldLogger, ctx context.Context) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](l, ctx)(requestAccounts(), Extract)
 }
 
-func GetById(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(id uint32) (Model, error) {
+func GetById(l logrus.FieldLogger, ctx context.Context) func(id uint32) (Model, error) {
 	return func(id uint32) (Model, error) {
-		return ByIdModelProvider(l, ctx, tenant)(id)()
+		return ByIdModelProvider(l, ctx)(id)()
 	}
 }
 
-func GetByName(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(name string) (Model, error) {
+func GetByName(l logrus.FieldLogger, ctx context.Context) func(name string) (Model, error) {
 	return func(name string) (Model, error) {
-		return ByNameModelProvider(l, ctx, tenant)(name)()
+		return ByNameModelProvider(l, ctx)(name)()
 	}
 }
 
-func IsLoggedIn(_ logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(id uint32) bool {
+func IsLoggedIn(_ logrus.FieldLogger, tenant tenant.Model) func(id uint32) bool {
 	return func(id uint32) bool {
 		return getRegistry().LoggedIn(Key{Tenant: tenant, Id: id})
 	}
 }
 
 func InitializeRegistry(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) error {
-	as, err := model.CollectToMap[Model, Key, bool](allProvider(l, ctx, tenant), KeyForTenantFunc(tenant), IsLogged)()
+	as, err := model.CollectToMap[Model, Key, bool](allProvider(l, ctx), KeyForTenantFunc(tenant), IsLogged)()
 	if err != nil {
 		return err
 	}
@@ -69,14 +69,14 @@ func IsLogged(m Model) bool {
 	return m.LoggedIn() > 0
 }
 
-func UpdatePin(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(id uint32, pin string) error {
+func UpdatePin(l logrus.FieldLogger, ctx context.Context) func(id uint32, pin string) error {
 	return func(id uint32, pin string) error {
-		a, err := GetById(l, ctx, tenant)(id)
+		a, err := GetById(l, ctx)(id)
 		if err != nil {
 			return err
 		}
 		a.pin = pin
-		_, err = requestUpdate(ctx, tenant)(a)(l)
+		_, err = requestUpdate(a)(l, ctx)
 		if err != nil {
 			return err
 		}
@@ -84,14 +84,14 @@ func UpdatePin(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) f
 	}
 }
 
-func UpdatePic(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(id uint32, pic string) error {
+func UpdatePic(l logrus.FieldLogger, ctx context.Context) func(id uint32, pic string) error {
 	return func(id uint32, pic string) error {
-		a, err := GetById(l, ctx, tenant)(id)
+		a, err := GetById(l, ctx)(id)
 		if err != nil {
 			return err
 		}
 		a.pic = pic
-		_, err = requestUpdate(ctx, tenant)(a)(l)
+		_, err = requestUpdate(a)(l, ctx)
 		if err != nil {
 			return err
 		}
@@ -99,14 +99,14 @@ func UpdatePic(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) f
 	}
 }
 
-func UpdateTos(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(id uint32, tos bool) error {
+func UpdateTos(l logrus.FieldLogger, ctx context.Context) func(id uint32, tos bool) error {
 	return func(id uint32, tos bool) error {
-		a, err := GetById(l, ctx, tenant)(id)
+		a, err := GetById(l, ctx)(id)
 		if err != nil {
 			return err
 		}
 		a.tos = tos
-		_, err = requestUpdate(ctx, tenant)(a)(l)
+		_, err = requestUpdate(a)(l, ctx)
 		if err != nil {
 			return err
 		}
@@ -114,14 +114,14 @@ func UpdateTos(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) f
 	}
 }
 
-func UpdateGender(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(id uint32, gender byte) error {
+func UpdateGender(l logrus.FieldLogger, ctx context.Context) func(id uint32, gender byte) error {
 	return func(id uint32, gender byte) error {
-		a, err := GetById(l, ctx, tenant)(id)
+		a, err := GetById(l, ctx)(id)
 		if err != nil {
 			return err
 		}
 		a.gender = gender
-		_, err = requestUpdate(ctx, tenant)(a)(l)
+		_, err = requestUpdate(a)(l, ctx)
 		if err != nil {
 			return err
 		}

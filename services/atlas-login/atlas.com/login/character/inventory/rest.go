@@ -108,21 +108,42 @@ func Extract(model RestModel) (Model, error) {
 	if err != nil {
 		return Model{}, err
 	}
+	use, err := ExtractItem(model.Useable)
+	if err != nil {
+		return Model{}, err
+	}
+	setup, err := ExtractItem(model.Setup)
+	if err != nil {
+		return Model{}, err
+	}
+	etc, err := ExtractItem(model.Etc)
+	if err != nil {
+		return Model{}, err
+	}
+	cash, err := ExtractItem(model.Cash)
+	if err != nil {
+		return Model{}, err
+	}
 
 	return Model{
 		equipable: e,
-		useable:   ExtractItem(model.Useable),
-		setup:     ExtractItem(model.Setup),
-		etc:       ExtractItem(model.Etc),
-		cash:      ExtractItem(model.Cash),
+		useable:   use,
+		setup:     setup,
+		etc:       etc,
+		cash:      cash,
 	}, nil
 }
 
-func ExtractItem(rm ItemRestModel) ItemModel {
+func ExtractItem(rm ItemRestModel) (ItemModel, error) {
+	is, err := model.SliceMap[item.RestModel, item.Model](model.FixedProvider(rm.Items), item.Extract)()
+	if err != nil {
+		return ItemModel{}, err
+	}
+
 	return ItemModel{
 		capacity: rm.Capacity,
-		items:    item.ExtractAll(rm.Items),
-	}
+		items:    is,
+	}, nil
 }
 
 func ExtractEquipable(rm EquipableRestModel) (EquipableModel, error) {

@@ -25,14 +25,6 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
-func Transform(m Model) (RestModel, error) {
-	return RestModel{
-		Id:        uint32(m.id),
-		IpAddress: m.ipAddress,
-		Port:      m.port,
-	}, nil
-}
-
 func Extract(m RestModel) (Model, error) {
 	return Model{
 		id:        byte(m.Id),

@@ -3,9 +3,9 @@ package session
 import (
 	as "atlas-login/account/session"
 	"atlas-login/kafka/producer"
-	"atlas-login/tenant"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -31,7 +31,7 @@ func Create(l logrus.FieldLogger, r *Registry) func(t tenant.Model, locale byte)
 func Decrypt(_ logrus.FieldLogger, r *Registry, tenant tenant.Model) func(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
 	return func(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
 		return func(sessionId uuid.UUID, input []byte) []byte {
-			s, ok := r.Get(tenant.Id, sessionId)
+			s, ok := r.Get(tenant.Id(), sessionId)
 			if !ok {
 				return input
 			}
@@ -43,10 +43,10 @@ func Decrypt(_ logrus.FieldLogger, r *Registry, tenant tenant.Model) func(hasAes
 	}
 }
 
-func DestroyAll(l logrus.FieldLogger, ctx context.Context, r *Registry) model.Operator[uuid.UUID] {
-	return func(tenantId uuid.UUID) error {
+func DestroyAll(l logrus.FieldLogger, ctx context.Context, r *Registry) model.Operator[tenant.Model] {
+	return func(t tenant.Model) error {
 		for _, s := range r.GetAll() {
-			Destroy(l, ctx, r, tenantId)(s)
+			Destroy(l, ctx, r, t.Id())(s)
 		}
 		return nil
 	}

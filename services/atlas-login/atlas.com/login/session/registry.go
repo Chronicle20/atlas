@@ -25,15 +25,16 @@ func GetRegistry() *Registry {
 
 func (r *Registry) Add(s Model) {
 	r.mutex.Lock()
-	if _, ok := r.sessionRegistry[s.Tenant().Id]; !ok {
-		r.sessionRegistry[s.Tenant().Id] = make(map[uuid.UUID]Model)
+	t := s.Tenant()
+	if _, ok := r.sessionRegistry[t.Id()]; !ok {
+		r.sessionRegistry[t.Id()] = make(map[uuid.UUID]Model)
 	}
-	r.sessionRegistry[s.Tenant().Id][s.SessionId()] = s
+	r.sessionRegistry[t.Id()][s.SessionId()] = s
 
-	if _, ok := r.lockRegistry[s.Tenant().Id]; !ok {
-		r.lockRegistry[s.Tenant().Id] = make(map[uuid.UUID]*sync.RWMutex)
+	if _, ok := r.lockRegistry[t.Id()]; !ok {
+		r.lockRegistry[t.Id()] = make(map[uuid.UUID]*sync.RWMutex)
 	}
-	r.lockRegistry[s.Tenant().Id][s.SessionId()] = &sync.RWMutex{}
+	r.lockRegistry[t.Id()][s.SessionId()] = &sync.RWMutex{}
 	r.mutex.Unlock()
 }
 
@@ -88,10 +89,11 @@ func (r *Registry) GetAll() []Model {
 
 func (r *Registry) Update(m Model) {
 	r.mutex.Lock()
-	if _, ok := r.sessionRegistry[m.Tenant().Id]; !ok {
-		r.sessionRegistry[m.Tenant().Id] = make(map[uuid.UUID]Model)
+	t := m.Tenant()
+	if _, ok := r.sessionRegistry[t.Id()]; !ok {
+		r.sessionRegistry[t.Id()] = make(map[uuid.UUID]Model)
 	}
-	r.sessionRegistry[m.Tenant().Id][m.SessionId()] = m
+	r.sessionRegistry[t.Id()][m.SessionId()] = m
 	r.mutex.Unlock()
 }
 

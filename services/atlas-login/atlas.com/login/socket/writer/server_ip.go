@@ -1,8 +1,8 @@
 package writer
 
 import (
-	"atlas-login/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
@@ -46,7 +46,7 @@ func ServerIPBody(l logrus.FieldLogger, tenant tenant.Model) func(ipAddr string,
 			w.WriteShort(port)
 			w.WriteInt(clientId)
 			w.WriteByte(0) // bAuthenCode
-			if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
 				w.WriteInt(0) // ulPremiumArgument
 			}
 			return w.Bytes()

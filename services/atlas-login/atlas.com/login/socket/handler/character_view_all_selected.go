@@ -23,26 +23,27 @@ func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Contex
 		macAddressWithHDDSerial := r.ReadAsciiString()
 		l.Debugf("Character [%d] attempting to login via view all. worldId [%d], macAddress [%s], macAddressWithHDDSerial [%s].", characterId, worldId, macAddress, macAddressWithHDDSerial)
 
-		c, err := character.GetById(l, ctx, s.Tenant())(characterId)
+		c, err := character.GetById(l, ctx)(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get character [%d].", characterId)
 			// TODO issue error
 			return
 		}
 
+		t := s.Tenant()
 		if c.WorldId() != byte(worldId) {
 			l.Errorf("Character is not part of world provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry(), s.Tenant().Id)(s)
+			session.Destroy(l, ctx, session.GetRegistry(), t.Id())(s)
 			return
 		}
 
 		if c.AccountId() != s.AccountId() {
 			l.Errorf("Character is not part of account provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry(), s.Tenant().Id)(s)
+			session.Destroy(l, ctx, session.GetRegistry(), t.Id())(s)
 			return
 		}
 
-		w, err := world.GetById(l, ctx, s.Tenant())(byte(worldId))
+		w, err := world.GetById(l, ctx)(byte(worldId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get world [%d].", worldId)
 			// TODO issue error
@@ -55,12 +56,12 @@ func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Contex
 			return
 		}
 
-		s = session.SetWorldId(byte(worldId))(s.Tenant().Id, s.SessionId())
+		s = session.SetWorldId(byte(worldId))(t.Id(), s.SessionId())
 
-		channel, err := channel.GetRandomInWorld(l, ctx, s.Tenant())(byte(worldId))
-		s = session.SetChannelId(channel.Id())(s.Tenant().Id, s.SessionId())
+		channel, err := channel.GetRandomInWorld(l, ctx)(byte(worldId))
+		s = session.SetChannelId(channel.Id())(t.Id(), s.SessionId())
 
-		resp, err := as.UpdateState(l, ctx, s.Tenant())(s.SessionId(), s.AccountId(), 2)
+		resp, err := as.UpdateState(l, ctx)(s.SessionId(), s.AccountId(), 2)
 		if err != nil || resp.Code != "OK" {
 			l.WithError(err).Errorf("Unable to update session for character [%d] attempting to login.", characterId)
 			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeTooManyConnectionRequests))
@@ -71,7 +72,7 @@ func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Contex
 			return
 		}
 
-		err = serverIpFunc(s, writer.ServerIPBody(l, s.Tenant())(channel.IpAddress(), uint16(channel.Port()), characterId))
+		err = serverIpFunc(s, writer.ServerIPBody(l, t)(channel.IpAddress(), uint16(channel.Port()), characterId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write server ip response due to error.")
 			return

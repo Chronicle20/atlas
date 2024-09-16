@@ -16,8 +16,8 @@ func ServerStatusHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer
 	return func(s session.Model, r *request.Reader) {
 		worldId := byte(r.ReadUint16())
 
-		cs := world.GetCapacityStatus(l, ctx, s.Tenant())(worldId)
-		err := serverStatusFunc(s, writer.ServerStatusBody(l)(cs))
+		cs := world.GetCapacityStatus(l, ctx)(worldId)
+		err := serverStatusFunc(s, writer.ServerStatusBody(cs))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue world capacity status information")
 		}

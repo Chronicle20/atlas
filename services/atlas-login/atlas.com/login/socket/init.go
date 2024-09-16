@@ -2,10 +2,10 @@ package socket
 
 import (
 	"atlas-login/session"
-	"atlas-login/tenant"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-socket"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"net"
 	"strconv"
@@ -21,16 +21,16 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 				return
 			}
 
-			l.Infof("Creating login socket service for [%s] [%d.%d] on port [%d].", t.Region, t.MajorVersion, t.MinorVersion, port)
+			l.Infof("Creating login socket service for [%s] [%d.%d] on port [%d].", t.Region(), t.MajorVersion(), t.MinorVersion(), port)
 
 			hasMapleEncryption := true
-			if t.Region == "JMS" {
+			if t.Region() == "JMS" {
 				hasMapleEncryption = false
 				l.Debugf("Service does not expect Maple encryption.")
 			}
 
 			locale := byte(8)
-			if t.Region == "JMS" {
+			if t.Region() == "JMS" {
 				locale = 3
 			}
 
@@ -45,7 +45,7 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 					socket.SetPort(port),
 					socket.SetCreator(session.Create(l, session.GetRegistry())(t, locale)),
 					socket.SetMessageDecryptor(session.Decrypt(l, session.GetRegistry(), t)(true, hasMapleEncryption)),
-					socket.SetDestroyer(session.DestroyByIdWithSpan(l, session.GetRegistry(), t.Id)),
+					socket.SetDestroyer(session.DestroyByIdWithSpan(l, session.GetRegistry(), t.Id())),
 					socket.SetReadWriter(rw),
 				)
 

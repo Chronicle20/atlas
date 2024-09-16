@@ -2,8 +2,8 @@ package session
 
 import (
 	"atlas-login/kafka/producer"
-	"atlas-login/tenant"
 	"context"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -15,8 +15,8 @@ func Destroy(l logrus.FieldLogger, kp producer.Provider) func(tenant tenant.Mode
 	}
 }
 
-func UpdateState(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(sessionId uuid.UUID, accountId uint32, state int) (Model, error) {
+func UpdateState(l logrus.FieldLogger, ctx context.Context) func(sessionId uuid.UUID, accountId uint32, state int) (Model, error) {
 	return func(sessionId uuid.UUID, accountId uint32, state int) (Model, error) {
-		return updateState(l, ctx, tenant)(sessionId, accountId, state)
+		return updateState(l, ctx)(sessionId, accountId, state)
 	}
 }

@@ -1,6 +1,6 @@
 # Start from a Debian image with the latest version of Go installed
 # and a workspace (GOPATH) configured at /go.
-FROM golang:1.21.6-alpine3.19 AS build-env
+FROM golang:1.23.1-alpine3.20 AS build-env
 
 ENV CGO_ENABLED 0
 
@@ -18,7 +18,7 @@ WORKDIR /atlas.com/character
 
 RUN go build -gcflags="all=-N -l" -o /server
 
-FROM alpine:3.19
+FROM alpine:3.20
 
 # Port 8080 belongs to our application, 40000 belongs to Delve
 EXPOSE 8080 40000

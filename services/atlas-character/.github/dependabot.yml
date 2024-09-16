@@ -8,4 +8,4 @@ updates:
   - package-ecosystem: "gomod" # See documentation for possible values
     directory: "/atlas.com/character" # Location of package manifests
     schedule:
-      interval: "weekly"
+      interval: "daily"

@@ -6,15 +6,11 @@ import (
 	"atlas-data/logger"
 	_map "atlas-data/map"
 	"atlas-data/monster"
+	"atlas-data/service"
 	"atlas-data/tracing"
 	"atlas-data/wz"
-	"context"
 	"github.com/Chronicle20/atlas-rest/server"
-	"io"
 	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 )
 
 const serviceName = "atlas-data"
@@ -43,19 +39,12 @@ func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
 
-	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	tdm := service.GetTeardownManager()
 
-	tc, err := tracing.InitTracer(l)(serviceName)
+	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
-	defer func(tc io.Closer) {
-		err := tc.Close()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to close tracer.")
-		}
-	}(tc)
 
 	wzDir := os.Getenv("GAME_DATA_ROOT_DIR")
 
@@ -63,20 +52,14 @@ func main() {
 	wz.GetFileCache().Init(wzDir)
 	l.Infoln("Completed initializing game data cache.")
 
-	server.CreateService(l, ctx, wg, GetServer().GetPrefix(),
+	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(),
 		_map.InitResource(GetServer()),
 		monster.InitResource(GetServer()),
 		slots.InitResource(GetServer()),
 		statistics.InitResource(GetServer()))
 
-	// trap sigterm or interrupt and gracefully shutdown the server
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
+	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
-	// Block until a signal is received.
-	sig := <-c
-	l.Infof("Initiating shutdown with signal %s.", sig)
-	cancel()
-	wg.Wait()
+	tdm.Wait()
 	l.Infoln("Service shutdown.")
 }

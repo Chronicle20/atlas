@@ -26,7 +26,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetEquipmentSlots(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseEquipmentId(d.Logger(), func(equipmentId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			e, err := GetById(d.Logger(), d.Span(), c.Tenant())(equipmentId)
+			e, err := GetById(c.Tenant())(equipmentId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get equipment.")
 				w.WriteHeader(http.StatusInternalServerError)

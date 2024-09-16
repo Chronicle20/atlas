@@ -52,7 +52,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetMapRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := GetById(d.Logger(), d.Span(), c.Tenant())(mapId)
+			m, err := GetById(d.Logger(), d.Context(), c.Tenant())(mapId)
 			if err != nil {
 				d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 				w.WriteHeader(http.StatusNotFound)
@@ -74,7 +74,7 @@ func handleGetMapRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http
 func handleGetMapPortalsRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			ps, err := GetPortals(d.Logger(), d.Span(), c.Tenant())(mapId)
+			ps, err := GetPortals(d.Logger(), d.Context(), c.Tenant())(mapId)
 			if err != nil {
 				d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 				w.WriteHeader(http.StatusNotFound)
@@ -99,7 +99,7 @@ func handleGetMapPortalsByNameRequest(d *rest.HandlerDependency, c *rest.Handler
 			vars := mux.Vars(r)
 			portalName := vars["name"]
 
-			ps, err := GetPortalsByName(d.Logger(), d.Span(), c.Tenant())(mapId, portalName)
+			ps, err := GetPortalsByName(d.Logger(), d.Context(), c.Tenant())(mapId, portalName)
 			if err != nil {
 				d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 				w.WriteHeader(http.StatusNotFound)
@@ -122,7 +122,7 @@ func handleGetMapPortalRequest(d *rest.HandlerDependency, c *rest.HandlerContext
 	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 		return rest.ParsePortalId(d.Logger(), func(portalId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				p, err := GetPortalById(d.Logger(), d.Span(), c.Tenant())(mapId, portalId)
+				p, err := GetPortalById(d.Logger(), d.Context(), c.Tenant())(mapId, portalId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 					w.WriteHeader(http.StatusNotFound)
@@ -145,7 +145,7 @@ func handleGetMapPortalRequest(d *rest.HandlerDependency, c *rest.HandlerContext
 func handleGetMapReactorsRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			rs, err := GetReactors(d.Logger(), d.Span(), c.Tenant())(mapId)
+			rs, err := GetReactors(d.Logger(), d.Context(), c.Tenant())(mapId)
 			if err != nil {
 				d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 				w.WriteHeader(http.StatusNotFound)
@@ -175,7 +175,7 @@ func handleGetMapNPCsByObjectIdRequest(d *rest.HandlerDependency, c *rest.Handle
 				return
 			}
 
-			ns, err := GetNpcsByObjectId(d.Logger(), d.Span(), c.Tenant())(mapId, uint32(objectId))
+			ns, err := GetNpcsByObjectId(d.Logger(), d.Context(), c.Tenant())(mapId, uint32(objectId))
 			res, err := model.SliceMap(model.FixedProvider(ns), npc.Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
@@ -191,7 +191,7 @@ func handleGetMapNPCsByObjectIdRequest(d *rest.HandlerDependency, c *rest.Handle
 func handleGetMapNPCsRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			ns, err := GetNpcs(d.Logger(), d.Span(), c.Tenant())(mapId)
+			ns, err := GetNpcs(d.Logger(), d.Context(), c.Tenant())(mapId)
 			res, err := model.SliceMap(model.FixedProvider(ns), npc.Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
@@ -208,7 +208,7 @@ func handleGetMapNPCRequest(d *rest.HandlerDependency, c *rest.HandlerContext) h
 	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 		return rest.ParseNPC(d.Logger(), func(npcId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				ns, err := GetNpc(d.Logger(), d.Span(), c.Tenant())(mapId, npcId)
+				ns, err := GetNpc(d.Logger(), d.Context(), c.Tenant())(mapId, npcId)
 				res, err := model.Map(model.FixedProvider(ns), npc.Transform)()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
@@ -225,7 +225,7 @@ func handleGetMapNPCRequest(d *rest.HandlerDependency, c *rest.HandlerContext) h
 func handleGetMapMonstersRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			ms, err := GetMonsters(d.Logger(), d.Span(), c.Tenant())(mapId)
+			ms, err := GetMonsters(d.Logger(), d.Context(), c.Tenant())(mapId)
 			res, err := model.SliceMap(model.FixedProvider(ms), monster.Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")

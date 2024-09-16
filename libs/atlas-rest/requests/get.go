@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-rest/retry"
 	"github.com/sirupsen/logrus"
@@ -10,9 +11,9 @@ import (
 var ErrBadRequest = errors.New("bad request")
 var ErrNotFound = errors.New("not found")
 
-type Request[A any] func(l logrus.FieldLogger) (A, error)
+type Request[A any] func(l logrus.FieldLogger, ctx context.Context) (A, error)
 
-func get[A any](l logrus.FieldLogger) func(url string, configurators ...Configurator) (A, error) {
+func get[A any](l logrus.FieldLogger, ctx context.Context) func(url string, configurators ...Configurator) (A, error) {
 	return func(url string, configurators ...Configurator) (A, error) {
 		c := &configuration{retries: 1}
 		for _, configurator := range configurators {
@@ -29,7 +30,11 @@ func get[A any](l logrus.FieldLogger) func(url string, configurators ...Configur
 				return true, err
 			}
 
-			c.headerDecorator(req.Header)
+			for _, hd := range c.headerDecorators {
+				hd(req.Header)
+			}
+
+			req = req.WithContext(ctx)
 
 			l.Debugf("Issuing [%s] request to [%s].", req.Method, req.URL)
 			r, err = http.DefaultClient.Do(req)
@@ -64,7 +69,7 @@ func get[A any](l logrus.FieldLogger) func(url string, configurators ...Configur
 
 //goland:noinspection GoUnusedExportedFunction
 func MakeGetRequest[A any](url string, configurators ...Configurator) Request[A] {
-	return func(l logrus.FieldLogger) (A, error) {
-		return get[A](l)(url, configurators...)
+	return func(l logrus.FieldLogger, ctx context.Context) (A, error) {
+		return get[A](l, ctx)(url, configurators...)
 	}
 }

@@ -1,15 +1,11 @@
 package requests
 
-import "net/http"
-
 type configuration struct {
-	retries         int
-	headerDecorator HeaderDecorator
+	retries          int
+	headerDecorators []HeaderDecorator
 }
 
 type Configurator func(c *configuration)
-
-type HeaderDecorator func(header http.Header)
 
 //goland:noinspection GoUnusedExportedFunction
 func SetRetries(amount int) Configurator {
@@ -21,6 +17,13 @@ func SetRetries(amount int) Configurator {
 //goland:noinspection GoUnusedExportedFunction
 func SetHeaderDecorator(hd HeaderDecorator) Configurator {
 	return func(c *configuration) {
-		c.headerDecorator = hd
+		c.headerDecorators = []HeaderDecorator{hd}
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func AddHeaderDecorator(hd HeaderDecorator) Configurator {
+	return func(c *configuration) {
+		c.headerDecorators = append(c.headerDecorators, hd)
 	}
 }

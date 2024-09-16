@@ -15,10 +15,10 @@ import (
 type SpanHandler func(logrus.FieldLogger, context.Context) http.HandlerFunc
 
 //goland:noinspection GoUnusedExportedFunction
-func RetrieveSpan(l logrus.FieldLogger, name string, next SpanHandler) http.HandlerFunc {
+func RetrieveSpan(l logrus.FieldLogger, name string, ctx context.Context, next SpanHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		propagator := otel.GetTextMapPropagator()
-		sctx := propagator.Extract(context.Background(), propagation.HeaderCarrier(r.Header))
+		sctx := propagator.Extract(ctx, propagation.HeaderCarrier(r.Header))
 		sctx, span := otel.GetTracerProvider().Tracer("atlas-rest").Start(sctx, name)
 		sl := l.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
 		defer span.End()
@@ -26,10 +26,10 @@ func RetrieveSpan(l logrus.FieldLogger, name string, next SpanHandler) http.Hand
 	}
 }
 
-type TenantHandler func(l logrus.FieldLogger, tenant tenant.Model) http.HandlerFunc
+type TenantHandler func(logrus.FieldLogger, context.Context) http.HandlerFunc
 
 //goland:noinspection GoUnusedExportedFunction
-func ParseTenant(l logrus.FieldLogger, next TenantHandler) http.HandlerFunc {
+func ParseTenant(l logrus.FieldLogger, ctx context.Context, next TenantHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		idStr := r.Header.Get(tenant.ID)
 		if idStr == "" {
@@ -82,6 +82,7 @@ func ParseTenant(l logrus.FieldLogger, next TenantHandler) http.HandlerFunc {
 			return
 		}
 
-		next(tl, t)(w, r)
+		tctx := tenant.WithContext(ctx, t)
+		next(tl, tctx)(w, r)
 	}
 }

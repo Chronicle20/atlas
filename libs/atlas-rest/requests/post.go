@@ -2,13 +2,14 @@ package requests
 
 import (
 	"bytes"
+	"context"
 	"github.com/Chronicle20/atlas-rest/retry"
 	"github.com/manyminds/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
-func createOrUpdate[A any](l logrus.FieldLogger) func(method string) func(url string, input interface{}, configurators ...Configurator) (A, error) {
+func createOrUpdate[A any](l logrus.FieldLogger, ctx context.Context) func(method string) func(url string, input interface{}, configurators ...Configurator) (A, error) {
 	return func(method string) func(url string, input interface{}, configurators ...Configurator) (A, error) {
 		return func(url string, input interface{}, configurators ...Configurator) (A, error) {
 			c := &configuration{retries: 1}
@@ -32,7 +33,11 @@ func createOrUpdate[A any](l logrus.FieldLogger) func(method string) func(url st
 					return true, err
 				}
 
-				c.headerDecorator(req.Header)
+				for _, hd := range c.headerDecorators {
+					hd(req.Header)
+				}
+
+				req = req.WithContext(ctx)
 
 				l.Debugf("Issuing [%s] request to [%s].", method, req.URL)
 				r, err = http.DefaultClient.Do(req)
@@ -65,7 +70,7 @@ func createOrUpdate[A any](l logrus.FieldLogger) func(method string) func(url st
 
 //goland:noinspection GoUnusedExportedFunction
 func MakePostRequest[A any](url string, i interface{}, configurators ...Configurator) Request[A] {
-	return func(l logrus.FieldLogger) (A, error) {
-		return createOrUpdate[A](l)(http.MethodPost)(url, i, configurators...)
+	return func(l logrus.FieldLogger, ctx context.Context) (A, error) {
+		return createOrUpdate[A](l, ctx)(http.MethodPost)(url, i, configurators...)
 	}
 }

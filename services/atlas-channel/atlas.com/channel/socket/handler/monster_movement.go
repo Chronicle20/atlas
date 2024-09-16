@@ -19,7 +19,8 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		uniqueId := r.ReadUint32()
 
-		m, err := monster.GetById(l, ctx, s.Tenant())(uniqueId)
+		t := s.Tenant()
+		m, err := monster.GetById(l, ctx, t)(uniqueId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate monster [%d] moving.", uniqueId)
 			return
@@ -39,23 +40,23 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 
 		multiTargetForBall := model.MultiTargetForBall{}
 		randTimeForAreaAttack := model.RandTimeForAreaAttack{}
-		if (s.Tenant().Region == "GMS" && s.Tenant().MajorVersion > 83) || s.Tenant().Region == "JMS" {
-			multiTargetForBall.Decode(l, s.Tenant(), readerOptions)(r)
-			randTimeForAreaAttack.Decode(l, s.Tenant(), readerOptions)(r)
+		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+			multiTargetForBall.Decode(l, t, readerOptions)(r)
+			randTimeForAreaAttack.Decode(l, t, readerOptions)(r)
 		}
 
 		r.ReadByte()   // moveFlags
 		r.ReadUint32() // getHackedCode
 		r.ReadUint32() // flyCtxTargetX
 		r.ReadUint32() // flyCtxTargetY
-		if (s.Tenant().Region == "GMS" && s.Tenant().MajorVersion > 83) || s.Tenant().Region == "JMS" {
+		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
 			r.ReadUint32() // dwHackedCodeCRC
 		}
 
 		mp := model.Movement{}
-		mp.Decode(l, s.Tenant(), readerOptions)(r)
+		mp.Decode(l, t, readerOptions)(r)
 
-		if (s.Tenant().Region == "GMS" && s.Tenant().MajorVersion > 83) || s.Tenant().Region == "JMS" {
+		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
 			r.ReadByte()   // bChasing
 			r.ReadByte()   // hasTarget | pTarget != 0
 			r.ReadByte()   // bChasing 2
@@ -64,14 +65,14 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		}
 
 		l.Debugf("Monster [%d] moved. MoveId [%d], dwFlag [%d], nActionAndDir [%d], skillData [%d].", uniqueId, moveId, dwFlag, nActionAndDir, skillData)
-		err = moveMonsterAckFunc(s, writer.MoveMonsterAckBody(l, s.Tenant())(uniqueId, moveId, uint16(m.MP()), false, 0, 0))
+		err = moveMonsterAckFunc(s, writer.MoveMonsterAckBody(l, t)(uniqueId, moveId, uint16(m.MP()), false, 0, 0))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to ack monster [%d] movement for character [%d].", m.UniqueId(), s.CharacterId())
 		}
 
 		monsterMoveStartResult := dwFlag > 0
 
-		err = moveMonsterCommandFunc(monster.Move(s.Tenant(), s.WorldId(), s.ChannelId(), m.UniqueId(), s.CharacterId(), monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, mp))
+		err = moveMonsterCommandFunc(monster.Move(t, s.WorldId(), s.ChannelId(), m.UniqueId(), s.CharacterId(), monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, mp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to distribute monster movement to other services.")
 		}

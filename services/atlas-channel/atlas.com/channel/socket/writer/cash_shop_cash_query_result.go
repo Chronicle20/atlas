@@ -1,8 +1,8 @@
 package writer
 
 import (
-	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -13,7 +13,7 @@ func CashShopCashQueryResultBody(l logrus.FieldLogger) func(tenant tenant.Model)
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(0)
 			w.WriteInt(0)
-			if tenant.Region == "GMS" && tenant.MajorVersion > 12 {
+			if tenant.Region() == "GMS" && tenant.MajorVersion() > 12 {
 				w.WriteInt(0)
 			}
 			return w.Bytes()

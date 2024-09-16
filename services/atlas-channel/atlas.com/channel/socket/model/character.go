@@ -1,10 +1,10 @@
 package model
 
 import (
-	"atlas-channel/tenant"
 	"atlas-channel/tool"
 	"errors"
 	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"time"
 )
@@ -243,7 +243,7 @@ func CharacterTemporaryStatTypeByName(tenant tenant.Model) func(name CharacterTe
 	newAndIncNonDiseased(CharacterTemporaryStatTypeNameMagicShield)
 	newAndIncNonDiseased(CharacterTemporaryStatTypeNameMagicResist)
 	newAndIncNonDiseased(CharacterTemporaryStatTypeNameSoulStone)
-	if (tenant.Region == "GMS" && tenant.MajorVersion > 83) || tenant.Region == "JMS" {
+	if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
 		newAndIncNonDiseased(CharacterTemporaryStatTypeNameFlying)
 		newAndIncNonDiseased(CharacterTemporaryStatTypeNameFrozen)
 		newAndIncNonDiseased(CharacterTemporaryStatTypeNameAssistCharge)

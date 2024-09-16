@@ -2,8 +2,8 @@ package session
 
 import (
 	"atlas-channel/kafka/producer"
-	"atlas-channel/tenant"
 	"context"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

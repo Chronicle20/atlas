@@ -17,13 +17,14 @@ import (
 	"atlas-channel/socket/handler"
 	"atlas-channel/socket/writer"
 	"atlas-channel/tasks"
-	"atlas-channel/tenant"
 	"atlas-channel/tracing"
 	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	socket2 "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"strconv"
@@ -67,8 +68,20 @@ func main() {
 	ctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
 	for _, s := range config.Data.Attributes.Servers {
+		majorVersion, err := strconv.Atoi(s.Version.Major)
+		if err != nil {
+			l.WithError(err).Errorf("Socket service [majorVersion] is configured incorrectly")
+			continue
+		}
+
+		minorVersion, err := strconv.Atoi(s.Version.Minor)
+		if err != nil {
+			l.WithError(err).Errorf("Socket service [minorVersion] is configured incorrectly")
+			continue
+		}
+
 		var t tenant.Model
-		t, err = tenant.NewFromConfiguration(l)(s)
+		t, err = tenant.Create(uuid.MustParse(s.Tenant), s.Region, uint16(majorVersion), uint16(minorVersion))
 		if err != nil {
 			continue
 		}
@@ -79,7 +92,7 @@ func main() {
 		}
 
 		var rw socket2.OpReadWriter = socket2.ShortReadWriter{}
-		if t.Region == "GMS" && t.MajorVersion <= 28 {
+		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
 			rw = socket2.ByteReadWriter{}
 		}
 
@@ -92,9 +105,9 @@ func main() {
 				}
 
 				fl := l.
-					WithField("tenant", sc.Tenant().Id.String()).
-					WithField("region", sc.Tenant().Region).
-					WithField("ms.version", fmt.Sprintf("%d.%d", sc.Tenant().MajorVersion, sc.Tenant().MinorVersion)).
+					WithField("tenant", t.Id().String()).
+					WithField("region", t.Region()).
+					WithField("ms.version", fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion())).
 					WithField("world.id", sc.WorldId()).
 					WithField("channel.id", sc.ChannelId())
 
@@ -118,7 +131,7 @@ func main() {
 				_, _ = cm.RegisterHandler(inventory.ChangeEventMoveRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(inventory.ChangeEventRemoveRegister(sc, wp)(fl))
 
-				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
+				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id(), wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tdm.Context(), tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
 			}
 		}

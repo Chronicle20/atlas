@@ -2,8 +2,8 @@ package message
 
 import (
 	"atlas-channel/kafka/producer"
-	"atlas-channel/tenant"
 	"context"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 

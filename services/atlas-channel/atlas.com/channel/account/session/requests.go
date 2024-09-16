@@ -2,9 +2,9 @@ package session
 
 import (
 	"atlas-channel/rest"
-	"atlas-channel/tenant"
 	"context"
 	"fmt"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"os"

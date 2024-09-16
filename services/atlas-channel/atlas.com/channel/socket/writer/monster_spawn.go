@@ -3,8 +3,8 @@ package writer
 import (
 	"atlas-channel/monster"
 	"atlas-channel/socket/model"
-	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,7 +20,7 @@ func SpawnMonsterWithEffectBody(l logrus.FieldLogger, t tenant.Model) func(m mon
 	return func(m monster.Model, newSpawn bool, effect byte) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(m.UniqueId())
-			if (t.Region == "GMS" && t.MajorVersion > 12) || t.Region == "JMS" {
+			if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
 				if m.Controlled() {
 					w.WriteByte(1)
 				} else {

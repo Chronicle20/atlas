@@ -6,11 +6,11 @@ import (
 	"atlas-channel/character/inventory/item"
 	"atlas-channel/kafka/producer"
 	"atlas-channel/socket/model"
-	"atlas-channel/tenant"
 	"context"
 	"errors"
 	model2 "github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 

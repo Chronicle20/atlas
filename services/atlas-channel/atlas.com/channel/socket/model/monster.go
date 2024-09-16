@@ -1,8 +1,8 @@
 package model
 
 import (
-	"atlas-channel/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"math"
 )
@@ -185,7 +185,7 @@ func NewMonster(x int16, y int16, stance byte, fh int16, team int8) Monster {
 
 func (m *Monster) Encode(l logrus.FieldLogger, tenant tenant.Model, ops map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
-		if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
 			m.monsterTemporaryStat.Encode(l, tenant, ops)(w)
 		}
 		w.WriteInt16(m.x)
@@ -197,7 +197,7 @@ func (m *Monster) Encode(l logrus.FieldLogger, tenant tenant.Model, ops map[stri
 		if m.appearType == MonsterAppearTypeRevived || m.appearType >= 0 {
 			w.WriteInt(m.appearTypeOption)
 		}
-		if (tenant.Region == "GMS" && tenant.MajorVersion > 12) || tenant.Region == "JMS" {
+		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
 			w.WriteInt8(m.team)
 			w.WriteInt(m.effectItemId)
 			w.WriteInt(m.phase)

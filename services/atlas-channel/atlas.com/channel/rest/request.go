@@ -1,9 +1,9 @@
 package rest
 
 import (
-	"atlas-channel/tenant"
 	"context"
 	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/Chronicle20/atlas-tenant"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"net/http"
@@ -20,10 +20,10 @@ const (
 func headerDecorator(ctx context.Context, tenant tenant.Model) requests.HeaderDecorator {
 	return func(h http.Header) {
 		h.Set("Content-Type", "application/json; charset=utf-8")
-		h.Set(ID, tenant.Id.String())
-		h.Set(Region, tenant.Region)
-		h.Set(MajorVersion, strconv.Itoa(int(tenant.MajorVersion)))
-		h.Set(MinorVersion, strconv.Itoa(int(tenant.MinorVersion)))
+		h.Set(ID, tenant.Id().String())
+		h.Set(Region, tenant.Region())
+		h.Set(MajorVersion, strconv.Itoa(int(tenant.MajorVersion())))
+		h.Set(MinorVersion, strconv.Itoa(int(tenant.MinorVersion())))
 
 		propagator := otel.GetTextMapPropagator()
 		propagator.Inject(ctx, propagation.HeaderCarrier(h))

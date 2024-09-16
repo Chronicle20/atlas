@@ -1,15 +1,18 @@
 package model
 
 import (
-	"atlas-channel/tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"testing"
 )
 
 func TestShiftGeneration(t *testing.T) {
-	validateTemplateTemporaryStats(t)(tenant.Model{Id: uuid.New(), Region: "JMS", MajorVersion: 185, MinorVersion: 1}, 110)
+	t1, _ := tenant.Create(uuid.New(), "JMS", 185, 1)
+	t2, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+
+	validateTemplateTemporaryStats(t)(t1, 110)
 	//validateTemplateTemporaryStats(t)(tenant.Model{Id: uuid.New(), Region: "GMS", MajorVersion: 87, MinorVersion: 1}, 86)
-	validateTemplateTemporaryStats(t)(tenant.Model{Id: uuid.New(), Region: "GMS", MajorVersion: 83, MinorVersion: 1}, 82)
+	validateTemplateTemporaryStats(t)(t2, 82)
 }
 
 func validateTemplateTemporaryStats(t *testing.T) func(tenant tenant.Model, shiftBase uint) {

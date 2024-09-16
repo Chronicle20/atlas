@@ -3,9 +3,9 @@ package session
 import (
 	as "atlas-channel/account/session"
 	"atlas-channel/kafka/producer"
-	"atlas-channel/tenant"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -33,7 +33,7 @@ func Create(l logrus.FieldLogger, r *Registry, tenant tenant.Model) func(worldId
 func Decrypt(_ logrus.FieldLogger, r *Registry, tenant tenant.Model) func(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
 	return func(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
 		return func(sessionId uuid.UUID, input []byte) []byte {
-			s, ok := r.Get(tenant.Id, sessionId)
+			s, ok := r.Get(tenant.Id(), sessionId)
 			if !ok {
 				return input
 			}

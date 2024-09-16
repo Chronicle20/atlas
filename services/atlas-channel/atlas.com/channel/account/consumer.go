@@ -28,16 +28,8 @@ func StatusRegister(l logrus.FieldLogger, sc server.Model) (string, handler.Hand
 
 func handleAccountStatusEvent(sc server.Model) func(l logrus.FieldLogger, ctx context.Context, event statusEvent) {
 	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent) {
-		if sc.Tenant().Id != event.Tenant.Id {
-			return
-		}
-		if sc.Tenant().Region != event.Tenant.Region {
-			return
-		}
-		if sc.Tenant().MajorVersion != event.Tenant.MajorVersion {
-			return
-		}
-		if sc.Tenant().MinorVersion != event.Tenant.MinorVersion {
+		t := sc.Tenant()
+		if !t.Is(event.Tenant) {
 			return
 		}
 

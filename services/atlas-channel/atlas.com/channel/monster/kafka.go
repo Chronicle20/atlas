@@ -1,6 +1,6 @@
 package monster
 
-import "atlas-channel/tenant"
+import "github.com/Chronicle20/atlas-tenant"
 
 const (
 	EnvCommandMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"

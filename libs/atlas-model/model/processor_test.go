@@ -198,3 +198,53 @@ func TestMerge(t *testing.T) {
 		t.Errorf("Expected 10, got %d", len(rs))
 	}
 }
+
+func TestApply(t *testing.T) {
+	f := func(a uint32) Provider[uint32] {
+		return func() (uint32, error) {
+			return a + 32, nil
+		}
+	}
+
+	r, err := Apply(f)(5)
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	if r != 37 {
+		t.Errorf("Expected 37, got %d", r)
+	}
+}
+
+func TestCurry(t *testing.T) {
+	f := func(a uint32, b uint32) uint32 {
+		return a + b
+	}
+	r := Curry(f)(1)(2)
+	if r != 3 {
+		t.Errorf("Expected 3, got %d", r)
+	}
+}
+
+func TestCompose(t *testing.T) {
+	f := func(a uint64) func(b uint32) func(c uint16) Provider[uint32] {
+		return func(b uint32) func(c uint16) Provider[uint32] {
+			return func(c uint16) Provider[uint32] {
+				return func() (uint32, error) {
+					return uint32(a)*b*uint32(c) + 24, nil
+				}
+			}
+		}
+	}
+
+	type a = uint32
+	type b = func(uint16) Provider[uint32]
+	type c = func(uint16) (uint32, error)
+
+	r, err := Compose(Curry(Compose[a, b, c])(Apply[uint16, uint32]), f)(2)(3)(4)
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	if r != 48 {
+		t.Errorf("Expected 47, got %d", r)
+	}
+}

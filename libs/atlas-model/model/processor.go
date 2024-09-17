@@ -449,3 +449,10 @@ func Pipe[A any, B any, C any](f1 func(A) B, f2 func(B) C) func(a A) C {
 		return f2(f1(a))
 	}
 }
+
+//goland:noinspection GoUnusedExportedFunction
+func Always[A any, B any](f func(a A) B) func(a A) (B, error) {
+	return func(a A) (B, error) {
+		return f(a), nil
+	}
+}

@@ -248,3 +248,25 @@ func TestCompose(t *testing.T) {
 		t.Errorf("Expected 47, got %d", r)
 	}
 }
+
+func TestParameterTransformation(t *testing.T) {
+	type rt = func(uint642 uint64) Provider[uint32]
+
+	f := func(a uint32) Provider[uint32] {
+		return func() (uint32, error) {
+			return a + 32, nil
+		}
+	}
+	tf := func(uint642 uint64) uint32 {
+		return uint32(uint642)
+	}
+
+	var rf rt = Compose(f, tf)
+	r, err := rf(5)()
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	if r != 37 {
+		t.Errorf("Expected 37, got %d", r)
+	}
+}

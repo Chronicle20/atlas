@@ -4,7 +4,7 @@ import "testing"
 
 func TestFirstNoFilter(t *testing.T) {
 	p := FixedProvider([]uint32{1})
-	r, err := First(p)
+	r, err := First(p, Filters[uint32]())
 	if err != nil {
 		t.Errorf("Expected result, got err %s", err)
 	}
@@ -72,7 +72,7 @@ func isTwo(val uint32) bool {
 
 func TestFirst(t *testing.T) {
 	p := FixedProvider([]uint32{1, 2, 3, 4, 5})
-	mp, err := First(p, isTwo)
+	mp, err := First(p, Filters(isTwo))
 	if err != nil {
 		t.Errorf("Expected result, got err %s", err)
 	}
@@ -94,7 +94,7 @@ func TestThenOperator(t *testing.T) {
 		return nil
 	}
 
-	err := For(p, ThenOperator(op1, op2))
+	err := For(p, ThenOperator(op1, Operators(op2)))
 	if err != nil {
 		t.Errorf("Expected result, got err %s", err)
 	}
@@ -269,4 +269,20 @@ func TestParameterTransformation(t *testing.T) {
 	if r != 37 {
 		t.Errorf("Expected 37, got %d", r)
 	}
+}
+
+func TestFilters(t *testing.T) {
+	ip := FixedProvider([]uint32{1, 2, 3, 4, 5})
+	f := func(i uint32) bool {
+		return i > 3
+	}
+	op := FilteredProvider(ip, Filters(f))
+	r, err := op()
+	if err != nil {
+		t.Errorf("Expected result, got err %s", err)
+	}
+	if len(r) != 2 {
+		t.Errorf("Expected 2, got %d", len(r))
+	}
+
 }

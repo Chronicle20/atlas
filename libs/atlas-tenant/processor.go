@@ -76,6 +76,15 @@ func FromContext(ctx context.Context) model.Provider[Model] {
 }
 
 //goland:noinspection GoUnusedExportedFunction
+func MustFromContext(ctx context.Context) Model {
+	t, err := FromContext(ctx)()
+	if err != nil {
+		panic("ctx parse err: " + err.Error())
+	}
+	return t
+}
+
+//goland:noinspection GoUnusedExportedFunction
 func WithContext(ctx context.Context, tenant Model) context.Context {
 	var wctx = ctx
 	wctx = context.WithValue(wctx, ID, tenant.Id())

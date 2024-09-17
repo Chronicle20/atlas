@@ -1,8 +1,8 @@
 package account
 
 import (
-	"atlas-account/tenant"
 	"errors"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"sync"
 	"time"
@@ -190,12 +190,12 @@ func (l *Registry) GetExpiredInTransition(timeout time.Duration) []AccountKey {
 	return accounts
 }
 
-func (l *Registry) Tenants() map[uuid.UUID]tenant.Model {
+func (l *Registry) Tenants() []tenant.Model {
 	l.lock.Lock()
 	defer l.lock.Unlock()
-	var tenants = make(map[uuid.UUID]tenant.Model)
+	var tenants = make([]tenant.Model, 0)
 	for ak := range l.sessions {
-		tenants[ak.Tenant.Id] = ak.Tenant
+		tenants = append(tenants, ak.Tenant)
 	}
 	return tenants
 }

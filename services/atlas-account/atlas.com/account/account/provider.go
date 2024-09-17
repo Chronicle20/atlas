@@ -2,8 +2,8 @@ package account
 
 import (
 	"atlas-account/database"
-	"atlas-account/tenant"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
 	"gorm.io/gorm"
 )
 
@@ -22,7 +22,7 @@ func entityById(tenant tenant.Model, id uint32) database.EntityProvider[entity] 
 func entitiesByName(tenant tenant.Model, name string) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		var results []entity
-		err := db.Where(&entity{TenantId: tenant.Id, Name: name}).First(&results).Error
+		err := db.Where(&entity{TenantId: tenant.Id(), Name: name}).First(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]entity](err)
 		}
@@ -33,7 +33,7 @@ func entitiesByName(tenant tenant.Model, name string) database.EntityProvider[[]
 func allInTenant(tenant tenant.Model) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		var results []entity
-		err := db.Where(&entity{TenantId: tenant.Id}).Find(&results).Error
+		err := db.Where(&entity{TenantId: tenant.Id()}).Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]entity](err)
 		}

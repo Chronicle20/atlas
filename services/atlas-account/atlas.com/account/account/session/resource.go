@@ -33,7 +33,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleCreateSession(d *rest.HandlerDependency, c *rest.HandlerContext, input InputRestModel) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			resp := AttemptLogin(d.Logger(), d.DB(), d.Context(), c.Tenant())(input.SessionId, input.Name, input.Password)
+			resp := AttemptLogin(d.Logger(), d.DB(), d.Context())(input.SessionId, input.Name, input.Password)
 			res, err := model.Map(model.FixedProvider(resp), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
@@ -48,7 +48,7 @@ func handleCreateSession(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 func handleUpdateSession(d *rest.HandlerDependency, c *rest.HandlerContext, input InputRestModel) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			resp := ProgressState(d.Logger(), d.DB(), d.Context(), c.Tenant())(input.SessionId, input.Issuer, accountId, account.State(input.State))
+			resp := ProgressState(d.Logger(), d.DB(), d.Context())(input.SessionId, input.Issuer, accountId, account.State(input.State))
 			res, err := model.Map(model.FixedProvider(resp), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
@@ -63,7 +63,7 @@ func handleUpdateSession(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 func handleDeleteSession(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicAccountLogout)(logoutCommandProvider(c.Tenant(), accountId))
+			_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicAccountLogout)(logoutCommandProvider(accountId))
 			w.WriteHeader(http.StatusAccepted)
 		}
 	})

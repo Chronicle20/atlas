@@ -9,7 +9,12 @@ import (
 type Operator[M any] func(M) error
 
 //goland:noinspection GoUnusedExportedFunction
-func ThenOperator[M any](first Operator[M], others ...Operator[M]) Operator[M] {
+func Operators[M any](operators ...Operator[M]) []Operator[M] {
+	return operators
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func ThenOperator[M any](first Operator[M], others []Operator[M]) Operator[M] {
 	return func(m M) error {
 		err := first(m)
 		if err != nil {
@@ -28,6 +33,10 @@ func ThenOperator[M any](first Operator[M], others ...Operator[M]) Operator[M] {
 type KeyValueOperator[K any, V any] func(K) Operator[V]
 
 type Provider[M any] func() (M, error)
+
+func Decorators[M any](decorators ...Decorator[M]) []Decorator[M] {
+	return decorators
+}
 
 type Decorator[M any] func(M) M
 
@@ -136,7 +145,12 @@ func ExecuteForEachMap[K comparable, V any](f KeyValueOperator[K, V], configurat
 type Filter[M any] func(M) bool
 
 //goland:noinspection GoUnusedExportedFunction
-func FilteredProvider[M any](provider Provider[[]M], filters ...Filter[M]) Provider[[]M] {
+func Filters[M any](filters ...Filter[M]) []Filter[M] {
+	return filters
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func FilteredProvider[M any](provider Provider[[]M], filters []Filter[M]) Provider[[]M] {
 	models, err := provider()
 	if err != nil {
 		return ErrorProvider[[]M](err)
@@ -333,7 +347,7 @@ func Fold[M any, N any](provider Provider[[]M], supplier Provider[N], folder Fol
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func Decorate[M any](decorators ...Decorator[M]) func(m M) (M, error) {
+func Decorate[M any](decorators []Decorator[M]) func(m M) (M, error) {
 	return func(m M) (M, error) {
 		var n = m
 		for _, d := range decorators {
@@ -344,7 +358,7 @@ func Decorate[M any](decorators ...Decorator[M]) func(m M) (M, error) {
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func FirstProvider[M any](provider Provider[[]M], filters ...Filter[M]) Provider[M] {
+func FirstProvider[M any](provider Provider[[]M], filters []Filter[M]) Provider[M] {
 	ms, err := provider()
 	if err != nil {
 		return ErrorProvider[M](err)
@@ -373,8 +387,8 @@ func FirstProvider[M any](provider Provider[[]M], filters ...Filter[M]) Provider
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func First[M any](provider Provider[[]M], filters ...Filter[M]) (M, error) {
-	return FirstProvider(provider, filters...)()
+func First[M any](provider Provider[[]M], filters []Filter[M]) (M, error) {
+	return FirstProvider(provider, filters)()
 }
 
 //goland:noinspection GoUnusedExportedFunction

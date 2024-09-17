@@ -36,7 +36,7 @@ func FixedProvider[M any](ps []Provider[M]) model.Provider[[]Provider[M]] {
 
 //goland:noinspection GoUnusedExportedFunction
 func Await[M any](provider model.Provider[Provider[M]], configurators ...Configurator) model.Provider[M] {
-	return model.FirstProvider(AwaitSlice(model.ToSliceProvider(provider), configurators...))
+	return model.FirstProvider(AwaitSlice(model.ToSliceProvider(provider), configurators...), model.Filters[M]())
 }
 
 //goland:noinspection GoUnusedExportedFunction

@@ -412,3 +412,40 @@ func MergeSliceProvider[M any](provider Provider[[]M], other Provider[[]M]) Prov
 		return append(r1, r2...), nil
 	}
 }
+
+//goland:noinspection GoUnusedExportedFunction
+func Apply[A any, B any](f func(a A) Provider[B]) func(a A) (B, error) {
+	return func(a A) (B, error) {
+		return f(a)()
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func Curry[A any, B any, C any](f func(a A, b B) C) func(a A) func(b B) C {
+	return func(a A) func(b B) C {
+		return func(b B) C {
+			return f(a, b)
+		}
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func Uncurry[A any, B any, C any](f func(a A) func(b B) C) func(a A, b B) C {
+	return func(a A, b B) C {
+		return f(a)(b)
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func Compose[A any, B any, C any](f1 func(B) C, f2 func(A) B) func(a A) C {
+	return func(a A) C {
+		return f1(f2(a))
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func Pipe[A any, B any, C any](f1 func(A) B, f2 func(B) C) func(a A) C {
+	return func(a A) C {
+		return f2(f1(a))
+	}
+}

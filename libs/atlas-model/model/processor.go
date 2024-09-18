@@ -233,16 +233,18 @@ func ForEachMap[K comparable, V any](provider Provider[map[K]V], operator KeyVal
 type Transformer[M any, N any] func(M) (N, error)
 
 //goland:noinspection GoUnusedExportedFunction
-func Map[M any, N any](provider Provider[M], transformer Transformer[M, N]) Provider[N] {
-	m, err := provider()
-	if err != nil {
-		return ErrorProvider[N](err)
+func Map[M any, N any](transformer Transformer[M, N]) func(provider Provider[M]) Provider[N] {
+	return func(provider Provider[M]) Provider[N] {
+		m, err := provider()
+		if err != nil {
+			return ErrorProvider[N](err)
+		}
+		n, err := transformer(m)
+		if err != nil {
+			return ErrorProvider[N](err)
+		}
+		return FixedProvider(n)
 	}
-	n, err := transformer(m)
-	if err != nil {
-		return ErrorProvider[N](err)
-	}
-	return FixedProvider(n)
 }
 
 type MapFuncConfigurator Decorator[MapConfig]

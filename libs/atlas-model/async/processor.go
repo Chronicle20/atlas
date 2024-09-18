@@ -10,10 +10,18 @@ import (
 var ErrAwaitTimeout = errors.New("timeout")
 
 type Config struct {
+	ctx     context.Context
 	timeout time.Duration
 }
 
 type Configurator func(*Config)
+
+//goland:noinspection GoUnusedExportedFunction
+func SetContext(ctx context.Context) Configurator {
+	return func(config *Config) {
+		config.ctx = ctx
+	}
+}
 
 //goland:noinspection GoUnusedExportedFunction
 func SetTimeout(timeout time.Duration) Configurator {
@@ -41,12 +49,12 @@ func Await[M any](provider model.Provider[Provider[M]], configurators ...Configu
 
 //goland:noinspection GoUnusedExportedFunction
 func AwaitSlice[M any](provider model.Provider[[]Provider[M]], configurators ...Configurator) model.Provider[[]M] {
-	c := &Config{timeout: 500 * time.Millisecond}
+	c := &Config{ctx: context.Background(), timeout: 500 * time.Millisecond}
 	for _, configurator := range configurators {
 		configurator(c)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
 	defer cancel()
 
 	providers, err := provider()

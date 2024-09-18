@@ -13,7 +13,7 @@ func Provider[A any, M any](l logrus.FieldLogger, ctx context.Context) func(r Re
 		if err != nil {
 			return model.ErrorProvider[M](err)
 		}
-		return model.Map[A, M](model.FixedProvider(result), t)
+		return model.Map[A, M](t)(model.FixedProvider(result))
 	}
 }
 
@@ -24,7 +24,7 @@ func SliceProvider[A any, M any](l logrus.FieldLogger, ctx context.Context) func
 		if err != nil {
 			return model.ErrorProvider[[]M](err)
 		}
-		sm := model.SliceMap[A, M](model.FixedProvider(resp), t)
+		sm := model.SliceMap[A, M](t)(model.FixedProvider(resp))()
 		return model.FilteredProvider[M](sm, filters)
 	}
 }

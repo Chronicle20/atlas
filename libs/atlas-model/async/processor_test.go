@@ -16,7 +16,7 @@ func TestAsyncSlice(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		results, err := AwaitSlice(model.SliceMap(model.FixedProvider(items), AsyncTestTransformer))()
+		results, err := AwaitSlice(model.SliceMap(AsyncTestTransformer)(model.FixedProvider(items))())()
 		if err != nil {
 			t.Fatal(err)
 		}

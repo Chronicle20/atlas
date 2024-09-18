@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Validator[M any] func(m M) bool
+type Validator[M any] func(l logrus.FieldLogger, ctx context.Context, m M) bool
 
 type Handler[M any] func(l logrus.FieldLogger, ctx context.Context, m M)
 
@@ -23,7 +23,7 @@ type Config[M any] struct {
 func PersistentConfig[M any](handler Handler[M]) Config[M] {
 	return Config[M]{
 		persistent: true,
-		validator:  func(m M) bool { return true },
+		validator:  func(l logrus.FieldLogger, ctx context.Context, m M) bool { return true },
 		handler:    handler,
 	}
 }
@@ -46,7 +46,7 @@ func AdaptHandler[M any](config Config[M]) handler.Handler {
 			return true, err
 		}
 
-		process := config.validator(m)
+		process := config.validator(l, ctx, m)
 		if !process {
 			return true, nil
 		}

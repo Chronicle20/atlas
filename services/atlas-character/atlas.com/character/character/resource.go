@@ -58,14 +58,14 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 			return
 		}
 
-		cs, err := GetForAccountInWorld(d.DB(), c.Tenant())(uint32(accountId), byte(worldId), decoratorsFromInclude(r, d, c)...)
+		cs, err := GetForAccountInWorld(d.DB())(d.Context())(uint32(accountId), byte(worldId), decoratorsFromInclude(r, d, c)...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to get characters for account %d in world %d.", accountId, worldId)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		res, err := model.SliceMap(model.FixedProvider(cs), Transform)()
+		res, err := model.SliceMap(Transform)(model.FixedProvider(cs))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -76,11 +76,11 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 	}
 }
 
-func decoratorsFromInclude(r *http.Request, d *rest.HandlerDependency, c *rest.HandlerContext) []model.Decorator[Model] {
+func decoratorsFromInclude(r *http.Request, d *rest.HandlerDependency, _ *rest.HandlerContext) []model.Decorator[Model] {
 	var decorators = make([]model.Decorator[Model], 0)
 	include := mux.Vars(r)["include"]
 	if strings.Contains(include, "inventory") {
-		decorators = append(decorators, InventoryModelDecorator(d.Logger(), d.DB(), d.Context(), c.Tenant()))
+		decorators = append(decorators, InventoryModelDecorator(d.Logger())(d.DB())(d.Context()))
 	}
 	return decorators
 }
@@ -100,14 +100,14 @@ func handleGetCharactersByMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 			return
 		}
 
-		cs, err := GetForMapInWorld(d.DB(), c.Tenant())(byte(worldId), uint32(mapId), decoratorsFromInclude(r, d, c)...)
+		cs, err := GetForMapInWorld(d.DB())(d.Context())(byte(worldId), uint32(mapId), decoratorsFromInclude(r, d, c)...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to get characters for map %d in world %d.", mapId, worldId)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		res, err := model.SliceMap(model.FixedProvider(cs), Transform)()
+		res, err := model.SliceMap(Transform)(model.FixedProvider(cs))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -127,14 +127,14 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 			return
 		}
 
-		cs, err := GetForName(d.DB(), c.Tenant())(name, decoratorsFromInclude(r, d, c)...)
+		cs, err := GetForName(d.DB())(d.Context())(name, decoratorsFromInclude(r, d, c)...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Getting character %s.", name)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		res, err := model.SliceMap(model.FixedProvider(cs), Transform)()
+		res, err := model.SliceMap(Transform)(model.FixedProvider(cs))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -148,7 +148,7 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 func handleGetCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cs, err := GetById(d.DB(), c.Tenant())(characterId, decoratorsFromInclude(r, d, c)...)
+			cs, err := GetById(d.DB())(d.Context())(decoratorsFromInclude(r, d, c)...)(characterId)
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 				return
@@ -160,7 +160,7 @@ func handleGetCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 				return
 			}
 
-			res, err := model.Map(model.FixedProvider(cs), Transform)()
+			res, err := model.Map(Transform)(model.FixedProvider(cs))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -180,7 +180,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		cs, err := Create(d.Logger(), d.DB(), d.Context(), producer.ProviderImpl(d.Logger())(d.Context()))(c.Tenant(), m)
+		cs, err := Create(d.Logger())(d.DB())(d.Context())(producer.ProviderImpl(d.Logger())(d.Context()))(m)
 		if err != nil {
 			if errors.Is(err, blockedNameErr) || errors.Is(err, invalidLevelErr) {
 				w.WriteHeader(http.StatusBadRequest)
@@ -192,7 +192,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			return
 		}
 
-		res, err := model.Map(model.FixedProvider(cs), Transform)()
+		res, err := model.Map(Transform)(model.FixedProvider(cs))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -203,10 +203,10 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 	}
 }
 
-func handleDeleteCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleDeleteCharacter(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			err := Delete(d.Logger(), d.DB(), d.Context(), c.Tenant())(characterId)
+			err := Delete(d.Logger())(d.DB())(d.Context())(characterId)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return

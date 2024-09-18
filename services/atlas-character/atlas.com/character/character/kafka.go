@@ -1,9 +1,5 @@
 package character
 
-import (
-	"atlas-character/tenant"
-)
-
 const (
 	EnvEventTopicCharacterStatus       = "EVENT_TOPIC_CHARACTER_STATUS"
 	EventCharacterStatusTypeCreated    = "CREATED"
@@ -25,11 +21,10 @@ const (
 )
 
 type statusEvent[E any] struct {
-	Tenant      tenant.Model `json:"tenant"`
-	WorldId     byte         `json:"worldId"`
-	CharacterId uint32       `json:"characterId"`
-	Type        string       `json:"type"`
-	Body        E            `json:"body"`
+	WorldId     byte   `json:"worldId"`
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
 }
 
 type statusEventCreatedBody struct {
@@ -54,11 +49,10 @@ type statusEventMapChangedBody struct {
 }
 
 type commandEvent[E any] struct {
-	Tenant      tenant.Model `json:"tenant"`
-	WorldId     byte         `json:"worldId"`
-	CharacterId uint32       `json:"characterId"`
-	Type        string       `json:"type"`
-	Body        E            `json:"body"`
+	WorldId     byte   `json:"worldId"`
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
 }
 
 type changeMapBody struct {
@@ -68,21 +62,19 @@ type changeMapBody struct {
 }
 
 type movementCommand struct {
-	Tenant      tenant.Model `json:"tenant"`
-	WorldId     byte         `json:"worldId"`
-	ChannelId   byte         `json:"channelId"`
-	MapId       uint32       `json:"mapId"`
-	CharacterId uint32       `json:"characterId"`
-	Movement    movement     `json:"movement"`
+	WorldId     byte     `json:"worldId"`
+	ChannelId   byte     `json:"channelId"`
+	MapId       uint32   `json:"mapId"`
+	CharacterId uint32   `json:"characterId"`
+	Movement    movement `json:"movement"`
 }
 
 type movementEvent struct {
-	Tenant      tenant.Model `json:"tenant"`
-	WorldId     byte         `json:"worldId"`
-	ChannelId   byte         `json:"channelId"`
-	MapId       uint32       `json:"mapId"`
-	CharacterId uint32       `json:"characterId"`
-	Movement    movement     `json:"movement"`
+	WorldId     byte     `json:"worldId"`
+	ChannelId   byte     `json:"channelId"`
+	MapId       uint32   `json:"mapId"`
+	CharacterId uint32   `json:"characterId"`
+	Movement    movement `json:"movement"`
 }
 
 type movement struct {

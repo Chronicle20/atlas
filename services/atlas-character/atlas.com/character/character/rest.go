@@ -111,12 +111,12 @@ func Transform(m Model) (RestModel, error) {
 }
 
 func Extract(m RestModel) (Model, error) {
-	eqp, err := model.Map(model.FixedProvider(m.Equipment), equipment.Extract)()
+	eqp, err := model.Map(equipment.Extract)(model.FixedProvider(m.Equipment))()
 	if err != nil {
 		return Model{}, err
 	}
 
-	inv, err := model.Map(model.FixedProvider(m.Inventory), inventory.Extract)()
+	inv, err := model.Map(inventory.Extract)(model.FixedProvider(m.Inventory))()
 	if err != nil {
 		return Model{}, err
 	}

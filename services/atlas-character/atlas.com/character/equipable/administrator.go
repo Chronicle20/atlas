@@ -1,14 +1,13 @@
 package equipable
 
 import (
-	"atlas-character/tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func createItem(db *gorm.DB, t tenant.Model, inventoryId uint32, itemId uint32, slot int16, referenceId uint32) (Model, error) {
+func createItem(db *gorm.DB, tenantId uuid.UUID, inventoryId uint32, itemId uint32, slot int16, referenceId uint32) (Model, error) {
 	eii := &entity{
-		TenantId:    t.Id,
+		TenantId:    tenantId,
 		InventoryId: inventoryId,
 		ItemId:      itemId,
 		Slot:        slot,

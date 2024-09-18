@@ -37,7 +37,7 @@ func TestInternalCreate(t *testing.T) {
 	}
 
 	if a.TenantId() != st.Id() {
-		t.Fatalf("Tenant mismatch. Expected %v, got %v", st.Id, a.TenantId())
+		t.Fatalf("Tenant mismatch. Expected %v, got %v", st.Id(), a.TenantId())
 	}
 
 	if a.Name() != testName {

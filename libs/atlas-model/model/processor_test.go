@@ -19,7 +19,7 @@ func byTwo(val uint32) (uint32, error) {
 
 func TestMap(t *testing.T) {
 	p := FixedProvider(uint32(1))
-	mp := Map[uint32, uint32](p, byTwo)
+	mp := Map[uint32, uint32](byTwo)(p)
 
 	ar, err := mp()
 	if err != nil {

@@ -17,7 +17,7 @@ func TestConfig(t *testing.T) {
 		t.Fatalf("Invalid broker max wait.")
 	}
 
-	c, err := model.Decorate(SetMaxWait(time.Second * 60))(c)
+	c, err := model.Decorate(model.Decorators(SetMaxWait(time.Second * 60)))(c)
 	if err != nil || c.maxWait != time.Second*60 {
 		t.Fatalf("Invalid broker max wait.")
 	}

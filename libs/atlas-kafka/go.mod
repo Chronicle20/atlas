@@ -3,8 +3,8 @@ module github.com/Chronicle20/atlas-kafka
 go 1.23.1
 
 require (
-	github.com/Chronicle20/atlas-model v1.0.5
-	github.com/Chronicle20/atlas-tenant v1.0.2
+	github.com/Chronicle20/atlas-model v1.2.0
+	github.com/Chronicle20/atlas-tenant v1.0.3
 	github.com/google/uuid v1.6.0
 	github.com/segmentio/kafka-go v0.4.47
 	github.com/sirupsen/logrus v1.9.3

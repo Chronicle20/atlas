@@ -31,7 +31,7 @@ type RawMessage struct {
 }
 
 func MessageProvider(mp model.Provider[[]RawMessage]) model.Provider[[]kafka.Message] {
-	return model.SliceMap(mp, transformer, model.ParallelMap())
+	return model.SliceMap(transformer)(mp)(model.ParallelMap())
 }
 
 func SingleMessageProvider(key []byte, value interface{}) model.Provider[[]kafka.Message] {

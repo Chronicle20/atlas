@@ -103,7 +103,7 @@ func TestSpanPropagation(t *testing.T) {
 	ictx, ispan := otel.GetTracerProvider().Tracer("atlas-kafka").Start(context.Background(), "test-span")
 
 	msg := kafka.Message{Value: []byte("this is a test")}
-	msg, err := model.Map(model.FixedProvider(msg), producer.DecorateHeaders(producer.SpanHeaderDecorator(ictx)))()
+	msg, err := model.Map(producer.DecorateHeaders(producer.SpanHeaderDecorator(ictx)))(model.FixedProvider(msg))()
 	if err != nil {
 		t.Fatalf("Unable to prepare headers for test.")
 	}
@@ -150,7 +150,7 @@ func TestTenantPropagation(t *testing.T) {
 	ictx := tenant.WithContext(context.Background(), it)
 
 	msg := kafka.Message{Value: []byte("this is a test")}
-	msg, err = model.Map(model.FixedProvider(msg), producer.DecorateHeaders(producer.TenantHeaderDecorator(ictx)))()
+	msg, err = model.Map(producer.DecorateHeaders(producer.TenantHeaderDecorator(ictx)))(model.FixedProvider(msg))()
 	if err != nil {
 		t.Fatalf("Unable to prepare headers for test.")
 	}

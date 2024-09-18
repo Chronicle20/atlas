@@ -9,7 +9,7 @@ import (
 
 func entityById(tenant tenant.Model, id uint32) database.EntityProvider[entity] {
 	return func(db *gorm.DB) model.Provider[entity] {
-		where := map[string]interface{}{"tenant_id": tenant.Id, "id": id}
+		where := map[string]interface{}{"tenant_id": tenant.Id(), "id": id}
 		var result = entity{}
 		err := db.Where(where).First(&result).Error
 		if err != nil {

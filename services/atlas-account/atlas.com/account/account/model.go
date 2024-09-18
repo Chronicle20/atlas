@@ -66,3 +66,7 @@ func (a Model) Pin() string {
 func (a Model) Pic() string {
 	return a.pic
 }
+
+func LoggedIn(m Model) bool {
+	return m.state != StateNotLoggedIn
+}

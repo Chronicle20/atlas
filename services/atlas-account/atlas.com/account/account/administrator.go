@@ -1,7 +1,7 @@
 package account
 
 import (
-	"atlas-account/tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"gorm.io/gorm"
 )
 
@@ -10,7 +10,7 @@ type EntityUpdateFunction func() ([]string, func(e *entity))
 func create(db *gorm.DB) func(tenant tenant.Model, name string, password string, gender byte) (Model, error) {
 	return func(tenant tenant.Model, name string, password string, gender byte) (Model, error) {
 		a := &entity{
-			TenantId: tenant.Id,
+			TenantId: tenant.Id(),
 			Name:     name,
 			Password: password,
 			Gender:   gender,
@@ -35,8 +35,7 @@ func update(db *gorm.DB) func(modifiers ...EntityUpdateFunction) IdOperator {
 				columns = append(columns, c...)
 				u(e)
 			}
-			return db.Model(&entity{TenantId: tenant.Id, ID: id}).Select(columns).Updates(e).Error
-
+			return db.Model(&entity{TenantId: tenant.Id(), ID: id}).Select(columns).Updates(e).Error
 		}
 	}
 }

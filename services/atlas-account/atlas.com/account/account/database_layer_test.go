@@ -1,7 +1,7 @@
 package account
 
 import (
-	"atlas-account/tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -21,12 +21,8 @@ func setupTestDatabase(t *testing.T) *gorm.DB {
 }
 
 func sampleTenant() tenant.Model {
-	return tenant.Model{
-		Id:           uuid.New(),
-		Region:       "GMS",
-		MajorVersion: 83,
-		MinorVersion: 1,
-	}
+	t, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	return t
 }
 
 func TestInternalCreate(t *testing.T) {
@@ -40,8 +36,8 @@ func TestInternalCreate(t *testing.T) {
 		t.Fatalf("Failed to create account: %v", err)
 	}
 
-	if a.TenantId() != st.Id {
-		t.Fatalf("Tenant mismatch. Expected %v, got %v", st.Id, a.TenantId())
+	if a.TenantId() != st.Id() {
+		t.Fatalf("Tenant mismatch. Expected %v, got %v", st.Id(), a.TenantId())
 	}
 
 	if a.Name() != testName {

@@ -3,8 +3,8 @@ package session
 import (
 	"atlas-account/account"
 	"atlas-account/configuration"
-	"atlas-account/tenant"
 	"context"
+	"github.com/Chronicle20/atlas-tenant"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -22,7 +22,7 @@ const (
 	LicenseAgreement  = "LICENSE_AGREEMENT"
 )
 
-func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(sessionId uuid.UUID, name string, password string) Model {
+func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(sessionId uuid.UUID, name string, password string) Model {
 	return func(sessionId uuid.UUID, name string, password string) Model {
 		l.Debugf("Attemting login for [%s].", name)
 		if checkLoginAttempts(sessionId) > 4 {
@@ -35,7 +35,7 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant
 			return ErrorModel(SystemError)
 		}
 
-		a, err := account.GetOrCreate(l, db, ctx, tenant)(name, password, c.AutomaticRegister)
+		a, err := account.GetOrCreate(l, db, ctx)(name, password, c.AutomaticRegister)
 		if err != nil && !c.AutomaticRegister {
 			return ErrorModel(NotRegistered)
 		}
@@ -57,42 +57,66 @@ func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant
 			return ErrorModel(IncorrectPassword)
 		}
 
-		account.Login(l, db, ctx, tenant)(sessionId, a.Id(), account.ServiceLogin)
+		err = account.Login(l, db, ctx)(sessionId, a.Id(), account.ServiceLogin)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to record login.")
+			return ErrorModel(SystemError)
+		}
 
 		l.Debugf("Login successful for [%s].", name)
 
-		if !a.TOS() && tenant.Region != "JMS" {
+		t, err := tenant.FromContext(ctx)()
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate tenant.")
+			return ErrorModel(SystemError)
+		}
+
+		if !a.TOS() && t.Region() != "JMS" {
 			return ErrorModel(LicenseAgreement)
 		}
 		return OkModel()
 	}
 }
 
-func ProgressState(l logrus.FieldLogger, db *gorm.DB, ctx context.Context, tenant tenant.Model) func(sessionId uuid.UUID, issuer string, accountId uint32, state account.State) Model {
+func ProgressState(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(sessionId uuid.UUID, issuer string, accountId uint32, state account.State) Model {
 	return func(sessionId uuid.UUID, issuer string, accountId uint32, state account.State) Model {
-		a, err := account.GetById(l, db, tenant)(accountId)
+		a, err := account.GetById(db)(ctx)(accountId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate account a session is being created for.")
 			return ErrorModel(NotRegistered)
 		}
 
 		l.Debugf("Received request to progress state for account [%d] to state [%d] from state [%d].", accountId, state, a.State())
-		for k, v := range account.Get().GetStates(account.AccountKey{Tenant: tenant, AccountId: accountId}) {
+		t, err := tenant.FromContext(ctx)()
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate tenant.")
+			return ErrorModel(SystemError)
+		}
+
+		for k, v := range account.Get().GetStates(account.AccountKey{Tenant: t, AccountId: accountId}) {
 			l.Debugf("Has state [%d] for [%s].", v.State, k.Service)
 		}
 		if a.State() == account.StateNotLoggedIn {
 			return ErrorModel(SystemError)
 		}
 		if state == account.StateNotLoggedIn {
-			account.Logout(l, db, ctx, tenant)(sessionId, accountId, issuer)
+			err = account.Logout(l, db, ctx)(sessionId, accountId, issuer)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to logout account.")
+				return ErrorModel(SystemError)
+			}
 			return OkModel()
 		}
 		if state == account.StateLoggedIn {
-			account.Login(l, db, ctx, tenant)(sessionId, accountId, issuer)
+			err = account.Login(l, db, ctx)(sessionId, accountId, issuer)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to login account.")
+				return ErrorModel(SystemError)
+			}
 			return OkModel()
 		}
 		if state == account.StateTransition {
-			err = account.Get().Transition(account.AccountKey{Tenant: tenant, AccountId: accountId}, account.ServiceKey{SessionId: sessionId, Service: account.Service(issuer)})
+			err = account.Get().Transition(account.AccountKey{Tenant: t, AccountId: accountId}, account.ServiceKey{SessionId: sessionId, Service: account.Service(issuer)})
 			if err == nil {
 				l.Debugf("State transition triggered a transition.")
 			}

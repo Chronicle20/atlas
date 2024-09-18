@@ -50,8 +50,8 @@ func main() {
 	db := database.Connect(l, database.SetMigrations(account.Migration))
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.CreateAccountCommandConsumer(l)(consumerGroupId))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.CreateAccountSessionCommandConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.CreateCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.CreateSessionCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(account.CreateAccountRegister(l, db))
 	_, _ = cm.RegisterHandler(account.CreateAccountSessionRegister(l, db))
 

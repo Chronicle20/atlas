@@ -44,7 +44,7 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			a, err := Update(d.Logger(), d.DB(), c.Tenant())(accountId, im)
+			a, err := Update(d.Logger(), d.DB(), d.Context())(accountId, im)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to update account [%d].", accountId)
 				w.WriteHeader(http.StatusNotFound)
@@ -64,7 +64,7 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 
 func handleCreateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicCreateAccount)(createCommandProvider(c.Tenant(), input.Name, input.Password))
+		_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicCreateAccount)(createCommandProvider(input.Name, input.Password))
 		w.WriteHeader(http.StatusAccepted)
 	}
 }
@@ -85,17 +85,10 @@ func parseName(l logrus.FieldLogger, next nameHandler) http.HandlerFunc {
 func handleGetAccountByName(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return parseName(d.Logger(), func(name string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			a, err := GetByName(d.Logger(), d.DB(), c.Tenant())(name)
+			res, err := model.Map(ByNameProvider(d.DB())(d.Context())(name), Transform)()
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Unable to locate account [%s].", name)
+				d.Logger().WithError(err).Errorf("Unable to retrieve account by name [%s].", name)
 				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-
-			res, err := model.Map(model.FixedProvider(a), Transform)()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
@@ -105,7 +98,7 @@ func handleGetAccountByName(d *rest.HandlerDependency, c *rest.HandlerContext) h
 
 func handleGetAccounts(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		as, err := GetAll(d.Logger(), d.DB(), c.Tenant())
+		as, err := GetByTenant(d.DB())(d.Context())
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to locate accounts.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -125,17 +118,10 @@ func handleGetAccounts(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 func handleGetAccountById(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(id uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			a, err := GetById(d.Logger(), d.DB(), c.Tenant())(id)
+			res, err := model.Map(ByIdProvider(d.DB())(d.Context())(id), Transform)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to locate account [%d].", id)
 				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-
-			res, err := model.Map(model.FixedProvider(a), Transform)()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)

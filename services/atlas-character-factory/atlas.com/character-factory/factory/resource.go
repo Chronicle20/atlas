@@ -24,14 +24,14 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 
 func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cm, err := Create(d.Logger(), d.Context(), c.Tenant())(input)
+		cm, err := Create(d.Logger())(d.Context())(input)
 		if err != nil {
 			d.Logger().WithError(err).Error("Error creating character from seed.")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		res, err := model.Map(model.FixedProvider(cm), character.Transform)()
+		res, err := model.Map(character.Transform)(model.FixedProvider(cm))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)

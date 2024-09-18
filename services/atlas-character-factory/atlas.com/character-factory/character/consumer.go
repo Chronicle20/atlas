@@ -2,12 +2,12 @@ package character
 
 import (
 	consumer2 "atlas-character-factory/kafka/consumer"
-	"atlas-character-factory/tenant"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/async"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,18 +22,20 @@ func CreatedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config 
 	}
 }
 
-func createdValidator(tenant tenant.Model, name string) func(event statusEvent[statusEventCreatedBody]) bool {
-	return func(event statusEvent[statusEventCreatedBody]) bool {
-		if !tenant.Equals(event.Tenant) {
-			return false
+func createdValidator(t tenant.Model) func(name string) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventCreatedBody]) bool {
+	return func(name string) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventCreatedBody]) bool {
+		return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventCreatedBody]) bool {
+			if !t.Is(tenant.MustFromContext(ctx)) {
+				return false
+			}
+			if event.Type != EventCharacterStatusTypeCreated {
+				return false
+			}
+			if name != event.Body.Name {
+				return false
+			}
+			return true
 		}
-		if event.Type != EventCharacterStatusTypeCreated {
-			return false
-		}
-		if name != event.Body.Name {
-			return false
-		}
-		return true
 	}
 }
 
@@ -43,12 +45,15 @@ func createdHandler(rchan chan uint32, _ chan error) message.Handler[statusEvent
 	}
 }
 
-func AwaitCreated(l logrus.FieldLogger, tenant tenant.Model) func(name string) async.Provider[uint32] {
+func AwaitCreated(l logrus.FieldLogger) func(name string) async.Provider[uint32] {
 	t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
 	return func(name string) async.Provider[uint32] {
 		return func(ctx context.Context, rchan chan uint32, echan chan error) {
 			l.Debugf("Creating OneTime topic consumer to await [%s] character creation.", name)
-			_, _ = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(createdValidator(tenant, name), createdHandler(rchan, echan))))
+			_, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(createdValidator(tenant.MustFromContext(ctx))(name), createdHandler(rchan, echan))))
+			if err != nil {
+				echan <- err
+			}
 		}
 	}
 }
@@ -59,15 +64,22 @@ func ItemGainedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Conf
 	}
 }
 
-func itemGainedValidator(tenant tenant.Model, itemId uint32) func(event inventoryChangedEvent[inventoryChangedItemAddBody]) bool {
-	return func(event inventoryChangedEvent[inventoryChangedItemAddBody]) bool {
-		if !tenant.Equals(event.Tenant) {
-			return false
+func itemGainedValidator(t tenant.Model) func(characterId uint32) func(itemId uint32) func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemAddBody]) bool {
+	return func(characterId uint32) func(itemId uint32) func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemAddBody]) bool {
+		return func(itemId uint32) func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemAddBody]) bool {
+			return func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemAddBody]) bool {
+				if !t.Is(tenant.MustFromContext(ctx)) {
+					return false
+				}
+				if characterId != event.CharacterId {
+					return false
+				}
+				if itemId != event.Body.ItemId {
+					return false
+				}
+				return true
+			}
 		}
-		if itemId != event.Body.ItemId {
-			return false
-		}
-		return true
 	}
 }
 
@@ -77,11 +89,14 @@ func itemGainedHandler(rchan chan ItemGained, _ chan error) message.Handler[inve
 	}
 }
 
-func AwaitItemGained(l logrus.FieldLogger, tenant tenant.Model) func(itemId uint32) async.Provider[ItemGained] {
+func AwaitItemGained(l logrus.FieldLogger) func(characterId uint32) func(itemId uint32) async.Provider[ItemGained] {
 	t, _ := topic.EnvProvider(l)(EnvEventInventoryChanged)()
-	return func(itemId uint32) async.Provider[ItemGained] {
-		return func(ctx context.Context, rchan chan ItemGained, echan chan error) {
-			_, _ = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(itemGainedValidator(tenant, itemId), itemGainedHandler(rchan, echan))))
+	return func(characterId uint32) func(itemId uint32) async.Provider[ItemGained] {
+		return func(itemId uint32) async.Provider[ItemGained] {
+			return func(ctx context.Context, rchan chan ItemGained, echan chan error) {
+				tenant := tenant.MustFromContext(ctx)
+				_, _ = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(itemGainedValidator(tenant)(characterId)(itemId), itemGainedHandler(rchan, echan))))
+			}
 		}
 	}
 }
@@ -92,18 +107,25 @@ func EquipChangedConsumer(l logrus.FieldLogger) func(groupId string) consumer.Co
 	}
 }
 
-func equipChangedValidator(tenant tenant.Model, itemId uint32) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) bool {
-	return func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) bool {
-		if !tenant.Equals(event.Tenant) {
-			return false
+func equipChangedValidator(t tenant.Model) func(characterId uint32) func(itemId uint32) func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemMoveBody]) bool {
+	return func(characterId uint32) func(itemId uint32) func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemMoveBody]) bool {
+		return func(itemId uint32) func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemMoveBody]) bool {
+			return func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemMoveBody]) bool {
+				if !t.Is(tenant.MustFromContext(ctx)) {
+					return false
+				}
+				if characterId != event.CharacterId {
+					return false
+				}
+				if itemId != event.Body.ItemId {
+					return false
+				}
+				if event.Slot < 0 {
+					return false
+				}
+				return true
+			}
 		}
-		if itemId != event.Body.ItemId {
-			return false
-		}
-		if event.Slot < 0 {
-			return false
-		}
-		return true
 	}
 }
 
@@ -113,11 +135,14 @@ func equipChangedHandler(rchan chan uint32, _ chan error) message.Handler[invent
 	}
 }
 
-func AwaitEquipChanged(l logrus.FieldLogger, tenant tenant.Model) func(itemId uint32) async.Provider[uint32] {
+func AwaitEquipChanged(l logrus.FieldLogger) func(characterId uint32) func(itemId uint32) async.Provider[uint32] {
 	t, _ := topic.EnvProvider(l)(EnvEventInventoryChanged)()
-	return func(itemId uint32) async.Provider[uint32] {
-		return func(ctx context.Context, rchan chan uint32, echan chan error) {
-			_, _ = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(equipChangedValidator(tenant, itemId), equipChangedHandler(rchan, echan))))
+	return func(characterId uint32) func(itemId uint32) async.Provider[uint32] {
+		return func(itemId uint32) async.Provider[uint32] {
+			return func(ctx context.Context, rchan chan uint32, echan chan error) {
+				tenant := tenant.MustFromContext(ctx)
+				_, _ = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(equipChangedValidator(tenant)(characterId)(itemId), equipChangedHandler(rchan, echan))))
+			}
 		}
 	}
 }

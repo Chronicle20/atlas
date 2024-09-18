@@ -45,9 +45,9 @@ func main() {
 	}
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.CreatedConsumer(l)(consumerGroupId))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.ItemGainedConsumer(l)(consumerGroupId))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.EquipChangedConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.CreatedConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.ItemGainedConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.EquipChangedConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), factory.InitResource(GetServer()))
 

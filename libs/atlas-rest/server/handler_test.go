@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/Chronicle20/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"

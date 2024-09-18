@@ -37,7 +37,7 @@ func getForName(tenantId uuid.UUID, name string) database.EntityProvider[[]entit
 	}
 }
 
-func makeCharacter(e entity) (Model, error) {
+func modelFromEntity(e entity) (Model, error) {
 	r := NewModelBuilder().
 		SetId(e.ID).
 		SetAccountId(e.AccountId).

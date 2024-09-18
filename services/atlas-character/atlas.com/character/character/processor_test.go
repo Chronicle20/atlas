@@ -6,10 +6,10 @@ import (
 	"atlas-character/inventory"
 	"atlas-character/inventory/item"
 	"atlas-character/kafka/producer"
-	"atlas-character/tenant"
 	"context"
 	producer2 "github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -37,12 +37,8 @@ func testDatabase(t *testing.T) *gorm.DB {
 }
 
 func testTenant() tenant.Model {
-	return tenant.Model{
-		Id:           uuid.New(),
-		Region:       "GMS",
-		MajorVersion: 83,
-		MinorVersion: 1,
-	}
+	t, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	return t
 }
 
 func testLogger() logrus.FieldLogger {
@@ -66,11 +62,13 @@ func testProducer(output *[]kafka.Message) producer.Provider {
 }
 
 func TestCreateSunny(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("Atlas").SetLevel(1).SetExperience(0).Build()
 
 	var outputMessages = make([]kafka.Message, 0)
 
-	c, err := character.Create(testLogger(), testDatabase(t), context.Background(), testProducer(&outputMessages))(testTenant(), input)
+	c, err := character.Create(testLogger())(testDatabase(t))(tctx)(testProducer(&outputMessages))(input)
 	if err != nil {
 		t.Fatalf("Failed to create model: %v", err)
 	}

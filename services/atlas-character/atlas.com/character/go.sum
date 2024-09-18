@@ -1,9 +1,11 @@
-github.com/Chronicle20/atlas-kafka v1.0.5 h1:bIkWaiUjfpU1T2vOs28HxNIO0TPW8/yGB8DSlfmgc90=
-github.com/Chronicle20/atlas-kafka v1.0.5/go.mod h1:mQC2CxiGjKNZVJf3FyytNj6ajABejOa/u7Bd9s1WRLk=
-github.com/Chronicle20/atlas-model v1.0.4 h1:e54nQ0HrYjCRg7rN4xAPZuUvPXB7ycARktfecQGwd30=
-github.com/Chronicle20/atlas-model v1.0.4/go.mod h1:pqiCUYkDTLXkObDhi2QkVmi/ncfjq8TvESoxJSap4DM=
-github.com/Chronicle20/atlas-rest v1.0.0 h1:xPlwWah2uUUFDutFiFogCX9e3QLNn12vUqFiWXQhED8=
-github.com/Chronicle20/atlas-rest v1.0.0/go.mod h1:apd34gn88KqSYeybCb/P5AjNGTHAE48RN3fAcSa9Crc=
+github.com/Chronicle20/atlas-kafka v1.0.7 h1:h1eL/qhxEHCEXi7YTCeeMj0T7TDTET2h8AaUkK5qwKU=
+github.com/Chronicle20/atlas-kafka v1.0.7/go.mod h1:+NBv7WkkK3PAOARG177xlJa73CzcdZNmn2Dp+TTvwtA=
+github.com/Chronicle20/atlas-model v1.2.0 h1:jGONbpgBJO01mdG1G9B2beHZydIeaFcfZNBM6xz08Jc=
+github.com/Chronicle20/atlas-model v1.2.0/go.mod h1:5FNYT/ypml+goxft0XCACTEp6666yys+l6LTxSPeh1k=
+github.com/Chronicle20/atlas-rest v1.2.1 h1:iT/KSU78lbghaZTBgeMd4GWrEtNuS17s7mMkfkfcPzY=
+github.com/Chronicle20/atlas-rest v1.2.1/go.mod h1:vsxMt/bVJbG4eOgIXLoa0Fcc2ob2LLoI73zKofAy2mc=
+github.com/Chronicle20/atlas-tenant v1.0.3 h1:Peg20t68yC1SR9sj3F0dobKi84Zlz761lg7dd+uAKHQ=
+github.com/Chronicle20/atlas-tenant v1.0.3/go.mod h1:dUx28T5cxvNGxbnJEDufWq7484Hr5a2kCwk5ja24BYw=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

@@ -33,14 +33,14 @@ func handleStatusEvent(db *gorm.DB) message.Handler[statusEvent] {
 		}
 
 		if event.Type == EventSessionStatusTypeCreated {
-			err := character.Login(l, db, ctx, event.Tenant)(event.CharacterId, event.WorldId, event.ChannelId)
+			err := character.Login(l)(db)(ctx)(event.CharacterId)(event.WorldId)(event.ChannelId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to login character [%d] as a result of session [%s] being created.", event.CharacterId, event.SessionId.String())
 			}
 			return
 		}
 		if event.Type == EventSessionStatusTypeDestroyed {
-			err := character.Logout(l, db, ctx, event.Tenant)(event.CharacterId, event.WorldId, event.ChannelId)
+			err := character.Logout(l)(db)(ctx)(event.CharacterId)(event.WorldId)(event.ChannelId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to logout character [%d] as a result of session [%s] being destroyed.", event.CharacterId, event.SessionId.String())
 			}

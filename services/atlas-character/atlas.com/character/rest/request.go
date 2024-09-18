@@ -1,52 +1,39 @@
 package rest
 
 import (
-	"atlas-character/tenant"
 	"context"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/propagation"
-	"net/http"
-	"strconv"
+	"github.com/sirupsen/logrus"
 )
 
-func headerDecorator(ctx context.Context, tenant tenant.Model) requests.HeaderDecorator {
-	return func(h http.Header) {
-		h.Set("Content-Type", "application/json; charset=utf-8")
-		h.Set(ID, tenant.Id.String())
-		h.Set(Region, tenant.Region)
-		h.Set(MajorVersion, strconv.Itoa(int(tenant.MajorVersion)))
-		h.Set(MinorVersion, strconv.Itoa(int(tenant.MinorVersion)))
-
-		propagator := otel.GetTextMapPropagator()
-		propagator.Inject(ctx, propagation.HeaderCarrier(h))
+func MakeGetRequest[A any](url string) requests.Request[A] {
+	return func(l logrus.FieldLogger, ctx context.Context) (A, error) {
+		sd := requests.AddHeaderDecorator(requests.SpanHeaderDecorator(ctx))
+		td := requests.AddHeaderDecorator(requests.TenantHeaderDecorator(ctx))
+		return requests.MakeGetRequest[A](url, sd, td)(l, ctx)
 	}
 }
 
-func MakeGetRequest[A any](ctx context.Context, tenant tenant.Model) func(url string) requests.Request[A] {
-	hd := requests.SetHeaderDecorator(headerDecorator(ctx, tenant))
-	return func(url string) requests.Request[A] {
-		return requests.MakeGetRequest[A](url, hd)
+func MakePostRequest[A any](url string, i interface{}) requests.Request[A] {
+	return func(l logrus.FieldLogger, ctx context.Context) (A, error) {
+		sd := requests.AddHeaderDecorator(requests.SpanHeaderDecorator(ctx))
+		td := requests.AddHeaderDecorator(requests.TenantHeaderDecorator(ctx))
+		return requests.MakePostRequest[A](url, i, sd, td)(l, ctx)
 	}
 }
 
-func MakePostRequest[A any](ctx context.Context, tenant tenant.Model) func(url string, i interface{}) requests.Request[A] {
-	hd := requests.SetHeaderDecorator(headerDecorator(ctx, tenant))
-	return func(url string, i interface{}) requests.Request[A] {
-		return requests.MakePostRequest[A](url, i, hd)
+func MakePatchRequest[A any](url string, i interface{}) requests.Request[A] {
+	return func(l logrus.FieldLogger, ctx context.Context) (A, error) {
+		sd := requests.AddHeaderDecorator(requests.SpanHeaderDecorator(ctx))
+		td := requests.AddHeaderDecorator(requests.TenantHeaderDecorator(ctx))
+		return requests.MakePatchRequest[A](url, i, sd, td)(l, ctx)
 	}
 }
 
-func MakePatchRequest[A any](ctx context.Context, tenant tenant.Model) func(url string, i interface{}) requests.Request[A] {
-	hd := requests.SetHeaderDecorator(headerDecorator(ctx, tenant))
-	return func(url string, i interface{}) requests.Request[A] {
-		return requests.MakePatchRequest[A](url, i, hd)
-	}
-}
-
-func MakeDeleteRequest(ctx context.Context, tenant tenant.Model) func(url string) requests.EmptyBodyRequest {
-	hd := requests.SetHeaderDecorator(headerDecorator(ctx, tenant))
-	return func(url string) requests.EmptyBodyRequest {
-		return requests.MakeDeleteRequest(url, hd)
+func MakeDeleteRequest(url string) requests.EmptyBodyRequest {
+	return func(l logrus.FieldLogger, ctx context.Context) error {
+		sd := requests.AddHeaderDecorator(requests.SpanHeaderDecorator(ctx))
+		td := requests.AddHeaderDecorator(requests.TenantHeaderDecorator(ctx))
+		return requests.MakeDeleteRequest(url, sd, td)(l, ctx)
 	}
 }

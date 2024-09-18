@@ -233,16 +233,18 @@ func ForEachMap[K comparable, V any](provider Provider[map[K]V], operator KeyVal
 type Transformer[M any, N any] func(M) (N, error)
 
 //goland:noinspection GoUnusedExportedFunction
-func Map[M any, N any](provider Provider[M], transformer Transformer[M, N]) Provider[N] {
-	m, err := provider()
-	if err != nil {
-		return ErrorProvider[N](err)
+func Map[M any, N any](transformer Transformer[M, N]) func(provider Provider[M]) Provider[N] {
+	return func(provider Provider[M]) Provider[N] {
+		m, err := provider()
+		if err != nil {
+			return ErrorProvider[N](err)
+		}
+		n, err := transformer(m)
+		if err != nil {
+			return ErrorProvider[N](err)
+		}
+		return FixedProvider(n)
 	}
-	n, err := transformer(m)
-	if err != nil {
-		return ErrorProvider[N](err)
-	}
-	return FixedProvider(n)
 }
 
 type MapFuncConfigurator Decorator[MapConfig]
@@ -269,47 +271,51 @@ type mapResult[E any] struct {
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func SliceMap[M any, N any](provider Provider[[]M], transformer Transformer[M, N], configurators ...MapFuncConfigurator) Provider[[]N] {
-	c := MapConfig{parallel: false}
-	for _, configurator := range configurators {
-		c = configurator(c)
-	}
-
-	models, err := provider()
-	if err != nil {
-		return ErrorProvider[[]N](err)
-	}
-	var results = make([]N, len(models))
-
-	if c.parallel {
-		var wg sync.WaitGroup
-
-		resCh := make(chan mapResult[N], len(models))
-
-		for i, m := range models {
-			wg.Add(1)
-			go parallelTransform(&wg, transformer, i, m, resCh)
-		}
-		wg.Wait()
-
-		close(resCh)
-		for res := range resCh {
-			if res.err != nil {
-				return ErrorProvider[[]N](res.err)
+func SliceMap[M any, N any](transformer Transformer[M, N]) func(provider Provider[[]M]) func(configurators ...MapFuncConfigurator) Provider[[]N] {
+	return func(provider Provider[[]M]) func(configurators ...MapFuncConfigurator) Provider[[]N] {
+		return func(configurators ...MapFuncConfigurator) Provider[[]N] {
+			c := MapConfig{parallel: false}
+			for _, configurator := range configurators {
+				c = configurator(c)
 			}
-			results[res.index] = res.value
-		}
-	} else {
-		for i, m := range models {
-			var n N
-			n, err = transformer(m)
+
+			models, err := provider()
 			if err != nil {
 				return ErrorProvider[[]N](err)
 			}
-			results[i] = n
+			var results = make([]N, len(models))
+
+			if c.parallel {
+				var wg sync.WaitGroup
+
+				resCh := make(chan mapResult[N], len(models))
+
+				for i, m := range models {
+					wg.Add(1)
+					go parallelTransform(&wg, transformer, i, m, resCh)
+				}
+				wg.Wait()
+
+				close(resCh)
+				for res := range resCh {
+					if res.err != nil {
+						return ErrorProvider[[]N](res.err)
+					}
+					results[res.index] = res.value
+				}
+			} else {
+				for i, m := range models {
+					var n N
+					n, err = transformer(m)
+					if err != nil {
+						return ErrorProvider[[]N](err)
+					}
+					results[i] = n
+				}
+			}
+			return FixedProvider(results)
 		}
 	}
-	return FixedProvider(results)
 }
 
 func parallelTransform[M any, N any](wg *sync.WaitGroup, transformer Transformer[M, N], index int, model M, resCh chan<- mapResult[N]) {

@@ -40,7 +40,7 @@ func OneTimeConfig[M any](validator Validator[M], handler Handler[M]) Config[M] 
 //goland:noinspection GoUnusedExportedFunction
 func AdaptHandler[M any](config Config[M]) handler.Handler {
 	h := func(l logrus.FieldLogger, ctx context.Context, msg kafka.Message) (bool, error) {
-		tem := model.Map[kafka.Message, M](model.FixedProvider(msg), adapt[M])
+		tem := model.Map[kafka.Message, M](adapt[M])(model.FixedProvider(msg))
 		m, err := tem()
 		if err != nil {
 			return true, err

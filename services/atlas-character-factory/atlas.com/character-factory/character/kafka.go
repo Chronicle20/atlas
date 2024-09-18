@@ -1,9 +1,5 @@
 package character
 
-import (
-	"atlas-character-factory/tenant"
-)
-
 const (
 	EnvEventTopicCharacterStatus    = "EVENT_TOPIC_CHARACTER_STATUS"
 	EventCharacterStatusTypeCreated = "CREATED"
@@ -12,11 +8,10 @@ const (
 )
 
 type statusEvent[E any] struct {
-	Tenant      tenant.Model `json:"tenant"`
-	CharacterId uint32       `json:"characterId"`
-	Type        string       `json:"type"`
-	WorldId     byte         `json:"worldId"`
-	Body        E            `json:"body"`
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
+	WorldId     byte   `json:"worldId"`
+	Body        E      `json:"body"`
 }
 
 type statusEventCreatedBody struct {
@@ -24,12 +19,11 @@ type statusEventCreatedBody struct {
 }
 
 type inventoryChangedEvent[M any] struct {
-	Tenant      tenant.Model `json:"tenant"`
-	CharacterId uint32       `json:"characterId"`
-	Slot        int16        `json:"slot"`
-	Type        string       `json:"type"`
-	Body        M            `json:"body"`
-	Silent      bool         `json:"silent"`
+	CharacterId uint32 `json:"characterId"`
+	Slot        int16  `json:"slot"`
+	Type        string `json:"type"`
+	Body        M      `json:"body"`
+	Silent      bool   `json:"silent"`
 }
 
 type inventoryChangedItemAddBody struct {

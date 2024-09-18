@@ -19,7 +19,7 @@ func byTwo(val uint32) (uint32, error) {
 
 func TestMap(t *testing.T) {
 	p := FixedProvider(uint32(1))
-	mp := Map[uint32, uint32](p, byTwo)
+	mp := Map[uint32, uint32](byTwo)(p)
 
 	ar, err := mp()
 	if err != nil {
@@ -34,7 +34,7 @@ func TestMap(t *testing.T) {
 
 func TestSliceMap(t *testing.T) {
 	p := FixedProvider([]uint32{1, 2, 3, 4, 5})
-	mp := SliceMap[uint32, uint32](p, byTwo)
+	mp := SliceMap[uint32, uint32](byTwo)(p)()
 
 	ar, err := mp()
 	if err != nil {
@@ -51,7 +51,7 @@ func TestSliceMap(t *testing.T) {
 
 func TestParallelSliceMap(t *testing.T) {
 	p := FixedProvider([]uint32{1, 2, 3, 4, 5})
-	mp := SliceMap[uint32, uint32](p, byTwo, ParallelMap())
+	mp := SliceMap[uint32, uint32](byTwo)(p)(ParallelMap())
 
 	ar, err := mp()
 	if err != nil {

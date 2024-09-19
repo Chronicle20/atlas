@@ -78,7 +78,7 @@ func RequestStatus(l logrus.FieldLogger) func(ctx context.Context) func(c config
 		return func(c configuration.Model) {
 			for _, sc := range c.Data.Attributes.Servers {
 				t, _ := tenant.Create(uuid.MustParse(sc.Tenant), "", 0, 0)
-				_ = producer.ProviderImpl(l)(ctx)(EnvCommandTopicChannelStatus)(emitChannelServerStatusCommand(t))
+				_ = producer.ProviderImpl(l)(tenant.WithContext(ctx, t))(EnvCommandTopicChannelStatus)(emitChannelServerStatusCommand(t))
 			}
 		}
 	}

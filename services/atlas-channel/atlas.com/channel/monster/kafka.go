@@ -1,7 +1,5 @@
 package monster
 
-import "github.com/Chronicle20/atlas-tenant"
-
 const (
 	EnvCommandMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 
@@ -14,18 +12,17 @@ const (
 )
 
 type movementCommand struct {
-	Tenant        tenant.Model `json:"tenant"`
-	WorldId       byte         `json:"worldId"`
-	ChannelId     byte         `json:"channelId"`
-	UniqueId      uint32       `json:"uniqueId"`
-	ObserverId    uint32       `json:"observerId"`
-	SkillPossible bool         `json:"skillPossible"`
-	Skill         int8         `json:"skill"`
-	SkillId       int16        `json:"skillId"`
-	SkillLevel    int16        `json:"skillLevel"`
-	MultiTarget   []position   `json:"multiTarget"`
-	RandomTimes   []int32      `json:"randomTimes"`
-	Movement      movement     `json:"movement"`
+	WorldId       byte       `json:"worldId"`
+	ChannelId     byte       `json:"channelId"`
+	UniqueId      uint32     `json:"uniqueId"`
+	ObserverId    uint32     `json:"observerId"`
+	SkillPossible bool       `json:"skillPossible"`
+	Skill         int8       `json:"skill"`
+	SkillId       int16      `json:"skillId"`
+	SkillLevel    int16      `json:"skillLevel"`
+	MultiTarget   []position `json:"multiTarget"`
+	RandomTimes   []int32    `json:"randomTimes"`
+	Movement      movement   `json:"movement"`
 }
 
 type movement struct {

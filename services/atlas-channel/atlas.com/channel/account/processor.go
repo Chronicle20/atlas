@@ -10,39 +10,49 @@ import (
 
 type LoginErr string
 
-func byIdModelProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(id uint32) model.Provider[Model] {
-	return func(id uint32) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l)(requestAccountById(ctx, tenant)(id), Extract)
+func ByIdModelProvider(l logrus.FieldLogger) func(ctx context.Context) func(id uint32) model.Provider[Model] {
+	return func(ctx context.Context) func(id uint32) model.Provider[Model] {
+		return func(id uint32) model.Provider[Model] {
+			return requests.Provider[RestModel, Model](l, ctx)(requestAccountById(id), Extract)
+		}
 	}
 }
 
-func allProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](l)(requestAccounts(ctx, tenant), Extract)
-}
-
-func GetById(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(id uint32) (Model, error) {
-	return func(id uint32) (Model, error) {
-		return byIdModelProvider(l, ctx, tenant)(id)()
+func AllProvider(l logrus.FieldLogger) func(ctx context.Context) model.Provider[[]Model] {
+	return func(ctx context.Context) model.Provider[[]Model] {
+		return requests.SliceProvider[RestModel, Model](l, ctx)(requestAccounts, Extract, model.Filters[Model]())
 	}
 }
 
-func GetAll(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) ([]Model, error) {
-	return allProvider(l, ctx, tenant)()
+func GetById(l logrus.FieldLogger) func(ctx context.Context) func(id uint32) (Model, error) {
+	return func(ctx context.Context) func(id uint32) (Model, error) {
+		return func(id uint32) (Model, error) {
+			return ByIdModelProvider(l)(ctx)(id)()
+		}
+	}
 }
 
-func IsLoggedIn(_ logrus.FieldLogger, _ context.Context, tenant tenant.Model) func(id uint32) bool {
+func GetAll(l logrus.FieldLogger) func(ctx context.Context) ([]Model, error) {
+	return func(ctx context.Context) ([]Model, error) {
+		return AllProvider(l)(ctx)()
+	}
+}
+
+func IsLoggedIn(ctx context.Context) func(id uint32) bool {
 	return func(id uint32) bool {
-		return getRegistry().LoggedIn(Key{Tenant: tenant, Id: id})
+		return getRegistry().LoggedIn(Key{Tenant: tenant.MustFromContext(ctx), Id: id})
 	}
 }
 
-func InitializeRegistry(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) error {
-	as, err := model.CollectToMap[Model, Key, bool](allProvider(l, ctx, tenant), KeyForTenantFunc(tenant), IsLogged)()
-	if err != nil {
-		return err
+func InitializeRegistry(l logrus.FieldLogger) func(ctx context.Context) error {
+	return func(ctx context.Context) error {
+		as, err := model.CollectToMap[Model, Key, bool](AllProvider(l)(ctx), KeyForTenantFunc(tenant.MustFromContext(ctx)), IsLogged)()
+		if err != nil {
+			return err
+		}
+		getRegistry().Init(as)
+		return nil
 	}
-	getRegistry().Init(as)
-	return nil
 }
 
 func IsLogged(m Model) bool {

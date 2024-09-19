@@ -45,7 +45,7 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 					socket.SetPort(port),
 					socket.SetCreator(session.Create(l, session.GetRegistry(), t)(sc.WorldId(), sc.ChannelId(), locale)),
 					socket.SetMessageDecryptor(session.Decrypt(l, session.GetRegistry(), t)(true, hasMapleEncryption)),
-					socket.SetDestroyer(session.DestroyByIdWithSpan(l, session.GetRegistry(), t.Id())),
+					socket.SetDestroyer(session.DestroyByIdWithSpan(l)(ctx)(session.GetRegistry())),
 					socket.SetReadWriter(rw),
 				)
 
@@ -57,9 +57,9 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 				}
 			}()
 
-			sctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), "startup")
+			sctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(ctx, "startup")
 
-			err = channel.Register(l, sctx, t)(sc.WorldId(), sc.ChannelId(), ipAddress, portStr)
+			err = channel.Register(l)(sctx)(sc.WorldId(), sc.ChannelId(), ipAddress, portStr)
 			if err != nil {
 				l.WithError(err).Errorf("Socket service registration error.")
 			}
@@ -69,10 +69,10 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 			<-ctx.Done()
 			l.Infof("Shutting down server on port %d", port)
 
-			sctx, span = otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), "teardown")
+			sctx, span = otel.GetTracerProvider().Tracer("atlas-channel").Start(ctx, "teardown")
 			defer span.End()
 
-			err = channel.Unregister(l, sctx, t)(sc.WorldId(), sc.ChannelId())
+			err = channel.Unregister(l)(sctx)(sc.WorldId(), sc.ChannelId())
 			if err != nil {
 				l.WithError(err).Errorf("Socket service unregistration error.")
 			}

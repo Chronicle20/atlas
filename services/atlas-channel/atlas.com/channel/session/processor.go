@@ -6,13 +6,13 @@ import (
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 )
 
-func AllInTenantProvider(tenant tenant.Model) func() ([]Model, error) {
+func AllInTenantProvider(tenant tenant.Model) model.Provider[[]Model] {
 	return func() ([]Model, error) {
 		return GetRegistry().GetInTenant(tenant.Id()), nil
 	}
@@ -20,7 +20,7 @@ func AllInTenantProvider(tenant tenant.Model) func() ([]Model, error) {
 
 func ByCharacterIdModelProvider(tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
-		return model.FirstProvider[Model](AllInTenantProvider(tenant), CharacterIdFilter(characterId))
+		return model.FirstProvider[Model](AllInTenantProvider(tenant), model.Filters(CharacterIdFilter(characterId)))
 	}
 }
 
@@ -53,27 +53,28 @@ func GetByCharacterId(tenant tenant.Model) func(characterId uint32) (Model, erro
 
 func ForEachByCharacterId(tenant tenant.Model) func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
 	return func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
-		return model.ForEachSlice(model.SliceMap[uint32, Model](provider, GetByCharacterId(tenant)), f, model.ParallelExecute())
+		return model.ForEachSlice(model.SliceMap[uint32, Model](GetByCharacterId(tenant))(provider)(), f, model.ParallelExecute())
 	}
 }
 
-func Announce(l logrus.FieldLogger) func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
-	return func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
-		return func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
-			return func(s Model, bodyProducer writer.BodyProducer) error {
-				w, err := writerProducer(l, writerName)
-				if err != nil {
-					return err
-				}
+func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
+	return func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
+		return func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
+			return func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
+				return func(s Model, bodyProducer writer.BodyProducer) error {
+					w, err := writerProducer(l, writerName)
+					if err != nil {
+						return err
+					}
 
-				t := s.Tenant()
-				if lock, ok := GetRegistry().GetLock(t.Id(), s.SessionId()); ok {
-					lock.Lock()
-					err = s.announceEncrypted(w(l)(bodyProducer))
-					lock.Unlock()
-					return err
+					if lock, ok := GetRegistry().GetLock(tenant.MustFromContext(ctx), s.SessionId()); ok {
+						lock.Lock()
+						err = s.announceEncrypted(w(l)(bodyProducer))
+						lock.Unlock()
+						return err
+					}
+					return errors.New("invalid session")
 				}
-				return errors.New("invalid session")
 			}
 		}
 	}
@@ -144,9 +145,9 @@ func UpdateLastRequest() func(tenantId uuid.UUID, id uuid.UUID) Model {
 	}
 }
 
-func EmitCreated(kp producer.Provider, tenant tenant.Model) func(s Model) {
+func EmitCreated(kp producer.Provider) func(s Model) {
 	return func(s Model) {
-		_ = kp(EnvEventTopicSessionStatus)(createdStatusEventProvider(tenant, s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
+		_ = kp(EnvEventTopicSessionStatus)(createdStatusEventProvider(s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
 	}
 }
 
@@ -154,10 +155,7 @@ func Teardown(l logrus.FieldLogger) func() {
 	return func() {
 		ctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), "teardown")
 		defer span.End()
-		model.ForEachSlice(model.SliceMap(tenant.AllProvider(), GetId), DestroyAll(l, ctx, GetRegistry()))
-	}
-}
 
-func GetId(m tenant.Model) (uuid.UUID, error) {
-	return m.Id(), nil
+		tenant.ForAll(DestroyAll(l, ctx, GetRegistry()))
+	}
 }

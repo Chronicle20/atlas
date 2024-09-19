@@ -126,7 +126,7 @@ func ExtractItem(rm ItemRestModel) ItemModel {
 }
 
 func ExtractEquipable(rm EquipableRestModel) (EquipableModel, error) {
-	es, err := model.SliceMap(model.FixedProvider(rm.Items), equipable.Extract)()
+	es, err := model.SliceMap(equipable.Extract)(model.FixedProvider(rm.Items))(model.ParallelMap())()
 	if err != nil {
 		return EquipableModel{}, err
 	}

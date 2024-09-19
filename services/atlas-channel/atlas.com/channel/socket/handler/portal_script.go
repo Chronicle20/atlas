@@ -20,6 +20,6 @@ func PortalScriptHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.
 		y := r.ReadInt16()
 		l.Debugf("Character [%d] attempting to execute portal script for [%s] at [%d,%d]. FieldKey [%d].", s.CharacterId(), portalName, x, y, fieldKey)
 
-		_ = portal.Enter(l, ctx, producer.ProviderImpl(l)(ctx))(s.Tenant(), s.WorldId(), s.ChannelId(), s.MapId(), portalName, s.CharacterId())
+		_ = portal.Enter(l, ctx, producer.ProviderImpl(l)(ctx))(s.WorldId(), s.ChannelId(), s.MapId(), portalName, s.CharacterId())
 	}
 }

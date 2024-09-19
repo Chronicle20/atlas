@@ -8,6 +8,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,20 +30,14 @@ func StatusRegister(l logrus.FieldLogger, sc server.Model) (string, handler.Hand
 func handleAccountStatusEvent(sc server.Model) func(l logrus.FieldLogger, ctx context.Context, event statusEvent) {
 	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent) {
 		t := sc.Tenant()
-		if !t.Is(event.Tenant) {
+		if !t.Is(tenant.MustFromContext(ctx)) {
 			return
 		}
 
 		if event.Status == EventAccountStatusLoggedIn {
-			getRegistry().Login(Key{
-				Tenant: event.Tenant,
-				Id:     event.AccountId,
-			})
+			getRegistry().Login(Key{Tenant: t, Id: event.AccountId})
 		} else if event.Status == EventAccountStatusLoggedOut {
-			getRegistry().Logout(Key{
-				Tenant: event.Tenant,
-				Id:     event.AccountId,
-			})
+			getRegistry().Logout(Key{Tenant: t, Id: event.AccountId})
 		}
 	}
 }

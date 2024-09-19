@@ -55,17 +55,17 @@ func main() {
 	writerList := produceWriters()
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(_map.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.MovementEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(channel.CommandStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.MovementEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.StatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.GeneralChatEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(inventory.ChangedConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(_map.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.MovementEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(channel.CommandStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.MovementEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.StatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.GeneralChatEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(inventory.ChangedConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 
-	ctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
+	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
 	for _, s := range config.Data.Attributes.Servers {
 		majorVersion, err := strconv.Atoi(s.Version.Major)
@@ -81,12 +81,13 @@ func main() {
 		}
 
 		var t tenant.Model
-		t, err = tenant.Create(uuid.MustParse(s.Tenant), s.Region, uint16(majorVersion), uint16(minorVersion))
+		t, err = tenant.Register(uuid.MustParse(s.Tenant), s.Region, uint16(majorVersion), uint16(minorVersion))
 		if err != nil {
 			continue
 		}
+		tctx := tenant.WithContext(sctx, t)
 
-		err = account.InitializeRegistry(l, ctx, t)
+		err = account.InitializeRegistry(l)(tctx)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to initialize account registry for tenant [%s].", t.String())
 		}
@@ -131,8 +132,8 @@ func main() {
 				_, _ = cm.RegisterHandler(inventory.ChangeEventMoveRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(inventory.ChangeEventRemoveRegister(sc, wp)(fl))
 
-				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id(), wp))(s.Handlers, validatorMap, handlerMap)
-				socket.CreateSocketService(fl, tdm.Context(), tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
+				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
+				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
 			}
 		}
 	}

@@ -1,7 +1,5 @@
 package inventory
 
-import "github.com/Chronicle20/atlas-tenant"
-
 const (
 	EnvEventInventoryChanged = "EVENT_TOPIC_INVENTORY_CHANGED"
 
@@ -12,12 +10,11 @@ const (
 )
 
 type inventoryChangedEvent[M any] struct {
-	Tenant      tenant.Model `json:"tenant"`
-	CharacterId uint32       `json:"characterId"`
-	Slot        int16        `json:"slot"`
-	Type        string       `json:"type"`
-	Body        M            `json:"body"`
-	Silent      bool         `json:"silent"`
+	CharacterId uint32 `json:"characterId"`
+	Slot        int16  `json:"slot"`
+	Type        string `json:"type"`
+	Body        M      `json:"body"`
+	Silent      bool   `json:"silent"`
 }
 
 type inventoryChangedItemAddBody struct {

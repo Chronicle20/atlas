@@ -1,6 +1,7 @@
 package session
 
 import (
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"sync"
 )
@@ -60,14 +61,14 @@ func (r *Registry) Get(tenantId uuid.UUID, sessionId uuid.UUID) (Model, bool) {
 	return Model{}, false
 }
 
-func (r *Registry) GetLock(tenantId uuid.UUID, sessionId uuid.UUID) (*sync.RWMutex, bool) {
+func (r *Registry) GetLock(tenant tenant.Model, sessionId uuid.UUID) (*sync.RWMutex, bool) {
 	r.mutex.RLock()
-	if _, ok := r.lockRegistry[tenantId]; !ok {
+	if _, ok := r.lockRegistry[tenant.Id()]; !ok {
 		r.mutex.RUnlock()
 		return nil, false
 	}
 
-	if val, ok := r.lockRegistry[tenantId][sessionId]; ok {
+	if val, ok := r.lockRegistry[tenant.Id()][sessionId]; ok {
 		r.mutex.RUnlock()
 		return val, true
 	}

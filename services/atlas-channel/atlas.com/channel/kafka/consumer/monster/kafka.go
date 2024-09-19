@@ -1,7 +1,5 @@
 package monster
 
-import "github.com/Chronicle20/atlas-tenant"
-
 const (
 	EnvEventTopicStatus   = "EVENT_TOPIC_MONSTER_STATUS"
 	EnvEventTopicMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
@@ -23,14 +21,13 @@ const (
 )
 
 type statusEvent[E any] struct {
-	Tenant    tenant.Model `json:"tenant"`
-	WorldId   byte         `json:"worldId"`
-	ChannelId byte         `json:"channelId"`
-	MapId     uint32       `json:"mapId"`
-	UniqueId  uint32       `json:"uniqueId"`
-	MonsterId uint32       `json:"monsterId"`
-	Type      string       `json:"type"`
-	Body      E            `json:"body"`
+	WorldId   byte   `json:"worldId"`
+	ChannelId byte   `json:"channelId"`
+	MapId     uint32 `json:"mapId"`
+	UniqueId  uint32 `json:"uniqueId"`
+	MonsterId uint32 `json:"monsterId"`
+	Type      string `json:"type"`
+	Body      E      `json:"body"`
 }
 
 type statusEventCreatedBody struct {
@@ -62,18 +59,17 @@ type damageEntry struct {
 }
 
 type movementEvent struct {
-	Tenant        tenant.Model `json:"tenant"`
-	WorldId       byte         `json:"worldId"`
-	ChannelId     byte         `json:"channelId"`
-	UniqueId      uint32       `json:"uniqueId"`
-	ObserverId    uint32       `json:"observerId"`
-	SkillPossible bool         `json:"skillPossible"`
-	Skill         int8         `json:"skill"`
-	SkillId       int16        `json:"skillId"`
-	SkillLevel    int16        `json:"skillLevel"`
-	MultiTarget   []position   `json:"multiTarget"`
-	RandomTimes   []int32      `json:"randomTimes"`
-	Movement      movement     `json:"movement"`
+	WorldId       byte       `json:"worldId"`
+	ChannelId     byte       `json:"channelId"`
+	UniqueId      uint32     `json:"uniqueId"`
+	ObserverId    uint32     `json:"observerId"`
+	SkillPossible bool       `json:"skillPossible"`
+	Skill         int8       `json:"skill"`
+	SkillId       int16      `json:"skillId"`
+	SkillLevel    int16      `json:"skillLevel"`
+	MultiTarget   []position `json:"multiTarget"`
+	RandomTimes   []int32    `json:"randomTimes"`
+	Movement      movement   `json:"movement"`
 }
 
 type movement struct {

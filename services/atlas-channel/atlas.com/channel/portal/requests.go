@@ -2,10 +2,8 @@ package portal
 
 import (
 	"atlas-channel/rest"
-	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/Chronicle20/atlas-tenant"
 	"os"
 )
 
@@ -18,8 +16,6 @@ func getBaseRequest() string {
 	return os.Getenv("GAME_DATA_SERVICE_URL")
 }
 
-func requestInMapByName(ctx context.Context, tenant tenant.Model) func(mapId uint32, name string) requests.Request[[]RestModel] {
-	return func(mapId uint32, name string) requests.Request[[]RestModel] {
-		return rest.MakeGetRequest[[]RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+portalsByName, mapId, name))
-	}
+func requestInMapByName(mapId uint32, name string) requests.Request[[]RestModel] {
+	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+portalsByName, mapId, name))
 }

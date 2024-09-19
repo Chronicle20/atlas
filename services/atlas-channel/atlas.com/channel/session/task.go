@@ -3,6 +3,8 @@ package session
 import (
 	"atlas-channel/configuration"
 	"context"
+	"github.com/Chronicle20/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"time"
@@ -37,20 +39,22 @@ func NewTimeout(l logrus.FieldLogger, interval time.Duration) *Timeout {
 }
 
 func (t *Timeout) Run() {
-	ctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), TimeoutTask)
+	sctx, span := otel.GetTracerProvider().Tracer("atlas-login").Start(context.Background(), TimeoutTask)
 	defer span.End()
 
-	sessions := GetRegistry().GetAll()
 	cur := time.Now()
 
 	t.l.Debugf("Executing timeout task.")
-	for _, s := range sessions {
-		if cur.Sub(s.LastRequest()) > t.timeout {
-			t.l.Infof("Account [%d] was auto-disconnected due to inactivity.", s.AccountId())
-			tenant := s.Tenant()
-			DestroyById(t.l, ctx, GetRegistry(), tenant.Id())(s.SessionId())
-		}
-	}
+	_ = tenant.ForAll(func(ten tenant.Model) error {
+		tctx := tenant.WithContext(sctx, ten)
+		return model.ForEachSlice(AllInTenantProvider(ten), func(s Model) error {
+			if cur.Sub(s.LastRequest()) > t.timeout {
+				t.l.Infof("Account [%d] was auto-disconnected due to inactivity.", s.AccountId())
+				DestroyById(t.l, tctx, GetRegistry())(s.SessionId())
+			}
+			return nil
+		})
+	})
 }
 
 func (t *Timeout) SleepTime() time.Duration {

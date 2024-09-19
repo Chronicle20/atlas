@@ -11,7 +11,6 @@ import (
 	"atlas-login/socket/writer"
 	"atlas-login/tasks"
 	"atlas-login/tracing"
-	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	socket2 "github.com/Chronicle20/atlas-socket"
@@ -50,7 +49,7 @@ func main() {
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.StatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 
-	ctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
+	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
 	for _, s := range config.Data.Attributes.Servers {
 		var t tenant.Model
@@ -70,8 +69,9 @@ func main() {
 		if err != nil {
 			continue
 		}
+		tctx := tenant.WithContext(sctx, t)
 
-		err = account.InitializeRegistry(l, ctx, t)
+		err = account.InitializeRegistry(l, tctx, t)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to initialize account registry for tenant [%s].", t.String())
 		}
@@ -89,9 +89,9 @@ func main() {
 		wp := produceWriterProducer(fl)(s.Writers, writerList, rw)
 		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 
-		_, _ = cm.RegisterHandler(account.StatusRegister(l))
+		_, _ = cm.RegisterHandler(account.StatusRegister(t)(l))
 
-		socket.CreateSocketService(fl, tdm.Context(), tdm.WaitGroup())(hp, rw, t, s.Port)
+		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, t, s.Port)
 	}
 	span.End()
 

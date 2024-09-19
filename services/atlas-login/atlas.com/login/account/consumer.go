@@ -21,31 +21,29 @@ func StatusConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	}
 }
 
-func StatusRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvEventTopicAccountStatus)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleAccountStatusEvent))
+func StatusRegister(tenant tenant.Model) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvEventTopicAccountStatus)()
+		return t, message.AdaptHandler(message.PersistentConfig(handleAccountStatusEvent(tenant)))
+	}
 }
 
-func handleAccountStatusEvent(l logrus.FieldLogger, ctx context.Context, event statusEvent) {
-	t, err := tenant.FromContext(ctx)()
-	if err != nil {
-		l.WithError(err).Error("error getting tenant")
-		return
-	}
+func handleAccountStatusEvent(ot tenant.Model) func(l logrus.FieldLogger, ctx context.Context, event statusEvent) {
+	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent) {
+		t, err := tenant.FromContext(ctx)()
+		if err != nil {
+			l.WithError(err).Error("error getting tenant")
+			return
+		}
 
-	if !t.Is(event.Tenant) {
-		return
-	}
+		if !t.Is(ot) {
+			return
+		}
 
-	if event.Status == EventAccountStatusLoggedIn {
-		getRegistry().Login(Key{
-			Tenant: event.Tenant,
-			Id:     event.AccountId,
-		})
-	} else if event.Status == EventAccountStatusLoggedOut {
-		getRegistry().Logout(Key{
-			Tenant: event.Tenant,
-			Id:     event.AccountId,
-		})
+		if event.Status == EventAccountStatusLoggedIn {
+			getRegistry().Login(Key{Tenant: t, Id: event.AccountId})
+		} else if event.Status == EventAccountStatusLoggedOut {
+			getRegistry().Logout(Key{Tenant: t, Id: event.AccountId})
+		}
 	}
 }

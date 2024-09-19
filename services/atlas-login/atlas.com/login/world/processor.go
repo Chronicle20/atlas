@@ -9,11 +9,11 @@ import (
 )
 
 func AllProvider(l logrus.FieldLogger, ctx context.Context) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](l, ctx)(requestWorlds(), Extract)
+	return requests.SliceProvider[RestModel, Model](l, ctx)(requestWorlds(), Extract, model.Filters[Model]())
 }
 
 func GetAll(l logrus.FieldLogger, ctx context.Context, decorators ...model.Decorator[Model]) ([]Model, error) {
-	return model.SliceMap(AllProvider(l, ctx), model.Decorate(decorators...))()
+	return model.SliceMap(model.Decorate(decorators))(AllProvider(l, ctx))(model.ParallelMap())()
 }
 
 func ByIdModelProvider(l logrus.FieldLogger, ctx context.Context) func(worldId byte) model.Provider[Model] {

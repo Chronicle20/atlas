@@ -5,11 +5,18 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 )
+
+func AllInTenantProvider(tenant tenant.Model) model.Provider[[]Model] {
+	return func() ([]Model, error) {
+		return GetRegistry().GetInTenant(tenant.Id()), nil
+	}
+}
 
 func Announce(l logrus.FieldLogger) func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
 	return func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
@@ -87,7 +94,7 @@ func SetChannelId(channelId byte) func(tenantId uuid.UUID, id uuid.UUID) Model {
 
 func SessionCreated(kp producer.Provider, tenant tenant.Model) func(s Model) {
 	return func(s Model) {
-		_ = kp(EnvEventTopicSessionStatus)(createdStatusEventProvider(tenant, s.SessionId(), s.AccountId()))
+		_ = kp(EnvEventTopicSessionStatus)(createdStatusEventProvider(s.SessionId(), s.AccountId()))
 	}
 }
 

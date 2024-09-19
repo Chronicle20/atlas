@@ -75,6 +75,7 @@ func (r *Registry) GetLock(tenantId uuid.UUID, sessionId uuid.UUID) (*sync.RWMut
 	return nil, false
 }
 
+// Deprecated
 func (r *Registry) GetAll() []Model {
 	r.mutex.RLock()
 	s := make([]Model, 0)

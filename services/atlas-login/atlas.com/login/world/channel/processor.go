@@ -23,7 +23,7 @@ func GetById(l logrus.FieldLogger, ctx context.Context) func(worldId byte, chann
 
 func byWorldModelProvider(l logrus.FieldLogger, ctx context.Context) func(worldId byte) model.Provider[[]Model] {
 	return func(worldId byte) model.Provider[[]Model] {
-		return requests.SliceProvider[RestModel, Model](l, ctx)(requestChannels(worldId), Extract)
+		return requests.SliceProvider[RestModel, Model](l, ctx)(requestChannels(worldId), Extract, model.Filters[Model]())
 	}
 }
 

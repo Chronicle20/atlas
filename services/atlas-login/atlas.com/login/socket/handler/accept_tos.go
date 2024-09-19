@@ -17,8 +17,7 @@ func AcceptTosHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 		l.Debugf("Account [%d] responded to the TOS dialog with [%t].", s.AccountId(), accepted)
 		if !accepted {
 			l.Debugf("Account [%d] has chosen not to accept TOS. Terminating session.", s.AccountId())
-			t := s.Tenant()
-			session.Destroy(l, ctx, session.GetRegistry(), t.Id())(s)
+			session.Destroy(l, ctx, session.GetRegistry())(s)
 			return
 		}
 

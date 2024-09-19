@@ -35,7 +35,7 @@ func ByIdModelProvider(l logrus.FieldLogger, ctx context.Context) func(id uint32
 }
 
 func allProvider(l logrus.FieldLogger, ctx context.Context) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](l, ctx)(requestAccounts(), Extract)
+	return requests.SliceProvider[RestModel, Model](l, ctx)(requestAccounts(), Extract, model.Filters[Model]())
 }
 
 func GetById(l logrus.FieldLogger, ctx context.Context) func(id uint32) (Model, error) {

@@ -9,6 +9,6 @@ import (
 
 func ByWorldModelProvider(l logrus.FieldLogger, ctx context.Context) func(worldId byte) model.Provider[[]Model] {
 	return func(worldId byte) model.Provider[[]Model] {
-		return requests.SliceProvider[RestModel, Model](l, ctx)(requestChannelsForWorld(worldId), Extract)
+		return requests.SliceProvider[RestModel, Model](l, ctx)(requestChannelsForWorld(worldId), Extract, model.Filters[Model]())
 	}
 }

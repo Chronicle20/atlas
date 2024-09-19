@@ -36,7 +36,7 @@ func IsValidName(l logrus.FieldLogger, ctx context.Context) func(name string) (b
 
 func byAccountAndWorldProvider(l logrus.FieldLogger, ctx context.Context) func(accountId uint32, worldId byte) model.Provider[[]Model] {
 	return func(accountId uint32, worldId byte) model.Provider[[]Model] {
-		return requests.SliceProvider[RestModel, Model](l, ctx)(requestByAccountAndWorld(accountId, worldId), Extract)
+		return requests.SliceProvider[RestModel, Model](l, ctx)(requestByAccountAndWorld(accountId, worldId), Extract, model.Filters[Model]())
 	}
 }
 
@@ -52,7 +52,7 @@ func GetForWorld(l logrus.FieldLogger, ctx context.Context) func(accountId uint3
 
 func byNameProvider(l logrus.FieldLogger, ctx context.Context) func(name string) model.Provider[[]Model] {
 	return func(name string) model.Provider[[]Model] {
-		return requests.SliceProvider[RestModel, Model](l, ctx)(requestByName(name), Extract)
+		return requests.SliceProvider[RestModel, Model](l, ctx)(requestByName(name), Extract, model.Filters[Model]())
 	}
 }
 

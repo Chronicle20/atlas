@@ -36,13 +36,13 @@ func CharacterViewAllSelectedPicRegisterHandleFunc(l logrus.FieldLogger, ctx con
 		t := s.Tenant()
 		if c.WorldId() != byte(worldId) {
 			l.Errorf("Character is not part of world provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry(), t.Id())(s)
+			session.Destroy(l, ctx, session.GetRegistry())(s)
 			return
 		}
 
 		if c.AccountId() != s.AccountId() {
 			l.Errorf("Character is not part of account provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry(), t.Id())(s)
+			session.Destroy(l, ctx, session.GetRegistry())(s)
 			return
 		}
 

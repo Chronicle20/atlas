@@ -22,10 +22,9 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 			pin = r.ReadAsciiString()
 		}
 		l.Debugf("AfterLogin handling opt1 [%d] opt2 [%d] pin [%s].", opt1, opt2, pin)
-		t := s.Tenant()
 		if opt1 == 0 && opt2 == 0 {
 			l.Debugf("Account [%d] has chosen not to input PIN. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry(), t.Id())(s)
+			session.Destroy(l, ctx, session.GetRegistry())(s)
 			return
 		}
 
@@ -91,7 +90,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 		}
 
 		l.Warnf("Client should not have gotten here. Terminating session.")
-		session.Destroy(l, ctx, session.GetRegistry(), t.Id())(s)
+		session.Destroy(l, ctx, session.GetRegistry())(s)
 	}
 }
 

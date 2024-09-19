@@ -45,39 +45,42 @@ func Decrypt(_ logrus.FieldLogger, r *Registry, tenant tenant.Model) func(hasAes
 
 func DestroyAll(l logrus.FieldLogger, ctx context.Context, r *Registry) model.Operator[tenant.Model] {
 	return func(t tenant.Model) error {
-		for _, s := range r.GetAll() {
-			Destroy(l, ctx, r, t.Id())(s)
+		tctx := tenant.WithContext(ctx, t)
+		return model.ForEachSlice(AllInTenantProvider(t), Destroy(l, tctx, r))
+	}
+}
+
+func DestroyByIdWithSpan(l logrus.FieldLogger) func(ctx context.Context) func(r *Registry) func(sessionId uuid.UUID) {
+	return func(ctx context.Context) func(r *Registry) func(sessionId uuid.UUID) {
+		return func(r *Registry) func(sessionId uuid.UUID) {
+			return func(sessionId uuid.UUID) {
+				sctx, span := otel.GetTracerProvider().Tracer("atlas-login").Start(ctx, "session-destroy")
+				defer span.End()
+				DestroyById(l, sctx, r)(sessionId)
+			}
 		}
-		return nil
 	}
 }
 
-func DestroyByIdWithSpan(l logrus.FieldLogger, r *Registry, tenantId uuid.UUID) func(sessionId uuid.UUID) {
+func DestroyById(l logrus.FieldLogger, ctx context.Context, r *Registry) func(sessionId uuid.UUID) {
+	t := tenant.MustFromContext(ctx)
 	return func(sessionId uuid.UUID) {
-		ctx, span := otel.GetTracerProvider().Tracer("atlas-login").Start(context.Background(), "session-destroy")
-		defer span.End()
-
-		DestroyById(l, ctx, r, tenantId)(sessionId)
-	}
-}
-
-func DestroyById(l logrus.FieldLogger, ctx context.Context, r *Registry, tenantId uuid.UUID) func(sessionId uuid.UUID) {
-	return func(sessionId uuid.UUID) {
-		s, ok := r.Get(tenantId, sessionId)
+		s, ok := r.Get(t.Id(), sessionId)
 		if !ok {
 			return
 		}
-		Destroy(l, ctx, r, tenantId)(s)
+		Destroy(l, ctx, r)(s)
 	}
 }
 
-func Destroy(l logrus.FieldLogger, ctx context.Context, r *Registry, tenantId uuid.UUID) func(Model) {
+func Destroy(l logrus.FieldLogger, ctx context.Context, r *Registry) model.Operator[Model] {
+	t := tenant.MustFromContext(ctx)
 	pi := producer.ProviderImpl(l)(ctx)
-	return func(s Model) {
+	return func(s Model) error {
 		l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
-		r.Remove(tenantId, s.SessionId())
+		r.Remove(t.Id(), s.SessionId())
 		s.Disconnect()
 		as.Destroy(l, pi)(s.Tenant(), s.SessionId(), s.AccountId())
-		_ = pi(EnvEventTopicSessionStatus)(destroyedStatusEventProvider(s.tenant, s.SessionId(), s.AccountId()))
+		return pi(EnvEventTopicSessionStatus)(destroyedStatusEventProvider(s.SessionId(), s.AccountId()))
 	}
 }

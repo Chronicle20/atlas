@@ -21,7 +21,7 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 		t := s.Tenant()
 		if opt == 0 {
 			l.Debugf("Account [%d] opted out of PIN registration. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry(), t.Id())(s)
+			session.Destroy(l, ctx, session.GetRegistry())(s)
 		}
 
 		if opt == 1 {
@@ -38,7 +38,7 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 
 			if len(pin) > 4 {
 				l.Warnf("Read an invalid length pin. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-				session.Destroy(l, ctx, session.GetRegistry(), t.Id())(s)
+				session.Destroy(l, ctx, session.GetRegistry())(s)
 				return
 			}
 
@@ -65,6 +65,6 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 			return
 		}
 		l.Warnf("Unhandled opt [%d] for PIN registration. Terminating session.", opt)
-		session.Destroy(l, ctx, session.GetRegistry(), t.Id())(s)
+		session.Destroy(l, ctx, session.GetRegistry())(s)
 	}
 }

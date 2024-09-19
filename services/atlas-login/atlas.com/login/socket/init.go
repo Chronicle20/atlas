@@ -45,7 +45,7 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 					socket.SetPort(port),
 					socket.SetCreator(session.Create(l, session.GetRegistry())(t, locale)),
 					socket.SetMessageDecryptor(session.Decrypt(l, session.GetRegistry(), t)(true, hasMapleEncryption)),
-					socket.SetDestroyer(session.DestroyByIdWithSpan(l, session.GetRegistry(), t.Id())),
+					socket.SetDestroyer(session.DestroyByIdWithSpan(l)(ctx)(session.GetRegistry())),
 					socket.SetReadWriter(rw),
 				)
 

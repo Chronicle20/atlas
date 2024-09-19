@@ -4,45 +4,47 @@ import (
 	"atlas-monsters/kafka/producer"
 	_map "atlas-monsters/map"
 	"atlas-monsters/monster/information"
-	"atlas-monsters/tenant"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 )
 
-func byIdProvider(tenant tenant.Model) func(monsterId uint32) model.Provider[Model] {
+func byIdProvider(ctx context.Context) func(monsterId uint32) model.Provider[Model] {
 	return func(monsterId uint32) model.Provider[Model] {
 		return func() (Model, error) {
-			return GetMonsterRegistry().GetMonster(tenant, monsterId)
+			t := tenant.MustFromContext(ctx)
+			return GetMonsterRegistry().GetMonster(t, monsterId)
 		}
 	}
 }
 
-func ByMapProvider(t tenant.Model) func(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model] {
+func ByMapProvider(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model] {
 	return func(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model] {
 		return func() ([]Model, error) {
+			t := tenant.MustFromContext(ctx)
 			return GetMonsterRegistry().GetMonstersInMap(t, worldId, channelId, mapId), nil
 		}
 	}
 }
 
-func ControlledInMapProvider(tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model] {
+func ControlledInMapProvider(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model] {
 	return func(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model] {
-		return model.FilteredProvider(ByMapProvider(tenant)(worldId, channelId, mapId), Controlled)
+		return model.FilteredProvider(ByMapProvider(ctx)(worldId, channelId, mapId), model.Filters(Controlled))
 	}
 }
 
-func NotControlledInMapProvider(tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model] {
+func NotControlledInMapProvider(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model] {
 	return func(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model] {
-		return model.FilteredProvider(ByMapProvider(tenant)(worldId, channelId, mapId), NotControlled)
+		return model.FilteredProvider(ByMapProvider(ctx)(worldId, channelId, mapId), model.Filters(NotControlled))
 	}
 }
 
-func ControlledByCharacterInMapProvider(tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, characterId uint32) model.Provider[[]Model] {
+func ControlledByCharacterInMapProvider(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) model.Provider[[]Model] {
 	return func(worldId byte, channelId byte, mapId uint32, characterId uint32) model.Provider[[]Model] {
-		return model.FilteredProvider(ByMapProvider(tenant)(worldId, channelId, mapId), IsControlledBy(characterId))
+		return model.FilteredProvider(ByMapProvider(ctx)(worldId, channelId, mapId), model.Filters(IsControlledBy(characterId)))
 	}
 }
 
@@ -52,86 +54,94 @@ func allByTenantProvider() model.Provider[map[tenant.Model][]Model] {
 	}
 }
 
-func GetById(tenant tenant.Model) func(monsterId uint32) (Model, error) {
+func GetById(ctx context.Context) func(monsterId uint32) (Model, error) {
 	return func(monsterId uint32) (Model, error) {
-		return byIdProvider(tenant)(monsterId)()
+		return byIdProvider(ctx)(monsterId)()
 	}
 }
 
-func GetInMap(t tenant.Model) func(worldId byte, channelId byte, mapId uint32) ([]Model, error) {
+func GetInMap(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) ([]Model, error) {
 	return func(worldId byte, channelId byte, mapId uint32) ([]Model, error) {
-		return ByMapProvider(t)(worldId, channelId, mapId)()
+		return ByMapProvider(ctx)(worldId, channelId, mapId)()
 	}
 }
 
-func CreateMonster(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, input RestModel) (Model, error) {
-	return func(worldId byte, channelId byte, mapId uint32, input RestModel) (Model, error) {
-		l.Debugf("Attempting to create monster [%d] in world [%d] channel [%d] map [%d].", input.MonsterId, worldId, channelId, mapId)
-		ma, err := information.GetById(l, ctx, tenant)(input.MonsterId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve information necessary to create monster [%d].", input.MonsterId)
-			return Model{}, err
-		}
-		m := GetMonsterRegistry().CreateMonster(tenant, worldId, channelId, mapId, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.HP(), ma.MP())
+func CreateMonster(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, input RestModel) (Model, error) {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, input RestModel) (Model, error) {
+		return func(worldId byte, channelId byte, mapId uint32, input RestModel) (Model, error) {
+			l.Debugf("Attempting to create monster [%d] in world [%d] channel [%d] map [%d].", input.MonsterId, worldId, channelId, mapId)
+			ma, err := information.GetById(l)(ctx)(input.MonsterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve information necessary to create monster [%d].", input.MonsterId)
+				return Model{}, err
+			}
 
-		cid, err := GetControllerCandidate(l, ctx, tenant)(worldId, channelId, mapId)
-		if err == nil {
-			l.Debugf("Created monster [%d] with id [%d] will be controlled by [%d].", m.MonsterId(), m.UniqueId(), cid)
-			m, err = StartControl(l, ctx, tenant)(m.UniqueId(), cid)
+			t := tenant.MustFromContext(ctx)
+			m := GetMonsterRegistry().CreateMonster(t, worldId, channelId, mapId, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.HP(), ma.MP())
+
+			cid, err := GetControllerCandidate(l)(ctx)(worldId, channelId, mapId)
+			if err == nil {
+				l.Debugf("Created monster [%d] with id [%d] will be controlled by [%d].", m.MonsterId(), m.UniqueId(), cid)
+				m, err = StartControl(l)(ctx)(m.UniqueId(), cid)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in world [%d] channel [%d] map [%d].", cid, m.UniqueId(), m.WorldId(), m.ChannelId(), m.MapId())
+				}
+			}
+
+			l.Debugf("Created monster [%d] in world [%d] channel [%d] map [%d]. Emitting Monster Status.", input.MonsterId, worldId, channelId, mapId)
+			_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitCreated(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId()))
+			return m, nil
+		}
+	}
+}
+
+func FindNextController(l logrus.FieldLogger) func(ctx context.Context) model.Operator[Model] {
+	return func(ctx context.Context) model.Operator[Model] {
+		return func(m Model) error {
+			cid, err := GetControllerCandidate(l)(ctx)(m.WorldId(), m.ChannelId(), m.MapId())
+			if err != nil {
+				return err
+			}
+
+			_, err = StartControl(l)(ctx)(m.UniqueId(), cid)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in world [%d] channel [%d] map [%d].", cid, m.UniqueId(), m.WorldId(), m.ChannelId(), m.MapId())
 			}
-		}
-
-		l.Debugf("Created monster [%d] in world [%d] channel [%d] map [%d]. Emitting Monster Status.", input.MonsterId, worldId, channelId, mapId)
-		_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitCreated(tenant, m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId()))
-		return m, nil
-	}
-}
-
-func FindNextController(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) model.Operator[Model] {
-	return func(m Model) error {
-		cid, err := GetControllerCandidate(l, ctx, tenant)(m.WorldId(), m.ChannelId(), m.MapId())
-		if err != nil {
 			return err
 		}
-
-		_, err = StartControl(l, ctx, tenant)(m.UniqueId(), cid)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in world [%d] channel [%d] map [%d].", cid, m.UniqueId(), m.WorldId(), m.ChannelId(), m.MapId())
-		}
-		return err
 	}
 }
 
-func GetControllerCandidate(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32) (uint32, error) {
-	return func(worldId byte, channelId byte, mapId uint32) (uint32, error) {
-		l.Debugf("Identifying controller candidate for monsters in world [%d] channel [%d] map [%d].", worldId, channelId, mapId)
+func GetControllerCandidate(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) (uint32, error) {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) (uint32, error) {
+		return func(worldId byte, channelId byte, mapId uint32) (uint32, error) {
+			l.Debugf("Identifying controller candidate for monsters in world [%d] channel [%d] map [%d].", worldId, channelId, mapId)
 
-		controlCounts, err := model.CollectToMap(_map.CharacterIdsInMapProvider(l, ctx, tenant)(worldId, channelId, mapId), characterIdKey, zeroValue)()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to initialize controller candidate map.")
-			return 0, err
-		}
-		err = model.ForEachSlice(ControlledInMapProvider(tenant)(worldId, channelId, mapId), func(m Model) error {
-			controlCounts[m.ControlCharacterId()] += 1
-			return nil
-		})
-
-		var index = uint32(0)
-		for key, val := range controlCounts {
-			if index == 0 {
-				index = key
-			} else if val < controlCounts[index] {
-				index = key
+			controlCounts, err := model.CollectToMap(_map.CharacterIdsInMapProvider(l)(ctx)(worldId, channelId, mapId), characterIdKey, zeroValue)()
+			if err != nil {
+				l.WithError(err).Errorf("Unable to initialize controller candidate map.")
+				return 0, err
 			}
-		}
+			err = model.ForEachSlice(ControlledInMapProvider(ctx)(worldId, channelId, mapId), func(m Model) error {
+				controlCounts[m.ControlCharacterId()] += 1
+				return nil
+			})
 
-		if index == 0 {
-			return 0, errors.New("should not get here")
-		} else {
-			l.Debugf("Controller candidate has been determined. Character [%d].", index)
-			return index, nil
+			var index = uint32(0)
+			for key, val := range controlCounts {
+				if index == 0 {
+					index = key
+				} else if val < controlCounts[index] {
+					index = key
+				}
+			}
+
+			if index == 0 {
+				return 0, errors.New("should not get here")
+			} else {
+				l.Debugf("Controller candidate has been determined. Character [%d].", index)
+				return index, nil
+			}
 		}
 	}
 }
@@ -144,40 +154,46 @@ func characterIdKey(id uint32) uint32 {
 	return id
 }
 
-func StartControl(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(uniqueId uint32, controllerId uint32) (Model, error) {
-	return func(uniqueId uint32, controllerId uint32) (Model, error) {
-		m, err := GetById(tenant)(uniqueId)
-		if err != nil {
-			return Model{}, err
-		}
-
-		if m.ControlCharacterId() != 0 {
-			err = StopControl(l, ctx, tenant)(m)
+func StartControl(l logrus.FieldLogger) func(ctx context.Context) func(uniqueId uint32, controllerId uint32) (Model, error) {
+	return func(ctx context.Context) func(uniqueId uint32, controllerId uint32) (Model, error) {
+		return func(uniqueId uint32, controllerId uint32) (Model, error) {
+			m, err := GetById(ctx)(uniqueId)
 			if err != nil {
 				return Model{}, err
 			}
-		}
 
-		m, err = GetById(tenant)(uniqueId)
-		if err != nil {
-			return Model{}, err
-		}
+			if m.ControlCharacterId() != 0 {
+				err = StopControl(l)(ctx)(m)
+				if err != nil {
+					return Model{}, err
+				}
+			}
 
-		m, err = GetMonsterRegistry().ControlMonster(tenant, m.UniqueId(), controllerId)
-		if err == nil {
-			_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitStartControl(tenant, m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId(), m.ControlCharacterId()))
+			m, err = GetById(ctx)(uniqueId)
+			if err != nil {
+				return Model{}, err
+			}
+
+			t := tenant.MustFromContext(ctx)
+			m, err = GetMonsterRegistry().ControlMonster(t, m.UniqueId(), controllerId)
+			if err == nil {
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitStartControl(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId(), m.ControlCharacterId()))
+			}
+			return m, err
 		}
-		return m, err
 	}
 }
 
-func StopControl(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) model.Operator[Model] {
-	return func(m Model) error {
-		m, err := GetMonsterRegistry().ClearControl(tenant, m.UniqueId())
-		if err == nil {
-			_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitStopControl(tenant, m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId(), m.ControlCharacterId()))
+func StopControl(l logrus.FieldLogger) func(ctx context.Context) model.Operator[Model] {
+	return func(ctx context.Context) model.Operator[Model] {
+		return func(m Model) error {
+			t := tenant.MustFromContext(ctx)
+			m, err := GetMonsterRegistry().ClearControl(t, m.UniqueId())
+			if err == nil {
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitStopControl(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId(), m.ControlCharacterId()))
+			}
+			return err
 		}
-		return err
 	}
 }
 
@@ -185,8 +201,8 @@ func DestroyInTenant(l logrus.FieldLogger) func(ctx context.Context) func(tenant
 	return func(ctx context.Context) func(tenant tenant.Model) model.Operator[[]Model] {
 		return func(tenant tenant.Model) model.Operator[[]Model] {
 			return func(models []Model) error {
-				idp := model.SliceMap(model.FixedProvider(models), IdTransformer, model.ParallelMap())
-				return model.ForEachSlice(idp, Destroy(l, ctx, tenant), model.ParallelExecute())
+				idp := model.SliceMap(IdTransformer)(model.FixedProvider(models))(model.ParallelMap())
+				return model.ForEachSlice(idp, Destroy(l)(ctx), model.ParallelExecute())
 			}
 		}
 	}
@@ -196,81 +212,90 @@ func DestroyAll(l logrus.FieldLogger, ctx context.Context) error {
 	return model.ForEachMap(allByTenantProvider(), DestroyInTenant(l)(ctx), model.ParallelExecute())
 }
 
-func Destroy(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(uniqueId uint32) error {
-	return func(uniqueId uint32) error {
-		m, err := GetMonsterRegistry().RemoveMonster(tenant, uniqueId)
-		if err != nil {
-			return err
-		}
+func Destroy(l logrus.FieldLogger) func(ctx context.Context) func(uniqueId uint32) error {
+	return func(ctx context.Context) func(uniqueId uint32) error {
+		return func(uniqueId uint32) error {
+			t := tenant.MustFromContext(ctx)
+			m, err := GetMonsterRegistry().RemoveMonster(t, uniqueId)
+			if err != nil {
+				return err
+			}
 
-		return producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitDestroyed(tenant, m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId()))
+			return producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitDestroyed(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId()))
+		}
 	}
 }
 
-func Move(tenant tenant.Model) func(id uint32, x int16, y int16, stance byte) {
+func Move(ctx context.Context) func(id uint32, x int16, y int16, stance byte) {
 	return func(id uint32, x int16, y int16, stance byte) {
-		GetMonsterRegistry().MoveMonster(tenant, id, x, y, stance)
+		t := tenant.MustFromContext(ctx)
+		GetMonsterRegistry().MoveMonster(t, id, x, y, stance)
 	}
 }
 
-func Damage(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(id uint32, characterId uint32, damage int64) {
-	return func(id uint32, characterId uint32, damage int64) {
-		m, err := GetMonsterRegistry().GetMonster(tenant, id)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to get monster [%d].", id)
-			return
-		}
-		if !m.Alive() {
-			l.Errorf("Character [%d] trying to apply damage to an already dead monster [%d].", characterId, id)
-			return
-		}
-
-		s, err := GetMonsterRegistry().ApplyDamage(tenant, characterId, damage, m.UniqueId())
-		if err != nil {
-			l.WithError(err).Errorf("Error applying damage to monster %d from character %d.", m.UniqueId(), characterId)
-			return
-		}
-
-		if s.Killed {
-			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitKilled(tenant, s.Monster.WorldId(), s.Monster.ChannelId(), s.Monster.MapId(), s.Monster.UniqueId(), s.Monster.MonsterId(), s.Monster.X(), s.Monster.Y(), s.CharacterId, s.Monster.DamageSummary()))
+func Damage(l logrus.FieldLogger) func(ctx context.Context) func(id uint32, characterId uint32, damage int64) {
+	return func(ctx context.Context) func(id uint32, characterId uint32, damage int64) {
+		return func(id uint32, characterId uint32, damage int64) {
+			t := tenant.MustFromContext(ctx)
+			m, err := GetMonsterRegistry().GetMonster(t, id)
 			if err != nil {
-				l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the map.", s.Monster.UniqueId())
+				l.WithError(err).Errorf("Unable to get monster [%d].", id)
+				return
 			}
-			_, err = GetMonsterRegistry().RemoveMonster(tenant, s.Monster.UniqueId())
+			if !m.Alive() {
+				l.Errorf("Character [%d] trying to apply damage to an already dead monster [%d].", characterId, id)
+				return
+			}
+
+			s, err := GetMonsterRegistry().ApplyDamage(t, characterId, damage, m.UniqueId())
 			if err != nil {
-				l.WithError(err).Errorf("Monster [%d] killed, but not removed from registry.", s.Monster.UniqueId())
+				l.WithError(err).Errorf("Error applying damage to monster %d from character %d.", m.UniqueId(), characterId)
+				return
 			}
-			return
-		}
 
-		if characterId != s.Monster.ControlCharacterId() {
-			dl := s.Monster.DamageLeader() == characterId
-			l.Debugf("Character [%d] has become damage leader. They should now control the monster.", characterId)
-			if dl {
-				// TODO this stop seems superfluous
-				m, err := GetById(tenant)(s.Monster.UniqueId())
+			if s.Killed {
+				err = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitKilled(s.Monster.WorldId(), s.Monster.ChannelId(), s.Monster.MapId(), s.Monster.UniqueId(), s.Monster.MonsterId(), s.Monster.X(), s.Monster.Y(), s.CharacterId, s.Monster.DamageSummary()))
 				if err != nil {
-					return
+					l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the map.", s.Monster.UniqueId())
 				}
+				_, err = GetMonsterRegistry().RemoveMonster(t, s.Monster.UniqueId())
+				if err != nil {
+					l.WithError(err).Errorf("Monster [%d] killed, but not removed from registry.", s.Monster.UniqueId())
+				}
+				return
+			}
 
-				err = StopControl(l, ctx, tenant)(m)
-				if err != nil {
-					l.WithError(err).Errorf("Unable to stop [%d] from controlling monster [%d].", s.Monster.ControlCharacterId(), s.Monster.UniqueId())
-				}
-				m, err = StartControl(l, ctx, tenant)(m.UniqueId(), characterId)
-				if err != nil {
-					l.WithError(err).Errorf("Unable to start [%d] controlling monster [%d].", characterId, m.UniqueId())
+			if characterId != s.Monster.ControlCharacterId() {
+				dl := s.Monster.DamageLeader() == characterId
+				l.Debugf("Character [%d] has become damage leader. They should now control the monster.", characterId)
+				if dl {
+					// TODO this stop seems superfluous
+					m, err := GetById(ctx)(s.Monster.UniqueId())
+					if err != nil {
+						return
+					}
+
+					err = StopControl(l)(ctx)(m)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to stop [%d] from controlling monster [%d].", s.Monster.ControlCharacterId(), s.Monster.UniqueId())
+					}
+					m, err = StartControl(l)(ctx)(m.UniqueId(), characterId)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to start [%d] controlling monster [%d].", characterId, m.UniqueId())
+					}
 				}
 			}
-		}
 
-		// TODO broadcast HP bar update
+			// TODO broadcast HP bar update
+		}
 	}
 }
 
-func DestroyInMap(l logrus.FieldLogger, ctx context.Context, t tenant.Model) func(worldId byte, channelId byte, mapId uint32) error {
-	return func(worldId byte, channelId byte, mapId uint32) error {
-		return model.ForEachSlice(model.SliceMap[Model, uint32](ByMapProvider(t)(worldId, channelId, mapId), IdTransformer), Destroy(l, ctx, t), model.ParallelExecute())
+func DestroyInMap(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) error {
+		return func(worldId byte, channelId byte, mapId uint32) error {
+			return model.ForEachSlice(model.SliceMap[Model, uint32](IdTransformer)(ByMapProvider(ctx)(worldId, channelId, mapId))(model.ParallelMap()), Destroy(l)(ctx), model.ParallelExecute())
+		}
 	}
 }
 

@@ -48,9 +48,9 @@ func main() {
 	}
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.DamageConsumer(l)(consumerGroupId))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.MovementConsumer(l)(consumerGroupId))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(_map.StatusEventConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.DamageConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.MovementConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(_map.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(monster.DamageCommandRegister(l))
 	_, _ = cm.RegisterHandler(monster.MovementCommandRegister(l))
 	_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(l))

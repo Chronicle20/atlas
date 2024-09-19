@@ -24,7 +24,7 @@ func DamageCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
 }
 
 func handleDamageCommand(l logrus.FieldLogger, ctx context.Context, command damageCommand) {
-	Damage(l, ctx, command.Tenant)(command.UniqueId, command.CharacterId, command.Damage)
+	Damage(l)(ctx)(command.UniqueId, command.CharacterId, command.Damage)
 }
 
 func MovementConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
@@ -68,9 +68,9 @@ func handleMovementCommand(l logrus.FieldLogger, ctx context.Context, command mo
 		return
 	}
 
-	Move(command.Tenant)(command.UniqueId, ms.X, ms.Y, ms.Stance)
+	Move(ctx)(command.UniqueId, ms.X, ms.Y, ms.Stance)
 
-	err = producer.ProviderImpl(l)(ctx)(EnvEventTopicMovement)(emitMove(command.Tenant, command.WorldId, command.ChannelId, command.UniqueId, command.ObserverId, command.SkillPossible, command.Skill, command.SkillId, command.SkillLevel, command.MultiTarget, command.RandomTimes, command.Movement))
+	err = producer.ProviderImpl(l)(ctx)(EnvEventTopicMovement)(emitMove(command.WorldId, command.ChannelId, command.UniqueId, command.ObserverId, command.SkillPossible, command.Skill, command.SkillId, command.SkillLevel, command.MultiTarget, command.RandomTimes, command.Movement))
 	if err != nil {
 		l.WithError(err).Errorf("Unable to relay monster [%d] movement to other characters in map.", command.UniqueId)
 	}

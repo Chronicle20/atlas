@@ -1,7 +1,7 @@
 package monster
 
 import (
-	"atlas-monsters/tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"testing"
 )
@@ -9,7 +9,7 @@ import (
 func TestSunnyDay(t *testing.T) {
 	r := GetMonsterRegistry()
 	r.Clear()
-	tenant := tenant.New(uuid.New(), "GMS", 83, 1)
+	tenant, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	worldId := byte(0)
 	channelId := byte(0)
 	mapId := uint32(40000)
@@ -107,8 +107,8 @@ func TestSunnyDay(t *testing.T) {
 func TestIdReuse(t *testing.T) {
 	r := GetMonsterRegistry()
 	r.Clear()
-	tenant1 := tenant.New(uuid.New(), "GMS", 83, 1)
-	tenant2 := tenant.New(uuid.New(), "GMS", 87, 1)
+	tenant1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tenant2, _ := tenant.Create(uuid.New(), "GMS", 87, 1)
 	worldId := byte(0)
 	channelId := byte(0)
 	mapId := uint32(40000)
@@ -224,8 +224,8 @@ func compare(m Model) func(o Model) bool {
 func TestDestroyAll(t *testing.T) {
 	r := GetMonsterRegistry()
 	r.Clear()
-	tenant1 := tenant.New(uuid.New(), "GMS", 83, 1)
-	tenant2 := tenant.New(uuid.New(), "GMS", 87, 1)
+	tenant1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tenant2, _ := tenant.Create(uuid.New(), "GMS", 87, 1)
 	worldId := byte(0)
 	channelId := byte(0)
 	mapId := uint32(40000)

@@ -43,7 +43,7 @@ func (m RestModel) GetName() string {
 }
 
 func Transform(m Model) (RestModel, error) {
-	des, err := model.SliceMap(model.FixedProvider(m.damageEntries), TransformDamageEntry)()
+	des, err := model.SliceMap(TransformDamageEntry)(model.FixedProvider(m.damageEntries))(model.ParallelMap())()
 	if err != nil {
 		return RestModel{}, err
 	}

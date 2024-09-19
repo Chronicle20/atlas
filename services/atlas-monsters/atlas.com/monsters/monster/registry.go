@@ -1,8 +1,8 @@
 package monster
 
 import (
-	"atlas-monsters/tenant"
 	"errors"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"sync"
 )
 

@@ -24,12 +24,12 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetMonsterById(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMonsterId(d.Logger(), func(monsterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := GetById(c.Tenant())(monsterId)
+			m, err := GetById(d.Context())(monsterId)
 			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			res, err := model.Map(model.FixedProvider(m), Transform)()
+			res, err := model.Map(Transform)(model.FixedProvider(m))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)

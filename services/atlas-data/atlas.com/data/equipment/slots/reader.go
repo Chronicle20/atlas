@@ -1,11 +1,11 @@
 package slots
 
 import (
-	"atlas-data/tenant"
 	"atlas-data/wz"
 	"atlas-data/xml"
 	"errors"
 	"fmt"
+	"github.com/Chronicle20/atlas-tenant"
 	"strconv"
 )
 

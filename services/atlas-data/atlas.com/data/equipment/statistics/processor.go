@@ -1,20 +1,21 @@
 package statistics
 
 import (
-	"atlas-data/tenant"
+	"context"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
-func byIdProvider(tenant tenant.Model) func(equipmentId uint32) model.Provider[Model] {
+func byIdProvider(ctx context.Context) func(equipmentId uint32) model.Provider[Model] {
 	return func(equipmentId uint32) model.Provider[Model] {
 		return func() (Model, error) {
-			return GetEquipmentCache().GetEquipment(tenant, equipmentId)
+			return GetEquipmentCache().GetEquipment(tenant.MustFromContext(ctx), equipmentId)
 		}
 	}
 }
 
-func GetById(tenant tenant.Model) func(equipmentId uint32) (Model, error) {
+func GetById(ctx context.Context) func(equipmentId uint32) (Model, error) {
 	return func(equipmentId uint32) (Model, error) {
-		return byIdProvider(tenant)(equipmentId)()
+		return byIdProvider(ctx)(equipmentId)()
 	}
 }

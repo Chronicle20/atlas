@@ -1,8 +1,8 @@
 package slots
 
 import (
-	"atlas-data/tenant"
 	"errors"
+	"github.com/Chronicle20/atlas-tenant"
 	"strconv"
 	"sync"
 )

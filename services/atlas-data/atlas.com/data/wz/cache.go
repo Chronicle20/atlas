@@ -1,9 +1,9 @@
 package wz
 
 import (
-	"atlas-data/tenant"
 	"errors"
 	"fmt"
+	"github.com/Chronicle20/atlas-tenant"
 	"strconv"
 	"sync"
 )

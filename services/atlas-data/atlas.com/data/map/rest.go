@@ -1,10 +1,9 @@
 package _map
 
 import (
-	"strconv"
-
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/manyminds/api2go/jsonapi"
+	"strconv"
 )
 
 type RestModel struct {
@@ -68,12 +67,12 @@ func Transform(m Model) (RestModel, error) {
 		return RestModel{}, err
 	}
 
-	as, err := model.SliceMap(model.FixedProvider(m.areas), TransformRectangle)()
+	as, err := model.SliceMap(TransformRectangle)(model.FixedProvider(m.areas))(model.ParallelMap())()
 	if err != nil {
 		return RestModel{}, err
 	}
 
-	bt, err := model.SliceMap(model.FixedProvider(m.backgroundTypes), TransformBackgroundType)()
+	bt, err := model.SliceMap(TransformBackgroundType)(model.FixedProvider(m.backgroundTypes))(model.ParallelMap())()
 	if err != nil {
 		return RestModel{}, err
 	}

@@ -6,10 +6,9 @@ import (
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
 	"atlas-data/point"
-	"atlas-data/tenant"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/sirupsen/logrus"
+	"github.com/Chronicle20/atlas-tenant"
 	"math"
 )
 
@@ -161,23 +160,23 @@ func bSearchDropPos(tree *FootholdTree, initial *point.Model, fallback *point.Mo
 	return fallback
 }
 
-func byIdProvider(_ logrus.FieldLogger, _ context.Context, tenant tenant.Model) func(mapId uint32) model.Provider[Model] {
+func byIdProvider(ctx context.Context) func(mapId uint32) model.Provider[Model] {
 	return func(mapId uint32) model.Provider[Model] {
 		return func() (Model, error) {
-			return GetRegistry().GetMap(tenant, mapId)
+			return GetRegistry().GetMap(tenant.MustFromContext(ctx), mapId)
 		}
 	}
 }
 
-func GetById(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32) (Model, error) {
+func GetById(ctx context.Context) func(mapId uint32) (Model, error) {
 	return func(mapId uint32) (Model, error) {
-		return byIdProvider(l, ctx, tenant)(mapId)()
+		return byIdProvider(ctx)(mapId)()
 	}
 }
 
-func portalProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32) model.Provider[[]portal.Model] {
+func portalProvider(ctx context.Context) func(mapId uint32) model.Provider[[]portal.Model] {
 	return func(mapId uint32) model.Provider[[]portal.Model] {
-		m, err := byIdProvider(l, ctx, tenant)(mapId)()
+		m, err := byIdProvider(ctx)(mapId)()
 		if err != nil {
 			return model.ErrorProvider[[]portal.Model](err)
 		}
@@ -185,21 +184,21 @@ func portalProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Mod
 	}
 }
 
-func GetPortals(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32) ([]portal.Model, error) {
+func GetPortals(ctx context.Context) func(mapId uint32) ([]portal.Model, error) {
 	return func(mapId uint32) ([]portal.Model, error) {
-		return portalProvider(l, ctx, tenant)(mapId)()
+		return portalProvider(ctx)(mapId)()
 	}
 }
 
-func GetPortalsByName(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32, name string) ([]portal.Model, error) {
+func GetPortalsByName(ctx context.Context) func(mapId uint32, name string) ([]portal.Model, error) {
 	return func(mapId uint32, name string) ([]portal.Model, error) {
-		return model.FilteredProvider(portalProvider(l, ctx, tenant)(mapId), PortalNameFilter(name))()
+		return model.FilteredProvider(portalProvider(ctx)(mapId), model.Filters(PortalNameFilter(name)))()
 	}
 }
 
-func GetPortalById(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32, portalId uint32) (portal.Model, error) {
+func GetPortalById(ctx context.Context) func(mapId uint32, portalId uint32) (portal.Model, error) {
 	return func(mapId uint32, portalId uint32) (portal.Model, error) {
-		return model.First(portalProvider(l, ctx, tenant)(mapId), PortalIdFilter(portalId))
+		return model.First(portalProvider(ctx)(mapId), model.Filters(PortalIdFilter(portalId)))
 	}
 }
 
@@ -215,9 +214,9 @@ func PortalIdFilter(portalId uint32) model.Filter[portal.Model] {
 	}
 }
 
-func reactorProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32) model.Provider[[]reactor.Model] {
+func reactorProvider(ctx context.Context) func(mapId uint32) model.Provider[[]reactor.Model] {
 	return func(mapId uint32) model.Provider[[]reactor.Model] {
-		m, err := byIdProvider(l, ctx, tenant)(mapId)()
+		m, err := byIdProvider(ctx)(mapId)()
 		if err != nil {
 			return model.ErrorProvider[[]reactor.Model](err)
 		}
@@ -225,15 +224,15 @@ func reactorProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Mo
 	}
 }
 
-func GetReactors(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32) ([]reactor.Model, error) {
+func GetReactors(ctx context.Context) func(mapId uint32) ([]reactor.Model, error) {
 	return func(mapId uint32) ([]reactor.Model, error) {
-		return reactorProvider(l, ctx, tenant)(mapId)()
+		return reactorProvider(ctx)(mapId)()
 	}
 }
 
-func npcProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32) model.Provider[[]npc.Model] {
+func npcProvider(ctx context.Context) func(mapId uint32) model.Provider[[]npc.Model] {
 	return func(mapId uint32) model.Provider[[]npc.Model] {
-		m, err := byIdProvider(l, ctx, tenant)(mapId)()
+		m, err := byIdProvider(ctx)(mapId)()
 		if err != nil {
 			return model.ErrorProvider[[]npc.Model](err)
 		}
@@ -241,21 +240,21 @@ func npcProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model)
 	}
 }
 
-func GetNpcs(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32) ([]npc.Model, error) {
+func GetNpcs(ctx context.Context) func(mapId uint32) ([]npc.Model, error) {
 	return func(mapId uint32) ([]npc.Model, error) {
-		return npcProvider(l, ctx, tenant)(mapId)()
+		return npcProvider(ctx)(mapId)()
 	}
 }
 
-func GetNpcsByObjectId(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32, objectId uint32) ([]npc.Model, error) {
+func GetNpcsByObjectId(ctx context.Context) func(mapId uint32, objectId uint32) ([]npc.Model, error) {
 	return func(mapId uint32, objectId uint32) ([]npc.Model, error) {
-		return model.FilteredProvider(npcProvider(l, ctx, tenant)(mapId), NPCObjectIdFilter(objectId))()
+		return model.FilteredProvider(npcProvider(ctx)(mapId), model.Filters(NPCObjectIdFilter(objectId)))()
 	}
 }
 
-func GetNpc(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32, npcId uint32) (npc.Model, error) {
+func GetNpc(ctx context.Context) func(mapId uint32, npcId uint32) (npc.Model, error) {
 	return func(mapId uint32, npcId uint32) (npc.Model, error) {
-		return model.First(npcProvider(l, ctx, tenant)(mapId), NPCIdFilter(npcId))
+		return model.First(npcProvider(ctx)(mapId), model.Filters(NPCIdFilter(npcId)))
 	}
 }
 
@@ -271,9 +270,9 @@ func NPCObjectIdFilter(id uint32) model.Filter[npc.Model] {
 	}
 }
 
-func monsterProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32) model.Provider[[]monster.Model] {
+func monsterProvider(ctx context.Context) func(mapId uint32) model.Provider[[]monster.Model] {
 	return func(mapId uint32) model.Provider[[]monster.Model] {
-		m, err := byIdProvider(l, ctx, tenant)(mapId)()
+		m, err := byIdProvider(ctx)(mapId)()
 		if err != nil {
 			return model.ErrorProvider[[]monster.Model](err)
 		}
@@ -281,8 +280,8 @@ func monsterProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Mo
 	}
 }
 
-func GetMonsters(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(mapId uint32) ([]monster.Model, error) {
+func GetMonsters(ctx context.Context) func(mapId uint32) ([]monster.Model, error) {
 	return func(mapId uint32) ([]monster.Model, error) {
-		return monsterProvider(l, ctx, tenant)(mapId)()
+		return monsterProvider(ctx)(mapId)()
 	}
 }

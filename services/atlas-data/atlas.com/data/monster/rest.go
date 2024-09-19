@@ -50,32 +50,32 @@ func (r RestModel) GetID() string {
 }
 
 func Transform(m Model) (RestModel, error) {
-	lis, err := model.SliceMap(model.FixedProvider(m.loseItems), TransformLoseItem)()
+	lis, err := model.SliceMap(TransformLoseItem)(model.FixedProvider(m.loseItems))(model.ParallelMap())()
 	if err != nil {
 		return RestModel{}, err
 	}
-	ss, err := model.SliceMap(model.FixedProvider(m.skills), TransformSkill)()
+	ss, err := model.SliceMap(TransformSkill)(model.FixedProvider(m.skills))(model.ParallelMap())()
 	if err != nil {
 		return RestModel{}, err
 	}
 
 	var b banish = banish{}
 	if m.banish != nil {
-		b, err = model.Map(model.FixedProvider(*m.banish), TransformBanish)()
+		b, err = model.Map(TransformBanish)(model.FixedProvider(*m.banish))()
 		if err != nil {
 			return RestModel{}, err
 		}
 	}
 	var sd selfDestruction = selfDestruction{}
 	if m.selfDestruction != nil {
-		sd, err = model.Map(model.FixedProvider(*m.selfDestruction), TransformSelfDestruction)()
+		sd, err = model.Map(TransformSelfDestruction)(model.FixedProvider(*m.selfDestruction))()
 		if err != nil {
 			return RestModel{}, err
 		}
 	}
 	var cd coolDamage = coolDamage{}
 	if m.coolDamage != nil {
-		cd, err = model.Map(model.FixedProvider(*m.coolDamage), TransformCoolDamage)()
+		cd, err = model.Map(TransformCoolDamage)(model.FixedProvider(*m.coolDamage))()
 		if err != nil {
 			return RestModel{}, err
 		}

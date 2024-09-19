@@ -2,11 +2,11 @@ package monster
 
 import (
 	"atlas-data/element"
-	"atlas-data/tenant"
 	"atlas-data/wz"
 	"atlas-data/xml"
 	"errors"
 	"fmt"
+	"github.com/Chronicle20/atlas-tenant"
 	"math"
 	"strconv"
 )

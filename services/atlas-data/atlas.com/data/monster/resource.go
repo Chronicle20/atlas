@@ -4,6 +4,7 @@ import (
 	"atlas-data/rest"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/manyminds/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -28,14 +29,14 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetMonsterRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMonsterId(d.Logger(), func(monsterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := GetRegistry().GetMonster(c.Tenant(), monsterId)
+			m, err := GetRegistry().GetMonster(tenant.MustFromContext(d.Context()), monsterId)
 			if err != nil {
 				d.Logger().WithError(err).Debugf("Unable to locate monster %d.", monsterId)
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
 
-			res, err := model.Map(model.FixedProvider(m), Transform)()
+			res, err := model.Map(Transform)(model.FixedProvider(m))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -50,14 +51,14 @@ func handleGetMonsterRequest(d *rest.HandlerDependency, c *rest.HandlerContext) 
 func handleGetMonsterLoseItemsRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMonsterId(d.Logger(), func(monsterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := GetRegistry().GetMonster(c.Tenant(), monsterId)
+			m, err := GetRegistry().GetMonster(tenant.MustFromContext(d.Context()), monsterId)
 			if err != nil {
 				d.Logger().WithError(err).Debugf("Unable to locate monster %d.", monsterId)
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
 
-			res, err := model.SliceMap(model.FixedProvider(m.loseItems), TransformLoseItem)()
+			res, err := model.SliceMap(TransformLoseItem)(model.FixedProvider(m.loseItems))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)

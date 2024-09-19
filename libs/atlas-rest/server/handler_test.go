@@ -93,13 +93,66 @@ func TestSpanPropagation(t *testing.T) {
 	})(w, req)
 }
 
+func TestNullSpanPropagation(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	otel.SetTracerProvider(&MockTracerProvider{})
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	req, err := http.NewRequest(http.MethodGet, "www.google.com", nil)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	w := httptest.NewRecorder()
+
+	requests.SpanHeaderDecorator(context.Background())(req.Header)
+
+	var called = false
+
+	server.RetrieveSpan(l, "test-handler", context.Background(), func(l logrus.FieldLogger, ctx context.Context) http.HandlerFunc {
+		called = true
+		span := trace.SpanFromContext(ctx)
+		if !span.SpanContext().TraceID().IsValid() {
+			t.Fatalf(errors.New("invalid trace id").Error())
+		}
+		return func(w http.ResponseWriter, r *http.Request) {
+		}
+	})(w, req)
+
+	if !called {
+		t.Fatalf(errors.New("invalid trace").Error())
+	}
+}
+
 func TestTenantPropagation(t *testing.T) {
 	l, _ := test.NewNullLogger()
-	it, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	uuid := uuid.New()
+	region := "GMS"
+	majorVersion := uint16(83)
+	minorVersion := uint16(1)
+
+	it, err := tenant.Create(uuid, region, majorVersion, minorVersion)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	ictx := tenant.WithContext(context.Background(), it)
+
+	ctxId := ictx.Value(tenant.ID)
+	if ctxId != uuid {
+		t.Fatalf(errors.New("invalid tenant id").Error())
+	}
+	ctxRegion := ictx.Value(tenant.Region)
+	if ctxRegion != region {
+		t.Fatalf(errors.New("invalid tenant region").Error())
+	}
+	ctxMajorVersion := ictx.Value(tenant.MajorVersion)
+	if ctxMajorVersion != majorVersion {
+		t.Fatalf(errors.New("invalid tenant major version").Error())
+	}
+	ctxMinorVersion := ictx.Value(tenant.MinorVersion)
+	if ctxMinorVersion != minorVersion {
+		t.Fatalf(errors.New("invalid tenant minor version").Error())
+	}
 
 	req, err := http.NewRequest(http.MethodGet, "www.google.com", nil)
 	if err != nil {
@@ -109,7 +162,10 @@ func TestTenantPropagation(t *testing.T) {
 
 	requests.TenantHeaderDecorator(ictx)(req.Header)
 
+	var called = false
+
 	server.ParseTenant(l, context.Background(), func(l logrus.FieldLogger, tctx context.Context) http.HandlerFunc {
+		called = true
 		ot, err := tenant.FromContext(tctx)()
 		if err != nil {
 			t.Fatalf(err.Error())
@@ -121,4 +177,8 @@ func TestTenantPropagation(t *testing.T) {
 		return func(w http.ResponseWriter, r *http.Request) {
 		}
 	})(w, req)
+
+	if !called {
+		t.Fatalf(errors.New("invalid tenant").Error())
+	}
 }

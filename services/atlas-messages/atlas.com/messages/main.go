@@ -27,7 +27,7 @@ func main() {
 	command.Registry().Add(_map.WarpMapCommandProducer)
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.GeneralChatCommandConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.GeneralChatCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(message.GeneralChatCommandRegister(l))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

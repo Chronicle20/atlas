@@ -1,7 +1,6 @@
 package account
 
 import (
-	"atlas-account/database"
 	"atlas-account/kafka/producer"
 	"context"
 	"errors"
@@ -27,10 +26,13 @@ var GetById = model.Compose(model.Curry(model.Compose[context.Context, IdProvide
 // ByIdProvider Retrieves a singular account by id.
 var ByIdProvider = model.Flip(model.Compose(model.Curry(model.Compose[context.Context, tenant.Model, IdProvider]), byIdProvider))(tenant.MustFromContext)
 
+var entityModelMapper = model.Map(modelFromEntity)
+var entitySliceModelMapper = model.SliceMap(modelFromEntity)
+
 func byIdProvider(db *gorm.DB) func(tenant tenant.Model) func(id uint32) model.Provider[Model] {
 	return func(tenant tenant.Model) func(id uint32) model.Provider[Model] {
 		return func(id uint32) model.Provider[Model] {
-			return model.Map(database.ModelProvider[Model, entity](db)(entityById(tenant, id), modelFromEntity), decorateState(tenant))
+			return model.Map(decorateState(tenant))(entityModelMapper(entityById(tenant, id)(db)))
 		}
 	}
 }
@@ -48,7 +50,7 @@ var ByNameProvider = model.Flip(model.Compose(model.Curry(model.Compose[context.
 func byNameProvider(db *gorm.DB) func(t tenant.Model) func(string) model.Provider[Model] {
 	return func(t tenant.Model) func(string) model.Provider[Model] {
 		return func(name string) model.Provider[Model] {
-			return model.Map(model.FirstProvider(database.ModelSliceProvider[Model, entity](db)(entitiesByName(t, name), modelFromEntity), model.Filters[Model]()), decorateState(t))
+			return model.Map(decorateState(t))(model.FirstProvider(entitySliceModelMapper(entitiesByName(t, name)(db))(model.ParallelMap()), model.Filters[Model]()))
 		}
 	}
 }
@@ -65,7 +67,7 @@ var ByTenantProvider = model.Flip(model.Compose(model.Flip(byTenantProvider), te
 
 func byTenantProvider(db *gorm.DB) func(tenant tenant.Model) model.Provider[[]Model] {
 	return func(t tenant.Model) model.Provider[[]Model] {
-		return model.SliceMap(database.ModelSliceProvider[Model, entity](db)(allInTenant(t), modelFromEntity), decorateState(t))
+		return model.SliceMap(decorateState(t))(entitySliceModelMapper(allInTenant(t)(db))(model.ParallelMap()))(model.ParallelMap())
 	}
 }
 
@@ -236,7 +238,7 @@ func Teardown(l logrus.FieldLogger, db *gorm.DB) func() {
 		sctx, span := otel.GetTracerProvider().Tracer("atlas-account").Start(context.Background(), "teardown")
 		defer span.End()
 
-		err := model.ForEachSlice(model.SliceMap(allTenants, model.Always(model.Curry(tenant.WithContext)(sctx))), teardownTenant(l)(db))
+		err := model.ForEachSlice(model.SliceMap(model.Always(model.Curry(tenant.WithContext)(sctx)))(allTenants)(model.ParallelMap()), teardownTenant(l)(db))
 		if err != nil {
 			l.WithError(err).Errorf("Error tearing down ")
 		}

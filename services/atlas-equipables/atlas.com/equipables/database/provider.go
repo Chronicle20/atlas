@@ -7,21 +7,9 @@ import (
 
 type EntityProvider[E any] func(db *gorm.DB) model.Provider[E]
 
-func ModelProvider[M any, E any](db *gorm.DB) func(ep EntityProvider[E], t model.Transformer[E, M]) model.Provider[M] {
-	return func(ep EntityProvider[E], t model.Transformer[E, M]) model.Provider[M] {
-		return model.Map[E, M](ep(db), t)
-	}
-}
-
 func FoldModelProvider[M any, N any](db *gorm.DB) func(ep EntityProvider[[]N], supplier model.Provider[M], folder model.Folder[N, M]) model.Provider[M] {
 	return func(ep EntityProvider[[]N], supplier model.Provider[M], folder model.Folder[N, M]) model.Provider[M] {
 		return model.Fold[N, M](ep(db), supplier, folder)
-	}
-}
-
-func ModelSliceProvider[M any, E any](db *gorm.DB) func(ep EntityProvider[[]E], t model.Transformer[E, M]) model.Provider[[]M] {
-	return func(ep EntityProvider[[]E], t model.Transformer[E, M]) model.Provider[[]M] {
-		return model.SliceMap(ep(db), t)
 	}
 }
 

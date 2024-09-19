@@ -32,10 +32,10 @@ func InitResource(si jsonapi.ServerInformation, db *gorm.DB) server.RouteInitial
 	}
 }
 
-func handleDeleteEquipment(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleDeleteEquipment(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseEquipmentId(d.Logger(), func(equipmentId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			err := DeleteById(d.Logger(), d.DB(), c.Tenant())(equipmentId)
+			err := DeleteById(d.Logger())(d.DB())(d.Context())(equipmentId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to delete equipment %d.", equipmentId)
 				w.WriteHeader(http.StatusNotFound)
@@ -48,14 +48,14 @@ func handleDeleteEquipment(d *rest.HandlerDependency, c *rest.HandlerContext) ht
 
 func handleCreateRandomEquipment(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		e, err := CreateRandom(d.Logger(), d.DB(), d.Context(), c.Tenant())(input.ItemId)
+		e, err := CreateRandom(d.Logger())(d.DB())(d.Context())(input.ItemId)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Cannot create equipment.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		res, err := model.Map(model.FixedProvider(e), Transform)()
+		res, err := model.Map(Transform)(model.FixedProvider(e))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -68,7 +68,7 @@ func handleCreateRandomEquipment(d *rest.HandlerDependency, c *rest.HandlerConte
 
 func handleCreateEquipment(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		e, err := Create(d.Logger(), d.DB(), d.Context(), c.Tenant())(input.ItemId, input.Strength, input.Dexterity, input.Intelligence, input.Luck,
+		e, err := Create(d.Logger())(d.DB())(d.Context())(input.ItemId, input.Strength, input.Dexterity, input.Intelligence, input.Luck,
 			input.HP, input.MP, input.WeaponAttack, input.MagicAttack, input.WeaponDefense, input.MagicDefense, input.Accuracy,
 			input.Avoidability, input.Hands, input.Speed, input.Jump, input.Slots)
 		if err != nil {
@@ -77,7 +77,7 @@ func handleCreateEquipment(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			return
 		}
 
-		res, err := model.Map(model.FixedProvider(e), Transform)()
+		res, err := model.Map(Transform)(model.FixedProvider(e))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -91,13 +91,13 @@ func handleCreateEquipment(d *rest.HandlerDependency, c *rest.HandlerContext, in
 func handleGetEquipment(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseEquipmentId(d.Logger(), func(equipmentId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			e, err := GetById(d.Logger(), d.DB(), d.Context(), c.Tenant())(equipmentId)
+			e, err := GetById(d.Logger())(d.DB())(d.Context())(equipmentId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve equipment %d.", equipmentId)
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			res, err := model.Map(model.FixedProvider(e), Transform)()
+			res, err := model.Map(Transform)(model.FixedProvider(e))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)

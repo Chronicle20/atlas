@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -10,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"net/http"
+	"strconv"
 )
 
 type SpanHandler func(logrus.FieldLogger, context.Context) http.HandlerFunc
@@ -59,7 +59,12 @@ func ParseTenant(l logrus.FieldLogger, ctx context.Context, next TenantHandler) 
 			return
 		}
 
-		majorVersionVal := binary.BigEndian.Uint16([]byte(majorVersion))
+		majorVersionVal, err := strconv.Atoi(majorVersion)
+		if err != nil {
+			l.Errorf("%s is not supplied.", tenant.MajorVersion)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
 		minorVersion := r.Header.Get(tenant.MinorVersion)
 		if minorVersion == "" {
@@ -68,14 +73,19 @@ func ParseTenant(l logrus.FieldLogger, ctx context.Context, next TenantHandler) 
 			return
 		}
 
-		minorVersionVal := binary.BigEndian.Uint16([]byte(minorVersion))
+		minorVersionVal, err := strconv.Atoi(minorVersion)
+		if err != nil {
+			l.Errorf("%s is not supplied.", tenant.MinorVersion)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
 		tl := l.
 			WithField("tenant", id.String()).
 			WithField("region", region).
 			WithField("ms.version", fmt.Sprintf("%d.%d", majorVersionVal, minorVersionVal))
 
-		t, err := tenant.Create(id, region, majorVersionVal, minorVersionVal)
+		t, err := tenant.Create(id, region, uint16(majorVersionVal), uint16(minorVersionVal))
 		if err != nil {
 			l.Errorf("Failed to create tenant with provided data.")
 			w.WriteHeader(http.StatusBadRequest)

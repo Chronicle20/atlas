@@ -2,11 +2,11 @@ package requests
 
 import (
 	"context"
-	"encoding/binary"
 	"github.com/Chronicle20/atlas-tenant"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"net/http"
+	"strconv"
 )
 
 type HeaderDecorator func(header http.Header)
@@ -35,7 +35,7 @@ func TenantHeaderDecorator(ctx context.Context) HeaderDecorator {
 
 		h.Set(tenant.ID, t.Id().String())
 		h.Set(tenant.Region, t.Region())
-		h.Set(tenant.MajorVersion, string(binary.BigEndian.AppendUint16(make([]byte, 0), t.MajorVersion())))
-		h.Set(tenant.MinorVersion, string(binary.BigEndian.AppendUint16(make([]byte, 0), t.MinorVersion())))
+		h.Set(tenant.MajorVersion, strconv.Itoa(int(t.MajorVersion())))
+		h.Set(tenant.MinorVersion, strconv.Itoa(int(t.MinorVersion())))
 	}
 }

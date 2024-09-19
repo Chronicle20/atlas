@@ -24,10 +24,10 @@ func handleEventStatus() message.Handler[channelStatusEvent] {
 	return func(l logrus.FieldLogger, ctx context.Context, event channelStatusEvent) {
 		if event.Type == EventChannelStatusType {
 			l.Debugf("Registering channel [%d] for world [%d] at [%s:%d].", event.ChannelId, event.WorldId, event.IpAddress, event.Port)
-			_, _ = Register(l, event.Tenant)(event.WorldId, event.ChannelId, event.IpAddress, event.Port)
+			_, _ = Register(l)(ctx)(event.WorldId, event.ChannelId, event.IpAddress, event.Port)
 		} else if event.Type == EventChannelStatusTypeShutdown {
 			l.Debugf("Unregistering channel [%d] for world [%d] at [%s:%d].", event.ChannelId, event.WorldId, event.IpAddress, event.Port)
-			_ = Unregister(l, event.Tenant)(event.WorldId, event.ChannelId)
+			_ = Unregister(l)(ctx)(event.WorldId, event.ChannelId)
 		} else {
 			l.Errorf("Unhandled event status [%s].", event.Type)
 		}

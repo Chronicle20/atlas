@@ -29,7 +29,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetWorld(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			ws, err := GetWorld(d.Logger(), c.Tenant())(worldId)
+			ws, err := GetWorld(d.Logger())(d.Context())(worldId)
 			if err != nil {
 				if errors.Is(err, errWorldNotFound) {
 					w.WriteHeader(http.StatusNotFound)
@@ -40,7 +40,7 @@ func handleGetWorld(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			res, err := model.Map(model.FixedProvider(ws), Transform)()
+			res, err := model.Map(Transform)(model.FixedProvider(ws))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -54,13 +54,13 @@ func handleGetWorld(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 
 func handleGetWorlds(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ws, err := GetWorlds(d.Logger(), c.Tenant())
+		ws, err := GetWorlds(d.Logger())(d.Context())
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to get all channel servers.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		res, err := model.SliceMap(model.FixedProvider(ws), Transform)()
+		res, err := model.SliceMap(Transform)(model.FixedProvider(ws))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)

@@ -48,7 +48,7 @@ func main() {
 	}
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(channel.EventStatusConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(channel.EventStatusConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(channel.EventStatusRegister(l))
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), channel.InitResource(GetServer()), world.InitResource(GetServer()))
@@ -60,7 +60,7 @@ func main() {
 	}
 
 	ctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
-	channel.RequestStatus(l, ctx, config)
+	channel.RequestStatus(l)(ctx)(config)
 	span.End()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

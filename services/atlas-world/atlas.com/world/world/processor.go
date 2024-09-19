@@ -3,32 +3,37 @@ package world
 import (
 	"atlas-world/channel"
 	"atlas-world/configuration"
-	"atlas-world/tenant"
+	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 var errWorldNotFound = errors.New("world not found")
 
-func allWorldProvider(l logrus.FieldLogger, tenant tenant.Model) model.Provider[[]Model] {
-	worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(tenant.Id.String()))
-	return model.SliceMap[byte, Model](model.FixedProvider[[]byte](worldIds), worldTransformer(l, tenant))
+func AllWorldProvider(ctx context.Context) model.Provider[[]Model] {
+	t := tenant.MustFromContext(ctx)
+	worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(t.Id().String()))
+	return model.SliceMap[byte, Model](worldTransformer(ctx))(model.FixedProvider[[]byte](worldIds))(model.ParallelMap())
 }
 
-func GetWorlds(l logrus.FieldLogger, tenant tenant.Model) ([]Model, error) {
-	return allWorldProvider(l, tenant)()
-}
-
-func worldTransformer(l logrus.FieldLogger, tenant tenant.Model) func(b byte) (Model, error) {
-	return func(b byte) (Model, error) {
-		return byWorldIdProvider(l, tenant)(b)()
+func GetWorlds(_ logrus.FieldLogger) func(ctx context.Context) ([]Model, error) {
+	return func(ctx context.Context) ([]Model, error) {
+		return AllWorldProvider(ctx)()
 	}
 }
 
-func byWorldIdProvider(l logrus.FieldLogger, tenant tenant.Model) func(worldId byte) model.Provider[Model] {
+func worldTransformer(ctx context.Context) func(b byte) (Model, error) {
+	return func(b byte) (Model, error) {
+		return ByWorldIdProvider(ctx)(b)()
+	}
+}
+
+func ByWorldIdProvider(ctx context.Context) func(worldId byte) model.Provider[Model] {
 	return func(worldId byte) model.Provider[Model] {
-		worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(tenant.Id.String()))
+		t := tenant.MustFromContext(ctx)
+		worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(t.Id().String()))
 		var exists = false
 		for _, wid := range worldIds {
 			if wid == worldId {
@@ -44,7 +49,7 @@ func byWorldIdProvider(l logrus.FieldLogger, tenant tenant.Model) func(worldId b
 			return model.ErrorProvider[Model](err)
 		}
 
-		wc, err := c.FindWorld(tenant.Id.String(), worldId)
+		wc, err := c.FindWorld(t.Id().String(), worldId)
 		if err != nil {
 			return model.ErrorProvider[Model](err)
 		}
@@ -61,9 +66,11 @@ func byWorldIdProvider(l logrus.FieldLogger, tenant tenant.Model) func(worldId b
 	}
 }
 
-func GetWorld(l logrus.FieldLogger, tenant tenant.Model) func(worldId byte) (Model, error) {
-	return func(worldId byte) (Model, error) {
-		return byWorldIdProvider(l, tenant)(worldId)()
+func GetWorld(_ logrus.FieldLogger) func(ctx context.Context) func(worldId byte) (Model, error) {
+	return func(ctx context.Context) func(worldId byte) (Model, error) {
+		return func(worldId byte) (Model, error) {
+			return ByWorldIdProvider(ctx)(worldId)()
+		}
 	}
 }
 

@@ -7,16 +7,18 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const CharacterMoveHandle = "CharacterMoveHandle"
 
 func CharacterMoveHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		var dr0 uint32
 		var dr1 uint32
-		t := s.Tenant()
+
 		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
 			dr0 = r.ReadUint32()
 			dr1 = r.ReadUint32()
@@ -46,6 +48,6 @@ func CharacterMoveHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer
 
 		mp := model.Movement{}
 		mp.Decode(l, t, readerOptions)(r)
-		character.Move(l, ctx, t)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), mp)
+		character.Move(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), mp)
 	}
 }

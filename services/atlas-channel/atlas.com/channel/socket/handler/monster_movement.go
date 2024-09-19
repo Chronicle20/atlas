@@ -8,19 +8,20 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const MonsterMovementHandle = "MonsterMovementHandle"
 
 func MonsterMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	moveMonsterAckFunc := session.Announce(l)(wp)(writer.MoveMonsterAck)
+	t := tenant.MustFromContext(ctx)
+	moveMonsterAckFunc := session.Announce(l)(ctx)(wp)(writer.MoveMonsterAck)
 	moveMonsterCommandFunc := producer.ProviderImpl(l)(ctx)(monster.EnvCommandMovement)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		uniqueId := r.ReadUint32()
 
-		t := s.Tenant()
-		m, err := monster.GetById(l, ctx, t)(uniqueId)
+		m, err := monster.GetById(l)(ctx)(uniqueId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate monster [%d] moving.", uniqueId)
 			return
@@ -72,7 +73,7 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 
 		monsterMoveStartResult := dwFlag > 0
 
-		err = moveMonsterCommandFunc(monster.Move(t, s.WorldId(), s.ChannelId(), m.UniqueId(), s.CharacterId(), monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, mp))
+		err = moveMonsterCommandFunc(monster.Move(s.WorldId(), s.ChannelId(), m.UniqueId(), s.CharacterId(), monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, mp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to distribute monster movement to other services.")
 		}

@@ -3,12 +3,13 @@ package message
 import (
 	"atlas-channel/kafka/producer"
 	"context"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-func GeneralChat(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, balloonOnly bool) error {
-	return func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, balloonOnly bool) error {
-		return producer.ProviderImpl(l)(ctx)(EnvCommandTopicGeneralChat)(generalChatCommandProvider(tenant)(worldId, channelId, mapId, characterId, message, balloonOnly))
+func GeneralChat(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, balloonOnly bool) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, balloonOnly bool) error {
+		return func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, balloonOnly bool) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopicGeneralChat)(generalChatCommandProvider(worldId, channelId, mapId, characterId, message, balloonOnly))
+		}
 	}
 }

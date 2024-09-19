@@ -43,7 +43,7 @@ func StatusEventMapChangedRegister(sc server.Model, wp writer.Producer) func(l l
 
 func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventStatChangedBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventStatChangedBody]) {
-		if !sc.Is(event.Tenant, event.WorldId, event.Body.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.Body.ChannelId) {
 			return
 		}
 
@@ -51,27 +51,31 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			return
 		}
 
-		session.IfPresentByCharacterId(event.Tenant, sc.WorldId(), sc.ChannelId())(event.CharacterId, statChanged(l, ctx, event.Tenant, wp)(event.Body.ExclRequestSent))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, statChanged(l)(ctx)(wp)(event.Body.ExclRequestSent))
 	}
 }
 
-func statChanged(l logrus.FieldLogger, _ context.Context, _ tenant.Model, wp writer.Producer) func(exclRequestSent bool) model.Operator[session.Model] {
-	statChangedFunc := session.Announce(l)(wp)(writer.StatChanged)
-	return func(exclRequestSent bool) model.Operator[session.Model] {
-		return func(s session.Model) error {
-			err := statChangedFunc(s, writer.StatChangedBody(l)(exclRequestSent))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
-				return err
+func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(exclRequestSent bool) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(exclRequestSent bool) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(exclRequestSent bool) model.Operator[session.Model] {
+			statChangedFunc := session.Announce(l)(ctx)(wp)(writer.StatChanged)
+			return func(exclRequestSent bool) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := statChangedFunc(s, writer.StatChangedBody(l)(exclRequestSent))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+						return err
+					}
+					return nil
+				}
 			}
-			return nil
 		}
 	}
 }
 
 func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventMapChangedBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventMapChangedBody]) {
-		if !sc.Is(event.Tenant, event.WorldId, event.Body.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.Body.ChannelId) {
 			return
 		}
 
@@ -79,29 +83,33 @@ func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l log
 			return
 		}
 
-		session.IfPresentByCharacterId(event.Tenant, sc.WorldId(), sc.ChannelId())(event.CharacterId, warpCharacter(l, ctx, event.Tenant, wp)(event))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, warpCharacter(l)(ctx)(wp)(event))
 	}
 }
 
-func warpCharacter(l logrus.FieldLogger, ctx context.Context, t tenant.Model, wp writer.Producer) func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
-	setFieldFunc := session.Announce(l)(wp)(writer.SetField)
-	return func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
-		return func(s session.Model) error {
-			c, err := character.GetById(l, ctx, t)(s.CharacterId())
-			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve character [%d].", s.CharacterId())
-				return err
-			}
+func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
+		return func(wp writer.Producer) func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
+			setFieldFunc := session.Announce(l)(ctx)(wp)(writer.SetField)
+			return func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					c, err := character.GetById(l)(ctx)(s.CharacterId())
+					if err != nil {
+						l.WithError(err).Errorf("Unable to retrieve character [%d].", s.CharacterId())
+						return err
+					}
 
-			t := s.Tenant()
-			s = session.SetMapId(event.Body.TargetMapId)(t.Id(), s.SessionId())
+					s = session.SetMapId(event.Body.TargetMapId)(t.Id(), s.SessionId())
 
-			err = setFieldFunc(s, writer.WarpToMapBody(l, t)(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp()))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
-				return err
+					err = setFieldFunc(s, writer.WarpToMapBody(l, t)(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp()))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
+						return err
+					}
+					return nil
+				}
 			}
-			return nil
 		}
 	}
 }
@@ -121,7 +129,7 @@ func MovementEventRegister(sc server.Model, wp writer.Producer) func(l logrus.Fi
 
 func handleMovementEvent(sc server.Model, wp writer.Producer) message.Handler[movementEvent] {
 	return func(l logrus.FieldLogger, ctx context.Context, event movementEvent) {
-		if !sc.Is(event.Tenant, event.WorldId, event.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.ChannelId) {
 			return
 		}
 
@@ -261,19 +269,23 @@ func handleMovementEvent(sc server.Model, wp writer.Producer) message.Handler[mo
 			}
 		}
 
-		_map.ForOtherSessionsInMap(l, ctx, sc.Tenant())(sc.WorldId(), sc.ChannelId(), event.MapId, event.CharacterId, showMovementForSession(l, wp)(event.CharacterId, mv))
+		_map.ForOtherSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), event.MapId, event.CharacterId, showMovementForSession(l)(ctx)(wp)(event.CharacterId, mv))
 	}
 }
 
-func showMovementForSession(l logrus.FieldLogger, wp writer.Producer) func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
-	moveCharacterFunc := session.Announce(l)(wp)(writer.CharacterMovement)
-	return func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
-		return func(s session.Model) error {
-			err := moveCharacterFunc(s, writer.CharacterMovementBody(l, s.Tenant())(characterId, m))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to move character [%d] for character [%d].", characterId, s.CharacterId())
+func showMovementForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
+			moveCharacterFunc := session.Announce(l)(ctx)(wp)(writer.CharacterMovement)
+			return func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := moveCharacterFunc(s, writer.CharacterMovementBody(l, tenant.MustFromContext(ctx))(characterId, m))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to move character [%d] for character [%d].", characterId, s.CharacterId())
+					}
+					return err
+				}
 			}
-			return err
 		}
 	}
 }

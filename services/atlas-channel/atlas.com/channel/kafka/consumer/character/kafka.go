@@ -1,7 +1,5 @@
 package character
 
-import "github.com/Chronicle20/atlas-tenant"
-
 const (
 	EnvEventTopicCharacterStatus        = "EVENT_TOPIC_CHARACTER_STATUS"
 	EventCharacterStatusTypeStatChanged = "STAT_CHANGED"
@@ -18,11 +16,10 @@ const (
 )
 
 type statusEvent[E any] struct {
-	Tenant      tenant.Model `json:"tenant"`
-	CharacterId uint32       `json:"characterId"`
-	Type        string       `json:"type"`
-	WorldId     byte         `json:"worldId"`
-	Body        E            `json:"body"`
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
+	WorldId     byte   `json:"worldId"`
+	Body        E      `json:"body"`
 }
 
 // TODO this should transmit stats
@@ -39,12 +36,11 @@ type statusEventMapChangedBody struct {
 }
 
 type movementEvent struct {
-	Tenant      tenant.Model `json:"tenant"`
-	WorldId     byte         `json:"worldId"`
-	ChannelId   byte         `json:"channelId"`
-	MapId       uint32       `json:"mapId"`
-	CharacterId uint32       `json:"characterId"`
-	Movement    movement     `json:"movement"`
+	WorldId     byte     `json:"worldId"`
+	ChannelId   byte     `json:"channelId"`
+	MapId       uint32   `json:"mapId"`
+	CharacterId uint32   `json:"characterId"`
+	Movement    movement `json:"movement"`
 }
 
 type movement struct {

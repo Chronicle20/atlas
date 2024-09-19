@@ -2,10 +2,8 @@ package character
 
 import (
 	"atlas-channel/rest"
-	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/Chronicle20/atlas-tenant"
 	"os"
 )
 
@@ -19,14 +17,10 @@ func getBaseRequest() string {
 	return os.Getenv("CHARACTER_SERVICE_URL")
 }
 
-func requestById(ctx context.Context, tenant tenant.Model) func(id uint32) requests.Request[RestModel] {
-	return func(id uint32) requests.Request[RestModel] {
-		return rest.MakeGetRequest[RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+ById, id))
-	}
+func requestById(id uint32) requests.Request[RestModel] {
+	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
 }
 
-func requestByIdWithInventory(ctx context.Context, tenant tenant.Model) func(id uint32) requests.Request[RestModel] {
-	return func(id uint32) requests.Request[RestModel] {
-		return rest.MakeGetRequest[RestModel](ctx, tenant)(fmt.Sprintf(getBaseRequest()+ByIdWithInventory, id))
-	}
+func requestByIdWithInventory(id uint32) requests.Request[RestModel] {
+	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByIdWithInventory, id))
 }

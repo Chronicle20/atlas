@@ -4,11 +4,10 @@ import (
 	model2 "atlas-channel/socket/model"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 )
 
-func move(tenant tenant.Model, worldId byte, channelId byte, mapId uint32, characterId uint32, mm model2.Movement) model.Provider[[]kafka.Message] {
+func move(worldId byte, channelId byte, mapId uint32, characterId uint32, mm model2.Movement) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 
 	m := movement{StartX: mm.StartX, StartY: mm.StartY}
@@ -157,7 +156,6 @@ func move(tenant tenant.Model, worldId byte, channelId byte, mapId uint32, chara
 	}
 
 	value := &movementCommand{
-		Tenant:      tenant,
 		WorldId:     worldId,
 		ChannelId:   channelId,
 		MapId:       mapId,

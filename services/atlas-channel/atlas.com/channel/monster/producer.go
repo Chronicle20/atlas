@@ -4,14 +4,10 @@ import (
 	model2 "atlas-channel/socket/model"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 )
 
-func Move(tenant tenant.Model, worldId byte, channelId byte, uniqueId uint32, observerId uint32, skillPossible bool,
-	skill int8, skillId int16, skillLevel int16, multiTarget model2.MultiTargetForBall,
-	randTimes model2.RandTimeForAreaAttack, mm model2.Movement) model.Provider[[]kafka.Message] {
-
+func Move(worldId byte, channelId byte, uniqueId uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget model2.MultiTargetForBall, randTimes model2.RandTimeForAreaAttack, mm model2.Movement) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(uniqueId))
 	ps := make([]position, 0)
 	for _, p := range multiTarget.Targets {
@@ -164,7 +160,6 @@ func Move(tenant tenant.Model, worldId byte, channelId byte, uniqueId uint32, ob
 	}
 
 	value := &movementCommand{
-		Tenant:        tenant,
 		WorldId:       worldId,
 		ChannelId:     channelId,
 		UniqueId:      uniqueId,

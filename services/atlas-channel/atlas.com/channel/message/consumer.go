@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,30 +36,34 @@ func GeneralChatEventRegister(sc server.Model, wp writer.Producer) func(l logrus
 
 func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[generalChatEvent] {
 	return func(l logrus.FieldLogger, ctx context.Context, event generalChatEvent) {
-		if !sc.Is(event.Tenant, event.WorldId, event.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.ChannelId) {
 			return
 		}
 
-		c, err := character.GetById(l, ctx, event.Tenant)(event.CharacterId)
+		c, err := character.GetById(l)(ctx)(event.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] chatting.", event.CharacterId)
 			return
 		}
 
-		_ = _map.ForSessionsInMap(l, ctx, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, showGeneralChatForSession(l, wp)(event, c.Gm()))
+		_ = _map.ForSessionsInMap(l)(ctx)(event.WorldId, event.ChannelId, event.MapId, showGeneralChatForSession(l)(ctx)(wp)(event, c.Gm()))
 	}
 }
 
-func showGeneralChatForSession(l logrus.FieldLogger, wp writer.Producer) func(event generalChatEvent, gm bool) model.Operator[session.Model] {
-	generalChatFunc := session.Announce(l)(wp)(writer.CharacterGeneralChat)
-	return func(event generalChatEvent, gm bool) model.Operator[session.Model] {
-		return func(s session.Model) error {
-			err := generalChatFunc(s, writer.CharacterGeneralChatBody(event.CharacterId, gm, event.Message, event.BalloonOnly))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to write message to rest of map.")
-				return err
+func showGeneralChatForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event generalChatEvent, gm bool) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(event generalChatEvent, gm bool) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(event generalChatEvent, gm bool) model.Operator[session.Model] {
+			generalChatFunc := session.Announce(l)(ctx)(wp)(writer.CharacterGeneralChat)
+			return func(event generalChatEvent, gm bool) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := generalChatFunc(s, writer.CharacterGeneralChatBody(event.CharacterId, gm, event.Message, event.BalloonOnly))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to write message to rest of map.")
+						return err
+					}
+					return nil
+				}
 			}
-			return nil
 		}
 	}
 }

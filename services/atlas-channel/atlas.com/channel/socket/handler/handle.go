@@ -6,6 +6,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -25,11 +26,10 @@ const LoggedInValidator = "LoggedInValidator"
 
 func LoggedInValidatorFunc(l logrus.FieldLogger, ctx context.Context) func(s session.Model) bool {
 	return func(s session.Model) bool {
-		t := s.Tenant()
-		v := account.IsLoggedIn(l, ctx, t)(s.AccountId())
+		v := account.IsLoggedIn(ctx)(s.AccountId())
 		if !v {
 			l.Errorf("Attempting to process a request when the account [%d] is not logged in. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry(), t.Id())(s)
+			session.Destroy(l, ctx, session.GetRegistry())(s)
 		}
 		return v
 	}
@@ -46,25 +46,27 @@ func NoOpHandlerFunc(_ logrus.FieldLogger, _ context.Context, _ writer.Producer)
 
 type Adapter func(name string, v MessageValidator, h MessageHandler, readerOptions map[string]interface{}) request.Handler
 
-func AdaptHandler(l logrus.FieldLogger) func(tenantId uuid.UUID, wp writer.Producer) Adapter {
-	return func(tenantId uuid.UUID, wp writer.Producer) Adapter {
+func AdaptHandler(l logrus.FieldLogger) func(t tenant.Model, wp writer.Producer) Adapter {
+	return func(t tenant.Model, wp writer.Producer) Adapter {
 		return func(name string, v MessageValidator, h MessageHandler, readerOptions map[string]interface{}) request.Handler {
 			return func(sessionId uuid.UUID, r request.Reader) {
 				fl := l.WithField("session", sessionId.String())
 
-				ctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), name)
+				sctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(context.Background(), name)
 				sl := fl.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
 				defer span.End()
 
-				s, ok := session.GetRegistry().Get(tenantId, sessionId)
+				tctx := tenant.WithContext(sctx, t)
+
+				s, ok := session.GetRegistry().Get(t.Id(), sessionId)
 				if !ok {
 					sl.Errorf("Unable to locate session %d", sessionId)
 					return
 				}
 
-				if v(sl, ctx)(s) {
-					h(sl, ctx, wp)(s, &r, readerOptions)
-					s = session.UpdateLastRequest()(tenantId, s.SessionId())
+				if v(sl, tctx)(s) {
+					h(sl, tctx, wp)(s, &r, readerOptions)
+					s = session.UpdateLastRequest()(t.Id(), s.SessionId())
 				}
 			}
 		}

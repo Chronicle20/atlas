@@ -1,7 +1,5 @@
 package character
 
-import "github.com/Chronicle20/atlas-tenant"
-
 const (
 	EnvCommandTopicMovement = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
 
@@ -14,12 +12,11 @@ const (
 )
 
 type movementCommand struct {
-	Tenant      tenant.Model `json:"tenant"`
-	WorldId     byte         `json:"worldId"`
-	ChannelId   byte         `json:"channelId"`
-	MapId       uint32       `json:"mapId"`
-	CharacterId uint32       `json:"characterId"`
-	Movement    movement     `json:"movement"`
+	WorldId     byte     `json:"worldId"`
+	ChannelId   byte     `json:"channelId"`
+	MapId       uint32   `json:"mapId"`
+	CharacterId uint32   `json:"characterId"`
+	Movement    movement `json:"movement"`
 }
 
 type movement struct {

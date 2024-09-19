@@ -18,7 +18,7 @@ func CreateSecurityHandleFunc(l logrus.FieldLogger, _ context.Context, wp writer
 		loginScreen := [2]string{"MapLogin", "MapLogin1"}
 		randomIndex := rand.Intn(len(loginScreen))
 
-		err := loginAuthFunc(s, writer.LoginAuthBody(l)(loginScreen[randomIndex]))
+		err := loginAuthFunc(s, writer.LoginAuthBody(loginScreen[randomIndex]))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce login screen.")
 		}

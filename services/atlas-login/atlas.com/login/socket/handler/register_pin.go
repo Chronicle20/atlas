@@ -18,9 +18,10 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 	pinUpdateFunc := session.Announce(l)(wp)(writer.PinUpdate)
 	return func(s session.Model, r *request.Reader) {
 		opt := r.ReadByte()
+		t := s.Tenant()
 		if opt == 0 {
 			l.Debugf("Account [%d] opted out of PIN registration. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry(), s.Tenant().Id)(s)
+			session.Destroy(l, ctx, session.GetRegistry())(s)
 		}
 
 		if opt == 1 {
@@ -37,12 +38,12 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 
 			if len(pin) > 4 {
 				l.Warnf("Read an invalid length pin. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-				session.Destroy(l, ctx, session.GetRegistry(), s.Tenant().Id)(s)
+				session.Destroy(l, ctx, session.GetRegistry())(s)
 				return
 			}
 
 			l.Debugf("Registering PIN [%s] for account [%d].", pin, s.AccountId())
-			err := account.UpdatePin(l, ctx, s.Tenant())(s.AccountId(), pin)
+			err := account.UpdatePin(l, ctx)(s.AccountId(), pin)
 			if err != nil {
 				l.WithError(err).Errorf("Error updating PIN for account [%d].", s.AccountId())
 				err = pinOperationFunc(s, writer.PinConnectionFailedBody(l))
@@ -60,10 +61,10 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 			}
 
 			l.Debugf("Logging account out, as they are still at login screen and need to issue a new request.")
-			as.Destroy(l, producer.ProviderImpl(l)(ctx))(s.Tenant(), s.SessionId(), s.AccountId())
+			as.Destroy(l, producer.ProviderImpl(l)(ctx))(t, s.SessionId(), s.AccountId())
 			return
 		}
 		l.Warnf("Unhandled opt [%d] for PIN registration. Terminating session.", opt)
-		session.Destroy(l, ctx, session.GetRegistry(), s.Tenant().Id)(s)
+		session.Destroy(l, ctx, session.GetRegistry())(s)
 	}
 }

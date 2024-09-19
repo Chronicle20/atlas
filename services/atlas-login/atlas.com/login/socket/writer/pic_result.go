@@ -2,12 +2,11 @@ package writer
 
 import (
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const PicResult = "PicResult"
 
-func PicResultBody(l logrus.FieldLogger) BodyProducer {
+func PicResultBody() BodyProducer {
 	return func(w *response.Writer, options map[string]interface{}) []byte {
 		w.WriteByte(0)
 		rtn := w.Bytes()

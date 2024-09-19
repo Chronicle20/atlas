@@ -10,13 +10,13 @@ import (
 	"atlas-login/socket/handler"
 	"atlas-login/socket/writer"
 	"atlas-login/tasks"
-	"atlas-login/tenant"
 	"atlas-login/tracing"
-	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	socket2 "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"strconv"
@@ -47,38 +47,51 @@ func main() {
 	writerList := produceWriters()
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.AccountStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.StatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 
-	ctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
+	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
 	for _, s := range config.Data.Attributes.Servers {
 		var t tenant.Model
-		t, err = tenant.NewFromConfiguration(l)(s)
+		majorVersion, err := strconv.Atoi(s.Version.Major)
 		if err != nil {
+			l.WithError(err).Errorf("Socket service [majorVersion] is configured incorrectly")
 			continue
 		}
 
-		err = account.InitializeRegistry(l, ctx, t)
+		minorVersion, err := strconv.Atoi(s.Version.Minor)
+		if err != nil {
+			l.WithError(err).Errorf("Socket service [minorVersion] is configured incorrectly")
+			continue
+		}
+
+		t, err = tenant.Register(uuid.MustParse(s.Tenant), s.Region, uint16(majorVersion), uint16(minorVersion))
+		if err != nil {
+			continue
+		}
+		tctx := tenant.WithContext(sctx, t)
+
+		err = account.InitializeRegistry(l, tctx, t)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to initialize account registry for tenant [%s].", t.String())
 		}
 
 		fl := l.
-			WithField("tenant", t.Id.String()).
-			WithField("region", t.Region).
-			WithField("ms.version", fmt.Sprintf("%d.%d", t.MajorVersion, t.MinorVersion))
+			WithField("tenant", t.Id().String()).
+			WithField("region", t.Region()).
+			WithField("ms.version", fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()))
 
 		var rw socket2.OpReadWriter = socket2.ShortReadWriter{}
-		if t.Region == "GMS" && t.MajorVersion <= 28 {
+		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
 			rw = socket2.ByteReadWriter{}
 		}
 
 		wp := produceWriterProducer(fl)(s.Writers, writerList, rw)
-		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t.Id, wp))(s.Handlers, validatorMap, handlerMap)
+		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 
-		_, _ = cm.RegisterHandler(account.AccountStatusRegister(l, t))
+		_, _ = cm.RegisterHandler(account.StatusRegister(t)(l))
 
-		socket.CreateSocketService(fl, tdm.Context(), tdm.WaitGroup())(hp, rw, t, s.Port)
+		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, t, s.Port)
 	}
 	span.End()
 

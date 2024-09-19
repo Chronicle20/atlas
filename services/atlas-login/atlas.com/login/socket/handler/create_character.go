@@ -16,16 +16,17 @@ func CreateCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 	return func(s session.Model, r *request.Reader) {
 		name := r.ReadAsciiString()
 		var jobIndex uint32
-		if s.Tenant().Region == "GMS" && s.Tenant().MajorVersion >= 73 {
+		t := s.Tenant()
+		if t.Region() == "GMS" && t.MajorVersion() >= 73 {
 			jobIndex = r.ReadUint32()
-		} else if s.Tenant().Region == "JMS" {
+		} else if t.Region() == "JMS" {
 			jobIndex = r.ReadUint32()
 		} else {
 			jobIndex = 1
 		}
 
 		var subJobIndex uint16
-		if s.Tenant().Region == "GMS" && s.Tenant().MajorVersion <= 83 {
+		if t.Region() == "GMS" && t.MajorVersion() <= 83 {
 			subJobIndex = 0
 		} else {
 			subJobIndex = r.ReadUint16()
@@ -35,7 +36,7 @@ func CreateCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 
 		var hairColor uint32
 		var skinColor uint32
-		if s.Tenant().Region == "JMS" {
+		if t.Region() == "JMS" {
 			hairColor = 0
 			skinColor = 0
 		} else {
@@ -49,7 +50,7 @@ func CreateCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		weapon := r.ReadUint32()
 
 		var gender byte
-		if (s.Tenant().Region == "GMS" && s.Tenant().MajorVersion <= 28) || s.Tenant().Region == "JMS" {
+		if (t.Region() == "GMS" && t.MajorVersion() <= 28) || t.Region() == "JMS" {
 			// TODO see if this is just an assumption of if they default to account gender.
 			gender = 0
 		} else {
@@ -61,24 +62,24 @@ func CreateCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		var intelligence byte
 		var luck byte
 
-		if s.Tenant().Region == "GMS" && s.Tenant().MajorVersion <= 28 {
+		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
 			strength = r.ReadByte()
 			dexterity = r.ReadByte()
 			intelligence = r.ReadByte()
 			luck = r.ReadByte()
 		}
 
-		m, err := factory.SeedCharacter(l, ctx, s.Tenant())(s.AccountId(), s.WorldId(), name, jobIndex, subJobIndex, face, hair, hairColor, skinColor, gender, top, bottom, shoes, weapon, strength, dexterity, intelligence, luck)
+		m, err := factory.SeedCharacter(l, ctx)(s.AccountId(), s.WorldId(), name, jobIndex, subJobIndex, face, hair, hairColor, skinColor, gender, top, bottom, shoes, weapon, strength, dexterity, intelligence, luck)
 		if err != nil {
 			l.WithError(err).Errorf("Error creating character from seed.")
-			err = addCharacterEntryFunc(s, writer.AddCharacterErrorBody(l, s.Tenant())(writer.AddCharacterCodeUnknownError))
+			err = addCharacterEntryFunc(s, writer.AddCharacterErrorBody(l, t)(writer.AddCharacterCodeUnknownError))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show newly created character.")
 			}
 			return
 		}
 
-		err = addCharacterEntryFunc(s, writer.AddCharacterEntryBody(l, s.Tenant())(m))
+		err = addCharacterEntryFunc(s, writer.AddCharacterEntryBody(l, t)(m))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show newly created character.")
 		}

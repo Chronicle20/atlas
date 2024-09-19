@@ -20,7 +20,8 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 		characterId := r.ReadUint32()
 		var sMacAddressWithHDDSerial = ""
 		var sMacAddressWithHDDSerial2 = ""
-		if s.Tenant().Region == "GMS" {
+		t := s.Tenant()
+		if t.Region() == "GMS" {
 			sMacAddressWithHDDSerial = r.ReadAsciiString()
 			sMacAddressWithHDDSerial2 = r.ReadAsciiString()
 		}
@@ -28,7 +29,7 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 
 		l.Debugf("Attempting to register PIC [%s]. opt [%d], character [%d], hwid [%s] hwid [%s].", pic, opt, characterId, sMacAddressWithHDDSerial, sMacAddressWithHDDSerial2)
 
-		a, err := account.GetById(l, ctx, s.Tenant())(s.AccountId())
+		a, err := account.GetById(l, ctx)(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Failed to get account by id [%d].", s.AccountId())
 			//TODO
@@ -39,12 +40,12 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 			//TODO
 			return
 		}
-		err = account.UpdatePic(l, ctx, s.Tenant())(s.AccountId(), pic)
+		err = account.UpdatePic(l, ctx)(s.AccountId(), pic)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to register PIC [%s] for account [%d].", pic, s.AccountId())
 		}
 
-		c, err := channel.GetById(l, ctx, s.Tenant())(s.WorldId(), s.ChannelId())
+		c, err := channel.GetById(l, ctx)(s.WorldId(), s.ChannelId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")
 			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeServerUnderInspection))
@@ -55,7 +56,7 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 			return
 		}
 
-		resp, err := as.UpdateState(l, ctx, s.Tenant())(s.SessionId(), s.AccountId(), 2)
+		resp, err := as.UpdateState(l, ctx)(s.SessionId(), s.AccountId(), 2)
 		if err != nil || resp.Code != "OK" {
 			l.WithError(err).Errorf("Unable to update session for character [%d] attempting to login.", characterId)
 			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeTooManyConnectionRequests))
@@ -66,7 +67,7 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 			return
 		}
 
-		err = serverIpFunc(s, writer.ServerIPBody(l, s.Tenant())(c.IpAddress(), uint16(c.Port()), characterId))
+		err = serverIpFunc(s, writer.ServerIPBody(l, t)(c.IpAddress(), uint16(c.Port()), characterId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write server ip response due to error.")
 			return

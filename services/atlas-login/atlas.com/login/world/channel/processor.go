@@ -1,7 +1,6 @@
 package channel
 
 import (
-	"atlas-login/tenant"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
@@ -10,33 +9,33 @@ import (
 	"math/rand"
 )
 
-func byIdModelProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(worldId byte, channelId byte) model.Provider[Model] {
+func byIdModelProvider(l logrus.FieldLogger, ctx context.Context) func(worldId byte, channelId byte) model.Provider[Model] {
 	return func(worldId byte, channelId byte) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l)(requestChannel(ctx, tenant)(worldId, channelId), Extract)
+		return requests.Provider[RestModel, Model](l, ctx)(requestChannel(worldId, channelId), Extract)
 	}
 }
 
-func GetById(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(worldId byte, channelId byte) (Model, error) {
+func GetById(l logrus.FieldLogger, ctx context.Context) func(worldId byte, channelId byte) (Model, error) {
 	return func(worldId byte, channelId byte) (Model, error) {
-		return byIdModelProvider(l, ctx, tenant)(worldId, channelId)()
+		return byIdModelProvider(l, ctx)(worldId, channelId)()
 	}
 }
 
-func byWorldModelProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(worldId byte) model.Provider[[]Model] {
+func byWorldModelProvider(l logrus.FieldLogger, ctx context.Context) func(worldId byte) model.Provider[[]Model] {
 	return func(worldId byte) model.Provider[[]Model] {
-		return requests.SliceProvider[RestModel, Model](l)(requestChannels(ctx, tenant)(worldId), Extract)
+		return requests.SliceProvider[RestModel, Model](l, ctx)(requestChannels(worldId), Extract, model.Filters[Model]())
 	}
 }
 
-func GetForWorld(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(worldId byte) ([]Model, error) {
+func GetForWorld(l logrus.FieldLogger, ctx context.Context) func(worldId byte) ([]Model, error) {
 	return func(worldId byte) ([]Model, error) {
-		return byWorldModelProvider(l, ctx, tenant)(worldId)()
+		return byWorldModelProvider(l, ctx)(worldId)()
 	}
 }
 
-func GetRandomInWorld(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(worldId byte) (Model, error) {
+func GetRandomInWorld(l logrus.FieldLogger, ctx context.Context) func(worldId byte) (Model, error) {
 	return func(worldId byte) (Model, error) {
-		cs, err := GetForWorld(l, ctx, tenant)(worldId)
+		cs, err := GetForWorld(l, ctx)(worldId)
 		if err != nil {
 			return Model{}, err
 		}

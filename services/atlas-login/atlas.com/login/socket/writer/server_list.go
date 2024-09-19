@@ -2,24 +2,23 @@ package writer
 
 import (
 	"atlas-login/channel"
-	"atlas-login/tenant"
 	"atlas-login/world"
 	"fmt"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/sirupsen/logrus"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 const ServerListEntry = "ServerListEntry"
 const ServerListEnd = "ServerListEnd"
 
-func ServerListEntryBody(l logrus.FieldLogger, tenant tenant.Model) func(worldId byte, worldName string, state world.State, eventMessage string, channelLoad []channel.Load) BodyProducer {
+func ServerListEntryBody(tenant tenant.Model) func(worldId byte, worldName string, state world.State, eventMessage string, channelLoad []channel.Load) BodyProducer {
 	return func(worldId byte, worldName string, state world.State, eventMessage string, channelLoad []channel.Load) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(worldId)
 			w.WriteAsciiString(worldName)
 
-			if tenant.Region == "GMS" {
-				if tenant.MajorVersion > 12 {
+			if tenant.Region() == "GMS" {
+				if tenant.MajorVersion() > 12 {
 					w.WriteByte(byte(state))
 					w.WriteAsciiString(eventMessage)
 					w.WriteShort(100) // eventExpRate 100 = 1x
@@ -28,7 +27,7 @@ func ServerListEntryBody(l logrus.FieldLogger, tenant tenant.Model) func(worldId
 					//support blocking character creation
 					w.WriteByte(0)
 				}
-			} else if tenant.Region == "JMS" {
+			} else if tenant.Region() == "JMS" {
 				w.WriteByte(byte(state))
 				w.WriteAsciiString(eventMessage)
 				w.WriteShort(100) // eventExpRate 100 = 1x
@@ -45,11 +44,11 @@ func ServerListEntryBody(l logrus.FieldLogger, tenant tenant.Model) func(worldId
 			}
 
 			//balloon size
-			if tenant.Region == "GMS" {
-				if tenant.MajorVersion > 12 {
+			if tenant.Region() == "GMS" {
+				if tenant.MajorVersion() > 12 {
 					w.WriteShort(0)
 				}
-			} else if tenant.Region == "JMS" {
+			} else if tenant.Region() == "JMS" {
 				w.WriteShort(0)
 			}
 
@@ -62,9 +61,7 @@ func ServerListEntryBody(l logrus.FieldLogger, tenant tenant.Model) func(worldId
 	}
 }
 
-func ServerListEndBody(l logrus.FieldLogger) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(byte(0xFF))
-		return w.Bytes()
-	}
+func ServerListEndBody(w *response.Writer, _ map[string]interface{}) []byte {
+	w.WriteByte(byte(0xFF))
+	return w.Bytes()
 }

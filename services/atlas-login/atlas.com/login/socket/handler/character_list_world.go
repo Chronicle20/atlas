@@ -18,7 +18,8 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 	characterListFunc := session.Announce(l)(wp)(writer.CharacterList)
 	return func(s session.Model, r *request.Reader) {
 		var gameStartMode = byte(0)
-		if s.Tenant().Region == "GMS" && s.Tenant().MajorVersion > 28 {
+		t := s.Tenant()
+		if t.Region() == "GMS" && t.MajorVersion() > 28 {
 			// GMS v28 is not definite here, but this is not present in 28.
 			gameStartMode = r.ReadByte()
 		}
@@ -26,44 +27,44 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 		channelId := r.ReadByte()
 
 		var socketAddr int32
-		if s.Tenant().Region == "GMS" && s.Tenant().MajorVersion > 12 {
+		if t.Region() == "GMS" && t.MajorVersion() > 12 {
 			socketAddr = r.ReadInt32()
-		} else if s.Tenant().Region == "JMS" {
+		} else if t.Region() == "JMS" {
 			socketAddr = r.ReadInt32()
 		}
 
 		l.Debugf("Handling [CharacterListWorld]. gameStartMode=[%d], worldId=[%d], channelId=[%d], socketAddr=[%d]", gameStartMode, worldId, channelId, socketAddr)
 
-		w, err := world.GetById(l, ctx, s.Tenant())(worldId)
+		w, err := world.GetById(l, ctx)(worldId)
 		if err != nil {
 			l.WithError(err).Errorf("Received a character list request for a world we do not have")
 			return
 		}
 
 		if w.CapacityStatus() == world.StatusFull {
-			err = serverStatusFunc(s, writer.ServerStatusBody(l)(world.StatusFull))
+			err = serverStatusFunc(s, writer.ServerStatusBody(world.StatusFull))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show that world %d is full", w.Id())
 			}
 			return
 		}
 
-		s = session.SetWorldId(worldId)(s.Tenant().Id, s.SessionId())
-		s = session.SetChannelId(channelId)(s.Tenant().Id, s.SessionId())
+		s = session.SetWorldId(worldId)(t.Id(), s.SessionId())
+		s = session.SetChannelId(channelId)(t.Id(), s.SessionId())
 
-		a, err := account.GetById(l, ctx, s.Tenant())(s.AccountId())
+		a, err := account.GetById(l, ctx)(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Cannot retrieve account")
 			return
 		}
 
-		cs, err := character.GetForWorld(l, ctx, s.Tenant())(s.AccountId(), worldId)
+		cs, err := character.GetForWorld(l, ctx)(s.AccountId(), worldId)
 		if err != nil {
 			l.WithError(err).Errorf("Cannot retrieve account characters")
 			return
 		}
 
-		err = characterListFunc(s, writer.CharacterListBody(l, s.Tenant())(cs, worldId, 0, a.PIC(), int16(1), a.CharacterSlots()))
+		err = characterListFunc(s, writer.CharacterListBody(t)(cs, worldId, 0, a.PIC(), int16(1), a.CharacterSlots()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show character list")
 		}

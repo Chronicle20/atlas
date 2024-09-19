@@ -20,7 +20,7 @@ func ServerListRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 
 func issueServerInformation(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model) {
 	return func(s session.Model) {
-		ws, err := world.GetAll(l, ctx, s.Tenant(), world.ChannelLoadDecorator(l, ctx, s.Tenant()))
+		ws, err := world.GetAll(l, ctx, world.ChannelLoadDecorator(l, ctx))
 		if err != nil {
 			l.WithError(err).Errorf("Retrieving worlds")
 			return
@@ -55,7 +55,7 @@ func announceRecommendedWorlds(l logrus.FieldLogger, wp writer.Producer) func(ws
 				rs = append(rs, x.Recommendation())
 			}
 		}
-		err := serverListRecommendationFunc(ms, writer.ServerListRecommendationsBody(l)(rs))
+		err := serverListRecommendationFunc(ms, writer.ServerListRecommendationsBody(rs))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue recommended worlds")
 		}
@@ -65,7 +65,7 @@ func announceRecommendedWorlds(l logrus.FieldLogger, wp writer.Producer) func(ws
 func announceLastWorld(l logrus.FieldLogger, wp writer.Producer) func(ms session.Model) {
 	selectWorldFunc := session.Announce(l)(wp)(writer.SelectWorld)
 	return func(ms session.Model) {
-		err := selectWorldFunc(ms, writer.SelectWorldBody(l)(0))
+		err := selectWorldFunc(ms, writer.SelectWorldBody(0))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to identify the last world a account was logged into")
 		}
@@ -77,12 +77,12 @@ func announceServerList(l logrus.FieldLogger, wp writer.Producer) func(ws []worl
 	serverListEndFunc := session.Announce(l)(wp)(writer.ServerListEnd)
 	return func(ws []world.Model, ms session.Model) {
 		for _, x := range ws {
-			err := serverListEntryFunc(ms, writer.ServerListEntryBody(l, ms.Tenant())(x.Id(), x.Name(), x.State(), x.EventMessage(), x.ChannelLoad()))
+			err := serverListEntryFunc(ms, writer.ServerListEntryBody(ms.Tenant())(x.Id(), x.Name(), x.State(), x.EventMessage(), x.ChannelLoad()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write server list entry for %d", x.Id())
 			}
 		}
-		err := serverListEndFunc(ms, writer.ServerListEndBody(l))
+		err := serverListEndFunc(ms, writer.ServerListEndBody)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to complete writing the server list")
 		}

@@ -1,7 +1,6 @@
 package character
 
 import (
-	"atlas-login/tenant"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
@@ -10,7 +9,7 @@ import (
 	"regexp"
 )
 
-func IsValidName(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(name string) (bool, error) {
+func IsValidName(l logrus.FieldLogger, ctx context.Context) func(name string) (bool, error) {
 	return func(name string) (bool, error) {
 		m, err := regexp.MatchString("[A-Za-z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{3,12}", name)
 		if err != nil {
@@ -20,7 +19,7 @@ func IsValidName(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model)
 			return false, nil
 		}
 
-		cs, err := GetByName(l, ctx, tenant)(name)
+		cs, err := GetByName(l, ctx)(name)
 		if len(cs) != 0 || err != nil {
 			return false, nil
 		}
@@ -35,15 +34,15 @@ func IsValidName(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model)
 	}
 }
 
-func byAccountAndWorldProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(accountId uint32, worldId byte) model.Provider[[]Model] {
+func byAccountAndWorldProvider(l logrus.FieldLogger, ctx context.Context) func(accountId uint32, worldId byte) model.Provider[[]Model] {
 	return func(accountId uint32, worldId byte) model.Provider[[]Model] {
-		return requests.SliceProvider[RestModel, Model](l)(requestByAccountAndWorld(l, ctx, tenant)(accountId, worldId), Extract)
+		return requests.SliceProvider[RestModel, Model](l, ctx)(requestByAccountAndWorld(accountId, worldId), Extract, model.Filters[Model]())
 	}
 }
 
-func GetForWorld(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(accountId uint32, worldId byte) ([]Model, error) {
+func GetForWorld(l logrus.FieldLogger, ctx context.Context) func(accountId uint32, worldId byte) ([]Model, error) {
 	return func(accountId uint32, worldId byte) ([]Model, error) {
-		cs, err := byAccountAndWorldProvider(l, ctx, tenant)(accountId, worldId)()
+		cs, err := byAccountAndWorldProvider(l, ctx)(accountId, worldId)()
 		if errors.Is(requests.ErrNotFound, err) {
 			return make([]Model, 0), nil
 		}
@@ -51,26 +50,26 @@ func GetForWorld(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model)
 	}
 }
 
-func byNameProvider(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(name string) model.Provider[[]Model] {
+func byNameProvider(l logrus.FieldLogger, ctx context.Context) func(name string) model.Provider[[]Model] {
 	return func(name string) model.Provider[[]Model] {
-		return requests.SliceProvider[RestModel, Model](l)(requestByName(l, ctx, tenant)(name), Extract)
+		return requests.SliceProvider[RestModel, Model](l, ctx)(requestByName(name), Extract, model.Filters[Model]())
 	}
 }
 
-func GetByName(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(name string) ([]Model, error) {
+func GetByName(l logrus.FieldLogger, ctx context.Context) func(name string) ([]Model, error) {
 	return func(name string) ([]Model, error) {
-		return byNameProvider(l, ctx, tenant)(name)()
+		return byNameProvider(l, ctx)(name)()
 	}
 }
 
-func GetById(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32) (Model, error) {
+func GetById(l logrus.FieldLogger, ctx context.Context) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
-		return requests.Provider[RestModel, Model](l)(requestById(l, ctx, tenant)(characterId), Extract)()
+		return requests.Provider[RestModel, Model](l, ctx)(requestById(characterId), Extract)()
 	}
 }
 
-func DeleteById(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) func(characterId uint32) error {
+func DeleteById(l logrus.FieldLogger, ctx context.Context) func(characterId uint32) error {
 	return func(characterId uint32) error {
-		return requestDelete(l, ctx, tenant)(characterId)(l)
+		return requestDelete(characterId)(l, ctx)
 	}
 }

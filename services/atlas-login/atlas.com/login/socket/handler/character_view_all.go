@@ -21,7 +21,8 @@ func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 		var gameRoomClient uint32
 		var gameStartMode2 byte
 
-		if s.Tenant().Region == "GMS" && s.Tenant().MajorVersion > 83 {
+		t := s.Tenant()
+		if t.Region() == "GMS" && t.MajorVersion() > 83 {
 			gameStartMode = r.ReadByte()
 			nexonPassport = r.ReadAsciiString()
 			machineId = r.ReadAsciiString()
@@ -30,7 +31,7 @@ func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 		}
 		l.Debugf("Processing request to view all characters. GameStartMode [%d], NexonPassport [%s], MachineId [%s], GameRoomClient [%d], GameStartMode2 [%d]", gameStartMode, nexonPassport, machineId, gameRoomClient, gameStartMode2)
 
-		ws, err := world.GetAll(l, ctx, s.Tenant())
+		ws, err := world.GetAll(l, ctx)
 		if err != nil {
 			l.Debugf("Unable to retrieve available worlds.")
 			err = viewAllFunc(s, writer.CharacterViewAllErrorBody(l)())
@@ -44,7 +45,7 @@ func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 		var count int
 		for _, w := range ws {
 			var cs []character.Model
-			cs, err = character.GetForWorld(l, ctx, s.Tenant())(s.AccountId(), w.Id())
+			cs, err = character.GetForWorld(l, ctx)(s.AccountId(), w.Id())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve characters for account [%d] in world [%d].", s.AccountId(), w.Id())
 			}
@@ -68,7 +69,7 @@ func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 		}
 
 		for w, cs := range wcs {
-			err = viewAllFunc(s, writer.CharacterViewAllCharacterBody(l, s.Tenant())(w, cs))
+			err = viewAllFunc(s, writer.CharacterViewAllCharacterBody(l, t)(w, cs))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write search failed.")
 			}

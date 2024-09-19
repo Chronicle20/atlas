@@ -5,19 +5,18 @@ import (
 	"atlas-login/character/equipment"
 	"atlas-login/character/equipment/slot"
 	"atlas-login/pet"
-	"atlas-login/tenant"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/sirupsen/logrus"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 const CharacterList = "CharacterList"
 
-func CharacterListBody(l logrus.FieldLogger, tenant tenant.Model) func(characters []character.Model, worldId byte, status int, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
+func CharacterListBody(tenant tenant.Model) func(characters []character.Model, worldId byte, status int, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
 	return func(characters []character.Model, worldId byte, status int, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(byte(status))
 
-			if tenant.Region == "JMS" {
+			if tenant.Region() == "JMS" {
 				w.WriteAsciiString("")
 			}
 
@@ -25,18 +24,18 @@ func CharacterListBody(l logrus.FieldLogger, tenant tenant.Model) func(character
 			for _, x := range characters {
 				WriteCharacter(tenant)(w, x, false)
 			}
-			if tenant.Region == "GMS" && tenant.MajorVersion <= 28 {
+			if tenant.Region() == "GMS" && tenant.MajorVersion() <= 28 {
 				// no trailing information
 				return w.Bytes()
 			}
 
 			w.WriteBool(pic != "")
-			if tenant.Region == "GMS" {
+			if tenant.Region() == "GMS" {
 				w.WriteInt(uint32(characterSlots))
-				if tenant.MajorVersion > 87 {
+				if tenant.MajorVersion() > 87 {
 					w.WriteInt(0) // nBuyCharCount
 				}
-			} else if tenant.Region == "JMS" {
+			} else if tenant.Region() == "JMS" {
 				w.WriteByte(0)
 				w.WriteInt(uint32(characterSlots))
 				w.WriteInt(0)
@@ -59,7 +58,7 @@ func WriteCharacter(tenant tenant.Model) func(w *response.Writer, character char
 			return
 		}
 
-		if tenant.Region == "GMS" && tenant.MajorVersion <= 28 {
+		if tenant.Region() == "GMS" && tenant.MajorVersion() <= 28 {
 			w.WriteInt(1) // auto select first character
 		}
 
@@ -73,7 +72,7 @@ func WriteCharacter(tenant tenant.Model) func(w *response.Writer, character char
 
 func WriteCharacterLook(tenant tenant.Model) func(w *response.Writer, character character.Model, mega bool) {
 	return func(w *response.Writer, character character.Model, mega bool) {
-		if tenant.Region == "GMS" && tenant.MajorVersion <= 28 {
+		if tenant.Region() == "GMS" && tenant.MajorVersion() <= 28 {
 			// older versions don't write gender / skin color / face / mega / hair a second time
 		} else {
 			w.WriteByte(character.Gender())
@@ -105,7 +104,7 @@ func WriteCharacterEquipment(tenant tenant.Model) func(w *response.Writer, chara
 		w.WriteInt(0)
 		//}
 
-		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 			writeForEachPet(w, character.Pets(), writePetItemId, writeEmptyPetItemId)
 		} else {
 			if len(character.Pets()) > 0 {
@@ -122,7 +121,7 @@ func writeEquips(tenant tenant.Model) func(w *response.Writer, equips map[slot.P
 		for k, v := range equips {
 			w.WriteKeyValue(byte(k), v)
 		}
-		if tenant.Region == "GMS" && tenant.MajorVersion <= 28 {
+		if tenant.Region() == "GMS" && tenant.MajorVersion() <= 28 {
 			w.WriteByte(0)
 		} else {
 			w.WriteByte(0xFF)
@@ -130,7 +129,7 @@ func writeEquips(tenant tenant.Model) func(w *response.Writer, equips map[slot.P
 		for k, v := range maskedEquips {
 			w.WriteKeyValue(byte(k), v)
 		}
-		if tenant.Region == "GMS" && tenant.MajorVersion <= 28 {
+		if tenant.Region() == "GMS" && tenant.MajorVersion() <= 28 {
 			w.WriteByte(0)
 		} else {
 			w.WriteByte(0xFF)
@@ -249,7 +248,7 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 		w.WriteInt(character.Face())
 		w.WriteInt(character.Hair())
 
-		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 			writeForEachPet(w, character.Pets(), writePetId, writeEmptyPetId)
 		} else {
 			if len(character.Pets()) > 0 {
@@ -278,24 +277,24 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 
 		w.WriteInt(character.Experience())
 		w.WriteInt16(character.Fame())
-		if (tenant.Region == "GMS" && tenant.MajorVersion > 28) || tenant.Region == "JMS" {
+		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 			w.WriteInt(character.GachaponExperience())
 		}
 		w.WriteInt(character.MapId())
 		w.WriteByte(character.SpawnPoint())
 
-		if tenant.Region == "GMS" {
-			if tenant.MajorVersion > 12 {
+		if tenant.Region() == "GMS" {
+			if tenant.MajorVersion() > 12 {
 				w.WriteInt(0)
 			} else {
 				w.WriteInt64(0)
 				w.WriteInt(0)
 				w.WriteInt(0)
 			}
-			if tenant.MajorVersion >= 87 {
+			if tenant.MajorVersion() >= 87 {
 				w.WriteShort(0) // nSubJob
 			}
-		} else if tenant.Region == "JMS" {
+		} else if tenant.Region() == "JMS" {
 			w.WriteShort(0)
 			w.WriteLong(0)
 			w.WriteInt(0)

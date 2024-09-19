@@ -1,7 +1,7 @@
 package character
 
 import (
-	"atlas-maps/tenant"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 type MapKey struct {

@@ -4,6 +4,7 @@ import (
 	"atlas-maps/map/character"
 	"atlas-maps/map/monster"
 	"context"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"time"
@@ -28,7 +29,8 @@ func (r *Respawn) Run() {
 
 	mks := character.GetMapsWithCharacters()
 	for _, mk := range mks {
-		go monster.Spawn(r.l, ctx, mk.Tenant)(mk.WorldId, mk.ChannelId, mk.MapId)
+		tctx := tenant.WithContext(ctx, mk.Tenant)
+		go monster.Spawn(r.l)(tctx)(mk.WorldId, mk.ChannelId, mk.MapId)
 	}
 }
 

@@ -1,12 +1,14 @@
 package character
 
 import (
-	"atlas-maps/tenant"
+	"context"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
-func GetCharactersInMap(tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32) ([]uint32, error) {
+func GetCharactersInMap(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) ([]uint32, error) {
 	return func(worldId byte, channelId byte, mapId uint32) ([]uint32, error) {
-		return getRegistry().GetInMap(MapKey{Tenant: tenant, WorldId: worldId, ChannelId: channelId, MapId: mapId}), nil
+		t := tenant.MustFromContext(ctx)
+		return getRegistry().GetInMap(MapKey{Tenant: t, WorldId: worldId, ChannelId: channelId, MapId: mapId}), nil
 	}
 }
 
@@ -14,14 +16,16 @@ func GetMapsWithCharacters() []MapKey {
 	return getRegistry().GetMapsWithCharacters()
 }
 
-func Enter(tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
+func Enter(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
 	return func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
-		getRegistry().AddCharacter(MapKey{Tenant: tenant, WorldId: worldId, ChannelId: channelId, MapId: mapId}, characterId)
+		t := tenant.MustFromContext(ctx)
+		getRegistry().AddCharacter(MapKey{Tenant: t, WorldId: worldId, ChannelId: channelId, MapId: mapId}, characterId)
 	}
 }
 
-func Exit(tenant tenant.Model) func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
+func Exit(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
 	return func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
-		getRegistry().RemoveCharacter(MapKey{Tenant: tenant, WorldId: worldId, ChannelId: channelId, MapId: mapId}, characterId)
+		t := tenant.MustFromContext(ctx)
+		getRegistry().RemoveCharacter(MapKey{Tenant: t, WorldId: worldId, ChannelId: channelId, MapId: mapId}, characterId)
 	}
 }

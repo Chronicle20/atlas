@@ -27,12 +27,12 @@ func handleGetCharactersInMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					ids, err := character.GetCharactersInMap(c.Tenant())(worldId, channelId, mapId)
+					ids, err := character.GetCharactersInMap(d.Context())(worldId, channelId, mapId)
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
-					res, err := model.SliceMap(model.FixedProvider(ids), Transform)()
+					res, err := model.SliceMap(Transform)(model.FixedProvider(ids))(model.ParallelMap())()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
 						w.WriteHeader(http.StatusInternalServerError)

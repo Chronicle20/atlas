@@ -43,7 +43,7 @@ func main() {
 	}
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(portal.CommandConsumer(l)(consumerGroupId))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(portal.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(portal.EnterCommandRegister(l))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

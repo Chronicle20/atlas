@@ -25,5 +25,5 @@ func EnterCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
 
 func handleEnterCommand(l logrus.FieldLogger, ctx context.Context, command commandEvent[enterBody]) {
 	l.Debugf("Received command for Character [%d] to enter portal [%d] in map [%d].", command.Body.CharacterId, command.PortalId, command.MapId)
-	Enter(l, ctx, command.Tenant)(command.WorldId, command.ChannelId, command.MapId, command.PortalId, command.Body.CharacterId)
+	Enter(l)(ctx)(command.WorldId, command.ChannelId, command.MapId, command.PortalId, command.Body.CharacterId)
 }

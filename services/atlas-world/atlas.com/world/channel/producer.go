@@ -1,9 +1,9 @@
 package channel
 
 import (
-	"atlas-world/tenant"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -16,9 +16,8 @@ func emitChannelServerShutdown(tenant tenant.Model, worldId byte, channelId byte
 }
 
 func emitChannelServerEvent(tenant tenant.Model, worldId byte, channelId byte, status string, ipAddress string, port int) model.Provider[[]kafka.Message] {
-	key := []byte(tenant.Id.String())
+	key := []byte(tenant.Id().String())
 	value := &channelStatusEvent{
-		Tenant:    tenant,
 		WorldId:   worldId,
 		ChannelId: channelId,
 		Type:      status,
@@ -29,10 +28,9 @@ func emitChannelServerEvent(tenant tenant.Model, worldId byte, channelId byte, s
 }
 
 func emitChannelServerStatusCommand(tenant tenant.Model) model.Provider[[]kafka.Message] {
-	key := []byte(tenant.Id.String())
+	key := []byte(tenant.Id().String())
 	value := &channelStatusCommand{
-		Tenant: tenant,
-		Type:   CommandChannelStatusType,
+		Type: CommandChannelStatusType,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

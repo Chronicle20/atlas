@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/manyminds/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -36,13 +37,13 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetChannelServers(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cs, err := GetByWorld(d.Logger(), c.Tenant())(worldId)
+			cs, err := GetByWorld(d.Logger())(d.Context())(worldId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get all channel servers.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			res, err := model.SliceMap(model.FixedProvider(cs), Transform)()
+			res, err := model.SliceMap(Transform)(model.FixedProvider(cs))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -63,7 +64,8 @@ func handleRegisterChannelServer(d *rest.HandlerDependency, c *rest.HandlerConte
 				return
 			}
 
-			_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvEventTopicChannelStatus)(emitChannelServerStarted(c.Tenant(), worldId, byte(id), input.IpAddress, input.Port))
+			t := tenant.MustFromContext(d.Context())
+			_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvEventTopicChannelStatus)(emitChannelServerStarted(t, worldId, byte(id), input.IpAddress, input.Port))
 			w.WriteHeader(http.StatusAccepted)
 		}
 	})
@@ -73,13 +75,15 @@ func handleUnregisterChannelServer(d *rest.HandlerDependency, c *rest.HandlerCon
 	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				ch, err := GetById(d.Logger(), c.Tenant())(worldId, channelId)
+				ch, err := GetById(d.Logger())(d.Context())(worldId, channelId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Attempting to shutdown a world [%d] channel [%d] that does not exist.", worldId, channelId)
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
-				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvEventTopicChannelStatus)(emitChannelServerShutdown(c.Tenant(), worldId, channelId, ch.IpAddress(), ch.Port()))
+
+				t := tenant.MustFromContext(d.Context())
+				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvEventTopicChannelStatus)(emitChannelServerShutdown(t, worldId, channelId, ch.IpAddress(), ch.Port()))
 				w.WriteHeader(http.StatusAccepted)
 			}
 		})
@@ -90,7 +94,7 @@ func handleGetChannel(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				ch, err := GetById(d.Logger(), c.Tenant())(worldId, channelId)
+				ch, err := GetById(d.Logger())(d.Context())(worldId, channelId)
 				if err != nil {
 					if errors.Is(err, errChannelNotFound) {
 						w.WriteHeader(http.StatusNotFound)
@@ -101,7 +105,7 @@ func handleGetChannel(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
-				res, err := model.Map(model.FixedProvider(ch), Transform)()
+				res, err := model.Map(Transform)(model.FixedProvider(ch))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					w.WriteHeader(http.StatusInternalServerError)

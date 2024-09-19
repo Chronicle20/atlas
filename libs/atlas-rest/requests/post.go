@@ -42,7 +42,7 @@ func createOrUpdate[A any](l logrus.FieldLogger, ctx context.Context) func(metho
 				l.Debugf("Issuing [%s] request to [%s].", method, req.URL)
 				r, err = http.DefaultClient.Do(req)
 				if err != nil {
-					l.Warnf("Failed calling [%s] on [%s], will retry.", method, url)
+					l.WithError(err).Warnf("Failed calling [%s] on [%s], will retry.", method, url)
 					return true, err
 				}
 				return false, nil

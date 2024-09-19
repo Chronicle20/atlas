@@ -35,7 +35,7 @@ func delete(l logrus.FieldLogger, ctx context.Context) func(url string, configur
 			l.Debugf("Issuing [%s] request to [%s].", req.Method, req.URL)
 			r, err = http.DefaultClient.Do(req)
 			if err != nil {
-				l.Warnf("Failed calling [%s] on [%s], will retry.", http.MethodDelete, url)
+				l.WithError(err).Warnf("Failed calling [%s] on [%s], will retry.", http.MethodDelete, url)
 				return true, err
 			}
 			return false, nil

@@ -3,10 +3,9 @@ module atlas-messages
 go 1.23.1
 
 require (
-	github.com/Chronicle20/atlas-kafka v1.0.5
-	github.com/Chronicle20/atlas-model v1.0.4
-	github.com/Chronicle20/atlas-rest v1.0.0
-	github.com/google/uuid v1.6.0
+	github.com/Chronicle20/atlas-kafka v1.1.0
+	github.com/Chronicle20/atlas-model v1.2.1
+	github.com/Chronicle20/atlas-rest v1.2.1
 	github.com/segmentio/kafka-go v0.4.47
 	github.com/sirupsen/logrus v1.9.3
 	go.elastic.co/ecslogrus v1.0.0
@@ -17,10 +16,12 @@ require (
 )
 
 require (
+	github.com/Chronicle20/atlas-tenant v1.0.3 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/magefile/mage v1.15.0 // indirect

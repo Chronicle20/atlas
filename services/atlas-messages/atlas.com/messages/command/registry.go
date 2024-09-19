@@ -2,7 +2,6 @@ package command
 
 import (
 	"atlas-messages/character"
-	"atlas-messages/tenant"
 	"context"
 	"github.com/sirupsen/logrus"
 	"sync"
@@ -29,9 +28,9 @@ func (r *registry) Add(svs ...Producer) {
 	}
 }
 
-func (r *registry) Get(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model, worldId byte, channelId byte, character character.Model, m string) (Executor, bool) {
+func (r *registry) Get(l logrus.FieldLogger, ctx context.Context, worldId byte, channelId byte, character character.Model, m string) (Executor, bool) {
 	for _, c := range r.commandRegistry {
-		e, found := c(l, ctx, tenant, worldId, channelId, character, m)
+		e, found := c(l)(ctx)(worldId, channelId, character, m)
 		if found {
 			return e, found
 		}

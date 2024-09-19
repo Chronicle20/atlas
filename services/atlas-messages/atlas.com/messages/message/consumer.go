@@ -26,5 +26,5 @@ func GeneralChatCommandRegister(l logrus.FieldLogger) (string, handler.Handler) 
 }
 
 func handleGeneralChat(l logrus.FieldLogger, ctx context.Context, event generalChatCommand) {
-	_ = Handle(l, ctx, event.Tenant)(event.WorldId, event.ChannelId, event.MapId, event.CharacterId, event.Message, event.BalloonOnly)
+	_ = Handle(l)(ctx)(event.WorldId, event.ChannelId, event.MapId, event.CharacterId, event.Message, event.BalloonOnly)
 }

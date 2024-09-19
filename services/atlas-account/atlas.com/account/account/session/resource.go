@@ -34,7 +34,7 @@ func handleCreateSession(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			resp := AttemptLogin(d.Logger(), d.DB(), d.Context())(input.SessionId, input.Name, input.Password)
-			res, err := model.Map(model.FixedProvider(resp), Transform)()
+			res, err := model.Map(Transform)(model.FixedProvider(resp))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -49,7 +49,7 @@ func handleUpdateSession(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			resp := ProgressState(d.Logger(), d.DB(), d.Context())(input.SessionId, input.Issuer, accountId, account.State(input.State))
-			res, err := model.Map(model.FixedProvider(resp), Transform)()
+			res, err := model.Map(Transform)(model.FixedProvider(resp))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)

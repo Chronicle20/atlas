@@ -1,7 +1,7 @@
 package monster
 
 import (
-	"atlas-monsters/tenant"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 type MapKey struct {

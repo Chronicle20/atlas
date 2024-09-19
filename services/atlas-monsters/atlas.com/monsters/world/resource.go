@@ -30,14 +30,14 @@ func handleGetMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext) h
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					ms, err := monster.GetInMap(c.Tenant())(worldId, channelId, mapId)
+					ms, err := monster.GetInMap(d.Context())(worldId, channelId, mapId)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to retrieve monsters in map.")
 						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
 
-					res, err := model.SliceMap(model.FixedProvider(ms), monster.Transform)()
+					res, err := model.SliceMap(monster.Transform)(model.FixedProvider(ms))(model.ParallelMap())()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
 						w.WriteHeader(http.StatusInternalServerError)
@@ -56,7 +56,7 @@ func handleDeleteMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					err := monster.DestroyInMap(d.Logger(), d.Context(), c.Tenant())(worldId, channelId, mapId)
+					err := monster.DestroyInMap(d.Logger())(d.Context())(worldId, channelId, mapId)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to remove monsters in map.")
 						w.WriteHeader(http.StatusInternalServerError)
@@ -74,13 +74,13 @@ func handleCreateMonsterInMap(d *rest.HandlerDependency, c *rest.HandlerContext,
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					m, err := monster.CreateMonster(d.Logger(), d.Context(), c.Tenant())(worldId, channelId, mapId, input)
+					m, err := monster.CreateMonster(d.Logger())(d.Context())(worldId, channelId, mapId, input)
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Unable to create monsters.")
 						w.WriteHeader(http.StatusBadRequest)
 						return
 					}
-					res, err := model.Map(model.FixedProvider(m), monster.Transform)()
+					res, err := model.Map(monster.Transform)(model.FixedProvider(m))()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
 						w.WriteHeader(http.StatusInternalServerError)

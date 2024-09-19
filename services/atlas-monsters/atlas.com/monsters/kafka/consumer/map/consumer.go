@@ -35,8 +35,8 @@ func handleStatusEventCharacterEnter(l logrus.FieldLogger, ctx context.Context, 
 		return
 	}
 
-	provider := monster.NotControlledInMapProvider(event.Tenant)(event.WorldId, event.ChannelId, event.MapId)
-	_ = model.ForEachSlice(provider, monster.FindNextController(l, ctx, event.Tenant), model.ParallelExecute())
+	provider := monster.NotControlledInMapProvider(ctx)(event.WorldId, event.ChannelId, event.MapId)
+	_ = model.ForEachSlice(provider, monster.FindNextController(l)(ctx), model.ParallelExecute())
 }
 
 func handleStatusEventCharacterExit(l logrus.FieldLogger, ctx context.Context, event statusEvent[characterExit]) {
@@ -44,7 +44,7 @@ func handleStatusEventCharacterExit(l logrus.FieldLogger, ctx context.Context, e
 		return
 	}
 
-	provider := monster.ControlledByCharacterInMapProvider(event.Tenant)(event.WorldId, event.ChannelId, event.MapId, event.Body.CharacterId)
-	_ = model.ForEachSlice(provider, monster.StopControl(l, ctx, event.Tenant), model.ParallelExecute())
-	_ = model.ForEachSlice(provider, monster.FindNextController(l, ctx, event.Tenant))
+	provider := monster.ControlledByCharacterInMapProvider(ctx)(event.WorldId, event.ChannelId, event.MapId, event.Body.CharacterId)
+	_ = model.ForEachSlice(provider, monster.StopControl(l)(ctx), model.ParallelExecute())
+	_ = model.ForEachSlice(provider, monster.FindNextController(l)(ctx))
 }

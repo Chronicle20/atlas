@@ -3,7 +3,7 @@ module atlas-character
 go 1.23.1
 
 require (
-	github.com/Chronicle20/atlas-kafka v1.0.7
+	github.com/Chronicle20/atlas-kafka v1.1.0
 	github.com/Chronicle20/atlas-model v1.2.1
 	github.com/Chronicle20/atlas-rest v1.2.1
 	github.com/Chronicle20/atlas-tenant v1.0.3

@@ -3,7 +3,7 @@ module atlas-messages
 go 1.23.1
 
 require (
-	github.com/Chronicle20/atlas-kafka v1.1.0
+	github.com/Chronicle20/atlas-kafka v1.1.1
 	github.com/Chronicle20/atlas-model v1.2.1
 	github.com/Chronicle20/atlas-rest v1.2.2
 	github.com/segmentio/kafka-go v0.4.47

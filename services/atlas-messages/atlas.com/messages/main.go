@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-messages/character/inventory"
 	"atlas-messages/command"
 	"atlas-messages/logger"
 	_map "atlas-messages/map"
@@ -25,6 +26,7 @@ func main() {
 	}
 
 	command.Registry().Add(_map.WarpMapCommandProducer)
+	command.Registry().Add(inventory.AwardItemCommandProducer)
 
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.GeneralChatCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))

@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"atlas-messages/character/inventory/item"
 	"atlas-messages/equipment/statistics"
 	"context"
 	"github.com/sirupsen/logrus"
@@ -20,6 +21,18 @@ func Exists(l logrus.FieldLogger) func(ctx context.Context) func(itemId uint32) 
 			}
 
 			return true
+		}
+	}
+}
+
+func CreateItem(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, itemId uint32, quantity uint16) (item.Model, error) {
+	return func(ctx context.Context) func(characterId uint32, itemId uint32, quantity uint16) (item.Model, error) {
+		return func(characterId uint32, itemId uint32, quantity uint16) (item.Model, error) {
+			rm, err := requestCreateItem(characterId, itemId, quantity)(l, ctx)
+			if err != nil {
+				return item.Model{}, err
+			}
+			return item.Extract(rm)
 		}
 	}
 }

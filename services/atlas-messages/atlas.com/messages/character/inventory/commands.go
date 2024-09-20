@@ -39,18 +39,19 @@ func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 					return nil, false
 				}
 				quantity = uint16(tQuantity)
-			}
-			re = regexp.MustCompile("@award item (\\d*)")
-			match = re.FindStringSubmatch(m)
-			if len(match) == 2 {
-				tItemId, err := strconv.ParseUint(match[1], 10, 32)
-				if err != nil {
+			} else {
+				re = regexp.MustCompile("@award item (\\d*)")
+				match = re.FindStringSubmatch(m)
+				if len(match) == 2 {
+					tItemId, err := strconv.ParseUint(match[1], 10, 32)
+					if err != nil {
+						return nil, false
+					}
+					itemId = uint32(tItemId)
+					quantity = 1
+				} else {
 					return nil, false
 				}
-				itemId = uint32(tItemId)
-				quantity = 1
-			} else {
-				return nil, false
 			}
 
 			exists := Exists(l)(ctx)(itemId)

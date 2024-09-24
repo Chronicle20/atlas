@@ -25,7 +25,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	command.Registry().Add(_map.WarpMapCommandProducer)
+	command.Registry().Add(_map.WarpCommandProducer)
 	command.Registry().Add(inventory.AwardItemCommandProducer)
 
 	cm := consumer.GetManager()

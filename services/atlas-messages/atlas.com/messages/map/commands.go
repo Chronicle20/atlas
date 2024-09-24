@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func WarpMapCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			if !c.Gm() {
@@ -18,10 +18,10 @@ func WarpMapCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func
 				return nil, false
 			}
 
-			if !strings.HasPrefix(m, "@warp map") {
+			if !strings.HasPrefix(m, "@warp me") {
 				return nil, false
 			}
-			re := regexp.MustCompile("@warp map (\\d*)")
+			re := regexp.MustCompile("@warp me (\\d*)")
 			match := re.FindStringSubmatch(m)
 			if len(match) != 2 {
 				return nil, false

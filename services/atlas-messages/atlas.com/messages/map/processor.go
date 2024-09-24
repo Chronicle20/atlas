@@ -26,7 +26,7 @@ func Exists(l logrus.FieldLogger) func(ctx context.Context) func(mapId uint32) b
 func WarpRandom(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32) error {
 	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32) error {
 		return func(worldId byte, channelId byte, characterId uint32, mapId uint32) error {
-			return WarpToPortal(l)(ctx)(worldId, channelId, characterId, mapId, portal.RandomPortalIdProvider(l)(ctx)(mapId))
+			return WarpToPortal(l)(ctx)(worldId, channelId, characterId, mapId, portal.RandomSpawnPointIdProvider(l)(ctx)(mapId))
 		}
 	}
 }

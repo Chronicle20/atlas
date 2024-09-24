@@ -14,3 +14,23 @@ type Model struct {
 func (p Model) Id() uint32 {
 	return p.id
 }
+
+func (p Model) TargetMapId() uint32 {
+	return p.targetMapId
+}
+
+func (p Model) Type() uint8 {
+	return p.portalType
+}
+
+func ValidPortal(m Model) bool {
+	return m.Type() >= 1
+}
+
+func SpawnPoint(m Model) bool {
+	return m.Type() <= 1
+}
+
+func NoTarget(m Model) bool {
+	return m.TargetMapId() == 999999999
+}

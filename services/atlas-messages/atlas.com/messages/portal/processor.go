@@ -15,24 +15,24 @@ func InMapProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId ui
 	}
 }
 
-func RandomPortalProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId uint32) model.Provider[Model] {
+func RandomSpawnPointProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId uint32) model.Provider[Model] {
 	return func(ctx context.Context) func(mapId uint32) model.Provider[Model] {
 		return func(mapId uint32) model.Provider[Model] {
 			return func() (Model, error) {
-				ps, err := InMapProvider(l)(ctx)(mapId)()
+				sps, err := model.FilteredProvider(InMapProvider(l)(ctx)(mapId), model.Filters(ValidPortal, SpawnPoint, NoTarget))()
 				if err != nil {
 					return Model{}, err
 				}
-				return model.RandomPreciselyOneFilter(ps)
+				return model.RandomPreciselyOneFilter(sps)
 			}
 		}
 	}
 }
 
-func RandomPortalIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId uint32) model.Provider[uint32] {
+func RandomSpawnPointIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId uint32) model.Provider[uint32] {
 	return func(ctx context.Context) func(mapId uint32) model.Provider[uint32] {
 		return func(mapId uint32) model.Provider[uint32] {
-			return model.Map(getId)(RandomPortalProvider(l)(ctx)(mapId))
+			return model.Map(getId)(RandomSpawnPointProvider(l)(ctx)(mapId))
 		}
 	}
 }

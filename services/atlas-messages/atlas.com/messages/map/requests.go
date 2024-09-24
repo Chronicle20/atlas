@@ -8,13 +8,14 @@ import (
 )
 
 const (
-	getMap = "maps/%d"
+	mapResource           = "worlds/%d/channels/%d/maps/%d"
+	mapCharactersResource = mapResource + "/characters/"
 )
 
 func getBaseRequest() string {
-	return os.Getenv("GAME_DATA_SERVICE_URL")
+	return os.Getenv("MAP_SERVICE_URL")
 }
 
-func requestMap(mapId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+getMap, mapId))
+func requestCharactersInMap(worldId byte, channelId byte, mapId uint32) requests.Request[[]RestModel] {
+	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+mapCharactersResource, worldId, channelId, mapId))
 }

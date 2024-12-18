@@ -3,7 +3,7 @@ module atlas-monsters
 go 1.23.1
 
 require (
-	github.com/Chronicle20/atlas-kafka v1.1.2
+	github.com/Chronicle20/atlas-kafka v1.1.3
 	github.com/Chronicle20/atlas-model v1.2.1
 	github.com/Chronicle20/atlas-rest v1.2.4
 	github.com/Chronicle20/atlas-tenant v1.0.4

@@ -14,7 +14,7 @@ WORKDIR /atlas.com/dis
 
 RUN go build -o /server
 
-FROM alpine:3.19
+FROM alpine:3.21
 
 # Port 8080 belongs to our application
 EXPOSE 8080

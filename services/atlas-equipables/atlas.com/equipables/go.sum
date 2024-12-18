@@ -1,7 +1,7 @@
 github.com/Chronicle20/atlas-model v1.2.1 h1:F/SYo4PAHd1BuZz5/RV65V4uv5wXHzE95LE4nkmhO4g=
 github.com/Chronicle20/atlas-model v1.2.1/go.mod h1:5FNYT/ypml+goxft0XCACTEp6666yys+l6LTxSPeh1k=
-github.com/Chronicle20/atlas-rest v1.2.3 h1:pStEeqYyHpZp+yHRepdZe0a1DEH7fuFdFrJPQnWzci8=
-github.com/Chronicle20/atlas-rest v1.2.3/go.mod h1:wDA7XhQSSoU0k4LC6RqGPMfkyz95LgEwtkqetGiDPQo=
+github.com/Chronicle20/atlas-rest v1.2.4 h1:MgDW03g12Fw9k3Q/4obi2xK3vutxCzM2g4KZJGYAIk8=
+github.com/Chronicle20/atlas-rest v1.2.4/go.mod h1:OI6Fq6dMk37yQIH9y9f6+2EgY20RBX5Uty6NBM6zgxg=
 github.com/Chronicle20/atlas-tenant v1.0.4 h1:zS+hK56eNTVDlvTvSFN4wo9hZQ9aM/6SxXzRL+9P2Zk=
 github.com/Chronicle20/atlas-tenant v1.0.4/go.mod h1:6DHjFyHY9wRfOuphFwmwklf50hYm74L7MlWH7wqgnRQ=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=

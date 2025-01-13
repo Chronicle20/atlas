@@ -59,7 +59,11 @@ func handleLeave(l logrus.FieldLogger, ctx context.Context, c commandEvent[leave
 	}
 
 	if c.Body.Force {
-		// Expel
+		_, err := Expel(l)(ctx)(c.Body.PartyId, c.Body.CharacterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to expel [%d] from party [%d].", c.Body.CharacterId, c.Body.PartyId)
+			return
+		}
 	} else {
 		_, err := Leave(l)(ctx)(c.Body.PartyId, c.Body.CharacterId)
 		if err != nil {

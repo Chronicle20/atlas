@@ -131,6 +131,49 @@ func Join(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, c
 	}
 }
 
+func Expel(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, characterId uint32) (Model, error) {
+	return func(ctx context.Context) func(partyId uint32, characterId uint32) (Model, error) {
+		return func(partyId uint32, characterId uint32) (Model, error) {
+			t := tenant.MustFromContext(ctx)
+			c, err := character.GetById(l)(ctx)(characterId)
+			if err != nil {
+				l.WithError(err).Errorf("Error getting character [%d].", characterId)
+				return Model{}, err
+			}
+
+			if c.PartyId() != partyId {
+				l.Errorf("Character [%d] not in party.", characterId)
+				return Model{}, ErrNotIn
+			}
+
+			p, err := GetRegistry().Get(t, partyId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve party [%d].", partyId)
+				return Model{}, err
+			}
+
+			p, err = GetRegistry().Update(t, partyId, func(m Model) Model { return Model.RemoveMember(m, characterId) })
+			if err != nil {
+				l.WithError(err).Errorf("Unable to join party [%d].", partyId)
+				return Model{}, err
+			}
+			err = character.LeaveParty(l)(ctx)(characterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to expel from party [%d].", partyId)
+				p, err = GetRegistry().Update(t, partyId, func(m Model) Model { return Model.AddMember(m, characterId) })
+				if err != nil {
+					l.WithError(err).Errorf("Unable to clean up party [%d], when failing to remove member [%d].", partyId, characterId)
+				}
+				return Model{}, err
+			}
+
+			l.Debugf("Character [%d] expelled from party [%d].", characterId, partyId)
+
+			return p, nil
+		}
+	}
+}
+
 func Leave(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, characterId uint32) (Model, error) {
 	return func(ctx context.Context) func(partyId uint32, characterId uint32) (Model, error) {
 		return func(partyId uint32, characterId uint32) (Model, error) {
@@ -163,11 +206,6 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 					leaderChange = true
 					fns = append(fns, Model.ElectLeader)
 				}
-			}
-
-			if len(p.members) > 6 {
-				l.Errorf("Party [%d] already at capacity.", partyId)
-				return Model{}, ErrAtCapacity
 			}
 
 			p, err = GetRegistry().Update(t, partyId, fns...)

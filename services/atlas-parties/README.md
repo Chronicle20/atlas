@@ -43,6 +43,10 @@ MINOR_VERSION:1
 
 ```/api/parties/{partyId}```
 
+#### [PATCH] Update Party
+
+```/api/parties/{partyId}```
+
 #### [GET] Get Party Members
 
 ```/api/parties/{partyId}/members```

@@ -59,12 +59,31 @@ func handleLeave(l logrus.FieldLogger, ctx context.Context, c commandEvent[leave
 	}
 
 	if c.Body.Force {
-		// Expel
+		_, err := Expel(l)(ctx)(c.Body.PartyId, c.Body.CharacterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to expel [%d] from party [%d].", c.Body.CharacterId, c.Body.PartyId)
+			return
+		}
 	} else {
 		_, err := Leave(l)(ctx)(c.Body.PartyId, c.Body.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to leave party [%d].", c.Body.PartyId)
 			return
 		}
+	}
+}
+
+func ChangeLeaderCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
+	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleChangeLeader))
+}
+
+func handleChangeLeader(l logrus.FieldLogger, ctx context.Context, c commandEvent[changeLeaderBody]) {
+	if c.Type != CommandPartyChangeLeader {
+		return
+	}
+	_, err := ChangeLeader(l)(ctx)(c.Body.PartyId, c.Body.LeaderId)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to establish [%d] as leader of party [%d].", c.Body.LeaderId, c.Body.PartyId)
 	}
 }

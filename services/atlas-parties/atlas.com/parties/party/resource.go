@@ -17,6 +17,7 @@ const (
 	GetPartiesByMemberId = "get_parties_by_member_id"
 	CreateParty          = "create_party"
 	GetParty             = "get_party"
+	UpdateParty          = "update_party"
 	GetPartyMembers      = "get_party_members"
 	CreatePartyMember    = "create_party_member"
 	GetPartyMember       = "get_party_member"
@@ -31,6 +32,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 		r.HandleFunc("", registerGet(GetParties, handleGetParties)).Methods(http.MethodGet)
 		r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)(CreateParty, handleCreateParty)).Methods(http.MethodPost)
 		r.HandleFunc("/{partyId}", registerGet(GetParty, handleGetParty)).Methods(http.MethodGet)
+		r.HandleFunc("/{partyId}", rest.RegisterInputHandler[RestModel](l)(si)(UpdateParty, handleUpdateParty)).Methods(http.MethodPatch)
 		r.HandleFunc("/{partyId}/members", registerGet(GetPartyMembers, handleGetPartyMembers)).Methods(http.MethodGet)
 		r.HandleFunc("/{partyId}/relationships/members", registerGet(GetPartyMembers, handleGetPartyMembers)).Methods(http.MethodGet)
 		r.HandleFunc("/{partyId}/members", rest.RegisterInputHandler[MemberRestModel](l)(si)(CreatePartyMember, handleCreatePartyMember)).Methods(http.MethodPost)
@@ -103,6 +105,28 @@ func handleGetParty(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 			}
 
 			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+		}
+	})
+}
+
+func handleUpdateParty(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
+	return rest.ParsePartyId(d.Logger(), func(partyId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			p, err := GetById(d.Context())(partyId)
+			if err != nil {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+
+			if p.LeaderId() != i.LeaderId {
+				ep := producer.ProviderImpl(d.Logger())(d.Context())
+				err := ep(EnvCommandTopic)(changeLeaderCommandProvider(partyId, i.LeaderId))
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+			}
+			w.WriteHeader(http.StatusAccepted)
 		}
 	})
 }

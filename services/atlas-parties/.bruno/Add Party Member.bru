@@ -1,0 +1,29 @@
+meta {
+  name: Add Party Member
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/parties/1000000000/members
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "type": "members",
+      "id": "4",
+      "attributes": {
+        "name": "Atlas",
+        "level": 1,
+        "jobId": 0,
+        "worldId": 0,
+        "channelId": 0,
+        "mapId": 10000,
+        "online": false
+      }
+    }
+  }
+}

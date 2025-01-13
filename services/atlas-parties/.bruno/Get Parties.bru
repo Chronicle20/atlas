@@ -1,0 +1,27 @@
+meta {
+  name: Get Parties
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/parties
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "type": "parties",
+      "id": "0",
+      "attributes": {
+        "members": [
+          {
+            "id": 3
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Get Party Members Alt
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/parties/1000000000/relationships/members
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "type": "parties",
+      "id": "0",
+      "attributes": {
+        "members": [
+          {
+            "id": 3
+          }
+        ]
+      }
+    }
+  }
+}

@@ -154,7 +154,7 @@ func Expel(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 
 			p, err = GetRegistry().Update(t, partyId, func(m Model) Model { return Model.RemoveMember(m, characterId) })
 			if err != nil {
-				l.WithError(err).Errorf("Unable to join party [%d].", partyId)
+				l.WithError(err).Errorf("Unable to expel from party [%d].", partyId)
 				return Model{}, err
 			}
 			err = character.LeaveParty(l)(ctx)(characterId)
@@ -210,7 +210,7 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 
 			p, err = GetRegistry().Update(t, partyId, fns...)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to join party [%d].", partyId)
+				l.WithError(err).Errorf("Unable to leave party [%d].", partyId)
 				return Model{}, err
 			}
 			err = character.LeaveParty(l)(ctx)(characterId)
@@ -233,6 +233,33 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 				GetRegistry().Remove(t, partyId)
 				l.Debugf("Party [%d] has been disbanded.", partyId)
 			}
+			return p, nil
+		}
+	}
+}
+
+func ChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, characterId uint32) (Model, error) {
+	return func(ctx context.Context) func(partyId uint32, characterId uint32) (Model, error) {
+		return func(partyId uint32, characterId uint32) (Model, error) {
+			t := tenant.MustFromContext(ctx)
+			c, err := character.GetById(l)(ctx)(characterId)
+			if err != nil {
+				l.WithError(err).Errorf("Error getting character [%d].", characterId)
+				return Model{}, err
+			}
+
+			if c.PartyId() != partyId {
+				l.Errorf("Character [%d] not in party. Cannot become leader.", characterId)
+				return Model{}, ErrNotIn
+			}
+
+			p, err := GetRegistry().Update(t, partyId, func(m Model) Model { return Model.SetLeader(m, characterId) })
+			if err != nil {
+				l.WithError(err).Errorf("Unable to join party [%d].", partyId)
+				return Model{}, err
+			}
+
+			l.Debugf("Character [%d] became leader of party [%d].", characterId, partyId)
 			return p, nil
 		}
 	}

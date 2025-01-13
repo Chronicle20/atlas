@@ -41,3 +41,15 @@ func leaveCommandProvider(partyId uint32, characterId uint32, force bool) model.
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func changeLeaderCommandProvider(partyId uint32, leaderId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(leaderId))
+	value := &commandEvent[changeLeaderBody]{
+		Type: CommandPartyChangeLeader,
+		Body: changeLeaderBody{
+			LeaderId: leaderId,
+			PartyId:  partyId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

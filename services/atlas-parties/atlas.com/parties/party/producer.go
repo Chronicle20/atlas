@@ -117,3 +117,16 @@ func disbandEventProvider(partyId uint32, worldId byte, characterId uint32, memb
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func changeLeaderEventProvider(partyId uint32, worldId byte, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(partyId))
+	value := &statusEvent[changeLeaderEventBody]{
+		PartyId: partyId,
+		WorldId: worldId,
+		Type:    EventPartyStatusTypeChangeLeader,
+		Body: changeLeaderEventBody{
+			CharacterId: characterId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

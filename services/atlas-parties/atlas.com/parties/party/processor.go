@@ -290,6 +290,11 @@ func ChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(partyId u
 			}
 
 			l.Debugf("Character [%d] became leader of party [%d].", characterId, partyId)
+			err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(changeLeaderEventProvider(p.Id(), c.WorldId(), characterId))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce leadership change in party [%d].", c.Id())
+				return Model{}, err
+			}
 			return p, nil
 		}
 	}

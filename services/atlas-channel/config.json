@@ -823,6 +823,7 @@
               "writer": "PartyOperation",
               "options": {
                 "operations": {
+                  "UPDATE": "0x07",
                   "CREATED": "0x08",
                   "LEAVE": "0x0C",
                   "DISBAND": "0x0C",

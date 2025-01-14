@@ -9,6 +9,7 @@ import (
 	"atlas-channel/kafka/consumer/map"
 	"atlas-channel/kafka/consumer/monster"
 	"atlas-channel/kafka/consumer/party"
+	"atlas-channel/kafka/consumer/party/member"
 	"atlas-channel/logger"
 	"atlas-channel/message"
 	"atlas-channel/server"
@@ -66,6 +67,7 @@ func main() {
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.GeneralChatEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(inventory.ChangedConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(party.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(member.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
@@ -137,6 +139,8 @@ func main() {
 				_, _ = cm.RegisterHandler(party.JoinStatusEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(party.LeftStatusEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(party.DisbandStatusEventRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(member.LoginStatusEventRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(member.LogoutStatusEventRegister(sc, wp)(fl))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)

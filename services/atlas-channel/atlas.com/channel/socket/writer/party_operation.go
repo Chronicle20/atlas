@@ -15,6 +15,7 @@ const (
 	PartyOperationExpel   = "EXPEL"
 	PartyOperationLeave   = "LEAVE"
 	PartyOperationJoin    = "JOIN"
+	PartyOperationUpdate  = "UPDATE"
 )
 
 func PartyCreatedBody(l logrus.FieldLogger) func(partyId uint32) BodyProducer {
@@ -66,6 +67,16 @@ func PartyJoinBody(l logrus.FieldLogger) func(p party.Model, t character.Model, 
 			w.WriteByte(getOperation(l)(options, PartyOperationJoin))
 			w.WriteInt(p.Id())
 			w.WriteAsciiString(t.Name())
+			return WriteParty(w, p, forChannel)
+		}
+	}
+}
+
+func PartyUpdateBody(l logrus.FieldLogger) func(p party.Model, t character.Model, forChannel byte) BodyProducer {
+	return func(p party.Model, t character.Model, forChannel byte) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getOperation(l)(options, PartyOperationUpdate))
+			w.WriteInt(p.Id())
 			return WriteParty(w, p, forChannel)
 		}
 	}
@@ -134,6 +145,7 @@ func WriteParty(w *response.Writer, p party.Model, forChannel byte) []byte {
 	return w.Bytes()
 }
 
+// TODO test with JMS before moving to library
 func WritePaddedString(w *response.Writer, str string, number int) {
 	if len(str) > number {
 		w.WriteByteArray([]byte(str)[:number])

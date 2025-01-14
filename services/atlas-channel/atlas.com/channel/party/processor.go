@@ -26,6 +26,15 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 	}
 }
 
+func Expel(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, characterId uint32, targetCharacterId uint32) error {
+	return func(ctx context.Context) func(partyId uint32, characterId uint32, targetCharacterId uint32) error {
+		return func(partyId uint32, characterId uint32, targetCharacterId uint32) error {
+			l.Debugf("Character [%d] attempting to expel [%d] from party [%d].", characterId, targetCharacterId, partyId)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(leaveCommandProvider(partyId, targetCharacterId, true))
+		}
+	}
+}
+
 func GetById(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32) (Model, error) {
 	return func(ctx context.Context) func(partyId uint32) (Model, error) {
 		return func(partyId uint32) (Model, error) {

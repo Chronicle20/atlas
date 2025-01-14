@@ -138,6 +138,71 @@ func partyLeft(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pr
 	}
 }
 
+func ExpelStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
+		return t, message.AdaptHandler(message.PersistentConfig(handleExpelEvent(sc, wp)))
+	}
+}
+
+func handleExpelEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[leftEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[leftEventBody]) {
+		if e.Type != EventPartyStatusTypeExpel {
+			return
+		}
+
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		if sc.WorldId() != e.WorldId {
+			return
+		}
+
+		p, err := party.GetById(l)(ctx)(e.PartyId)
+		if err != nil {
+			l.WithError(err).Errorf("Received expel event for party [%d] which does not exist.", e.PartyId)
+			return
+		}
+
+		tc, err := character.GetById(l)(ctx)(e.Body.CharacterId)
+		if err != nil {
+			l.WithError(err).Errorf("Received expel event for character [%d] which does not exist.", e.Body.CharacterId)
+			return
+		}
+
+		// For remaining party members.
+		go func() {
+			for _, m := range p.Members() {
+				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+			}
+		}()
+		go func() {
+			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+		}()
+
+	}
+}
+
+func partyExpel(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
+			partyExpelFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
+			return func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := partyExpelFunc(s, writer.PartyExpelBody(l)(p, tc, forChannel))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to announce character [%d] expel party [%d].", s.CharacterId(), p.Id())
+						return err
+					}
+					return nil
+				}
+			}
+		}
+	}
+}
+
 func DisbandStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
 	return func(l logrus.FieldLogger) (string, handler.Handler) {
 		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()

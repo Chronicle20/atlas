@@ -594,7 +594,8 @@
               "options": {
                 "operations": {
                   "CREATE": 1,
-                  "LEAVE": 2
+                  "LEAVE": 2,
+                  "EXPEL": 5
                 }
               }
             },
@@ -827,7 +828,8 @@
                   "CREATED": "0x08",
                   "LEAVE": "0x0C",
                   "DISBAND": "0x0C",
-                  "JOIN": "0x0F"
+                  "JOIN": "0x0F",
+                  "EXPEL": "0x0C"
                 }
               }
             },

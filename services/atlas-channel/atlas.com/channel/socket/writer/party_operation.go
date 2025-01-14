@@ -48,6 +48,20 @@ func PartyLeftBody(l logrus.FieldLogger) func(p party.Model, t character.Model, 
 	}
 }
 
+func PartyExpelBody(l logrus.FieldLogger) func(p party.Model, t character.Model, forChannel byte) BodyProducer {
+	return func(p party.Model, t character.Model, forChannel byte) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getOperation(l)(options, PartyOperationExpel))
+			w.WriteInt(p.Id())
+			w.WriteInt(t.Id())
+			w.WriteByte(1)
+			w.WriteBool(true) // forced
+			w.WriteAsciiString(t.Name())
+			return WriteParty(w, p, forChannel)
+		}
+	}
+}
+
 func PartyDisbandBody(l logrus.FieldLogger) func(partyId uint32, t character.Model, forChannel byte) BodyProducer {
 	return func(partyId uint32, t character.Model, forChannel byte) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {

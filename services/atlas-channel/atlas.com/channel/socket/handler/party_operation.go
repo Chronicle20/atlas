@@ -13,6 +13,7 @@ const (
 	PartyOperationHandle = "PartyOperationHandle"
 	PartyOperationCreate = "CREATE"
 	PartyOperationLeave  = "LEAVE"
+	PartyOperationExpel  = "EXPEL"
 )
 
 func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -34,6 +35,19 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			err = party.Leave(l)(ctx)(p.Id(), s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] unable to attempt leaving party.", s.CharacterId())
+			}
+			return
+		}
+		if isOperation(l)(readerOptions, op, PartyOperationExpel) {
+			targetCharacterId := r.ReadUint32()
+			p, err := party.GetByMemberId(l)(ctx)(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to locate party for character [%d] to leave.", s.CharacterId())
+				return
+			}
+			err = party.Expel(l)(ctx)(p.Id(), s.CharacterId(), targetCharacterId)
+			if err != nil {
+				l.WithError(err).Errorf("Character [%d] unable to attempt expelling [%d] from party.", s.CharacterId(), targetCharacterId)
 			}
 			return
 		}

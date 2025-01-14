@@ -6,34 +6,34 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func createCommandProvider(leaderId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(leaderId))
+func createCommandProvider(actorId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(actorId))
 	value := &commandEvent[createCommandBody]{
-		Type: CommandPartyCreate,
-		Body: createCommandBody{
-			LeaderId: leaderId,
-		},
+		ActorId: actorId,
+		Type:    CommandPartyCreate,
+		Body:    createCommandBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func leaveCommandProvider(partyId uint32, characterId uint32, force bool) model.Provider[[]kafka.Message] {
+func leaveCommandProvider(actorId uint32, partyId uint32, characterId uint32, force bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &commandEvent[leaveCommandBody]{
-		Type: CommandPartyLeave,
+		ActorId: actorId,
+		Type:    CommandPartyLeave,
 		Body: leaveCommandBody{
-			CharacterId: characterId,
-			PartyId:     partyId,
-			Force:       force,
+			PartyId: partyId,
+			Force:   force,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func changeLeaderCommandProvider(partyId uint32, leaderId uint32) model.Provider[[]kafka.Message] {
+func changeLeaderCommandProvider(actorId uint32, partyId uint32, leaderId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(leaderId))
 	value := &commandEvent[changeLeaderBody]{
-		Type: CommandPartyChangeLeader,
+		ActorId: actorId,
+		Type:    CommandPartyChangeLeader,
 		Body: changeLeaderBody{
 			LeaderId: leaderId,
 			PartyId:  partyId,

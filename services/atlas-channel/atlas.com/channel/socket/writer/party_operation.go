@@ -28,8 +28,8 @@ func PartyCreatedBody(l logrus.FieldLogger) func(partyId uint32) BodyProducer {
 			// TODO write doors for party.
 			w.WriteInt(999999999)
 			w.WriteInt(999999999)
-			w.WriteInt(0)
-			w.WriteInt(0)
+			w.WriteShort(0)
+			w.WriteShort(0)
 			return w.Bytes()
 		}
 	}
@@ -97,11 +97,16 @@ func PartyUpdateBody(l logrus.FieldLogger) func(p party.Model, t character.Model
 	}
 }
 
-func PartyChangeLeaderBody(l logrus.FieldLogger) func(targetCharacterId uint32) BodyProducer {
-	return func(targetCharacterId uint32) BodyProducer {
+func PartyChangeLeaderBody(l logrus.FieldLogger) func(targetCharacterId uint32, disconnected bool) BodyProducer {
+	return func(targetCharacterId uint32, disconnected bool) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getOperation(l)(options, PartyOperationChangeLeader))
 			w.WriteInt(targetCharacterId)
+			w.WriteBool(disconnected)
+			return w.Bytes()
+		}
+	}
+}
 			w.WriteByte(0)
 			return w.Bytes()
 		}

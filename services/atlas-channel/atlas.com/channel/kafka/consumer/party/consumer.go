@@ -101,9 +101,9 @@ func handleLeftEvent(sc server.Model, wp writer.Producer) message.Handler[status
 			return
 		}
 
-		tc, err := character.GetById(l)(ctx)(e.Body.CharacterId)
+		tc, err := character.GetById(l)(ctx)(e.ActorId)
 		if err != nil {
-			l.WithError(err).Errorf("Received left event for character [%d] which does not exist.", e.Body.CharacterId)
+			l.WithError(err).Errorf("Received left event for character [%d] which does not exist.", e.ActorId)
 			return
 		}
 
@@ -114,7 +114,7 @@ func handleLeftEvent(sc server.Model, wp writer.Producer) message.Handler[status
 			}
 		}()
 		go func() {
-			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 		}()
 
 	}
@@ -225,9 +225,9 @@ func handleDisbandEvent(sc server.Model, wp writer.Producer) message.Handler[sta
 			return
 		}
 
-		tc, err := character.GetById(l)(ctx)(e.Body.CharacterId)
+		tc, err := character.GetById(l)(ctx)(e.ActorId)
 		if err != nil {
-			l.WithError(err).Errorf("Received disband event for character [%d] which does not exist.", e.Body.CharacterId)
+			l.WithError(err).Errorf("Received disband event for character [%d] which does not exist.", e.ActorId)
 			return
 		}
 
@@ -238,7 +238,7 @@ func handleDisbandEvent(sc server.Model, wp writer.Producer) message.Handler[sta
 			}
 		}()
 		go func() {
-			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
+			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
 		}()
 
 	}
@@ -290,9 +290,9 @@ func handleJoinEvent(sc server.Model, wp writer.Producer) message.Handler[status
 			return
 		}
 
-		tc, err := character.GetById(l)(ctx)(e.Body.CharacterId)
+		tc, err := character.GetById(l)(ctx)(e.ActorId)
 		if err != nil {
-			l.WithError(err).Errorf("Received join event for character [%d] which does not exist.", e.Body.CharacterId)
+			l.WithError(err).Errorf("Received join event for character [%d] which does not exist.", e.ActorId)
 			return
 		}
 
@@ -354,19 +354,33 @@ func handleChangeLeaderEvent(sc server.Model, wp writer.Producer) message.Handle
 		// For remaining party members.
 		go func() {
 			for _, m := range p.Members() {
-				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId))
+				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
 			}
 		}()
 		go func() {
-			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId))
+			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
 		}()
 
 	}
 }
 
-func partyChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, targetCharacterId uint32) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, targetCharacterId uint32) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(partyId uint32, targetCharacterId uint32) model.Operator[session.Model] {
+func partyChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, targetCharacterId uint32, disconnected bool) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, targetCharacterId uint32, disconnected bool) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(partyId uint32, targetCharacterId uint32, disconnected bool) model.Operator[session.Model] {
+			partyChangeLeaderFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
+			return func(partyId uint32, targetCharacterId uint32, disconnected bool) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := partyChangeLeaderFunc(s, writer.PartyChangeLeaderBody(l)(targetCharacterId, disconnected))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to announce change party [%d] leadership to [%d].", partyId, s.CharacterId())
+						return err
+					}
+					return nil
+				}
+			}
+		}
+	}
+}
 			partyChangeLeaderFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
 			return func(partyId uint32, targetCharacterId uint32) model.Operator[session.Model] {
 				return func(s session.Model) error {

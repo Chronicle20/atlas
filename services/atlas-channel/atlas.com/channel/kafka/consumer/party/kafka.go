@@ -11,6 +11,7 @@ const (
 )
 
 type statusEvent[E any] struct {
+	ActorId uint32 `json:"actorId"`
 	WorldId byte   `json:"worldId"`
 	PartyId uint32 `json:"partyId"`
 	Type    string `json:"type"`
@@ -21,11 +22,9 @@ type createdEventBody struct {
 }
 
 type joinedEventBody struct {
-	CharacterId uint32 `json:"characterId"`
 }
 
 type leftEventBody struct {
-	CharacterId uint32 `json:"characterId"`
 }
 
 type expelEventBody struct {
@@ -33,10 +32,11 @@ type expelEventBody struct {
 }
 
 type disbandEventBody struct {
-	CharacterId uint32   `json:"characterId"`
-	Members     []uint32 `json:"members"`
+	Members []uint32 `json:"members"`
 }
 
 type changeLeaderEventBody struct {
-	CharacterId uint32 `json:"characterId"`
+	CharacterId  uint32 `json:"characterId"`
+	Disconnected bool   `json:"disconnected"`
+}
 }

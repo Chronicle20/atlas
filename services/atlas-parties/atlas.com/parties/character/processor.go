@@ -13,7 +13,6 @@ import (
 func Login(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
 		return func(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
-
 			t := tenant.MustFromContext(ctx)
 			c, err := GetById(l)(ctx)(characterId)
 			if err != nil {
@@ -23,7 +22,7 @@ func Login(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, ch
 					l.WithError(err).Errorf("Unable to retrieve needed character information from foreign service.")
 					return err
 				}
-				c = GetRegistry().Create(t, worldId, channelId, mapId, characterId, fm.Name(), fm.Level(), fm.JobId())
+				c = GetRegistry().Create(t, worldId, channelId, mapId, characterId, fm.Name(), fm.Level(), fm.JobId(), fm.GM())
 			}
 
 			l.Debugf("Setting character [%d] to online in registry.", characterId)
@@ -147,7 +146,7 @@ func byIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(character
 					if ferr != nil {
 						return Model{}, err
 					}
-					c = GetRegistry().Create(t, fm.WorldId(), 0, fm.MapId(), characterId, fm.Name(), fm.Level(), fm.JobId())
+					c = GetRegistry().Create(t, fm.WorldId(), 0, fm.MapId(), characterId, fm.Name(), fm.Level(), fm.JobId(), fm.GM())
 				}
 				return c, nil
 			}

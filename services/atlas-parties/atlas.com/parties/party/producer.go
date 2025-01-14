@@ -132,3 +132,18 @@ func changeLeaderEventProvider(actorId uint32, partyId uint32, worldId byte, cha
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func errorEventProvider(actorId uint32, partyId uint32, worldId byte, errorType string, characterName string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(partyId))
+	value := &statusEvent[errorEventBody]{
+		ActorId: actorId,
+		PartyId: partyId,
+		WorldId: worldId,
+		Type:    EventPartyStatusTypeError,
+		Body: errorEventBody{
+			Type:          errorType,
+			CharacterName: characterName,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

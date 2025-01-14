@@ -26,7 +26,7 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) Create(t tenant.Model, worldId byte, channelId byte, mapId uint32, id uint32, name string, level byte, jobId uint16) Model {
+func (r *Registry) Create(t tenant.Model, worldId byte, channelId byte, mapId uint32, id uint32, name string, level byte, jobId uint16, gm int) Model {
 	r.lock.Lock()
 
 	var cm map[uint32]Model
@@ -55,6 +55,7 @@ func (r *Registry) Create(t tenant.Model, worldId byte, channelId byte, mapId ui
 		mapId:     mapId,
 		partyId:   0,
 		online:    false,
+		gm:        gm,
 	}
 	cm[id] = m
 	cml.Unlock()

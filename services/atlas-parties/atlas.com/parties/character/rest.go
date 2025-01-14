@@ -64,5 +64,6 @@ func ExtractForeign(rm ForeignRestModel) (ForeignModel, error) {
 		name:    rm.Name,
 		level:   rm.Level,
 		jobId:   rm.JobId,
+		gm:      rm.Gm,
 	}, nil
 }

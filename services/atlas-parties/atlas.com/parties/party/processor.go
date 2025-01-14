@@ -222,11 +222,9 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 				return Model{}, err
 			}
 
-			var fns []func(m Model) Model
 			var disbandParty = p.LeaderId() == characterId
-			fns = append(fns, func(m Model) Model { return Model.RemoveMember(m, characterId) })
 
-			p, err = GetRegistry().Update(t, partyId, fns...)
+			p, err = GetRegistry().Update(t, partyId, func(m Model) Model { return Model.RemoveMember(m, characterId) })
 			if err != nil {
 				l.WithError(err).Errorf("Unable to leave party [%d].", partyId)
 				return Model{}, err
@@ -242,6 +240,13 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 			}
 
 			if disbandParty {
+				for _, m := range p.Members() {
+					err = character.LeaveParty(l)(ctx)(m)
+					if err != nil {
+						l.WithError(err).Errorf("Character [%d] stuck in party [%d].", m, partyId)
+					}
+				}
+
 				GetRegistry().Remove(t, partyId)
 				l.Debugf("Party [%d] has been disbanded.", partyId)
 				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(disbandEventProvider(p.Id(), c.WorldId(), characterId, p.Members()))

@@ -1,13 +1,14 @@
 package party
 
 const (
-	EnvEventStatusTopic              = "EVENT_TOPIC_PARTY_STATUS"
-	EventPartyStatusTypeCreated      = "CREATED"
-	EventPartyStatusTypeJoined       = "JOINED"
-	EventPartyStatusTypeLeft         = "LEFT"
-	EventPartyStatusTypeExpel        = "EXPEL"
-	EventPartyStatusTypeDisband      = "DISBAND"
-	EventPartyStatusTypeChangeLeader = "CHANGE_LEADER"
+	EnvEventStatusTopic                             = "EVENT_TOPIC_PARTY_STATUS"
+	EventPartyStatusTypeCreated                     = "CREATED"
+	EventPartyStatusTypeJoined                      = "JOINED"
+	EventPartyStatusTypeLeft                        = "LEFT"
+	EventPartyStatusTypeExpel                       = "EXPEL"
+	EventPartyStatusTypeDisband                     = "DISBAND"
+	EventPartyStatusTypeChangeLeader                = "CHANGE_LEADER"
+	EventPartyStatusTypeError                       = "ERROR"
 )
 
 type statusEvent[E any] struct {

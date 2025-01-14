@@ -190,7 +190,7 @@ func Expel(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 			}
 
 			l.Debugf("Character [%d] expelled from party [%d].", characterId, partyId)
-			err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(leftEventProvider(p.Id(), c.WorldId(), characterId))
+			err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(expelEventProvider(p.Id(), c.WorldId(), characterId))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce the party [%d] was left.", c.Id())
 				return Model{}, err

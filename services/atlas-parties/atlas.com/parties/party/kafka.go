@@ -11,6 +11,7 @@ const (
 	EventPartyStatusTypeCreated = "CREATED"
 	EventPartyStatusTypeJoined  = "JOINED"
 	EventPartyStatusTypeLeft    = "LEFT"
+	EventPartyStatusTypeExpel   = "EXPEL"
 	EventPartyStatusTypeDisband = "DISBAND"
 )
 
@@ -54,6 +55,10 @@ type joinedEventBody struct {
 }
 
 type leftEventBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
+type expelEventBody struct {
 	CharacterId uint32 `json:"characterId"`
 }
 

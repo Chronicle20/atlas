@@ -91,6 +91,19 @@ func leftEventProvider(partyId uint32, worldId byte, characterId uint32) model.P
 	return producer.SingleMessageProvider(key, value)
 }
 
+func expelEventProvider(partyId uint32, worldId byte, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(partyId))
+	value := &statusEvent[expelEventBody]{
+		PartyId: partyId,
+		WorldId: worldId,
+		Type:    EventPartyStatusTypeExpel,
+		Body: expelEventBody{
+			CharacterId: characterId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func disbandEventProvider(partyId uint32, worldId byte, characterId uint32, members []uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[disbandEventBody]{

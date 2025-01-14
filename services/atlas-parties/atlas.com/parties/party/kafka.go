@@ -17,31 +17,30 @@ const (
 )
 
 type commandEvent[E any] struct {
-	Type string `json:"type"`
-	Body E      `json:"body"`
+	ActorId uint32 `json:"actorId"`
+	Type    string `json:"type"`
+	Body    E      `json:"body"`
 }
 
 type createCommandBody struct {
-	LeaderId uint32 `json:"leaderId"`
 }
 
 type joinCommandBody struct {
-	PartyId     uint32 `json:"partyId"`
-	CharacterId uint32 `json:"characterId"`
+	PartyId uint32 `json:"partyId"`
 }
 
 type leaveCommandBody struct {
-	PartyId     uint32 `json:"partyId"`
-	CharacterId uint32 `json:"characterId"`
-	Force       bool   `json:"force"`
+	PartyId uint32 `json:"partyId"`
+	Force   bool   `json:"force"`
 }
 
 type changeLeaderBody struct {
-	LeaderId uint32 `json:"leaderId"`
 	PartyId  uint32 `json:"partyId"`
+	LeaderId uint32 `json:"leaderId"`
 }
 
 type statusEvent[E any] struct {
+	ActorId uint32 `json:"actorId"`
 	WorldId byte   `json:"worldId"`
 	PartyId uint32 `json:"partyId"`
 	Type    string `json:"type"`
@@ -52,11 +51,9 @@ type createdEventBody struct {
 }
 
 type joinedEventBody struct {
-	CharacterId uint32 `json:"characterId"`
 }
 
 type leftEventBody struct {
-	CharacterId uint32 `json:"characterId"`
 }
 
 type expelEventBody struct {
@@ -64,10 +61,14 @@ type expelEventBody struct {
 }
 
 type disbandEventBody struct {
-	CharacterId uint32   `json:"characterId"`
-	Members     []uint32 `json:"members"`
+	Members []uint32 `json:"members"`
 }
 
 type changeLeaderEventBody struct {
-	CharacterId uint32 `json:"characterId"`
+	CharacterId  uint32 `json:"characterId"`
+	Disconnected bool   `json:"disconnected"`
+}
+
+type errorEventBody struct {
+	CharacterName string `json:"characterName"`
 }

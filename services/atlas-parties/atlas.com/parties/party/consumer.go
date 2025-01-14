@@ -27,9 +27,9 @@ func handleCreate(l logrus.FieldLogger, ctx context.Context, c commandEvent[crea
 	if c.Type != CommandPartyCreate {
 		return
 	}
-	_, err := Create(l)(ctx)(c.Body.LeaderId)
+	_, err := Create(l)(ctx)(c.ActorId)
 	if err != nil {
-		l.WithError(err).Errorf("Unable to create party for leader [%d].", c.Body.LeaderId)
+		l.WithError(err).Errorf("Unable to create party for leader [%d].", c.ActorId)
 	}
 }
 
@@ -42,9 +42,9 @@ func handleJoin(l logrus.FieldLogger, ctx context.Context, c commandEvent[joinCo
 	if c.Type != CommandPartyJoin {
 		return
 	}
-	_, err := Join(l)(ctx)(c.Body.PartyId, c.Body.CharacterId)
+	_, err := Join(l)(ctx)(c.Body.PartyId, c.ActorId)
 	if err != nil {
-		l.WithError(err).Errorf("Character [%d] unable to join party [%d].", c.Body.CharacterId, c.Body.PartyId)
+		l.WithError(err).Errorf("Character [%d] unable to join party [%d].", c.ActorId, c.Body.PartyId)
 	}
 }
 
@@ -59,13 +59,13 @@ func handleLeave(l logrus.FieldLogger, ctx context.Context, c commandEvent[leave
 	}
 
 	if c.Body.Force {
-		_, err := Expel(l)(ctx)(c.Body.PartyId, c.Body.CharacterId)
+		_, err := Expel(l)(ctx)(c.ActorId, c.Body.PartyId, c.ActorId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to expel [%d] from party [%d].", c.Body.CharacterId, c.Body.PartyId)
+			l.WithError(err).Errorf("Unable to expel [%d] from party [%d].", c.ActorId, c.Body.PartyId)
 			return
 		}
 	} else {
-		_, err := Leave(l)(ctx)(c.Body.PartyId, c.Body.CharacterId)
+		_, err := Leave(l)(ctx)(c.Body.PartyId, c.ActorId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to leave party [%d].", c.Body.PartyId)
 			return
@@ -82,7 +82,7 @@ func handleChangeLeader(l logrus.FieldLogger, ctx context.Context, c commandEven
 	if c.Type != CommandPartyChangeLeader {
 		return
 	}
-	_, err := ChangeLeader(l)(ctx)(c.Body.PartyId, c.Body.LeaderId)
+	_, err := ChangeLeader(l)(ctx)(c.ActorId, c.Body.PartyId, c.Body.LeaderId)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to establish [%d] as leader of party [%d].", c.Body.LeaderId, c.Body.PartyId)
 	}

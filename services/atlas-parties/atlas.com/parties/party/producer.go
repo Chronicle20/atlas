@@ -9,10 +9,9 @@ import (
 func createCommandProvider(leaderId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(leaderId))
 	value := &commandEvent[createCommandBody]{
-		Type: CommandPartyCreate,
-		Body: createCommandBody{
-			LeaderId: leaderId,
-		},
+		ActorId: leaderId,
+		Type:    CommandPartyCreate,
+		Body:    createCommandBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
@@ -20,10 +19,10 @@ func createCommandProvider(leaderId uint32) model.Provider[[]kafka.Message] {
 func joinCommandProvider(partyId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &commandEvent[joinCommandBody]{
-		Type: CommandPartyJoin,
+		ActorId: characterId,
+		Type:    CommandPartyJoin,
 		Body: joinCommandBody{
-			CharacterId: characterId,
-			PartyId:     partyId,
+			PartyId: partyId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -32,20 +31,21 @@ func joinCommandProvider(partyId uint32, characterId uint32) model.Provider[[]ka
 func leaveCommandProvider(partyId uint32, characterId uint32, force bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &commandEvent[leaveCommandBody]{
-		Type: CommandPartyLeave,
+		ActorId: characterId,
+		Type:    CommandPartyLeave,
 		Body: leaveCommandBody{
-			CharacterId: characterId,
-			PartyId:     partyId,
-			Force:       force,
+			PartyId: partyId,
+			Force:   force,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func changeLeaderCommandProvider(partyId uint32, leaderId uint32) model.Provider[[]kafka.Message] {
+func changeLeaderCommandProvider(characterId uint32, partyId uint32, leaderId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(leaderId))
 	value := &commandEvent[changeLeaderBody]{
-		Type: CommandPartyChangeLeader,
+		ActorId: characterId,
+		Type:    CommandPartyChangeLeader,
 		Body: changeLeaderBody{
 			LeaderId: leaderId,
 			PartyId:  partyId,
@@ -54,9 +54,10 @@ func changeLeaderCommandProvider(partyId uint32, leaderId uint32) model.Provider
 	return producer.SingleMessageProvider(key, value)
 }
 
-func createdEventProvider(partyId uint32, worldId byte) model.Provider[[]kafka.Message] {
+func createdEventProvider(actorId uint32, partyId uint32, worldId byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[createdEventBody]{
+		ActorId: actorId,
 		PartyId: partyId,
 		WorldId: worldId,
 		Type:    EventPartyStatusTypeCreated,
@@ -65,35 +66,34 @@ func createdEventProvider(partyId uint32, worldId byte) model.Provider[[]kafka.M
 	return producer.SingleMessageProvider(key, value)
 }
 
-func joinedEventProvider(partyId uint32, worldId byte, characterId uint32) model.Provider[[]kafka.Message] {
+func joinedEventProvider(actorId uint32, partyId uint32, worldId byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[joinedEventBody]{
+		ActorId: actorId,
 		PartyId: partyId,
 		WorldId: worldId,
 		Type:    EventPartyStatusTypeJoined,
-		Body: joinedEventBody{
-			CharacterId: characterId,
-		},
+		Body:    joinedEventBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func leftEventProvider(partyId uint32, worldId byte, characterId uint32) model.Provider[[]kafka.Message] {
+func leftEventProvider(actorId uint32, partyId uint32, worldId byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[leftEventBody]{
+		ActorId: actorId,
 		PartyId: partyId,
 		WorldId: worldId,
 		Type:    EventPartyStatusTypeLeft,
-		Body: leftEventBody{
-			CharacterId: characterId,
-		},
+		Body:    leftEventBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func expelEventProvider(partyId uint32, worldId byte, characterId uint32) model.Provider[[]kafka.Message] {
+func expelEventProvider(actorId uint32, partyId uint32, worldId byte, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[expelEventBody]{
+		ActorId: actorId,
 		PartyId: partyId,
 		WorldId: worldId,
 		Type:    EventPartyStatusTypeExpel,
@@ -104,28 +104,30 @@ func expelEventProvider(partyId uint32, worldId byte, characterId uint32) model.
 	return producer.SingleMessageProvider(key, value)
 }
 
-func disbandEventProvider(partyId uint32, worldId byte, characterId uint32, members []uint32) model.Provider[[]kafka.Message] {
+func disbandEventProvider(actorId uint32, partyId uint32, worldId byte, members []uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[disbandEventBody]{
+		ActorId: actorId,
 		PartyId: partyId,
 		WorldId: worldId,
 		Type:    EventPartyStatusTypeDisband,
 		Body: disbandEventBody{
-			CharacterId: characterId,
-			Members:     members,
+			Members: members,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func changeLeaderEventProvider(partyId uint32, worldId byte, characterId uint32) model.Provider[[]kafka.Message] {
+func changeLeaderEventProvider(actorId uint32, partyId uint32, worldId byte, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[changeLeaderEventBody]{
+		ActorId: actorId,
 		PartyId: partyId,
 		WorldId: worldId,
 		Type:    EventPartyStatusTypeChangeLeader,
 		Body: changeLeaderEventBody{
-			CharacterId: characterId,
+			CharacterId:  characterId,
+			Disconnected: false,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

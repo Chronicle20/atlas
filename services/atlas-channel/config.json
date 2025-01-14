@@ -588,6 +588,17 @@
               "handler": "PortalScriptHandle"
             },
             {
+              "opCode": "0x7C",
+              "validator": "LoggedInValidator",
+              "handler": "PartyOperationHandle",
+              "options": {
+                "operations": {
+                  "CREATE": 1,
+                  "LEAVE": 2
+                }
+              }
+            },
+            {
               "opCode": "0xBC",
               "validator": "LoggedInValidator",
               "handler": "MonsterMovementHandle",
@@ -806,6 +817,18 @@
             {
               "opCode": "0x3D",
               "writer": "CharacterInfo"
+            },
+            {
+              "opCode": "0x3E",
+              "writer": "PartyOperation",
+              "options": {
+                "operations": {
+                  "CREATED": "0x08",
+                  "LEAVE": "0x0C",
+                  "DISBAND": "0x0C",
+                  "JOIN": "0x0F"
+                }
+              }
             },
             {
               "opCode": "0x7D",

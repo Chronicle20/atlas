@@ -29,10 +29,12 @@ func Login(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, ch
 			fn := func(m Model) Model { return Model.ChangeChannel(m, channelId) }
 			c = GetRegistry().Update(t, c.Id(), Model.Login, fn)
 
-			err = producer.ProviderImpl(l)(ctx)(EnvEventMemberStatusTopic)(loginEventProvider(c.PartyId(), c.WorldId(), characterId))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to announce the party [%d] member [%d] logged in.", c.PartyId(), c.Id())
-				return err
+			if c.PartyId() != 0 {
+				err = producer.ProviderImpl(l)(ctx)(EnvEventMemberStatusTopic)(loginEventProvider(c.PartyId(), c.WorldId(), characterId))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce the party [%d] member [%d] logged in.", c.PartyId(), c.Id())
+					return err
+				}
 			}
 
 			return nil
@@ -53,10 +55,12 @@ func Logout(l logrus.FieldLogger) func(ctx context.Context) func(characterId uin
 			l.Debugf("Setting character [%d] to offline in registry.", characterId)
 			c = GetRegistry().Update(t, c.Id(), Model.Logout)
 
-			err = producer.ProviderImpl(l)(ctx)(EnvEventMemberStatusTopic)(logoutEventProvider(c.PartyId(), c.WorldId(), characterId))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to announce the party [%d] member [%d] logged out.", c.PartyId(), c.Id())
-				return err
+			if c.PartyId() != 0 {
+				err = producer.ProviderImpl(l)(ctx)(EnvEventMemberStatusTopic)(logoutEventProvider(c.PartyId(), c.WorldId(), characterId))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce the party [%d] member [%d] logged out.", c.PartyId(), c.Id())
+					return err
+				}
 			}
 
 			return nil

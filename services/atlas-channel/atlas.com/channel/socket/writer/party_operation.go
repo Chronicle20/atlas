@@ -107,7 +107,12 @@ func PartyChangeLeaderBody(l logrus.FieldLogger) func(targetCharacterId uint32, 
 		}
 	}
 }
-			w.WriteByte(0)
+
+func PartyErrorBody(l logrus.FieldLogger) func(code string, name string) BodyProducer {
+	return func(code string, name string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getOperation(l)(options, code))
+			w.WriteAsciiString(name)
 			return w.Bytes()
 		}
 	}
@@ -201,7 +206,13 @@ func getOperation(l logrus.FieldLogger) func(options map[string]interface{}, key
 			return 99
 		}
 
-		op, err := strconv.ParseUint(codes[key].(string), 0, 16)
+		var code interface{}
+		if code, ok = codes[key]; !ok {
+			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
+			return 99
+		}
+
+		op, err := strconv.ParseUint(code.(string), 0, 16)
 		if err != nil {
 			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
 			return 99

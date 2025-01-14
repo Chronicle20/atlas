@@ -39,4 +39,8 @@ type changeLeaderEventBody struct {
 	CharacterId  uint32 `json:"characterId"`
 	Disconnected bool   `json:"disconnected"`
 }
+
+type errorEventBody struct {
+	Type          string `json:"type"`
+	CharacterName string `json:"characterName"`
 }

@@ -825,13 +825,29 @@
               "writer": "PartyOperation",
               "options": {
                 "operations": {
+                  "INVITE": "0x04",
                   "UPDATE": "0x07",
                   "CREATED": "0x08",
+                  "ALREADY_HAVE_JOINED_A_PARTY_1": "0x09",
+                  "A_BEGINNER_CANT_CREATE_A_PARTY": "0x0A",
                   "LEAVE": "0x0C",
                   "DISBAND": "0x0C",
-                  "JOIN": "0x0F",
                   "EXPEL": "0x0C",
-                  "CHANGE_LEADER": "0x1B"
+                  "YOU_HAVE_YET_TO_JOIN_A_PARTY": "0x0D",
+                  "JOIN": "0x0F",
+                  "ALREADY_HAVE_JOINED_A_PARTY_2": "0x10",
+                  "THE_PARTY_YOURE_TRYING_TO_JOIN_IS_ALREADY_IN_FULL_CAPACITY": "0x11",
+                  "UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL": "0x13",
+                  "IS_CURRENTLY_BLOCKING_ANY_PARTY_INVITATIONS": "0x15",
+                  "IS_TAKING_CARE_OF_ANOTHER_INVITATION": "0x16",
+                  "HAVE_DENIED_REQUEST_TO_THE_PARTY": "x017",
+                  "CANNOT_KICK_ANOTHER_USER_IN_THIS_MAP": "0x19",
+                  "CHANGE_LEADER": "0x1B",
+                  "THIS_CAN_ONLY_BE_GIVEN_TO_A_PARTY_MEMBER_WITHIN_THE_VICINITY": "0x1C",
+                  "UNABLE_TO_HAND_OVER_THE_LEADERSHIP_POST_NO_PARTY_MEMBER_IS_CURRENTLY_WITHIN_THE": "0x1D",
+                  "YOU_MAY_ONLY_CHANGE_WITH_THE_PARTY_MEMBER_THATS_ON_THE_SAME_CHANNEL": "0x1E",
+                  "AS_A_GM_YOURE_FORBIDDEN_FROM_CREATING_A_PARTY": "0x20",
+                  "UNABLE_TO_FIND_THE_CHARACTER": "0x21"
                 }
               }
             },

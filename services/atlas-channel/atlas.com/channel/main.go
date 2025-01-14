@@ -141,6 +141,7 @@ func main() {
 				_, _ = cm.RegisterHandler(party.ExpelStatusEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(party.DisbandStatusEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(party.ChangeLeaderStatusEventRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(party.ErrorEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(member.LoginStatusEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(member.LogoutStatusEventRegister(sc, wp)(fl))
 

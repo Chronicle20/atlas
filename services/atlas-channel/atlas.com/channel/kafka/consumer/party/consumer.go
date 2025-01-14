@@ -381,12 +381,41 @@ func partyChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 		}
 	}
 }
-			partyChangeLeaderFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
-			return func(partyId uint32, targetCharacterId uint32) model.Operator[session.Model] {
+
+func ErrorEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
+		return t, message.AdaptHandler(message.PersistentConfig(handleErrorEvent(sc, wp)))
+	}
+}
+
+func handleErrorEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[errorEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[errorEventBody]) {
+		if e.Type != EventPartyStatusTypeError {
+			return
+		}
+
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		if sc.WorldId() != e.WorldId {
+			return
+		}
+
+		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, partyErrorEvent(l)(ctx)(wp)(e.Body.Type, e.Body.CharacterName))
+	}
+}
+
+func partyErrorEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
+			partyOperationFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
+			return func(errorType string, name string) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					err := partyChangeLeaderFunc(s, writer.PartyChangeLeaderBody(l)(targetCharacterId))
+					err := partyOperationFunc(s, writer.PartyErrorBody(l)(errorType, name))
 					if err != nil {
-						l.WithError(err).Errorf("Unable to announce change party [%d] leadership to [%d].", partyId, s.CharacterId())
 						return err
 					}
 					return nil

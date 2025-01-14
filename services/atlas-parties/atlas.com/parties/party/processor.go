@@ -2,6 +2,7 @@ package party
 
 import (
 	"atlas-parties/character"
+	"atlas-parties/kafka/producer"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
@@ -71,13 +72,28 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(leaderId uint32
 			}
 
 			p := GetRegistry().Create(t, leaderId)
+
 			l.Debugf("Created party [%d] for leader [%d].", p.Id(), leaderId)
+
+			err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(createdEventProvider(p.Id(), c.WorldId()))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce the party [%d] was created.", c.Id())
+				return Model{}, err
+			}
 
 			err = character.JoinParty(l)(ctx)(leaderId, p.Id())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to have character [%d] join party [%d]", leaderId, p.Id())
 				return Model{}, err
 			}
+
+			//l.Debugf("Character [%d] joined party [%d].", leaderId, p.Id())
+			//err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(joinedEventProvider(p.Id(), c.WorldId(), leaderId))
+			//if err != nil {
+			//	l.WithError(err).Errorf("Unable to announce the party [%d] was created.", c.Id())
+			//	return Model{}, err
+			//}
+
 			return p, nil
 		}
 	}
@@ -126,6 +142,12 @@ func Join(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, c
 			}
 
 			l.Debugf("Character [%d] joined party [%d].", characterId, partyId)
+			err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(joinedEventProvider(p.Id(), c.WorldId(), characterId))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce the party [%d] was created.", c.Id())
+				return Model{}, err
+			}
+
 			return p, nil
 		}
 	}
@@ -168,6 +190,11 @@ func Expel(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 			}
 
 			l.Debugf("Character [%d] expelled from party [%d].", characterId, partyId)
+			err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(leftEventProvider(p.Id(), c.WorldId(), characterId))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce the party [%d] was left.", c.Id())
+				return Model{}, err
+			}
 
 			return p, nil
 		}
@@ -196,17 +223,8 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 			}
 
 			var fns []func(m Model) Model
-			var leaderChange = false
-			var disbandParty = false
+			var disbandParty = p.LeaderId() == characterId
 			fns = append(fns, func(m Model) Model { return Model.RemoveMember(m, characterId) })
-			if len(p.members) == 1 {
-				disbandParty = true
-			} else {
-				if p.LeaderId() == characterId {
-					leaderChange = true
-					fns = append(fns, Model.ElectLeader)
-				}
-			}
 
 			p, err = GetRegistry().Update(t, partyId, fns...)
 			if err != nil {
@@ -216,23 +234,30 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 			err = character.LeaveParty(l)(ctx)(characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to leave party [%d].", partyId)
-				ramf := func(m Model) Model { return Model.AddMember(m, characterId) }
-				rslf := func(m Model) Model { return Model.SetLeader(m, characterId) }
-				p, err = GetRegistry().Update(t, partyId, ramf, rslf)
+				p, err = GetRegistry().Update(t, partyId, func(m Model) Model { return Model.AddMember(m, characterId) })
 				if err != nil {
 					l.WithError(err).Errorf("Unable to clean up party [%d], when failing to remove member [%d].", partyId, characterId)
 				}
 				return Model{}, err
 			}
 
-			l.Debugf("Character [%d] left party [%d].", characterId, partyId)
-			if leaderChange {
-				l.Debugf("Character [%d] became leader of party [%d].", p.LeaderId(), partyId)
-			}
 			if disbandParty {
 				GetRegistry().Remove(t, partyId)
 				l.Debugf("Party [%d] has been disbanded.", partyId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(disbandEventProvider(p.Id(), c.WorldId(), characterId, p.Members()))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce the party [%d] was disbanded.", c.Id())
+					return Model{}, err
+				}
+			} else {
+				l.Debugf("Character [%d] left party [%d].", characterId, partyId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(leftEventProvider(p.Id(), c.WorldId(), characterId))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce the party [%d] was left.", c.Id())
+					return Model{}, err
+				}
 			}
+
 			return p, nil
 		}
 	}

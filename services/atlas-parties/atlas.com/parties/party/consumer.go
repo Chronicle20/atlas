@@ -23,7 +23,7 @@ func CreateCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
 	return t, message.AdaptHandler(message.PersistentConfig(handleCreate))
 }
 
-func handleCreate(l logrus.FieldLogger, ctx context.Context, c commandEvent[createBody]) {
+func handleCreate(l logrus.FieldLogger, ctx context.Context, c commandEvent[createCommandBody]) {
 	if c.Type != CommandPartyCreate {
 		return
 	}
@@ -38,7 +38,7 @@ func JoinCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
 	return t, message.AdaptHandler(message.PersistentConfig(handleJoin))
 }
 
-func handleJoin(l logrus.FieldLogger, ctx context.Context, c commandEvent[joinBody]) {
+func handleJoin(l logrus.FieldLogger, ctx context.Context, c commandEvent[joinCommandBody]) {
 	if c.Type != CommandPartyJoin {
 		return
 	}
@@ -53,7 +53,7 @@ func LeaveCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
 	return t, message.AdaptHandler(message.PersistentConfig(handleLeave))
 }
 
-func handleLeave(l logrus.FieldLogger, ctx context.Context, c commandEvent[leaveBody]) {
+func handleLeave(l logrus.FieldLogger, ctx context.Context, c commandEvent[leaveCommandBody]) {
 	if c.Type != CommandPartyLeave {
 		return
 	}

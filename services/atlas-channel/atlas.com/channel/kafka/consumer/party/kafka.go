@@ -1,12 +1,13 @@
 package party
 
 const (
-	EnvEventStatusTopic         = "EVENT_TOPIC_PARTY_STATUS"
-	EventPartyStatusTypeCreated = "CREATED"
-	EventPartyStatusTypeJoined  = "JOINED"
-	EventPartyStatusTypeLeft    = "LEFT"
-	EventPartyStatusTypeExpel   = "EXPEL"
-	EventPartyStatusTypeDisband = "DISBAND"
+	EnvEventStatusTopic              = "EVENT_TOPIC_PARTY_STATUS"
+	EventPartyStatusTypeCreated      = "CREATED"
+	EventPartyStatusTypeJoined       = "JOINED"
+	EventPartyStatusTypeLeft         = "LEFT"
+	EventPartyStatusTypeExpel        = "EXPEL"
+	EventPartyStatusTypeDisband      = "DISBAND"
+	EventPartyStatusTypeChangeLeader = "CHANGE_LEADER"
 )
 
 type statusEvent[E any] struct {
@@ -34,4 +35,8 @@ type expelEventBody struct {
 type disbandEventBody struct {
 	CharacterId uint32   `json:"characterId"`
 	Members     []uint32 `json:"members"`
+}
+
+type changeLeaderEventBody struct {
+	CharacterId uint32 `json:"characterId"`
 }

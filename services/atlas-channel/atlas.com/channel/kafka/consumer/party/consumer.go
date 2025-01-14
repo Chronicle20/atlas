@@ -145,8 +145,8 @@ func ExpelStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus
 	}
 }
 
-func handleExpelEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[leftEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[leftEventBody]) {
+func handleExpelEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[expelEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[expelEventBody]) {
 		if e.Type != EventPartyStatusTypeExpel {
 			return
 		}
@@ -314,6 +314,65 @@ func partyJoined(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 					err := partyJoinedFunc(s, writer.PartyJoinBody(l)(p, tc, forChannel))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to announce character [%d] joined party [%d].", s.CharacterId(), p.Id())
+						return err
+					}
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func ChangeLeaderStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
+		return t, message.AdaptHandler(message.PersistentConfig(handleChangeLeaderEvent(sc, wp)))
+	}
+}
+
+func handleChangeLeaderEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[changeLeaderEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[changeLeaderEventBody]) {
+		if e.Type != EventPartyStatusTypeChangeLeader {
+			return
+		}
+
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		if sc.WorldId() != e.WorldId {
+			return
+		}
+
+		p, err := party.GetById(l)(ctx)(e.PartyId)
+		if err != nil {
+			l.WithError(err).Errorf("Received expel event for party [%d] which does not exist.", e.PartyId)
+			return
+		}
+
+		// For remaining party members.
+		go func() {
+			for _, m := range p.Members() {
+				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId))
+			}
+		}()
+		go func() {
+			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId))
+		}()
+
+	}
+}
+
+func partyChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, targetCharacterId uint32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, targetCharacterId uint32) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(partyId uint32, targetCharacterId uint32) model.Operator[session.Model] {
+			partyChangeLeaderFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
+			return func(partyId uint32, targetCharacterId uint32) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := partyChangeLeaderFunc(s, writer.PartyChangeLeaderBody(l)(targetCharacterId))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to announce change party [%d] leadership to [%d].", partyId, s.CharacterId())
 						return err
 					}
 					return nil

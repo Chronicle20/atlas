@@ -595,7 +595,8 @@
                 "operations": {
                   "CREATE": 1,
                   "LEAVE": 2,
-                  "EXPEL": 5
+                  "EXPEL": 5,
+                  "CHANGE_LEADER": 6
                 }
               }
             },
@@ -829,7 +830,8 @@
                   "LEAVE": "0x0C",
                   "DISBAND": "0x0C",
                   "JOIN": "0x0F",
-                  "EXPEL": "0x0C"
+                  "EXPEL": "0x0C",
+                  "CHANGE_LEADER": "0x1B"
                 }
               }
             },

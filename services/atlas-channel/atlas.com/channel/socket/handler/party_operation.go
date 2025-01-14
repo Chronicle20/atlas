@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	PartyOperationHandle = "PartyOperationHandle"
-	PartyOperationCreate = "CREATE"
-	PartyOperationLeave  = "LEAVE"
-	PartyOperationExpel  = "EXPEL"
+	PartyOperationHandle       = "PartyOperationHandle"
+	PartyOperationCreate       = "CREATE"
+	PartyOperationLeave        = "LEAVE"
+	PartyOperationExpel        = "EXPEL"
+	PartyOperationChangeLeader = "CHANGE_LEADER"
 )
 
 func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -48,6 +49,19 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			err = party.Expel(l)(ctx)(p.Id(), s.CharacterId(), targetCharacterId)
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] unable to attempt expelling [%d] from party.", s.CharacterId(), targetCharacterId)
+			}
+			return
+		}
+		if isOperation(l)(readerOptions, op, PartyOperationChangeLeader) {
+			targetCharacterId := r.ReadUint32()
+			p, err := party.GetByMemberId(l)(ctx)(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to locate party for character [%d] to leave.", s.CharacterId())
+				return
+			}
+			err = party.ChangeLeader(l)(ctx)(p.Id(), s.CharacterId(), targetCharacterId)
+			if err != nil {
+				l.WithError(err).Errorf("Character [%d] unable to pass leadership to [%d] in party.", s.CharacterId(), targetCharacterId)
 			}
 			return
 		}

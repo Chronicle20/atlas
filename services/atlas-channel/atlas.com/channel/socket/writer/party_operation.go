@@ -9,13 +9,14 @@ import (
 )
 
 const (
-	PartyOperation        = "PartyOperation"
-	PartyOperationCreated = "CREATED"
-	PartyOperationDisband = "DISBAND"
-	PartyOperationExpel   = "EXPEL"
-	PartyOperationLeave   = "LEAVE"
-	PartyOperationJoin    = "JOIN"
-	PartyOperationUpdate  = "UPDATE"
+	PartyOperation             = "PartyOperation"
+	PartyOperationCreated      = "CREATED"
+	PartyOperationDisband      = "DISBAND"
+	PartyOperationExpel        = "EXPEL"
+	PartyOperationLeave        = "LEAVE"
+	PartyOperationJoin         = "JOIN"
+	PartyOperationUpdate       = "UPDATE"
+	PartyOperationChangeLeader = "CHANGE_LEADER"
 )
 
 func PartyCreatedBody(l logrus.FieldLogger) func(partyId uint32) BodyProducer {
@@ -92,6 +93,17 @@ func PartyUpdateBody(l logrus.FieldLogger) func(p party.Model, t character.Model
 			w.WriteByte(getOperation(l)(options, PartyOperationUpdate))
 			w.WriteInt(p.Id())
 			return WriteParty(w, p, forChannel)
+		}
+	}
+}
+
+func PartyChangeLeaderBody(l logrus.FieldLogger) func(targetCharacterId uint32) BodyProducer {
+	return func(targetCharacterId uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getOperation(l)(options, PartyOperationChangeLeader))
+			w.WriteInt(targetCharacterId)
+			w.WriteByte(0)
+			return w.Bytes()
 		}
 	}
 }

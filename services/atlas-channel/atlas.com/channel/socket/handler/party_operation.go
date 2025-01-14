@@ -1,0 +1,94 @@
+package handler
+
+import (
+	"atlas-channel/party"
+	"atlas-channel/session"
+	"atlas-channel/socket/writer"
+	"context"
+	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/sirupsen/logrus"
+)
+
+const (
+	PartyOperationHandle       = "PartyOperationHandle"
+	PartyOperationCreate       = "CREATE"
+	PartyOperationLeave        = "LEAVE"
+	PartyOperationExpel        = "EXPEL"
+	PartyOperationChangeLeader = "CHANGE_LEADER"
+)
+
+func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+		op := r.ReadByte()
+		if isOperation(l)(readerOptions, op, PartyOperationCreate) {
+			err := party.Create(l)(ctx)(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Character [%d] unable to attempt party creation.", s.CharacterId())
+			}
+			return
+		}
+		if isOperation(l)(readerOptions, op, PartyOperationLeave) {
+			p, err := party.GetByMemberId(l)(ctx)(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to locate party for character [%d] to leave.", s.CharacterId())
+				return
+			}
+			err = party.Leave(l)(ctx)(p.Id(), s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Character [%d] unable to attempt leaving party.", s.CharacterId())
+			}
+			return
+		}
+		if isOperation(l)(readerOptions, op, PartyOperationExpel) {
+			targetCharacterId := r.ReadUint32()
+			p, err := party.GetByMemberId(l)(ctx)(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to locate party for character [%d] to leave.", s.CharacterId())
+				return
+			}
+			err = party.Expel(l)(ctx)(p.Id(), s.CharacterId(), targetCharacterId)
+			if err != nil {
+				l.WithError(err).Errorf("Character [%d] unable to attempt expelling [%d] from party.", s.CharacterId(), targetCharacterId)
+			}
+			return
+		}
+		if isOperation(l)(readerOptions, op, PartyOperationChangeLeader) {
+			targetCharacterId := r.ReadUint32()
+			p, err := party.GetByMemberId(l)(ctx)(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to locate party for character [%d] to leave.", s.CharacterId())
+				return
+			}
+			err = party.ChangeLeader(l)(ctx)(p.Id(), s.CharacterId(), targetCharacterId)
+			if err != nil {
+				l.WithError(err).Errorf("Character [%d] unable to pass leadership to [%d] in party.", s.CharacterId(), targetCharacterId)
+			}
+			return
+		}
+		l.Warnf("Character [%d] issued a unhandled party operation [%d].", s.CharacterId(), op)
+	}
+}
+
+func isOperation(l logrus.FieldLogger) func(options map[string]interface{}, op byte, key string) bool {
+	return func(options map[string]interface{}, op byte, key string) bool {
+		var genericCodes interface{}
+		var ok bool
+		if genericCodes, ok = options["operations"]; !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return false
+		}
+
+		var codes map[string]interface{}
+		if codes, ok = genericCodes.(map[string]interface{}); !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return false
+		}
+
+		res, ok := codes[key].(float64)
+		if !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return false
+		}
+		return byte(res) == op
+	}
+}

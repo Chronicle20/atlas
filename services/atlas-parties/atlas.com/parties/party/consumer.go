@@ -23,13 +23,13 @@ func CreateCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
 	return t, message.AdaptHandler(message.PersistentConfig(handleCreate))
 }
 
-func handleCreate(l logrus.FieldLogger, ctx context.Context, c commandEvent[createBody]) {
+func handleCreate(l logrus.FieldLogger, ctx context.Context, c commandEvent[createCommandBody]) {
 	if c.Type != CommandPartyCreate {
 		return
 	}
-	_, err := Create(l)(ctx)(c.Body.LeaderId)
+	_, err := Create(l)(ctx)(c.ActorId)
 	if err != nil {
-		l.WithError(err).Errorf("Unable to create party for leader [%d].", c.Body.LeaderId)
+		l.WithError(err).Errorf("Unable to create party for leader [%d].", c.ActorId)
 	}
 }
 
@@ -38,13 +38,13 @@ func JoinCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
 	return t, message.AdaptHandler(message.PersistentConfig(handleJoin))
 }
 
-func handleJoin(l logrus.FieldLogger, ctx context.Context, c commandEvent[joinBody]) {
+func handleJoin(l logrus.FieldLogger, ctx context.Context, c commandEvent[joinCommandBody]) {
 	if c.Type != CommandPartyJoin {
 		return
 	}
-	_, err := Join(l)(ctx)(c.Body.PartyId, c.Body.CharacterId)
+	_, err := Join(l)(ctx)(c.Body.PartyId, c.ActorId)
 	if err != nil {
-		l.WithError(err).Errorf("Character [%d] unable to join party [%d].", c.Body.CharacterId, c.Body.PartyId)
+		l.WithError(err).Errorf("Character [%d] unable to join party [%d].", c.ActorId, c.Body.PartyId)
 	}
 }
 
@@ -53,19 +53,19 @@ func LeaveCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
 	return t, message.AdaptHandler(message.PersistentConfig(handleLeave))
 }
 
-func handleLeave(l logrus.FieldLogger, ctx context.Context, c commandEvent[leaveBody]) {
+func handleLeave(l logrus.FieldLogger, ctx context.Context, c commandEvent[leaveCommandBody]) {
 	if c.Type != CommandPartyLeave {
 		return
 	}
 
 	if c.Body.Force {
-		_, err := Expel(l)(ctx)(c.Body.PartyId, c.Body.CharacterId)
+		_, err := Expel(l)(ctx)(c.ActorId, c.Body.PartyId, c.ActorId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to expel [%d] from party [%d].", c.Body.CharacterId, c.Body.PartyId)
+			l.WithError(err).Errorf("Unable to expel [%d] from party [%d].", c.ActorId, c.Body.PartyId)
 			return
 		}
 	} else {
-		_, err := Leave(l)(ctx)(c.Body.PartyId, c.Body.CharacterId)
+		_, err := Leave(l)(ctx)(c.Body.PartyId, c.ActorId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to leave party [%d].", c.Body.PartyId)
 			return
@@ -82,7 +82,7 @@ func handleChangeLeader(l logrus.FieldLogger, ctx context.Context, c commandEven
 	if c.Type != CommandPartyChangeLeader {
 		return
 	}
-	_, err := ChangeLeader(l)(ctx)(c.Body.PartyId, c.Body.LeaderId)
+	_, err := ChangeLeader(l)(ctx)(c.ActorId, c.Body.PartyId, c.Body.LeaderId)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to establish [%d] as leader of party [%d].", c.Body.LeaderId, c.Body.PartyId)
 	}

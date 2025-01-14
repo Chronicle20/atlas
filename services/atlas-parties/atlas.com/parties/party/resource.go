@@ -120,7 +120,7 @@ func handleUpdateParty(d *rest.HandlerDependency, c *rest.HandlerContext, i Rest
 
 			if p.LeaderId() != i.LeaderId {
 				ep := producer.ProviderImpl(d.Logger())(d.Context())
-				err := ep(EnvCommandTopic)(changeLeaderCommandProvider(partyId, i.LeaderId))
+				err := ep(EnvCommandTopic)(changeLeaderCommandProvider(0, partyId, i.LeaderId))
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return

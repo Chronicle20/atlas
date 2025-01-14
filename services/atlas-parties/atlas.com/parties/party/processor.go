@@ -2,6 +2,7 @@ package party
 
 import (
 	"atlas-parties/character"
+	"atlas-parties/kafka/producer"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
@@ -15,6 +16,8 @@ var ErrNotFound = errors.New("not found")
 var ErrAtCapacity = errors.New("at capacity")
 var ErrAlreadyIn = errors.New("already in party")
 var ErrNotIn = errors.New("not in party")
+var ErrNotAsBeginner = errors.New("not as beginner")
+var ErrNotAsGm = errors.New("not as gm")
 
 func allProvider(ctx context.Context) model.Provider[[]Model] {
 	return func() ([]Model, error) {
@@ -62,22 +65,64 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(leaderId uint32
 			c, err := character.GetById(l)(ctx)(leaderId)
 			if err != nil {
 				l.WithError(err).Errorf("Error getting character [%d].", leaderId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(leaderId, 0, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party create error to [%d].", leaderId)
+				}
 				return Model{}, err
 			}
 
 			if c.PartyId() != 0 {
 				l.Errorf("Character [%d] already in party. Cannot create another one.", leaderId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(leaderId, 0, c.WorldId(), EventPartyStatusErrorTypeAlreadyJoined1, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party create error to [%d].", leaderId)
+				}
 				return Model{}, ErrAlreadyIn
 			}
 
+			if c.IsBeginner() {
+				l.Errorf("Character [%d] is a beginner, cannot create parties.", leaderId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(leaderId, 0, c.WorldId(), EventPartyStatusErrorTypeBeginnerCannotCreate, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party create error to [%d].", leaderId)
+				}
+				return Model{}, ErrNotAsBeginner
+			}
+
+			if c.GM() > 0 {
+				l.Errorf("Character [%d] is a GM, cannot create parties.", leaderId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(leaderId, 0, c.WorldId(), EventPartyStatusErrorTypeGmCannotCreate, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party create error to [%d].", leaderId)
+				}
+				return Model{}, ErrNotAsGm
+			}
+
 			p := GetRegistry().Create(t, leaderId)
+
 			l.Debugf("Created party [%d] for leader [%d].", p.Id(), leaderId)
+
+			err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(createdEventProvider(leaderId, p.Id(), c.WorldId()))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce the party [%d] was created.", leaderId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(leaderId, 0, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", p.Id())
+				}
+				return Model{}, err
+			}
 
 			err = character.JoinParty(l)(ctx)(leaderId, p.Id())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to have character [%d] join party [%d]", leaderId, p.Id())
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(leaderId, 0, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", p.Id())
+				}
 				return Model{}, err
 			}
+
 			return p, nil
 		}
 	}
@@ -90,22 +135,38 @@ func Join(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, c
 			c, err := character.GetById(l)(ctx)(characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Error getting character [%d].", characterId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, err
 			}
 
 			if c.PartyId() != 0 {
-				l.Errorf("Character [%d] already in party. Cannot join another one.", characterId)
+				l.Errorf("Character [%d] already in party. Cannot create another one.", characterId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, c.PartyId(), c.WorldId(), EventPartyStatusErrorTypeAlreadyJoined2, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, ErrAlreadyIn
 			}
 
 			p, err := GetRegistry().Get(t, partyId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve party [%d].", partyId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, err
 			}
 
-			if len(p.members) > 6 {
+			if len(p.Members()) > 6 {
 				l.Errorf("Party [%d] already at capacity.", partyId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorTypeAtCapacity, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, ErrAtCapacity
 			}
 
@@ -113,6 +174,10 @@ func Join(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, c
 			p, err = GetRegistry().Update(t, partyId, fn)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to join party [%d].", partyId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, err
 			}
 			err = character.JoinParty(l)(ctx)(characterId, partyId)
@@ -122,39 +187,69 @@ func Join(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, c
 				if err != nil {
 					l.WithError(err).Errorf("Unable to clean up party [%d], when failing to add member [%d].", partyId, characterId)
 				}
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, err
 			}
 
 			l.Debugf("Character [%d] joined party [%d].", characterId, partyId)
+			err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(joinedEventProvider(characterId, p.Id(), c.WorldId()))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce the party [%d] was created.", partyId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
+				return Model{}, err
+			}
+
 			return p, nil
 		}
 	}
 }
 
-func Expel(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, characterId uint32) (Model, error) {
-	return func(ctx context.Context) func(partyId uint32, characterId uint32) (Model, error) {
-		return func(partyId uint32, characterId uint32) (Model, error) {
+func Expel(l logrus.FieldLogger) func(ctx context.Context) func(actorId uint32, partyId uint32, characterId uint32) (Model, error) {
+	return func(ctx context.Context) func(actorId uint32, partyId uint32, characterId uint32) (Model, error) {
+		return func(actorId uint32, partyId uint32, characterId uint32) (Model, error) {
 			t := tenant.MustFromContext(ctx)
 			c, err := character.GetById(l)(ctx)(characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Error getting character [%d].", characterId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, err
 			}
 
 			if c.PartyId() != partyId {
 				l.Errorf("Character [%d] not in party.", characterId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, ErrNotIn
 			}
 
 			p, err := GetRegistry().Get(t, partyId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve party [%d].", partyId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, err
 			}
 
 			p, err = GetRegistry().Update(t, partyId, func(m Model) Model { return Model.RemoveMember(m, characterId) })
 			if err != nil {
 				l.WithError(err).Errorf("Unable to expel from party [%d].", partyId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, err
 			}
 			err = character.LeaveParty(l)(ctx)(characterId)
@@ -164,10 +259,23 @@ func Expel(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 				if err != nil {
 					l.WithError(err).Errorf("Unable to clean up party [%d], when failing to remove member [%d].", partyId, characterId)
 				}
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, err
 			}
 
 			l.Debugf("Character [%d] expelled from party [%d].", characterId, partyId)
+			err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(expelEventProvider(actorId, p.Id(), c.WorldId(), characterId))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce the party [%d] was left.", partyId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
+				return Model{}, err
+			}
 
 			return p, nil
 		}
@@ -181,85 +289,172 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 			c, err := character.GetById(l)(ctx)(characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Error getting character [%d].", characterId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, err
 			}
 
 			if c.PartyId() != partyId {
 				l.Errorf("Character [%d] not in party.", characterId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, ErrNotIn
 			}
 
 			p, err := GetRegistry().Get(t, partyId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve party [%d].", partyId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, err
 			}
 
-			var fns []func(m Model) Model
-			var leaderChange = false
-			var disbandParty = false
-			fns = append(fns, func(m Model) Model { return Model.RemoveMember(m, characterId) })
-			if len(p.members) == 1 {
-				disbandParty = true
-			} else {
-				if p.LeaderId() == characterId {
-					leaderChange = true
-					fns = append(fns, Model.ElectLeader)
-				}
-			}
+			var disbandParty = p.LeaderId() == characterId
 
-			p, err = GetRegistry().Update(t, partyId, fns...)
+			p, err = GetRegistry().Update(t, partyId, func(m Model) Model { return Model.RemoveMember(m, characterId) })
 			if err != nil {
 				l.WithError(err).Errorf("Unable to leave party [%d].", partyId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, err
 			}
 			err = character.LeaveParty(l)(ctx)(characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to leave party [%d].", partyId)
-				ramf := func(m Model) Model { return Model.AddMember(m, characterId) }
-				rslf := func(m Model) Model { return Model.SetLeader(m, characterId) }
-				p, err = GetRegistry().Update(t, partyId, ramf, rslf)
+				p, err = GetRegistry().Update(t, partyId, func(m Model) Model { return Model.AddMember(m, characterId) })
 				if err != nil {
 					l.WithError(err).Errorf("Unable to clean up party [%d], when failing to remove member [%d].", partyId, characterId)
+				}
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", characterId)
 				}
 				return Model{}, err
 			}
 
-			l.Debugf("Character [%d] left party [%d].", characterId, partyId)
-			if leaderChange {
-				l.Debugf("Character [%d] became leader of party [%d].", p.LeaderId(), partyId)
-			}
 			if disbandParty {
+				for _, m := range p.Members() {
+					err = character.LeaveParty(l)(ctx)(m)
+					if err != nil {
+						l.WithError(err).Errorf("Character [%d] stuck in party [%d].", m, partyId)
+					}
+				}
+
 				GetRegistry().Remove(t, partyId)
 				l.Debugf("Party [%d] has been disbanded.", partyId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(disbandEventProvider(characterId, partyId, c.WorldId(), p.Members()))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce the party [%d] was disbanded.", partyId)
+					err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+					}
+					return Model{}, err
+				}
+			} else {
+				l.Debugf("Character [%d] left party [%d].", characterId, partyId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(leftEventProvider(characterId, partyId, c.WorldId()))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce the party [%d] was left.", partyId)
+					err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+					}
+					return Model{}, err
+				}
 			}
+
 			return p, nil
 		}
 	}
 }
 
-func ChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, characterId uint32) (Model, error) {
-	return func(ctx context.Context) func(partyId uint32, characterId uint32) (Model, error) {
-		return func(partyId uint32, characterId uint32) (Model, error) {
+func ChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(actorId uint32, partyId uint32, characterId uint32) (Model, error) {
+	return func(ctx context.Context) func(actorId uint32, partyId uint32, characterId uint32) (Model, error) {
+		return func(actorId uint32, partyId uint32, characterId uint32) (Model, error) {
 			t := tenant.MustFromContext(ctx)
+			a, err := character.GetById(l)(ctx)(characterId)
+			if err != nil {
+				l.WithError(err).Errorf("Error getting character [%d].", actorId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, a.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
+				return Model{}, err
+			}
+
 			c, err := character.GetById(l)(ctx)(characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Error getting character [%d].", characterId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, err
 			}
 
 			if c.PartyId() != partyId {
 				l.Errorf("Character [%d] not in party. Cannot become leader.", characterId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
+				return Model{}, ErrNotIn
+			}
+
+			if a.PartyId() != c.PartyId() {
+				l.Errorf("Character [%d] not in the same party as actor [%d]. Cannot become leader.", characterId, actorId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
+				return Model{}, ErrNotIn
+			}
+
+			if a.WorldId() != c.WorldId() && a.ChannelId() != c.ChannelId() {
+				l.Errorf("Character [%d] not in the same channel as actor [%d]. Cannot become leader.", characterId, actorId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorTypeNotInChannel, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
+				return Model{}, ErrNotIn
+			}
+
+			if a.MapId() != c.MapId() {
+				l.Errorf("Character [%d] not in the same map as actor [%d]. Cannot become leader.", characterId, actorId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorTypeUnableToInVicinity, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 				return Model{}, ErrNotIn
 			}
 
 			p, err := GetRegistry().Update(t, partyId, func(m Model) Model { return Model.SetLeader(m, characterId) })
 			if err != nil {
 				l.WithError(err).Errorf("Unable to join party [%d].", partyId)
-				return Model{}, err
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
 			}
 
 			l.Debugf("Character [%d] became leader of party [%d].", characterId, partyId)
+			err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(changeLeaderEventProvider(actorId, p.Id(), c.WorldId(), characterId))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce leadership change in party [%d].", c.Id())
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+				}
+			}
 			return p, nil
 		}
 	}

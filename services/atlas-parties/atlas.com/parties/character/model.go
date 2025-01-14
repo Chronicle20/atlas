@@ -1,6 +1,9 @@
 package character
 
-import "github.com/google/uuid"
+import (
+	"atlas-parties/job"
+	"github.com/google/uuid"
+)
 
 type Model struct {
 	tenantId  uuid.UUID
@@ -13,6 +16,7 @@ type Model struct {
 	mapId     uint32
 	partyId   uint32
 	online    bool
+	gm        int
 }
 
 func (m Model) LeaveParty() Model {
@@ -27,6 +31,7 @@ func (m Model) LeaveParty() Model {
 		mapId:     m.mapId,
 		partyId:   0,
 		online:    m.online,
+		gm:        m.gm,
 	}
 }
 
@@ -42,6 +47,7 @@ func (m Model) JoinParty(partyId uint32) Model {
 		mapId:     m.mapId,
 		partyId:   partyId,
 		online:    m.online,
+		gm:        m.gm,
 	}
 }
 
@@ -57,6 +63,7 @@ func (m Model) ChangeMap(mapId uint32) Model {
 		mapId:     mapId,
 		partyId:   m.partyId,
 		online:    m.online,
+		gm:        m.gm,
 	}
 }
 
@@ -72,6 +79,7 @@ func (m Model) ChangeChannel(channelId byte) Model {
 		mapId:     m.mapId,
 		partyId:   m.partyId,
 		online:    m.online,
+		gm:        m.gm,
 	}
 }
 
@@ -87,6 +95,7 @@ func (m Model) Logout() Model {
 		mapId:     m.mapId,
 		partyId:   m.partyId,
 		online:    false,
+		gm:        m.gm,
 	}
 }
 
@@ -102,6 +111,7 @@ func (m Model) Login() Model {
 		mapId:     m.mapId,
 		partyId:   m.partyId,
 		online:    true,
+		gm:        m.gm,
 	}
 }
 
@@ -141,6 +151,14 @@ func (m Model) PartyId() uint32 {
 	return m.partyId
 }
 
+func (m Model) IsBeginner() bool {
+	return m.jobId == job.Beginner || m.jobId == job.Noblesse || m.jobId == job.Legend
+}
+
+func (m Model) GM() int {
+	return m.gm
+}
+
 type ForeignModel struct {
 	id      uint32
 	worldId byte
@@ -148,6 +166,7 @@ type ForeignModel struct {
 	name    string
 	level   byte
 	jobId   uint16
+	gm      int
 }
 
 func (m ForeignModel) Name() string {
@@ -168,4 +187,8 @@ func (m ForeignModel) WorldId() byte {
 
 func (m ForeignModel) MapId() uint32 {
 	return m.mapId
+}
+
+func (m ForeignModel) GM() int {
+	return m.gm
 }

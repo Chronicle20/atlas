@@ -64,3 +64,7 @@ func (m Model) Id() uint32 {
 func (m Model) LeaderId() uint32 {
 	return m.leaderId
 }
+
+func (m Model) Members() []uint32 {
+	return m.members
+}

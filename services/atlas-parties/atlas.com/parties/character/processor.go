@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-parties/kafka/producer"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
@@ -12,7 +13,6 @@ import (
 func Login(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
 		return func(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
-
 			t := tenant.MustFromContext(ctx)
 			c, err := GetById(l)(ctx)(characterId)
 			if err != nil {
@@ -22,12 +22,19 @@ func Login(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, ch
 					l.WithError(err).Errorf("Unable to retrieve needed character information from foreign service.")
 					return err
 				}
-				c = GetRegistry().Create(t, worldId, channelId, mapId, characterId, fm.Name(), fm.Level(), fm.JobId())
+				c = GetRegistry().Create(t, worldId, channelId, mapId, characterId, fm.Name(), fm.Level(), fm.JobId(), fm.GM())
 			}
 
 			l.Debugf("Setting character [%d] to online in registry.", characterId)
 			fn := func(m Model) Model { return Model.ChangeChannel(m, channelId) }
 			c = GetRegistry().Update(t, c.Id(), Model.Login, fn)
+
+			err = producer.ProviderImpl(l)(ctx)(EnvEventMemberStatusTopic)(loginEventProvider(c.PartyId(), c.WorldId(), characterId))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce the party [%d] member [%d] logged in.", c.PartyId(), c.Id())
+				return err
+			}
+
 			return nil
 		}
 	}
@@ -45,6 +52,12 @@ func Logout(l logrus.FieldLogger) func(ctx context.Context) func(characterId uin
 
 			l.Debugf("Setting character [%d] to offline in registry.", characterId)
 			c = GetRegistry().Update(t, c.Id(), Model.Logout)
+
+			err = producer.ProviderImpl(l)(ctx)(EnvEventMemberStatusTopic)(logoutEventProvider(c.PartyId(), c.WorldId(), characterId))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce the party [%d] member [%d] logged out.", c.PartyId(), c.Id())
+				return err
+			}
 
 			return nil
 		}
@@ -133,7 +146,7 @@ func byIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(character
 					if ferr != nil {
 						return Model{}, err
 					}
-					c = GetRegistry().Create(t, fm.WorldId(), 0, fm.MapId(), characterId, fm.Name(), fm.Level(), fm.JobId())
+					c = GetRegistry().Create(t, fm.WorldId(), 0, fm.MapId(), characterId, fm.Name(), fm.Level(), fm.JobId(), fm.GM())
 				}
 				return c, nil
 			}

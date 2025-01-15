@@ -94,7 +94,7 @@ func ProgressState(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(
 		}
 
 		for k, v := range account.Get().GetStates(account.AccountKey{Tenant: t, AccountId: accountId}) {
-			l.Debugf("Has state [%d] for [%s].", v.State, k.Service)
+			l.Debugf("Has state [%d] for [%s] via session [%s].", v.State, k.Service, k.SessionId.String())
 		}
 		if a.State() == account.StateNotLoggedIn {
 			return ErrorModel(SystemError)

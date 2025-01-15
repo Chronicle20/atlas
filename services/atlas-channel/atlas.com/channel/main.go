@@ -201,6 +201,7 @@ func produceWriters() []string {
 		writer.CharacterDespawn,
 		writer.PartyOperation,
 		writer.CharacterMultiChat,
+		writer.CharacterKeyMap,
 	}
 }
 

@@ -1222,6 +1222,9 @@
             {
               "opCode": "0x145",
               "writer": "CashShopOperation"
+            }, {
+              "opCode": "0x14F",
+              "writer": "CharacterKeyMap"
             }
           ]
         },

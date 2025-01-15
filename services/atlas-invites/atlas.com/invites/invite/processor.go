@@ -19,17 +19,17 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(referenceId uin
 	}
 }
 
-func Accept(l logrus.FieldLogger) func(ctx context.Context) func(originatorId uint32, worldId byte, inviteType string, actorId uint32) error {
-	return func(ctx context.Context) func(originatorId uint32, worldId byte, inviteType string, actorId uint32) error {
-		return func(originatorId uint32, worldId byte, inviteType string, actorId uint32) error {
+func Accept(l logrus.FieldLogger) func(ctx context.Context) func(referenceId uint32, worldId byte, inviteType string, actorId uint32) error {
+	return func(ctx context.Context) func(referenceId uint32, worldId byte, inviteType string, actorId uint32) error {
+		return func(referenceId uint32, worldId byte, inviteType string, actorId uint32) error {
 			t := tenant.MustFromContext(ctx)
-			i, err := GetRegistry().Get(t, actorId, inviteType, originatorId)
+			i, err := GetRegistry().GetByReference(t, actorId, inviteType, referenceId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate invite being acted upon.")
 				return err
 			}
 
-			err = GetRegistry().Delete(t, actorId, inviteType, originatorId)
+			err = GetRegistry().Delete(t, actorId, inviteType, i.OriginatorId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate invite being acted upon.")
 				return err
@@ -44,7 +44,7 @@ func Reject(l logrus.FieldLogger) func(ctx context.Context) func(originatorId ui
 	return func(ctx context.Context) func(originatorId uint32, worldId byte, inviteType string, actorId uint32) error {
 		return func(originatorId uint32, worldId byte, inviteType string, actorId uint32) error {
 			t := tenant.MustFromContext(ctx)
-			i, err := GetRegistry().Get(t, actorId, inviteType, originatorId)
+			i, err := GetRegistry().GetByOriginator(t, actorId, inviteType, originatorId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate invite being acted upon.")
 				return err

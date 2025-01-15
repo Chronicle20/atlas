@@ -37,7 +37,7 @@ func handleAcceptCommand(l logrus.FieldLogger, ctx context.Context, c commandEve
 	if c.Type != CommandInviteTypeAccept {
 		return
 	}
-	_ = Accept(l)(ctx)(c.Body.OriginatorId, c.WorldId, c.InviteType, c.Body.TargetId)
+	_ = Accept(l)(ctx)(c.Body.ReferenceId, c.WorldId, c.InviteType, c.Body.TargetId)
 }
 
 func RejectCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {

@@ -73,7 +73,7 @@ func (r *Registry) Create(t tenant.Model, originatorId uint32, targetId uint32, 
 	return m
 }
 
-func (r *Registry) Get(t tenant.Model, actorId uint32, inviteType string, originatorId uint32) (Model, error) {
+func (r *Registry) GetByOriginator(t tenant.Model, actorId uint32, inviteType string, originatorId uint32) (Model, error) {
 	var tl *sync.RWMutex
 	var ok bool
 	if tl, ok = r.tenantLock[t]; !ok {
@@ -94,6 +94,36 @@ func (r *Registry) Get(t tenant.Model, actorId uint32, inviteType string, origin
 			if invReg, ok = charReg[inviteType]; ok {
 				for _, i := range invReg {
 					if i.OriginatorId() == originatorId {
+						return i, nil
+					}
+				}
+			}
+		}
+	}
+	return Model{}, errors.New("not found")
+}
+
+func (r *Registry) GetByReference(t tenant.Model, actorId uint32, inviteType string, referenceId uint32) (Model, error) {
+	var tl *sync.RWMutex
+	var ok bool
+	if tl, ok = r.tenantLock[t]; !ok {
+		r.lock.Lock()
+		tl = &sync.RWMutex{}
+		r.inviteReg[t] = make(map[uint32]map[string][]Model)
+		r.tenantLock[t] = tl
+		r.lock.Unlock()
+	}
+
+	tl.RLock()
+	defer tl.RUnlock()
+	var tenReg map[uint32]map[string][]Model
+	if tenReg, ok = r.inviteReg[t]; ok {
+		var charReg map[string][]Model
+		if charReg, ok = tenReg[actorId]; ok {
+			var invReg []Model
+			if invReg, ok = charReg[inviteType]; ok {
+				for _, i := range invReg {
+					if i.ReferenceId() == referenceId {
 						return i, nil
 					}
 				}

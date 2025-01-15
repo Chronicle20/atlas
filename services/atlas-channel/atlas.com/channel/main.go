@@ -147,6 +147,7 @@ func main() {
 				_, _ = cm.RegisterHandler(member.LoginStatusEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(member.LogoutStatusEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(invite.CreatedStatusEventRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(invite.RejectedStatusEventRegister(sc, wp)(fl))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
@@ -216,6 +217,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[handler.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
 	handlerMap[handler.PartyOperationHandle] = handler.PartyOperationHandleFunc
+	handlerMap[handler.PartyInviteRejectHandle] = handler.PartyInviteRejectHandleFunc
 	return handlerMap
 }
 

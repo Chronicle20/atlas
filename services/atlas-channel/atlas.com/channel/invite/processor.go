@@ -1,0 +1,15 @@
+package invite
+
+import (
+	"atlas-channel/kafka/producer"
+	"context"
+	"github.com/sirupsen/logrus"
+)
+
+func Reject(l logrus.FieldLogger) func(ctx context.Context) func(actorId uint32, worldId byte, inviteType string, originatorId uint32) error {
+	return func(ctx context.Context) func(actorId uint32, worldId byte, inviteType string, originatorId uint32) error {
+		return func(actorId uint32, worldId byte, inviteType string, originatorId uint32) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(rejectInviteCommandProvider(actorId, worldId, inviteType, originatorId))
+		}
+	}
+}

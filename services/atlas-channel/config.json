@@ -602,6 +602,11 @@
               }
             },
             {
+              "opCode": "0x7D",
+              "validator": "LoggedInValidator",
+              "handler": "PartyInviteRejectHandle"
+            },
+            {
               "opCode": "0xBC",
               "validator": "LoggedInValidator",
               "handler": "MonsterMovementHandle",
@@ -841,7 +846,7 @@
                   "UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL": "0x13",
                   "IS_CURRENTLY_BLOCKING_ANY_PARTY_INVITATIONS": "0x15",
                   "IS_TAKING_CARE_OF_ANOTHER_INVITATION": "0x16",
-                  "HAVE_DENIED_REQUEST_TO_THE_PARTY": "x017",
+                  "HAVE_DENIED_REQUEST_TO_THE_PARTY": "0x17",
                   "CANNOT_KICK_ANOTHER_USER_IN_THIS_MAP": "0x19",
                   "CHANGE_LEADER": "0x1B",
                   "THIS_CAN_ONLY_BE_GIVEN_TO_A_PARTY_MEMBER_WITHIN_THE_VICINITY": "0x1C",

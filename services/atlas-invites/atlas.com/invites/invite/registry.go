@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Chronicle20/atlas-tenant"
 	"sync"
+	"time"
 )
 
 type Registry struct {
@@ -49,9 +50,11 @@ func (r *Registry) Create(t tenant.Model, originatorId uint32, targetId uint32, 
 
 	m := Model{
 		id:           inviteId,
+		inviteType:   inviteType,
 		referenceId:  referenceId,
 		originatorId: originatorId,
 		targetId:     targetId,
+		age:          time.Now(),
 	}
 
 	tenantLock.Lock()
@@ -131,6 +134,34 @@ func (r *Registry) GetByReference(t tenant.Model, actorId uint32, inviteType str
 		}
 	}
 	return Model{}, errors.New("not found")
+}
+
+func (r *Registry) GetForCharacter(t tenant.Model, characterId uint32) ([]Model, error) {
+	var tl *sync.RWMutex
+	var ok bool
+	if tl, ok = r.tenantLock[t]; !ok {
+		r.lock.Lock()
+		tl = &sync.RWMutex{}
+		r.inviteReg[t] = make(map[uint32]map[string][]Model)
+		r.tenantLock[t] = tl
+		r.lock.Unlock()
+	}
+
+	tl.RLock()
+	defer tl.RUnlock()
+	var results = make([]Model, 0)
+
+	var tenReg map[uint32]map[string][]Model
+	if tenReg, ok = r.inviteReg[t]; ok {
+		var charReg map[string][]Model
+		if charReg, ok = tenReg[characterId]; ok {
+			for _, v := range charReg {
+				results = append(results, v...)
+			}
+		}
+	}
+	return results, nil
+
 }
 
 func (r *Registry) Delete(t tenant.Model, actorId uint32, inviteType string, originatorId uint32) error {

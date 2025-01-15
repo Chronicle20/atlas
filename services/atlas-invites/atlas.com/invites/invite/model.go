@@ -1,10 +1,14 @@
 package invite
 
+import "time"
+
 type Model struct {
 	id           uint32
+	inviteType   string
 	referenceId  uint32
 	originatorId uint32
 	targetId     uint32
+	age          time.Time
 }
 
 func (m Model) ReferenceId() uint32 {

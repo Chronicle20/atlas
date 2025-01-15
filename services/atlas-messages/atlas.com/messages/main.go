@@ -29,8 +29,9 @@ func main() {
 	command.Registry().Add(inventory.AwardItemCommandProducer)
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.GeneralChatCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.ChatCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(message.GeneralChatCommandRegister(l))
+	_, _ = cm.RegisterHandler(message.MultiChatCommandRegister(l))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

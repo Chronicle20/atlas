@@ -11,20 +11,35 @@ import (
 )
 
 const (
-	generalChatEventConsumer = "general_chat_consumer"
+	chatEventConsumer = "chat_consumer"
 )
 
-func GeneralChatCommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
+func ChatCommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(generalChatEventConsumer)(EnvCommandTopicGeneralChat)(groupId)
+		return consumer2.NewConfig(l)(chatEventConsumer)(EnvCommandTopicChat)(groupId)
 	}
 }
 
 func GeneralChatCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopicGeneralChat)()
+	t, _ := topic.EnvProvider(l)(EnvCommandTopicChat)()
 	return t, message.AdaptHandler(message.PersistentConfig(handleGeneralChat))
 }
 
-func handleGeneralChat(l logrus.FieldLogger, ctx context.Context, event generalChatCommand) {
-	_ = Handle(l)(ctx)(event.WorldId, event.ChannelId, event.MapId, event.CharacterId, event.Message, event.BalloonOnly)
+func handleGeneralChat(l logrus.FieldLogger, ctx context.Context, event chatCommand[generalChatBody]) {
+	if event.Type != ChatTypeGeneral {
+		return
+	}
+	_ = HandleGeneral(l)(ctx)(event.WorldId, event.ChannelId, event.MapId, event.CharacterId, event.Message, event.Body.BalloonOnly)
+}
+
+func MultiChatCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
+	t, _ := topic.EnvProvider(l)(EnvCommandTopicChat)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleMultiChat))
+}
+
+func handleMultiChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[multiChatBody]) {
+	if e.Type == ChatTypeGeneral {
+		return
+	}
+	_ = HandleMulti(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.CharacterId, e.Message, e.Type, e.Body.Recipients)
 }

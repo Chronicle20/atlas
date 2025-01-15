@@ -6,6 +6,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func Accept(l logrus.FieldLogger) func(ctx context.Context) func(actorId uint32, worldId byte, inviteType string, referenceId uint32) error {
+	return func(ctx context.Context) func(actorId uint32, worldId byte, inviteType string, referenceId uint32) error {
+		return func(actorId uint32, worldId byte, inviteType string, referenceId uint32) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(acceptInviteCommandProvider(actorId, worldId, inviteType, referenceId))
+		}
+	}
+}
+
 func Reject(l logrus.FieldLogger) func(ctx context.Context) func(actorId uint32, worldId byte, inviteType string, originatorId uint32) error {
 	return func(ctx context.Context) func(actorId uint32, worldId byte, inviteType string, originatorId uint32) error {
 		return func(actorId uint32, worldId byte, inviteType string, originatorId uint32) error {

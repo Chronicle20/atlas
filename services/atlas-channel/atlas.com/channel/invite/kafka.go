@@ -23,8 +23,8 @@ type commandEvent[E any] struct {
 }
 
 type acceptCommandBody struct {
-	TargetId     uint32 `json:"targetId"`
-	OriginatorId uint32 `json:"originatorId"`
+	TargetId    uint32 `json:"targetId"`
+	ReferenceId uint32 `json:"referenceId"`
 }
 
 type rejectCommandBody struct {

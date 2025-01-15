@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/invite"
 	"atlas-channel/party"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -17,6 +18,7 @@ const (
 	PartyOperationExpel        = "EXPEL"
 	PartyOperationChangeLeader = "CHANGE_LEADER"
 	PartyOperationInvite       = "INVITE"
+	PartyOperationJoin         = "JOIN"
 )
 
 func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -28,6 +30,14 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			err := party.Create(l)(ctx)(s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] unable to attempt party creation.", s.CharacterId())
+			}
+			return
+		}
+		if isOperation(l)(readerOptions, op, PartyOperationJoin) {
+			partyId := r.ReadUint32()
+			err := invite.Accept(l)(ctx)(s.CharacterId(), s.WorldId(), invite.InviteTypeParty, partyId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
 			}
 			return
 		}

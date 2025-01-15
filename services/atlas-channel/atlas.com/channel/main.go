@@ -26,7 +26,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	socket2 "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/request"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -65,7 +65,7 @@ func main() {
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.MovementEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.StatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.GeneralChatEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.ChatEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(inventory.ChangedConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(party.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(member.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
@@ -132,6 +132,7 @@ func main() {
 				_, _ = cm.RegisterHandler(monster.MovementEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(account.StatusRegister(fl, sc))
 				_, _ = cm.RegisterHandler(message.GeneralChatEventRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(message.MultiChatEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(character.MovementEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(inventory.ChangeEventAddRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(inventory.ChangeEventUpdateRegister(sc, wp)(fl))
@@ -199,6 +200,7 @@ func produceWriters() []string {
 		writer.CharacterAppearanceUpdate,
 		writer.CharacterDespawn,
 		writer.PartyOperation,
+		writer.CharacterMultiChat,
 	}
 }
 
@@ -218,6 +220,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
 	handlerMap[handler.PartyOperationHandle] = handler.PartyOperationHandleFunc
 	handlerMap[handler.PartyInviteRejectHandle] = handler.PartyInviteRejectHandleFunc
+	handlerMap[handler.CharacterMultiChatHandle] = handler.CharacterMultiChatHandleFunc
 	return handlerMap
 }
 

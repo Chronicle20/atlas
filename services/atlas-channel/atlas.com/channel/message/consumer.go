@@ -18,24 +18,28 @@ import (
 )
 
 const (
-	generalChatEventConsumer = "general_chat_consumer"
+	chatEventConsumer = "chat_consumer"
 )
 
-func GeneralChatEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
+func ChatEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(generalChatEventConsumer)(EnvEventTopicGeneralChat)(groupId)
+		return consumer2.NewConfig(l)(chatEventConsumer)(EnvEventTopicChat)(groupId)
 	}
 }
 
 func GeneralChatEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
 	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicGeneralChat)()
+		t, _ := topic.EnvProvider(l)(EnvEventTopicChat)()
 		return t, message.AdaptHandler(message.PersistentConfig(handleGeneralChat(sc, wp)))
 	}
 }
 
-func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[generalChatEvent] {
-	return func(l logrus.FieldLogger, ctx context.Context, event generalChatEvent) {
+func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[chatEvent[generalChatBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, event chatEvent[generalChatBody]) {
+		if event.Type != ChatTypeGeneral {
+			return
+		}
+
 		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.ChannelId) {
 			return
 		}
@@ -50,15 +54,61 @@ func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[gene
 	}
 }
 
-func showGeneralChatForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event generalChatEvent, gm bool) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(event generalChatEvent, gm bool) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(event generalChatEvent, gm bool) model.Operator[session.Model] {
+func showGeneralChatForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
 			generalChatFunc := session.Announce(l)(ctx)(wp)(writer.CharacterGeneralChat)
-			return func(event generalChatEvent, gm bool) model.Operator[session.Model] {
+			return func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					err := generalChatFunc(s, writer.CharacterGeneralChatBody(event.CharacterId, gm, event.Message, event.BalloonOnly))
+					err := generalChatFunc(s, writer.CharacterGeneralChatBody(event.CharacterId, gm, event.Message, event.Body.BalloonOnly))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write message to rest of map.")
+						return err
+					}
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func MultiChatEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvEventTopicChat)()
+		return t, message.AdaptHandler(message.PersistentConfig(handleMultiChat(sc, wp)))
+	}
+}
+
+func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[chatEvent[multiChatBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e chatEvent[multiChatBody]) {
+		if e.Type == ChatTypeGeneral {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		c, err := character.GetById(l)(ctx)(e.CharacterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to retrieve character [%d] chatting.", e.CharacterId)
+			return
+		}
+
+		for _, cid := range e.Body.Recipients {
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(cid, sendMultiChat(l)(ctx)(wp)(c.Name(), e.Message, MultiChatTypeStrToInd(e.Type)))
+		}
+	}
+}
+
+func sendMultiChat(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(name string, message string, mode byte) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(name string, message string, mode byte) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(name string, message string, mode byte) model.Operator[session.Model] {
+			multiChatFunc := session.Announce(l)(ctx)(wp)(writer.CharacterMultiChat)
+			return func(name string, message string, mode byte) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := multiChatFunc(s, writer.CharacterMultiChatBody(name, message, mode))
+					if err != nil {
 						return err
 					}
 					return nil

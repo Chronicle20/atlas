@@ -49,6 +49,7 @@ func (r *Registry) Create(t tenant.Model, originatorId uint32, targetId uint32, 
 	r.lock.Unlock()
 
 	m := Model{
+		tenant:       t,
 		id:           inviteId,
 		inviteType:   inviteType,
 		referenceId:  referenceId,
@@ -192,6 +193,7 @@ func (r *Registry) Delete(t tenant.Model, actorId uint32, inviteType string, ori
 						found = true
 					}
 				}
+				r.inviteReg[t][actorId][inviteType] = remain
 				if found {
 					return nil
 				}
@@ -199,4 +201,24 @@ func (r *Registry) Delete(t tenant.Model, actorId uint32, inviteType string, ori
 		}
 	}
 	return errors.New("not found")
+}
+
+func (r *Registry) GetExpired(timeout time.Duration) ([]Model, error) {
+	var results = make([]Model, 0)
+	for k, v := range r.inviteReg {
+		if tl, ok := r.tenantLock[k]; ok {
+			tl.RLock()
+			for _, cir := range v {
+				for _, is := range cir {
+					for _, i := range is {
+						if i.Expired(timeout) {
+							results = append(results, i)
+						}
+					}
+				}
+			}
+			tl.RUnlock()
+		}
+	}
+	return results, nil
 }

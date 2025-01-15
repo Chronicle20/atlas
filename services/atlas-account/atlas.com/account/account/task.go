@@ -36,7 +36,7 @@ func (t *Timeout) Run() {
 	t.l.Debugf("Executing timeout task.")
 	for _, a := range as {
 		t.l.Infof("Account [%d] was stuck in transition and will be set to logged out.", a.AccountId)
-		Get().ExpireTransition(a)
+		Get().ExpireTransition(a, t.timeout)
 	}
 }
 

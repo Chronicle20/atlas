@@ -139,7 +139,7 @@ func (l *Registry) Transition(key AccountKey, sk ServiceKey) error {
 	return errors.New("not logged in")
 }
 
-func (l *Registry) ExpireTransition(key AccountKey) {
+func (l *Registry) ExpireTransition(key AccountKey, timeout time.Duration) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
@@ -151,7 +151,7 @@ func (l *Registry) ExpireTransition(key AccountKey) {
 	}
 
 	for sk, state := range states {
-		if state.State == 2 {
+		if state.State == StateTransition && time.Now().Sub(state.UpdatedAt) > timeout {
 			delete(states, sk)
 		}
 	}

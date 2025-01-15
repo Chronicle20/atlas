@@ -613,6 +613,11 @@
               "handler": "PartyInviteRejectHandle"
             },
             {
+              "opCode": "0x87",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterKeyMapChangeHandle"
+            },
+            {
               "opCode": "0xBC",
               "validator": "LoggedInValidator",
               "handler": "MonsterMovementHandle",

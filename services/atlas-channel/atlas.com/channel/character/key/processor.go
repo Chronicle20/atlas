@@ -23,10 +23,11 @@ func Extract(rm RestModel) (Model, error) {
 	}, nil
 }
 
-func GetByCharacterId(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) ([]Model, error) {
-	return func(ctx context.Context) func(characterId uint32) ([]Model, error) {
-		return func(characterId uint32) ([]Model, error) {
-			return ByCharacterIdProvider(l)(ctx)(characterId)()
+func Update(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, key int32, theType int8, action int32) error {
+	return func(ctx context.Context) func(characterId uint32, key int32, theType int8, action int32) error {
+		return func(characterId uint32, key int32, theType int8, action int32) error {
+			_, err := updateKey(characterId, key, theType, action)(l, ctx)
+			return err
 		}
 	}
 }

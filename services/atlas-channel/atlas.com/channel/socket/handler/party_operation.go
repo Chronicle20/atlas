@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"atlas-channel/character"
 	"atlas-channel/party"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -15,9 +16,12 @@ const (
 	PartyOperationLeave        = "LEAVE"
 	PartyOperationExpel        = "EXPEL"
 	PartyOperationChangeLeader = "CHANGE_LEADER"
+	PartyOperationInvite       = "INVITE"
 )
 
-func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	partyOperationFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
+
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		op := r.ReadByte()
 		if isOperation(l)(readerOptions, op, PartyOperationCreate) {
@@ -62,6 +66,22 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			err = party.ChangeLeader(l)(ctx)(p.Id(), s.CharacterId(), targetCharacterId)
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] unable to pass leadership to [%d] in party.", s.CharacterId(), targetCharacterId)
+			}
+			return
+		}
+		if isOperation(l)(readerOptions, op, PartyOperationInvite) {
+			name := r.ReadAsciiString()
+			cs, err := character.GetByName(l, ctx)(name)
+			if err != nil || len(cs) < 1 {
+				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to party.", name)
+				err := partyOperationFunc(s, writer.PartyErrorBody(l)("UNABLE_TO_FIND_THE_CHARACTER", name))
+				if err != nil {
+					return
+				}
+			}
+			err = party.RequestInvite(l)(ctx)(s.CharacterId(), cs[0].Id())
+			if err != nil {
+				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to join party.", s.CharacterId(), cs[0].Id())
 			}
 			return
 		}

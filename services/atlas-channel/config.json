@@ -595,6 +595,7 @@
                 "operations": {
                   "CREATE": 1,
                   "LEAVE": 2,
+                  "INVITE": 4,
                   "EXPEL": 5,
                   "CHANGE_LEADER": 6
                 }

@@ -21,7 +21,7 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 	return func(ctx context.Context) func(partyId uint32, characterId uint32) error {
 		return func(partyId uint32, characterId uint32) error {
 			l.Debugf("Character [%d] attempting to leave party [%d].", characterId, partyId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(leaveCommandProvider(characterId, partyId, characterId, false))
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(leaveCommandProvider(characterId, partyId, false))
 		}
 	}
 }
@@ -30,7 +30,7 @@ func Expel(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, 
 	return func(ctx context.Context) func(partyId uint32, characterId uint32, targetCharacterId uint32) error {
 		return func(partyId uint32, characterId uint32, targetCharacterId uint32) error {
 			l.Debugf("Character [%d] attempting to expel [%d] from party [%d].", characterId, targetCharacterId, partyId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(leaveCommandProvider(characterId, partyId, targetCharacterId, true))
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(leaveCommandProvider(characterId, partyId, true))
 		}
 	}
 }
@@ -40,6 +40,15 @@ func ChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(partyId u
 		return func(partyId uint32, characterId uint32, targetCharacterId uint32) error {
 			l.Debugf("Character [%d] attempting to pass leadership to [%d] in party [%d].", characterId, targetCharacterId, partyId)
 			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeLeaderCommandProvider(characterId, partyId, targetCharacterId))
+		}
+	}
+}
+
+func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, targetCharacterId uint32) error {
+	return func(ctx context.Context) func(characterId uint32, targetCharacterId uint32) error {
+		return func(characterId uint32, targetCharacterId uint32) error {
+			l.Debugf("Character [%d] attempting to invite [%d] to a party.", characterId, targetCharacterId)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestInviteCommandProvider(characterId, targetCharacterId))
 		}
 	}
 }

@@ -89,3 +89,15 @@ func GetItemInSlot(l logrus.FieldLogger) func(ctx context.Context) func(characte
 		}
 	}
 }
+
+func byNameProvider(l logrus.FieldLogger, ctx context.Context) func(name string) model2.Provider[[]Model] {
+	return func(name string) model2.Provider[[]Model] {
+		return requests.SliceProvider[RestModel, Model](l, ctx)(requestByName(name), Extract, model2.Filters[Model]())
+	}
+}
+
+func GetByName(l logrus.FieldLogger, ctx context.Context) func(name string) ([]Model, error) {
+	return func(name string) ([]Model, error) {
+		return byNameProvider(l, ctx)(name)()
+	}
+}

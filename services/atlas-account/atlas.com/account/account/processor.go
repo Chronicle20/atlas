@@ -227,6 +227,7 @@ func Logout(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(session
 
 		ok := Get().Logout(AccountKey{Tenant: t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
 		if ok {
+			l.Debugf("Logging out [%d] for [%s] via session [%s].", accountId, issuer, sessionId.String())
 			return sendLogoutEvent(l)(ctx)("state transition")(a)
 		}
 		return errors.New("error while logging out")

@@ -22,26 +22,26 @@ const (
 )
 
 type commandEvent[E any] struct {
-	WorldId byte   `json:"worldId"`
-	Type    string `json:"type"`
-	Body    E      `json:"body"`
+	WorldId    byte   `json:"worldId"`
+	InviteType string `json:"inviteType"`
+	Type       string `json:"type"`
+	Body       E      `json:"body"`
 }
 
 type createCommandBody struct {
-	InviteType   string `json:"inviteType"`
 	OriginatorId uint32 `json:"originatorId"`
 	TargetId     uint32 `json:"targetId"`
 	ReferenceId  uint32 `json:"referenceId"`
 }
 
 type acceptCommandBody struct {
-	ActorId     uint32 `json:"actorId"`
-	ReferenceId uint32 `json:"referenceId"`
+	TargetId     uint32 `json:"targetId"`
+	OriginatorId uint32 `json:"originatorId"`
 }
 
 type rejectCommandBody struct {
-	ActorId     uint32 `json:"actorId"`
-	ReferenceId uint32 `json:"referenceId"`
+	TargetId     uint32 `json:"targetId"`
+	OriginatorId uint32 `json:"originatorId"`
 }
 
 type statusEvent[E any] struct {

@@ -20,3 +20,33 @@ func createdStatusEventProvider(referenceId uint32, worldId byte, inviteType str
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func acceptedStatusEventProvider(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(referenceId))
+	value := &statusEvent[acceptedEventBody]{
+		WorldId:     worldId,
+		InviteType:  inviteType,
+		ReferenceId: referenceId,
+		Type:        EventInviteStatusTypeAccepted,
+		Body: acceptedEventBody{
+			OriginatorId: originatorId,
+			TargetId:     targetId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func rejectedStatusEventProvider(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(referenceId))
+	value := &statusEvent[rejectedEventBody]{
+		WorldId:     worldId,
+		InviteType:  inviteType,
+		ReferenceId: referenceId,
+		Type:        EventInviteStatusTypeRejected,
+		Body: rejectedEventBody{
+			OriginatorId: originatorId,
+			TargetId:     targetId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

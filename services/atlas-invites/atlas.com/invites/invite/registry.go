@@ -1,0 +1,141 @@
+package invite
+
+import (
+	"errors"
+	"github.com/Chronicle20/atlas-tenant"
+	"sync"
+)
+
+type Registry struct {
+	lock           sync.Mutex
+	tenantInviteId map[tenant.Model]uint32
+	inviteReg      map[tenant.Model]map[uint32]map[string][]Model
+	tenantLock     map[tenant.Model]*sync.RWMutex
+}
+
+var registry *Registry
+var once sync.Once
+
+func GetRegistry() *Registry {
+	once.Do(func() {
+		registry = &Registry{}
+		registry.tenantInviteId = make(map[tenant.Model]uint32)
+		registry.inviteReg = make(map[tenant.Model]map[uint32]map[string][]Model)
+		registry.tenantLock = make(map[tenant.Model]*sync.RWMutex)
+	})
+	return registry
+}
+
+func (r *Registry) Create(t tenant.Model, originatorId uint32, targetId uint32, inviteType string, referenceId uint32) Model {
+	var inviteId uint32
+	var inviteReg map[uint32]map[string][]Model
+	var tenantLock *sync.RWMutex
+	var ok bool
+
+	r.lock.Lock()
+	if inviteId, ok = r.tenantInviteId[t]; ok {
+		inviteId += 1
+		inviteReg = r.inviteReg[t]
+		tenantLock = r.tenantLock[t]
+	} else {
+		inviteId = StartInviteId
+		inviteReg = make(map[uint32]map[string][]Model)
+		tenantLock = &sync.RWMutex{}
+	}
+	r.tenantInviteId[t] = inviteId
+	r.inviteReg[t] = inviteReg
+	r.tenantLock[t] = tenantLock
+	r.lock.Unlock()
+
+	m := Model{
+		id:           inviteId,
+		referenceId:  referenceId,
+		originatorId: originatorId,
+		targetId:     targetId,
+	}
+
+	tenantLock.Lock()
+	defer tenantLock.Unlock()
+	if _, ok = r.inviteReg[t][targetId]; !ok {
+		r.inviteReg[t][targetId] = make(map[string][]Model)
+	}
+
+	if _, ok = r.inviteReg[t][targetId][inviteType]; !ok {
+		r.inviteReg[t][targetId][inviteType] = make([]Model, 0)
+	}
+
+	for _, i := range r.inviteReg[t][targetId][inviteType] {
+		if i.ReferenceId() == referenceId {
+			return i
+		}
+	}
+	r.inviteReg[t][targetId][inviteType] = append(r.inviteReg[t][targetId][inviteType], m)
+	return m
+}
+
+func (r *Registry) Get(t tenant.Model, actorId uint32, inviteType string, originatorId uint32) (Model, error) {
+	var tl *sync.RWMutex
+	var ok bool
+	if tl, ok = r.tenantLock[t]; !ok {
+		r.lock.Lock()
+		tl = &sync.RWMutex{}
+		r.inviteReg[t] = make(map[uint32]map[string][]Model)
+		r.tenantLock[t] = tl
+		r.lock.Unlock()
+	}
+
+	tl.RLock()
+	defer tl.RUnlock()
+	var tenReg map[uint32]map[string][]Model
+	if tenReg, ok = r.inviteReg[t]; ok {
+		var charReg map[string][]Model
+		if charReg, ok = tenReg[actorId]; ok {
+			var invReg []Model
+			if invReg, ok = charReg[inviteType]; ok {
+				for _, i := range invReg {
+					if i.OriginatorId() == originatorId {
+						return i, nil
+					}
+				}
+			}
+		}
+	}
+	return Model{}, errors.New("not found")
+}
+
+func (r *Registry) Delete(t tenant.Model, actorId uint32, inviteType string, originatorId uint32) error {
+	var tl *sync.RWMutex
+	var ok bool
+	if tl, ok = r.tenantLock[t]; !ok {
+		r.lock.Lock()
+		tl = &sync.RWMutex{}
+		r.inviteReg[t] = make(map[uint32]map[string][]Model)
+		r.tenantLock[t] = tl
+		r.lock.Unlock()
+	}
+
+	tl.Lock()
+	defer tl.Unlock()
+	var tenReg map[uint32]map[string][]Model
+	if tenReg, ok = r.inviteReg[t]; ok {
+		var charReg map[string][]Model
+		if charReg, ok = tenReg[actorId]; ok {
+			var invReg []Model
+			if invReg, ok = charReg[inviteType]; ok {
+				var found = false
+				var remain = make([]Model, 0)
+				for _, i := range invReg {
+					if i.OriginatorId() != originatorId {
+						remain = append(remain, i)
+					} else {
+						found = true
+					}
+				}
+				if found {
+					return nil
+				}
+			}
+		}
+	}
+	return errors.New("not found")
+}

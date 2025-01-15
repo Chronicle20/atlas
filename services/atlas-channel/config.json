@@ -613,6 +613,11 @@
               "handler": "PartyInviteRejectHandle"
             },
             {
+              "opCode": "0x87",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterKeyMapChangeHandle"
+            },
+            {
               "opCode": "0xBC",
               "validator": "LoggedInValidator",
               "handler": "MonsterMovementHandle",
@@ -1222,6 +1227,9 @@
             {
               "opCode": "0x145",
               "writer": "CashShopOperation"
+            }, {
+              "opCode": "0x14F",
+              "writer": "CharacterKeyMap"
             }
           ]
         },

@@ -2,6 +2,7 @@ package party
 
 import (
 	"atlas-parties/character"
+	"atlas-parties/invite"
 	"atlas-parties/kafka/producer"
 	"context"
 	"errors"
@@ -463,7 +464,7 @@ func ChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(actorId u
 func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(actorId uint32, characterId uint32) error {
 	return func(ctx context.Context) func(actorId uint32, characterId uint32) error {
 		return func(actorId uint32, characterId uint32) error {
-			a, err := character.GetById(l)(ctx)(characterId)
+			a, err := character.GetById(l)(ctx)(actorId)
 			if err != nil {
 				l.WithError(err).Errorf("Error getting character [%d].", actorId)
 				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, 0, a.WorldId(), EventPartyStatusErrorUnexpected, ""))
@@ -514,7 +515,16 @@ func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(actorId 
 				return ErrAtCapacity
 			}
 
-			// TODO issue invite
+			err = invite.Create(l)(ctx)(actorId, a.WorldId(), p.Id(), characterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce party [%d] invite.", p.Id())
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, a.PartyId(), c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", a.PartyId())
+				}
+				return err
+			}
+
 			return nil
 		}
 	}

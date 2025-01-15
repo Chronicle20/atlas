@@ -22,3 +22,10 @@ func CharacterKeyMapBody(keys map[int32]key.Model) BodyProducer {
 		return w.Bytes()
 	}
 }
+
+func CharacterKeyMapResetToDefaultBody() BodyProducer {
+	return func(w *response.Writer, options map[string]interface{}) []byte {
+		w.WriteByte(1)
+		return w.Bytes()
+	}
+}

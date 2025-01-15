@@ -1,11 +1,15 @@
 package main
 
 import (
+	"atlas-invites/character"
 	"atlas-invites/invite"
 	"atlas-invites/logger"
 	"atlas-invites/service"
+	"atlas-invites/tasks"
 	"atlas-invites/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas-rest/server"
+	"time"
 )
 
 const serviceName = "atlas-invites"
@@ -48,7 +52,9 @@ func main() {
 	_, _ = cm.RegisterHandler(invite.AcceptCommandRegister(l))
 	_, _ = cm.RegisterHandler(invite.RejectCommandRegister(l))
 
-	//server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix())
+	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), character.InitResource(GetServer()))
+
+	go tasks.Register(l, tdm.Context())(invite.NewInviteTimeout(l, time.Second*time.Duration(5)))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

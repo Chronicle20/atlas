@@ -3,6 +3,7 @@ package invite
 import (
 	"atlas-invites/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -57,6 +58,27 @@ func Reject(l logrus.FieldLogger) func(ctx context.Context) func(originatorId ui
 			}
 
 			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(rejectedStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId()))
+		}
+	}
+}
+
+func byCharacterIdProvider(_ logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) model.Provider[[]Model] {
+	return func(ctx context.Context) func(characterId uint32) model.Provider[[]Model] {
+		return func(characterId uint32) model.Provider[[]Model] {
+			t := tenant.MustFromContext(ctx)
+			is, err := GetRegistry().GetForCharacter(t, characterId)
+			if err != nil {
+				return model.ErrorProvider[[]Model](err)
+			}
+			return model.FixedProvider(is)
+		}
+	}
+}
+
+func GetByCharacterId(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) ([]Model, error) {
+	return func(ctx context.Context) func(characterId uint32) ([]Model, error) {
+		return func(characterId uint32) ([]Model, error) {
+			return byCharacterIdProvider(l)(ctx)(characterId)()
 		}
 	}
 }

@@ -22,7 +22,7 @@ func create(db *gorm.DB, t tenant.Model, characterId uint32, key int32, theType 
 }
 
 func update(db *gorm.DB, t tenant.Model, characterId uint32, key int32, theType int8, action int32) error {
-	return db.Model(&entity{TenantId: t.Id(), CharacterId: characterId, Key: key}).Updates(entity{Type: theType, Action: action}).Error
+	return db.Model(&entity{TenantId: t.Id(), CharacterId: characterId, Key: key}).Select("Type", "Action").Updates(entity{Type: theType, Action: action}).Error
 }
 
 func deleteByCharacter(db *gorm.DB, t tenant.Model, characterId uint32) error {

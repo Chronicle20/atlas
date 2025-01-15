@@ -588,6 +588,11 @@
               "handler": "PortalScriptHandle"
             },
             {
+              "opCode": "0x77",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterMultiChatHandle"
+            },
+            {
               "opCode": "0x7C",
               "validator": "LoggedInValidator",
               "handler": "PartyOperationHandle",
@@ -865,6 +870,10 @@
             {
               "opCode": "0x7F",
               "writer": "CashShopOpen"
+            },
+            {
+              "opCode": "0x86",
+              "writer": "CharacterMultiChat"
             },
             {
               "opCode": "0xA0",

@@ -1,24 +1,40 @@
 package message
 
 const (
-	EnvCommandTopicGeneralChat = "COMMAND_TOPIC_CHARACTER_GENERAL_CHAT"
-	EnvEventTopicGeneralChat   = "EVENT_TOPIC_CHARACTER_GENERAL_CHAT"
+	EnvCommandTopicChat = "COMMAND_TOPIC_CHARACTER_CHAT"
+	EnvEventTopicChat   = "EVENT_TOPIC_CHARACTER_CHAT"
+
+	ChatTypeGeneral  = "GENERAL"
+	ChatTypeBuddy    = "BUDDY"
+	ChatTypeParty    = "PARTY"
+	ChatTypeGuild    = "GUILD"
+	ChatTypeAlliance = "Alliance"
 )
 
-type generalChatCommand struct {
+type chatCommand[E any] struct {
 	WorldId     byte   `json:"worldId"`
 	ChannelId   byte   `json:"channelId"`
 	MapId       uint32 `json:"mapId"`
 	CharacterId uint32 `json:"characterId"`
 	Message     string `json:"message"`
-	BalloonOnly bool   `json:"balloonOnly"`
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
 }
 
-type generalChatEvent struct {
+type generalChatBody struct {
+	BalloonOnly bool `json:"balloonOnly"`
+}
+
+type multiChatBody struct {
+	Recipients []uint32 `json:"recipients"`
+}
+
+type chatEvent[E any] struct {
 	WorldId     byte   `json:"worldId"`
 	ChannelId   byte   `json:"channelId"`
 	MapId       uint32 `json:"mapId"`
 	CharacterId uint32 `json:"characterId"`
 	Message     string `json:"message"`
-	BalloonOnly bool   `json:"balloonOnly"`
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
 }

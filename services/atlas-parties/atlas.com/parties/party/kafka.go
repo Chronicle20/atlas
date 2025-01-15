@@ -1,11 +1,12 @@
 package party
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_PARTY"
-	CommandPartyCreate       = "CREATE"
-	CommandPartyJoin         = "JOIN"
-	CommandPartyLeave        = "LEAVE"
-	CommandPartyChangeLeader = "CHANGE_LEADER"
+	EnvCommandTopic           = "COMMAND_TOPIC_PARTY"
+	CommandPartyCreate        = "CREATE"
+	CommandPartyJoin          = "JOIN"
+	CommandPartyLeave         = "LEAVE"
+	CommandPartyChangeLeader  = "CHANGE_LEADER"
+	CommandPartyRequestInvite = "REQUEST_INVITE"
 
 	EnvEventStatusTopic              = "EVENT_TOPIC_PARTY_STATUS"
 	EventPartyStatusTypeCreated      = "CREATED"
@@ -55,6 +56,10 @@ type leaveCommandBody struct {
 type changeLeaderBody struct {
 	PartyId  uint32 `json:"partyId"`
 	LeaderId uint32 `json:"leaderId"`
+}
+
+type requestInviteBody struct {
+	CharacterId uint32 `json:"characterId"`
 }
 
 type statusEvent[E any] struct {

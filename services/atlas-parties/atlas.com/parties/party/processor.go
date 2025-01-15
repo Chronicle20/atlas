@@ -161,7 +161,7 @@ func Join(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, c
 				return Model{}, err
 			}
 
-			if len(p.Members()) > 6 {
+			if len(p.Members()) >= 6 {
 				l.Errorf("Party [%d] already at capacity.", partyId)
 				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorTypeAtCapacity, ""))
 				if err != nil {
@@ -456,6 +456,66 @@ func ChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(actorId u
 				}
 			}
 			return p, nil
+		}
+	}
+}
+
+func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(actorId uint32, characterId uint32) error {
+	return func(ctx context.Context) func(actorId uint32, characterId uint32) error {
+		return func(actorId uint32, characterId uint32) error {
+			a, err := character.GetById(l)(ctx)(characterId)
+			if err != nil {
+				l.WithError(err).Errorf("Error getting character [%d].", actorId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, 0, a.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", 0)
+				}
+				return err
+			}
+
+			c, err := character.GetById(l)(ctx)(characterId)
+			if err != nil {
+				l.WithError(err).Errorf("Error getting character [%d].", characterId)
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, a.PartyId(), c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", a.PartyId())
+				}
+				return err
+			}
+
+			if c.PartyId() != 0 {
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, c.PartyId(), c.WorldId(), EventPartyStatusErrorTypeAlreadyJoined2, c.Name()))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", a.PartyId())
+				}
+				return ErrAlreadyIn
+			}
+
+			var p Model
+			if a.PartyId() == 0 {
+				p, err = Create(l)(ctx)(actorId)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to automatically create party [%d].", a.PartyId())
+					return err
+				}
+			} else {
+				p, err = GetById(ctx)(a.PartyId())
+				if err != nil {
+					return err
+				}
+			}
+
+			if len(p.Members()) >= 6 {
+				l.Errorf("Party [%d] already at capacity.", p.Id())
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, p.Id(), c.WorldId(), EventPartyStatusErrorTypeAtCapacity, ""))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] error.", p.Id())
+				}
+				return ErrAtCapacity
+			}
+
+			// TODO issue invite
+			return nil
 		}
 	}
 }

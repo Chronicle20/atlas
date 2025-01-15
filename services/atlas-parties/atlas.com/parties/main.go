@@ -50,6 +50,7 @@ func main() {
 	_, _ = cm.RegisterHandler(party.JoinCommandRegister(l))
 	_, _ = cm.RegisterHandler(party.LeaveCommandRegister(l))
 	_, _ = cm.RegisterHandler(party.ChangeLeaderCommandRegister(l))
+	_, _ = cm.RegisterHandler(party.RequestInviteCommandRegister(l))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(character.LoginStatusRegister(l))
 	_, _ = cm.RegisterHandler(character.LogoutStatusRegister(l))

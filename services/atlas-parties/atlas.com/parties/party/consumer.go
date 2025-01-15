@@ -87,3 +87,18 @@ func handleChangeLeader(l logrus.FieldLogger, ctx context.Context, c commandEven
 		l.WithError(err).Errorf("Unable to establish [%d] as leader of party [%d].", c.Body.LeaderId, c.Body.PartyId)
 	}
 }
+
+func RequestInviteCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
+	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleRequestInvite))
+}
+
+func handleRequestInvite(l logrus.FieldLogger, ctx context.Context, c commandEvent[requestInviteBody]) {
+	if c.Type != CommandPartyRequestInvite {
+		return
+	}
+	err := RequestInvite(l)(ctx)(c.ActorId, c.Body.CharacterId)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to invite [%d] to party.", c.Body.CharacterId)
+	}
+}

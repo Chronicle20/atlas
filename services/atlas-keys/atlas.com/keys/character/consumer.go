@@ -31,6 +31,10 @@ func CreatedStatusEventRegister(db *gorm.DB) func(l logrus.FieldLogger) (string,
 
 func handleCreatedStatusEvent(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCreatedBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCreatedBody]) {
+		if e.Type != EventCharacterStatusTypeCreated {
+			return
+		}
+
 		err := key.CreateDefault(l)(ctx)(db)(e.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to create default keymapping for character %d.", e.CharacterId)

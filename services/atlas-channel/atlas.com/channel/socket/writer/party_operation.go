@@ -17,6 +17,7 @@ const (
 	PartyOperationJoin         = "JOIN"
 	PartyOperationUpdate       = "UPDATE"
 	PartyOperationChangeLeader = "CHANGE_LEADER"
+	PartyOperationInvite       = "INVITE"
 )
 
 func PartyCreatedBody(l logrus.FieldLogger) func(partyId uint32) BodyProducer {
@@ -113,6 +114,18 @@ func PartyErrorBody(l logrus.FieldLogger) func(code string, name string) BodyPro
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getOperation(l)(options, code))
 			w.WriteAsciiString(name)
+			return w.Bytes()
+		}
+	}
+}
+
+func PartyInviteBody(l logrus.FieldLogger) func(partyId uint32, originatorName string) BodyProducer {
+	return func(partyId uint32, originatorName string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getOperation(l)(options, PartyOperationInvite))
+			w.WriteInt(partyId)
+			w.WriteAsciiString(originatorName)
+			w.WriteByte(0) // TODO this triggers op 3 for party operation if 1, feels like auto reject, blocked packet
 			return w.Bytes()
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"atlas-channel/configuration"
 	"atlas-channel/kafka/consumer/character"
 	"atlas-channel/kafka/consumer/inventory"
+	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/map"
 	"atlas-channel/kafka/consumer/monster"
 	"atlas-channel/kafka/consumer/party"
@@ -68,6 +69,7 @@ func main() {
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(inventory.ChangedConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(party.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(member.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(invite.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
@@ -144,6 +146,8 @@ func main() {
 				_, _ = cm.RegisterHandler(party.ErrorEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(member.LoginStatusEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(member.LogoutStatusEventRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(invite.CreatedStatusEventRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(invite.RejectedStatusEventRegister(sc, wp)(fl))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
@@ -213,6 +217,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[handler.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
 	handlerMap[handler.PartyOperationHandle] = handler.PartyOperationHandleFunc
+	handlerMap[handler.PartyInviteRejectHandle] = handler.PartyInviteRejectHandleFunc
 	return handlerMap
 }
 

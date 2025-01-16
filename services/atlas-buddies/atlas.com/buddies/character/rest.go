@@ -5,6 +5,7 @@ import "strconv"
 type RestModel struct {
 	Id   uint32 `json:"-"`
 	Name string `json:"name"`
+	Gm   int    `json:"gm"`
 }
 
 func (r *RestModel) GetName() string {
@@ -29,5 +30,6 @@ func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:   rm.Id,
 		name: rm.Name,
+		gm:   rm.Gm,
 	}, nil
 }

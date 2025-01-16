@@ -64,6 +64,12 @@ func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 						return err
 					}
 
+					if tc.GM() > 0 {
+						l.Infof("Character [%d] attempting to buddy a GM.", characterId)
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorCannotBuddyGm))
+						return nil
+					}
+
 					cbl, err := GetByCharacterId(l)(ctx)(tx)(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)

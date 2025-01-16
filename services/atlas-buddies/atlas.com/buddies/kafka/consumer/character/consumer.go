@@ -32,7 +32,7 @@ func handleStatusEventLogin(db *gorm.DB) func(l logrus.FieldLogger, ctx context.
 		if event.Type != EventCharacterStatusTypeLogin {
 			return
 		}
-		err := list.UpdateChannel(l)(ctx)(db)(event.CharacterId, int8(event.Body.ChannelId))
+		err := list.UpdateChannel(l)(ctx)(db)(event.CharacterId, event.WorldId, int8(event.Body.ChannelId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process login for character [%d].", event.CharacterId)
 		}
@@ -51,7 +51,7 @@ func handleStatusEventLogout(db *gorm.DB) func(l logrus.FieldLogger, ctx context
 		if event.Type != EventCharacterStatusTypeLogout {
 			return
 		}
-		err := list.UpdateChannel(l)(ctx)(db)(event.CharacterId, -1)
+		err := list.UpdateChannel(l)(ctx)(db)(event.CharacterId, event.WorldId, -1)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process logout for character [%d].", event.CharacterId)
 		}

@@ -1,16 +1,15 @@
 package buddy
 
 import (
-	"github.com/google/uuid"
+	"strconv"
 )
 
 type RestModel struct {
-	Id            uuid.UUID `json:"id"`
-	CharacterId   uint32    `json:"characterId"`
-	Group         string    `json:"group"`
-	CharacterName string    `json:"characterName"`
-	ChannelId     byte      `json:"channelId"`
-	Visible       bool      `json:"visible"`
+	CharacterId   uint32 `json:"characterId"`
+	Group         string `json:"group"`
+	CharacterName string `json:"characterName"`
+	ChannelId     byte   `json:"channelId"`
+	Pending       bool   `json:"pending"`
 }
 
 func (r RestModel) GetName() string {
@@ -18,36 +17,24 @@ func (r RestModel) GetName() string {
 }
 
 func (r RestModel) GetID() string {
-	return r.Id.String()
+	return strconv.Itoa(int(r.CharacterId))
 }
 
 func (r *RestModel) SetID(strId string) error {
-	id, err := uuid.Parse(strId)
+	id, err := strconv.Atoi(strId)
 	if err != nil {
 		return err
 	}
-	r.Id = id
+	r.CharacterId = uint32(id)
 	return nil
 }
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:            m.id,
 		CharacterId:   m.characterId,
 		Group:         m.group,
 		CharacterName: m.characterName,
 		ChannelId:     m.channelId,
-		Visible:       m.visible,
-	}, nil
-}
-
-func Extract(rm RestModel) (Model, error) {
-	return Model{
-		id:            rm.Id,
-		characterId:   rm.CharacterId,
-		group:         rm.Group,
-		characterName: rm.CharacterName,
-		channelId:     rm.ChannelId,
-		visible:       rm.Visible,
+		Pending:       m.pending,
 	}, nil
 }

@@ -1,6 +1,7 @@
 package list
 
 import (
+	"atlas-buddies/buddy"
 	"atlas-buddies/kafka/producer"
 	"atlas-buddies/rest"
 	"errors"
@@ -14,8 +15,10 @@ import (
 )
 
 const (
-	GetBuddyList    = "get_buddy_list"
-	CreateBuddyList = "create_buddy_list"
+	GetBuddyList          = "get_buddy_list"
+	CreateBuddyList       = "create_buddy_list"
+	GetBuddiesInBuddyList = "get_buddies_in_buddy_list"
+	AddBuddyToBuddyList   = "add_buddy_to_buddy_list"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -25,6 +28,8 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r := router.PathPrefix("/characters/{characterId}/buddy-list").Subrouter()
 			r.HandleFunc("", registerGet(GetBuddyList, handleGetBuddyList(db))).Methods(http.MethodGet)
 			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)(CreateBuddyList, handleCreateBuddyList)).Methods(http.MethodPost)
+			r.HandleFunc("/buddies", registerGet(GetBuddiesInBuddyList, handleGetBuddiesInBuddyList(db))).Methods(http.MethodGet)
+			r.HandleFunc("/buddies", rest.RegisterInputHandler[buddy.RestModel](l)(si)(AddBuddyToBuddyList, handleAddBuddyToBuddyList)).Methods(http.MethodPost)
 		}
 	}
 }
@@ -64,6 +69,46 @@ func handleCreateBuddyList(d *rest.HandlerDependency, _ *rest.HandlerContext, i 
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+
+			w.WriteHeader(http.StatusAccepted)
+		}
+	})
+}
+
+func handleGetBuddiesInBuddyList(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				bl, err := GetByCharacterId(d.Logger())(d.Context())(db)(characterId)
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				res, err := model.SliceMap(buddy.Transform)(model.FixedProvider(bl.buddies))()()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				server.Marshal[[]buddy.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			}
+		})
+	}
+}
+
+func handleAddBuddyToBuddyList(d *rest.HandlerDependency, _ *rest.HandlerContext, i buddy.RestModel) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			//err := producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopic)(addBuddyCommandProvider(characterId, i.CharacterId, i.Group, i.CharacterName, i.ChannelId, i.Visible))
+			//if err != nil {
+			//	w.WriteHeader(http.StatusInternalServerError)
+			//	return
+			//}
 
 			w.WriteHeader(http.StatusAccepted)
 		}

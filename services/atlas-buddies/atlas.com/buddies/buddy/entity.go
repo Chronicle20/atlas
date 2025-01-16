@@ -10,13 +10,12 @@ func Migration(db *gorm.DB) error {
 }
 
 type Entity struct {
-	Id            uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
+	CharacterId   uint32    `gorm:"primaryKey;autoIncrement:false;not null"`
 	ListId        uuid.UUID `gorm:"not null"`
-	CharacterId   uint32    `gorm:"not null"`
 	Group         string    `gorm:"not null"`
 	CharacterName string    `gorm:"not null"`
 	ChannelId     byte      `gorm:"not null"`
-	Visible       bool      `gorm:"not null"`
+	Pending       bool      `gorm:"not null"`
 }
 
 func (e Entity) TableName() string {
@@ -25,12 +24,11 @@ func (e Entity) TableName() string {
 
 func Make(e Entity) (Model, error) {
 	return Model{
-		id:            e.Id,
 		listId:        e.ListId,
 		characterId:   e.CharacterId,
 		group:         e.Group,
 		characterName: e.CharacterName,
 		channelId:     e.ChannelId,
-		visible:       e.Visible,
+		pending:       e.Pending,
 	}, nil
 }

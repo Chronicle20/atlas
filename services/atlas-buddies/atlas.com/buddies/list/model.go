@@ -12,3 +12,11 @@ type Model struct {
 	capacity    uint32
 	buddies     []buddy.Model
 }
+
+func (m Model) Buddies() []buddy.Model {
+	return m.buddies
+}
+
+func (m Model) Capacity() uint32 {
+	return m.capacity
+}

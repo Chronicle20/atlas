@@ -1,6 +1,7 @@
 package list
 
 import (
+	"atlas-buddies/invite"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -41,6 +42,115 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					return Model{}, err
 				}
 				return m, nil
+			}
+		}
+	}
+}
+
+func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, targetName string, group string) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, targetName string, group string) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, targetName string, group string) error {
+			return func(characterId uint32, worldId byte, targetId uint32, targetName string, group string) error {
+				return db.Transaction(func(tx *gorm.DB) error {
+					cbl, err := GetByCharacterId(l)(ctx)(tx)(characterId)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
+						// TODO send error to requester
+						return err
+					}
+
+					if uint32(len(cbl.Buddies()))+1 > cbl.Capacity() {
+						l.Infof("Buddy list for character [%d] is at capacity.", characterId)
+						// TODO send error to requester
+						return nil
+					}
+
+					var found = false
+					for _, b := range cbl.Buddies() {
+						if b.CharacterId() == targetId {
+							found = true
+							break
+						}
+					}
+					if found {
+						l.Infof("Target [%d] is already on character [%d] buddy list.", targetId, characterId)
+						// TODO send error to requester
+						return nil
+					}
+
+					// soft allocate buddy for character
+					err = addPendingBuddy(tx, t.Id(), characterId, targetId, targetName, group)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to add buddy to buddy list for character [%d].", characterId)
+						return err
+					}
+					err = invite.Create(l)(ctx)(characterId, worldId, targetId)
+					if err != nil {
+
+					}
+					// TODO respond to requester
+					return nil
+				})
+			}
+		}
+	}
+}
+
+func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
+			return func(characterId uint32, worldId byte, targetId uint32) error {
+				return db.Transaction(func(tx *gorm.DB) error {
+					cbl, err := GetByCharacterId(l)(ctx)(tx)(characterId)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
+						// TODO send error to requester
+						return err
+					}
+
+					var found = false
+					for _, b := range cbl.Buddies() {
+						if b.CharacterId() == targetId {
+							found = true
+							break
+						}
+					}
+					if !found {
+						l.Debugf("Target [%d] is not on character [%d] buddy list. This could be an invite rejection.", targetId, characterId)
+						err = invite.Reject(l)(ctx)(characterId, worldId, targetId)
+						if err != nil {
+							return err
+						}
+						return nil
+					}
+
+					err = removeBuddy(tx, t.Id(), characterId, targetId)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", characterId)
+						return err
+					}
+					// TODO respond to requester
+					return nil
+				})
+			}
+		}
+	}
+}
+
+func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
+			return func(characterId uint32, worldId byte, targetId uint32) error {
+				err := removeBuddy(db, t.Id(), characterId, targetId)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", characterId)
+					return err
+				}
+				// TODO respond to requester
+				return nil
 			}
 		}
 	}

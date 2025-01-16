@@ -3,6 +3,8 @@ package main
 import (
 	"atlas-buddies/buddy"
 	"atlas-buddies/database"
+	invite2 "atlas-buddies/kafka/consumer/invite"
+	list2 "atlas-buddies/kafka/consumer/list"
 	"atlas-buddies/list"
 	"atlas-buddies/logger"
 	"atlas-buddies/service"
@@ -48,8 +50,12 @@ func main() {
 	db := database.Connect(l, database.SetMigrations(list.Migration, buddy.Migration))
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(list.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(list.CreateCommandRegister(l)(db))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(list2.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	_, _ = cm.RegisterHandler(list2.CreateCommandRegister(l)(db))
+	_, _ = cm.RegisterHandler(list2.RequestAddCommandRegister(l)(db))
+	_, _ = cm.RegisterHandler(list2.RequestDeleteCommandRegister(l)(db))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(invite2.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	_, _ = cm.RegisterHandler(invite2.RejectedStatusEventRegister(l)(db))
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), list.InitResource(GetServer())(db))
 

@@ -6,6 +6,7 @@ const (
 	EventCharacterStatusTypeLogin      = "LOGIN"
 	EventCharacterStatusTypeLogout     = "LOGOUT"
 	EventCharacterStatusTypeMapChanged = "MAP_CHANGED"
+	EventCharacterStatusTypeDeleted    = "DELETED"
 
 	EnvCommandTopic           = "COMMAND_TOPIC_CHARACTER"
 	CommandCharacterChangeMap = "CHANGE_MAP"
@@ -46,6 +47,9 @@ type statusEventMapChangedBody struct {
 	OldMapId       uint32 `json:"oldMapId"`
 	TargetMapId    uint32 `json:"targetMapId"`
 	TargetPortalId uint32 `json:"targetPortalId"`
+}
+
+type statusEventDeletedBody struct {
 }
 
 type commandEvent[E any] struct {

@@ -17,13 +17,12 @@ func BuddyInviteBody(l logrus.FieldLogger) func(actorId uint32, originatorId uin
 			w.WriteByte(getPartyOperation(l)(options, BuddyOperationInvite))
 			w.WriteInt(originatorId)
 			w.WriteAsciiString(originatorName)
-			w.WriteInt(originatorId)
+			w.WriteInt(actorId)
 			WritePaddedString(w, originatorName, 13)
-			w.WriteByte(0) //nFlag
+			w.WriteByte(0) // nFlag
 			w.WriteInt(0)  // nChannelID
 			WritePaddedString(w, "Default Group", 17)
-			w.WriteByte(0)
-			w.WriteInt(actorId)
+			w.WriteByte(0) // m_aInShop
 			return w.Bytes()
 		}
 	}

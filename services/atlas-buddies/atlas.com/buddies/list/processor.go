@@ -138,6 +138,12 @@ func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 						l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", characterId)
 						return err
 					}
+					err = updateBuddyChannel(tx, t.Id(), characterId, targetId, -1)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to update character [%d] channel to [%d] in [%d] buddy list.", characterId, -1, targetId)
+						return err
+					}
+
 					// TODO respond to requester
 					return nil
 				})
@@ -219,6 +225,7 @@ func Accept(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					}
 					return nil
 				})
+				// TODO trigger buddy list updates
 			}
 		}
 	}
@@ -229,14 +236,48 @@ func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 			return func(characterId uint32, worldId byte, targetId uint32) error {
-				err := removeBuddy(db, t.Id(), characterId, targetId)
-				if err != nil {
-					l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", characterId)
-					return err
-				}
-				// TODO update buddies entry to have a -1 channel
-				// TODO respond to requester
-				return nil
+				return db.Transaction(func(tx *gorm.DB) error {
+					err := removeBuddy(tx, t.Id(), characterId, targetId)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", characterId)
+						return err
+					}
+					err = updateBuddyChannel(tx, t.Id(), characterId, targetId, -1)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to update character [%d] channel to [%d] in [%d] buddy list.", characterId, -1, targetId)
+						return err
+					}
+
+					// TODO respond to requester
+					return nil
+				})
+			}
+		}
+	}
+}
+
+func UpdateChannel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, channelId int8) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, channelId int8) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, channelId int8) error {
+			return func(characterId uint32, channelId int8) error {
+				return db.Transaction(func(tx *gorm.DB) error {
+					bl, err := byCharacterIdEntityProvider(t.Id(), characterId)(tx)()
+					if err != nil {
+						l.WithError(err).Errorf("Unable to locate buddy list for character [%d].", characterId)
+						return err
+					}
+					for _, b := range bl.Buddies {
+						err = updateBuddyChannel(tx, t.Id(), characterId, b.CharacterId, channelId)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to update character [%d] channel to [%d] in [%d] buddy list.", characterId, channelId, b.CharacterId)
+							return err
+						}
+					}
+
+					return nil
+				})
+				// TODO trigger buddy list updates
 			}
 		}
 	}

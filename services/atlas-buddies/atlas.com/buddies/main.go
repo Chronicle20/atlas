@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-buddies/buddy"
 	"atlas-buddies/database"
+	"atlas-buddies/kafka/consumer/character"
 	invite2 "atlas-buddies/kafka/consumer/invite"
 	list2 "atlas-buddies/kafka/consumer/list"
 	"atlas-buddies/list"
@@ -57,6 +58,9 @@ func main() {
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(invite2.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(invite2.AcceptedStatusEventRegister(l)(db))
 	_, _ = cm.RegisterHandler(invite2.RejectedStatusEventRegister(l)(db))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	_, _ = cm.RegisterHandler(character.LoginStatusRegister(l)(db))
+	_, _ = cm.RegisterHandler(character.LogoutStatusRegister(l)(db))
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), list.InitResource(GetServer())(db))
 

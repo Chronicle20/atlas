@@ -62,3 +62,27 @@ func removeBuddy(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId u
 
 	return db.Delete(&rb).Error
 }
+
+func updateBuddyChannel(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId uint32, channelId int8) error {
+	bbl, err := byCharacterIdEntityProvider(tenantId, targetId)(db)()
+	if err != nil {
+		return err
+	}
+
+	var meAsBuddy *buddy.Entity
+	for _, pm := range bbl.Buddies {
+		if pm.CharacterId == characterId {
+			meAsBuddy = &pm
+		}
+	}
+	if meAsBuddy == nil {
+		return nil
+	}
+	meAsBuddy.ChannelId = channelId
+
+	err = db.Save(meAsBuddy).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}

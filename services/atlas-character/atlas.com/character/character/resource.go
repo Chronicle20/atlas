@@ -206,7 +206,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 func handleDeleteCharacter(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			err := Delete(d.Logger())(d.DB())(d.Context())(characterId)
+			err := Delete(d.Logger())(d.DB())(d.Context())(producer.ProviderImpl(d.Logger())(d.Context()))(characterId)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return

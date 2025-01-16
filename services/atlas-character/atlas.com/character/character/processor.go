@@ -303,61 +303,67 @@ func Create(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) fu
 	}
 }
 
-func Delete(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(characterId uint32) error {
-	return func(db *gorm.DB) func(ctx context.Context) func(characterId uint32) error {
-		return func(ctx context.Context) func(characterId uint32) error {
-			return func(characterId uint32) error {
-				err := db.Transaction(func(tx *gorm.DB) error {
-					c, err := GetById(tx)(ctx)(InventoryModelDecorator(l)(tx)(ctx))(characterId)
-					if err != nil {
-						return err
-					}
+func Delete(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(eventProducer producer.Provider) func(characterId uint32) error {
+	return func(db *gorm.DB) func(ctx context.Context) func(eventProducer producer.Provider) func(characterId uint32) error {
+		return func(ctx context.Context) func(eventProducer producer.Provider) func(characterId uint32) error {
+			return func(eventProducer producer.Provider) func(characterId uint32) error {
+				return func(characterId uint32) error {
+					err := db.Transaction(func(tx *gorm.DB) error {
+						c, err := GetById(tx)(ctx)(InventoryModelDecorator(l)(tx)(ctx))(characterId)
+						if err != nil {
+							return err
+						}
 
-					// delete equipment.
-					err = equipment.Delete(l)(tx)(ctx)(c.equipment)
-					if err != nil {
-						l.WithError(err).Errorf("Unable to delete equipment for character with id [%d].", characterId)
-						return err
-					}
+						// delete equipment.
+						err = equipment.Delete(l)(tx)(ctx)(c.equipment)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to delete equipment for character with id [%d].", characterId)
+							return err
+						}
 
-					// delete inventories.
-					err = inventory.DeleteEquipableInventory(l)(tx)(ctx)(characterId, c.inventory.Equipable())
-					if err != nil {
-						l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
-						return err
-					}
-					err = inventory.DeleteItemInventory(l)(tx)(ctx)(characterId, c.inventory.Useable())
-					if err != nil {
-						l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
-						return err
-					}
-					err = inventory.DeleteItemInventory(l)(tx)(ctx)(characterId, c.inventory.Setup())
-					if err != nil {
-						l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
-						return err
-					}
-					err = inventory.DeleteItemInventory(l)(tx)(ctx)(characterId, c.inventory.Etc())
-					if err != nil {
-						l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
-						return err
-					}
-					err = inventory.DeleteItemInventory(l)(tx)(ctx)(characterId, c.inventory.Cash())
-					if err != nil {
-						l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
-						return err
-					}
+						// delete inventories.
+						err = inventory.DeleteEquipableInventory(l)(tx)(ctx)(characterId, c.inventory.Equipable())
+						if err != nil {
+							l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
+							return err
+						}
+						err = inventory.DeleteItemInventory(l)(tx)(ctx)(characterId, c.inventory.Useable())
+						if err != nil {
+							l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
+							return err
+						}
+						err = inventory.DeleteItemInventory(l)(tx)(ctx)(characterId, c.inventory.Setup())
+						if err != nil {
+							l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
+							return err
+						}
+						err = inventory.DeleteItemInventory(l)(tx)(ctx)(characterId, c.inventory.Etc())
+						if err != nil {
+							l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
+							return err
+						}
+						err = inventory.DeleteItemInventory(l)(tx)(ctx)(characterId, c.inventory.Cash())
+						if err != nil {
+							l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
+							return err
+						}
 
-					_ = inventory.GetLockRegistry().DeleteForCharacter(characterId)
+						_ = inventory.GetLockRegistry().DeleteForCharacter(characterId)
 
-					tenant := tenant.MustFromContext(ctx)
-					err = delete(tx, tenant.Id(), characterId)
-					if err != nil {
-						return err
-					}
+						tenant := tenant.MustFromContext(ctx)
+						err = delete(tx, tenant.Id(), characterId)
+						if err != nil {
+							return err
+						}
 
-					return nil
-				})
-				return err
+						err = eventProducer(EnvEventTopicCharacterStatus)(deletedEventProvider(characterId, c.WorldId()))
+						if err != nil {
+							l.WithError(err).Errorf("Unable to notify to other services a character [%d] has been deleted.", characterId)
+						}
+						return nil
+					})
+					return err
+				}
 			}
 		}
 	}

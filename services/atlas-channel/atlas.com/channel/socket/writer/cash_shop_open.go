@@ -2,6 +2,7 @@ package writer
 
 import (
 	"atlas-channel/account"
+	"atlas-channel/buddylist"
 	"atlas-channel/character"
 	"atlas-channel/socket/model"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -21,10 +22,10 @@ func Skip(amount int) func(w *response.Writer) {
 	}
 }
 
-func CashShopOpenBody(l logrus.FieldLogger) func(tenant tenant.Model, a account.Model, c character.Model) BodyProducer {
-	return func(tenant tenant.Model, a account.Model, c character.Model) BodyProducer {
+func CashShopOpenBody(l logrus.FieldLogger) func(tenant tenant.Model, a account.Model, c character.Model, bl buddylist.Model) BodyProducer {
+	return func(tenant tenant.Model, a account.Model, c character.Model, bl buddylist.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			WriteCharacterInfo(tenant)(w)(c)
+			WriteCharacterInfo(tenant)(w)(c, bl)
 
 			if tenant.Region() == "GMS" {
 				var bCashShopAuthorized = true

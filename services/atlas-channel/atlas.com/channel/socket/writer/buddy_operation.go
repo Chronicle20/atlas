@@ -18,12 +18,10 @@ func BuddyInviteBody(l logrus.FieldLogger) func(actorId uint32, originatorId uin
 			w.WriteInt(originatorId)
 			w.WriteAsciiString(originatorName)
 			w.WriteInt(originatorId)
-			WritePaddedString(w, originatorName, 11)
-			w.WriteByte(0x09)
-			w.WriteByte(0xF0)
-			w.WriteByte(0x01)
-			w.WriteInt(0x0F)
-			w.WriteAsciiString("Default Group")
+			WritePaddedString(w, originatorName, 13)
+			w.WriteByte(0) //nFlag
+			w.WriteInt(0)  // nChannelID
+			WritePaddedString(w, "Default Group", 17)
 			w.WriteByte(0)
 			w.WriteInt(actorId)
 			return w.Bytes()

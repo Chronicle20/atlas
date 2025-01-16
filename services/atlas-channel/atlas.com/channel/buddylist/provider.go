@@ -1,4 +1,4 @@
-package buddy
+package buddylist
 
 import (
 	"github.com/Chronicle20/atlas-kafka/producer"

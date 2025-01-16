@@ -1,4 +1,4 @@
-package buddy
+package buddylist
 
 const (
 	EnvCommandTopic          = "COMMAND_TOPIC_BUDDY_LIST"

@@ -2,6 +2,7 @@ package handler
 
 import (
 	as "atlas-channel/account/session"
+	"atlas-channel/buddylist"
 	"atlas-channel/character"
 	"atlas-channel/character/key"
 	"atlas-channel/kafka/producer"
@@ -29,7 +30,13 @@ func CharacterLoggedInHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		c, err := character.GetByIdWithInventory(l)(ctx)(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate character [%d] attempting to login.", characterId)
-			session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			return
+		}
+		bl, err := buddylist.GetById(l)(ctx)(characterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate buddylist [%d] attempting to login.", characterId)
+			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
 			return
 		}
 
@@ -41,7 +48,7 @@ func CharacterLoggedInHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		resp, err := as.UpdateState(l)(ctx)(s.SessionId(), s.AccountId(), 1)
 		if err != nil || resp.Code != "OK" {
 			l.WithError(err).Errorf("Unable to update session for character [%d] attempting to switch to channel.", characterId)
-			session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
 			return
 		}
 
@@ -49,7 +56,7 @@ func CharacterLoggedInHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 
 		go func() {
 			l.Debugf("Writing SetField for character [%d].", c.Id())
-			err = setFieldFunc(s, writer.SetFieldBody(l, t)(s.ChannelId(), c))
+			err = setFieldFunc(s, writer.SetFieldBody(l, t)(s.ChannelId(), c, bl))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 			}

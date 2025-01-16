@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/account"
+	"atlas-channel/buddylist"
 	"atlas-channel/character"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -28,9 +29,25 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 		// TODO block when already in cash shop
 
 		a, err := account.GetById(l)(ctx)(s.AccountId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate account [%d] attempting to enter cash shop.", s.AccountId())
+			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			return
+		}
 		c, err := character.GetByIdWithInventory(l)(ctx)(s.CharacterId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate character [%d] attempting to enter cash shop.", s.CharacterId())
+			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			return
+		}
+		bl, err := buddylist.GetById(l)(ctx)(s.CharacterId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to locate buddylist [%d] attempting to enter cash shop.", s.CharacterId())
+			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			return
+		}
 
-		err = cashShopOpenFunc(s, writer.CashShopOpenBody(l)(t, a, c))
+		err = cashShopOpenFunc(s, writer.CashShopOpenBody(l)(t, a, c, bl))
 		if err != nil {
 			return
 		}

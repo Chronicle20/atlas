@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"atlas-channel/buddy"
+	"atlas-channel/buddylist"
 	"atlas-channel/character"
 	"atlas-channel/invite"
 	"atlas-channel/session"
@@ -46,7 +46,7 @@ func BuddyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				return
 			}
 
-			err = buddy.RequestAdd(l)(ctx)(s.CharacterId(), s.WorldId(), tc[0].Id(), group)
+			err = buddylist.RequestAdd(l)(ctx)(s.CharacterId(), s.WorldId(), tc[0].Id(), group)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to request buddy addition for character [%d].", s.CharacterId())
 			}
@@ -64,7 +64,7 @@ func BuddyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 		if isBuddyOperation(l)(readerOptions, op, BuddyOperationDelete) {
 			buddyCharacterId := r.ReadUint32()
 			// This happens both when a character uses the UI to remove an existing buddy. Or when a character rejects another characters invitation.
-			err := buddy.RequestDelete(l)(ctx)(s.CharacterId(), s.WorldId(), buddyCharacterId)
+			err := buddylist.RequestDelete(l)(ctx)(s.CharacterId(), s.WorldId(), buddyCharacterId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to request buddy addition for character [%d].", s.CharacterId())
 			}

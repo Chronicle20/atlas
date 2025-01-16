@@ -18,17 +18,24 @@ func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Con
 	}
 }
 
-func AcceptedStatusEventRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleAcceptedStatusEvent))
+func AcceptedStatusEventRegister(l logrus.FieldLogger) func(db *gorm.DB) (string, handler.Handler) {
+	return func(db *gorm.DB) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
+		return t, message.AdaptHandler(message.PersistentConfig(handleAcceptedStatusEvent(db)))
+	}
 }
 
-func handleAcceptedStatusEvent(l logrus.FieldLogger, ctx context.Context, e statusEvent[acceptedEventBody]) {
-	if e.Type != EventInviteStatusTypeAccepted {
-		return
-	}
-	if e.InviteType != InviteTypeBuddy {
-		return
+func handleAcceptedStatusEvent(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, e statusEvent[acceptedEventBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[acceptedEventBody]) {
+		if e.Type != EventInviteStatusTypeAccepted {
+			return
+		}
+
+		if e.InviteType != InviteTypeBuddy {
+			return
+		}
+
+		_ = list.Accept(l)(ctx)(db)(e.Body.TargetId, e.WorldId, e.Body.OriginatorId)
 	}
 }
 
@@ -44,6 +51,7 @@ func handleRejectedStatusEvent(db *gorm.DB) func(l logrus.FieldLogger, ctx conte
 		if e.Type != EventInviteStatusTypeRejected {
 			return
 		}
+
 		if e.InviteType != InviteTypeBuddy {
 			return
 		}

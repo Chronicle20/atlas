@@ -22,6 +22,10 @@ func create(db *gorm.DB, t tenant.Model, characterId uint32, capacity uint32) (M
 }
 
 func addPendingBuddy(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId uint32, targetName string, group string) error {
+	return addBuddy(db, tenantId, characterId, targetId, targetName, group, true)
+}
+
+func addBuddy(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId uint32, targetName string, group string, pending bool) error {
 	e, err := byCharacterIdEntityProvider(tenantId, characterId)(db)()
 	if err != nil {
 		return err
@@ -33,7 +37,7 @@ func addPendingBuddy(db *gorm.DB, tenantId uuid.UUID, characterId uint32, target
 		Group:         group,
 		CharacterName: targetName,
 		ChannelId:     0,
-		Pending:       true,
+		Pending:       pending,
 	}
 	return db.Create(&nb).Error
 }

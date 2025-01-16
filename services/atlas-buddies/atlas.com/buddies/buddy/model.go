@@ -14,3 +14,11 @@ type Model struct {
 func (m Model) CharacterId() uint32 {
 	return m.characterId
 }
+
+func (m Model) Name() string {
+	return m.characterName
+}
+
+func (m Model) Group() string {
+	return m.group
+}

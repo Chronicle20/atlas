@@ -55,6 +55,7 @@ func main() {
 	_, _ = cm.RegisterHandler(list2.RequestAddCommandRegister(l)(db))
 	_, _ = cm.RegisterHandler(list2.RequestDeleteCommandRegister(l)(db))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(invite2.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	_, _ = cm.RegisterHandler(invite2.AcceptedStatusEventRegister(l)(db))
 	_, _ = cm.RegisterHandler(invite2.RejectedStatusEventRegister(l)(db))
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), list.InitResource(GetServer())(db))

@@ -51,7 +51,7 @@ func handleRequestBuddyAddCommand(db *gorm.DB) message.Handler[command[requestAd
 		if c.Type != CommandTypeRequestAdd {
 			return
 		}
-		err := list.RequestAdd(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.CharacterId, c.Body.CharacterName, c.Body.Group)
+		err := list.RequestAdd(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.CharacterId, c.Body.Group)
 		if err != nil {
 			l.WithError(err).Errorf("Error attempting to add [%d] to character [%d] buddy list.", c.Body.CharacterId, c.CharacterId)
 		}

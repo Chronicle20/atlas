@@ -17,3 +17,16 @@ func createCommandProvider(characterId uint32, capacity byte) model.Provider[[]k
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func errorStatusEventProvider(characterId uint32, worldId byte, error string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &statusEvent[errorStatusEventBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        StatusEventTypeError,
+		Body: errorStatusEventBody{
+			Error: error,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -4,6 +4,7 @@ import (
 	"atlas-buddies/buddy"
 	"atlas-buddies/character"
 	"atlas-buddies/invite"
+	"atlas-buddies/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -52,20 +53,28 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, group string) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, group string) error {
 		t := tenant.MustFromContext(ctx)
+		errorEventProducer := producer.ProviderImpl(l)(ctx)(EnvCommandTopic)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, group string) error {
 			return func(characterId uint32, worldId byte, targetId uint32, group string) error {
 				return db.Transaction(func(tx *gorm.DB) error {
+					tc, err := character.GetById(l)(ctx)(targetId)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to retrieve character [%d] information.", targetId)
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorCharacterNotFound))
+						return err
+					}
+
 					cbl, err := GetByCharacterId(l)(ctx)(tx)(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
-						// TODO send error to requester
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
 						return err
 					}
 
 					if byte(len(cbl.Buddies()))+1 > cbl.Capacity() {
 						l.Infof("Buddy list for character [%d] is at capacity.", characterId)
-						// TODO send error to requester
-						return nil
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorListFull))
+						return err
 					}
 
 					var found = false
@@ -77,24 +86,34 @@ func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 					}
 					if found {
 						l.Infof("Target [%d] is already on character [%d] buddy list.", targetId, characterId)
-						// TODO send error to requester
-						return nil
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorAlreadyBuddy))
+						return err
 					}
 
-					tc, err := character.GetById(l)(ctx)(targetId)
+					obl, err := GetByCharacterId(l)(ctx)(tx)(targetId)
 					if err != nil {
-						l.WithError(err).Errorf("Unable to retrieve character [%d] information.", targetId)
+						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] being added as buddy.", targetId)
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
+						return err
+					}
+
+					if byte(len(obl.Buddies()))+1 > obl.Capacity() {
+						l.Infof("Buddy list for character [%d] is at capacity.", targetId)
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorOtherListFull))
+						return err
 					}
 
 					// soft allocate buddy for character
 					err = addPendingBuddy(tx, t.Id(), characterId, targetId, tc.Name(), group)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to add buddy to buddy list for character [%d].", characterId)
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
 						return err
 					}
 					err = invite.Create(l)(ctx)(characterId, worldId, targetId)
 					if err != nil {
-
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
+						return err
 					}
 					// TODO respond to requester
 					return nil
@@ -107,13 +126,14 @@ func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 		t := tenant.MustFromContext(ctx)
+		errorEventProducer := producer.ProviderImpl(l)(ctx)(EnvCommandTopic)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 			return func(characterId uint32, worldId byte, targetId uint32) error {
 				return db.Transaction(func(tx *gorm.DB) error {
 					cbl, err := GetByCharacterId(l)(ctx)(tx)(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
-						// TODO send error to requester
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
 						return err
 					}
 
@@ -128,6 +148,7 @@ func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 						l.Debugf("Target [%d] is not on character [%d] buddy list. This could be an invite rejection.", targetId, characterId)
 						err = invite.Reject(l)(ctx)(characterId, worldId, targetId)
 						if err != nil {
+							err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
 							return err
 						}
 						return nil
@@ -136,11 +157,13 @@ func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 					err = removeBuddy(tx, t.Id(), characterId, targetId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", characterId)
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
 						return err
 					}
 					err = updateBuddyChannel(tx, t.Id(), characterId, targetId, -1)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to update character [%d] channel to [%d] in [%d] buddy list.", characterId, -1, targetId)
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
 						return err
 					}
 
@@ -155,19 +178,20 @@ func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 func Accept(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 		t := tenant.MustFromContext(ctx)
+		errorEventProducer := producer.ProviderImpl(l)(ctx)(EnvCommandTopic)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 			return func(characterId uint32, worldId byte, targetId uint32) error {
 				return db.Transaction(func(tx *gorm.DB) error {
 					cbl, err := GetByCharacterId(l)(ctx)(tx)(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
-						// TODO send error to requester
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
 						return err
 					}
 
 					if byte(len(cbl.Buddies()))+1 > cbl.Capacity() {
 						l.Infof("Buddy list for character [%d] is at capacity.", characterId)
-						// TODO send error to requester
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorListFull))
 						return nil
 					}
 
@@ -180,14 +204,14 @@ func Accept(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					}
 					if found {
 						l.Infof("Target [%d] is already on character [%d] buddy list.", targetId, characterId)
-						// TODO send error to requester
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorAlreadyBuddy))
 						return nil
 					}
 
 					obl, err := GetByCharacterId(l)(ctx)(tx)(targetId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
-						// TODO send error to requester
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
 						return err
 					}
 					var ob buddy.Model
@@ -200,12 +224,14 @@ func Accept(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					c, err := character.GetById(l)(ctx)(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d] information.", characterId)
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
 						return err
 					}
 
 					oc, err := character.GetById(l)(ctx)(targetId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d] information.", targetId)
+						err = errorEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorCharacterNotFound))
 						return err
 					}
 

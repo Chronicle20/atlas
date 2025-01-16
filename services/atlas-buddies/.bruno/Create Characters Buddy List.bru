@@ -1,0 +1,22 @@
+meta {
+  name: Create Characters Buddy List
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/3/buddy-list
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "type": "buddy-list",
+      "attributes": {
+        "capacity": 30
+      }
+    }
+  }
+}

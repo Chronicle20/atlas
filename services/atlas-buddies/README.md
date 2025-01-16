@@ -9,6 +9,13 @@ A RESTful resource which provides buddies services.
 
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
+- DB_USER - Postgres user name
+- DB_PASSWORD - Postgres user password
+- DB_HOST - Postgres Database host
+- DB_PORT - Postgres Database port
+- DB_NAME - Postgres Database name
+- BOOTSTRAP_SERVERS - Kafka [host]:[port]
+- COMMAND_TOPIC_BUDDY_LIST - Kafka Topic for transmitting buddy list commands.
 
 ## API
 
@@ -24,3 +31,11 @@ MINOR_VERSION:1
 ```
 
 ### Requests
+
+#### [GET] Get Characters Buddy List
+
+```/api/characters/{characterId}/buddy-list```
+
+#### [POST] Create Characters Buddy List
+
+```/api/characters/{characterId}/buddy-list```

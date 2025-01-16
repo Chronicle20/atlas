@@ -83,30 +83,16 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 	}
 }
 
-type PartyIdHandler func(partyId uint32) http.HandlerFunc
+type CharacterIdHandler func(characterId uint32) http.HandlerFunc
 
-func ParsePartyId(l logrus.FieldLogger, next PartyIdHandler) http.HandlerFunc {
+func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		partyId, err := strconv.Atoi(mux.Vars(r)["partyId"])
+		characterId, err := strconv.Atoi(mux.Vars(r)["characterId"])
 		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse partyId from path.")
+			l.WithError(err).Errorf("Unable to properly parse characterId from path.")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		next(uint32(partyId))(w, r)
-	}
-}
-
-type MemberIdHandler func(memberId uint32) http.HandlerFunc
-
-func ParseMemberId(l logrus.FieldLogger, next MemberIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		memberId, err := strconv.Atoi(mux.Vars(r)["memberId"])
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse memberId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(memberId))(w, r)
+		next(uint32(characterId))(w, r)
 	}
 }

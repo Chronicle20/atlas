@@ -1,7 +1,9 @@
 package main
 
 import (
+	"atlas-buddies/buddy"
 	"atlas-buddies/database"
+	"atlas-buddies/list"
 	"atlas-buddies/logger"
 	"atlas-buddies/service"
 	"atlas-buddies/tracing"
@@ -10,6 +12,7 @@ import (
 )
 
 const serviceName = "atlas-buddies"
+const consumerGroupId = "Buddy Service"
 
 type Server struct {
 	baseUrl string
@@ -42,11 +45,13 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	_ = database.Connect(l, database.SetMigrations())
+	db := database.Connect(l, database.SetMigrations(list.Migration, buddy.Migration))
 
-	_ = consumer.GetManager()
+	cm := consumer.GetManager()
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(list.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	_, _ = cm.RegisterHandler(list.CreateCommandRegister(l)(db))
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix())
+	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), list.InitResource(GetServer())(db))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

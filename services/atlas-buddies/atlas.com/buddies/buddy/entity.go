@@ -1,4 +1,4 @@
-package character
+package buddy
 
 import (
 	"github.com/google/uuid"
@@ -6,15 +6,31 @@ import (
 )
 
 func Migration(db *gorm.DB) error {
-	return db.AutoMigrate(&entity{})
+	return db.AutoMigrate(&Entity{})
 }
 
-type entity struct {
-	TenantId    uuid.UUID `gorm:"not null"`
-	CharacterId uint32    `gorm:"primaryKey;autoIncrement:false;not null"`
-	Capacity    uint32    `gorm:"not null"`
+type Entity struct {
+	Id            uuid.UUID `gorm:"type:uuid;default:uuid_generate_v4()"`
+	ListId        uuid.UUID `gorm:"not null"`
+	CharacterId   uint32    `gorm:"not null"`
+	Group         string    `gorm:"not null"`
+	CharacterName string    `gorm:"not null"`
+	ChannelId     byte      `gorm:"not null"`
+	Visible       bool      `gorm:"not null"`
 }
 
-func (e entity) TableName() string {
-	return "characters"
+func (e Entity) TableName() string {
+	return "buddies"
+}
+
+func Make(e Entity) (Model, error) {
+	return Model{
+		id:            e.Id,
+		listId:        e.ListId,
+		characterId:   e.CharacterId,
+		group:         e.Group,
+		characterName: e.CharacterName,
+		channelId:     e.ChannelId,
+		visible:       e.Visible,
+	}, nil
 }

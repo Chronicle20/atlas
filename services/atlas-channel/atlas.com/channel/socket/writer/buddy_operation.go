@@ -1,7 +1,10 @@
 package writer
 
 import (
+	"atlas-channel/buddylist/buddy"
+	"atlas-channel/socket/model"
 	"github.com/Chronicle20/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"strconv"
 )
@@ -9,20 +12,48 @@ import (
 const (
 	BuddyOperation       = "BuddyOperation"
 	BuddyOperationInvite = "INVITE"
+	BuddyOperationUpdate = "UPDATE"
 )
 
-func BuddyInviteBody(l logrus.FieldLogger) func(actorId uint32, originatorId uint32, originatorName string) BodyProducer {
+func BuddyInviteBody(l logrus.FieldLogger, t tenant.Model) func(actorId uint32, originatorId uint32, originatorName string) BodyProducer {
 	return func(actorId uint32, originatorId uint32, originatorName string) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getPartyOperation(l)(options, BuddyOperationInvite))
+			w.WriteByte(getBuddyOperation(l)(options, BuddyOperationInvite))
 			w.WriteInt(originatorId)
 			w.WriteAsciiString(originatorName)
-			w.WriteInt(actorId)
-			WritePaddedString(w, originatorName, 13)
-			w.WriteByte(0) // nFlag
-			w.WriteInt(0)  // nChannelID
-			WritePaddedString(w, "Default Group", 17)
-			w.WriteByte(0) // m_aInShop
+
+			b := model.Buddy{
+				FriendId:    actorId,
+				FriendName:  originatorName,
+				Flag:        0,
+				ChannelId:   0,
+				FriendGroup: "Default Group",
+			}
+			b.Encode(l, t, options)(w)
+			w.WriteByte(0) // 0 no, 1 true m_aInShop
+			return w.Bytes()
+		}
+	}
+}
+
+func BuddyUpdateBody(l logrus.FieldLogger, t tenant.Model) func(buddies []buddy.Model) BodyProducer {
+	return func(buddies []buddy.Model) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getBuddyOperation(l)(options, BuddyOperationUpdate))
+			w.WriteByte(byte(len(buddies)))
+			for _, b := range buddies {
+				m := model.Buddy{
+					FriendId:    b.CharacterId(),
+					FriendName:  b.Name(),
+					Flag:        0,
+					ChannelId:   b.ChannelId(),
+					FriendGroup: b.Group(),
+				}
+				m.Encode(l, t, options)(w)
+			}
+			for range len(buddies) {
+				w.WriteInt(0) // 0 no, 1 true m_aInShop
+			}
 			return w.Bytes()
 		}
 	}

@@ -65,11 +65,12 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 
 func handleBuddyCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
 			buddyOperationFunc := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)
 			return func(originatorId uint32, originatorName string) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					err := buddyOperationFunc(s, writer.BuddyInviteBody(l)(s.CharacterId(), originatorId, originatorName))
+					err := buddyOperationFunc(s, writer.BuddyInviteBody(l, t)(s.CharacterId(), originatorId, originatorName))
 					if err != nil {
 						return err
 					}

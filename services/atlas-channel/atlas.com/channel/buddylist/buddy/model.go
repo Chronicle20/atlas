@@ -7,7 +7,7 @@ type Model struct {
 	characterId   uint32
 	group         string
 	characterName string
-	channelId     byte
+	channelId     int8
 	pending       bool
 }
 
@@ -21,4 +21,12 @@ func (m Model) Name() string {
 
 func (m Model) Group() string {
 	return m.group
+}
+
+func (m Model) Pending() bool {
+	return m.pending
+}
+
+func (m Model) ChannelId() int8 {
+	return m.channelId
 }

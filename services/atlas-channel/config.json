@@ -855,6 +855,7 @@
               "writer": "BuddyOperation",
               "options": {
                 "operations": {
+                  "UPDATE": "0x07",
                   "INVITE": "0x09"
                 }
               }

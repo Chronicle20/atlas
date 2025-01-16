@@ -22,6 +22,8 @@ func CharacterLoggedInHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 
 	setFieldFunc := session.Announce(l)(ctx)(wp)(writer.SetField)
 	characterKeyMapFunc := session.Announce(l)(ctx)(wp)(writer.CharacterKeyMap)
+	buddyOperationFunc := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)
+
 	return func(s session.Model, r *request.Reader, _ map[string]interface{}) {
 		characterId := r.ReadUint32()
 		buffer := r.GetRestAsBytes()
@@ -54,11 +56,15 @@ func CharacterLoggedInHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 
 		session.EmitCreated(producer.ProviderImpl(l)(ctx))(s)
 
+		l.Debugf("Writing SetField for character [%d].", c.Id())
+		err = setFieldFunc(s, writer.SetFieldBody(l, t)(s.ChannelId(), c, bl))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
+		}
 		go func() {
-			l.Debugf("Writing SetField for character [%d].", c.Id())
-			err = setFieldFunc(s, writer.SetFieldBody(l, t)(s.ChannelId(), c, bl))
+			err := buddyOperationFunc(s, writer.BuddyUpdateBody(l, t)(bl.Buddies()))
 			if err != nil {
-				l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
+				l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 			}
 		}()
 		go func() {

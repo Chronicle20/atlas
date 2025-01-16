@@ -6,11 +6,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, worldId byte, targetId uint32, targetName string, group string) error {
-	return func(ctx context.Context) func(characterId uint32, worldId byte, targetId uint32, targetName string, group string) error {
-		return func(characterId uint32, worldId byte, targetId uint32, targetName string, group string) error {
+func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, worldId byte, targetId uint32, group string) error {
+	return func(ctx context.Context) func(characterId uint32, worldId byte, targetId uint32, group string) error {
+		return func(characterId uint32, worldId byte, targetId uint32, group string) error {
 			l.Debugf("Character [%d] would like to add [%d] to group [%s] to their buddy list.", characterId, targetId, group)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestAddBuddyCommandProvider(characterId, worldId, targetId, targetName, group))
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestAddBuddyCommandProvider(characterId, worldId, targetId, group))
 		}
 	}
 }

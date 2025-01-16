@@ -14,9 +14,8 @@ type command[E any] struct {
 }
 
 type requestAddBuddyCommandBody struct {
-	CharacterId   uint32 `json:"characterId"`
-	CharacterName string `json:"characterName"`
-	Group         string `json:"group"`
+	CharacterId uint32 `json:"characterId"`
+	Group       string `json:"group"`
 }
 
 type requestDeleteBuddyCommandBody struct {

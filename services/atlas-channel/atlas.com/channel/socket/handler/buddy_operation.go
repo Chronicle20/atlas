@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/buddy"
 	"atlas-channel/character"
+	"atlas-channel/invite"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -45,7 +46,7 @@ func BuddyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				return
 			}
 
-			err = buddy.RequestAdd(l)(ctx)(s.CharacterId(), s.WorldId(), tc[0].Id(), tc[0].Name(), group)
+			err = buddy.RequestAdd(l)(ctx)(s.CharacterId(), s.WorldId(), tc[0].Id(), group)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to request buddy addition for character [%d].", s.CharacterId())
 			}
@@ -54,6 +55,10 @@ func BuddyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 		if isBuddyOperation(l)(readerOptions, op, BuddyOperationAccept) {
 			fromCharacterId := r.ReadUint32()
 			l.Debugf("Character [%d] attempting to accept buddy request from [%d].", s.CharacterId(), fromCharacterId)
+			err := invite.Accept(l)(ctx)(s.CharacterId(), s.WorldId(), invite.InviteTypeBuddy, fromCharacterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		if isBuddyOperation(l)(readerOptions, op, BuddyOperationDelete) {

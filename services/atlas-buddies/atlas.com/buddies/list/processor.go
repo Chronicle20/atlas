@@ -32,11 +32,11 @@ func GetByCharacterId(l logrus.FieldLogger) func(ctx context.Context) func(db *g
 	}
 }
 
-func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, capacity uint32) (Model, error) {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, capacity uint32) (Model, error) {
+func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, capacity byte) (Model, error) {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, capacity byte) (Model, error) {
 		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(characterId uint32, capacity uint32) (Model, error) {
-			return func(characterId uint32, capacity uint32) (Model, error) {
+		return func(db *gorm.DB) func(characterId uint32, capacity byte) (Model, error) {
+			return func(characterId uint32, capacity byte) (Model, error) {
 				l.Debugf("Creating buddy list for character [%d] with a capacity of [%d].", characterId, capacity)
 				m, err := create(db, t, characterId, capacity)
 				if err != nil {
@@ -62,7 +62,7 @@ func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 						return err
 					}
 
-					if uint32(len(cbl.Buddies()))+1 > cbl.Capacity() {
+					if byte(len(cbl.Buddies()))+1 > cbl.Capacity() {
 						l.Infof("Buddy list for character [%d] is at capacity.", characterId)
 						// TODO send error to requester
 						return nil
@@ -159,7 +159,7 @@ func Accept(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 						return err
 					}
 
-					if uint32(len(cbl.Buddies()))+1 > cbl.Capacity() {
+					if byte(len(cbl.Buddies()))+1 > cbl.Capacity() {
 						l.Infof("Buddy list for character [%d] is at capacity.", characterId)
 						// TODO send error to requester
 						return nil
@@ -234,6 +234,7 @@ func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", characterId)
 					return err
 				}
+				// TODO update buddies entry to have a -1 channel
 				// TODO respond to requester
 				return nil
 			}

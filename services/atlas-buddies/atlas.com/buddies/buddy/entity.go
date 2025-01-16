@@ -14,7 +14,7 @@ type Entity struct {
 	ListId        uuid.UUID `gorm:"not null"`
 	Group         string    `gorm:"not null"`
 	CharacterName string    `gorm:"not null"`
-	ChannelId     byte      `gorm:"not null"`
+	ChannelId     int8      `gorm:"not null"`
 	Pending       bool      `gorm:"not null"`
 }
 

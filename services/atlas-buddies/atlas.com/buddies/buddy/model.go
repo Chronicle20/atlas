@@ -7,7 +7,7 @@ type Model struct {
 	characterId   uint32
 	group         string
 	characterName string
-	channelId     byte
+	channelId     int8
 	pending       bool
 }
 

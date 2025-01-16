@@ -9,7 +9,7 @@ type RestModel struct {
 	Id          uuid.UUID         `json:"-"`
 	TenantId    uuid.UUID         `json:"-"`
 	CharacterId uint32            `json:"characterId"`
-	Capacity    uint32            `json:"capacity"`
+	Capacity    byte              `json:"capacity"`
 	Buddies     []buddy.RestModel `json:"buddies"`
 }
 

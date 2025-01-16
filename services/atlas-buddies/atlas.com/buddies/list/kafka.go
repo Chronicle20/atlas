@@ -13,5 +13,5 @@ type command[E any] struct {
 }
 
 type createCommandBody struct {
-	Capacity uint32 `json:"capacity"`
+	Capacity byte `json:"capacity"`
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func createCommandProvider(characterId uint32, capacity uint32) model.Provider[[]kafka.Message] {
+func createCommandProvider(characterId uint32, capacity byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &command[createCommandBody]{
 		CharacterId: characterId,

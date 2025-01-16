@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func create(db *gorm.DB, t tenant.Model, characterId uint32, capacity uint32) (Model, error) {
+func create(db *gorm.DB, t tenant.Model, characterId uint32, capacity byte) (Model, error) {
 	e := &Entity{
 		TenantId:    t.Id(),
 		CharacterId: characterId,
@@ -36,7 +36,7 @@ func addBuddy(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId uint
 		ListId:        e.Id,
 		Group:         group,
 		CharacterName: targetName,
-		ChannelId:     0,
+		ChannelId:     -1,
 		Pending:       pending,
 	}
 	return db.Create(&nb).Error

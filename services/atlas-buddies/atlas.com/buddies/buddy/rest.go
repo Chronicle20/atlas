@@ -8,7 +8,7 @@ type RestModel struct {
 	CharacterId   uint32 `json:"characterId"`
 	Group         string `json:"group"`
 	CharacterName string `json:"characterName"`
-	ChannelId     byte   `json:"channelId"`
+	ChannelId     int8   `json:"channelId"`
 	Pending       bool   `json:"pending"`
 }
 

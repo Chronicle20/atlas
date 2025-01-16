@@ -14,7 +14,7 @@ type Entity struct {
 	TenantId    uuid.UUID      `gorm:"not null"`
 	Id          uuid.UUID      `gorm:"type:uuid;default:uuid_generate_v4()"`
 	CharacterId uint32         `gorm:"not null"`
-	Capacity    uint32         `gorm:"not null"`
+	Capacity    byte           `gorm:"not null"`
 	Buddies     []buddy.Entity `gorm:"foreignkey:ListId"`
 }
 

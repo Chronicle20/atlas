@@ -23,7 +23,7 @@ const (
 func PartyCreatedBody(l logrus.FieldLogger) func(partyId uint32) BodyProducer {
 	return func(partyId uint32) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getOperation(l)(options, PartyOperationCreated))
+			w.WriteByte(getPartyOperation(l)(options, PartyOperationCreated))
 			w.WriteInt(partyId)
 
 			// TODO write doors for party.
@@ -39,7 +39,7 @@ func PartyCreatedBody(l logrus.FieldLogger) func(partyId uint32) BodyProducer {
 func PartyLeftBody(l logrus.FieldLogger) func(p party.Model, t character.Model, forChannel byte) BodyProducer {
 	return func(p party.Model, t character.Model, forChannel byte) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getOperation(l)(options, PartyOperationLeave))
+			w.WriteByte(getPartyOperation(l)(options, PartyOperationLeave))
 			w.WriteInt(p.Id())
 			w.WriteInt(t.Id())
 			w.WriteByte(1)
@@ -53,7 +53,7 @@ func PartyLeftBody(l logrus.FieldLogger) func(p party.Model, t character.Model, 
 func PartyExpelBody(l logrus.FieldLogger) func(p party.Model, t character.Model, forChannel byte) BodyProducer {
 	return func(p party.Model, t character.Model, forChannel byte) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getOperation(l)(options, PartyOperationExpel))
+			w.WriteByte(getPartyOperation(l)(options, PartyOperationExpel))
 			w.WriteInt(p.Id())
 			w.WriteInt(t.Id())
 			w.WriteByte(1)
@@ -67,7 +67,7 @@ func PartyExpelBody(l logrus.FieldLogger) func(p party.Model, t character.Model,
 func PartyDisbandBody(l logrus.FieldLogger) func(partyId uint32, t character.Model, forChannel byte) BodyProducer {
 	return func(partyId uint32, t character.Model, forChannel byte) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getOperation(l)(options, PartyOperationDisband))
+			w.WriteByte(getPartyOperation(l)(options, PartyOperationDisband))
 			w.WriteInt(partyId)
 			w.WriteInt(t.Id())
 			w.WriteByte(0)
@@ -80,7 +80,7 @@ func PartyDisbandBody(l logrus.FieldLogger) func(partyId uint32, t character.Mod
 func PartyJoinBody(l logrus.FieldLogger) func(p party.Model, t character.Model, forChannel byte) BodyProducer {
 	return func(p party.Model, t character.Model, forChannel byte) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getOperation(l)(options, PartyOperationJoin))
+			w.WriteByte(getPartyOperation(l)(options, PartyOperationJoin))
 			w.WriteInt(p.Id())
 			w.WriteAsciiString(t.Name())
 			return WriteParty(w, p, forChannel)
@@ -91,7 +91,7 @@ func PartyJoinBody(l logrus.FieldLogger) func(p party.Model, t character.Model, 
 func PartyUpdateBody(l logrus.FieldLogger) func(p party.Model, t character.Model, forChannel byte) BodyProducer {
 	return func(p party.Model, t character.Model, forChannel byte) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getOperation(l)(options, PartyOperationUpdate))
+			w.WriteByte(getPartyOperation(l)(options, PartyOperationUpdate))
 			w.WriteInt(p.Id())
 			return WriteParty(w, p, forChannel)
 		}
@@ -101,7 +101,7 @@ func PartyUpdateBody(l logrus.FieldLogger) func(p party.Model, t character.Model
 func PartyChangeLeaderBody(l logrus.FieldLogger) func(targetCharacterId uint32, disconnected bool) BodyProducer {
 	return func(targetCharacterId uint32, disconnected bool) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getOperation(l)(options, PartyOperationChangeLeader))
+			w.WriteByte(getPartyOperation(l)(options, PartyOperationChangeLeader))
 			w.WriteInt(targetCharacterId)
 			w.WriteBool(disconnected)
 			return w.Bytes()
@@ -112,7 +112,7 @@ func PartyChangeLeaderBody(l logrus.FieldLogger) func(targetCharacterId uint32, 
 func PartyErrorBody(l logrus.FieldLogger) func(code string, name string) BodyProducer {
 	return func(code string, name string) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getOperation(l)(options, code))
+			w.WriteByte(getPartyOperation(l)(options, code))
 			w.WriteAsciiString(name)
 			return w.Bytes()
 		}
@@ -122,7 +122,7 @@ func PartyErrorBody(l logrus.FieldLogger) func(code string, name string) BodyPro
 func PartyInviteBody(l logrus.FieldLogger) func(partyId uint32, originatorName string) BodyProducer {
 	return func(partyId uint32, originatorName string) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getOperation(l)(options, PartyOperationInvite))
+			w.WriteByte(getPartyOperation(l)(options, PartyOperationInvite))
 			w.WriteInt(partyId)
 			w.WriteAsciiString(originatorName)
 			w.WriteByte(0) // TODO this triggers op 3 for party operation if 1, feels like auto reject, blocked packet
@@ -204,7 +204,7 @@ func WritePaddedString(w *response.Writer, str string, number int) {
 	}
 }
 
-func getOperation(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
+func getPartyOperation(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
 	return func(options map[string]interface{}, key string) byte {
 		var genericCodes interface{}
 		var ok bool

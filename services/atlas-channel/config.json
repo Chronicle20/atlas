@@ -613,6 +613,19 @@
               "handler": "PartyInviteRejectHandle"
             },
             {
+              "opCode": "0x82",
+              "validator": "LoggedInValidator",
+              "handler": "BuddyOperationHandle",
+              "options": {
+                "operations": {
+                  "RELOAD": 0,
+                  "ADD": 1,
+                  "ACCEPT": 2,
+                  "DELETE": 3
+                }
+              }
+            },
+            {
               "opCode": "0x87",
               "validator": "LoggedInValidator",
               "handler": "CharacterKeyMapChangeHandle"
@@ -836,6 +849,15 @@
             {
               "opCode": "0x3D",
               "writer": "CharacterInfo"
+            },
+            {
+              "opCode": "0x3F",
+              "writer": "BuddyOperation",
+              "options": {
+                "operations": {
+                  "INVITE": "0x09"
+                }
+              }
             },
             {
               "opCode": "0x3E",
@@ -1227,7 +1249,8 @@
             {
               "opCode": "0x145",
               "writer": "CashShopOperation"
-            }, {
+            },
+            {
               "opCode": "0x14F",
               "writer": "CharacterKeyMap"
             }

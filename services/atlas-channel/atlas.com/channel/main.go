@@ -202,6 +202,7 @@ func produceWriters() []string {
 		writer.PartyOperation,
 		writer.CharacterMultiChat,
 		writer.CharacterKeyMap,
+		writer.BuddyOperation,
 	}
 }
 
@@ -223,6 +224,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.PartyInviteRejectHandle] = handler.PartyInviteRejectHandleFunc
 	handlerMap[handler.CharacterMultiChatHandle] = handler.CharacterMultiChatHandleFunc
 	handlerMap[handler.CharacterKeyMapChangeHandle] = handler.CharacterKeyMapChangeHandleFunc
+	handlerMap[handler.BuddyOperationHandle] = handler.BuddyOperationHandleFunc
 	return handlerMap
 }
 

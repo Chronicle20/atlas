@@ -236,3 +236,7 @@ func (m Model) Y() int16 {
 func (m Model) Stance() byte {
 	return m.stance
 }
+
+func (m Model) WorldId() byte {
+	return m.worldId
+}

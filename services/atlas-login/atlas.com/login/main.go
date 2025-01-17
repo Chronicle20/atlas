@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-login/account"
 	"atlas-login/configuration"
+	session2 "atlas-login/kafka/consumer/session"
 	"atlas-login/logger"
 	"atlas-login/service"
 	"atlas-login/session"
@@ -48,6 +49,7 @@ func main() {
 
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.StatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(session2.AccountSessionStatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
@@ -90,6 +92,10 @@ func main() {
 		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 
 		_, _ = cm.RegisterHandler(account.StatusRegister(t)(l))
+		_, _ = cm.RegisterHandler(session2.CreatedAccountSessionStatusEventRegister(t, wp)(l))
+		_, _ = cm.RegisterHandler(session2.LicenseAgreementAccountSessionStatusEventRegister(t, wp)(l))
+		_, _ = cm.RegisterHandler(session2.StateChangedAccountSessionStatusEventRegister(t, wp)(l))
+		_, _ = cm.RegisterHandler(session2.ErrorAccountSessionStatusEventRegister(t, wp)(l))
 
 		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, t, s.Port)
 	}

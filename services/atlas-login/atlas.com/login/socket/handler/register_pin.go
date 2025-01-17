@@ -18,7 +18,6 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 	pinUpdateFunc := session.Announce(l)(wp)(writer.PinUpdate)
 	return func(s session.Model, r *request.Reader) {
 		opt := r.ReadByte()
-		t := s.Tenant()
 		if opt == 0 {
 			l.Debugf("Account [%d] opted out of PIN registration. Terminating session.", s.AccountId())
 			session.Destroy(l, ctx, session.GetRegistry())(s)
@@ -61,7 +60,7 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 			}
 
 			l.Debugf("Logging account out, as they are still at login screen and need to issue a new request.")
-			as.Destroy(l, producer.ProviderImpl(l)(ctx))(t, s.SessionId(), s.AccountId())
+			as.Destroy(l, producer.ProviderImpl(l)(ctx))(s.SessionId(), s.AccountId())
 			return
 		}
 		l.Warnf("Unhandled opt [%d] for PIN registration. Terminating session.", opt)

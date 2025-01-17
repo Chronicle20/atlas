@@ -80,7 +80,7 @@ func Destroy(l logrus.FieldLogger, ctx context.Context, r *Registry) model.Opera
 		l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 		r.Remove(t.Id(), s.SessionId())
 		s.Disconnect()
-		as.Destroy(l, pi)(s.Tenant(), s.SessionId(), s.AccountId())
+		as.Destroy(l, pi)(s.SessionId(), s.AccountId())
 		return pi(EnvEventTopicSessionStatus)(destroyedStatusEventProvider(s.SessionId(), s.AccountId()))
 	}
 }

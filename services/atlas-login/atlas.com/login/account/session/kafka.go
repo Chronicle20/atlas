@@ -1,17 +1,37 @@
 package session
 
 import (
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 )
 
 const (
-	EnvCommandTopicAccountLogout = "COMMAND_TOPIC_ACCOUNT_LOGOUT"
+	EnvCommandTopic = "COMMAND_TOPIC_ACCOUNT_SESSION"
+
+	CommandIssuerLogin = "LOGIN"
+
+	CommandTypeCreate        = "CREATE"
+	CommandTypeProgressState = "PROGRESS_STATE"
+	CommandTypeLogout        = "LOGOUT"
 )
 
-type logoutCommand struct {
-	Tenant    tenant.Model `json:"tenant"`
-	Issuer    string       `json:"author"`
-	SessionId uuid.UUID    `json:"sessionId"`
-	AccountId uint32       `json:"accountId"`
+type command[E any] struct {
+	SessionId uuid.UUID `json:"sessionId"`
+	AccountId uint32    `json:"accountId"`
+	Issuer    string    `json:"author"`
+	Type      string    `json:"type"`
+	Body      E         `json:"body"`
+}
+
+type createCommandBody struct {
+	AccountName string `json:"accountName"`
+	Password    string `json:"password"`
+	IPAddress   string `json:"ipAddress"`
+}
+
+type progressStateCommandBody struct {
+	State  uint8       `json:"state"`
+	Params interface{} `json:"params"`
+}
+
+type logoutCommandBody struct {
 }

@@ -2,21 +2,25 @@ package session
 
 import (
 	"atlas-login/kafka/producer"
-	"context"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
-func Destroy(l logrus.FieldLogger, kp producer.Provider) func(tenant tenant.Model, sessionId uuid.UUID, accountId uint32) {
-	return func(tenant tenant.Model, sessionId uuid.UUID, accountId uint32) {
-		l.Debugf("Destroying session for account [%d].", accountId)
-		_ = kp(EnvCommandTopicAccountLogout)(logoutCommandProvider(tenant, sessionId, accountId))
+func Create(_ logrus.FieldLogger, kp producer.Provider) func(sessionId uuid.UUID, accountId uint32, accountName string, password string, ipAddress string) error {
+	return func(sessionId uuid.UUID, accountId uint32, accountName string, password string, ipAddress string) error {
+		return kp(EnvCommandTopic)(createCommandProvider(sessionId, accountId, accountName, password, ipAddress))
 	}
 }
 
-func UpdateState(l logrus.FieldLogger, ctx context.Context) func(sessionId uuid.UUID, accountId uint32, state int) (Model, error) {
-	return func(sessionId uuid.UUID, accountId uint32, state int) (Model, error) {
-		return updateState(l, ctx)(sessionId, accountId, state)
+func Destroy(l logrus.FieldLogger, kp producer.Provider) func(sessionId uuid.UUID, accountId uint32) {
+	return func(sessionId uuid.UUID, accountId uint32) {
+		l.Debugf("Destroying session for account [%d].", accountId)
+		_ = kp(EnvCommandTopic)(logoutCommandProvider(sessionId, accountId))
+	}
+}
+
+func UpdateState(_ logrus.FieldLogger, kp producer.Provider) func(sessionId uuid.UUID, accountId uint32, state uint8, params interface{}) error {
+	return func(sessionId uuid.UUID, accountId uint32, state uint8, params interface{}) error {
+		return kp(EnvCommandTopic)(progressStateCommandProvider(sessionId, accountId, state, params))
 	}
 }

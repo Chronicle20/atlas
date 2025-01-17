@@ -40,6 +40,20 @@ func requestLicenseAgreementStatusProvider(sessionId uuid.UUID, accountId uint32
 	return producer.SingleMessageProvider(key, value)
 }
 
+func stateChangedStatusProvider(sessionId uuid.UUID, accountId uint32, state uint8, params interface{}) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(accountId))
+	value := &statusEvent[stateChangedEventBody]{
+		SessionId: sessionId,
+		AccountId: accountId,
+		Type:      EventStatusTypeStateChanged,
+		Body: stateChangedEventBody{
+			State:  state,
+			Params: params,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func errorStatusProvider(sessionId uuid.UUID, accountId uint32, code string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &statusEvent[errorStatusEventBody]{

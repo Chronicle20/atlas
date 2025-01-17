@@ -13,6 +13,7 @@ const (
 
 	EnvEventStatusTopic                    = "EVENT_TOPIC_ACCOUNT_SESSION_STATUS"
 	EventStatusTypeCreated                 = "CREATED"
+	EventStatusTypeStateChanged            = "STATE_CHANGED"
 	EventStatusTypeRequestLicenseAgreement = "REQUEST_LICENSE_AGREEMENT"
 	EventStatusTypeError                   = "ERROR"
 )
@@ -36,6 +37,11 @@ type statusEvent[E any] struct {
 }
 
 type createdStatusEventBody struct {
+}
+
+type stateChangedEventBody struct {
+	State  uint8       `json:"state"`
+	Params interface{} `json:"params"`
 }
 
 type errorStatusEventBody struct {

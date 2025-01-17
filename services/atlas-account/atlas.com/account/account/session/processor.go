@@ -5,6 +5,7 @@ import (
 	"atlas-account/configuration"
 	"atlas-account/kafka/producer"
 	"context"
+	"errors"
 	"github.com/Chronicle20/atlas-tenant"
 
 	"github.com/google/uuid"
@@ -86,51 +87,55 @@ func AttemptLogin(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.
 	}
 }
 
-func ProgressState(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(sessionId uuid.UUID, issuer string, accountId uint32, state account.State) Model {
-	return func(sessionId uuid.UUID, issuer string, accountId uint32, state account.State) Model {
-		a, err := account.GetById(db)(ctx)(accountId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate account a session is being created for.")
-			return ErrorModel(NotRegistered)
-		}
+func ProgressState(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(sessionId uuid.UUID, issuer string, accountId uint32, state account.State, params interface{}) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(sessionId uuid.UUID, issuer string, accountId uint32, state account.State, params interface{}) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(sessionId uuid.UUID, issuer string, accountId uint32, state account.State, params interface{}) error {
+			return func(sessionId uuid.UUID, issuer string, accountId uint32, state account.State, params interface{}) error {
+				a, err := account.GetById(db)(ctx)(accountId)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to locate account a session is being created for.")
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorStatusProvider(sessionId, a.Id(), NotRegistered))
+					return err
+				}
 
-		l.Debugf("Received request to progress state for account [%d] to state [%d] from state [%d].", accountId, state, a.State())
-		t, err := tenant.FromContext(ctx)()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate tenant.")
-			return ErrorModel(SystemError)
-		}
-
-		for k, v := range account.Get().GetStates(account.AccountKey{Tenant: t, AccountId: accountId}) {
-			l.Debugf("Has state [%d] for [%s] via session [%s].", v.State, k.Service, k.SessionId.String())
-		}
-		if a.State() == account.StateNotLoggedIn {
-			return ErrorModel(SystemError)
-		}
-		if state == account.StateNotLoggedIn {
-			err = account.Logout(l, db, ctx)(sessionId, accountId, issuer)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to logout account.")
-				return ErrorModel(SystemError)
+				l.Debugf("Received request to progress state for account [%d] to state [%d] from state [%d].", accountId, state, a.State())
+				for k, v := range account.Get().GetStates(account.AccountKey{Tenant: t, AccountId: accountId}) {
+					l.Debugf("Has state [%d] for [%s] via session [%s].", v.State, k.Service, k.SessionId.String())
+				}
+				if a.State() == account.StateNotLoggedIn {
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorStatusProvider(sessionId, a.Id(), SystemError))
+					return errors.New("not logged in")
+				}
+				if state == account.StateNotLoggedIn {
+					err = account.Logout(l, db, ctx)(sessionId, accountId, issuer)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to logout account.")
+						_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorStatusProvider(sessionId, a.Id(), SystemError))
+						return err
+					}
+					return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(stateChangedStatusProvider(sessionId, a.Id(), account.StateNotLoggedIn, params))
+				}
+				if state == account.StateLoggedIn {
+					err = account.Login(l, db, ctx)(sessionId, accountId, issuer)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to login account.")
+						_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorStatusProvider(sessionId, a.Id(), SystemError))
+						return err
+					}
+					return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(stateChangedStatusProvider(sessionId, a.Id(), account.StateLoggedIn, params))
+				}
+				if state == account.StateTransition {
+					err = account.Get().Transition(account.AccountKey{Tenant: t, AccountId: accountId}, account.ServiceKey{SessionId: sessionId, Service: account.Service(issuer)})
+					if err == nil {
+						l.Debugf("State transition triggered a transition.")
+					}
+					return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(stateChangedStatusProvider(sessionId, a.Id(), account.StateTransition, params))
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorStatusProvider(sessionId, 0, SystemError))
+				return errors.New("invalid state")
 			}
-			return OkModel()
 		}
-		if state == account.StateLoggedIn {
-			err = account.Login(l, db, ctx)(sessionId, accountId, issuer)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to login account.")
-				return ErrorModel(SystemError)
-			}
-			return OkModel()
-		}
-		if state == account.StateTransition {
-			err = account.Get().Transition(account.AccountKey{Tenant: t, AccountId: accountId}, account.ServiceKey{SessionId: sessionId, Service: account.Service(issuer)})
-			if err == nil {
-				l.Debugf("State transition triggered a transition.")
-			}
-			return OkModel()
-		}
-		return ErrorModel(SystemError)
 	}
 }
 

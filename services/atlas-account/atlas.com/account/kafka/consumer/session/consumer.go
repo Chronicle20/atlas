@@ -40,6 +40,20 @@ func handleCreateAccountSessionCommand(db *gorm.DB) func(l logrus.FieldLogger, c
 	}
 }
 
+func ProgressStateAccountSessionCommandRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handler) {
+	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleProgressStateAccountSessionCommand(db)))
+}
+
+func handleProgressStateAccountSessionCommand(db *gorm.DB) message.Handler[command[progressStateCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[progressStateCommandBody]) {
+		if c.Type != CommandTypeProgressState {
+			return
+		}
+		_ = session.ProgressState(l)(ctx)(db)(c.SessionId, c.Issuer, c.AccountId, account.State(c.Body.State), c.Body.Params)
+	}
+}
+
 func LogoutAccountSessionCommandRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handler) {
 	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
 	return t, message.AdaptHandler(message.PersistentConfig(handleLogoutAccountSessionCommand(db)))

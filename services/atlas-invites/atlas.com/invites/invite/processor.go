@@ -14,7 +14,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(referenceId uin
 	return func(ctx context.Context) func(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32) error {
 		return func(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32) error {
 			t := tenant.MustFromContext(ctx)
-			i := GetRegistry().Create(t, originatorId, targetId, inviteType, referenceId)
+			i := GetRegistry().Create(t, originatorId, worldId, targetId, inviteType, referenceId)
 			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(createdStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId()))
 		}
 	}

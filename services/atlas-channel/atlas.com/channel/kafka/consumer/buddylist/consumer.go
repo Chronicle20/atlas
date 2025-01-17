@@ -223,7 +223,7 @@ func buddyCapacityChange(l logrus.FieldLogger) func(ctx context.Context) func(wp
 				return func(s session.Model) error {
 					err := buddyOperationFunc(s, writer.BuddyCapacityUpdateBody(l)(capacity))
 					if err != nil {
-						l.WithError(err).Errorf("Unable to announce character [%d] buddy list capacity [%s] update.", s.CharacterId(), capacity)
+						l.WithError(err).Errorf("Unable to announce character [%d] buddy list capacity [%d] update.", s.CharacterId(), capacity)
 						return err
 					}
 					return nil

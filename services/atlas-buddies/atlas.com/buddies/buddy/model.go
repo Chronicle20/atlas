@@ -22,3 +22,7 @@ func (m Model) Name() string {
 func (m Model) Group() string {
 	return m.group
 }
+
+func (m Model) ChannelId() int8 {
+	return m.channelId
+}

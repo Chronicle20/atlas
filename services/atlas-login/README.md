@@ -15,5 +15,5 @@ A stateful, multi-tenant, multi-version login service for a mushroom game.
 - CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
 - CHARACTER_FACTORY_SERVICE_URL - [scheme]://[host]:[port]/api/cfs/
 - WORLD_SERVICE_URL - [scheme]://[host]:[port]/api/wrg/
-- COMMAND_TOPIC_ACCOUNT_LOGOUT - Kafka Topic for transmitting Account Logout Commands
+- COMMAND_TOPIC_ACCOUNT_SESSION - Kafka Topic for transmitting Account Session Commands
 - EVENT_TOPIC_SESSION_STATUS - Kafka Topic for capturing session events.

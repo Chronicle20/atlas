@@ -2,6 +2,7 @@ package session
 
 import (
 	"atlas-account/account"
+	"atlas-account/account/session"
 	consumer2 "atlas-account/kafka/consumer"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -23,15 +24,34 @@ func AccountSessionCommandConsumer(l logrus.FieldLogger) func(groupId string) co
 	}
 }
 
-func LogoutAccountSessionCommandRegister(l *logrus.Logger, db *gorm.DB) (string, handler.Handler) {
+func CreateAccountSessionCommandRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handler) {
+	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleCreateAccountSessionCommand(db)))
+}
+
+func handleCreateAccountSessionCommand(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c command[createCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[createCommandBody]) {
+		if c.Type != CommandTypeCreate {
+			return
+		}
+
+		l.Debugf("Received create account command account [%d] from [%s].", c.AccountId, c.Issuer)
+		_ = session.AttemptLogin(l)(ctx)(db)(c.SessionId, c.Body.AccountName, c.Body.Password)
+	}
+}
+
+func LogoutAccountSessionCommandRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handler) {
 	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
 	return t, message.AdaptHandler(message.PersistentConfig(handleLogoutAccountSessionCommand(db)))
 }
 
 func handleLogoutAccountSessionCommand(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c command[logoutCommandBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, c command[logoutCommandBody]) {
+		if c.Type != CommandTypeLogout {
+			return
+		}
+
 		l.Debugf("Received logout account command account [%d] from [%s].", c.AccountId, c.Issuer)
 		_ = account.Logout(l, db, ctx)(c.SessionId, c.AccountId, strings.ToUpper(c.Issuer))
-		// l.Debugf("Ignoring logout command from [%s] as account [%d] is not in correct state.", command.Issuer, command.AccountId)
 	}
 }

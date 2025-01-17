@@ -32,7 +32,7 @@ func handleCreateAccountCommand(db *gorm.DB) message.Handler[createCommand] {
 	}
 }
 
-func CreateAccountRegister(l *logrus.Logger, db *gorm.DB) (string, handler.Handler) {
+func CreateAccountRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handler) {
 	t, _ := topic.EnvProvider(l)(EnvCommandTopicCreateAccount)()
 	return t, message.AdaptHandler(message.PersistentConfig(handleCreateAccountCommand(db)))
 }

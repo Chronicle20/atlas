@@ -54,6 +54,7 @@ func main() {
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.CreateCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(session2.AccountSessionCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(account.CreateAccountRegister(l, db))
+	_, _ = cm.RegisterHandler(session2.CreateAccountSessionCommandRegister(l, db))
 	_, _ = cm.RegisterHandler(session2.LogoutAccountSessionCommandRegister(l, db))
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), session.InitResource(GetServer())(db), account.InitResource(GetServer())(db))

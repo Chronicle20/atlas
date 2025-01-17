@@ -8,10 +8,13 @@ const (
 	EnvCommandTopic = "COMMAND_TOPIC_ACCOUNT_SESSION"
 
 	CommandIssuerInternal = "INTERNAL"
-	CommandIssuerLogin    = "LOGIN"
-	CommandIssuerChannel  = "CHANNEL"
 
 	CommandTypeLogout = "LOGOUT"
+
+	EnvEventStatusTopic                    = "EVENT_TOPIC_ACCOUNT_SESSION_STATUS"
+	EventStatusTypeCreated                 = "CREATED"
+	EventStatusTypeRequestLicenseAgreement = "REQUEST_LICENSE_AGREEMENT"
+	EventStatusTypeError                   = "ERROR"
 )
 
 type command[E any] struct {
@@ -23,4 +26,20 @@ type command[E any] struct {
 }
 
 type logoutCommandBody struct {
+}
+
+type statusEvent[E any] struct {
+	SessionId uuid.UUID `json:"sessionId"`
+	AccountId uint32    `json:"accountId"`
+	Type      string    `json:"type"`
+	Body      E         `json:"body"`
+}
+
+type createdStatusEventBody struct {
+}
+
+type errorStatusEventBody struct {
+	Code   string `json:"code"`
+	Reason byte   `json:"reason"`
+	Until  uint64 `json:"until"`
 }

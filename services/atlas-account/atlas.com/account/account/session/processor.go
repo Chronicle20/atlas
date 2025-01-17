@@ -3,6 +3,7 @@ package session
 import (
 	"atlas-account/account"
 	"atlas-account/configuration"
+	"atlas-account/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-tenant"
 
@@ -19,62 +20,69 @@ const (
 	AlreadyLoggedIn   = "ALREADY_LOGGED_IN"
 	IncorrectPassword = "INCORRECT_PASSWORD"
 	TooManyAttempts   = "TOO_MANY_ATTEMPTS"
-	LicenseAgreement  = "LICENSE_AGREEMENT"
 )
 
-func AttemptLogin(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(sessionId uuid.UUID, name string, password string) Model {
-	return func(sessionId uuid.UUID, name string, password string) Model {
-		l.Debugf("Attemting login for [%s].", name)
-		if checkLoginAttempts(sessionId) > 4 {
-			return ErrorModel(TooManyAttempts)
-		}
+func AttemptLogin(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(sessionId uuid.UUID, name string, password string) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(sessionId uuid.UUID, name string, password string) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(sessionId uuid.UUID, name string, password string) error {
+			return func(sessionId uuid.UUID, name string, password string) error {
+				l.Debugf("Attemting login for [%s].", name)
+				if checkLoginAttempts(sessionId) > 4 {
+					l.Warnf("Session [%s] has attempted to log into (or create) an account too many times.", sessionId.String())
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorStatusProvider(sessionId, 0, TooManyAttempts))
+					return nil
+				}
 
-		c, err := configuration.Get()
-		if err != nil {
-			l.WithError(err).Errorf("Error reading needed configuration.")
-			return ErrorModel(SystemError)
-		}
+				c, err := configuration.Get()
+				if err != nil {
+					l.WithError(err).Errorf("Error reading needed configuration.")
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorStatusProvider(sessionId, 0, SystemError))
+					return err
+				}
 
-		a, err := account.GetOrCreate(l, db, ctx)(name, password, c.AutomaticRegister)
-		if err != nil && !c.AutomaticRegister {
-			return ErrorModel(NotRegistered)
-		}
-		if err != nil {
-			return ErrorModel(SystemError)
-		}
+				a, err := account.GetOrCreate(l, db, ctx)(name, password, c.AutomaticRegister)
+				if err != nil && !c.AutomaticRegister {
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorStatusProvider(sessionId, 0, NotRegistered))
+					return nil
+				}
+				if err != nil {
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorStatusProvider(sessionId, 0, SystemError))
+					return err
+				}
 
-		if a.Banned() {
-			return ErrorModel(DeletedOrBlocked)
+				if a.Banned() {
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorStatusProvider(sessionId, a.Id(), DeletedOrBlocked))
+					return nil
+				}
+
+				// TODO implement ip, mac, and temporary banning practices
+
+				if a.State() != account.StateNotLoggedIn {
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorStatusProvider(sessionId, a.Id(), AlreadyLoggedIn))
+					return nil
+				} else if a.Password()[0] == uint8('$') && a.Password()[1] == uint8('2') && bcrypt.CompareHashAndPassword([]byte(a.Password()), []byte(password)) == nil {
+					// TODO implement tos tracking
+				} else {
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorStatusProvider(sessionId, a.Id(), IncorrectPassword))
+					return nil
+				}
+
+				err = account.Login(l, db, ctx)(sessionId, a.Id(), account.ServiceLogin)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to record login.")
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorStatusProvider(sessionId, a.Id(), SystemError))
+				}
+
+				l.Debugf("Login successful for [%s].", name)
+
+				if !a.TOS() && t.Region() != "JMS" {
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(requestLicenseAgreementStatusProvider(sessionId, a.Id()))
+					return nil
+				}
+				return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(createdStatusProvider(sessionId, a.Id()))
+			}
 		}
-
-		// TODO implement ip, mac, and temporary banning practices
-
-		if a.State() != account.StateNotLoggedIn {
-			return ErrorModel(AlreadyLoggedIn)
-		} else if a.Password()[0] == uint8('$') && a.Password()[1] == uint8('2') && bcrypt.CompareHashAndPassword([]byte(a.Password()), []byte(password)) == nil {
-			// TODO implement tos tracking
-		} else {
-			return ErrorModel(IncorrectPassword)
-		}
-
-		err = account.Login(l, db, ctx)(sessionId, a.Id(), account.ServiceLogin)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to record login.")
-			return ErrorModel(SystemError)
-		}
-
-		l.Debugf("Login successful for [%s].", name)
-
-		t, err := tenant.FromContext(ctx)()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate tenant.")
-			return ErrorModel(SystemError)
-		}
-
-		if !a.TOS() && t.Region() != "JMS" {
-			return ErrorModel(LicenseAgreement)
-		}
-		return OkModel()
 	}
 }
 

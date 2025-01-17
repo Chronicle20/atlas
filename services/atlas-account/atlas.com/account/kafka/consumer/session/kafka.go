@@ -9,6 +9,7 @@ const (
 	CommandIssuerLogin    = "LOGIN"
 	CommandIssuerChannel  = "CHANNEL"
 
+	CommandTypeCreate = "CREATE"
 	CommandTypeLogout = "LOGOUT"
 )
 
@@ -18,6 +19,12 @@ type command[E any] struct {
 	Issuer    string    `json:"author"`
 	Type      string    `json:"type"`
 	Body      E         `json:"body"`
+}
+
+type createCommandBody struct {
+	AccountName string `json:"accountName"`
+	Password    string `json:"password"`
+	IPAddress   string `json:"ipAddress"`
 }
 
 type logoutCommandBody struct {

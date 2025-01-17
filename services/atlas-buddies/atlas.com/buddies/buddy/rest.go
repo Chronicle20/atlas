@@ -9,6 +9,7 @@ type RestModel struct {
 	Group         string `json:"group"`
 	CharacterName string `json:"characterName"`
 	ChannelId     int8   `json:"channelId"`
+	InShop        bool   `json:"inShop"`
 	Pending       bool   `json:"pending"`
 }
 
@@ -35,6 +36,7 @@ func Transform(m Model) (RestModel, error) {
 		Group:         m.group,
 		CharacterName: m.characterName,
 		ChannelId:     m.channelId,
+		InShop:        m.inShop,
 		Pending:       m.pending,
 	}, nil
 }

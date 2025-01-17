@@ -395,3 +395,56 @@ func UpdateChannel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 		}
 	}
 }
+
+func UpdateShopStatus(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, inShop bool) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, inShop bool) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, worldId byte, inShop bool) error {
+			return func(characterId uint32, worldId byte, inShop bool) error {
+				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					bl, err := byCharacterIdEntityProvider(t.Id(), characterId)(tx)()
+					if err != nil {
+						l.WithError(err).Errorf("Unable to locate buddy list for character [%d].", characterId)
+						return err
+					}
+					for _, b := range bl.Buddies {
+						var update bool
+						update, err = updateBuddyShopStatus(tx, t.Id(), characterId, b.CharacterId, inShop)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to update character [%d] shop status to [%t] in [%d] buddy list.", characterId, inShop, b.CharacterId)
+							return err
+						}
+
+						if update {
+							tbl, err := byCharacterIdEntityProvider(t.Id(), b.CharacterId)(tx)()
+							if err != nil {
+								return err
+							}
+							var tbe *buddy.Entity
+							for _, pbe := range tbl.Buddies {
+								if pbe.CharacterId == characterId {
+									tbe = &pbe
+								}
+							}
+							if tbe == nil {
+								continue
+							}
+
+							events = model.MergeSliceProvider(events, buddyUpdatedStatusEventProvider(b.CharacterId, worldId, tbe.CharacterId, tbe.Group, tbe.CharacterName, b.ChannelId, inShop))
+							if err != nil {
+								l.WithError(err).Errorf("Unable to inform character [%d] that [%d] has updated.", b.CharacterId, characterId)
+							}
+						}
+					}
+					return nil
+				})
+				msgErr := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(events)
+				if msgErr != nil {
+					return msgErr
+				}
+				return txErr
+			}
+		}
+	}
+}

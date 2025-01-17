@@ -7,6 +7,7 @@ const (
 	EnvStatusEventTopic                = "EVENT_TOPIC_BUDDY_LIST_STATUS"
 	StatusEventTypeBuddyAdded          = "BUDDY_ADDED"
 	StatusEventTypeBuddyRemoved        = "BUDDY_REMOVED"
+	StatusEventTypeBuddyUpdated        = "BUDDY_UPDATED"
 	StatusEventTypeBuddyChannelChange  = "BUDDY_CHANNEL_CHANGE"
 	StatusEventTypeBuddyCapacityUpdate = "CAPACITY_CHANGE"
 	StatusEventTypeError               = "ERROR"
@@ -46,6 +47,14 @@ type buddyAddedStatusEventBody struct {
 
 type buddyRemovedStatusEventBody struct {
 	CharacterId uint32 `json:"characterId"`
+}
+
+type buddyUpdatedStatusEventBody struct {
+	CharacterId   uint32 `json:"characterId"`
+	Group         string `json:"group"`
+	CharacterName string `json:"characterName"`
+	ChannelId     int8   `json:"channelId"`
+	InShop        bool   `json:"inShop"`
 }
 
 type buddyChannelChangeStatusEventBody struct {

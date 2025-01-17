@@ -86,3 +86,27 @@ func updateBuddyChannel(db *gorm.DB, tenantId uuid.UUID, characterId uint32, tar
 	}
 	return true, nil
 }
+
+func updateBuddyShopStatus(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId uint32, inShop bool) (bool, error) {
+	bbl, err := byCharacterIdEntityProvider(tenantId, targetId)(db)()
+	if err != nil {
+		return false, err
+	}
+
+	var meAsBuddy *buddy.Entity
+	for _, pm := range bbl.Buddies {
+		if pm.CharacterId == characterId {
+			meAsBuddy = &pm
+		}
+	}
+	if meAsBuddy == nil {
+		return false, nil
+	}
+	meAsBuddy.InShop = inShop
+
+	err = db.Save(meAsBuddy).Error
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}

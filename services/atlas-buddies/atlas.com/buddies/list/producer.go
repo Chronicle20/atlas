@@ -47,6 +47,23 @@ func buddyRemovedStatusEventProvider(characterId uint32, worldId byte, buddyId u
 	return producer.SingleMessageProvider(key, value)
 }
 
+func buddyUpdatedStatusEventProvider(characterId uint32, worldId byte, buddyId uint32, group string, buddyName string, channelId int8, inShop bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &statusEvent[buddyUpdatedStatusEventBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        StatusEventTypeBuddyUpdated,
+		Body: buddyUpdatedStatusEventBody{
+			CharacterId:   buddyId,
+			Group:         group,
+			CharacterName: buddyName,
+			ChannelId:     channelId,
+			InShop:        inShop,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func buddyChannelChangeStatusEventProvider(characterId uint32, worldId byte, buddyId uint32, buddyChannelId int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &statusEvent[buddyChannelChangeStatusEventBody]{

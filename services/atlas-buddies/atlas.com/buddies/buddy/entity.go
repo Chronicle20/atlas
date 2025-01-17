@@ -14,8 +14,9 @@ type Entity struct {
 	ListId        uuid.UUID `gorm:"not null"`
 	Group         string    `gorm:"not null"`
 	CharacterName string    `gorm:"not null"`
-	ChannelId     int8      `gorm:"not null"`
-	Pending       bool      `gorm:"not null"`
+	ChannelId     int8      `gorm:"not null;default:-1"`
+	InShop        bool      `gorm:"not null;default:false"`
+	Pending       bool      `gorm:"not null;default:false"`
 }
 
 func (e Entity) TableName() string {
@@ -29,6 +30,7 @@ func Make(e Entity) (Model, error) {
 		group:         e.Group,
 		characterName: e.CharacterName,
 		channelId:     e.ChannelId,
+		inShop:        e.InShop,
 		pending:       e.Pending,
 	}, nil
 }

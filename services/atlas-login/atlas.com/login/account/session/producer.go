@@ -7,6 +7,22 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+func createCommandProvider(sessionId uuid.UUID, accountId uint32, accountName string, password string, ipAddress string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(accountId))
+	value := &command[createCommandBody]{
+		SessionId: sessionId,
+		AccountId: accountId,
+		Issuer:    CommandIssuerLogin,
+		Type:      CommandTypeCreate,
+		Body: createCommandBody{
+			AccountName: accountName,
+			Password:    password,
+			IPAddress:   ipAddress,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func logoutCommandProvider(sessionId uuid.UUID, accountId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &command[logoutCommandBody]{

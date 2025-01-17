@@ -18,6 +18,28 @@ func AllInTenantProvider(tenant tenant.Model) model.Provider[[]Model] {
 	}
 }
 
+func ByIdModelProvider(tenant tenant.Model) func(sessionId uuid.UUID) model.Provider[Model] {
+	return func(sessionId uuid.UUID) model.Provider[Model] {
+		return func() (Model, error) {
+			s, ok := GetRegistry().Get(tenant.Id(), sessionId)
+			if !ok {
+				return Model{}, errors.New("not found")
+			}
+			return s, nil
+		}
+	}
+}
+
+func IfPresentById(tenant tenant.Model) func(sessionId uuid.UUID, f model.Operator[Model]) {
+	return func(sessionId uuid.UUID, f model.Operator[Model]) {
+		s, err := ByIdModelProvider(tenant)(sessionId)()
+		if err != nil {
+			return
+		}
+		_ = f(s)
+	}
+}
+
 func Announce(l logrus.FieldLogger) func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
 	return func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
 		return func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {

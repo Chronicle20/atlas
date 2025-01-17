@@ -1,7 +1,9 @@
 package invite
 
 import (
+	"atlas-invites/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"time"
@@ -34,7 +36,17 @@ func (t *Timeout) Run() {
 	t.l.Debugf("Executing timeout task.")
 	for _, i := range is {
 		t.l.Infof("Invite [%d] has expired. Character [%d] will no longer be able to act upon it.", i.Id(), i.TargetId())
-		_ = GetRegistry().Delete(i.Tenant(), i.TargetId(), i.Type(), i.OriginatorId())
+		err = GetRegistry().Delete(i.Tenant(), i.TargetId(), i.Type(), i.OriginatorId())
+		if err != nil {
+			t.l.WithError(err).Errorf("Unable to expire invite [%d].", i.Id())
+			return
+		}
+
+		ctx := tenant.WithContext(context.Background(), i.Tenant())
+		err = producer.ProviderImpl(t.l)(ctx)(EnvEventStatusTopic)(rejectedStatusEventProvider(i.ReferenceId(), i.WorldId(), i.Type(), i.OriginatorId(), i.TargetId()))
+		if err != nil {
+			t.l.WithError(err).Errorf("Unable to produce rejection event for [%d] denying [%d] [%s] due to timeout.", i.TargetId(), i.OriginatorId(), i.Type())
+		}
 	}
 }
 

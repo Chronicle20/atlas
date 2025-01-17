@@ -27,7 +27,7 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) Create(t tenant.Model, originatorId uint32, targetId uint32, inviteType string, referenceId uint32) Model {
+func (r *Registry) Create(t tenant.Model, originatorId uint32, worldId byte, targetId uint32, inviteType string, referenceId uint32) Model {
 	var inviteId uint32
 	var inviteReg map[uint32]map[string][]Model
 	var tenantLock *sync.RWMutex
@@ -55,6 +55,7 @@ func (r *Registry) Create(t tenant.Model, originatorId uint32, targetId uint32, 
 		referenceId:  referenceId,
 		originatorId: originatorId,
 		targetId:     targetId,
+		worldId:      worldId,
 		age:          time.Now(),
 	}
 

@@ -1,7 +1,7 @@
 package invite
 
 import (
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"time"
 )
 
@@ -12,6 +12,7 @@ type Model struct {
 	referenceId  uint32
 	originatorId uint32
 	targetId     uint32
+	worldId      byte
 	age          time.Time
 }
 
@@ -48,4 +49,8 @@ func (m Model) Tenant() tenant.Model {
 
 func (m Model) Type() string {
 	return m.inviteType
+}
+
+func (m Model) WorldId() byte {
+	return m.worldId
 }

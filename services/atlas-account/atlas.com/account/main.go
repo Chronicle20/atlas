@@ -2,8 +2,8 @@ package main
 
 import (
 	"atlas-account/account"
-	"atlas-account/account/session"
 	"atlas-account/database"
+	session2 "atlas-account/kafka/consumer/session"
 	"atlas-account/logger"
 	"atlas-account/service"
 	"atlas-account/tasks"
@@ -51,11 +51,13 @@ func main() {
 
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.CreateCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.CreateSessionCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(session2.AccountSessionCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(account.CreateAccountRegister(l, db))
-	_, _ = cm.RegisterHandler(account.CreateAccountSessionRegister(l, db))
+	_, _ = cm.RegisterHandler(session2.CreateAccountSessionCommandRegister(l, db))
+	_, _ = cm.RegisterHandler(session2.ProgressStateAccountSessionCommandRegister(l, db))
+	_, _ = cm.RegisterHandler(session2.LogoutAccountSessionCommandRegister(l, db))
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), session.InitResource(GetServer())(db), account.InitResource(GetServer())(db))
+	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), account.InitResource(GetServer())(db))
 
 	go tasks.Register(l, tdm.Context())(account.NewTransitionTimeout(l, db, time.Second*time.Duration(5)))
 

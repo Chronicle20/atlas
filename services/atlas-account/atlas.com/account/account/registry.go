@@ -108,11 +108,18 @@ func (l *Registry) Login(key AccountKey, sk ServiceKey) error {
 		states[sk] = StateValue{State: StateLoggedIn, UpdatedAt: time.Now()}
 		return nil
 	} else if sk.Service == ServiceChannel {
-		for _, state := range states {
-			if state.State > 1 {
-				l.sessions[key][sk] = StateValue{State: StateLoggedIn, UpdatedAt: time.Now()}
-				return nil
+		// Remove ServiceLogin states if we've successfully moved to a ServiceChannel.
+		var transition = false
+		for tk, ts := range states {
+			if ts.State > 1 {
+				transition = true
 			}
+			delete(states, tk)
+		}
+
+		if transition {
+			l.sessions[key][sk] = StateValue{State: StateLoggedIn, UpdatedAt: time.Now()}
+			return nil
 		}
 		return errors.New("no other service transitioning")
 	}

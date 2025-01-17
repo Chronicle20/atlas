@@ -90,7 +90,7 @@ func LicenseAgreementAccountSessionStatusEventRegister(t tenant.Model, wp writer
 	}
 }
 
-func handleLicenseAgreementAccountSessionStatusEvent(t tenant.Model, _ writer.Producer) message.Handler[statusEvent[any]] {
+func handleLicenseAgreementAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) message.Handler[statusEvent[any]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[any]) {
 		if e.Type != EventStatusTypeRequestLicenseAgreement {
 			return
@@ -99,6 +99,19 @@ func handleLicenseAgreementAccountSessionStatusEvent(t tenant.Model, _ writer.Pr
 		if !t.Is(tenant.MustFromContext(ctx)) {
 			return
 		}
+
+		session.IfPresentById(t)(e.SessionId, func(s session.Model) error {
+			a, err := account.GetById(l, ctx)(e.AccountId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve account [%d] that had a session [%s] created for it.", e.AccountId, s.SessionId().String())
+				return err
+			}
+
+			s = session.SetAccountId(a.Id())(t.Id(), s.SessionId())
+			session.SessionCreated(producer.ProviderImpl(l)(ctx), t)(s)
+
+			return announceError(l)(ctx)(wp)("LICENSE_AGREEMENT")(s)
+		})
 	}
 }
 

@@ -9,10 +9,12 @@ import (
 
 func logoutCommandProvider(sessionId uuid.UUID, accountId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
-	value := &logoutCommand{
+	value := &command[logoutCommandBody]{
 		SessionId: sessionId,
-		Issuer:    "CHANNEL",
 		AccountId: accountId,
+		Issuer:    CommandIssuerChannel,
+		Type:      CommandTypeLogout,
+		Body:      logoutCommandBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

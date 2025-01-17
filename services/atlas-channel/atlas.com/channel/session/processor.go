@@ -18,6 +18,31 @@ func AllInTenantProvider(tenant tenant.Model) model.Provider[[]Model] {
 	}
 }
 
+func ByIdModelProvider(tenant tenant.Model) func(sessionId uuid.UUID) model.Provider[Model] {
+	return func(sessionId uuid.UUID) model.Provider[Model] {
+		return func() (Model, error) {
+			s, ok := GetRegistry().Get(tenant.Id(), sessionId)
+			if !ok {
+				return Model{}, errors.New("not found")
+			}
+			return s, nil
+		}
+	}
+}
+
+func IfPresentById(tenant tenant.Model, worldId byte, channelId byte) func(sessionId uuid.UUID, f model.Operator[Model]) {
+	return func(sessionId uuid.UUID, f model.Operator[Model]) {
+		s, err := ByIdModelProvider(tenant)(sessionId)()
+		if err != nil {
+			return
+		}
+		if s.WorldId() != worldId || s.ChannelId() != channelId {
+			return
+		}
+		_ = f(s)
+	}
+}
+
 func ByCharacterIdModelProvider(tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
 		return model.FirstProvider[Model](AllInTenantProvider(tenant), model.Filters(CharacterIdFilter(characterId)))

@@ -4,6 +4,7 @@ import (
 	"atlas-channel/account"
 	"atlas-channel/channel"
 	"atlas-channel/configuration"
+	"atlas-channel/kafka/consumer/buddylist"
 	"atlas-channel/kafka/consumer/character"
 	"atlas-channel/kafka/consumer/inventory"
 	"atlas-channel/kafka/consumer/invite"
@@ -11,6 +12,7 @@ import (
 	"atlas-channel/kafka/consumer/monster"
 	"atlas-channel/kafka/consumer/party"
 	"atlas-channel/kafka/consumer/party/member"
+	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/logger"
 	"atlas-channel/message"
 	"atlas-channel/server"
@@ -70,6 +72,8 @@ func main() {
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(party.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(member.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(invite.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(buddylist.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(session2.AccountSessionStatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
@@ -149,6 +153,15 @@ func main() {
 				_, _ = cm.RegisterHandler(member.LogoutStatusEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(invite.CreatedStatusEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(invite.RejectedStatusEventRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyAddedRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyRemovedRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyUpdatedRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyChannelChangeRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyCapacityChangeRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyErrorRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(session2.ChannelChangeStateChangedAccountSessionStatusEventRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(session2.PlayerLoggedInStateChangedAccountSessionStatusEventRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(session2.ErrorAccountSessionStatusEventRegister(sc, wp)(l))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
@@ -202,6 +215,7 @@ func produceWriters() []string {
 		writer.PartyOperation,
 		writer.CharacterMultiChat,
 		writer.CharacterKeyMap,
+		writer.BuddyOperation,
 	}
 }
 
@@ -223,6 +237,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.PartyInviteRejectHandle] = handler.PartyInviteRejectHandleFunc
 	handlerMap[handler.CharacterMultiChatHandle] = handler.CharacterMultiChatHandleFunc
 	handlerMap[handler.CharacterKeyMapChangeHandle] = handler.CharacterKeyMapChangeHandleFunc
+	handlerMap[handler.BuddyOperationHandle] = handler.BuddyOperationHandleFunc
 	return handlerMap
 }
 

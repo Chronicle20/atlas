@@ -3,7 +3,9 @@ package handler
 import (
 	as "atlas-channel/account/session"
 	"atlas-channel/channel"
+	"atlas-channel/kafka/producer"
 	"atlas-channel/session"
+	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
@@ -12,8 +14,7 @@ import (
 
 const ChannelChangeHandle = "ChannelChangeHandle"
 
-func ChannelChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	channelChangeFunc := session.Announce(l)(ctx)(wp)(writer.ChannelChange)
+func ChannelChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		channelId := r.ReadByte()
 		updateTime := r.ReadUint32()
@@ -29,17 +30,9 @@ func ChannelChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			return
 		}
 
-		resp, err := as.UpdateState(l)(ctx)(s.SessionId(), s.AccountId(), 2)
-		if err != nil || resp.Code != "OK" {
-			l.WithError(err).Errorf("Unable to update session for character [%d] attempting to switch to channel.", s.CharacterId())
-			session.Destroy(l, ctx, session.GetRegistry())(s)
-			return
-		}
-
-		err = channelChangeFunc(s, writer.ChannelChangeBody(c.IpAddress(), uint16(c.Port())))
+		err = as.UpdateState(l, producer.ProviderImpl(l)(ctx))(s.SessionId(), s.AccountId(), 2, model.ChannelChange{IPAddress: c.IpAddress(), Port: uint16(c.Port())})
 		if err != nil {
-			l.WithError(err).Errorf("Unable to write change channel.")
-			return
+			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
 		}
 	}
 }

@@ -26,14 +26,14 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		op := r.ReadByte()
-		if isOperation(l)(readerOptions, op, PartyOperationCreate) {
+		if isPartyOperation(l)(readerOptions, op, PartyOperationCreate) {
 			err := party.Create(l)(ctx)(s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] unable to attempt party creation.", s.CharacterId())
 			}
 			return
 		}
-		if isOperation(l)(readerOptions, op, PartyOperationJoin) {
+		if isPartyOperation(l)(readerOptions, op, PartyOperationJoin) {
 			partyId := r.ReadUint32()
 			err := invite.Accept(l)(ctx)(s.CharacterId(), s.WorldId(), invite.InviteTypeParty, partyId)
 			if err != nil {
@@ -41,7 +41,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			}
 			return
 		}
-		if isOperation(l)(readerOptions, op, PartyOperationLeave) {
+		if isPartyOperation(l)(readerOptions, op, PartyOperationLeave) {
 			p, err := party.GetByMemberId(l)(ctx)(s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate party for character [%d] to leave.", s.CharacterId())
@@ -53,7 +53,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			}
 			return
 		}
-		if isOperation(l)(readerOptions, op, PartyOperationExpel) {
+		if isPartyOperation(l)(readerOptions, op, PartyOperationExpel) {
 			targetCharacterId := r.ReadUint32()
 			p, err := party.GetByMemberId(l)(ctx)(s.CharacterId())
 			if err != nil {
@@ -66,7 +66,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			}
 			return
 		}
-		if isOperation(l)(readerOptions, op, PartyOperationChangeLeader) {
+		if isPartyOperation(l)(readerOptions, op, PartyOperationChangeLeader) {
 			targetCharacterId := r.ReadUint32()
 			p, err := party.GetByMemberId(l)(ctx)(s.CharacterId())
 			if err != nil {
@@ -79,7 +79,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			}
 			return
 		}
-		if isOperation(l)(readerOptions, op, PartyOperationInvite) {
+		if isPartyOperation(l)(readerOptions, op, PartyOperationInvite) {
 			name := r.ReadAsciiString()
 			cs, err := character.GetByName(l, ctx)(name)
 			if err != nil || len(cs) < 1 {
@@ -109,7 +109,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 	}
 }
 
-func isOperation(l logrus.FieldLogger) func(options map[string]interface{}, op byte, key string) bool {
+func isPartyOperation(l logrus.FieldLogger) func(options map[string]interface{}, op byte, key string) bool {
 	return func(options map[string]interface{}, op byte, key string) bool {
 		var genericCodes interface{}
 		var ok bool

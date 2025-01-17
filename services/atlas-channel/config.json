@@ -613,6 +613,19 @@
               "handler": "PartyInviteRejectHandle"
             },
             {
+              "opCode": "0x82",
+              "validator": "LoggedInValidator",
+              "handler": "BuddyOperationHandle",
+              "options": {
+                "operations": {
+                  "RELOAD": 0,
+                  "ADD": 1,
+                  "ACCEPT": 2,
+                  "DELETE": 3
+                }
+              }
+            },
+            {
               "opCode": "0x87",
               "validator": "LoggedInValidator",
               "handler": "CharacterKeyMapChangeHandle"
@@ -836,6 +849,25 @@
             {
               "opCode": "0x3D",
               "writer": "CharacterInfo"
+            },
+            {
+              "opCode": "0x3F",
+              "writer": "BuddyOperation",
+              "options": {
+                "operations": {
+                  "UPDATE": "0x07",
+                  "BUDDY_UPDATE": "0x08",
+                  "INVITE": "0x09",
+                  "BUDDY_LIST_FULL": "0x0B",
+                  "OTHER_BUDDY_LIST_FULL": "0x0C",
+                  "ALREADY_BUDDY": "0x0D",
+                  "CANNOT_BUDDY_GM": "0x0E",
+                  "CHARACTER_NOT_FOUND": "0x0F",
+                  "UNKNOWN_ERROR": "0x10",
+                  "BUDDY_CHANNEL_CHANGE": "0x14",
+                  "CAPACITY_CHANGE": "0x15"
+                }
+              }
             },
             {
               "opCode": "0x3E",
@@ -1227,7 +1259,8 @@
             {
               "opCode": "0x145",
               "writer": "CashShopOperation"
-            }, {
+            },
+            {
               "opCode": "0x14F",
               "writer": "CharacterKeyMap"
             }

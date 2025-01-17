@@ -1,6 +1,7 @@
 package writer
 
 import (
+	"atlas-channel/buddylist"
 	"atlas-channel/character"
 	"atlas-channel/character/equipment/slot"
 	"atlas-channel/character/inventory/equipable"
@@ -49,8 +50,8 @@ func WarpToMapBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byt
 	}
 }
 
-func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byte, c character.Model) BodyProducer {
-	return func(channelId byte, c character.Model) BodyProducer {
+func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byte, c character.Model, bl buddylist.Model) BodyProducer {
+	return func(channelId byte, c character.Model, bl buddylist.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
 				w.WriteShort(0) // decode opt, loop with 2 decode 4s
@@ -75,7 +76,7 @@ func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byte
 				w.WriteInt(rand.Uint32())
 			}
 
-			WriteCharacterInfo(tenant)(w)(c)
+			WriteCharacterInfo(tenant)(w)(c, bl)
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
 				w.WriteInt(0) // logout gifts
 				w.WriteInt(0)
@@ -88,9 +89,9 @@ func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byte
 	}
 }
 
-func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(c character.Model) {
-	return func(w *response.Writer) func(c character.Model) {
-		return func(m character.Model) {
+func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(c character.Model, bl buddylist.Model) {
+	return func(w *response.Writer) func(c character.Model, bl buddylist.Model) {
+		return func(c character.Model, bl buddylist.Model) {
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 				w.WriteInt64(-1) // dbcharFlag
 				w.WriteByte(0)   // something about SN, I believe this is size of list
@@ -98,8 +99,8 @@ func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(c cha
 				w.WriteInt16(-1) // dbcharFlag
 			}
 
-			WriteCharacterStatistics(tenant)(w, m)
-			w.WriteByte(0) // buddy list capacity
+			WriteCharacterStatistics(tenant)(w, c)
+			w.WriteByte(bl.Capacity())
 
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 				if true {
@@ -109,28 +110,28 @@ func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(c cha
 					w.WriteAsciiString("") // linked name
 				}
 			}
-			w.WriteInt(m.Meso())
+			w.WriteInt(c.Meso())
 
 			if tenant.Region() == "JMS" {
-				w.WriteInt(m.Id())
+				w.WriteInt(c.Id())
 				w.WriteInt(0) // dama / gachapon items
 				w.WriteInt(0)
 			}
-			WriteInventoryInfo(tenant)(w, m)
-			WriteSkillInfo(tenant)(w, m)
-			WriteQuestInfo(tenant)(w, m)
-			WriteMiniGameInfo(tenant)(w, m)
-			WriteRingInfo(tenant)(w, m)
-			WriteTeleportInfo(tenant)(w, m)
+			WriteInventoryInfo(tenant)(w, c)
+			WriteSkillInfo(tenant)(w, c)
+			WriteQuestInfo(tenant)(w, c)
+			WriteMiniGameInfo(tenant)(w, c)
+			WriteRingInfo(tenant)(w, c)
+			WriteTeleportInfo(tenant)(w, c)
 			if tenant.Region() == "JMS" {
 				w.WriteShort(0)
 			}
 
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
-				WriteMonsterBookInfo(tenant)(w, m)
+				WriteMonsterBookInfo(tenant)(w, c)
 				if tenant.Region() == "GMS" {
-					WriteNewYearInfo(tenant)(w, m)
-					WriteAreaInfo(tenant)(w, m)
+					WriteNewYearInfo(tenant)(w, c)
+					WriteAreaInfo(tenant)(w, c)
 				} else if tenant.Region() == "JMS" {
 					w.WriteShort(0)
 				}

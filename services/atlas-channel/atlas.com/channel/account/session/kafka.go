@@ -11,7 +11,8 @@ const (
 	CommandIssuerLogin    = "LOGIN"
 	CommandIssuerChannel  = "CHANNEL"
 
-	CommandTypeLogout = "LOGOUT"
+	CommandTypeProgressState = "PROGRESS_STATE"
+	CommandTypeLogout        = "LOGOUT"
 )
 
 type command[E any] struct {
@@ -20,6 +21,11 @@ type command[E any] struct {
 	Issuer    string    `json:"author"`
 	Type      string    `json:"type"`
 	Body      E         `json:"body"`
+}
+
+type progressStateCommandBody struct {
+	State  uint8       `json:"state"`
+	Params interface{} `json:"params"`
 }
 
 type logoutCommandBody struct {

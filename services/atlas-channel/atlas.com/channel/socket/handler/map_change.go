@@ -7,6 +7,7 @@ import (
 	"atlas-channel/kafka/producer"
 	"atlas-channel/portal"
 	"atlas-channel/session"
+	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
@@ -16,9 +17,8 @@ import (
 
 const MapChangeHandle = "MapChangeHandle"
 
-func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
-	channelChangeFunc := session.Announce(l)(ctx)(wp)(writer.ChannelChange)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		cs := r.Available() == 0
 		var fieldKey byte
@@ -41,22 +41,14 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 				return
 			}
 
-			resp, err := as.UpdateState(l)(ctx)(s.SessionId(), s.AccountId(), 2)
-			if err != nil || resp.Code != "OK" {
-				l.WithError(err).Errorf("Unable to update session for character [%d] attempting to switch to channel.", s.CharacterId())
-				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
-				return
-			}
-
 			err = cashshop.Exit(l)(ctx)(s.CharacterId(), s.WorldId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce [%d] has returned from cash shop.", s.CharacterId())
 			}
 
-			err = channelChangeFunc(s, writer.ChannelChangeBody(c.IpAddress(), uint16(c.Port())))
+			err = as.UpdateState(l, producer.ProviderImpl(l)(ctx))(s.SessionId(), s.AccountId(), 2, model.ChannelChange{IPAddress: c.IpAddress(), Port: uint16(c.Port())})
 			if err != nil {
-				l.WithError(err).Errorf("Unable to write change channel.")
-				return
+				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
 			}
 			return
 		}

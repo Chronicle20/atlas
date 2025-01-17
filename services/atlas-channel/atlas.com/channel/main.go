@@ -12,6 +12,7 @@ import (
 	"atlas-channel/kafka/consumer/monster"
 	"atlas-channel/kafka/consumer/party"
 	"atlas-channel/kafka/consumer/party/member"
+	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/logger"
 	"atlas-channel/message"
 	"atlas-channel/server"
@@ -72,6 +73,7 @@ func main() {
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(member.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(invite.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(buddylist.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(session2.AccountSessionStatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
@@ -157,6 +159,9 @@ func main() {
 				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyChannelChangeRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyCapacityChangeRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyErrorRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(session2.ChannelChangeStateChangedAccountSessionStatusEventRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(session2.PlayerLoggedInStateChangedAccountSessionStatusEventRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(session2.ErrorAccountSessionStatusEventRegister(sc, wp)(l))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)

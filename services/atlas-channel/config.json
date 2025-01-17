@@ -856,6 +856,7 @@
               "options": {
                 "operations": {
                   "UPDATE": "0x07",
+                  "BUDDY_UPDATE": "0x08",
                   "INVITE": "0x09",
                   "BUDDY_LIST_FULL": "0x0B",
                   "OTHER_BUDDY_LIST_FULL": "0x0C",

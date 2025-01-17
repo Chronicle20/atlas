@@ -9,6 +9,7 @@ type RestModel struct {
 	Group         string `json:"group"`
 	CharacterName string `json:"characterName"`
 	ChannelId     int8   `json:"channelId"`
+	InShop        bool   `json:"inShop"`
 	Pending       bool   `json:"pending"`
 }
 
@@ -35,6 +36,7 @@ func Extract(rm RestModel) (Model, error) {
 		group:         rm.Group,
 		characterName: rm.CharacterName,
 		channelId:     rm.ChannelId,
+		inShop:        rm.InShop,
 		pending:       rm.Pending,
 	}, nil
 }

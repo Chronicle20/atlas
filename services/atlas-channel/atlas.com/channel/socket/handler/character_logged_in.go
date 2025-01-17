@@ -62,7 +62,7 @@ func CharacterLoggedInHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 		}
 		go func() {
-			err := buddyOperationFunc(s, writer.BuddyUpdateBody(l, t)(bl.Buddies()))
+			err := buddyOperationFunc(s, writer.BuddyListUpdateBody(l, t)(bl.Buddies()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 			}

@@ -8,6 +8,7 @@ type Model struct {
 	group         string
 	characterName string
 	channelId     int8
+	inShop        bool
 	pending       bool
 }
 
@@ -29,4 +30,8 @@ func (m Model) Pending() bool {
 
 func (m Model) ChannelId() int8 {
 	return m.channelId
+}
+
+func (m Model) InShop() bool {
+	return m.inShop
 }

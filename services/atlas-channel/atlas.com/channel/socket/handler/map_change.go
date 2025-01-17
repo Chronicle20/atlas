@@ -2,6 +2,7 @@ package handler
 
 import (
 	as "atlas-channel/account/session"
+	"atlas-channel/cashshop"
 	"atlas-channel/channel"
 	"atlas-channel/kafka/producer"
 	"atlas-channel/portal"
@@ -9,7 +10,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,8 +44,13 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			resp, err := as.UpdateState(l)(ctx)(s.SessionId(), s.AccountId(), 2)
 			if err != nil || resp.Code != "OK" {
 				l.WithError(err).Errorf("Unable to update session for character [%d] attempting to switch to channel.", s.CharacterId())
-				session.Destroy(l, ctx, session.GetRegistry())(s)
+				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
 				return
+			}
+
+			err = cashshop.Exit(l)(ctx)(s.CharacterId(), s.WorldId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce [%d] has returned from cash shop.", s.CharacterId())
 			}
 
 			err = channelChangeFunc(s, writer.ChannelChangeBody(c.IpAddress(), uint16(c.Port())))

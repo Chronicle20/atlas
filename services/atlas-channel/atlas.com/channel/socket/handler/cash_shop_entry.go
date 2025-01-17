@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/account"
 	"atlas-channel/buddylist"
+	"atlas-channel/cashshop"
 	"atlas-channel/character"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -70,6 +71,11 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 		err = cashShopCashQueryResultFunc(s, writer.CashShopCashQueryResultBody(l)(t))
 		if err != nil {
 			return
+		}
+
+		err = cashshop.Enter(l)(ctx)(s.CharacterId(), s.WorldId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce [%d] has entered the cash shop.", s.CharacterId())
 		}
 	}
 }

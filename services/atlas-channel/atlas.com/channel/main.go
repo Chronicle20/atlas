@@ -153,6 +153,7 @@ func main() {
 				_, _ = cm.RegisterHandler(invite.RejectedStatusEventRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyAddedRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyRemovedRegister(sc, wp)(fl))
+				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyUpdatedRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyChannelChangeRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyCapacityChangeRegister(sc, wp)(fl))
 				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyErrorRegister(sc, wp)(fl))

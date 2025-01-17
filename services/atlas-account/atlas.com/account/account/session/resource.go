@@ -63,7 +63,7 @@ func handleUpdateSession(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 func handleDeleteSession(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicAccountLogout)(logoutCommandProvider(accountId))
+			_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopic)(logoutCommandProvider(accountId))
 			w.WriteHeader(http.StatusAccepted)
 		}
 	})

@@ -1,8 +1,6 @@
 package session
 
-import (
-	"github.com/google/uuid"
-)
+import "github.com/google/uuid"
 
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_ACCOUNT_SESSION"

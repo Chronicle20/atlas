@@ -3,8 +3,6 @@ package account
 import (
 	consumer2 "atlas-account/kafka/consumer"
 	"context"
-	"strings"
-
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -15,7 +13,6 @@ import (
 
 const (
 	consumerNameCreate = "create_account_command"
-	consumerNameLogout = "logout_account_command"
 )
 
 func CreateCommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
@@ -38,23 +35,4 @@ func handleCreateAccountCommand(db *gorm.DB) message.Handler[createCommand] {
 func CreateAccountRegister(l *logrus.Logger, db *gorm.DB) (string, handler.Handler) {
 	t, _ := topic.EnvProvider(l)(EnvCommandTopicCreateAccount)()
 	return t, message.AdaptHandler(message.PersistentConfig(handleCreateAccountCommand(db)))
-}
-
-func CreateSessionCommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerNameLogout)(EnvCommandTopicAccountLogout)(groupId)
-	}
-}
-
-func handleLogoutAccountCommand(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, command logoutCommand) {
-	return func(l logrus.FieldLogger, ctx context.Context, command logoutCommand) {
-		l.Debugf("Received logout account command account [%d] from [%s].", command.AccountId, command.Issuer)
-		Logout(l, db, ctx)(command.SessionId, command.AccountId, strings.ToUpper(command.Issuer))
-		// l.Debugf("Ignoring logout command from [%s] as account [%d] is not in correct state.", command.Issuer, command.AccountId)
-	}
-}
-
-func CreateAccountSessionRegister(l *logrus.Logger, db *gorm.DB) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopicAccountLogout)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleLogoutAccountCommand(db)))
 }

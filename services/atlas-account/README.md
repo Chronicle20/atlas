@@ -18,7 +18,7 @@ A RESTful resource which provides account services.
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
 - EVENT_TOPIC_ACCOUNT_STATUS - Kafka Topic for transmitting Account Status Events 
 - COMMAND_TOPIC_CREATE_ACCOUNT - Kafka Topic for transmitting Create Account Commands
-- COMMAND_TOPIC_ACCOUNT_LOGOUT - Kafka Topic for transmitting Account Logout Commands
+- COMMAND_TOPIC_ACCOUNT_SESSION - Kafka Topic for receiving Account Session Commands
 
 ## API
 

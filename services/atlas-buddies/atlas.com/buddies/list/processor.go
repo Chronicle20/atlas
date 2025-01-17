@@ -169,7 +169,9 @@ func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 						err = statusEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
 						return err
 					}
-					err = updateBuddyChannel(tx, t.Id(), characterId, targetId, -1)
+
+					var update bool
+					update, err = updateBuddyChannel(tx, t.Id(), characterId, targetId, -1)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to update character [%d] channel to [%d] in [%d] buddy list.", characterId, -1, targetId)
 						err = statusEventProducer(errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
@@ -180,9 +182,12 @@ func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 					if err != nil {
 						l.WithError(err).Errorf("Unable to inform [%d] the buddy [%d] was removed.", characterId, targetId)
 					}
-					err = statusEventProducer(buddyChannelChangeStatusEventProvider(targetId, worldId, characterId, -1))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to update [%d] buddy list to set [%d] as offline.", targetId, characterId)
+
+					if update {
+						err = statusEventProducer(buddyChannelChangeStatusEventProvider(targetId, worldId, characterId, -1))
+						if err != nil {
+							l.WithError(err).Errorf("Unable to update [%d] buddy list to set [%d] as offline.", targetId, characterId)
+						}
 					}
 					return nil
 				})
@@ -290,7 +295,8 @@ func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 						l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", characterId)
 						return err
 					}
-					err = updateBuddyChannel(tx, t.Id(), characterId, targetId, -1)
+					var update bool
+					update, err = updateBuddyChannel(tx, t.Id(), characterId, targetId, -1)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to update character [%d] channel to [%d] in [%d] buddy list.", characterId, -1, targetId)
 						return err
@@ -299,6 +305,13 @@ func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					err = statusEventProducer(buddyRemovedStatusEventProvider(characterId, worldId, targetId))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to inform [%d] that their buddy [%d] was removed.", characterId, targetId)
+					}
+
+					if update {
+						err = statusEventProducer(buddyChannelChangeStatusEventProvider(targetId, worldId, characterId, -1))
+						if err != nil {
+							l.WithError(err).Errorf("Unable to update [%d] buddy list to set [%d] as offline.", targetId, characterId)
+						}
 					}
 					return nil
 				})
@@ -320,15 +333,18 @@ func UpdateChannel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 						return err
 					}
 					for _, b := range bl.Buddies {
-						err = updateBuddyChannel(tx, t.Id(), characterId, b.CharacterId, channelId)
+						var update bool
+						update, err = updateBuddyChannel(tx, t.Id(), characterId, b.CharacterId, channelId)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to update character [%d] channel to [%d] in [%d] buddy list.", characterId, channelId, b.CharacterId)
 							return err
 						}
 
-						err = statusEventProducer(buddyChannelChangeStatusEventProvider(b.CharacterId, worldId, characterId, channelId))
-						if err != nil {
-							l.WithError(err).Errorf("Unable to inform character [%d] that [%d] channel has changed.", b.CharacterId, characterId)
+						if update {
+							err = statusEventProducer(buddyChannelChangeStatusEventProvider(b.CharacterId, worldId, characterId, channelId))
+							if err != nil {
+								l.WithError(err).Errorf("Unable to inform character [%d] that [%d] channel has changed.", b.CharacterId, characterId)
+							}
 						}
 					}
 					return nil

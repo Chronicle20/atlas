@@ -6,9 +6,11 @@ import (
 	session2 "atlas-account/kafka/consumer/session"
 	"atlas-account/logger"
 	"atlas-account/service"
+	"atlas-account/tasks"
 	"atlas-account/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"time"
 )
 
 const serviceName = "atlas-account"
@@ -57,7 +59,7 @@ func main() {
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), account.InitResource(GetServer())(db))
 
-	//go tasks.Register(l, tdm.Context())(account.NewTransitionTimeout(l, db, time.Second*time.Duration(5)))
+	go tasks.Register(l, tdm.Context())(account.NewTransitionTimeout(l, db, time.Second*time.Duration(5)))
 
 	tdm.TeardownFunc(account.Teardown(l, db))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

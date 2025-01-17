@@ -6,6 +6,7 @@ import (
 	consumer2 "atlas-login/kafka/consumer"
 	"atlas-login/kafka/producer"
 	"atlas-login/session"
+	model2 "atlas-login/socket/model"
 	"atlas-login/socket/writer"
 	"atlas-login/world"
 	"context"
@@ -270,6 +271,50 @@ func announceServerList(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					err := serverListEndFunc(s, writer.ServerListEndBody)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to complete writing the server list")
+						return err
+					}
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func StateChangedAccountSessionStatusEventRegister(t tenant.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		tn, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
+		return tn, message.AdaptHandler(message.PersistentConfig(handleStateChangedAccountSessionStatusEvent(t, wp)))
+	}
+}
+
+func handleStateChangedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) message.Handler[statusEvent[stateChangedEventBody[model2.ChannelSelect]]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[stateChangedEventBody[model2.ChannelSelect]]) {
+		if e.Type != EventStatusTypeStateChanged {
+			return
+		}
+
+		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		session.IfPresentById(t)(e.SessionId, processStateReturn(l)(ctx)(wp)(e.AccountId, e.Body.State, e.Body.Params))
+	}
+}
+
+func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.ChannelSelect) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.ChannelSelect) model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
+		return func(wp writer.Producer) func(accountId uint32, state uint8, params model2.ChannelSelect) model.Operator[session.Model] {
+			serverIpFunc := session.Announce(l)(wp)(writer.ServerIP)
+			return func(accountId uint32, state uint8, params model2.ChannelSelect) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					if len(params.IPAddress) <= 0 {
+						return nil
+					}
+
+					err := serverIpFunc(s, writer.ServerIPBody(l, t)(params.IPAddress, params.Port, params.CharacterId))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to write server ip response due to error.")
 						return err
 					}
 					return nil

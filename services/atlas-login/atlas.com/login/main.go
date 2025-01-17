@@ -94,6 +94,7 @@ func main() {
 		_, _ = cm.RegisterHandler(account.StatusRegister(t)(l))
 		_, _ = cm.RegisterHandler(session2.CreatedAccountSessionStatusEventRegister(t, wp)(l))
 		_, _ = cm.RegisterHandler(session2.LicenseAgreementAccountSessionStatusEventRegister(t, wp)(l))
+		_, _ = cm.RegisterHandler(session2.StateChangedAccountSessionStatusEventRegister(t, wp)(l))
 		_, _ = cm.RegisterHandler(session2.ErrorAccountSessionStatusEventRegister(t, wp)(l))
 
 		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, t, s.Port)

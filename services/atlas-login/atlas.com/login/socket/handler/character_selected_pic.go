@@ -2,7 +2,9 @@ package handler
 
 import (
 	as "atlas-login/account/session"
+	"atlas-login/kafka/producer"
 	"atlas-login/session"
+	"atlas-login/socket/model"
 	"atlas-login/socket/writer"
 	"atlas-login/world/channel"
 	"context"
@@ -36,21 +38,26 @@ func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
-		resp, err := as.UpdateState(l, ctx)(s.SessionId(), s.AccountId(), 2)
-		if err != nil || resp.Code != "OK" {
-			l.WithError(err).Errorf("Unable to update session for character [%d] attempting to login.", characterId)
-			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeTooManyConnectionRequests))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to write server ip response due to error.")
-				return
-			}
+		err = as.UpdateState(l, producer.ProviderImpl(l)(ctx))(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: c.IpAddress(), Port: uint16(c.Port()), CharacterId: characterId})
+		if err != nil {
 			return
 		}
 
-		err = serverIpFunc(s, writer.ServerIPBody(l, t)(c.IpAddress(), uint16(c.Port()), characterId))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to write server ip response due to error.")
-			return
-		}
+		//resp, err := as.UpdateState(l, ctx)(s.SessionId(), s.AccountId(), 2)
+		//if err != nil || resp.Code != "OK" {
+		//	l.WithError(err).Errorf("Unable to update session for character [%d] attempting to login.", characterId)
+		//	err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeTooManyConnectionRequests))
+		//	if err != nil {
+		//		l.WithError(err).Errorf("Unable to write server ip response due to error.")
+		//		return
+		//	}
+		//	return
+		//}
+		//
+		//err = serverIpFunc(s, writer.ServerIPBody(l, t)(c.IpAddress(), uint16(c.Port()), characterId))
+		//if err != nil {
+		//	l.WithError(err).Errorf("Unable to write server ip response due to error.")
+		//	return
+		//}
 	}
 }

@@ -3,7 +3,9 @@ package handler
 import (
 	as "atlas-login/account/session"
 	"atlas-login/character"
+	"atlas-login/kafka/producer"
 	"atlas-login/session"
+	"atlas-login/socket/model"
 	"atlas-login/socket/writer"
 	"atlas-login/world"
 	"atlas-login/world/channel"
@@ -15,7 +17,7 @@ import (
 const CharacterViewAllSelectedHandle = "CharacterViewAllSelectedHandle"
 
 func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	serverIpFunc := session.Announce(l)(wp)(writer.ServerIP)
+	//serverIpFunc := session.Announce(l)(wp)(writer.ServerIP)
 	return func(s session.Model, r *request.Reader) {
 		characterId := r.ReadUint32()
 		worldId := r.ReadUint32()
@@ -61,21 +63,26 @@ func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Contex
 		channel, err := channel.GetRandomInWorld(l, ctx)(byte(worldId))
 		s = session.SetChannelId(channel.Id())(t.Id(), s.SessionId())
 
-		resp, err := as.UpdateState(l, ctx)(s.SessionId(), s.AccountId(), 2)
-		if err != nil || resp.Code != "OK" {
-			l.WithError(err).Errorf("Unable to update session for character [%d] attempting to login.", characterId)
-			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeTooManyConnectionRequests))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to write server ip response due to error.")
-				return
-			}
+		err = as.UpdateState(l, producer.ProviderImpl(l)(ctx))(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: channel.IpAddress(), Port: uint16(channel.Port()), CharacterId: characterId})
+		if err != nil {
 			return
 		}
 
-		err = serverIpFunc(s, writer.ServerIPBody(l, t)(channel.IpAddress(), uint16(channel.Port()), characterId))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to write server ip response due to error.")
-			return
-		}
+		//resp, err := as.UpdateState(l, ctx)(s.SessionId(), s.AccountId(), 2)
+		//if err != nil || resp.Code != "OK" {
+		//	l.WithError(err).Errorf("Unable to update session for character [%d] attempting to login.", characterId)
+		//	err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeTooManyConnectionRequests))
+		//	if err != nil {
+		//		l.WithError(err).Errorf("Unable to write server ip response due to error.")
+		//		return
+		//	}
+		//	return
+		//}
+		//
+		//err = serverIpFunc(s, writer.ServerIPBody(l, t)(channel.IpAddress(), uint16(channel.Port()), characterId))
+		//if err != nil {
+		//	l.WithError(err).Errorf("Unable to write server ip response due to error.")
+		//	return
+		//}
 	}
 }

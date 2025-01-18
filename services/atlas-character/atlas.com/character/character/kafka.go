@@ -1,12 +1,13 @@
 package character
 
 const (
-	EnvEventTopicCharacterStatus       = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeCreated    = "CREATED"
-	EventCharacterStatusTypeLogin      = "LOGIN"
-	EventCharacterStatusTypeLogout     = "LOGOUT"
-	EventCharacterStatusTypeMapChanged = "MAP_CHANGED"
-	EventCharacterStatusTypeDeleted    = "DELETED"
+	EnvEventTopicCharacterStatus           = "EVENT_TOPIC_CHARACTER_STATUS"
+	EventCharacterStatusTypeCreated        = "CREATED"
+	EventCharacterStatusTypeLogin          = "LOGIN"
+	EventCharacterStatusTypeLogout         = "LOGOUT"
+	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
+	EventCharacterStatusTypeMapChanged     = "MAP_CHANGED"
+	EventCharacterStatusTypeDeleted        = "DELETED"
 
 	EnvCommandTopic           = "COMMAND_TOPIC_CHARACTER"
 	CommandCharacterChangeMap = "CHANGE_MAP"
@@ -40,6 +41,12 @@ type statusEventLoginBody struct {
 type statusEventLogoutBody struct {
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
+}
+
+type changeChannelEventLoginBody struct {
+	ChannelId    byte   `json:"channelId"`
+	OldChannelId byte   `json:"oldChannelId"`
+	MapId        uint32 `json:"mapId"`
 }
 
 type statusEventMapChangedBody struct {

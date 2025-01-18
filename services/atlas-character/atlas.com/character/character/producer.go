@@ -47,6 +47,21 @@ func logoutEventProvider(characterId uint32, worldId byte, channelId byte, mapId
 	return producer.SingleMessageProvider(key, value)
 }
 
+func changeChannelEventProvider(characterId uint32, worldId byte, channelId byte, oldChannelId byte, mapId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &statusEvent[changeChannelEventLoginBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        EventCharacterStatusTypeChannelChanged,
+		Body: changeChannelEventLoginBody{
+			ChannelId:    channelId,
+			OldChannelId: oldChannelId,
+			MapId:        mapId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func mapChangedEventProvider(characterId uint32, worldId byte, channelId byte, oldMapId uint32, targetMapId uint32, targetPortalId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &statusEvent[statusEventMapChangedBody]{

@@ -417,6 +417,34 @@ func announceLogout(provider producer.Provider) func(worldId byte) func(channelI
 	}
 }
 
+func ChangeChannel(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(characterId uint32) func(worldId byte) func(channelId byte) func(oldChannelId byte) error {
+	return func(db *gorm.DB) func(ctx context.Context) func(characterId uint32) func(worldId byte) func(channelId byte) func(oldChannelId byte) error {
+		return func(ctx context.Context) func(characterId uint32) func(worldId byte) func(channelId byte) func(oldChannelId byte) error {
+			return func(characterId uint32) func(worldId byte) func(channelId byte) func(oldChannelId byte) error {
+				return func(worldId byte) func(channelId byte) func(oldChannelId byte) error {
+					return func(channelId byte) func(oldChannelId byte) error {
+						return func(oldChannelId byte) error {
+							return model.For(byIdProvider(db)(tenant.MustFromContext(ctx))(characterId), announceChangeChannel(producer.ProviderImpl(l)(ctx))(worldId)(channelId)(oldChannelId))
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func announceChangeChannel(provider producer.Provider) func(worldId byte) func(channelId byte) func(oldChannelId byte) model.Operator[Model] {
+	return func(worldId byte) func(channelId byte) func(oldChannelId byte) model.Operator[Model] {
+		return func(channelId byte) func(oldChannelId byte) model.Operator[Model] {
+			return func(oldChannelId byte) model.Operator[Model] {
+				return func(c Model) error {
+					return provider(EnvEventTopicCharacterStatus)(changeChannelEventProvider(c.Id(), worldId, channelId, oldChannelId, c.MapId()))
+				}
+			}
+		}
+	}
+}
+
 func ChangeMap(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(characterId uint32, worldId byte, channelId byte, mapId uint32, portalId uint32) error {
 	return func(characterId uint32, worldId byte, channelId byte, mapId uint32, portalId uint32) error {
 		cmf := changeMap(db)(ctx)(mapId)

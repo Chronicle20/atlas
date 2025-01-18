@@ -51,11 +51,9 @@ func handleStatusEvent(db *gorm.DB) message.Handler[statusEvent] {
 			} else if cs.State() == StateTransition {
 				l.Debugf("Processing a session status event of [%s] which will trigger a change channel.", event.Type)
 				err = GetRegistry().Set(t, event.CharacterId, event.WorldId, event.ChannelId, StateLoggedIn)
+				err = character.ChangeChannel(l)(db)(ctx)(event.CharacterId)(event.WorldId)(event.ChannelId)(cs.ChannelId())
 				if err != nil {
-					err = character.ChangeChannel(l)(db)(ctx)(event.CharacterId)(event.WorldId)(event.ChannelId)(cs.ChannelId())
-					if err != nil {
-						l.WithError(err).Errorf("Unable to change character [%d] channel as a result of session [%s] being created.", event.CharacterId, event.SessionId.String())
-					}
+					l.WithError(err).Errorf("Unable to change character [%d] channel as a result of session [%s] being created.", event.CharacterId, event.SessionId.String())
 				}
 			}
 			return

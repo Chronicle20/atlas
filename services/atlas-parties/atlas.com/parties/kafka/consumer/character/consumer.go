@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-parties/character"
 	consumer2 "atlas-parties/kafka/consumer"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -27,7 +28,7 @@ func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, event sta
 	if event.Type != EventCharacterStatusTypeLogin {
 		return
 	}
-	err := Login(l)(ctx)(event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
+	err := character.Login(l)(ctx)(event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to process login for character [%d].", event.CharacterId)
 	}
@@ -42,7 +43,7 @@ func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event st
 	if event.Type != EventCharacterStatusTypeLogout {
 		return
 	}
-	err := Logout(l)(ctx)(event.CharacterId)
+	err := character.Logout(l)(ctx)(event.CharacterId)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to process logout for character [%d].", event.CharacterId)
 	}
@@ -57,7 +58,7 @@ func handleMapChangedStatusEventLogout(l logrus.FieldLogger, ctx context.Context
 	if event.Type != EventCharacterStatusTypeMapChanged {
 		return
 	}
-	err := MapChange(l)(ctx)(event.CharacterId, event.Body.TargetMapId)
+	err := character.MapChange(l)(ctx)(event.CharacterId, event.Body.TargetMapId)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to process map changed for character [%d].", event.CharacterId)
 	}

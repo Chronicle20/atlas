@@ -573,6 +573,11 @@
               "handler": "CharacterGeneralChatHandle"
             },
             {
+              "opCode": "0x33",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterExpressionHandle"
+            },
+            {
               "opCode": "0x47",
               "validator": "LoggedInValidator",
               "handler": "CharacterInventoryMoveHandle"
@@ -1023,6 +1028,10 @@
                   }
                 ]
               }
+            },
+            {
+              "opCode": "0xC1",
+              "writer": "CharacterExpression"
             },
             {
               "opCode": "0xC5",

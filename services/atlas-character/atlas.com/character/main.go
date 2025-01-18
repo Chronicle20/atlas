@@ -9,9 +9,11 @@ import (
 	"atlas-character/logger"
 	"atlas-character/service"
 	"atlas-character/session"
+	"atlas-character/tasks"
 	"atlas-character/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"time"
 )
 import _ "net/http/pprof"
 
@@ -68,6 +70,8 @@ func main() {
 	_, _ = cm.RegisterHandler(character.MovementEventRegister(l))
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), character.InitResource(GetServer())(db), inventory.InitResource(GetServer())(db))
+
+	go tasks.Register(l, tdm.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000)))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

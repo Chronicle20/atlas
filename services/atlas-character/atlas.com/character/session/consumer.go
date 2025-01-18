@@ -8,6 +8,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -32,17 +33,32 @@ func handleStatusEvent(db *gorm.DB) message.Handler[statusEvent] {
 			return
 		}
 
+		t := tenant.MustFromContext(ctx)
 		if event.Type == EventSessionStatusTypeCreated {
-			err := character.Login(l)(db)(ctx)(event.CharacterId)(event.WorldId)(event.ChannelId)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to login character [%d] as a result of session [%s] being created.", event.CharacterId, event.SessionId.String())
+			cs, err := GetRegistry().Get(t, event.CharacterId)
+			if err != nil || cs.State() == StateLoggedOut {
+				l.Debugf("Processing a session status event of [%s] which will trigger a login.", event.Type)
+				err = GetRegistry().Add(t, event.CharacterId, event.WorldId, event.ChannelId, StateLoggedIn)
+				if err != nil {
+					err = character.Login(l)(db)(ctx)(event.CharacterId)(event.WorldId)(event.ChannelId)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to login character [%d] as a result of session [%s] being created.", event.CharacterId, event.SessionId.String())
+					}
+				}
+			} else if cs.State() == StateTransition {
+				l.Debugf("Processing a session status event of [%s] which will trigger a change channel.", event.Type)
 			}
 			return
 		}
 		if event.Type == EventSessionStatusTypeDestroyed {
-			err := character.Logout(l)(db)(ctx)(event.CharacterId)(event.WorldId)(event.ChannelId)
+			cs, err := GetRegistry().Get(t, event.CharacterId)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to logout character [%d] as a result of session [%s] being destroyed.", event.CharacterId, event.SessionId.String())
+				l.Debugf("Processing a session status event of [%s]. Session already destroyed.", event.Type)
+				return
+			}
+			if cs.State() == StateLoggedIn {
+				l.Debugf("Processing a session status event of [%s] which will trigger a transition state. Either it will be culled (logout), or updated (change channel) later.", event.Type)
+				_ = GetRegistry().Set(t, cs.CharacterId(), cs.WorldId(), cs.ChannelId(), StateTransition)
 			}
 			return
 		}

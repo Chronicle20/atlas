@@ -40,11 +40,14 @@ func handleStatusEvent(db *gorm.DB) message.Handler[statusEvent] {
 				l.Debugf("Processing a session status event of [%s] which will trigger a login.", event.Type)
 				err = GetRegistry().Add(t, event.CharacterId, event.WorldId, event.ChannelId, StateLoggedIn)
 				if err != nil {
-					err = character.Login(l)(db)(ctx)(event.CharacterId)(event.WorldId)(event.ChannelId)
-					if err != nil {
-						l.WithError(err).Errorf("Unable to login character [%d] as a result of session [%s] being created.", event.CharacterId, event.SessionId.String())
-					}
+					l.WithError(err).Errorf("Character [%d] already logged in. Eating event.", event.CharacterId)
+					return
 				}
+				err = character.Login(l)(db)(ctx)(event.CharacterId)(event.WorldId)(event.ChannelId)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to login character [%d] as a result of session [%s] being created.", event.CharacterId, event.SessionId.String())
+				}
+				return
 			} else if cs.State() == StateTransition {
 				l.Debugf("Processing a session status event of [%s] which will trigger a change channel.", event.Type)
 				err = GetRegistry().Set(t, event.CharacterId, event.WorldId, event.ChannelId, StateLoggedIn)

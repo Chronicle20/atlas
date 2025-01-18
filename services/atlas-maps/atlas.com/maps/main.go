@@ -50,6 +50,7 @@ func main() {
 	_, _ = cm.RegisterHandler(character.StatusEventLoginRegister(l))
 	_, _ = cm.RegisterHandler(character.StatusEventLogoutRegister(l))
 	_, _ = cm.RegisterHandler(character.StatusEventMapChangedRegister(l))
+	_, _ = cm.RegisterHandler(character.StatusEventChannelChangedRegister(l))
 
 	go tasks.Register(tasks.NewRespawn(l, 10000))
 

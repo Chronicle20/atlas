@@ -76,17 +76,15 @@ func (r *Registry) Set(t tenant.Model, characterId uint32, worldId byte, channel
 }
 
 func (r *Registry) Get(t tenant.Model, characterId uint32) (Model, error) {
-	var tl *sync.RWMutex
-	var ok bool
-	if tl, ok = r.lockRegistry[t.Id()]; !ok {
+	if _, ok := r.lockRegistry[t.Id()]; !ok {
 		r.mutex.Lock()
 		r.lockRegistry[t.Id()] = &sync.RWMutex{}
 		r.sessionRegistry[t.Id()] = make(map[uint32]Model)
 		r.mutex.Unlock()
 	}
 
-	tl.RLock()
-	defer tl.RUnlock()
+	r.lockRegistry[t.Id()].RLock()
+	defer r.lockRegistry[t.Id()].RUnlock()
 	if val, ok := r.sessionRegistry[t.Id()][characterId]; ok {
 		return val, nil
 	}
@@ -111,16 +109,14 @@ func (r *Registry) GetAll() []Model {
 }
 
 func (r *Registry) Remove(t tenant.Model, characterId uint32) {
-	var tl *sync.RWMutex
-	var ok bool
-	if tl, ok = r.lockRegistry[t.Id()]; !ok {
+	if _, ok := r.lockRegistry[t.Id()]; !ok {
 		r.mutex.Lock()
 		r.lockRegistry[t.Id()] = &sync.RWMutex{}
 		r.sessionRegistry[t.Id()] = make(map[uint32]Model)
 		r.mutex.Unlock()
 	}
 
-	tl.Lock()
-	defer tl.Unlock()
+	r.lockRegistry[t.Id()].Lock()
+	defer r.lockRegistry[t.Id()].Unlock()
 	delete(r.sessionRegistry[t.Id()], characterId)
 }

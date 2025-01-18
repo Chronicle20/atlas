@@ -57,3 +57,25 @@ func handleStatusEventLogout(db *gorm.DB) func(l logrus.FieldLogger, ctx context
 		}
 	}
 }
+
+func ChannelChangedStatusRegister(l logrus.FieldLogger) func(db *gorm.DB) (string, handler.Handler) {
+	return func(db *gorm.DB) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged(db)))
+	}
+}
+
+func handleStatusEventChannelChanged(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventChannelChangedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventChannelChangedBody]) {
+		if event.Type != EventCharacterStatusTypeChannelChanged {
+			return
+		}
+		if event.Body.ChannelId == event.Body.OldChannelId {
+			return
+		}
+		err := list.UpdateChannel(l)(ctx)(db)(event.CharacterId, event.WorldId, int8(event.Body.ChannelId))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to process change channel for character [%d].", event.CharacterId)
+		}
+	}
+}

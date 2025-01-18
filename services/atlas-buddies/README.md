@@ -17,6 +17,11 @@ A RESTful resource which provides buddies services.
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
 - CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
 - COMMAND_TOPIC_BUDDY_LIST - Kafka Topic for transmitting buddy list commands.
+- COMMAND_TOPIC_INVITE - Kafka Topic for transmitting invite commands.
+- EVENT_TOPIC_BUDDY_LIST_STATUS - Kafka Topic for transmitting buddy list status events.
+- EVENT_TOPIC_CASH_SHOP_STATUS - Kafka Topic for receiving cash shop status events.
+- EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for receiving character status events.
+- EVENT_TOPIC_INVITE_STATUS - Kafka Topic for receiving invite status events.
 
 ## API
 

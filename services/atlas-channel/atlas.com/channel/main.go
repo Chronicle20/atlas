@@ -7,6 +7,7 @@ import (
 	"atlas-channel/kafka/consumer/buddylist"
 	"atlas-channel/kafka/consumer/character"
 	"atlas-channel/kafka/consumer/expression"
+	"atlas-channel/kafka/consumer/guild"
 	"atlas-channel/kafka/consumer/inventory"
 	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/map"
@@ -78,6 +79,7 @@ func main() {
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(session2.AccountSessionStatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(expression.EventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(conversation.CommandConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(guild.CommandConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
@@ -168,6 +170,7 @@ func main() {
 				_, _ = cm.RegisterHandler(session2.ErrorAccountSessionStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(expression.EventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(conversation.SimpleConversationCommandRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(guild.RequestNameRegister(sc, wp)(l))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
@@ -224,6 +227,7 @@ func produceWriters() []string {
 		writer.BuddyOperation,
 		writer.CharacterExpression,
 		writer.NPCConversation,
+		writer.GuildOperation,
 	}
 }
 

@@ -1,11 +1,11 @@
 package conversation
 
 const (
-	EnvCommandTopic      = "COMMAND_TOPIC_NPC_CONVERSATION"
-	EnvCommandTypeSimple = "SIMPLE"
-	EnvCommandTypeText   = "TEXT"
-	EnvCommandTypeStyle  = "STYLE"
-	EnvCommandTypeNumber = "NUMBER"
+	EnvCommandTopic   = "COMMAND_TOPIC_NPC_CONVERSATION"
+	CommandTypeSimple = "SIMPLE"
+	CommandTypeText   = "TEXT"
+	CommandTypeStyle  = "STYLE"
+	CommandTypeNumber = "NUMBER"
 )
 
 type commandEvent[E any] struct {

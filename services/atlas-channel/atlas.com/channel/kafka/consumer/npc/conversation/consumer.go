@@ -33,7 +33,7 @@ func SimpleConversationCommandRegister(sc server.Model, wp writer.Producer) func
 
 func handleSimpleConversationCommand(sc server.Model, wp writer.Producer) message.Handler[commandEvent[commandSimpleBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[commandSimpleBody]) {
-		if c.Type != EnvCommandTypeSimple {
+		if c.Type != CommandTypeSimple {
 			return
 		}
 

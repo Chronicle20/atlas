@@ -916,6 +916,15 @@
               }
             },
             {
+              "opCode": "0x41",
+              "writer": "GuildOperation",
+              "options": {
+                "operations": {
+                  "REQUEST_NAME": "0x01"
+                }
+              }
+            },
+            {
               "opCode": "0x7D",
               "writer": "SetField"
             },

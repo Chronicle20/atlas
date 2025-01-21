@@ -7,14 +7,64 @@ import (
 )
 
 const (
-	GuildOperation            = "GuildOperation"
-	RequestNameGuildOperation = "REQUEST_NAME"
+	GuildOperation                               = "GuildOperation"
+	GuildOperationRequestName                    = "REQUEST_NAME"
+	GuildOperationRequestAgreement               = "REQUEST_AGREEMENT"
+	GuildOperationCreateErrorNameInUse           = "THE_NAME_IS_ALREADY_IN_USE_PLEASE_TRY_OTHER_ONES"
+	GuildOperationCreateErrorDisagreed           = "SOMEBODY_HAS_DISAGREED_TO_FORM_A_GUILD"
+	GuildOperationCreateError                    = "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_FORMING_THE_GUILD_PLEASE_TRY_AGAIN"
+	GuildOperationJoinSuccess                    = "JOIN_SUCCESS"
+	GuildOperationJoinErrorAlreadyJoined         = "ALREADY_JOINED_THE_GUILD"
+	GuildOperationJoinErrorMaxMembers            = "THE_GUILD_YOU_ARE_TRYING_TO_JOIN_HAS_ALREADY_REACHED_THE_MAX_NUMBER_OF_USERS"
+	GuildOperationJoinErrorNotInChannel          = "THE_CHARACTER_CANNOT_BE_FOUND_IN_THE_CURRENT_CHANNEL"
+	GuildOperationMemberQuitSuccess              = "MEMBER_QUIT_SUCCESS"
+	GuildOperationMemberQuitErrorNotInGuild      = "MEMBER_QUIT_ERROR_NOT_IN_GUILD"
+	GuildOperationMemberExpelledSuccess          = "MEMBER_EXPELLED_SUCCESS"
+	GuildOperationMemberExpelledErrorNotInGuild  = "MEMBER_EXPELLED_ERROR_NOT_IN_GUILD"
+	GuildOperationDisbandSuccess                 = "DISBAND_SUCCESS"
+	GuildOperationDisbandError                   = "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_DISBANDING_THE_GUILD_PLEASE_TRY_AGAIN"
+	GuildOperationInviteErrorNotAcceptingInvites = "IS_CURRENTLY_NOT_ACCEPTING_GUILD_INVITE_MESSAGE"
+	GuildOperationInviteErrorAnotherInvite       = "IS_TAKING_CARE_OF_ANOTHER_INVITATION"
+	GuildOperationInviteDenied                   = "HAS_DENIED_YOUR_GUILD_INVITATION"
+	GuildOperationCreateErrorCannotAsAdmin       = "ADMIN_CANNOT_MAKE_A_GUILD"
+	GuildOperationIncreaseCapacitySuccess        = "CONGRATULATION_THE_NUMBER_OF_GUILD_MEMBERS_HAS_NOW_INCREASED_TO"
+	GuildOperationIncreaseCapacityError          = "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_INCREASING_THE_GUILD_PLEASE_TRY_AGAIN"
+	GuildOperationMemberUpdate                   = "MEMBER_UPDATE"
+	GuildOperationMemberOnline                   = "MEMBER_ONLINE"
+	GuildOperationRankTitleUpdate                = "RANK_TITLE_UPDATE"
+	GuildOperationMemberRankChange               = "MEMBER_RANK_CHANGE"
+	GuildOperationEmblemChange                   = "EMBLEM_CHANGE"
+	GuildOperationNoticeChange                   = "NOTICE_CHANGE"
+	GuildOperationShowRanks                      = "SHOW_RANKS"
+	GuildOperationQuestErrorLessThanSixMembers   = "THERE_ARE_LESS_THAN_6_MEMBERS_REMAINING_SO_THE_QUEST_CANNOT_CONTINUE_YOUR_GUILD"
+	GuildOperationQuestErrorDisconnected         = "THE_USER_THAT_REGISTERED_HAS_DISCONNECTED_SO_THE_QUEST_CANNOT_CONTINUE_YOUR_GUILD"
+	GuildOperationQuestWaitingNotice             = "QUEST_WAITING_NOTICE"
+	GuildOperationBoardAuthKeyUpdate             = "BOARD_AUTH_KEY_UPDATE"
+	GuildOperationSetSkillResponse               = "SET_SKILL_RESPONSE"
 )
 
 func RequestGuildNameBody(l logrus.FieldLogger) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(getGuildOperation(l)(options, RequestNameGuildOperation))
-		return w.Bytes()
+	return GuildErrorBody(l)(GuildOperationRequestName)
+}
+
+func GuildRequestAgreement(l logrus.FieldLogger) func(partyId uint32, leaderName string, guildName string) BodyProducer {
+	return func(partyId uint32, leaderName string, guildName string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getGuildOperation(l)(options, GuildOperationRequestAgreement))
+			w.WriteInt(partyId)
+			w.WriteAsciiString(leaderName)
+			w.WriteAsciiString(guildName)
+			return w.Bytes()
+		}
+	}
+}
+
+func GuildErrorBody(l logrus.FieldLogger) func(code string) BodyProducer {
+	return func(code string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getGuildOperation(l)(options, code))
+			return w.Bytes()
+		}
 	}
 }
 

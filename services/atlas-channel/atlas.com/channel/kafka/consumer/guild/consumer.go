@@ -2,6 +2,7 @@ package guild
 
 import (
 	consumer2 "atlas-channel/kafka/consumer"
+	"atlas-channel/party"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -16,6 +17,7 @@ import (
 )
 
 const consumerCommand = "guild_command"
+const consumerStatusEvent = "guild_status_event"
 
 func CommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
 	return func(groupId string) consumer.Config {
@@ -55,6 +57,106 @@ func requestGuildName(l logrus.FieldLogger) func(ctx context.Context) func(wp wr
 					return err
 				}
 				return nil
+			}
+		}
+	}
+}
+
+func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
+	return func(groupId string) consumer.Config {
+		return consumer2.NewConfig(l)(consumerStatusEvent)(EnvStatusEventTopic)(groupId)
+	}
+}
+
+func RequestAgreementStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		top, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
+		return top, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventRequestAgreementBody]) {
+			if e.Type != StatusEventTypeRequestAgreement {
+				return
+			}
+
+			t := sc.Tenant()
+			if !t.Is(tenant.MustFromContext(ctx)) {
+				return
+			}
+			if sc.WorldId() != e.WorldId {
+				return
+			}
+
+			p, err := party.GetByMemberId(l)(ctx)(e.Body.ActorId)
+			if err != nil {
+				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.ActorId, announceGuildError(l)(ctx)(wp)(writer.GuildOperationCreateError))
+				return
+			}
+
+			leaderName := ""
+			for _, m := range p.Members() {
+				if p.LeaderId() == m.Id() {
+					leaderName = m.Name()
+					break
+				}
+			}
+
+			for _, m := range p.Members() {
+				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), requestGuildNameAgreement(l)(ctx)(wp)(p.Id(), leaderName, e.Body.ProposedName))
+			}
+		}))
+	}
+}
+
+func requestGuildNameAgreement(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, leaderName string, guildName string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, leaderName string, guildName string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(partyId uint32, leaderName string, guildName string) model.Operator[session.Model] {
+			guildOperationFunc := session.Announce(l)(ctx)(wp)(writer.GuildOperation)
+			return func(partyId uint32, leaderName string, guildName string) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := guildOperationFunc(s, writer.GuildRequestAgreement(l)(partyId, leaderName, guildName))
+					if err != nil {
+						l.Debugf("Unable to issue character [%d] guild error [%s].", s.CharacterId(), err)
+						return err
+					}
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func ErrorStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		top, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
+		return top, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventErrorBody]) {
+			if e.Type != StatusEventTypeError {
+				return
+			}
+
+			t := sc.Tenant()
+			if !t.Is(tenant.MustFromContext(ctx)) {
+				return
+			}
+			if sc.WorldId() != e.WorldId {
+				return
+			}
+
+			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.ActorId, announceGuildError(l)(ctx)(wp)(e.Body.Error))
+		}))
+	}
+}
+
+func announceGuildError(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
+			guildOperationFunc := session.Announce(l)(ctx)(wp)(writer.GuildOperation)
+			return func(errCode string) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := guildOperationFunc(s, writer.GuildErrorBody(l)(errCode))
+					if err != nil {
+						l.Debugf("Unable to issue character [%d] guild error [%s].", s.CharacterId(), err)
+						return err
+					}
+					return nil
+				}
 			}
 		}
 	}

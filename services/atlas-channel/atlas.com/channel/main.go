@@ -80,6 +80,7 @@ func main() {
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(expression.EventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(conversation.CommandConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(guild.CommandConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(guild.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
@@ -171,6 +172,8 @@ func main() {
 				_, _ = cm.RegisterHandler(expression.EventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(conversation.SimpleConversationCommandRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.RequestNameRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(guild.RequestAgreementStatusEventRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(guild.ErrorStatusEventRegister(sc, wp)(l))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
@@ -253,6 +256,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterExpressionHandle] = handler.CharacterExpressionHandleFunc
 	handlerMap[handler.NPCStartConversationHandle] = handler.NPCStartConversationHandleFunc
 	handlerMap[handler.NPCContinueConversationHandle] = handler.NPCContinueConversationHandleFunc
+	handlerMap[handler.GuildOperationHandle] = handler.GuildOperationHandleFunc
 	return handlerMap
 }
 

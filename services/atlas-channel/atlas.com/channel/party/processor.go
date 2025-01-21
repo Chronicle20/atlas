@@ -99,14 +99,16 @@ func byMemberIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(mem
 				if err != nil {
 					return []Model{}, err
 				}
+				var results = make([]Model, 0)
 				for _, p := range ps {
 					ms, err := requests.SliceProvider[MemberRestModel, MemberModel](l, ctx)(requestMembers(p.Id()), ExtractMember, model.Filters[MemberModel]())()
 					if err != nil {
 						return []Model{}, err
 					}
 					p.members = ms
+					results = append(results, p)
 				}
-				return ps, nil
+				return results, nil
 			}
 		}
 	}

@@ -39,12 +39,38 @@ func RequestCreate(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, mapId uint32, name string) error {
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, mapId uint32, name string) error {
 			return func(characterId uint32, worldId byte, channelId byte, mapId uint32, name string) error {
+				if nameInUse(l)(ctx)(worldId, name) {
+					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, "THE_NAME_IS_ALREADY_IN_USE_PLEASE_TRY_OTHER_ONES"))
+					return errors.New("name in use")
+				}
+
+				if isValidName(name) {
+					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_FORMING_THE_GUILD_PLEASE_TRY_AGAIN"))
+					return errors.New("invalid name")
+				}
+
+				// TODO validate party, must be leader, members must not be in a guild, members must not be a gm?
+
 				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventRequestAgreementProvider(worldId, characterId, name))
 				return nil
 			}
 		}
 	}
 
+}
+
+func nameInUse(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, name string) bool {
+	return func(ctx context.Context) func(worldId byte, name string) bool {
+		return func(worldId byte, name string) bool {
+			// TODO identify if name in use
+			return name == "Already"
+		}
+	}
+}
+
+func isValidName(name string) bool {
+	// TODO validate name
+	return name == "Stupid"
 }
 
 func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, leaderId uint32, name string) (Model, error) {

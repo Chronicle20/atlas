@@ -583,6 +583,11 @@
               "handler": "NPCStartConversationHandle"
             },
             {
+              "opCode": "0x3C",
+              "validator": "LoggedInValidator",
+              "handler": "NPCContinueConversationHandle"
+            },
+            {
               "opCode": "0x47",
               "validator": "LoggedInValidator",
               "handler": "CharacterInventoryMoveHandle"

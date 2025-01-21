@@ -1,5 +1,5 @@
-# atlas-npc
-Mushroom game npc Service
+# "atlas-npc-conversations
+Mushroom game NPC Conversations Service
 
 ## Overview
 

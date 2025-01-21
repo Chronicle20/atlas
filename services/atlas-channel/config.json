@@ -580,7 +580,7 @@
             {
               "opCode": "0x3A",
               "validator": "LoggedInValidator",
-              "handler": "NPCTalkHandle"
+              "handler": "NPCStartConversationHandle"
             },
             {
               "opCode": "0x47",

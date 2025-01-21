@@ -247,7 +247,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterKeyMapChangeHandle] = handler.CharacterKeyMapChangeHandleFunc
 	handlerMap[handler.BuddyOperationHandle] = handler.BuddyOperationHandleFunc
 	handlerMap[handler.CharacterExpressionHandle] = handler.CharacterExpressionHandleFunc
-	handlerMap[handler.NPCTalkHandle] = handler.NPCTalkHandleFunc
+	handlerMap[handler.NPCStartConversationHandle] = handler.NPCStartConversationHandleFunc
 	return handlerMap
 }
 

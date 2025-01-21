@@ -9,9 +9,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const NPCTalkHandle = "NPCTalkHandle"
+const NPCStartConversationHandle = "NPCStartConversationHandle"
 
-func NPCTalkHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func NPCStartConversationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		oid := r.ReadUint32()
 		n, err := npc.GetInMapByObjectId(l)(ctx)(s.MapId(), oid)

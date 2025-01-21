@@ -29,7 +29,7 @@ func simpleConversationProvider(worldId byte, channelId byte, characterId uint32
 		NpcId:       npcId,
 		Speaker:     speaker,
 		Message:     message,
-		Type:        MessageTypeSimple,
+		Type:        CommandTypeSimple,
 		Body:        commandSimpleBody{Type: messageType},
 	}
 	return producer.SingleMessageProvider(key, value)

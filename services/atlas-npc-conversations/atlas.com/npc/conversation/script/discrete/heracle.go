@@ -137,7 +137,7 @@ func (r Heracle) MustBeLeaderToIncrease(l logrus.FieldLogger) func(ctx context.C
 func (r Heracle) ValidateCreate(l logrus.FieldLogger) func(ctx context.Context) func(c script.Context) script.State {
 	return func(ctx context.Context) func(c script.Context) script.State {
 		return func(c script.Context) script.State {
-			//TODO implement
+			guild.RequestName(l)(ctx)(c.WorldId, c.ChannelId, c.CharacterId)
 			return script.Exit()(l)(ctx)(c)
 		}
 	}

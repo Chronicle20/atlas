@@ -4,11 +4,11 @@ const (
 	EnvEventTopicCharacterStatus        = "EVENT_TOPIC_CHARACTER_STATUS"
 	EventCharacterStatusTypeStatChanged = "STAT_CHANGED"
 
-	EnvCommandTopic      = "COMMAND_TOPIC_NPC_CONVERSATION"
-	EnvCommandTypeSimple = "SIMPLE"
-	EnvCommandTypeText   = "TEXT"
-	EnvCommandTypeStyle  = "STYLE"
-	EnvCommandTypeNumber = "NUMBER"
+	EnvCommandTopic   = "COMMAND_TOPIC_NPC_CONVERSATION"
+	CommandTypeSimple = "SIMPLE"
+	CommandTypeText   = "TEXT"
+	CommandTypeStyle  = "STYLE"
+	CommandTypeNumber = "NUMBER"
 )
 
 type statusEvent[E any] struct {

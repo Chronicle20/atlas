@@ -1,0 +1,118 @@
+package conversation
+
+import (
+	consumer2 "atlas-channel/kafka/consumer"
+	"atlas-channel/server"
+	"atlas-channel/session"
+	"atlas-channel/socket/writer"
+	"context"
+	"fmt"
+	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas-kafka/handler"
+	"github.com/Chronicle20/atlas-kafka/message"
+	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/sirupsen/logrus"
+)
+
+const consumerCommand = "npc_conversation_command"
+
+func CommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
+	return func(groupId string) consumer.Config {
+		return consumer2.NewConfig(l)(consumerCommand)(EnvCommandTopic)(groupId)
+	}
+}
+
+func SimpleConversationCommandRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+		return t, message.AdaptHandler(message.PersistentConfig(handleSimpleConversationCommand(sc, wp)))
+	}
+}
+
+func handleSimpleConversationCommand(sc server.Model, wp writer.Producer) message.Handler[commandEvent[commandSimpleBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[commandSimpleBody]) {
+		if c.Type != EnvCommandTypeSimple {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), c.WorldId, c.ChannelId) {
+			return
+		}
+
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, announceSimpleConversation(l)(ctx)(wp)(c.NpcId, getNPCTalkType(c.Body.Type), c.Message, getNPCTalkEnd(c.Body.Type), getNPCTalkSpeaker(c.Speaker)))
+	}
+}
+
+func announceSimpleConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
+			npcConversationFunc := session.Announce(l)(ctx)(wp)(writer.NPCConversation)
+			return func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := npcConversationFunc(s, writer.NPCConversationBody(l)(npcId, talkType, message, endType, speaker))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+						return err
+					}
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func getNPCTalkSpeaker(speaker string) byte {
+	switch speaker {
+	case "NPC_LEFT":
+		return 0
+	case "NPC_RIGHT":
+		return 1
+	case "CHARACTER_LEFT":
+		return 2
+	case "CHARACTER_RIGHT":
+		return 3
+	}
+	panic(fmt.Sprintf("unsupported npc talk speaker %s", speaker))
+}
+
+func getNPCTalkEnd(t string) []byte {
+	switch t {
+	case "NEXT":
+		return []byte{00, 01}
+	case "PREVIOUS":
+		return []byte{01, 00}
+	case "NEXT_PREVIOUS":
+		return []byte{01, 01}
+	case "OK":
+		return []byte{00, 00}
+	case "YES_NO":
+		return []byte{}
+	case "ACCEPT_DECLINE":
+		return []byte{}
+	case "SIMPLE":
+		return []byte{}
+	}
+	panic(fmt.Sprintf("unsupported talk type %s", t))
+}
+
+func getNPCTalkType(t string) byte {
+	switch t {
+	case "NEXT":
+		return 0
+	case "PREVIOUS":
+		return 0
+	case "NEXT_PREVIOUS":
+		return 0
+	case "OK":
+		return 0
+	case "YES_NO":
+		return 1
+	case "ACCEPT_DECLINE":
+		return 0x0C
+	case "SIMPLE":
+		return 4
+	}
+	panic(fmt.Sprintf("unsupported talk type %s", t))
+}

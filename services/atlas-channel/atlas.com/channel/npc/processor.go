@@ -1,6 +1,7 @@
 package npc
 
 import (
+	"atlas-channel/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -36,6 +37,15 @@ func GetInMapByObjectId(l logrus.FieldLogger) func(ctx context.Context) func(map
 		return func(mapId uint32, objectId uint32) (Model, error) {
 			p := InMapByObjectIdModelProvider(l)(ctx)(mapId, objectId)
 			return model.First[Model](p, model.Filters[Model]())
+		}
+	}
+}
+
+func StartConversation(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, npcId uint32, characterId uint32) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, npcId uint32, characterId uint32) error {
+		return func(worldId byte, channelId byte, mapId uint32, npcId uint32, characterId uint32) error {
+			l.Debugf("Character [%d] is talking to npc [%d].", characterId, npcId)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(startConversationCommandProvider(worldId, channelId, mapId, npcId, characterId))
 		}
 	}
 }

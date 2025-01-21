@@ -578,6 +578,11 @@
               "handler": "CharacterExpressionHandle"
             },
             {
+              "opCode": "0x3A",
+              "validator": "LoggedInValidator",
+              "handler": "NPCTalkHandle"
+            },
+            {
               "opCode": "0x47",
               "validator": "LoggedInValidator",
               "handler": "CharacterInventoryMoveHandle"
@@ -1260,6 +1265,10 @@
                   }
                 ]
               }
+            },
+            {
+              "opCode": "0x130",
+              "writer": "NPCConversation"
             },
             {
               "opCode": "0x144",

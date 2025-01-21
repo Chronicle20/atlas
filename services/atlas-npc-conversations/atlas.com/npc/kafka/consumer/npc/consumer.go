@@ -25,5 +25,23 @@ func StartConversationCommandRegister(l logrus.FieldLogger) (string, handler.Han
 }
 
 func handleStartConversationCommand(l logrus.FieldLogger, ctx context.Context, c command[startConversationCommandBody]) {
-	_ = conversation.Start(l)(ctx)(c.WorldId, c.ChannelId, c.MapId, c.NpcId, c.CharacterId)
+	_ = conversation.Start(l)(ctx)(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.NpcId, c.CharacterId)
+}
+
+func ContinueConversationCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
+	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleContinueConversationCommand))
+}
+
+func handleContinueConversationCommand(l logrus.FieldLogger, ctx context.Context, c command[continueConversationCommandBody]) {
+	_ = conversation.Continue(l)(ctx)(c.NpcId, c.CharacterId, c.Body.Action, c.Body.LastMessageType, c.Body.Selection)
+}
+
+func EndConversationCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
+	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+	return t, message.AdaptHandler(message.PersistentConfig(handleEndConversationCommand))
+}
+
+func handleEndConversationCommand(l logrus.FieldLogger, ctx context.Context, c command[endConversationCommandBody]) {
+	_ = conversation.End(l)(ctx)(c.CharacterId)
 }

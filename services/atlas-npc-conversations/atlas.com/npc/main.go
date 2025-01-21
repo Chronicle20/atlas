@@ -33,6 +33,8 @@ func main() {
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(npc.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(npc.StartConversationCommandRegister(l))
+	_, _ = cm.RegisterHandler(npc.ContinueConversationCommandRegister(l))
+	_, _ = cm.RegisterHandler(npc.EndConversationCommandRegister(l))
 
 	for _, s := range config.Data.Attributes.Servers {
 		for _, sct := range s.Scripts {

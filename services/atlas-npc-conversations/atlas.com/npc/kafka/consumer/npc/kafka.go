@@ -6,9 +6,6 @@ const (
 )
 
 type command[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	MapId       uint32 `json:"mapId"`
 	NpcId       uint32 `json:"npcId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
@@ -16,4 +13,16 @@ type command[E any] struct {
 }
 
 type startConversationCommandBody struct {
+	WorldId   byte   `json:"worldId"`
+	ChannelId byte   `json:"channelId"`
+	MapId     uint32 `json:"mapId"`
+}
+
+type continueConversationCommandBody struct {
+	Action          byte  `json:"action"`
+	LastMessageType byte  `json:"lastMessageType"`
+	Selection       int32 `json:"selection"`
+}
+
+type endConversationCommandBody struct {
 }

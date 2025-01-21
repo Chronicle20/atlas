@@ -10,24 +10,24 @@ import (
 )
 
 const (
-	GuildOperationHandle           = "GuildOperationHandle"
-	GuildOperationLoad             = "LOAD"
-	GuildOperationInputName        = "INPUT_NAME"
-	GuildOperationRequestCreate    = "REQUEST_CREATE"
-	GuildOperationAgree            = "AGREE"
-	GuildOperationCreate           = "CREATE"
-	GuildOperationInvite           = "INVITE"
-	GuildOperationJoin             = "JOIN"
-	GuildOperationWithdraw         = "WITHDRAW"
-	GuildOperationKick             = "KICK"
-	GuildOperationRemove           = "REMOVE"
-	GuildOperationIncreaseCapacity = "INCREASE_CAPACITY"
-	GuildOperationChangeLevel      = "CHANGE_LEVEL"
-	GuildOperationChangeJob        = "CHANGE_JOB"
-	GuildOperationSetRankName      = "SET_RANK_NAME"
-	GuildOperationSetMemberRank    = "SET_MEMBER_RANK"
-	GuildOperationSetMark          = "SET_MARK"
-	GuildOperationSetNotice        = "SET_NOTICE"
+	GuildOperationHandle            = "GuildOperationHandle"
+	GuildOperationLoad              = "LOAD"
+	GuildOperationInputName         = "INPUT_NAME"
+	GuildOperationRequestCreate     = "REQUEST_CREATE"
+	GuildOperationAgreementResponse = "AGREEMENT_RESPONSE"
+	GuildOperationCreate            = "CREATE"
+	GuildOperationInvite            = "INVITE"
+	GuildOperationJoin              = "JOIN"
+	GuildOperationWithdraw          = "WITHDRAW"
+	GuildOperationKick              = "KICK"
+	GuildOperationRemove            = "REMOVE"
+	GuildOperationIncreaseCapacity  = "INCREASE_CAPACITY"
+	GuildOperationChangeLevel       = "CHANGE_LEVEL"
+	GuildOperationChangeJob         = "CHANGE_JOB"
+	GuildOperationSetRankName       = "SET_RANK_NAME"
+	GuildOperationSetMemberRank     = "SET_MEMBER_RANK"
+	GuildOperationSetMark           = "SET_MARK"
+	GuildOperationSetNotice         = "SET_NOTICE"
 )
 
 func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -39,6 +39,11 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			l.Debugf("Attempting to create guild with name [%s]", name)
 			_ = guild.RequestCreate(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), name)
 			return
+		}
+		if isGuildOperation(l)(readerOptions, op, GuildOperationAgreementResponse) {
+			unk := r.ReadUint32()
+			agreed := r.ReadBool()
+			l.Debugf("Character [%d] responded to the request to create a guild with [%t]. unk [%d].", s.CharacterId(), agreed, unk)
 		}
 	}
 }

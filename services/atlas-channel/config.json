@@ -633,7 +633,8 @@
               "handler": "GuildOperationHandle",
               "options": {
                 "operations": {
-                  "REQUEST_CREATE": 2
+                  "REQUEST_CREATE": 2,
+                  "AGREEMENT_RESPONSE": 30
                 }
               }
             },

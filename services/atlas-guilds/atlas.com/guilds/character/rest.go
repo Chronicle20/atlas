@@ -7,6 +7,7 @@ type RestModel struct {
 	Name  string `json:"name"`
 	Level byte   `json:"level"`
 	JobId uint16 `json:"jobId"`
+	Gm    int    `json:"gm"`
 }
 
 func (r *RestModel) GetName() string {
@@ -33,5 +34,6 @@ func Extract(rm RestModel) (Model, error) {
 		name:  rm.Name,
 		level: rm.Level,
 		jobId: rm.JobId,
+		gm:    rm.Gm,
 	}, nil
 }

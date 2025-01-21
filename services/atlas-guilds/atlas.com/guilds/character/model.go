@@ -5,6 +5,7 @@ type Model struct {
 	name  string
 	level byte
 	jobId uint16
+	gm    int
 }
 
 func (m Model) Name() string {
@@ -17,4 +18,8 @@ func (m Model) Level() byte {
 
 func (m Model) JobId() uint16 {
 	return m.jobId
+}
+
+func (m Model) Gm() bool {
+	return m.gm >= 1
 }

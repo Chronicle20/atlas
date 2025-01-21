@@ -13,3 +13,7 @@ type Model struct {
 	online       bool
 	allianceRank byte
 }
+
+func (m Model) CharacterId() uint32 {
+	return m.characterId
+}

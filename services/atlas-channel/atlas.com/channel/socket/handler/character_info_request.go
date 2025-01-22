@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/guild"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -26,7 +27,9 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			l.WithError(err).Errorf("Unable to retrieve character [%d] being requested.", characterId)
 			return
 		}
-		err = characterInfoFunc(s, writer.CharacterInfoBody(t)(c))
+		g, _ := guild.GetByMemberId(l)(ctx)(characterId)
+
+		err = characterInfoFunc(s, writer.CharacterInfoBody(t)(c, g))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write character information.")
 		}

@@ -2,21 +2,26 @@ package writer
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/guild"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 )
 
 const CharacterInfo = "CharacterInfo"
 
-func CharacterInfoBody(tenant tenant.Model) func(c character.Model) BodyProducer {
-	return func(c character.Model) BodyProducer {
+func CharacterInfoBody(tenant tenant.Model) func(c character.Model, g guild.Model) BodyProducer {
+	return func(c character.Model, g guild.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(c.Id())
 			w.WriteByte(c.Level())
 			w.WriteShort(c.JobId())
 			w.WriteInt16(c.Fame())
-			w.WriteBool(false)     // marriage ring
-			w.WriteAsciiString("") // guild name
+			w.WriteBool(false) // marriage ring
+			if g.Id() != 0 {
+				w.WriteAsciiString(g.Name())
+			} else {
+				w.WriteAsciiString("")
+			}
 			w.WriteAsciiString("") // alliance name
 			w.WriteByte(0)         // medal info
 			w.WriteByte(0)         // pet activated, followed by pet info

@@ -31,7 +31,7 @@ func allProvider(ctx context.Context) func(db *gorm.DB) model.Provider[[]Model] 
 	}
 }
 
-func GetSlice(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(filters ...model.Filter[Model]) ([]Model, error) {
+func GetSlice(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(filters ...model.Filter[Model]) ([]Model, error) {
 	return func(ctx context.Context) func(db *gorm.DB) func(filters ...model.Filter[Model]) ([]Model, error) {
 		return func(db *gorm.DB) func(filters ...model.Filter[Model]) ([]Model, error) {
 			return func(filters ...model.Filter[Model]) ([]Model, error) {

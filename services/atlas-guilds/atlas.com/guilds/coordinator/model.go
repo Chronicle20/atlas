@@ -1,8 +1,12 @@
 package coordinator
 
-import "time"
+import (
+	"github.com/Chronicle20/atlas-tenant"
+	"time"
+)
 
 type Model struct {
+	tenant    tenant.Model
 	worldId   byte
 	channelId byte
 	leaderId  uint32
@@ -15,6 +19,7 @@ type Model struct {
 func (m Model) Agree(characterId uint32) Model {
 	m.responses[characterId] = true
 	return Model{
+		tenant:    m.tenant,
 		worldId:   m.worldId,
 		channelId: m.channelId,
 		leaderId:  m.leaderId,
@@ -43,4 +48,12 @@ func (m Model) Name() string {
 
 func (m Model) WorldId() byte {
 	return m.worldId
+}
+
+func (m Model) Age() time.Time {
+	return m.age
+}
+
+func (m Model) Tenant() tenant.Model {
+	return m.tenant
 }

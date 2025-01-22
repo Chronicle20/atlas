@@ -44,6 +44,7 @@ func (r *Registry) Initiate(t tenant.Model, worldId byte, channelId byte, name s
 	rm[leaderId] = true
 
 	r.agreementReg[agreementId] = Model{
+		tenant:    t,
 		worldId:   worldId,
 		channelId: channelId,
 		leaderId:  leaderId,
@@ -72,4 +73,17 @@ func (r *Registry) Respond(t tenant.Model, characterId uint32, agree bool) (Mode
 		r.lock.Unlock()
 		return Model{}, nil
 	}
+}
+
+func (r *Registry) GetExpired(timeout time.Duration) ([]Model, error) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	now := time.Now()
+	var results = make([]Model, 0)
+	for _, g := range r.agreementReg {
+		if now.Sub(g.Age()) > timeout {
+			results = append(results, g)
+		}
+	}
+	return results, nil
 }

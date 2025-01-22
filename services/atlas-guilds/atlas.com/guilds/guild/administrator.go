@@ -92,3 +92,20 @@ func updateNotice(db *gorm.DB, tenantId uuid.UUID, guildId uint32, notice string
 	}
 	return Make(ge)
 }
+
+func updateCapacity(db *gorm.DB, tenantId uuid.UUID, guildId uint32) (Model, error) {
+	ge, err := getById(tenantId, guildId)(db)()
+	if err != nil {
+		return Model{}, err
+	}
+	ge.Capacity = ge.Capacity + 5
+	err = db.Save(&ge).Error
+	if err != nil {
+		return Model{}, err
+	}
+	return Make(ge)
+}
+
+func deleteGuild(db *gorm.DB, tenantId uuid.UUID, guildId uint32) error {
+	return db.Where("tenant_id = ? AND id = ?", tenantId, guildId).Delete(&Entity{}).Error
+}

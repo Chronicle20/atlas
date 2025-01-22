@@ -3,6 +3,7 @@ package guild
 const (
 	EnvStatusEventTopic                = "EVENT_TOPIC_GUILD_STATUS"
 	StatusEventTypeCreated             = "CREATED"
+	StatusEventTypeDisbanded           = "DISBANDED"
 	StatusEventTypeEmblemUpdated       = "EMBLEM_UPDATED"
 	StatusEventTypeRequestAgreement    = "REQUEST_AGREEMENT"
 	StatusEventTypeMemberStatusUpdated = "MEMBER_STATUS_UPDATED"
@@ -10,6 +11,7 @@ const (
 	StatusEventTypeMemberLeft          = "MEMBER_LEFT"
 	StatusEventTypeMemberJoined        = "MEMBER_JOINED"
 	StatusEventTypeNoticeUpdated       = "NOTICE_UPDATED"
+	StatusEventTypeCapacityUpdated     = "CAPACITY_UPDATED"
 	StatusEventTypeTitlesUpdated       = "TITLES_UPDATED"
 	StatusEventTypeError               = "ERROR"
 )
@@ -27,6 +29,10 @@ type statusEventRequestAgreementBody struct {
 }
 
 type statusEventCreatedBody struct {
+}
+
+type statusEventDisbandedBody struct {
+	Members []uint32 `json:"members"`
 }
 
 type statusEventEmblemUpdatedBody struct {
@@ -63,6 +69,10 @@ type statusEventMemberJoinedBody struct {
 
 type statusEventNoticeUpdatedBody struct {
 	Notice string `json:"notice"`
+}
+
+type statusEventCapacityUpdatedBody struct {
+	Capacity uint32 `json:"capacity"`
 }
 
 type statusEventTitlesUpdatedBody struct {

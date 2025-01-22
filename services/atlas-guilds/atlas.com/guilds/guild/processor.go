@@ -484,3 +484,59 @@ func ChangeMemberTitle(l logrus.FieldLogger) func(ctx context.Context) func(db *
 		}
 	}
 }
+
+func RequestDisband(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32) error {
+			return func(characterId uint32) error {
+				l.Debugf("Character [%d] attempting to disband guild.", characterId)
+				return db.Transaction(func(tx *gorm.DB) error {
+					g, err := GetByMemberId(l)(ctx)(tx)(characterId)
+					if err != nil {
+						return err
+					}
+					if g.LeaderId() != characterId {
+						return errors.New("must be leader")
+					}
+
+					members := make([]uint32, 0)
+					for _, gm := range g.Members() {
+						members = append(members, gm.CharacterId())
+						_ = member.RemoveMember(l)(ctx)(tx)(g.Id(), gm.CharacterId())
+					}
+					_ = title.Clear(l)(ctx)(tx)(g.Id())
+					_ = deleteGuild(tx, t.Id(), g.Id())
+
+					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventDisbandedProvider(g.WorldId(), g.Id(), members))
+					return nil
+				})
+			}
+		}
+	}
+}
+
+func RequestCapacityIncrease(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32) error {
+			return func(characterId uint32) error {
+				g, err := GetByMemberId(l)(ctx)(db)(characterId)
+				if err != nil {
+					return err
+				}
+				if g.LeaderId() != characterId {
+					return errors.New("must be leader")
+				}
+
+				l.Debugf("Character [%d] is attempting to increase guild [%d] capacity.", characterId, g.Id())
+				g, err = updateCapacity(db, t.Id(), g.Id())
+				if err != nil {
+					return err
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventCapacityUpdatedProvider(g.WorldId(), g.Id(), g.Capacity()))
+				return nil
+			}
+		}
+	}
+}

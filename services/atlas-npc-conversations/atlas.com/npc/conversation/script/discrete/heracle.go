@@ -76,7 +76,7 @@ func (r Heracle) Disband(l logrus.FieldLogger) func(ctx context.Context) func(c 
 func (r Heracle) IncreaseCapacity(l logrus.FieldLogger) func(ctx context.Context) func(c script.Context) script.State {
 	return func(ctx context.Context) func(c script.Context) script.State {
 		return func(c script.Context) script.State {
-			if guild.IsLeader(l)(ctx)(c.CharacterId) {
+			if !guild.IsLeader(l)(ctx)(c.CharacterId) {
 				return r.MustBeLeaderToIncrease(l)(ctx)(c)
 			}
 			return r.IncreaseConfirmation(l)(ctx)(c)
@@ -155,7 +155,7 @@ func (r Heracle) PerformDisband(l logrus.FieldLogger) func(ctx context.Context) 
 func (r Heracle) ValidateIncrease(l logrus.FieldLogger) func(ctx context.Context) func(c script.Context) script.State {
 	return func(ctx context.Context) func(c script.Context) script.State {
 		return func(c script.Context) script.State {
-			//TODO implement
+			guild.RequestCapacityIncrease(l)(ctx)(c.WorldId, c.ChannelId, c.CharacterId)
 			return script.Exit()(l)(ctx)(c)
 		}
 	}

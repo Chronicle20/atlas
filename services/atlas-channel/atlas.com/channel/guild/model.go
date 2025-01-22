@@ -28,3 +28,44 @@ func (m Model) Id() uint32 {
 func (m Model) Name() string {
 	return m.name
 }
+
+func (m Model) Logo() uint16 {
+	return m.logo
+}
+
+func (m Model) LogoColor() byte {
+	return m.logoColor
+}
+
+func (m Model) LogoBackground() uint16 {
+	return m.logoBackground
+}
+
+func (m Model) LogoBackgroundColor() byte {
+	return m.logoBackgroundColor
+}
+
+func (m Model) Titles() []title.Model {
+	return m.titles
+}
+
+func (m Model) Members() []member.Model {
+	return m.members
+
+}
+
+func (m Model) Capacity() uint32 {
+	return m.capacity
+}
+
+func (m Model) Notice() string {
+	return m.notice
+}
+
+func (m Model) Points() uint32 {
+	return m.points
+}
+
+func (m Model) AllianceId() uint32 {
+	return 0
+}

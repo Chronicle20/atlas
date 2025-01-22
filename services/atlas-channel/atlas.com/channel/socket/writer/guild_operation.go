@@ -1,7 +1,10 @@
 package writer
 
 import (
+	"atlas-channel/guild"
+	"atlas-channel/socket/model"
 	"github.com/Chronicle20/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"strconv"
 )
@@ -63,6 +66,54 @@ func GuildErrorBody(l logrus.FieldLogger) func(code string) BodyProducer {
 	return func(code string) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, code))
+			return w.Bytes()
+		}
+	}
+}
+
+func GuildInfoBody(l logrus.FieldLogger, t tenant.Model) func(g guild.Model) BodyProducer {
+	return func(g guild.Model) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(0x1A) // TODO
+
+			inGuild := g.Id() != 0
+			w.WriteBool(inGuild)
+			if !inGuild {
+				return w.Bytes()
+			}
+			w.WriteInt(g.Id())
+			w.WriteAsciiString(g.Name())
+			for i := range 5 {
+				for _, t := range g.Titles() {
+					if t.Index() == byte(i)+1 {
+						w.WriteAsciiString(t.Name())
+					}
+				}
+			}
+			w.WriteByte(byte(len(g.Members())))
+			for _, mm := range g.Members() {
+				w.WriteInt(mm.CharacterId())
+			}
+			for _, mm := range g.Members() {
+				gm := model.GuildMember{
+					Name:         mm.Name(),
+					JobId:        mm.JobId(),
+					Level:        mm.Level(),
+					Rank:         mm.Rank(),
+					Online:       mm.Online(),
+					Signature:    0,
+					AllianceRank: mm.AllianceRank(),
+				}
+				gm.Encode(l, t, options)(w)
+			}
+			w.WriteInt(g.Capacity())
+			w.WriteShort(g.LogoBackground())
+			w.WriteByte(g.LogoBackgroundColor())
+			w.WriteShort(g.Logo())
+			w.WriteByte(g.LogoColor())
+			w.WriteAsciiString(g.Notice())
+			w.WriteInt(g.Points())
+			w.WriteInt(g.AllianceId())
 			return w.Bytes()
 		}
 	}

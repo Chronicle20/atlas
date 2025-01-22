@@ -36,11 +36,11 @@ const (
 	GuildOperationIncreaseCapacityError          = "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_INCREASING_THE_GUILD_PLEASE_TRY_AGAIN"
 	GuildOperationMemberUpdate                   = "MEMBER_UPDATE"
 	GuildOperationMemberOnline                   = "MEMBER_ONLINE"
-	GuildOperationRankTitleUpdate                = "RANK_TITLE_UPDATE"
-	GuildOperationMemberRankChange               = "MEMBER_RANK_CHANGE"
+	GuildOperationTitleUpdate                    = "TITLE_UPDATE"
+	GuildOperationMemberTitleChange              = "MEMBER_TITLE_CHANGE"
 	GuildOperationEmblemChange                   = "EMBLEM_CHANGE"
 	GuildOperationNoticeChange                   = "NOTICE_CHANGE"
-	GuildOperationShowRanks                      = "SHOW_RANKS"
+	GuildOperationShowTitles                     = "SHOW_TITLES"
 	GuildOperationQuestErrorLessThanSixMembers   = "THERE_ARE_LESS_THAN_6_MEMBERS_REMAINING_SO_THE_QUEST_CANNOT_CONTINUE_YOUR_GUILD"
 	GuildOperationQuestErrorDisconnected         = "THE_USER_THAT_REGISTERED_HAS_DISCONNECTED_SO_THE_QUEST_CANNOT_CONTINUE_YOUR_GUILD"
 	GuildOperationQuestWaitingNotice             = "QUEST_WAITING_NOTICE"
@@ -112,13 +112,13 @@ func GuildInfoBody(l logrus.FieldLogger, t tenant.Model) func(g guild.Model) Bod
 			}
 			for _, mm := range g.Members() {
 				gm := model.GuildMember{
-					Name:         mm.Name(),
-					JobId:        mm.JobId(),
-					Level:        mm.Level(),
-					Rank:         mm.Rank(),
-					Online:       mm.Online(),
-					Signature:    0,
-					AllianceRank: mm.AllianceRank(),
+					Name:          mm.Name(),
+					JobId:         mm.JobId(),
+					Level:         mm.Level(),
+					Title:         mm.Title(),
+					Online:        mm.Online(),
+					Signature:     0,
+					AllianceTitle: mm.AllianceTitle(),
 				}
 				gm.Encode(l, t, options)(w)
 			}
@@ -196,20 +196,20 @@ func GuildMemberExpelBody(l logrus.FieldLogger) func(guildId uint32, characterId
 	}
 }
 
-func GuildMemberJoinedBody(l logrus.FieldLogger, t tenant.Model) func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, rank byte, online bool, allianceRank byte) BodyProducer {
-	return func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, rank byte, online bool, allianceRank byte) BodyProducer {
+func GuildMemberJoinedBody(l logrus.FieldLogger, t tenant.Model) func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte, online bool, allianceTitle byte) BodyProducer {
+	return func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte, online bool, allianceTitle byte) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationJoinSuccess))
 			w.WriteInt(guildId)
 			w.WriteInt(characterId)
 			gm := model.GuildMember{
-				Name:         name,
-				JobId:        jobId,
-				Level:        level,
-				Rank:         rank,
-				Online:       online,
-				Signature:    0,
-				AllianceRank: allianceRank,
+				Name:          name,
+				JobId:         jobId,
+				Level:         level,
+				Title:         title,
+				Online:        online,
+				Signature:     0,
+				AllianceTitle: allianceTitle,
 			}
 			gm.Encode(l, t, options)(w)
 			return w.Bytes()
@@ -223,6 +223,19 @@ func GuildInviteBody(l logrus.FieldLogger) func(guildId uint32, originatorName s
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationInvite))
 			w.WriteInt(guildId)
 			w.WriteAsciiString(originatorName)
+			return w.Bytes()
+		}
+	}
+}
+
+func GuildTitleChangedBody(l logrus.FieldLogger) func(guildId uint32, titles []string) BodyProducer {
+	return func(guildId uint32, titles []string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getGuildOperation(l)(options, GuildOperationTitleUpdate))
+			w.WriteInt(guildId)
+			for i := range 5 {
+				w.WriteAsciiString(titles[i])
+			}
 			return w.Bytes()
 		}
 	}

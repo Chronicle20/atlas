@@ -381,7 +381,7 @@ func MemberJoinedStatusEventRegister(sc server.Model, wp writer.Producer) func(l
 				for _, gm := range g.Members() {
 					if gm.Online() && gm.CharacterId() != e.Body.CharacterId {
 						session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(gm.CharacterId(), func(s session.Model) error {
-							err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildMemberJoinedBody(l, t)(g.Id(), c.Id(), e.Body.Name, e.Body.JobId, e.Body.Level, e.Body.Rank, e.Body.Online, e.Body.AllianceRank))
+							err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildMemberJoinedBody(l, t)(g.Id(), c.Id(), e.Body.Name, e.Body.JobId, e.Body.Level, e.Body.Title, e.Body.Online, e.Body.AllianceTitle))
 							if err != nil {
 								l.Debugf("Unable to issue character [%d] guild error [%s].", s.CharacterId(), err)
 								return err
@@ -416,6 +416,44 @@ func MemberJoinedStatusEventRegister(sc server.Model, wp writer.Producer) func(l
 				}()
 				return nil
 			})
+		}))
+	}
+}
+
+func TitlesUpdateStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		top, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
+		return top, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventTitlesUpdatedBody]) {
+			if e.Type != StatusEventTypeTitlesUpdated {
+				return
+			}
+
+			t := sc.Tenant()
+			if !t.Is(tenant.MustFromContext(ctx)) {
+				return
+			}
+			if sc.WorldId() != e.WorldId {
+				return
+			}
+
+			g, err := guild.GetById(l)(ctx)(e.GuildId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce guild [%d] title has changed.", e.GuildId)
+				return
+			}
+
+			for _, gm := range g.Members() {
+				go func() {
+					session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(gm.CharacterId(), func(s session.Model) error {
+						err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildTitleChangedBody(l)(g.Id(), e.Body.Titles))
+						if err != nil {
+							l.Debugf("Unable to issue character [%d] guild error [%s].", s.CharacterId(), err)
+							return err
+						}
+						return nil
+					})
+				}()
+			}
 		}))
 	}
 }

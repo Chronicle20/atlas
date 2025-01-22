@@ -85,7 +85,7 @@ func (m Model) IsLeadership(characterId uint32) bool {
 
 	for _, mm := range m.Members() {
 		if mm.CharacterId() == characterId {
-			return mm.Rank() <= 2
+			return mm.Title() <= 2
 		}
 	}
 	return false

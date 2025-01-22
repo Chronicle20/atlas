@@ -26,8 +26,8 @@ const (
 	GuildOperationIncreaseCapacity  = "INCREASE_CAPACITY"
 	GuildOperationChangeLevel       = "CHANGE_LEVEL"
 	GuildOperationChangeJob         = "CHANGE_JOB"
-	GuildOperationSetRankName       = "SET_RANK_NAME"
-	GuildOperationSetMemberRank     = "SET_MEMBER_RANK"
+	GuildOperationSetTitleNames     = "SET_TITLE_NAMES"
+	GuildOperationSetMemberTitle    = "SET_MEMBER_TITLE"
 	GuildOperationSetEmblem         = "SET_EMBLEM"
 	GuildOperationSetNotice         = "SET_NOTICE"
 )
@@ -48,17 +48,17 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationSetEmblem) {
-			logoBackground := r.ReadUint16()
-			logoBackgroundColor := r.ReadByte()
-			logo := r.ReadUint16()
-			logoColor := r.ReadByte()
-
 			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
 			if !g.IsLeader(s.CharacterId()) {
 				l.Errorf("Character [%d] attempting to change guild emblem when they are not the guild leader.", s.CharacterId())
 				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
 				return
 			}
+
+			logoBackground := r.ReadUint16()
+			logoBackgroundColor := r.ReadByte()
+			logo := r.ReadUint16()
+			logoColor := r.ReadByte()
 
 			_ = guild.RequestEmblemUpdate(l)(ctx)(g.Id(), s.CharacterId(), logoBackground, logoBackgroundColor, logo, logoColor)
 			return
@@ -152,6 +152,20 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			if err != nil {
 				l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
 			}
+			return
+		}
+		if isGuildOperation(l)(readerOptions, op, GuildOperationSetTitleNames) {
+			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+			if !g.IsLeader(s.CharacterId()) {
+				l.Errorf("Character [%d] attempting to change title names when they are not the guild leader.", s.CharacterId())
+				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				return
+			}
+			titles := make([]string, 5)
+			for i := range 5 {
+				titles[i] = r.ReadAsciiString()
+			}
+			_ = guild.RequestTitleChanges(l)(ctx)(g.Id(), s.CharacterId(), titles)
 			return
 		}
 		l.Warnf("Character [%d] issued unhandled guild operation with operation [%d].", s.CharacterId(), op)

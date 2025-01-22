@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
+	"strings"
 )
 
 func GetById(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32) (Model, error) {
@@ -91,6 +92,15 @@ func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(guildId 
 		return func(guildId uint32, characterId uint32, targetId uint32) error {
 			l.Debugf("Character [%d] is inviting [%d] to guild [%d].", characterId, targetId, guildId)
 			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestInviteProvider(guildId, characterId, targetId))
+		}
+	}
+}
+
+func RequestTitleChanges(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, characterId uint32, titles []string) error {
+	return func(ctx context.Context) func(guildId uint32, characterId uint32, titles []string) error {
+		return func(guildId uint32, characterId uint32, titles []string) error {
+			l.Debugf("Character [%d] attempting to change guild [%d] titles to [%s].", characterId, guildId, strings.Join(titles, ":"))
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeTitlesProvider(guildId, characterId, titles))
 		}
 	}
 }

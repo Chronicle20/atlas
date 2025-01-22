@@ -75,6 +75,19 @@ func changeNoticeProvider(guildId uint32, characterId uint32, notice string) mod
 	return producer.SingleMessageProvider(key, value)
 }
 
+func changeTitlesProvider(guildId uint32, characterId uint32, titles []string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[changeTitlesBody]{
+		CharacterId: characterId,
+		Type:        CommandTypeChangeTitles,
+		Body: changeTitlesBody{
+			GuildId: guildId,
+			Titles:  titles,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func expelGuildProvider(guildId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &command[leaveBody]{

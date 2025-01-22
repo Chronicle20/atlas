@@ -179,6 +179,7 @@ func main() {
 				_, _ = cm.RegisterHandler(guild.NoticeUpdateStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.MemberLeftStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.MemberJoinedStatusEventRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(guild.TitlesUpdateStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.ErrorStatusEventRegister(sc, wp)(l))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)

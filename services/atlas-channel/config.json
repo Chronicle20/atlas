@@ -639,6 +639,7 @@
                   "WITHDRAW": 7,
                   "KICK": 8,
                   "SET_TITLE_NAMES": 13,
+                  "SET_MEMBER_TITLE": 14,
                   "SET_EMBLEM": 15,
                   "SET_NOTICE": 16,
                   "AGREEMENT_RESPONSE": 30

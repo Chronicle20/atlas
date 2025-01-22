@@ -90,3 +90,17 @@ func (m Model) IsLeadership(characterId uint32) bool {
 	}
 	return false
 }
+
+func (m Model) TitlePossible(characterId uint32, newTitle byte) bool {
+	if m.id == 0 {
+		return false
+	}
+
+	curTitle := byte(5)
+	for _, mm := range m.Members() {
+		if mm.CharacterId() == characterId {
+			curTitle = mm.Title()
+		}
+	}
+	return !(curTitle > 2 || (newTitle <= 2 && curTitle != 1))
+}

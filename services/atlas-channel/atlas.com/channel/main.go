@@ -176,6 +176,7 @@ func main() {
 				_, _ = cm.RegisterHandler(guild.RequestAgreementStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.EmblemUpdateStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.MemberStatusUpdatedStatusEventRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(guild.MemberTitleUpdatedStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.NoticeUpdateStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.MemberLeftStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.MemberJoinedStatusEventRegister(sc, wp)(l))

@@ -168,6 +168,25 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			_ = guild.RequestTitleChanges(l)(ctx)(g.Id(), s.CharacterId(), titles)
 			return
 		}
+		if isGuildOperation(l)(readerOptions, op, GuildOperationSetMemberTitle) {
+			targetId := r.ReadUint32()
+			newTitle := r.ReadByte()
+
+			if newTitle <= 1 || newTitle > 5 {
+				l.Errorf("Character [%d] attempting to change [%d] to a title [%d] outside of bounds.", s.CharacterId(), targetId, newTitle)
+				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				return
+			}
+			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+			if !g.TitlePossible(s.CharacterId(), newTitle) {
+				l.Errorf("Character [%d] attempting to change [%d] to a title [%d] outside of bounds.", s.CharacterId(), targetId, newTitle)
+				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				return
+			}
+
+			_ = guild.RequestMemberTitleUpdate(l)(ctx)(g.Id(), s.CharacterId(), targetId, newTitle)
+			return
+		}
 		l.Warnf("Character [%d] issued unhandled guild operation with operation [%d].", s.CharacterId(), op)
 	}
 }

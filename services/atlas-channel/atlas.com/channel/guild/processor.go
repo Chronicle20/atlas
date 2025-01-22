@@ -104,3 +104,12 @@ func RequestTitleChanges(l logrus.FieldLogger) func(ctx context.Context) func(gu
 		}
 	}
 }
+
+func RequestMemberTitleUpdate(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, characterId uint32, targetId uint32, newTitle byte) error {
+	return func(ctx context.Context) func(guildId uint32, characterId uint32, targetId uint32, newTitle byte) error {
+		return func(guildId uint32, characterId uint32, targetId uint32, newTitle byte) error {
+			l.Debugf("Character [%d] attempting to change [%d] title to [%d].", characterId, targetId, newTitle)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeMemberTitleProvider(guildId, characterId, targetId, newTitle))
+		}
+	}
+}

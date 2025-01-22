@@ -1,9 +1,11 @@
 package guild
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_GUILD"
-	CommandTypeRequestName   = "REQUEST_NAME"
-	CommandTypeRequestEmblem = "REQUEST_EMBLEM"
+	EnvCommandTopic                    = "COMMAND_TOPIC_GUILD"
+	CommandTypeRequestName             = "REQUEST_NAME"
+	CommandTypeRequestEmblem           = "REQUEST_EMBLEM"
+	CommandTypeRequestDisband          = "REQUEST_DISBAND"
+	CommandTypeRequestCapacityIncrease = "REQUEST_CAPACITY_INCREASE"
 )
 
 type command[E any] struct {
@@ -18,6 +20,16 @@ type requestNameBody struct {
 }
 
 type requestEmblemBody struct {
+	WorldId   byte `json:"worldId"`
+	ChannelId byte `json:"channelId"`
+}
+
+type requestDisbandBody struct {
+	WorldId   byte `json:"worldId"`
+	ChannelId byte `json:"channelId"`
+}
+
+type requestCapacityIncreaseBody struct {
 	WorldId   byte `json:"worldId"`
 	ChannelId byte `json:"channelId"`
 }

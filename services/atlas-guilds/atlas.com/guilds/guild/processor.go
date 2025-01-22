@@ -367,3 +367,25 @@ func ChangeNotice(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.
 		}
 	}
 }
+
+func Leave(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, force bool) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, force bool) error {
+		return func(db *gorm.DB) func(guildId uint32, characterId uint32, force bool) error {
+			return func(guildId uint32, characterId uint32, force bool) error {
+				l.Debugf("Character [%d] is leaving guild [%d]. Forced? [%t].", characterId, guildId, force)
+				g, err := GetById(l)(ctx)(db)(guildId)
+				if err != nil {
+					return err
+				}
+
+				err = member.RemoveMember(l)(ctx)(db)(guildId, characterId)
+				if err != nil {
+					return err
+				}
+
+				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventMemberLeftProvider(g.WorldId(), g.Id(), characterId, force))
+				return nil
+			}
+		}
+	}
+}

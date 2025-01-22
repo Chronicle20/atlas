@@ -71,3 +71,16 @@ func ChangeNoticeRegister(db *gorm.DB) func(l logrus.FieldLogger) (string, handl
 		}))
 	}
 }
+
+func LeaveRegister(db *gorm.DB) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+		return t, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, c command[leaveBody]) {
+			if c.Type != CommandTypeLeave {
+				return
+			}
+
+			_ = guild.Leave(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.Force)
+		}))
+	}
+}

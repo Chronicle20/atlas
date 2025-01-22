@@ -6,6 +6,7 @@ const (
 	CommandTypeCreationAgreement = "CREATION_AGREEMENT"
 	CommandTypeChangeEmblem      = "CHANGE_EMBLEM"
 	CommandTypeChangeNotice      = "CHANGE_NOTICE"
+	CommandTypeLeave             = "LEAVE"
 )
 
 type command[E any] struct {
@@ -36,4 +37,9 @@ type changeEmblemBody struct {
 type changeNoticeBody struct {
 	GuildId uint32 `json:"guildId"`
 	Notice  string `json:"notice"`
+}
+
+type leaveBody struct {
+	GuildId uint32 `json:"guildId"`
+	Force   bool   `json:"force"`
 }

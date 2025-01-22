@@ -34,3 +34,14 @@ func AddMember(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB)
 		}
 	}
 }
+
+func RemoveMember(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(guildId uint32, characterId uint32) error {
+			return func(guildId uint32, characterId uint32) error {
+				return db.Where("tenant_id = ? AND guild_id = ? AND character_id = ?", t.Id(), guildId, characterId).Delete(&Entity{}).Error
+			}
+		}
+	}
+}

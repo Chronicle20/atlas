@@ -173,6 +173,8 @@ func main() {
 				_, _ = cm.RegisterHandler(conversation.SimpleConversationCommandRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.RequestNameRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.RequestEmblemRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(guild.CreatedStatusEventRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(guild.DisbandedStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.RequestAgreementStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.EmblemUpdateStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.MemberStatusUpdatedStatusEventRegister(sc, wp)(l))

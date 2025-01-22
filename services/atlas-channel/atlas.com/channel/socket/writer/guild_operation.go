@@ -253,6 +253,16 @@ func GuildTitleChangedBody(l logrus.FieldLogger) func(guildId uint32, titles []s
 	}
 }
 
+func GuildDisbandBody(l logrus.FieldLogger) func(guildId uint32) BodyProducer {
+	return func(guildId uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getGuildOperation(l)(options, GuildOperationDisbandSuccess))
+			w.WriteInt(guildId)
+			return w.Bytes()
+		}
+	}
+}
+
 func getGuildOperation(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
 	return func(options map[string]interface{}, key string) byte {
 		var genericCodes interface{}

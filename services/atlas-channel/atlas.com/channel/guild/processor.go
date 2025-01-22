@@ -14,3 +14,12 @@ func RequestCreate(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 		}
 	}
 }
+
+func CreationAgreement(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, agreed bool) error {
+	return func(ctx context.Context) func(characterId uint32, agreed bool) error {
+		return func(characterId uint32, agreed bool) error {
+			l.Debugf("Character [%d] responded to guild creation agreement with [%t].", characterId, agreed)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(creationAgreementProvider(characterId, agreed))
+		}
+	}
+}

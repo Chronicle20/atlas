@@ -44,6 +44,7 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			unk := r.ReadUint32()
 			agreed := r.ReadBool()
 			l.Debugf("Character [%d] responded to the request to create a guild with [%t]. unk [%d].", s.CharacterId(), agreed, unk)
+			_ = guild.CreationAgreement(l)(ctx)(s.CharacterId(), agreed)
 		}
 	}
 }

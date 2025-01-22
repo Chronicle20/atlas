@@ -20,3 +20,15 @@ func requestCreateProvider(worldId byte, channelId byte, mapId uint32, character
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func creationAgreementProvider(characterId uint32, agreed bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[creationAgreementBody]{
+		CharacterId: characterId,
+		Type:        CommandTypeCreationAgreement,
+		Body: creationAgreementBody{
+			Agreed: agreed,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

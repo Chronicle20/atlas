@@ -138,6 +138,18 @@ func GuildEmblemChangedBody(l logrus.FieldLogger) func(guildId uint32, logo uint
 	}
 }
 
+func GuildMemberStatusUpdatedBody(l logrus.FieldLogger) func(guildId uint32, characterId uint32, online bool) BodyProducer {
+	return func(guildId uint32, characterId uint32, online bool) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getGuildOperation(l)(options, GuildOperationMemberOnline))
+			w.WriteInt(guildId)
+			w.WriteInt(characterId)
+			w.WriteBool(online)
+			return w.Bytes()
+		}
+	}
+}
+
 func getGuildOperation(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
 	return func(options map[string]interface{}, key string) byte {
 		var genericCodes interface{}

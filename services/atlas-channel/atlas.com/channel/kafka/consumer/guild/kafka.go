@@ -5,10 +5,11 @@ const (
 	CommandTypeRequestName   = "REQUEST_NAME"
 	CommandTypeRequestEmblem = "REQUEST_EMBLEM"
 
-	EnvStatusEventTopic             = "EVENT_TOPIC_GUILD_STATUS"
-	StatusEventTypeRequestAgreement = "REQUEST_AGREEMENT"
-	StatusEventTypeEmblemUpdated    = "EMBLEM_UPDATED"
-	StatusEventTypeError            = "ERROR"
+	EnvStatusEventTopic                = "EVENT_TOPIC_GUILD_STATUS"
+	StatusEventTypeRequestAgreement    = "REQUEST_AGREEMENT"
+	StatusEventTypeEmblemUpdated       = "EMBLEM_UPDATED"
+	StatusEventTypeMemberStatusUpdated = "MEMBER_STATUS_UPDATED"
+	StatusEventTypeError               = "ERROR"
 )
 
 type command[E any] struct {
@@ -44,6 +45,11 @@ type statusEventEmblemUpdatedBody struct {
 	LogoColor           byte   `json:"logoColor"`
 	LogoBackground      uint16 `json:"logoBackground"`
 	LogoBackgroundColor byte   `json:"logoBackgroundColor"`
+}
+
+type statusEventMemberStatusUpdatedBody struct {
+	CharacterId uint32 `json:"characterId"`
+	Online      bool   `json:"online"`
 }
 
 type statusEventErrorBody struct {

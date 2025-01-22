@@ -184,6 +184,54 @@ func EmblemUpdateStatusEventRegister(sc server.Model, wp writer.Producer) func(l
 	}
 }
 
+func MemberStatusUpdatedStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		top, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
+		return top, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventMemberStatusUpdatedBody]) {
+			if e.Type != StatusEventTypeMemberStatusUpdated {
+				return
+			}
+
+			t := sc.Tenant()
+			if !t.Is(tenant.MustFromContext(ctx)) {
+				return
+			}
+			if sc.WorldId() != e.WorldId {
+				return
+			}
+
+			g, err := guild.GetById(l)(ctx)(e.GuildId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce guild [%d] emblem has changed.", e.GuildId)
+				return
+			}
+
+			for _, gm := range g.Members() {
+				go func() {
+					session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(gm.CharacterId(), func(s session.Model) error {
+						if gm.CharacterId() != e.Body.CharacterId {
+							err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildMemberStatusUpdatedBody(l)(g.Id(), e.Body.CharacterId, e.Body.Online))
+							if err != nil {
+								l.Debugf("Unable to issue character [%d] guild [%d] member [%d] online [%t].", s.CharacterId(), g.Id(), e.Body.CharacterId, e.Body.Online)
+								return err
+							}
+							return nil
+						} else {
+							// Refresh own list, as the character will appear offline if not.
+							err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildInfoBody(l, t)(g))
+							if err != nil {
+								l.Debugf("Unable to issue character [%d] guild [%d] member [%d] online [%t].", s.CharacterId(), g.Id(), e.Body.CharacterId, e.Body.Online)
+								return err
+							}
+							return nil
+						}
+					})
+				}()
+			}
+		}))
+	}
+}
+
 func ErrorStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
 	return func(l logrus.FieldLogger) (string, handler.Handler) {
 		top, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()

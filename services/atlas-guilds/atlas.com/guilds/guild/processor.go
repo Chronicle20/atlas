@@ -200,7 +200,10 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 						return errors.New("already exists")
 					}
 
-					// TODO ensure leader is not already in a guild.
+					lge, err := character2.GetById(l)(ctx)(tx)(leaderId)
+					if lge.GuildId() != 0 {
+						l.WithError(err).Errorf("Character [%d] already in guild. Cannot create one.", leaderId)
+					}
 
 					g, err = create(tx, t, worldId, leaderId, name)
 					if err != nil {

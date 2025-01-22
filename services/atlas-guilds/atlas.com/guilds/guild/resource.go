@@ -9,11 +9,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
 const (
-	GetGuilds = "get_guilds"
-	GetGuild  = "get_guild"
+	GetGuilds           = "get_guilds"
+	GetGuildsByMemberId = "get_guilds_by_member_id"
+	GetGuild            = "get_guild"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -21,7 +23,8 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerGet := rest.RegisterHandler(l)(si)
 			r := router.PathPrefix("/guilds").Subrouter()
-			r.HandleFunc("/", registerGet(GetGuilds, handleGetGuilds(db))).Methods(http.MethodGet)
+			r.HandleFunc("", registerGet(GetGuildsByMemberId, handleGetGuilds(db))).Queries("filter[members.id]", "{memberId}").Methods(http.MethodGet)
+			r.HandleFunc("", registerGet(GetGuilds, handleGetGuilds(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{guildId}", registerGet(GetGuild, handleGetGuild(db))).Methods(http.MethodGet)
 		}
 	}
@@ -30,7 +33,17 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleGetGuilds(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			gs, err := GetSlice(d.Logger())(d.Context())(db)()
+			var filters = make([]model.Filter[Model], 0)
+			if memberFilter, ok := mux.Vars(r)["memberId"]; ok {
+				memberId, err := strconv.Atoi(memberFilter)
+				if err != nil {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				filters = append(filters, MemberFilter(uint32(memberId)))
+			}
+
+			gs, err := GetSlice(d.Logger())(d.Context())(db)(filters...)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return

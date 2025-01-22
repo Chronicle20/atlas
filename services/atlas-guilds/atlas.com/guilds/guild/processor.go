@@ -31,6 +31,17 @@ func allProvider(ctx context.Context) func(db *gorm.DB) model.Provider[[]Model] 
 	}
 }
 
+func MemberFilter(memberId uint32) model.Filter[Model] {
+	return func(m Model) bool {
+		for _, mm := range m.members {
+			if mm.CharacterId() == memberId {
+				return true
+			}
+		}
+		return false
+	}
+}
+
 func GetSlice(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(filters ...model.Filter[Model]) ([]Model, error) {
 	return func(ctx context.Context) func(db *gorm.DB) func(filters ...model.Filter[Model]) ([]Model, error) {
 		return func(db *gorm.DB) func(filters ...model.Filter[Model]) ([]Model, error) {

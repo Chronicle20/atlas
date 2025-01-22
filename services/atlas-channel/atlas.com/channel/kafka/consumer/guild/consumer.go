@@ -28,37 +28,48 @@ func CommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config 
 func RequestNameRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
 	return func(l logrus.FieldLogger) (string, handler.Handler) {
 		t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleRequestNameCommand(sc, wp)))
-	}
-}
+		return t, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, c command[requestNameBody]) {
+			if c.Type != CommandTypeRequestName {
+				return
+			}
 
-func handleRequestNameCommand(sc server.Model, wp writer.Producer) message.Handler[command[requestNameBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestNameBody]) {
-		if c.Type != CommandTypeRequestName {
-			return
-		}
+			if !sc.Is(tenant.MustFromContext(ctx), c.Body.WorldId, c.Body.ChannelId) {
+				return
+			}
 
-		if !sc.Is(tenant.MustFromContext(ctx), c.Body.WorldId, c.Body.ChannelId) {
-			return
-		}
-
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, requestGuildName(l)(ctx)(wp))
-	}
-}
-
-func requestGuildName(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
-		return func(wp writer.Producer) model.Operator[session.Model] {
-			guildOperationFunc := session.Announce(l)(ctx)(wp)(writer.GuildOperation)
-			return func(s session.Model) error {
-				err := guildOperationFunc(s, writer.RequestGuildNameBody(l))
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, func(s session.Model) error {
+				err := session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.RequestGuildNameBody(l))
 				if err != nil {
 					l.Debugf("Unable to request character [%d] input guild name.", s.CharacterId())
 					return err
 				}
 				return nil
+			})
+		}))
+	}
+}
+
+func RequestEmblemRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+		return t, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, c command[requestEmblemBody]) {
+			if c.Type != CommandTypeRequestEmblem {
+				return
 			}
-		}
+
+			if !sc.Is(tenant.MustFromContext(ctx), c.Body.WorldId, c.Body.ChannelId) {
+				return
+			}
+
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, func(s session.Model) error {
+				err := session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.RequestGuildEmblemBody(l))
+				if err != nil {
+					l.Debugf("Unable to request character [%d] input guild emblem.", s.CharacterId())
+					return err
+				}
+				return nil
+			})
+		}))
 	}
 }
 

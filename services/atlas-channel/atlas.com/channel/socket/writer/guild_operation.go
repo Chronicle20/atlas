@@ -4,7 +4,7 @@ import (
 	"atlas-channel/guild"
 	"atlas-channel/socket/model"
 	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"strconv"
 )
@@ -13,6 +13,7 @@ const (
 	GuildOperation                               = "GuildOperation"
 	GuildOperationRequestName                    = "REQUEST_NAME"
 	GuildOperationRequestAgreement               = "REQUEST_AGREEMENT"
+	GuildOperationRequestEmblem                  = "REQUEST_EMBLEM"
 	GuildOperationCreateErrorNameInUse           = "THE_NAME_IS_ALREADY_IN_USE_PLEASE_TRY_OTHER_ONES"
 	GuildOperationCreateErrorDisagreed           = "SOMEBODY_HAS_DISAGREED_TO_FORM_A_GUILD"
 	GuildOperationCreateError                    = "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_FORMING_THE_GUILD_PLEASE_TRY_AGAIN"
@@ -48,6 +49,10 @@ const (
 
 func RequestGuildNameBody(l logrus.FieldLogger) BodyProducer {
 	return GuildErrorBody(l)(GuildOperationRequestName)
+}
+
+func RequestGuildEmblemBody(l logrus.FieldLogger) BodyProducer {
+	return GuildErrorBody(l)(GuildOperationRequestEmblem)
 }
 
 func GuildRequestAgreement(l logrus.FieldLogger) func(partyId uint32, leaderName string, guildName string) BodyProducer {

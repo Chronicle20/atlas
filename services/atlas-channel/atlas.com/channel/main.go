@@ -172,6 +172,7 @@ func main() {
 				_, _ = cm.RegisterHandler(expression.EventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(conversation.SimpleConversationCommandRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.RequestNameRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(guild.RequestEmblemRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.RequestAgreementStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.ErrorStatusEventRegister(sc, wp)(l))
 

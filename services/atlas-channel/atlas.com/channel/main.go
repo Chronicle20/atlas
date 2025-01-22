@@ -174,6 +174,7 @@ func main() {
 				_, _ = cm.RegisterHandler(guild.RequestNameRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.RequestEmblemRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.RequestAgreementStatusEventRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(guild.EmblemUpdateStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.ErrorStatusEventRegister(sc, wp)(l))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
@@ -232,6 +233,7 @@ func produceWriters() []string {
 		writer.CharacterExpression,
 		writer.NPCConversation,
 		writer.GuildOperation,
+		writer.GuildEmblemChanged,
 	}
 }
 

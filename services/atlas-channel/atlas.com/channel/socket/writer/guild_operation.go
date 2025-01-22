@@ -124,6 +124,20 @@ func GuildInfoBody(l logrus.FieldLogger, t tenant.Model) func(g guild.Model) Bod
 	}
 }
 
+func GuildEmblemChangedBody(l logrus.FieldLogger) func(guildId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) BodyProducer {
+	return func(guildId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getGuildOperation(l)(options, GuildOperationEmblemChange))
+			w.WriteInt(guildId)
+			w.WriteShort(logoBackground)
+			w.WriteByte(logoBackgroundColor)
+			w.WriteShort(logo)
+			w.WriteByte(logoColor)
+			return w.Bytes()
+		}
+	}
+}
+
 func getGuildOperation(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
 	return func(options map[string]interface{}, key string) byte {
 		var genericCodes interface{}

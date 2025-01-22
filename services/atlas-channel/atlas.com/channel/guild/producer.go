@@ -32,3 +32,19 @@ func creationAgreementProvider(characterId uint32, agreed bool) model.Provider[[
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func changeEmblemProvider(guildId uint32, characterId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[changeEmblemBody]{
+		CharacterId: characterId,
+		Type:        CommandTypeChangeEmblem,
+		Body: changeEmblemBody{
+			GuildId:             guildId,
+			Logo:                logo,
+			LogoColor:           logoColor,
+			LogoBackground:      logoBackground,
+			LogoBackgroundColor: logoBackgroundColor,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

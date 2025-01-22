@@ -22,10 +22,10 @@ func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.M
 			w.WriteAsciiString(c.Name())
 			if g.Id() != 0 {
 				w.WriteAsciiString(g.Name())
-				w.WriteShort(g.Logo())
-				w.WriteByte(g.LogoColor())
 				w.WriteShort(g.LogoBackground())
 				w.WriteByte(g.LogoBackgroundColor())
+				w.WriteShort(g.Logo())
+				w.WriteByte(g.LogoColor())
 			} else {
 				w.WriteAsciiString("")
 				w.WriteShort(0)

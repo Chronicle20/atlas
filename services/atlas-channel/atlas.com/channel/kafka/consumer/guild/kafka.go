@@ -7,6 +7,7 @@ const (
 
 	EnvStatusEventTopic             = "EVENT_TOPIC_GUILD_STATUS"
 	StatusEventTypeRequestAgreement = "REQUEST_AGREEMENT"
+	StatusEventTypeEmblemUpdated    = "EMBLEM_UPDATED"
 	StatusEventTypeError            = "ERROR"
 )
 
@@ -36,6 +37,13 @@ type statusEvent[E any] struct {
 type statusEventRequestAgreementBody struct {
 	ActorId      uint32 `json:"actorId"`
 	ProposedName string `json:"proposedName"`
+}
+
+type statusEventEmblemUpdatedBody struct {
+	Logo                uint16 `json:"logo"`
+	LogoColor           byte   `json:"logoColor"`
+	LogoBackground      uint16 `json:"logoBackground"`
+	LogoBackgroundColor byte   `json:"logoBackgroundColor"`
 }
 
 type statusEventErrorBody struct {

@@ -1,7 +1,9 @@
 package guild
 
 import (
+	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
+	_map "atlas-channel/map"
 	"atlas-channel/party"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -131,6 +133,54 @@ func requestGuildNameAgreement(l logrus.FieldLogger) func(ctx context.Context) f
 				}
 			}
 		}
+	}
+}
+
+func EmblemUpdateStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		top, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
+		return top, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventEmblemUpdatedBody]) {
+			if e.Type != StatusEventTypeEmblemUpdated {
+				return
+			}
+
+			t := sc.Tenant()
+			if !t.Is(tenant.MustFromContext(ctx)) {
+				return
+			}
+			if sc.WorldId() != e.WorldId {
+				return
+			}
+
+			g, err := guild.GetById(l)(ctx)(e.GuildId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce guild [%d] emblem has changed.", e.GuildId)
+				return
+			}
+
+			for _, gm := range g.Members() {
+				if gm.Online() {
+					go func() {
+						session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(gm.CharacterId(), func(s session.Model) error {
+							err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildEmblemChangedBody(l)(g.Id(), e.Body.Logo, e.Body.LogoColor, e.Body.LogoBackground, e.Body.LogoBackgroundColor))
+							if err != nil {
+								l.Debugf("Unable to issue character [%d] guild error [%s].", s.CharacterId(), err)
+								return err
+							}
+
+							return _map.ForSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), s.MapId(), func(os session.Model) error {
+								err = session.Announce(l)(ctx)(wp)(writer.GuildEmblemChanged)(os, writer.ForeignGuildEmblemChangedBody(l)(s.CharacterId(), e.Body.Logo, e.Body.LogoColor, e.Body.LogoBackground, e.Body.LogoBackgroundColor))
+								if err != nil {
+									l.Debugf("Unable to issue character [%d] guild error [%s].", s.CharacterId(), err)
+									return err
+								}
+								return nil
+							})
+						})
+					}()
+				}
+			}
+		}))
 	}
 }
 

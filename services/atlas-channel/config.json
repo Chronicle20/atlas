@@ -634,6 +634,7 @@
               "options": {
                 "operations": {
                   "REQUEST_CREATE": 2,
+                  "SET_EMBLEM": 15,
                   "AGREEMENT_RESPONSE": 30
                 }
               }
@@ -1099,6 +1100,10 @@
             {
               "opCode": "0xC5",
               "writer": "CharacterAppearanceUpdate"
+            },
+            {
+              "opCode": "0xCB",
+              "writer": "GuildEmblemChanged"
             },
             {
               "opCode": "0xEC",

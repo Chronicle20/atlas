@@ -69,3 +69,7 @@ func (m Model) Points() uint32 {
 func (m Model) AllianceId() uint32 {
 	return 0
 }
+
+func (m Model) LeaderId() uint32 {
+	return m.leaderId
+}

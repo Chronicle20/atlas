@@ -8,10 +8,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) (Model, error) {
-	return func(ctx context.Context) func(characterId uint32) (Model, error) {
-		return func(characterId uint32) (Model, error) {
-			return requests.Provider[RestModel, Model](l, ctx)(requestById(characterId), Extract)()
+func GetById(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32) (Model, error) {
+	return func(ctx context.Context) func(guildId uint32) (Model, error) {
+		return func(guildId uint32) (Model, error) {
+			return requests.Provider[RestModel, Model](l, ctx)(requestById(guildId), Extract)()
 		}
 	}
 }
@@ -46,6 +46,15 @@ func CreationAgreement(l logrus.FieldLogger) func(ctx context.Context) func(char
 		return func(characterId uint32, agreed bool) error {
 			l.Debugf("Character [%d] responded to guild creation agreement with [%t].", characterId, agreed)
 			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(creationAgreementProvider(characterId, agreed))
+		}
+	}
+}
+
+func RequestEmblemUpdate(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, characterId uint32, logoBackground uint16, logoBackgroundColor byte, logo uint16, logoColor byte) error {
+	return func(ctx context.Context) func(guildId uint32, characterId uint32, logoBackground uint16, logoBackgroundColor byte, logo uint16, logoColor byte) error {
+		return func(guildId uint32, characterId uint32, logoBackground uint16, logoBackgroundColor byte, logo uint16, logoColor byte) error {
+			l.Debugf("Character [%d] is attempting to change their guild emblem. Logo [%d], Logo Color [%d], Logo Background [%d], Logo Background Color [%d]", characterId, logo, logoColor, logoBackground, logoBackgroundColor)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeEmblemProvider(guildId, characterId, logo, logoColor, logoBackground, logoBackgroundColor))
 		}
 	}
 }

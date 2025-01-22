@@ -3,16 +3,15 @@ package main
 import (
 	"atlas-guilds/database"
 	"atlas-guilds/guild"
+	"atlas-guilds/guild/character"
 	"atlas-guilds/guild/member"
 	"atlas-guilds/guild/title"
 	guild2 "atlas-guilds/kafka/consumer/guild"
 	"atlas-guilds/logger"
 	"atlas-guilds/service"
-	"atlas-guilds/tasks"
 	"atlas-guilds/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
-	"time"
 )
 
 const serviceName = "atlas-guilds"
@@ -49,7 +48,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(guild.Migration, title.Migration, member.Migration))
+	db := database.Connect(l, database.SetMigrations(guild.Migration, title.Migration, member.Migration, character.Migration))
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), guild.InitResource(GetServer())(db))
 
@@ -58,7 +57,7 @@ func main() {
 	_, _ = cm.RegisterHandler(guild2.RequestCreateRegister(db)(l))
 	_, _ = cm.RegisterHandler(guild2.CreationAgreementRegister(db)(l))
 
-	go tasks.Register(l, tdm.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35)))
+	//go tasks.Register(l, tdm.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35)))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

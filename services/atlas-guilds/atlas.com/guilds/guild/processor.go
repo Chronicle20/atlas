@@ -211,8 +211,8 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 
 				var g Model
 				txErr := db.Transaction(func(tx *gorm.DB) error {
-					_, err = GetByName(l)(ctx)(tx)(worldId, name)
-					if !errors.Is(err, gorm.ErrRecordNotFound) {
+					g, err = GetByName(l)(ctx)(tx)(worldId, name)
+					if g.Id() != 0 {
 						l.WithError(err).Errorf("Attempting to create a guild [%s] by name which already exists.", name)
 						return errors.New("already exists")
 					}

@@ -14,7 +14,7 @@ func Migration(db *gorm.DB) error {
 type Entity struct {
 	TenantId            uuid.UUID       `gorm:"not null"`
 	Id                  uint32          `gorm:"primaryKey;autoIncrement;not null"`
-	WorldId             byte            `json:"worldId"`
+	WorldId             byte            `gorm:"not null"`
 	Name                string          `gorm:"not null"`
 	Notice              string          `gorm:"not null"`
 	Points              uint32          `gorm:"not null"`

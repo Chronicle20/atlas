@@ -38,14 +38,14 @@ func SetGuild(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) 
 					c, _ := getById(t.Id(), characterId)(tx)()
 					if c.GuildId != 0 {
 						c.GuildId = guildId
-						return tx.Save(c).Error
+						return tx.Save(&c).Error
 					}
 					c = Entity{
 						TenantId:    t.Id(),
 						CharacterId: characterId,
 						GuildId:     guildId,
 					}
-					return tx.Save(c).Error
+					return tx.Save(&c).Error
 				})
 			}
 		}

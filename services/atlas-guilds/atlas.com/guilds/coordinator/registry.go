@@ -71,7 +71,7 @@ func (r *Registry) Respond(t tenant.Model, characterId uint32, agree bool) (Mode
 			r.characterReg[t][m] = uuid.Nil
 		}
 		r.lock.Unlock()
-		return Model{}, nil
+		return g, nil
 	}
 }
 

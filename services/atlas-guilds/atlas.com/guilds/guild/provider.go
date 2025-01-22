@@ -22,7 +22,7 @@ func getById(tenantId uuid.UUID, id uint32) database.EntityProvider[Entity] {
 func getForName(tenantId uuid.UUID, worldId byte, name string) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		err := db.Where("tenant_id = ? AND worldId = ? AND LOWER(name) = LOWER(?)", tenantId, worldId, name).Find(&results).Error
+		err := db.Where("tenant_id = ? AND world_id = ? AND LOWER(name) = LOWER(?)", tenantId, worldId, name).Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}

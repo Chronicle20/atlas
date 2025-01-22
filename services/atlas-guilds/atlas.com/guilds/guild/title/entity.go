@@ -18,7 +18,7 @@ type Entity struct {
 }
 
 func (e Entity) TableName() string {
-	return "members"
+	return "titles"
 }
 
 func Make(e Entity) (Model, error) {

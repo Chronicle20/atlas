@@ -58,3 +58,16 @@ func updateMemberStatus(db *gorm.DB, tenantId uuid.UUID, guildId uint32, charact
 	gm.Online = online
 	return db.Save(gm).Error
 }
+
+func updateNotice(db *gorm.DB, tenantId uuid.UUID, guildId uint32, notice string) (Model, error) {
+	ge, err := getById(tenantId, guildId)(db)()
+	if err != nil {
+		return Model{}, err
+	}
+	ge.Notice = notice
+	err = db.Save(&ge).Error
+	if err != nil {
+		return Model{}, err
+	}
+	return Make(ge)
+}

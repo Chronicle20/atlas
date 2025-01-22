@@ -350,3 +350,20 @@ func UpdateMemberOnline(l logrus.FieldLogger) func(ctx context.Context) func(db 
 		}
 	}
 }
+
+func ChangeNotice(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, notice string) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, notice string) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(guildId uint32, characterId uint32, notice string) error {
+			return func(guildId uint32, characterId uint32, notice string) error {
+				l.Debugf("Character [%d] is setting guild [%d] notice [%s].", characterId, guildId, notice)
+				g, err := updateNotice(db, t.Id(), guildId, notice)
+				if err != nil {
+					return err
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventNoticeUpdatedProvider(g.WorldId(), g.Id(), notice))
+				return nil
+			}
+		}
+	}
+}

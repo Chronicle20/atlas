@@ -58,3 +58,16 @@ func ChangeEmblemRegister(db *gorm.DB) func(l logrus.FieldLogger) (string, handl
 		}))
 	}
 }
+
+func ChangeNoticeRegister(db *gorm.DB) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+		return t, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, c command[changeNoticeBody]) {
+			if c.Type != CommandTypeChangeNotice {
+				return
+			}
+
+			_ = guild.ChangeNotice(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.Notice)
+		}))
+	}
+}

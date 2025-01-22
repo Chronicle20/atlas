@@ -60,6 +60,7 @@ func main() {
 	_, _ = cm.RegisterHandler(guild2.RequestCreateRegister(db)(l))
 	_, _ = cm.RegisterHandler(guild2.CreationAgreementRegister(db)(l))
 	_, _ = cm.RegisterHandler(guild2.ChangeEmblemRegister(db)(l))
+	_, _ = cm.RegisterHandler(guild2.ChangeNoticeRegister(db)(l))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character2.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(character2.LoginStatusRegister(l)(db))
 	_, _ = cm.RegisterHandler(character2.LogoutStatusRegister(l)(db))

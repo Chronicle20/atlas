@@ -42,3 +42,7 @@ func (m Model) Titles() []title.Model {
 func (m Model) Capacity() uint32 {
 	return m.capacity
 }
+
+func (m Model) LeaderId() uint32 {
+	return m.leaderId
+}

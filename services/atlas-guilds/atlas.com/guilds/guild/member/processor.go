@@ -40,7 +40,18 @@ func RemoveMember(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(guildId uint32, characterId uint32) error {
 			return func(guildId uint32, characterId uint32) error {
-				return db.Where("tenant_id = ? AND guild_id = ? AND character_id = ?", t.Id(), guildId, characterId).Delete(&Entity{}).Error
+				return db.Transaction(func(tx *gorm.DB) error {
+					err := tx.Where("tenant_id = ? AND guild_id = ? AND character_id = ?", t.Id(), guildId, characterId).Delete(&Entity{}).Error
+					if err != nil {
+						return err
+					}
+
+					err = character.SetGuild(l)(ctx)(tx)(characterId, 0)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
 			}
 		}
 	}

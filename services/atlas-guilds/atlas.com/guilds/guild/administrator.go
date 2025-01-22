@@ -92,3 +92,7 @@ func updateNotice(db *gorm.DB, tenantId uuid.UUID, guildId uint32, notice string
 	}
 	return Make(ge)
 }
+
+func deleteGuild(db *gorm.DB, tenantId uuid.UUID, guildId uint32) error {
+	return db.Where("tenant_id = ? AND id = ?", tenantId, guildId).Delete(&Entity{}).Error
+}

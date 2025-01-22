@@ -4,6 +4,7 @@ const (
 	EnvCommandTopic              = "COMMAND_TOPIC_GUILD"
 	CommandTypeRequestCreate     = "REQUEST_CREATE"
 	CommandTypeRequestInvite     = "REQUEST_INVITE"
+	CommandTypeRequestDisband    = "REQUEST_DISBAND"
 	CommandTypeCreationAgreement = "CREATION_AGREEMENT"
 	CommandTypeChangeEmblem      = "CHANGE_EMBLEM"
 	CommandTypeChangeNotice      = "CHANGE_NOTICE"
@@ -61,4 +62,9 @@ type changeMemberTitleBody struct {
 	GuildId  uint32 `json:"guildId"`
 	TargetId uint32 `json:"targetId"`
 	Title    byte   `json:"title"`
+}
+
+type requestDisbandBody struct {
+	WorldId   byte `json:"worldId"`
+	ChannelId byte `json:"channelId"`
 }

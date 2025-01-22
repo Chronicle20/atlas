@@ -7,6 +7,7 @@ const (
 	CommandTypeCreationAgreement = "CREATION_AGREEMENT"
 	CommandTypeChangeEmblem      = "CHANGE_EMBLEM"
 	CommandTypeChangeNotice      = "CHANGE_NOTICE"
+	CommandTypeChangeTitles      = "CHANGE_TITLES"
 	CommandTypeLeave             = "LEAVE"
 )
 
@@ -48,4 +49,9 @@ type leaveBody struct {
 type requestInviteBody struct {
 	GuildId  uint32 `json:"guildId"`
 	TargetId uint32 `json:"characterId"`
+}
+
+type changeTitlesBody struct {
+	GuildId uint32   `json:"guildId"`
+	Titles  []string `json:"titles"`
 }

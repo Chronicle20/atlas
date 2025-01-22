@@ -15,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"strings"
 )
 
 const (
@@ -248,7 +249,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 
 					_, err = title.CreateDefaults(l)(ctx)(tx)(g.Id())
 					if err != nil {
-						l.WithError(err).Errorf("Unable to create default ranks for guild [%d].", g.Id())
+						l.WithError(err).Errorf("Unable to create default titles for guild [%d].", g.Id())
 						return err
 					}
 
@@ -432,6 +433,28 @@ func Join(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func
 				}
 
 				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventMemberJoinedProvider(g.WorldId(), g.Id(), characterId, c.Name(), c.JobId(), c.Level(), 5, 5))
+				return nil
+			}
+		}
+	}
+}
+
+func ChangeTitles(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, titles []string) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, titles []string) error {
+		return func(db *gorm.DB) func(guildId uint32, characterId uint32, titles []string) error {
+			return func(guildId uint32, characterId uint32, titles []string) error {
+				l.Debugf("Character [%d] changing guild [%d] titles to [%s].", characterId, guildId, strings.Join(titles, ":"))
+				g, err := GetById(l)(ctx)(db)(guildId)
+				if err != nil {
+					return err
+				}
+
+				err = title.Replace(l)(ctx)(db)(guildId, titles)
+				if err != nil {
+					return err
+				}
+
+				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventTitlesUpdatedProvider(g.WorldId(), g.Id(), titles))
 				return nil
 			}
 		}

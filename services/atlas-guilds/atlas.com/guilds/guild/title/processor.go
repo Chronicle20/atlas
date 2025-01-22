@@ -26,5 +26,25 @@ func CreateDefaults(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 			}
 		}
 	}
+}
 
+func Replace(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, titles []string) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, titles []string) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(guildId uint32, titles []string) error {
+			return func(guildId uint32, titles []string) error {
+				return db.Transaction(func(tx *gorm.DB) error {
+					err := tx.Where("tenant_id = ? AND guild_id = ?", t.Id(), guildId).Delete(&Entity{}).Error
+					if err != nil {
+						return err
+					}
+					_, err = create(tx, t, guildId, titles)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
+			}
+		}
+	}
 }

@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func create(db *gorm.DB, tenant tenant.Model, guildId uint32, characterId uint32, name string, jobId uint16, level byte, rank byte) (Model, error) {
+func create(db *gorm.DB, tenant tenant.Model, guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte) (Model, error) {
 	e := &Entity{
 		TenantId:    tenant.Id(),
 		GuildId:     guildId,
@@ -13,7 +13,7 @@ func create(db *gorm.DB, tenant tenant.Model, guildId uint32, characterId uint32
 		Name:        name,
 		JobId:       jobId,
 		Level:       level,
-		Rank:        rank,
+		Title:       title,
 		Online:      true,
 	}
 	err := db.Create(e).Error

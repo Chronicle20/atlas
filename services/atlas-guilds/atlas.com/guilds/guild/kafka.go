@@ -9,6 +9,7 @@ const (
 	StatusEventTypeMemberLeft          = "MEMBER_LEFT"
 	StatusEventTypeMemberJoined        = "MEMBER_JOINED"
 	StatusEventTypeNoticeUpdated       = "NOTICE_UPDATED"
+	StatusEventTypeTitlesUpdated       = "TITLES_UPDATED"
 	StatusEventTypeError               = "ERROR"
 )
 
@@ -45,17 +46,22 @@ type statusEventMemberLeftBody struct {
 }
 
 type statusEventMemberJoinedBody struct {
-	CharacterId  uint32 `json:"characterId"`
-	Name         string `json:"name"`
-	JobId        uint16 `json:"jobId"`
-	Level        byte   `json:"level"`
-	Rank         byte   `json:"rank"`
-	Online       bool   `json:"online"`
-	AllianceRank byte   `json:"allianceRank"`
+	CharacterId   uint32 `json:"characterId"`
+	Name          string `json:"name"`
+	JobId         uint16 `json:"jobId"`
+	Level         byte   `json:"level"`
+	Title         byte   `json:"title"`
+	Online        bool   `json:"online"`
+	AllianceTitle byte   `json:"allianceTitle"`
 }
 
 type statusEventNoticeUpdatedBody struct {
 	Notice string `json:"notice"`
+}
+
+type statusEventTitlesUpdatedBody struct {
+	GuildId uint32   `json:"guildId"`
+	Titles  []string `json:"titles"`
 }
 
 type statusEventErrorBody struct {

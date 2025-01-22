@@ -304,12 +304,21 @@ func MemberLeftStatusEventRegister(sc server.Model, wp writer.Producer) func(l l
 				for _, gm := range g.Members() {
 					if gm.Online() && gm.CharacterId() != e.Body.CharacterId {
 						session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(gm.CharacterId(), func(s session.Model) error {
-							err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildMemberLeftBody(l)(g.Id(), c.Id(), c.Name()))
-							if err != nil {
-								l.Debugf("Unable to issue character [%d] guild error [%s].", s.CharacterId(), err)
-								return err
+							if e.Body.Force {
+								err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildMemberExpelBody(l)(g.Id(), c.Id(), c.Name()))
+								if err != nil {
+									l.Debugf("Unable to issue character [%d] guild error [%s].", s.CharacterId(), err)
+									return err
+								}
+								return nil
+							} else {
+								err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildMemberLeftBody(l)(g.Id(), c.Id(), c.Name()))
+								if err != nil {
+									l.Debugf("Unable to issue character [%d] guild error [%s].", s.CharacterId(), err)
+									return err
+								}
+								return nil
 							}
-							return nil
 						})
 					}
 				}

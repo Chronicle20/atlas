@@ -184,6 +184,18 @@ func GuildMemberLeftBody(l logrus.FieldLogger) func(guildId uint32, characterId 
 	}
 }
 
+func GuildMemberExpelBody(l logrus.FieldLogger) func(guildId uint32, characterId uint32, name string) BodyProducer {
+	return func(guildId uint32, characterId uint32, name string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getGuildOperation(l)(options, GuildOperationMemberExpelledSuccess))
+			w.WriteInt(guildId)
+			w.WriteInt(characterId)
+			w.WriteAsciiString(name)
+			return w.Bytes()
+		}
+	}
+}
+
 func GuildMemberJoinedBody(l logrus.FieldLogger, t tenant.Model) func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, rank byte, online bool, allianceRank byte) BodyProducer {
 	return func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, rank byte, online bool, allianceRank byte) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {

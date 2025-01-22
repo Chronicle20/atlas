@@ -107,6 +107,20 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			_ = guild.Leave(l)(ctx)(g.Id(), s.CharacterId())
 			return
 		}
+		if isGuildOperation(l)(readerOptions, op, GuildOperationKick) {
+			cid := r.ReadUint32()
+			name := r.ReadAsciiString()
+
+			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+			if !g.IsLeadership(s.CharacterId()) {
+				l.Errorf("Character [%d] attempting to leave guild, while not in one.", s.CharacterId())
+				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				return
+			}
+
+			_ = guild.Expel(l)(ctx)(g.Id(), s.CharacterId(), cid, name)
+			return
+		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationInvite) {
 			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
 			if !g.IsLeadership(s.CharacterId()) {

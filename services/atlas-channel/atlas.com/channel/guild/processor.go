@@ -77,6 +77,15 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, 
 	}
 }
 
+func Expel(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, characterId uint32, targetId uint32, targetName string) error {
+	return func(ctx context.Context) func(guildId uint32, characterId uint32, targetId uint32, targetName string) error {
+		return func(guildId uint32, characterId uint32, targetId uint32, targetName string) error {
+			l.Debugf("Character [%d] expelling [%d] - [%s] from guild [%d].", characterId, targetId, targetName, guildId)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(expelGuildProvider(guildId, targetId))
+		}
+	}
+}
+
 func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, characterId uint32, targetId uint32) error {
 	return func(ctx context.Context) func(guildId uint32, characterId uint32, targetId uint32) error {
 		return func(guildId uint32, characterId uint32, targetId uint32) error {

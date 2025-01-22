@@ -637,6 +637,7 @@
                   "INVITE": 5,
                   "JOIN": 6,
                   "WITHDRAW": 7,
+                  "KICK": 8,
                   "SET_EMBLEM": 15,
                   "SET_NOTICE": 16,
                   "AGREEMENT_RESPONSE": 30

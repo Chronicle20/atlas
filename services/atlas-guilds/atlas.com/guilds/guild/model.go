@@ -38,3 +38,7 @@ func (m Model) Members() []member.Model {
 func (m Model) Titles() []title.Model {
 	return m.titles
 }
+
+func (m Model) Capacity() uint32 {
+	return m.capacity
+}

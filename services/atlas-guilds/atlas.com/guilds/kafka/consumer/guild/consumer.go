@@ -84,3 +84,16 @@ func LeaveRegister(db *gorm.DB) func(l logrus.FieldLogger) (string, handler.Hand
 		}))
 	}
 }
+
+func RequestInviteRegister(db *gorm.DB) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+		return t, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, c command[requestInviteBody]) {
+			if c.Type != CommandTypeRequestInvite {
+				return
+			}
+
+			_ = guild.RequestInvite(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.TargetId)
+		}))
+	}
+}

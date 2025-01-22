@@ -16,9 +16,9 @@ type Entity struct {
 	Name         string    `gorm:"not null"`
 	JobId        uint16    `gorm:"not null;default=0"`
 	Level        byte      `gorm:"not null"`
-	Rank         byte      `gorm:"not null;default=0"`
+	Rank         byte      `gorm:"not null;default=5"`
 	Online       bool      `gorm:"not null;default=false"`
-	AllianceRank byte      `gorm:"not null;default=0"`
+	AllianceRank byte      `gorm:"not null;default=5"`
 }
 
 func (e Entity) TableName() string {

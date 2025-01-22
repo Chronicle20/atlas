@@ -8,6 +8,7 @@ import (
 	"atlas-guilds/guild/title"
 	character2 "atlas-guilds/kafka/consumer/character"
 	guild2 "atlas-guilds/kafka/consumer/guild"
+	"atlas-guilds/kafka/consumer/invite"
 	"atlas-guilds/logger"
 	"atlas-guilds/service"
 	"atlas-guilds/tasks"
@@ -62,9 +63,12 @@ func main() {
 	_, _ = cm.RegisterHandler(guild2.ChangeEmblemRegister(db)(l))
 	_, _ = cm.RegisterHandler(guild2.ChangeNoticeRegister(db)(l))
 	_, _ = cm.RegisterHandler(guild2.LeaveRegister(db)(l))
+	_, _ = cm.RegisterHandler(guild2.RequestInviteRegister(db)(l))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character2.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(character2.LoginStatusRegister(l)(db))
 	_, _ = cm.RegisterHandler(character2.LogoutStatusRegister(l)(db))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(invite.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	_, _ = cm.RegisterHandler(invite.AcceptedStatusEventRegister(l)(db))
 
 	go tasks.Register(l, tdm.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35)))
 

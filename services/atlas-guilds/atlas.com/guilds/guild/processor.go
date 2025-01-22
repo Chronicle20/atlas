@@ -6,6 +6,7 @@ import (
 	character2 "atlas-guilds/guild/character"
 	"atlas-guilds/guild/member"
 	"atlas-guilds/guild/title"
+	"atlas-guilds/invite"
 	"atlas-guilds/kafka/producer"
 	"atlas-guilds/party"
 	"context"
@@ -384,6 +385,53 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fun
 				}
 
 				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventMemberLeftProvider(g.WorldId(), g.Id(), characterId, force))
+				return nil
+			}
+		}
+	}
+}
+
+func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, targetId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, targetId uint32) error {
+		return func(db *gorm.DB) func(guildId uint32, characterId uint32, targetId uint32) error {
+			return func(guildId uint32, characterId uint32, targetId uint32) error {
+				l.Debugf("Character [%d] requesting that [%d] be invited to guild [%d].", characterId, targetId, guildId)
+				g, err := GetById(l)(ctx)(db)(guildId)
+				if err != nil {
+					// TODO issue error
+					return err
+				}
+				if uint32(len(g.Members())) >= g.Capacity() {
+					// TODO issue error
+					return errors.New("guild full")
+				}
+
+				return invite.Create(l)(ctx)(characterId, g.WorldId(), g.Id(), targetId)
+			}
+		}
+	}
+}
+
+func Join(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32) error {
+		return func(db *gorm.DB) func(guildId uint32, characterId uint32) error {
+			return func(guildId uint32, characterId uint32) error {
+				c, err := character.GetById(l)(ctx)(characterId)
+				if err != nil {
+					return err
+				}
+
+				g, err := GetById(l)(ctx)(db)(guildId)
+				if err != nil {
+					return err
+				}
+
+				_, err = member.AddMember(l)(ctx)(db)(guildId, characterId, c.Name(), c.JobId(), c.Level(), 5)
+				if err != nil {
+					return err
+				}
+
+				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventMemberJoinedProvider(g.WorldId(), g.Id(), characterId, c.Name(), c.JobId(), c.Level(), 5, 5))
 				return nil
 			}
 		}

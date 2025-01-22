@@ -31,3 +31,16 @@ func requestEmblemProvider(worldId byte, channelId byte, characterId uint32) mod
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func requestDisbandProvider(worldId byte, channelId byte, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[requestDisbandBody]{
+		CharacterId: characterId,
+		Type:        CommandTypeRequestDisband,
+		Body: requestDisbandBody{
+			WorldId:   worldId,
+			ChannelId: channelId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

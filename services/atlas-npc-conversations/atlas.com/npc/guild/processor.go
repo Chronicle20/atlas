@@ -59,3 +59,12 @@ func RequestEmblem(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 		}
 	}
 }
+
+func RequestDisband(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) error {
+		return func(worldId byte, channelId byte, characterId uint32) error {
+			l.Debugf("Character [%d] attempting to disband guild.", characterId)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestDisbandProvider(worldId, channelId, characterId))
+		}
+	}
+}

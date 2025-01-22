@@ -25,6 +25,9 @@ func StartConversationCommandRegister(l logrus.FieldLogger) (string, handler.Han
 }
 
 func handleStartConversationCommand(l logrus.FieldLogger, ctx context.Context, c command[startConversationCommandBody]) {
+	if c.Type != CommandTypeStartConversation {
+		return
+	}
 	_ = conversation.Start(l)(ctx)(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.NpcId, c.CharacterId)
 }
 
@@ -34,6 +37,9 @@ func ContinueConversationCommandRegister(l logrus.FieldLogger) (string, handler.
 }
 
 func handleContinueConversationCommand(l logrus.FieldLogger, ctx context.Context, c command[continueConversationCommandBody]) {
+	if c.Type != CommandTypeContinueConversation {
+		return
+	}
 	_ = conversation.Continue(l)(ctx)(c.NpcId, c.CharacterId, c.Body.Action, c.Body.LastMessageType, c.Body.Selection)
 }
 
@@ -43,5 +49,8 @@ func EndConversationCommandRegister(l logrus.FieldLogger) (string, handler.Handl
 }
 
 func handleEndConversationCommand(l logrus.FieldLogger, ctx context.Context, c command[endConversationCommandBody]) {
+	if c.Type != CommandTypeEndConversation {
+		return
+	}
 	_ = conversation.End(l)(ctx)(c.CharacterId)
 }

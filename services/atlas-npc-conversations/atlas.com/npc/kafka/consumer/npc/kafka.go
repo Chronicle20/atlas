@@ -1,8 +1,10 @@
 package npc
 
 const (
-	EnvCommandTopic              = "COMMAND_TOPIC_NPC"
-	CommandTypeStartConversation = "START_CONVERSATION"
+	EnvCommandTopic                 = "COMMAND_TOPIC_NPC"
+	CommandTypeStartConversation    = "START_CONVERSATION"
+	CommandTypeContinueConversation = "CONTINUE_CONVERSATION"
+	CommandTypeEndConversation      = "END_CONVERSATION"
 )
 
 type command[E any] struct {

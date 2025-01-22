@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Heracle is located in Orbis - Guild Headquarters <Hall of Fame> (200000301)
+// Heracle (2010007) is located in Orbis - Guild Headquarters <Hall of Fame> (200000301)
 type Heracle struct {
 }
 

@@ -18,3 +18,16 @@ func requestNameProvider(worldId byte, channelId byte, characterId uint32) model
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func requestEmblemProvider(worldId byte, channelId byte, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[requestEmblemBody]{
+		CharacterId: characterId,
+		Type:        CommandTypeRequestEmblem,
+		Body: requestEmblemBody{
+			WorldId:   worldId,
+			ChannelId: channelId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

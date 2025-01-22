@@ -30,6 +30,7 @@ func initRegistry() *Registry {
 		scripts:  make(map[string]script.Script),
 	}
 	s.addConversation(discrete.Heracle{})
+	s.addConversation(discrete.Lea{})
 	return s
 }
 

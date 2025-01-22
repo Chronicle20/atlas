@@ -23,6 +23,10 @@
             {
               "npcId": 2010007,
               "impl": "Heracle"
+            },
+            {
+              "npcId": 2010008,
+              "impl": "Lea"
             }
           ]
         },

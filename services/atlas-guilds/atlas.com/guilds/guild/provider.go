@@ -9,13 +9,23 @@ import (
 
 func getAll(tenantId uuid.UUID) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
-		return database.SliceQuery[Entity](db, &Entity{TenantId: tenantId})
+		var result []Entity
+		err := db.Where(&Entity{TenantId: tenantId}).Preload("Members").Preload("Titles").Find(&result).Error
+		if err != nil {
+			return model.ErrorProvider[[]Entity](err)
+		}
+		return model.FixedProvider[[]Entity](result)
 	}
 }
 
 func getById(tenantId uuid.UUID, id uint32) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
-		return database.Query[Entity](db, &Entity{TenantId: tenantId, Id: id})
+		var result Entity
+		err := db.Where(&Entity{TenantId: tenantId, Id: id}).Preload("Members").Preload("Titles").First(&result).Error
+		if err != nil {
+			return model.ErrorProvider[Entity](err)
+		}
+		return model.FixedProvider[Entity](result)
 	}
 }
 

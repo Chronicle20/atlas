@@ -9,9 +9,11 @@ import (
 	guild2 "atlas-guilds/kafka/consumer/guild"
 	"atlas-guilds/logger"
 	"atlas-guilds/service"
+	"atlas-guilds/tasks"
 	"atlas-guilds/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"time"
 )
 
 const serviceName = "atlas-guilds"
@@ -57,7 +59,7 @@ func main() {
 	_, _ = cm.RegisterHandler(guild2.RequestCreateRegister(db)(l))
 	_, _ = cm.RegisterHandler(guild2.CreationAgreementRegister(db)(l))
 
-	//go tasks.Register(l, tdm.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35)))
+	go tasks.Register(l, tdm.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35)))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

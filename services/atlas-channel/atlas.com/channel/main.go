@@ -180,6 +180,7 @@ func main() {
 				_, _ = cm.RegisterHandler(guild.MemberStatusUpdatedStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.MemberTitleUpdatedStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.NoticeUpdateStatusEventRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(guild.CapacityUpdateStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.MemberLeftStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.MemberJoinedStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.TitlesUpdateStatusEventRegister(sc, wp)(l))

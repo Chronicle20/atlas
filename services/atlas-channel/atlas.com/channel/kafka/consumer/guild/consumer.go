@@ -82,6 +82,102 @@ func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Con
 	}
 }
 
+func CreatedStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		top, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
+		return top, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCreatedBody]) {
+			if e.Type != StatusEventTypeCreated {
+				return
+			}
+
+			t := sc.Tenant()
+			if !t.Is(tenant.MustFromContext(ctx)) {
+				return
+			}
+			if sc.WorldId() != e.WorldId {
+				return
+			}
+
+			g, err := guild.GetById(l)(ctx)(e.GuildId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce guild [%d] emblem has changed.", e.GuildId)
+				return
+			}
+
+			// Inform members that guild member left.
+			for _, gm := range g.Members() {
+				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(gm.CharacterId(), func(s session.Model) error {
+					go func() {
+						_ = _map.ForSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), s.MapId(), func(os session.Model) error {
+							err = session.Announce(l)(ctx)(wp)(writer.GuildNameChanged)(os, writer.ForeignGuildNameChangedBody(l)(s.CharacterId(), g.Name()))
+							if err != nil {
+								return err
+							}
+							err = session.Announce(l)(ctx)(wp)(writer.GuildEmblemChanged)(os, writer.ForeignGuildEmblemChangedBody(l)(s.CharacterId(), g.Logo(), g.LogoColor(), g.LogoBackground(), g.LogoBackgroundColor()))
+							if err != nil {
+								return err
+							}
+							return nil
+						})
+					}()
+
+					go func() {
+						err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildInfoBody(l, t)(g))
+						if err != nil {
+						}
+					}()
+					return nil
+				})
+			}
+		}))
+	}
+}
+
+func DisbandedStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		top, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
+		return top, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventDisbandedBody]) {
+			if e.Type != StatusEventTypeDisbanded {
+				return
+			}
+
+			t := sc.Tenant()
+			if !t.Is(tenant.MustFromContext(ctx)) {
+				return
+			}
+			if sc.WorldId() != e.WorldId {
+				return
+			}
+
+			// Inform members that guild member left.
+			for _, cid := range e.Body.Members {
+				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(cid, func(s session.Model) error {
+					go func() {
+						_ = _map.ForSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), s.MapId(), func(os session.Model) error {
+							err := session.Announce(l)(ctx)(wp)(writer.GuildNameChanged)(os, writer.ForeignGuildNameChangedBody(l)(s.CharacterId(), ""))
+							if err != nil {
+								return err
+							}
+							return nil
+						})
+					}()
+
+					go func() {
+						err := session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildDisbandBody(l)(e.GuildId))
+						if err != nil {
+						}
+
+						err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildInfoBody(l, t)(guild.Model{}))
+						if err != nil {
+						}
+					}()
+					return nil
+				})
+			}
+		}))
+	}
+}
+
 func RequestAgreementStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
 	return func(l logrus.FieldLogger) (string, handler.Handler) {
 		top, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
@@ -307,6 +403,44 @@ func NoticeUpdateStatusEventRegister(sc server.Model, wp writer.Producer) func(l
 				go func() {
 					session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(gm.CharacterId(), func(s session.Model) error {
 						err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildNoticeChangedBody(l)(g.Id(), e.Body.Notice))
+						if err != nil {
+							l.Debugf("Unable to issue character [%d] guild error [%s].", s.CharacterId(), err)
+							return err
+						}
+						return nil
+					})
+				}()
+			}
+		}))
+	}
+}
+
+func CapacityUpdateStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		top, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
+		return top, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCapacityUpdatedBody]) {
+			if e.Type != StatusEventTypeCapacityUpdated {
+				return
+			}
+
+			t := sc.Tenant()
+			if !t.Is(tenant.MustFromContext(ctx)) {
+				return
+			}
+			if sc.WorldId() != e.WorldId {
+				return
+			}
+
+			g, err := guild.GetById(l)(ctx)(e.GuildId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce guild [%d] capacity has changed.", e.GuildId)
+				return
+			}
+
+			for _, gm := range g.Members() {
+				go func() {
+					session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(gm.CharacterId(), func(s session.Model) error {
+						err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildCapacityChangedBody(l)(g.Id(), e.Body.Capacity))
 						if err != nil {
 							l.Debugf("Unable to issue character [%d] guild error [%s].", s.CharacterId(), err)
 							return err

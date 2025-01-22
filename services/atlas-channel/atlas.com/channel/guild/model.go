@@ -3,6 +3,7 @@ package guild
 import (
 	"atlas-channel/guild/member"
 	"atlas-channel/guild/title"
+	"sort"
 )
 
 type Model struct {
@@ -50,6 +51,9 @@ func (m Model) Titles() []title.Model {
 }
 
 func (m Model) Members() []member.Model {
+	sort.Slice(m.members, func(i, j int) bool {
+		return m.members[i].Name() < m.members[j].Name()
+	})
 	return m.members
 
 }

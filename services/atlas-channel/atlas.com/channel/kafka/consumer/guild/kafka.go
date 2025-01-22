@@ -7,12 +7,15 @@ const (
 
 	EnvStatusEventTopic                = "EVENT_TOPIC_GUILD_STATUS"
 	StatusEventTypeRequestAgreement    = "REQUEST_AGREEMENT"
+	StatusEventTypeCreated             = "CREATED"
+	StatusEventTypeDisbanded           = "DISBANDED"
 	StatusEventTypeEmblemUpdated       = "EMBLEM_UPDATED"
 	StatusEventTypeMemberStatusUpdated = "MEMBER_STATUS_UPDATED"
 	StatusEventTypeMemberTitleUpdated  = "MEMBER_TITLE_UPDATED"
 	StatusEventTypeMemberLeft          = "MEMBER_LEFT"
 	StatusEventTypeMemberJoined        = "MEMBER_JOINED"
 	StatusEventTypeNoticeUpdated       = "NOTICE_UPDATED"
+	StatusEventTypeCapacityUpdated     = "CAPACITY_UPDATED"
 	StatusEventTypeTitlesUpdated       = "TITLES_UPDATED"
 	StatusEventTypeError               = "ERROR"
 )
@@ -38,6 +41,13 @@ type statusEvent[E any] struct {
 	GuildId uint32 `json:"guildId"`
 	Type    string `json:"type"`
 	Body    E      `json:"body"`
+}
+
+type statusEventCreatedBody struct {
+}
+
+type statusEventDisbandedBody struct {
+	Members []uint32 `json:"members"`
 }
 
 type statusEventRequestAgreementBody struct {
@@ -79,6 +89,10 @@ type statusEventMemberJoinedBody struct {
 
 type statusEventNoticeUpdatedBody struct {
 	Notice string `json:"notice"`
+}
+
+type statusEventCapacityUpdatedBody struct {
+	Capacity uint32 `json:"capacity"`
 }
 
 type statusEventTitlesUpdatedBody struct {

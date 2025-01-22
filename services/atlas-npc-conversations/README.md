@@ -1,4 +1,4 @@
-# "atlas-npc-conversations
+# atlas-npc-conversations
 Mushroom game NPC Conversations Service
 
 ## Overview
@@ -9,6 +9,12 @@ A RESTful resource which provides npc services.
 
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
+- CONFIG_FILE - Location of service configuration file.
+- BOOTSTRAP_SERVERS - Kafka [host]:[port]
+- COMMAND_TOPIC_GUILD - Kafka topic for transmitting Guild commands
+- COMMAND_TOPIC_NPC - Kafka topic for transmitting NPC commands 
+- COMMAND_TOPIC_NPC_CONVERSATION - Kafka topic for transmitting NPC Conversation commands
+- EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for receiving Character status events
 
 ## API
 

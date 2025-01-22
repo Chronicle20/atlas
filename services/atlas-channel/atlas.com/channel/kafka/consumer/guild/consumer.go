@@ -1,6 +1,7 @@
 package guild
 
 import (
+	"atlas-channel/character"
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
@@ -266,6 +267,74 @@ func NoticeUpdateStatusEventRegister(sc server.Model, wp writer.Producer) func(l
 					})
 				}()
 			}
+		}))
+	}
+}
+
+func MemberLeftStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		top, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
+		return top, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventMemberLeftBody]) {
+			if e.Type != StatusEventTypeMemberLeft {
+				return
+			}
+
+			t := sc.Tenant()
+			if !t.Is(tenant.MustFromContext(ctx)) {
+				return
+			}
+			if sc.WorldId() != e.WorldId {
+				return
+			}
+
+			c, err := character.GetById(l)(ctx)(e.Body.CharacterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce guild [%d] member [%d] has left.", e.GuildId, e.Body.CharacterId)
+				return
+			}
+
+			g, err := guild.GetById(l)(ctx)(e.GuildId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce guild [%d] member [%d] has left.", e.GuildId, e.Body.CharacterId)
+				return
+			}
+
+			// Inform members that guild member left.
+			go func() {
+				for _, gm := range g.Members() {
+					if gm.Online() && gm.CharacterId() != e.Body.CharacterId {
+						session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(gm.CharacterId(), func(s session.Model) error {
+							err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildMemberLeftBody(l)(g.Id(), c.Id(), c.Name()))
+							if err != nil {
+								l.Debugf("Unable to issue character [%d] guild error [%s].", s.CharacterId(), err)
+								return err
+							}
+							return nil
+						})
+					}
+				}
+			}()
+
+			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
+				// Update characters in map that x is no longer in guild.
+				go func() {
+					_ = _map.ForSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), s.MapId(), func(os session.Model) error {
+						err = session.Announce(l)(ctx)(wp)(writer.GuildNameChanged)(os, writer.ForeignGuildNameChangedBody(l)(s.CharacterId(), ""))
+						if err != nil {
+							return err
+						}
+						return nil
+					})
+				}()
+
+				// Update character to show they are not in guild.
+				go func() {
+					err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildInfoBody(l, t)(guild.Model{}))
+					if err != nil {
+					}
+				}()
+				return nil
+			})
 		}))
 	}
 }

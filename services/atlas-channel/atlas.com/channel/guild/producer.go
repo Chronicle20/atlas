@@ -61,3 +61,29 @@ func changeNoticeProvider(guildId uint32, characterId uint32, notice string) mod
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func expelGuildProvider(guildId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[leaveBody]{
+		CharacterId: characterId,
+		Type:        CommandTypeLeave,
+		Body: leaveBody{
+			GuildId: guildId,
+			Force:   true,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func leaveGuildProvider(guildId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[leaveBody]{
+		CharacterId: characterId,
+		Type:        CommandTypeLeave,
+		Body: leaveBody{
+			GuildId: guildId,
+			Force:   false,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

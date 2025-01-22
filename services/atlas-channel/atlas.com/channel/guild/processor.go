@@ -67,3 +67,12 @@ func RequestNoticeUpdate(l logrus.FieldLogger) func(ctx context.Context) func(gu
 		}
 	}
 }
+
+func Leave(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, characterId uint32) error {
+	return func(ctx context.Context) func(guildId uint32, characterId uint32) error {
+		return func(guildId uint32, characterId uint32) error {
+			l.Debugf("Character [%d] is leaving guild [%d].", characterId, guildId)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(leaveGuildProvider(guildId, characterId))
+		}
+	}
+}

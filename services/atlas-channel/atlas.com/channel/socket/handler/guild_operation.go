@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"atlas-channel/character"
 	"atlas-channel/guild"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -55,6 +56,7 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			if !g.IsLeader(s.CharacterId()) {
 				l.Errorf("Character [%d] attempting to change guild emblem when they are not the guild leader.", s.CharacterId())
 				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				return
 			}
 
 			_ = guild.RequestEmblemUpdate(l)(ctx)(g.Id(), s.CharacterId(), logoBackground, logoBackgroundColor, logo, logoColor)
@@ -65,15 +67,43 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			if len(notice) > 100 {
 				l.Errorf("Character [%d] setting a guild notice longer than possible.", s.CharacterId())
 				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				return
 			}
 
 			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
 			if !g.IsLeadership(s.CharacterId()) {
 				l.Errorf("Character [%d] setting a guild notice when they are not allowed.", s.CharacterId())
 				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				return
 			}
 
 			_ = guild.RequestNoticeUpdate(l)(ctx)(g.Id(), s.CharacterId(), notice)
+			return
+		}
+		if isGuildOperation(l)(readerOptions, op, GuildOperationWithdraw) {
+			cid := r.ReadUint32()
+			name := r.ReadAsciiString()
+			if cid != s.CharacterId() {
+				l.Errorf("Character [%d] attempting to have [%d] leave guild.", s.CharacterId(), cid)
+				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				return
+			}
+
+			c, err := character.GetById(l)(ctx)(cid)
+			if err != nil || c.Name() != name {
+				l.Errorf("Character [%d] attempting to have [%s] leave guild.", s.CharacterId(), name)
+				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				return
+			}
+
+			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+			if g.Id() == 0 {
+				l.Errorf("Character [%d] attempting to leave guild, while not in one.", s.CharacterId())
+				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				return
+			}
+
+			_ = guild.Leave(l)(ctx)(g.Id(), s.CharacterId())
 			return
 		}
 		l.Warnf("Character [%d] issued unhandled guild operation with operation [%d].", s.CharacterId(), op)

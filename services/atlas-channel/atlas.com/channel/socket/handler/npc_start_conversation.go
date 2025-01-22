@@ -18,6 +18,7 @@ func NPCStartConversationHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		if err != nil {
 			l.WithError(err).Errorf("Character [%d] is interacting with a map object [%d] that is not found in map [%d].", s.CharacterId(), oid, s.MapId())
 			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			return
 		}
 		_ = npc.StartConversation(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), n.Template(), s.CharacterId())
 

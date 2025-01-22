@@ -48,3 +48,16 @@ func changeEmblemProvider(guildId uint32, characterId uint32, logo uint16, logoC
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func changeNoticeProvider(guildId uint32, characterId uint32, notice string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[changeNoticeBody]{
+		CharacterId: characterId,
+		Type:        CommandTypeChangeNotice,
+		Body: changeNoticeBody{
+			GuildId: guildId,
+			Notice:  notice,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

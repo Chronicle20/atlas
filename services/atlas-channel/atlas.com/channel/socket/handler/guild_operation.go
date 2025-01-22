@@ -52,12 +52,29 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			logoColor := r.ReadByte()
 
 			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
-			if g.Id() == 0 || g.LeaderId() != s.CharacterId() {
+			if !g.IsLeader(s.CharacterId()) {
 				l.Errorf("Character [%d] attempting to change guild emblem when they are not the guild leader.", s.CharacterId())
 				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
 			}
 
 			_ = guild.RequestEmblemUpdate(l)(ctx)(g.Id(), s.CharacterId(), logoBackground, logoBackgroundColor, logo, logoColor)
+			return
+		}
+		if isGuildOperation(l)(readerOptions, op, GuildOperationSetNotice) {
+			notice := r.ReadAsciiString()
+			if len(notice) > 100 {
+				l.Errorf("Character [%d] setting a guild notice longer than possible.", s.CharacterId())
+				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			}
+
+			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+			if !g.IsLeadership(s.CharacterId()) {
+				l.Errorf("Character [%d] setting a guild notice when they are not allowed.", s.CharacterId())
+				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			}
+
+			_ = guild.RequestNoticeUpdate(l)(ctx)(g.Id(), s.CharacterId(), notice)
+			return
 		}
 		l.Warnf("Character [%d] issued unhandled guild operation with operation [%d].", s.CharacterId(), op)
 	}

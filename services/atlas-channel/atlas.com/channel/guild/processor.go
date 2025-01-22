@@ -58,3 +58,12 @@ func RequestEmblemUpdate(l logrus.FieldLogger) func(ctx context.Context) func(gu
 		}
 	}
 }
+
+func RequestNoticeUpdate(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, characterId uint32, notice string) error {
+	return func(ctx context.Context) func(guildId uint32, characterId uint32, notice string) error {
+		return func(guildId uint32, characterId uint32, notice string) error {
+			l.Debugf("Character [%d] is attempting to set guild [%d] notice [%s].", characterId, guildId, notice)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeNoticeProvider(guildId, characterId, notice))
+		}
+	}
+}

@@ -150,6 +150,17 @@ func GuildMemberStatusUpdatedBody(l logrus.FieldLogger) func(guildId uint32, cha
 	}
 }
 
+func GuildNoticeChangedBody(l logrus.FieldLogger) func(guildId uint32, notice string) BodyProducer {
+	return func(guildId uint32, notice string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getGuildOperation(l)(options, GuildOperationNoticeChange))
+			w.WriteInt(guildId)
+			w.WriteAsciiString(notice)
+			return w.Bytes()
+		}
+	}
+}
+
 func getGuildOperation(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
 	return func(options map[string]interface{}, key string) byte {
 		var genericCodes interface{}

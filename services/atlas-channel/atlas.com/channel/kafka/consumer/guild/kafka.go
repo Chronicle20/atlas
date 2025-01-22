@@ -9,6 +9,7 @@ const (
 	StatusEventTypeRequestAgreement    = "REQUEST_AGREEMENT"
 	StatusEventTypeEmblemUpdated       = "EMBLEM_UPDATED"
 	StatusEventTypeMemberStatusUpdated = "MEMBER_STATUS_UPDATED"
+	StatusEventTypeNoticeUpdated       = "NOTICE_UPDATED"
 	StatusEventTypeError               = "ERROR"
 )
 
@@ -50,6 +51,10 @@ type statusEventEmblemUpdatedBody struct {
 type statusEventMemberStatusUpdatedBody struct {
 	CharacterId uint32 `json:"characterId"`
 	Online      bool   `json:"online"`
+}
+
+type statusEventNoticeUpdatedBody struct {
+	Notice string `json:"notice"`
 }
 
 type statusEventErrorBody struct {

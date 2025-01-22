@@ -5,6 +5,7 @@ const (
 	CommandTypeRequestCreate     = "REQUEST_CREATE"
 	CommandTypeCreationAgreement = "CREATION_AGREEMENT"
 	CommandTypeChangeEmblem      = "CHANGE_EMBLEM"
+	CommandTypeChangeNotice      = "CHANGE_NOTICE"
 )
 
 type command[E any] struct {
@@ -30,4 +31,9 @@ type changeEmblemBody struct {
 	LogoColor           byte   `json:"logoColor"`
 	LogoBackground      uint16 `json:"logoBackground"`
 	LogoBackgroundColor byte   `json:"logoBackgroundColor"`
+}
+
+type changeNoticeBody struct {
+	GuildId uint32 `json:"guildId"`
+	Notice  string `json:"notice"`
 }

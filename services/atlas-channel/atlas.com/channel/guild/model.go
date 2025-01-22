@@ -73,3 +73,20 @@ func (m Model) AllianceId() uint32 {
 func (m Model) LeaderId() uint32 {
 	return m.leaderId
 }
+
+func (m Model) IsLeader(characterId uint32) bool {
+	return m.id != 0 && characterId != 0 && m.leaderId == characterId
+}
+
+func (m Model) IsLeadership(characterId uint32) bool {
+	if m.id == 0 || characterId == 0 {
+		return false
+	}
+
+	for _, mm := range m.Members() {
+		if mm.CharacterId() == characterId {
+			return mm.Rank() <= 2
+		}
+	}
+	return false
+}

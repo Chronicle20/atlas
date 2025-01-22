@@ -635,6 +635,7 @@
                 "operations": {
                   "REQUEST_CREATE": 2,
                   "SET_EMBLEM": 15,
+                  "SET_NOTICE": 16,
                   "AGREEMENT_RESPONSE": 30
                 }
               }

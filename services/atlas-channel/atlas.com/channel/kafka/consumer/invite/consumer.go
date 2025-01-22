@@ -55,28 +55,12 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 			eventHandler = handlePartyCreatedStatusEvent(l)(ctx)(wp)(e.ReferenceId, rc.Name())
 		} else if e.InviteType == InviteTypeBuddy {
 			eventHandler = handleBuddyCreatedStatusEvent(l)(ctx)(wp)(e.ReferenceId, rc.Name())
+		} else if e.InviteType == InviteTypeGuild {
+			eventHandler = handleGuildCreatedStatusEvent(l)(ctx)(wp)(e.ReferenceId, rc.Name())
 		}
 
 		if eventHandler != nil {
 			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.TargetId, eventHandler)
-		}
-	}
-}
-
-func handleBuddyCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
-		t := tenant.MustFromContext(ctx)
-		return func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
-			buddyOperationFunc := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)
-			return func(originatorId uint32, originatorName string) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := buddyOperationFunc(s, writer.BuddyInviteBody(l, t)(s.CharacterId(), originatorId, originatorName))
-					if err != nil {
-						return err
-					}
-					return nil
-				}
-			}
 		}
 	}
 }
@@ -102,6 +86,41 @@ func RejectedStatusEventRegister(sc server.Model, wp writer.Producer) func(l log
 	return func(l logrus.FieldLogger) (string, handler.Handler) {
 		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
 		return t, message.AdaptHandler(message.PersistentConfig(handleRejectedStatusEvent(sc, wp)))
+	}
+}
+
+func handleBuddyCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
+		return func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+			buddyOperationFunc := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)
+			return func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := buddyOperationFunc(s, writer.BuddyInviteBody(l, t)(s.CharacterId(), originatorId, originatorName))
+					if err != nil {
+						return err
+					}
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func handleGuildCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+			guildOperationFunc := session.Announce(l)(ctx)(wp)(writer.GuildOperation)
+			return func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := guildOperationFunc(s, writer.GuildInviteBody(l)(originatorId, originatorName))
+					if err != nil {
+						return err
+					}
+					return nil
+				}
+			}
+		}
 	}
 }
 
@@ -131,6 +150,8 @@ func handleRejectedStatusEvent(sc server.Model, wp writer.Producer) message.Hand
 			eventHandler = handlePartyRejectedStatusEvent(l)(ctx)(wp)(rc.Name())
 		} else if e.InviteType == InviteTypeBuddy {
 			// TODO send rejection to requesting character.
+		} else if e.InviteType == InviteTypeGuild {
+			eventHandler = handleGuildRejectedStatusEvent(l)(ctx)(wp)(rc.Name())
 		}
 
 		if eventHandler != nil {
@@ -146,6 +167,23 @@ func handlePartyRejectedStatusEvent(l logrus.FieldLogger) func(ctx context.Conte
 			return func(targetName string) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					err := partyOperationFunc(s, writer.PartyErrorBody(l)("HAVE_DENIED_REQUEST_TO_THE_PARTY", targetName))
+					if err != nil {
+						return err
+					}
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func handleGuildRejectedStatusEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
+			guildOperationFunc := session.Announce(l)(ctx)(wp)(writer.GuildOperation)
+			return func(targetName string) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := guildOperationFunc(s, writer.GuildErrorBody2(l)(writer.GuildOperationInviteDenied, targetName))
 					if err != nil {
 						return err
 					}

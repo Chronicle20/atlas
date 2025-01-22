@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/character/equipment"
 	"atlas-channel/character/equipment/slot"
+	"atlas-channel/guild"
 	"atlas-channel/pet"
 	"atlas-channel/socket/model"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -13,20 +14,26 @@ import (
 
 const CharacterSpawn = "CharacterSpawn"
 
-func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.Model, enteringField bool) BodyProducer {
-	return func(c character.Model, enteringField bool) BodyProducer {
+func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.Model, g guild.Model, enteringField bool) BodyProducer {
+	return func(c character.Model, g guild.Model, enteringField bool) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(c.Id())
 			w.WriteByte(c.Level())
 			w.WriteAsciiString(c.Name())
-			var guild = false
-			if !guild {
+			if g.Id() != 0 {
+				w.WriteAsciiString(g.Name())
+				w.WriteShort(g.LogoBackground())
+				w.WriteByte(g.LogoBackgroundColor())
+				w.WriteShort(g.Logo())
+				w.WriteByte(g.LogoColor())
+			} else {
 				w.WriteAsciiString("")
 				w.WriteShort(0)
 				w.WriteByte(0)
 				w.WriteShort(0)
 				w.WriteByte(0)
 			}
+
 			cts := model.CharacterTemporaryStat{}
 			cts.Encode(l, t, options)(w)
 

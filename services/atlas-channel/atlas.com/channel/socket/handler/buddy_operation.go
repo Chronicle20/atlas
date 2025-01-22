@@ -37,6 +37,7 @@ func BuddyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			if len(group) > 16 {
 				l.Warnf("Character [%d] attempting to add a buddy and input group is out of range.", s.CharacterId())
 				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				return
 			}
 
 			tc, err := character.GetByName(l, ctx)(name)

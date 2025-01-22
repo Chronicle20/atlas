@@ -2,6 +2,7 @@ package _map
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
@@ -72,18 +73,20 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				l.WithError(err).Errorf("Unable to retrieve character details for characters in map.")
 				return err
 			}
+			g, err := guild.GetByMemberId(l)(ctx)(s.CharacterId())
 
 			// spawn new character for others
 			for k := range cms {
 				if k != s.CharacterId() {
-					session.IfPresentByCharacterId(tenant.MustFromContext(ctx), s.WorldId(), s.ChannelId())(k, spawnCharacterForSession(l)(ctx)(wp)(cms[s.CharacterId()], true))
+					session.IfPresentByCharacterId(tenant.MustFromContext(ctx), s.WorldId(), s.ChannelId())(k, spawnCharacterForSession(l)(ctx)(wp)(cms[s.CharacterId()], g, true))
 				}
 			}
 
 			// spawn other characters for incoming
 			for k, v := range cms {
 				if k != s.CharacterId() {
-					_ = spawnCharacterForSession(l)(ctx)(wp)(v, false)(s)
+					kg, _ := guild.GetByMemberId(l)(ctx)(k)
+					_ = spawnCharacterForSession(l)(ctx)(wp)(v, kg, false)(s)
 				}
 			}
 
@@ -99,13 +102,13 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 	}
 }
 
-func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model, enteringField bool) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model, enteringField bool) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(c character.Model, enteringField bool) model.Operator[session.Model] {
+func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
 			spawnCharacterFunc := session.Announce(l)(ctx)(wp)(writer.CharacterSpawn)
-			return func(c character.Model, enteringField bool) model.Operator[session.Model] {
+			return func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					err := spawnCharacterFunc(s, writer.CharacterSpawnBody(l, tenant.MustFromContext(ctx))(c, enteringField))
+					err := spawnCharacterFunc(s, writer.CharacterSpawnBody(l, tenant.MustFromContext(ctx))(c, g, enteringField))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to spawn character [%d] for [%d]", c.Id(), s.CharacterId())
 						return err

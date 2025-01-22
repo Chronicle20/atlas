@@ -4,6 +4,7 @@ import (
 	"atlas-channel/buddylist"
 	"atlas-channel/character"
 	"atlas-channel/character/key"
+	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
 	"atlas-channel/kafka/producer"
 	"atlas-channel/server"
@@ -137,6 +138,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 			setFieldFunc := session.Announce(l)(ctx)(wp)(writer.SetField)
 			characterKeyMapFunc := session.Announce(l)(ctx)(wp)(writer.CharacterKeyMap)
 			buddyOperationFunc := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)
+			guildOperationFunc := session.Announce(l)(ctx)(wp)(writer.GuildOperation)
 			return func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					if params.CharacterId <= 0 {
@@ -170,6 +172,15 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						err := buddyOperationFunc(s, writer.BuddyListUpdateBody(l, t)(bl.Buddies()))
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
+						}
+					}()
+					go func() {
+						g, _ := guild.GetByMemberId(l)(ctx)(c.Id())
+						if g.Id() != 0 {
+							err := guildOperationFunc(s, writer.GuildInfoBody(l, t)(g))
+							if err != nil {
+								l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
+							}
 						}
 					}()
 					go func() {

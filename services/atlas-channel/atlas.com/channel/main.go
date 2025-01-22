@@ -178,6 +178,7 @@ func main() {
 				_, _ = cm.RegisterHandler(guild.MemberStatusUpdatedStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.NoticeUpdateStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.MemberLeftStatusEventRegister(sc, wp)(l))
+				_, _ = cm.RegisterHandler(guild.MemberJoinedStatusEventRegister(sc, wp)(l))
 				_, _ = cm.RegisterHandler(guild.ErrorStatusEventRegister(sc, wp)(l))
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
@@ -264,6 +265,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.NPCStartConversationHandle] = handler.NPCStartConversationHandleFunc
 	handlerMap[handler.NPCContinueConversationHandle] = handler.NPCContinueConversationHandleFunc
 	handlerMap[handler.GuildOperationHandle] = handler.GuildOperationHandleFunc
+	handlerMap[handler.GuildInviteRejectHandle] = handler.GuildInviteRejectHandleFunc
 	return handlerMap
 }
 

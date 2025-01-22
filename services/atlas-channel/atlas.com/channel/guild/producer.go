@@ -21,6 +21,19 @@ func requestCreateProvider(worldId byte, channelId byte, mapId uint32, character
 	return producer.SingleMessageProvider(key, value)
 }
 
+func requestInviteProvider(guildId uint32, characterId uint32, targetId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[requestInviteBody]{
+		CharacterId: characterId,
+		Type:        CommandTypeRequestInvite,
+		Body: requestInviteBody{
+			GuildId:  guildId,
+			TargetId: targetId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func creationAgreementProvider(characterId uint32, agreed bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &command[creationAgreementBody]{

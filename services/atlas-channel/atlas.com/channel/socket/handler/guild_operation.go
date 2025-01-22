@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/guild"
+	"atlas-channel/invite"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -104,6 +105,39 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			}
 
 			_ = guild.Leave(l)(ctx)(g.Id(), s.CharacterId())
+			return
+		}
+		if isGuildOperation(l)(readerOptions, op, GuildOperationInvite) {
+			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+			if !g.IsLeadership(s.CharacterId()) {
+				l.Errorf("Character [%d] attempting to invite someone to the guild when they're not in leadership.", s.CharacterId())
+				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				return
+			}
+			target := r.ReadAsciiString()
+
+			c, err := character.GetByName(l, ctx)(target)
+			if err != nil || len(c) == 0 {
+				l.Errorf("Unable to locate character [%s] to invite.", target)
+				// TODO announce error
+				return
+			}
+			_ = guild.RequestInvite(l)(ctx)(g.Id(), s.CharacterId(), c[0].Id())
+			return
+		}
+		if isGuildOperation(l)(readerOptions, op, GuildOperationJoin) {
+			guildId := r.ReadUint32()
+			characterId := r.ReadUint32()
+			if s.CharacterId() != characterId {
+				l.Errorf("Character [%d] attempting to have [%d] join guild.", s.CharacterId(), characterId)
+				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				return
+			}
+
+			err := invite.Accept(l)(ctx)(s.CharacterId(), s.WorldId(), invite.InviteTypeGuild, guildId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		l.Warnf("Character [%d] issued unhandled guild operation with operation [%d].", s.CharacterId(), op)

@@ -3,6 +3,7 @@ package guild
 const (
 	EnvCommandTopic              = "COMMAND_TOPIC_GUILD"
 	CommandTypeRequestCreate     = "REQUEST_CREATE"
+	CommandTypeRequestInvite     = "REQUEST_INVITE"
 	CommandTypeCreationAgreement = "CREATION_AGREEMENT"
 	CommandTypeChangeEmblem      = "CHANGE_EMBLEM"
 	CommandTypeChangeNotice      = "CHANGE_NOTICE"
@@ -42,4 +43,9 @@ type changeNoticeBody struct {
 type leaveBody struct {
 	GuildId uint32 `json:"guildId"`
 	Force   bool   `json:"force"`
+}
+
+type requestInviteBody struct {
+	GuildId  uint32 `json:"guildId"`
+	TargetId uint32 `json:"characterId"`
 }

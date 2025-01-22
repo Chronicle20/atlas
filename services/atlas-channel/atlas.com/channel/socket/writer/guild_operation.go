@@ -14,6 +14,7 @@ const (
 	GuildOperationRequestName                    = "REQUEST_NAME"
 	GuildOperationRequestAgreement               = "REQUEST_AGREEMENT"
 	GuildOperationRequestEmblem                  = "REQUEST_EMBLEM"
+	GuildOperationInvite                         = "INVITE"
 	GuildOperationCreateErrorNameInUse           = "THE_NAME_IS_ALREADY_IN_USE_PLEASE_TRY_OTHER_ONES"
 	GuildOperationCreateErrorDisagreed           = "SOMEBODY_HAS_DISAGREED_TO_FORM_A_GUILD"
 	GuildOperationCreateError                    = "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_FORMING_THE_GUILD_PLEASE_TRY_AGAIN"
@@ -71,6 +72,16 @@ func GuildErrorBody(l logrus.FieldLogger) func(code string) BodyProducer {
 	return func(code string) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, code))
+			return w.Bytes()
+		}
+	}
+}
+
+func GuildErrorBody2(l logrus.FieldLogger) func(code string, target string) BodyProducer {
+	return func(code string, target string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getGuildOperation(l)(options, code))
+			w.WriteAsciiString(target)
 			return w.Bytes()
 		}
 	}
@@ -168,6 +179,38 @@ func GuildMemberLeftBody(l logrus.FieldLogger) func(guildId uint32, characterId 
 			w.WriteInt(guildId)
 			w.WriteInt(characterId)
 			w.WriteAsciiString(name)
+			return w.Bytes()
+		}
+	}
+}
+
+func GuildMemberJoinedBody(l logrus.FieldLogger, t tenant.Model) func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, rank byte, online bool, allianceRank byte) BodyProducer {
+	return func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, rank byte, online bool, allianceRank byte) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getGuildOperation(l)(options, GuildOperationJoinSuccess))
+			w.WriteInt(guildId)
+			w.WriteInt(characterId)
+			gm := model.GuildMember{
+				Name:         name,
+				JobId:        jobId,
+				Level:        level,
+				Rank:         rank,
+				Online:       online,
+				Signature:    0,
+				AllianceRank: allianceRank,
+			}
+			gm.Encode(l, t, options)(w)
+			return w.Bytes()
+		}
+	}
+}
+
+func GuildInviteBody(l logrus.FieldLogger) func(guildId uint32, originatorName string) BodyProducer {
+	return func(guildId uint32, originatorName string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getGuildOperation(l)(options, GuildOperationInvite))
+			w.WriteInt(guildId)
+			w.WriteAsciiString(originatorName)
 			return w.Bytes()
 		}
 	}

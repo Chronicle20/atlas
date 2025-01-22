@@ -634,12 +634,19 @@
               "options": {
                 "operations": {
                   "REQUEST_CREATE": 2,
+                  "INVITE": 5,
+                  "JOIN": 6,
                   "WITHDRAW": 7,
                   "SET_EMBLEM": 15,
                   "SET_NOTICE": 16,
                   "AGREEMENT_RESPONSE": 30
                 }
               }
+            },
+            {
+              "opCode": "0x7F",
+              "validator": "LoggedInValidator",
+              "handler": "GuildInviteRejectHandle"
             },
             {
               "opCode": "0x82",
@@ -936,6 +943,7 @@
                 "operations": {
                   "REQUEST_NAME": "0x01",
                   "REQUEST_AGREEMENT": "0x03",
+                  "INVITE": "0x05",
                   "REQUEST_EMBLEM": "0x11",
                   "THE_NAME_IS_ALREADY_IN_USE_PLEASE_TRY_OTHER_ONES": "0x1C",
                   "SOMEBODY_HAS_DISAGREED_TO_FORM_A_GUILD": "0x24",

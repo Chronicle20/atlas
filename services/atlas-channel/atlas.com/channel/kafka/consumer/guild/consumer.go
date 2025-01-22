@@ -339,6 +339,78 @@ func MemberLeftStatusEventRegister(sc server.Model, wp writer.Producer) func(l l
 	}
 }
 
+func MemberJoinedStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		top, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
+		return top, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventMemberJoinedBody]) {
+			if e.Type != StatusEventTypeMemberJoined {
+				return
+			}
+
+			t := sc.Tenant()
+			if !t.Is(tenant.MustFromContext(ctx)) {
+				return
+			}
+			if sc.WorldId() != e.WorldId {
+				return
+			}
+
+			c, err := character.GetById(l)(ctx)(e.Body.CharacterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce guild [%d] member [%d] has joined.", e.GuildId, e.Body.CharacterId)
+				return
+			}
+
+			g, err := guild.GetById(l)(ctx)(e.GuildId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce guild [%d] member [%d] has joined.", e.GuildId, e.Body.CharacterId)
+				return
+			}
+
+			// Inform members that guild member joined.
+			go func() {
+				for _, gm := range g.Members() {
+					if gm.Online() && gm.CharacterId() != e.Body.CharacterId {
+						session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(gm.CharacterId(), func(s session.Model) error {
+							err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildMemberJoinedBody(l, t)(g.Id(), c.Id(), e.Body.Name, e.Body.JobId, e.Body.Level, e.Body.Rank, e.Body.Online, e.Body.AllianceRank))
+							if err != nil {
+								l.Debugf("Unable to issue character [%d] guild error [%s].", s.CharacterId(), err)
+								return err
+							}
+							return nil
+						})
+					}
+				}
+			}()
+
+			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
+				// Update characters in map that x is no longer in guild.
+				go func() {
+					_ = _map.ForSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), s.MapId(), func(os session.Model) error {
+						err = session.Announce(l)(ctx)(wp)(writer.GuildNameChanged)(os, writer.ForeignGuildNameChangedBody(l)(s.CharacterId(), g.Name()))
+						if err != nil {
+							return err
+						}
+						err = session.Announce(l)(ctx)(wp)(writer.GuildEmblemChanged)(os, writer.ForeignGuildEmblemChangedBody(l)(s.CharacterId(), g.Logo(), g.LogoColor(), g.LogoBackground(), g.LogoBackgroundColor()))
+						if err != nil {
+							return err
+						}
+						return nil
+					})
+				}()
+
+				// Update character to show they are not in guild.
+				go func() {
+					err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildInfoBody(l, t)(g))
+					if err != nil {
+					}
+				}()
+				return nil
+			})
+		}))
+	}
+}
+
 func ErrorStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
 	return func(l logrus.FieldLogger) (string, handler.Handler) {
 		top, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()

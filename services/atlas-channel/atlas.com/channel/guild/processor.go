@@ -76,3 +76,12 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, 
 		}
 	}
 }
+
+func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, characterId uint32, targetId uint32) error {
+	return func(ctx context.Context) func(guildId uint32, characterId uint32, targetId uint32) error {
+		return func(guildId uint32, characterId uint32, targetId uint32) error {
+			l.Debugf("Character [%d] is inviting [%d] to guild [%d].", characterId, targetId, guildId)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestInviteProvider(guildId, characterId, targetId))
+		}
+	}
+}

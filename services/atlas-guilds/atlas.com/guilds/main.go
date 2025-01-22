@@ -58,6 +58,7 @@ func main() {
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(guild2.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(guild2.RequestCreateRegister(db)(l))
 	_, _ = cm.RegisterHandler(guild2.CreationAgreementRegister(db)(l))
+	_, _ = cm.RegisterHandler(guild2.ChangeEmblemRegister(db)(l))
 
 	go tasks.Register(l, tdm.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35)))
 

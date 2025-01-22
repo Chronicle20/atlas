@@ -45,3 +45,16 @@ func CreationAgreementRegister(db *gorm.DB) func(l logrus.FieldLogger) (string, 
 		}))
 	}
 }
+
+func ChangeEmblemRegister(db *gorm.DB) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+		return t, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, c command[changeEmblemBody]) {
+			if c.Type != CommandTypeChangeEmblem {
+				return
+			}
+
+			_ = guild.ChangeEmblem(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.Logo, c.Body.LogoColor, c.Body.LogoBackground, c.Body.LogoBackgroundColor)
+		}))
+	}
+}

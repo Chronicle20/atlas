@@ -310,3 +310,20 @@ func CreationAgreementResponse(l logrus.FieldLogger) func(ctx context.Context) f
 		}
 	}
 }
+
+func ChangeEmblem(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(guildId uint32, characterId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) error {
+			return func(guildId uint32, characterId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) error {
+				l.Debugf("Character [%d] attempting to update guild [%d] emblem to Logo [%d], Logo Color [%d], Logo Background [%d], Logo Background Color [%d].", characterId, guildId, logo, logoColor, logoBackground, logoBackgroundColor)
+				g, err := updateEmblem(db, t.Id(), guildId, logo, logoColor, logoBackground, logoBackgroundColor)
+				if err != nil {
+					return err
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventEmblemUpdatedProvider(g.WorldId(), g.Id(), logo, logoColor, logoBackground, logoBackgroundColor))
+				return nil
+			}
+		}
+	}
+}

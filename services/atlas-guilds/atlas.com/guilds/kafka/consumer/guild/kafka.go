@@ -4,6 +4,7 @@ const (
 	EnvCommandTopic              = "COMMAND_TOPIC_GUILD"
 	CommandTypeRequestCreate     = "REQUEST_CREATE"
 	CommandTypeCreationAgreement = "CREATION_AGREEMENT"
+	CommandTypeChangeEmblem      = "CHANGE_EMBLEM"
 )
 
 type command[E any] struct {
@@ -21,4 +22,12 @@ type requestCreateBody struct {
 
 type creationAgreementBody struct {
 	Agreed bool `json:"agreed"`
+}
+
+type changeEmblemBody struct {
+	GuildId             uint32 `json:"guildId"`
+	Logo                uint16 `json:"logo"`
+	LogoColor           byte   `json:"logoColor"`
+	LogoBackground      uint16 `json:"logoBackground"`
+	LogoBackgroundColor byte   `json:"logoBackgroundColor"`
 }

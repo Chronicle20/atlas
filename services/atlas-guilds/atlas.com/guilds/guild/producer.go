@@ -31,6 +31,22 @@ func statusEventCreatedProvider(worldId byte, guildId uint32) model.Provider[[]k
 	return producer.SingleMessageProvider(key, value)
 }
 
+func statusEventEmblemUpdatedProvider(worldId byte, guildId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(guildId))
+	value := &statusEvent[statusEventEmblemUpdatedBody]{
+		WorldId: worldId,
+		GuildId: guildId,
+		Type:    StatusEventTypeEmblemUpdated,
+		Body: statusEventEmblemUpdatedBody{
+			Logo:                logo,
+			LogoColor:           logoColor,
+			LogoBackground:      logoBackground,
+			LogoBackgroundColor: logoBackgroundColor,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func statusEventErrorProvider(worldId byte, characterId uint32, error string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &statusEvent[statusEventErrorBody]{

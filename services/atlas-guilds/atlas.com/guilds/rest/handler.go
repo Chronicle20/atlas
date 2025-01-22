@@ -83,30 +83,16 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 	}
 }
 
-type CharacterIdHandler func(characterId uint32) http.HandlerFunc
+type GuildIdHandler func(guildId uint32) http.HandlerFunc
 
-func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.HandlerFunc {
+func ParseGuildId(l logrus.FieldLogger, next GuildIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		characterId, err := strconv.Atoi(mux.Vars(r)["characterId"])
+		guildId, err := strconv.Atoi(mux.Vars(r)["guildId"])
 		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse characterId from path.")
+			l.WithError(err).Errorf("Unable to properly parse guildId from path.")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		next(uint32(characterId))(w, r)
-	}
-}
-
-type KeyIdHandler func(keyId int32) http.HandlerFunc
-
-func ParseKeyId(l logrus.FieldLogger, next KeyIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		keyId, err := strconv.Atoi(mux.Vars(r)["keyId"])
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse keyId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(int32(keyId))(w, r)
+		next(uint32(guildId))(w, r)
 	}
 }

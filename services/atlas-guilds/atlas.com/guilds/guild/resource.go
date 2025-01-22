@@ -13,6 +13,7 @@ import (
 
 const (
 	GetGuilds = "get_guilds"
+	GetGuild  = "get_guild"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -21,6 +22,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			registerGet := rest.RegisterHandler(l)(si)
 			r := router.PathPrefix("/guilds").Subrouter()
 			r.HandleFunc("/", registerGet(GetGuilds, handleGetGuilds(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{guildId}", registerGet(GetGuild, handleGetGuild(db))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -43,5 +45,28 @@ func handleGetGuilds(db *gorm.DB) rest.GetHandler {
 
 			server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
 		}
+	}
+}
+
+func handleGetGuild(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseGuildId(d.Logger(), func(guildId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				g, err := GetById(d.Logger())(d.Context())(db)(guildId)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				res, err := model.Map(Transform)(model.FixedProvider(g))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			}
+		})
 	}
 }

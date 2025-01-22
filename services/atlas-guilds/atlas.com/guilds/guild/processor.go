@@ -24,6 +24,23 @@ const (
 	MemberThreshold = 2
 )
 
+func allProvider(ctx context.Context) func(db *gorm.DB) model.Provider[[]Model] {
+	t := tenant.MustFromContext(ctx)
+	return func(db *gorm.DB) model.Provider[[]Model] {
+		return model.SliceMap(Make)(getAll(t.Id())(db))()
+	}
+}
+
+func GetSlice(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(filters ...model.Filter[Model]) ([]Model, error) {
+	return func(ctx context.Context) func(db *gorm.DB) func(filters ...model.Filter[Model]) ([]Model, error) {
+		return func(db *gorm.DB) func(filters ...model.Filter[Model]) ([]Model, error) {
+			return func(filters ...model.Filter[Model]) ([]Model, error) {
+				return model.FilteredProvider(allProvider(ctx)(db), model.Filters[Model](filters...))()
+			}
+		}
+	}
+}
+
 func byIdProvider(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32) model.Provider[Model] {
 	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32) model.Provider[Model] {
 		t := tenant.MustFromContext(ctx)

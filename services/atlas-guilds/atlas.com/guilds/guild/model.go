@@ -34,3 +34,7 @@ func (m Model) WorldId() byte {
 func (m Model) Members() []member.Model {
 	return m.members
 }
+
+func (m Model) Titles() []title.Model {
+	return m.titles
+}

@@ -10,6 +10,7 @@ import (
 	"atlas-guilds/service"
 	"atlas-guilds/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas-rest/server"
 )
 
 const serviceName = "atlas-guilds"
@@ -48,7 +49,7 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(guild.Migration, title.Migration, member.Migration))
 
-	//server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix())
+	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), guild.InitResource(GetServer())(db))
 
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(guild2.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))

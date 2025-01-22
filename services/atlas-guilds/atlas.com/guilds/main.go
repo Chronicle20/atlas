@@ -2,7 +2,10 @@ package main
 
 import (
 	"atlas-guilds/database"
-	"atlas-guilds/kafka/consumer/guild"
+	"atlas-guilds/guild"
+	"atlas-guilds/guild/member"
+	"atlas-guilds/guild/title"
+	guild2 "atlas-guilds/kafka/consumer/guild"
 	"atlas-guilds/logger"
 	"atlas-guilds/service"
 	"atlas-guilds/tracing"
@@ -43,13 +46,14 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations())
+	db := database.Connect(l, database.SetMigrations(guild.Migration, title.Migration, member.Migration))
 
 	//server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix())
 
 	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(guild.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(guild.RequestCreateRegister(db)(l))
+	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(guild2.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	_, _ = cm.RegisterHandler(guild2.RequestCreateRegister(db)(l))
+	_, _ = cm.RegisterHandler(guild2.CreationAgreementRegister(db)(l))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

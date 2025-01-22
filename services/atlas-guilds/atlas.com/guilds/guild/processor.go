@@ -2,6 +2,8 @@ package guild
 
 import (
 	"atlas-guilds/character"
+	"atlas-guilds/coordinator"
+	character2 "atlas-guilds/guild/character"
 	"atlas-guilds/guild/member"
 	"atlas-guilds/guild/title"
 	"atlas-guilds/kafka/producer"
@@ -15,12 +17,33 @@ import (
 )
 
 const (
-	GuildOperationCreateErrorNameInUse     = "THE_NAME_IS_ALREADY_IN_USE_PLEASE_TRY_OTHER_ONES"
-	GuildOperationCreateError              = "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_FORMING_THE_GUILD_PLEASE_TRY_AGAIN"
-	GuildOperationCreateErrorCannotAsAdmin = "ADMIN_CANNOT_MAKE_A_GUILD"
+	ErrorNameInUse     = "THE_NAME_IS_ALREADY_IN_USE_PLEASE_TRY_OTHER_ONES"
+	CreateError        = "THE_PROBLEM_HAS_HAPPENED_DURING_THE_PROCESS_OF_FORMING_THE_GUILD_PLEASE_TRY_AGAIN"
+	ErrorCannotAsAdmin = "ADMIN_CANNOT_MAKE_A_GUILD"
 
-	GuildPartyMemberThreshold = 1
+	MemberThreshold = 2
 )
+
+func byIdProvider(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32) model.Provider[Model] {
+	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32) model.Provider[Model] {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(guildId uint32) model.Provider[Model] {
+			return func(guildId uint32) model.Provider[Model] {
+				return model.Map(Make)(getById(t.Id(), guildId)(db))
+			}
+		}
+	}
+}
+
+func GetById(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32) (Model, error) {
+	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32) (Model, error) {
+		return func(db *gorm.DB) func(guildId uint32) (Model, error) {
+			return func(guildId uint32) (Model, error) {
+				return byIdProvider(l)(ctx)(db)(guildId)()
+			}
+		}
+	}
+}
 
 func byNameProvider(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, name string) model.Provider[Model] {
 	return func(ctx context.Context) func(db *gorm.DB) func(worldId byte, name string) model.Provider[Model] {
@@ -44,99 +67,92 @@ func GetByName(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB)
 	}
 }
 
-func MemberFilter(memberId uint32) model.Filter[Model] {
-	return func(m Model) bool {
-		for _, m := range m.members {
-			if m.CharacterId() == memberId {
-				return true
+func GetByMemberId(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(memberId uint32) (Model, error) {
+	return func(ctx context.Context) func(db *gorm.DB) func(memberId uint32) (Model, error) {
+		return func(db *gorm.DB) func(memberId uint32) (Model, error) {
+			return func(memberId uint32) (Model, error) {
+				c, err := character2.GetById(l)(ctx)(db)(memberId)
+				if err != nil {
+					return Model{}, err
+				}
+				g, err := GetById(l)(ctx)(db)(c.GuildId())
+				if err != nil {
+					return Model{}, err
+				}
+
+				return g, nil
 			}
-		}
-		return false
-	}
-}
-
-func allProvider(ctx context.Context) model.Provider[[]Model] {
-	return func() ([]Model, error) {
-		return make([]Model, 0), nil
-	}
-}
-
-func GetSlice(ctx context.Context) func(filters ...model.Filter[Model]) ([]Model, error) {
-	return func(filters ...model.Filter[Model]) ([]Model, error) {
-		return model.FilteredProvider(allProvider(ctx), model.Filters[Model](filters...))()
-	}
-}
-
-func GetByMemberId(l logrus.FieldLogger) func(ctx context.Context) func(memberId uint32) (Model, error) {
-	return func(ctx context.Context) func(memberId uint32) (Model, error) {
-		return func(memberId uint32) (Model, error) {
-			gs, err := GetSlice(ctx)(model.Filters[Model](MemberFilter(memberId))...)
-			if err != nil {
-				return Model{}, err
-			}
-			return model.First(model.FixedProvider(gs), model.Filters[Model]())
 		}
 	}
 }
 
 func RequestCreate(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, mapId uint32, name string) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, mapId uint32, name string) error {
+		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, mapId uint32, name string) error {
 			return func(characterId uint32, worldId byte, channelId byte, mapId uint32, name string) error {
-				if nameInUse(l)(ctx)(worldId, name) {
-					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, GuildOperationCreateErrorNameInUse))
+				if nameInUse(l)(ctx)(db)(worldId, name) {
+					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, ErrorNameInUse))
 					return errors.New("name in use")
 				}
 
 				if isValidName(name) {
-					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, GuildOperationCreateError))
+					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError))
 					return errors.New("invalid name")
 				}
 
 				c, err := character.GetById(l)(ctx)(characterId)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to retrieve character [%d] attempting to create guild.", characterId)
-					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, GuildOperationCreateError))
+					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError))
 					return err
 				}
 
 				if c.Gm() {
 					l.WithError(err).Errorf("Game administrators cannot create guild.")
-					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, GuildOperationCreateErrorCannotAsAdmin))
+					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, ErrorCannotAsAdmin))
 					return err
 				}
 
 				p, err := party.GetByMemberId(l)(ctx)(characterId)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to retrieve party for character [%d] attempting to create guild.", characterId)
-					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, GuildOperationCreateError))
+					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError))
 					return err
 				}
 				if p.LeaderId() != characterId {
 					l.WithError(err).Errorf("Character [%d] must be party leader to create guild.", characterId)
-					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, GuildOperationCreateError))
+					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError))
 					return errors.New("must be party leader")
 				}
 
-				if len(p.Members()) < GuildPartyMemberThreshold {
-					l.WithError(err).Errorf("Unable to create guild with less than [%d] party members.", GuildPartyMemberThreshold)
-					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, GuildOperationCreateError))
+				if len(p.Members()) < MemberThreshold {
+					l.WithError(err).Errorf("Unable to create guild with less than [%d] party members.", MemberThreshold)
+					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError))
 					return errors.New("not enough members")
 				}
 
+				var members = make([]uint32, 0)
 				var alreadyInGuild = false
 				for _, m := range p.Members() {
 					// TODO this should be better
-					g, _ := GetByMemberId(l)(ctx)(m.Id())
+					g, _ := GetByMemberId(l)(ctx)(db)(m.Id())
 					if g.Id() != 0 {
 						alreadyInGuild = true
-						break
 					}
+					members = append(members, m.Id())
 				}
 				if alreadyInGuild {
 					l.WithError(err).Errorf("All party members must not be in a guild.")
-					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, GuildOperationCreateError))
+					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError))
 					return errors.New("party member in guild")
+				}
+
+				err = coordinator.GetRegistry().Initiate(t, worldId, channelId, name, characterId, members)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to initialize a guild creation coordinator.")
+					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError))
+					return errors.New("creation coordinator initialization failed")
 				}
 
 				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventRequestAgreementProvider(worldId, characterId, name))
@@ -147,11 +163,13 @@ func RequestCreate(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 
 }
 
-func nameInUse(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, name string) bool {
-	return func(ctx context.Context) func(worldId byte, name string) bool {
-		return func(worldId byte, name string) bool {
-			// TODO identify if name in use
-			return name == "Already"
+func nameInUse(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, name string) bool {
+	return func(ctx context.Context) func(db *gorm.DB) func(worldId byte, name string) bool {
+		return func(db *gorm.DB) func(worldId byte, name string) bool {
+			return func(worldId byte, name string) bool {
+				g, _ := GetByName(l)(ctx)(db)(worldId, name)
+				return g.Id() != 0
+			}
 		}
 	}
 }
@@ -205,6 +223,58 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					return nil
 				})
 				return g, txErr
+			}
+		}
+	}
+}
+
+func CreationAgreementResponse(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, agreed bool) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, agreed bool) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, agreed bool) error {
+			return func(characterId uint32, agreed bool) error {
+				gc, err := coordinator.GetRegistry().Respond(t, characterId, agreed)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to record character [%d] guild creation agreement [%t].", characterId, agreed)
+					return err
+				}
+				l.Debugf("Character [%d] responded to [%d] request to create guild [%s] with a [%t].", characterId, gc.LeaderId(), gc.Name(), agreed)
+
+				if !agreed {
+					l.Debugf("Creation of guild [%s] failed due to [%d] rejecting the invite.", gc.Name(), characterId)
+					// TODO respond with failure
+					return nil
+				}
+
+				if len(gc.Responses()) != len(gc.Requests()) {
+					l.Debugf("[%d/%d] responses needed to create guild [%s]. Continuing to wait other responses.", len(gc.Responses()), len(gc.Requests()), gc.Name())
+					return nil
+				}
+
+				g, err := Create(l)(ctx)(db)(gc.WorldId(), gc.LeaderId(), gc.Name())
+				if err != nil {
+					l.WithError(err).Errorf("Failed to create guild [%s].", gc.Name())
+					return err
+				}
+
+				for _, gmid := range gc.Requests() {
+					if gmid != gc.LeaderId() {
+						c, err := character.GetById(l)(ctx)(gmid)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to request character information on [%d]. Unable to add them to guild.", gmid)
+							continue
+						}
+						_, err = member.AddMember(l)(ctx)(db)(g.Id(), gmid, c.Name(), c.JobId(), c.Level(), 2)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to add character [%d] to guild [%d].", gmid, g.Id())
+							continue
+						}
+					}
+				}
+
+				l.Debugf("Guild [%d] created.", g.Id())
+				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventCreatedProvider(g.WorldId(), g.Id()))
+				return nil
 			}
 		}
 	}

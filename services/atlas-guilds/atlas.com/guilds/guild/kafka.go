@@ -19,6 +19,9 @@ type statusEventRequestAgreementBody struct {
 	ProposedName string `json:"proposedName"`
 }
 
+type statusEventCreatedBody struct {
+}
+
 type statusEventErrorBody struct {
 	ActorId uint32 `json:"actorId"`
 	Error   string `json:"error"`

@@ -1,8 +1,9 @@
 package guild
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_GUILD"
-	CommandTypeRequestCreate = "REQUEST_CREATE"
+	EnvCommandTopic              = "COMMAND_TOPIC_GUILD"
+	CommandTypeRequestCreate     = "REQUEST_CREATE"
+	CommandTypeCreationAgreement = "CREATION_AGREEMENT"
 )
 
 type command[E any] struct {
@@ -16,4 +17,8 @@ type requestCreateBody struct {
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
 	Name      string `json:"name"`
+}
+
+type creationAgreementBody struct {
+	Agreed bool `json:"agreed"`
 }

@@ -1,13 +1,14 @@
 package member
 
 import (
+	"atlas-guilds/guild/character"
 	"context"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-func AddMember(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, rank byte) (Model, error) {
+func AddMember(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, rank byte) (Model, error) {
 	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, rank byte) (Model, error) {
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, rank byte) (Model, error) {
@@ -20,6 +21,12 @@ func AddMember(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB)
 					if err != nil {
 						return err
 					}
+
+					err = character.SetGuild(l)(ctx)(tx)(characterId, guildId)
+					if err != nil {
+						return err
+					}
+
 					return nil
 				})
 				return m, txErr

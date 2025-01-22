@@ -7,3 +7,7 @@ type Model struct {
 	characterId uint32
 	guildId     uint32
 }
+
+func (m Model) GuildId() uint32 {
+	return m.guildId
+}

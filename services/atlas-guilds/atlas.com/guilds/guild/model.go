@@ -26,3 +26,11 @@ type Model struct {
 func (m Model) Id() uint32 {
 	return m.id
 }
+
+func (m Model) WorldId() byte {
+	return m.worldId
+}
+
+func (m Model) Members() []member.Model {
+	return m.members
+}

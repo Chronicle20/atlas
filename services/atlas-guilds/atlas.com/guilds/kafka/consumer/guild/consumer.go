@@ -23,16 +23,25 @@ func CommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config 
 func RequestCreateRegister(db *gorm.DB) func(l logrus.FieldLogger) (string, handler.Handler) {
 	return func(l logrus.FieldLogger) (string, handler.Handler) {
 		t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleRequestCreateCommand(db)))
+		return t, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, c command[requestCreateBody]) {
+			if c.Type != CommandTypeRequestCreate {
+				return
+			}
+
+			_ = guild.RequestCreate(l)(ctx)(db)(c.CharacterId, c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.Body.Name)
+		}))
 	}
 }
 
-func handleRequestCreateCommand(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c command[requestCreateBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestCreateBody]) {
-		if c.Type != CommandTypeRequestCreate {
-			return
-		}
+func CreationAgreementRegister(db *gorm.DB) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+		return t, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, c command[creationAgreementBody]) {
+			if c.Type != CommandTypeCreationAgreement {
+				return
+			}
 
-		_ = guild.RequestCreate(l)(ctx)(db)(c.CharacterId, c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.Body.Name)
+			_ = guild.CreationAgreementResponse(l)(ctx)(db)(c.CharacterId, c.Body.Agreed)
+		}))
 	}
 }

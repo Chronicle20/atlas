@@ -20,6 +20,17 @@ func statusEventRequestAgreementProvider(worldId byte, characterId uint32, propo
 	return producer.SingleMessageProvider(key, value)
 }
 
+func statusEventCreatedProvider(worldId byte, guildId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(guildId))
+	value := &statusEvent[statusEventCreatedBody]{
+		WorldId: worldId,
+		GuildId: guildId,
+		Type:    StatusEventTypeCreated,
+		Body:    statusEventCreatedBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func statusEventErrorProvider(worldId byte, characterId uint32, error string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &statusEvent[statusEventErrorBody]{

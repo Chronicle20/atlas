@@ -1,16 +1,17 @@
 package guild
 
 const (
-	EnvCommandTopic              = "COMMAND_TOPIC_GUILD"
-	CommandTypeRequestCreate     = "REQUEST_CREATE"
-	CommandTypeRequestInvite     = "REQUEST_INVITE"
-	CommandTypeRequestDisband    = "REQUEST_DISBAND"
-	CommandTypeCreationAgreement = "CREATION_AGREEMENT"
-	CommandTypeChangeEmblem      = "CHANGE_EMBLEM"
-	CommandTypeChangeNotice      = "CHANGE_NOTICE"
-	CommandTypeChangeTitles      = "CHANGE_TITLES"
-	CommandTypeChangeMemberTitle = "CHANGE_MEMBER_TITLE"
-	CommandTypeLeave             = "LEAVE"
+	EnvCommandTopic                    = "COMMAND_TOPIC_GUILD"
+	CommandTypeRequestCreate           = "REQUEST_CREATE"
+	CommandTypeRequestInvite           = "REQUEST_INVITE"
+	CommandTypeRequestDisband          = "REQUEST_DISBAND"
+	CommandTypeRequestCapacityIncrease = "REQUEST_CAPACITY_INCREASE"
+	CommandTypeCreationAgreement       = "CREATION_AGREEMENT"
+	CommandTypeChangeEmblem            = "CHANGE_EMBLEM"
+	CommandTypeChangeNotice            = "CHANGE_NOTICE"
+	CommandTypeChangeTitles            = "CHANGE_TITLES"
+	CommandTypeChangeMemberTitle       = "CHANGE_MEMBER_TITLE"
+	CommandTypeLeave                   = "LEAVE"
 )
 
 type command[E any] struct {
@@ -65,6 +66,11 @@ type changeMemberTitleBody struct {
 }
 
 type requestDisbandBody struct {
+	WorldId   byte `json:"worldId"`
+	ChannelId byte `json:"channelId"`
+}
+
+type requestCapacityIncreaseBody struct {
 	WorldId   byte `json:"worldId"`
 	ChannelId byte `json:"channelId"`
 }

@@ -11,6 +11,7 @@ const (
 	StatusEventTypeMemberLeft          = "MEMBER_LEFT"
 	StatusEventTypeMemberJoined        = "MEMBER_JOINED"
 	StatusEventTypeNoticeUpdated       = "NOTICE_UPDATED"
+	StatusEventTypeCapacityUpdated     = "CAPACITY_UPDATED"
 	StatusEventTypeTitlesUpdated       = "TITLES_UPDATED"
 	StatusEventTypeError               = "ERROR"
 )
@@ -68,6 +69,10 @@ type statusEventMemberJoinedBody struct {
 
 type statusEventNoticeUpdatedBody struct {
 	Notice string `json:"notice"`
+}
+
+type statusEventCapacityUpdatedBody struct {
+	Capacity uint32 `json:"capacity"`
 }
 
 type statusEventTitlesUpdatedBody struct {

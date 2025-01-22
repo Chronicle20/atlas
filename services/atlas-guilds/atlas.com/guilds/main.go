@@ -67,6 +67,7 @@ func main() {
 	_, _ = cm.RegisterHandler(guild2.ChangeTitlesRegister(db)(l))
 	_, _ = cm.RegisterHandler(guild2.ChangeMemberTitleRegister(db)(l))
 	_, _ = cm.RegisterHandler(guild2.RequestDisbandRegister(db)(l))
+	_, _ = cm.RegisterHandler(guild2.RequestCapacityIncreaseRegister(db)(l))
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character2.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 	_, _ = cm.RegisterHandler(character2.LoginStatusRegister(l)(db))
 	_, _ = cm.RegisterHandler(character2.LogoutStatusRegister(l)(db))

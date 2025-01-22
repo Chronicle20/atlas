@@ -515,3 +515,28 @@ func RequestDisband(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 		}
 	}
 }
+
+func RequestCapacityIncrease(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32) error {
+			return func(characterId uint32) error {
+				g, err := GetByMemberId(l)(ctx)(db)(characterId)
+				if err != nil {
+					return err
+				}
+				if g.LeaderId() != characterId {
+					return errors.New("must be leader")
+				}
+
+				l.Debugf("Character [%d] is attempting to increase guild [%d] capacity.", characterId, g.Id())
+				g, err = updateCapacity(db, t.Id(), g.Id())
+				if err != nil {
+					return err
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventCapacityUpdatedProvider(g.WorldId(), g.Id(), g.Capacity()))
+				return nil
+			}
+		}
+	}
+}

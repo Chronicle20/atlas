@@ -136,3 +136,16 @@ func RequestDisbandRegister(db *gorm.DB) func(l logrus.FieldLogger) (string, han
 		}))
 	}
 }
+
+func RequestCapacityIncreaseRegister(db *gorm.DB) func(l logrus.FieldLogger) (string, handler.Handler) {
+	return func(l logrus.FieldLogger) (string, handler.Handler) {
+		t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+		return t, message.AdaptHandler(message.PersistentConfig(func(l logrus.FieldLogger, ctx context.Context, c command[requestCapacityIncreaseBody]) {
+			if c.Type != CommandTypeRequestCapacityIncrease {
+				return
+			}
+
+			_ = guild.RequestCapacityIncrease(l)(ctx)(db)(c.CharacterId)
+		}))
+	}
+}

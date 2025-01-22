@@ -460,3 +460,27 @@ func ChangeTitles(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.
 		}
 	}
 }
+
+func ChangeMemberTitle(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, targetId uint32, title byte) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, targetId uint32, title byte) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(guildId uint32, characterId uint32, targetId uint32, title byte) error {
+			return func(guildId uint32, characterId uint32, targetId uint32, title byte) error {
+				l.Debugf("Character [%d] attempting to change [%d] title to [%d].", characterId, targetId, title)
+				return db.Transaction(func(tx *gorm.DB) error {
+					g, err := GetByMemberId(l)(ctx)(tx)(characterId)
+					if err != nil {
+						return nil
+					}
+					l.Debugf("Updating guild [%d] member [%d] title to [%d]", g.Id(), targetId, title)
+					err = updateMemberTitle(db, t.Id(), g.Id(), targetId, title)
+					if err != nil {
+						return err
+					}
+					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventMemberTitleUpdatedProvider(g.WorldId(), g.Id(), targetId, title))
+					return nil
+				})
+			}
+		}
+	}
+}

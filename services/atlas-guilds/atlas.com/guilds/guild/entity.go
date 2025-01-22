@@ -18,7 +18,7 @@ type Entity struct {
 	Name                string          `gorm:"not null"`
 	Notice              string          `gorm:"not null"`
 	Points              uint32          `gorm:"not null"`
-	Capacity            uint32          `gorm:"not null;default=100"`
+	Capacity            uint32          `gorm:"not null;default=30"`
 	Logo                uint16          `gorm:"not null;default=0"`
 	LogoColor           byte            `gorm:"not null;default=0"`
 	LogoBackground      uint16          `gorm:"not null;default=0"`

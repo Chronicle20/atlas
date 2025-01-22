@@ -6,6 +6,7 @@ const (
 	StatusEventTypeEmblemUpdated       = "EMBLEM_UPDATED"
 	StatusEventTypeRequestAgreement    = "REQUEST_AGREEMENT"
 	StatusEventTypeMemberStatusUpdated = "MEMBER_STATUS_UPDATED"
+	StatusEventTypeMemberTitleUpdated  = "MEMBER_TITLE_UPDATED"
 	StatusEventTypeMemberLeft          = "MEMBER_LEFT"
 	StatusEventTypeMemberJoined        = "MEMBER_JOINED"
 	StatusEventTypeNoticeUpdated       = "NOTICE_UPDATED"
@@ -38,6 +39,11 @@ type statusEventEmblemUpdatedBody struct {
 type statusEventMemberStatusUpdatedBody struct {
 	CharacterId uint32 `json:"characterId"`
 	Online      bool   `json:"online"`
+}
+
+type statusEventMemberTitleUpdatedBody struct {
+	CharacterId uint32 `json:"characterId"`
+	Title       byte   `json:"title"`
 }
 
 type statusEventMemberLeftBody struct {

@@ -13,6 +13,7 @@ func create(db *gorm.DB, tenant tenant.Model, worldId byte, leaderId uint32, nam
 		WorldId:  worldId,
 		Name:     name,
 		LeaderId: leaderId,
+		Capacity: 30,
 	}
 	err := db.Create(e).Error
 	if err != nil {
@@ -56,6 +57,26 @@ func updateMemberStatus(db *gorm.DB, tenantId uuid.UUID, guildId uint32, charact
 	}
 
 	gm.Online = online
+	return db.Save(gm).Error
+}
+
+func updateMemberTitle(db *gorm.DB, tenantId uuid.UUID, guildId uint32, characterId uint32, title byte) error {
+	ge, err := getById(tenantId, guildId)(db)()
+	if err != nil {
+		return err
+	}
+
+	var gm *member.Entity
+	for _, pm := range ge.Members {
+		if pm.CharacterId == characterId {
+			gm = &pm
+		}
+	}
+	if gm == nil {
+		return nil
+	}
+
+	gm.Title = title
 	return db.Save(gm).Error
 }
 

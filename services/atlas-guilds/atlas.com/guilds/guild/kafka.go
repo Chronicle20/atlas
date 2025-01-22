@@ -1,11 +1,12 @@
 package guild
 
 const (
-	EnvStatusEventTopic             = "EVENT_TOPIC_GUILD_STATUS"
-	StatusEventTypeCreated          = "CREATED"
-	StatusEventTypeEmblemUpdated    = "EMBLEM_UPDATED"
-	StatusEventTypeRequestAgreement = "REQUEST_AGREEMENT"
-	StatusEventTypeError            = "ERROR"
+	EnvStatusEventTopic                = "EVENT_TOPIC_GUILD_STATUS"
+	StatusEventTypeCreated             = "CREATED"
+	StatusEventTypeEmblemUpdated       = "EMBLEM_UPDATED"
+	StatusEventTypeRequestAgreement    = "REQUEST_AGREEMENT"
+	StatusEventTypeMemberStatusUpdated = "MEMBER_STATUS_UPDATED"
+	StatusEventTypeError               = "ERROR"
 )
 
 type statusEvent[E any] struct {
@@ -28,6 +29,11 @@ type statusEventEmblemUpdatedBody struct {
 	LogoColor           byte   `json:"logoColor"`
 	LogoBackground      uint16 `json:"logoBackground"`
 	LogoBackgroundColor byte   `json:"logoBackgroundColor"`
+}
+
+type statusEventMemberStatusUpdatedBody struct {
+	CharacterId uint32 `json:"characterId"`
+	Online      bool   `json:"online"`
 }
 
 type statusEventErrorBody struct {

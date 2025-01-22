@@ -47,6 +47,20 @@ func statusEventEmblemUpdatedProvider(worldId byte, guildId uint32, logo uint16,
 	return producer.SingleMessageProvider(key, value)
 }
 
+func statusEventMemberStatusUpdatedProvider(worldId byte, guildId uint32, characterId uint32, online bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(guildId))
+	value := &statusEvent[statusEventMemberStatusUpdatedBody]{
+		WorldId: worldId,
+		GuildId: guildId,
+		Type:    StatusEventTypeMemberStatusUpdated,
+		Body: statusEventMemberStatusUpdatedBody{
+			CharacterId: characterId,
+			Online:      online,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func statusEventErrorProvider(worldId byte, characterId uint32, error string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &statusEvent[statusEventErrorBody]{

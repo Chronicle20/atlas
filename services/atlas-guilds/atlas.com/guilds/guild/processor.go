@@ -327,3 +327,26 @@ func ChangeEmblem(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.
 		}
 	}
 }
+
+func UpdateMemberOnline(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, online bool) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, online bool) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, online bool) error {
+			return func(characterId uint32, online bool) error {
+				return db.Transaction(func(tx *gorm.DB) error {
+					g, err := GetByMemberId(l)(ctx)(tx)(characterId)
+					if err != nil {
+						return nil
+					}
+					l.Debugf("Updating guild [%d] member [%d] status to online [%t]", g.Id(), characterId, online)
+					err = updateMemberStatus(db, t.Id(), g.Id(), characterId, online)
+					if err != nil {
+						return err
+					}
+					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventMemberStatusUpdatedProvider(g.WorldId(), g.Id(), characterId, online))
+					return nil
+				})
+			}
+		}
+	}
+}

@@ -6,6 +6,9 @@ import (
 	"atlas-character/equipable"
 	"atlas-character/inventory"
 	"atlas-character/inventory/item"
+	character2 "atlas-character/kafka/consumer/character"
+	inventory2 "atlas-character/kafka/consumer/inventory"
+	session2 "atlas-character/kafka/consumer/session"
 	"atlas-character/logger"
 	"atlas-character/service"
 	"atlas-character/session"
@@ -53,21 +56,13 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(character.Migration, inventory.Migration, item.Migration, equipable.Migration))
 
-	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(inventory.EquipItemCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(inventory.UnequipItemCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(inventory.MoveItemCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(inventory.DropItemCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(session.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.MovementEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(inventory.EquipItemRegister(l, db))
-	_, _ = cm.RegisterHandler(inventory.UnequipItemRegister(l, db))
-	_, _ = cm.RegisterHandler(inventory.MoveItemRegister(l, db))
-	_, _ = cm.RegisterHandler(inventory.DropItemRegister(l, db))
-	_, _ = cm.RegisterHandler(session.StatusEventRegister(l, db))
-	_, _ = cm.RegisterHandler(character.ChangeMapCommandRegister(l, db))
-	_, _ = cm.RegisterHandler(character.MovementEventRegister(l))
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	character2.InitConsumers(l)(cmf)(consumerGroupId)
+	inventory2.InitConsumers(l)(cmf)(consumerGroupId)
+	session2.InitConsumers(l)(cmf)(consumerGroupId)
+	character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	inventory2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	session2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), character.InitResource(GetServer())(db), inventory.InitResource(GetServer())(db))
 

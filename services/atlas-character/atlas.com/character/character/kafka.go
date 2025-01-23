@@ -9,10 +9,6 @@ const (
 	EventCharacterStatusTypeMapChanged     = "MAP_CHANGED"
 	EventCharacterStatusTypeDeleted        = "DELETED"
 
-	EnvCommandTopic           = "COMMAND_TOPIC_CHARACTER"
-	CommandCharacterChangeMap = "CHANGE_MAP"
-
-	EnvCommandTopicMovement   = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
 	EnvEventTopicMovement     = "EVENT_TOPIC_CHARACTER_MOVEMENT"
 	MovementTypeNormal        = "NORMAL"
 	MovementTypeTeleport      = "TELEPORT"
@@ -59,42 +55,21 @@ type statusEventMapChangedBody struct {
 type statusEventDeletedBody struct {
 }
 
-type commandEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
-}
-
-type changeMapBody struct {
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	PortalId  uint32 `json:"portalId"`
-}
-
-type movementCommand struct {
-	WorldId     byte     `json:"worldId"`
-	ChannelId   byte     `json:"channelId"`
-	MapId       uint32   `json:"mapId"`
-	CharacterId uint32   `json:"characterId"`
-	Movement    movement `json:"movement"`
-}
-
 type movementEvent struct {
 	WorldId     byte     `json:"worldId"`
 	ChannelId   byte     `json:"channelId"`
 	MapId       uint32   `json:"mapId"`
 	CharacterId uint32   `json:"characterId"`
-	Movement    movement `json:"movement"`
+	Movement    Movement `json:"movement"`
 }
 
-type movement struct {
+type Movement struct {
 	StartX   int16     `json:"startX"`
 	StartY   int16     `json:"startY"`
-	Elements []element `json:"elements"`
+	Elements []Element `json:"elements"`
 }
 
-type element struct {
+type Element struct {
 	TypeStr     string `json:"typeStr"`
 	TypeVal     byte   `json:"typeVal"`
 	StartX      int16  `json:"startX"`

@@ -504,7 +504,7 @@ func MovementSummaryProvider(x int16, y int16, stance byte) model.Provider[Movem
 	}
 }
 
-func FoldMovementSummary(summary MovementSummary, e element) (MovementSummary, error) {
+func FoldMovementSummary(summary MovementSummary, e Element) (MovementSummary, error) {
 	ms := MovementSummary{X: summary.X, Y: summary.Y, Stance: summary.Stance}
 	if e.TypeStr == MovementTypeNormal {
 		ms.X = e.X
@@ -516,13 +516,13 @@ func FoldMovementSummary(summary MovementSummary, e element) (MovementSummary, e
 	return ms, nil
 }
 
-func Move(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement movement) error {
-	return func(ctx context.Context) func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement movement) error {
-		return func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement movement) error {
-			return func(worldId byte) func(channelId byte) func(mapId uint32) func(movement movement) error {
-				return func(channelId byte) func(mapId uint32) func(movement movement) error {
-					return func(mapId uint32) func(movement movement) error {
-						return func(movement movement) error {
+func Move(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement Movement) error {
+	return func(ctx context.Context) func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement Movement) error {
+		return func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement Movement) error {
+			return func(worldId byte) func(channelId byte) func(mapId uint32) func(movement Movement) error {
+				return func(channelId byte) func(mapId uint32) func(movement Movement) error {
+					return func(mapId uint32) func(movement Movement) error {
+						return func(movement Movement) error {
 							msp := model.Fold(model.FixedProvider(movement.Elements), MovementSummaryProvider(movement.StartX, movement.StartY, GetTemporalRegistry().GetById(characterId).Stance()), FoldMovementSummary)
 							err := model.For(msp, updateTemporal(characterId))
 							if err != nil {

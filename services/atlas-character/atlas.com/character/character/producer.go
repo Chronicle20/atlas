@@ -89,9 +89,9 @@ func deletedEventProvider(characterId uint32, worldId byte) model.Provider[[]kaf
 	return producer.SingleMessageProvider(key, value)
 }
 
-func move(worldId byte, channelId byte, mapId uint32, characterId uint32, m movement) model.Provider[[]kafka.Message] {
+func move(worldId byte, channelId byte, mapId uint32, characterId uint32, m Movement) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &movementCommand{
+	value := &movementEvent{
 		WorldId:     worldId,
 		ChannelId:   channelId,
 		MapId:       mapId,

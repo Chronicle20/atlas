@@ -56,13 +56,15 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(character.Migration, inventory.Migration, item.Migration, equipable.Migration))
 
-	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
-	character2.InitConsumers(l)(cmf)(consumerGroupId)
-	inventory2.InitConsumers(l)(cmf)(consumerGroupId)
-	session2.InitConsumers(l)(cmf)(consumerGroupId)
-	character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	inventory2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	session2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if service.GetMode() == service.Mixed {
+		cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+		character2.InitConsumers(l)(cmf)(consumerGroupId)
+		inventory2.InitConsumers(l)(cmf)(consumerGroupId)
+		session2.InitConsumers(l)(cmf)(consumerGroupId)
+		character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+		inventory2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+		session2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	}
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), character.InitResource(GetServer())(db), inventory.InitResource(GetServer())(db))
 

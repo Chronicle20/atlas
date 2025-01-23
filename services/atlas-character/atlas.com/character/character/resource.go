@@ -148,7 +148,7 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 func handleGetCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cs, err := GetById(d.DB())(d.Context())(decoratorsFromInclude(r, d, c)...)(characterId)
+			cs, err := GetById(d.Context())(d.DB())(decoratorsFromInclude(r, d, c)...)(characterId)
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 				return

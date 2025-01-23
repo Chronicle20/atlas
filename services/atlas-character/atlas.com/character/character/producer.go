@@ -11,7 +11,7 @@ func createdEventProvider(characterId uint32, worldId byte, name string) model.P
 	value := &statusEvent[statusEventCreatedBody]{
 		CharacterId: characterId,
 		WorldId:     worldId,
-		Type:        EventCharacterStatusTypeCreated,
+		Type:        StatusEventTypeCreated,
 		Body: statusEventCreatedBody{
 			Name: name,
 		},
@@ -24,7 +24,7 @@ func loginEventProvider(characterId uint32, worldId byte, channelId byte, mapId 
 	value := &statusEvent[statusEventLoginBody]{
 		CharacterId: characterId,
 		WorldId:     worldId,
-		Type:        EventCharacterStatusTypeLogin,
+		Type:        StatusEventTypeLogin,
 		Body: statusEventLoginBody{
 			ChannelId: channelId,
 			MapId:     mapId,
@@ -38,7 +38,7 @@ func logoutEventProvider(characterId uint32, worldId byte, channelId byte, mapId
 	value := &statusEvent[statusEventLogoutBody]{
 		CharacterId: characterId,
 		WorldId:     worldId,
-		Type:        EventCharacterStatusTypeLogout,
+		Type:        StatusEventTypeLogout,
 		Body: statusEventLogoutBody{
 			ChannelId: channelId,
 			MapId:     mapId,
@@ -52,7 +52,7 @@ func changeChannelEventProvider(characterId uint32, worldId byte, channelId byte
 	value := &statusEvent[changeChannelEventLoginBody]{
 		CharacterId: characterId,
 		WorldId:     worldId,
-		Type:        EventCharacterStatusTypeChannelChanged,
+		Type:        StatusEventTypeChannelChanged,
 		Body: changeChannelEventLoginBody{
 			ChannelId:    channelId,
 			OldChannelId: oldChannelId,
@@ -67,7 +67,7 @@ func mapChangedEventProvider(characterId uint32, worldId byte, channelId byte, o
 	value := &statusEvent[statusEventMapChangedBody]{
 		CharacterId: characterId,
 		WorldId:     worldId,
-		Type:        EventCharacterStatusTypeMapChanged,
+		Type:        StatusEventTypeMapChanged,
 		Body: statusEventMapChangedBody{
 			ChannelId:      channelId,
 			OldMapId:       oldMapId,
@@ -83,15 +83,44 @@ func deletedEventProvider(characterId uint32, worldId byte) model.Provider[[]kaf
 	value := &statusEvent[statusEventDeletedBody]{
 		CharacterId: characterId,
 		WorldId:     worldId,
-		Type:        EventCharacterStatusTypeDeleted,
+		Type:        StatusEventTypeDeleted,
 		Body:        statusEventDeletedBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func move(worldId byte, channelId byte, mapId uint32, characterId uint32, m movement) model.Provider[[]kafka.Message] {
+func mesoChangedStatusEventProvider(characterId uint32, worldId byte, amount int32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &movementCommand{
+	value := &statusEvent[mesoChangedStatusEventBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        StatusEventTypeMesoChanged,
+		Body: mesoChangedStatusEventBody{
+			Amount: amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func notEnoughMesoErrorStatusEventProvider(characterId uint32, worldId byte, amount int32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &statusEvent[statusEventErrorBody[notEnoughMesoErrorStatusBodyBody]]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        StatusEventTypeError,
+		Body: statusEventErrorBody[notEnoughMesoErrorStatusBodyBody]{
+			Error: StatusEventErrorTypeNotEnoughMeso,
+			Body: notEnoughMesoErrorStatusBodyBody{
+				Amount: amount,
+			},
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func move(worldId byte, channelId byte, mapId uint32, characterId uint32, m Movement) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &movementEvent{
 		WorldId:     worldId,
 		ChannelId:   channelId,
 		MapId:       mapId,

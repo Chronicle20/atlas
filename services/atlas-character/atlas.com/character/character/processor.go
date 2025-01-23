@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"math"
 	"regexp"
 )
 
@@ -45,8 +46,8 @@ func byIdProvider(db *gorm.DB) func(t tenant.Model) func(characterId uint32) mod
 }
 
 // GetById Retrieves a singular character by id.
-func GetById(db *gorm.DB) func(ctx context.Context) func(decorators ...model.Decorator[Model]) IdRetriever {
-	return func(ctx context.Context) func(decorators ...model.Decorator[Model]) IdRetriever {
+func GetById(ctx context.Context) func(db *gorm.DB) func(decorators ...model.Decorator[Model]) IdRetriever {
+	return func(db *gorm.DB) func(decorators ...model.Decorator[Model]) IdRetriever {
 		return func(decorators ...model.Decorator[Model]) IdRetriever {
 			return func(id uint32) (Model, error) {
 				return model.Map(model.Decorate[Model](decorators))(ByIdProvider(db)(ctx)(id))()
@@ -309,7 +310,7 @@ func Delete(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) fu
 			return func(eventProducer producer.Provider) func(characterId uint32) error {
 				return func(characterId uint32) error {
 					err := db.Transaction(func(tx *gorm.DB) error {
-						c, err := GetById(tx)(ctx)(InventoryModelDecorator(l)(tx)(ctx))(characterId)
+						c, err := GetById(ctx)(tx)(InventoryModelDecorator(l)(tx)(ctx))(characterId)
 						if err != nil {
 							return err
 						}
@@ -504,7 +505,7 @@ func MovementSummaryProvider(x int16, y int16, stance byte) model.Provider[Movem
 	}
 }
 
-func FoldMovementSummary(summary MovementSummary, e element) (MovementSummary, error) {
+func FoldMovementSummary(summary MovementSummary, e Element) (MovementSummary, error) {
 	ms := MovementSummary{X: summary.X, Y: summary.Y, Stance: summary.Stance}
 	if e.TypeStr == MovementTypeNormal {
 		ms.X = e.X
@@ -516,13 +517,13 @@ func FoldMovementSummary(summary MovementSummary, e element) (MovementSummary, e
 	return ms, nil
 }
 
-func Move(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement movement) error {
-	return func(ctx context.Context) func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement movement) error {
-		return func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement movement) error {
-			return func(worldId byte) func(channelId byte) func(mapId uint32) func(movement movement) error {
-				return func(channelId byte) func(mapId uint32) func(movement movement) error {
-					return func(mapId uint32) func(movement movement) error {
-						return func(movement movement) error {
+func Move(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement Movement) error {
+	return func(ctx context.Context) func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement Movement) error {
+		return func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement Movement) error {
+			return func(worldId byte) func(channelId byte) func(mapId uint32) func(movement Movement) error {
+				return func(channelId byte) func(mapId uint32) func(movement Movement) error {
+					return func(mapId uint32) func(movement Movement) error {
+						return func(movement Movement) error {
 							msp := model.Fold(model.FixedProvider(movement.Elements), MovementSummaryProvider(movement.StartX, movement.StartY, GetTemporalRegistry().GetById(characterId).Stance()), FoldMovementSummary)
 							err := model.For(msp, updateTemporal(characterId))
 							if err != nil {
@@ -541,5 +542,33 @@ func updateTemporal(characterId uint32) model.Operator[MovementSummary] {
 	return func(ms MovementSummary) error {
 		GetTemporalRegistry().Update(characterId, ms.X, ms.Y, ms.Stance)
 		return nil
+	}
+}
+
+func RequestChangeMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, amount int32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, amount int32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, amount int32) error {
+			return func(characterId uint32, amount int32) error {
+				return db.Transaction(func(tx *gorm.DB) error {
+					c, err := GetById(ctx)(db)()(characterId)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their meso adjusted.", characterId)
+						return err
+					}
+					if int64(c.Meso())+int64(amount) < 0 {
+						l.Debugf("Request for character [%d] would leave their meso negative. Amount [%d]. Existing [%d].", characterId, amount, c.Meso())
+						return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(notEnoughMesoErrorStatusEventProvider(characterId, c.WorldId(), amount))
+					}
+					if uint32(amount) > (math.MaxUint32 - c.Meso()) {
+						l.Errorf("Transaction for character [%d] would result in a uint32 overflow. Rejecting transaction.", characterId)
+						return err
+					}
+
+					err = dynamicUpdate(db)(SetMeso(uint32(int64(c.Meso()) + int64(amount))))(t.Id())(c)
+					return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(mesoChangedStatusEventProvider(characterId, c.WorldId(), amount))
+				})
+			}
+		}
 	}
 }

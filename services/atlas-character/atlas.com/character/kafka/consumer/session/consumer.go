@@ -3,27 +3,34 @@ package session
 import (
 	"atlas-character/character"
 	consumer2 "atlas-character/kafka/consumer"
+	"atlas-character/session"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-const consumerStatusEvent = "status_event"
-
-func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerStatusEvent)(EnvEventTopicSessionStatus)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("status_event")(EnvEventTopicSessionStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func StatusEventRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvEventTopicSessionStatus)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleStatusEvent(db)))
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+			var t string
+			t, _ = topic.EnvProvider(l)(EnvEventTopicSessionStatus)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEvent(db))))
+		}
+	}
 }
 
 func handleStatusEvent(db *gorm.DB) message.Handler[statusEvent] {
@@ -35,10 +42,10 @@ func handleStatusEvent(db *gorm.DB) message.Handler[statusEvent] {
 
 		t := tenant.MustFromContext(ctx)
 		if event.Type == EventSessionStatusTypeCreated {
-			cs, err := GetRegistry().Get(t, event.CharacterId)
-			if err != nil || cs.State() == StateLoggedOut {
+			cs, err := session.GetRegistry().Get(t, event.CharacterId)
+			if err != nil || cs.State() == session.StateLoggedOut {
 				l.Debugf("Processing a session status event of [%s] which will trigger a login.", event.Type)
-				err = GetRegistry().Add(t, event.CharacterId, event.WorldId, event.ChannelId, StateLoggedIn)
+				err = session.GetRegistry().Add(t, event.CharacterId, event.WorldId, event.ChannelId, session.StateLoggedIn)
 				if err != nil {
 					l.WithError(err).Errorf("Character [%d] already logged in. Eating event.", event.CharacterId)
 					return
@@ -48,9 +55,9 @@ func handleStatusEvent(db *gorm.DB) message.Handler[statusEvent] {
 					l.WithError(err).Errorf("Unable to login character [%d] as a result of session [%s] being created.", event.CharacterId, event.SessionId.String())
 				}
 				return
-			} else if cs.State() == StateTransition {
+			} else if cs.State() == session.StateTransition {
 				l.Debugf("Processing a session status event of [%s] which will trigger a change channel.", event.Type)
-				err = GetRegistry().Set(t, event.CharacterId, event.WorldId, event.ChannelId, StateLoggedIn)
+				err = session.GetRegistry().Set(t, event.CharacterId, event.WorldId, event.ChannelId, session.StateLoggedIn)
 				err = character.ChangeChannel(l)(db)(ctx)(event.CharacterId)(event.WorldId)(event.ChannelId)(cs.ChannelId())
 				if err != nil {
 					l.WithError(err).Errorf("Unable to change character [%d] channel as a result of session [%s] being created.", event.CharacterId, event.SessionId.String())
@@ -59,14 +66,14 @@ func handleStatusEvent(db *gorm.DB) message.Handler[statusEvent] {
 			return
 		}
 		if event.Type == EventSessionStatusTypeDestroyed {
-			cs, err := GetRegistry().Get(t, event.CharacterId)
+			cs, err := session.GetRegistry().Get(t, event.CharacterId)
 			if err != nil {
 				l.Debugf("Processing a session status event of [%s]. Session already destroyed.", event.Type)
 				return
 			}
-			if cs.State() == StateLoggedIn {
+			if cs.State() == session.StateLoggedIn {
 				l.Debugf("Processing a session status event of [%s] which will trigger a transition state. Either it will be culled (logout), or updated (change channel) later.", event.Type)
-				_ = GetRegistry().Set(t, cs.CharacterId(), cs.WorldId(), cs.ChannelId(), StateTransition)
+				_ = session.GetRegistry().Set(t, cs.CharacterId(), cs.WorldId(), cs.ChannelId(), session.StateTransition)
 			}
 			return
 		}

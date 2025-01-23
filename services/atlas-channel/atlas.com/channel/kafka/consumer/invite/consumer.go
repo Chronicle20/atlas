@@ -16,16 +16,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)("invite_status_event")(EnvEventStatusTopic)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("invite_status_event")(EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func CreatedStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleCreatedStatusEvent(sc, wp)))
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+				var t string
+				t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedStatusEvent(sc, wp))))
+				t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRejectedStatusEvent(sc, wp))))
+			}
+		}
 	}
 }
 
@@ -79,13 +88,6 @@ func handlePartyCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Contex
 				}
 			}
 		}
-	}
-}
-
-func RejectedStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleRejectedStatusEvent(sc, wp)))
 	}
 }
 

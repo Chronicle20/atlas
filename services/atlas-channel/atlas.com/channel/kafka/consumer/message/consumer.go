@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
+	message2 "atlas-channel/message"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -17,20 +18,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	chatEventConsumer = "chat_consumer"
-)
-
-func ChatEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(chatEventConsumer)(EnvEventTopicChat)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("chat_event")(EnvEventTopicChat)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func GeneralChatEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicChat)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleGeneralChat(sc, wp)))
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+				var t string
+				t, _ = topic.EnvProvider(l)(EnvEventTopicChat)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleGeneralChat(sc, wp))))
+				t, _ = topic.EnvProvider(l)(EnvEventTopicChat)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMultiChat(sc, wp))))
+			}
+		}
 	}
 }
 
@@ -72,13 +78,6 @@ func showGeneralChatForSession(l logrus.FieldLogger) func(ctx context.Context) f
 	}
 }
 
-func MultiChatEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicChat)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleMultiChat(sc, wp)))
-	}
-}
-
 func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[chatEvent[multiChatBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e chatEvent[multiChatBody]) {
 		if e.Type == ChatTypeGeneral {
@@ -96,7 +95,7 @@ func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[chatEv
 		}
 
 		for _, cid := range e.Body.Recipients {
-			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(cid, sendMultiChat(l)(ctx)(wp)(c.Name(), e.Message, MultiChatTypeStrToInd(e.Type)))
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(cid, sendMultiChat(l)(ctx)(wp)(c.Name(), e.Message, message2.MultiChatTypeStrToInd(e.Type)))
 		}
 	}
 }

@@ -24,7 +24,7 @@ type Registry struct {
 var registry *Registry
 var once sync.Once
 
-func getRegistry() *Registry {
+func GetRegistry() *Registry {
 	once.Do(func() {
 		registry = &Registry{}
 		registry.accounts = make(map[Key]bool)

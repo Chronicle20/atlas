@@ -18,26 +18,28 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const consumerStatusEvent = "character_status"
-const consumerMovementEvent = "character_movement"
-
-func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerStatusEvent)(EnvEventTopicCharacterStatus)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("character_status_event")(EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("character_movement_event")(EnvEventTopicMovement)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func StatusEventStatChangedRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventStatChanged(sc, wp)))
-	}
-}
-
-func StatusEventMapChangedRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged(sc, wp)))
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+				var t string
+				t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventStatChanged(sc, wp))))
+				t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged(sc, wp))))
+				t, _ = topic.EnvProvider(l)(EnvEventTopicMovement)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp))))
+			}
+		}
 	}
 }
 
@@ -111,19 +113,6 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 				}
 			}
 		}
-	}
-}
-
-func MovementEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerMovementEvent)(EnvEventTopicMovement)(groupId)
-	}
-}
-
-func MovementEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicMovement)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp)))
 	}
 }
 

@@ -40,7 +40,7 @@ func GetAll(l logrus.FieldLogger) func(ctx context.Context) ([]Model, error) {
 
 func IsLoggedIn(ctx context.Context) func(id uint32) bool {
 	return func(id uint32) bool {
-		return getRegistry().LoggedIn(Key{Tenant: tenant.MustFromContext(ctx), Id: id})
+		return GetRegistry().LoggedIn(Key{Tenant: tenant.MustFromContext(ctx), Id: id})
 	}
 }
 
@@ -50,7 +50,7 @@ func InitializeRegistry(l logrus.FieldLogger) func(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		getRegistry().Init(as)
+		GetRegistry().Init(as)
 		return nil
 	}
 }

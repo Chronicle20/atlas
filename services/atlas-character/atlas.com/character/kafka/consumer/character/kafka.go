@@ -3,19 +3,11 @@ package character
 import "atlas-character/character"
 
 const (
-	EnvEventTopicCharacterStatus           = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeCreated        = "CREATED"
-	EventCharacterStatusTypeLogin          = "LOGIN"
-	EventCharacterStatusTypeLogout         = "LOGOUT"
-	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
-	EventCharacterStatusTypeMapChanged     = "MAP_CHANGED"
-	EventCharacterStatusTypeDeleted        = "DELETED"
-
-	EnvCommandTopic           = "COMMAND_TOPIC_CHARACTER"
-	CommandCharacterChangeMap = "CHANGE_MAP"
+	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER"
+	CommandChangeMap         = "CHANGE_MAP"
+	CommandRequestChangeMeso = "REQUEST_CHANGE_MESO"
 
 	EnvCommandTopicMovement   = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
-	EnvEventTopicMovement     = "EVENT_TOPIC_CHARACTER_MOVEMENT"
 	MovementTypeNormal        = "NORMAL"
 	MovementTypeTeleport      = "TELEPORT"
 	MovementTypeStartFallDown = "START_FALL_DOWN"
@@ -35,6 +27,10 @@ type changeMapBody struct {
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
 	PortalId  uint32 `json:"portalId"`
+}
+
+type requestChangeMesoBody struct {
+	Amount int32 `json:"amount"`
 }
 
 type movementCommand struct {

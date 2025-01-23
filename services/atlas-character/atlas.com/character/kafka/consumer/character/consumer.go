@@ -28,6 +28,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			var t string
 			t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMap(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestChangeMeso(db))))
 			t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent)))
 		}
@@ -36,10 +37,24 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 
 func handleChangeMap(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c commandEvent[changeMapBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[changeMapBody]) {
+		if c.Type != CommandChangeMap {
+			return
+		}
+
 		err := character.ChangeMap(l, db, ctx)(c.CharacterId, c.WorldId, c.Body.ChannelId, c.Body.MapId, c.Body.PortalId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to change character [%d] map.", c.CharacterId)
 		}
+	}
+}
+
+func handleRequestChangeMeso(db *gorm.DB) message.Handler[commandEvent[requestChangeMesoBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[requestChangeMesoBody]) {
+		if c.Type != CommandRequestChangeMeso {
+			return
+		}
+
+		_ = character.RequestChangeMeso(l)(ctx)(db)(c.CharacterId, c.Body.Amount)
 	}
 }
 

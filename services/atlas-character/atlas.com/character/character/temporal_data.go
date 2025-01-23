@@ -143,16 +143,16 @@ func (r temporalRegistry) GetById(characterId uint32) *temporalData {
 	}
 }
 
-var t *temporalRegistry
+var treg *temporalRegistry
 var once sync.Once
 
 func GetTemporalRegistry() *temporalRegistry {
 	once.Do(func() {
-		t = &temporalRegistry{
+		treg = &temporalRegistry{
 			data:           make(map[uint32]*temporalData),
 			mutex:          &sync.RWMutex{},
 			characterLocks: make(map[uint32]*sync.RWMutex),
 		}
 	})
-	return t
+	return treg
 }

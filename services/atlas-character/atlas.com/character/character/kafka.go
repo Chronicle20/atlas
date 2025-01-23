@@ -1,13 +1,17 @@
 package character
 
 const (
-	EnvEventTopicCharacterStatus           = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeCreated        = "CREATED"
-	EventCharacterStatusTypeLogin          = "LOGIN"
-	EventCharacterStatusTypeLogout         = "LOGOUT"
-	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
-	EventCharacterStatusTypeMapChanged     = "MAP_CHANGED"
-	EventCharacterStatusTypeDeleted        = "DELETED"
+	EnvEventTopicCharacterStatus  = "EVENT_TOPIC_CHARACTER_STATUS"
+	StatusEventTypeCreated        = "CREATED"
+	StatusEventTypeLogin          = "LOGIN"
+	StatusEventTypeLogout         = "LOGOUT"
+	StatusEventTypeChannelChanged = "CHANNEL_CHANGED"
+	StatusEventTypeMapChanged     = "MAP_CHANGED"
+	StatusEventTypeMesoChanged    = "MESO_CHANGED"
+	StatusEventTypeDeleted        = "DELETED"
+	StatusEventTypeError          = "ERROR"
+
+	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
 
 	EnvEventTopicMovement     = "EVENT_TOPIC_CHARACTER_MOVEMENT"
 	MovementTypeNormal        = "NORMAL"
@@ -53,6 +57,19 @@ type statusEventMapChangedBody struct {
 }
 
 type statusEventDeletedBody struct {
+}
+
+type statusEventErrorBody[F any] struct {
+	Error string `json:"error"`
+	Body  F      `json:"body"`
+}
+
+type mesoChangedStatusEventBody struct {
+	Amount int32 `json:"amount"`
+}
+
+type notEnoughMesoErrorStatusBodyBody struct {
+	Amount int32 `json:"amount"`
 }
 
 type movementEvent struct {

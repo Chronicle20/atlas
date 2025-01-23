@@ -31,15 +31,10 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				var t string
 				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyAdded(sc, wp))))
-				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyRemoved(sc, wp))))
-				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyUpdated(sc, wp))))
-				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyChannelChange(sc, wp))))
-				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyCapacityChange(sc, wp))))
-				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyError(sc, wp))))
 			}
 		}

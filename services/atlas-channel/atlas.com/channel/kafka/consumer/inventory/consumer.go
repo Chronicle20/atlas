@@ -33,11 +33,8 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				var t string
 				t, _ = topic.EnvProvider(l)(EnvEventInventoryChanged)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryAddEvent(sc, wp))))
-				t, _ = topic.EnvProvider(l)(EnvEventInventoryChanged)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryUpdateEvent(sc, wp))))
-				t, _ = topic.EnvProvider(l)(EnvEventInventoryChanged)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryMoveEvent(sc, wp))))
-				t, _ = topic.EnvProvider(l)(EnvEventInventoryChanged)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryRemoveEvent(sc, wp))))
 			}
 		}

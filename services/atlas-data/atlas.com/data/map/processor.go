@@ -9,8 +9,92 @@ import (
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"math"
 )
+
+func RegisterMap(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
+	return func(ctx context.Context) func(path string) {
+		t := tenant.MustFromContext(ctx)
+		return func(path string) {
+			m, err := ReadFromFile(l)(ctx)(path)()
+			if err == nil {
+				l.Debugf("Processed map [%d].", m.Id())
+				_ = GetMapModelRegistry().Add(t, m)
+			}
+		}
+	}
+}
+
+func byIdProvider(ctx context.Context) func(mapId uint32) model.Provider[Model] {
+	t := tenant.MustFromContext(ctx)
+	return func(mapId uint32) model.Provider[Model] {
+		return func() (Model, error) {
+			m, err := GetMapModelRegistry().Get(t, mapId)
+			if err == nil {
+				return m, nil
+			}
+			nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
+			if err != nil {
+				return Model{}, err
+			}
+			return GetMapModelRegistry().Get(nt, mapId)
+		}
+	}
+}
+
+func GetById(ctx context.Context) func(mapId uint32) (Model, error) {
+	return func(mapId uint32) (Model, error) {
+		return byIdProvider(ctx)(mapId)()
+	}
+}
+
+func bSearchDropPos(tree *FootholdTree, initial *point.Model, fallback *point.Model) *point.Model {
+	var dropPos *point.Model
+	awayX := fallback.X()
+	homeX := initial.X()
+	y := initial.Y() - 85
+
+	for math.Abs(float64(homeX-awayX)) > 5 {
+		distanceX := awayX - homeX
+		dx := distanceX / 2
+		searchX := homeX + dx
+		res := calcPointBelow(tree, point.NewModel(searchX, y))
+		if res != nil {
+			awayX = searchX
+			dropPos = res
+		} else {
+			homeX = searchX
+		}
+	}
+
+	if dropPos != nil {
+		return dropPos
+	}
+	return fallback
+}
+
+func calcPointBelow(tree *FootholdTree, initial *point.Model) *point.Model {
+	fh := tree.findBelow(initial)
+	if fh == nil {
+		return nil
+	}
+
+	dropY := fh.first.Y()
+	if !fh.isWall() && fh.first.Y() != fh.second.Y() {
+		s1 := math.Abs(float64(fh.second.Y() - fh.first.Y()))
+		s2 := math.Abs(float64(fh.second.X() - fh.first.X()))
+		s5 := math.Cos(math.Atan(s2/s1)) * (math.Abs(float64(initial.X()-fh.first.X())) / math.Cos(math.Atan(s1/s2)))
+		if fh.second.Y() < fh.first.Y() {
+			dropY = fh.first.Y() - int16(s5)
+		} else {
+			dropY = fh.first.Y() + int16(s5)
+		}
+	}
+	ret := point.NewModel(initial.X(), dropY)
+	return ret
+}
 
 type FootholdTreeConfigurator func(f *FootholdTree)
 
@@ -90,88 +174,6 @@ func (f *FootholdTree) InsertSingle(foothold Foothold) *FootholdTree {
 		}
 	}
 	return f
-}
-
-func calcDropPos(tenant tenant.Model, mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
-	m, err := GetRegistry().GetMap(tenant, mapId)
-	if err != nil {
-		return fallback
-	}
-
-	rp := initial
-	if rp.X() < int16(m.xLimit.min) {
-		rp = rp.SetX(int16(m.xLimit.min))
-	} else if rp.X() > int16(m.xLimit.max) {
-		rp = rp.SetX(int16(m.xLimit.max))
-	}
-	ret := calcPointBelow(m.footholdTree, point.NewModel(rp.X(), rp.Y()-85))
-	if ret == nil {
-		ret = bSearchDropPos(m.footholdTree, initial, fallback)
-	}
-	if !m.mapArea.contains(*ret) {
-		return fallback
-	}
-	return ret
-}
-
-func calcPointBelow(tree *FootholdTree, initial *point.Model) *point.Model {
-	fh := tree.findBelow(initial)
-	if fh == nil {
-		return nil
-	}
-
-	dropY := fh.first.Y()
-	if !fh.isWall() && fh.first.Y() != fh.second.Y() {
-		s1 := math.Abs(float64(fh.second.Y() - fh.first.Y()))
-		s2 := math.Abs(float64(fh.second.X() - fh.first.X()))
-		s5 := math.Cos(math.Atan(s2/s1)) * (math.Abs(float64(initial.X()-fh.first.X())) / math.Cos(math.Atan(s1/s2)))
-		if fh.second.Y() < fh.first.Y() {
-			dropY = fh.first.Y() - int16(s5)
-		} else {
-			dropY = fh.first.Y() + int16(s5)
-		}
-	}
-	ret := point.NewModel(initial.X(), dropY)
-	return ret
-}
-
-func bSearchDropPos(tree *FootholdTree, initial *point.Model, fallback *point.Model) *point.Model {
-	var dropPos *point.Model
-	awayX := fallback.X()
-	homeX := initial.X()
-	y := initial.Y() - 85
-
-	for math.Abs(float64(homeX-awayX)) > 5 {
-		distanceX := awayX - homeX
-		dx := distanceX / 2
-		searchX := homeX + dx
-		res := calcPointBelow(tree, point.NewModel(searchX, y))
-		if res != nil {
-			awayX = searchX
-			dropPos = res
-		} else {
-			homeX = searchX
-		}
-	}
-
-	if dropPos != nil {
-		return dropPos
-	}
-	return fallback
-}
-
-func byIdProvider(ctx context.Context) func(mapId uint32) model.Provider[Model] {
-	return func(mapId uint32) model.Provider[Model] {
-		return func() (Model, error) {
-			return GetRegistry().GetMap(tenant.MustFromContext(ctx), mapId)
-		}
-	}
-}
-
-func GetById(ctx context.Context) func(mapId uint32) (Model, error) {
-	return func(mapId uint32) (Model, error) {
-		return byIdProvider(ctx)(mapId)()
-	}
 }
 
 func portalProvider(ctx context.Context) func(mapId uint32) model.Provider[[]portal.Model] {
@@ -284,4 +286,26 @@ func GetMonsters(ctx context.Context) func(mapId uint32) ([]monster.Model, error
 	return func(mapId uint32) ([]monster.Model, error) {
 		return monsterProvider(ctx)(mapId)()
 	}
+}
+
+func calcDropPos(tenant tenant.Model, mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
+	m, err := GetMapModelRegistry().Get(tenant, mapId)
+	if err != nil {
+		return fallback
+	}
+
+	rp := initial
+	if rp.X() < int16(m.xLimit.min) {
+		rp = rp.SetX(int16(m.xLimit.min))
+	} else if rp.X() > int16(m.xLimit.max) {
+		rp = rp.SetX(int16(m.xLimit.max))
+	}
+	ret := calcPointBelow(m.footholdTree, point.NewModel(rp.X(), rp.Y()-85))
+	if ret == nil {
+		ret = bSearchDropPos(m.footholdTree, initial, fallback)
+	}
+	if !m.mapArea.contains(*ret) {
+		return fallback
+	}
+	return ret
 }

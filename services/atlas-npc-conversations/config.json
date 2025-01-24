@@ -21,6 +21,10 @@
           },
           "scripts": [
             {
+              "npcId": 1012000,
+              "impl": "RegularCabHenesys"
+            },
+            {
               "npcId": 2010007,
               "impl": "Heracle"
             },

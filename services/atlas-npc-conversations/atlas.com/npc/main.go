@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-npc-conversations/configuration"
 	"atlas-npc-conversations/conversation/script/registry"
+	"atlas-npc-conversations/kafka/consumer/character"
 	"atlas-npc-conversations/kafka/consumer/npc"
 	"atlas-npc-conversations/logger"
 	"atlas-npc-conversations/service"
@@ -30,11 +31,12 @@ func main() {
 		l.WithError(err).Fatal("Unable to successfully load configuration.")
 	}
 
-	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(npc.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(npc.StartConversationCommandRegister(l))
-	_, _ = cm.RegisterHandler(npc.ContinueConversationCommandRegister(l))
-	_, _ = cm.RegisterHandler(npc.EndConversationCommandRegister(l))
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	character.InitConsumers(l)(cmf)(consumerGroupId)
+	npc.InitConsumers(l)(cmf)(consumerGroupId)
+
+	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	npc.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	for _, s := range config.Data.Attributes.Servers {
 		for _, sct := range s.Scripts {

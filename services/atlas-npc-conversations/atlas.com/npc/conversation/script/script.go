@@ -51,6 +51,15 @@ func SendListSelection(l logrus.FieldLogger) func(ctx context.Context) func(c Co
 	}
 }
 
+func SendListSelectionExit(l logrus.FieldLogger) func(ctx context.Context) func(c Context, message string, s ProcessSelection, exit StateProducer) State {
+	return func(ctx context.Context) func(c Context, message string, s ProcessSelection, exit StateProducer) State {
+		return func(c Context, message string, s ProcessSelection, exit StateProducer) State {
+			npc.SendSimple(l)(ctx)(c.WorldId, c.ChannelId, c.CharacterId, c.NPCId)(message)
+			return doListSelectionExit(exit, s)
+		}
+	}
+}
+
 func doListSelectionExit(e StateProducer, s ProcessSelection) State {
 	return func(l logrus.FieldLogger) func(ctx context.Context) func(c Context, mode byte, theType byte, selection int32) State {
 		return func(ctx context.Context) func(c Context, mode byte, theType byte, selection int32) State {
@@ -85,6 +94,14 @@ func (c SendTalkConfig) Configurators() []npc.TalkConfigurator {
 }
 
 type SendTalkConfigurator func(config *SendTalkConfig)
+
+func SendYesNoExit(l logrus.FieldLogger) func(ctx context.Context) func(c Context, message string, yes StateProducer, no StateProducer, exit StateProducer) State {
+	return func(ctx context.Context) func(c Context, message string, yes StateProducer, no StateProducer, exit StateProducer) State {
+		return func(c Context, message string, yes StateProducer, no StateProducer, exit StateProducer) State {
+			return SendYesNo(l)(ctx)(c, message, yes, no, SetSendTalkExit(exit))
+		}
+	}
+}
 
 func SendOk(l logrus.FieldLogger) func(ctx context.Context) func(c Context, message string, configurations ...SendTalkConfigurator) State {
 	return func(ctx context.Context) func(c Context, message string, configurations ...SendTalkConfigurator) State {
@@ -128,6 +145,43 @@ func doYesNo(yes StateProducer, no StateProducer) ProcessStateFunc {
 						return yes(l)(ctx)(c)
 					}
 					return nil
+				}
+			}
+		}
+	}
+}
+
+func SetSendTalkExit(exit StateProducer) SendTalkConfigurator {
+	return func(config *SendTalkConfig) {
+		config.exit = exit
+	}
+}
+
+func SendNext(l logrus.FieldLogger) func(ctx context.Context) func(c Context, message string, next StateProducer, configurations ...SendTalkConfigurator) State {
+	return func(ctx context.Context) func(c Context, message string, next StateProducer, configurations ...SendTalkConfigurator) State {
+		return func(c Context, message string, next StateProducer, configurations ...SendTalkConfigurator) State {
+			return sendTalk(l, c, message, configurations, npc.SendNext(l)(ctx)(c.WorldId, c.ChannelId, c.CharacterId, c.NPCId), doNext(next))
+		}
+	}
+}
+
+func SendNextExit(l logrus.FieldLogger) func(ctx context.Context) func(c Context, message string, next StateProducer, exit StateProducer) State {
+	return func(ctx context.Context) func(c Context, message string, next StateProducer, exit StateProducer) State {
+		return func(c Context, message string, next StateProducer, exit StateProducer) State {
+			return SendNext(l)(ctx)(c, message, next, SetSendTalkExit(exit))
+		}
+	}
+}
+
+func doNext(next StateProducer) ProcessStateFunc {
+	return func(exit StateProducer) State {
+		return func(l logrus.FieldLogger) func(ctx context.Context) func(c Context, mode byte, theType byte, selection int32) State {
+			return func(ctx context.Context) func(c Context, mode byte, theType byte, selection int32) State {
+				return func(c Context, mode byte, theType byte, selection int32) State {
+					if mode == 255 && theType == 0 {
+						return exit(l)(ctx)(c)
+					}
+					return next(l)(ctx)(c)
 				}
 			}
 		}

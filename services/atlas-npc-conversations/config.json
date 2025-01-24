@@ -21,8 +21,28 @@
           },
           "scripts": [
             {
+              "npcId": 1002000,
+              "impl": "Phil"
+            },
+            {
+              "npcId": 1002007,
+              "impl": "RegularCabLithHarbor"
+            },
+            {
               "npcId": 1012000,
               "impl": "RegularCabHenesys"
+            },
+            {
+              "npcId": 1022001,
+              "impl": "RegularCabPerion"
+            },
+            {
+              "npcId": 1032000,
+              "impl": "RegularCabEllinia"
+            },
+            {
+              "npcId": 1052016,
+              "impl": "RegularCabKerningCity"
             },
             {
               "npcId": 2010007,

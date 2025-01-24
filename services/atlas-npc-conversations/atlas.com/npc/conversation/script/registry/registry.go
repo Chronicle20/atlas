@@ -29,7 +29,12 @@ func initRegistry() *Registry {
 		registry: make(map[uuid.UUID]map[uint32]script.Script),
 		scripts:  make(map[string]script.Script),
 	}
+	s.addConversation(discrete.Phil{})
+	s.addConversation(discrete.RegularCabLithHarbor{})
 	s.addConversation(discrete.RegularCabHenesys{})
+	s.addConversation(discrete.RegularCabPerion{})
+	s.addConversation(discrete.RegularCabEllinia{})
+	s.addConversation(discrete.RegularCabKerningCity{})
 	s.addConversation(discrete.Heracle{})
 	s.addConversation(discrete.Lea{})
 	return s

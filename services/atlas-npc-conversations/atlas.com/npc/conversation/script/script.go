@@ -193,3 +193,39 @@ func doNext(next StateProducer) ProcessStateFunc {
 		}
 	}
 }
+
+func SendNextPrevious(l logrus.FieldLogger) func(ctx context.Context) func(c Context, message string, next StateProducer, previous StateProducer, configurations ...SendTalkConfigurator) State {
+	return func(ctx context.Context) func(c Context, message string, next StateProducer, previous StateProducer, configurations ...SendTalkConfigurator) State {
+		return func(c Context, message string, next StateProducer, previous StateProducer, configurations ...SendTalkConfigurator) State {
+			return sendTalk(l, c, message, configurations, npc.SendNextPrevious(l)(ctx)(c.WorldId, c.ChannelId, c.CharacterId, c.NPCId), doNextPrevious(next, previous))
+		}
+	}
+}
+
+func SendNextPreviousExit(l logrus.FieldLogger) func(ctx context.Context) func(c Context, message string, next StateProducer, previous StateProducer, exit StateProducer) State {
+	return func(ctx context.Context) func(c Context, message string, next StateProducer, previous StateProducer, exit StateProducer) State {
+		return func(c Context, message string, next StateProducer, previous StateProducer, exit StateProducer) State {
+			return SendNextPrevious(l)(ctx)(c, message, next, previous, SetSendTalkExit(exit))
+		}
+	}
+}
+
+func doNextPrevious(next StateProducer, previous StateProducer) ProcessStateFunc {
+	return func(exit StateProducer) State {
+		return func(l logrus.FieldLogger) func(ctx context.Context) func(c Context, mode byte, theType byte, selection int32) State {
+			return func(ctx context.Context) func(c Context, mode byte, theType byte, selection int32) State {
+				return func(c Context, mode byte, theType byte, selection int32) State {
+					if mode == 255 && theType == 0 {
+						return exit(l)(ctx)(c)
+					}
+					if mode == 0 && previous != nil {
+						return previous(l)(ctx)(c)
+					} else if mode == 1 && next != nil {
+						return next(l)(ctx)(c)
+					}
+					return nil
+				}
+			}
+		}
+	}
+}

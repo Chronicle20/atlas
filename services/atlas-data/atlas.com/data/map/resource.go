@@ -3,7 +3,6 @@ package _map
 import (
 	"atlas-data/map/monster"
 	"atlas-data/map/npc"
-	point2 "atlas-data/map/point"
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
 	"atlas-data/point"
@@ -18,35 +17,21 @@ import (
 	"strconv"
 )
 
-const (
-	getMap               = "get_map"
-	getMapPortalsByName  = "get_map_portals_by_name"
-	getMapPortals        = "get_map_portals"
-	getMapPortal         = "get_map_portal"
-	getMapReactors       = "get_map_reactors"
-	getMapNPCsByObjectId = "get_map_npcs_by_object_id"
-	getMapNPCs           = "get_map_npcs"
-	getMapNPC            = "get_map_npc"
-	getMapMonsters       = "get_map_monsters"
-	getMapDropPosition   = "get_map_drop_position"
-)
-
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(router *mux.Router, l logrus.FieldLogger) {
 		registerGet := rest.RegisterHandler(l)(si)
-		registerInput := rest.RegisterInputHandler[DropPositionRestModel](l)(si)
 
 		r := router.PathPrefix("/maps").Subrouter()
-		r.HandleFunc("/{mapId}", registerGet(getMap, handleGetMapRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/portals", registerGet(getMapPortalsByName, handleGetMapPortalsByNameRequest)).Queries("name", "{name}").Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/portals", registerGet(getMapPortals, handleGetMapPortalsRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/portals/{portalId}", registerGet(getMapPortal, handleGetMapPortalRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/reactors", registerGet(getMapReactors, handleGetMapReactorsRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/npcs", registerGet(getMapNPCsByObjectId, handleGetMapNPCsByObjectIdRequest)).Queries("objectId", "{objectId}").Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/npcs", registerGet(getMapNPCs, handleGetMapNPCsRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/npcs/{npcId}", registerGet(getMapNPC, handleGetMapNPCRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/monsters", registerGet(getMapMonsters, handleGetMapMonstersRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/dropPosition", registerInput(getMapDropPosition, handleGetMapDropPositionRequest)).Methods(http.MethodPost)
+		r.HandleFunc("/{mapId}", registerGet("get_map", handleGetMapRequest)).Methods(http.MethodGet)
+		r.HandleFunc("/{mapId}/portals", registerGet("get_map_portals_by_name", handleGetMapPortalsByNameRequest)).Queries("name", "{name}").Methods(http.MethodGet)
+		r.HandleFunc("/{mapId}/portals", registerGet("get_map_portals", handleGetMapPortalsRequest)).Methods(http.MethodGet)
+		r.HandleFunc("/{mapId}/portals/{portalId}", registerGet("get_map_portal", handleGetMapPortalRequest)).Methods(http.MethodGet)
+		r.HandleFunc("/{mapId}/reactors", registerGet("get_map_reactors", handleGetMapReactorsRequest)).Methods(http.MethodGet)
+		r.HandleFunc("/{mapId}/npcs", registerGet("get_map_npcs_by_object_id", handleGetMapNPCsByObjectIdRequest)).Queries("objectId", "{objectId}").Methods(http.MethodGet)
+		r.HandleFunc("/{mapId}/npcs", registerGet("get_map_npcs", handleGetMapNPCsRequest)).Methods(http.MethodGet)
+		r.HandleFunc("/{mapId}/npcs/{npcId}", registerGet("get_map_npc", handleGetMapNPCRequest)).Methods(http.MethodGet)
+		r.HandleFunc("/{mapId}/monsters", registerGet("get_map_monsters", handleGetMapMonstersRequest)).Methods(http.MethodGet)
+		r.HandleFunc("/{mapId}/dropPosition", rest.RegisterInputHandler[DropPositionRestModel](l)(si)("get_map_drop_position", handleGetMapDropPositionRequest)).Methods(http.MethodPost)
 	}
 }
 
@@ -72,10 +57,13 @@ func handleGetMapRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http
 	})
 }
 
-func handleGetMapPortalsRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleGetMapPortalsByNameRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			ps, err := GetPortals(d.Context())(mapId)
+			vars := mux.Vars(r)
+			portalName := vars["name"]
+
+			ps, err := GetPortalsByName(d.Context())(mapId, portalName)
 			if err != nil {
 				d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 				w.WriteHeader(http.StatusNotFound)
@@ -94,13 +82,10 @@ func handleGetMapPortalsRequest(d *rest.HandlerDependency, c *rest.HandlerContex
 	})
 }
 
-func handleGetMapPortalsByNameRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleGetMapPortalsRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			vars := mux.Vars(r)
-			portalName := vars["name"]
-
-			ps, err := GetPortalsByName(d.Context())(mapId, portalName)
+			ps, err := GetPortals(d.Context())(mapId)
 			if err != nil {
 				d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 				w.WriteHeader(http.StatusNotFound)
@@ -243,14 +228,14 @@ func handleGetMapDropPositionRequest(d *rest.HandlerDependency, c *rest.HandlerC
 	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			p := calcDropPos(tenant.MustFromContext(d.Context()), mapId, point.NewModel(input.InitialX, input.InitialY), point.NewModel(input.FallbackX, input.FallbackY))
-			res, err := model.Map(point2.Transform)(model.FixedProvider(*p))()
+			res, err := model.Map(point.Transform)(model.FixedProvider(*p))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			server.Marshal[point2.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			server.Marshal[point.RestModel](d.Logger())(w)(c.ServerInformation())(res)
 			w.WriteHeader(http.StatusCreated)
 		}
 	})

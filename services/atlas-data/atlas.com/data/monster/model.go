@@ -36,6 +36,10 @@ type Model struct {
 	coolDamage         *CoolDamage
 }
 
+func (m Model) Id() uint32 {
+	return m.id
+}
+
 type Skill struct {
 	id    uint32
 	level uint32

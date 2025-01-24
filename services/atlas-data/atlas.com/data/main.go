@@ -1,16 +1,22 @@
 package main
 
 import (
-	"atlas-data/equipment/slots"
-	"atlas-data/equipment/statistics"
+	"atlas-data/data"
+	"atlas-data/equipment"
 	"atlas-data/logger"
 	_map "atlas-data/map"
 	"atlas-data/monster"
 	"atlas-data/service"
 	"atlas-data/tracing"
-	"atlas-data/wz"
+	"context"
+	"errors"
 	"github.com/Chronicle20/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 const serviceName = "atlas-data"
@@ -31,7 +37,7 @@ func (s Server) GetPrefix() string {
 func GetServer() Server {
 	return Server{
 		baseUrl: "",
-		prefix:  "/api/gis/",
+		prefix:  "/api/data/",
 	}
 }
 
@@ -46,20 +52,96 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	wzDir := os.Getenv("GAME_DATA_ROOT_DIR")
+	dir, exists := os.LookupEnv("GAME_DATA_ROOT_DIR")
+	if !exists {
+		l.Errorf("Unable to retrieve [GAME_DATA_ROOT_DIR] configuration necessary to ingest data.")
+		return
+	}
 
-	l.Infoln("Initializing game data cache.")
-	wz.GetFileCache().Init(wzDir)
-	l.Infoln("Completed initializing game data cache.")
+	ts, err := collectUniqueFiles(dir)
+	if err != nil {
+		return
+	}
+	for _, t := range ts {
+		tctx := tenant.WithContext(context.Background(), t)
+		_ = data.RegisterData(l)(tctx)
+	}
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(),
+		data.InitResource(GetServer()),
 		_map.InitResource(GetServer()),
 		monster.InitResource(GetServer()),
-		slots.InitResource(GetServer()),
-		statistics.InitResource(GetServer()))
+		equipment.InitResource(GetServer()))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
 	tdm.Wait()
 	l.Infoln("Service shutdown.")
+}
+
+func collectUniqueFiles(root string) ([]tenant.Model, error) {
+	uniqueFiles := make([]tenant.Model, 0)
+
+	// Helper function to recursively iterate up to three levels
+	var walk func(path string, depth int) error
+	walk = func(path string, depth int) error {
+		if depth > 3 {
+			return nil // Stop recursion beyond three levels
+		}
+
+		entries, err := os.ReadDir(path)
+		if err != nil {
+			return err // Handle errors accessing the directory
+		}
+
+		for _, entry := range entries {
+			fullPath := filepath.Join(path, entry.Name())
+
+			// If this is a directory, recurse
+			if entry.IsDir() {
+				if depth < 3 { // Only recurse for tenant, region, and version levels
+					if err := walk(fullPath, depth+1); err != nil {
+						return err
+					}
+				}
+				if depth == 3 { // Process files only at the third level
+					relativePath, err := filepath.Rel(root, fullPath)
+					if err != nil {
+						return err
+					}
+
+					parts := strings.Split(relativePath, string(os.PathSeparator))
+					if len(parts) < 3 {
+						continue // Skip files without enough levels
+					}
+
+					tid := uuid.MustParse(parts[0])
+					region := parts[1]
+					version := parts[2]
+					versions := strings.Split(version, ".")
+					if len(versions) != 2 {
+						return errors.New("invalid folder structure")
+					}
+					mav, err := strconv.Atoi(versions[0])
+					if err != nil {
+						return err
+					}
+					miv, err := strconv.Atoi(versions[1])
+					if err != nil {
+						return err
+					}
+					t, err := tenant.Create(tid, region, uint16(mav), uint16(miv))
+					uniqueFiles = append(uniqueFiles, t)
+				}
+			}
+		}
+		return nil
+	}
+
+	// Start the walk at depth 1
+	if err := walk(root, 1); err != nil {
+		return nil, err
+	}
+
+	return uniqueFiles, nil
 }

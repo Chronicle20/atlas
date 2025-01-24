@@ -1,6 +1,8 @@
-package statistics
+package equipment
 
-import "strconv"
+import (
+	"strconv"
+)
 
 type RestModel struct {
 	Id            uint32 `json:"-"`
@@ -50,4 +52,33 @@ func Transform(m Model) (RestModel, error) {
 		Slots:         m.slots,
 		Cash:          m.cash,
 	}, nil
+}
+
+type SlotRestModel struct {
+	Id   uint32 `json:"-"`
+	Name string `json:"name"`
+	WZ   string `json:"WZ"`
+	Slot int16  `json:"slot"`
+}
+
+func (r SlotRestModel) GetName() string {
+	return "slots"
+}
+
+func (r SlotRestModel) GetID() string {
+	return strconv.Itoa(int(r.Id))
+}
+
+func TransformSlot(m Model) ([]SlotRestModel, error) {
+	var results = make([]SlotRestModel, 0)
+	for _, s := range m.slotIndex {
+		rm := SlotRestModel{
+			Id:   m.itemId,
+			Name: m.slotName,
+			WZ:   m.slotWz,
+			Slot: s,
+		}
+		results = append(results, rm)
+	}
+	return results, nil
 }

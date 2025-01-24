@@ -44,6 +44,10 @@ type Model struct {
 	monsters          []monster.Model
 }
 
+func (m Model) Id() uint32 {
+	return m.id
+}
+
 type TimeMob struct {
 	id      uint32
 	message string

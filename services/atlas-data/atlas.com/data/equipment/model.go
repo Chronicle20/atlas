@@ -1,4 +1,4 @@
-package statistics
+package equipment
 
 type Model struct {
 	itemId        uint32
@@ -18,4 +18,11 @@ type Model struct {
 	mp            uint16
 	slots         uint16
 	cash          bool
+	slotName      string
+	slotWz        string
+	slotIndex     []int16
+}
+
+func (m Model) Id() uint32 {
+	return m.itemId
 }

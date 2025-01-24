@@ -26,10 +26,20 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
 			t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCreated(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogin(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged(db))))
 		}
+	}
+}
+
+func handleStatusEventCreated(db *gorm.DB) message.Handler[statusEvent[statusEventCreatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCreatedBody]) {
+		if e.Type != EventCharacterStatusTypeCreated {
+			return
+		}
+		_, _ = list.Create(l)(ctx)(db)(e.CharacterId, 30)
 	}
 }
 

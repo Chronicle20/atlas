@@ -8,22 +8,27 @@ import (
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-const consumerStatusEvent = "cash_shop_status"
-
-func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerStatusEvent)(EnvEventTopicCashShopStatus)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("cash_shop_status_event")(EnvEventTopicCashShopStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func CharacterEnterStatusRegister(l logrus.FieldLogger) func(db *gorm.DB) (string, handler.Handler) {
-	return func(db *gorm.DB) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicCashShopStatus)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterEnter(db)))
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+			var t string
+			t, _ = topic.EnvProvider(l)(EnvEventTopicCashShopStatus)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterEnter(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterExit(db))))
+		}
 	}
 }
 
@@ -33,13 +38,6 @@ func handleStatusEventCharacterEnter(db *gorm.DB) message.Handler[statusEvent[ch
 			return
 		}
 		_ = list.UpdateShopStatus(l)(ctx)(db)(e.Body.CharacterId, e.WorldId, true)
-	}
-}
-
-func CharacterExitStatusRegister(l logrus.FieldLogger) func(db *gorm.DB) (string, handler.Handler) {
-	return func(db *gorm.DB) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicCashShopStatus)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterExit(db)))
 	}
 }
 

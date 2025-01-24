@@ -8,20 +8,27 @@ import (
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)("invite_status_event")(EnvEventStatusTopic)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("invite_status_event")(EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func AcceptedStatusEventRegister(l logrus.FieldLogger) func(db *gorm.DB) (string, handler.Handler) {
-	return func(db *gorm.DB) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleAcceptedStatusEvent(db)))
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+			var t string
+			t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAcceptedStatusEvent(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRejectedStatusEvent(db))))
+		}
 	}
 }
 
@@ -36,13 +43,6 @@ func handleAcceptedStatusEvent(db *gorm.DB) func(l logrus.FieldLogger, ctx conte
 		}
 
 		_ = list.Accept(l)(ctx)(db)(e.Body.TargetId, e.WorldId, e.Body.OriginatorId)
-	}
-}
-
-func RejectedStatusEventRegister(l logrus.FieldLogger) func(db *gorm.DB) (string, handler.Handler) {
-	return func(db *gorm.DB) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleRejectedStatusEvent(db)))
 	}
 }
 

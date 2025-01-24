@@ -8,22 +8,28 @@ import (
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-const consumerCommand = "buddy_list_command"
-
-func CommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerCommand)(EnvCommandTopic)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("buddy_list_command")(EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func CreateCommandRegister(l logrus.FieldLogger) func(db *gorm.DB) (string, handler.Handler) {
-	return func(db *gorm.DB) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleCreateBuddyListCommand(db)))
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+			var t string
+			t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateBuddyListCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestBuddyAddCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestBuddyDeleteCommand(db))))
+		}
 	}
 }
 
@@ -39,13 +45,6 @@ func handleCreateBuddyListCommand(db *gorm.DB) func(l logrus.FieldLogger, ctx co
 	}
 }
 
-func RequestAddCommandRegister(l logrus.FieldLogger) func(db *gorm.DB) (string, handler.Handler) {
-	return func(db *gorm.DB) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleRequestBuddyAddCommand(db)))
-	}
-}
-
 func handleRequestBuddyAddCommand(db *gorm.DB) message.Handler[command[requestAddBuddyCommandBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, c command[requestAddBuddyCommandBody]) {
 		if c.Type != CommandTypeRequestAdd {
@@ -55,13 +54,6 @@ func handleRequestBuddyAddCommand(db *gorm.DB) message.Handler[command[requestAd
 		if err != nil {
 			l.WithError(err).Errorf("Error attempting to add [%d] to character [%d] buddy list.", c.Body.CharacterId, c.CharacterId)
 		}
-	}
-}
-
-func RequestDeleteCommandRegister(l logrus.FieldLogger) func(db *gorm.DB) (string, handler.Handler) {
-	return func(db *gorm.DB) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleRequestBuddyDeleteCommand(db)))
 	}
 }
 

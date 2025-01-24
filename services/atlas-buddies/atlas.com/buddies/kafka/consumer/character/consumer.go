@@ -8,22 +8,38 @@ import (
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-const consumerStatusEvent = "character_status"
-
-func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerStatusEvent)(EnvEventTopicCharacterStatus)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("character_status_event")(EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func LoginStatusRegister(l logrus.FieldLogger) func(db *gorm.DB) (string, handler.Handler) {
-	return func(db *gorm.DB) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogin(db)))
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+			var t string
+			t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCreated(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogin(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged(db))))
+		}
+	}
+}
+
+func handleStatusEventCreated(db *gorm.DB) message.Handler[statusEvent[statusEventCreatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCreatedBody]) {
+		if e.Type != EventCharacterStatusTypeCreated {
+			return
+		}
+		_, _ = list.Create(l)(ctx)(db)(e.CharacterId, 30)
 	}
 }
 
@@ -39,13 +55,6 @@ func handleStatusEventLogin(db *gorm.DB) func(l logrus.FieldLogger, ctx context.
 	}
 }
 
-func LogoutStatusRegister(l logrus.FieldLogger) func(db *gorm.DB) (string, handler.Handler) {
-	return func(db *gorm.DB) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout(db)))
-	}
-}
-
 func handleStatusEventLogout(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventLogoutBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventLogoutBody]) {
 		if event.Type != EventCharacterStatusTypeLogout {
@@ -55,13 +64,6 @@ func handleStatusEventLogout(db *gorm.DB) func(l logrus.FieldLogger, ctx context
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process logout for character [%d].", event.CharacterId)
 		}
-	}
-}
-
-func ChannelChangedStatusRegister(l logrus.FieldLogger) func(db *gorm.DB) (string, handler.Handler) {
-	return func(db *gorm.DB) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged(db)))
 	}
 }
 

@@ -142,13 +142,13 @@ func (r RegularCabHenesys) ConfirmMap(mapId uint32, cost uint32) script.StatePro
 	return func(l logrus.FieldLogger) func(ctx context.Context) func(c script.Context) script.State {
 		return func(ctx context.Context) func(c script.Context) script.State {
 			return func(c script.Context) script.State {
-				return script.SendYesNoExit(l)(ctx)(c, m.String(), r.PerformTransaction(mapId, cost), r.MoreToSee, r.MoreToSee)
+				return script.SendYesNoExit(l)(ctx)(c, m.String(), r.StartTransaction(mapId, cost), r.MoreToSee, r.MoreToSee)
 			}
 		}
 	}
 }
 
-func (r RegularCabHenesys) PerformTransaction(mapId uint32, cost uint32) script.StateProducer {
+func (r RegularCabHenesys) StartTransaction(mapId uint32, cost uint32) script.StateProducer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) func(c script.Context) script.State {
 		return func(ctx context.Context) func(c script.Context) script.State {
 			return func(c script.Context) script.State {
@@ -157,10 +157,18 @@ func (r RegularCabHenesys) PerformTransaction(mapId uint32, cost uint32) script.
 						AddText("You don't have enough mesos. Sorry to say this, but without them, you won't be able to ride the cab.")
 					return script.SendNextExit(l)(ctx)(c, m.String(), script.Exit(), script.Exit())
 				}
+				_ = character.RequestChangeMeso(l)(ctx)(c.CharacterId, c.WorldId, -int32(cost))
 
-				//character.GainMeso(l)(ctx)(c.CharacterId, -int32(cost))
-				//npc.WarpById(l)(ctx)(c.WorldId, c.ChannelId, c.CharacterId, mapId, 0)
-				return nil
+				return func(l logrus.FieldLogger) func(ctx context.Context) func(c script.Context, mode byte, theType byte, selection int32) script.State {
+					return func(ctx context.Context) func(c script.Context, mode byte, theType byte, selection int32) script.State {
+						return func(c script.Context, mode byte, theType byte, selection int32) script.State {
+							if mode == 0 {
+								_ = character.WarpById(l)(ctx)(c.WorldId, c.ChannelId, c.CharacterId, mapId, 0)
+							}
+							return nil
+						}
+					}
+				}
 			}
 		}
 	}

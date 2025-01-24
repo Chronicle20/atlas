@@ -6,6 +6,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	ModeCharacterMesoGained    = byte(0)
+	ModeCharacterError         = byte(1)
+	ModeCharacterMesoGainError = byte(2)
+)
+
 type Context struct {
 	WorldId     byte
 	ChannelId   byte

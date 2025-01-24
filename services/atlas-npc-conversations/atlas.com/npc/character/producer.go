@@ -18,3 +18,18 @@ func requestChangeMesoCommandProvider(characterId uint32, worldId byte, amount i
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func changeMapProvider(worldId byte, channelId byte, characterId uint32, mapId uint32, portalId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &commandEvent[changeMapBody]{
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        CommandChangeMap,
+		Body: changeMapBody{
+			ChannelId: channelId,
+			MapId:     mapId,
+			PortalId:  portalId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

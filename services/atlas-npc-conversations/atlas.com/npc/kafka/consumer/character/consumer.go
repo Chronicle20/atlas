@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-npc-conversations/conversation"
+	"atlas-npc-conversations/conversation/script"
 	consumer2 "atlas-npc-conversations/kafka/consumer"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -26,18 +27,40 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMesoChanged)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventErrorNotEnoughMeso)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventError)))
 	}
 }
 
+func handleStatusEventErrorNotEnoughMeso(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventErrorBody[notEnoughMesoErrorStatusBody]]) {
+	if e.Type == StatusEventTypeError && e.Body.Error == StatusEventErrorTypeNotEnoughMeso {
+		_ = conversation.ContinueViaEvent(l)(ctx)(e.CharacterId, script.ModeCharacterMesoGainError, e.Body.Body.Amount)
+	}
+}
+
+func handleStatusEventError(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventErrorBody[any]]) {
+	if e.Type == StatusEventTypeError && e.Body.Error != StatusEventErrorTypeNotEnoughMeso {
+		_ = conversation.ContinueViaEvent(l)(ctx)(e.CharacterId, script.ModeCharacterError, 0)
+	}
+}
+
+func handleStatusEventMesoChanged(l logrus.FieldLogger, ctx context.Context, e statusEvent[mesoChangedStatusEventBody]) {
+	if e.Type != StatusEventTypeMesoChanged {
+		return
+	}
+	_ = conversation.ContinueViaEvent(l)(ctx)(e.CharacterId, script.ModeCharacterMesoGained, e.Body.Amount)
+}
+
 func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventLogoutBody]) {
-	if e.Type != EventCharacterStatusTypeLogout {
+	if e.Type != StatusEventTypeLogout {
 		return
 	}
 	_ = conversation.End(l)(ctx)(e.CharacterId)
 }
 
 func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventChannelChangedBody]) {
-	if e.Type != EventCharacterStatusTypeChannelChanged {
+	if e.Type != StatusEventTypeChannelChanged {
 		return
 	}
 	_ = conversation.End(l)(ctx)(e.CharacterId)

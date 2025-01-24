@@ -2,7 +2,10 @@ package character
 
 import (
 	"atlas-npc-conversations/job"
+	"atlas-npc-conversations/kafka/producer"
+	"atlas-npc-conversations/portal"
 	"context"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
@@ -66,7 +69,45 @@ func HasMesoCriteria(amount uint32) AttributeCriteria {
 func RequestChangeMeso(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, worldId byte, amount int32) error {
 	return func(ctx context.Context) func(characterId uint32, worldId byte, amount int32) error {
 		return func(characterId uint32, worldId byte, amount int32) error {
-			return nil
+			l.Debugf("Requesting to change character [%d] meso by [%d].", characterId, amount)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestChangeMesoCommandProvider(characterId, worldId, amount))
+		}
+	}
+}
+
+func WarpToPortal(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32, p model.Provider[uint32]) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32, p model.Provider[uint32]) error {
+		return func(worldId byte, channelId byte, characterId uint32, mapId uint32, p model.Provider[uint32]) error {
+			pid, err := p()
+			if err != nil {
+				return err
+			}
+
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeMapProvider(worldId, channelId, characterId, mapId, pid))
+		}
+	}
+}
+
+func WarpRandom(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32) error {
+		return func(worldId byte, channelId byte, characterId uint32, mapId uint32) error {
+			return WarpToPortal(l)(ctx)(worldId, channelId, characterId, mapId, portal.RandomPortalIdProvider(l)(ctx)(mapId))
+		}
+	}
+}
+
+func WarpById(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32, portalId uint32) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32, portalId uint32) error {
+		return func(worldId byte, channelId byte, characterId uint32, mapId uint32, portalId uint32) error {
+			return WarpToPortal(l)(ctx)(worldId, channelId, characterId, mapId, model.FixedProvider(portalId))
+		}
+	}
+}
+
+func WarpByName(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32, portalName string) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32, portalName string) error {
+		return func(worldId byte, channelId byte, characterId uint32, mapId uint32, portalName string) error {
+			return WarpToPortal(l)(ctx)(worldId, channelId, characterId, mapId, portal.ByNamePortalIdProvider(l)(ctx)(mapId, portalName))
 		}
 	}
 }

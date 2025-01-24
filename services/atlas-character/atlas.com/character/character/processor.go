@@ -560,7 +560,7 @@ func RequestChangeMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *
 						l.Debugf("Request for character [%d] would leave their meso negative. Amount [%d]. Existing [%d].", characterId, amount, c.Meso())
 						return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(notEnoughMesoErrorStatusEventProvider(characterId, c.WorldId(), amount))
 					}
-					if uint32(amount) > (math.MaxUint32 - c.Meso()) {
+					if amount > 0 && uint32(amount) > (math.MaxUint32-c.Meso()) {
 						l.Errorf("Transaction for character [%d] would result in a uint32 overflow. Rejecting transaction.", characterId)
 						return err
 					}

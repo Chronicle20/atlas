@@ -72,6 +72,31 @@ func Continue(l logrus.FieldLogger) func(ctx context.Context) func(npcId uint32,
 	}
 }
 
+func ContinueViaEvent(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, action byte, referenceId int32) error {
+	return func(ctx context.Context) func(characterId uint32, action byte, referenceId int32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(characterId uint32, action byte, referenceId int32) error {
+			s, err := GetRegistry().GetPreviousContext(t, characterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve conversation context for [%d].", characterId)
+				return errors.New("conversation context not found")
+			}
+			sctx := s.ctx
+			state := s.ns
+
+			l.Debugf("Continuing conversation with NPC [%d] with character [%d] in map [%d].", sctx.NPCId, characterId, sctx.MapId)
+			l.Debugf("Calling continue for NPC [%d] conversation with: mode [%d], type [%d], selection [%d].", sctx.NPCId, action, 0, referenceId)
+			ns := state(l)(ctx)(sctx, action, 0, referenceId)
+			if ns != nil {
+				GetRegistry().SetContext(t, characterId, sctx, ns)
+			} else {
+				GetRegistry().ClearContext(t, characterId)
+			}
+			return nil
+		}
+	}
+}
+
 func End(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) error {
 	return func(ctx context.Context) func(characterId uint32) error {
 		t := tenant.MustFromContext(ctx)

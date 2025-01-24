@@ -59,6 +59,22 @@ func SendSimple(l logrus.FieldLogger) func(ctx context.Context) func(worldId byt
 	}
 }
 
+func SendNext(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, npcId uint32) TalkFunc {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, npcId uint32) TalkFunc {
+		return func(worldId byte, channelId byte, characterId uint32, npcId uint32) TalkFunc {
+			return SendNPCTalk(l)(ctx)(worldId, channelId, characterId, npcId, &TalkConfig{messageType: MessageTypeNext, speaker: SpeakerNPCLeft})
+		}
+	}
+}
+
+func SendNextPrevious(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, npcId uint32) TalkFunc {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, npcId uint32) TalkFunc {
+		return func(worldId byte, channelId byte, characterId uint32, npcId uint32) TalkFunc {
+			return SendNPCTalk(l)(ctx)(worldId, channelId, characterId, npcId, &TalkConfig{messageType: MessageTypeNextPrevious, speaker: SpeakerNPCLeft})
+		}
+	}
+}
+
 func SendOk(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, npcId uint32) TalkFunc {
 	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, npcId uint32) TalkFunc {
 		return func(worldId byte, channelId byte, characterId uint32, npcId uint32) TalkFunc {

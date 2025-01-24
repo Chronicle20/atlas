@@ -8,20 +8,26 @@ import (
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 )
 
-const consumerCommand = "npc_command"
-
-func CommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerCommand)(EnvCommandTopic)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("npc_command")(EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func StartConversationCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleStartConversationCommand))
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+		var t string
+		t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStartConversationCommand)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleContinueConversationCommand)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleEndConversationCommand)))
+	}
 }
 
 func handleStartConversationCommand(l logrus.FieldLogger, ctx context.Context, c command[startConversationCommandBody]) {
@@ -31,21 +37,11 @@ func handleStartConversationCommand(l logrus.FieldLogger, ctx context.Context, c
 	_ = conversation.Start(l)(ctx)(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.NpcId, c.CharacterId)
 }
 
-func ContinueConversationCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleContinueConversationCommand))
-}
-
 func handleContinueConversationCommand(l logrus.FieldLogger, ctx context.Context, c command[continueConversationCommandBody]) {
 	if c.Type != CommandTypeContinueConversation {
 		return
 	}
 	_ = conversation.Continue(l)(ctx)(c.NpcId, c.CharacterId, c.Body.Action, c.Body.LastMessageType, c.Body.Selection)
-}
-
-func EndConversationCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleEndConversationCommand))
 }
 
 func handleEndConversationCommand(l logrus.FieldLogger, ctx context.Context, c command[endConversationCommandBody]) {

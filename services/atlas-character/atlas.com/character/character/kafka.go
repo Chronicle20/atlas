@@ -8,6 +8,7 @@ const (
 	StatusEventTypeChannelChanged = "CHANNEL_CHANGED"
 	StatusEventTypeMapChanged     = "MAP_CHANGED"
 	StatusEventTypeMesoChanged    = "MESO_CHANGED"
+	StatusEventTypeFameChanged    = "FAME_CHANGED"
 	StatusEventTypeDeleted        = "DELETED"
 	StatusEventTypeError          = "ERROR"
 
@@ -70,6 +71,12 @@ type mesoChangedStatusEventBody struct {
 
 type notEnoughMesoErrorStatusBodyBody struct {
 	Amount int32 `json:"amount"`
+}
+
+type fameChangedStatusEventBody struct {
+	ActorId   uint32 `json:"actorId"`
+	ActorType string `json:"actorType"`
+	Amount    int8   `json:"amount"`
 }
 
 type movementEvent struct {

@@ -6,6 +6,7 @@ const (
 	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER"
 	CommandChangeMap         = "CHANGE_MAP"
 	CommandRequestChangeMeso = "REQUEST_CHANGE_MESO"
+	CommandRequestChangeFame = "REQUEST_CHANGE_FAME"
 
 	EnvCommandTopicMovement   = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
 	MovementTypeNormal        = "NORMAL"
@@ -31,6 +32,12 @@ type changeMapBody struct {
 
 type requestChangeMesoBody struct {
 	Amount int32 `json:"amount"`
+}
+
+type requestChangeFameBody struct {
+	ActorId   uint32 `json:"actorId"`
+	ActorType string `json:"actorType"`
+	Amount    int8   `json:"amount"`
 }
 
 type movementCommand struct {

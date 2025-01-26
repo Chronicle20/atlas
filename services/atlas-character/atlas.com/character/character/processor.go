@@ -572,3 +572,22 @@ func RequestChangeMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *
 		}
 	}
 }
+
+func RequestChangeFame(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, amount int8, actorId uint32, actorType string) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, amount int8, actorId uint32, actorType string) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, amount int8, actorId uint32, actorType string) error {
+			return func(characterId uint32, amount int8, actorId uint32, actorType string) error {
+				c, err := GetById(ctx)(db)()(characterId)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their fame adjusted.", characterId)
+					return err
+				}
+
+				total := c.Fame() + int16(amount)
+				err = dynamicUpdate(db)(SetFame(total))(t.Id())(c)
+				return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(fameChangedStatusEventProvider(characterId, c.WorldId(), amount, actorId, actorType))
+			}
+		}
+	}
+}

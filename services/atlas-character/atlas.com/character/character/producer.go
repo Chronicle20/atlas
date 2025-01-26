@@ -118,6 +118,21 @@ func notEnoughMesoErrorStatusEventProvider(characterId uint32, worldId byte, amo
 	return producer.SingleMessageProvider(key, value)
 }
 
+func fameChangedStatusEventProvider(characterId uint32, worldId byte, amount int8, actorId uint32, actorType string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &statusEvent[fameChangedStatusEventBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        StatusEventTypeFameChanged,
+		Body: fameChangedStatusEventBody{
+			ActorId:   actorId,
+			ActorType: actorType,
+			Amount:    amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func move(worldId byte, channelId byte, mapId uint32, characterId uint32, m Movement) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &movementEvent{

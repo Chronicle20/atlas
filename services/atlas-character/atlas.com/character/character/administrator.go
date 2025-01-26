@@ -220,3 +220,11 @@ func SetJob(jobId uint16) EntityUpdateFunction {
 		}
 	}
 }
+
+func SetFame(amount int16) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"Fame"}, func(e *entity) {
+			e.Fame = amount
+		}
+	}
+}

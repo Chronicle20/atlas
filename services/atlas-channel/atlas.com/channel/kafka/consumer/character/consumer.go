@@ -45,6 +45,10 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 
 func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventStatChangedBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventStatChangedBody]) {
+		if e.Type != EventCharacterStatusTypeStatChanged {
+			return
+		}
+
 		t := sc.Tenant()
 		if !t.Is(tenant.MustFromContext(ctx)) {
 			return

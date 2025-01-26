@@ -1,6 +1,16 @@
 package character
 
 const (
+	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
+	CommandRequestDistributeAp = "REQUEST_DISTRIBUTE_AP"
+
+	CommandDistributeApAbilityStrength     = "STRENGTH"
+	CommandDistributeApAbilityDexterity    = "DEXTERITY"
+	CommandDistributeApAbilityIntelligence = "INTELLIGENCE"
+	CommandDistributeApAbilityLuck         = "LUCK"
+	CommandDistributeApAbilityHp           = "HP"
+	CommandDistributeApAbilityMp           = "MP"
+
 	EnvCommandTopicMovement = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
 
 	MovementTypeNormal        = "NORMAL"
@@ -10,6 +20,18 @@ const (
 	MovementTypeJump          = "JUMP"
 	MovementTypeStatChange    = "STAT_CHANGE"
 )
+
+type command[E any] struct {
+	WorldId     byte   `json:"worldId"`
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
+}
+
+type requestDistributeApCommandBody struct {
+	Ability string `json:"ability"`
+	Amount  int8   `json:"amount"`
+}
 
 type movementCommand struct {
 	WorldId     byte     `json:"worldId"`

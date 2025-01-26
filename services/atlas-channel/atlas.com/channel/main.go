@@ -236,6 +236,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.GuildInviteRejectHandle] = handler.GuildInviteRejectHandleFunc
 	handlerMap[handler.FameChangeHandle] = handler.FameChangeHandleFunc
 	handlerMap[handler.CharacterDistributeApHandle] = handler.CharacterDistributeApHandleFunc
+	handlerMap[handler.CharacterAutoDistributeApHandle] = handler.CharacterAutoDistributeApHandleFunc
 	return handlerMap
 }
 

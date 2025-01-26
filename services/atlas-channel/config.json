@@ -888,7 +888,33 @@
             },
             {
               "opCode": "0x1F",
-              "writer": "StatChanged"
+              "writer": "StatChanged",
+              "options": {
+                "statistics": [
+                  "SKIN",
+                  "FACE",
+                  "HAIR",
+                  "PET_SN_1",
+                  "LEVEL",
+                  "JOB",
+                  "STRENGTH",
+                  "DEXTERITY",
+                  "INTELLIGENCE",
+                  "LUCK",
+                  "HP",
+                  "MAX_HP",
+                  "MP",
+                  "MAX_MP",
+                  "AVAILABLE_AP",
+                  "AVAILABLE_SP",
+                  "EXPERIENCE",
+                  "FAME",
+                  "MESO",
+                  "PET_SN_2",
+                  "PET_SN_3",
+                  "GACHAPON_EXPERIENCE"
+                ]
+                }
             },
             {
               "opCode": "0x26",

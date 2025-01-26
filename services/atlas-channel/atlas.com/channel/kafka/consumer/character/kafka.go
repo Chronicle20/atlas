@@ -25,10 +25,10 @@ type statusEvent[E any] struct {
 	Body        E      `json:"body"`
 }
 
-// TODO this should transmit stats
 type statusEventStatChangedBody struct {
-	ChannelId       byte `json:"channelId"`
-	ExclRequestSent bool `json:"exclRequestSent"`
+	ChannelId       byte     `json:"channelId"`
+	ExclRequestSent bool     `json:"exclRequestSent"`
+	Updates         []string `json:"updates"`
 }
 
 type statusEventMapChangedBody struct {

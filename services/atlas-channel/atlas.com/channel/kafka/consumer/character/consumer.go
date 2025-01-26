@@ -44,26 +44,82 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 }
 
 func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventStatChangedBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventStatChangedBody]) {
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.Body.ChannelId) {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventStatChangedBody]) {
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
 			return
 		}
 
-		if event.Type != EventCharacterStatusTypeStatChanged {
+		if sc.WorldId() != e.WorldId {
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, statChanged(l)(ctx)(wp)(event.Body.ExclRequestSent))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, statChanged(l)(ctx)(wp)(e.Body.ExclRequestSent, e.Body.Updates))
 	}
 }
 
-func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(exclRequestSent bool) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(exclRequestSent bool) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(exclRequestSent bool) model.Operator[session.Model] {
+func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
 			statChangedFunc := session.Announce(l)(ctx)(wp)(writer.StatChanged)
-			return func(exclRequestSent bool) model.Operator[session.Model] {
+			return func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					err := statChangedFunc(s, writer.StatChangedBody(l)(exclRequestSent))
+					c, err := character.GetById(l)(ctx)(s.CharacterId())
+					if err != nil {
+						return err
+					}
+					var su = make([]model2.StatUpdate, 0)
+					for _, update := range updates {
+						value := int64(0)
+						if update == writer.StatSkin {
+							value = int64(c.SkinColor())
+						} else if update == writer.StatFace {
+							value = int64(c.Face())
+						} else if update == writer.StatHair {
+							value = int64(c.Hair())
+						} else if update == writer.StatPetSn1 {
+							value = int64(0)
+						} else if update == writer.StatLevel {
+							value = int64(c.Level())
+						} else if update == writer.StatJob {
+							value = int64(c.JobId())
+						} else if update == writer.StatStrength {
+							value = int64(c.Strength())
+						} else if update == writer.StatDexterity {
+							value = int64(c.Dexterity())
+						} else if update == writer.StatIntelligence {
+							value = int64(c.Intelligence())
+						} else if update == writer.StatLuck {
+							value = int64(c.Luck())
+						} else if update == writer.StatHp {
+							value = int64(c.Hp())
+						} else if update == writer.StatMaxHp {
+							value = int64(c.MaxHp())
+						} else if update == writer.StatMp {
+							value = int64(c.Mp())
+						} else if update == writer.StatMaxMp {
+							value = int64(c.MaxMp())
+						} else if update == writer.StatAvailableAp {
+							value = int64(c.Ap())
+						} else if update == writer.StatAvailableSp {
+							value = int64(c.Sp()[0])
+						} else if update == writer.StatExperience {
+							value = int64(c.Experience())
+						} else if update == writer.StatFame {
+							value = int64(c.Fame())
+						} else if update == writer.StatMeso {
+							value = int64(c.Meso())
+						} else if update == writer.StatPetSn2 {
+							value = int64(0)
+						} else if update == writer.StatPetSn3 {
+							value = int64(0)
+						} else if update == writer.StatGachaponExperience {
+							value = int64(c.GachaponExperience())
+						}
+						su = append(su, model2.NewStatUpdate(update, value))
+					}
+
+					err = statChangedFunc(s, writer.StatChangedBody(l)(su, exclRequestSent))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
 						return err

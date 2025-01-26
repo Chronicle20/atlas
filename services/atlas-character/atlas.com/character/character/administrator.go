@@ -179,6 +179,14 @@ func SetMaxMP(mp uint16) EntityUpdateFunction {
 	}
 }
 
+func SetHPMPUsed(value int) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"HPMPUsed"}, func(e *entity) {
+			e.HPMPUsed = value
+		}
+	}
+}
+
 func SetMapId(mapId uint32) EntityUpdateFunction {
 	return func() ([]string, func(e *entity)) {
 		return []string{"MapId"}, func(e *entity) {

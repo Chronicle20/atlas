@@ -5,6 +5,7 @@ import (
 	"atlas-character/equipment"
 	"atlas-character/equipment/slot"
 	"atlas-character/inventory"
+	"atlas-character/job"
 	"atlas-character/kafka/producer"
 	"atlas-character/portal"
 	"context"
@@ -19,6 +20,15 @@ import (
 
 var blockedNameErr = errors.New("blocked name")
 var invalidLevelErr = errors.New("invalid level")
+
+const (
+	CommandDistributeApAbilityStrength     = "STRENGTH"
+	CommandDistributeApAbilityDexterity    = "DEXTERITY"
+	CommandDistributeApAbilityIntelligence = "INTELLIGENCE"
+	CommandDistributeApAbilityLuck         = "LUCK"
+	CommandDistributeApAbilityHp           = "HP"
+	CommandDistributeApAbilityMp           = "MP"
+)
 
 // entityModelMapper A function which maps an entity provider to a Model provider
 type entityModelMapper = func(provider model.Provider[entity]) model.Provider[Model]
@@ -551,7 +561,7 @@ func RequestChangeMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *
 		return func(db *gorm.DB) func(characterId uint32, amount int32) error {
 			return func(characterId uint32, amount int32) error {
 				return db.Transaction(func(tx *gorm.DB) error {
-					c, err := GetById(ctx)(db)()(characterId)
+					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their meso adjusted.", characterId)
 						return err
@@ -565,7 +575,7 @@ func RequestChangeMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *
 						return err
 					}
 
-					err = dynamicUpdate(db)(SetMeso(uint32(int64(c.Meso()) + int64(amount))))(t.Id())(c)
+					err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(amount))))(t.Id())(c)
 					_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(mesoChangedStatusEventProvider(characterId, c.WorldId(), amount))
 					return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{"MESO"}))
 				})
@@ -579,17 +589,145 @@ func RequestChangeFame(l logrus.FieldLogger) func(ctx context.Context) func(db *
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, amount int8, actorId uint32, actorType string) error {
 			return func(characterId uint32, amount int8, actorId uint32, actorType string) error {
-				c, err := GetById(ctx)(db)()(characterId)
-				if err != nil {
-					l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their fame adjusted.", characterId)
-					return err
-				}
+				return db.Transaction(func(tx *gorm.DB) error {
+					c, err := GetById(ctx)(tx)()(characterId)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their fame adjusted.", characterId)
+						return err
+					}
 
-				total := c.Fame() + int16(amount)
-				err = dynamicUpdate(db)(SetFame(total))(t.Id())(c)
-				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(fameChangedStatusEventProvider(characterId, c.WorldId(), amount, actorId, actorType))
-				return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{"FAME"}))
+					total := c.Fame() + int16(amount)
+					err = dynamicUpdate(tx)(SetFame(total))(t.Id())(c)
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(fameChangedStatusEventProvider(characterId, c.WorldId(), amount, actorId, actorType))
+					return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{"FAME"}))
+				})
 			}
+		}
+	}
+}
+
+func RequestDistributeAp(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, ability string, amount int8) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, ability string, amount int8) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, ability string, amount int8) error {
+			return func(characterId uint32, ability string, amount int8) error {
+				return db.Transaction(func(tx *gorm.DB) error {
+					c, err := GetById(ctx)(tx)()(characterId)
+					if err != nil {
+						_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{}))
+						return err
+					}
+					if c.AP() <= 0 {
+						_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{}))
+						return errors.New("not enough ap")
+					}
+
+					var eufs = make([]EntityUpdateFunction, 0)
+					var stat = ""
+					switch ability {
+					case CommandDistributeApAbilityStrength:
+						eufs = append(eufs, SetStrength(c.Strength()+1))
+						stat = "STRENGTH"
+						break
+					case CommandDistributeApAbilityDexterity:
+						eufs = append(eufs, SetDexterity(c.Dexterity()+1))
+						stat = "DEXTERITY"
+						break
+					case CommandDistributeApAbilityIntelligence:
+						eufs = append(eufs, SetIntelligence(c.Intelligence()+1))
+						stat = "INTELLIGENCE"
+						break
+					case CommandDistributeApAbilityLuck:
+						eufs = append(eufs, SetLuck(c.Luck()+1))
+						stat = "LUCK"
+						break
+					case CommandDistributeApAbilityHp:
+						hpGrowth, err := getMaxHpGrowth(l)(ctx)(c)
+						if err != nil {
+							return err
+						}
+						eufs = append(eufs, SetMaxHP(hpGrowth))
+						eufs = append(eufs, SetHPMPUsed(c.HPMPUsed()+1))
+						stat = "MAX_HP"
+						break
+					case CommandDistributeApAbilityMp:
+						mpGrowth, err := getMaxMpGrowth(l)(ctx)(c)
+						if err != nil {
+							return err
+						}
+						eufs = append(eufs, SetMaxMP(mpGrowth))
+						eufs = append(eufs, SetHPMPUsed(c.HPMPUsed()+1))
+						stat = "MAX_MP"
+						break
+					}
+
+					if len(eufs) == 0 {
+						_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{}))
+						return errors.New("invalid ability")
+					}
+
+					eufs = append(eufs, SetAP(c.AP()-1))
+					err = dynamicUpdate(tx)(eufs...)(t.Id())(c)
+					if err != nil {
+						_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{"AVAILABLE_AP"}))
+						return err
+					}
+
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{stat, "AVAILABLE_AP"}))
+					return nil
+				})
+			}
+		}
+	}
+}
+
+func getMaxHpGrowth(_ logrus.FieldLogger) func(ctx context.Context) func(c Model) (uint16, error) {
+	return func(_ context.Context) func(c Model) (uint16, error) {
+		return func(c Model) (uint16, error) {
+			if c.MaxHP() >= 30000 || c.HPMPUsed() > 9999 {
+				return c.MaxHP(), errors.New("max ap to hp")
+			}
+			resMax := c.MaxHP()
+			if job.IsA(c.JobId(), job.Warrior, job.DawnWarrior1, job.Aran1) {
+				// TODO include MAX_HP_INCREASE skill
+				resMax += 20
+			} else if job.IsA(c.JobId(), job.Magician, job.BlazeWizard1) {
+				resMax += 6
+			} else if job.IsA(c.JobId(), job.Bowman, job.WindArcher1, job.Thief, job.NightWalker1) {
+				resMax += 16
+			} else if job.IsA(c.JobId(), job.Pirate, job.ThunderBreaker1) {
+				// TODO include IMPROVE_MAX_HP
+				resMax += 18
+			} else {
+				resMax += 8
+			}
+			return resMax, nil
+		}
+	}
+}
+
+func getMaxMpGrowth(_ logrus.FieldLogger) func(ctx context.Context) func(c Model) (uint16, error) {
+	return func(_ context.Context) func(c Model) (uint16, error) {
+		return func(c Model) (uint16, error) {
+			if c.MaxMP() >= 30000 || c.HPMPUsed() > 9999 {
+				return c.MaxMP(), errors.New("max ap to mp")
+			}
+			resMax := c.MaxMP()
+			if job.IsA(c.JobId(), job.Warrior, job.DawnWarrior1, job.Aran1) {
+				resMax += 2
+			} else if job.IsA(c.JobId(), job.Magician, job.BlazeWizard1) {
+				// TODO include INCREASING_MAX_MP skill
+				resMax += 18
+			} else if job.IsA(c.JobId(), job.Bowman, job.WindArcher1, job.Thief, job.NightWalker1) {
+				resMax += 10
+			} else if job.IsA(c.JobId(), job.Pirate, job.ThunderBreaker1) {
+				resMax += 14
+			} else {
+				resMax += 6
+			}
+			// TODO this needs to incorporate computed total intelligence (buffs, weapons, etc)
+			resMax += uint16(math.Ceil(float64(c.Intelligence()) / 10))
+			return resMax, nil
 		}
 	}
 }

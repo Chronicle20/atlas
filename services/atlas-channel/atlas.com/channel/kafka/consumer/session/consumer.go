@@ -21,24 +21,29 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	consumerAccountSessionStatusEvent = "account_session_status_event"
-)
-
-func AccountSessionStatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerAccountSessionStatusEvent)(EnvEventStatusTopic)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("account_session_status_event")(EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func ErrorAccountSessionStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		tn, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return tn, message.AdaptHandler(message.PersistentConfig(handleErrorAccountSessionStatusEvent(sc, wp)))
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+				var t string
+				t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleError(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChannelChange(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handlePlayerLoggedIn(sc, wp))))
+			}
+		}
 	}
 }
 
-func handleErrorAccountSessionStatusEvent(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e statusEvent[errorStatusEventBody]) {
+func handleError(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e statusEvent[errorStatusEventBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[errorStatusEventBody]) {
 		if e.Type != EventStatusTypeError {
 			return
@@ -66,14 +71,7 @@ func announceError(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	}
 }
 
-func ChannelChangeStateChangedAccountSessionStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		tn, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return tn, message.AdaptHandler(message.PersistentConfig(handleChannelChangeStateChangedAccountSessionStatusEvent(sc, wp)))
-	}
-}
-
-func handleChannelChangeStateChangedAccountSessionStatusEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[stateChangedEventBody[model2.ChannelChange]]] {
+func handleChannelChange(sc server.Model, wp writer.Producer) message.Handler[statusEvent[stateChangedEventBody[model2.ChannelChange]]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[stateChangedEventBody[model2.ChannelChange]]) {
 		if e.Type != EventStatusTypeStateChanged {
 			return
@@ -110,14 +108,7 @@ func processChannelChangeReturn(l logrus.FieldLogger) func(ctx context.Context) 
 	}
 }
 
-func PlayerLoggedInStateChangedAccountSessionStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		tn, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return tn, message.AdaptHandler(message.PersistentConfig(handlePlayerLoggedInStateChangedAccountSessionStatusEvent(sc, wp)))
-	}
-}
-
-func handlePlayerLoggedInStateChangedAccountSessionStatusEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[stateChangedEventBody[model2.SetField]]] {
+func handlePlayerLoggedIn(sc server.Model, wp writer.Producer) message.Handler[statusEvent[stateChangedEventBody[model2.SetField]]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[stateChangedEventBody[model2.SetField]]) {
 		if e.Type != EventStatusTypeStateChanged {
 			return
@@ -131,6 +122,7 @@ func handlePlayerLoggedInStateChangedAccountSessionStatusEvent(sc server.Model, 
 		session.IfPresentById(t, sc.WorldId(), sc.ChannelId())(e.SessionId, processStateReturn(l)(ctx)(wp)(e.AccountId, e.Body.State, e.Body.Params))
 	}
 }
+
 func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 		t := tenant.MustFromContext(ctx)

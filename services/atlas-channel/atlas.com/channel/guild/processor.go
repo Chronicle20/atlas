@@ -1,6 +1,7 @@
 package guild
 
 import (
+	"atlas-channel/guild/member"
 	"atlas-channel/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
@@ -29,6 +30,41 @@ func byMemberIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(mem
 	return func(ctx context.Context) func(memberId uint32) model.Provider[[]Model] {
 		return func(memberId uint32) model.Provider[[]Model] {
 			return requests.SliceProvider[RestModel, Model](l, ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
+		}
+	}
+}
+
+func MemberOnline(m member.Model) bool {
+	return m.Online()
+}
+
+func NotMember(characterId uint32) model.Filter[member.Model] {
+	return func(m member.Model) bool {
+		return m.CharacterId() != characterId
+	}
+}
+
+func GetMemberIds(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, filters []model.Filter[member.Model]) model.Provider[[]uint32] {
+	return func(ctx context.Context) func(guildId uint32, filters []model.Filter[member.Model]) model.Provider[[]uint32] {
+		return func(guildId uint32, filters []model.Filter[member.Model]) model.Provider[[]uint32] {
+			g, err := GetById(l)(ctx)(guildId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve guild [%d].", guildId)
+				return model.ErrorProvider[[]uint32](err)
+			}
+			ids := make([]uint32, 0)
+			for _, m := range g.Members() {
+				ok := true
+				for _, f := range filters {
+					if !f(m) {
+						ok = false
+					}
+				}
+				if ok {
+					ids = append(ids, m.CharacterId())
+				}
+			}
+			return model.FixedProvider(ids)
 		}
 	}
 }

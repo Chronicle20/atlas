@@ -4,6 +4,9 @@ const (
 	EnvEventTopicCharacterStatus        = "EVENT_TOPIC_CHARACTER_STATUS"
 	EventCharacterStatusTypeStatChanged = "STAT_CHANGED"
 	EventCharacterStatusTypeMapChanged  = "MAP_CHANGED"
+	StatusEventTypeFameChanged          = "FAME_CHANGED"
+
+	StatusEventActorTypeCharacter = "CHARACTER"
 
 	EnvEventTopicMovement = "EVENT_TOPIC_CHARACTER_MOVEMENT"
 
@@ -22,10 +25,10 @@ type statusEvent[E any] struct {
 	Body        E      `json:"body"`
 }
 
-// TODO this should transmit stats
 type statusEventStatChangedBody struct {
-	ChannelId       byte `json:"channelId"`
-	ExclRequestSent bool `json:"exclRequestSent"`
+	ChannelId       byte     `json:"channelId"`
+	ExclRequestSent bool     `json:"exclRequestSent"`
+	Updates         []string `json:"updates"`
 }
 
 type statusEventMapChangedBody struct {
@@ -33,6 +36,12 @@ type statusEventMapChangedBody struct {
 	OldMapId       uint32 `json:"oldMapId"`
 	TargetMapId    uint32 `json:"targetMapId"`
 	TargetPortalId uint32 `json:"targetPortalId"`
+}
+
+type fameChangedStatusEventBody struct {
+	ActorId   uint32 `json:"actorId"`
+	ActorType string `json:"actorType"`
+	Amount    int8   `json:"amount"`
 }
 
 type movementEvent struct {

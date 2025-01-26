@@ -17,20 +17,33 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)("party_status_event")(EnvEventStatusTopic)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("party_status_event")(EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func CreatedStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleCreatedEvent(sc, wp)))
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+				var t string
+				t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreated(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLeft(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleExpel(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDisband(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleJoin(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeLeader(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleError(sc, wp))))
+			}
+		}
 	}
 }
 
-func handleCreatedEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[createdEventBody]] {
+func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[createdEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[createdEventBody]) {
 		if e.Type != EventPartyStatusTypeCreated {
 			return
@@ -73,14 +86,7 @@ func partyCreated(l logrus.FieldLogger) func(ctx context.Context) func(wp writer
 	}
 }
 
-func LeftStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleLeftEvent(sc, wp)))
-	}
-}
-
-func handleLeftEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[leftEventBody]] {
+func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent[leftEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[leftEventBody]) {
 		if e.Type != EventPartyStatusTypeLeft {
 			return
@@ -138,14 +144,7 @@ func partyLeft(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pr
 	}
 }
 
-func ExpelStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleExpelEvent(sc, wp)))
-	}
-}
-
-func handleExpelEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[expelEventBody]] {
+func handleExpel(sc server.Model, wp writer.Producer) message.Handler[statusEvent[expelEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[expelEventBody]) {
 		if e.Type != EventPartyStatusTypeExpel {
 			return
@@ -203,14 +202,7 @@ func partyExpel(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.P
 	}
 }
 
-func DisbandStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleDisbandEvent(sc, wp)))
-	}
-}
-
-func handleDisbandEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[disbandEventBody]] {
+func handleDisband(sc server.Model, wp writer.Producer) message.Handler[statusEvent[disbandEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[disbandEventBody]) {
 		if e.Type != EventPartyStatusTypeDisband {
 			return
@@ -262,14 +254,7 @@ func partyDisband(l logrus.FieldLogger) func(ctx context.Context) func(wp writer
 	}
 }
 
-func JoinStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleJoinEvent(sc, wp)))
-	}
-}
-
-func handleJoinEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[joinedEventBody]] {
+func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent[joinedEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[joinedEventBody]) {
 		if e.Type != EventPartyStatusTypeJoined {
 			return
@@ -323,14 +308,7 @@ func partyJoined(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	}
 }
 
-func ChangeLeaderStatusEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleChangeLeaderEvent(sc, wp)))
-	}
-}
-
-func handleChangeLeaderEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[changeLeaderEventBody]] {
+func handleChangeLeader(sc server.Model, wp writer.Producer) message.Handler[statusEvent[changeLeaderEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[changeLeaderEventBody]) {
 		if e.Type != EventPartyStatusTypeChangeLeader {
 			return
@@ -382,14 +360,7 @@ func partyChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 	}
 }
 
-func ErrorEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleErrorEvent(sc, wp)))
-	}
-}
-
-func handleErrorEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[errorEventBody]] {
+func handleError(sc server.Model, wp writer.Producer) message.Handler[statusEvent[errorEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[errorEventBody]) {
 		if e.Type != EventPartyStatusTypeError {
 			return
@@ -404,11 +375,11 @@ func handleErrorEvent(sc server.Model, wp writer.Producer) message.Handler[statu
 			return
 		}
 
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, partyErrorEvent(l)(ctx)(wp)(e.Body.Type, e.Body.CharacterName))
+		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, partyError(l)(ctx)(wp)(e.Body.Type, e.Body.CharacterName))
 	}
 }
 
-func partyErrorEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
+func partyError(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
 			partyOperationFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)

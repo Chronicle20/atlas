@@ -113,3 +113,28 @@ func byMemberIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(mem
 		}
 	}
 }
+
+func GetMemberIds(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, filters []model.Filter[MemberModel]) model.Provider[[]uint32] {
+	return func(ctx context.Context) func(partyId uint32, filters []model.Filter[MemberModel]) model.Provider[[]uint32] {
+		return func(partyId uint32, filters []model.Filter[MemberModel]) model.Provider[[]uint32] {
+			g, err := GetById(l)(ctx)(partyId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve party [%d].", partyId)
+				return model.ErrorProvider[[]uint32](err)
+			}
+			ids := make([]uint32, 0)
+			for _, m := range g.Members() {
+				ok := true
+				for _, f := range filters {
+					if !f(m) {
+						ok = false
+					}
+				}
+				if ok {
+					ids = append(ids, m.Id())
+				}
+			}
+			return model.FixedProvider(ids)
+		}
+	}
+}

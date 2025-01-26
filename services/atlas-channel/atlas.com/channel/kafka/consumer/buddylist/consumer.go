@@ -16,18 +16,28 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const consumerStatusEvent = "buddy_list_status"
-
-func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerStatusEvent)(EnvStatusEventTopic)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("buddy_list_status_event")(EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func StatusEventBuddyAddedRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyAdded(sc, wp)))
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+				var t string
+				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyAdded(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyRemoved(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyUpdated(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyChannelChange(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyCapacityChange(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyError(sc, wp))))
+			}
+		}
 	}
 }
 
@@ -74,13 +84,6 @@ func redrawBuddyList(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 	}
 }
 
-func StatusEventBuddyRemovedRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyRemoved(sc, wp)))
-	}
-}
-
 func handleStatusEventBuddyRemoved(sc server.Model, wp writer.Producer) message.Handler[statusEvent[buddyRemovedStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, c statusEvent[buddyRemovedStatusEventBody]) {
 		if c.Type != StatusEventTypeBuddyRemoved {
@@ -97,13 +100,6 @@ func handleStatusEventBuddyRemoved(sc server.Model, wp writer.Producer) message.
 		}
 
 		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(c.CharacterId, redrawBuddyList(l)(ctx)(wp)())
-	}
-}
-
-func StatusEventBuddyUpdatedRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyUpdated(sc, wp)))
 	}
 }
 
@@ -145,13 +141,6 @@ func updateBuddy(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	}
 }
 
-func StatusEventBuddyChannelChangeRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyChannelChange(sc, wp)))
-	}
-}
-
 func handleStatusEventBuddyChannelChange(sc server.Model, wp writer.Producer) message.Handler[statusEvent[buddyChannelChangeStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, c statusEvent[buddyChannelChangeStatusEventBody]) {
 		if c.Type != StatusEventTypeBuddyChannelChange {
@@ -189,13 +178,6 @@ func buddyChannelChange(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 	}
 }
 
-func StatusEventBuddyCapacityChangeRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyCapacityChange(sc, wp)))
-	}
-}
-
 func handleStatusEventBuddyCapacityChange(sc server.Model, wp writer.Producer) message.Handler[statusEvent[buddyCapacityChangeStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, c statusEvent[buddyCapacityChangeStatusEventBody]) {
 		if c.Type != StatusEventTypeBuddyCapacityUpdate {
@@ -230,13 +212,6 @@ func buddyCapacityChange(l logrus.FieldLogger) func(ctx context.Context) func(wp
 				}
 			}
 		}
-	}
-}
-
-func StatusEventBuddyErrorRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvStatusEventTopic)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyError(sc, wp)))
 	}
 }
 

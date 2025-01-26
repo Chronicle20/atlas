@@ -25,6 +25,16 @@ func GetCharacterIdsInMap(l logrus.FieldLogger) func(ctx context.Context) func(w
 	}
 }
 
+func ForSessionsInSessionsMap(l logrus.FieldLogger) func(ctx context.Context) func(f func(oid uint32) model.Operator[session.Model]) model.Operator[session.Model] {
+	return func(ctx context.Context) func(f func(oid uint32) model.Operator[session.Model]) model.Operator[session.Model] {
+		return func(f func(oid uint32) model.Operator[session.Model]) model.Operator[session.Model] {
+			return func(s session.Model) error {
+				return session.ForEachByCharacterId(tenant.MustFromContext(ctx))(CharacterIdsInMapModelProvider(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId()), f(s.CharacterId()))
+			}
+		}
+	}
+}
+
 func ForSessionsInMap(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, o model.Operator[session.Model]) error {
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, o model.Operator[session.Model]) error {
 		return func(worldId byte, channelId byte, mapId uint32, o model.Operator[session.Model]) error {

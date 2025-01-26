@@ -2,22 +2,24 @@ package main
 
 import (
 	"atlas-channel/account"
-	"atlas-channel/channel"
 	"atlas-channel/configuration"
+	account2 "atlas-channel/kafka/consumer/account"
 	"atlas-channel/kafka/consumer/buddylist"
+	"atlas-channel/kafka/consumer/channel"
 	"atlas-channel/kafka/consumer/character"
 	"atlas-channel/kafka/consumer/expression"
+	"atlas-channel/kafka/consumer/fame"
 	"atlas-channel/kafka/consumer/guild"
 	"atlas-channel/kafka/consumer/inventory"
 	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/map"
+	"atlas-channel/kafka/consumer/message"
 	"atlas-channel/kafka/consumer/monster"
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/party"
 	"atlas-channel/kafka/consumer/party/member"
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/logger"
-	"atlas-channel/message"
 	"atlas-channel/server"
 	"atlas-channel/service"
 	"atlas-channel/session"
@@ -40,7 +42,7 @@ import (
 )
 
 const serviceName = "atlas-channel"
-const consumerGroupId = "Channel Service - %s"
+const consumerGroupIdTemplate = "Channel Service - %s"
 
 func main() {
 	l := logger.CreateLogger(serviceName)
@@ -57,30 +59,29 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatal("Unable to successfully load configuration.")
 	}
+	var consumerGroupId = fmt.Sprintf(consumerGroupIdTemplate, config.Data.Id)
 
 	validatorMap := produceValidators()
 	handlerMap := produceHandlers()
 	writerList := produceWriters()
 
-	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(_map.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.MovementEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(channel.CommandStatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.MovementEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.StatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(message.ChatEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(inventory.ChangedConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(party.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(member.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(invite.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(buddylist.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(session2.AccountSessionStatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(expression.EventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(conversation.CommandConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(guild.CommandConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(guild.StatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	account2.InitConsumers(l)(cmf)(consumerGroupId)
+	buddylist.InitConsumers(l)(cmf)(consumerGroupId)
+	character.InitConsumers(l)(cmf)(consumerGroupId)
+	channel.InitConsumers(l)(cmf)(consumerGroupId)
+	conversation.InitConsumers(l)(cmf)(consumerGroupId)
+	expression.InitConsumers(l)(cmf)(consumerGroupId)
+	guild.InitConsumers(l)(cmf)(consumerGroupId)
+	inventory.InitConsumers(l)(cmf)(consumerGroupId)
+	invite.InitConsumers(l)(cmf)(consumerGroupId)
+	_map.InitConsumers(l)(cmf)(consumerGroupId)
+	member.InitConsumers(l)(cmf)(consumerGroupId)
+	message.InitConsumers(l)(cmf)(consumerGroupId)
+	monster.InitConsumers(l)(cmf)(consumerGroupId)
+	party.InitConsumers(l)(cmf)(consumerGroupId)
+	session2.InitConsumers(l)(cmf)(consumerGroupId)
+	fame.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
@@ -130,61 +131,22 @@ func main() {
 					WithField("channel.id", sc.ChannelId())
 
 				wp := produceWriterProducer(fl)(s.Writers, writerList, rw)
-				_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(character.StatusEventStatChangedRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(character.StatusEventMapChangedRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(channel.CommandStatusRegister(sc, config.Data.Attributes.IPAddress, c.Port)(fl))
-				_, _ = cm.RegisterHandler(monster.StatusEventCreatedRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(monster.StatusEventDestroyedRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(monster.StatusEventKilledRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(monster.StatusEventStartControlRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(monster.StatusEventStopControlRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(monster.MovementEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(account.StatusRegister(fl, sc))
-				_, _ = cm.RegisterHandler(message.GeneralChatEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(message.MultiChatEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(character.MovementEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(inventory.ChangeEventAddRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(inventory.ChangeEventUpdateRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(inventory.ChangeEventMoveRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(inventory.ChangeEventRemoveRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(party.CreatedStatusEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(party.JoinStatusEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(party.LeftStatusEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(party.ExpelStatusEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(party.DisbandStatusEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(party.ChangeLeaderStatusEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(party.ErrorEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(member.LoginStatusEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(member.LogoutStatusEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(invite.CreatedStatusEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(invite.RejectedStatusEventRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyAddedRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyRemovedRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyUpdatedRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyChannelChangeRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyCapacityChangeRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(buddylist.StatusEventBuddyErrorRegister(sc, wp)(fl))
-				_, _ = cm.RegisterHandler(session2.ChannelChangeStateChangedAccountSessionStatusEventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(session2.PlayerLoggedInStateChangedAccountSessionStatusEventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(session2.ErrorAccountSessionStatusEventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(expression.EventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(conversation.SimpleConversationCommandRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(guild.RequestNameRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(guild.RequestEmblemRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(guild.CreatedStatusEventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(guild.DisbandedStatusEventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(guild.RequestAgreementStatusEventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(guild.EmblemUpdateStatusEventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(guild.MemberStatusUpdatedStatusEventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(guild.MemberTitleUpdatedStatusEventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(guild.NoticeUpdateStatusEventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(guild.CapacityUpdateStatusEventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(guild.MemberLeftStatusEventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(guild.MemberJoinedStatusEventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(guild.TitlesUpdateStatusEventRegister(sc, wp)(l))
-				_, _ = cm.RegisterHandler(guild.ErrorStatusEventRegister(sc, wp)(l))
+				account2.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				buddylist.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				channel.InitHandlers(fl)(sc)(config.Data.Attributes.IPAddress, c.Port)(consumer.GetManager().RegisterHandler)
+				character.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				expression.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				guild.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				inventory.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				invite.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				_map.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				message.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				monster.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				conversation.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				member.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				party.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				session2.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				fame.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
@@ -244,6 +206,7 @@ func produceWriters() []string {
 		writer.GuildOperation,
 		writer.GuildEmblemChanged,
 		writer.GuildNameChanged,
+		writer.FameResponse,
 	}
 }
 
@@ -271,6 +234,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.NPCContinueConversationHandle] = handler.NPCContinueConversationHandleFunc
 	handlerMap[handler.GuildOperationHandle] = handler.GuildOperationHandleFunc
 	handlerMap[handler.GuildInviteRejectHandle] = handler.GuildInviteRejectHandleFunc
+	handlerMap[handler.FameChangeHandle] = handler.FameChangeHandleFunc
 	return handlerMap
 }
 

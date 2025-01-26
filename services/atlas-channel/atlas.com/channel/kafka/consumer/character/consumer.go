@@ -18,50 +18,108 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const consumerStatusEvent = "character_status"
-const consumerMovementEvent = "character_movement"
-
-func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerStatusEvent)(EnvEventTopicCharacterStatus)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("character_status_event")(EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("character_movement_event")(EnvEventTopicMovement)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func StatusEventStatChangedRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventStatChanged(sc, wp)))
-	}
-}
-
-func StatusEventMapChangedRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged(sc, wp)))
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+				var t string
+				t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventStatChanged(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventFameChanged(sc, wp))))
+				t, _ = topic.EnvProvider(l)(EnvEventTopicMovement)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp))))
+			}
+		}
 	}
 }
 
 func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventStatChangedBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventStatChangedBody]) {
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.Body.ChannelId) {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventStatChangedBody]) {
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
 			return
 		}
 
-		if event.Type != EventCharacterStatusTypeStatChanged {
+		if sc.WorldId() != e.WorldId {
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, statChanged(l)(ctx)(wp)(event.Body.ExclRequestSent))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, statChanged(l)(ctx)(wp)(e.Body.ExclRequestSent, e.Body.Updates))
 	}
 }
 
-func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(exclRequestSent bool) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(exclRequestSent bool) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(exclRequestSent bool) model.Operator[session.Model] {
+func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
 			statChangedFunc := session.Announce(l)(ctx)(wp)(writer.StatChanged)
-			return func(exclRequestSent bool) model.Operator[session.Model] {
+			return func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					err := statChangedFunc(s, writer.StatChangedBody(l)(exclRequestSent))
+					c, err := character.GetById(l)(ctx)(s.CharacterId())
+					if err != nil {
+						return err
+					}
+					var su = make([]model2.StatUpdate, 0)
+					for _, update := range updates {
+						value := int64(0)
+						if update == writer.StatSkin {
+							value = int64(c.SkinColor())
+						} else if update == writer.StatFace {
+							value = int64(c.Face())
+						} else if update == writer.StatHair {
+							value = int64(c.Hair())
+						} else if update == writer.StatPetSn1 {
+							value = int64(0)
+						} else if update == writer.StatLevel {
+							value = int64(c.Level())
+						} else if update == writer.StatJob {
+							value = int64(c.JobId())
+						} else if update == writer.StatStrength {
+							value = int64(c.Strength())
+						} else if update == writer.StatDexterity {
+							value = int64(c.Dexterity())
+						} else if update == writer.StatIntelligence {
+							value = int64(c.Intelligence())
+						} else if update == writer.StatLuck {
+							value = int64(c.Luck())
+						} else if update == writer.StatHp {
+							value = int64(c.Hp())
+						} else if update == writer.StatMaxHp {
+							value = int64(c.MaxHp())
+						} else if update == writer.StatMp {
+							value = int64(c.Mp())
+						} else if update == writer.StatMaxMp {
+							value = int64(c.MaxMp())
+						} else if update == writer.StatAvailableAp {
+							value = int64(c.Ap())
+						} else if update == writer.StatAvailableSp {
+							value = int64(c.Sp()[0])
+						} else if update == writer.StatExperience {
+							value = int64(c.Experience())
+						} else if update == writer.StatFame {
+							value = int64(c.Fame())
+						} else if update == writer.StatMeso {
+							value = int64(c.Meso())
+						} else if update == writer.StatPetSn2 {
+							value = int64(0)
+						} else if update == writer.StatPetSn3 {
+							value = int64(0)
+						} else if update == writer.StatGachaponExperience {
+							value = int64(c.GachaponExperience())
+						}
+						su = append(su, model2.NewStatUpdate(update, value))
+					}
+
+					err = statChangedFunc(s, writer.StatChangedBody(l)(su, exclRequestSent))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
 						return err
@@ -75,11 +133,11 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 
 func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventMapChangedBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventMapChangedBody]) {
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.Body.ChannelId) {
+		if event.Type != EventCharacterStatusTypeMapChanged {
 			return
 		}
 
-		if event.Type != EventCharacterStatusTypeMapChanged {
+		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.Body.ChannelId) {
 			return
 		}
 
@@ -114,16 +172,71 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	}
 }
 
-func MovementEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerMovementEvent)(EnvEventTopicMovement)(groupId)
+func handleStatusEventFameChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[fameChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[fameChangedStatusEventBody]) {
+		if e.Type != StatusEventTypeFameChanged {
+			return
+		}
+
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		if sc.WorldId() != e.WorldId {
+			return
+		}
+
+		c, err := character.GetById(l)(ctx)(e.CharacterId)
+		if err != nil {
+			return
+		}
+
+		if e.Body.ActorType == StatusEventActorTypeCharacter {
+			ac, err := character.GetById(l)(ctx)(e.Body.ActorId)
+			if err != nil {
+				return
+			}
+
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, receiveFame(l)(ctx)(wp)(ac.Name(), e.Body.Amount))
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, giveFame(l)(ctx)(wp)(c.Name(), e.Body.Amount, c.Fame()))
+		}
 	}
 }
 
-func MovementEventRegister(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicMovement)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp)))
+func receiveFame(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(fromName string, amount int8) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(fromName string, amount int8) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(fromName string, amount int8) model.Operator[session.Model] {
+			fameResponseFunc := session.Announce(l)(ctx)(wp)(writer.FameResponse)
+			return func(fromName string, amount int8) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := fameResponseFunc(s, writer.ReceiveFameResponseBody(l)(fromName, amount))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", s.CharacterId(), amount, fromName)
+						return err
+					}
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func giveFame(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(toName string, amount int8, total int16) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(toName string, amount int8, total int16) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(toName string, amount int8, total int16) model.Operator[session.Model] {
+			fameResponseFunc := session.Announce(l)(ctx)(wp)(writer.FameResponse)
+			return func(toName string, amount int8, total int16) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := fameResponseFunc(s, writer.GiveFameResponseBody(l)(toName, amount, total))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", s.CharacterId(), amount, toName)
+						return err
+					}
+					return nil
+				}
+			}
+		}
 	}
 }
 

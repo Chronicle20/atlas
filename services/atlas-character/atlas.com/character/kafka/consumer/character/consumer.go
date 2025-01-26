@@ -29,6 +29,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMap(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestChangeMeso(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestChangeFame(db))))
 			t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent)))
 		}
@@ -55,6 +56,16 @@ func handleRequestChangeMeso(db *gorm.DB) message.Handler[commandEvent[requestCh
 		}
 
 		_ = character.RequestChangeMeso(l)(ctx)(db)(c.CharacterId, c.Body.Amount)
+	}
+}
+
+func handleRequestChangeFame(db *gorm.DB) message.Handler[commandEvent[requestChangeFameBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[requestChangeFameBody]) {
+		if c.Type != CommandRequestChangeFame {
+			return
+		}
+
+		_ = character.RequestChangeFame(l)(ctx)(db)(c.CharacterId, c.Body.Amount, c.Body.ActorId, c.Body.ActorType)
 	}
 }
 

@@ -593,6 +593,11 @@
               "handler": "CharacterInventoryMoveHandle"
             },
             {
+              "opCode": "0x5F",
+              "validator": "LoggedInValidator",
+              "handler": "FameChangeHandle"
+            },
+            {
               "opCode": "0x61",
               "validator": "LoggedInValidator",
               "handler": "CharacterInfoRequestHandle"
@@ -884,6 +889,21 @@
             {
               "opCode": "0x1F",
               "writer": "StatChanged"
+            },
+            {
+              "opCode": "0x26",
+              "writer": "FameResponse",
+              "options": {
+                "operations": {
+                  "GIVE": "0x00",
+                  "INVALID_NAME": "0x01",
+                  "NOT_MINIMUM_LEVEL": "0x02",
+                  "NOT_TODAY": "0x03",
+                  "NOT_THIS_MONTH": "0x04",
+                  "RECEIVE": "0x05",
+                  "UNEXPECTED": "0x06"
+                }
+              }
             },
             {
               "opCode": "0x3D",

@@ -35,6 +35,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventStatChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventFameChanged(sc, wp))))
 				t, _ = topic.EnvProvider(l)(EnvEventTopicMovement)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp))))
 			}
@@ -76,11 +77,11 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 
 func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventMapChangedBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventMapChangedBody]) {
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.Body.ChannelId) {
+		if event.Type != EventCharacterStatusTypeMapChanged {
 			return
 		}
 
-		if event.Type != EventCharacterStatusTypeMapChanged {
+		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.Body.ChannelId) {
 			return
 		}
 
@@ -106,6 +107,74 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					err = setFieldFunc(s, writer.WarpToMapBody(l, t)(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp()))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
+						return err
+					}
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func handleStatusEventFameChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[fameChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[fameChangedStatusEventBody]) {
+		if e.Type != StatusEventTypeFameChanged {
+			return
+		}
+
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		if sc.WorldId() != e.WorldId {
+			return
+		}
+
+		c, err := character.GetById(l)(ctx)(e.CharacterId)
+		if err != nil {
+			return
+		}
+
+		if e.Body.ActorType == StatusEventActorTypeCharacter {
+			ac, err := character.GetById(l)(ctx)(e.Body.ActorId)
+			if err != nil {
+				return
+			}
+
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, receiveFame(l)(ctx)(wp)(ac.Name(), e.Body.Amount))
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, giveFame(l)(ctx)(wp)(c.Name(), e.Body.Amount, c.Fame()))
+		}
+	}
+}
+
+func receiveFame(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(fromName string, amount int8) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(fromName string, amount int8) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(fromName string, amount int8) model.Operator[session.Model] {
+			fameResponseFunc := session.Announce(l)(ctx)(wp)(writer.FameResponse)
+			return func(fromName string, amount int8) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := fameResponseFunc(s, writer.ReceiveFameResponseBody(l)(fromName, amount))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", s.CharacterId(), amount, fromName)
+						return err
+					}
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func giveFame(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(toName string, amount int8, total int16) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(toName string, amount int8, total int16) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(toName string, amount int8, total int16) model.Operator[session.Model] {
+			fameResponseFunc := session.Announce(l)(ctx)(wp)(writer.FameResponse)
+			return func(toName string, amount int8, total int16) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := fameResponseFunc(s, writer.GiveFameResponseBody(l)(toName, amount, total))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", s.CharacterId(), amount, toName)
 						return err
 					}
 					return nil

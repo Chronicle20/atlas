@@ -593,6 +593,11 @@
               "handler": "CharacterInventoryMoveHandle"
             },
             {
+              "opCode": "0x57",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterDistributeApHandle"
+            },
+            {
               "opCode": "0x5F",
               "validator": "LoggedInValidator",
               "handler": "FameChangeHandle"

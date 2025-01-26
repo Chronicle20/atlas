@@ -101,3 +101,34 @@ func GetByName(l logrus.FieldLogger, ctx context.Context) func(name string) ([]M
 		return byNameProvider(l, ctx)(name)()
 	}
 }
+
+func RequestDistributeAp(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, characterId uint32, updateTime uint32, flag uint32) error {
+	return func(ctx context.Context) func(worldId byte, characterId uint32, updateTime uint32, flag uint32) error {
+		return func(worldId byte, characterId uint32, updateTime uint32, flag uint32) error {
+			a, err := abilityFromFlag(flag)
+			if err != nil {
+				l.WithError(err).Errorf("Character [%d] passed invalid flag when attempting to distribute AP.", characterId)
+				return err
+			}
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestDistributeApCommandProvider(worldId, characterId, a, 1))
+		}
+	}
+}
+
+func abilityFromFlag(flag uint32) (string, error) {
+	switch flag {
+	case 64:
+		return CommandDistributeApAbilityStrength, nil
+	case 128:
+		return CommandDistributeApAbilityDexterity, nil
+	case 256:
+		return CommandDistributeApAbilityIntelligence, nil
+	case 512:
+		return CommandDistributeApAbilityLuck, nil
+	case 2048:
+		return CommandDistributeApAbilityHp, nil
+	case 8192:
+		return CommandDistributeApAbilityMp, nil
+	}
+	return "", errors.New("invalid flag")
+}

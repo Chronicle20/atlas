@@ -48,33 +48,15 @@ func StatChangedBody(l logrus.FieldLogger) func(updates []model.StatUpdate, excl
 			w.WriteInt(updateMask)
 
 			for _, u := range updates {
-				switch u.Stat() {
-				case StatSkin:
-				case StatLevel:
+				if u.Stat() == StatSkin || u.Stat() == StatLevel {
 					w.WriteByte(byte(u.Value()))
-				case StatJob:
-				case StatStrength:
-				case StatDexterity:
-				case StatIntelligence:
-				case StatLuck:
-				case StatHp:
-				case StatMaxHp:
-				case StatMp:
-				case StatMaxMp:
-				case StatAvailableAp:
-				case StatFame:
+				} else if u.Stat() == StatJob || u.Stat() == StatStrength || u.Stat() == StatDexterity || u.Stat() == StatIntelligence || u.Stat() == StatLuck || u.Stat() == StatHp || u.Stat() == StatMaxHp || u.Stat() == StatMp || u.Stat() == StatMaxMp || u.Stat() == StatAvailableAp || u.Stat() == StatFame {
 					w.WriteInt16(int16(u.Value()))
-				case StatAvailableSp:
+				} else if u.Stat() == StatAvailableSp {
 					w.WriteShort(uint16(u.Value()))
-				case StatFace:
-				case StatHair:
-				case StatExperience:
-				case StatMeso:
-				case StatGachaponExperience:
+				} else if u.Stat() == StatFace || u.Stat() == StatHair || u.Stat() == StatExperience || u.Stat() == StatMeso || u.Stat() == StatGachaponExperience {
 					w.WriteInt(uint32(u.Value()))
-				case StatPetSn1:
-				case StatPetSn2:
-				case StatPetSn3:
+				} else if u.Stat() == StatPetSn1 || u.Stat() == StatPetSn2 || u.Stat() == StatPetSn3 {
 					w.WriteLong(uint64(u.Value()))
 				}
 			}

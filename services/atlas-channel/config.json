@@ -598,6 +598,11 @@
               "handler": "CharacterDistributeApHandle"
             },
             {
+              "opCode": "0x58",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterAutoDistributeApHandle"
+            },
+            {
               "opCode": "0x5F",
               "validator": "LoggedInValidator",
               "handler": "FameChangeHandle"

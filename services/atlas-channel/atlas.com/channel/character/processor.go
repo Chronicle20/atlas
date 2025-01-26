@@ -102,15 +102,28 @@ func GetByName(l logrus.FieldLogger, ctx context.Context) func(name string) ([]M
 	}
 }
 
-func RequestDistributeAp(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, characterId uint32, updateTime uint32, flag uint32) error {
-	return func(ctx context.Context) func(worldId byte, characterId uint32, updateTime uint32, flag uint32) error {
-		return func(worldId byte, characterId uint32, updateTime uint32, flag uint32) error {
-			a, err := abilityFromFlag(flag)
-			if err != nil {
-				l.WithError(err).Errorf("Character [%d] passed invalid flag when attempting to distribute AP.", characterId)
-				return err
+type DistributePacket struct {
+	Flag  uint32
+	Value uint32
+}
+
+func RequestDistributeAp(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
+	return func(ctx context.Context) func(worldId byte, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
+		return func(worldId byte, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
+			var distributions = make([]DistributePair, 0)
+			for _, d := range distributes {
+				a, err := abilityFromFlag(d.Flag)
+				if err != nil {
+					l.WithError(err).Errorf("Character [%d] passed invalid flag when attempting to distribute AP.", characterId)
+					return err
+				}
+
+				distributions = append(distributions, DistributePair{
+					Ability: a,
+					Amount:  int8(d.Value),
+				})
 			}
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestDistributeApCommandProvider(worldId, characterId, a, 1))
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestDistributeApCommandProvider(worldId, characterId, distributions))
 		}
 	}
 }

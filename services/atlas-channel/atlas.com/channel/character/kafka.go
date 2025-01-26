@@ -28,9 +28,13 @@ type command[E any] struct {
 	Body        E      `json:"body"`
 }
 
-type requestDistributeApCommandBody struct {
+type DistributePair struct {
 	Ability string `json:"ability"`
 	Amount  int8   `json:"amount"`
+}
+
+type requestDistributeApCommandBody struct {
+	Distributions []DistributePair `json:"distributions"`
 }
 
 type movementCommand struct {

@@ -7,15 +7,14 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func requestDistributeApCommandProvider(worldId byte, characterId uint32, ability string, amount int8) model.Provider[[]kafka.Message] {
+func requestDistributeApCommandProvider(worldId byte, characterId uint32, distributions []DistributePair) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &command[requestDistributeApCommandBody]{
 		CharacterId: characterId,
 		WorldId:     worldId,
 		Type:        CommandRequestDistributeAp,
 		Body: requestDistributeApCommandBody{
-			Ability: ability,
-			Amount:  amount,
+			Distributions: distributions,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

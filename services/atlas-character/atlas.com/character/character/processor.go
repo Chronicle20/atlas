@@ -566,7 +566,8 @@ func RequestChangeMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *
 					}
 
 					err = dynamicUpdate(db)(SetMeso(uint32(int64(c.Meso()) + int64(amount))))(t.Id())(c)
-					return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(mesoChangedStatusEventProvider(characterId, c.WorldId(), amount))
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(mesoChangedStatusEventProvider(characterId, c.WorldId(), amount))
+					return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{"MESO"}))
 				})
 			}
 		}
@@ -586,7 +587,8 @@ func RequestChangeFame(l logrus.FieldLogger) func(ctx context.Context) func(db *
 
 				total := c.Fame() + int16(amount)
 				err = dynamicUpdate(db)(SetFame(total))(t.Id())(c)
-				return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(fameChangedStatusEventProvider(characterId, c.WorldId(), amount, actorId, actorType))
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(fameChangedStatusEventProvider(characterId, c.WorldId(), amount, actorId, actorType))
+				return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{"FAME"}))
 			}
 		}
 	}

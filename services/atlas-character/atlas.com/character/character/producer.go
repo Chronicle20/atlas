@@ -133,6 +133,21 @@ func fameChangedStatusEventProvider(characterId uint32, worldId byte, amount int
 	return producer.SingleMessageProvider(key, value)
 }
 
+func statChangedProvider(worldId byte, channelId byte, characterId uint32, updates []string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &statusEvent[statusEventStatChangedBody]{
+		CharacterId: characterId,
+		Type:        StatusEventTypeStatChanged,
+		WorldId:     worldId,
+		Body: statusEventStatChangedBody{
+			ChannelId:       channelId,
+			ExclRequestSent: true,
+			Updates:         updates,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func move(worldId byte, channelId byte, mapId uint32, characterId uint32, m Movement) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &movementEvent{

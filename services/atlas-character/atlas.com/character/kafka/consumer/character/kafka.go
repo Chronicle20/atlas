@@ -41,9 +41,13 @@ type requestChangeFameBody struct {
 	Amount    int8   `json:"amount"`
 }
 
-type requestDistributeApCommandBody struct {
+type DistributePair struct {
 	Ability string `json:"ability"`
 	Amount  int8   `json:"amount"`
+}
+
+type requestDistributeApCommandBody struct {
+	Distributions []DistributePair `json:"distributions"`
 }
 
 type movementCommand struct {

@@ -606,59 +606,69 @@ func RequestChangeFame(l logrus.FieldLogger) func(ctx context.Context) func(db *
 	}
 }
 
-func RequestDistributeAp(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, ability string, amount int8) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, ability string, amount int8) error {
+type Distribution struct {
+	Ability string
+	Amount  int8
+}
+
+func RequestDistributeAp(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, distributions []Distribution) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, distributions []Distribution) error {
 		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(characterId uint32, ability string, amount int8) error {
-			return func(characterId uint32, ability string, amount int8) error {
+		return func(db *gorm.DB) func(characterId uint32, distributions []Distribution) error {
+			return func(characterId uint32, distributions []Distribution) error {
 				return db.Transaction(func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
 						_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{}))
 						return err
 					}
-					if c.AP() <= 0 {
+					if c.AP() < uint16(len(distributions)) {
 						_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{}))
 						return errors.New("not enough ap")
 					}
 
 					var eufs = make([]EntityUpdateFunction, 0)
-					var stat = ""
-					switch ability {
-					case CommandDistributeApAbilityStrength:
-						eufs = append(eufs, SetStrength(c.Strength()+1))
-						stat = "STRENGTH"
-						break
-					case CommandDistributeApAbilityDexterity:
-						eufs = append(eufs, SetDexterity(c.Dexterity()+1))
-						stat = "DEXTERITY"
-						break
-					case CommandDistributeApAbilityIntelligence:
-						eufs = append(eufs, SetIntelligence(c.Intelligence()+1))
-						stat = "INTELLIGENCE"
-						break
-					case CommandDistributeApAbilityLuck:
-						eufs = append(eufs, SetLuck(c.Luck()+1))
-						stat = "LUCK"
-						break
-					case CommandDistributeApAbilityHp:
-						hpGrowth, err := getMaxHpGrowth(l)(ctx)(c)
-						if err != nil {
-							return err
+					var stat = make([]string, 0)
+
+					spent := uint16(0)
+					for _, d := range distributions {
+						switch d.Ability {
+						case CommandDistributeApAbilityStrength:
+							eufs = append(eufs, SetStrength(uint16(int16(c.Strength())+int16(d.Amount))))
+							stat = append(stat, "STRENGTH")
+							break
+						case CommandDistributeApAbilityDexterity:
+							eufs = append(eufs, SetDexterity(uint16(int16(c.Dexterity())+int16(d.Amount))))
+							stat = append(stat, "DEXTERITY")
+							break
+						case CommandDistributeApAbilityIntelligence:
+							eufs = append(eufs, SetIntelligence(uint16(int16(c.Intelligence())+int16(d.Amount))))
+							stat = append(stat, "INTELLIGENCE")
+							break
+						case CommandDistributeApAbilityLuck:
+							eufs = append(eufs, SetLuck(uint16(int16(c.Luck())+int16(d.Amount))))
+							stat = append(stat, "LUCK")
+							break
+						case CommandDistributeApAbilityHp:
+							hpGrowth, err := getMaxHpGrowth(l)(ctx)(c)
+							if err != nil {
+								return err
+							}
+							eufs = append(eufs, SetMaxHP(uint16(int16(hpGrowth)*int16(d.Amount))))
+							eufs = append(eufs, SetHPMPUsed(c.HPMPUsed()+int(d.Amount)))
+							stat = append(stat, "MAX_HP")
+							break
+						case CommandDistributeApAbilityMp:
+							mpGrowth, err := getMaxMpGrowth(l)(ctx)(c)
+							if err != nil {
+								return err
+							}
+							eufs = append(eufs, SetMaxMP(uint16(int16(mpGrowth)*int16(d.Amount))))
+							eufs = append(eufs, SetHPMPUsed(c.HPMPUsed()+int(d.Amount)))
+							stat = append(stat, "MAX_MP")
+							break
 						}
-						eufs = append(eufs, SetMaxHP(hpGrowth))
-						eufs = append(eufs, SetHPMPUsed(c.HPMPUsed()+1))
-						stat = "MAX_HP"
-						break
-					case CommandDistributeApAbilityMp:
-						mpGrowth, err := getMaxMpGrowth(l)(ctx)(c)
-						if err != nil {
-							return err
-						}
-						eufs = append(eufs, SetMaxMP(mpGrowth))
-						eufs = append(eufs, SetHPMPUsed(c.HPMPUsed()+1))
-						stat = "MAX_MP"
-						break
+						spent = uint16(int16(spent) + int16(d.Amount))
 					}
 
 					if len(eufs) == 0 {
@@ -666,14 +676,16 @@ func RequestDistributeAp(l logrus.FieldLogger) func(ctx context.Context) func(db
 						return errors.New("invalid ability")
 					}
 
-					eufs = append(eufs, SetAP(c.AP()-1))
+					eufs = append(eufs, SetAP(c.AP()-spent))
+					stat = append(stat, "AVAILABLE_AP")
+
 					err = dynamicUpdate(tx)(eufs...)(t.Id())(c)
 					if err != nil {
 						_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{"AVAILABLE_AP"}))
 						return err
 					}
 
-					_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{stat, "AVAILABLE_AP"}))
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, stat))
 					return nil
 				})
 			}

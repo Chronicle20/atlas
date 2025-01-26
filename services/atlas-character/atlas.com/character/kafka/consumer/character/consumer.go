@@ -76,8 +76,22 @@ func handleRequestDistributeAp(db *gorm.DB) message.Handler[commandEvent[request
 			return
 		}
 
-		_ = character.RequestDistributeAp(l)(ctx)(db)(c.CharacterId, c.Body.Ability, c.Body.Amount)
+		dp := model.SliceMap(transform)(model.FixedProvider(c.Body.Distributions))()
+		ds, err := model.FilteredProvider(dp, model.Filters[character.Distribution](func(d character.Distribution) bool {
+			return d.Amount > 0
+		}))()
+		if err != nil {
+			return
+		}
+		_ = character.RequestDistributeAp(l)(ctx)(db)(c.CharacterId, ds)
 	}
+}
+
+func transform(m DistributePair) (character.Distribution, error) {
+	return character.Distribution{
+		Ability: m.Ability,
+		Amount:  m.Amount,
+	}, nil
 }
 
 func handleMovementEvent(l logrus.FieldLogger, ctx context.Context, c movementCommand) {

@@ -89,14 +89,16 @@ func deletedEventProvider(characterId uint32, worldId byte) model.Provider[[]kaf
 	return producer.SingleMessageProvider(key, value)
 }
 
-func mesoChangedStatusEventProvider(characterId uint32, worldId byte, amount int32) model.Provider[[]kafka.Message] {
+func mesoChangedStatusEventProvider(characterId uint32, worldId byte, amount int32, actorId uint32, actorType string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &statusEvent[mesoChangedStatusEventBody]{
 		CharacterId: characterId,
 		WorldId:     worldId,
 		Type:        StatusEventTypeMesoChanged,
 		Body: mesoChangedStatusEventBody{
-			Amount: amount,
+			ActorId:   actorId,
+			ActorType: actorType,
+			Amount:    amount,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

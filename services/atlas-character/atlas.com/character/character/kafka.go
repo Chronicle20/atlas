@@ -67,7 +67,9 @@ type statusEventErrorBody[F any] struct {
 }
 
 type mesoChangedStatusEventBody struct {
-	Amount int32 `json:"amount"`
+	ActorId   uint32 `json:"actorId"`
+	ActorType string `json:"actorType"`
+	Amount    int32  `json:"amount"`
 }
 
 type notEnoughMesoErrorStatusBodyBody struct {

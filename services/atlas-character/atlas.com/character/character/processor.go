@@ -555,11 +555,11 @@ func updateTemporal(characterId uint32) model.Operator[MovementSummary] {
 	}
 }
 
-func RequestChangeMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, amount int32) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, amount int32) error {
+func RequestChangeMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, amount int32, actorId uint32, actorType string) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, amount int32, actorId uint32, actorType string) error {
 		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(characterId uint32, amount int32) error {
-			return func(characterId uint32, amount int32) error {
+		return func(db *gorm.DB) func(characterId uint32, amount int32, actorId uint32, actorType string) error {
+			return func(characterId uint32, amount int32, actorId uint32, actorType string) error {
 				return db.Transaction(func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
@@ -576,7 +576,7 @@ func RequestChangeMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *
 					}
 
 					err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(amount))))(t.Id())(c)
-					_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(mesoChangedStatusEventProvider(characterId, c.WorldId(), amount))
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(mesoChangedStatusEventProvider(characterId, c.WorldId(), amount, actorId, actorType))
 					return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{"MESO"}))
 				})
 			}

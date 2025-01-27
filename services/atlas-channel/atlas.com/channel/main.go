@@ -207,6 +207,7 @@ func produceWriters() []string {
 		writer.GuildEmblemChanged,
 		writer.GuildNameChanged,
 		writer.FameResponse,
+		writer.CharacterStatusMessage,
 	}
 }
 

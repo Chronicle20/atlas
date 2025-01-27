@@ -36,6 +36,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventStatChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventFameChanged(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMesoChanged(sc, wp))))
 				t, _ = topic.EnvProvider(l)(EnvEventTopicMovement)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp))))
 			}
@@ -45,7 +46,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 
 func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventStatChangedBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventStatChangedBody]) {
-		if e.Type != EventCharacterStatusTypeStatChanged {
+		if e.Type != StatusEventTypeStatChanged {
 			return
 		}
 
@@ -137,7 +138,7 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 
 func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventMapChangedBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventMapChangedBody]) {
-		if event.Type != EventCharacterStatusTypeMapChanged {
+		if event.Type != StatusEventTypeMapChanged {
 			return
 		}
 
@@ -235,6 +236,43 @@ func giveFame(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 					err := fameResponseFunc(s, writer.GiveFameResponseBody(l)(toName, amount, total))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", s.CharacterId(), amount, toName)
+						return err
+					}
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func handleStatusEventMesoChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[mesoChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[mesoChangedStatusEventBody]) {
+		if e.Type != StatusEventTypeMesoChanged {
+			return
+		}
+
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		if sc.WorldId() != e.WorldId {
+			return
+		}
+
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, mesoChanged(l)(ctx)(wp)(e.Body.Amount))
+	}
+}
+
+func mesoChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(amount int32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(amount int32) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(amount int32) model.Operator[session.Model] {
+			characterStatusMessageFunc := session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)
+			return func(amount int32) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := characterStatusMessageFunc(s, writer.CharacterStatusMessageOperationIncreaseMesoBody(l)(amount))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to notify character [%d] they received meso [%d].", s.CharacterId(), amount)
 						return err
 					}
 					return nil

@@ -18,9 +18,12 @@ A RESTful resource which provides guilds services.
 - CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
 - COMMAND_TOPIC_GUILD - Kafka topic for transmitting Guild commands
+- COMMAND_TOPIC_GUILD_THREAD - Kafka topic for transmitting Guild Thread commands
 - COMMAND_TOPIC_INVITE - Kafka topic for transmitting Invite commands
 - EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for receiving Character status events
 - EVENT_TOPIC_INVITE_STATUS - Kafka Topic for receiving Invite status events
+- EVENT_TOPIC_GUILD_STATUS - Kafka Topic for receiving Guild status events
+- EVENT_TOPIC_GUILD_THREAD_STATUS - Kafka Topic for receiving Guild Thread status events
 
 ## API
 

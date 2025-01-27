@@ -72,7 +72,7 @@ func handleCommandDelete(db *gorm.DB) message.Handler[command[deleteCommandBody]
 		if err != nil {
 			return
 		}
-		_ = thread.Delete(l)(ctx)(db)(g.WorldId(), g.Id(), c.Body.ThreadId)
+		_ = thread.Delete(l)(ctx)(db)(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId)
 	}
 }
 
@@ -98,6 +98,6 @@ func handleCommandDeleteReply(db *gorm.DB) message.Handler[command[deleteReplyCo
 		if err != nil {
 			return
 		}
-		_, _ = thread.DeleteReply(l)(ctx)(db)(g.WorldId(), g.Id(), c.Body.ThreadId, c.Body.ReplyId)
+		_, _ = thread.DeleteReply(l)(ctx)(db)(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId, c.Body.ReplyId)
 	}
 }

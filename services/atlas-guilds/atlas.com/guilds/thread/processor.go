@@ -54,7 +54,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					l.Debugf("Unable to create thread for guild [%d].", guildId)
 					return Model{}, err
 				}
-				err = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventCreatedProvider(worldId, guildId, thr.Id()))
+				err = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventCreatedProvider(worldId, guildId, thr.Id(), posterId))
 				if err != nil {
 					l.Debugf("Unable to report thread [%d] created for guild [%d].", thr.Id(), guildId)
 				}
@@ -87,7 +87,7 @@ func Update(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 				if txErr != nil {
 					return Model{}, txErr
 				}
-				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventUpdatedProvider(worldId, guildId, thr.Id()))
+				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventUpdatedProvider(worldId, guildId, thr.Id(), posterId))
 				if err != nil {
 					l.Debugf("Unable to report thread [%d] updated for guild [%d].", thr.Id(), guildId)
 				}
@@ -97,11 +97,11 @@ func Update(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 	}
 }
 
-func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32) error {
+func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32, actorId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32, actorId uint32) error {
 		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32) error {
-			return func(worldId byte, guildId uint32, threadId uint32) error {
+		return func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32, actorId uint32) error {
+			return func(worldId byte, guildId uint32, threadId uint32, actorId uint32) error {
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					thr, err := getById(t.Id(), guildId, threadId)(tx)()
 					if err != nil {
@@ -128,7 +128,7 @@ func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					l.Debugf("Unable to delete guild [%d] thread [%d].", guildId, threadId)
 					return txErr
 				}
-				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventDeletedProvider(worldId, guildId, threadId))
+				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventDeletedProvider(worldId, guildId, threadId, actorId))
 				if err != nil {
 					l.Debugf("Unable to report thread [%d] deleted for guild [%d].", threadId, guildId)
 				}
@@ -165,7 +165,7 @@ func Reply(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fun
 				if txErr != nil {
 					return Model{}, txErr
 				}
-				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventReplyAddedProvider(worldId, guildId, threadId, rp.Id()))
+				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventReplyAddedProvider(worldId, guildId, threadId, posterId, rp.Id()))
 				if err != nil {
 					l.Debugf("Unable to report thread [%d] replied to for guild [%d].", thr.Id(), guildId)
 				}
@@ -175,10 +175,10 @@ func Reply(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fun
 	}
 }
 
-func DeleteReply(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32, replyId uint32) (Model, error) {
-	return func(ctx context.Context) func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32, replyId uint32) (Model, error) {
-		return func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32, replyId uint32) (Model, error) {
-			return func(worldId byte, guildId uint32, threadId uint32, replyId uint32) (Model, error) {
+func DeleteReply(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32, actorId uint32, replyId uint32) (Model, error) {
+	return func(ctx context.Context) func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32, actorId uint32, replyId uint32) (Model, error) {
+		return func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32, actorId uint32, replyId uint32) (Model, error) {
+			return func(worldId byte, guildId uint32, threadId uint32, actorId uint32, replyId uint32) (Model, error) {
 				var thr Model
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					_, err := GetById(ctx)(tx)(guildId, threadId)
@@ -201,7 +201,7 @@ func DeleteReply(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 				if txErr != nil {
 					return Model{}, txErr
 				}
-				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventReplyDeletedProvider(worldId, guildId, threadId, replyId))
+				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventReplyDeletedProvider(worldId, guildId, threadId, actorId, replyId))
 				if err != nil {
 					l.Debugf("Unable to report thread [%d] reply removed for guild [%d].", thr.Id(), guildId)
 				}

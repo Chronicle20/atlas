@@ -14,6 +14,7 @@ type statusEvent[E any] struct {
 	WorldId  byte   `json:"worldId"`
 	GuildId  uint32 `json:"guildId"`
 	ThreadId uint32 `json:"threadId"`
+	ActorId  uint32 `json:"actorId"`
 	Type     string `json:"type"`
 	Body     E      `json:"body"`
 }

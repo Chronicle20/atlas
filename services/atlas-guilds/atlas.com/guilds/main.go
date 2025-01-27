@@ -9,9 +9,12 @@ import (
 	character2 "atlas-guilds/kafka/consumer/character"
 	guild2 "atlas-guilds/kafka/consumer/guild"
 	"atlas-guilds/kafka/consumer/invite"
+	thread2 "atlas-guilds/kafka/consumer/thread"
 	"atlas-guilds/logger"
 	"atlas-guilds/service"
 	"atlas-guilds/tasks"
+	"atlas-guilds/thread"
+	"atlas-guilds/thread/reply"
 	"atlas-guilds/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -52,27 +55,20 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(guild.Migration, title.Migration, member.Migration, character.Migration))
+	db := database.Connect(l, database.SetMigrations(guild.Migration, title.Migration, member.Migration, character.Migration, thread.Migration, reply.Migration))
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), guild.InitResource(GetServer())(db))
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	guild2.InitConsumers(l)(cmf)(consumerGroupId)
+	character2.InitConsumers(l)(cmf)(consumerGroupId)
+	invite.InitConsumers(l)(cmf)(consumerGroupId)
+	thread2.InitConsumers(l)(cmf)(consumerGroupId)
 
-	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(guild2.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(guild2.RequestCreateRegister(db)(l))
-	_, _ = cm.RegisterHandler(guild2.CreationAgreementRegister(db)(l))
-	_, _ = cm.RegisterHandler(guild2.ChangeEmblemRegister(db)(l))
-	_, _ = cm.RegisterHandler(guild2.ChangeNoticeRegister(db)(l))
-	_, _ = cm.RegisterHandler(guild2.LeaveRegister(db)(l))
-	_, _ = cm.RegisterHandler(guild2.RequestInviteRegister(db)(l))
-	_, _ = cm.RegisterHandler(guild2.ChangeTitlesRegister(db)(l))
-	_, _ = cm.RegisterHandler(guild2.ChangeMemberTitleRegister(db)(l))
-	_, _ = cm.RegisterHandler(guild2.RequestDisbandRegister(db)(l))
-	_, _ = cm.RegisterHandler(guild2.RequestCapacityIncreaseRegister(db)(l))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character2.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(character2.LoginStatusRegister(l)(db))
-	_, _ = cm.RegisterHandler(character2.LogoutStatusRegister(l)(db))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(invite.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(invite.AcceptedStatusEventRegister(l)(db))
+	guild2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	invite.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	thread2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+
+	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), guild.InitResource(GetServer())(db), thread.InitResource(GetServer())(db))
 
 	go tasks.Register(l, tdm.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35)))
 

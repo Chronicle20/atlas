@@ -9,6 +9,18 @@ A RESTful resource which provides guilds services.
 
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
+- DB_USER - Postgres user name
+- DB_PASSWORD - Postgres user password
+- DB_HOST - Postgres Database host
+- DB_PORT - Postgres Database port
+- DB_NAME - Postgres Database name
+- BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
+- CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
+- BOOTSTRAP_SERVERS - Kafka [host]:[port]
+- COMMAND_TOPIC_GUILD - Kafka topic for transmitting Guild commands
+- COMMAND_TOPIC_INVITE - Kafka topic for transmitting Invite commands
+- EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for receiving Character status events
+- EVENT_TOPIC_INVITE_STATUS - Kafka Topic for receiving Invite status events
 
 ## API
 

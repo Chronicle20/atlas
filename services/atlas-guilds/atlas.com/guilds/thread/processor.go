@@ -102,12 +102,33 @@ func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32) error {
 			return func(worldId byte, guildId uint32, threadId uint32) error {
-				err := remove(db, t.Id(), guildId, threadId)
-				if err != nil {
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					thr, err := getById(t.Id(), guildId, threadId)(tx)()
+					if err != nil {
+						l.Debugf("Unable to delete guild [%d] thread [%d].", guildId, threadId)
+						return err
+					}
+
+					for _, r := range thr.Replies {
+						err = reply.Delete(l)(ctx)(tx)(threadId, r.Id)
+						if err != nil {
+							l.Debugf("Unable to delete guild [%d] thread [%d].", guildId, threadId)
+							return err
+						}
+					}
+
+					err = remove(tx, t.Id(), guildId, threadId)
+					if err != nil {
+						l.Debugf("Unable to delete guild [%d] thread [%d].", guildId, threadId)
+						return err
+					}
+					return nil
+				})
+				if txErr != nil {
 					l.Debugf("Unable to delete guild [%d] thread [%d].", guildId, threadId)
-					return err
+					return txErr
 				}
-				err = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventDeletedProvider(worldId, guildId, threadId))
+				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventDeletedProvider(worldId, guildId, threadId))
 				if err != nil {
 					l.Debugf("Unable to report thread [%d] deleted for guild [%d].", threadId, guildId)
 				}

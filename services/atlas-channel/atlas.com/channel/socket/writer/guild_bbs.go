@@ -29,7 +29,7 @@ func GuildBBSThreadsBody(l logrus.FieldLogger) func(ts []thread.Model, startInde
 				w.WriteInt(nt.Id())
 				w.WriteInt(nt.PosterId())
 				w.WriteAsciiString(nt.Title())
-				w.WriteLong(uint64(nt.CreatedAt().UnixNano() / int64(time.Millisecond)))
+				w.WriteInt64(msTime(nt.CreatedAt()))
 				w.WriteInt(nt.EmoticonId())
 				w.WriteInt(uint32(len(nt.Replies())))
 				at = append(ts[:0], ts[1:]...)
@@ -45,7 +45,7 @@ func GuildBBSThreadsBody(l logrus.FieldLogger) func(ts []thread.Model, startInde
 					w.WriteInt(at[i].Id())
 					w.WriteInt(at[i].PosterId())
 					w.WriteAsciiString(at[i].Title())
-					w.WriteLong(uint64(at[i].CreatedAt().UnixNano() / int64(time.Millisecond)))
+					w.WriteInt64(msTime(at[i].CreatedAt()))
 					w.WriteInt(at[i].EmoticonId())
 					w.WriteInt(uint32(len(at[i].Replies())))
 				}
@@ -61,7 +61,7 @@ func GuildBBSThreadBody(l logrus.FieldLogger) func(t thread.Model) BodyProducer 
 			w.WriteByte(0x07)
 			w.WriteInt(t.Id())
 			w.WriteInt(t.PosterId())
-			w.WriteLong(uint64(t.CreatedAt().UnixNano() / int64(time.Millisecond)))
+			w.WriteInt64(msTime(t.CreatedAt()))
 			w.WriteAsciiString(t.Title())
 			w.WriteAsciiString(t.Message())
 			w.WriteInt(t.EmoticonId())
@@ -69,10 +69,14 @@ func GuildBBSThreadBody(l logrus.FieldLogger) func(t thread.Model) BodyProducer 
 			for _, r := range t.Replies() {
 				w.WriteInt(r.Id())
 				w.WriteInt(r.PosterId())
-				w.WriteLong(uint64(r.CreatedAt().UnixNano() / int64(time.Millisecond)))
+				w.WriteInt64(msTime(r.CreatedAt()))
 				w.WriteAsciiString(r.Message())
 			}
 			return w.Bytes()
 		}
 	}
+}
+
+func msTime(t time.Time) int64 {
+	return t.Unix()*int64(10000000) + int64(116444736000000000)
 }

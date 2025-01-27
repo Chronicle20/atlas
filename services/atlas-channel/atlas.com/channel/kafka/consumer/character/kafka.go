@@ -1,10 +1,11 @@
 package character
 
 const (
-	EnvEventTopicCharacterStatus        = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeStatChanged = "STAT_CHANGED"
-	EventCharacterStatusTypeMapChanged  = "MAP_CHANGED"
-	StatusEventTypeFameChanged          = "FAME_CHANGED"
+	EnvEventTopicCharacterStatus = "EVENT_TOPIC_CHARACTER_STATUS"
+	StatusEventTypeStatChanged   = "STAT_CHANGED"
+	StatusEventTypeMapChanged    = "MAP_CHANGED"
+	StatusEventTypeMesoChanged   = "MESO_CHANGED"
+	StatusEventTypeFameChanged   = "FAME_CHANGED"
 
 	StatusEventActorTypeCharacter = "CHARACTER"
 
@@ -42,6 +43,10 @@ type fameChangedStatusEventBody struct {
 	ActorId   uint32 `json:"actorId"`
 	ActorType string `json:"actorType"`
 	Amount    int8   `json:"amount"`
+}
+
+type mesoChangedStatusEventBody struct {
+	Amount int32 `json:"amount"`
 }
 
 type movementEvent struct {

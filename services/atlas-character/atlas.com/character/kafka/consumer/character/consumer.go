@@ -56,7 +56,7 @@ func handleRequestChangeMeso(db *gorm.DB) message.Handler[commandEvent[requestCh
 			return
 		}
 
-		_ = character.RequestChangeMeso(l)(ctx)(db)(c.CharacterId, c.Body.Amount)
+		_ = character.RequestChangeMeso(l)(ctx)(db)(c.CharacterId, c.Body.Amount, c.Body.ActorId, c.Body.ActorType)
 	}
 }
 

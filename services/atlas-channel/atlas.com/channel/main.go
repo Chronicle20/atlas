@@ -208,6 +208,7 @@ func produceWriters() []string {
 		writer.GuildNameChanged,
 		writer.FameResponse,
 		writer.CharacterStatusMessage,
+		writer.GuildBBS,
 	}
 }
 
@@ -238,6 +239,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.FameChangeHandle] = handler.FameChangeHandleFunc
 	handlerMap[handler.CharacterDistributeApHandle] = handler.CharacterDistributeApHandleFunc
 	handlerMap[handler.CharacterAutoDistributeApHandle] = handler.CharacterAutoDistributeApHandleFunc
+	handlerMap[handler.GuildBBSHandle] = handler.GuildBBSHandleFunc
 	return handlerMap
 }
 

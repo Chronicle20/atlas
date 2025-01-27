@@ -685,6 +685,21 @@
               "handler": "CharacterKeyMapChangeHandle"
             },
             {
+              "opCode": "0x9B",
+              "validator": "LoggedInValidator",
+              "handler": "GuildBBSHandle",
+              "options": {
+                "operations": {
+                  "CREATE_OR_EDIT_THREAD": 0,
+                  "DELETE_THREAD": 1,
+                  "LIST_THREADS": 2,
+                  "DISPLAY_THREAD": 3,
+                  "REPLY_THREAD": 4,
+                  "DELETE_REPLY": 5
+                }
+              }
+            },
+            {
               "opCode": "0xBC",
               "validator": "LoggedInValidator",
               "handler": "MonsterMovementHandle",
@@ -962,6 +977,10 @@
                   "SKILL_EXPIRE": "0x0D"
                 }
               }
+            },
+            {
+              "opCode": "0x3B",
+              "writer": "GuildBBS"
             },
             {
               "opCode": "0x3D",

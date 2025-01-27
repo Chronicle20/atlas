@@ -96,3 +96,17 @@ func ParseGuildId(l logrus.FieldLogger, next GuildIdHandler) http.HandlerFunc {
 		next(uint32(guildId))(w, r)
 	}
 }
+
+type ThreadIdHandler func(threadId uint32) http.HandlerFunc
+
+func ParseThreadId(l logrus.FieldLogger, next ThreadIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		threadId, err := strconv.Atoi(mux.Vars(r)["threadId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse threadId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint32(threadId))(w, r)
+	}
+}

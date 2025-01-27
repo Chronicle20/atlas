@@ -12,20 +12,14 @@ import (
 	"strconv"
 )
 
-const (
-	GetGuilds           = "get_guilds"
-	GetGuildsByMemberId = "get_guilds_by_member_id"
-	GetGuild            = "get_guild"
-)
-
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerGet := rest.RegisterHandler(l)(si)
 			r := router.PathPrefix("/guilds").Subrouter()
-			r.HandleFunc("", registerGet(GetGuildsByMemberId, handleGetGuilds(db))).Queries("filter[members.id]", "{memberId}").Methods(http.MethodGet)
-			r.HandleFunc("", registerGet(GetGuilds, handleGetGuilds(db))).Methods(http.MethodGet)
-			r.HandleFunc("/{guildId}", registerGet(GetGuild, handleGetGuild(db))).Methods(http.MethodGet)
+			r.HandleFunc("", registerGet("get_guilds_by_member_id", handleGetGuilds(db))).Queries("filter[members.id]", "{memberId}").Methods(http.MethodGet)
+			r.HandleFunc("", registerGet("get_guilds", handleGetGuilds(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{guildId}", registerGet("get_guild", handleGetGuild(db))).Methods(http.MethodGet)
 		}
 	}
 }

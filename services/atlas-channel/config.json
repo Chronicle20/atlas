@@ -568,6 +568,16 @@
               }
             },
             {
+              "opCode": "0x2A",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterChairInteractionHandle"
+            },
+            {
+              "opCode": "0x2B",
+              "validator": "LoggedInValidator",
+              "handler": "CharacterChairPortableHandle"
+            },
+            {
               "opCode": "0x31",
               "validator": "LoggedInValidator",
               "handler": "CharacterGeneralChatHandle"
@@ -1208,6 +1218,10 @@
               "writer": "CharacterExpression"
             },
             {
+              "opCode": "0xC4",
+              "writer": "CharacterShowChair"
+            },
+            {
               "opCode": "0xC5",
               "writer": "CharacterAppearanceUpdate"
             },
@@ -1218,6 +1232,10 @@
             {
               "opCode": "0xCB",
               "writer": "GuildEmblemChanged"
+            },
+            {
+              "opCode": "0xCD",
+              "writer": "CharacterSitResult"
             },
             {
               "opCode": "0xEC",

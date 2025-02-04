@@ -5,6 +5,7 @@ import (
 	"atlas-channel/configuration"
 	account2 "atlas-channel/kafka/consumer/account"
 	"atlas-channel/kafka/consumer/buddylist"
+	"atlas-channel/kafka/consumer/chair"
 	"atlas-channel/kafka/consumer/channel"
 	"atlas-channel/kafka/consumer/character"
 	"atlas-channel/kafka/consumer/expression"
@@ -84,6 +85,7 @@ func main() {
 	session2.InitConsumers(l)(cmf)(consumerGroupId)
 	fame.InitConsumers(l)(cmf)(consumerGroupId)
 	thread.InitConsumers(l)(cmf)(consumerGroupId)
+	chair.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
@@ -150,6 +152,7 @@ func main() {
 				session2.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				fame.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				thread.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				chair.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
@@ -212,6 +215,8 @@ func produceWriters() []string {
 		writer.FameResponse,
 		writer.CharacterStatusMessage,
 		writer.GuildBBS,
+		writer.CharacterShowChair,
+		writer.CharacterSitResult,
 	}
 }
 
@@ -243,6 +248,8 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterDistributeApHandle] = handler.CharacterDistributeApHandleFunc
 	handlerMap[handler.CharacterAutoDistributeApHandle] = handler.CharacterAutoDistributeApHandleFunc
 	handlerMap[handler.GuildBBSHandle] = handler.GuildBBSHandleFunc
+	handlerMap[handler.CharacterChairPortableHandle] = handler.CharacterChairPortableHandleFunc
+	handlerMap[handler.CharacterChairInteractionHandle] = handler.CharacterChairFixedHandleFunc
 	return handlerMap
 }
 

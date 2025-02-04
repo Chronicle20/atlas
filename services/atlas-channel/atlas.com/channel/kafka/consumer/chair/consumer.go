@@ -33,6 +33,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				var t string
 				t, _ = topic.EnvProvider(l)(EnvEventTopicStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventUsed(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventError(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCancelled(sc, wp))))
 			}
 		}
@@ -89,6 +90,36 @@ func showChair(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pr
 				}
 			}
 		}
+	}
+}
+
+func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventErrorBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventErrorBody]) {
+		if e.Type != EventStatusTypeError {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		if e.Body.Type != ErrorTypeInternal {
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
+				l.Errorf("Character [%d] attempting to perform chair action they cannot.", s.CharacterId())
+				return session.Destroy(l, ctx, session.GetRegistry())(s)
+			})
+		}
+
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
+			l.Warnf("Internal issue performing character [%d] sit action.", s.CharacterId())
+			err := session.Announce(l)(ctx)(wp)(writer.StatChanged)(s, writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+				return err
+			}
+			return nil
+		})
+		return
 	}
 }
 

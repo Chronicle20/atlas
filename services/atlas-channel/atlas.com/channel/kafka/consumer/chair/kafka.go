@@ -3,7 +3,10 @@ package chair
 const (
 	EnvEventTopicStatus      = "EVENT_TOPIC_CHAIR_STATUS"
 	EventStatusTypeUsed      = "USED"
+	EventStatusTypeError     = "ERROR"
 	EventStatusTypeCancelled = "CANCELLED"
+
+	ErrorTypeInternal = "INTERNAL"
 
 	ChairTypeFixed    = "FIXED"
 	ChairTypePortable = "PORTABLE"
@@ -21,6 +24,11 @@ type statusEvent[E any] struct {
 
 type statusEventUsedBody struct {
 	CharacterId uint32 `json:"characterId"`
+}
+
+type statusEventErrorBody struct {
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
 }
 
 type statusEventCancelledBody struct {

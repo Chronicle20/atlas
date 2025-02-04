@@ -1,4 +1,4 @@
-package server
+package channel
 
 import (
 	"atlas-configurations/configuration/handler"

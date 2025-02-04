@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"atlas-configurations/configuration/service/channel"
+	"atlas-configurations/configuration/service/characterfactory"
 	"atlas-configurations/database"
 	"context"
 	"encoding/json"
@@ -33,14 +34,6 @@ func configurationProvider[M any](ctx context.Context) func(db *gorm.DB) func(se
 	}
 }
 
-func channelServiceConfigurationProvider(ctx context.Context) func(db *gorm.DB) func(serviceId uuid.UUID) model.Provider[channel.RestModel] {
-	return func(db *gorm.DB) func(serviceId uuid.UUID) model.Provider[channel.RestModel] {
-		return func(serviceId uuid.UUID) model.Provider[channel.RestModel] {
-			return configurationProvider[channel.RestModel](ctx)(db)(serviceId, TypeChannelService)(MakeChannelServiceModel)
-		}
-	}
-}
-
 func MakeChannelServiceModel(e Entity) (channel.RestModel, error) {
 	var rm channel.RestModel
 	err := json.Unmarshal(e.Data, &rm)
@@ -54,7 +47,25 @@ func MakeChannelServiceModel(e Entity) (channel.RestModel, error) {
 func GetChannelServiceConfiguration(ctx context.Context) func(db *gorm.DB) func(serviceId uuid.UUID) (channel.RestModel, error) {
 	return func(db *gorm.DB) func(serviceId uuid.UUID) (channel.RestModel, error) {
 		return func(serviceId uuid.UUID) (channel.RestModel, error) {
-			return channelServiceConfigurationProvider(ctx)(db)(serviceId)()
+			return configurationProvider[channel.RestModel](ctx)(db)(serviceId, TypeChannelService)(MakeChannelServiceModel)()
 		}
 	}
+}
+
+func GetCharacterFactoryConfiguration(ctx context.Context) func(db *gorm.DB) func(serviceId uuid.UUID) (characterfactory.RestModel, error) {
+	return func(db *gorm.DB) func(serviceId uuid.UUID) (characterfactory.RestModel, error) {
+		return func(serviceId uuid.UUID) (characterfactory.RestModel, error) {
+			return configurationProvider[characterfactory.RestModel](ctx)(db)(serviceId, TypeCharacterFactory)(MakeCharacterFactoryModel)()
+		}
+	}
+}
+
+func MakeCharacterFactoryModel(e Entity) (characterfactory.RestModel, error) {
+	var rm characterfactory.RestModel
+	err := json.Unmarshal(e.Data, &rm)
+	if err != nil {
+		return characterfactory.RestModel{}, err
+	}
+	rm.Id = e.ServiceId
+	return rm, nil
 }

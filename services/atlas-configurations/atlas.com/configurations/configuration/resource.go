@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"atlas-configurations/configuration/service/channel"
+	"atlas-configurations/configuration/service/characterfactory"
 	"atlas-configurations/rest"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
@@ -46,6 +47,16 @@ func handleGetConfigurations(db *gorm.DB) rest.GetHandler {
 						return
 					}
 					server.Marshal[channel.RestModel](d.Logger())(w)(c.ServerInformation())(rm)
+					return
+				}
+				if theType == TypeCharacterFactory {
+					var rm characterfactory.RestModel
+					rm, err = GetCharacterFactoryConfiguration(d.Context())(db)(serviceId)
+					if err != nil {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					server.Marshal[characterfactory.RestModel](d.Logger())(w)(c.ServerInformation())(rm)
 					return
 				}
 

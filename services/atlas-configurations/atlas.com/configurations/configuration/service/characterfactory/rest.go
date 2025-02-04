@@ -1,16 +1,13 @@
-package channel
+package characterfactory
 
 import (
-	"atlas-configurations/configuration/server/channel"
-	"atlas-configurations/configuration/task"
+	"atlas-configurations/configuration/server/characterfactory"
 	"github.com/google/uuid"
 )
 
 type RestModel struct {
-	Id        uuid.UUID           `json:"-"`
-	Tasks     []task.RestModel    `json:"tasks"`
-	Channels  []channel.RestModel `json:"channels"`
-	IpAddress string              `json:"ipAddress"`
+	Id      uuid.UUID                    `json:"-"`
+	Servers []characterfactory.RestModel `json:"servers"`
 }
 
 func (r RestModel) GetName() string {

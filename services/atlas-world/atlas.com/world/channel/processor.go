@@ -6,7 +6,6 @@ import (
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -73,11 +72,11 @@ func Unregister(_ logrus.FieldLogger) func(ctx context.Context) func(worldId byt
 	}
 }
 
-func RequestStatus(l logrus.FieldLogger) func(ctx context.Context) func(c configuration.Model) {
-	return func(ctx context.Context) func(c configuration.Model) {
-		return func(c configuration.Model) {
-			for _, sc := range c.Data.Attributes.Servers {
-				t, _ := tenant.Create(uuid.MustParse(sc.Tenant), "", 0, 0)
+func RequestStatus(l logrus.FieldLogger) func(ctx context.Context) func(c configuration.RestModel) {
+	return func(ctx context.Context) func(c configuration.RestModel) {
+		return func(c configuration.RestModel) {
+			for _, sc := range c.Servers {
+				t, _ := tenant.Create(sc.TenantId, "", 0, 0)
 				_ = producer.ProviderImpl(l)(tenant.WithContext(ctx, t))(EnvCommandTopicChannelStatus)(emitChannelServerStatusCommand(t))
 			}
 		}

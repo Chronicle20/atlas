@@ -10,7 +10,9 @@ import (
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
+	"os"
 )
 
 const serviceName = "atlas-world"
@@ -54,13 +56,14 @@ func main() {
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), channel.InitResource(GetServer()), world.InitResource(GetServer()))
 
 	l.Infof("Service started.")
-	config, err := configuration.GetConfiguration()
+	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")), os.Getenv("SERVICE_TYPE"))
+	config, err := configuration.Get()
 	if err != nil {
 		l.WithError(err).Fatal("Unable to load configuration.")
 	}
 
 	ctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
-	channel.RequestStatus(l)(ctx)(config)
+	channel.RequestStatus(l)(ctx)(*config)
 	span.End()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

@@ -3,6 +3,7 @@ package configuration
 import (
 	"atlas-configurations/configuration/service/channel"
 	"atlas-configurations/configuration/service/characterfactory"
+	"atlas-configurations/configuration/service/login"
 	"atlas-configurations/database"
 	"context"
 	"encoding/json"
@@ -34,6 +35,14 @@ func configurationProvider[M any](ctx context.Context) func(db *gorm.DB) func(se
 	}
 }
 
+func GetChannelServiceConfiguration(ctx context.Context) func(db *gorm.DB) func(serviceId uuid.UUID) (channel.RestModel, error) {
+	return func(db *gorm.DB) func(serviceId uuid.UUID) (channel.RestModel, error) {
+		return func(serviceId uuid.UUID) (channel.RestModel, error) {
+			return configurationProvider[channel.RestModel](ctx)(db)(serviceId, TypeChannelService)(MakeChannelServiceModel)()
+		}
+	}
+}
+
 func MakeChannelServiceModel(e Entity) (channel.RestModel, error) {
 	var rm channel.RestModel
 	err := json.Unmarshal(e.Data, &rm)
@@ -42,14 +51,6 @@ func MakeChannelServiceModel(e Entity) (channel.RestModel, error) {
 	}
 	rm.Id = e.ServiceId
 	return rm, nil
-}
-
-func GetChannelServiceConfiguration(ctx context.Context) func(db *gorm.DB) func(serviceId uuid.UUID) (channel.RestModel, error) {
-	return func(db *gorm.DB) func(serviceId uuid.UUID) (channel.RestModel, error) {
-		return func(serviceId uuid.UUID) (channel.RestModel, error) {
-			return configurationProvider[channel.RestModel](ctx)(db)(serviceId, TypeChannelService)(MakeChannelServiceModel)()
-		}
-	}
 }
 
 func GetCharacterFactoryConfiguration(ctx context.Context) func(db *gorm.DB) func(serviceId uuid.UUID) (characterfactory.RestModel, error) {
@@ -65,6 +66,24 @@ func MakeCharacterFactoryModel(e Entity) (characterfactory.RestModel, error) {
 	err := json.Unmarshal(e.Data, &rm)
 	if err != nil {
 		return characterfactory.RestModel{}, err
+	}
+	rm.Id = e.ServiceId
+	return rm, nil
+}
+
+func GetLoginServiceConfiguration(ctx context.Context) func(db *gorm.DB) func(serviceId uuid.UUID) (login.RestModel, error) {
+	return func(db *gorm.DB) func(serviceId uuid.UUID) (login.RestModel, error) {
+		return func(serviceId uuid.UUID) (login.RestModel, error) {
+			return configurationProvider[login.RestModel](ctx)(db)(serviceId, TypeLoginService)(MakeLoginServiceModel)()
+		}
+	}
+}
+
+func MakeLoginServiceModel(e Entity) (login.RestModel, error) {
+	var rm login.RestModel
+	err := json.Unmarshal(e.Data, &rm)
+	if err != nil {
+		return login.RestModel{}, err
 	}
 	rm.Id = e.ServiceId
 	return rm, nil

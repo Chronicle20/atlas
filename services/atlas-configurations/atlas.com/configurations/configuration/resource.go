@@ -3,6 +3,7 @@ package configuration
 import (
 	"atlas-configurations/configuration/service/channel"
 	"atlas-configurations/configuration/service/characterfactory"
+	"atlas-configurations/configuration/service/login"
 	"atlas-configurations/rest"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
@@ -57,6 +58,16 @@ func handleGetConfigurations(db *gorm.DB) rest.GetHandler {
 						return
 					}
 					server.Marshal[characterfactory.RestModel](d.Logger())(w)(c.ServerInformation())(rm)
+					return
+				}
+				if theType == TypeLoginService {
+					var rm login.RestModel
+					rm, err = GetLoginServiceConfiguration(d.Context())(db)(serviceId)
+					if err != nil {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					server.Marshal[login.RestModel](d.Logger())(w)(c.ServerInformation())(rm)
 					return
 				}
 

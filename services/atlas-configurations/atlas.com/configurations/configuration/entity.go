@@ -9,6 +9,7 @@ import (
 const (
 	TypeChannelService   = "channel-service"
 	TypeCharacterFactory = "character-factory"
+	TypeLoginService     = "login-service"
 )
 
 func Migration(db *gorm.DB) error {

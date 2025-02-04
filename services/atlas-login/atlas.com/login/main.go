@@ -38,7 +38,8 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	config, err := configuration.GetConfiguration()
+	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")), os.Getenv("SERVICE_TYPE"))
+	config, err := configuration.Get()
 	if err != nil {
 		l.WithError(err).Fatal("Unable to successfully load configuration.")
 	}
@@ -53,7 +54,7 @@ func main() {
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
-	for _, s := range config.Data.Attributes.Servers {
+	for _, s := range config.Servers {
 		var t tenant.Model
 		majorVersion, err := strconv.Atoi(s.Version.Major)
 		if err != nil {
@@ -67,7 +68,7 @@ func main() {
 			continue
 		}
 
-		t, err = tenant.Register(uuid.MustParse(s.Tenant), s.Region, uint16(majorVersion), uint16(minorVersion))
+		t, err = tenant.Register(s.TenantId, s.Region, uint16(majorVersion), uint16(minorVersion))
 		if err != nil {
 			continue
 		}
@@ -105,7 +106,7 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatalf("Unable to find task [%s].", session.TimeoutTask)
 	}
-	go tasks.Register(l, tdm.Context())(session.NewTimeout(l, time.Millisecond*time.Duration(tt.Attributes.Interval)))
+	go tasks.Register(l, tdm.Context())(session.NewTimeout(l, time.Millisecond*time.Duration(tt.Interval)))
 
 	tdm.TeardownFunc(session.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
@@ -115,8 +116,8 @@ func main() {
 	l.Infoln("Service shutdown.")
 }
 
-func produceWriterProducer(l logrus.FieldLogger) func(writers []configuration.Writer, writerList []string, w socket2.OpWriter) writer.Producer {
-	return func(writers []configuration.Writer, writerList []string, w socket2.OpWriter) writer.Producer {
+func produceWriterProducer(l logrus.FieldLogger) func(writers []writer2.RestModel, writerList []string, w socket2.OpWriter) writer.Producer {
+	return func(writers []writer2.RestModel, writerList []string, w socket2.OpWriter) writer.Producer {
 		return getWriterProducer(l)(writers, writerList, w)
 	}
 }
@@ -183,8 +184,8 @@ func produceValidators() map[string]handler.MessageValidator {
 	return validatorMap
 }
 
-func getWriterProducer(l logrus.FieldLogger) func(writerConfig []configuration.Writer, wl []string, w socket2.OpWriter) writer.Producer {
-	return func(writerConfig []configuration.Writer, wl []string, w socket2.OpWriter) writer.Producer {
+func getWriterProducer(l logrus.FieldLogger) func(writerConfig []writer2.RestModel, wl []string, w socket2.OpWriter) writer.Producer {
+	return func(writerConfig []writer2.RestModel, wl []string, w socket2.OpWriter) writer.Producer {
 		rwm := make(map[string]writer.BodyFunc)
 		for _, wc := range writerConfig {
 			op, err := strconv.ParseUint(wc.OpCode, 0, 16)
@@ -203,9 +204,9 @@ func getWriterProducer(l logrus.FieldLogger) func(writerConfig []configuration.W
 	}
 }
 
-func handlerProducer(l logrus.FieldLogger) func(adapter handler.Adapter) func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
-	return func(adapter handler.Adapter) func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
-		return func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
+func handlerProducer(l logrus.FieldLogger) func(adapter handler.Adapter) func(handlerConfig []handler2.RestModel, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
+	return func(adapter handler.Adapter) func(handlerConfig []handler2.RestModel, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
+		return func(handlerConfig []handler2.RestModel, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
 			handlers := make(map[uint16]request.Handler)
 			for _, hc := range handlerConfig {
 				var v handler.MessageValidator

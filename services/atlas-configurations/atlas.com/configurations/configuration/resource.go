@@ -5,6 +5,7 @@ import (
 	"atlas-configurations/configuration/service/characterfactory"
 	"atlas-configurations/configuration/service/login"
 	"atlas-configurations/configuration/service/npcconversation"
+	"atlas-configurations/configuration/service/world"
 	"atlas-configurations/rest"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
@@ -79,6 +80,16 @@ func handleGetConfigurations(db *gorm.DB) rest.GetHandler {
 						return
 					}
 					server.Marshal[npcconversation.RestModel](d.Logger())(w)(c.ServerInformation())(rm)
+					return
+				}
+				if theType == TypeWorldService {
+					var rm world.RestModel
+					rm, err = GetWorldServiceConfiguration(d.Context())(db)(serviceId)
+					if err != nil {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					server.Marshal[world.RestModel](d.Logger())(w)(c.ServerInformation())(rm)
 					return
 				}
 

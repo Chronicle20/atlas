@@ -5,6 +5,7 @@ import (
 	"atlas-configurations/configuration/service/characterfactory"
 	"atlas-configurations/configuration/service/login"
 	"atlas-configurations/configuration/service/npcconversation"
+	"atlas-configurations/configuration/service/world"
 	"atlas-configurations/database"
 	"context"
 	"encoding/json"
@@ -103,6 +104,24 @@ func MakeNPCConversationModel(e Entity) (npcconversation.RestModel, error) {
 	err := json.Unmarshal(e.Data, &rm)
 	if err != nil {
 		return npcconversation.RestModel{}, err
+	}
+	rm.Id = e.ServiceId
+	return rm, nil
+}
+
+func GetWorldServiceConfiguration(ctx context.Context) func(db *gorm.DB) func(serviceId uuid.UUID) (world.RestModel, error) {
+	return func(db *gorm.DB) func(serviceId uuid.UUID) (world.RestModel, error) {
+		return func(serviceId uuid.UUID) (world.RestModel, error) {
+			return configurationProvider[world.RestModel](ctx)(db)(serviceId, TypeWorldService)(MakeWorldServiceModel)()
+		}
+	}
+}
+
+func MakeWorldServiceModel(e Entity) (world.RestModel, error) {
+	var rm world.RestModel
+	err := json.Unmarshal(e.Data, &rm)
+	if err != nil {
+		return world.RestModel{}, err
 	}
 	rm.Id = e.ServiceId
 	return rm, nil

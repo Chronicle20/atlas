@@ -11,6 +11,7 @@ const (
 	TypeCharacterFactory = "character-factory"
 	TypeLoginService     = "login-service"
 	TypeNPCConversation  = "npc-conversation"
+	TypeWorldService     = "world-service"
 )
 
 func Migration(db *gorm.DB) error {

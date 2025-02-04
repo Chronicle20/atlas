@@ -1,0 +1,11 @@
+meta {
+  name: Get World Service Configuration
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/configurations/world-service
+  body: none
+  auth: none
+}

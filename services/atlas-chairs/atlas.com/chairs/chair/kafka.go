@@ -4,6 +4,11 @@ const (
 	EnvEventTopicStatus      = "EVENT_TOPIC_CHAIR_STATUS"
 	EventStatusTypeUsed      = "USED"
 	EventStatusTypeCancelled = "CANCELLED"
+	EventStatusTypeError     = "ERROR"
+
+	ErrorTypeInternal       = "INTERNAL"
+	ErrorTypeAlreadySitting = "ALREADY_SITING"
+	ErrorTypeDoesNotExist   = "DOES_NOT_EXIT"
 
 	ChairTypeFixed    = "FIXED"
 	ChairTypePortable = "PORTABLE"
@@ -21,6 +26,11 @@ type statusEvent[E any] struct {
 
 type statusEventUsedBody struct {
 	CharacterId uint32 `json:"characterId"`
+}
+
+type statusEventErrorBody struct {
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
 }
 
 type statusEventCancelledBody struct {

@@ -22,6 +22,23 @@ func statusEventUsedProvider(worldId byte, channelId byte, mapId uint32, chairTy
 	return producer.SingleMessageProvider(key, value)
 }
 
+func statusEventErrorProvider(worldId byte, channelId byte, mapId uint32, chairType string, chairId uint32, characterId uint32, errorType string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &statusEvent[statusEventErrorBody]{
+		WorldId:   worldId,
+		ChannelId: channelId,
+		MapId:     mapId,
+		ChairType: chairType,
+		ChairId:   chairId,
+		Type:      EventStatusTypeError,
+		Body: statusEventErrorBody{
+			CharacterId: characterId,
+			Type:        errorType,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func statusEventCancelledProvider(worldId byte, channelId byte, mapId uint32, chairType string, chairId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &statusEvent[statusEventCancelledBody]{

@@ -4,6 +4,7 @@ import (
 	"atlas-configurations/configuration/service/channel"
 	"atlas-configurations/configuration/service/characterfactory"
 	"atlas-configurations/configuration/service/login"
+	"atlas-configurations/configuration/service/npcconversation"
 	"atlas-configurations/rest"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
@@ -68,6 +69,16 @@ func handleGetConfigurations(db *gorm.DB) rest.GetHandler {
 						return
 					}
 					server.Marshal[login.RestModel](d.Logger())(w)(c.ServerInformation())(rm)
+					return
+				}
+				if theType == TypeNPCConversation {
+					var rm npcconversation.RestModel
+					rm, err = GetNPCConversationConfiguration(d.Context())(db)(serviceId)
+					if err != nil {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					server.Marshal[npcconversation.RestModel](d.Logger())(w)(c.ServerInformation())(rm)
 					return
 				}
 

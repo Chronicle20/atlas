@@ -10,6 +10,7 @@ import (
 	"atlas-npc-conversations/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/google/uuid"
+	"os"
 )
 
 const serviceName = "atlas-npc-conversations"
@@ -26,7 +27,8 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	config, err := configuration.GetConfiguration()
+	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")), os.Getenv("SERVICE_TYPE"))
+	config, err := configuration.Get()
 	if err != nil {
 		l.WithError(err).Fatal("Unable to successfully load configuration.")
 	}
@@ -38,9 +40,9 @@ func main() {
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	npc.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
-	for _, s := range config.Data.Attributes.Servers {
+	for _, s := range config.Servers {
 		for _, sct := range s.Scripts {
-			registry.GetRegistry().InitScript(uuid.MustParse(s.Tenant), sct.NPCId, sct.Impl)
+			registry.GetRegistry().InitScript(s.TenantId, sct.NPCId, sct.Impl)
 		}
 	}
 

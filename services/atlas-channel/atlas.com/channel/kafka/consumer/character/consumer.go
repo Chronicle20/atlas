@@ -66,7 +66,6 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
-			statChangedFunc := session.Announce(l)(ctx)(wp)(writer.StatChanged)
 			return func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					c, err := character.GetById(l)(ctx)(s.CharacterId())
@@ -124,7 +123,7 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 						su = append(su, model2.NewStatUpdate(update, value))
 					}
 
-					err = statChangedFunc(s, writer.StatChangedBody(l)(su, exclRequestSent))
+					err = session.Announce(l)(ctx)(wp)(writer.StatChanged)(s, writer.StatChangedBody(l)(su, exclRequestSent))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
 						return err

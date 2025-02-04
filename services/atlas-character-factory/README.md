@@ -10,7 +10,6 @@ A RESTful resource which provides character-factory services.
 
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
-- CONFIG_FILE - Location of service configuration file.
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
 - EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for transmitting character status events
 - EVENT_TOPIC_INVENTORY_CHANGED - Kafka Topic for transmitting inventory change events

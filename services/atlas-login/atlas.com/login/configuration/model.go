@@ -1,82 +1,26 @@
 package configuration
 
-import "errors"
+import (
+	"atlas-login/configuration/login"
+	"atlas-login/configuration/task"
+	"errors"
+	"github.com/google/uuid"
+)
 
-type Model struct {
-	Data Data `json:"data"`
-}
-
-func (d *Model) FindTask(task string) (Task, error) {
-	for _, v := range d.Data.Attributes.Tasks {
-		if v.Type == task {
+func (r *RestModel) FindTask(name string) (task.RestModel, error) {
+	for _, v := range r.Tasks {
+		if v.Type == name {
 			return v, nil
 		}
 	}
-	return Task{}, errors.New("task not found")
+	return task.RestModel{}, errors.New("task not found")
 }
 
-func (d *Model) FindServer(tenantId string) (Server, error) {
-	for _, v := range d.Data.Attributes.Servers {
-		if v.Tenant == tenantId {
+func (r *RestModel) FindServer(tenantId uuid.UUID) (login.RestModel, error) {
+	for _, v := range r.Servers {
+		if v.TenantId == tenantId {
 			return v, nil
 		}
 	}
-	return Server{}, errors.New("server not found")
-}
-
-// Data contains the main data configuration.
-type Data struct {
-	Id         string     `json:"id"`
-	Type       string     `json:"type"`
-	Attributes Attributes `json:"attributes"`
-}
-
-// Attributes contain all settings under attributes key.
-type Attributes struct {
-	Tasks   []Task   `json:"tasks"`
-	Servers []Server `json:"servers"`
-}
-
-// Task represents a task in the configuration.
-type Task struct {
-	Type       string         `json:"type"`
-	Attributes TaskAttributes `json:"attributes"`
-}
-
-// TaskAttributes contains settings specific to a task.
-type TaskAttributes struct {
-	Interval int64 `json:"interval"`
-	Duration int64 `json:"duration"`
-}
-
-// Server represents a server in the configuration.
-type Server struct {
-	Tenant   string    `json:"tenant"`
-	Region   string    `json:"region"`
-	Port     string    `json:"port"`
-	Version  Version   `json:"version"`
-	UsesPIN  bool      `json:"usesPin"`
-	Handlers []Handler `json:"handlers"`
-	Writers  []Writer  `json:"writers"`
-}
-
-// Version represents a server version.
-type Version struct {
-	Major string `json:"major"`
-	Minor string `json:"minor"`
-}
-
-// Handler represents a server handler.
-type Handler struct {
-	OpCode    string                 `json:"opCode"`
-	Validator string                 `json:"validator"`
-	Handler   string                 `json:"handler"`
-	Options   map[string]interface{} `json:"options"`
-}
-
-// Writer represents a server writer.
-type Writer struct {
-	OpCode  string                 `json:"opCode"`
-	Writer  string                 `json:"writer"`
-	Options map[string]interface{} `json:"options"`
+	return login.RestModel{}, errors.New("server not found")
 }

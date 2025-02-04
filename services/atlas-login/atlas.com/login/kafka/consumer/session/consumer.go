@@ -20,23 +20,28 @@ import (
 	"sort"
 )
 
-const (
-	consumerAccountSessionStatusEvent = "account_session_status_event"
-)
-
-func AccountSessionStatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerAccountSessionStatusEvent)(EnvEventStatusTopic)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("account_session_status_event")(EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func CreatedAccountSessionStatusEventRegister(t tenant.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		tn, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return tn, message.AdaptHandler(message.PersistentConfig(handleCreatedAccountSessionStatusEvent(t, wp)))
+func InitHandlers(l logrus.FieldLogger) func(tenant tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(tenant tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+				var t string
+				t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedAccountSessionStatusEvent(tenant, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLicenseAgreementAccountSessionStatusEvent(tenant, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleErrorAccountSessionStatusEvent(tenant, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStateChangedAccountSessionStatusEvent(tenant, wp))))
+			}
+		}
 	}
 }
-
 func handleCreatedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e statusEvent[createdStatusEventBody]) {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[createdStatusEventBody]) {
 		if e.Type != EventStatusTypeCreated {
@@ -57,13 +62,13 @@ func handleCreatedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) 
 			s = session.SetAccountId(a.Id())(t.Id(), s.SessionId())
 			session.SessionCreated(producer.ProviderImpl(l)(ctx), t)(s)
 
-			c, err := configuration.GetConfiguration()
+			c, err := configuration.Get()
 			if err != nil {
 				l.WithError(err).Errorf("Unable to get configuration.")
 				return err
 			}
 
-			sc, err := c.FindServer(t.Id().String())
+			sc, err := c.FindServer(t.Id())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to find server configuration.")
 				return err
@@ -81,13 +86,6 @@ func handleCreatedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) 
 
 			return err
 		})
-	}
-}
-
-func LicenseAgreementAccountSessionStatusEventRegister(t tenant.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		tn, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return tn, message.AdaptHandler(message.PersistentConfig(handleLicenseAgreementAccountSessionStatusEvent(t, wp)))
 	}
 }
 
@@ -113,13 +111,6 @@ func handleLicenseAgreementAccountSessionStatusEvent(t tenant.Model, wp writer.P
 
 			return announceError(l)(ctx)(wp)("LICENSE_AGREEMENT")(s)
 		})
-	}
-}
-
-func ErrorAccountSessionStatusEventRegister(t tenant.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		tn, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return tn, message.AdaptHandler(message.PersistentConfig(handleErrorAccountSessionStatusEvent(t, wp)))
 	}
 }
 
@@ -277,13 +268,6 @@ func announceServerList(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 				}
 			}
 		}
-	}
-}
-
-func StateChangedAccountSessionStatusEventRegister(t tenant.Model, wp writer.Producer) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		tn, _ := topic.EnvProvider(l)(EnvEventStatusTopic)()
-		return tn, message.AdaptHandler(message.PersistentConfig(handleStateChangedAccountSessionStatusEvent(t, wp)))
 	}
 }
 

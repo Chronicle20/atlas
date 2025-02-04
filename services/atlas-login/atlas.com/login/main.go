@@ -3,6 +3,8 @@ package main
 import (
 	"atlas-login/account"
 	"atlas-login/configuration"
+	handler2 "atlas-login/configuration/handler"
+	writer2 "atlas-login/configuration/writer"
 	session2 "atlas-login/kafka/consumer/session"
 	"atlas-login/logger"
 	"atlas-login/service"
@@ -20,12 +22,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+	"os"
 	"strconv"
 	"time"
 )
 
 const serviceName = "atlas-login"
-const consumerGroupId = "Login Service - %s"
+const consumerGroupIdTemplate = "Login Service - %s"
 
 func main() {
 	l := logger.CreateLogger(serviceName)
@@ -48,9 +51,10 @@ func main() {
 	handlerMap := produceHandlers()
 	writerList := produceWriters()
 
-	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.StatusConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(session2.AccountSessionStatusEventConsumer(l)(fmt.Sprintf(consumerGroupId, config.Data.Id)), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+	var consumerGroupId = fmt.Sprintf(consumerGroupIdTemplate, config.Id.String())
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	account.InitConsumers(l)(cmf)(consumerGroupId)
+	session2.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
@@ -92,11 +96,8 @@ func main() {
 		wp := produceWriterProducer(fl)(s.Writers, writerList, rw)
 		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 
-		_, _ = cm.RegisterHandler(account.StatusRegister(t)(l))
-		_, _ = cm.RegisterHandler(session2.CreatedAccountSessionStatusEventRegister(t, wp)(l))
-		_, _ = cm.RegisterHandler(session2.LicenseAgreementAccountSessionStatusEventRegister(t, wp)(l))
-		_, _ = cm.RegisterHandler(session2.StateChangedAccountSessionStatusEventRegister(t, wp)(l))
-		_, _ = cm.RegisterHandler(session2.ErrorAccountSessionStatusEventRegister(t, wp)(l))
+		account.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler)
+		session2.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler)
 
 		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, t, s.Port)
 	}

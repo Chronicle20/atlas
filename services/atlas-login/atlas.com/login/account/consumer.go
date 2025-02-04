@@ -2,29 +2,33 @@ package account
 
 import (
 	consumer2 "atlas-login/kafka/consumer"
+	"atlas-login/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	consumerNameAccountStatus = "account-status"
-)
-
-func StatusConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerNameAccountStatus)(EnvEventTopicAccountStatus)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("account_status_event")(EnvEventTopicAccountStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func StatusRegister(tenant tenant.Model) func(l logrus.FieldLogger) (string, handler.Handler) {
-	return func(l logrus.FieldLogger) (string, handler.Handler) {
-		t, _ := topic.EnvProvider(l)(EnvEventTopicAccountStatus)()
-		return t, message.AdaptHandler(message.PersistentConfig(handleAccountStatusEvent(tenant)))
+func InitHandlers(l logrus.FieldLogger) func(tenant tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(tenant tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+				t, _ := topic.EnvProvider(l)(EnvEventTopicAccountStatus)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAccountStatusEvent(tenant))))
+			}
+		}
 	}
 }
 

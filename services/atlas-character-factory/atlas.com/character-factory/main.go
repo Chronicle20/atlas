@@ -2,12 +2,15 @@ package main
 
 import (
 	"atlas-character-factory/character"
+	"atlas-character-factory/configuration"
 	"atlas-character-factory/factory"
 	"atlas-character-factory/logger"
 	"atlas-character-factory/service"
 	"atlas-character-factory/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
+	"os"
 )
 
 const serviceName = "atlas-character-factory"
@@ -43,6 +46,8 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
+
+	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")), os.Getenv("SERVICE_TYPE"))
 
 	cm := consumer.GetManager()
 	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.CreatedConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))

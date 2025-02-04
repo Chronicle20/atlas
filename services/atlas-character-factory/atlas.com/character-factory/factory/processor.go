@@ -26,13 +26,13 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 				return character.Model{}, errors.New("must provide valid job index")
 			}
 
-			c, err := configuration.GetConfiguration()
+			c, err := configuration.Get()
 			if err != nil {
 				l.WithError(err).Errorf("Unable to find template validation configuration")
 				return character.Model{}, err
 			}
 			t := tenant.MustFromContext(ctx)
-			tc, err := c.FindTemplate(t.Id().String(), input.JobIndex, input.SubJobIndex, input.Gender)
+			tc, err := c.FindTemplate(t.Id(), input.JobIndex, input.SubJobIndex, input.Gender)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to find template validation configuration")
 				return character.Model{}, err

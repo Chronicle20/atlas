@@ -10,7 +10,6 @@ A RESTful resource which provides Channel services.
 
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
-- CONFIG_FILE - Location of service configuration file.
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
 - ACCOUNT_SERVICE_URL - [scheme]://[host]:[port]/api/aos/
 - CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/

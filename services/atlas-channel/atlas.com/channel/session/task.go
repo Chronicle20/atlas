@@ -20,7 +20,7 @@ type Timeout struct {
 
 func NewTimeout(l logrus.FieldLogger, interval time.Duration) *Timeout {
 	var to int64
-	c, err := configuration.GetConfiguration()
+	c, err := configuration.Get()
 
 	if err != nil {
 		to = 3600000
@@ -29,7 +29,7 @@ func NewTimeout(l logrus.FieldLogger, interval time.Duration) *Timeout {
 		if err != nil {
 			to = 3600000
 		} else {
-			to = t.Attributes.Duration
+			to = t.Duration
 		}
 	}
 

@@ -3,6 +3,8 @@ package main
 import (
 	"atlas-channel/account"
 	"atlas-channel/configuration"
+	handler2 "atlas-channel/configuration/handler"
+	writer2 "atlas-channel/configuration/writer"
 	account2 "atlas-channel/kafka/consumer/account"
 	"atlas-channel/kafka/consumer/buddylist"
 	"atlas-channel/kafka/consumer/chair"
@@ -39,6 +41,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+	"os"
 	"strconv"
 	"time"
 )
@@ -57,11 +60,12 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	config, err := configuration.GetConfiguration()
+	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")), os.Getenv("SERVICE_TYPE"))
+	config, err := configuration.Get()
 	if err != nil {
 		l.WithError(err).Fatal("Unable to successfully load configuration.")
 	}
-	var consumerGroupId = fmt.Sprintf(consumerGroupIdTemplate, config.Data.Id)
+	var consumerGroupId = fmt.Sprintf(consumerGroupIdTemplate, config.Id.String())
 
 	validatorMap := produceValidators()
 	handlerMap := produceHandlers()
@@ -89,7 +93,7 @@ func main() {
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
-	for _, s := range config.Data.Attributes.Servers {
+	for _, s := range config.Channels {
 		majorVersion, err := strconv.Atoi(s.Version.Major)
 		if err != nil {
 			l.WithError(err).Errorf("Socket service [majorVersion] is configured incorrectly")
@@ -103,7 +107,7 @@ func main() {
 		}
 
 		var t tenant.Model
-		t, err = tenant.Register(uuid.MustParse(s.Tenant), s.Region, uint16(majorVersion), uint16(minorVersion))
+		t, err = tenant.Register(s.TenantId, s.Region, uint16(majorVersion), uint16(minorVersion))
 		if err != nil {
 			continue
 		}
@@ -137,7 +141,7 @@ func main() {
 				wp := produceWriterProducer(fl)(s.Writers, writerList, rw)
 				account2.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				buddylist.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				channel.InitHandlers(fl)(sc)(config.Data.Attributes.IPAddress, c.Port)(consumer.GetManager().RegisterHandler)
+				channel.InitHandlers(fl)(sc)(config.IpAddress, c.Port)(consumer.GetManager().RegisterHandler)
 				character.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				expression.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				guild.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
@@ -155,7 +159,7 @@ func main() {
 				chair.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
-				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.Data.Attributes.IPAddress, c.Port)
+				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.IpAddress, c.Port)
 			}
 		}
 	}
@@ -165,7 +169,7 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatalf("Unable to find task [%s].", session.TimeoutTask)
 	}
-	go tasks.Register(l, tdm.Context())(session.NewTimeout(l, time.Millisecond*time.Duration(tt.Attributes.Interval)))
+	go tasks.Register(l, tdm.Context())(session.NewTimeout(l, time.Millisecond*time.Duration(tt.Interval)))
 
 	tdm.TeardownFunc(session.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
@@ -174,8 +178,8 @@ func main() {
 	l.Infoln("Service shutdown.")
 }
 
-func produceWriterProducer(l logrus.FieldLogger) func(writers []configuration.Writer, writerList []string, w socket2.OpWriter) writer.Producer {
-	return func(writers []configuration.Writer, writerList []string, w socket2.OpWriter) writer.Producer {
+func produceWriterProducer(l logrus.FieldLogger) func(writers []writer2.RestModel, writerList []string, w socket2.OpWriter) writer.Producer {
+	return func(writers []writer2.RestModel, writerList []string, w socket2.OpWriter) writer.Producer {
 		return getWriterProducer(l)(writers, writerList, w)
 	}
 }
@@ -260,8 +264,8 @@ func produceValidators() map[string]handler.MessageValidator {
 	return validatorMap
 }
 
-func getWriterProducer(l logrus.FieldLogger) func(writerConfig []configuration.Writer, wl []string, w socket2.OpWriter) writer.Producer {
-	return func(writerConfig []configuration.Writer, wl []string, w socket2.OpWriter) writer.Producer {
+func getWriterProducer(l logrus.FieldLogger) func(writerConfig []writer2.RestModel, wl []string, w socket2.OpWriter) writer.Producer {
+	return func(writerConfig []writer2.RestModel, wl []string, w socket2.OpWriter) writer.Producer {
 		rwm := make(map[string]writer.BodyFunc)
 		for _, wc := range writerConfig {
 			op, err := strconv.ParseUint(wc.OpCode, 0, 16)
@@ -280,9 +284,9 @@ func getWriterProducer(l logrus.FieldLogger) func(writerConfig []configuration.W
 	}
 }
 
-func handlerProducer(l logrus.FieldLogger) func(adapter handler.Adapter) func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
-	return func(adapter handler.Adapter) func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
-		return func(handlerConfig []configuration.Handler, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
+func handlerProducer(l logrus.FieldLogger) func(adapter handler.Adapter) func(handlerConfig []handler2.RestModel, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
+	return func(adapter handler.Adapter) func(handlerConfig []handler2.RestModel, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
+		return func(handlerConfig []handler2.RestModel, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
 			handlers := make(map[uint16]request.Handler)
 			for _, hc := range handlerConfig {
 				var v handler.MessageValidator

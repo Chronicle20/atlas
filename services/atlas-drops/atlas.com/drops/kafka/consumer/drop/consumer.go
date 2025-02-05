@@ -45,8 +45,7 @@ func handleSpawn(l logrus.FieldLogger, ctx context.Context, c command[spawnComma
 		SetPosition(c.Body.X, c.Body.Y).
 		SetOwner(c.Body.OwnerId, c.Body.OwnerPartyId).
 		SetDropper(c.Body.DropperId, c.Body.DropperX, c.Body.DropperY).
-		SetPlayerDrop(c.Body.PlayerDrop).
-		SetMod(c.Body.Mod)
+		SetPlayerDrop(c.Body.PlayerDrop)
 	_ = drop.Spawn(l)(ctx)(mb)
 }
 
@@ -63,8 +62,7 @@ func handleSpawnFromCharacter(l logrus.FieldLogger, ctx context.Context, c comma
 		SetPosition(c.Body.X, c.Body.Y).
 		SetOwner(c.Body.OwnerId, c.Body.OwnerPartyId).
 		SetDropper(c.Body.DropperId, c.Body.DropperX, c.Body.DropperY).
-		SetPlayerDrop(c.Body.PlayerDrop).
-		SetMod(c.Body.Mod)
+		SetPlayerDrop(c.Body.PlayerDrop)
 	_ = drop.SpawnForCharacter(l)(ctx)(mb)
 }
 

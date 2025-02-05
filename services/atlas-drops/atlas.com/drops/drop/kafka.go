@@ -34,7 +34,6 @@ type createdStatusEventBody struct {
 	DropperX        int16     `json:"dropperX"`
 	DropperY        int16     `json:"dropperY"`
 	PlayerDrop      bool      `json:"playerDrop"`
-	Mod             byte      `json:"mod"`
 }
 
 type expiredStatusEventBody struct {

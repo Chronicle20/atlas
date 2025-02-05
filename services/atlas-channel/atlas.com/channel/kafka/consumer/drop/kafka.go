@@ -5,6 +5,7 @@ import "time"
 const (
 	EnvEventTopicDropStatus = "EVENT_TOPIC_DROP_STATUS"
 	StatusEventTypeCreated  = "CREATED"
+	StatusEventTypeExpired  = "EXPIRED"
 )
 
 type statusEvent[E any] struct {
@@ -31,4 +32,7 @@ type createdStatusEventBody struct {
 	DropperY        int16     `json:"dropperY"`
 	PlayerDrop      bool      `json:"playerDrop"`
 	Mod             byte      `json:"mod"`
+}
+
+type expiredStatusEventBody struct {
 }

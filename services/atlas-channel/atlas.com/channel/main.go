@@ -225,6 +225,7 @@ func produceWriters() []string {
 		writer.CharacterShowChair,
 		writer.CharacterSitResult,
 		writer.DropSpawn,
+		writer.DropDestroy,
 	}
 }
 

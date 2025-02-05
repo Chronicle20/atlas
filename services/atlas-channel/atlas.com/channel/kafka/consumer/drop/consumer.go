@@ -32,6 +32,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				var t string
 				t, _ = topic.EnvProvider(l)(EnvEventTopicDropStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCreated(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventExpired(sc, wp))))
 			}
 		}
 	}
@@ -64,6 +65,27 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			err := session.Announce(l)(ctx)(wp)(writer.DropSpawn)(s, writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeFresh, 0))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to spawn drop [%d] for character [%d].", d.Id(), s.CharacterId())
+			}
+			return err
+		})
+	}
+}
+
+func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handler[statusEvent[expiredStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[expiredStatusEventBody]) {
+		if e.Type != StatusEventTypeExpired {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		_ = _map.ForSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), e.MapId, func(s session.Model) error {
+			l.Debugf("Despawning drop [%d] for character [%d].", e.DropId, s.CharacterId())
+			err := session.Announce(l)(ctx)(wp)(writer.DropDestroy)(s, writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypeExpire, s.CharacterId(), -1))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to spawn drop [%d] for character [%d].", e.DropId, s.CharacterId())
 			}
 			return err
 		})

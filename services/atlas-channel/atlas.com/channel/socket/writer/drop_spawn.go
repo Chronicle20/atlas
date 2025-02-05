@@ -7,12 +7,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const DropSpawn = "DropSpawn"
+type DropEnterType byte
 
-func DropSpawnBody(l logrus.FieldLogger, t tenant.Model) func(d drop.Model, delay int16) BodyProducer {
-	return func(d drop.Model, delay int16) BodyProducer {
+const (
+	DropSpawn              = "DropSpawn"
+	DropEnterTypeFresh     = DropEnterType(1)
+	DropEnterTypeExisting  = DropEnterType(2)
+	DropEnterTypeDisappear = DropEnterType(3)
+)
+
+func DropSpawnBody(l logrus.FieldLogger, t tenant.Model) func(d drop.Model, enterType DropEnterType, delay int16) BodyProducer {
+	return func(d drop.Model, enterType DropEnterType, delay int16) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(d.Mod())
+			w.WriteByte(byte(enterType))
 			w.WriteInt(d.Id())
 			w.WriteBool(d.Meso() > 0)
 			w.WriteInt(d.ItemId())

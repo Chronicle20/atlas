@@ -206,7 +206,7 @@ func spawnDropsForSession(l logrus.FieldLogger) func(ctx context.Context) func(w
 			return func(s session.Model) model.Operator[drop.Model] {
 				return func(d drop.Model) error {
 					l.Debugf("Spawning [%d] drop [%d] for character [%d].", d.ItemId(), d.Id(), s.CharacterId())
-					err := session.Announce(l)(ctx)(wp)(writer.DropSpawn)(s, writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, 0))
+					err := session.Announce(l)(ctx)(wp)(writer.DropSpawn)(s, writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeExisting, 0))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to spawn drop [%d] for character [%d].", d.Id(), s.CharacterId())
 					}

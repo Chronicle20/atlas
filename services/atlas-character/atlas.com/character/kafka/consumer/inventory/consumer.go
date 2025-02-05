@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"atlas-character/character"
 	"atlas-character/equipable"
 	"atlas-character/equipment"
 	"atlas-character/inventory"
@@ -70,6 +71,7 @@ func handleMoveItemCommand(db *gorm.DB) message.Handler[moveItemCommand] {
 
 func handleDropItemCommand(db *gorm.DB) message.Handler[dropItemCommand] {
 	return func(l logrus.FieldLogger, ctx context.Context, c dropItemCommand) {
-		_ = inventory.Drop(l)(db)(ctx)(c.InventoryType)(c.CharacterId)(c.Source)(c.Quantity)
+		td := character.GetTemporalRegistry().GetById(c.CharacterId)
+		_ = inventory.Drop(l)(db)(ctx)(c.InventoryType)(c.WorldId, c.ChannelId, c.MapId, c.CharacterId, td.X(), td.Y(), c.Source, c.Quantity)
 	}
 }

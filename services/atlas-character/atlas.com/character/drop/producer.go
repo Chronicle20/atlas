@@ -1,0 +1,79 @@
+package drop
+
+import (
+	"github.com/Chronicle20/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/segmentio/kafka-go"
+)
+
+func dropEquipmentProvider(worldId byte, channelId byte, mapId uint32, itemId uint32, equipmentId uint32, dropType byte, x int16, y int16, ownerId uint32, mod byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(mapId))
+	value := &command[spawnFromCharacterCommandBody]{
+		WorldId:   worldId,
+		ChannelId: channelId,
+		MapId:     mapId,
+		Type:      CommandTypeSpawnFromCharacter,
+		Body: spawnFromCharacterCommandBody{
+			ItemId:      itemId,
+			EquipmentId: equipmentId,
+			Quantity:    1,
+			DropType:    dropType,
+			X:           x,
+			Y:           y,
+			OwnerId:     ownerId,
+			DropperId:   ownerId,
+			DropperX:    x,
+			DropperY:    y,
+			PlayerDrop:  true,
+			Mod:         mod,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func dropItemProvider(worldId byte, channelId byte, mapId uint32, itemId uint32, quantity uint32, dropType byte, x int16, y int16, ownerId uint32, mod byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(mapId))
+	value := &command[spawnFromCharacterCommandBody]{
+		WorldId:   worldId,
+		ChannelId: channelId,
+		MapId:     mapId,
+		Type:      CommandTypeSpawnFromCharacter,
+		Body: spawnFromCharacterCommandBody{
+			ItemId:     itemId,
+			Quantity:   quantity,
+			DropType:   dropType,
+			X:          x,
+			Y:          y,
+			OwnerId:    ownerId,
+			DropperId:  ownerId,
+			DropperX:   x,
+			DropperY:   y,
+			PlayerDrop: true,
+			Mod:        mod,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func dropMesoProvider(worldId byte, channelId byte, mapId uint32, mesos uint32, dropType byte, x int16, y int16, ownerId uint32, mod byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(mapId))
+	value := &command[spawnFromCharacterCommandBody]{
+		WorldId:   worldId,
+		ChannelId: channelId,
+		MapId:     mapId,
+		Type:      CommandTypeSpawnFromCharacter,
+		Body: spawnFromCharacterCommandBody{
+			Mesos:      mesos,
+			DropType:   dropType,
+			X:          x,
+			Y:          y,
+			OwnerId:    ownerId,
+			DropperId:  ownerId,
+			DropperX:   x,
+			DropperY:   y,
+			PlayerDrop: true,
+			Mod:        mod,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

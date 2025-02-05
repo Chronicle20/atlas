@@ -3,6 +3,7 @@ package configuration
 import (
 	"atlas-configurations/configuration/service/channel"
 	"atlas-configurations/configuration/service/characterfactory"
+	"atlas-configurations/configuration/service/drops"
 	"atlas-configurations/configuration/service/login"
 	"atlas-configurations/configuration/service/npcconversation"
 	"atlas-configurations/configuration/service/world"
@@ -68,6 +69,24 @@ func MakeCharacterFactoryModel(e Entity) (characterfactory.RestModel, error) {
 	err := json.Unmarshal(e.Data, &rm)
 	if err != nil {
 		return characterfactory.RestModel{}, err
+	}
+	rm.Id = e.ServiceId
+	return rm, nil
+}
+
+func GetDropsServiceConfiguration(ctx context.Context) func(db *gorm.DB) func(serviceId uuid.UUID) (drops.RestModel, error) {
+	return func(db *gorm.DB) func(serviceId uuid.UUID) (drops.RestModel, error) {
+		return func(serviceId uuid.UUID) (drops.RestModel, error) {
+			return configurationProvider[drops.RestModel](ctx)(db)(serviceId, TypeDropsService)(MakeDropsServiceModel)()
+		}
+	}
+}
+
+func MakeDropsServiceModel(e Entity) (drops.RestModel, error) {
+	var rm drops.RestModel
+	err := json.Unmarshal(e.Data, &rm)
+	if err != nil {
+		return drops.RestModel{}, err
 	}
 	rm.Id = e.ServiceId
 	return rm, nil

@@ -12,6 +12,7 @@ const (
 	TypeLoginService     = "login-service"
 	TypeNPCConversation  = "npc-conversation"
 	TypeWorldService     = "world-service"
+	TypeDropsService     = "drops-service"
 )
 
 func Migration(db *gorm.DB) error {

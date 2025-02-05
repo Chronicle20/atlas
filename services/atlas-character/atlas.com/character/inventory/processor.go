@@ -686,7 +686,7 @@ func dropItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) 
 					}
 
 					// TODO determine appropriate drop type and mod
-					_ = drop.DropItem(l)(ctx)(worldId, channelId, mapId, i.ItemId(), uint32(math.Abs(float64(quantity))), 2, x, y, characterId, 0)
+					_ = drop.DropItem(l)(ctx)(worldId, channelId, mapId, i.ItemId(), uint32(math.Abs(float64(quantity))), 2, x, y, characterId)
 
 					err := producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(events)
 					if err != nil {
@@ -732,7 +732,7 @@ func dropEquip(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context)
 				}
 
 				// TODO determine appropriate drop type and mod
-				_ = drop.DropEquipment(l)(ctx)(worldId, channelId, mapId, e.ItemId(), e.ReferenceId(), 2, x, y, characterId, 0)
+				_ = drop.DropEquipment(l)(ctx)(worldId, channelId, mapId, e.ItemId(), e.ReferenceId(), 2, x, y, characterId)
 
 				err := producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(events)
 				if err != nil {

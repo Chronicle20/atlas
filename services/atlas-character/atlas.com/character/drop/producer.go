@@ -6,7 +6,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func dropEquipmentProvider(worldId byte, channelId byte, mapId uint32, itemId uint32, equipmentId uint32, dropType byte, x int16, y int16, ownerId uint32, mod byte) model.Provider[[]kafka.Message] {
+func dropEquipmentProvider(worldId byte, channelId byte, mapId uint32, itemId uint32, equipmentId uint32, dropType byte, x int16, y int16, ownerId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(mapId))
 	value := &command[spawnFromCharacterCommandBody]{
 		WorldId:   worldId,
@@ -25,13 +25,12 @@ func dropEquipmentProvider(worldId byte, channelId byte, mapId uint32, itemId ui
 			DropperX:    x,
 			DropperY:    y,
 			PlayerDrop:  true,
-			Mod:         mod,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func dropItemProvider(worldId byte, channelId byte, mapId uint32, itemId uint32, quantity uint32, dropType byte, x int16, y int16, ownerId uint32, mod byte) model.Provider[[]kafka.Message] {
+func dropItemProvider(worldId byte, channelId byte, mapId uint32, itemId uint32, quantity uint32, dropType byte, x int16, y int16, ownerId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(mapId))
 	value := &command[spawnFromCharacterCommandBody]{
 		WorldId:   worldId,
@@ -49,13 +48,12 @@ func dropItemProvider(worldId byte, channelId byte, mapId uint32, itemId uint32,
 			DropperX:   x,
 			DropperY:   y,
 			PlayerDrop: true,
-			Mod:        mod,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func dropMesoProvider(worldId byte, channelId byte, mapId uint32, mesos uint32, dropType byte, x int16, y int16, ownerId uint32, mod byte) model.Provider[[]kafka.Message] {
+func dropMesoProvider(worldId byte, channelId byte, mapId uint32, mesos uint32, dropType byte, x int16, y int16, ownerId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(mapId))
 	value := &command[spawnFromCharacterCommandBody]{
 		WorldId:   worldId,
@@ -72,7 +70,6 @@ func dropMesoProvider(worldId byte, channelId byte, mapId uint32, mesos uint32, 
 			DropperX:   x,
 			DropperY:   y,
 			PlayerDrop: true,
-			Mod:        mod,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

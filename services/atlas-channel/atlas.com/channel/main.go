@@ -221,6 +221,7 @@ func produceWriters() []string {
 		writer.GuildBBS,
 		writer.CharacterShowChair,
 		writer.CharacterSitResult,
+		writer.DropSpawn,
 	}
 }
 

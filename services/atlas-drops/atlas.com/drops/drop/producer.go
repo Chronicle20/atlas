@@ -28,7 +28,6 @@ func createdEventStatusProvider(drop Model) model.Provider[[]kafka.Message] {
 			DropperX:        drop.DropperX(),
 			DropperY:        drop.DropperY(),
 			PlayerDrop:      drop.PlayerDrop(),
-			Mod:             drop.Mod(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

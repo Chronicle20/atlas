@@ -64,6 +64,5 @@ func Transform(m Model) (RestModel, error) {
 		DropperX:      m.DropperX(),
 		DropperY:      m.DropperY(),
 		CharacterDrop: m.CharacterDrop(),
-		Mod:           m.Mod(),
 	}, nil
 }

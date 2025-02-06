@@ -15,7 +15,6 @@ A RESTful resource which provides guilds services.
 - DB_PORT - Postgres Database port
 - DB_NAME - Postgres Database name
 - BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
-- CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
 - COMMAND_TOPIC_GUILD - Kafka topic for transmitting Guild commands
 - COMMAND_TOPIC_GUILD_THREAD - Kafka topic for transmitting Guild Thread commands

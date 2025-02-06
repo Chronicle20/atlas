@@ -45,12 +45,9 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(character.StatusEventLoginRegister(l))
-	_, _ = cm.RegisterHandler(character.StatusEventLogoutRegister(l))
-	_, _ = cm.RegisterHandler(character.StatusEventMapChangedRegister(l))
-	_, _ = cm.RegisterHandler(character.StatusEventChannelChangedRegister(l))
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	character.InitConsumers(l)(cmf)(consumerGroupId)
+	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	go tasks.Register(tasks.NewRespawn(l, 10000))
 

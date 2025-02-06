@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"atlas-character/asset"
+	"atlas-character/character"
 	"atlas-character/drop"
 	"atlas-character/equipable"
 	statistics2 "atlas-character/equipable/statistics"
@@ -850,7 +851,10 @@ func AttemptMesoPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.
 	return func(db *gorm.DB) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
 		return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
 			return func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
-				// TODO
+				err := character.PickUpMeso(l)(ctx)(db)(characterId, int32(meso))
+				if err != nil {
+					return err
+				}
 				return drop.RequestPickUp(l)(ctx)(worldId, channelId, mapId, dropId, characterId)
 			}
 		}

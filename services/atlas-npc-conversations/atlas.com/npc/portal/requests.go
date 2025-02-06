@@ -4,16 +4,15 @@ import (
 	"atlas-npc-conversations/rest"
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"os"
 )
 
 const (
-	portalsInMap  = "maps/%d/portals"
+	portalsInMap  = "data/maps/%d/portals"
 	portalsByName = portalsInMap + "?name=%s"
 )
 
 func getBaseRequest() string {
-	return os.Getenv("GAME_DATA_SERVICE_URL")
+	return requests.RootUrl("DATA")
 }
 
 func requestInMapByName(mapId uint32, name string) requests.Request[[]RestModel] {

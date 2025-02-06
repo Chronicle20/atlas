@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	npcsInMap           = "maps/%d/npcs"
+	npcsInMap           = "data/maps/%d/npcs"
 	npcsInMapByObjectId = npcsInMap + "?objectId=%d"
 )
 

@@ -11,8 +11,7 @@ A RESTful resource which provides monsters services.
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
-- GAME_DATA_SERVICE_URL - [scheme]://[host]:[port]/api/gis/
-- MAP_SERVICE_URL - [scheme]://[host]:[port]/api/mas/
+- BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
 - EVENT_TOPIC_MAP_STATUS - Kafka Topic for transmitting Map Status events.
 - EVENT_TOPIC_MONSTER_STATUS - Kafka Topic for transmitting Monster Status events.
 - EVENT_TOPIC_MONSTER_MOVEMENT - Kafka Topic for transmitting Monster Movement events.

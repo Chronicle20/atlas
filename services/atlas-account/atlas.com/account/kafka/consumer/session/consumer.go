@@ -9,24 +9,30 @@ import (
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"strings"
 )
 
-const (
-	consumerAccountSessionCommand = "account_session_command"
-)
-
-func AccountSessionCommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerAccountSessionCommand)(EnvCommandTopic)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("account_session_command")(EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func CreateAccountSessionCommandRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleCreateAccountSessionCommand(db)))
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+			var t string
+			t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateAccountSessionCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleProgressStateAccountSessionCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLogoutAccountSessionCommand(db))))
+		}
+	}
 }
 
 func handleCreateAccountSessionCommand(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c command[createCommandBody]) {
@@ -40,11 +46,6 @@ func handleCreateAccountSessionCommand(db *gorm.DB) func(l logrus.FieldLogger, c
 	}
 }
 
-func ProgressStateAccountSessionCommandRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleProgressStateAccountSessionCommand(db)))
-}
-
 func handleProgressStateAccountSessionCommand(db *gorm.DB) message.Handler[command[progressStateCommandBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, c command[progressStateCommandBody]) {
 		if c.Type != CommandTypeProgressState {
@@ -52,11 +53,6 @@ func handleProgressStateAccountSessionCommand(db *gorm.DB) message.Handler[comma
 		}
 		_ = session.ProgressState(l)(ctx)(db)(c.SessionId, c.Issuer, c.AccountId, account.State(c.Body.State), c.Body.Params)
 	}
-}
-
-func LogoutAccountSessionCommandRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleLogoutAccountSessionCommand(db)))
 }
 
 func handleLogoutAccountSessionCommand(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c command[logoutCommandBody]) {

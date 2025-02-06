@@ -32,7 +32,7 @@ func (s Server) GetPrefix() string {
 func GetServer() Server {
 	return Server{
 		baseUrl: "",
-		prefix:  "/api/aos/",
+		prefix:  "/api/",
 	}
 }
 
@@ -49,13 +49,11 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(account.Migration))
 
-	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(account.CreateCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(session2.AccountSessionCommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(account.CreateAccountRegister(l, db))
-	_, _ = cm.RegisterHandler(session2.CreateAccountSessionCommandRegister(l, db))
-	_, _ = cm.RegisterHandler(session2.ProgressStateAccountSessionCommandRegister(l, db))
-	_, _ = cm.RegisterHandler(session2.LogoutAccountSessionCommandRegister(l, db))
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	account.InitConsumers(l)(cmf)(consumerGroupId)
+	session2.InitConsumers(l)(cmf)(consumerGroupId)
+	account.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	session2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), account.InitResource(GetServer())(db))
 

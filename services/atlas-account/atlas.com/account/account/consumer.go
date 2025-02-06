@@ -7,17 +7,26 @@ import (
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-const (
-	consumerNameCreate = "create_account_command"
-)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("create_account_command")(EnvCommandTopicCreateAccount)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
+	}
+}
 
-func CreateCommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerNameCreate)(EnvCommandTopicCreateAccount)(groupId)
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+			var t string
+			t, _ = topic.EnvProvider(l)(EnvCommandTopicCreateAccount)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateAccountCommand(db))))
+		}
 	}
 }
 
@@ -30,9 +39,4 @@ func handleCreateAccountCommand(db *gorm.DB) message.Handler[createCommand] {
 			return
 		}
 	}
-}
-
-func CreateAccountRegister(l logrus.FieldLogger, db *gorm.DB) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopicCreateAccount)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleCreateAccountCommand(db)))
 }

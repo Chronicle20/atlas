@@ -28,7 +28,6 @@ func createdEventStatusProvider(drop Model) model.Provider[[]kafka.Message] {
 			DropperX:        drop.DropperX(),
 			DropperY:        drop.DropperY(),
 			PlayerDrop:      drop.PlayerDrop(),
-			Mod:             drop.Mod(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -62,7 +61,7 @@ func pickedUpEventStatusProvider(worldId byte, channelId byte, mapId uint32, dro
 	return producer.SingleMessageProvider(key, value)
 }
 
-func reservedEventStatusProvider(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+func reservedEventStatusProvider(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32, itemId uint32, equipmentId uint32, quantity uint32, meso uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))
 	value := &statusEvent[reservedStatusEventBody]{
 		WorldId:   worldId,
@@ -72,6 +71,10 @@ func reservedEventStatusProvider(worldId byte, channelId byte, mapId uint32, dro
 		Type:      StatusEventTypeReserved,
 		Body: reservedStatusEventBody{
 			CharacterId: characterId,
+			ItemId:      itemId,
+			EquipmentId: equipmentId,
+			Quantity:    quantity,
+			Meso:        meso,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

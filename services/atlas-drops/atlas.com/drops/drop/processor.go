@@ -20,7 +20,7 @@ func Spawn(l logrus.FieldLogger) func(ctx context.Context) func(mb *ModelBuilder
 					l.WithError(err).Errorf("Unable to generate [%d] equipment for drop.", mb.ItemId())
 					return err
 				}
-				
+
 				mb.SetEquipmentId(e.Id())
 			}
 			m := GetRegistry().CreateDrop(mb)
@@ -43,10 +43,10 @@ func SpawnForCharacter(l logrus.FieldLogger) func(ctx context.Context) func(mb *
 func Reserve(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
 		return func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
-			err := GetRegistry().ReserveDrop(dropId, characterId)
+			d, err := GetRegistry().ReserveDrop(dropId, characterId)
 			if err == nil {
 				l.Debugf("Reserving [%d] for [%d].", dropId, characterId)
-				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicDropStatus)(reservedEventStatusProvider(worldId, channelId, mapId, dropId, characterId))
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicDropStatus)(reservedEventStatusProvider(worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso()))
 			} else {
 				l.Debugf("Failed reserving [%d] for [%d].", dropId, characterId)
 				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicDropStatus)(reservationFailureEventStatusProvider(worldId, channelId, mapId, dropId, characterId))

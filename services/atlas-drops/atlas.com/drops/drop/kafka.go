@@ -34,7 +34,6 @@ type createdStatusEventBody struct {
 	DropperX        int16     `json:"dropperX"`
 	DropperY        int16     `json:"dropperY"`
 	PlayerDrop      bool      `json:"playerDrop"`
-	Mod             byte      `json:"mod"`
 }
 
 type expiredStatusEventBody struct {
@@ -46,6 +45,10 @@ type pickedUpStatusEventBody struct {
 
 type reservedStatusEventBody struct {
 	CharacterId uint32 `json:"characterId"`
+	ItemId      uint32 `json:"itemId"`
+	EquipmentId uint32 `json:"equipmentId"`
+	Quantity    uint32 `json:"quantity"`
+	Meso        uint32 `json:"meso"`
 }
 
 type reservationFailureStatusEventBody struct {

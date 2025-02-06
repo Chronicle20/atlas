@@ -59,6 +59,8 @@ func destroyedStatusEventProvider(r Model) model.Provider[[]kafka.Message] {
 		Type:      EventStatusTypeDestroyed,
 		Body: destroyedStatusEventBody{
 			State: r.State(),
+			X:     r.X(),
+			Y:     r.Y(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

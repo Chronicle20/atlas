@@ -3,6 +3,8 @@ package drop
 const (
 	EnvCommandTopic               = "COMMAND_TOPIC_DROP"
 	CommandTypeSpawnFromCharacter = "SPAWN_FROM_CHARACTER"
+	CommandTypeCancelReservation  = "CANCEL_RESERVATION"
+	CommandTypeRequestPickUp      = "REQUEST_PICK_UP"
 )
 
 type command[E any] struct {
@@ -26,5 +28,14 @@ type spawnFromCharacterCommandBody struct {
 	DropperX    int16  `json:"dropperX"`
 	DropperY    int16  `json:"dropperY"`
 	PlayerDrop  bool   `json:"playerDrop"`
-	Mod         byte   `json:"mod"`
+}
+
+type cancelReservationCommandBody struct {
+	DropId      uint32 `json:"dropId"`
+	CharacterId uint32 `json:"characterId"`
+}
+
+type requestPickUpCommandBody struct {
+	DropId      uint32 `json:"dropId"`
+	CharacterId uint32 `json:"characterId"`
 }

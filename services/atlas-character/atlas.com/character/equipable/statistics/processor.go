@@ -22,6 +22,16 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) Creator {
 	}
 }
 
+func Existing(l logrus.FieldLogger) func(ctx context.Context) func(equipmentId uint32) Creator {
+	return func(ctx context.Context) func(equipmentId uint32) Creator {
+		return func(equipmentId uint32) Creator {
+			return func(itemId uint32) model.Provider[Model] {
+				return byEquipmentIdModelProvider(l, ctx)(equipmentId)
+			}
+		}
+	}
+}
+
 func byEquipmentIdModelProvider(l logrus.FieldLogger, ctx context.Context) func(equipmentId uint32) model.Provider[Model] {
 	return func(equipmentId uint32) model.Provider[Model] {
 		return requests.Provider[RestModel, Model](l, ctx)(requestById(equipmentId), makeEquipment)

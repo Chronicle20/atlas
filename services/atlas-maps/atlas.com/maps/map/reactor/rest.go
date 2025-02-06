@@ -17,6 +17,11 @@ func (r RestModel) GetID() string {
 	return r.Id
 }
 
+func (rm *RestModel) SetID(id string) error {
+	rm.Id = id
+	return nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:        rm.Id,

@@ -36,6 +36,6 @@ func Extract(rm RestModel) (Model, error) {
 		x:         rm.X,
 		y:         rm.Y,
 		delay:     rm.Delay,
-		direction: rm.FacingDirection,
+		direction: rm.Direction,
 	}, nil
 }

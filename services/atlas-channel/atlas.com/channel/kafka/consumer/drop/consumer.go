@@ -103,13 +103,35 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 
-		_ = _map.ForSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), e.MapId, func(s session.Model) error {
-			l.Debugf("[%d] is picking up drop [%d].", e.Body.CharacterId, e.DropId)
-			err := session.Announce(l)(ctx)(wp)(writer.DropDestroy)(s, writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypePickUp, e.Body.CharacterId, -1))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to pick up drop [%d] for character [%d].", e.DropId, s.CharacterId())
-			}
-			return err
-		})
+		l.Debugf("[%d] is picking up drop [%d].", e.Body.CharacterId, e.DropId)
+
+		go func() {
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
+				var bp writer.BodyProducer
+				if e.Body.Meso > 0 {
+					bp = writer.CharacterStatusMessageOperationDropPickUpMesoBody(l)(false, e.Body.Meso, 0)
+				} else if e.Body.EquipmentId > 0 {
+					bp = writer.CharacterStatusMessageOperationDropPickUpUnStackableItemBody(l)(e.Body.ItemId)
+				} else {
+					bp = writer.CharacterStatusMessageOperationDropPickUpStackableItemBody(l)(e.Body.ItemId, e.Body.Quantity)
+				}
+
+				err := session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(s, bp)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to write status message to character [%d] picking up drop [%d].", s.CharacterId(), e.DropId)
+				}
+				return err
+			})
+		}()
+
+		go func() {
+			_ = _map.ForSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), e.MapId, func(s session.Model) error {
+				err := session.Announce(l)(ctx)(wp)(writer.DropDestroy)(s, writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypePickUp, e.Body.CharacterId, -1))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to pick up drop [%d] for character [%d].", e.DropId, s.CharacterId())
+				}
+				return err
+			})
+		}()
 	}
 }

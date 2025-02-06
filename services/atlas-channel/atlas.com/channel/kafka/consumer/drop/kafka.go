@@ -40,4 +40,8 @@ type expiredStatusEventBody struct {
 
 type pickedUpStatusEventBody struct {
 	CharacterId uint32 `json:"characterId"`
+	ItemId      uint32 `json:"itemId"`
+	EquipmentId uint32 `json:"equipmentId"`
+	Quantity    uint32 `json:"quantity"`
+	Meso        uint32 `json:"meso"`
 }

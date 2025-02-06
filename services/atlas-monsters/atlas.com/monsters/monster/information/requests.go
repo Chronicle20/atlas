@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	monstersResource = "monsters"
+	monstersResource = "data/monsters"
 	monsterResource  = monstersResource + "/%d"
 )
 

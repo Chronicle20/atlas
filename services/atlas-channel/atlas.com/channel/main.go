@@ -260,6 +260,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterChairPortableHandle] = handler.CharacterChairPortableHandleFunc
 	handlerMap[handler.CharacterChairInteractionHandle] = handler.CharacterChairFixedHandleFunc
 	handlerMap[handler.DropPickUpHandle] = handler.DropPickUpHandleFunc
+	handlerMap[handler.CharacterDropMesoHandle] = handler.CharacterDropMesoHandleFunc
 	return handlerMap
 }
 

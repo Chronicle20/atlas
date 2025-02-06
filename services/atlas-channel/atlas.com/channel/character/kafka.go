@@ -3,6 +3,7 @@ package character
 const (
 	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
 	CommandRequestDistributeAp = "REQUEST_DISTRIBUTE_AP"
+	CommandRequestDropMeso     = "REQUEST_DROP_MESO"
 
 	CommandDistributeApAbilityStrength     = "STRENGTH"
 	CommandDistributeApAbilityDexterity    = "DEXTERITY"
@@ -35,6 +36,12 @@ type DistributePair struct {
 
 type requestDistributeApCommandBody struct {
 	Distributions []DistributePair `json:"distributions"`
+}
+
+type requestDropMesoCommandBody struct {
+	ChannelId byte   `json:"channelId"`
+	MapId     uint32 `json:"mapId"`
+	Amount    uint32 `json:"amount"`
 }
 
 type movementCommand struct {

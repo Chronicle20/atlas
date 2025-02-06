@@ -71,7 +71,7 @@ func BuddyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			}
 			return
 		}
-		l.Warnf("Character [%d] issued a unhandled party operation [%d].", s.CharacterId(), op)
+		l.Warnf("Character [%d] issued a unhandled buddy operation [%d].", s.CharacterId(), op)
 	}
 }
 

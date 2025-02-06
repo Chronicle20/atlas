@@ -21,8 +21,13 @@ func DropSpawnBody(l logrus.FieldLogger, t tenant.Model) func(d drop.Model, ente
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(byte(enterType))
 			w.WriteInt(d.Id())
-			w.WriteBool(d.Meso() > 0)
-			w.WriteInt(d.ItemId())
+			if d.Meso() > 0 {
+				w.WriteBool(true)
+				w.WriteInt(d.Meso())
+			} else {
+				w.WriteBool(false)
+				w.WriteInt(d.ItemId())
+			}
 			w.WriteInt(d.Owner())
 			w.WriteByte(d.Type())
 			w.WriteInt16(d.X())

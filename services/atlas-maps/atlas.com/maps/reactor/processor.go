@@ -55,7 +55,7 @@ func IssueCreate(l logrus.FieldLogger) func(ctx context.Context) func(worldId by
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) model.Operator[reactor.Model] {
 		return func(worldId byte, channelId byte, mapId uint32) model.Operator[reactor.Model] {
 			return func(r reactor.Model) error {
-				return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(createCommandProvider(worldId, channelId, mapId, r.Id(), r.Name(), 0, r.X(), r.Y(), r.Delay(), r.Direction()))
+				return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(createCommandProvider(worldId, channelId, mapId, r.Classification(), r.Name(), 0, r.X(), r.Y(), r.Delay(), r.Direction()))
 			}
 		}
 	}

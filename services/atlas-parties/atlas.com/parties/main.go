@@ -46,18 +46,13 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(party2.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(party2.CreateCommandRegister(l))
-	_, _ = cm.RegisterHandler(party2.JoinCommandRegister(l))
-	_, _ = cm.RegisterHandler(party2.LeaveCommandRegister(l))
-	_, _ = cm.RegisterHandler(party2.ChangeLeaderCommandRegister(l))
-	_, _ = cm.RegisterHandler(party2.RequestInviteCommandRegister(l))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(character.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(character.LoginStatusRegister(l))
-	_, _ = cm.RegisterHandler(character.LogoutStatusRegister(l))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(invite.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(invite.AcceptedStatusEventRegister(l))
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	party2.InitConsumers(l)(cmf)(consumerGroupId)
+	character.InitConsumers(l)(cmf)(consumerGroupId)
+	invite.InitConsumers(l)(cmf)(consumerGroupId)
+	party2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	invite.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), party.InitResource(GetServer()))
 

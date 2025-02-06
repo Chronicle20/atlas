@@ -9,7 +9,7 @@ A RESTful resource which provides parties services.
 
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
-- CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
+- BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
 
 ## API

@@ -12,30 +12,27 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func DamageConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerNameDamage)(EnvCommandTopicDamage)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("monster_damage_event")(EnvCommandTopicDamage)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("monster_movement_event")(EnvCommandTopicMovement)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func DamageCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopicDamage)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleDamageCommand))
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+		var t string
+		t, _ = topic.EnvProvider(l)(EnvCommandTopicDamage)()
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDamageCommand)))
+		t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand)))
+	}
 }
 
 func handleDamageCommand(l logrus.FieldLogger, ctx context.Context, command damageCommand) {
 	Damage(l)(ctx)(command.UniqueId, command.CharacterId, command.Damage)
-}
-
-func MovementConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerNameMovement)(EnvCommandTopicMovement)(groupId)
-	}
-}
-
-func MovementCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopicMovement)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand))
 }
 
 type MovementSummary struct {

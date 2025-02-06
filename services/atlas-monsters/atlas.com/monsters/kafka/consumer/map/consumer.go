@@ -12,22 +12,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const consumerStatusEvent = "status_event"
-
-func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerStatusEvent)(EnvEventTopicMapStatus)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("map_status_event")(EnvEventTopicMapStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func StatusEventCharacterEnterRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvEventTopicMapStatus)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterEnter))
-}
-
-func StatusEventCharacterExitRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvEventTopicMapStatus)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterExit))
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+		var t string
+		t, _ = topic.EnvProvider(l)(EnvEventTopicMapStatus)()
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterEnter)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterExit)))
+	}
 }
 
 func handleStatusEventCharacterEnter(l logrus.FieldLogger, ctx context.Context, event statusEvent[characterEnter]) {

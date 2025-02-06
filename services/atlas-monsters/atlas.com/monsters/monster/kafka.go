@@ -6,9 +6,6 @@ const (
 	EnvCommandTopicMovement    = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 	EnvEventTopicMovement      = "EVENT_TOPIC_MONSTER_MOVEMENT"
 
-	consumerNameDamage   = "monster_damage_event"
-	consumerNameMovement = "monster_movement_event"
-
 	EventMonsterStatusCreated      = "CREATED"
 	EventMonsterStatusDestroyed    = "DESTROYED"
 	EventMonsterStatusStartControl = "START_CONTROL"

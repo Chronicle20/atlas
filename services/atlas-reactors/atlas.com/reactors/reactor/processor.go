@@ -69,10 +69,11 @@ func DestroyAll(l logrus.FieldLogger) func(ctx context.Context) error {
 }
 
 func DestroyInTenant(l logrus.FieldLogger) func(ctx context.Context) func(t tenant.Model) model.Operator[[]Model] {
-	return func(ctx context.Context) func(tenant tenant.Model) model.Operator[[]Model] {
-		return func(tenant tenant.Model) model.Operator[[]Model] {
+	return func(ctx context.Context) func(t tenant.Model) model.Operator[[]Model] {
+		return func(t tenant.Model) model.Operator[[]Model] {
 			return func(models []Model) error {
-				return model.ForEachSlice(model.FixedProvider(models), Destroy(l)(ctx), model.ParallelExecute())
+				tctx := tenant.WithContext(ctx, t)
+				return model.ForEachSlice(model.FixedProvider(models), Destroy(l)(tctx), model.ParallelExecute())
 			}
 		}
 	}

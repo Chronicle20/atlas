@@ -42,9 +42,9 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(portal.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(portal.EnterCommandRegister(l))
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	portal.InitConsumers(l)(cmf)(consumerGroupId)
+	portal.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

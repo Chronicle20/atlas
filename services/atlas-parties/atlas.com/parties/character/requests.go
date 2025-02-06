@@ -4,7 +4,6 @@ import (
 	"atlas-parties/rest"
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"os"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 )
 
 func getBaseRequest() string {
-	return os.Getenv("CHARACTER_SERVICE_URL")
+	return requests.RootUrl("CHARACTERS")
 }
 
 func requestById(id uint32) requests.Request[ForeignRestModel] {

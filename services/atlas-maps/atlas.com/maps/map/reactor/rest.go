@@ -1,12 +1,15 @@
 package reactor
 
+import "strconv"
+
 type RestModel struct {
-	Id              string `json:"-"`
-	Name            string `json:"name"`
-	X               int16  `json:"x"`
-	Y               int16  `json:"y"`
-	Delay           uint32 `json:"delay"`
-	FacingDirection byte   `json:"facingDirection"`
+	Id             uint32 `json:"-"`
+	Classification uint32 `json:"classification"`
+	Name           string `json:"name"`
+	X              int16  `json:"x"`
+	Y              int16  `json:"y"`
+	Delay          uint32 `json:"delay"`
+	Direction      byte   `json:"direction"`
 }
 
 func (r RestModel) GetName() string {
@@ -14,7 +17,16 @@ func (r RestModel) GetName() string {
 }
 
 func (r RestModel) GetID() string {
-	return r.Id
+	return strconv.Itoa(int(r.Id))
+}
+
+func (r *RestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
 }
 
 func Extract(rm RestModel) (Model, error) {
@@ -24,6 +36,6 @@ func Extract(rm RestModel) (Model, error) {
 		x:         rm.X,
 		y:         rm.Y,
 		delay:     rm.Delay,
-		direction: rm.FacingDirection,
+		direction: rm.Direction,
 	}, nil
 }

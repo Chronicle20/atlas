@@ -1,19 +1,21 @@
 package reactor
 
-import "strconv"
-
 type Model struct {
-	id        string
-	name      string
-	x         int16
-	y         int16
-	delay     uint32
-	direction byte
+	id             uint32
+	classification uint32
+	name           string
+	x              int16
+	y              int16
+	delay          uint32
+	direction      byte
 }
 
 func (m Model) Id() uint32 {
-	id, _ := strconv.Atoi(m.id)
-	return uint32(id)
+	return m.id
+}
+
+func (m Model) Classification() uint32 {
+	return m.classification
 }
 
 func (m Model) X() int16 {

@@ -23,12 +23,8 @@ func (p Model) Type() uint8 {
 	return p.portalType
 }
 
-func ValidPortal(m Model) bool {
-	return m.Type() >= 1
-}
-
 func SpawnPoint(m Model) bool {
-	return m.Type() <= 1
+	return m.Type() == 0
 }
 
 func NoTarget(m Model) bool {

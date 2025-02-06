@@ -9,6 +9,7 @@ A RESTful resource which provides drops services.
 
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
+- BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
 
 ## API
 

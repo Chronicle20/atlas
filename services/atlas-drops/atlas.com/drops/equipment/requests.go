@@ -4,7 +4,6 @@ import (
 	"atlas-drops/rest"
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"os"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 )
 
 func getBaseRequest() string {
-	return os.Getenv("EQUIPABLE_SERVICE_URL")
+	return requests.RootUrl("EQUIPABLES")
 }
 
 func requestCreate(itemId uint32) requests.Request[RestModel] {

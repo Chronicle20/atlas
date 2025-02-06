@@ -49,9 +49,9 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(channel.EventStatusConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(channel.EventStatusRegister(l))
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	channel.InitConsumers(l)(cmf)(consumerGroupId)
+	channel.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), channel.InitResource(GetServer()), world.InitResource(GetServer()))
 

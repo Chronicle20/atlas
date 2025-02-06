@@ -7,22 +7,25 @@ import (
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	chatEventConsumer = "chat_consumer"
-)
-
-func ChatCommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(chatEventConsumer)(EnvCommandTopicChat)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("chat_command")(EnvCommandTopicChat)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func GeneralChatCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopicChat)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleGeneralChat))
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+		var t string
+		t, _ = topic.EnvProvider(l)(EnvCommandTopicChat)()
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleGeneralChat)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMultiChat)))
+	}
 }
 
 func handleGeneralChat(l logrus.FieldLogger, ctx context.Context, event chatCommand[generalChatBody]) {
@@ -30,11 +33,6 @@ func handleGeneralChat(l logrus.FieldLogger, ctx context.Context, event chatComm
 		return
 	}
 	_ = HandleGeneral(l)(ctx)(event.WorldId, event.ChannelId, event.MapId, event.CharacterId, event.Message, event.Body.BalloonOnly)
-}
-
-func MultiChatCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopicChat)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleMultiChat))
 }
 
 func handleMultiChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[multiChatBody]) {

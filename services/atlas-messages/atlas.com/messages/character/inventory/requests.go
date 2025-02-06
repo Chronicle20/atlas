@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"math"
-	"os"
 )
 
 const (
@@ -16,7 +15,7 @@ const (
 )
 
 func getBaseRequest() string {
-	return os.Getenv("CHARACTER_SERVICE_URL")
+	return requests.RootUrl("CHARACTERS")
 }
 
 func requestCreateItem(characterId uint32, itemId uint32, quantity uint16) requests.Request[item.RestModel] {

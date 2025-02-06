@@ -17,7 +17,7 @@ const (
 
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(router *mux.Router, l logrus.FieldLogger) {
-		r := router.PathPrefix("/characters").Subrouter()
+		r := router.PathPrefix("/characters/seed").Subrouter()
 		r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)(CreateCharacter, handleCreateCharacter)).Methods(http.MethodPost)
 	}
 }

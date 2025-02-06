@@ -19,7 +19,7 @@ func RandomSpawnPointProvider(l logrus.FieldLogger) func(ctx context.Context) fu
 	return func(ctx context.Context) func(mapId uint32) model.Provider[Model] {
 		return func(mapId uint32) model.Provider[Model] {
 			return func() (Model, error) {
-				sps, err := model.FilteredProvider(InMapProvider(l)(ctx)(mapId), model.Filters(ValidPortal, SpawnPoint, NoTarget))()
+				sps, err := model.FilteredProvider(InMapProvider(l)(ctx)(mapId), model.Filters(SpawnPoint, NoTarget))()
 				if err != nil {
 					return Model{}, err
 				}

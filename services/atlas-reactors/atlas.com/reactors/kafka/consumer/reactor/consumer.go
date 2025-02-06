@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,7 +34,8 @@ func handleCreate(l logrus.FieldLogger, ctx context.Context, c command[createCom
 		return
 	}
 
-	b := reactor.NewModelBuilder(c.WorldId, c.ChannelId, c.MapId, c.Body.Classification, c.Body.Name).
+	t := tenant.MustFromContext(ctx)
+	b := reactor.NewModelBuilder(t, c.WorldId, c.ChannelId, c.MapId, c.Body.Classification, c.Body.Name).
 		SetState(c.Body.State).
 		SetPosition(c.Body.X, c.Body.Y).
 		SetDelay(c.Body.Delay).

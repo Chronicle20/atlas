@@ -48,3 +48,18 @@ func createdStatusEventProvider(r Model) model.Provider[[]kafka.Message] {
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func destroyedStatusEventProvider(r Model) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(r.Id()))
+	value := &statusEvent[destroyedStatusEventBody]{
+		WorldId:   r.WorldId(),
+		ChannelId: r.ChannelId(),
+		MapId:     r.MapId(),
+		ReactorId: r.Id(),
+		Type:      EventStatusTypeDestroyed,
+		Body: destroyedStatusEventBody{
+			State: r.State(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

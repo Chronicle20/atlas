@@ -50,24 +50,22 @@ func (r *registry) Get(id uint32) (Model, error) {
 
 type Filter func(*Model) bool
 
-func (r *registry) GetAll(filters ...Filter) []Model {
+func (r *registry) GetAll() map[tenant.Model][]Model {
 	r.lock.RLock()
-	var result []Model
+	defer r.lock.RUnlock()
 
-	for _, x := range r.reactors {
-		ok := true
-		for _, filter := range filters {
-			if !filter(x) {
-				ok = false
-			}
+	res := make(map[tenant.Model][]Model)
+
+	for _, m := range r.reactors {
+		var val []Model
+		var ok bool
+		if val, ok = res[m.Tenant()]; !ok {
+			val = make([]Model, 0)
 		}
-		if ok {
-			result = append(result, *x)
-		}
+		val = append(val, *m)
+		res[m.Tenant()] = val
 	}
-
-	r.lock.RUnlock()
-	return result
+	return res
 }
 
 func (r *registry) GetInMap(t tenant.Model, worldId byte, channelId byte, mapId uint32) []Model {

@@ -197,12 +197,13 @@ func StopControl(l logrus.FieldLogger) func(ctx context.Context) model.Operator[
 	}
 }
 
-func DestroyInTenant(l logrus.FieldLogger) func(ctx context.Context) func(tenant tenant.Model) model.Operator[[]Model] {
-	return func(ctx context.Context) func(tenant tenant.Model) model.Operator[[]Model] {
-		return func(tenant tenant.Model) model.Operator[[]Model] {
+func DestroyInTenant(l logrus.FieldLogger) func(ctx context.Context) func(t tenant.Model) model.Operator[[]Model] {
+	return func(ctx context.Context) func(t tenant.Model) model.Operator[[]Model] {
+		return func(t tenant.Model) model.Operator[[]Model] {
 			return func(models []Model) error {
+				tctx := tenant.WithContext(ctx, t)
 				idp := model.SliceMap(IdTransformer)(model.FixedProvider(models))(model.ParallelMap())
-				return model.ForEachSlice(idp, Destroy(l)(ctx), model.ParallelExecute())
+				return model.ForEachSlice(idp, Destroy(l)(tctx), model.ParallelExecute())
 			}
 		}
 	}

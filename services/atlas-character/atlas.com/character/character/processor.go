@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-character/drop"
 	"atlas-character/equipable"
 	"atlas-character/equipment"
 	"atlas-character/equipment/slot"
@@ -579,6 +580,39 @@ func RequestChangeMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *
 					_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(mesoChangedStatusEventProvider(characterId, c.WorldId(), amount, actorId, actorType))
 					return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{"MESO"}))
 				})
+			}
+		}
+	}
+}
+
+func RequestDropMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, mapId uint32, characterId uint32, amount uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, mapId uint32, characterId uint32, amount uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(worldId byte, channelId byte, mapId uint32, characterId uint32, amount uint32) error {
+			return func(worldId byte, channelId byte, mapId uint32, characterId uint32, amount uint32) error {
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					c, err := GetById(ctx)(tx)()(characterId)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their meso adjusted.", characterId)
+						return err
+					}
+					if int64(c.Meso())-int64(amount) < 0 {
+						l.Debugf("Request for character [%d] would leave their meso negative. Amount [%d]. Existing [%d].", characterId, amount, c.Meso())
+						return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(notEnoughMesoErrorStatusEventProvider(characterId, c.WorldId(), int32(amount)))
+					}
+
+					return dynamicUpdate(tx)(SetMeso(c.Meso() - amount))(t.Id())(c)
+				})
+				if txErr != nil {
+					return txErr
+				}
+
+				tc := GetTemporalRegistry().GetById(characterId)
+
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(worldId, channelId, characterId, []string{"MESO"}))
+				// TODO determine appropriate drop type and mod
+				_ = drop.CreateForMesos(l)(ctx)(worldId, channelId, mapId, amount, 2, tc.X(), tc.Y(), characterId)
+				return nil
 			}
 		}
 	}

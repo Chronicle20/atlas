@@ -6,6 +6,7 @@ const (
 	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
 	CommandChangeMap           = "CHANGE_MAP"
 	CommandRequestChangeMeso   = "REQUEST_CHANGE_MESO"
+	CommandRequestDropMeso     = "REQUEST_DROP_MESO"
 	CommandRequestChangeFame   = "REQUEST_CHANGE_FAME"
 	CommandRequestDistributeAp = "REQUEST_DISTRIBUTE_AP"
 
@@ -35,6 +36,12 @@ type requestChangeMesoBody struct {
 	ActorId   uint32 `json:"actorId"`
 	ActorType string `json:"actorType"`
 	Amount    int32  `json:"amount"`
+}
+
+type requestDropMesoCommandBody struct {
+	ChannelId byte   `json:"channelId"`
+	MapId     uint32 `json:"mapId"`
+	Amount    uint32 `json:"amount"`
 }
 
 type requestChangeFameBody struct {

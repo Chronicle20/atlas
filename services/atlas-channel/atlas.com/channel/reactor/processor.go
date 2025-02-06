@@ -15,23 +15,6 @@ func InMapModelProvider(l logrus.FieldLogger) func(ctx context.Context) func(wor
 	}
 }
 
-func Extract(rm RestModel) (Model, error) {
-	return Model{
-		id:             rm.Id,
-		worldId:        rm.WorldId,
-		channelId:      rm.ChannelId,
-		mapId:          rm.MapId,
-		classification: rm.Classification,
-		name:           rm.Name,
-		state:          rm.State,
-		eventState:     rm.EventState,
-		delay:          rm.Delay,
-		direction:      rm.Direction,
-		x:              rm.X,
-		y:              rm.Y,
-	}, nil
-}
-
 func ForEachInMap(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, f model.Operator[Model]) error {
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, f model.Operator[Model]) error {
 		return func(worldId byte, channelId byte, mapId uint32, f model.Operator[Model]) error {

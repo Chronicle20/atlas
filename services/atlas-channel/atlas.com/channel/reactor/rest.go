@@ -34,3 +34,20 @@ func (r *RestModel) SetID(strId string) error {
 	r.Id = uint32(id)
 	return nil
 }
+
+func Extract(rm RestModel) (Model, error) {
+	return Model{
+		id:             rm.Id,
+		worldId:        rm.WorldId,
+		channelId:      rm.ChannelId,
+		mapId:          rm.MapId,
+		classification: rm.Classification,
+		name:           rm.Name,
+		state:          rm.State,
+		eventState:     rm.EventState,
+		delay:          rm.Delay,
+		direction:      rm.Direction,
+		x:              rm.X,
+		y:              rm.Y,
+	}, nil
+}

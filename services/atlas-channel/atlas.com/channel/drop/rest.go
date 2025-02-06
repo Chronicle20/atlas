@@ -24,7 +24,6 @@ type RestModel struct {
 	DropperX      int16     `json:"dropperX"`
 	DropperY      int16     `json:"dropperY"`
 	CharacterDrop bool      `json:"characterDrop"`
-	Mod           byte      `json:"mod"`
 }
 
 func (r RestModel) GetName() string {
@@ -61,6 +60,5 @@ func Extract(rm RestModel) (Model, error) {
 		dropperX:     rm.DropperX,
 		dropperY:     rm.DropperY,
 		playerDrop:   rm.CharacterDrop,
-		mod:          rm.Mod,
 	}, nil
 }

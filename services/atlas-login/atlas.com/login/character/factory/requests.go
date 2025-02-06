@@ -5,7 +5,6 @@ import (
 	"atlas-login/rest"
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"os"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 )
 
 func getBaseRequest() string {
-	return os.Getenv("CHARACTER_FACTORY_SERVICE_URL")
+	return requests.RootUrl("CHARACTER_FACTORY")
 }
 
 func requestCreate(accountId uint32, worldId byte, name string, jobIndex uint32, subJobIndex uint16, face uint32, hair uint32, color uint32, skinColor uint32, gender byte, top uint32, bottom uint32, shoes uint32, weapon uint32,

@@ -32,7 +32,7 @@ func (s Server) GetPrefix() string {
 func GetServer() Server {
 	return Server{
 		baseUrl: "",
-		prefix:  "/api/mos/",
+		prefix:  "/api/",
 	}
 }
 
@@ -47,14 +47,11 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.DamageConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(monster.MovementConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(_map.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(monster.DamageCommandRegister(l))
-	_, _ = cm.RegisterHandler(monster.MovementCommandRegister(l))
-	_, _ = cm.RegisterHandler(_map.StatusEventCharacterEnterRegister(l))
-	_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(l))
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	monster.InitConsumers(l)(cmf)(consumerGroupId)
+	_map.InitConsumers(l)(cmf)(consumerGroupId)
+	monster.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	_map.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), monster.InitResource(GetServer()), world.InitResource(GetServer()))
 

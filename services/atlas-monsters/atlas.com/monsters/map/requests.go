@@ -4,7 +4,6 @@ import (
 	"atlas-monsters/rest"
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"os"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 )
 
 func getBaseRequest() string {
-	return os.Getenv("MAP_SERVICE_URL")
+	return requests.RootUrl("MAPS")
 }
 
 func requestCharactersInMap(worldId byte, channelId byte, mapId uint32) requests.Request[[]RestModel] {

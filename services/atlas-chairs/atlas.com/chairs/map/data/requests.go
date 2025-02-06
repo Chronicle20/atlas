@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	getMap = "maps/%d"
+	getMap = "data/maps/%d"
 )
 
 func getBaseRequest() string {

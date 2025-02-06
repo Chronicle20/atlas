@@ -53,5 +53,7 @@ type createdStatusEventBody struct {
 }
 
 type destroyedStatusEventBody struct {
-	State int8 `json:"state"`
+	State int8  `json:"state"`
+	X     int16 `json:"x"`
+	Y     int16 `json:"y"`
 }

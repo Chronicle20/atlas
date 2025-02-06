@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	portalsInMap  = "maps/%d/portals"
+	portalsInMap  = "data/maps/%d/portals"
 	portalsByName = portalsInMap + "?name=%s"
 	portalById    = portalsInMap + "/%d"
 )

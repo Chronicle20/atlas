@@ -27,6 +27,9 @@ type moveItemCommand struct {
 }
 
 type dropItemCommand struct {
+	WorldId       byte   `json:"worldId"`
+	ChannelId     byte   `json:"channelId"`
+	MapId         uint32 `json:"mapId"`
 	CharacterId   uint32 `json:"characterId"`
 	InventoryType byte   `json:"inventoryType"`
 	Source        int16  `json:"source"`

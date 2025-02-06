@@ -30,10 +30,10 @@ func Move(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint3
 	}
 }
 
-func Drop(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
-	return func(ctx context.Context) func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
-		return func(characterId uint32, inventoryType byte, source int16, quantity int16) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopicDropItem)(dropItemCommandProvider(characterId, inventoryType, source, quantity))
+func Drop(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, inventoryType byte, source int16, quantity int16) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, inventoryType byte, source int16, quantity int16) error {
+		return func(worldId byte, channelId byte, mapId uint32, characterId uint32, inventoryType byte, source int16, quantity int16) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopicDropItem)(dropItemCommandProvider(worldId, channelId, mapId, characterId, inventoryType, source, quantity))
 		}
 	}
 }

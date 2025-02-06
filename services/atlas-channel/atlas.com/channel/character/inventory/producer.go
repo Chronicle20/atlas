@@ -37,9 +37,12 @@ func moveItemCommandProvider(characterId uint32, inventoryType byte, source int1
 	return producer.SingleMessageProvider(key, value)
 }
 
-func dropItemCommandProvider(characterId uint32, inventoryType byte, source int16, quantity int16) model.Provider[[]kafka.Message] {
+func dropItemCommandProvider(worldId byte, channelId byte, mapId uint32, characterId uint32, inventoryType byte, source int16, quantity int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &dropItemCommand{
+		WorldId:       worldId,
+		ChannelId:     channelId,
+		MapId:         mapId,
 		CharacterId:   characterId,
 		InventoryType: inventoryType,
 		Source:        source,

@@ -2,6 +2,7 @@ package _map
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/drop"
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
@@ -93,7 +94,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 
 			go monster.ForEachInMap(l)(ctx)(s.WorldId(), s.ChannelId(), mapId, spawnMonsterForSession(l)(ctx)(wp)(s))
 
-			// fetch drops in map
+			go drop.ForEachInMap(l)(ctx)(s.WorldId(), s.ChannelId(), mapId, spawnDropsForSession(l)(ctx)(wp)(s))
 
 			// fetch reactors in map
 			return nil
@@ -191,6 +192,23 @@ func spawnMonsterForSession(l logrus.FieldLogger) func(ctx context.Context) func
 					err := spawnMonsterFunc(s, writer.SpawnMonsterBody(l, tenant.MustFromContext(ctx))(m, false))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to spawn monster [%d] for character [%d].", m.UniqueId(), s.CharacterId())
+					}
+					return err
+				}
+			}
+		}
+	}
+}
+
+func spawnDropsForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[drop.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[drop.Model] {
+		return func(wp writer.Producer) func(s session.Model) model.Operator[drop.Model] {
+			return func(s session.Model) model.Operator[drop.Model] {
+				return func(d drop.Model) error {
+					l.Debugf("Spawning [%d] drop [%d] for character [%d].", d.ItemId(), d.Id(), s.CharacterId())
+					err := session.Announce(l)(ctx)(wp)(writer.DropSpawn)(s, writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeExisting, 0))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to spawn drop [%d] for character [%d].", d.Id(), s.CharacterId())
 					}
 					return err
 				}

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	itemInformationResource = "equipment/"
+	itemInformationResource = "data/equipment/"
 	itemInformationById     = itemInformationResource + "%d"
 	slotsForEquipment       = itemInformationById + "/slots"
 )

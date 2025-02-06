@@ -20,7 +20,6 @@ type Model struct {
 	dropperX     int16
 	dropperY     int16
 	playerDrop   bool
-	mod          byte
 }
 
 func (m Model) Id() uint32 {
@@ -79,10 +78,6 @@ func (m Model) PlayerDrop() bool {
 	return m.playerDrop
 }
 
-func (m Model) Mod() byte {
-	return m.mod
-}
-
 func (m Model) CharacterDrop() bool {
 	return m.playerDrop
 }
@@ -107,7 +102,6 @@ type ModelBuilder struct {
 	dropperX     int16
 	dropperY     int16
 	playerDrop   bool
-	mod          byte
 }
 
 func NewModelBuilder() *ModelBuilder {
@@ -171,11 +165,6 @@ func (b *ModelBuilder) SetPlayerDrop(is bool) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetMod(mod byte) *ModelBuilder {
-	b.mod = mod
-	return b
-}
-
 func (b *ModelBuilder) Clone(m Model) *ModelBuilder {
 	b.id = m.Id()
 	b.itemId = m.ItemId()
@@ -192,7 +181,6 @@ func (b *ModelBuilder) Clone(m Model) *ModelBuilder {
 	b.dropperX = m.DropperX()
 	b.dropperY = m.DropperY()
 	b.playerDrop = m.PlayerDrop()
-	b.mod = m.Mod()
 	return b
 }
 
@@ -213,7 +201,6 @@ func (b *ModelBuilder) Build() Model {
 		dropperX:     b.dropperX,
 		dropperY:     b.dropperY,
 		playerDrop:   b.playerDrop,
-		mod:          b.mod,
 	}
 }
 

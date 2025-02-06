@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	equipmentResource = "equipment"
+	equipmentResource = "equipables"
 	equipResource     = equipmentResource + "/%d"
 )
 

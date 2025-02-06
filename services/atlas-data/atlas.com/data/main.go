@@ -6,12 +6,13 @@ import (
 	"atlas-data/logger"
 	_map "atlas-data/map"
 	"atlas-data/monster"
+	"atlas-data/reactor"
 	"atlas-data/service"
 	"atlas-data/tracing"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"os"
 	"path/filepath"
@@ -71,7 +72,8 @@ func main() {
 		data.InitResource(GetServer()),
 		_map.InitResource(GetServer()),
 		monster.InitResource(GetServer()),
-		equipment.InitResource(GetServer()))
+		equipment.InitResource(GetServer()),
+		reactor.InitResource(GetServer()))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

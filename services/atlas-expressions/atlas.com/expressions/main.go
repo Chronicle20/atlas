@@ -26,11 +26,11 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	cm := consumer.GetManager()
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(expression2.CommandConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(expression2.ChangeCommandRegister(l))
-	cm.AddConsumer(l, tdm.Context(), tdm.WaitGroup())(_map.StatusEventConsumer(l)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-	_, _ = cm.RegisterHandler(_map.StatusEventCharacterExitRegister(l))
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	expression2.InitConsumers(l)(cmf)(consumerGroupId)
+	_map.InitConsumers(l)(cmf)(consumerGroupId)
+	expression2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	_map.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	go tasks.Register(l, tdm.Context())(expression.NewRevertTask(l, time.Millisecond*50))
 

@@ -11,10 +11,9 @@ A RESTful resource which provides character-factory services.
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
+- BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
 - EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for transmitting character status events
 - EVENT_TOPIC_INVENTORY_CHANGED - Kafka Topic for transmitting inventory change events
-- CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
-- GAME_DATA_SERVICE_URL - [scheme]://[host]:[port]/api/gis/
 
 ## API
 

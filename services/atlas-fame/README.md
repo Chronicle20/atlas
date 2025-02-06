@@ -15,4 +15,4 @@ A resource which provides fame services.
 - DB_PORT - Postgres Database port
 - DB_NAME - Postgres Database name
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
-- CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
+- BASE_SERVICE_URL - [scheme]://[host]:[port]/api/

@@ -3,8 +3,9 @@ package tasks
 import (
 	"atlas-maps/map/character"
 	"atlas-maps/map/monster"
+	"atlas-maps/reactor"
 	"context"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"time"
@@ -31,6 +32,7 @@ func (r *Respawn) Run() {
 	for _, mk := range mks {
 		tctx := tenant.WithContext(ctx, mk.Tenant)
 		go monster.Spawn(r.l)(tctx)(mk.WorldId, mk.ChannelId, mk.MapId)
+		go reactor.Spawn(r.l)(tctx)(mk.WorldId, mk.ChannelId, mk.MapId)
 	}
 }
 

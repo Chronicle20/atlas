@@ -31,11 +31,12 @@ func (r *RestModel) SetID(strId string) error {
 
 func Extract(rm RestModel) (Model, error) {
 	return Model{
-		id:        rm.Id,
-		name:      rm.Name,
-		x:         rm.X,
-		y:         rm.Y,
-		delay:     rm.Delay,
-		direction: rm.Direction,
+		id:             rm.Id,
+		classification: rm.Classification,
+		name:           rm.Name,
+		x:              rm.X,
+		y:              rm.Y,
+		delay:          rm.Delay,
+		direction:      rm.Direction,
 	}, nil
 }

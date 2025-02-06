@@ -58,7 +58,6 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			SetOwner(e.Body.OwnerId, e.Body.OwnerPartyId).
 			SetDropper(e.Body.DropperUniqueId, e.Body.DropperX, e.Body.DropperY).
 			SetPlayerDrop(e.Body.PlayerDrop).
-			SetMod(e.Body.Mod).
 			Build()
 
 		_ = _map.ForSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), e.MapId, func(s session.Model) error {

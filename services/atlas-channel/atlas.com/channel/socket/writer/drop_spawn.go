@@ -28,7 +28,7 @@ func DropSpawnBody(l logrus.FieldLogger, t tenant.Model) func(d drop.Model, ente
 			w.WriteInt16(d.X())
 			w.WriteInt16(d.Y())
 			w.WriteInt(d.DropperId())
-			if d.Mod() != 2 {
+			if enterType != 2 {
 				w.WriteInt16(d.DropperX())
 				w.WriteInt16(d.DropperY())
 				w.WriteInt16(delay)

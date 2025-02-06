@@ -342,6 +342,7 @@ func getReactors(exml *xml.Node) []reactor.Model {
 	if err != nil {
 		return results
 	}
+	uid := uint32(0)
 	for _, r := range rd.ChildNodes {
 		id := r.GetString("id", "")
 		x := int16(r.GetIntegerWithDefault("x", 0))
@@ -349,14 +350,22 @@ func getReactors(exml *xml.Node) []reactor.Model {
 		reactorTime := uint32(r.GetIntegerWithDefault("reactorTime", 0))
 		name := r.GetString("name", "")
 		fd := byte(r.GetIntegerWithDefault("f", 0))
+
+		c, err := strconv.Atoi(id)
+		if err != nil {
+			continue
+		}
+
 		results = append(results, reactor.Model{
-			Id:              id,
-			Name:            name,
-			X:               x,
-			Y:               y,
-			Delay:           reactorTime * 1000,
-			FacingDirection: fd,
+			Id:             uid,
+			Classification: uint32(c),
+			Name:           name,
+			X:              x,
+			Y:              y,
+			Delay:          reactorTime * 1000,
+			Direction:      fd,
 		})
+		uid += 1
 	}
 	return results
 }

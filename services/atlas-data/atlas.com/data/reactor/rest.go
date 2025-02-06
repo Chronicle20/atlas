@@ -21,6 +21,11 @@ func (r RestModel) GetID() string {
 	return r.Id
 }
 
+func (r *RestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
 func Transform(m Model) (RestModel, error) {
 	tl, err := model.Map(TransformPoint)(model.FixedProvider(m.tl))()
 	if err != nil {

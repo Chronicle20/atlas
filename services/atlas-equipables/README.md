@@ -15,7 +15,7 @@ A RESTful resource which provides equipables services.
 - DB_HOST - Postgres Database host
 - DB_PORT - Postgres Database port
 - DB_NAME - Postgres Database name
-- GAME_DATA_SERVICE_URL - [scheme]://[host]:[port]/api/gis/
+- BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
 
 ## API
 

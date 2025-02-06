@@ -2,10 +2,12 @@ package reactor
 
 import (
 	"atlas-reactors/reactor/data"
+	"github.com/Chronicle20/atlas-tenant"
 	"time"
 )
 
 type Model struct {
+	tenant         tenant.Model
 	id             uint32
 	worldId        byte
 	channelId      byte
@@ -78,7 +80,12 @@ func (m Model) Data() data.Model {
 	return m.data
 }
 
+func (m Model) Tenant() tenant.Model {
+	return m.tenant
+}
+
 type ModelBuilder struct {
+	tenant         tenant.Model
 	id             uint32
 	worldId        byte
 	channelId      byte
@@ -95,8 +102,9 @@ type ModelBuilder struct {
 	updateTime     time.Time
 }
 
-func NewModelBuilder(worldId byte, channelId byte, mapId uint32, classification uint32, name string) *ModelBuilder {
+func NewModelBuilder(t tenant.Model, worldId byte, channelId byte, mapId uint32, classification uint32, name string) *ModelBuilder {
 	return &ModelBuilder{
+		tenant:         t,
 		worldId:        worldId,
 		channelId:      channelId,
 		mapId:          mapId,
@@ -108,6 +116,7 @@ func NewModelBuilder(worldId byte, channelId byte, mapId uint32, classification 
 
 func NewFromModel(m Model) *ModelBuilder {
 	return &ModelBuilder{
+		tenant:         m.tenant,
 		id:             m.Id(),
 		worldId:        m.WorldId(),
 		channelId:      m.ChannelId(),
@@ -127,6 +136,7 @@ func NewFromModel(m Model) *ModelBuilder {
 
 func (b *ModelBuilder) Build() Model {
 	return Model{
+		tenant:         b.tenant,
 		id:             b.id,
 		worldId:        b.worldId,
 		channelId:      b.channelId,

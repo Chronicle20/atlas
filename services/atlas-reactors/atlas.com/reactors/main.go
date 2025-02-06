@@ -50,6 +50,7 @@ func main() {
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), reactor.InitResource(GetServer()))
 
+	tdm.TeardownFunc(reactor.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
 	tdm.Wait()

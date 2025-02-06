@@ -26,8 +26,9 @@ type createCommandBody struct {
 }
 
 const (
-	EnvEventStatusTopic    = "EVENT_TOPIC_REACTOR_STATUS"
-	EventStatusTypeCreated = "CREATED"
+	EnvEventStatusTopic      = "EVENT_TOPIC_REACTOR_STATUS"
+	EventStatusTypeCreated   = "CREATED"
+	EventStatusTypeDestroyed = "DESTROYED"
 )
 
 type statusEvent[E any] struct {
@@ -49,4 +50,8 @@ type createdStatusEventBody struct {
 	X              int16     `json:"x"`
 	Y              int16     `json:"y"`
 	UpdateTime     time.Time `json:"updateTime"`
+}
+
+type destroyedStatusEventBody struct {
+	State int8 `json:"state"`
 }

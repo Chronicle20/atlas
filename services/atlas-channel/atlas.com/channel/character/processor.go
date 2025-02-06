@@ -145,3 +145,11 @@ func abilityFromFlag(flag uint32) (string, error) {
 	}
 	return "", errors.New("invalid flag")
 }
+
+func RequestDropMeso(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, amount uint32) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, amount uint32) error {
+		return func(worldId byte, channelId byte, mapId uint32, characterId uint32, amount uint32) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestDropMesoCommandProvider(worldId, channelId, mapId, characterId, amount))
+		}
+	}
+}

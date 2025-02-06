@@ -4,7 +4,6 @@ import (
 	"atlas-channel/rest"
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"os"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 )
 
 func getBaseRequest() string {
-	return os.Getenv("ACCOUNT_SERVICE_URL")
+	return requests.RootUrl("ACCOUNTS")
 }
 
 var requestAccounts = rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest() + AccountsResource))

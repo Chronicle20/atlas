@@ -11,12 +11,7 @@ A RESTful resource which provides Channel services.
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
-- ACCOUNT_SERVICE_URL - [scheme]://[host]:[port]/api/aos/
-- CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
-- GAME_DATA_SERVICE_URL - [scheme]://[host]:[port]/api/gis/
-- MAP_SERVICE_URL - [scheme]://[host]:[port]/api/mas/
-- MONSTER_SERVICE_URL - [scheme]://[host]:[port]/api/mos/
-- WORLD_SERVICE_URL - [scheme]://[host]:[port]/api/wrg/
+- BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
 - EVENT_TOPIC_ACCOUNT_STATUS - Kafka Topic for receiving account status events
 - EVENT_TOPIC_CHAIR_STATUS
 - EVENT_TOPIC_CHARACTER_GENERAL_CHAT - Kafka Topic for receiving character general chat events

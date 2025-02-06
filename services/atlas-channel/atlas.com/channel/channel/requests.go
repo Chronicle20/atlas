@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 const (
@@ -15,7 +14,7 @@ const (
 )
 
 func getBaseRequest() string {
-	return os.Getenv("WORLD_SERVICE_URL")
+	return requests.RootUrl("CHANNELS")
 }
 
 func requestChannel(worldId byte, channelId byte) requests.Request[RestModel] {

@@ -28,7 +28,7 @@ func GetInMap(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte,
 func doesNotExist(existing []Model) model.Filter[reactor.Model] {
 	return func(reference reactor.Model) bool {
 		for _, er := range existing {
-			if er.Classification() == reference.Id() && er.X() == reference.X() && er.Y() == reference.Y() {
+			if er.Classification() == reference.Classification() && er.X() == reference.X() && er.Y() == reference.Y() {
 				return false
 			}
 		}

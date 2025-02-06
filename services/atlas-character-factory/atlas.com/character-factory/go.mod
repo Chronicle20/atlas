@@ -5,8 +5,9 @@ go 1.23.1
 require (
 	github.com/Chronicle20/atlas-kafka v1.1.4
 	github.com/Chronicle20/atlas-model v1.2.1
-	github.com/Chronicle20/atlas-rest v1.2.5
+	github.com/Chronicle20/atlas-rest v1.2.6
 	github.com/Chronicle20/atlas-tenant v1.0.4
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6
 	github.com/sirupsen/logrus v1.9.3
@@ -22,7 +23,6 @@ require (
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.25.1 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/magefile/mage v1.15.0 // indirect

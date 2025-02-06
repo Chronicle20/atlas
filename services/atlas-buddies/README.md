@@ -15,7 +15,7 @@ A RESTful resource which provides buddies services.
 - DB_PORT - Postgres Database port
 - DB_NAME - Postgres Database name
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
-- CHARACTER_SERVICE_URL - [scheme]://[host]:[port]/api/cos/
+- BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
 - COMMAND_TOPIC_BUDDY_LIST - Kafka Topic for transmitting buddy list commands.
 - COMMAND_TOPIC_INVITE - Kafka Topic for transmitting invite commands.
 - EVENT_TOPIC_BUDDY_LIST_STATUS - Kafka Topic for transmitting buddy list status events.

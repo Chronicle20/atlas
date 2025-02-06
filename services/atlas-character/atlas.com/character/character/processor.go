@@ -585,25 +585,29 @@ func RequestChangeMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *
 	}
 }
 
-func PickUpMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, amount int32) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, amount int32) error {
-		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(characterId uint32, amount int32) error {
-			return func(characterId uint32, amount int32) error {
-				return db.Transaction(func(tx *gorm.DB) error {
+func AttemptMesoPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
+	return func(db *gorm.DB) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
+		return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
+			t := tenant.MustFromContext(ctx)
+			return func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
+				txErr := db.Transaction(func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their meso adjusted.", characterId)
 						return err
 					}
-					if amount > 0 && uint32(amount) > (math.MaxUint32-c.Meso()) {
+					if meso > (math.MaxUint32 - c.Meso()) {
 						l.Errorf("Transaction for character [%d] would result in a uint32 overflow. Rejecting transaction.", characterId)
 						return err
 					}
 
-					err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(amount))))(t.Id())(c)
+					err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(meso))))(t.Id())(c)
 					return producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{"MESO"}))
 				})
+				if txErr != nil {
+					return txErr
+				}
+				return drop.RequestPickUp(l)(ctx)(worldId, channelId, mapId, dropId, characterId)
 			}
 		}
 	}

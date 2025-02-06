@@ -1,6 +1,7 @@
 package drop
 
 import (
+	"atlas-character/character"
 	"atlas-character/inventory"
 	consumer2 "atlas-character/kafka/consumer"
 	"context"
@@ -38,7 +39,7 @@ func handleDropReservation(db *gorm.DB) message.Handler[statusEvent[reservedStat
 		}
 
 		if e.Body.Meso > 0 {
-			_ = inventory.AttemptMesoPickUp(l)(db)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.Body.CharacterId, e.DropId, e.Body.Meso)
+			_ = character.AttemptMesoPickUp(l)(db)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.Body.CharacterId, e.DropId, e.Body.Meso)
 			return
 		}
 		if e.Body.EquipmentId > 0 {

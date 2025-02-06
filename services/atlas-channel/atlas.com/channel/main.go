@@ -259,6 +259,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.GuildBBSHandle] = handler.GuildBBSHandleFunc
 	handlerMap[handler.CharacterChairPortableHandle] = handler.CharacterChairPortableHandleFunc
 	handlerMap[handler.CharacterChairInteractionHandle] = handler.CharacterChairFixedHandleFunc
+	handlerMap[handler.DropPickUpHandle] = handler.DropPickUpHandleFunc
 	return handlerMap
 }
 

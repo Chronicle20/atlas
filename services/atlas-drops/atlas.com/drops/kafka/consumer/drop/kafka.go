@@ -53,6 +53,8 @@ type spawnFromCharacterCommandBody struct {
 type requestReservationCommandBody struct {
 	DropId      uint32 `json:"dropId"`
 	CharacterId uint32 `json:"characterId"`
+	CharacterX  int16  `json:"characterX"`
+	CharacterY  int16  `json:"characterY"`
 }
 
 type cancelReservationCommandBody struct {

@@ -33,6 +33,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				t, _ = topic.EnvProvider(l)(EnvEventTopicDropStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCreated(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventExpired(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventPickedUp(sc, wp))))
 			}
 		}
 	}
@@ -85,7 +86,28 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			l.Debugf("Despawning drop [%d] for character [%d].", e.DropId, s.CharacterId())
 			err := session.Announce(l)(ctx)(wp)(writer.DropDestroy)(s, writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypeExpire, s.CharacterId(), -1))
 			if err != nil {
-				l.WithError(err).Errorf("Unable to spawn drop [%d] for character [%d].", e.DropId, s.CharacterId())
+				l.WithError(err).Errorf("Unable to destroy drop [%d] for character [%d].", e.DropId, s.CharacterId())
+			}
+			return err
+		})
+	}
+}
+
+func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Handler[statusEvent[pickedUpStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[pickedUpStatusEventBody]) {
+		if e.Type != StatusEventTypePickedUp {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		_ = _map.ForSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), e.MapId, func(s session.Model) error {
+			l.Debugf("[%d] is picking up drop [%d].", e.Body.CharacterId, e.DropId)
+			err := session.Announce(l)(ctx)(wp)(writer.DropDestroy)(s, writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypePickUp, e.Body.CharacterId, -1))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to pick up drop [%d] for character [%d].", e.DropId, s.CharacterId())
 			}
 			return err
 		})

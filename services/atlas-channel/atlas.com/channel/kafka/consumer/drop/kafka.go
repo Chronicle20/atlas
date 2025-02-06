@@ -6,6 +6,7 @@ const (
 	EnvEventTopicDropStatus = "EVENT_TOPIC_DROP_STATUS"
 	StatusEventTypeCreated  = "CREATED"
 	StatusEventTypeExpired  = "EXPIRED"
+	StatusEventTypePickedUp = "PICKED_UP"
 )
 
 type statusEvent[E any] struct {
@@ -35,4 +36,8 @@ type createdStatusEventBody struct {
 }
 
 type expiredStatusEventBody struct {
+}
+
+type pickedUpStatusEventBody struct {
+	CharacterId uint32 `json:"characterId"`
 }

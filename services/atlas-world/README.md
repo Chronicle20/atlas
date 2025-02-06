@@ -9,8 +9,8 @@ A RESTful resource which provides world services.
 
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
-- CONFIG_FILE - Location of service configuration file.
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
+- BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
 - TOPIC_CHANNEL_SERVICE - Kafka Topic for transmitting Channel Service events
   - Announces when channel services start and stop.
 - COMMAND_TOPIC_CHANNEL_STATUS - Kafka Topic for issuing Channel Service commands.

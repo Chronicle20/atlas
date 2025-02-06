@@ -8,6 +8,7 @@ import (
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
 	"atlas-channel/npc"
+	"atlas-channel/reactor"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -96,7 +97,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 
 			go drop.ForEachInMap(l)(ctx)(s.WorldId(), s.ChannelId(), mapId, spawnDropsForSession(l)(ctx)(wp)(s))
 
-			// fetch reactors in map
+			go reactor.ForEachInMap(l)(ctx)(s.WorldId(), s.ChannelId(), mapId, spawnReactorsForSession(l)(ctx)(wp)(s))
 			return nil
 		}
 	}
@@ -209,6 +210,23 @@ func spawnDropsForSession(l logrus.FieldLogger) func(ctx context.Context) func(w
 					err := session.Announce(l)(ctx)(wp)(writer.DropSpawn)(s, writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeExisting, 0))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to spawn drop [%d] for character [%d].", d.Id(), s.CharacterId())
+					}
+					return err
+				}
+			}
+		}
+	}
+}
+
+func spawnReactorsForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[reactor.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[reactor.Model] {
+		return func(wp writer.Producer) func(s session.Model) model.Operator[reactor.Model] {
+			return func(s session.Model) model.Operator[reactor.Model] {
+				return func(r reactor.Model) error {
+					l.Debugf("Spawning [%d] reactor [%d] for character [%d].", r.Classification(), r.Id(), s.CharacterId())
+					err := session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(s, writer.ReactorSpawnBody(l, tenant.MustFromContext(ctx))(r))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to spawn reactor [%d] for character [%d].", r.Id(), s.CharacterId())
 					}
 					return err
 				}

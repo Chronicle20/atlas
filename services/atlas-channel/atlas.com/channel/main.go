@@ -23,6 +23,7 @@ import (
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/party"
 	"atlas-channel/kafka/consumer/party/member"
+	"atlas-channel/kafka/consumer/reactor"
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/logger"
 	"atlas-channel/server"
@@ -92,6 +93,7 @@ func main() {
 	thread.InitConsumers(l)(cmf)(consumerGroupId)
 	chair.InitConsumers(l)(cmf)(consumerGroupId)
 	drop.InitConsumers(l)(cmf)(consumerGroupId)
+	reactor.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
@@ -160,6 +162,7 @@ func main() {
 				thread.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				chair.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				drop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				reactor.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.IpAddress, c.Port)
@@ -226,6 +229,7 @@ func produceWriters() []string {
 		writer.CharacterSitResult,
 		writer.DropSpawn,
 		writer.DropDestroy,
+		writer.ReactorSpawn,
 	}
 }
 

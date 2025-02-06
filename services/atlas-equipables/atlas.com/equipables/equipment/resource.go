@@ -24,7 +24,7 @@ func InitResource(si jsonapi.ServerInformation, db *gorm.DB) server.RouteInitial
 		registerCreate := rest.RegisterInputHandler[RestModel](l)(db)(si)
 		registerDelete := rest.RegisterHandler(l)(db)(si)
 
-		r := router.PathPrefix("/equipment").Subrouter()
+		r := router.PathPrefix("/equipable").Subrouter()
 		r.HandleFunc("", registerCreate(createRandomEquipment, handleCreateRandomEquipment)).Queries("random", "{random}").Methods(http.MethodPost)
 		r.HandleFunc("", registerCreate(createEquipment, handleCreateEquipment)).Methods(http.MethodPost)
 		r.HandleFunc("/{equipmentId}", registerGet(getEquipment, handleGetEquipment)).Methods(http.MethodGet)

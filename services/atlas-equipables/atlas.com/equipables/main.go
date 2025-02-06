@@ -27,7 +27,7 @@ func (s Server) GetPrefix() string {
 func GetServer() Server {
 	return Server{
 		baseUrl: "",
-		prefix:  "/api/ess/",
+		prefix:  "/api/",
 	}
 }
 

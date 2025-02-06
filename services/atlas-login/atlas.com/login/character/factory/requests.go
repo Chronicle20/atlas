@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	Resource = "characters"
+	Resource = "characters/seed"
 )
 
 func getBaseRequest() string {

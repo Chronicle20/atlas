@@ -845,14 +845,3 @@ func AttemptEquipmentPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx con
 		}
 	}
 }
-
-func AttemptMesoPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
-	return func(db *gorm.DB) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
-		return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
-			return func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
-				// TODO
-				return drop.RequestPickUp(l)(ctx)(worldId, channelId, mapId, dropId, characterId)
-			}
-		}
-	}
-}

@@ -29,6 +29,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMap(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestChangeMeso(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDropMeso(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestChangeFame(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDistributeAp(db))))
 			t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
@@ -57,6 +58,16 @@ func handleRequestChangeMeso(db *gorm.DB) message.Handler[commandEvent[requestCh
 		}
 
 		_ = character.RequestChangeMeso(l)(ctx)(db)(c.CharacterId, c.Body.Amount, c.Body.ActorId, c.Body.ActorType)
+	}
+}
+
+func handleRequestDropMeso(db *gorm.DB) message.Handler[commandEvent[requestDropMesoCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[requestDropMesoCommandBody]) {
+		if c.Type != CommandRequestDropMeso {
+			return
+		}
+
+		_ = character.RequestDropMeso(l)(ctx)(db)(c.WorldId, c.Body.ChannelId, c.Body.MapId, c.CharacterId, c.Body.Amount)
 	}
 }
 

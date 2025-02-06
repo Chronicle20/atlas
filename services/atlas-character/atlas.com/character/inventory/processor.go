@@ -127,7 +127,6 @@ func CreateItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context
 		return func(ctx context.Context) func(eventProducer producer.Provider) func(characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
 			return func(eventProducer producer.Provider) func(characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
 				return func(characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
-
 					expectedInventoryType := math.Floor(float64(itemId) / 1000000)
 					if expectedInventoryType != float64(inventoryType) {
 						l.Errorf("Provided inventoryType [%d] does not match expected one [%d] for itemId [%d].", inventoryType, uint32(expectedInventoryType), itemId)
@@ -686,7 +685,7 @@ func dropItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) 
 					}
 
 					// TODO determine appropriate drop type and mod
-					_ = drop.DropItem(l)(ctx)(worldId, channelId, mapId, i.ItemId(), uint32(math.Abs(float64(quantity))), 2, x, y, characterId)
+					_ = drop.CreateForItem(l)(ctx)(worldId, channelId, mapId, i.ItemId(), uint32(math.Abs(float64(quantity))), 2, x, y, characterId)
 
 					err := producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(events)
 					if err != nil {
@@ -732,13 +731,127 @@ func dropEquip(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context)
 				}
 
 				// TODO determine appropriate drop type and mod
-				_ = drop.DropEquipment(l)(ctx)(worldId, channelId, mapId, e.ItemId(), e.ReferenceId(), 2, x, y, characterId)
+				_ = drop.CreateForEquipment(l)(ctx)(worldId, channelId, mapId, e.ItemId(), e.ReferenceId(), 2, x, y, characterId)
 
 				err := producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(events)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
 				}
 				return err
+			}
+		}
+	}
+}
+
+func AttemptItemPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, quantity uint32) error {
+	return func(db *gorm.DB) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, quantity uint32) error {
+		return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, quantity uint32) error {
+			return func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, quantity uint32) error {
+				inventoryType := Type(math.Floor(float64(itemId) / 1000000))
+				if quantity == 0 {
+					quantity = 1
+				}
+
+				l.Debugf("Creating [%d] item [%d] for character [%d] in inventory [%d].", quantity, itemId, characterId, inventoryType)
+				invLock := GetLockRegistry().GetById(characterId, inventoryType)
+				invLock.Lock()
+				defer invLock.Unlock()
+
+				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventoryType)()
+					if err != nil {
+						l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
+						return err
+					}
+
+					iap := inventoryItemAddProvider(characterId)(itemId)
+					iup := inventoryItemUpdateProvider(characterId)(itemId)
+					eap := item.AssetByItemIdProvider(tx)(ctx)(invId)(itemId)
+					smp := func() (uint32, error) {
+						// TODO properly look this up.
+						return 200, nil
+					}
+					nac := item.CreateItem(tx)(ctx)(characterId)(invId, int8(inventoryType))(itemId)
+					aqu := item.UpdateQuantity(tx)(ctx)
+
+					res, err := CreateAsset(l)(eap, smp, nac, aqu, iap, iup, quantity)()
+					if err != nil {
+						l.WithError(err).Errorf("Unable to create [%d] equipable [%d] for character [%d].", quantity, itemId, characterId)
+						return err
+					}
+					events = model.MergeSliceProvider(events, model.FixedProvider(res))
+					return err
+				})
+				if txErr != nil {
+					_ = drop.CancelReservation(l)(ctx)(worldId, channelId, mapId, dropId, characterId)
+					return txErr
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(events)
+				_ = drop.RequestPickUp(l)(ctx)(worldId, channelId, mapId, dropId, characterId)
+				return nil
+			}
+		}
+	}
+}
+
+func AttemptEquipmentPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, equipmentId uint32) error {
+	return func(db *gorm.DB) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, equipmentId uint32) error {
+		return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, equipmentId uint32) error {
+			return func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, equipmentId uint32) error {
+				inventoryType := Type(math.Floor(float64(itemId) / 1000000))
+				if 1 != inventoryType {
+					l.Errorf("Provided inventoryType [%d] does not match expected one [%d] for itemId [%d].", inventoryType, 1, itemId)
+					return errors.New("invalid inventory type")
+				}
+
+				l.Debugf("Gaining [%d] item [%d] for character [%d] in inventory [%d].", 1, itemId, characterId, inventoryType)
+				invLock := GetLockRegistry().GetById(characterId, inventoryType)
+				invLock.Lock()
+				defer invLock.Unlock()
+
+				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventoryType)()
+					if err != nil {
+						l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
+						return err
+					}
+
+					iap := inventoryItemAddProvider(characterId)(itemId)
+					iup := inventoryItemUpdateProvider(characterId)(itemId)
+					eap := asset.NoOpSliceProvider
+					smp := OfOneSlotMaxProvider
+					escf := statistics2.Existing(l)(ctx)(equipmentId)
+					nac := equipable.CreateItem(l)(tx)(ctx)(escf)(characterId)(invId, int8(inventoryType))(itemId)
+					aqu := asset.NoOpQuantityUpdater
+
+					res, err := CreateAsset(l)(eap, smp, nac, aqu, iap, iup, 1)()
+					if err != nil {
+						l.WithError(err).Errorf("Unable to create [%d] equipable [%d] for character [%d].", 1, itemId, characterId)
+						return err
+					}
+					events = model.MergeSliceProvider(events, model.FixedProvider(res))
+					return err
+				})
+				if txErr != nil {
+					_ = drop.CancelReservation(l)(ctx)(worldId, channelId, mapId, dropId, characterId)
+					return txErr
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(events)
+				_ = drop.RequestPickUp(l)(ctx)(worldId, channelId, mapId, dropId, characterId)
+				return nil
+			}
+		}
+	}
+}
+
+func AttemptMesoPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
+	return func(db *gorm.DB) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
+		return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
+			return func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
+				// TODO
+				return drop.RequestPickUp(l)(ctx)(worldId, channelId, mapId, dropId, characterId)
 			}
 		}
 	}

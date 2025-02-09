@@ -500,6 +500,115 @@ func announceMapChanged(provider producer.Provider) func(worldId byte, channelId
 	}
 }
 
+func ChangeJob(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, jobId uint16) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, jobId uint16) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, jobId uint16) error {
+			return func(characterId uint32, worldId byte, channelId byte, jobId uint16) error {
+				l.Debugf("Attempting to set character [%d] job to [%d].", characterId, jobId)
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					c, err := GetById(ctx)(tx)()(characterId)
+					if err != nil {
+						return err
+					}
+					err = dynamicUpdate(tx)(SetJob(jobId))(t.Id())(c)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
+				if txErr != nil {
+					l.WithError(txErr).Errorf("Could not set character [%d] job to [%d].", characterId, jobId)
+					return txErr
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(jobChangedEventProvider(characterId, worldId, channelId, jobId))
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(worldId, channelId, characterId, []string{"JOB"}))
+				return nil
+			}
+		}
+	}
+}
+
+func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, amount uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, amount uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, amount uint32) error {
+			return func(characterId uint32, worldId byte, channelId byte, amount uint32) error {
+				l.Debugf("Attempting to award character [%d] [%d] experience.", characterId, amount)
+				willLevel := false
+				current := uint32(0)
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					c, err := GetById(ctx)(tx)()(characterId)
+					if err != nil {
+						return err
+					}
+
+					if c.Experience()+amount >= GetExperienceNeededForLevel(c.Level()) {
+						current = c.Experience() + amount - GetExperienceNeededForLevel(c.Level())
+						willLevel = true
+					} else {
+						current = c.Experience() + amount
+					}
+
+					err = dynamicUpdate(tx)(SetExperience(current))(t.Id())(c)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
+				if txErr != nil {
+					l.WithError(txErr).Errorf("Could not award character [%d] [%d] experience.", characterId, amount)
+					return txErr
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(experienceChangedEventProvider(characterId, worldId, channelId, amount, current))
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(worldId, channelId, characterId, []string{"EXPERIENCE"}))
+				if willLevel {
+					_ = producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(awardLevelCommandProvider(characterId, worldId, channelId, 1))
+				}
+				return nil
+			}
+		}
+	}
+}
+
+func AwardLevel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, amount byte) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, amount byte) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, amount byte) error {
+			return func(characterId uint32, worldId byte, channelId byte, amount byte) error {
+				l.Debugf("Attempting to award character [%d] [%d] level(s).", characterId, amount)
+				actual := amount
+				current := byte(0)
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					c, err := GetById(ctx)(tx)()(characterId)
+					if err != nil {
+						return err
+					}
+
+					if c.Level()+amount > MaxLevel {
+						l.Debugf("Awarding [%d] level(s) would cause character [%d] to go over cap [%d]. Setting change to [%d].", amount, characterId, MaxLevel, actual)
+						actual = MaxLevel - c.Level()
+					}
+					current = c.Level() + actual
+
+					err = dynamicUpdate(tx)(SetLevel(current))(t.Id())(c)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
+				if txErr != nil {
+					l.WithError(txErr).Errorf("Could not award character [%d] [%d] level(s).", characterId, actual)
+					return txErr
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(levelChangedEventProvider(characterId, worldId, channelId, actual, current))
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(worldId, channelId, characterId, []string{"LEVEL"}))
+				return nil
+			}
+		}
+	}
+}
+
 type MovementSummary struct {
 	X      int16
 	Y      int16

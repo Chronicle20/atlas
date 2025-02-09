@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/cos/characters?name=chronicle
+  url: {{scheme}}://{{host}}:{{port}}/api/characters?name=chronicle
   body: none
   auth: none
+}
+
+params:query {
+  name: chronicle
 }

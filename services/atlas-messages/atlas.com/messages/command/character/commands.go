@@ -73,7 +73,7 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 			var cn string
 			var amountStr string
 
-			re := regexp.MustCompile(`@award\s+(\w+)\s+level\s+(\d+)`)
+			re := regexp.MustCompile(`@award\s+(\w+)\s+(\d+)\s+level`)
 			match := re.FindStringSubmatch(m)
 			if len(match) == 3 {
 				cn = match[1]
@@ -114,6 +114,60 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 						err = character.AwardLevel(l)(ctx)(worldId, channelId, id, amount)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with [%d] level(s).", id, amount)
+						}
+					}
+					return err
+				}
+			}, true
+		}
+	}
+}
+
+func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+			var cn string
+			var jobStr string
+
+			re := regexp.MustCompile(`@change\s+(\w+)\s+job\s+(\d+)`)
+			match := re.FindStringSubmatch(m)
+			if len(match) == 3 {
+				cn = match[1]
+				jobStr = match[2]
+			}
+
+			if len(cn) == 0 {
+				return nil, false
+			}
+
+			if !c.Gm() {
+				l.Debugf("Ignoring character [%d] command [%s], because they are not a gm.", c.Id(), m)
+				return nil, false
+			}
+
+			var idProvider model.Provider[[]uint32]
+			if match[1] == "my" {
+				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
+			} else {
+				idProvider = model.ToSliceProvider(character.IdByNameProvider(l)(ctx)(match[1]))
+			}
+
+			tJobId, err := strconv.ParseUint(jobStr, 10, 16)
+			if err != nil {
+				return nil, false
+			}
+			jobId := uint16(tJobId)
+
+			return func(l logrus.FieldLogger) func(ctx context.Context) error {
+				return func(ctx context.Context) error {
+					cids, err := idProvider()
+					if err != nil {
+						return err
+					}
+					for _, id := range cids {
+						err = character.ChangeJob(l)(ctx)(worldId, channelId, id, jobId)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to award [%d] with [%d] level(s).", id, jobId)
 						}
 					}
 					return err

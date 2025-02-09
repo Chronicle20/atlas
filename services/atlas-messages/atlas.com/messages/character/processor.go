@@ -59,3 +59,11 @@ func AwardLevel(l logrus.FieldLogger) func(ctx context.Context) func(worldId byt
 		}
 	}
 }
+
+func ChangeJob(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
+		return func(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeJobCommandProvider(characterId, worldId, channelId, jobId))
+		}
+	}
+}

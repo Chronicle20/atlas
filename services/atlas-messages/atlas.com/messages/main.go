@@ -30,6 +30,7 @@ func main() {
 	command.Registry().Add(inventory.AwardItemCommandProducer)
 	command.Registry().Add(character.AwardExperienceCommandProducer)
 	command.Registry().Add(character.AwardLevelCommandProducer)
+	command.Registry().Add(character.ChangeJobCommandProducer)
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	message.InitConsumers(l)(cmf)(consumerGroupId)

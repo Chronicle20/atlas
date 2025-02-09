@@ -48,3 +48,17 @@ func awardLevelCommandProvider(characterId uint32, worldId byte, channelId byte,
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func changeJobCommandProvider(characterId uint32, worldId byte, channelId byte, jobId uint16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[changeJobCommandBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        CommandChangeJob,
+		Body: changeJobCommandBody{
+			ChannelId: channelId,
+			JobId:     jobId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -9,43 +9,33 @@ import (
 	"github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+			re := regexp.MustCompile(`@warp\s+(\w+)\s+(\d+)`)
+			match := re.FindStringSubmatch(m)
+			if len(match) != 3 {
+				return nil, false
+			}
+
 			if !c.Gm() {
 				l.Debugf("Ignoring character [%d] command [%s], because they are not a gm.", c.Id(), m)
 				return nil, false
 			}
 
-			if !strings.HasPrefix(m, "@warp") {
-				return nil, false
+			var idProvider model.Provider[[]uint32]
+			if match[1] == "me" {
+				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
+			} else if match[1] == "map" {
+				idProvider = CharacterIdsInMapStringProvider(l)(ctx)(worldId, channelId, match[2])
+			} else {
+				idProvider = model.ToSliceProvider(character.IdByNameProvider(l)(ctx)(match[1]))
 			}
 
-			re := regexp.MustCompile("@warp me (\\d*)")
-			match := re.FindStringSubmatch(m)
-			if len(match) == 2 {
-				idProvider := model.ToSliceProvider(model.FixedProvider(c.Id()))
-				return warpCommandProducer(worldId, channelId, c.Id(), idProvider, match[1])
-			}
+			return warpCommandProducer(worldId, channelId, c.Id(), idProvider, match[2])
 
-			re = regexp.MustCompile("@warp map (\\d*)")
-			match = re.FindStringSubmatch(m)
-			if len(match) == 2 {
-				idProvider := CharacterIdsInMapStringProvider(l)(ctx)(worldId, channelId, match[1])
-				return warpCommandProducer(worldId, channelId, c.Id(), idProvider, match[1])
-			}
-
-			re = regexp.MustCompile(`@warp\s+(\w+)\s+(\d+)`)
-			match = re.FindStringSubmatch(m)
-			if len(match) == 3 {
-				idProvider := model.ToSliceProvider(character.IdByNameProvider(l)(ctx)(match[1]))
-				return warpCommandProducer(worldId, channelId, c.Id(), idProvider, match[2])
-			}
-
-			return nil, false
 		}
 	}
 }

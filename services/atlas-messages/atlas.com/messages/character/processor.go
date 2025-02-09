@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-messages/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -27,6 +28,42 @@ func GetByName(l logrus.FieldLogger) func(ctx context.Context) func(name string)
 	return func(ctx context.Context) func(name string) (Model, error) {
 		return func(name string) (Model, error) {
 			return model.First(byNameProvider(l)(ctx)(name), model.Filters[Model]())
+		}
+	}
+}
+
+func IdByNameProvider(l logrus.FieldLogger) func(ctx context.Context) func(name string) model.Provider[uint32] {
+	return func(ctx context.Context) func(name string) model.Provider[uint32] {
+		return func(name string) model.Provider[uint32] {
+			c, err := GetByName(l)(ctx)(name)
+			if err != nil {
+				return model.ErrorProvider[uint32](err)
+			}
+			return model.FixedProvider(c.Id())
+		}
+	}
+}
+
+func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount uint32) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount uint32) error {
+		return func(worldId byte, channelId byte, characterId uint32, amount uint32) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(awardExperienceCommandProvider(characterId, worldId, channelId, amount))
+		}
+	}
+}
+
+func AwardLevel(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount byte) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount byte) error {
+		return func(worldId byte, channelId byte, characterId uint32, amount byte) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(awardLevelCommandProvider(characterId, worldId, channelId, amount))
+		}
+	}
+}
+
+func ChangeJob(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
+		return func(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeJobCommandProvider(characterId, worldId, channelId, jobId))
 		}
 	}
 }

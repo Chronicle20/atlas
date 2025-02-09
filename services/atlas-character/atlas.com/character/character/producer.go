@@ -6,6 +6,20 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+func awardLevelCommandProvider(characterId uint32, worldId byte, channelId byte, amount byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[awardLevelCommandBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        CommandAwardLevel,
+		Body: awardLevelCommandBody{
+			ChannelId: channelId,
+			Amount:    amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func createdEventProvider(characterId uint32, worldId byte, name string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &statusEvent[statusEventCreatedBody]{
@@ -73,6 +87,50 @@ func mapChangedEventProvider(characterId uint32, worldId byte, channelId byte, o
 			OldMapId:       oldMapId,
 			TargetMapId:    targetMapId,
 			TargetPortalId: targetPortalId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func jobChangedEventProvider(characterId uint32, worldId byte, channelId byte, jobId uint16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &statusEvent[jobChangedStatusEventBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        StatusEventTypeJobChanged,
+		Body: jobChangedStatusEventBody{
+			ChannelId: channelId,
+			JobId:     jobId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func experienceChangedEventProvider(characterId uint32, worldId byte, channelId byte, amount uint32, current uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &statusEvent[experienceChangedStatusEventBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        StatusEventTypeExperienceChanged,
+		Body: experienceChangedStatusEventBody{
+			ChannelId: channelId,
+			Amount:    amount,
+			Current:   current,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func levelChangedEventProvider(characterId uint32, worldId byte, channelId byte, amount byte, current byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &statusEvent[levelChangedStatusEventBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        StatusEventTypeLevelChanged,
+		Body: levelChangedStatusEventBody{
+			ChannelId: channelId,
+			Amount:    amount,
+			Current:   current,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

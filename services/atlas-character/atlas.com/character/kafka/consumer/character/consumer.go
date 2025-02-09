@@ -28,6 +28,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			var t string
 			t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMap(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeJob(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardExperience(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardLevel(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestChangeMeso(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDropMeso(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestChangeFame(db))))
@@ -38,8 +41,8 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	}
 }
 
-func handleChangeMap(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c commandEvent[changeMapBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[changeMapBody]) {
+func handleChangeMap(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c command[changeMapBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[changeMapBody]) {
 		if c.Type != CommandChangeMap {
 			return
 		}
@@ -51,8 +54,38 @@ func handleChangeMap(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context
 	}
 }
 
-func handleRequestChangeMeso(db *gorm.DB) message.Handler[commandEvent[requestChangeMesoBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[requestChangeMesoBody]) {
+func handleChangeJob(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c command[changeJobCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[changeJobCommandBody]) {
+		if c.Type != CommandChangeJob {
+			return
+		}
+
+		_ = character.ChangeJob(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.ChannelId, c.Body.JobId)
+	}
+}
+
+func handleAwardExperience(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c command[awardExperienceCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[awardExperienceCommandBody]) {
+		if c.Type != CommandAwardExperience {
+			return
+		}
+
+		_ = character.AwardExperience(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.ChannelId, c.Body.Amount)
+	}
+}
+
+func handleAwardLevel(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c command[awardLevelCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[awardLevelCommandBody]) {
+		if c.Type != CommandAwardLevel {
+			return
+		}
+
+		_ = character.AwardLevel(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.ChannelId, c.Body.Amount)
+	}
+}
+
+func handleRequestChangeMeso(db *gorm.DB) message.Handler[command[requestChangeMesoBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[requestChangeMesoBody]) {
 		if c.Type != CommandRequestChangeMeso {
 			return
 		}
@@ -61,8 +94,8 @@ func handleRequestChangeMeso(db *gorm.DB) message.Handler[commandEvent[requestCh
 	}
 }
 
-func handleRequestDropMeso(db *gorm.DB) message.Handler[commandEvent[requestDropMesoCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[requestDropMesoCommandBody]) {
+func handleRequestDropMeso(db *gorm.DB) message.Handler[command[requestDropMesoCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[requestDropMesoCommandBody]) {
 		if c.Type != CommandRequestDropMeso {
 			return
 		}
@@ -71,8 +104,8 @@ func handleRequestDropMeso(db *gorm.DB) message.Handler[commandEvent[requestDrop
 	}
 }
 
-func handleRequestChangeFame(db *gorm.DB) message.Handler[commandEvent[requestChangeFameBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[requestChangeFameBody]) {
+func handleRequestChangeFame(db *gorm.DB) message.Handler[command[requestChangeFameBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[requestChangeFameBody]) {
 		if c.Type != CommandRequestChangeFame {
 			return
 		}
@@ -81,8 +114,8 @@ func handleRequestChangeFame(db *gorm.DB) message.Handler[commandEvent[requestCh
 	}
 }
 
-func handleRequestDistributeAp(db *gorm.DB) message.Handler[commandEvent[requestDistributeApCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[requestDistributeApCommandBody]) {
+func handleRequestDistributeAp(db *gorm.DB) message.Handler[command[requestDistributeApCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[requestDistributeApCommandBody]) {
 		if c.Type != CommandRequestDistributeAp {
 			return
 		}

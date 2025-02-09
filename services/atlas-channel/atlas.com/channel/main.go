@@ -230,6 +230,7 @@ func produceWriters() []string {
 		writer.DropSpawn,
 		writer.DropDestroy,
 		writer.ReactorSpawn,
+		writer.ReactorDestroy,
 	}
 }
 

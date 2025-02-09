@@ -32,6 +32,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				var t string
 				t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreated(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyed(sc, wp))))
 			}
 		}
 	}
@@ -61,6 +62,27 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			err := session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(s, writer.ReactorSpawnBody(l, tenant.MustFromContext(ctx))(r))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to spawn reactor [%d] for character [%d].", r.Id(), s.CharacterId())
+			}
+			return err
+		})
+	}
+}
+
+func handleDestroyed(sc server.Model, wp writer.Producer) message.Handler[statusEvent[destroyedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[destroyedStatusEventBody]) {
+		if e.Type != EventStatusTypeDestroyed {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		_ = _map.ForSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), e.MapId, func(s session.Model) error {
+			l.Debugf("Destroying reactor [%d] for character [%d].", e.ReactorId, s.CharacterId())
+			err := session.Announce(l)(ctx)(wp)(writer.ReactorDestroy)(s, writer.ReactorDestroyBody(l, tenant.MustFromContext(ctx))(e.ReactorId, e.Body.State, e.Body.X, e.Body.Y))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to destroy reactor [%d] for character [%d].", e.ReactorId, s.CharacterId())
 			}
 			return err
 		})

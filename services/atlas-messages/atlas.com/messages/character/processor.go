@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-messages/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -39,6 +40,14 @@ func IdByNameProvider(l logrus.FieldLogger) func(ctx context.Context) func(name 
 				return model.ErrorProvider[uint32](err)
 			}
 			return model.FixedProvider(c.Id())
+		}
+	}
+}
+
+func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount uint32) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount uint32) error {
+		return func(worldId byte, channelId byte, characterId uint32, amount uint32) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(awardExperienceCommandProvider(characterId, worldId, channelId, amount))
 		}
 	}
 }

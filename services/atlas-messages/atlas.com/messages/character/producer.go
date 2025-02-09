@@ -8,7 +8,7 @@ import (
 
 func ChangeMapProvider(worldId byte, channelId byte, characterId uint32, mapId uint32, portalId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &commandEvent[changeMapBody]{
+	value := &command[changeMapBody]{
 		WorldId:     worldId,
 		CharacterId: characterId,
 		Type:        CommandCharacterChangeMap,
@@ -16,6 +16,20 @@ func ChangeMapProvider(worldId byte, channelId byte, characterId uint32, mapId u
 			ChannelId: channelId,
 			MapId:     mapId,
 			PortalId:  portalId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func awardExperienceCommandProvider(characterId uint32, worldId byte, channelId byte, amount uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[awardExperienceCommandBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        CommandAwardExperience,
+		Body: awardExperienceCommandBody{
+			ChannelId: channelId,
+			Amount:    amount,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

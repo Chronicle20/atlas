@@ -1,37 +1,27 @@
-package inventory
+package character
 
 import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	_map "atlas-messages/map"
-	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
 	"regexp"
 	"strconv"
 )
 
-func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			var cn string
-			var itemIdStr string
-			var quantityStr string
+			var amountStr string
 
-			re := regexp.MustCompile(`@award\s+(\w+)\s+item\s+(\d+)\s+(\d+)`)
+			re := regexp.MustCompile(`@award\s+(\w+)\s+experience\s+(\d+)`)
 			match := re.FindStringSubmatch(m)
-			if len(match) == 4 {
+			if len(match) == 3 {
 				cn = match[1]
-				itemIdStr = match[2]
-				quantityStr = match[3]
-			} else {
-				re = regexp.MustCompile(`@award\s+(\w+)\s+item\s+(\d+)`)
-				match = re.FindStringSubmatch(m)
-				if len(match) == 3 {
-					cn = match[1]
-					itemIdStr = match[2]
-					quantityStr = "1"
-				}
+				amountStr = match[2]
 			}
 
 			if len(cn) == 0 {
@@ -52,22 +42,11 @@ func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 				idProvider = model.ToSliceProvider(character.IdByNameProvider(l)(ctx)(match[1]))
 			}
 
-			tItemId, err := strconv.ParseUint(itemIdStr, 10, 32)
+			tAmount, err := strconv.ParseUint(amountStr, 10, 32)
 			if err != nil {
 				return nil, false
 			}
-			itemId := uint32(tItemId)
-			exists := Exists(l)(ctx)(itemId)
-			if !exists {
-				l.Debugf("Ignoring character [%d] command [%s], because they did not input a valid item.", c.Id(), m)
-				return nil, false
-			}
-
-			tQuantity, err := strconv.ParseInt(quantityStr, 10, 16)
-			if err != nil {
-				return nil, false
-			}
-			quantity := uint16(tQuantity)
+			amount := uint32(tAmount)
 
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
@@ -76,9 +55,9 @@ func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 						return err
 					}
 					for _, id := range cids {
-						_, err = CreateItem(l)(ctx)(id, itemId, quantity)
+						err = character.AwardExperience(l)(ctx)(worldId, channelId, id, amount)
 						if err != nil {
-							l.WithError(err).Errorf("Unable to award [%d] with (%d) item [%d].", id, quantity, itemId)
+							l.WithError(err).Errorf("Unable to award [%d] with [%d] experience.", id, amount)
 						}
 					}
 					return err

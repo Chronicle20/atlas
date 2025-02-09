@@ -3,6 +3,7 @@ package _map
 import (
 	"atlas-messages/character"
 	"atlas-messages/command"
+	"atlas-messages/map"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
@@ -29,7 +30,7 @@ func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(wo
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				idProvider = CharacterIdsInMapStringProvider(l)(ctx)(worldId, channelId, match[2])
+				idProvider = _map.CharacterIdsInMapStringProvider(l)(ctx)(worldId, channelId, match[2])
 			} else {
 				idProvider = model.ToSliceProvider(character.IdByNameProvider(l)(ctx)(match[1]))
 			}
@@ -48,7 +49,7 @@ func warpCommandProducer(worldId byte, channelId byte, actorId uint32, idProvide
 				return errors.New("map does not exist")
 			}
 
-			exists := Exists(l)(ctx)(uint32(requestedMapId))
+			exists := _map.Exists(l)(ctx)(uint32(requestedMapId))
 			if !exists {
 				l.Debugf("Ignoring character [%d] command [%d], because they did not input a valid map.", actorId, requestedMapId)
 				return errors.New("map does not exist")
@@ -59,7 +60,7 @@ func warpCommandProducer(worldId byte, channelId byte, actorId uint32, idProvide
 				return err
 			}
 			for _, id := range ids {
-				err = WarpRandom(l)(ctx)(worldId)(channelId)(id)(uint32(requestedMapId))
+				err = _map.WarpRandom(l)(ctx)(worldId)(channelId)(id)(uint32(requestedMapId))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to warp character [%d] via warp map command.", id)
 				}

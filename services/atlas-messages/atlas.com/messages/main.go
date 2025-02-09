@@ -1,10 +1,11 @@
 package main
 
 import (
-	"atlas-messages/character/inventory"
 	"atlas-messages/command"
+	"atlas-messages/command/character"
+	"atlas-messages/command/character/inventory"
+	"atlas-messages/command/map"
 	"atlas-messages/logger"
-	_map "atlas-messages/map"
 	"atlas-messages/message"
 	"atlas-messages/service"
 	"atlas-messages/tracing"
@@ -27,6 +28,7 @@ func main() {
 
 	command.Registry().Add(_map.WarpCommandProducer)
 	command.Registry().Add(inventory.AwardItemCommandProducer)
+	command.Registry().Add(character.AwardExperienceCommandProducer)
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	message.InitConsumers(l)(cmf)(consumerGroupId)

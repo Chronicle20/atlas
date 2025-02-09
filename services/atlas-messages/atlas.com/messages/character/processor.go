@@ -51,3 +51,11 @@ func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(worldI
 		}
 	}
 }
+
+func AwardLevel(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount byte) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount byte) error {
+		return func(worldId byte, channelId byte, characterId uint32, amount byte) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(awardLevelCommandProvider(characterId, worldId, channelId, amount))
+		}
+	}
+}

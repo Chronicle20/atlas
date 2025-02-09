@@ -29,6 +29,7 @@ func main() {
 	command.Registry().Add(_map.WarpCommandProducer)
 	command.Registry().Add(inventory.AwardItemCommandProducer)
 	command.Registry().Add(character.AwardExperienceCommandProducer)
+	command.Registry().Add(character.AwardLevelCommandProducer)
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	message.InitConsumers(l)(cmf)(consumerGroupId)

@@ -543,7 +543,7 @@ func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(db *go
 						return err
 					}
 
-					if c.Experience()+amount > GetExperienceNeededForLevel(c.Level()) {
+					if c.Experience()+amount >= GetExperienceNeededForLevel(c.Level()) {
 						current = c.Experience() + amount - GetExperienceNeededForLevel(c.Level())
 						willLevel = true
 					} else {

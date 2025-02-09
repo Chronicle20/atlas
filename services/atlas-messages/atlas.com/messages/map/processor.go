@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
+	"strconv"
 )
 
 func Exists(l logrus.FieldLogger) func(ctx context.Context) func(mapId uint32) bool {
@@ -24,18 +25,22 @@ func Exists(l logrus.FieldLogger) func(ctx context.Context) func(mapId uint32) b
 	}
 }
 
-func CharacterIdsInMapModelProvider(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
-		return func(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
-			return requests.SliceProvider[RestModel, uint32](l, ctx)(requestCharactersInMap(worldId, channelId, mapId), Extract, model.Filters[uint32]())
+func CharacterIdsInMapStringProvider(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapStr string) model.Provider[[]uint32] {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapStr string) model.Provider[[]uint32] {
+		return func(worldId byte, channelId byte, mapStr string) model.Provider[[]uint32] {
+			mapId, err := strconv.ParseUint(mapStr, 10, 32)
+			if err != nil {
+				return model.ErrorProvider[[]uint32](err)
+			}
+			return CharacterIdsInMapProvider(l)(ctx)(worldId, channelId, uint32(mapId))
 		}
 	}
 }
 
-func GetCharacterIdsInMap(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) ([]uint32, error) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) ([]uint32, error) {
-		return func(worldId byte, channelId byte, mapId uint32) ([]uint32, error) {
-			return CharacterIdsInMapModelProvider(l)(ctx)(worldId, channelId, mapId)()
+func CharacterIdsInMapProvider(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
+		return func(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
+			return requests.SliceProvider[RestModel, uint32](l, ctx)(requestCharactersInMap(worldId, channelId, mapId), Extract, model.Filters[uint32]())
 		}
 	}
 }

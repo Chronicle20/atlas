@@ -30,3 +30,15 @@ func GetByName(l logrus.FieldLogger) func(ctx context.Context) func(name string)
 		}
 	}
 }
+
+func IdByNameProvider(l logrus.FieldLogger) func(ctx context.Context) func(name string) model.Provider[uint32] {
+	return func(ctx context.Context) func(name string) model.Provider[uint32] {
+		return func(name string) model.Provider[uint32] {
+			c, err := GetByName(l)(ctx)(name)
+			if err != nil {
+				return model.ErrorProvider[uint32](err)
+			}
+			return model.FixedProvider(c.Id())
+		}
+	}
+}

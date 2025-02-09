@@ -4,6 +4,8 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	"context"
+	"errors"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
@@ -25,73 +27,54 @@ func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(wo
 			re := regexp.MustCompile("@warp me (\\d*)")
 			match := re.FindStringSubmatch(m)
 			if len(match) == 2 {
-				return warpCharacterCommandProducer(l)(ctx)(worldId, channelId, c.Id(), match[1])
+				idProvider := model.ToSliceProvider(model.FixedProvider(c.Id()))
+				return warpCommandProducer(worldId, channelId, c.Id(), idProvider, match[1])
 			}
 
 			re = regexp.MustCompile("@warp map (\\d*)")
 			match = re.FindStringSubmatch(m)
 			if len(match) == 2 {
-				return warpMapCommandProducer(l)(ctx)(worldId, channelId, match[1])
+				idProvider := CharacterIdsInMapStringProvider(l)(ctx)(worldId, channelId, match[1])
+				return warpCommandProducer(worldId, channelId, c.Id(), idProvider, match[1])
 			}
 
 			re = regexp.MustCompile(`@warp\s+(\w+)\s+(\d+)`)
 			match = re.FindStringSubmatch(m)
 			if len(match) == 3 {
-				oc, err := character.GetByName(l)(ctx)(match[1])
-				if err != nil {
-					return nil, false
-				}
-				return warpCharacterCommandProducer(l)(ctx)(worldId, channelId, oc.Id(), match[2])
+				idProvider := model.ToSliceProvider(character.IdByNameProvider(l)(ctx)(match[1]))
+				return warpCommandProducer(worldId, channelId, c.Id(), idProvider, match[2])
 			}
+
 			return nil, false
 		}
 	}
 }
 
-func warpMapCommandProducer(_ logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapString string) (command.Executor, bool) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapString string) (command.Executor, bool) {
-		return func(worldId byte, channelId byte, mapString string) (command.Executor, bool) {
-			mapId, err := strconv.ParseUint(mapString, 10, 32)
+func warpCommandProducer(worldId byte, channelId byte, actorId uint32, idProvider model.Provider[[]uint32], mapStr string) (command.Executor, bool) {
+	return func(l logrus.FieldLogger) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			requestedMapId, err := strconv.ParseUint(mapStr, 10, 32)
 			if err != nil {
-				return nil, false
+				return errors.New("map does not exist")
 			}
-			return func(l logrus.FieldLogger) func(ctx context.Context) error {
-				return func(ctx context.Context) error {
-					var cids []uint32
-					cids, err = GetCharacterIdsInMap(l)(ctx)(worldId, channelId, uint32(mapId))
-					if err != nil {
-						return err
-					}
-					for _, id := range cids {
-						err = WarpRandom(l)(ctx)(worldId)(channelId)(id)(uint32(mapId))
-						if err != nil {
-							l.WithError(err).Errorf("Unable to warp character [%d] via warp map command.", id)
-						}
-					}
-					return err
-				}
-			}, true
-		}
-	}
-}
 
-func warpCharacterCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapString string) (command.Executor, bool) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapString string) (command.Executor, bool) {
-		return func(worldId byte, channelId byte, characterId uint32, mapString string) (command.Executor, bool) {
-			mapId, err := strconv.ParseUint(mapString, 10, 32)
-			if err != nil {
-				return nil, false
-			}
-			exists := Exists(l)(ctx)(uint32(mapId))
+			exists := Exists(l)(ctx)(uint32(requestedMapId))
 			if !exists {
-				l.Debugf("Ignoring character [%d] command [%s], because they did not input a valid map.", characterId, mapString)
-				return nil, false
+				l.Debugf("Ignoring character [%d] command [%d], because they did not input a valid map.", actorId, requestedMapId)
+				return errors.New("map does not exist")
 			}
-			return func(l logrus.FieldLogger) func(ctx context.Context) error {
-				return func(ctx context.Context) error {
-					return WarpRandom(l)(ctx)(worldId)(channelId)(characterId)(uint32(mapId))
+
+			ids, err := idProvider()
+			if err != nil {
+				return err
+			}
+			for _, id := range ids {
+				err = WarpRandom(l)(ctx)(worldId)(channelId)(id)(uint32(requestedMapId))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to warp character [%d] via warp map command.", id)
 				}
-			}, true
+			}
+			return err
 		}
-	}
+	}, true
 }

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -98,9 +99,9 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 		m.skillDataCrc = r.ReadUint32()
 		m.skillDataCrc2 = r.ReadUint32()
 
-		if isKeyDownSkill(m.skillId) {
+		if skill.IsKeyDownSkill(skill.Id(m.skillId)) {
 			m.keyDown = r.ReadUint32()
-		} else if isChargeSkill(m.skillId) {
+		} else if skill.IsChargeSkill(skill.Id(m.skillId)) {
 			m.keyDown = r.ReadUint32()
 		}
 		mask1 := r.ReadByte()
@@ -139,7 +140,7 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 			m.pnCashItemPos = r.ReadUint16()
 			m.nShootRange = r.ReadByte()
 
-			if m.javlin && !isShootSkillNotConsumingBullet(m.skillId) {
+			if m.javlin && !skill.IsShootSkillNotConsumingBullet(skill.Id(m.skillId)) {
 				m.bulletItemId = r.ReadUint32()
 			}
 		} else if m.attackType == AttackTypeMagic {
@@ -156,10 +157,10 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 
 		m.targetX = r.ReadUint16()
 		m.targetY = r.ReadUint16()
-		if m.skillId == 14111006 { // poison bomb
+		if skill.Id(m.skillId) == skill.NightWalkerStage3PoisonBomb {
 			m.grenadeX = r.ReadUint16()
 			m.grenadeY = r.ReadUint16()
-		} else if m.skillId == 15111006 {
+		} else if skill.Id(m.skillId) == skill.ThunderBreakerStage3Spark {
 			m.reserveSpark = r.ReadUint32()
 		}
 		if m.attackType == AttackTypeMagic {
@@ -170,49 +171,4 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 			}
 		}
 	}
-}
-
-func isChargeSkill(skillId uint32) bool {
-	return skillId == 2121001 || skillId == 2221001 || skillId == 2321001 || skillId == 22121000 || skillId == 22151001
-}
-
-func isShootSkillNotUsingShootingWeapon(skillId uint32) bool {
-	switch skillId {
-	case 4121003, 4221003, 5121002, 11101004, 15111006, 15111007, 21100004, 21110004, 21120006, 33101007:
-		return true
-	default:
-		return false
-	}
-}
-
-func isShootSkillNotConsumingBullet(skillId uint32) bool {
-	if isShootSkillNotUsingShootingWeapon(skillId) {
-		return true
-	}
-	switch skillId {
-	case 3101003, 3201003, 4111004, 13101005, 14101006, 33101002, 35001001, 35001004, 35101009, 35101010, 35111004, 35111015, 35121005, 35121012, 35121013:
-		return true
-	default:
-		return false
-	}
-}
-
-func isKeyDownSkill(skillId uint32) bool {
-	return skillId == 2321001 || skillId == 80001836 || skillId == 37121052 || skillId == 36121000 ||
-		skillId == 37121003 || skillId == 36101001 || skillId == 33121114 || skillId == 33121214 ||
-		skillId == 35121015 || skillId == 33121009 || skillId == 32121003 || skillId == 31211001 ||
-		skillId == 31111005 || skillId == 30021238 || skillId == 31001000 || skillId == 31101000 ||
-		skillId == 80001887 || skillId == 80001880 || skillId == 80001629 || skillId == 20041226 ||
-		skillId == 60011216 || skillId == 65121003 || skillId == 80001587 || skillId == 131001008 ||
-		skillId == 142111010 || skillId == 131001004 || skillId == 95001001 || skillId == 101110100 ||
-		skillId == 101110101 || skillId == 101110102 || skillId == 27111100 || skillId == 12121054 ||
-		skillId == 11121052 || skillId == 11121055 || skillId == 5311002 || skillId == 4341002 ||
-		skillId == 5221004 || skillId == 5221022 || skillId == 3121020 || skillId == 3101008 ||
-		skillId == 3111013 || skillId == 1311011 || skillId == 2221011 || skillId == 2221052 ||
-		skillId == 25121030 || skillId == 27101202 || skillId == 25111005 || skillId == 23121000 ||
-		skillId == 22171083 || skillId == 14121004 || skillId == 13111020 || skillId == 13121001 ||
-		skillId == 14111006 || (skillId >= 80001389 && skillId <= 80001392) || skillId == 42121000 ||
-		skillId == 42120003 || skillId == 5700010 || skillId == 5711021 || skillId == 5721001 ||
-		skillId == 5721061 || skillId == 21120018 || skillId == 21120019 || skillId == 24121000 ||
-		skillId == 24121005
 }

@@ -6,6 +6,7 @@ import (
 	"atlas-channel/character/equipment/slot"
 	"atlas-channel/character/inventory/equipable"
 	"atlas-channel/character/inventory/item"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
@@ -164,12 +165,12 @@ func WriteMonsterBookInfo(tenant tenant.Model) func(w *response.Writer, c charac
 func WriteTeleportInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
 	return func(w *response.Writer, c character.Model) {
 		for i := 0; i < 5; i++ {
-			w.WriteInt(999999999)
+			w.WriteInt(uint32(_map.EmptyMapId))
 		}
 
 		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 			for j := 0; j < 10; j++ {
-				w.WriteInt(999999999)
+				w.WriteInt(uint32(_map.EmptyMapId))
 			}
 		}
 	}

@@ -5,6 +5,7 @@ import (
 	"atlas-channel/character/inventory"
 	"atlas-channel/character/skill"
 	"atlas-channel/pet"
+	"github.com/Chronicle20/atlas-constants/job"
 	"strconv"
 	"strings"
 )
@@ -136,28 +137,28 @@ func (m Model) Ap() uint16 {
 }
 
 func (m Model) HasSPTable() bool {
-	switch m.jobId {
-	case 2001:
+	switch job.Id(m.jobId) {
+	case job.EvanId:
 		return true
-	case 2200:
+	case job.EvanStage1Id:
 		return true
-	case 2210:
+	case job.EvanStage2Id:
 		return true
-	case 2211:
+	case job.EvanStage3Id:
 		return true
-	case 2212:
+	case job.EvanStage4Id:
 		return true
-	case 2213:
+	case job.EvanStage5Id:
 		return true
-	case 2214:
+	case job.EvanStage6Id:
 		return true
-	case 2215:
+	case job.EvanStage7Id:
 		return true
-	case 2216:
+	case job.EvanStage8Id:
 		return true
-	case 2217:
+	case job.EvanStage9Id:
 		return true
-	case 2218:
+	case job.EvanStage10Id:
 		return true
 	default:
 		return false

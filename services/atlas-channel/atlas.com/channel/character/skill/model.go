@@ -1,7 +1,7 @@
 package skill
 
 import (
-	"math"
+	"github.com/Chronicle20/atlas-constants/skill"
 	"time"
 )
 
@@ -29,7 +29,5 @@ func (m Model) Expiration() time.Time {
 }
 
 func (m Model) IsFourthJob() bool {
-	// TODO Cygnus, Aran, or Evan
-	jobId := uint32(math.Floor(float64(m.id) / float64(10000)))
-	return jobId == 112 || jobId == 122 || jobId == 132 || jobId == 212 || jobId == 222 || jobId == 232 || jobId == 412 || jobId == 422 || jobId == 512 || jobId == 522
+	return skill.IsFourthJob(skill.Id(m.Id()))
 }

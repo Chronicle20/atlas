@@ -1,6 +1,8 @@
 package item
 
-import "math"
+import (
+	"github.com/Chronicle20/atlas-constants/item"
+)
 
 type Model struct {
 	id       uint32
@@ -38,9 +40,9 @@ func (m Model) Rechargeable() bool {
 }
 
 func (m Model) ThrowingStar() bool {
-	return uint32(math.Floor(float64(m.ItemId())/float64(10000))) == 207
+	return item.IsThrowingStar(item.Id(m.ItemId()))
 }
 
 func (m Model) Bullet() bool {
-	return uint32(math.Floor(float64(m.ItemId())/float64(10000))) == 233
+	return item.IsBullet(item.Id(m.ItemId()))
 }

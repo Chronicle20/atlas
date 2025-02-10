@@ -8,6 +8,8 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"errors"
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -15,7 +17,6 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"math"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -64,25 +65,30 @@ func addToInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writ
 			return func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					var bp writer.BodyProducer
-					inventoryType := byte(math.Floor(float64(event.Body.ItemId) / 1000000))
+					inventoryType, ok := inventory.TypeFromItemId(event.Body.ItemId)
+					if !ok {
+						l.Errorf("Unable to identify inventory type by item [%d].", event.Body.ItemId)
+						return errors.New("unable to identify inventory type")
+					}
+
 					if inventoryType == 1 {
 						e, err := character.GetEquipableInSlot(l)(ctx)(s.CharacterId(), event.Slot)()
 						if err != nil {
 							return err
 						}
-						bp = writer.CharacterInventoryAddEquipableBody(tenant.MustFromContext(ctx))(inventoryType, event.Slot, e, false)
+						bp = writer.CharacterInventoryAddEquipableBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, e, false)
 					} else if inventoryType == 2 || inventoryType == 3 || inventoryType == 4 {
-						i, err := character.GetItemInSlot(l)(ctx)(s.CharacterId(), inventoryType, event.Slot)()
+						i, err := character.GetItemInSlot(l)(ctx)(s.CharacterId(), byte(inventoryType), event.Slot)()
 						if err != nil {
 							return err
 						}
-						bp = writer.CharacterInventoryAddItemBody(tenant.MustFromContext(ctx))(inventoryType, event.Slot, i, false)
+						bp = writer.CharacterInventoryAddItemBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, i, false)
 					} else if inventoryType == 5 {
-						i, err := character.GetItemInSlot(l)(ctx)(s.CharacterId(), inventoryType, event.Slot)()
+						i, err := character.GetItemInSlot(l)(ctx)(s.CharacterId(), byte(inventoryType), event.Slot)()
 						if err != nil {
 							return err
 						}
-						bp = writer.CharacterInventoryAddCashItemBody(tenant.MustFromContext(ctx))(inventoryType, event.Slot, i, false)
+						bp = writer.CharacterInventoryAddCashItemBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, i, false)
 					}
 					err := inventoryChangeFunc(s, bp)
 					if err != nil {
@@ -116,8 +122,13 @@ func updateInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 			inventoryChangeFunc := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)
 			return func(event inventoryChangedEvent[inventoryChangedItemUpdateBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					inventoryType := byte(math.Floor(float64(event.Body.ItemId) / 1000000))
-					err := inventoryChangeFunc(s, writer.CharacterInventoryUpdateBody(tenant.MustFromContext(ctx))(inventoryType, event.Slot, event.Body.Quantity, false))
+					inventoryType, ok := inventory.TypeFromItemId(event.Body.ItemId)
+					if !ok {
+						l.Errorf("Unable to identify inventory type by item [%d].", event.Body.ItemId)
+						return errors.New("unable to identify inventory type")
+					}
+
+					err := inventoryChangeFunc(s, writer.CharacterInventoryUpdateBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, event.Body.Quantity, false))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", event.Body.ItemId, event.Slot, s.CharacterId())
 					}
@@ -151,8 +162,13 @@ func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 				return func(s session.Model) error {
 					errChannels := make(chan error, 2)
 					go func() {
-						inventoryType := byte(math.Floor(float64(event.Body.ItemId) / 1000000))
-						err := inventoryChangeFunc(s, writer.CharacterInventoryMoveBody(tenant.MustFromContext(ctx))(inventoryType, event.Slot, event.Body.OldSlot, false))
+						inventoryType, ok := inventory.TypeFromItemId(event.Body.ItemId)
+						if !ok {
+							l.Errorf("Unable to identify inventory type by item [%d].", event.Body.ItemId)
+							return
+						}
+
+						err := inventoryChangeFunc(s, writer.CharacterInventoryMoveBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, event.Body.OldSlot, false))
 						if err != nil {
 							l.WithError(err).Errorf("Unable to move [%d] in slot [%d] to [%d] for character [%d].", event.Body.ItemId, event.Body.OldSlot, event.Slot, s.CharacterId())
 						}
@@ -219,8 +235,13 @@ func removeFromInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp
 			inventoryChangeFunc := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)
 			return func(event inventoryChangedEvent[inventoryChangedItemRemoveBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					inventoryType := byte(math.Floor(float64(event.Body.ItemId) / 1000000))
-					err := inventoryChangeFunc(s, writer.CharacterInventoryRemoveBody(tenant.MustFromContext(ctx))(inventoryType, event.Slot, false))
+					inventoryType, ok := inventory.TypeFromItemId(event.Body.ItemId)
+					if !ok {
+						l.Errorf("Unable to identify inventory type by item [%d].", event.Body.ItemId)
+						return errors.New("unable to identify inventory type")
+					}
+
+					err := inventoryChangeFunc(s, writer.CharacterInventoryRemoveBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, false))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to remove [%d] in slot [%d] for character [%d].", event.Body.ItemId, event.Slot, s.CharacterId())
 					}

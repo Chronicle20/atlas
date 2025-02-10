@@ -87,10 +87,10 @@ const (
 	EvanStage10Id              = Id(2218)
 )
 
-func IsA(jobId Id, referenceJobId ...Id) bool {
+func IsA(jobId Id, referenceJobs ...Id) bool {
 	is := false
-	for _, jobId := range referenceJobId {
-		if Is(jobId, jobId) {
+	for _, referenceJobId := range referenceJobs {
+		if Is(jobId, referenceJobId) {
 			is = true
 		}
 	}

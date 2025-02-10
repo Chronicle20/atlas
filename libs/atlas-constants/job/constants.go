@@ -87,18 +87,23 @@ const (
 	EvanStage10Id              = Id(2218)
 )
 
-func IsA(characterJobId Id, referenceJobId ...Id) bool {
+func IsA(jobId Id, referenceJobId ...Id) bool {
 	is := false
 	for _, jobId := range referenceJobId {
-		if isA(characterJobId, jobId) {
+		if Is(jobId, jobId) {
 			is = true
 		}
 	}
 	return is
 }
 
-func isA(characterJobId Id, referenceJobId Id) bool {
-	characterBranch := characterJobId / 10
+func Is(jobId Id, referenceJobId Id) bool {
+	characterBranch := jobId / 10
 	referenceBranch := referenceJobId / 10
-	return characterBranch == referenceBranch && characterJobId >= referenceJobId || referenceBranch%10 == 0 && characterJobId/100 == referenceJobId/100
+	return characterBranch == referenceBranch && jobId >= referenceJobId || referenceBranch%10 == 0 && jobId/100 == referenceJobId/100
+}
+
+func IsFourthJob(jobId Id) bool {
+	// TODO Cygnus, Aran, or Evan
+	return IsA(jobId, HeroId, PaladinId, DarkKnightId, FirePoisonArchMagicianId, IceLightningArchMagicianId, BishopId, BowmasterId, MarksmanId, NightLordId, ChiefBanditId, BuccaneerId, CorsairId)
 }

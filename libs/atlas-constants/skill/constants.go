@@ -1,5 +1,10 @@
 package skill
 
+import (
+	"github.com/Chronicle20/atlas-constants/job"
+	"math"
+)
+
 type Id uint32
 
 const (
@@ -546,7 +551,7 @@ const (
 )
 
 func IsChargeSkill(skillId Id) bool {
-	return ifIn(skillId,
+	return Is(skillId,
 		FirePoisonArchMagicianBigBangId,
 		IceLightningArchMagicianBigBangId,
 		BishopBigBangId,
@@ -576,7 +581,7 @@ func IsShootSkillNotConsumingBullet(skillId Id) bool {
 }
 
 func IsKeyDownSkill(skillId Id) bool {
-	return ifIn(skillId,
+	return Is(skillId,
 		FirePoisonArchMagicianBigBangId,
 		IceLightningArchMagicianBigBangId,
 		BishopBigBangId,
@@ -593,11 +598,16 @@ func IsKeyDownSkill(skillId Id) bool {
 		EvanStage7FireBreath)
 }
 
-func ifIn(skillId Id, references ...Id) bool {
+func Is(skillId Id, references ...Id) bool {
 	for _, r := range references {
 		if skillId == r {
 			return true
 		}
 	}
 	return false
+}
+
+func IsFourthJob(skillId Id) bool {
+	jobId := job.Id(math.Floor(float64(skillId) / float64(10000)))
+	return job.IsFourthJob(jobId)
 }

@@ -23,8 +23,6 @@ type AttackInfo struct {
 	fieldKey             byte
 	dr0                  uint32
 	dr1                  uint32
-	hits                 byte
-	damage               uint32
 	dr2                  uint32
 	dr3                  uint32
 	skillId              uint32
@@ -56,6 +54,9 @@ type AttackInfo struct {
 	pnCashItemPos        uint16
 	nShootRange          byte
 	bulletItemId         uint32
+	dragon               bool
+	dragonX              uint16
+	dragonY              uint16
 }
 
 func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(r *request.Reader) {
@@ -66,8 +67,8 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 			m.dr1 = r.ReadUint32()
 		}
 		numAttackedAndDamageMask := r.ReadByte()
-		m.hits = numAttackedAndDamageMask & 0xF
-		m.damage = uint32((numAttackedAndDamageMask >> 4) & 0xF)
+		hits := numAttackedAndDamageMask & 0xF
+		damage := uint32((numAttackedAndDamageMask >> 4) & 0xF)
 
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			m.dr2 = r.ReadUint32()
@@ -78,17 +79,28 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			m.skillLevel = r.ReadByte() // nCombatOrders
 		}
-		if m.attackType == AttackTypeMagic {
-			// TODO
-		}
 
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			m.randomDr = r.ReadUint32()
 			m.crc32 = r.ReadUint32()
+
+			if m.attackType == AttackTypeMagic {
+				// TODO
+				_ = r.ReadUint32() //2dr0
+				_ = r.ReadUint32() //2dr1
+				_ = r.ReadUint32() //2dr2
+				_ = r.ReadUint32() //2dr3
+				_ = r.ReadUint32() //2rnd
+				_ = r.ReadUint32() //2crc
+			}
 		}
+
 		m.skillDataCrc = r.ReadUint32()
 		m.skillDataCrc2 = r.ReadUint32()
+
 		if isKeyDownSkill(m.skillId) {
+			m.keyDown = r.ReadUint32()
+		} else if isChargeSkill(m.skillId) {
 			m.keyDown = r.ReadUint32()
 		}
 		mask1 := r.ReadByte()
@@ -126,15 +138,18 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 			m.properBulletPosition = r.ReadUint16()
 			m.pnCashItemPos = r.ReadUint16()
 			m.nShootRange = r.ReadByte()
-			// consider spirit javelin
-			spiritJavelin := false
-			if spiritJavelin && !isShootSkillNotConsumingBullet(m.skillId) {
+
+			if m.javlin && !isShootSkillNotConsumingBullet(m.skillId) {
 				m.bulletItemId = r.ReadUint32()
+			}
+		} else if m.attackType == AttackTypeMagic {
+			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+				_ = r.ReadUint32()
 			}
 		}
 
-		for range m.damage {
-			di := NewDamageInfo(m.hits)
+		for range damage {
+			di := NewDamageInfo(hits)
 			di.Decode(l, t, options)(r)
 			m.damageInfo = append(m.damageInfo, *di)
 		}
@@ -147,7 +162,18 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 		} else if m.skillId == 15111006 {
 			m.reserveSpark = r.ReadUint32()
 		}
+		if m.attackType == AttackTypeMagic {
+			m.dragon = r.ReadBool()
+			if m.dragon {
+				m.dragonX = r.ReadUint16()
+				m.dragonY = r.ReadUint16()
+			}
+		}
 	}
+}
+
+func isChargeSkill(skillId uint32) bool {
+	return skillId == 2121001 || skillId == 2221001 || skillId == 2321001 || skillId == 22121000 || skillId == 22151001
 }
 
 func isShootSkillNotUsingShootingWeapon(skillId uint32) bool {

@@ -108,6 +108,10 @@ func Update(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					if err != nil {
 						return err
 					}
+					s, err = GetById(ctx)(tx)(characterId, id)
+					if err != nil {
+						return errors.New("does not exist")
+					}
 					return nil
 				})
 				if txErr != nil {

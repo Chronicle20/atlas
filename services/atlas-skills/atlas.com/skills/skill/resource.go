@@ -89,7 +89,7 @@ func handleRequestUpdateSkill(_ *gorm.DB) rest.InputHandler[RestModel] {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return rest.ParseSkillId(d.Logger(), func(skillId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					err := RequestUpdate(d.Logger())(d.Context())(characterId, i.Id, i.Level, i.MasterLevel, i.Expiration)
+					err := RequestUpdate(d.Logger())(d.Context())(characterId, skillId, i.Level, i.MasterLevel, i.Expiration)
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						return

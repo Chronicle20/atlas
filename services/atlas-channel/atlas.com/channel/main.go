@@ -270,6 +270,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterChairInteractionHandle] = handler.CharacterChairFixedHandleFunc
 	handlerMap[handler.DropPickUpHandle] = handler.DropPickUpHandleFunc
 	handlerMap[handler.CharacterDropMesoHandle] = handler.CharacterDropMesoHandleFunc
+	handlerMap[handler.CharacterMeleeAttackHandle] = handler.CharacterMeleeAttackHandleFunc
 	return handlerMap
 }
 

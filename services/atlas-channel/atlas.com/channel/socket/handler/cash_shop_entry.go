@@ -35,7 +35,7 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
 			return
 		}
-		c, err := character.GetByIdWithInventory(l)(ctx)(s.CharacterId())
+		c, err := character.GetByIdWithInventory(l)(ctx)(character.SkillModelDecorator(l)(ctx))(s.CharacterId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate character [%d] attempting to enter cash shop.", s.CharacterId())
 			_ = session.Destroy(l, ctx, session.GetRegistry())(s)

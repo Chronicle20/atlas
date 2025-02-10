@@ -159,7 +159,7 @@ func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 						errChannels <- err
 					}()
 					go func() {
-						c, err := character.GetByIdWithInventory(l)(ctx)(s.CharacterId())
+						c, err := character.GetByIdWithInventory(l)(ctx)()(s.CharacterId())
 						if err != nil {
 							l.WithError(err).Errorf("Unable to issue appearance update for character [%d] to others in map.", s.CharacterId())
 							errChannels <- err

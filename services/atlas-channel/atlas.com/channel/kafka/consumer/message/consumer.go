@@ -49,7 +49,7 @@ func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[chat
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)(event.CharacterId)
+		c, err := character.GetById(l)(ctx)()(event.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] chatting.", event.CharacterId)
 			return
@@ -87,7 +87,7 @@ func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[chatEv
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)(e.CharacterId)
+		c, err := character.GetById(l)(ctx)()(e.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] chatting.", e.CharacterId)
 			return

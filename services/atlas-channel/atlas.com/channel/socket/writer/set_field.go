@@ -141,28 +141,28 @@ func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(c cha
 	}
 }
 
-func WriteAreaInfo(tenant tenant.Model) func(w *response.Writer, character character.Model) {
-	return func(w *response.Writer, character character.Model) {
+func WriteAreaInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
+	return func(w *response.Writer, c character.Model) {
 		w.WriteShort(0)
 	}
 }
 
-func WriteNewYearInfo(tenant tenant.Model) func(w *response.Writer, character character.Model) {
-	return func(w *response.Writer, character character.Model) {
+func WriteNewYearInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
+	return func(w *response.Writer, c character.Model) {
 		w.WriteShort(0)
 	}
 }
 
-func WriteMonsterBookInfo(tenant tenant.Model) func(w *response.Writer, character character.Model) {
-	return func(w *response.Writer, character character.Model) {
+func WriteMonsterBookInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
+	return func(w *response.Writer, c character.Model) {
 		w.WriteInt(0) // cover id
 		w.WriteByte(0)
 		w.WriteShort(0) // card size
 	}
 }
 
-func WriteTeleportInfo(tenant tenant.Model) func(w *response.Writer, character character.Model) {
-	return func(w *response.Writer, character character.Model) {
+func WriteTeleportInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
+	return func(w *response.Writer, c character.Model) {
 		for i := 0; i < 5; i++ {
 			w.WriteInt(999999999)
 		}
@@ -175,8 +175,8 @@ func WriteTeleportInfo(tenant tenant.Model) func(w *response.Writer, character c
 	}
 }
 
-func WriteRingInfo(tenant tenant.Model) func(w *response.Writer, character character.Model) {
-	return func(w *response.Writer, character character.Model) {
+func WriteRingInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
+	return func(w *response.Writer, c character.Model) {
 		w.WriteShort(0) // crush rings
 
 		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
@@ -186,14 +186,14 @@ func WriteRingInfo(tenant tenant.Model) func(w *response.Writer, character chara
 	}
 }
 
-func WriteMiniGameInfo(tenant tenant.Model) func(w *response.Writer, character character.Model) {
-	return func(w *response.Writer, character character.Model) {
+func WriteMiniGameInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
+	return func(w *response.Writer, c character.Model) {
 		w.WriteShort(0)
 	}
 }
 
-func WriteQuestInfo(tenant tenant.Model) func(w *response.Writer, character character.Model) {
-	return func(w *response.Writer, character character.Model) {
+func WriteQuestInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
+	return func(w *response.Writer, c character.Model) {
 		w.WriteShort(0) // started size
 		if tenant.Region() == "JMS" {
 			w.WriteShort(0)
@@ -205,9 +205,17 @@ func WriteQuestInfo(tenant tenant.Model) func(w *response.Writer, character char
 	}
 }
 
-func WriteSkillInfo(tenant tenant.Model) func(w *response.Writer, character character.Model) {
-	return func(w *response.Writer, character character.Model) {
-		w.WriteShort(0) // skill size
+func WriteSkillInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
+	return func(w *response.Writer, c character.Model) {
+		w.WriteShort(uint16(len(c.Skills())))
+		for _, s := range c.Skills() {
+			w.WriteInt(s.Id())
+			w.WriteInt(uint32(s.Level()))
+			w.WriteInt64(msTime(s.Expiration()))
+			if s.IsFourthJob() {
+				w.WriteInt(uint32(s.MasterLevel()))
+			}
+		}
 
 		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 			w.WriteShort(0) // cooldowns

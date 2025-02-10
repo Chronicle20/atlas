@@ -137,7 +137,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						return nil
 					}
 
-					c, err := character.GetByIdWithInventory(l)(ctx)(params.CharacterId)
+					c, err := character.GetByIdWithInventory(l)(ctx)(character.SkillModelDecorator(l)(ctx))(params.CharacterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to locate character [%d] attempting to login.", params.CharacterId)
 						return session.Destroy(l, ctx, session.GetRegistry())(s)

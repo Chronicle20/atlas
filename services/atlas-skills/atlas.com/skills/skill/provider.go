@@ -10,7 +10,7 @@ import (
 func getByCharacterId(tenantId uuid.UUID, characterId uint32) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var result []Entity
-		err := db.Where("tenant_id = ? AND character_id = ? AND id = ?", tenantId, characterId).Find(&result).Error
+		err := db.Where("tenant_id = ? AND character_id = ?", tenantId, characterId).Find(&result).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}

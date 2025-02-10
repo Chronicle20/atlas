@@ -50,6 +50,12 @@ type AttackInfo struct {
 	targetY              uint16
 	grenadeX             uint16
 	grenadeY             uint16
+	reserveSpark         uint32
+	javlin               bool
+	properBulletPosition uint16
+	pnCashItemPos        uint16
+	nShootRange          byte
+	bulletItemId         uint32
 }
 
 func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(r *request.Reader) {
@@ -70,7 +76,7 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 
 		m.skillId = r.ReadUint32()
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			m.skillLevel = r.ReadByte()
+			m.skillLevel = r.ReadByte() // nCombatOrders
 		}
 		if m.attackType == AttackTypeMagic {
 			// TODO
@@ -92,8 +98,10 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 		m.serialAttackSkillId = int((mask1 >> 5) & 0x01) // Extract bit 5 (boolean flag)
 		m.unknown2 = int((mask1 >> 7) & 0x7F)            // Extract bits 7-13 (7-bit value)
 
-		if m.attackType == AttackTypeRanged {
-			// TODO
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			if m.attackType == AttackTypeRanged {
+				m.javlin = r.ReadBool()
+			}
 		}
 
 		mask2 := r.ReadUint16()
@@ -106,13 +114,23 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 		m.attackSpeed = r.ReadByte()
 		m.attackTime = r.ReadUint32()
 
-		if m.attackType == AttackTypeRanged {
-			// TODO
-		}
-
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			// TODO battle mage related
-			_ = r.ReadUint32()
+		if m.attackType == AttackTypeMelee {
+			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+				// TODO battle mage related
+				_ = r.ReadUint32()
+			}
+		} else if m.attackType == AttackTypeRanged {
+			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+				_ = r.ReadUint32()
+			}
+			m.properBulletPosition = r.ReadUint16()
+			m.pnCashItemPos = r.ReadUint16()
+			m.nShootRange = r.ReadByte()
+			// consider spirit javelin
+			spiritJavelin := false
+			if spiritJavelin && !isShootSkillNotConsumingBullet(m.skillId) {
+				m.bulletItemId = r.ReadUint32()
+			}
 		}
 
 		for range m.damage {
@@ -126,7 +144,30 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 		if m.skillId == 14111006 { // poison bomb
 			m.grenadeX = r.ReadUint16()
 			m.grenadeY = r.ReadUint16()
+		} else if m.skillId == 15111006 {
+			m.reserveSpark = r.ReadUint32()
 		}
+	}
+}
+
+func isShootSkillNotUsingShootingWeapon(skillId uint32) bool {
+	switch skillId {
+	case 4121003, 4221003, 5121002, 11101004, 15111006, 15111007, 21100004, 21110004, 21120006, 33101007:
+		return true
+	default:
+		return false
+	}
+}
+
+func isShootSkillNotConsumingBullet(skillId uint32) bool {
+	if isShootSkillNotUsingShootingWeapon(skillId) {
+		return true
+	}
+	switch skillId {
+	case 3101003, 3201003, 4111004, 13101005, 14101006, 33101002, 35001001, 35001004, 35101009, 35101010, 35111004, 35111015, 35121005, 35121012, 35121013:
+		return true
+	default:
+		return false
 	}
 }
 

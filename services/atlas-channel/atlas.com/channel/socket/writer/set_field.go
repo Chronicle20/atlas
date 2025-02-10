@@ -458,6 +458,9 @@ func WriteItemInfo(_ tenant.Model) func(w *response.Writer, zeroPosition bool) m
 			w.WriteShort(uint16(i.Quantity()))
 			w.WriteAsciiString(i.Owner())
 			w.WriteShort(i.Flag())
+			if i.Rechargeable() {
+				w.WriteLong(0)
+			}
 			return nil
 		}
 	}

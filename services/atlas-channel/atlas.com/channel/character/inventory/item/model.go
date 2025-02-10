@@ -1,5 +1,7 @@
 package item
 
+import "math"
+
 type Model struct {
 	id       uint32
 	itemId   uint32
@@ -29,4 +31,16 @@ func (m Model) Owner() string {
 
 func (m Model) Flag() uint16 {
 	return 0
+}
+
+func (m Model) Rechargeable() bool {
+	return m.ThrowingStar() || m.Bullet()
+}
+
+func (m Model) ThrowingStar() bool {
+	return uint32(math.Floor(float64(m.ItemId())/float64(10000))) == 207
+}
+
+func (m Model) Bullet() bool {
+	return uint32(math.Floor(float64(m.ItemId())/float64(10000))) == 233
 }

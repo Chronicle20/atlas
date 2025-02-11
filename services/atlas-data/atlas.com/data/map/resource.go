@@ -31,7 +31,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 		r.HandleFunc("/{mapId}/npcs", registerGet("get_map_npcs", handleGetMapNPCsRequest)).Methods(http.MethodGet)
 		r.HandleFunc("/{mapId}/npcs/{npcId}", registerGet("get_map_npc", handleGetMapNPCRequest)).Methods(http.MethodGet)
 		r.HandleFunc("/{mapId}/monsters", registerGet("get_map_monsters", handleGetMapMonstersRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/dropPosition", rest.RegisterInputHandler[DropPositionRestModel](l)(si)("get_map_drop_position", handleGetMapDropPositionRequest)).Methods(http.MethodPost)
+		r.HandleFunc("/{mapId}/drops/position", rest.RegisterInputHandler[DropPositionRestModel](l)(si)("get_map_drop_position", handleGetMapDropPositionRequest)).Methods(http.MethodPost)
 	}
 }
 
@@ -242,8 +242,26 @@ func handleGetMapDropPositionRequest(d *rest.HandlerDependency, c *rest.HandlerC
 }
 
 type DropPositionRestModel struct {
-	InitialX  int16 `json:"initialX"`
-	InitialY  int16 `json:"initialY"`
-	FallbackX int16 `json:"fallbackX"`
-	FallbackY int16 `json:"fallbackY"`
+	Id        uint32 `json:"-"`
+	InitialX  int16  `json:"initialX"`
+	InitialY  int16  `json:"initialY"`
+	FallbackX int16  `json:"fallbackX"`
+	FallbackY int16  `json:"fallbackY"`
+}
+
+func (r DropPositionRestModel) GetName() string {
+	return "positions"
+}
+
+func (r DropPositionRestModel) GetID() string {
+	return strconv.Itoa(int(r.Id))
+}
+
+func (r *DropPositionRestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
 }

@@ -22,7 +22,7 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		petInfo := r.ReadBool()
 		l.Debugf("Received info request for character [%d]. UpdateTime [%d]. PetInfo [%t].", characterId, updateTime, petInfo)
 
-		c, err := character.GetById(l)(ctx)(characterId)
+		c, err := character.GetById(l)(ctx)()(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] being requested.", characterId)
 			return

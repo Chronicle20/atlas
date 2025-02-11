@@ -68,7 +68,7 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 		return func(wp writer.Producer) func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
 			return func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					c, err := character.GetById(l)(ctx)(s.CharacterId())
+					c, err := character.GetById(l)(ctx)()(s.CharacterId())
 					if err != nil {
 						return err
 					}
@@ -156,7 +156,7 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 			setFieldFunc := session.Announce(l)(ctx)(wp)(writer.SetField)
 			return func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					c, err := character.GetById(l)(ctx)(s.CharacterId())
+					c, err := character.GetById(l)(ctx)()(s.CharacterId())
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d].", s.CharacterId())
 						return err
@@ -191,13 +191,13 @@ func handleStatusEventFameChanged(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)(e.CharacterId)
+		c, err := character.GetById(l)(ctx)()(e.CharacterId)
 		if err != nil {
 			return
 		}
 
 		if e.Body.ActorType == StatusEventActorTypeCharacter {
-			ac, err := character.GetById(l)(ctx)(e.Body.ActorId)
+			ac, err := character.GetById(l)(ctx)()(e.Body.ActorId)
 			if err != nil {
 				return
 			}

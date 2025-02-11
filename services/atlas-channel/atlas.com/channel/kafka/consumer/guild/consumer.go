@@ -228,7 +228,7 @@ func handleMemberLeft(sc server.Model, wp writer.Producer) message.Handler[statu
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)(e.Body.CharacterId)
+		c, err := character.GetById(l)(ctx)()(e.Body.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce guild [%d] member [%d] has left.", e.GuildId, e.Body.CharacterId)
 			return

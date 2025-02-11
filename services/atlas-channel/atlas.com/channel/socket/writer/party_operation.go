@@ -3,6 +3,7 @@ package writer
 import (
 	"atlas-channel/character"
 	"atlas-channel/party"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 	"strconv"
@@ -27,8 +28,8 @@ func PartyCreatedBody(l logrus.FieldLogger) func(partyId uint32) BodyProducer {
 			w.WriteInt(partyId)
 
 			// TODO write doors for party.
-			w.WriteInt(999999999)
-			w.WriteInt(999999999)
+			w.WriteInt(uint32(_map.EmptyMapId))
+			w.WriteInt(uint32(_map.EmptyMapId))
 			w.WriteShort(0)
 			w.WriteShort(0)
 			return w.Bytes()
@@ -186,8 +187,8 @@ func WriteParty(w *response.Writer, p party.Model, forChannel byte) []byte {
 
 	for range 6 {
 		// TODO write doors for party.
-		w.WriteInt(999999999)
-		w.WriteInt(999999999)
+		w.WriteInt(uint32(_map.EmptyMapId))
+		w.WriteInt(uint32(_map.EmptyMapId))
 		w.WriteInt(0)
 		w.WriteInt(0)
 	}

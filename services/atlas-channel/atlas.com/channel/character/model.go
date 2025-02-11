@@ -3,7 +3,9 @@ package character
 import (
 	"atlas-channel/character/equipment"
 	"atlas-channel/character/inventory"
+	"atlas-channel/character/skill"
 	"atlas-channel/pet"
+	"github.com/Chronicle20/atlas-constants/job"
 	"strconv"
 	"strings"
 )
@@ -43,6 +45,7 @@ type Model struct {
 	pets               []pet.Model
 	equipment          equipment.Model
 	inventory          inventory.Model
+	skills             []skill.Model
 }
 
 func (m Model) Gm() bool {
@@ -134,28 +137,28 @@ func (m Model) Ap() uint16 {
 }
 
 func (m Model) HasSPTable() bool {
-	switch m.jobId {
-	case 2001:
+	switch job.Id(m.jobId) {
+	case job.EvanId:
 		return true
-	case 2200:
+	case job.EvanStage1Id:
 		return true
-	case 2210:
+	case job.EvanStage2Id:
 		return true
-	case 2211:
+	case job.EvanStage3Id:
 		return true
-	case 2212:
+	case job.EvanStage4Id:
 		return true
-	case 2213:
+	case job.EvanStage5Id:
 		return true
-	case 2214:
+	case job.EvanStage6Id:
 		return true
-	case 2215:
+	case job.EvanStage7Id:
 		return true
-	case 2216:
+	case job.EvanStage8Id:
 		return true
-	case 2217:
+	case job.EvanStage9Id:
 		return true
-	case 2218:
+	case job.EvanStage10Id:
 		return true
 	default:
 		return false
@@ -239,4 +242,48 @@ func (m Model) Stance() byte {
 
 func (m Model) WorldId() byte {
 	return m.worldId
+}
+
+func (m Model) SetSkills(ms []skill.Model) Model {
+	return Model{
+		id:                 m.id,
+		accountId:          m.accountId,
+		worldId:            m.worldId,
+		name:               m.name,
+		gender:             m.gender,
+		skinColor:          m.skinColor,
+		face:               m.face,
+		hair:               m.hair,
+		level:              m.level,
+		jobId:              m.jobId,
+		strength:           m.strength,
+		dexterity:          m.dexterity,
+		intelligence:       m.intelligence,
+		luck:               m.luck,
+		hp:                 m.hp,
+		maxHp:              m.maxHp,
+		mp:                 m.mp,
+		maxMp:              m.maxMp,
+		hpMpUsed:           m.hpMpUsed,
+		ap:                 m.ap,
+		sp:                 m.sp,
+		experience:         m.experience,
+		fame:               m.fame,
+		gachaponExperience: m.gachaponExperience,
+		mapId:              m.mapId,
+		spawnPoint:         m.spawnPoint,
+		gm:                 m.gm,
+		x:                  m.x,
+		y:                  m.y,
+		stance:             m.stance,
+		meso:               m.meso,
+		pets:               m.pets,
+		equipment:          m.equipment,
+		inventory:          m.inventory,
+		skills:             ms,
+	}
+}
+
+func (m Model) Skills() []skill.Model {
+	return m.skills
 }

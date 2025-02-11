@@ -107,7 +107,7 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		tc, err := character.GetById(l)(ctx)(e.ActorId)
+		tc, err := character.GetById(l)(ctx)()(e.ActorId)
 		if err != nil {
 			l.WithError(err).Errorf("Received left event for character [%d] which does not exist.", e.ActorId)
 			return
@@ -165,7 +165,7 @@ func handleExpel(sc server.Model, wp writer.Producer) message.Handler[statusEven
 			return
 		}
 
-		tc, err := character.GetById(l)(ctx)(e.Body.CharacterId)
+		tc, err := character.GetById(l)(ctx)()(e.Body.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Received expel event for character [%d] which does not exist.", e.Body.CharacterId)
 			return
@@ -217,7 +217,7 @@ func handleDisband(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		tc, err := character.GetById(l)(ctx)(e.ActorId)
+		tc, err := character.GetById(l)(ctx)()(e.ActorId)
 		if err != nil {
 			l.WithError(err).Errorf("Received disband event for character [%d] which does not exist.", e.ActorId)
 			return
@@ -275,7 +275,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		tc, err := character.GetById(l)(ctx)(e.ActorId)
+		tc, err := character.GetById(l)(ctx)()(e.ActorId)
 		if err != nil {
 			l.WithError(err).Errorf("Received join event for character [%d] which does not exist.", e.ActorId)
 			return

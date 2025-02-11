@@ -7,6 +7,21 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+func damageCommandProvider(worldId byte, channelId byte, monsterId uint32, characterId uint32, damage uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(monsterId))
+	value := &command[damageCommandBody]{
+		WorldId:   worldId,
+		ChannelId: channelId,
+		MonsterId: monsterId,
+		Type:      CommandTypeDamage,
+		Body: damageCommandBody{
+			CharacterId: characterId,
+			Damage:      damage,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func Move(worldId byte, channelId byte, uniqueId uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget model2.MultiTargetForBall, randTimes model2.RandTimeForAreaAttack, mm model2.Movement) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(uniqueId))
 	ps := make([]position, 0)

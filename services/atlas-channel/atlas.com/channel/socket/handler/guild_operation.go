@@ -90,7 +90,7 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				return
 			}
 
-			c, err := character.GetById(l)(ctx)(cid)
+			c, err := character.GetById(l)(ctx)()(cid)
 			if err != nil || c.Name() != name {
 				l.Errorf("Character [%d] attempting to have [%s] leave guild.", s.CharacterId(), name)
 				_ = session.Destroy(l, ctx, session.GetRegistry())(s)

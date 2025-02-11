@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character/inventory"
 	"atlas-channel/character/inventory/equipable"
 	"atlas-channel/character/inventory/item"
+	"atlas-channel/character/skill"
 	"atlas-channel/kafka/producer"
 	"atlas-channel/socket/model"
 	"context"
@@ -13,18 +14,36 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) (Model, error) {
-	return func(ctx context.Context) func(characterId uint32) (Model, error) {
-		return func(characterId uint32) (Model, error) {
-			return requests.Provider[RestModel, Model](l, ctx)(requestById(characterId), Extract)()
+func GetById(l logrus.FieldLogger) func(ctx context.Context) func(decorators ...model2.Decorator[Model]) func(characterId uint32) (Model, error) {
+	return func(ctx context.Context) func(decorators ...model2.Decorator[Model]) func(characterId uint32) (Model, error) {
+		return func(decorators ...model2.Decorator[Model]) func(characterId uint32) (Model, error) {
+			return func(characterId uint32) (Model, error) {
+				p := requests.Provider[RestModel, Model](l, ctx)(requestById(characterId), Extract)
+				return model2.Map(model2.Decorate(decorators))(p)()
+			}
 		}
 	}
 }
 
-func GetByIdWithInventory(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) (Model, error) {
-	return func(ctx context.Context) func(characterId uint32) (Model, error) {
-		return func(characterId uint32) (Model, error) {
-			return requests.Provider[RestModel, Model](l, ctx)(requestByIdWithInventory(characterId), Extract)()
+func GetByIdWithInventory(l logrus.FieldLogger) func(ctx context.Context) func(decorators ...model2.Decorator[Model]) func(characterId uint32) (Model, error) {
+	return func(ctx context.Context) func(decorators ...model2.Decorator[Model]) func(characterId uint32) (Model, error) {
+		return func(decorators ...model2.Decorator[Model]) func(characterId uint32) (Model, error) {
+			return func(characterId uint32) (Model, error) {
+				p := requests.Provider[RestModel, Model](l, ctx)(requestByIdWithInventory(characterId), Extract)
+				return model2.Map(model2.Decorate(decorators))(p)()
+			}
+		}
+	}
+}
+
+func SkillModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model2.Decorator[Model] {
+	return func(ctx context.Context) model2.Decorator[Model] {
+		return func(m Model) Model {
+			ms, err := skill.GetByCharacterId(l)(ctx)(m.Id())
+			if err != nil {
+				return m
+			}
+			return m.SetSkills(ms)
 		}
 	}
 }
@@ -45,7 +64,7 @@ func GetEquipableInSlot(l logrus.FieldLogger) func(ctx context.Context) func(cha
 	return func(ctx context.Context) func(characterId uint32, slot int16) model2.Provider[equipable.Model] {
 		return func(characterId uint32, slot int16) model2.Provider[equipable.Model] {
 			// TODO this needs to be more performant
-			c, err := GetByIdWithInventory(l)(ctx)(characterId)
+			c, err := GetByIdWithInventory(l)(ctx)()(characterId)
 			if err != nil {
 				return model2.ErrorProvider[equipable.Model](err)
 			}
@@ -63,7 +82,7 @@ func GetItemInSlot(l logrus.FieldLogger) func(ctx context.Context) func(characte
 	return func(ctx context.Context) func(characterId uint32, inventoryType byte, slot int16) model2.Provider[item.Model] {
 		return func(characterId uint32, inventoryType byte, slot int16) model2.Provider[item.Model] {
 			// TODO this needs to be more performant
-			c, err := GetByIdWithInventory(l)(ctx)(characterId)
+			c, err := GetByIdWithInventory(l)(ctx)()(characterId)
 			if err != nil {
 				return model2.ErrorProvider[item.Model](err)
 			}

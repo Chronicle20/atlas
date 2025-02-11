@@ -70,7 +70,14 @@ func handleAwardExperience(db *gorm.DB) func(l logrus.FieldLogger, ctx context.C
 			return
 		}
 
-		_ = character.AwardExperience(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.ChannelId, c.Body.Amount)
+		es, err := model.SliceMap(func(m experienceDistributions) (character.ExperienceModel, error) {
+			return character.NewExperienceModel(m.ExperienceType, m.Amount, m.Attr1), nil
+		})(model.FixedProvider(c.Body.Distributions))()()
+		if err != nil {
+			return
+		}
+
+		_ = character.AwardExperience(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.ChannelId, es)
 	}
 }
 

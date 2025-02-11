@@ -32,6 +32,21 @@ const (
 	StatusEventTypeStatChanged       = "STAT_CHANGED"
 	StatusEventTypeDeleted           = "DELETED"
 
+	ExperienceDistributionTypeWhite        = "WHITE"
+	ExperienceDistributionTypeYellow       = "YELLOW"
+	ExperienceDistributionTypeChat         = "CHAT"
+	ExperienceDistributionTypeMonsterBook  = "MONSTER_BOOK"
+	ExperienceDistributionTypeMonsterEvent = "MONSTER_EVENT"
+	ExperienceDistributionTypePlayTime     = "PLAY_TIME"
+	ExperienceDistributionTypeWedding      = "WEDDING"
+	ExperienceDistributionTypeSpiritWeek   = "SPIRIT_WEEK"
+	ExperienceDistributionTypeParty        = "PARTY"
+	ExperienceDistributionTypeItem         = "ITEM"
+	ExperienceDistributionTypeInternetCafe = "INTERNET_CAFE"
+	ExperienceDistributionTypeRainbowWeek  = "RAINBOW_WEEK"
+	ExperienceDistributionTypePartyRing    = "PARTY_RING"
+	ExperienceDistributionTypeCakePie      = "CAKE_PIE"
+
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
 )
@@ -76,9 +91,15 @@ type jobChangedStatusEventBody struct {
 }
 
 type experienceChangedStatusEventBody struct {
-	ChannelId byte   `json:"channelId"`
-	Amount    uint32 `json:"amount"`
-	Current   uint32 `json:"current"`
+	ChannelId     byte                      `json:"channelId"`
+	Current       uint32                    `json:"current"`
+	Distributions []experienceDistributions `json:"distributions"`
+}
+
+type experienceDistributions struct {
+	ExperienceType string `json:"experienceType"`
+	Amount         uint32 `json:"amount"`
+	Attr1          uint32 `json:"attr1"`
 }
 
 type levelChangedStatusEventBody struct {

@@ -529,11 +529,26 @@ func ChangeJob(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB)
 	}
 }
 
-func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, amount uint32) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, amount uint32) error {
+type ExperienceModel struct {
+	experienceType string
+	amount         uint32
+	attr1          uint32
+}
+
+func NewExperienceModel(experienceType string, amount uint32, attr1 uint32) ExperienceModel {
+	return ExperienceModel{experienceType, amount, attr1}
+}
+
+func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, experience []ExperienceModel) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, experience []ExperienceModel) error {
 		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, amount uint32) error {
-			return func(characterId uint32, worldId byte, channelId byte, amount uint32) error {
+		return func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, experience []ExperienceModel) error {
+			return func(characterId uint32, worldId byte, channelId byte, experience []ExperienceModel) error {
+				amount := uint32(0)
+				for _, e := range experience {
+					amount += e.amount
+				}
+
 				l.Debugf("Attempting to award character [%d] [%d] experience.", characterId, amount)
 				willLevel := false
 				current := uint32(0)
@@ -560,7 +575,8 @@ func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(db *go
 					l.WithError(txErr).Errorf("Could not award character [%d] [%d] experience.", characterId, amount)
 					return txErr
 				}
-				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(experienceChangedEventProvider(characterId, worldId, channelId, amount, current))
+
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(experienceChangedEventProvider(characterId, worldId, channelId, experience, current))
 				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(worldId, channelId, characterId, []string{"EXPERIENCE"}))
 				if willLevel {
 					_ = producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(awardLevelCommandProvider(characterId, worldId, channelId, 1))

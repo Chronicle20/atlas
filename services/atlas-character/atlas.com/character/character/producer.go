@@ -106,16 +106,26 @@ func jobChangedEventProvider(characterId uint32, worldId byte, channelId byte, j
 	return producer.SingleMessageProvider(key, value)
 }
 
-func experienceChangedEventProvider(characterId uint32, worldId byte, channelId byte, amount uint32, current uint32) model.Provider[[]kafka.Message] {
+func experienceChangedEventProvider(characterId uint32, worldId byte, channelId byte, experience []ExperienceModel, current uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
+
+	ds := make([]experienceDistributions, 0)
+	for _, e := range experience {
+		ds = append(ds, experienceDistributions{
+			ExperienceType: e.experienceType,
+			Amount:         e.amount,
+			Attr1:          e.attr1,
+		})
+	}
+
 	value := &statusEvent[experienceChangedStatusEventBody]{
 		CharacterId: characterId,
 		WorldId:     worldId,
 		Type:        StatusEventTypeExperienceChanged,
 		Body: experienceChangedStatusEventBody{
-			ChannelId: channelId,
-			Amount:    amount,
-			Current:   current,
+			ChannelId:     channelId,
+			Current:       current,
+			Distributions: ds,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

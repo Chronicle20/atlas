@@ -7,7 +7,7 @@ import (
 type DamageSummary struct {
 	CharacterId   uint32
 	Monster       Model
-	VisibleDamage int64
+	VisibleDamage uint32
 	ActualDamage  int64
 	Killed        bool
 }
@@ -33,7 +33,7 @@ type Model struct {
 
 type entry struct {
 	CharacterId uint32
-	Damage      int64
+	Damage      uint32
 }
 
 func NewMonster(worldId byte, channelId byte, mapId uint32, uniqueId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
@@ -110,7 +110,7 @@ func (m *Model) DamageEntries() []entry {
 }
 
 func (m *Model) DamageSummary() []entry {
-	var damageSummary = make(map[uint32]int64)
+	var damageSummary = make(map[uint32]uint32)
 	for _, x := range m.damageEntries {
 		if _, ok := damageSummary[x.CharacterId]; ok {
 			damageSummary[x.CharacterId] += x.Damage
@@ -192,8 +192,8 @@ func (m *Model) ClearControl() Model {
 	}
 }
 
-func (m *Model) Damage(characterId uint32, damage int64) Model {
-	actualDamage := int64(m.Hp()) - int64(math.Max(float64(m.Hp())-float64(damage), 0))
+func (m *Model) Damage(characterId uint32, damage uint32) Model {
+	actualDamage := m.Hp() - uint32(math.Max(float64(m.Hp())-float64(damage), 0))
 
 	return Model{
 		uniqueId:           m.UniqueId(),
@@ -201,7 +201,7 @@ func (m *Model) Damage(characterId uint32, damage int64) Model {
 		channelId:          m.ChannelId(),
 		mapId:              m.MapId(),
 		maxHp:              m.MaxHp(),
-		hp:                 m.Hp() - uint32(actualDamage),
+		hp:                 m.Hp() - actualDamage,
 		maxMp:              m.MaxMp(),
 		mp:                 m.Mp(),
 		monsterId:          m.MonsterId(),

@@ -89,7 +89,7 @@ func CreateMonster(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 			}
 
 			l.Debugf("Created monster [%d] in world [%d] channel [%d] map [%d]. Emitting Monster Status.", input.MonsterId, worldId, channelId, mapId)
-			_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitCreated(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId()))
+			_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(createdStatusEventProvider(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId()))
 			return m, nil
 		}
 	}
@@ -177,7 +177,7 @@ func StartControl(l logrus.FieldLogger) func(ctx context.Context) func(uniqueId 
 			t := tenant.MustFromContext(ctx)
 			m, err = GetMonsterRegistry().ControlMonster(t, m.UniqueId(), controllerId)
 			if err == nil {
-				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitStartControl(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId(), m.ControlCharacterId()))
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(startControlStatusEventProvider(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId(), m.ControlCharacterId()))
 			}
 			return m, err
 		}
@@ -190,7 +190,7 @@ func StopControl(l logrus.FieldLogger) func(ctx context.Context) model.Operator[
 			t := tenant.MustFromContext(ctx)
 			m, err := GetMonsterRegistry().ClearControl(t, m.UniqueId())
 			if err == nil {
-				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitStopControl(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId(), m.ControlCharacterId()))
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(stopControlStatusEventProvider(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId(), m.ControlCharacterId()))
 			}
 			return err
 		}
@@ -222,21 +222,58 @@ func Destroy(l logrus.FieldLogger) func(ctx context.Context) func(uniqueId uint3
 				return err
 			}
 
-			return producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitDestroyed(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId()))
+			return producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(destroyedStatusEventProvider(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId()))
 		}
 	}
 }
 
-func Move(ctx context.Context) func(id uint32, x int16, y int16, stance byte) {
-	return func(id uint32, x int16, y int16, stance byte) {
+type MovementSummary struct {
+	X      int16
+	Y      int16
+	Stance byte
+}
+
+func MovementSummaryProvider() (MovementSummary, error) {
+	return MovementSummary{}, nil
+}
+
+func FoldMovement(summary MovementSummary, e Element) (MovementSummary, error) {
+	res := MovementSummary{
+		X:      summary.X,
+		Y:      summary.Y,
+		Stance: summary.Stance,
+	}
+	if e.TypeStr == MovementTypeNormal {
+		res.X = e.X
+		res.Y = e.Y
+		res.Stance = e.MoveAction
+	}
+	return res, nil
+}
+
+func Move(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, id uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randomTimes []int32, movement Movement) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, id uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randomTimes []int32, movement Movement) error {
 		t := tenant.MustFromContext(ctx)
-		GetMonsterRegistry().MoveMonster(t, id, x, y, stance)
+		return func(worldId byte, channelId byte, id uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randomTimes []int32, movement Movement) error {
+			ms, err := model.Fold(model.FixedProvider(movement.Elements), MovementSummaryProvider, FoldMovement)()
+			if err != nil {
+				return err
+			}
+			GetMonsterRegistry().MoveMonster(t, id, ms.X, ms.Y, ms.Stance)
+
+			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicMovement)(movementEventProvider(worldId, channelId, id, observerId, skillPossible, skill, skillId, skillLevel, multiTarget, randomTimes, movement))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to relay monster [%d] movement to other characters in map.", id)
+				return err
+			}
+			return nil
+		}
 	}
 }
 
-func Damage(l logrus.FieldLogger) func(ctx context.Context) func(id uint32, characterId uint32, damage int64) {
-	return func(ctx context.Context) func(id uint32, characterId uint32, damage int64) {
-		return func(id uint32, characterId uint32, damage int64) {
+func Damage(l logrus.FieldLogger) func(ctx context.Context) func(id uint32, characterId uint32, damage uint32) {
+	return func(ctx context.Context) func(id uint32, characterId uint32, damage uint32) {
+		return func(id uint32, characterId uint32, damage uint32) {
 			t := tenant.MustFromContext(ctx)
 			m, err := GetMonsterRegistry().GetMonster(t, id)
 			if err != nil {
@@ -255,7 +292,7 @@ func Damage(l logrus.FieldLogger) func(ctx context.Context) func(id uint32, char
 			}
 
 			if s.Killed {
-				err = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(emitKilled(s.Monster.WorldId(), s.Monster.ChannelId(), s.Monster.MapId(), s.Monster.UniqueId(), s.Monster.MonsterId(), s.Monster.X(), s.Monster.Y(), s.CharacterId, s.Monster.DamageSummary()))
+				err = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(killedStatusEventProvider(s.Monster.WorldId(), s.Monster.ChannelId(), s.Monster.MapId(), s.Monster.UniqueId(), s.Monster.MonsterId(), s.Monster.X(), s.Monster.Y(), s.CharacterId, s.Monster.DamageSummary()))
 				if err != nil {
 					l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the map.", s.Monster.UniqueId())
 				}

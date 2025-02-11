@@ -1,0 +1,26 @@
+meta {
+  name: Get Drop Position
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/data/maps/10000/drops/position
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "id": "0",
+      "type": "positions",
+      "attributes": {
+        "initialX": 0,
+        "initialY": 0,
+        "fallbackX": 1,
+        "fallbackY": 1
+      }
+    }
+  }
+}

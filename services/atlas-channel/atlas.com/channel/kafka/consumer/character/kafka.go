@@ -1,11 +1,29 @@
 package character
 
 const (
-	EnvEventTopicCharacterStatus = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeStatChanged   = "STAT_CHANGED"
-	StatusEventTypeMapChanged    = "MAP_CHANGED"
-	StatusEventTypeMesoChanged   = "MESO_CHANGED"
-	StatusEventTypeFameChanged   = "FAME_CHANGED"
+	EnvEventTopicCharacterStatus     = "EVENT_TOPIC_CHARACTER_STATUS"
+	StatusEventTypeMapChanged        = "MAP_CHANGED"
+	StatusEventTypeJobChanged        = "JOB_CHANGED"
+	StatusEventTypeExperienceChanged = "EXPERIENCE_CHANGED"
+	StatusEventTypeLevelChanged      = "LEVEL_CHANGED"
+	StatusEventTypeMesoChanged       = "MESO_CHANGED"
+	StatusEventTypeFameChanged       = "FAME_CHANGED"
+	StatusEventTypeStatChanged       = "STAT_CHANGED"
+
+	ExperienceDistributionTypeWhite        = "WHITE"
+	ExperienceDistributionTypeYellow       = "YELLOW"
+	ExperienceDistributionTypeChat         = "CHAT"
+	ExperienceDistributionTypeMonsterBook  = "MONSTER_BOOK"
+	ExperienceDistributionTypeMonsterEvent = "MONSTER_EVENT"
+	ExperienceDistributionTypePlayTime     = "PLAY_TIME"
+	ExperienceDistributionTypeWedding      = "WEDDING"
+	ExperienceDistributionTypeSpiritWeek   = "SPIRIT_WEEK"
+	ExperienceDistributionTypeParty        = "PARTY"
+	ExperienceDistributionTypeItem         = "ITEM"
+	ExperienceDistributionTypeInternetCafe = "INTERNET_CAFE"
+	ExperienceDistributionTypeRainbowWeek  = "RAINBOW_WEEK"
+	ExperienceDistributionTypePartyRing    = "PARTY_RING"
+	ExperienceDistributionTypeCakePie      = "CAKE_PIE"
 
 	StatusEventActorTypeCharacter = "CHARACTER"
 
@@ -37,6 +55,18 @@ type statusEventMapChangedBody struct {
 	OldMapId       uint32 `json:"oldMapId"`
 	TargetMapId    uint32 `json:"targetMapId"`
 	TargetPortalId uint32 `json:"targetPortalId"`
+}
+
+type experienceChangedStatusEventBody struct {
+	ChannelId     byte                      `json:"channelId"`
+	Current       uint32                    `json:"current"`
+	Distributions []experienceDistributions `json:"distributions"`
+}
+
+type experienceDistributions struct {
+	ExperienceType string `json:"experienceType"`
+	Amount         uint32 `json:"amount"`
+	Attr1          uint32 `json:"attr1"`
 }
 
 type fameChangedStatusEventBody struct {

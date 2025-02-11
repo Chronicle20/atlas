@@ -29,7 +29,10 @@ func awardExperienceCommandProvider(characterId uint32, worldId byte, channelId 
 		Type:        CommandAwardExperience,
 		Body: awardExperienceCommandBody{
 			ChannelId: channelId,
-			Amount:    amount,
+			Distributions: []experienceDistributions{{
+				ExperienceType: ExperienceDistributionTypeWhite,
+				Amount:         amount,
+			}},
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

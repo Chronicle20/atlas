@@ -12,7 +12,7 @@ func NewDamageInfo(hits byte) *DamageInfo {
 
 type DamageInfo struct {
 	hits                byte
-	mobId               uint32
+	monsterId           uint32
 	hitAction           byte
 	forceAction         byte
 	frameIdx            byte
@@ -28,7 +28,7 @@ type DamageInfo struct {
 
 func (m *DamageInfo) Decode(_ logrus.FieldLogger, t tenant.Model, _ map[string]interface{}) func(r *request.Reader) {
 	return func(r *request.Reader) {
-		m.mobId = r.ReadUint32()
+		m.monsterId = r.ReadUint32()
 		m.hitAction = r.ReadByte()
 		m.forceAction = r.ReadByte()
 		m.frameIdx = r.ReadByte()
@@ -45,4 +45,12 @@ func (m *DamageInfo) Decode(_ logrus.FieldLogger, t tenant.Model, _ map[string]i
 			m.crc = r.ReadUint32()
 		}
 	}
+}
+
+func (m *DamageInfo) Damages() []uint32 {
+	return m.damages
+}
+
+func (m *DamageInfo) MonsterId() uint32 {
+	return m.monsterId
 }

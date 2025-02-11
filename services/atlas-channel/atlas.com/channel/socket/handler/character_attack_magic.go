@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"atlas-channel/monster"
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
@@ -18,5 +19,16 @@ func CharacterMagicAttackHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		at := model2.NewAttackInfo(model2.AttackTypeMagic)
 		at.Decode(l, t, readerOptions)(r)
 		l.Debugf("Character [%d] is attempting a magic attack.", s.CharacterId())
+
+		// TODO validate attack
+
+		for _, di := range at.DamageInfo() {
+			for _, d := range di.Damages() {
+				err := monster.Damage(l)(ctx)(s.WorldId(), s.ChannelId(), di.MonsterId(), s.CharacterId(), d)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to apply damage [%d] to monster [%d] from character [%d].", d, di.MonsterId(), s.CharacterId())
+				}
+			}
+		}
 	}
 }

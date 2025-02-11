@@ -172,3 +172,7 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 		}
 	}
 }
+
+func (m *AttackInfo) DamageInfo() []DamageInfo {
+	return m.damageInfo
+}

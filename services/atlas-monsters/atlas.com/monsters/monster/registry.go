@@ -165,7 +165,7 @@ func (r *Registry) ClearControl(tenant tenant.Model, uniqueId uint32) (Model, er
 	}
 }
 
-func (r *Registry) ApplyDamage(tenant tenant.Model, characterId uint32, damage int64, uniqueId uint32) (DamageSummary, error) {
+func (r *Registry) ApplyDamage(tenant tenant.Model, characterId uint32, damage uint32, uniqueId uint32) (DamageSummary, error) {
 	monKey := MonsterKey{Tenant: tenant, MonsterId: uniqueId}
 
 	r.monsterLock.Lock()

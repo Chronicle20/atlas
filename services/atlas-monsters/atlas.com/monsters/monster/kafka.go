@@ -53,7 +53,7 @@ type statusEventKilledBody struct {
 
 type damageEntry struct {
 	CharacterId uint32 `json:"characterId"`
-	Damage      int64  `json:"damage"`
+	Damage      uint32 `json:"damage"`
 }
 
 type movementEvent struct {

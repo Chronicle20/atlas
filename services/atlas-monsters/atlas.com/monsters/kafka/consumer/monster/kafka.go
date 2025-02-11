@@ -3,17 +3,23 @@ package monster
 import "atlas-monsters/monster"
 
 const (
-	EnvCommandTopicDamage   = "COMMAND_TOPIC_MONSTER_DAMAGE"
+	EnvCommandTopic   = "COMMAND_TOPIC_MONSTER"
+	CommandTypeDamage = "DAMAGE"
+
 	EnvCommandTopicMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 )
 
-type damageCommand struct {
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	MapId       uint32 `json:"mapId"`
-	UniqueId    uint32 `json:"uniqueId"`
+type command[E any] struct {
+	WorldId   byte   `json:"worldId"`
+	ChannelId byte   `json:"channelId"`
+	MonsterId uint32 `json:"monsterId"`
+	Type      string `json:"type"`
+	Body      E      `json:"body"`
+}
+
+type damageCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
-	Damage      int64  `json:"damage"`
+	Damage      uint32 `json:"damage"`
 }
 
 type movementCommand struct {

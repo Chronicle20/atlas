@@ -26,7 +26,7 @@ type RestModel struct {
 
 type DamageEntry struct {
 	CharacterId uint32 `json:"characterId"`
-	Damage      int64  `json:"damage"`
+	Damage      uint32 `json:"damage"`
 }
 
 func (m RestModel) GetID() string {

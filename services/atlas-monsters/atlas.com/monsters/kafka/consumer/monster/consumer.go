@@ -15,7 +15,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("monster_damage_event")(EnvCommandTopicDamage)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("monster_command")(EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 			rf(consumer2.NewConfig(l)("monster_movement_event")(EnvCommandTopicMovement)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
@@ -24,15 +24,19 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) {
 		var t string
-		t, _ = topic.EnvProvider(l)(EnvCommandTopicDamage)()
+		t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDamageCommand)))
 		t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand)))
 	}
 }
 
-func handleDamageCommand(l logrus.FieldLogger, ctx context.Context, command damageCommand) {
-	monster.Damage(l)(ctx)(command.UniqueId, command.CharacterId, command.Damage)
+func handleDamageCommand(l logrus.FieldLogger, ctx context.Context, c command[damageCommandBody]) {
+	if c.Type != CommandTypeDamage {
+		return
+	}
+
+	monster.Damage(l)(ctx)(c.MonsterId, c.Body.CharacterId, c.Body.Damage)
 }
 
 func handleMovementCommand(l logrus.FieldLogger, ctx context.Context, c movementCommand) {

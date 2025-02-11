@@ -35,6 +35,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventStatChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventExperienceChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventFameChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMesoChanged(sc, wp))))
 				t, _ = topic.EnvProvider(l)(EnvEventTopicMovement)()
@@ -167,6 +168,77 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					err = setFieldFunc(s, writer.WarpToMapBody(l, t)(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp()))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
+						return err
+					}
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func handleStatusEventExperienceChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[experienceChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[experienceChangedStatusEventBody]) {
+		if e.Type != StatusEventTypeExperienceChanged {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.Body.ChannelId) {
+			return
+		}
+
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, announceExperienceGain(l)(ctx)(wp)(e.Body.Distributions))
+	}
+}
+
+func announceExperienceGain(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(distributions []experienceDistributions) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(distributions []experienceDistributions) model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
+		return func(wp writer.Producer) func(distributions []experienceDistributions) model.Operator[session.Model] {
+			return func(distributions []experienceDistributions) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					c := model2.IncreaseExperienceConfig{}
+
+					for _, d := range distributions {
+						if d.ExperienceType == ExperienceDistributionTypeWhite {
+							c.White = true
+							c.Amount = int32(d.Amount)
+						} else if d.ExperienceType == ExperienceDistributionTypeYellow {
+							c.White = false
+							c.Amount = int32(d.Amount)
+						} else if d.ExperienceType == ExperienceDistributionTypeChat {
+							c.InChat = true
+							c.Amount = int32(d.Amount)
+						} else if d.ExperienceType == ExperienceDistributionTypeMonsterBook {
+							c.MonsterBookBonus = int32(d.Amount)
+						} else if d.ExperienceType == ExperienceDistributionTypeMonsterEvent {
+							c.MobEventBonusPercentage = byte(d.Amount)
+						} else if d.ExperienceType == ExperienceDistributionTypePlayTime {
+							c.MobEventBonusPercentage = byte(d.Amount)
+							c.PlayTimeHour = byte(d.Attr1)
+						} else if d.ExperienceType == ExperienceDistributionTypeWedding {
+							c.WeddingBonusEXP = int32(d.Amount)
+						} else if d.ExperienceType == ExperienceDistributionTypeSpiritWeek {
+							c.QuestBonusRate = byte(d.Amount)
+						} else if d.ExperienceType == ExperienceDistributionTypeParty {
+							c.PartyBonusExp = int32(d.Amount)
+							c.PartyBonusEventRate = byte(d.Attr1)
+						} else if d.ExperienceType == ExperienceDistributionTypeItem {
+							c.ItemBonusEXP = int32(d.Amount)
+						} else if d.ExperienceType == ExperienceDistributionTypeInternetCafe {
+							c.PremiumIPExp = int32(d.Amount)
+						} else if d.ExperienceType == ExperienceDistributionTypeRainbowWeek {
+							c.RainbowWeekEventEXP = int32(d.Amount)
+						} else if d.ExperienceType == ExperienceDistributionTypePartyRing {
+							c.PartyEXPRingEXP = int32(d.Amount)
+						} else if d.ExperienceType == ExperienceDistributionTypeCakePie {
+							c.CakePieEventBonus = int32(d.Amount)
+						}
+					}
+
+					err := session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(s, writer.CharacterStatusMessageOperationIncreaseExperienceBody(l, t)(c))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to announce experience gain to character [%d].", s.CharacterId())
 						return err
 					}
 					return nil

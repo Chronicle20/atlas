@@ -2,8 +2,6 @@ package monster
 
 const (
 	EnvEventTopicMonsterStatus = "EVENT_TOPIC_MONSTER_STATUS"
-	EnvCommandTopicDamage      = "COMMAND_TOPIC_MONSTER_DAMAGE"
-	EnvCommandTopicMovement    = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 	EnvEventTopicMovement      = "EVENT_TOPIC_MONSTER_MOVEMENT"
 
 	EventMonsterStatusCreated      = "CREATED"
@@ -58,29 +56,6 @@ type damageEntry struct {
 	Damage      int64  `json:"damage"`
 }
 
-type damageCommand struct {
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	MapId       uint32 `json:"mapId"`
-	UniqueId    uint32 `json:"uniqueId"`
-	CharacterId uint32 `json:"characterId"`
-	Damage      int64  `json:"damage"`
-}
-
-type movementCommand struct {
-	WorldId       byte       `json:"worldId"`
-	ChannelId     byte       `json:"channelId"`
-	UniqueId      uint32     `json:"uniqueId"`
-	ObserverId    uint32     `json:"observerId"`
-	SkillPossible bool       `json:"skillPossible"`
-	Skill         int8       `json:"skill"`
-	SkillId       int16      `json:"skillId"`
-	SkillLevel    int16      `json:"skillLevel"`
-	MultiTarget   []position `json:"multiTarget"`
-	RandomTimes   []int32    `json:"randomTimes"`
-	Movement      movement   `json:"movement"`
-}
-
 type movementEvent struct {
 	WorldId       byte       `json:"worldId"`
 	ChannelId     byte       `json:"channelId"`
@@ -90,18 +65,18 @@ type movementEvent struct {
 	Skill         int8       `json:"skill"`
 	SkillId       int16      `json:"skillId"`
 	SkillLevel    int16      `json:"skillLevel"`
-	MultiTarget   []position `json:"multiTarget"`
+	MultiTarget   []Position `json:"multiTarget"`
 	RandomTimes   []int32    `json:"randomTimes"`
-	Movement      movement   `json:"movement"`
+	Movement      Movement   `json:"movement"`
 }
 
-type movement struct {
+type Movement struct {
 	StartX   int16     `json:"startX"`
 	StartY   int16     `json:"startY"`
-	Elements []element `json:"elements"`
+	Elements []Element `json:"elements"`
 }
 
-type element struct {
+type Element struct {
 	TypeStr     string `json:"typeStr"`
 	TypeVal     byte   `json:"typeVal"`
 	StartX      int16  `json:"startX"`
@@ -119,7 +94,7 @@ type element struct {
 	TimeElapsed int16  `json:"timeElapsed"`
 }
 
-type position struct {
+type Position struct {
 	X int32 `json:"x"`
 	Y int32 `json:"y"`
 }

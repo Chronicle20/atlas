@@ -2,6 +2,7 @@ package main
 
 import (
 	_map "atlas-monsters/kafka/consumer/map"
+	monster2 "atlas-monsters/kafka/consumer/monster"
 	"atlas-monsters/logger"
 	"atlas-monsters/monster"
 	"atlas-monsters/service"
@@ -48,9 +49,9 @@ func main() {
 	}
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
-	monster.InitConsumers(l)(cmf)(consumerGroupId)
+	monster2.InitConsumers(l)(cmf)(consumerGroupId)
 	_map.InitConsumers(l)(cmf)(consumerGroupId)
-	monster.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	monster2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	_map.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), monster.InitResource(GetServer()), world.InitResource(GetServer()))

@@ -227,10 +227,47 @@ func Destroy(l logrus.FieldLogger) func(ctx context.Context) func(uniqueId uint3
 	}
 }
 
-func Move(ctx context.Context) func(id uint32, x int16, y int16, stance byte) {
-	return func(id uint32, x int16, y int16, stance byte) {
+type MovementSummary struct {
+	X      int16
+	Y      int16
+	Stance byte
+}
+
+func MovementSummaryProvider() (MovementSummary, error) {
+	return MovementSummary{}, nil
+}
+
+func FoldMovement(summary MovementSummary, e Element) (MovementSummary, error) {
+	res := MovementSummary{
+		X:      summary.X,
+		Y:      summary.Y,
+		Stance: summary.Stance,
+	}
+	if e.TypeStr == MovementTypeNormal {
+		res.X = e.X
+		res.Y = e.Y
+		res.Stance = e.MoveAction
+	}
+	return res, nil
+}
+
+func Move(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, id uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randomTimes []int32, movement Movement) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, id uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randomTimes []int32, movement Movement) error {
 		t := tenant.MustFromContext(ctx)
-		GetMonsterRegistry().MoveMonster(t, id, x, y, stance)
+		return func(worldId byte, channelId byte, id uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randomTimes []int32, movement Movement) error {
+			ms, err := model.Fold(model.FixedProvider(movement.Elements), MovementSummaryProvider, FoldMovement)()
+			if err != nil {
+				return err
+			}
+			GetMonsterRegistry().MoveMonster(t, id, ms.X, ms.Y, ms.Stance)
+
+			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicMovement)(emitMove(worldId, channelId, id, observerId, skillPossible, skill, skillId, skillLevel, multiTarget, randomTimes, movement))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to relay monster [%d] movement to other characters in map.", id)
+				return err
+			}
+			return nil
+		}
 	}
 }
 

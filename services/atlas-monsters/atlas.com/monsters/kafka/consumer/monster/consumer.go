@@ -2,7 +2,7 @@ package monster
 
 import (
 	consumer2 "atlas-monsters/kafka/consumer"
-	"atlas-monsters/kafka/producer"
+	"atlas-monsters/monster"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -32,43 +32,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 }
 
 func handleDamageCommand(l logrus.FieldLogger, ctx context.Context, command damageCommand) {
-	Damage(l)(ctx)(command.UniqueId, command.CharacterId, command.Damage)
+	monster.Damage(l)(ctx)(command.UniqueId, command.CharacterId, command.Damage)
 }
 
-type MovementSummary struct {
-	X      int16
-	Y      int16
-	Stance byte
-}
-
-func MovementSummaryProvider() (MovementSummary, error) {
-	return MovementSummary{}, nil
-}
-
-func FoldMovement(summary MovementSummary, e element) (MovementSummary, error) {
-	res := MovementSummary{
-		X:      summary.X,
-		Y:      summary.Y,
-		Stance: summary.Stance,
-	}
-	if e.TypeStr == MovementTypeNormal {
-		res.X = e.X
-		res.Y = e.Y
-		res.Stance = e.MoveAction
-	}
-	return res, nil
-}
-
-func handleMovementCommand(l logrus.FieldLogger, ctx context.Context, command movementCommand) {
-	ms, err := model.Fold(model.FixedProvider(command.Movement.Elements), MovementSummaryProvider, FoldMovement)()
-	if err != nil {
-		return
-	}
-
-	Move(ctx)(command.UniqueId, ms.X, ms.Y, ms.Stance)
-
-	err = producer.ProviderImpl(l)(ctx)(EnvEventTopicMovement)(emitMove(command.WorldId, command.ChannelId, command.UniqueId, command.ObserverId, command.SkillPossible, command.Skill, command.SkillId, command.SkillLevel, command.MultiTarget, command.RandomTimes, command.Movement))
-	if err != nil {
-		l.WithError(err).Errorf("Unable to relay monster [%d] movement to other characters in map.", command.UniqueId)
-	}
+func handleMovementCommand(l logrus.FieldLogger, ctx context.Context, c movementCommand) {
+	_ = monster.Move(l)(ctx)(c.WorldId, c.ChannelId, c.UniqueId, c.ObserverId, c.SkillPossible, c.Skill, c.SkillId, c.SkillLevel, c.MultiTarget, c.RandomTimes, c.Movement)
 }

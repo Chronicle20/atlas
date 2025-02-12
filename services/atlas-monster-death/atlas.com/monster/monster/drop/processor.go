@@ -54,7 +54,6 @@ func SpawnMeso(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte
 		return func(worldId byte, channelId byte, mapId uint32, monsterId uint32, x int16, y int16, killerId uint32, dropType byte, m Model, posX int16, posY int16) error {
 			mesos := uint32(rand.Int31n(int32(m.MaximumQuantity()-m.MinimumQuantity())+1)) + m.MinimumQuantity()
 			//TODO apply characters meso buff.
-			mesos *= 20
 			return SpawnDrop(l)(ctx)(worldId, channelId, mapId, 0, 0, mesos, posX, posY, x, y, monsterId, killerId, false, dropType)
 		}
 	}

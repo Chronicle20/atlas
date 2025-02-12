@@ -288,24 +288,26 @@ func GetMonsters(ctx context.Context) func(mapId uint32) ([]monster.Model, error
 	}
 }
 
-func calcDropPos(tenant tenant.Model, mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
-	m, err := GetMapModelRegistry().Get(tenant, mapId)
-	if err != nil {
-		return fallback
-	}
+func calcDropPos(ctx context.Context) func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
+	return func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
+		m, err := GetById(ctx)(mapId)
+		if err != nil {
+			return fallback
+		}
 
-	rp := initial
-	if rp.X() < int16(m.xLimit.min) {
-		rp = rp.SetX(int16(m.xLimit.min))
-	} else if rp.X() > int16(m.xLimit.max) {
-		rp = rp.SetX(int16(m.xLimit.max))
+		rp := initial
+		if rp.X() < int16(m.xLimit.min) {
+			rp = rp.SetX(int16(m.xLimit.min))
+		} else if rp.X() > int16(m.xLimit.max) {
+			rp = rp.SetX(int16(m.xLimit.max))
+		}
+		ret := calcPointBelow(m.footholdTree, point.NewModel(rp.X(), rp.Y()-85))
+		if ret == nil {
+			ret = bSearchDropPos(m.footholdTree, initial, fallback)
+		}
+		if !m.mapArea.contains(*ret) {
+			return fallback
+		}
+		return ret
 	}
-	ret := calcPointBelow(m.footholdTree, point.NewModel(rp.X(), rp.Y()-85))
-	if ret == nil {
-		ret = bSearchDropPos(m.footholdTree, initial, fallback)
-	}
-	if !m.mapArea.contains(*ret) {
-		return fallback
-	}
-	return ret
 }

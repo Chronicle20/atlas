@@ -50,7 +50,6 @@ func evaluateSuccess(d drop.Model, killerId uint32) bool {
 	//TODO buff rate  (cards)
 	//TODO evaluate card rate for killer, whether it's meso or drop.
 	chance := int32(math.Min(float64(d.Chance()), math.MaxUint32))
-	chance *= 1000
 	return rand.Int31n(999999) < chance
 }
 

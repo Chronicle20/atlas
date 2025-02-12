@@ -9,7 +9,6 @@ import (
 	"atlas-data/rest"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/manyminds/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -227,7 +226,7 @@ func handleGetMapMonstersRequest(d *rest.HandlerDependency, c *rest.HandlerConte
 func handleGetMapDropPositionRequest(d *rest.HandlerDependency, c *rest.HandlerContext, input DropPositionRestModel) http.HandlerFunc {
 	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			p := calcDropPos(tenant.MustFromContext(d.Context()), mapId, point.NewModel(input.InitialX, input.InitialY), point.NewModel(input.FallbackX, input.FallbackY))
+			p := calcDropPos(d.Context())(mapId, point.NewModel(input.InitialX, input.InitialY), point.NewModel(input.FallbackX, input.FallbackY))
 			res, err := model.Map(point.Transform)(model.FixedProvider(*p))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")

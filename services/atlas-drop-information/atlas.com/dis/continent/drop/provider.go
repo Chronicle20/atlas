@@ -1,15 +1,16 @@
 package drop
 
 import (
-	"atlas-dis/database"
+	"atlas-drops-information/database"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func getAll() database.EntityProvider[[]entity] {
+func getAll(tenantId uuid.UUID) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		var results []entity
-		err := db.Find(&results).Error
+		err := db.Where(&entity{TenantId: tenantId}).Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]entity](err)
 		}

@@ -24,7 +24,5 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /
 
 COPY --from=build-env /server /
-COPY /atlas.com/dis/continent_drop_data.json /
-COPY /atlas.com/dis/monster_drop_data.json /
 
 CMD ["/server"]

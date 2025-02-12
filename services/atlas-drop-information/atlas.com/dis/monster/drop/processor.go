@@ -1,27 +1,43 @@
 package drop
 
 import (
-	"atlas-dis/database"
+	"context"
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-func GetAll(l logrus.FieldLogger, db *gorm.DB) []Model {
-	ms, err := database.ModelSliceProvider[Model, entity](db)(getAll(), makeDrop)()
-	if err != nil {
-		l.WithError(err).Errorf("There was an error retrieving drops")
-		return make([]Model, 0)
+func allProvider(ctx context.Context) func(db *gorm.DB) model.Provider[[]Model] {
+	t := tenant.MustFromContext(ctx)
+	return func(db *gorm.DB) model.Provider[[]Model] {
+		return model.SliceMap(makeDrop)(getAll(t.Id())(db))()
 	}
-	return ms
 }
 
-func GetForMonster(l logrus.FieldLogger, db *gorm.DB) func(monsterId uint32) []Model {
-	return func(monsterId uint32) []Model {
-		ms, err := database.ModelSliceProvider[Model, entity](db)(getByMonsterId(monsterId), makeDrop)()
-		if err != nil {
-			l.WithError(err).Errorf("There was an error retrieving drops for monster [%d]", monsterId)
-			return make([]Model, 0)
+func GetAll(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) ([]Model, error) {
+	return func(ctx context.Context) func(db *gorm.DB) ([]Model, error) {
+		return func(db *gorm.DB) ([]Model, error) {
+			return allProvider(ctx)(db)()
 		}
-		return ms
+	}
+}
+
+func forMonsterProvider(ctx context.Context) func(db *gorm.DB) func(monsterId uint32) model.Provider[[]Model] {
+	t := tenant.MustFromContext(ctx)
+	return func(db *gorm.DB) func(monsterId uint32) model.Provider[[]Model] {
+		return func(monsterId uint32) model.Provider[[]Model] {
+			return model.SliceMap(makeDrop)(getByMonsterId(t.Id(), monsterId)(db))()
+		}
+	}
+}
+
+func GetForMonster(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(monsterId uint32) ([]Model, error) {
+	return func(ctx context.Context) func(db *gorm.DB) func(monsterId uint32) ([]Model, error) {
+		return func(db *gorm.DB) func(monsterId uint32) ([]Model, error) {
+			return func(monsterId uint32) ([]Model, error) {
+				return forMonsterProvider(ctx)(db)(monsterId)()
+			}
+		}
 	}
 }

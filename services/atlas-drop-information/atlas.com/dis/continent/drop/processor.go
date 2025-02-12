@@ -1,16 +1,20 @@
 package drop
 
 import (
-	"atlas-dis/database"
+	"context"
+	"github.com/Chronicle20/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-func GetAll(l logrus.FieldLogger, db *gorm.DB) []Model {
-	ms, err := database.ModelSliceProvider[Model, entity](db)(getAll(), makeDrop)()
-	if err != nil {
-		l.WithError(err).Errorf("There was an error retrieving drops")
-		return make([]Model, 0)
+func GetAll(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func() ([]Model, error) {
+	return func(ctx context.Context) func(db *gorm.DB) func() ([]Model, error) {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func() ([]Model, error) {
+			return func() ([]Model, error) {
+				return model.SliceMap(makeDrop)(getAll(t.Id())(db))()()
+			}
+		}
 	}
-	return ms
 }

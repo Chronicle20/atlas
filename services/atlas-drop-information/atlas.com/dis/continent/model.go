@@ -1,7 +1,7 @@
 package continent
 
 import (
-	"atlas-dis/continent/drop"
+	"atlas-drops-information/continent/drop"
 )
 
 type Model struct {

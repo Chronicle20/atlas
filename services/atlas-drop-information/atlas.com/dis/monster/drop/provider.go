@@ -1,16 +1,17 @@
 package drop
 
 import (
-	"atlas-dis/database"
+	"atlas-drops-information/database"
+	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas-model/model"
 	"gorm.io/gorm"
 )
 
-func getAll() database.EntityProvider[[]entity] {
+func getAll(tenantId uuid.UUID) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		var results []entity
-		err := db.Find(&results).Error
+		err := db.Where(&entity{TenantId: tenantId}).Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]entity](err)
 		}
@@ -18,14 +19,14 @@ func getAll() database.EntityProvider[[]entity] {
 	}
 }
 
-func getByMonsterId(monsterId uint32) database.EntityProvider[[]entity] {
+func getByMonsterId(tenantId uuid.UUID, monsterId uint32) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
-		return database.SliceQuery[entity](db, &entity{MonsterId: monsterId})
+		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, MonsterId: monsterId})
 	}
 }
 
 func makeDrop(m entity) (Model, error) {
-	r := NewMonsterDropBuilder(m.ID).
+	r := NewMonsterDropBuilder(m.TenantId, m.ID).
 		SetMonsterId(m.MonsterId).
 		SetItemId(m.ItemId).
 		SetMinimumQuantity(m.MinimumQuantity).

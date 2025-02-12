@@ -4,6 +4,7 @@ import (
 	"atlas-configurations/configuration/service/channel"
 	"atlas-configurations/configuration/service/characterfactory"
 	"atlas-configurations/configuration/service/drops"
+	"atlas-configurations/configuration/service/drops/information"
 	"atlas-configurations/configuration/service/login"
 	"atlas-configurations/configuration/service/npcconversation"
 	"atlas-configurations/configuration/service/world"
@@ -101,6 +102,17 @@ func handleGetConfigurations(db *gorm.DB) rest.GetHandler {
 						return
 					}
 					server.Marshal[world.RestModel](d.Logger())(w)(c.ServerInformation())(rm)
+					return
+				}
+				if theType == TypeDropsInformationService {
+					var rm information.RestModel
+					rm, err = GetDropsInformationServiceConfiguration(d.Context())(db)(serviceId)
+					if err != nil {
+						d.Logger().WithError(err).Errorf("oof")
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					server.Marshal[information.RestModel](d.Logger())(w)(c.ServerInformation())(rm)
 					return
 				}
 

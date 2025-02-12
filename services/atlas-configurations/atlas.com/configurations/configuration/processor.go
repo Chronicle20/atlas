@@ -4,6 +4,7 @@ import (
 	"atlas-configurations/configuration/service/channel"
 	"atlas-configurations/configuration/service/characterfactory"
 	"atlas-configurations/configuration/service/drops"
+	"atlas-configurations/configuration/service/drops/information"
 	"atlas-configurations/configuration/service/login"
 	"atlas-configurations/configuration/service/npcconversation"
 	"atlas-configurations/configuration/service/world"
@@ -141,6 +142,24 @@ func MakeWorldServiceModel(e Entity) (world.RestModel, error) {
 	err := json.Unmarshal(e.Data, &rm)
 	if err != nil {
 		return world.RestModel{}, err
+	}
+	rm.Id = e.ServiceId
+	return rm, nil
+}
+
+func GetDropsInformationServiceConfiguration(ctx context.Context) func(db *gorm.DB) func(serviceId uuid.UUID) (information.RestModel, error) {
+	return func(db *gorm.DB) func(serviceId uuid.UUID) (information.RestModel, error) {
+		return func(serviceId uuid.UUID) (information.RestModel, error) {
+			return configurationProvider[information.RestModel](ctx)(db)(serviceId, TypeDropsInformationService)(MakeDropsInformationServiceModel)()
+		}
+	}
+}
+
+func MakeDropsInformationServiceModel(e Entity) (information.RestModel, error) {
+	var rm information.RestModel
+	err := json.Unmarshal(e.Data, &rm)
+	if err != nil {
+		return information.RestModel{}, err
 	}
 	rm.Id = e.ServiceId
 	return rm, nil

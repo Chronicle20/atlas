@@ -7,12 +7,13 @@ import (
 )
 
 const (
-	TypeChannelService   = "channel-service"
-	TypeCharacterFactory = "character-factory"
-	TypeLoginService     = "login-service"
-	TypeNPCConversation  = "npc-conversation"
-	TypeWorldService     = "world-service"
-	TypeDropsService     = "drops-service"
+	TypeChannelService          = "channel-service"
+	TypeCharacterFactory        = "character-factory"
+	TypeLoginService            = "login-service"
+	TypeNPCConversation         = "npc-conversation"
+	TypeWorldService            = "world-service"
+	TypeDropsService            = "drops-service"
+	TypeDropsInformationService = "drops-information-service"
 )
 
 func Migration(db *gorm.DB) error {

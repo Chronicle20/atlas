@@ -2,12 +2,2927 @@ package skill
 
 type Id uint32
 
+type Skill struct {
+	id     Id
+	buff   bool
+	charge bool
+}
+
+func (s Skill) Id() Id {
+	return s.id
+}
+
+func (s Skill) Buff() bool {
+	return s.buff
+}
+
+func (s Skill) Charge() bool {
+	return s.charge
+}
+
+var BeginnerThreeSnails = Skill{
+	id: BeginnerThreeSnailsId,
+}
+
+var BeginnerRecovery = Skill{
+	id:   BeginnerRecoveryId,
+	buff: true,
+}
+
+var BeginnerNimbleFeet = Skill{
+	id:   BeginnerNimbleFeetId,
+	buff: true,
+}
+
+var BeginnerSoulOfCraftsman = Skill{
+	id: BeginnerSoulOfCraftsmanId,
+}
+
+var BeginnerMonsterRiding = Skill{
+	id:   BeginnerMonsterRidingId,
+	buff: true,
+}
+
+var BeginnerEchoOfHero = Skill{
+	id:   BeginnerEchoOfHeroId,
+	buff: true,
+}
+
+var BeginnerJumpDown = Skill{
+	id: BeginnerJumpDownId,
+}
+
+var BeginnerMaker = Skill{
+	id: BeginnerMakerId,
+}
+
+var BeginnerMultiPet = Skill{
+	id: BeginnerMultiPetId,
+}
+
+var BeginnerBamboo = Skill{
+	id: BeginnerBambooId,
+}
+
+var BeginnerInvincible = Skill{
+	id: BeginnerInvincibleId,
+}
+
+var BeginnerBerserk = Skill{
+	id: BeginnerBerserkId,
+}
+
+var BeginnerBlessOfNymph = Skill{
+	id: BeginnerBlessOfNymphId,
+}
+
+var WarriorImprovedHpRecovery = Skill{
+	id: WarriorImprovedHpRecoveryId,
+}
+
+var WarriorImprovedMaxHpIncrease = Skill{
+	id: WarriorImprovedMaxHpIncreaseId,
+}
+
+var WarriorEndure = Skill{
+	id: WarriorEndureId,
+}
+
+var WarriorIronBody = Skill{
+	id:   WarriorIronBodyId,
+	buff: true,
+}
+
+var WarriorPowerStrike = Skill{
+	id: WarriorPowerStrikeId,
+}
+
+var WarriorSlashBlast = Skill{
+	id: WarriorSlashBlastId,
+}
+
+var FighterSwordMastery = Skill{
+	id: FighterSwordMasteryId,
+}
+
+var FighterAxeMastery = Skill{
+	id: FighterAxeMasteryId,
+}
+
+var FighterFinalAttackSword = Skill{
+	id: FighterFinalAttackSwordId,
+}
+
+var FighterFinalAttackAxe = Skill{
+	id: FighterFinalAttackAxeId,
+}
+
+var FighterSwordBooster = Skill{
+	id:   FighterSwordBoosterId,
+	buff: true,
+}
+
+var FighterAxeBooster = Skill{
+	id:   FighterAxeBoosterId,
+	buff: true,
+}
+
+var FighterRage = Skill{
+	id:   FighterRageId,
+	buff: true,
+}
+
+var FighterPowerGuard = Skill{
+	id:   FighterPowerGuardId,
+	buff: true,
+}
+
+var CrusaderImprovingMpRecovery = Skill{
+	id: CrusaderImprovingMpRecoveryId,
+}
+
+var CrusaderShieldMastery = Skill{
+	id: CrusaderShieldMasteryId,
+}
+
+var CrusaderComboAttack = Skill{
+	id:   CrusaderComboAttackId,
+	buff: true,
+}
+
+var CrusaderPanicSword = Skill{
+	id: CrusaderPanicSwordId,
+}
+
+var CrusaderPanicAxe = Skill{
+	id: CrusaderPanicAxeId,
+}
+
+var CrusaderComaSword = Skill{
+	id: CrusaderComaSwordId,
+}
+
+var CrusaderComaAxe = Skill{
+	id: CrusaderComaAxeId,
+}
+
+var CrusaderArmorCrash = Skill{
+	id:   CrusaderArmorCrashId,
+	buff: true,
+}
+
+var CrusaderShout = Skill{
+	id: CrusaderShoutId,
+}
+
+var HeroMapleWarrior = Skill{
+	id:   HeroMapleWarriorId,
+	buff: true,
+}
+
+var HeroMonsterMagnet = Skill{
+	id: HeroMonsterMagnetId,
+}
+
+var HeroPowerStance = Skill{
+	id:   HeroPowerStanceId,
+	buff: true,
+}
+
+var HeroAdvancedComboAttack = Skill{
+	id: HeroAdvancedComboAttackId,
+}
+
+var HeroAchilles = Skill{
+	id: HeroAchillesId,
+}
+
+var HeroGuardian = Skill{
+	id: HeroGuardianId,
+}
+
+var HeroRush = Skill{
+	id: HeroRushId,
+}
+
+var HeroBrandish = Skill{
+	id: HeroBrandishId,
+}
+
+var HeroEnrage = Skill{
+	id:   HeroEnrageId,
+	buff: true,
+}
+
+var HeroHerosWill = Skill{
+	id:   HeroHerosWillId,
+	buff: true,
+}
+
+var PageSwordMastery = Skill{
+	id: PageSwordMasteryId,
+}
+
+var PageBluntWeaponMastery = Skill{
+	id: PageBluntWeaponMasteryId,
+}
+
+var PageSwordFinalAttack = Skill{
+	id: PageSwordFinalAttackId,
+}
+
+var PageBluntFinalAttack = Skill{
+	id: PageBluntFinalAttackId,
+}
+
+var PageSwordBooster = Skill{
+	id:   PageSwordBoosterId,
+	buff: true,
+}
+
+var PageBluntWeaponBooster = Skill{
+	id:   PageBluntWeaponBoosterId,
+	buff: true,
+}
+
+var PageThreaten = Skill{
+	id:   PageThreatenId,
+	buff: true,
+}
+
+var PagePowerGuard = Skill{
+	id:   PagePowerGuardId,
+	buff: true,
+}
+
+var WhiteKnightImprovingMpRecovery = Skill{
+	id: WhiteKnightImprovingMpRecoveryId,
+}
+
+var WhiteKnightShieldMastery = Skill{
+	id: WhiteKnightShieldMasteryId,
+}
+
+var WhiteKnightChargedBlow = Skill{
+	id: WhiteKnightChargedBlowId,
+}
+
+var WhiteKnightFireChargeSword = Skill{
+	id:   WhiteKnightFireChargeSwordId,
+	buff: true,
+}
+
+var WhiteKnightFlameChargeBluntWeapon = Skill{
+	id:   WhiteKnightFlameChargeBluntWeaponId,
+	buff: true,
+}
+
+var WhiteKnightIceChargeSword = Skill{
+	id:   WhiteKnightIceChargeSwordId,
+	buff: true,
+}
+
+var WhiteKnightBlizzardChargeBluntWeapon = Skill{
+	id:   WhiteKnightBlizzardChargeBluntWeaponId,
+	buff: true,
+}
+
+var WhiteKnightThunderChargeSword = Skill{
+	id:   WhiteKnightThunderChargeSwordId,
+	buff: true,
+}
+
+var WhiteKnightLightningChargeBluntWeapon = Skill{
+	id:   WhiteKnightLightningChargeBluntWeaponId,
+	buff: true,
+}
+
+var WhiteKnightMagicCrash = Skill{
+	id:   WhiteKnightMagicCrashId,
+	buff: true,
+}
+
+var PaladinMapleWarrior = Skill{
+	id:   PaladinMapleWarriorId,
+	buff: true,
+}
+
+var PaladinMonsterMagnet = Skill{
+	id: PaladinMonsterMagnetId,
+}
+
+var PaladinPowerStance = Skill{
+	id:   PaladinPowerStanceId,
+	buff: true,
+}
+
+var PaladinHolyChargeSword = Skill{
+	id:   PaladinHolyChargeSwordId,
+	buff: true,
+}
+
+var PaladinDivineChargeBluntWeapon = Skill{
+	id:   PaladinDivineChargeBluntWeaponId,
+	buff: true,
+}
+
+var PaladinAchilles = Skill{
+	id: PaladinAchillesId,
+}
+
+var PaladinGuardian = Skill{
+	id: PaladinGuardianId,
+}
+
+var PaladinRush = Skill{
+	id: PaladinRushId,
+}
+
+var PaladinBlast = Skill{
+	id: PaladinBlastId,
+}
+
+var PaladinAdvancedCharge = Skill{
+	id: PaladinAdvancedChargeId,
+}
+
+var PaladinHeavensHammer = Skill{
+	id: PaladinHeavensHammerId,
+}
+
+var PaladinHerosWill = Skill{
+	id:   PaladinHerosWillId,
+	buff: true,
+}
+
+var SpearmanSpearMastery = Skill{
+	id: SpearmanSpearMasteryId,
+}
+
+var SpearmanPolearmMastery = Skill{
+	id: SpearmanPolearmMasteryId,
+}
+
+var SpearmanFinalAttackSpear = Skill{
+	id: SpearmanFinalAttackSpearId,
+}
+
+var SpearmanFinalAttackPolearm = Skill{
+	id: SpearmanFinalAttackPolearmId,
+}
+
+var SpearmanSpearBooster = Skill{
+	id:   SpearmanSpearBoosterId,
+	buff: true,
+}
+
+var SpearmanPolearmBooster = Skill{
+	id:   SpearmanPolearmBoosterId,
+	buff: true,
+}
+
+var SpearmanIronWill = Skill{
+	id:   SpearmanIronWillId,
+	buff: true,
+}
+
+var SpearmanHyperBody = Skill{
+	id:   SpearmanHyperBodyId,
+	buff: true,
+}
+
+var DragonKnightElementalResistance = Skill{
+	id: DragonKnightElementalResistanceId,
+}
+
+var DragonKnightSpearCrusher = Skill{
+	id: DragonKnightSpearCrusherId,
+}
+
+var DragonKnightPolearmCrusher = Skill{
+	id: DragonKnightPolearmCrusherId,
+}
+
+var DragonKnightDragonFurySpear = Skill{
+	id: DragonKnightDragonFurySpearId,
+}
+
+var DragonKnightDragonFuryPolearm = Skill{
+	id: DragonKnightDragonFuryPolearmId,
+}
+
+var DragonKnightSacrifice = Skill{
+	id: DragonKnightSacrificeId,
+}
+
+var DragonKnightDragonRoar = Skill{
+	id: DragonKnightDragonRoarId,
+}
+
+var DragonKnightPowerCrash = Skill{
+	id:   DragonKnightPowerCrashId,
+	buff: true,
+}
+
+var DragonKnightDragonBlood = Skill{
+	id:   DragonKnightDragonBloodId,
+	buff: true,
+}
+
+var DarkKnightMapleWarrior = Skill{
+	id:   DarkKnightMapleWarriorId,
+	buff: true,
+}
+
+var DarkKnightMonsterMagnet = Skill{
+	id: DarkKnightMonsterMagnetId,
+}
+
+var DarkKnightPowerStance = Skill{
+	id: DarkKnightPowerStanceId,
+}
+
+var DarkKnightRush = Skill{
+	id: DarkKnightRushId,
+}
+
+var DarkKnightAchilles = Skill{
+	id: DarkKnightAchillesId,
+}
+
+var DarkKnightBerserk = Skill{
+	id: DarkKnightBerserkId,
+}
+
+var DarkKnightBeholder = Skill{
+	id:   DarkKnightBeholderId,
+	buff: true,
+}
+
+var DarkKnightAuraOfTheBeholder = Skill{
+	id:   DarkKnightAuraOfTheBeholderId,
+	buff: true,
+}
+
+var DarkKnightHexOfTheBeholder = Skill{
+	id:   DarkKnightHexOfTheBeholderId,
+	buff: true,
+}
+
+var DarkKnightHerosWill = Skill{
+	id:   DarkKnightHerosWillId,
+	buff: true,
+}
+
+var MagicianImprovedMpRecovery = Skill{
+	id: MagicianImprovedMpRecoveryId,
+}
+
+var MagicianImprovedMaxMpIncrease = Skill{
+	id: MagicianImprovedMaxMpIncreaseId,
+}
+
+var MagicianMagicGuard = Skill{
+	id:   MagicianMagicGuardId,
+	buff: true,
+}
+
+var MagicianMagicArmor = Skill{
+	id:   MagicianMagicArmorId,
+	buff: true,
+}
+
+var MagicianEnergyBolt = Skill{
+	id: MagicianEnergyBoltId,
+}
+
+var MagicianMagicClaw = Skill{
+	id: MagicianMagicClawId,
+}
+
+var FirePoisionWizardMpEater = Skill{
+	id: FirePoisionWizardMpEaterId,
+}
+
+var FirePoisionWizardMeditation = Skill{
+	id:   FirePoisionWizardMeditationId,
+	buff: true,
+}
+
+var FirePoisionWizardTeleport = Skill{
+	id: FirePoisionWizardTeleportId,
+}
+
+var FirePoisionWizardSlow = Skill{
+	id:   FirePoisionWizardSlowId,
+	buff: true,
+}
+
+var FirePoisionWizardFireArrow = Skill{
+	id: FirePoisionWizardFireArrowId,
+}
+
+var FirePoisionWizardPoisonBreath = Skill{
+	id: FirePoisionWizardPoisonBreathId,
+}
+
+var FirePoisonMagicianPartialResistance = Skill{
+	id: FirePoisonMagicianPartialResistanceId,
+}
+
+var FirePoisonMagicianElementAmplification = Skill{
+	id: FirePoisonMagicianElementAmplificationId,
+}
+
+var FirePoisonMagicianExplosion = Skill{
+	id: FirePoisonMagicianExplosionId,
+}
+
+var FirePoisonMagicianPoisonMist = Skill{
+	id: FirePoisonMagicianPoisonMistId,
+}
+
+var FirePoisonMagicianSeal = Skill{
+	id:   FirePoisonMagicianSealId,
+	buff: true,
+}
+
+var FirePoisonMagicianSpellBooster = Skill{
+	id:   FirePoisonMagicianSpellBoosterId,
+	buff: true,
+}
+
+var FirePoisonMagicianElementComposition = Skill{
+	id: FirePoisonMagicianElementCompositionId,
+}
+
+var FirePoisonArchMagicianMapleWarrior = Skill{
+	id:   FirePoisonArchMagicianMapleWarriorId,
+	buff: true,
+}
+
+var FirePoisonArchMagicianBigBang = Skill{
+	id:     FirePoisonArchMagicianBigBangId,
+	charge: true,
+}
+
+var FirePoisonArchMagicianManaReflection = Skill{
+	id:   FirePoisonArchMagicianManaReflectionId,
+	buff: true,
+}
+
+var FirePoisonArchMagicianFireDemon = Skill{
+	id: FirePoisonArchMagicianFireDemonId,
+}
+
+var FirePoisonArchMagicianInfinity = Skill{
+	id:   FirePoisonArchMagicianInfinityId,
+	buff: true,
+}
+
+var FirePoisonArchMagicianElquines = Skill{
+	id: FirePoisonArchMagicianElquinesId,
+}
+
+var FirePoisonArchMagicianParalyze = Skill{
+	id: FirePoisonArchMagicianParalyzeId,
+}
+
+var FirePoisonArchMagicianMeteorShower = Skill{
+	id: FirePoisonArchMagicianMeteorShowerId,
+}
+
+var FirePoisonArchMagicianHerosWill = Skill{
+	id:   FirePoisonArchMagicianHerosWillId,
+	buff: true,
+}
+
+var IceLightningWizardMpEater = Skill{
+	id: IceLightningWizardMpEaterId,
+}
+
+var IceLightningWizardMeditation = Skill{
+	id:   IceLightningWizardMeditationId,
+	buff: true,
+}
+
+var IceLightningWizardTeleport = Skill{
+	id: IceLightningWizardTeleportId,
+}
+
+var IceLightningWizardSlow = Skill{
+	id:   IceLightningWizardSlowId,
+	buff: true,
+}
+
+var IceLightningWizardColdBeam = Skill{
+	id: IceLightningWizardColdBeamId,
+}
+
+var IceLightningWizardThunderBolt = Skill{
+	id: IceLightningWizardThunderBoltId,
+}
+
+var IceLightningMagicianPartialResistance = Skill{
+	id: IceLightningMagicianPartialResistanceId,
+}
+
+var IceLightningMagicianElementAmplification = Skill{
+	id: IceLightningMagicianElementAmplificationId,
+}
+
+var IceLightningMagicianIceStrike = Skill{
+	id: IceLightningMagicianIceStrikeId,
+}
+
+var IceLightningMagicianThunderSpear = Skill{
+	id: IceLightningMagicianThunderSpearId,
+}
+
+var IceLightningMagicianSeal = Skill{
+	id:   IceLightningMagicianSealId,
+	buff: true,
+}
+
+var IceLightningMagicianSpellBooster = Skill{
+	id:   IceLightningMagicianSpellBoosterId,
+	buff: true,
+}
+
+var IceLightningMagicianElementComposition = Skill{
+	id: IceLightningMagicianElementCompositionId,
+}
+
+var IceLightningArchMagicianMapleWarrior = Skill{
+	id:   IceLightningArchMagicianMapleWarriorId,
+	buff: true,
+}
+
+var IceLightningArchMagicianBigBang = Skill{
+	id:     IceLightningArchMagicianBigBangId,
+	charge: true,
+}
+
+var IceLightningArchMagicianManaReflection = Skill{
+	id:   IceLightningArchMagicianManaReflectionId,
+	buff: true,
+}
+
+var IceLightningArchMagicianIceDemon = Skill{
+	id: IceLightningArchMagicianIceDemonId,
+}
+
+var IceLightningArchMagicianInfinity = Skill{
+	id:   IceLightningArchMagicianInfinityId,
+	buff: true,
+}
+
+var IceLightningArchMagicianIfrit = Skill{
+	id: IceLightningArchMagicianIfritId,
+}
+
+var IceLightningArchMagicianChainLightning = Skill{
+	id: IceLightningArchMagicianChainLightningId,
+}
+
+var IceLightningArchMagicianBlizzard = Skill{
+	id: IceLightningArchMagicianBlizzardId,
+}
+
+var IceLightningArchMagicianHerosWill = Skill{
+	id:   IceLightningArchMagicianHerosWillId,
+	buff: true,
+}
+
+var ClericMpEater = Skill{
+	id: ClericMpEaterId,
+}
+
+var ClericTeleport = Skill{
+	id: ClericTeleportId,
+}
+
+var ClericHeal = Skill{
+	id: ClericHealId,
+}
+
+var ClericInvincible = Skill{
+	id:   ClericInvincibleId,
+	buff: true,
+}
+
+var ClericBless = Skill{
+	id:   ClericBlessId,
+	buff: true,
+}
+
+var ClericHolyArrow = Skill{
+	id: ClericHolyArrowId,
+}
+
+var PriestElementalResistance = Skill{
+	id: PriestElementalResistanceId,
+}
+
+var PriestDispel = Skill{
+	id:   PriestDispelId,
+	buff: true,
+}
+
+var PriestMysticDoor = Skill{
+	id:   PriestMysticDoorId,
+	buff: true,
+}
+
+var PriestHolySymbol = Skill{
+	id:   PriestHolySymbolId,
+	buff: true,
+}
+
+var PriestShiningRay = Skill{
+	id: PriestShiningRayId,
+}
+
+var PriestDoom = Skill{
+	id:   PriestDoomId,
+	buff: true,
+}
+
+var PriestSummonDragon = Skill{
+	id: PriestSummonDragonId,
+}
+
+var BishopMapleWarrior = Skill{
+	id:   BishopMapleWarriorId,
+	buff: true,
+}
+
+var BishopBigBang = Skill{
+	id:     BishopBigBangId,
+	charge: true,
+}
+
+var BishopManaReflection = Skill{
+	id:   BishopManaReflectionId,
+	buff: true,
+}
+
+var BishopBahamut = Skill{
+	id: BishopBahamutId,
+}
+
+var BishopInfinity = Skill{
+	id:   BishopInfinityId,
+	buff: true,
+}
+
+var BishopHolyShield = Skill{
+	id:   BishopHolyShieldId,
+	buff: true,
+}
+
+var BishopResurrection = Skill{
+	id: BishopResurrectionId,
+}
+
+var BishopAngelRay = Skill{
+	id: BishopAngelRayId,
+}
+
+var BishopGenesis = Skill{
+	id: BishopGenesisId,
+}
+
+var BishopHerosWill = Skill{
+	id:   BishopHerosWillId,
+	buff: true,
+}
+
+var BowmanTheBlessingOfAmazon = Skill{
+	id: BowmanTheBlessingOfAmazonId,
+}
+
+var BowmanCriticalShot = Skill{
+	id: BowmanCriticalShotId,
+}
+
+var BowmanTheEyeOfAmazon = Skill{
+	id: BowmanTheEyeOfAmazonId,
+}
+
+var BowmanFocus = Skill{
+	id:   BowmanFocusId,
+	buff: true,
+}
+
+var BowmanArrowBlow = Skill{
+	id: BowmanArrowBlowId,
+}
+
+var BowmanDoubleShot = Skill{
+	id: BowmanDoubleShotId,
+}
+
+var HunterBowMastery = Skill{
+	id: HunterBowMasteryId,
+}
+
+var HunterFinalAttackBow = Skill{
+	id: HunterFinalAttackBowId,
+}
+
+var HunterBowBooster = Skill{
+	id:   HunterBowBoosterId,
+	buff: true,
+}
+
+var HunterPowerKnockBack = Skill{
+	id: HunterPowerKnockBackId,
+}
+
+var HunterSoulArrowBow = Skill{
+	id:   HunterSoulArrowBowId,
+	buff: true,
+}
+
+var HunterArrowBombBow = Skill{
+	id: HunterArrowBombBowId,
+}
+
+var RangerThrust = Skill{
+	id: RangerThrustId,
+}
+
+var RangerMortalBlow = Skill{
+	id: RangerMortalBlowId,
+}
+
+var RangerPuppet = Skill{
+	id:   RangerPuppetId,
+	buff: true,
+}
+
+var RangerInferno = Skill{
+	id: RangerInfernoId,
+}
+
+var RangerArrowRain = Skill{
+	id: RangerArrowRainId,
+}
+
+var RangerSilverHawk = Skill{
+	id: RangerSilverHawkId,
+}
+
+var RangerStrafe = Skill{
+	id: RangerStrafeId,
+}
+
+var BowmasterMapleWarrior = Skill{
+	id:   BowmasterMapleWarriorId,
+	buff: true,
+}
+
+var BowmasterSharpEyes = Skill{
+	id:   BowmasterSharpEyesId,
+	buff: true,
+}
+
+var BowmasterDragonsBreath = Skill{
+	id: BowmasterDragonsBreathId,
+}
+
+var BowmasterHurricane = Skill{
+	id: BowmasterHurricaneId,
+}
+
+var BowmasterBowExpert = Skill{
+	id: BowmasterBowExpertId,
+}
+
+var BowmasterPhoenix = Skill{
+	id: BowmasterPhoenixId,
+}
+
+var BowmasterHamstring = Skill{
+	id: BowmasterHamstringId,
+}
+
+var BowmasterConcentrate = Skill{
+	id:   BowmasterConcentrateId,
+	buff: true,
+}
+
+var BowmasterHerosWill = Skill{
+	id:   BowmasterHerosWillId,
+	buff: true,
+}
+
+var CrossbowmanCrossbowMastery = Skill{
+	id: CrossbowmanCrossbowMasteryId,
+}
+
+var CrossbowmanFinalAttackCrossbow = Skill{
+	id: CrossbowmanFinalAttackCrossbowId,
+}
+
+var CrossbowmanCrossbowBooster = Skill{
+	id:   CrossbowmanCrossbowBoosterId,
+	buff: true,
+}
+
+var CrossbowmanPowerKnockBack = Skill{
+	id: CrossbowmanPowerKnockBackId,
+}
+
+var CrossbowmanSoulArrowCrossbow = Skill{
+	id:   CrossbowmanSoulArrowCrossbowId,
+	buff: true,
+}
+
+var CrossbowmanIronArrowCrossbow = Skill{
+	id: CrossbowmanIronArrowCrossbowId,
+}
+
+var SniperThrust = Skill{
+	id: SniperThrustId,
+}
+
+var SniperMortalBlow = Skill{
+	id: SniperMortalBlowId,
+}
+
+var SniperPuppet = Skill{
+	id:   SniperPuppetId,
+	buff: true,
+}
+
+var SniperBlizzard = Skill{
+	id: SniperBlizzardId,
+}
+
+var SniperArrowEruption = Skill{
+	id: SniperArrowEruptionId,
+}
+
+var SniperGoldenEagle = Skill{
+	id: SniperGoldenEagleId,
+}
+
+var SniperStrafe = Skill{
+	id: SniperStrafeId,
+}
+
+var MarksmanMapleWarrior = Skill{
+	id:   MarksmanMapleWarriorId,
+	buff: true,
+}
+
+var MarksmanPiercingArrow = Skill{
+	id: MarksmanPiercingArrowId,
+}
+
+var MarksmanSharpEyes = Skill{
+	id:   MarksmanSharpEyesId,
+	buff: true,
+}
+
+var MarksmanDragonsBreath = Skill{
+	id: MarksmanDragonsBreathId,
+}
+
+var MarksmanMarksmanBoost = Skill{
+	id: MarksmanMarksmanBoostId,
+}
+
+var MarksmanFrostprey = Skill{
+	id: MarksmanFrostpreyId,
+}
+
+var MarksmanBlind = Skill{
+	id:   MarksmanBlindId,
+	buff: true,
+}
+
+var MarksmanSnipe = Skill{
+	id: MarksmanSnipeId,
+}
+
+var MarksmanHerosWill = Skill{
+	id:   MarksmanHerosWillId,
+	buff: true,
+}
+
+var RogueNimbleBody = Skill{
+	id: RogueNimbleBodyId,
+}
+
+var RogueKeenEyes = Skill{
+	id: RogueKeenEyesId,
+}
+
+var RogueDisorder = Skill{
+	id: RogueDisorderId,
+}
+
+var RogueDarkSight = Skill{
+	id:   RogueDarkSightId,
+	buff: true,
+}
+
+var RogueDoubleStab = Skill{
+	id: RogueDoubleStabId,
+}
+
+var RogueLuckySeven = Skill{
+	id: RogueLuckySevenId,
+}
+
+var AssassinClawMastery = Skill{
+	id: AssassinClawMasteryId,
+}
+
+var AssassinCriticalThrow = Skill{
+	id: AssassinCriticalThrowId,
+}
+
+var AssassinEndure = Skill{
+	id: AssassinEndureId,
+}
+
+var AssassinClawBooster = Skill{
+	id:   AssassinClawBoosterId,
+	buff: true,
+}
+
+var AssassinHaste = Skill{
+	id:   AssassinHasteId,
+	buff: true,
+}
+
+var AssassinDrain = Skill{
+	id: AssassinDrainId,
+}
+
+var HermitAlchemist = Skill{
+	id: HermitAlchemistId,
+}
+
+var HermitMesoUp = Skill{
+	id:   HermitMesoUpId,
+	buff: true,
+}
+
+var HermitShadowPartner = Skill{
+	id:   HermitShadowPartnerId,
+	buff: true,
+}
+
+var HermitShadowWeb = Skill{
+	id: HermitShadowWebId,
+}
+
+var HermitShadowMeso = Skill{
+	id: HermitShadowMesoId,
+}
+
+var HermitAvenger = Skill{
+	id: HermitAvengerId,
+}
+
+var HermitFlashJump = Skill{
+	id: HermitFlashJumpId,
+}
+
+var NightLordMapleWarrior = Skill{
+	id:   NightLordMapleWarriorId,
+	buff: true,
+}
+
+var NightLordShadowShifter = Skill{
+	id: NightLordShadowShifterId,
+}
+
+var NightLordTaunt = Skill{
+	id: NightLordTauntId,
+}
+
+var NightLordNinjaAmbush = Skill{
+	id:   NightLordNinjaAmbushId,
+	buff: true,
+}
+
+var NightLordVenomousStar = Skill{
+	id: NightLordVenomousStarId,
+}
+
+var NightLordShadowStars = Skill{
+	id:   NightLordShadowStarsId,
+	buff: true,
+}
+
+var NightLordTripleThrow = Skill{
+	id: NightLordTripleThrowId,
+}
+
+var NightLordNinjaStorm = Skill{
+	id: NightLordNinjaStormId,
+}
+
+var NightLordHerosWill = Skill{
+	id:   NightLordHerosWillId,
+	buff: true,
+}
+
+var BanditDaggerMastery = Skill{
+	id: BanditDaggerMasteryId,
+}
+
+var BanditEndure = Skill{
+	id: BanditEndureId,
+}
+
+var BanditDaggerBooster = Skill{
+	id:   BanditDaggerBoosterId,
+	buff: true,
+}
+
+var BanditHaste = Skill{
+	id:   BanditHasteId,
+	buff: true,
+}
+
+var BanditSteal = Skill{
+	id: BanditStealId,
+}
+
+var BanditSavageBlow = Skill{
+	id: BanditSavageBlowId,
+}
+
+var ChiefBanditShieldMastery = Skill{
+	id: ChiefBanditShieldMasteryId,
+}
+
+var ChiefBanditChakra = Skill{
+	id: ChiefBanditChakraId,
+}
+
+var ChiefBanditAssaulter = Skill{
+	id: ChiefBanditAssaulterId,
+}
+
+var ChiefBanditPickpocket = Skill{
+	id:   ChiefBanditPickpocketId,
+	buff: true,
+}
+
+var ChiefBanditBandOfThieves = Skill{
+	id: ChiefBanditBandOfThievesId,
+}
+
+var ChiefBanditMesoGuard = Skill{
+	id:   ChiefBanditMesoGuardId,
+	buff: true,
+}
+
+var ChiefBanditMesoExplosion = Skill{
+	id: ChiefBanditMesoExplosionId,
+}
+
+var ShadowerMapleWarrior = Skill{
+	id:   ShadowerMapleWarriorId,
+	buff: true,
+}
+
+var ShadowerAssassinate = Skill{
+	id: ShadowerAssassinateId,
+}
+
+var ShadowerShadowShifter = Skill{
+	id: ShadowerShadowShifterId,
+}
+
+var ShadowerTaunt = Skill{
+	id: ShadowerTauntId,
+}
+
+var ShadowerNinjaAmbush = Skill{
+	id:   ShadowerNinjaAmbushId,
+	buff: true,
+}
+
+var ShadowerVenomousStab = Skill{
+	id: ShadowerVenomousStabId,
+}
+
+var ShadowerSmokescreen = Skill{
+	id: ShadowerSmokescreenId,
+}
+
+var ShadowerBoomerangStep = Skill{
+	id: ShadowerBoomerangStepId,
+}
+
+var ShadowerHerosWill = Skill{
+	id:   ShadowerHerosWillId,
+	buff: true,
+}
+
+var PirateBulletTime = Skill{
+	id: PirateBulletTimeId,
+}
+
+var PirateFlashFist = Skill{
+	id: PirateFlashFistId,
+}
+
+var PirateSommersaultKick = Skill{
+	id: PirateSommersaultKickId,
+}
+
+var PirateDoubleShot = Skill{
+	id: PirateDoubleShotId,
+}
+
+var PirateDash = Skill{
+	id:   PirateDashId,
+	buff: true,
+}
+
+var BrawlerImproveMaxHp = Skill{
+	id: BrawlerImproveMaxHpId,
+}
+
+var BrawlerKnucklerMastery = Skill{
+	id: BrawlerKnucklerMasteryId,
+}
+
+var BrawlerBackspinBlow = Skill{
+	id: BrawlerBackspinBlowId,
+}
+
+var BrawlerDoubleUppercut = Skill{
+	id: BrawlerDoubleUppercutId,
+}
+
+var BrawlerCorkscrewBlow = Skill{
+	id: BrawlerCorkscrewBlowId,
+}
+
+var BrawlerMPRecovery = Skill{
+	id: BrawlerMPRecoveryId,
+}
+
+var BrawlerKnucklerBooster = Skill{
+	id: BrawlerKnucklerBoosterId,
+}
+
+var BrawlerOakBarrel = Skill{
+	id: BrawlerOakBarrelId,
+}
+
+var MarauderStunMastery = Skill{
+	id: MarauderStunMasteryId,
+}
+
+var MarauderEnergyCharge = Skill{
+	id: MarauderEnergyChargeId,
+}
+
+var MarauderEnergyBlast = Skill{
+	id: MarauderEnergyBlastId,
+}
+
+var MarauderEnergyDrain = Skill{
+	id: MarauderEnergyDrainId,
+}
+
+var MarauderTransformation = Skill{
+	id:   MarauderTransformationId,
+	buff: true,
+}
+
+var MarauderShockwave = Skill{
+	id: MarauderShockwaveId,
+}
+
+var BuccaneerMapleWarrior = Skill{
+	id: BuccaneerMapleWarriorId,
+}
+
+var BuccaneerDragonStrike = Skill{
+	id: BuccaneerDragonStrikeId,
+}
+
+var BuccaneerEnergyOrb = Skill{
+	id: BuccaneerEnergyOrbId,
+}
+
+var BuccaneerSuperTransformation = Skill{
+	id:   BuccaneerSuperTransformationId,
+	buff: true,
+}
+
+var BuccaneerDemolition = Skill{
+	id: BuccaneerDemolitionId,
+}
+
+var BuccaneerSnatch = Skill{
+	id: BuccaneerSnatchId,
+}
+
+var BuccaneerBarrage = Skill{
+	id: BuccaneerBarrageId,
+}
+
+var BuccaneerPiratesRage = Skill{
+	id: BuccaneerPiratesRageId,
+}
+
+var BuccaneerSpeedInfusion = Skill{
+	id: BuccaneerSpeedInfusionId,
+}
+
+var BuccaneerTimeLeap = Skill{
+	id: BuccaneerTimeLeapId,
+}
+
+var GunslingerGunMastery = Skill{
+	id: GunslingerGunMasteryId,
+}
+
+var GunslingerInvisibleShot = Skill{
+	id: GunslingerInvisibleShotId,
+}
+
+var GunslingerGrenade = Skill{
+	id: GunslingerGrenadeId,
+}
+
+var GunslingerGunBooster = Skill{
+	id: GunslingerGunBoosterId,
+}
+
+var GunslingerBlankShot = Skill{
+	id: GunslingerBlankShotId,
+}
+
+var GunslingerWings = Skill{
+	id: GunslingerWingsId,
+}
+
+var GunslingerRecoilShot = Skill{
+	id: GunslingerRecoilShotId,
+}
+
+var OutlawBurstFire = Skill{
+	id: OutlawBurstFireId,
+}
+
+var OutlawOctopus = Skill{
+	id: OutlawOctopusId,
+}
+
+var OutlawGaviota = Skill{
+	id: OutlawGaviotaId,
+}
+
+var OutlawFlamethrower = Skill{
+	id: OutlawFlamethrowerId,
+}
+
+var OutlawIceSplitter = Skill{
+	id: OutlawIceSplitterId,
+}
+
+var OutlawHomingBeacon = Skill{
+	id: OutlawHomingBeaconId,
+}
+
+var CorsairMapleWarrior = Skill{
+	id: CorsairMapleWarriorId,
+}
+
+var CorsairElementalBoost = Skill{
+	id: CorsairElementalBoostId,
+}
+
+var CorsairWrathOfTheOctopi = Skill{
+	id: CorsairWrathOfTheOctopiId,
+}
+
+var CorsairAerialStrike = Skill{
+	id: CorsairAerialStrikeId,
+}
+
+var CorsairRapidFire = Skill{
+	id: CorsairRapidFireId,
+}
+
+var CorsairBattleship = Skill{
+	id:   CorsairBattleshipId,
+	buff: true,
+}
+
+var CorsairBattleshipCannon = Skill{
+	id: CorsairBattleshipCannonId,
+}
+
+var CorsairBattleshipTorpedo = Skill{
+	id: CorsairBattleshipTorpedoId,
+}
+
+var CorsairHypnotize = Skill{
+	id: CorsairHypnotizeId,
+}
+
+var CorsairSpeedInfusion = Skill{
+	id: CorsairSpeedInfusionId,
+}
+
+var CorsairBullseye = Skill{
+	id: CorsairBullseyeId,
+}
+
+var MapleLeafBrigadierAntiMacro = Skill{
+	id: MapleLeafBrigadierAntiMacroId,
+}
+
+var MapleLeafBrigadierTeleport = Skill{
+	id: MapleLeafBrigadierTeleportId,
+}
+
+var GmHaste = Skill{
+	id: GmHasteId,
+}
+
+var GmSuperDragonRoar = Skill{
+	id: GmSuperDragonRoarId,
+}
+
+var GmTeleport = Skill{
+	id: GmTeleportId,
+}
+
+var GmHide = Skill{
+	id:   GmHideId,
+	buff: true,
+}
+
+var SuperGmHealDispel = Skill{
+	id: SuperGmHealDispelId,
+}
+
+var SuperGmHaste = Skill{
+	id:   SuperGmHasteId,
+	buff: true,
+}
+
+var SuperGmHolySymbol = Skill{
+	id:   SuperGmHolySymbolId,
+	buff: true,
+}
+
+var SuperGmBless = Skill{
+	id:   SuperGmBlessId,
+	buff: true,
+}
+
+var SuperGmHide = Skill{
+	id:   SuperGmHideId,
+	buff: true,
+}
+
+var SuperGmResurrection = Skill{
+	id: SuperGmResurrectionId,
+}
+
+var SuperGmDragonRoar = Skill{
+	id: SuperGmDragonRoarId,
+}
+
+var SuperGmTeleport = Skill{
+	id: SuperGmTeleportId,
+}
+
+var SuperGmHyperBody = Skill{
+	id:   SuperGmHyperBodyId,
+	buff: true,
+}
+
+var NoblesseThreeSnails = Skill{
+	id: NoblesseThreeSnailsId,
+}
+
+var NoblesseRecovery = Skill{
+	id:   NoblesseRecoveryId,
+	buff: true,
+}
+
+var NoblesseNimbleFeet = Skill{
+	id:   NoblesseNimbleFeetId,
+	buff: true,
+}
+
+var NoblesseSoulOfCraftsman = Skill{
+	id: NoblesseSoulOfCraftsmanId,
+}
+
+var NoblesseMonsterRiding = Skill{
+	id:   NoblesseMonsterRidingId,
+	buff: true,
+}
+
+var NoblesseEchoOfHero = Skill{
+	id:   NoblesseEchoOfHeroId,
+	buff: true,
+}
+
+var NoblesseJumpDown = Skill{
+	id: NoblesseJumpDownId,
+}
+
+var NoblesseMaker = Skill{
+	id: NoblesseMakerId,
+}
+
+var NoblesseMultiPet = Skill{
+	id: NoblesseMultiPetId,
+}
+
+var NoblesseBamboo = Skill{
+	id: NoblesseBambooId,
+}
+
+var NoblesseInvincible = Skill{
+	id: NoblesseInvincibleId,
+}
+
+var NoblesseBerserk = Skill{
+	id: NoblesseBerserkId,
+}
+
+var NoblesseBlessOfNymph = Skill{
+	id:   NoblesseBlessOfNymphId,
+	buff: true,
+}
+
+var ThunderBreakerStage1QuickMotion = Skill{
+	id: ThunderBreakerStage1QuickMotionId,
+}
+
+var ThunderBreakerStage1FirstStrike = Skill{
+	id: ThunderBreakerStage1FirstStrikeId,
+}
+
+var ThunderBreakerStage1SomersaultKick = Skill{
+	id: ThunderBreakerStage1SomersaultKickId,
+}
+
+var ThunderBreakerStage1Dash = Skill{
+	id:   ThunderBreakerStage1DashId,
+	buff: true,
+}
+
+var ThunderBreakerStage1LightningSprite = Skill{
+	id:   ThunderBreakerStage1LightningSpriteId,
+	buff: true,
+}
+
+var ThunderBreakerStage2KnuckleMastery = Skill{
+	id: ThunderBreakerStage2KnuckleMasteryId,
+}
+
+var ThunderBreakerStage2KnuckleBooster = Skill{
+	id:   ThunderBreakerStage2KnuckleBoosterId,
+	buff: true,
+}
+
+var ThunderBreakerStage2CorkscrewBlow = Skill{
+	id: ThunderBreakerStage2CorkscrewBlowId,
+}
+
+var ThunderBreakerStage2EnergyCharge = Skill{
+	id:   ThunderBreakerStage2EnergyChargeId,
+	buff: true,
+}
+
+var ThunderBreakerStage2EnergyBlast = Skill{
+	id: ThunderBreakerStage2EnergyBlastId,
+}
+
+var ThunderBreakerStage2LightningCharge = Skill{
+	id:   ThunderBreakerStage2LightningChargeId,
+	buff: true,
+}
+
+var ThunderBreakerStage2ImprovedMaxHpIncrease = Skill{
+	id: ThunderBreakerStage2ImprovedMaxHpIncreaseId,
+}
+
+var ThunderBreakerStage3CriticalPunch = Skill{
+	id: ThunderBreakerStage3CriticalPunchId,
+}
+
+var ThunderBreakerStage3EnergyDrain = Skill{
+	id:   ThunderBreakerStage3EnergyDrainId,
+	buff: true,
+}
+
+var ThunderBreakerStage3Transformation = Skill{
+	id:   ThunderBreakerStage3TransformationId,
+	buff: true,
+}
+
+var ThunderBreakerStage3ShockWave = Skill{
+	id: ThunderBreakerStage3ShockWaveId,
+}
+
+var ThunderBreakerStage3Barrage = Skill{
+	id: ThunderBreakerStage3BarrageId,
+}
+
+var ThunderBreakerStage3SpeedInfusion = Skill{
+	id:   ThunderBreakerStage3SpeedInfusionId,
+	buff: true,
+}
+
+var ThunderBreakerStage3Spark = Skill{
+	id:   ThunderBreakerStage3SparkId,
+	buff: true,
+}
+
+var ThunderBreakerStage3SharkWave = Skill{
+	id: ThunderBreakerStage3SharkWaveId,
+}
+
+var DawnWarriorStage1IronBody = Skill{
+	id:   DawnWarriorStage1IronBodyId,
+	buff: true,
+}
+
+var DawnWarriorStage1PowerStrike = Skill{
+	id: DawnWarriorStage1PowerStrikeId,
+}
+
+var DawnWarriorStage1SlashBlast = Skill{
+	id: DawnWarriorStage1SlashBlastId,
+}
+
+var DawnWarriorStage1Soul = Skill{
+	id:   DawnWarriorStage1SoulId,
+	buff: true,
+}
+
+var DawnWarriorStage1ImprovedMaxHpIncrease = Skill{
+	id: DawnWarriorStage1ImprovedMaxHpIncreaseId,
+}
+
+var DawnWarriorStage2SwordMastery = Skill{
+	id: DawnWarriorStage2SwordMasteryId,
+}
+
+var DawnWarriorStage2SwordBooster = Skill{
+	id:   DawnWarriorStage2SwordBoosterId,
+	buff: true,
+}
+
+var DawnWarriorStage2FinalAttackSword = Skill{
+	id:   DawnWarriorStage2FinalAttackSwordId,
+	buff: true,
+}
+
+var DawnWarriorStage2Rage = Skill{
+	id:   DawnWarriorStage2RageId,
+	buff: true,
+}
+
+var DawnWarriorStage2SoulBlade = Skill{
+	id: DawnWarriorStage2SoulBladeId,
+}
+
+var DawnWarriorStage2SoulRush = Skill{
+	id: DawnWarriorStage2SoulRushId,
+}
+
+var DawnWarriorStage3ImprovedMpRecovery = Skill{
+	id: DawnWarriorStage3ImprovedMpRecoveryId,
+}
+
+var DawnWarriorStage3ComboAttack = Skill{
+	id:   DawnWarriorStage3ComboAttackId,
+	buff: true,
+}
+
+var DawnWarriorStage3Panic = Skill{
+	id: DawnWarriorStage3PanicId,
+}
+
+var DawnWarriorStage3Coma = Skill{
+	id: DawnWarriorStage3ComaId,
+}
+
+var DawnWarriorStage3Brandish = Skill{
+	id: DawnWarriorStage3BrandishId,
+}
+
+var DawnWarriorStage3AdvancedCombo = Skill{
+	id: DawnWarriorStage3AdvancedComboId,
+}
+
+var DawnWarriorStage3SoulDriver = Skill{
+	id: DawnWarriorStage3SoulDriverId,
+}
+
+var DawnWarriorStage3SoulCharge = Skill{
+	id:   DawnWarriorStage3SoulChargeId,
+	buff: true,
+}
+
+var BlazeWizardStage1MagicGuard = Skill{
+	id:   BlazeWizardStage1MagicGuardId,
+	buff: true,
+}
+
+var BlazeWizardStage1MagicArmor = Skill{
+	id:   BlazeWizardStage1MagicArmorId,
+	buff: true,
+}
+
+var BlazeWizardStage1MagicClaw = Skill{
+	id: BlazeWizardStage1MagicClawId,
+}
+
+var BlazeWizardStage1Flame = Skill{
+	id:   BlazeWizardStage1FlameId,
+	buff: true,
+}
+
+var BlazeWizardStage1ImprovedMaxMpIncrease = Skill{
+	id: BlazeWizardStage1ImprovedMaxMpIncreaseId,
+}
+
+var BlazeWizardStage2Meditation = Skill{
+	id:   BlazeWizardStage2MeditationId,
+	buff: true,
+}
+
+var BlazeWizardStage2Slow = Skill{
+	id:   BlazeWizardStage2SlowId,
+	buff: true,
+}
+
+var BlazeWizardStage2FireArrow = Skill{
+	id: BlazeWizardStage2FireArrowId,
+}
+
+var BlazeWizardStage2Teleport = Skill{
+	id: BlazeWizardStage2TeleportId,
+}
+
+var BlazeWizardStage2SpellBooster = Skill{
+	id:   BlazeWizardStage2SpellBoosterId,
+	buff: true,
+}
+
+var BlazeWizardStage2ElementalReset = Skill{
+	id:   BlazeWizardStage2ElementalResetId,
+	buff: true,
+}
+
+var BlazeWizardStage2FirePillar = Skill{
+	id: BlazeWizardStage2FirePillarId,
+}
+
+var BlazeWizardStage3SpellMastery = Skill{
+	id: BlazeWizardStage3SpellMasteryId,
+}
+
+var BlazeWizardStage3ElementResistance = Skill{
+	id: BlazeWizardStage3ElementResistanceId,
+}
+
+var BlazeWizardStage3ElementAmplification = Skill{
+	id: BlazeWizardStage3ElementAmplificationId,
+}
+
+var BlazeWizardStage3Seal = Skill{
+	id:   BlazeWizardStage3SealId,
+	buff: true,
+}
+
+var BlazeWizardStage3MeteorShower = Skill{
+	id: BlazeWizardStage3MeteorShowerId,
+}
+
+var BlazeWizardStage3Ifrit = Skill{
+	id:   BlazeWizardStage3IfritId,
+	buff: true,
+}
+
+var BlazeWizardStage3FlameGear = Skill{
+	id: BlazeWizardStage3FlameGearId,
+}
+
+var BlazeWizardStage3FireStrike = Skill{
+	id: BlazeWizardStage3FireStrikeId,
+}
+
+var WindArcherStage1CriticalShot = Skill{
+	id: WindArcherStage1CriticalShotId,
+}
+
+var WindArcherStage1TheEyeOfAmazon = Skill{
+	id: WindArcherStage1TheEyeOfAmazonId,
+}
+
+var WindArcherStage1Focus = Skill{
+	id:   WindArcherStage1FocusId,
+	buff: true,
+}
+
+var WindArcherStage1DoubleShot = Skill{
+	id: WindArcherStage1DoubleShotId,
+}
+
+var WindArcherStage1Storm = Skill{
+	id:   WindArcherStage1StormId,
+	buff: true,
+}
+
+var WindArcherStage2BowMastery = Skill{
+	id: WindArcherStage2BowMasteryId,
+}
+
+var WindArcherStage2BowBooster = Skill{
+	id:   WindArcherStage2BowBoosterId,
+	buff: true,
+}
+
+var WindArcherStage2FinalAttackBow = Skill{
+	id:   WindArcherStage2FinalAttackBowId,
+	buff: true,
+}
+
+var WindArcherStage2SoulArrow = Skill{
+	id:   WindArcherStage2SoulArrowId,
+	buff: true,
+}
+
+var WindArcherStage2Thrust = Skill{
+	id: WindArcherStage2ThrustId,
+}
+
+var WindArcherStage2StormBreak = Skill{
+	id: WindArcherStage2StormBreakId,
+}
+
+var WindArcherStage2WindWalk = Skill{
+	id:   WindArcherStage2WindWalkId,
+	buff: true,
+}
+
+var WindArcherStage3ArrowRain = Skill{
+	id: WindArcherStage3ArrowRainId,
+}
+
+var WindArcherStage3Strafe = Skill{
+	id: WindArcherStage3StrafeId,
+}
+
+var WindArcherStage3Hurricane = Skill{
+	id: WindArcherStage3HurricaneId,
+}
+
+var WindArcherStage3BowExpert = Skill{
+	id: WindArcherStage3BowExpertId,
+}
+
+var WindArcherStage3Puppet = Skill{
+	id:   WindArcherStage3PuppetId,
+	buff: true,
+}
+
+var WindArcherStage3EagleEye = Skill{
+	id:   WindArcherStage3EagleEyeId,
+	buff: true,
+}
+
+var WindArcherStage3WindPiercing = Skill{
+	id: WindArcherStage3WindPiercingId,
+}
+
+var WindArcherStage3WindShot = Skill{
+	id: WindArcherStage3WindShotId,
+}
+
+var NightWalkerStage1NimbleBody = Skill{
+	id: NightWalkerStage1NimbleBodyId,
+}
+
+var NightWalkerStage1KeenEyes = Skill{
+	id: NightWalkerStage1KeenEyesId,
+}
+
+var NightWalkerStage1Disorder = Skill{
+	id: NightWalkerStage1DisorderId,
+}
+
+var NightWalkerStage1DarkSight = Skill{
+	id:   NightWalkerStage1DarkSightId,
+	buff: true,
+}
+
+var NightWalkerStage1LuckySeven = Skill{
+	id: NightWalkerStage1LuckySevenId,
+}
+
+var NightWalkerStage1Darkness = Skill{
+	id:   NightWalkerStage1DarknessId,
+	buff: true,
+}
+
+var NightWalkerStage2ClawMastery = Skill{
+	id: NightWalkerStage2ClawMasteryId,
+}
+
+var NightWalkerStage2CriticalThrow = Skill{
+	id: NightWalkerStage2CriticalThrowId,
+}
+
+var NightWalkerStage2ClawBooster = Skill{
+	id:   NightWalkerStage2ClawBoosterId,
+	buff: true,
+}
+
+var NightWalkerStage2Haste = Skill{
+	id:   NightWalkerStage2HasteId,
+	buff: true,
+}
+
+var NightWalkerStage2FlashJump = Skill{
+	id: NightWalkerStage2FlashJumpId,
+}
+
+var NightWalkerStage2Vanish = Skill{
+	id: NightWalkerStage2VanishId,
+}
+
+var NightWalkerStage2Vampire = Skill{
+	id: NightWalkerStage2VampireId,
+}
+
+var NightWalkerStage3ShadowPartner = Skill{
+	id:   NightWalkerStage3ShadowPartnerId,
+	buff: true,
+}
+
+var NightWalkerStage3ShadowWeb = Skill{
+	id: NightWalkerStage3ShadowWebId,
+}
+
+var NightWalkerStage3Avenger = Skill{
+	id: NightWalkerStage3AvengerId,
+}
+
+var NightWalkerStage3Alchemist = Skill{
+	id: NightWalkerStage3AlchemistId,
+}
+
+var NightWalkerStage3Venom = Skill{
+	id: NightWalkerStage3VenomId,
+}
+
+var NightWalkerStage3TripleThrow = Skill{
+	id: NightWalkerStage3TripleThrowId,
+}
+
+var NightWalkerStage3PoisonBomb = Skill{
+	id: NightWalkerStage3PoisonBombId,
+}
+
+var LegendThreeSnails = Skill{
+	id: LegendThreeSnailsId,
+}
+
+var LegendRecovery = Skill{
+	id:   LegendRecoveryId,
+	buff: true,
+}
+
+var LegendNimbleFeet = Skill{
+	id:   LegendNimbleFeetId,
+	buff: true,
+}
+
+var LegendSoulOfCraftsman = Skill{
+	id: LegendSoulOfCraftsmanId,
+}
+
+var LegendMonsterRiding = Skill{
+	id:   LegendMonsterRidingId,
+	buff: true,
+}
+
+var LegendEchoOfHero = Skill{
+	id:   LegendEchoOfHeroId,
+	buff: true,
+}
+
+var LegendDamageMeter = Skill{
+	id: LegendDamageMeterId,
+}
+
+var LegendMaker = Skill{
+	id: LegendMakerId,
+}
+
+var LegendBamboo = Skill{
+	id: LegendBambooId,
+}
+
+var LegendInvincible = Skill{
+	id: LegendInvincibleId,
+}
+
+var LegendBerserk = Skill{
+	id: LegendBerserkId,
+}
+
+var LegendBlessOfNymph = Skill{
+	id:   LegendBlessOfNymphId,
+	buff: true,
+}
+
+var AranStage1ComboAbility = Skill{
+	id:   AranStage1ComboAbilityId,
+	buff: true,
+}
+
+var AranStage1CombatStep = Skill{
+	id: AranStage1CombatStepId,
+}
+
+var AranStage1DoubleSwing = Skill{
+	id: AranStage1DoubleSwingId,
+}
+
+var AranStage1PolearmBooster = Skill{
+	id:   AranStage1PolearmBoosterId,
+	buff: true,
+}
+
+var AranStage2PolearmMastery = Skill{
+	id: AranStage2PolearmMasteryId,
+}
+
+var AranStage2TripleSwing = Skill{
+	id: AranStage2TripleSwingId,
+}
+
+var AranStage2FinalCharge = Skill{
+	id: AranStage2FinalChargeId,
+}
+
+var AranStage2BodyPressure = Skill{
+	id:   AranStage2BodyPressureId,
+	buff: true,
+}
+
+var AranStage2ComboSmash = Skill{
+	id: AranStage2ComboSmashId,
+}
+
+var AranStage2ComboDrain = Skill{
+	id:   AranStage2ComboDrainId,
+	buff: true,
+}
+
+var AranStage3ComboCritical = Skill{
+	id: AranStage3ComboCriticalId,
+}
+
+var AranStage3SmartKnockback = Skill{
+	id:   AranStage3SmartKnockbackId,
+	buff: true,
+}
+
+var AranStage3FullSwing = Skill{
+	id: AranStage3FullSwingId,
+}
+
+var AranStage3FinalToss = Skill{
+	id: AranStage3FinalTossId,
+}
+
+var AranStage3ComboFenrir = Skill{
+	id: AranStage3ComboFenrirId,
+}
+
+var AranStage3SnowCharge = Skill{
+	id:   AranStage3SnowChargeId,
+	buff: true,
+}
+
+var AranStage3RollingSpin = Skill{
+	id: AranStage3RollingSpinId,
+}
+
+var AranStage3FullSwingDoubleSwing = Skill{
+	id: AranStage3FullSwingDoubleSwingId,
+}
+
+var AranStage3FullSwingTripleSwing = Skill{
+	id: AranStage3FullSwingTripleSwingId,
+}
+
+var AranStage4MapleWarrior = Skill{
+	id:   AranStage4MapleWarriorId,
+	buff: true,
+}
+
+var AranStage4HighMastery = Skill{
+	id: AranStage4HighMasteryId,
+}
+
+var AranStage4OverSwing = Skill{
+	id: AranStage4OverSwingId,
+}
+
+var AranStage4FreezeStanding = Skill{
+	id: AranStage4FreezeStandingId,
+}
+
+var AranStage4HighDefense = Skill{
+	id: AranStage4HighDefenseId,
+}
+
+var AranStage4FinalBlow = Skill{
+	id: AranStage4FinalBlowId,
+}
+
+var AranStage4ComboTempest = Skill{
+	id: AranStage4ComboTempestId,
+}
+
+var AranStage4ComboBarrier = Skill{
+	id:   AranStage4ComboBarrierId,
+	buff: true,
+}
+
+var AranStage4HerosWill = Skill{
+	id:   AranStage4HerosWillId,
+	buff: true,
+}
+
+var AranStage4OverswingDoubleSwing = Skill{
+	id: AranStage4OverswingDoubleSwingId,
+}
+
+var AranStage4OverswingTripleSwing = Skill{
+	id: AranStage4OverswingTripleSwingId,
+}
+
+var EvanThreeSnails = Skill{
+	id: EvanThreeSnailsId,
+}
+
+var EvanRecovery = Skill{
+	id:   EvanRecoveryId,
+	buff: true,
+}
+
+var EvanNimbleFeet = Skill{
+	id:   EvanNimbleFeetId,
+	buff: true,
+}
+
+var EvanSoulOfCraftsman = Skill{
+	id: EvanSoulOfCraftsmanId,
+}
+
+var EvanMonsterRiding = Skill{
+	id:   EvanMonsterRidingId,
+	buff: true,
+}
+
+var EvanEchoOfHero = Skill{
+	id:   EvanEchoOfHeroId,
+	buff: true,
+}
+
+var EvanDamageMeter = Skill{
+	id: EvanDamageMeterId,
+}
+
+var EvanMaker = Skill{
+	id: EvanMakerId,
+}
+
+var EvanBamboo = Skill{
+	id: EvanBambooId,
+}
+
+var EvanInvincible = Skill{
+	id: EvanInvincibleId,
+}
+
+var EvanBerserk = Skill{
+	id: EvanBerserkId,
+}
+
+var EvanBlessOfNymph = Skill{
+	id:   EvanBlessOfNymphId,
+	buff: true,
+}
+
+var EvanStage1DragonSoul = Skill{
+	id: EvanStage1DragonSoulId,
+}
+
+var EvanStage1MagicMissile = Skill{
+	id: EvanStage1MagicMissileId,
+}
+
+var EvanStage2FireCircle = Skill{
+	id: EvanStage2FireCircleId,
+}
+
+var EvanStage2Teleport = Skill{
+	id: EvanStage2TeleportId,
+}
+
+var EvanStage3LightningBolt = Skill{
+	id: EvanStage3LightningBoltId,
+}
+
+var EvanStage3MagicGuard = Skill{
+	id:   EvanStage3MagicGuardId,
+	buff: true,
+}
+
+var EvanStage4IceBreath = Skill{
+	id:     EvanStage4IceBreathId,
+	charge: true,
+}
+
+var EvanStage4ElementalReset = Skill{
+	id:   EvanStage4ElementalResetId,
+	buff: true,
+}
+
+var EvanStage5MagicFlare = Skill{
+	id: EvanStage5MagicFlareId,
+}
+
+var EvanStage5MagicShield = Skill{
+	id:   EvanStage5MagicShieldId,
+	buff: true,
+}
+
+var EvanStage6CriticalMagic = Skill{
+	id: EvanStage6CriticalMagicId,
+}
+
+var EvanStage6DragonThrust = Skill{
+	id: EvanStage6DragonThrustId,
+}
+
+var EvanStage6MagicBooster = Skill{
+	id:   EvanStage6MagicBoosterId,
+	buff: true,
+}
+
+var EvanStage6Slow = Skill{
+	id:   EvanStage6SlowId,
+	buff: true,
+}
+
+var EvanStage7MagicAmplification = Skill{
+	id: EvanStage7MagicAmplificationId,
+}
+
+var EvanStage7FireBreath = Skill{
+	id:     EvanStage7FireBreathId,
+	charge: true,
+}
+
+var EvanStage7KillerWings = Skill{
+	id: EvanStage7KillerWingsId,
+}
+
+var EvanStage7MagicResistance = Skill{
+	id:   EvanStage7MagicResistanceId,
+	buff: true,
+}
+
+var EvanStage8DragonFury = Skill{
+	id: EvanStage8DragonFuryId,
+}
+
+var EvanStage8Earthquake = Skill{
+	id: EvanStage8EarthquakeId,
+}
+
+var EvanStage8PhantomImprint = Skill{
+	id: EvanStage8PhantomImprintId,
+}
+
+var EvanStage8RecoveryAura = Skill{
+	id: EvanStage8RecoveryAuraId,
+}
+
+var EvanStage9MapleWarrior = Skill{
+	id:   EvanStage9MapleWarriorId,
+	buff: true,
+}
+
+var EvanStage9MagicMastery = Skill{
+	id: EvanStage9MagicMasteryId,
+}
+
+var EvanStage9Illusion = Skill{
+	id: EvanStage9IllusionId,
+}
+
+var EvanStage9FlameWheel = Skill{
+	id: EvanStage9FlameWheelId,
+}
+
+var EvanStage9HerosWill = Skill{
+	id:   EvanStage9HerosWillId,
+	buff: true,
+}
+
+var EvanStage10BlessingOfTheOnyx = Skill{
+	id:   EvanStage10BlessingOfTheOnyxId,
+	buff: true,
+}
+
+var EvanStage10Blaze = Skill{
+	id: EvanStage10BlazeId,
+}
+
+var EvanStage10DarkFog = Skill{
+	id: EvanStage10DarkFogId,
+}
+
+var EvanStage10SoulStone = Skill{
+	id:   EvanStage10SoulStoneId,
+	buff: true,
+}
+
+var Skills = map[Id]Skill{
+	BeginnerThreeSnailsId:                       BeginnerThreeSnails,
+	BeginnerRecoveryId:                          BeginnerRecovery,
+	BeginnerNimbleFeetId:                        BeginnerNimbleFeet,
+	BeginnerSoulOfCraftsmanId:                   BeginnerSoulOfCraftsman,
+	BeginnerMonsterRidingId:                     BeginnerMonsterRiding,
+	BeginnerEchoOfHeroId:                        BeginnerEchoOfHero,
+	BeginnerJumpDownId:                          BeginnerJumpDown,
+	BeginnerMakerId:                             BeginnerMaker,
+	BeginnerMultiPetId:                          BeginnerMultiPet,
+	BeginnerBambooId:                            BeginnerBamboo,
+	BeginnerInvincibleId:                        BeginnerInvincible,
+	BeginnerBerserkId:                           BeginnerBerserk,
+	BeginnerBlessOfNymphId:                      BeginnerBlessOfNymph,
+	WarriorImprovedHpRecoveryId:                 WarriorImprovedHpRecovery,
+	WarriorImprovedMaxHpIncreaseId:              WarriorImprovedMaxHpIncrease,
+	WarriorEndureId:                             WarriorEndure,
+	WarriorIronBodyId:                           WarriorIronBody,
+	WarriorPowerStrikeId:                        WarriorPowerStrike,
+	WarriorSlashBlastId:                         WarriorSlashBlast,
+	FighterSwordMasteryId:                       FighterSwordMastery,
+	FighterAxeMasteryId:                         FighterAxeMastery,
+	FighterFinalAttackSwordId:                   FighterFinalAttackSword,
+	FighterFinalAttackAxeId:                     FighterFinalAttackAxe,
+	FighterSwordBoosterId:                       FighterSwordBooster,
+	FighterAxeBoosterId:                         FighterAxeBooster,
+	FighterRageId:                               FighterRage,
+	FighterPowerGuardId:                         FighterPowerGuard,
+	CrusaderImprovingMpRecoveryId:               CrusaderImprovingMpRecovery,
+	CrusaderShieldMasteryId:                     CrusaderShieldMastery,
+	CrusaderComboAttackId:                       CrusaderComboAttack,
+	CrusaderPanicSwordId:                        CrusaderPanicSword,
+	CrusaderPanicAxeId:                          CrusaderPanicAxe,
+	CrusaderComaSwordId:                         CrusaderComaSword,
+	CrusaderComaAxeId:                           CrusaderComaAxe,
+	CrusaderArmorCrashId:                        CrusaderArmorCrash,
+	CrusaderShoutId:                             CrusaderShout,
+	HeroMapleWarriorId:                          HeroMapleWarrior,
+	HeroMonsterMagnetId:                         HeroMonsterMagnet,
+	HeroPowerStanceId:                           HeroPowerStance,
+	HeroAdvancedComboAttackId:                   HeroAdvancedComboAttack,
+	HeroAchillesId:                              HeroAchilles,
+	HeroGuardianId:                              HeroGuardian,
+	HeroRushId:                                  HeroRush,
+	HeroBrandishId:                              HeroBrandish,
+	HeroEnrageId:                                HeroEnrage,
+	HeroHerosWillId:                             HeroHerosWill,
+	PageSwordMasteryId:                          PageSwordMastery,
+	PageBluntWeaponMasteryId:                    PageBluntWeaponMastery,
+	PageSwordFinalAttackId:                      PageSwordFinalAttack,
+	PageBluntFinalAttackId:                      PageBluntFinalAttack,
+	PageSwordBoosterId:                          PageSwordBooster,
+	PageBluntWeaponBoosterId:                    PageBluntWeaponBooster,
+	PageThreatenId:                              PageThreaten,
+	PagePowerGuardId:                            PagePowerGuard,
+	WhiteKnightImprovingMpRecoveryId:            WhiteKnightImprovingMpRecovery,
+	WhiteKnightShieldMasteryId:                  WhiteKnightShieldMastery,
+	WhiteKnightChargedBlowId:                    WhiteKnightChargedBlow,
+	WhiteKnightFireChargeSwordId:                WhiteKnightFireChargeSword,
+	WhiteKnightFlameChargeBluntWeaponId:         WhiteKnightFlameChargeBluntWeapon,
+	WhiteKnightIceChargeSwordId:                 WhiteKnightIceChargeSword,
+	WhiteKnightBlizzardChargeBluntWeaponId:      WhiteKnightBlizzardChargeBluntWeapon,
+	WhiteKnightThunderChargeSwordId:             WhiteKnightThunderChargeSword,
+	WhiteKnightLightningChargeBluntWeaponId:     WhiteKnightLightningChargeBluntWeapon,
+	WhiteKnightMagicCrashId:                     WhiteKnightMagicCrash,
+	PaladinMapleWarriorId:                       PaladinMapleWarrior,
+	PaladinMonsterMagnetId:                      PaladinMonsterMagnet,
+	PaladinPowerStanceId:                        PaladinPowerStance,
+	PaladinHolyChargeSwordId:                    PaladinHolyChargeSword,
+	PaladinDivineChargeBluntWeaponId:            PaladinDivineChargeBluntWeapon,
+	PaladinAchillesId:                           PaladinAchilles,
+	PaladinGuardianId:                           PaladinGuardian,
+	PaladinRushId:                               PaladinRush,
+	PaladinBlastId:                              PaladinBlast,
+	PaladinAdvancedChargeId:                     PaladinAdvancedCharge,
+	PaladinHeavensHammerId:                      PaladinHeavensHammer,
+	PaladinHerosWillId:                          PaladinHerosWill,
+	SpearmanSpearMasteryId:                      SpearmanSpearMastery,
+	SpearmanPolearmMasteryId:                    SpearmanPolearmMastery,
+	SpearmanFinalAttackSpearId:                  SpearmanFinalAttackSpear,
+	SpearmanFinalAttackPolearmId:                SpearmanFinalAttackPolearm,
+	SpearmanSpearBoosterId:                      SpearmanSpearBooster,
+	SpearmanPolearmBoosterId:                    SpearmanPolearmBooster,
+	SpearmanIronWillId:                          SpearmanIronWill,
+	SpearmanHyperBodyId:                         SpearmanHyperBody,
+	DragonKnightElementalResistanceId:           DragonKnightElementalResistance,
+	DragonKnightSpearCrusherId:                  DragonKnightSpearCrusher,
+	DragonKnightPolearmCrusherId:                DragonKnightPolearmCrusher,
+	DragonKnightDragonFurySpearId:               DragonKnightDragonFurySpear,
+	DragonKnightDragonFuryPolearmId:             DragonKnightDragonFuryPolearm,
+	DragonKnightSacrificeId:                     DragonKnightSacrifice,
+	DragonKnightDragonRoarId:                    DragonKnightDragonRoar,
+	DragonKnightPowerCrashId:                    DragonKnightPowerCrash,
+	DragonKnightDragonBloodId:                   DragonKnightDragonBlood,
+	DarkKnightMapleWarriorId:                    DarkKnightMapleWarrior,
+	DarkKnightMonsterMagnetId:                   DarkKnightMonsterMagnet,
+	DarkKnightPowerStanceId:                     DarkKnightPowerStance,
+	DarkKnightRushId:                            DarkKnightRush,
+	DarkKnightAchillesId:                        DarkKnightAchilles,
+	DarkKnightBerserkId:                         DarkKnightBerserk,
+	DarkKnightBeholderId:                        DarkKnightBeholder,
+	DarkKnightAuraOfTheBeholderId:               DarkKnightAuraOfTheBeholder,
+	DarkKnightHexOfTheBeholderId:                DarkKnightHexOfTheBeholder,
+	DarkKnightHerosWillId:                       DarkKnightHerosWill,
+	MagicianImprovedMpRecoveryId:                MagicianImprovedMpRecovery,
+	MagicianImprovedMaxMpIncreaseId:             MagicianImprovedMaxMpIncrease,
+	MagicianMagicGuardId:                        MagicianMagicGuard,
+	MagicianMagicArmorId:                        MagicianMagicArmor,
+	MagicianEnergyBoltId:                        MagicianEnergyBolt,
+	MagicianMagicClawId:                         MagicianMagicClaw,
+	FirePoisionWizardMpEaterId:                  FirePoisionWizardMpEater,
+	FirePoisionWizardMeditationId:               FirePoisionWizardMeditation,
+	FirePoisionWizardTeleportId:                 FirePoisionWizardTeleport,
+	FirePoisionWizardSlowId:                     FirePoisionWizardSlow,
+	FirePoisionWizardFireArrowId:                FirePoisionWizardFireArrow,
+	FirePoisionWizardPoisonBreathId:             FirePoisionWizardPoisonBreath,
+	FirePoisonMagicianPartialResistanceId:       FirePoisonMagicianPartialResistance,
+	FirePoisonMagicianElementAmplificationId:    FirePoisonMagicianElementAmplification,
+	FirePoisonMagicianExplosionId:               FirePoisonMagicianExplosion,
+	FirePoisonMagicianPoisonMistId:              FirePoisonMagicianPoisonMist,
+	FirePoisonMagicianSealId:                    FirePoisonMagicianSeal,
+	FirePoisonMagicianSpellBoosterId:            FirePoisonMagicianSpellBooster,
+	FirePoisonMagicianElementCompositionId:      FirePoisonMagicianElementComposition,
+	FirePoisonArchMagicianMapleWarriorId:        FirePoisonArchMagicianMapleWarrior,
+	FirePoisonArchMagicianBigBangId:             FirePoisonArchMagicianBigBang,
+	FirePoisonArchMagicianManaReflectionId:      FirePoisonArchMagicianManaReflection,
+	FirePoisonArchMagicianFireDemonId:           FirePoisonArchMagicianFireDemon,
+	FirePoisonArchMagicianInfinityId:            FirePoisonArchMagicianInfinity,
+	FirePoisonArchMagicianElquinesId:            FirePoisonArchMagicianElquines,
+	FirePoisonArchMagicianParalyzeId:            FirePoisonArchMagicianParalyze,
+	FirePoisonArchMagicianMeteorShowerId:        FirePoisonArchMagicianMeteorShower,
+	FirePoisonArchMagicianHerosWillId:           FirePoisonArchMagicianHerosWill,
+	IceLightningWizardMpEaterId:                 IceLightningWizardMpEater,
+	IceLightningWizardMeditationId:              IceLightningWizardMeditation,
+	IceLightningWizardTeleportId:                IceLightningWizardTeleport,
+	IceLightningWizardSlowId:                    IceLightningWizardSlow,
+	IceLightningWizardColdBeamId:                IceLightningWizardColdBeam,
+	IceLightningWizardThunderBoltId:             IceLightningWizardThunderBolt,
+	IceLightningMagicianPartialResistanceId:     IceLightningMagicianPartialResistance,
+	IceLightningMagicianElementAmplificationId:  IceLightningMagicianElementAmplification,
+	IceLightningMagicianIceStrikeId:             IceLightningMagicianIceStrike,
+	IceLightningMagicianThunderSpearId:          IceLightningMagicianThunderSpear,
+	IceLightningMagicianSealId:                  IceLightningMagicianSeal,
+	IceLightningMagicianSpellBoosterId:          IceLightningMagicianSpellBooster,
+	IceLightningMagicianElementCompositionId:    IceLightningMagicianElementComposition,
+	IceLightningArchMagicianMapleWarriorId:      IceLightningArchMagicianMapleWarrior,
+	IceLightningArchMagicianBigBangId:           IceLightningArchMagicianBigBang,
+	IceLightningArchMagicianManaReflectionId:    IceLightningArchMagicianManaReflection,
+	IceLightningArchMagicianIceDemonId:          IceLightningArchMagicianIceDemon,
+	IceLightningArchMagicianInfinityId:          IceLightningArchMagicianInfinity,
+	IceLightningArchMagicianIfritId:             IceLightningArchMagicianIfrit,
+	IceLightningArchMagicianChainLightningId:    IceLightningArchMagicianChainLightning,
+	IceLightningArchMagicianBlizzardId:          IceLightningArchMagicianBlizzard,
+	IceLightningArchMagicianHerosWillId:         IceLightningArchMagicianHerosWill,
+	ClericMpEaterId:                             ClericMpEater,
+	ClericTeleportId:                            ClericTeleport,
+	ClericHealId:                                ClericHeal,
+	ClericInvincibleId:                          ClericInvincible,
+	ClericBlessId:                               ClericBless,
+	ClericHolyArrowId:                           ClericHolyArrow,
+	PriestElementalResistanceId:                 PriestElementalResistance,
+	PriestDispelId:                              PriestDispel,
+	PriestMysticDoorId:                          PriestMysticDoor,
+	PriestHolySymbolId:                          PriestHolySymbol,
+	PriestShiningRayId:                          PriestShiningRay,
+	PriestDoomId:                                PriestDoom,
+	PriestSummonDragonId:                        PriestSummonDragon,
+	BishopMapleWarriorId:                        BishopMapleWarrior,
+	BishopBigBangId:                             BishopBigBang,
+	BishopManaReflectionId:                      BishopManaReflection,
+	BishopBahamutId:                             BishopBahamut,
+	BishopInfinityId:                            BishopInfinity,
+	BishopHolyShieldId:                          BishopHolyShield,
+	BishopResurrectionId:                        BishopResurrection,
+	BishopAngelRayId:                            BishopAngelRay,
+	BishopGenesisId:                             BishopGenesis,
+	BishopHerosWillId:                           BishopHerosWill,
+	BowmanTheBlessingOfAmazonId:                 BowmanTheBlessingOfAmazon,
+	BowmanCriticalShotId:                        BowmanCriticalShot,
+	BowmanTheEyeOfAmazonId:                      BowmanTheEyeOfAmazon,
+	BowmanFocusId:                               BowmanFocus,
+	BowmanArrowBlowId:                           BowmanArrowBlow,
+	BowmanDoubleShotId:                          BowmanDoubleShot,
+	HunterBowMasteryId:                          HunterBowMastery,
+	HunterFinalAttackBowId:                      HunterFinalAttackBow,
+	HunterBowBoosterId:                          HunterBowBooster,
+	HunterPowerKnockBackId:                      HunterPowerKnockBack,
+	HunterSoulArrowBowId:                        HunterSoulArrowBow,
+	HunterArrowBombBowId:                        HunterArrowBombBow,
+	RangerThrustId:                              RangerThrust,
+	RangerMortalBlowId:                          RangerMortalBlow,
+	RangerPuppetId:                              RangerPuppet,
+	RangerInfernoId:                             RangerInferno,
+	RangerArrowRainId:                           RangerArrowRain,
+	RangerSilverHawkId:                          RangerSilverHawk,
+	RangerStrafeId:                              RangerStrafe,
+	BowmasterMapleWarriorId:                     BowmasterMapleWarrior,
+	BowmasterSharpEyesId:                        BowmasterSharpEyes,
+	BowmasterDragonsBreathId:                    BowmasterDragonsBreath,
+	BowmasterHurricaneId:                        BowmasterHurricane,
+	BowmasterBowExpertId:                        BowmasterBowExpert,
+	BowmasterPhoenixId:                          BowmasterPhoenix,
+	BowmasterHamstringId:                        BowmasterHamstring,
+	BowmasterConcentrateId:                      BowmasterConcentrate,
+	BowmasterHerosWillId:                        BowmasterHerosWill,
+	CrossbowmanCrossbowMasteryId:                CrossbowmanCrossbowMastery,
+	CrossbowmanFinalAttackCrossbowId:            CrossbowmanFinalAttackCrossbow,
+	CrossbowmanCrossbowBoosterId:                CrossbowmanCrossbowBooster,
+	CrossbowmanPowerKnockBackId:                 CrossbowmanPowerKnockBack,
+	CrossbowmanSoulArrowCrossbowId:              CrossbowmanSoulArrowCrossbow,
+	CrossbowmanIronArrowCrossbowId:              CrossbowmanIronArrowCrossbow,
+	SniperThrustId:                              SniperThrust,
+	SniperMortalBlowId:                          SniperMortalBlow,
+	SniperPuppetId:                              SniperPuppet,
+	SniperBlizzardId:                            SniperBlizzard,
+	SniperArrowEruptionId:                       SniperArrowEruption,
+	SniperGoldenEagleId:                         SniperGoldenEagle,
+	SniperStrafeId:                              SniperStrafe,
+	MarksmanMapleWarriorId:                      MarksmanMapleWarrior,
+	MarksmanPiercingArrowId:                     MarksmanPiercingArrow,
+	MarksmanSharpEyesId:                         MarksmanSharpEyes,
+	MarksmanDragonsBreathId:                     MarksmanDragonsBreath,
+	MarksmanMarksmanBoostId:                     MarksmanMarksmanBoost,
+	MarksmanFrostpreyId:                         MarksmanFrostprey,
+	MarksmanBlindId:                             MarksmanBlind,
+	MarksmanSnipeId:                             MarksmanSnipe,
+	MarksmanHerosWillId:                         MarksmanHerosWill,
+	RogueNimbleBodyId:                           RogueNimbleBody,
+	RogueKeenEyesId:                             RogueKeenEyes,
+	RogueDisorderId:                             RogueDisorder,
+	RogueDarkSightId:                            RogueDarkSight,
+	RogueDoubleStabId:                           RogueDoubleStab,
+	RogueLuckySevenId:                           RogueLuckySeven,
+	AssassinClawMasteryId:                       AssassinClawMastery,
+	AssassinCriticalThrowId:                     AssassinCriticalThrow,
+	AssassinEndureId:                            AssassinEndure,
+	AssassinClawBoosterId:                       AssassinClawBooster,
+	AssassinHasteId:                             AssassinHaste,
+	AssassinDrainId:                             AssassinDrain,
+	HermitAlchemistId:                           HermitAlchemist,
+	HermitMesoUpId:                              HermitMesoUp,
+	HermitShadowPartnerId:                       HermitShadowPartner,
+	HermitShadowWebId:                           HermitShadowWeb,
+	HermitShadowMesoId:                          HermitShadowMeso,
+	HermitAvengerId:                             HermitAvenger,
+	HermitFlashJumpId:                           HermitFlashJump,
+	NightLordMapleWarriorId:                     NightLordMapleWarrior,
+	NightLordShadowShifterId:                    NightLordShadowShifter,
+	NightLordTauntId:                            NightLordTaunt,
+	NightLordNinjaAmbushId:                      NightLordNinjaAmbush,
+	NightLordVenomousStarId:                     NightLordVenomousStar,
+	NightLordShadowStarsId:                      NightLordShadowStars,
+	NightLordTripleThrowId:                      NightLordTripleThrow,
+	NightLordNinjaStormId:                       NightLordNinjaStorm,
+	NightLordHerosWillId:                        NightLordHerosWill,
+	BanditDaggerMasteryId:                       BanditDaggerMastery,
+	BanditEndureId:                              BanditEndure,
+	BanditDaggerBoosterId:                       BanditDaggerBooster,
+	BanditHasteId:                               BanditHaste,
+	BanditStealId:                               BanditSteal,
+	BanditSavageBlowId:                          BanditSavageBlow,
+	ChiefBanditShieldMasteryId:                  ChiefBanditShieldMastery,
+	ChiefBanditChakraId:                         ChiefBanditChakra,
+	ChiefBanditAssaulterId:                      ChiefBanditAssaulter,
+	ChiefBanditPickpocketId:                     ChiefBanditPickpocket,
+	ChiefBanditBandOfThievesId:                  ChiefBanditBandOfThieves,
+	ChiefBanditMesoGuardId:                      ChiefBanditMesoGuard,
+	ChiefBanditMesoExplosionId:                  ChiefBanditMesoExplosion,
+	ShadowerMapleWarriorId:                      ShadowerMapleWarrior,
+	ShadowerAssassinateId:                       ShadowerAssassinate,
+	ShadowerShadowShifterId:                     ShadowerShadowShifter,
+	ShadowerTauntId:                             ShadowerTaunt,
+	ShadowerNinjaAmbushId:                       ShadowerNinjaAmbush,
+	ShadowerVenomousStabId:                      ShadowerVenomousStab,
+	ShadowerSmokescreenId:                       ShadowerSmokescreen,
+	ShadowerBoomerangStepId:                     ShadowerBoomerangStep,
+	ShadowerHerosWillId:                         ShadowerHerosWill,
+	PirateBulletTimeId:                          PirateBulletTime,
+	PirateFlashFistId:                           PirateFlashFist,
+	PirateSommersaultKickId:                     PirateSommersaultKick,
+	PirateDoubleShotId:                          PirateDoubleShot,
+	PirateDashId:                                PirateDash,
+	BrawlerImproveMaxHpId:                       BrawlerImproveMaxHp,
+	BrawlerKnucklerMasteryId:                    BrawlerKnucklerMastery,
+	BrawlerBackspinBlowId:                       BrawlerBackspinBlow,
+	BrawlerDoubleUppercutId:                     BrawlerDoubleUppercut,
+	BrawlerCorkscrewBlowId:                      BrawlerCorkscrewBlow,
+	BrawlerMPRecoveryId:                         BrawlerMPRecovery,
+	BrawlerKnucklerBoosterId:                    BrawlerKnucklerBooster,
+	BrawlerOakBarrelId:                          BrawlerOakBarrel,
+	MarauderStunMasteryId:                       MarauderStunMastery,
+	MarauderEnergyChargeId:                      MarauderEnergyCharge,
+	MarauderEnergyBlastId:                       MarauderEnergyBlast,
+	MarauderEnergyDrainId:                       MarauderEnergyDrain,
+	MarauderTransformationId:                    MarauderTransformation,
+	MarauderShockwaveId:                         MarauderShockwave,
+	BuccaneerMapleWarriorId:                     BuccaneerMapleWarrior,
+	BuccaneerDragonStrikeId:                     BuccaneerDragonStrike,
+	BuccaneerEnergyOrbId:                        BuccaneerEnergyOrb,
+	BuccaneerSuperTransformationId:              BuccaneerSuperTransformation,
+	BuccaneerDemolitionId:                       BuccaneerDemolition,
+	BuccaneerSnatchId:                           BuccaneerSnatch,
+	BuccaneerBarrageId:                          BuccaneerBarrage,
+	BuccaneerPiratesRageId:                      BuccaneerPiratesRage,
+	BuccaneerSpeedInfusionId:                    BuccaneerSpeedInfusion,
+	BuccaneerTimeLeapId:                         BuccaneerTimeLeap,
+	GunslingerGunMasteryId:                      GunslingerGunMastery,
+	GunslingerInvisibleShotId:                   GunslingerInvisibleShot,
+	GunslingerGrenadeId:                         GunslingerGrenade,
+	GunslingerGunBoosterId:                      GunslingerGunBooster,
+	GunslingerBlankShotId:                       GunslingerBlankShot,
+	GunslingerWingsId:                           GunslingerWings,
+	GunslingerRecoilShotId:                      GunslingerRecoilShot,
+	OutlawBurstFireId:                           OutlawBurstFire,
+	OutlawOctopusId:                             OutlawOctopus,
+	OutlawGaviotaId:                             OutlawGaviota,
+	OutlawFlamethrowerId:                        OutlawFlamethrower,
+	OutlawIceSplitterId:                         OutlawIceSplitter,
+	OutlawHomingBeaconId:                        OutlawHomingBeacon,
+	CorsairMapleWarriorId:                       CorsairMapleWarrior,
+	CorsairElementalBoostId:                     CorsairElementalBoost,
+	CorsairWrathOfTheOctopiId:                   CorsairWrathOfTheOctopi,
+	CorsairAerialStrikeId:                       CorsairAerialStrike,
+	CorsairRapidFireId:                          CorsairRapidFire,
+	CorsairBattleshipId:                         CorsairBattleship,
+	CorsairBattleshipCannonId:                   CorsairBattleshipCannon,
+	CorsairBattleshipTorpedoId:                  CorsairBattleshipTorpedo,
+	CorsairHypnotizeId:                          CorsairHypnotize,
+	CorsairSpeedInfusionId:                      CorsairSpeedInfusion,
+	CorsairBullseyeId:                           CorsairBullseye,
+	MapleLeafBrigadierAntiMacroId:               MapleLeafBrigadierAntiMacro,
+	MapleLeafBrigadierTeleportId:                MapleLeafBrigadierTeleport,
+	GmHasteId:                                   GmHaste,
+	GmSuperDragonRoarId:                         GmSuperDragonRoar,
+	GmTeleportId:                                GmTeleport,
+	GmHideId:                                    GmHide,
+	SuperGmHealDispelId:                         SuperGmHealDispel,
+	SuperGmHasteId:                              SuperGmHaste,
+	SuperGmHolySymbolId:                         SuperGmHolySymbol,
+	SuperGmBlessId:                              SuperGmBless,
+	SuperGmHideId:                               SuperGmHide,
+	SuperGmResurrectionId:                       SuperGmResurrection,
+	SuperGmDragonRoarId:                         SuperGmDragonRoar,
+	SuperGmTeleportId:                           SuperGmTeleport,
+	SuperGmHyperBodyId:                          SuperGmHyperBody,
+	NoblesseThreeSnailsId:                       NoblesseThreeSnails,
+	NoblesseRecoveryId:                          NoblesseRecovery,
+	NoblesseNimbleFeetId:                        NoblesseNimbleFeet,
+	NoblesseSoulOfCraftsmanId:                   NoblesseSoulOfCraftsman,
+	NoblesseMonsterRidingId:                     NoblesseMonsterRiding,
+	NoblesseEchoOfHeroId:                        NoblesseEchoOfHero,
+	NoblesseJumpDownId:                          NoblesseJumpDown,
+	NoblesseMakerId:                             NoblesseMaker,
+	NoblesseMultiPetId:                          NoblesseMultiPet,
+	NoblesseBambooId:                            NoblesseBamboo,
+	NoblesseInvincibleId:                        NoblesseInvincible,
+	NoblesseBerserkId:                           NoblesseBerserk,
+	NoblesseBlessOfNymphId:                      NoblesseBlessOfNymph,
+	ThunderBreakerStage1QuickMotionId:           ThunderBreakerStage1QuickMotion,
+	ThunderBreakerStage1FirstStrikeId:           ThunderBreakerStage1FirstStrike,
+	ThunderBreakerStage1SomersaultKickId:        ThunderBreakerStage1SomersaultKick,
+	ThunderBreakerStage1DashId:                  ThunderBreakerStage1Dash,
+	ThunderBreakerStage1LightningSpriteId:       ThunderBreakerStage1LightningSprite,
+	ThunderBreakerStage2KnuckleMasteryId:        ThunderBreakerStage2KnuckleMastery,
+	ThunderBreakerStage2KnuckleBoosterId:        ThunderBreakerStage2KnuckleBooster,
+	ThunderBreakerStage2CorkscrewBlowId:         ThunderBreakerStage2CorkscrewBlow,
+	ThunderBreakerStage2EnergyChargeId:          ThunderBreakerStage2EnergyCharge,
+	ThunderBreakerStage2EnergyBlastId:           ThunderBreakerStage2EnergyBlast,
+	ThunderBreakerStage2LightningChargeId:       ThunderBreakerStage2LightningCharge,
+	ThunderBreakerStage2ImprovedMaxHpIncreaseId: ThunderBreakerStage2ImprovedMaxHpIncrease,
+	ThunderBreakerStage3CriticalPunchId:         ThunderBreakerStage3CriticalPunch,
+	ThunderBreakerStage3EnergyDrainId:           ThunderBreakerStage3EnergyDrain,
+	ThunderBreakerStage3TransformationId:        ThunderBreakerStage3Transformation,
+	ThunderBreakerStage3ShockWaveId:             ThunderBreakerStage3ShockWave,
+	ThunderBreakerStage3BarrageId:               ThunderBreakerStage3Barrage,
+	ThunderBreakerStage3SpeedInfusionId:         ThunderBreakerStage3SpeedInfusion,
+	ThunderBreakerStage3SparkId:                 ThunderBreakerStage3Spark,
+	ThunderBreakerStage3SharkWaveId:             ThunderBreakerStage3SharkWave,
+	DawnWarriorStage1IronBodyId:                 DawnWarriorStage1IronBody,
+	DawnWarriorStage1PowerStrikeId:              DawnWarriorStage1PowerStrike,
+	DawnWarriorStage1SlashBlastId:               DawnWarriorStage1SlashBlast,
+	DawnWarriorStage1SoulId:                     DawnWarriorStage1Soul,
+	DawnWarriorStage1ImprovedMaxHpIncreaseId:    DawnWarriorStage1ImprovedMaxHpIncrease,
+	DawnWarriorStage2SwordMasteryId:             DawnWarriorStage2SwordMastery,
+	DawnWarriorStage2SwordBoosterId:             DawnWarriorStage2SwordBooster,
+	DawnWarriorStage2FinalAttackSwordId:         DawnWarriorStage2FinalAttackSword,
+	DawnWarriorStage2RageId:                     DawnWarriorStage2Rage,
+	DawnWarriorStage2SoulBladeId:                DawnWarriorStage2SoulBlade,
+	DawnWarriorStage2SoulRushId:                 DawnWarriorStage2SoulRush,
+	DawnWarriorStage3ImprovedMpRecoveryId:       DawnWarriorStage3ImprovedMpRecovery,
+	DawnWarriorStage3ComboAttackId:              DawnWarriorStage3ComboAttack,
+	DawnWarriorStage3PanicId:                    DawnWarriorStage3Panic,
+	DawnWarriorStage3ComaId:                     DawnWarriorStage3Coma,
+	DawnWarriorStage3BrandishId:                 DawnWarriorStage3Brandish,
+	DawnWarriorStage3AdvancedComboId:            DawnWarriorStage3AdvancedCombo,
+	DawnWarriorStage3SoulDriverId:               DawnWarriorStage3SoulDriver,
+	DawnWarriorStage3SoulChargeId:               DawnWarriorStage3SoulCharge,
+	BlazeWizardStage1MagicGuardId:               BlazeWizardStage1MagicGuard,
+	BlazeWizardStage1MagicArmorId:               BlazeWizardStage1MagicArmor,
+	BlazeWizardStage1MagicClawId:                BlazeWizardStage1MagicClaw,
+	BlazeWizardStage1FlameId:                    BlazeWizardStage1Flame,
+	BlazeWizardStage1ImprovedMaxMpIncreaseId:    BlazeWizardStage1ImprovedMaxMpIncrease,
+	BlazeWizardStage2MeditationId:               BlazeWizardStage2Meditation,
+	BlazeWizardStage2SlowId:                     BlazeWizardStage2Slow,
+	BlazeWizardStage2FireArrowId:                BlazeWizardStage2FireArrow,
+	BlazeWizardStage2TeleportId:                 BlazeWizardStage2Teleport,
+	BlazeWizardStage2SpellBoosterId:             BlazeWizardStage2SpellBooster,
+	BlazeWizardStage2ElementalResetId:           BlazeWizardStage2ElementalReset,
+	BlazeWizardStage2FirePillarId:               BlazeWizardStage2FirePillar,
+	BlazeWizardStage3SpellMasteryId:             BlazeWizardStage3SpellMastery,
+	BlazeWizardStage3ElementResistanceId:        BlazeWizardStage3ElementResistance,
+	BlazeWizardStage3ElementAmplificationId:     BlazeWizardStage3ElementAmplification,
+	BlazeWizardStage3SealId:                     BlazeWizardStage3Seal,
+	BlazeWizardStage3MeteorShowerId:             BlazeWizardStage3MeteorShower,
+	BlazeWizardStage3IfritId:                    BlazeWizardStage3Ifrit,
+	BlazeWizardStage3FlameGearId:                BlazeWizardStage3FlameGear,
+	BlazeWizardStage3FireStrikeId:               BlazeWizardStage3FireStrike,
+	WindArcherStage1CriticalShotId:              WindArcherStage1CriticalShot,
+	WindArcherStage1TheEyeOfAmazonId:            WindArcherStage1TheEyeOfAmazon,
+	WindArcherStage1FocusId:                     WindArcherStage1Focus,
+	WindArcherStage1DoubleShotId:                WindArcherStage1DoubleShot,
+	WindArcherStage1StormId:                     WindArcherStage1Storm,
+	WindArcherStage2BowMasteryId:                WindArcherStage2BowMastery,
+	WindArcherStage2BowBoosterId:                WindArcherStage2BowBooster,
+	WindArcherStage2FinalAttackBowId:            WindArcherStage2FinalAttackBow,
+	WindArcherStage2SoulArrowId:                 WindArcherStage2SoulArrow,
+	WindArcherStage2ThrustId:                    WindArcherStage2Thrust,
+	WindArcherStage2StormBreakId:                WindArcherStage2StormBreak,
+	WindArcherStage2WindWalkId:                  WindArcherStage2WindWalk,
+	WindArcherStage3ArrowRainId:                 WindArcherStage3ArrowRain,
+	WindArcherStage3StrafeId:                    WindArcherStage3Strafe,
+	WindArcherStage3HurricaneId:                 WindArcherStage3Hurricane,
+	WindArcherStage3BowExpertId:                 WindArcherStage3BowExpert,
+	WindArcherStage3PuppetId:                    WindArcherStage3Puppet,
+	WindArcherStage3EagleEyeId:                  WindArcherStage3EagleEye,
+	WindArcherStage3WindPiercingId:              WindArcherStage3WindPiercing,
+	WindArcherStage3WindShotId:                  WindArcherStage3WindShot,
+	NightWalkerStage1NimbleBodyId:               NightWalkerStage1NimbleBody,
+	NightWalkerStage1KeenEyesId:                 NightWalkerStage1KeenEyes,
+	NightWalkerStage1DisorderId:                 NightWalkerStage1Disorder,
+	NightWalkerStage1DarkSightId:                NightWalkerStage1DarkSight,
+	NightWalkerStage1LuckySevenId:               NightWalkerStage1LuckySeven,
+	NightWalkerStage1DarknessId:                 NightWalkerStage1Darkness,
+	NightWalkerStage2ClawMasteryId:              NightWalkerStage2ClawMastery,
+	NightWalkerStage2CriticalThrowId:            NightWalkerStage2CriticalThrow,
+	NightWalkerStage2ClawBoosterId:              NightWalkerStage2ClawBooster,
+	NightWalkerStage2HasteId:                    NightWalkerStage2Haste,
+	NightWalkerStage2FlashJumpId:                NightWalkerStage2FlashJump,
+	NightWalkerStage2VanishId:                   NightWalkerStage2Vanish,
+	NightWalkerStage2VampireId:                  NightWalkerStage2Vampire,
+	NightWalkerStage3ShadowPartnerId:            NightWalkerStage3ShadowPartner,
+	NightWalkerStage3ShadowWebId:                NightWalkerStage3ShadowWeb,
+	NightWalkerStage3AvengerId:                  NightWalkerStage3Avenger,
+	NightWalkerStage3AlchemistId:                NightWalkerStage3Alchemist,
+	NightWalkerStage3VenomId:                    NightWalkerStage3Venom,
+	NightWalkerStage3TripleThrowId:              NightWalkerStage3TripleThrow,
+	NightWalkerStage3PoisonBombId:               NightWalkerStage3PoisonBomb,
+	LegendThreeSnailsId:                         LegendThreeSnails,
+	LegendRecoveryId:                            LegendRecovery,
+	LegendNimbleFeetId:                          LegendNimbleFeet,
+	LegendSoulOfCraftsmanId:                     LegendSoulOfCraftsman,
+	LegendMonsterRidingId:                       LegendMonsterRiding,
+	LegendEchoOfHeroId:                          LegendEchoOfHero,
+	LegendDamageMeterId:                         LegendDamageMeter,
+	LegendMakerId:                               LegendMaker,
+	LegendBambooId:                              LegendBamboo,
+	LegendInvincibleId:                          LegendInvincible,
+	LegendBerserkId:                             LegendBerserk,
+	LegendBlessOfNymphId:                        LegendBlessOfNymph,
+	AranStage1ComboAbilityId:                    AranStage1ComboAbility,
+	AranStage1CombatStepId:                      AranStage1CombatStep,
+	AranStage1DoubleSwingId:                     AranStage1DoubleSwing,
+	AranStage1PolearmBoosterId:                  AranStage1PolearmBooster,
+	AranStage2PolearmMasteryId:                  AranStage2PolearmMastery,
+	AranStage2TripleSwingId:                     AranStage2TripleSwing,
+	AranStage2FinalChargeId:                     AranStage2FinalCharge,
+	AranStage2BodyPressureId:                    AranStage2BodyPressure,
+	AranStage2ComboSmashId:                      AranStage2ComboSmash,
+	AranStage2ComboDrainId:                      AranStage2ComboDrain,
+	AranStage3ComboCriticalId:                   AranStage3ComboCritical,
+	AranStage3SmartKnockbackId:                  AranStage3SmartKnockback,
+	AranStage3FullSwingId:                       AranStage3FullSwing,
+	AranStage3FinalTossId:                       AranStage3FinalToss,
+	AranStage3ComboFenrirId:                     AranStage3ComboFenrir,
+	AranStage3SnowChargeId:                      AranStage3SnowCharge,
+	AranStage3RollingSpinId:                     AranStage3RollingSpin,
+	AranStage3FullSwingDoubleSwingId:            AranStage3FullSwingDoubleSwing,
+	AranStage3FullSwingTripleSwingId:            AranStage3FullSwingTripleSwing,
+	AranStage4MapleWarriorId:                    AranStage4MapleWarrior,
+	AranStage4HighMasteryId:                     AranStage4HighMastery,
+	AranStage4OverSwingId:                       AranStage4OverSwing,
+	AranStage4FreezeStandingId:                  AranStage4FreezeStanding,
+	AranStage4HighDefenseId:                     AranStage4HighDefense,
+	AranStage4FinalBlowId:                       AranStage4FinalBlow,
+	AranStage4ComboTempestId:                    AranStage4ComboTempest,
+	AranStage4ComboBarrierId:                    AranStage4ComboBarrier,
+	AranStage4HerosWillId:                       AranStage4HerosWill,
+	AranStage4OverswingDoubleSwingId:            AranStage4OverswingDoubleSwing,
+	AranStage4OverswingTripleSwingId:            AranStage4OverswingTripleSwing,
+	EvanThreeSnailsId:                           EvanThreeSnails,
+	EvanRecoveryId:                              EvanRecovery,
+	EvanNimbleFeetId:                            EvanNimbleFeet,
+	EvanSoulOfCraftsmanId:                       EvanSoulOfCraftsman,
+	EvanMonsterRidingId:                         EvanMonsterRiding,
+	EvanEchoOfHeroId:                            EvanEchoOfHero,
+	EvanDamageMeterId:                           EvanDamageMeter,
+	EvanMakerId:                                 EvanMaker,
+	EvanBambooId:                                EvanBamboo,
+	EvanInvincibleId:                            EvanInvincible,
+	EvanBerserkId:                               EvanBerserk,
+	EvanBlessOfNymphId:                          EvanBlessOfNymph,
+	EvanStage1DragonSoulId:                      EvanStage1DragonSoul,
+	EvanStage1MagicMissileId:                    EvanStage1MagicMissile,
+	EvanStage2FireCircleId:                      EvanStage2FireCircle,
+	EvanStage2TeleportId:                        EvanStage2Teleport,
+	EvanStage3LightningBoltId:                   EvanStage3LightningBolt,
+	EvanStage3MagicGuardId:                      EvanStage3MagicGuard,
+	EvanStage4IceBreathId:                       EvanStage4IceBreath,
+	EvanStage4ElementalResetId:                  EvanStage4ElementalReset,
+	EvanStage5MagicFlareId:                      EvanStage5MagicFlare,
+	EvanStage5MagicShieldId:                     EvanStage5MagicShield,
+	EvanStage6CriticalMagicId:                   EvanStage6CriticalMagic,
+	EvanStage6DragonThrustId:                    EvanStage6DragonThrust,
+	EvanStage6MagicBoosterId:                    EvanStage6MagicBooster,
+	EvanStage6SlowId:                            EvanStage6Slow,
+	EvanStage7MagicAmplificationId:              EvanStage7MagicAmplification,
+	EvanStage7FireBreathId:                      EvanStage7FireBreath,
+	EvanStage7KillerWingsId:                     EvanStage7KillerWings,
+	EvanStage7MagicResistanceId:                 EvanStage7MagicResistance,
+	EvanStage8DragonFuryId:                      EvanStage8DragonFury,
+	EvanStage8EarthquakeId:                      EvanStage8Earthquake,
+	EvanStage8PhantomImprintId:                  EvanStage8PhantomImprint,
+	EvanStage8RecoveryAuraId:                    EvanStage8RecoveryAura,
+	EvanStage9MapleWarriorId:                    EvanStage9MapleWarrior,
+	EvanStage9MagicMasteryId:                    EvanStage9MagicMastery,
+	EvanStage9IllusionId:                        EvanStage9Illusion,
+	EvanStage9FlameWheelId:                      EvanStage9FlameWheel,
+	EvanStage9HerosWillId:                       EvanStage9HerosWill,
+	EvanStage10BlessingOfTheOnyxId:              EvanStage10BlessingOfTheOnyx,
+	EvanStage10BlazeId:                          EvanStage10Blaze,
+	EvanStage10DarkFogId:                        EvanStage10DarkFog,
+	EvanStage10SoulStoneId:                      EvanStage10SoulStone,
+}
+
 const (
 	BeginnerThreeSnailsId                       = Id(1000)
 	BeginnerRecoveryId                          = Id(1001)
 	BeginnerNimbleFeetId                        = Id(1002)
-	BeginnerSoulOfCraftsman                     = Id(1003)
-	BeginnerMonsterRiding                       = Id(1004)
+	BeginnerSoulOfCraftsmanId                   = Id(1003)
+	BeginnerMonsterRidingId                     = Id(1004)
 	BeginnerEchoOfHeroId                        = Id(1005)
 	BeginnerJumpDownId                          = Id(1006)
 	BeginnerMakerId                             = Id(1007)
@@ -15,7 +2930,7 @@ const (
 	BeginnerBambooId                            = Id(1009)
 	BeginnerInvincibleId                        = Id(1010)
 	BeginnerBerserkId                           = Id(1011)
-	BeginnerBlessOfNymph                        = Id(1012)
+	BeginnerBlessOfNymphId                      = Id(1012)
 	WarriorImprovedHpRecoveryId                 = Id(1000000)
 	WarriorImprovedMaxHpIncreaseId              = Id(1000001)
 	WarriorEndureId                             = Id(1000002)
@@ -337,7 +3252,7 @@ const (
 	GmHasteId                                   = Id(9001000)
 	GmSuperDragonRoarId                         = Id(9001001)
 	GmTeleportId                                = Id(9001002)
-	GmHide                                      = Id(9001004)
+	GmHideId                                    = Id(9001004)
 	SuperGmHealDispelId                         = Id(9101000)
 	SuperGmHasteId                              = Id(9101001)
 	SuperGmHolySymbolId                         = Id(9101002)
@@ -350,8 +3265,8 @@ const (
 	NoblesseThreeSnailsId                       = Id(10001000)
 	NoblesseRecoveryId                          = Id(10001001)
 	NoblesseNimbleFeetId                        = Id(10001002)
-	NoblesseSoulOfCraftsman                     = Id(10001003)
-	NoblesseMonsterRiding                       = Id(10001004)
+	NoblesseSoulOfCraftsmanId                   = Id(10001003)
+	NoblesseMonsterRidingId                     = Id(10001004)
 	NoblesseEchoOfHeroId                        = Id(10001005)
 	NoblesseJumpDownId                          = Id(10001006)
 	NoblesseMakerId                             = Id(10001007)
@@ -546,13 +3461,20 @@ const (
 	EvanStage10SoulStoneId                      = Id(22181003)
 )
 
-func IsChargeSkill(skillId Id) bool {
-	return Is(skillId,
-		FirePoisonArchMagicianBigBangId,
-		IceLightningArchMagicianBigBangId,
-		BishopBigBangId,
-		EvanStage4IceBreathId,
-		EvanStage7FireBreathId)
+func IsBuff(skillId Id) bool {
+	s, ok := Skills[skillId]
+	if !ok {
+		return false
+	}
+	return s.Buff()
+}
+
+func NeedsCharging(skillId Id) bool {
+	s, ok := Skills[skillId]
+	if !ok {
+		return false
+	}
+	return s.Charge()
 }
 
 func IsShootSkillNotUsingShootingWeapon(skillId Id) bool {

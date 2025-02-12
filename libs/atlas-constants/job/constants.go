@@ -9,16 +9,19 @@ type Id uint16
 
 type Job struct {
 	id        Id
-	skills    []skill.Id
+	skills    []skill.Skill
 	fourthJob bool
-	buffs     []skill.Id
 }
 
 func (j Job) Id() Id {
 	return j.id
 }
 
-func (j Job) Skills() []skill.Id {
+func (j Job) Skills() []skill.Skill {
+	return j.skills
+}
+
+func (j Job) Buffs() []skill.Skill {
 	return j.skills
 }
 
@@ -28,1381 +31,1139 @@ func (j Job) IsFourthJob() bool {
 
 var Beginner = Job{
 	id: BeginnerId,
-	skills: []skill.Id{
-		skill.BeginnerThreeSnailsId,
-		skill.BeginnerRecoveryId,
-		skill.BeginnerNimbleFeetId,
+	skills: []skill.Skill{
+		skill.BeginnerThreeSnails,
+		skill.BeginnerRecovery,
+		skill.BeginnerNimbleFeet,
 		skill.BeginnerSoulOfCraftsman,
 		skill.BeginnerMonsterRiding,
-		skill.BeginnerEchoOfHeroId,
-		skill.BeginnerJumpDownId,
-		skill.BeginnerMakerId,
-		skill.BeginnerMultiPetId,
-		skill.BeginnerBambooId,
-		skill.BeginnerInvincibleId,
-		skill.BeginnerBerserkId,
+		skill.BeginnerEchoOfHero,
+		skill.BeginnerJumpDown,
+		skill.BeginnerMaker,
+		skill.BeginnerMultiPet,
+		skill.BeginnerBamboo,
+		skill.BeginnerInvincible,
+		skill.BeginnerBerserk,
 		skill.BeginnerBlessOfNymph,
-	},
-	buffs: []skill.Id{
-		skill.BeginnerRecoveryId,
-		skill.BeginnerNimbleFeetId,
-		skill.BeginnerMonsterRiding,
-		skill.BeginnerEchoOfHeroId,
 	},
 }
 
 var Warrior = Job{
 	id: WarriorId,
-	skills: []skill.Id{
-		skill.WarriorImprovedHpRecoveryId,
-		skill.WarriorImprovedMaxHpIncreaseId,
-		skill.WarriorEndureId,
-		skill.WarriorIronBodyId,
-		skill.WarriorPowerStrikeId,
-		skill.WarriorSlashBlastId,
-	},
-	buffs: []skill.Id{
-		skill.WarriorIronBodyId,
+	skills: []skill.Skill{
+		skill.WarriorImprovedHpRecovery,
+		skill.WarriorImprovedMaxHpIncrease,
+		skill.WarriorEndure,
+		skill.WarriorIronBody,
+		skill.WarriorPowerStrike,
+		skill.WarriorSlashBlast,
 	},
 }
 
 var Fighter = Job{
 	id: FighterId,
-	skills: []skill.Id{
-		skill.FighterSwordMasteryId,
-		skill.FighterAxeMasteryId,
-		skill.FighterFinalAttackSwordId,
-		skill.FighterFinalAttackAxeId,
-		skill.FighterSwordBoosterId,
-		skill.FighterAxeBoosterId,
-		skill.FighterRageId,
-		skill.FighterPowerGuardId,
-	},
-	buffs: []skill.Id{
-		skill.FighterSwordBoosterId,
-		skill.FighterAxeBoosterId,
-		skill.FighterRageId,
-		skill.FighterPowerGuardId,
+	skills: []skill.Skill{
+		skill.FighterSwordMastery,
+		skill.FighterAxeMastery,
+		skill.FighterFinalAttackSword,
+		skill.FighterFinalAttackAxe,
+		skill.FighterSwordBooster,
+		skill.FighterAxeBooster,
+		skill.FighterRage,
+		skill.FighterPowerGuard,
 	},
 }
 
 var Crusader = Job{
 	id: CrusaderId,
-	skills: []skill.Id{
-		skill.CrusaderImprovingMpRecoveryId,
-		skill.CrusaderShieldMasteryId,
-		skill.CrusaderComboAttackId,
-		skill.CrusaderPanicSwordId,
-		skill.CrusaderPanicAxeId,
-		skill.CrusaderComaSwordId,
-		skill.CrusaderComaAxeId,
-		skill.CrusaderArmorCrashId,
-		skill.CrusaderShoutId,
-	},
-	buffs: []skill.Id{
-		skill.CrusaderComboAttackId,
-		skill.CrusaderArmorCrashId,
+	skills: []skill.Skill{
+		skill.CrusaderImprovingMpRecovery,
+		skill.CrusaderShieldMastery,
+		skill.CrusaderComboAttack,
+		skill.CrusaderPanicSword,
+		skill.CrusaderPanicAxe,
+		skill.CrusaderComaSword,
+		skill.CrusaderComaAxe,
+		skill.CrusaderArmorCrash,
+		skill.CrusaderShout,
 	},
 }
 
 var Hero = Job{
 	id: HeroId,
-	skills: []skill.Id{
-		skill.HeroMapleWarriorId,
-		skill.HeroMonsterMagnetId,
-		skill.HeroPowerStanceId,
-		skill.HeroAdvancedComboAttackId,
-		skill.HeroAchillesId,
-		skill.HeroGuardianId,
-		skill.HeroRushId,
-		skill.HeroBrandishId,
-		skill.HeroEnrageId,
-		skill.HeroHerosWillId,
+	skills: []skill.Skill{
+		skill.HeroMapleWarrior,
+		skill.HeroMonsterMagnet,
+		skill.HeroPowerStance,
+		skill.HeroAdvancedComboAttack,
+		skill.HeroAchilles,
+		skill.HeroGuardian,
+		skill.HeroRush,
+		skill.HeroBrandish,
+		skill.HeroEnrage,
+		skill.HeroHerosWill,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.HeroMapleWarriorId,
-		skill.HeroPowerStanceId,
-		skill.HeroEnrageId,
-		skill.HeroHerosWillId,
-	},
 }
 
 var Page = Job{
 	id: PageId,
-	skills: []skill.Id{
-		skill.PageSwordMasteryId,
-		skill.PageBluntWeaponMasteryId,
-		skill.PageSwordFinalAttackId,
-		skill.PageBluntFinalAttackId,
-		skill.PageSwordBoosterId,
-		skill.PageBluntWeaponBoosterId,
-		skill.PageThreatenId,
-		skill.PagePowerGuardId,
-	},
-	buffs: []skill.Id{
-		skill.PageSwordBoosterId,
-		skill.PageBluntWeaponBoosterId,
-		skill.PageThreatenId,
-		skill.PagePowerGuardId,
+	skills: []skill.Skill{
+		skill.PageSwordMastery,
+		skill.PageBluntWeaponMastery,
+		skill.PageSwordFinalAttack,
+		skill.PageBluntFinalAttack,
+		skill.PageSwordBooster,
+		skill.PageBluntWeaponBooster,
+		skill.PageThreaten,
+		skill.PagePowerGuard,
 	},
 }
 
 var WhiteKnight = Job{
 	id: WhiteKnightId,
-	skills: []skill.Id{
-		skill.WhiteKnightImprovingMpRecoveryId,
-		skill.WhiteKnightShieldMasteryId,
-		skill.WhiteKnightChargedBlowId,
-		skill.WhiteKnightFireChargeSwordId,
-		skill.WhiteKnightFlameChargeBluntWeaponId,
-		skill.WhiteKnightIceChargeSwordId,
-		skill.WhiteKnightBlizzardChargeBluntWeaponId,
-		skill.WhiteKnightThunderChargeSwordId,
-		skill.WhiteKnightLightningChargeBluntWeaponId,
-		skill.WhiteKnightMagicCrashId,
-	},
-	buffs: []skill.Id{
-		skill.WhiteKnightFireChargeSwordId,
-		skill.WhiteKnightFlameChargeBluntWeaponId,
-		skill.WhiteKnightIceChargeSwordId,
-		skill.WhiteKnightBlizzardChargeBluntWeaponId,
-		skill.WhiteKnightThunderChargeSwordId,
-		skill.WhiteKnightLightningChargeBluntWeaponId,
-		skill.WhiteKnightMagicCrashId,
+	skills: []skill.Skill{
+		skill.WhiteKnightImprovingMpRecovery,
+		skill.WhiteKnightShieldMastery,
+		skill.WhiteKnightChargedBlow,
+		skill.WhiteKnightFireChargeSword,
+		skill.WhiteKnightFlameChargeBluntWeapon,
+		skill.WhiteKnightIceChargeSword,
+		skill.WhiteKnightBlizzardChargeBluntWeapon,
+		skill.WhiteKnightThunderChargeSword,
+		skill.WhiteKnightLightningChargeBluntWeapon,
+		skill.WhiteKnightMagicCrash,
 	},
 }
 
 var Paladin = Job{
 	id: PaladinId,
-	skills: []skill.Id{
-		skill.PaladinMapleWarriorId,
-		skill.PaladinMonsterMagnetId,
-		skill.PaladinPowerStanceId,
-		skill.PaladinHolyChargeSwordId,
-		skill.PaladinDivineChargeBluntWeaponId,
-		skill.PaladinAchillesId,
-		skill.PaladinGuardianId,
-		skill.PaladinRushId,
-		skill.PaladinBlastId,
-		skill.PaladinAdvancedChargeId,
-		skill.PaladinHeavensHammerId,
-		skill.PaladinHerosWillId,
+	skills: []skill.Skill{
+		skill.PaladinMapleWarrior,
+		skill.PaladinMonsterMagnet,
+		skill.PaladinPowerStance,
+		skill.PaladinHolyChargeSword,
+		skill.PaladinDivineChargeBluntWeapon,
+		skill.PaladinAchilles,
+		skill.PaladinGuardian,
+		skill.PaladinRush,
+		skill.PaladinBlast,
+		skill.PaladinAdvancedCharge,
+		skill.PaladinHeavensHammer,
+		skill.PaladinHerosWill,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.PaladinMapleWarriorId,
-		skill.PaladinPowerStanceId,
-		skill.PaladinHolyChargeSwordId,
-		skill.PaladinDivineChargeBluntWeaponId,
-		skill.PaladinHerosWillId,
-	},
 }
 
 var Spearman = Job{
 	id: SpearmanId,
-	skills: []skill.Id{
-		skill.SpearmanSpearMasteryId,
-		skill.SpearmanPolearmMasteryId,
-		skill.SpearmanFinalAttackSpearId,
-		skill.SpearmanFinalAttackPolearmId,
-		skill.SpearmanSpearBoosterId,
-		skill.SpearmanPolearmBoosterId,
-		skill.SpearmanIronWillId,
-		skill.SpearmanHyperBodyId,
-	},
-	buffs: []skill.Id{
-		skill.SpearmanSpearBoosterId,
-		skill.SpearmanPolearmBoosterId,
-		skill.SpearmanIronWillId,
-		skill.SpearmanHyperBodyId,
+	skills: []skill.Skill{
+		skill.SpearmanSpearMastery,
+		skill.SpearmanPolearmMastery,
+		skill.SpearmanFinalAttackSpear,
+		skill.SpearmanFinalAttackPolearm,
+		skill.SpearmanSpearBooster,
+		skill.SpearmanPolearmBooster,
+		skill.SpearmanIronWill,
+		skill.SpearmanHyperBody,
 	},
 }
 
 var DragonKnight = Job{
 	id: DragonKnightId,
-	skills: []skill.Id{
-		skill.DragonKnightElementalResistanceId,
-		skill.DragonKnightSpearCrusherId,
-		skill.DragonKnightPolearmCrusherId,
-		skill.DragonKnightDragonFurySpearId,
-		skill.DragonKnightDragonFuryPolearmId,
-		skill.DragonKnightSacrificeId,
-		skill.DragonKnightDragonRoarId,
-		skill.DragonKnightPowerCrashId,
-		skill.DragonKnightDragonBloodId,
-	},
-	buffs: []skill.Id{
-		skill.DragonKnightPowerCrashId,
-		skill.DragonKnightDragonBloodId,
+	skills: []skill.Skill{
+		skill.DragonKnightElementalResistance,
+		skill.DragonKnightSpearCrusher,
+		skill.DragonKnightPolearmCrusher,
+		skill.DragonKnightDragonFurySpear,
+		skill.DragonKnightDragonFuryPolearm,
+		skill.DragonKnightSacrifice,
+		skill.DragonKnightDragonRoar,
+		skill.DragonKnightPowerCrash,
+		skill.DragonKnightDragonBlood,
 	},
 }
 
 var DarkKnight = Job{
 	id: DarkKnightId,
-	skills: []skill.Id{
-		skill.DarkKnightMapleWarriorId,
-		skill.DarkKnightMonsterMagnetId,
-		skill.DarkKnightPowerStanceId,
-		skill.DarkKnightRushId,
-		skill.DarkKnightAchillesId,
-		skill.DarkKnightBerserkId,
-		skill.DarkKnightBeholderId,
-		skill.DarkKnightAuraOfTheBeholderId,
-		skill.DarkKnightHexOfTheBeholderId,
-		skill.DarkKnightHerosWillId,
+	skills: []skill.Skill{
+		skill.DarkKnightMapleWarrior,
+		skill.DarkKnightMonsterMagnet,
+		skill.DarkKnightPowerStance,
+		skill.DarkKnightRush,
+		skill.DarkKnightAchilles,
+		skill.DarkKnightBerserk,
+		skill.DarkKnightBeholder,
+		skill.DarkKnightAuraOfTheBeholder,
+		skill.DarkKnightHexOfTheBeholder,
+		skill.DarkKnightHerosWill,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.DarkKnightMapleWarriorId,
-		skill.DarkKnightBeholderId,
-		skill.DarkKnightAuraOfTheBeholderId,
-		skill.DarkKnightHexOfTheBeholderId,
-		skill.DarkKnightHerosWillId,
-	},
 }
 
 var Magician = Job{
 	id: MagicianId,
-	skills: []skill.Id{
-		skill.MagicianImprovedMpRecoveryId,
-		skill.MagicianImprovedMaxMpIncreaseId,
-		skill.MagicianMagicGuardId,
-		skill.MagicianMagicArmorId,
-		skill.MagicianEnergyBoltId,
-		skill.MagicianMagicClawId,
-	},
-	buffs: []skill.Id{
-		skill.MagicianMagicGuardId,
-		skill.MagicianMagicArmorId,
+	skills: []skill.Skill{
+		skill.MagicianImprovedMpRecovery,
+		skill.MagicianImprovedMaxMpIncrease,
+		skill.MagicianMagicGuard,
+		skill.MagicianMagicArmor,
+		skill.MagicianEnergyBolt,
+		skill.MagicianMagicClaw,
 	},
 }
 
 var FirePoisonWizard = Job{
 	id: FirePoisonWizardId,
-	skills: []skill.Id{
-		skill.FirePoisionWizardMpEaterId,
-		skill.FirePoisionWizardMeditationId,
-		skill.FirePoisionWizardTeleportId,
-		skill.FirePoisionWizardSlowId,
-		skill.FirePoisionWizardFireArrowId,
-		skill.FirePoisionWizardPoisonBreathId,
-	},
-	buffs: []skill.Id{
-		skill.FirePoisionWizardMeditationId,
-		skill.FirePoisionWizardSlowId,
+	skills: []skill.Skill{
+		skill.FirePoisionWizardMpEater,
+		skill.FirePoisionWizardMeditation,
+		skill.FirePoisionWizardTeleport,
+		skill.FirePoisionWizardSlow,
+		skill.FirePoisionWizardFireArrow,
+		skill.FirePoisionWizardPoisonBreath,
 	},
 }
 
 var FirePoisonMagician = Job{
 	id: FirePoisonMagicianId,
-	skills: []skill.Id{
-		skill.FirePoisonMagicianPartialResistanceId,
-		skill.FirePoisonMagicianElementAmplificationId,
-		skill.FirePoisonMagicianExplosionId,
-		skill.FirePoisonMagicianPoisonMistId,
-		skill.FirePoisonMagicianSealId,
-		skill.FirePoisonMagicianSpellBoosterId,
-		skill.FirePoisonMagicianElementCompositionId,
-	},
-	buffs: []skill.Id{
-		skill.FirePoisonMagicianSealId,
-		skill.FirePoisonMagicianSpellBoosterId,
+	skills: []skill.Skill{
+		skill.FirePoisonMagicianPartialResistance,
+		skill.FirePoisonMagicianElementAmplification,
+		skill.FirePoisonMagicianExplosion,
+		skill.FirePoisonMagicianPoisonMist,
+		skill.FirePoisonMagicianSeal,
+		skill.FirePoisonMagicianSpellBooster,
+		skill.FirePoisonMagicianElementComposition,
 	},
 }
 
 var FirePoisonArchMagician = Job{
 	id: FirePoisonArchMagicianId,
-	skills: []skill.Id{
-		skill.FirePoisonArchMagicianMapleWarriorId,
-		skill.FirePoisonArchMagicianBigBangId,
-		skill.FirePoisonArchMagicianManaReflectionId,
-		skill.FirePoisonArchMagicianFireDemonId,
-		skill.FirePoisonArchMagicianInfinityId,
-		skill.FirePoisonArchMagicianElquinesId,
-		skill.FirePoisonArchMagicianParalyzeId,
-		skill.FirePoisonArchMagicianMeteorShowerId,
-		skill.FirePoisonArchMagicianHerosWillId,
+	skills: []skill.Skill{
+		skill.FirePoisonArchMagicianMapleWarrior,
+		skill.FirePoisonArchMagicianBigBang,
+		skill.FirePoisonArchMagicianManaReflection,
+		skill.FirePoisonArchMagicianFireDemon,
+		skill.FirePoisonArchMagicianInfinity,
+		skill.FirePoisonArchMagicianElquines,
+		skill.FirePoisonArchMagicianParalyze,
+		skill.FirePoisonArchMagicianMeteorShower,
+		skill.FirePoisonArchMagicianHerosWill,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.FirePoisonArchMagicianMapleWarriorId,
-		skill.FirePoisonArchMagicianManaReflectionId,
-		skill.FirePoisonArchMagicianInfinityId,
-		skill.FirePoisonArchMagicianHerosWillId,
-	},
 }
 
 var IceLightningWizard = Job{
 	id: IceLightningWizardId,
-	skills: []skill.Id{
-		skill.IceLightningWizardMpEaterId,
-		skill.IceLightningWizardMeditationId,
-		skill.IceLightningWizardTeleportId,
-		skill.IceLightningWizardSlowId,
-		skill.IceLightningWizardColdBeamId,
-		skill.IceLightningWizardThunderBoltId,
-	},
-	buffs: []skill.Id{
-		skill.IceLightningWizardMeditationId,
-		skill.IceLightningWizardSlowId,
+	skills: []skill.Skill{
+		skill.IceLightningWizardMpEater,
+		skill.IceLightningWizardMeditation,
+		skill.IceLightningWizardTeleport,
+		skill.IceLightningWizardSlow,
+		skill.IceLightningWizardColdBeam,
+		skill.IceLightningWizardThunderBolt,
 	},
 }
 
 var IceLightningMagician = Job{
 	id: IceLightningMagicianId,
-	skills: []skill.Id{
-		skill.IceLightningMagicianPartialResistanceId,
-		skill.IceLightningMagicianElementAmplificationId,
-		skill.IceLightningMagicianIceStrikeId,
-		skill.IceLightningMagicianThunderSpearId,
-		skill.IceLightningMagicianSealId,
-		skill.IceLightningMagicianSpellBoosterId,
-		skill.IceLightningMagicianElementCompositionId,
-	},
-	buffs: []skill.Id{
-		skill.IceLightningMagicianSealId,
-		skill.IceLightningMagicianSpellBoosterId,
+	skills: []skill.Skill{
+		skill.IceLightningMagicianPartialResistance,
+		skill.IceLightningMagicianElementAmplification,
+		skill.IceLightningMagicianIceStrike,
+		skill.IceLightningMagicianThunderSpear,
+		skill.IceLightningMagicianSeal,
+		skill.IceLightningMagicianSpellBooster,
+		skill.IceLightningMagicianElementComposition,
 	},
 }
 
 var IceLightningArchMagician = Job{
 	id: IceLightningArchMagicianId,
-	skills: []skill.Id{
-		skill.IceLightningArchMagicianMapleWarriorId,
-		skill.IceLightningArchMagicianBigBangId,
-		skill.IceLightningArchMagicianManaReflectionId,
-		skill.IceLightningArchMagicianIceDemonId,
-		skill.IceLightningArchMagicianInfinityId,
-		skill.IceLightningArchMagicianIfritId,
-		skill.IceLightningArchMagicianChainLightningId,
-		skill.IceLightningArchMagicianBlizzardId,
-		skill.IceLightningArchMagicianHerosWillId,
+	skills: []skill.Skill{
+		skill.IceLightningArchMagicianMapleWarrior,
+		skill.IceLightningArchMagicianBigBang,
+		skill.IceLightningArchMagicianManaReflection,
+		skill.IceLightningArchMagicianIceDemon,
+		skill.IceLightningArchMagicianInfinity,
+		skill.IceLightningArchMagicianIfrit,
+		skill.IceLightningArchMagicianChainLightning,
+		skill.IceLightningArchMagicianBlizzard,
+		skill.IceLightningArchMagicianHerosWill,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.IceLightningArchMagicianMapleWarriorId,
-		skill.IceLightningArchMagicianManaReflectionId,
-		skill.IceLightningArchMagicianInfinityId,
-		skill.IceLightningArchMagicianHerosWillId,
-	},
 }
 
 var Cleric = Job{
 	id: ClericId,
-	skills: []skill.Id{
-		skill.ClericMpEaterId,
-		skill.ClericTeleportId,
-		skill.ClericHealId,
-		skill.ClericInvincibleId,
-		skill.ClericBlessId,
-		skill.ClericHolyArrowId,
-	},
-	buffs: []skill.Id{
-		skill.ClericInvincibleId,
-		skill.ClericBlessId,
+	skills: []skill.Skill{
+		skill.ClericMpEater,
+		skill.ClericTeleport,
+		skill.ClericHeal,
+		skill.ClericInvincible,
+		skill.ClericBless,
+		skill.ClericHolyArrow,
 	},
 }
 
 var Priest = Job{
 	id: PriestId,
-	skills: []skill.Id{
-		skill.PriestElementalResistanceId,
-		skill.PriestDispelId,
-		skill.PriestMysticDoorId,
-		skill.PriestHolySymbolId,
-		skill.PriestShiningRayId,
-		skill.PriestDoomId,
-		skill.PriestSummonDragonId,
-	},
-	buffs: []skill.Id{
-		skill.PriestDispelId,
-		skill.PriestMysticDoorId,
-		skill.PriestHolySymbolId,
-		skill.PriestDoomId,
+	skills: []skill.Skill{
+		skill.PriestElementalResistance,
+		skill.PriestDispel,
+		skill.PriestMysticDoor,
+		skill.PriestHolySymbol,
+		skill.PriestShiningRay,
+		skill.PriestDoom,
+		skill.PriestSummonDragon,
 	},
 }
 
 var Bishop = Job{
 	id: BishopId,
-	skills: []skill.Id{
-		skill.BishopMapleWarriorId,
-		skill.BishopBigBangId,
-		skill.BishopManaReflectionId,
-		skill.BishopBahamutId,
-		skill.BishopInfinityId,
-		skill.BishopHolyShieldId,
-		skill.BishopResurrectionId,
-		skill.BishopAngelRayId,
-		skill.BishopGenesisId,
-		skill.BishopHerosWillId,
+	skills: []skill.Skill{
+		skill.BishopMapleWarrior,
+		skill.BishopBigBang,
+		skill.BishopManaReflection,
+		skill.BishopBahamut,
+		skill.BishopInfinity,
+		skill.BishopHolyShield,
+		skill.BishopResurrection,
+		skill.BishopAngelRay,
+		skill.BishopGenesis,
+		skill.BishopHerosWill,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.BishopMapleWarriorId,
-		skill.BishopManaReflectionId,
-		skill.BishopInfinityId,
-		skill.BishopHolyShieldId,
-		skill.BishopHerosWillId,
-	},
 }
 
 var Bowman = Job{
 	id: BowmanId,
-	skills: []skill.Id{
-		skill.BowmanTheBlessingOfAmazonId,
-		skill.BowmanCriticalShotId,
-		skill.BowmanTheEyeOfAmazonId,
-		skill.BowmanFocusId,
-		skill.BowmanArrowBlowId,
-		skill.BowmanDoubleShotId,
-	},
-	buffs: []skill.Id{
-		skill.BowmanFocusId,
+	skills: []skill.Skill{
+		skill.BowmanTheBlessingOfAmazon,
+		skill.BowmanCriticalShot,
+		skill.BowmanTheEyeOfAmazon,
+		skill.BowmanFocus,
+		skill.BowmanArrowBlow,
+		skill.BowmanDoubleShot,
 	},
 }
 
 var Hunter = Job{
 	id: HunterId,
-	skills: []skill.Id{
-		skill.HunterBowMasteryId,
-		skill.HunterFinalAttackBowId,
-		skill.HunterBowBoosterId,
-		skill.HunterPowerKnockBackId,
-		skill.HunterSoulArrowBowId,
-		skill.HunterArrowBombBowId,
-	},
-	buffs: []skill.Id{
-		skill.HunterBowBoosterId,
-		skill.HunterSoulArrowBowId,
+	skills: []skill.Skill{
+		skill.HunterBowMastery,
+		skill.HunterFinalAttackBow,
+		skill.HunterBowBooster,
+		skill.HunterPowerKnockBack,
+		skill.HunterSoulArrowBow,
+		skill.HunterArrowBombBow,
 	},
 }
 
 var Ranger = Job{
 	id: RangerId,
-	skills: []skill.Id{
-		skill.RangerThrustId,
-		skill.RangerMortalBlowId,
-		skill.RangerPuppetId,
-		skill.RangerInfernoId,
-		skill.RangerArrowRainId,
-		skill.RangerSilverHawkId,
-		skill.RangerStrafeId,
-	},
-	buffs: []skill.Id{
-		skill.RangerPuppetId,
+	skills: []skill.Skill{
+		skill.RangerThrust,
+		skill.RangerMortalBlow,
+		skill.RangerPuppet,
+		skill.RangerInferno,
+		skill.RangerArrowRain,
+		skill.RangerSilverHawk,
+		skill.RangerStrafe,
 	},
 }
 
 var Bowmaster = Job{
 	id: BowmasterId,
-	skills: []skill.Id{
-		skill.BowmasterMapleWarriorId,
-		skill.BowmasterSharpEyesId,
-		skill.BowmasterDragonsBreathId,
-		skill.BowmasterHurricaneId,
-		skill.BowmasterBowExpertId,
-		skill.BowmasterPhoenixId,
-		skill.BowmasterHamstringId,
-		skill.BowmasterConcentrateId,
-		skill.BowmasterHerosWillId,
+	skills: []skill.Skill{
+		skill.BowmasterMapleWarrior,
+		skill.BowmasterSharpEyes,
+		skill.BowmasterDragonsBreath,
+		skill.BowmasterHurricane,
+		skill.BowmasterBowExpert,
+		skill.BowmasterPhoenix,
+		skill.BowmasterHamstring,
+		skill.BowmasterConcentrate,
+		skill.BowmasterHerosWill,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.BowmasterMapleWarriorId,
-		skill.BowmasterSharpEyesId,
-		skill.BowmasterConcentrateId,
-		skill.BowmasterHerosWillId,
-	},
 }
 
 var Crossbowman = Job{
 	id: CrossbowmanId,
-	skills: []skill.Id{
-		skill.CrossbowmanCrossbowMasteryId,
-		skill.CrossbowmanFinalAttackCrossbowId,
-		skill.CrossbowmanCrossbowBoosterId,
-		skill.CrossbowmanPowerKnockBackId,
-		skill.CrossbowmanSoulArrowCrossbowId,
-		skill.CrossbowmanIronArrowCrossbowId,
-	},
-	buffs: []skill.Id{
-		skill.CrossbowmanCrossbowBoosterId,
-		skill.CrossbowmanSoulArrowCrossbowId,
+	skills: []skill.Skill{
+		skill.CrossbowmanCrossbowMastery,
+		skill.CrossbowmanFinalAttackCrossbow,
+		skill.CrossbowmanCrossbowBooster,
+		skill.CrossbowmanPowerKnockBack,
+		skill.CrossbowmanSoulArrowCrossbow,
+		skill.CrossbowmanIronArrowCrossbow,
 	},
 }
 
 var Sniper = Job{
 	id: SniperId,
-	skills: []skill.Id{
-		skill.SniperThrustId,
-		skill.SniperMortalBlowId,
-		skill.SniperPuppetId,
-		skill.SniperBlizzardId,
-		skill.SniperArrowEruptionId,
-		skill.SniperGoldenEagleId,
-		skill.SniperStrafeId,
-	},
-	buffs: []skill.Id{
-		skill.SniperPuppetId,
+	skills: []skill.Skill{
+		skill.SniperThrust,
+		skill.SniperMortalBlow,
+		skill.SniperPuppet,
+		skill.SniperBlizzard,
+		skill.SniperArrowEruption,
+		skill.SniperGoldenEagle,
+		skill.SniperStrafe,
 	},
 }
 
 var Marksman = Job{
 	id: MarksmanId,
-	skills: []skill.Id{
-		skill.MarksmanMapleWarriorId,
-		skill.MarksmanPiercingArrowId,
-		skill.MarksmanSharpEyesId,
-		skill.MarksmanDragonsBreathId,
-		skill.MarksmanMarksmanBoostId,
-		skill.MarksmanFrostpreyId,
-		skill.MarksmanBlindId,
-		skill.MarksmanSnipeId,
-		skill.MarksmanHerosWillId,
+	skills: []skill.Skill{
+		skill.MarksmanMapleWarrior,
+		skill.MarksmanPiercingArrow,
+		skill.MarksmanSharpEyes,
+		skill.MarksmanDragonsBreath,
+		skill.MarksmanMarksmanBoost,
+		skill.MarksmanFrostprey,
+		skill.MarksmanBlind,
+		skill.MarksmanSnipe,
+		skill.MarksmanHerosWill,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.MarksmanMapleWarriorId,
-		skill.MarksmanSharpEyesId,
-		skill.MarksmanBlindId,
-		skill.MarksmanHerosWillId,
-	},
 }
 
 var Rogue = Job{
 	id: RogueId,
-	skills: []skill.Id{
-		skill.RogueNimbleBodyId,
-		skill.RogueKeenEyesId,
-		skill.RogueDisorderId,
-		skill.RogueDarkSightId,
-		skill.RogueDoubleStabId,
-		skill.RogueLuckySevenId,
-	},
-	buffs: []skill.Id{
-		skill.RogueDarkSightId,
+	skills: []skill.Skill{
+		skill.RogueNimbleBody,
+		skill.RogueKeenEyes,
+		skill.RogueDisorder,
+		skill.RogueDarkSight,
+		skill.RogueDoubleStab,
+		skill.RogueLuckySeven,
 	},
 }
 
 var Assassin = Job{
 	id: AssassinId,
-	skills: []skill.Id{
-		skill.AssassinClawMasteryId,
-		skill.AssassinCriticalThrowId,
-		skill.AssassinEndureId,
-		skill.AssassinClawBoosterId,
-		skill.AssassinHasteId,
-		skill.AssassinDrainId,
-	},
-	buffs: []skill.Id{
-		skill.AssassinClawBoosterId,
-		skill.AssassinHasteId,
+	skills: []skill.Skill{
+		skill.AssassinClawMastery,
+		skill.AssassinCriticalThrow,
+		skill.AssassinEndure,
+		skill.AssassinClawBooster,
+		skill.AssassinHaste,
+		skill.AssassinDrain,
 	},
 }
 
 var Hermit = Job{
 	id: HermitId,
-	skills: []skill.Id{
-		skill.HermitAlchemistId,
-		skill.HermitMesoUpId,
-		skill.HermitShadowPartnerId,
-		skill.HermitShadowWebId,
-		skill.HermitShadowMesoId,
-		skill.HermitAvengerId,
-		skill.HermitFlashJumpId,
-	},
-	buffs: []skill.Id{
-		skill.HermitMesoUpId,
-		skill.HermitShadowPartnerId,
+	skills: []skill.Skill{
+		skill.HermitAlchemist,
+		skill.HermitMesoUp,
+		skill.HermitShadowPartner,
+		skill.HermitShadowWeb,
+		skill.HermitShadowMeso,
+		skill.HermitAvenger,
+		skill.HermitFlashJump,
 	},
 }
 
 var NightLord = Job{
 	id: NightLordId,
-	skills: []skill.Id{
-		skill.NightLordMapleWarriorId,
-		skill.NightLordShadowShifterId,
-		skill.NightLordTauntId,
-		skill.NightLordNinjaAmbushId,
-		skill.NightLordVenomousStarId,
-		skill.NightLordShadowStarsId,
-		skill.NightLordTripleThrowId,
-		skill.NightLordNinjaStormId,
-		skill.NightLordHerosWillId,
+	skills: []skill.Skill{
+		skill.NightLordMapleWarrior,
+		skill.NightLordShadowShifter,
+		skill.NightLordTaunt,
+		skill.NightLordNinjaAmbush,
+		skill.NightLordVenomousStar,
+		skill.NightLordShadowStars,
+		skill.NightLordTripleThrow,
+		skill.NightLordNinjaStorm,
+		skill.NightLordHerosWill,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.NightLordMapleWarriorId,
-		skill.NightLordNinjaAmbushId,
-		skill.NightLordShadowStarsId,
-		skill.NightLordHerosWillId,
-	},
 }
 
 var Bandit = Job{
 	id: BanditId,
-	skills: []skill.Id{
-		skill.BanditDaggerMasteryId,
-		skill.BanditEndureId,
-		skill.BanditDaggerBoosterId,
-		skill.BanditHasteId,
-		skill.BanditStealId,
-		skill.BanditSavageBlowId,
-	},
-	buffs: []skill.Id{
-		skill.BanditDaggerBoosterId,
-		skill.BanditHasteId,
+	skills: []skill.Skill{
+		skill.BanditDaggerMastery,
+		skill.BanditEndure,
+		skill.BanditDaggerBooster,
+		skill.BanditHaste,
+		skill.BanditSteal,
+		skill.BanditSavageBlow,
 	},
 }
 
 var ChiefBandit = Job{
 	id: ChiefBanditId,
-	skills: []skill.Id{
-		skill.ChiefBanditShieldMasteryId,
-		skill.ChiefBanditChakraId,
-		skill.ChiefBanditAssaulterId,
-		skill.ChiefBanditPickpocketId,
-		skill.ChiefBanditBandOfThievesId,
-		skill.ChiefBanditMesoGuardId,
-		skill.ChiefBanditMesoExplosionId,
-	},
-	buffs: []skill.Id{
-		skill.ChiefBanditPickpocketId,
-		skill.ChiefBanditMesoGuardId,
+	skills: []skill.Skill{
+		skill.ChiefBanditShieldMastery,
+		skill.ChiefBanditChakra,
+		skill.ChiefBanditAssaulter,
+		skill.ChiefBanditPickpocket,
+		skill.ChiefBanditBandOfThieves,
+		skill.ChiefBanditMesoGuard,
+		skill.ChiefBanditMesoExplosion,
 	},
 }
 
 var Shadower = Job{
 	id: ShadowerId,
-	skills: []skill.Id{
-		skill.ShadowerMapleWarriorId,
-		skill.ShadowerAssassinateId,
-		skill.ShadowerShadowShifterId,
-		skill.ShadowerTauntId,
-		skill.ShadowerNinjaAmbushId,
-		skill.ShadowerVenomousStabId,
-		skill.ShadowerSmokescreenId,
-		skill.ShadowerBoomerangStepId,
-		skill.ShadowerHerosWillId,
+	skills: []skill.Skill{
+		skill.ShadowerMapleWarrior,
+		skill.ShadowerAssassinate,
+		skill.ShadowerShadowShifter,
+		skill.ShadowerTaunt,
+		skill.ShadowerNinjaAmbush,
+		skill.ShadowerVenomousStab,
+		skill.ShadowerSmokescreen,
+		skill.ShadowerBoomerangStep,
+		skill.ShadowerHerosWill,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.ShadowerMapleWarriorId,
-		skill.ShadowerNinjaAmbushId,
-		skill.ShadowerHerosWillId,
-	},
 }
 
 var Pirate = Job{
 	id: PirateId,
-	skills: []skill.Id{
-		skill.PirateBulletTimeId,
-		skill.PirateFlashFistId,
-		skill.PirateSommersaultKickId,
-		skill.PirateDoubleShotId,
-		skill.PirateDashId,
-	},
-	buffs: []skill.Id{
-		skill.PirateDashId,
+	skills: []skill.Skill{
+		skill.PirateBulletTime,
+		skill.PirateFlashFist,
+		skill.PirateSommersaultKick,
+		skill.PirateDoubleShot,
+		skill.PirateDash,
 	},
 }
 
 var Brawler = Job{
 	id: BrawlerId,
-	skills: []skill.Id{
-		skill.BrawlerImproveMaxHpId,
-		skill.BrawlerKnucklerMasteryId,
-		skill.BrawlerBackspinBlowId,
-		skill.BrawlerDoubleUppercutId,
-		skill.BrawlerCorkscrewBlowId,
-		skill.BrawlerMPRecoveryId,
-		skill.BrawlerKnucklerBoosterId,
-		skill.BrawlerOakBarrelId,
+	skills: []skill.Skill{
+		skill.BrawlerImproveMaxHp,
+		skill.BrawlerKnucklerMastery,
+		skill.BrawlerBackspinBlow,
+		skill.BrawlerDoubleUppercut,
+		skill.BrawlerCorkscrewBlow,
+		skill.BrawlerMPRecovery,
+		skill.BrawlerKnucklerBooster,
+		skill.BrawlerOakBarrel,
 	},
 }
 
 var Marauder = Job{
 	id: MarauderId,
-	skills: []skill.Id{
-		skill.MarauderStunMasteryId,
-		skill.MarauderEnergyChargeId,
-		skill.MarauderEnergyBlastId,
-		skill.MarauderEnergyDrainId,
-		skill.MarauderTransformationId,
-		skill.MarauderShockwaveId,
-	},
-	buffs: []skill.Id{
-		skill.MarauderTransformationId,
+	skills: []skill.Skill{
+		skill.MarauderStunMastery,
+		skill.MarauderEnergyCharge,
+		skill.MarauderEnergyBlast,
+		skill.MarauderEnergyDrain,
+		skill.MarauderTransformation,
+		skill.MarauderShockwave,
 	},
 }
 
 var Buccaneer = Job{
 	id: BuccaneerId,
-	skills: []skill.Id{
-		skill.BuccaneerMapleWarriorId,
-		skill.BuccaneerDragonStrikeId,
-		skill.BuccaneerEnergyOrbId,
-		skill.BuccaneerSuperTransformationId,
-		skill.BuccaneerDemolitionId,
-		skill.BuccaneerSnatchId,
-		skill.BuccaneerBarrageId,
-		skill.BuccaneerPiratesRageId,
-		skill.BuccaneerSpeedInfusionId,
-		skill.BuccaneerTimeLeapId,
+	skills: []skill.Skill{
+		skill.BuccaneerMapleWarrior,
+		skill.BuccaneerDragonStrike,
+		skill.BuccaneerEnergyOrb,
+		skill.BuccaneerSuperTransformation,
+		skill.BuccaneerDemolition,
+		skill.BuccaneerSnatch,
+		skill.BuccaneerBarrage,
+		skill.BuccaneerPiratesRage,
+		skill.BuccaneerSpeedInfusion,
+		skill.BuccaneerTimeLeap,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.BuccaneerSuperTransformationId,
-	},
 }
 
 var Gunslinger = Job{
 	id: GunslingerId,
-	skills: []skill.Id{
-		skill.GunslingerGunMasteryId,
-		skill.GunslingerInvisibleShotId,
-		skill.GunslingerGrenadeId,
-		skill.GunslingerGunBoosterId,
-		skill.GunslingerBlankShotId,
-		skill.GunslingerWingsId,
-		skill.GunslingerRecoilShotId,
+	skills: []skill.Skill{
+		skill.GunslingerGunMastery,
+		skill.GunslingerInvisibleShot,
+		skill.GunslingerGrenade,
+		skill.GunslingerGunBooster,
+		skill.GunslingerBlankShot,
+		skill.GunslingerWings,
+		skill.GunslingerRecoilShot,
 	},
 }
 
 var Outlaw = Job{
 	id: OutlawId,
-	skills: []skill.Id{
-		skill.OutlawBurstFireId,
-		skill.OutlawOctopusId,
-		skill.OutlawGaviotaId,
-		skill.OutlawFlamethrowerId,
-		skill.OutlawIceSplitterId,
-		skill.OutlawHomingBeaconId,
+	skills: []skill.Skill{
+		skill.OutlawBurstFire,
+		skill.OutlawOctopus,
+		skill.OutlawGaviota,
+		skill.OutlawFlamethrower,
+		skill.OutlawIceSplitter,
+		skill.OutlawHomingBeacon,
 	},
 }
 
 var Corsair = Job{
 	id: CorsairId,
-	skills: []skill.Id{
-		skill.CorsairMapleWarriorId,
-		skill.CorsairElementalBoostId,
-		skill.CorsairWrathOfTheOctopiId,
-		skill.CorsairAerialStrikeId,
-		skill.CorsairRapidFireId,
-		skill.CorsairBattleshipId,
-		skill.CorsairBattleshipCannonId,
-		skill.CorsairBattleshipTorpedoId,
-		skill.CorsairHypnotizeId,
-		skill.CorsairSpeedInfusionId,
-		skill.CorsairBullseyeId,
+	skills: []skill.Skill{
+		skill.CorsairMapleWarrior,
+		skill.CorsairElementalBoost,
+		skill.CorsairWrathOfTheOctopi,
+		skill.CorsairAerialStrike,
+		skill.CorsairRapidFire,
+		skill.CorsairBattleship,
+		skill.CorsairBattleshipCannon,
+		skill.CorsairBattleshipTorpedo,
+		skill.CorsairHypnotize,
+		skill.CorsairSpeedInfusion,
+		skill.CorsairBullseye,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.CorsairBattleshipId,
-	},
 }
 
 var MapleLeafBrigadier = Job{
 	id: MapleLeafBrigadierId,
-	skills: []skill.Id{
-		skill.MapleLeafBrigadierAntiMacroId,
-		skill.MapleLeafBrigadierTeleportId,
+	skills: []skill.Skill{
+		skill.MapleLeafBrigadierAntiMacro,
+		skill.MapleLeafBrigadierTeleport,
 	},
 }
 
 var Gm = Job{
 	id: GmId,
-	skills: []skill.Id{
-		skill.GmHasteId,
-		skill.GmSuperDragonRoarId,
-		skill.GmTeleportId,
-		skill.GmHide,
-	},
-	buffs: []skill.Id{
+	skills: []skill.Skill{
+		skill.GmHaste,
+		skill.GmSuperDragonRoar,
+		skill.GmTeleport,
 		skill.GmHide,
 	},
 }
 
 var SuperGm = Job{
 	id: SuperGmId,
-	skills: []skill.Id{
-		skill.SuperGmHealDispelId,
-		skill.SuperGmHasteId,
-		skill.SuperGmHolySymbolId,
-		skill.SuperGmBlessId,
-		skill.SuperGmHideId,
-		skill.SuperGmResurrectionId,
-		skill.SuperGmDragonRoarId,
-		skill.SuperGmTeleportId,
-		skill.SuperGmHyperBodyId,
-	},
-	buffs: []skill.Id{
-		skill.SuperGmHasteId,
-		skill.SuperGmHolySymbolId,
-		skill.SuperGmBlessId,
-		skill.SuperGmHideId,
-		skill.SuperGmHyperBodyId,
+	skills: []skill.Skill{
+		skill.SuperGmHealDispel,
+		skill.SuperGmHaste,
+		skill.SuperGmHolySymbol,
+		skill.SuperGmBless,
+		skill.SuperGmHide,
+		skill.SuperGmResurrection,
+		skill.SuperGmDragonRoar,
+		skill.SuperGmTeleport,
+		skill.SuperGmHyperBody,
 	},
 }
 
 var Noblesse = Job{
 	id: NoblesseId,
-	skills: []skill.Id{
-		skill.NoblesseThreeSnailsId,
-		skill.NoblesseRecoveryId,
-		skill.NoblesseNimbleFeetId,
+	skills: []skill.Skill{
+		skill.NoblesseThreeSnails,
+		skill.NoblesseRecovery,
+		skill.NoblesseNimbleFeet,
 		skill.NoblesseSoulOfCraftsman,
 		skill.NoblesseMonsterRiding,
-		skill.NoblesseEchoOfHeroId,
-		skill.NoblesseJumpDownId,
-		skill.NoblesseMakerId,
-		skill.NoblesseMultiPetId,
-		skill.NoblesseBambooId,
-		skill.NoblesseInvincibleId,
-		skill.NoblesseBerserkId,
-		skill.NoblesseBlessOfNymphId,
-	},
-	buffs: []skill.Id{
-		skill.NoblesseRecoveryId,
-		skill.NoblesseNimbleFeetId,
-		skill.NoblesseMonsterRiding,
-		skill.NoblesseEchoOfHeroId,
-		skill.NoblesseBlessOfNymphId,
+		skill.NoblesseEchoOfHero,
+		skill.NoblesseJumpDown,
+		skill.NoblesseMaker,
+		skill.NoblesseMultiPet,
+		skill.NoblesseBamboo,
+		skill.NoblesseInvincible,
+		skill.NoblesseBerserk,
+		skill.NoblesseBlessOfNymph,
 	},
 }
 
 var DawnWarriorStage1 = Job{
 	id: DawnWarriorStage1Id,
-	skills: []skill.Id{
-		skill.DawnWarriorStage1IronBodyId,
-		skill.DawnWarriorStage1PowerStrikeId,
-		skill.DawnWarriorStage1SlashBlastId,
-		skill.DawnWarriorStage1SoulId,
-		skill.DawnWarriorStage1ImprovedMaxHpIncreaseId,
-	},
-	buffs: []skill.Id{
-		skill.DawnWarriorStage1IronBodyId,
-		skill.DawnWarriorStage1SoulId,
+	skills: []skill.Skill{
+		skill.DawnWarriorStage1IronBody,
+		skill.DawnWarriorStage1PowerStrike,
+		skill.DawnWarriorStage1SlashBlast,
+		skill.DawnWarriorStage1Soul,
+		skill.DawnWarriorStage1ImprovedMaxHpIncrease,
 	},
 }
 
 var DawnWarriorStage2 = Job{
 	id: DawnWarriorStage2Id,
-	skills: []skill.Id{
-		skill.DawnWarriorStage2SwordMasteryId,
-		skill.DawnWarriorStage2SwordBoosterId,
-		skill.DawnWarriorStage2FinalAttackSwordId,
-		skill.DawnWarriorStage2RageId,
-		skill.DawnWarriorStage2SoulBladeId,
-		skill.DawnWarriorStage2SoulRushId,
-	},
-	buffs: []skill.Id{
-		skill.DawnWarriorStage2SwordBoosterId,
-		skill.DawnWarriorStage2FinalAttackSwordId,
-		skill.DawnWarriorStage2RageId,
+	skills: []skill.Skill{
+		skill.DawnWarriorStage2SwordMastery,
+		skill.DawnWarriorStage2SwordBooster,
+		skill.DawnWarriorStage2FinalAttackSword,
+		skill.DawnWarriorStage2Rage,
+		skill.DawnWarriorStage2SoulBlade,
+		skill.DawnWarriorStage2SoulRush,
 	},
 }
 
 var DawnWarriorStage3 = Job{
 	id: DawnWarriorStage3Id,
-	skills: []skill.Id{
-		skill.DawnWarriorStage3ImprovedMpRecoveryId,
-		skill.DawnWarriorStage3ComboAttackId,
-		skill.DawnWarriorStage3PanicId,
-		skill.DawnWarriorStage3ComaId,
-		skill.DawnWarriorStage3BrandishId,
-		skill.DawnWarriorStage3AdvancedComboId,
-		skill.DawnWarriorStage3SoulDriverId,
-		skill.DawnWarriorStage3SoulChargeId,
-	},
-	buffs: []skill.Id{
-		skill.DawnWarriorStage3ComboAttackId,
-		skill.DawnWarriorStage3SoulChargeId,
+	skills: []skill.Skill{
+		skill.DawnWarriorStage3ImprovedMpRecovery,
+		skill.DawnWarriorStage3ComboAttack,
+		skill.DawnWarriorStage3Panic,
+		skill.DawnWarriorStage3Coma,
+		skill.DawnWarriorStage3Brandish,
+		skill.DawnWarriorStage3AdvancedCombo,
+		skill.DawnWarriorStage3SoulDriver,
+		skill.DawnWarriorStage3SoulCharge,
 	},
 }
 
 var DawnWarriorStage4 = Job{
 	id:        DawnWarriorStage4Id,
-	skills:    []skill.Id{},
+	skills:    []skill.Skill{},
 	fourthJob: true,
 }
 
 var BlazeWizardStage1 = Job{
 	id: BlazeWizardStage1Id,
-	skills: []skill.Id{
-		skill.BlazeWizardStage1MagicGuardId,
-		skill.BlazeWizardStage1MagicArmorId,
-		skill.BlazeWizardStage1MagicClawId,
-		skill.BlazeWizardStage1FlameId,
-		skill.BlazeWizardStage1ImprovedMaxMpIncreaseId,
-	},
-	buffs: []skill.Id{
-		skill.BlazeWizardStage1MagicGuardId,
-		skill.BlazeWizardStage1MagicArmorId,
-		skill.BlazeWizardStage1FlameId,
+	skills: []skill.Skill{
+		skill.BlazeWizardStage1MagicGuard,
+		skill.BlazeWizardStage1MagicArmor,
+		skill.BlazeWizardStage1MagicClaw,
+		skill.BlazeWizardStage1Flame,
+		skill.BlazeWizardStage1ImprovedMaxMpIncrease,
 	},
 }
 
 var BlazeWizardStage2 = Job{
 	id: BlazeWizardStage2Id,
-	skills: []skill.Id{
-		skill.BlazeWizardStage2MeditationId,
-		skill.BlazeWizardStage2SlowId,
-		skill.BlazeWizardStage2FireArrowId,
-		skill.BlazeWizardStage2TeleportId,
-		skill.BlazeWizardStage2SpellBoosterId,
-		skill.BlazeWizardStage2ElementalResetId,
-		skill.BlazeWizardStage2FirePillarId,
-	},
-	buffs: []skill.Id{
-		skill.BlazeWizardStage2MeditationId,
-		skill.BlazeWizardStage2SlowId,
-		skill.BlazeWizardStage2SpellBoosterId,
-		skill.BlazeWizardStage2ElementalResetId,
+	skills: []skill.Skill{
+		skill.BlazeWizardStage2Meditation,
+		skill.BlazeWizardStage2Slow,
+		skill.BlazeWizardStage2FireArrow,
+		skill.BlazeWizardStage2Teleport,
+		skill.BlazeWizardStage2SpellBooster,
+		skill.BlazeWizardStage2ElementalReset,
+		skill.BlazeWizardStage2FirePillar,
 	},
 }
 
 var BlazeWizardStage3 = Job{
 	id: BlazeWizardStage3Id,
-	skills: []skill.Id{
-		skill.BlazeWizardStage3SpellMasteryId,
-		skill.BlazeWizardStage3ElementResistanceId,
-		skill.BlazeWizardStage3ElementAmplificationId,
-		skill.BlazeWizardStage3SealId,
-		skill.BlazeWizardStage3MeteorShowerId,
-		skill.BlazeWizardStage3IfritId,
-		skill.BlazeWizardStage3FlameGearId,
-		skill.BlazeWizardStage3FireStrikeId,
-	},
-	buffs: []skill.Id{
-		skill.BlazeWizardStage3SealId,
-		skill.BlazeWizardStage3IfritId,
+	skills: []skill.Skill{
+		skill.BlazeWizardStage3SpellMastery,
+		skill.BlazeWizardStage3ElementResistance,
+		skill.BlazeWizardStage3ElementAmplification,
+		skill.BlazeWizardStage3Seal,
+		skill.BlazeWizardStage3MeteorShower,
+		skill.BlazeWizardStage3Ifrit,
+		skill.BlazeWizardStage3FlameGear,
+		skill.BlazeWizardStage3FireStrike,
 	},
 }
 
 var BlazeWizardStage4 = Job{
 	id:        BlazeWizardStage4Id,
-	skills:    []skill.Id{},
+	skills:    []skill.Skill{},
 	fourthJob: true,
 }
 
 var WindArcherStage1 = Job{
 	id: WindArcherStage1Id,
-	skills: []skill.Id{
-		skill.WindArcherStage1CriticalShotId,
-		skill.WindArcherStage1TheEyeOfAmazonId,
-		skill.WindArcherStage1FocusId,
-		skill.WindArcherStage1DoubleShotId,
-		skill.WindArcherStage1StormId,
-	},
-	buffs: []skill.Id{
-		skill.WindArcherStage1FocusId,
-		skill.WindArcherStage1StormId,
+	skills: []skill.Skill{
+		skill.WindArcherStage1CriticalShot,
+		skill.WindArcherStage1TheEyeOfAmazon,
+		skill.WindArcherStage1Focus,
+		skill.WindArcherStage1DoubleShot,
+		skill.WindArcherStage1Storm,
 	},
 }
 
 var WindArcherStage2 = Job{
 	id: WindArcherStage2Id,
-	skills: []skill.Id{
-		skill.WindArcherStage2BowMasteryId,
-		skill.WindArcherStage2BowBoosterId,
-		skill.WindArcherStage2FinalAttackBowId,
-		skill.WindArcherStage2SoulArrowId,
-		skill.WindArcherStage2ThrustId,
-		skill.WindArcherStage2StormBreakId,
-		skill.WindArcherStage2WindWalkId,
-	},
-	buffs: []skill.Id{
-		skill.WindArcherStage2BowBoosterId,
-		skill.WindArcherStage2FinalAttackBowId,
-		skill.WindArcherStage2SoulArrowId,
-		skill.WindArcherStage2WindWalkId,
+	skills: []skill.Skill{
+		skill.WindArcherStage2BowMastery,
+		skill.WindArcherStage2BowBooster,
+		skill.WindArcherStage2FinalAttackBow,
+		skill.WindArcherStage2SoulArrow,
+		skill.WindArcherStage2Thrust,
+		skill.WindArcherStage2StormBreak,
+		skill.WindArcherStage2WindWalk,
 	},
 }
 
 var WindArcherStage3 = Job{
 	id: WindArcherStage3Id,
-	skills: []skill.Id{
-		skill.WindArcherStage3ArrowRainId,
-		skill.WindArcherStage3StrafeId,
-		skill.WindArcherStage3HurricaneId,
-		skill.WindArcherStage3BowExpertId,
-		skill.WindArcherStage3PuppetId,
-		skill.WindArcherStage3EagleEyeId,
-		skill.WindArcherStage3WindPiercingId,
-		skill.WindArcherStage3WindShotId,
-	},
-	buffs: []skill.Id{
-		skill.WindArcherStage3EagleEyeId,
-		skill.WindArcherStage3PuppetId,
+	skills: []skill.Skill{
+		skill.WindArcherStage3ArrowRain,
+		skill.WindArcherStage3Strafe,
+		skill.WindArcherStage3Hurricane,
+		skill.WindArcherStage3BowExpert,
+		skill.WindArcherStage3Puppet,
+		skill.WindArcherStage3EagleEye,
+		skill.WindArcherStage3WindPiercing,
+		skill.WindArcherStage3WindShot,
 	},
 }
 
 var WindArcherStage4 = Job{
 	id:        WindArcherStage4Id,
-	skills:    []skill.Id{},
+	skills:    []skill.Skill{},
 	fourthJob: true,
 }
 
 var NightWalkerStage1 = Job{
 	id: NightWalkerStage1Id,
-	skills: []skill.Id{
-		skill.NightWalkerStage1NimbleBodyId,
-		skill.NightWalkerStage1KeenEyesId,
-		skill.NightWalkerStage1DisorderId,
-		skill.NightWalkerStage1DarkSightId,
-		skill.NightWalkerStage1LuckySevenId,
-		skill.NightWalkerStage1DarknessId,
-	},
-	buffs: []skill.Id{
-		skill.NightWalkerStage1DarkSightId,
-		skill.NightWalkerStage1DarknessId,
+	skills: []skill.Skill{
+		skill.NightWalkerStage1NimbleBody,
+		skill.NightWalkerStage1KeenEyes,
+		skill.NightWalkerStage1Disorder,
+		skill.NightWalkerStage1DarkSight,
+		skill.NightWalkerStage1LuckySeven,
+		skill.NightWalkerStage1Darkness,
 	},
 }
 
 var NightWalkerStage2 = Job{
 	id: NightWalkerStage2Id,
-	skills: []skill.Id{
-		skill.NightWalkerStage2ClawMasteryId,
-		skill.NightWalkerStage2CriticalThrowId,
-		skill.NightWalkerStage2ClawBoosterId,
-		skill.NightWalkerStage2HasteId,
-		skill.NightWalkerStage2FlashJumpId,
-		skill.NightWalkerStage2VanishId,
-		skill.NightWalkerStage2VampireId,
-	},
-	buffs: []skill.Id{
-		skill.NightWalkerStage2ClawBoosterId,
-		skill.NightWalkerStage2HasteId,
+	skills: []skill.Skill{
+		skill.NightWalkerStage2ClawMastery,
+		skill.NightWalkerStage2CriticalThrow,
+		skill.NightWalkerStage2ClawBooster,
+		skill.NightWalkerStage2Haste,
+		skill.NightWalkerStage2FlashJump,
+		skill.NightWalkerStage2Vanish,
+		skill.NightWalkerStage2Vampire,
 	},
 }
 
 var NightWalkerStage3 = Job{
 	id: NightWalkerStage3Id,
-	skills: []skill.Id{
-		skill.NightWalkerStage3ShadowPartnerId,
-		skill.NightWalkerStage3ShadowWebId,
-		skill.NightWalkerStage3AvengerId,
-		skill.NightWalkerStage3AlchemistId,
-		skill.NightWalkerStage3VenomId,
-		skill.NightWalkerStage3TripleThrowId,
-		skill.NightWalkerStage3PoisonBombId,
-	},
-	buffs: []skill.Id{
-		skill.NightWalkerStage3ShadowPartnerId,
+	skills: []skill.Skill{
+		skill.NightWalkerStage3ShadowPartner,
+		skill.NightWalkerStage3ShadowWeb,
+		skill.NightWalkerStage3Avenger,
+		skill.NightWalkerStage3Alchemist,
+		skill.NightWalkerStage3Venom,
+		skill.NightWalkerStage3TripleThrow,
+		skill.NightWalkerStage3PoisonBomb,
 	},
 }
 
 var NightWalkerStage4 = Job{
 	id:        NightWalkerStage4Id,
-	skills:    []skill.Id{},
+	skills:    []skill.Skill{},
 	fourthJob: true,
 }
 
 var ThunderBreakerStage1 = Job{
 	id: ThunderBreakerStage1Id,
-	skills: []skill.Id{
-		skill.ThunderBreakerStage1QuickMotionId,
-		skill.ThunderBreakerStage1FirstStrikeId,
-		skill.ThunderBreakerStage1SomersaultKickId,
-		skill.ThunderBreakerStage1DashId,
-		skill.ThunderBreakerStage1LightningSpriteId,
-	},
-	buffs: []skill.Id{
-		skill.ThunderBreakerStage1DashId,
-		skill.ThunderBreakerStage1LightningSpriteId,
+	skills: []skill.Skill{
+		skill.ThunderBreakerStage1QuickMotion,
+		skill.ThunderBreakerStage1FirstStrike,
+		skill.ThunderBreakerStage1SomersaultKick,
+		skill.ThunderBreakerStage1Dash,
+		skill.ThunderBreakerStage1LightningSprite,
 	},
 }
 
 var ThunderBreakerStage2 = Job{
 	id: ThunderBreakerStage2Id,
-	skills: []skill.Id{
-		skill.ThunderBreakerStage2KnuckleMasteryId,
-		skill.ThunderBreakerStage2KnuckleBoosterId,
-		skill.ThunderBreakerStage2CorkscrewBlowId,
-		skill.ThunderBreakerStage2EnergyChargeId,
-		skill.ThunderBreakerStage2EnergyBlastId,
-		skill.ThunderBreakerStage2LightningChargeId,
-		skill.ThunderBreakerStage2ImprovedMaxHpIncreaseId,
-	},
-	buffs: []skill.Id{
-		skill.ThunderBreakerStage2KnuckleBoosterId,
-		skill.ThunderBreakerStage2EnergyChargeId,
-		skill.ThunderBreakerStage2LightningChargeId,
+	skills: []skill.Skill{
+		skill.ThunderBreakerStage2KnuckleMastery,
+		skill.ThunderBreakerStage2KnuckleBooster,
+		skill.ThunderBreakerStage2CorkscrewBlow,
+		skill.ThunderBreakerStage2EnergyCharge,
+		skill.ThunderBreakerStage2EnergyBlast,
+		skill.ThunderBreakerStage2LightningCharge,
+		skill.ThunderBreakerStage2ImprovedMaxHpIncrease,
 	},
 }
 
 var ThunderBreakerStage3 = Job{
 	id: ThunderBreakerStage3Id,
-	skills: []skill.Id{
-		skill.ThunderBreakerStage3CriticalPunchId,
-		skill.ThunderBreakerStage3EnergyDrainId,
-		skill.ThunderBreakerStage3TransformationId,
-		skill.ThunderBreakerStage3ShockWaveId,
-		skill.ThunderBreakerStage3BarrageId,
-		skill.ThunderBreakerStage3SpeedInfusionId,
-		skill.ThunderBreakerStage3SparkId,
-		skill.ThunderBreakerStage3SharkWaveId,
-	},
-	buffs: []skill.Id{
-		skill.ThunderBreakerStage3EnergyDrainId,
-		skill.ThunderBreakerStage3TransformationId,
-		skill.ThunderBreakerStage3SpeedInfusionId,
-		skill.ThunderBreakerStage3SparkId,
+	skills: []skill.Skill{
+		skill.ThunderBreakerStage3CriticalPunch,
+		skill.ThunderBreakerStage3EnergyDrain,
+		skill.ThunderBreakerStage3Transformation,
+		skill.ThunderBreakerStage3ShockWave,
+		skill.ThunderBreakerStage3Barrage,
+		skill.ThunderBreakerStage3SpeedInfusion,
+		skill.ThunderBreakerStage3Spark,
+		skill.ThunderBreakerStage3SharkWave,
 	},
 }
 
 var ThunderBreakerStage4 = Job{
 	id:        ThunderBreakerStage4Id,
-	skills:    []skill.Id{},
+	skills:    []skill.Skill{},
 	fourthJob: true,
 }
 
 var Legend = Job{
 	id: LegendId,
-	skills: []skill.Id{
-		skill.LegendThreeSnailsId,
-		skill.LegendRecoveryId,
-		skill.LegendNimbleFeetId,
-		skill.LegendSoulOfCraftsmanId,
-		skill.LegendMonsterRidingId,
-		skill.LegendEchoOfHeroId,
-		skill.LegendDamageMeterId,
-		skill.LegendMakerId,
-		skill.LegendBambooId,
-		skill.LegendInvincibleId,
-		skill.LegendBerserkId,
-		skill.LegendBlessOfNymphId,
-	},
-	buffs: []skill.Id{
-		skill.LegendBlessOfNymphId,
-		// AGILE BODY
-		skill.LegendEchoOfHeroId,
-		skill.LegendNimbleFeetId,
-		skill.LegendRecoveryId,
-		skill.LegendMonsterRidingId,
+	skills: []skill.Skill{
+		skill.LegendThreeSnails,
+		skill.LegendRecovery,
+		skill.LegendNimbleFeet,
+		skill.LegendSoulOfCraftsman,
+		skill.LegendMonsterRiding,
+		skill.LegendEchoOfHero,
+		skill.LegendDamageMeter,
+		skill.LegendMaker,
+		skill.LegendBamboo,
+		skill.LegendInvincible,
+		skill.LegendBerserk,
+		skill.LegendBlessOfNymph,
 	},
 }
 
 var AranStage1 = Job{
 	id: AranStage1Id,
-	skills: []skill.Id{
-		skill.AranStage1ComboAbilityId,
-		skill.AranStage1CombatStepId,
-		skill.AranStage1DoubleSwingId,
-		skill.AranStage1PolearmBoosterId,
-	},
-	buffs: []skill.Id{
-		skill.AranStage1ComboAbilityId,
-		skill.AranStage1PolearmBoosterId,
+	skills: []skill.Skill{
+		skill.AranStage1ComboAbility,
+		skill.AranStage1CombatStep,
+		skill.AranStage1DoubleSwing,
+		skill.AranStage1PolearmBooster,
 	},
 }
 
 var AranStage2 = Job{
 	id: AranStage2Id,
-	skills: []skill.Id{
-		skill.AranStage2PolearmMasteryId,
-		skill.AranStage2TripleSwingId,
-		skill.AranStage2FinalChargeId,
-		skill.AranStage2BodyPressureId,
-		skill.AranStage2ComboSmashId,
-		skill.AranStage2ComboDrainId,
-	},
-	buffs: []skill.Id{
-		skill.AranStage2BodyPressureId,
-		skill.AranStage2ComboDrainId,
+	skills: []skill.Skill{
+		skill.AranStage2PolearmMastery,
+		skill.AranStage2TripleSwing,
+		skill.AranStage2FinalCharge,
+		skill.AranStage2BodyPressure,
+		skill.AranStage2ComboSmash,
+		skill.AranStage2ComboDrain,
 	},
 }
 
 var AranStage3 = Job{
 	id: AranStage3Id,
-	skills: []skill.Id{
-		skill.AranStage3ComboCriticalId,
-		skill.AranStage3SmartKnockbackId,
-		skill.AranStage3FullSwingId,
-		skill.AranStage3FinalTossId,
-		skill.AranStage3ComboFenrirId,
-		skill.AranStage3SnowChargeId,
-		skill.AranStage3RollingSpinId,
-		skill.AranStage3FullSwingDoubleSwingId,
-		skill.AranStage3FullSwingTripleSwingId,
-	},
-	buffs: []skill.Id{
-		skill.AranStage3SmartKnockbackId,
-		skill.AranStage3SnowChargeId,
+	skills: []skill.Skill{
+		skill.AranStage3ComboCritical,
+		skill.AranStage3SmartKnockback,
+		skill.AranStage3FullSwing,
+		skill.AranStage3FinalToss,
+		skill.AranStage3ComboFenrir,
+		skill.AranStage3SnowCharge,
+		skill.AranStage3RollingSpin,
+		skill.AranStage3FullSwingDoubleSwing,
+		skill.AranStage3FullSwingTripleSwing,
 	},
 }
 
 var AranStage4 = Job{
 	id: AranStage4Id,
-	skills: []skill.Id{
-		skill.AranStage4MapleWarriorId,
-		skill.AranStage4HighMasteryId,
-		skill.AranStage4OverSwingId,
-		skill.AranStage4FreezeStandingId,
-		skill.AranStage4HighDefenseId,
-		skill.AranStage4FinalBlowId,
-		skill.AranStage4ComboTempestId,
-		skill.AranStage4ComboBarrierId,
-		skill.AranStage4HerosWillId,
-		skill.AranStage4OverswingDoubleSwingId,
-		skill.AranStage4OverswingTripleSwingId,
+	skills: []skill.Skill{
+		skill.AranStage4MapleWarrior,
+		skill.AranStage4HighMastery,
+		skill.AranStage4OverSwing,
+		skill.AranStage4FreezeStanding,
+		skill.AranStage4HighDefense,
+		skill.AranStage4FinalBlow,
+		skill.AranStage4ComboTempest,
+		skill.AranStage4ComboBarrier,
+		skill.AranStage4HerosWill,
+		skill.AranStage4OverswingDoubleSwing,
+		skill.AranStage4OverswingTripleSwing,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.AranStage4MapleWarriorId,
-		skill.AranStage4ComboBarrierId,
-		skill.AranStage4HerosWillId,
-	},
 }
 
 var Evan = Job{
 	id: EvanId,
-	skills: []skill.Id{
-		skill.EvanThreeSnailsId,
-		skill.EvanRecoveryId,
-		skill.EvanNimbleFeetId,
-		skill.EvanSoulOfCraftsmanId,
-		skill.EvanMonsterRidingId,
-		skill.EvanEchoOfHeroId,
-		skill.EvanDamageMeterId,
-		skill.EvanMakerId,
-		skill.EvanBambooId,
-		skill.EvanInvincibleId,
-		skill.EvanBerserkId,
-		skill.EvanBlessOfNymphId,
-	},
-	buffs: []skill.Id{
-		skill.EvanBlessOfNymphId,
-		skill.EvanRecoveryId,
-		skill.EvanNimbleFeetId,
-		skill.EvanEchoOfHeroId,
-		skill.EvanMonsterRidingId,
+	skills: []skill.Skill{
+		skill.EvanThreeSnails,
+		skill.EvanRecovery,
+		skill.EvanNimbleFeet,
+		skill.EvanSoulOfCraftsman,
+		skill.EvanMonsterRiding,
+		skill.EvanEchoOfHero,
+		skill.EvanDamageMeter,
+		skill.EvanMaker,
+		skill.EvanBamboo,
+		skill.EvanInvincible,
+		skill.EvanBerserk,
+		skill.EvanBlessOfNymph,
 	},
 }
 
 var EvanStage1 = Job{
 	id: EvanStage1Id,
-	skills: []skill.Id{
-		skill.EvanStage1DragonSoulId,
-		skill.EvanStage1MagicMissileId,
+	skills: []skill.Skill{
+		skill.EvanStage1DragonSoul,
+		skill.EvanStage1MagicMissile,
 	},
 }
 
 var EvanStage2 = Job{
 	id: EvanStage2Id,
-	skills: []skill.Id{
-		skill.EvanStage2FireCircleId,
-		skill.EvanStage2TeleportId,
+	skills: []skill.Skill{
+		skill.EvanStage2FireCircle,
+		skill.EvanStage2Teleport,
 	},
 }
 
 var EvanStage3 = Job{
 	id: EvanStage3Id,
-	skills: []skill.Id{
-		skill.EvanStage3LightningBoltId,
-		skill.EvanStage3MagicGuardId,
-	},
-	buffs: []skill.Id{
-		skill.EvanStage3MagicGuardId,
+	skills: []skill.Skill{
+		skill.EvanStage3LightningBolt,
+		skill.EvanStage3MagicGuard,
 	},
 }
 
 var EvanStage4 = Job{
 	id: EvanStage4Id,
-	skills: []skill.Id{
-		skill.EvanStage4IceBreathId,
-		skill.EvanStage4ElementalResetId,
-	},
-	buffs: []skill.Id{
-		skill.EvanStage4ElementalResetId,
+	skills: []skill.Skill{
+		skill.EvanStage4IceBreath,
+		skill.EvanStage4ElementalReset,
 	},
 }
 
 var EvanStage5 = Job{
 	id: EvanStage5Id,
-	skills: []skill.Id{
-		skill.EvanStage5MagicFlareId,
-		skill.EvanStage5MagicShieldId,
-	},
-	buffs: []skill.Id{
-		skill.EvanStage5MagicShieldId,
+	skills: []skill.Skill{
+		skill.EvanStage5MagicFlare,
+		skill.EvanStage5MagicShield,
 	},
 }
 
 var EvanStage6 = Job{
 	id: EvanStage6Id,
-	skills: []skill.Id{
-		skill.EvanStage6CriticalMagicId,
-		skill.EvanStage6DragonThrustId,
-		skill.EvanStage6MagicBoosterId,
-		skill.EvanStage6SlowId,
+	skills: []skill.Skill{
+		skill.EvanStage6CriticalMagic,
+		skill.EvanStage6DragonThrust,
+		skill.EvanStage6MagicBooster,
+		skill.EvanStage6Slow,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.EvanStage6MagicBoosterId,
-		skill.EvanStage6SlowId,
-	},
 }
 
 var EvanStage7 = Job{
 	id: EvanStage7Id,
-	skills: []skill.Id{
-		skill.EvanStage7MagicAmplificationId,
-		skill.EvanStage7FireBreathId,
-		skill.EvanStage7KillerWingsId,
-		skill.EvanStage7MagicResistanceId,
+	skills: []skill.Skill{
+		skill.EvanStage7MagicAmplification,
+		skill.EvanStage7FireBreath,
+		skill.EvanStage7KillerWings,
+		skill.EvanStage7MagicResistance,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.EvanStage7MagicResistanceId,
-	},
 }
 
 var EvanStage8 = Job{
 	id: EvanStage8Id,
-	skills: []skill.Id{
-		skill.EvanStage8DragonFuryId,
-		skill.EvanStage8EarthquakeId,
-		skill.EvanStage8PhantomImprintId,
-		skill.EvanStage8RecoveryAuraId,
+	skills: []skill.Skill{
+		skill.EvanStage8DragonFury,
+		skill.EvanStage8Earthquake,
+		skill.EvanStage8PhantomImprint,
+		skill.EvanStage8RecoveryAura,
 	},
 	fourthJob: true,
 }
 
 var EvanStage9 = Job{
 	id: EvanStage9Id,
-	skills: []skill.Id{
-		skill.EvanStage9MapleWarriorId,
-		skill.EvanStage9MagicMasteryId,
-		skill.EvanStage9IllusionId,
-		skill.EvanStage9FlameWheelId,
-		skill.EvanStage9HerosWillId,
+	skills: []skill.Skill{
+		skill.EvanStage9MapleWarrior,
+		skill.EvanStage9MagicMastery,
+		skill.EvanStage9Illusion,
+		skill.EvanStage9FlameWheel,
+		skill.EvanStage9HerosWill,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.EvanStage9MapleWarriorId,
-		skill.EvanStage9HerosWillId,
-	},
 }
 
 var EvanStage10 = Job{
 	id: EvanStage10Id,
-	skills: []skill.Id{
-		skill.EvanStage10BlessingOfTheOnyxId,
-		skill.EvanStage10BlazeId,
-		skill.EvanStage10DarkFogId,
-		skill.EvanStage10SoulStoneId,
+	skills: []skill.Skill{
+		skill.EvanStage10BlessingOfTheOnyx,
+		skill.EvanStage10Blaze,
+		skill.EvanStage10DarkFog,
+		skill.EvanStage10SoulStone,
 	},
 	fourthJob: true,
-	buffs: []skill.Id{
-		skill.EvanStage10BlessingOfTheOnyxId,
-		skill.EvanStage10SoulStoneId,
-	},
 }
 
-var Jobs = []Job{Beginner, Warrior, Fighter, Crusader, Hero, Page, WhiteKnight, Paladin, Spearman, DragonKnight, DarkKnight, Magician, FirePoisonWizard, FirePoisonMagician, FirePoisonArchMagician, IceLightningWizard, IceLightningMagician, IceLightningArchMagician, Cleric, Priest, Bishop, Bowman, Hunter, Ranger, Bowmaster, Crossbowman, Sniper, Marksman, Rogue, Assassin, Hermit, NightLord, Bandit, ChiefBandit, Shadower, Pirate, Brawler, Marauder, Buccaneer, Gunslinger, Outlaw, Corsair, MapleLeafBrigadier, Gm, SuperGm, Noblesse, DawnWarriorStage1, DawnWarriorStage2, DawnWarriorStage3, DawnWarriorStage4, BlazeWizardStage1, BlazeWizardStage2, BlazeWizardStage3, BlazeWizardStage4, WindArcherStage1, WindArcherStage2, WindArcherStage3, WindArcherStage4, NightWalkerStage1, NightWalkerStage2, NightWalkerStage3, NightWalkerStage4, ThunderBreakerStage1, ThunderBreakerStage2, ThunderBreakerStage3, ThunderBreakerStage4, Legend, AranStage1, AranStage2, AranStage3, AranStage4, Evan, EvanStage1, EvanStage2, EvanStage3, EvanStage4, EvanStage5, EvanStage6, EvanStage7, EvanStage8, EvanStage9, EvanStage10}
+var Jobs = map[Id]Job{
+	BeginnerId:                 Beginner,
+	WarriorId:                  Warrior,
+	FighterId:                  Fighter,
+	CrusaderId:                 Crusader,
+	HeroId:                     Hero,
+	PageId:                     Page,
+	WhiteKnightId:              WhiteKnight,
+	PaladinId:                  Paladin,
+	SpearmanId:                 Spearman,
+	DragonKnightId:             DragonKnight,
+	DarkKnightId:               DarkKnight,
+	MagicianId:                 Magician,
+	FirePoisonWizardId:         FirePoisonWizard,
+	FirePoisonMagicianId:       FirePoisonMagician,
+	FirePoisonArchMagicianId:   FirePoisonArchMagician,
+	IceLightningWizardId:       IceLightningWizard,
+	IceLightningMagicianId:     IceLightningMagician,
+	IceLightningArchMagicianId: IceLightningArchMagician,
+	ClericId:                   Cleric,
+	PriestId:                   Priest,
+	BishopId:                   Bishop,
+	BowmanId:                   Bowman,
+	HunterId:                   Hunter,
+	RangerId:                   Ranger,
+	BowmasterId:                Bowmaster,
+	CrossbowmanId:              Crossbowman,
+	SniperId:                   Sniper,
+	MarksmanId:                 Marksman,
+	RogueId:                    Rogue,
+	AssassinId:                 Assassin,
+	HermitId:                   Hermit,
+	NightLordId:                NightLord,
+	BanditId:                   Bandit,
+	ChiefBanditId:              ChiefBandit,
+	ShadowerId:                 Shadower,
+	PirateId:                   Pirate,
+	BrawlerId:                  Brawler,
+	MarauderId:                 Marauder,
+	BuccaneerId:                Buccaneer,
+	GunslingerId:               Gunslinger,
+	OutlawId:                   Outlaw,
+	CorsairId:                  Corsair,
+	MapleLeafBrigadierId:       MapleLeafBrigadier,
+	GmId:                       Gm,
+	SuperGmId:                  SuperGm,
+	NoblesseId:                 Noblesse,
+	DawnWarriorStage1Id:        DawnWarriorStage1,
+	DawnWarriorStage2Id:        DawnWarriorStage2,
+	DawnWarriorStage3Id:        DawnWarriorStage3,
+	DawnWarriorStage4Id:        DawnWarriorStage4,
+	BlazeWizardStage1Id:        BlazeWizardStage1,
+	BlazeWizardStage2Id:        BlazeWizardStage2,
+	BlazeWizardStage3Id:        BlazeWizardStage3,
+	BlazeWizardStage4Id:        BlazeWizardStage4,
+	WindArcherStage1Id:         WindArcherStage1,
+	WindArcherStage2Id:         WindArcherStage2,
+	WindArcherStage3Id:         WindArcherStage3,
+	WindArcherStage4Id:         WindArcherStage4,
+	NightWalkerStage1Id:        NightWalkerStage1,
+	NightWalkerStage2Id:        NightWalkerStage2,
+	NightWalkerStage3Id:        NightWalkerStage3,
+	NightWalkerStage4Id:        NightWalkerStage4,
+	ThunderBreakerStage1Id:     ThunderBreakerStage1,
+	ThunderBreakerStage2Id:     ThunderBreakerStage2,
+	ThunderBreakerStage3Id:     ThunderBreakerStage3,
+	ThunderBreakerStage4Id:     ThunderBreakerStage4,
+	LegendId:                   Legend,
+	AranStage1Id:               AranStage1,
+	AranStage2Id:               AranStage2,
+	AranStage3Id:               AranStage3,
+	AranStage4Id:               AranStage4,
+	EvanId:                     Evan,
+	EvanStage1Id:               EvanStage1,
+	EvanStage2Id:               EvanStage2,
+	EvanStage3Id:               EvanStage3,
+	EvanStage4Id:               EvanStage4,
+	EvanStage5Id:               EvanStage5,
+	EvanStage6Id:               EvanStage6,
+	EvanStage7Id:               EvanStage7,
+	EvanStage8Id:               EvanStage8,
+	EvanStage9Id:               EvanStage9,
+	EvanStage10Id:              EvanStage10,
+}
 
 const (
 	BeginnerId                 = Id(0)
@@ -1505,15 +1266,20 @@ func Is(jobId Id, referenceJobId Id) bool {
 	return characterBranch == referenceBranch && jobId >= referenceJobId || referenceBranch%10 == 0 && jobId/100 == referenceJobId/100
 }
 
-func FromSkillId(skillId skill.Id) Id {
+func FromSkillId(skillId skill.Id) (Job, bool) {
+	jobId := IdFromSkillId(skillId)
+	j, ok := Jobs[jobId]
+	return j, ok
+}
+
+func IdFromSkillId(skillId skill.Id) Id {
 	return Id(math.Floor(float64(skillId) / float64(10000)))
 }
 
 func IsFourthJob(jobId Id) bool {
-	for _, j := range Jobs {
-		if j.id == jobId {
-			return j.IsFourthJob()
-		}
+	j, ok := Jobs[jobId]
+	if !ok {
+		return false
 	}
-	return false
+	return j.IsFourthJob()
 }

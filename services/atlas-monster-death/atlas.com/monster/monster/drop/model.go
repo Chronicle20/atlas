@@ -4,6 +4,7 @@ type Model struct {
 	itemId          uint32
 	minimumQuantity uint32
 	maximumQuantity uint32
+	questId         uint32
 	chance          uint32
 }
 

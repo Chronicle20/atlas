@@ -5,6 +5,7 @@ import (
 	"atlas-monster-death/monster/drop/position"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 	"math/rand"
 )
@@ -12,13 +13,7 @@ import (
 func byMonsterIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(monsterId uint32) model.Provider[[]Model] {
 	return func(ctx context.Context) func(monsterId uint32) model.Provider[[]Model] {
 		return func(monsterId uint32) model.Provider[[]Model] {
-			return model.FixedProvider([]Model{{
-				itemId:          0,
-				minimumQuantity: 10,
-				maximumQuantity: 1000,
-				chance:          500,
-			}})
-			//return requests.SliceProvider[attributes, Model](l, span)(requestByMonsterId(monsterId), makeDrop)()
+			return requests.SliceProvider[RestModel, Model](l, ctx)(requestForMonster(monsterId), Extract, model.Filters[Model]())
 		}
 	}
 }

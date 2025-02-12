@@ -1505,7 +1505,7 @@ func Is(jobId Id, referenceJobId Id) bool {
 	return characterBranch == referenceBranch && jobId >= referenceJobId || referenceBranch%10 == 0 && jobId/100 == referenceJobId/100
 }
 
-func JobFromSkillId(skillId Id) Id {
+func FromSkillId(skillId skill.Id) Id {
 	return Id(math.Floor(float64(skillId) / float64(10000)))
 }
 

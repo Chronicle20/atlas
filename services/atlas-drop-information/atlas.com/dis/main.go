@@ -1,28 +1,24 @@
 package main
 
 import (
-	"atlas-dis/continent"
-	drop2 "atlas-dis/continent/drop"
-	"atlas-dis/database"
-	"atlas-dis/logger"
-	"atlas-dis/monster"
-	"atlas-dis/monster/drop"
-	"atlas-dis/rest"
-	"atlas-dis/tracing"
+	"atlas-drops-information/configuration"
+	"atlas-drops-information/continent"
+	drop2 "atlas-drops-information/continent/drop"
+	"atlas-drops-information/database"
+	"atlas-drops-information/logger"
+	"atlas-drops-information/monster/drop"
+	"atlas-drops-information/service"
+	"atlas-drops-information/tracing"
 	"context"
-	"encoding/json"
+	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"io"
-	"io/ioutil"
-	"log"
 	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 )
 import "gorm.io/gorm"
 
-const serviceName = "atlas-dis"
+const serviceName = "atlas-drops-information"
 
 type Server struct {
 	baseUrl string
@@ -40,7 +36,7 @@ func (s Server) GetPrefix() string {
 func GetServer() Server {
 	return Server{
 		baseUrl: "",
-		prefix:  "/api/dis/",
+		prefix:  "/api/",
 	}
 }
 
@@ -48,123 +44,106 @@ func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
 
-	wg := &sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
+	tdm := service.GetTeardownManager()
 
 	tc, err := tracing.InitTracer(l)(serviceName)
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
-	defer func(tc io.Closer) {
-		err := tc.Close()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to close tracer.")
-		}
-	}(tc)
+
+	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")), os.Getenv("SERVICE_TYPE"))
+	c, err := configuration.Get()
+	if err != nil {
+		l.WithError(err).Fatal("Unable to successfully load configuration.")
+	}
 
 	db := database.Connect(l, database.SetMigrations(drop.Migration, drop2.Migration))
 
-	rest.CreateService(l, db, ctx, wg, GetServer().GetPrefix(), drop.InitResource(GetServer()), monster.InitResource(GetServer()), continent.InitResource(GetServer()))
+	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), drop.InitResource(GetServer())(db), continent.InitResource(GetServer())(db))
 
-	initializeMonsterDrops(l, db)
-	initializeContinentDrops(l, db)
+	initializeMonsterDrops(l)(*c)(db)
+	initializeContinentDrops(l)(*c)(db)
 
-	// trap sigterm or interrupt and gracefully shutdown the server
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, os.Kill, syscall.SIGTERM)
+	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
-	// Block until a signal is received.
-	sig := <-c
-	l.Infof("Initiating shutdown with signal %s.", sig)
-	cancel()
-	wg.Wait()
+	tdm.Wait()
 	l.Infoln("Service shutdown.")
 }
 
-func initializeMonsterDrops(l logrus.FieldLogger, db *gorm.DB) {
-	s := drop.GetAll(l, db)
-	if len(s) > 0 {
-		return
-	}
+func initializeMonsterDrops(l logrus.FieldLogger) func(c configuration.RestModel) func(db *gorm.DB) {
+	return func(c configuration.RestModel) func(db *gorm.DB) {
+		return func(db *gorm.DB) {
+			for _, s := range c.Servers {
+				t, err := tenant.Create(s.TenantId, "", 0, 0)
+				if err != nil {
+					continue
+				}
+				tctx := tenant.WithContext(context.Background(), t)
 
-	filePath, ok := os.LookupEnv("MONSTER_JSON_FILE_PATH")
-	if !ok {
-		l.Fatalf("Environment variable MONSTER_JSON_FILE_PATH is not set.")
-	}
+				ds, _ := drop.GetAll(l)(tctx)(db)
+				if len(ds) > 0 {
+					continue
+				}
 
-	jsonData, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		log.Fatal("Error reading JSON file:", err)
-	}
-
-	// Define a slice to store the objects
-	var objects []drop.JSONModel
-	var drops []drop.Model
-
-	// Unmarshal JSON into the slice
-	err = json.Unmarshal(jsonData, &objects)
-	if err != nil {
-		log.Fatal("Error unmarshalling JSON:", err)
-	}
-
-	for _, jdo := range objects {
-		md := drop.NewMonsterDropBuilder(0).
-			SetMonsterId(jdo.MonsterId).
-			SetItemId(jdo.ItemId).
-			SetMinimumQuantity(jdo.MinimumQuantity).
-			SetMaximumQuantity(jdo.MaximumQuantity).
-			SetQuestId(jdo.QuestId).
-			SetChance(jdo.Chance).
-			Build()
-		drops = append(drops, md)
-	}
-
-	err = drop.BulkCreateMonsterDrop(db, drops)
-	if err != nil {
-		l.Fatalf(err.Error())
+				var drops []drop.Model
+				for _, mon := range s.Monsters {
+					for _, d := range mon.Items {
+						md := drop.NewMonsterDropBuilder(t.Id(), 0).
+							SetMonsterId(uint32(mon.Id)).
+							SetItemId(d.ItemId).
+							SetMinimumQuantity(d.MinimumQuantity).
+							SetMaximumQuantity(d.MaximumQuantity).
+							SetQuestId(d.QuestId).
+							SetChance(d.Chance).
+							Build()
+						drops = append(drops, md)
+					}
+				}
+				err = drop.BulkCreateMonsterDrop(db, drops)
+				if err != nil {
+					l.Fatalf(err.Error())
+				}
+			}
+		}
 	}
 }
 
-func initializeContinentDrops(l logrus.FieldLogger, db *gorm.DB) {
-	s := drop2.GetAll(l, db)
-	if len(s) > 0 {
-		return
-	}
+func initializeContinentDrops(l logrus.FieldLogger) func(c configuration.RestModel) func(db *gorm.DB) {
+	return func(c configuration.RestModel) func(db *gorm.DB) {
+		return func(db *gorm.DB) {
+			for _, s := range c.Servers {
+				t, err := tenant.Create(s.TenantId, "", 0, 0)
+				if err != nil {
+					continue
+				}
+				tctx := tenant.WithContext(context.Background(), t)
 
-	filePath, ok := os.LookupEnv("CONTINENT_JSON_FILE_PATH")
-	if !ok {
-		l.Fatalf("Environment variable CONTINENT_JSON_FILE_PATH is not set.")
-	}
+				ds, _ := drop2.GetAll(l)(tctx)(db)()
+				if len(ds) > 0 {
+					continue
+				}
 
-	jsonData, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		log.Fatal("Error reading JSON file:", err)
-	}
+				var drops []drop2.Model
 
-	// Define a slice to store the objects
-	var objects []drop2.JSONModel
-	var drops []drop2.Model
+				for _, con := range s.Continents {
+					for _, d := range con.Items {
+						md := drop2.NewContinentDropBuilder(t.Id(), 0).
+							SetContinentId(con.Id).
+							SetItemId(d.ItemId).
+							SetMinimumQuantity(d.MinimumQuantity).
+							SetMaximumQuantity(d.MaximumQuantity).
+							SetQuestId(d.QuestId).
+							SetChance(d.Chance).
+							Build()
+						drops = append(drops, md)
+					}
+				}
 
-	// Unmarshal JSON into the slice
-	err = json.Unmarshal(jsonData, &objects)
-	if err != nil {
-		log.Fatal("Error unmarshalling JSON:", err)
-	}
-
-	for _, jdo := range objects {
-		md := drop2.NewContinentDropBuilder(0).
-			SetContinentId(jdo.ContinentId).
-			SetItemId(jdo.ItemId).
-			SetMinimumQuantity(jdo.MinimumQuantity).
-			SetMaximumQuantity(jdo.MaximumQuantity).
-			SetQuestId(jdo.QuestId).
-			SetChance(jdo.Chance).
-			Build()
-		drops = append(drops, md)
-	}
-
-	err = drop2.BulkCreateContinentDrop(db, drops)
-	if err != nil {
-		l.Fatalf(err.Error())
+				err = drop2.BulkCreateContinentDrop(db, drops)
+				if err != nil {
+					l.Fatalf(err.Error())
+				}
+			}
+		}
 	}
 }

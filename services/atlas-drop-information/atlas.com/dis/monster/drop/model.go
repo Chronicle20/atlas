@@ -1,6 +1,9 @@
 package drop
 
+import "github.com/google/uuid"
+
 type Model struct {
+	tenantId        uuid.UUID
 	id              uint32
 	monsterId       uint32
 	itemId          uint32
@@ -38,7 +41,12 @@ func (d Model) Id() uint32 {
 	return d.id
 }
 
+func (d Model) TenantId() uuid.UUID {
+	return d.tenantId
+}
+
 type builder struct {
+	tenantId        uuid.UUID
 	id              uint32
 	monsterId       uint32
 	itemId          uint32
@@ -48,8 +56,8 @@ type builder struct {
 	chance          uint32
 }
 
-func NewMonsterDropBuilder(id uint32) *builder {
-	return &builder{id: id}
+func NewMonsterDropBuilder(tenantId uuid.UUID, id uint32) *builder {
+	return &builder{tenantId: tenantId, id: id}
 }
 
 func (m *builder) SetMonsterId(monsterId uint32) *builder {
@@ -84,6 +92,7 @@ func (m *builder) SetQuestId(questId uint32) *builder {
 
 func (m *builder) Build() Model {
 	return Model{
+		tenantId:        m.tenantId,
 		id:              m.id,
 		monsterId:       m.monsterId,
 		itemId:          m.itemId,

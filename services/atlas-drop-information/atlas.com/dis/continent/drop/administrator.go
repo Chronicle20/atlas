@@ -17,6 +17,7 @@ func BulkCreateContinentDrop(db *gorm.DB, continentDrops []Model) error {
 
 	for _, md := range continentDrops {
 		m := &entity{
+			TenantId:        md.TenantId(),
 			ContinentId:     md.ContinentId(),
 			ItemId:          md.ItemId(),
 			MinimumQuantity: md.MinimumQuantity(),

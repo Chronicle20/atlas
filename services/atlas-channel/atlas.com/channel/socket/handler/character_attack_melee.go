@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"atlas-channel/monster"
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
@@ -13,22 +12,15 @@ import (
 
 const CharacterMeleeAttackHandle = "CharacterMeleeAttackHandle"
 
-func CharacterMeleeAttackHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func CharacterMeleeAttackHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		at := model2.NewAttackInfo(model2.AttackTypeMelee)
 		at.Decode(l, t, readerOptions)(r)
 		l.Debugf("Character [%d] is attempting a melee attack.", s.CharacterId())
-
-		// TODO validate attack
-
-		for _, di := range at.DamageInfo() {
-			for _, d := range di.Damages() {
-				err := monster.Damage(l)(ctx)(s.WorldId(), s.ChannelId(), di.MonsterId(), s.CharacterId(), d)
-				if err != nil {
-					l.WithError(err).Errorf("Unable to apply damage [%d] to monster [%d] from character [%d].", d, di.MonsterId(), s.CharacterId())
-				}
-			}
+		err := processAttack(l)(ctx)(wp)(*at)(s)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to completely process character [%d] melee attack.", s.CharacterId())
 		}
 	}
 }

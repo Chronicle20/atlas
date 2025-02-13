@@ -54,3 +54,7 @@ func (m *DamageInfo) Damages() []uint32 {
 func (m *DamageInfo) MonsterId() uint32 {
 	return m.monsterId
 }
+
+func (m *DamageInfo) HitAction() byte {
+	return m.hitAction
+}

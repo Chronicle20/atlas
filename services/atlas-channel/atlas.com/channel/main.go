@@ -235,6 +235,10 @@ func produceWriters() []string {
 		writer.ReactorSpawn,
 		writer.ReactorDestroy,
 		writer.CharacterSkillChange,
+		writer.CharacterAttackMelee,
+		writer.CharacterAttackRanged,
+		writer.CharacterAttackMagic,
+		writer.CharacterAttackEnergy,
 	}
 }
 

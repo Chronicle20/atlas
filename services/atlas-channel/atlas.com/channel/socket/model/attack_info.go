@@ -101,7 +101,7 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 
 		if skill.IsKeyDownSkill(skill.Id(m.skillId)) {
 			m.keyDown = r.ReadUint32()
-		} else if skill.IsChargeSkill(skill.Id(m.skillId)) {
+		} else if skill.NeedsCharging(skill.Id(m.skillId)) {
 			m.keyDown = r.ReadUint32()
 		}
 		mask1 := r.ReadByte()
@@ -157,10 +157,10 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 
 		m.targetX = r.ReadUint16()
 		m.targetY = r.ReadUint16()
-		if skill.Id(m.skillId) == skill.NightWalkerStage3PoisonBomb {
+		if skill.Id(m.skillId) == skill.NightWalkerStage3PoisonBombId {
 			m.grenadeX = r.ReadUint16()
 			m.grenadeY = r.ReadUint16()
-		} else if skill.Id(m.skillId) == skill.ThunderBreakerStage3Spark {
+		} else if skill.Id(m.skillId) == skill.ThunderBreakerStage3SparkId {
 			m.reserveSpark = r.ReadUint32()
 		}
 		if m.attackType == AttackTypeMagic {

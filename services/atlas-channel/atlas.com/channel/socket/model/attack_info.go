@@ -50,19 +50,21 @@ type AttackInfo struct {
 	attackSpeed          byte
 	attackTime           uint32
 	damageInfo           []DamageInfo
-	targetX              uint16
-	targetY              uint16
+	characterX           uint16
+	characterY           uint16
 	grenadeX             uint16
 	grenadeY             uint16
 	reserveSpark         uint32
 	javlin               bool
 	properBulletPosition uint16
-	pnCashItemPos        uint16
+	cashBulletPosition   uint16
 	nShootRange          byte
 	bulletItemId         uint32
 	dragon               bool
 	dragonX              uint16
 	dragonY              uint16
+	bulletX              uint16
+	bulletY              uint16
 }
 
 func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(r *request.Reader) {
@@ -142,7 +144,7 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 				_ = r.ReadUint32()
 			}
 			m.properBulletPosition = r.ReadUint16()
-			m.pnCashItemPos = r.ReadUint16()
+			m.cashBulletPosition = r.ReadUint16()
 			m.nShootRange = r.ReadByte()
 
 			if m.javlin && !skill.IsShootSkillNotConsumingBullet(skill.Id(m.skillId)) {
@@ -160,8 +162,13 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 			m.damageInfo = append(m.damageInfo, *di)
 		}
 
-		m.targetX = r.ReadUint16()
-		m.targetY = r.ReadUint16()
+		m.characterX = r.ReadUint16()
+		m.characterY = r.ReadUint16()
+		if m.attackType == AttackTypeRanged {
+			m.bulletX = r.ReadUint16()
+			m.bulletY = r.ReadUint16()
+		}
+
 		if skill.Id(m.skillId) == skill.NightWalkerStage3PoisonBombId {
 			m.grenadeX = r.ReadUint16()
 			m.grenadeY = r.ReadUint16()
@@ -224,4 +231,20 @@ func (m *AttackInfo) Keydown() uint32 {
 
 func (m *AttackInfo) AttackType() AttackType {
 	return m.attackType
+}
+
+func (m *AttackInfo) ProperBulletPosition() uint16 {
+	return m.properBulletPosition
+}
+
+func (m *AttackInfo) CashBulletPosition() uint16 {
+	return m.cashBulletPosition
+}
+
+func (m *AttackInfo) BulletX() uint16 {
+	return m.bulletX
+}
+
+func (m *AttackInfo) BulletY() uint16 {
+	return m.bulletY
 }

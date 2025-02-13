@@ -50,7 +50,24 @@ func WriteCommonAttackBody(t tenant.Model) func(c character.Model, ai model.Atta
 			if ai.AttackAction() <= 0x110 {
 				w.WriteByte(ai.ActionSpeed())
 				w.WriteByte(0) // mastery
-				w.WriteInt(ai.BulletItemId())
+
+				var bulletItemId = ai.BulletItemId()
+				if ai.CashBulletPosition() > 0 {
+					for _, i := range c.Inventory().Cash().Items() {
+						if uint16(i.Slot()) == ai.CashBulletPosition() {
+							bulletItemId = i.ItemId()
+							break
+						}
+					}
+				} else if ai.ProperBulletPosition() > 0 {
+					for _, i := range c.Inventory().Use().Items() {
+						if uint16(i.Slot()) == ai.ProperBulletPosition() && (i.Bullet() || i.ThrowingStar()) {
+							bulletItemId = i.ItemId()
+						}
+					}
+				}
+				w.WriteInt(bulletItemId)
+
 				for _, di := range ai.DamageInfo() {
 					w.WriteInt(di.MonsterId())
 					if di.MonsterId() > 0 {
@@ -64,9 +81,10 @@ func WriteCommonAttackBody(t tenant.Model) func(c character.Model, ai model.Atta
 					}
 				}
 			}
+
 			if ai.AttackType() == model.AttackTypeRanged {
-				w.WriteShort(0)
-				w.WriteShort(0)
+				w.WriteShort(ai.BulletX())
+				w.WriteShort(ai.BulletY())
 			}
 			if skill2.Is(skill2.Id(ai.SkillId()), skill2.FirePoisonArchMagicianBigBangId, skill2.IceLightningArchMagicianBigBangId, skill2.BishopBigBangId, skill2.EvanStage4IceBreathId, skill2.EvanStage7FireBreathId) {
 				w.WriteInt(ai.Keydown())

@@ -21,7 +21,7 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 		return func(wp writer.Producer) func(ai model2.AttackInfo) model.Operator[session.Model] {
 			return func(ai model2.AttackInfo) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					c, err := character.GetById(l)(ctx)(character.SkillModelDecorator(l)(ctx))(s.CharacterId())
+					c, err := character.GetByIdWithInventory(l)(ctx)(character.SkillModelDecorator(l)(ctx))(s.CharacterId())
 					if err != nil {
 						return err
 					}

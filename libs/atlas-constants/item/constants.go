@@ -22,3 +22,18 @@ func IsThrowingStar(itemId Id) bool {
 func IsBullet(itemId Id) bool {
 	return GetClassification(itemId) == ClassificationBullet
 }
+
+func Is(itemId Id, references ...Id) bool {
+	for _, r := range references {
+		if itemId == r {
+			return true
+		}
+	}
+	return false
+}
+
+const (
+	UseRedBeanPorridge = Id(2022001)
+	UseAirBubble       = Id(2022040)
+	UseSoftWhiteBun    = Id(2022186)
+)

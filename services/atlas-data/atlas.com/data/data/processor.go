@@ -6,6 +6,7 @@ import (
 	"atlas-data/monster"
 	"atlas-data/npc"
 	"atlas-data/reactor"
+	"atlas-data/skill"
 	"context"
 	"errors"
 	"fmt"
@@ -14,7 +15,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 )
 
@@ -23,7 +23,6 @@ type Worker func() error
 func RegisterData(l logrus.FieldLogger) func(ctx context.Context) error {
 	return func(ctx context.Context) error {
 		t := tenant.MustFromContext(ctx)
-		//t := tenant.MustFromContext(ctx)
 		l.Debugf("Attempting to ingest data for tenant.")
 
 		dir, exists := os.LookupEnv("GAME_DATA_ROOT_DIR")
@@ -44,22 +43,27 @@ func RegisterData(l logrus.FieldLogger) func(ctx context.Context) error {
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
-			_ = RegisterAllMapData(l)(ctx)(dir)()
+			_ = RegisterAllData(l)(ctx)(dir, filepath.Join("Map.wz", "Map"), true, _map.RegisterMap)()
 			wg.Done()
 		}()
 		wg.Add(1)
 		go func() {
-			_ = RegisterAllMonsterData(l)(ctx)(dir)()
+			_ = RegisterAllData(l)(ctx)(dir, "Mob.wz", false, monster.RegisterMonster)()
 			wg.Done()
 		}()
 		wg.Add(1)
 		go func() {
-			_ = RegisterAllEquipmentData(l)(ctx)(dir)()
+			_ = RegisterAllData(l)(ctx)(dir, "Character.wz", true, equipment.RegisterEquipment)()
 			wg.Done()
 		}()
 		wg.Add(1)
 		go func() {
-			_ = RegisterAllReactorData(l)(ctx)(dir)()
+			_ = RegisterAllData(l)(ctx)(dir, "Reactor.wz", true, reactor.RegisterReactor)()
+			wg.Done()
+		}()
+		wg.Add(1)
+		go func() {
+			_ = RegisterAllData(l)(ctx)(dir, "Skill.wz", false, skill.RegisterSkill)()
 			wg.Done()
 		}()
 
@@ -74,17 +78,18 @@ func RegisterData(l logrus.FieldLogger) func(ctx context.Context) error {
 	}
 }
 
-func RegisterAllMapData(l logrus.FieldLogger) func(ctx context.Context) func(rootDir string) Worker {
-	return func(ctx context.Context) func(rootDir string) Worker {
+type RegisterFunc func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string)
+
+func RegisterAllData(l logrus.FieldLogger) func(ctx context.Context) func(rootDir string, wzFileName string, nested bool, rf RegisterFunc) Worker {
+	return func(ctx context.Context) func(rootDir string, wzFileName string, nested bool, rf RegisterFunc) Worker {
 		t := tenant.MustFromContext(ctx)
-		return func(rootDir string) Worker {
+		return func(rootDir string, wzFileName string, nested bool, rf RegisterFunc) Worker {
 			return func() error {
-				baseDir := filepath.Join(rootDir, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "Map.wz", "Map")
+				baseDir := filepath.Join(rootDir, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), wzFileName)
 				if _, err := os.Stat(baseDir); os.IsNotExist(err) {
-					l.Debugf("Unable to locate map directory. Expected [%s]", baseDir)
+					l.Debugf("Unable to locate directory. Expected [%s]", baseDir)
 					return err
 				}
-				prefix := "Map"
 
 				// Channel to collect file paths
 				fileChan := make(chan string)
@@ -96,7 +101,7 @@ func RegisterAllMapData(l logrus.FieldLogger) func(ctx context.Context) func(roo
 					wg.Add(1)
 					go func() {
 						for filePath := range fileChan {
-							_map.RegisterMap(l)(ctx)(filePath)
+							rf(l)(ctx)(filePath)
 						}
 						wg.Done()
 					}()
@@ -107,207 +112,30 @@ func RegisterAllMapData(l logrus.FieldLogger) func(ctx context.Context) func(roo
 						return fmt.Errorf("error accessing path %s: %w", path, err)
 					}
 
-					if d.IsDir() && strings.HasPrefix(d.Name(), prefix) {
-						return filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
-							if err != nil {
-								return fmt.Errorf("error accessing file %s: %w", path, err)
-							}
+					if nested {
+						if d.IsDir() {
+							return filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
+								if err != nil {
+									return fmt.Errorf("error accessing file %s: %w", path, err)
+								}
 
-							if d.IsDir() {
+								if d.IsDir() {
+									return nil
+								}
+
+								fileChan <- path
 								return nil
-							}
-
-							fileChan <- path
-							return nil
-						})
-					}
-					return nil
-				})
-
-				// Close the file channel after walking the directory
-				if err != nil {
-					fmt.Printf("Error walking directory: %v\n", err)
-				}
-				close(fileChan)
-
-				// Wait for all workers to finish
-				wg.Wait()
-
-				return nil
-
-			}
-		}
-	}
-}
-
-func RegisterAllMonsterData(l logrus.FieldLogger) func(ctx context.Context) func(rootDir string) Worker {
-	return func(ctx context.Context) func(rootDir string) Worker {
-		t := tenant.MustFromContext(ctx)
-		return func(rootDir string) Worker {
-			return func() error {
-				baseDir := filepath.Join(rootDir, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "Mob.wz")
-				if _, err := os.Stat(baseDir); os.IsNotExist(err) {
-					l.Debugf("Unable to locate monster directory. Expected [%s]", baseDir)
-					return err
-				}
-
-				// Channel to collect file paths
-				fileChan := make(chan string)
-				var wg sync.WaitGroup
-
-				// Start a worker pool for processing files
-				const workerCount = 10 // Adjust based on your workload and system resources
-				for i := 0; i < workerCount; i++ {
-					wg.Add(1)
-					go func() {
-						for filePath := range fileChan {
-							monster.RegisterMonster(l)(ctx)(filePath)
+							})
 						}
-						wg.Done()
-					}()
-				}
+						return nil
+					} else {
+						if d.IsDir() {
+							return nil
+						}
 
-				err := filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
-					if err != nil {
-						return fmt.Errorf("error accessing file %s: %w", path, err)
-					}
-
-					if d.IsDir() {
+						fileChan <- path
 						return nil
 					}
-
-					fileChan <- path
-					return nil
-				})
-
-				// Close the file channel after walking the directory
-				if err != nil {
-					fmt.Printf("Error walking directory: %v\n", err)
-				}
-				close(fileChan)
-
-				// Wait for all workers to finish
-				wg.Wait()
-
-				return nil
-
-			}
-		}
-	}
-}
-
-func RegisterAllEquipmentData(l logrus.FieldLogger) func(ctx context.Context) func(rootDir string) Worker {
-	return func(ctx context.Context) func(rootDir string) Worker {
-		t := tenant.MustFromContext(ctx)
-		return func(rootDir string) Worker {
-			return func() error {
-				baseDir := filepath.Join(rootDir, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "Character.wz")
-				if _, err := os.Stat(baseDir); os.IsNotExist(err) {
-					l.Debugf("Unable to locate character directory. Expected [%s]", baseDir)
-					return err
-				}
-
-				// Channel to collect file paths
-				fileChan := make(chan string)
-				var wg sync.WaitGroup
-
-				// Start a worker pool for processing files
-				const workerCount = 10 // Adjust based on your workload and system resources
-				for i := 0; i < workerCount; i++ {
-					wg.Add(1)
-					go func() {
-						for filePath := range fileChan {
-							equipment.RegisterEquipment(l)(ctx)(filePath)
-						}
-						wg.Done()
-					}()
-				}
-
-				err := filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
-					if err != nil {
-						return fmt.Errorf("error accessing path %s: %w", path, err)
-					}
-
-					if d.IsDir() {
-						return filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
-							if err != nil {
-								return fmt.Errorf("error accessing file %s: %w", path, err)
-							}
-
-							if d.IsDir() {
-								return nil
-							}
-
-							fileChan <- path
-							return nil
-						})
-					}
-					return nil
-				})
-
-				// Close the file channel after walking the directory
-				if err != nil {
-					fmt.Printf("Error walking directory: %v\n", err)
-				}
-				close(fileChan)
-
-				// Wait for all workers to finish
-				wg.Wait()
-
-				return nil
-
-			}
-		}
-	}
-}
-
-func RegisterAllReactorData(l logrus.FieldLogger) func(ctx context.Context) func(rootDir string) Worker {
-	return func(ctx context.Context) func(rootDir string) Worker {
-		t := tenant.MustFromContext(ctx)
-		return func(rootDir string) Worker {
-			return func() error {
-				baseDir := filepath.Join(rootDir, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "Reactor.wz")
-				if _, err := os.Stat(baseDir); os.IsNotExist(err) {
-					l.Debugf("Unable to locate character directory. Expected [%s]", baseDir)
-					return err
-				}
-
-				// Channel to collect file paths
-				fileChan := make(chan string)
-				var wg sync.WaitGroup
-
-				// Start a worker pool for processing files
-				const workerCount = 10 // Adjust based on your workload and system resources
-				for i := 0; i < workerCount; i++ {
-					wg.Add(1)
-					go func() {
-						for filePath := range fileChan {
-							reactor.RegisterReactor(l)(ctx)(filePath)
-						}
-						wg.Done()
-					}()
-				}
-
-				err := filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
-					if err != nil {
-						return fmt.Errorf("error accessing path %s: %w", path, err)
-					}
-
-					if d.IsDir() {
-						return filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
-							if err != nil {
-								return fmt.Errorf("error accessing file %s: %w", path, err)
-							}
-
-							if d.IsDir() {
-								return nil
-							}
-
-							fileChan <- path
-							return nil
-						})
-					}
-					return nil
 				})
 
 				// Close the file channel after walking the directory

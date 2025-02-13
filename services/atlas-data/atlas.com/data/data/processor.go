@@ -6,6 +6,7 @@ import (
 	"atlas-data/monster"
 	"atlas-data/npc"
 	"atlas-data/reactor"
+	"atlas-data/skill"
 	"context"
 	"errors"
 	"fmt"
@@ -22,7 +23,6 @@ type Worker func() error
 func RegisterData(l logrus.FieldLogger) func(ctx context.Context) error {
 	return func(ctx context.Context) error {
 		t := tenant.MustFromContext(ctx)
-		//t := tenant.MustFromContext(ctx)
 		l.Debugf("Attempting to ingest data for tenant.")
 
 		dir, exists := os.LookupEnv("GAME_DATA_ROOT_DIR")
@@ -59,6 +59,11 @@ func RegisterData(l logrus.FieldLogger) func(ctx context.Context) error {
 		wg.Add(1)
 		go func() {
 			_ = RegisterAllData(l)(ctx)(dir, "Reactor.wz", true, reactor.RegisterReactor)()
+			wg.Done()
+		}()
+		wg.Add(1)
+		go func() {
+			_ = RegisterAllData(l)(ctx)(dir, "Skill.wz", false, skill.RegisterSkill)()
 			wg.Done()
 		}()
 

@@ -172,3 +172,18 @@ func ParseReactorId(l logrus.FieldLogger, next ReactorIdHandler) http.HandlerFun
 		next(uint32(reactorId))(w, r)
 	}
 }
+
+type SkillIdHandler func(skillId uint32) http.HandlerFunc
+
+func ParseSkillId(l logrus.FieldLogger, next SkillIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		skillId, err := strconv.Atoi(vars["skillId"])
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing skillId as uint32")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint32(skillId))(w, r)
+	}
+}

@@ -930,3 +930,57 @@ func getMaxMpGrowth(_ logrus.FieldLogger) func(ctx context.Context) func(c Model
 		}
 	}
 }
+
+func enforceBounds(change int16, current uint16, upperBound uint16, lowerBound uint16) uint16 {
+	var adjusted = int16(current) + change
+	return uint16(math.Min(math.Max(float64(adjusted), float64(lowerBound)), float64(upperBound)))
+}
+
+func ChangeHP(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
+			return func(worldId byte, channelId byte, characterId uint32, amount int16) error {
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					c, err := GetById(ctx)(db)()(characterId)
+					if err != nil {
+						return err
+					}
+					adjusted := enforceBounds(amount, c.HP(), c.MaxHP(), 0)
+					l.Debugf("Attempting to adjust character [%d] health by [%d] to [%d].", characterId, amount, adjusted)
+					return dynamicUpdate(tx)(SetHealth(adjusted))(t.Id())(c)
+				})
+				if txErr != nil {
+					return txErr
+				}
+				// TODO need to emit event when character dies.
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(worldId, channelId, characterId, []string{"HP"}))
+				return nil
+			}
+		}
+	}
+}
+
+func ChangeMP(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
+			return func(worldId byte, channelId byte, characterId uint32, amount int16) error {
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					c, err := GetById(ctx)(db)()(characterId)
+					if err != nil {
+						return err
+					}
+					adjusted := enforceBounds(amount, c.MP(), c.MaxMP(), 0)
+					l.Debugf("Attempting to adjust character [%d] mana by [%d] to [%d].", characterId, amount, adjusted)
+					return dynamicUpdate(tx)(SetMana(adjusted))(t.Id())(c)
+				})
+				if txErr != nil {
+					return txErr
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(worldId, channelId, characterId, []string{"MP"}))
+				return nil
+			}
+		}
+	}
+}

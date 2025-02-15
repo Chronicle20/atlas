@@ -12,6 +12,8 @@ const (
 	CommandRequestDropMeso     = "REQUEST_DROP_MESO"
 	CommandRequestChangeFame   = "REQUEST_CHANGE_FAME"
 	CommandRequestDistributeAp = "REQUEST_DISTRIBUTE_AP"
+	CommandChangeHP            = "CHANGE_HP"
+	CommandChangeMP            = "CHANGE_MP"
 
 	ExperienceDistributionTypeWhite        = "WHITE"
 	ExperienceDistributionTypeYellow       = "YELLOW"
@@ -96,6 +98,16 @@ type DistributePair struct {
 
 type requestDistributeApCommandBody struct {
 	Distributions []DistributePair `json:"distributions"`
+}
+
+type changeHPBody struct {
+	ChannelId byte  `json:"channelId"`
+	Amount    int16 `json:"amount"`
+}
+
+type changeMPBody struct {
+	ChannelId byte  `json:"channelId"`
+	Amount    int16 `json:"amount"`
 }
 
 type movementCommand struct {

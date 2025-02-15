@@ -12,11 +12,10 @@ const (
 	ClassificationThrowingStar = Classification(207)
 	ClassificationBullet       = Classification(233)
 
-	WeaponTypeNone           = WeaponType(0)
-	WeaponTypeOneHandedSword = WeaponType(1)
-	WeaponTypeOneHandedAxe   = WeaponType(2)
-	WeaponTypeOneHandedMace  = WeaponType(3)
-	WeaponTypeDagger         = WeaponType(4)
+	WeaponTypeOneHandedSword = WeaponType(0)
+	WeaponTypeOneHandedAxe   = WeaponType(1)
+	WeaponTypeOneHandedMace  = WeaponType(2)
+	WeaponTypeDagger         = WeaponType(3)
 	WeaponTypeWand           = WeaponType(7)
 	WeaponTypeStaff          = WeaponType(8)
 
@@ -30,6 +29,7 @@ const (
 	WeaponTypeClaw           = WeaponType(17)
 	WeaponTypeKnuckle        = WeaponType(18)
 	WeaponTypeGun            = WeaponType(19)
+	WeaponTypeNone           = WeaponType(99)
 )
 
 func GetClassification(itemId Id) Classification {
@@ -42,37 +42,37 @@ func GetWeaponType(itemId Id) WeaponType {
 		return WeaponTypeNone
 	}
 	switch cat - 30 {
-	case 1:
+	case 0:
 		return WeaponTypeOneHandedSword
-	case 2:
+	case 1:
 		return WeaponTypeOneHandedAxe
-	case 3:
+	case 2:
 		return WeaponTypeOneHandedMace
-	case 4:
+	case 3:
 		return WeaponTypeDagger
-	case 5:
+	case 7:
 		return WeaponTypeWand
-	case 6:
+	case 8:
 		return WeaponTypeStaff
-	case 9:
-		return WeaponTypeTwoHandedSword
 	case 10:
-		return WeaponTypeTwoHandedAxe
+		return WeaponTypeTwoHandedSword
 	case 11:
-		return WeaponTypeTwoHandedMace
+		return WeaponTypeTwoHandedAxe
 	case 12:
-		return WeaponTypeSpear
+		return WeaponTypeTwoHandedMace
 	case 13:
-		return WeaponTypePolearm
+		return WeaponTypeSpear
 	case 14:
-		return WeaponTypeBow
+		return WeaponTypePolearm
 	case 15:
-		return WeaponTypeCrossbow
+		return WeaponTypeBow
 	case 16:
-		return WeaponTypeClaw
+		return WeaponTypeCrossbow
 	case 17:
-		return WeaponTypeKnuckle
+		return WeaponTypeClaw
 	case 18:
+		return WeaponTypeKnuckle
+	case 19:
 		return WeaponTypeGun
 	}
 	return WeaponTypeNone

@@ -11,13 +11,11 @@ import (
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ai model2.AttackInfo) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ai model2.AttackInfo) model.Operator[session.Model] {
-		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(ai model2.AttackInfo) model.Operator[session.Model] {
 			return func(ai model2.AttackInfo) model.Operator[session.Model] {
 				return func(s session.Model) error {
@@ -54,16 +52,16 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						var bodyProducer writer.BodyProducer
 						if ai.AttackType() == model2.AttackTypeMelee {
 							writerName = writer.CharacterAttackMelee
-							bodyProducer = writer.CharacterAttackMeleeBody(l, t)(c, ai)
+							bodyProducer = writer.CharacterAttackMeleeBody(l)(ctx)(c, ai)
 						} else if ai.AttackType() == model2.AttackTypeRanged {
 							writerName = writer.CharacterAttackRanged
-							bodyProducer = writer.CharacterAttackRangedBody(l, t)(c, ai)
+							bodyProducer = writer.CharacterAttackRangedBody(l)(ctx)(c, ai)
 						} else if ai.AttackType() == model2.AttackTypeMagic {
 							writerName = writer.CharacterAttackMagic
-							bodyProducer = writer.CharacterAttackMagicBody(l, t)(c, ai)
+							bodyProducer = writer.CharacterAttackMagicBody(l)(ctx)(c, ai)
 						} else if ai.AttackType() == model2.AttackTypeEnergy {
 							writerName = writer.CharacterAttackEnergy
-							bodyProducer = writer.CharacterAttackEnergyBody(l, t)(c, ai)
+							bodyProducer = writer.CharacterAttackEnergyBody(l)(ctx)(c, ai)
 						} else {
 							return errors.New("unhandled attack type")
 						}

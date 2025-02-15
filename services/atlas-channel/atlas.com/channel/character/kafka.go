@@ -4,6 +4,8 @@ const (
 	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
 	CommandRequestDistributeAp = "REQUEST_DISTRIBUTE_AP"
 	CommandRequestDropMeso     = "REQUEST_DROP_MESO"
+	CommandChangeHP            = "CHANGE_HP"
+	CommandChangeMP            = "CHANGE_MP"
 
 	CommandDistributeApAbilityStrength     = "STRENGTH"
 	CommandDistributeApAbilityDexterity    = "DEXTERITY"
@@ -42,6 +44,16 @@ type requestDropMesoCommandBody struct {
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
 	Amount    uint32 `json:"amount"`
+}
+
+type changeHPCommandBody struct {
+	ChannelId byte  `json:"channelId"`
+	Amount    int16 `json:"amount"`
+}
+
+type changeMPCommandBody struct {
+	ChannelId byte  `json:"channelId"`
+	Amount    int16 `json:"amount"`
 }
 
 type movementCommand struct {

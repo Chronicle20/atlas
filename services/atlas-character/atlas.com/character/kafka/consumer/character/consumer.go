@@ -35,6 +35,8 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDropMeso(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestChangeFame(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDistributeAp(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeHP(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMP(db))))
 			t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent)))
 		}
@@ -143,6 +145,24 @@ func transform(m DistributePair) (character.Distribution, error) {
 		Ability: m.Ability,
 		Amount:  m.Amount,
 	}, nil
+}
+
+func handleChangeHP(db *gorm.DB) message.Handler[command[changeHPBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[changeHPBody]) {
+		if c.Type != CommandChangeHP {
+			return
+		}
+		_ = character.ChangeHP(l)(ctx)(db)(c.WorldId, c.Body.ChannelId, c.CharacterId, c.Body.Amount)
+	}
+}
+
+func handleChangeMP(db *gorm.DB) message.Handler[command[changeMPBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[changeMPBody]) {
+		if c.Type != CommandChangeMP {
+			return
+		}
+		_ = character.ChangeMP(l)(ctx)(db)(c.WorldId, c.Body.ChannelId, c.CharacterId, c.Body.Amount)
+	}
 }
 
 func handleMovementEvent(l logrus.FieldLogger, ctx context.Context, c movementCommand) {

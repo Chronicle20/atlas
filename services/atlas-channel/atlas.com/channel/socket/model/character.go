@@ -3,134 +3,11 @@ package model
 import (
 	"atlas-channel/tool"
 	"errors"
+	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"time"
-)
-
-type CharacterTemporaryStatTypeName string
-
-const (
-	CharacterTemporaryStatTypeNameWeaponAttack           CharacterTemporaryStatTypeName = "WEAPON_ATTACK"
-	CharacterTemporaryStatTypeNameWeaponDefense          CharacterTemporaryStatTypeName = "WEAPON_DEFENSE"
-	CharacterTemporaryStatTypeNameMagicAttack            CharacterTemporaryStatTypeName = "MAGIC_ATTACK"
-	CharacterTemporaryStatTypeNameMagicDefense           CharacterTemporaryStatTypeName = "MAGIC_DEFENSE"
-	CharacterTemporaryStatTypeNameAccuracy               CharacterTemporaryStatTypeName = "ACCURACY"
-	CharacterTemporaryStatTypeNameAvoidability           CharacterTemporaryStatTypeName = "AVOIDABILITY"
-	CharacterTemporaryStatTypeNameHands                  CharacterTemporaryStatTypeName = "HANDS"
-	CharacterTemporaryStatTypeNameSpeed                  CharacterTemporaryStatTypeName = "SPEED"
-	CharacterTemporaryStatTypeNameJump                   CharacterTemporaryStatTypeName = "JUMP"
-	CharacterTemporaryStatTypeNameMagicGuard             CharacterTemporaryStatTypeName = "MAGIC_GUARD"
-	CharacterTemporaryStatTypeNameDarkSight              CharacterTemporaryStatTypeName = "DARK_SIGHT"
-	CharacterTemporaryStatTypeNameBooster                CharacterTemporaryStatTypeName = "BOOSTER"
-	CharacterTemporaryStatTypeNamePowerGuard             CharacterTemporaryStatTypeName = "POWER_GUARD"
-	CharacterTemporaryStatTypeNameHyperBodyHP            CharacterTemporaryStatTypeName = "HYPER_BODY_HP"
-	CharacterTemporaryStatTypeNameHyperBodyMP            CharacterTemporaryStatTypeName = "HYPER_BODY_MP"
-	CharacterTemporaryStatTypeNameInvincible             CharacterTemporaryStatTypeName = "INVINCIBLE"
-	CharacterTemporaryStatTypeNameSoulArrow              CharacterTemporaryStatTypeName = "SOUL_ARROW"
-	CharacterTemporaryStatTypeNameStun                   CharacterTemporaryStatTypeName = "STUN"
-	CharacterTemporaryStatTypeNamePoison                 CharacterTemporaryStatTypeName = "POISON"
-	CharacterTemporaryStatTypeNameSeal                   CharacterTemporaryStatTypeName = "SEAL"
-	CharacterTemporaryStatTypeNameDarkness               CharacterTemporaryStatTypeName = "DARKNESS"
-	CharacterTemporaryStatTypeNameCombo                  CharacterTemporaryStatTypeName = "COMBO"
-	CharacterTemporaryStatTypeNameWhiteKnightCharge      CharacterTemporaryStatTypeName = "WHITE_KNIGHT_CHARGE"
-	CharacterTemporaryStatTypeNameDragonBlood            CharacterTemporaryStatTypeName = "DRAGON_BLOOD"
-	CharacterTemporaryStatTypeNameHolySymbol             CharacterTemporaryStatTypeName = "HOLY_SYMBOL"
-	CharacterTemporaryStatTypeNameMesoUp                 CharacterTemporaryStatTypeName = "MESO_UP"
-	CharacterTemporaryStatTypeNameShadowPartner          CharacterTemporaryStatTypeName = "SHADOW_PARTNER"
-	CharacterTemporaryStatTypeNamePickPocket             CharacterTemporaryStatTypeName = "PICK_POCKET"
-	CharacterTemporaryStatTypeNameMesoGuard              CharacterTemporaryStatTypeName = "MESO_GUARD"
-	CharacterTemporaryStatTypeNameThaw                   CharacterTemporaryStatTypeName = "THAW"
-	CharacterTemporaryStatTypeNameWeaken                 CharacterTemporaryStatTypeName = "WEAKEN"
-	CharacterTemporaryStatTypeNameCurse                  CharacterTemporaryStatTypeName = "CURSE"
-	CharacterTemporaryStatTypeNameSlow                   CharacterTemporaryStatTypeName = "SLOW"
-	CharacterTemporaryStatTypeNameMorph                  CharacterTemporaryStatTypeName = "MORPH"
-	CharacterTemporaryStatTypeNameRecovery               CharacterTemporaryStatTypeName = "RECOVERY"
-	CharacterTemporaryStatTypeNameMapleWarrior           CharacterTemporaryStatTypeName = "MAPLE_WARRIOR"
-	CharacterTemporaryStatTypeNameStance                 CharacterTemporaryStatTypeName = "STANCE"
-	CharacterTemporaryStatTypeNameSharpEyes              CharacterTemporaryStatTypeName = "SHARP_EYES"
-	CharacterTemporaryStatTypeNameManaReflection         CharacterTemporaryStatTypeName = "MANA_REFLECTION"
-	CharacterTemporaryStatTypeNameSeduce                 CharacterTemporaryStatTypeName = "SEDUCE"
-	CharacterTemporaryStatTypeNameShadowClaw             CharacterTemporaryStatTypeName = "SHADOW_CLAW"
-	CharacterTemporaryStatTypeNameInfinity               CharacterTemporaryStatTypeName = "INFINITY"
-	CharacterTemporaryStatTypeNameHolyShield             CharacterTemporaryStatTypeName = "HOLY_SHIELD"
-	CharacterTemporaryStatTypeNameHamstring              CharacterTemporaryStatTypeName = "HAMSTRING"
-	CharacterTemporaryStatTypeNameBlind                  CharacterTemporaryStatTypeName = "BLIND"
-	CharacterTemporaryStatTypeNameConcentrate            CharacterTemporaryStatTypeName = "CONCENTRATE"
-	CharacterTemporaryStatTypeNameBanMap                 CharacterTemporaryStatTypeName = "BAN_MAP"
-	CharacterTemporaryStatTypeNameEchoOfHero             CharacterTemporaryStatTypeName = "ECHO_OF_HERO"
-	CharacterTemporaryStatTypeNameMesoUpByItem           CharacterTemporaryStatTypeName = "MESO_UP_BY_ITEM"
-	CharacterTemporaryStatTypeNameGhostMorph             CharacterTemporaryStatTypeName = "GHOST_MORPH"
-	CharacterTemporaryStatTypeNameBarrier                CharacterTemporaryStatTypeName = "BARRIER"
-	CharacterTemporaryStatTypeNameConfuse                CharacterTemporaryStatTypeName = "CONFUSE"
-	CharacterTemporaryStatTypeNameItemUpByItem           CharacterTemporaryStatTypeName = "ITEM_UP_BY_ITEM"
-	CharacterTemporaryStatTypeNameRespectPImmune         CharacterTemporaryStatTypeName = "RESPECT_PIMMUNE"
-	CharacterTemporaryStatTypeNameRespectMImmune         CharacterTemporaryStatTypeName = "RESPECT_MIMMUNE"
-	CharacterTemporaryStatTypeNameDefenseAttack          CharacterTemporaryStatTypeName = "DEFENSE_ATTACK"
-	CharacterTemporaryStatTypeNameDefenseState           CharacterTemporaryStatTypeName = "DEFENSE_STATE"
-	CharacterTemporaryStatTypeNameIncreaseEffectHpPotion CharacterTemporaryStatTypeName = "INCREASE_EFFECT_HP_POTION"
-	CharacterTemporaryStatTypeNameIncreaseEffectMpPotion CharacterTemporaryStatTypeName = "INCREASE_EFFECT_MP_POTION"
-	CharacterTemporaryStatTypeNameBerserkFury            CharacterTemporaryStatTypeName = "BERSERK_FURY"
-	CharacterTemporaryStatTypeNameDivineBody             CharacterTemporaryStatTypeName = "DIVINE_BODY"
-	CharacterTemporaryStatTypeNameSpark                  CharacterTemporaryStatTypeName = "SPARK"
-	CharacterTemporaryStatTypeNameDojangShield           CharacterTemporaryStatTypeName = "DOJANG_SHIELD"
-	CharacterTemporaryStatTypeNameSoulMasterFinal        CharacterTemporaryStatTypeName = "SOUL_MASTER_FINAL"
-	CharacterTemporaryStatTypeNameWindBreakerFinal       CharacterTemporaryStatTypeName = "WIND_BREAKER_FINAL"
-	CharacterTemporaryStatTypeNameElementalReset         CharacterTemporaryStatTypeName = "ELEMENTAL_RESET"
-	CharacterTemporaryStatTypeNameWindWalk               CharacterTemporaryStatTypeName = "WIND_WALK"
-	CharacterTemporaryStatTypeNameEventRate              CharacterTemporaryStatTypeName = "EVENT_RATE"
-	CharacterTemporaryStatTypeNameAranCombo              CharacterTemporaryStatTypeName = "ARAN_COMBO"
-	CharacterTemporaryStatTypeNameComboDrain             CharacterTemporaryStatTypeName = "COMBO_DRAIN"
-	CharacterTemporaryStatTypeNameComboBarrier           CharacterTemporaryStatTypeName = "COMBO_BARRIER"
-	CharacterTemporaryStatTypeNameBodyPressure           CharacterTemporaryStatTypeName = "BODY_PRESSURE"
-	CharacterTemporaryStatTypeNameSmartKnockBack         CharacterTemporaryStatTypeName = "SMART_KNOCK_BACK"
-	CharacterTemporaryStatTypeNameRepeatEffect           CharacterTemporaryStatTypeName = "REPEAT_EFFECT"
-	CharacterTemporaryStatTypeNameExpBuffRate            CharacterTemporaryStatTypeName = "EXP_BUFF_RATE"
-	CharacterTemporaryStatTypeNameStopPortion            CharacterTemporaryStatTypeName = "STOP_PORTION"
-	CharacterTemporaryStatTypeNameStopMotion             CharacterTemporaryStatTypeName = "STOP_MOTION"
-	CharacterTemporaryStatTypeNameFear                   CharacterTemporaryStatTypeName = "FEAR"
-	CharacterTemporaryStatTypeNameEvanSlow               CharacterTemporaryStatTypeName = "EVAN_SLOW"
-	CharacterTemporaryStatTypeNameMagicShield            CharacterTemporaryStatTypeName = "MAGIC_SHIELD"
-	CharacterTemporaryStatTypeNameMagicResist            CharacterTemporaryStatTypeName = "MAGIC_RESIST"
-	CharacterTemporaryStatTypeNameSoulStone              CharacterTemporaryStatTypeName = "SOUL_STONE"
-	CharacterTemporaryStatTypeNameFlying                 CharacterTemporaryStatTypeName = "FLYING"
-	CharacterTemporaryStatTypeNameFrozen                 CharacterTemporaryStatTypeName = "FROZEN"
-	CharacterTemporaryStatTypeNameAssistCharge           CharacterTemporaryStatTypeName = "ASSIST_CHARGE"
-	CharacterTemporaryStatTypeNameMirrorImage            CharacterTemporaryStatTypeName = "MIRROR_IMAGE"
-	CharacterTemporaryStatTypeNameSuddenDeath            CharacterTemporaryStatTypeName = "SUDDEN_DEATH"
-	CharacterTemporaryStatTypeNameNotDamaged             CharacterTemporaryStatTypeName = "NOT_DAMAGED"
-	CharacterTemporaryStatTypeNameFinalCut               CharacterTemporaryStatTypeName = "FINAL_CUT"
-	CharacterTemporaryStatTypeNameThornsEffect           CharacterTemporaryStatTypeName = "THORNS_EFFECT"
-	CharacterTemporaryStatTypeNameSwallowAttackDamage    CharacterTemporaryStatTypeName = "SWALLOW_ATTACK_DAMAGE"
-	CharacterTemporaryStatTypeNameWildDamageUp           CharacterTemporaryStatTypeName = "WILD_DAMAGE_UP"
-	CharacterTemporaryStatTypeNameMine                   CharacterTemporaryStatTypeName = "MINE"
-	CharacterTemporaryStatTypeNameEMHP                   CharacterTemporaryStatTypeName = "EMHP"
-	CharacterTemporaryStatTypeNameEMMP                   CharacterTemporaryStatTypeName = "EMMP"
-	CharacterTemporaryStatTypeNameEPAD                   CharacterTemporaryStatTypeName = "EPAD"
-	CharacterTemporaryStatTypeNameEPPD                   CharacterTemporaryStatTypeName = "EPPD"
-	CharacterTemporaryStatTypeNameEMDD                   CharacterTemporaryStatTypeName = "EMDD"
-	CharacterTemporaryStatTypeNameGuard                  CharacterTemporaryStatTypeName = "GUARD"
-	CharacterTemporaryStatTypeNameSafetyDamage           CharacterTemporaryStatTypeName = "SAFETY_DAMAGE"
-	CharacterTemporaryStatTypeNameSafetyAbsorb           CharacterTemporaryStatTypeName = "SAFETY_ABSORB"
-	CharacterTemporaryStatTypeNameCyclone                CharacterTemporaryStatTypeName = "CYCLONE"
-	CharacterTemporaryStatTypeNameSwallowCritical        CharacterTemporaryStatTypeName = "SWALLOW_CRITICAL"
-	CharacterTemporaryStatTypeNameSwallowMaxMP           CharacterTemporaryStatTypeName = "SWALLOW_MAX_MP"
-	CharacterTemporaryStatTypeNameSwallowDefense         CharacterTemporaryStatTypeName = "SWALLOW_DEFENSE"
-	CharacterTemporaryStatTypeNameSwallowEvasion         CharacterTemporaryStatTypeName = "SWALLOW_EVASION"
-	CharacterTemporaryStatTypeNameConversion             CharacterTemporaryStatTypeName = "CONVERSION"
-	CharacterTemporaryStatTypeNameRevive                 CharacterTemporaryStatTypeName = "REVIEVE"
-	CharacterTemporaryStatTypeNameSneak                  CharacterTemporaryStatTypeName = "SNEAK"
-	CharacterTemporaryStatTypeNameUnknown                CharacterTemporaryStatTypeName = "UNKNOWN"
-	CharacterTemporaryStatTypeNameEnergyCharge           CharacterTemporaryStatTypeName = "ENERGY_CHARGE"
-	CharacterTemporaryStatTypeNameDashSpeed              CharacterTemporaryStatTypeName = "DASH_SPEED"
-	CharacterTemporaryStatTypeNameDashJump               CharacterTemporaryStatTypeName = "DASH_JUMP"
-	CharacterTemporaryStatTypeNameMonsterRiding          CharacterTemporaryStatTypeName = "MONSTER_RIDING"
-	CharacterTemporaryStatTypeNameSpeedInfusion          CharacterTemporaryStatTypeName = "SPEED_INFUSION"
-	CharacterTemporaryStatTypeNameHomingBeacon           CharacterTemporaryStatTypeName = "HOMING_BEACON"
-	CharacterTemporaryStatTypeNameUndead                 CharacterTemporaryStatTypeName = "UNDEAD"
-	CharacterTemporaryStatTypeNameSummon                 CharacterTemporaryStatTypeName = "SUMMON"
-	CharacterTemporaryStatTypeNamePuppet                 CharacterTemporaryStatTypeName = "PUPPET"
 )
 
 type CharacterTemporaryStatType struct {
@@ -148,12 +25,12 @@ func NewCharacterTemporaryStatType(shift uint, disease bool) CharacterTemporaryS
 	}
 }
 
-func CharacterTemporaryStatTypeByName(tenant tenant.Model) func(name CharacterTemporaryStatTypeName) (CharacterTemporaryStatType, error) {
+func CharacterTemporaryStatTypeByName(tenant tenant.Model) func(name character.TemporaryStatType) (CharacterTemporaryStatType, error) {
 	var shift uint = 0
-	set := make(map[CharacterTemporaryStatTypeName]CharacterTemporaryStatType)
+	set := make(map[character.TemporaryStatType]CharacterTemporaryStatType)
 
-	funcCallNewAndInc := func(disease bool) func(name CharacterTemporaryStatTypeName) {
-		return func(name CharacterTemporaryStatTypeName) {
+	funcCallNewAndInc := func(disease bool) func(name character.TemporaryStatType) {
+		return func(name character.TemporaryStatType) {
 			set[name] = NewCharacterTemporaryStatType(shift, disease)
 			shift += 1
 		}
@@ -161,128 +38,128 @@ func CharacterTemporaryStatTypeByName(tenant tenant.Model) func(name CharacterTe
 	newAndIncDiseased := funcCallNewAndInc(true)
 	newAndIncNonDiseased := funcCallNewAndInc(false)
 
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameWeaponAttack)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameWeaponDefense)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameMagicAttack)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameMagicDefense)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameAccuracy)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameAvoidability)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameHands)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameSpeed)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameJump)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameMagicGuard)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameDarkSight)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameBooster)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNamePowerGuard)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameHyperBodyHP)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameHyperBodyMP)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameInvincible)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameSoulArrow)
-	newAndIncDiseased(CharacterTemporaryStatTypeNameStun)
-	newAndIncDiseased(CharacterTemporaryStatTypeNamePoison)
-	newAndIncDiseased(CharacterTemporaryStatTypeNameSeal)
-	newAndIncDiseased(CharacterTemporaryStatTypeNameDarkness)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameCombo)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameWhiteKnightCharge)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameDragonBlood)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameHolySymbol)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameMesoUp)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameShadowPartner)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNamePickPocket)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameMesoGuard)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameThaw)
-	newAndIncDiseased(CharacterTemporaryStatTypeNameWeaken)
-	newAndIncDiseased(CharacterTemporaryStatTypeNameCurse)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameSlow)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameMorph)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameRecovery)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameMapleWarrior)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameStance)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameSharpEyes)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameManaReflection)
-	newAndIncDiseased(CharacterTemporaryStatTypeNameSeduce)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameShadowClaw)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameInfinity)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameHolyShield)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameHamstring)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameBlind)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameConcentrate)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameBanMap)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameEchoOfHero)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameMesoUpByItem)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameGhostMorph)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameBarrier)
-	newAndIncDiseased(CharacterTemporaryStatTypeNameConfuse)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameItemUpByItem)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameRespectPImmune)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameRespectMImmune)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameDefenseAttack)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameDefenseState)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameIncreaseEffectHpPotion)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameIncreaseEffectMpPotion)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameBerserkFury)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameDivineBody)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameSpark)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameDojangShield)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameSoulMasterFinal)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameWindBreakerFinal)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameElementalReset)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameWindWalk)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameEventRate)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameAranCombo)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameComboDrain)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameComboBarrier)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameBodyPressure)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameSmartKnockBack)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameRepeatEffect)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameExpBuffRate)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameStopPortion)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameStopMotion)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameFear)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameEvanSlow)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameMagicShield)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameMagicResist)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameSoulStone)
+	newAndIncNonDiseased(character.TemporaryStatTypeWeaponAttack)
+	newAndIncNonDiseased(character.TemporaryStatTypeWeaponDefense)
+	newAndIncNonDiseased(character.TemporaryStatTypeMagicAttack)
+	newAndIncNonDiseased(character.TemporaryStatTypeMagicDefense)
+	newAndIncNonDiseased(character.TemporaryStatTypeAccuracy)
+	newAndIncNonDiseased(character.TemporaryStatTypeAvoidability)
+	newAndIncNonDiseased(character.TemporaryStatTypeHands)
+	newAndIncNonDiseased(character.TemporaryStatTypeSpeed)
+	newAndIncNonDiseased(character.TemporaryStatTypeJump)
+	newAndIncNonDiseased(character.TemporaryStatTypeMagicGuard)
+	newAndIncNonDiseased(character.TemporaryStatTypeDarkSight)
+	newAndIncNonDiseased(character.TemporaryStatTypeBooster)
+	newAndIncNonDiseased(character.TemporaryStatTypePowerGuard)
+	newAndIncNonDiseased(character.TemporaryStatTypeHyperBodyHP)
+	newAndIncNonDiseased(character.TemporaryStatTypeHyperBodyMP)
+	newAndIncNonDiseased(character.TemporaryStatTypeInvincible)
+	newAndIncNonDiseased(character.TemporaryStatTypeSoulArrow)
+	newAndIncDiseased(character.TemporaryStatTypeStun)
+	newAndIncDiseased(character.TemporaryStatTypePoison)
+	newAndIncDiseased(character.TemporaryStatTypeSeal)
+	newAndIncDiseased(character.TemporaryStatTypeDarkness)
+	newAndIncNonDiseased(character.TemporaryStatTypeCombo)
+	newAndIncNonDiseased(character.TemporaryStatTypeWhiteKnightCharge)
+	newAndIncNonDiseased(character.TemporaryStatTypeDragonBlood)
+	newAndIncNonDiseased(character.TemporaryStatTypeHolySymbol)
+	newAndIncNonDiseased(character.TemporaryStatTypeMesoUp)
+	newAndIncNonDiseased(character.TemporaryStatTypeShadowPartner)
+	newAndIncNonDiseased(character.TemporaryStatTypePickPocket)
+	newAndIncNonDiseased(character.TemporaryStatTypeMesoGuard)
+	newAndIncNonDiseased(character.TemporaryStatTypeThaw)
+	newAndIncDiseased(character.TemporaryStatTypeWeaken)
+	newAndIncDiseased(character.TemporaryStatTypeCurse)
+	newAndIncNonDiseased(character.TemporaryStatTypeSlow)
+	newAndIncNonDiseased(character.TemporaryStatTypeMorph)
+	newAndIncNonDiseased(character.TemporaryStatTypeRecovery)
+	newAndIncNonDiseased(character.TemporaryStatTypeMapleWarrior)
+	newAndIncNonDiseased(character.TemporaryStatTypeStance)
+	newAndIncNonDiseased(character.TemporaryStatTypeSharpEyes)
+	newAndIncNonDiseased(character.TemporaryStatTypeManaReflection)
+	newAndIncDiseased(character.TemporaryStatTypeSeduce)
+	newAndIncNonDiseased(character.TemporaryStatTypeShadowClaw)
+	newAndIncNonDiseased(character.TemporaryStatTypeInfinity)
+	newAndIncNonDiseased(character.TemporaryStatTypeHolyShield)
+	newAndIncNonDiseased(character.TemporaryStatTypeHamstring)
+	newAndIncNonDiseased(character.TemporaryStatTypeBlind)
+	newAndIncNonDiseased(character.TemporaryStatTypeConcentrate)
+	newAndIncNonDiseased(character.TemporaryStatTypeBanMap)
+	newAndIncNonDiseased(character.TemporaryStatTypeEchoOfHero)
+	newAndIncNonDiseased(character.TemporaryStatTypeMesoUpByItem)
+	newAndIncNonDiseased(character.TemporaryStatTypeGhostMorph)
+	newAndIncNonDiseased(character.TemporaryStatTypeBarrier)
+	newAndIncDiseased(character.TemporaryStatTypeConfuse)
+	newAndIncNonDiseased(character.TemporaryStatTypeItemUpByItem)
+	newAndIncNonDiseased(character.TemporaryStatTypeRespectPImmune)
+	newAndIncNonDiseased(character.TemporaryStatTypeRespectMImmune)
+	newAndIncNonDiseased(character.TemporaryStatTypeDefenseAttack)
+	newAndIncNonDiseased(character.TemporaryStatTypeDefenseState)
+	newAndIncNonDiseased(character.TemporaryStatTypeIncreaseEffectHpPotion)
+	newAndIncNonDiseased(character.TemporaryStatTypeIncreaseEffectMpPotion)
+	newAndIncNonDiseased(character.TemporaryStatTypeBerserkFury)
+	newAndIncNonDiseased(character.TemporaryStatTypeDivineBody)
+	newAndIncNonDiseased(character.TemporaryStatTypeSpark)
+	newAndIncNonDiseased(character.TemporaryStatTypeDojangShield)
+	newAndIncNonDiseased(character.TemporaryStatTypeSoulMasterFinal)
+	newAndIncNonDiseased(character.TemporaryStatTypeWindBreakerFinal)
+	newAndIncNonDiseased(character.TemporaryStatTypeElementalReset)
+	newAndIncNonDiseased(character.TemporaryStatTypeWindWalk)
+	newAndIncNonDiseased(character.TemporaryStatTypeEventRate)
+	newAndIncNonDiseased(character.TemporaryStatTypeAranCombo)
+	newAndIncNonDiseased(character.TemporaryStatTypeComboDrain)
+	newAndIncNonDiseased(character.TemporaryStatTypeComboBarrier)
+	newAndIncNonDiseased(character.TemporaryStatTypeBodyPressure)
+	newAndIncNonDiseased(character.TemporaryStatTypeSmartKnockBack)
+	newAndIncNonDiseased(character.TemporaryStatTypeRepeatEffect)
+	newAndIncNonDiseased(character.TemporaryStatTypeExpBuffRate)
+	newAndIncNonDiseased(character.TemporaryStatTypeStopPortion)
+	newAndIncNonDiseased(character.TemporaryStatTypeStopMotion)
+	newAndIncNonDiseased(character.TemporaryStatTypeFear)
+	newAndIncNonDiseased(character.TemporaryStatTypeEvanSlow)
+	newAndIncNonDiseased(character.TemporaryStatTypeMagicShield)
+	newAndIncNonDiseased(character.TemporaryStatTypeMagicResist)
+	newAndIncNonDiseased(character.TemporaryStatTypeSoulStone)
 	if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameFlying)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameFrozen)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameAssistCharge)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameMirrorImage)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameSuddenDeath)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameNotDamaged)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameFinalCut)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameThornsEffect)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameSwallowAttackDamage)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameWildDamageUp)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameMine)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameEMHP)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameEMMP)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameEPAD)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameEPPD)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameEMDD)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameGuard)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameSafetyDamage)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameSafetyAbsorb)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameCyclone)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameSwallowCritical)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameSwallowMaxMP)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameSwallowDefense)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameSwallowEvasion)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameConversion)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameRevive)
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameSneak)
+		newAndIncNonDiseased(character.TemporaryStatTypeFlying)
+		newAndIncNonDiseased(character.TemporaryStatTypeFrozen)
+		newAndIncNonDiseased(character.TemporaryStatTypeAssistCharge)
+		newAndIncNonDiseased(character.TemporaryStatTypeMirrorImage)
+		newAndIncNonDiseased(character.TemporaryStatTypeSuddenDeath)
+		newAndIncNonDiseased(character.TemporaryStatTypeNotDamaged)
+		newAndIncNonDiseased(character.TemporaryStatTypeFinalCut)
+		newAndIncNonDiseased(character.TemporaryStatTypeThornsEffect)
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowAttackDamage)
+		newAndIncNonDiseased(character.TemporaryStatTypeWildDamageUp)
+		newAndIncNonDiseased(character.TemporaryStatTypeMine)
+		newAndIncNonDiseased(character.TemporaryStatTypeEMHP)
+		newAndIncNonDiseased(character.TemporaryStatTypeEMMP)
+		newAndIncNonDiseased(character.TemporaryStatTypeEPAD)
+		newAndIncNonDiseased(character.TemporaryStatTypeEPPD)
+		newAndIncNonDiseased(character.TemporaryStatTypeEMDD)
+		newAndIncNonDiseased(character.TemporaryStatTypeGuard)
+		newAndIncNonDiseased(character.TemporaryStatTypeSafetyDamage)
+		newAndIncNonDiseased(character.TemporaryStatTypeSafetyAbsorb)
+		newAndIncNonDiseased(character.TemporaryStatTypeCyclone)
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowCritical)
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowMaxMP)
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowDefense)
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowEvasion)
+		newAndIncNonDiseased(character.TemporaryStatTypeConversion)
+		newAndIncNonDiseased(character.TemporaryStatTypeRevive)
+		newAndIncNonDiseased(character.TemporaryStatTypeSneak)
 
-		newAndIncNonDiseased(CharacterTemporaryStatTypeNameUnknown)
+		newAndIncNonDiseased(character.TemporaryStatTypeUnknown)
 	}
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameEnergyCharge)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameDashSpeed)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameDashJump)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameMonsterRiding)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameSpeedInfusion)
-	newAndIncNonDiseased(CharacterTemporaryStatTypeNameHomingBeacon)
-	newAndIncDiseased(CharacterTemporaryStatTypeNameUndead)
+	newAndIncNonDiseased(character.TemporaryStatTypeEnergyCharge)
+	newAndIncNonDiseased(character.TemporaryStatTypeDashSpeed)
+	newAndIncNonDiseased(character.TemporaryStatTypeDashJump)
+	newAndIncNonDiseased(character.TemporaryStatTypeMonsterRiding)
+	newAndIncNonDiseased(character.TemporaryStatTypeSpeedInfusion)
+	newAndIncNonDiseased(character.TemporaryStatTypeHomingBeacon)
+	newAndIncDiseased(character.TemporaryStatTypeUndead)
 
-	return func(name CharacterTemporaryStatTypeName) (CharacterTemporaryStatType, error) {
+	return func(name character.TemporaryStatType) (CharacterTemporaryStatType, error) {
 		if val, ok := set[name]; ok {
 			return val, nil
 		}
@@ -394,18 +271,18 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, t tenant.Model, op
 	temporaryStatGetter := CharacterTemporaryStatTypeByName(t)
 	return func(w *response.Writer) {
 		mask := tool.Uint128{}
-		applyMask := func(name CharacterTemporaryStatTypeName) {
+		applyMask := func(name character.TemporaryStatType) {
 			if val, err := temporaryStatGetter(name); err == nil {
 				mask = mask.Or(val.mask)
 			}
 		}
-		applyMask(CharacterTemporaryStatTypeNameEnergyCharge)
-		applyMask(CharacterTemporaryStatTypeNameDashSpeed)
-		applyMask(CharacterTemporaryStatTypeNameDashJump)
-		applyMask(CharacterTemporaryStatTypeNameMonsterRiding)
-		applyMask(CharacterTemporaryStatTypeNameSpeedInfusion)
-		applyMask(CharacterTemporaryStatTypeNameHomingBeacon)
-		applyMask(CharacterTemporaryStatTypeNameUndead)
+		applyMask(character.TemporaryStatTypeEnergyCharge)
+		applyMask(character.TemporaryStatTypeDashSpeed)
+		applyMask(character.TemporaryStatTypeDashJump)
+		applyMask(character.TemporaryStatTypeMonsterRiding)
+		applyMask(character.TemporaryStatTypeSpeedInfusion)
+		applyMask(character.TemporaryStatTypeHomingBeacon)
+		applyMask(character.TemporaryStatTypeUndead)
 
 		// TODO gather active buffs
 		w.WriteInt(uint32(mask.H >> 32))

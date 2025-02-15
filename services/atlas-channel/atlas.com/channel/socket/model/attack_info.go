@@ -13,6 +13,7 @@ const (
 	AttackTypeMelee  = AttackType(0)
 	AttackTypeRanged = AttackType(1)
 	AttackTypeMagic  = AttackType(2)
+	AttackTypeEnergy = AttackType(3)
 )
 
 func NewAttackInfo(attackType AttackType) *AttackInfo {
@@ -24,6 +25,8 @@ type AttackInfo struct {
 	fieldKey             byte
 	dr0                  uint32
 	dr1                  uint32
+	hits                 byte
+	damage               uint32
 	dr2                  uint32
 	dr3                  uint32
 	skillId              uint32
@@ -32,6 +35,8 @@ type AttackInfo struct {
 	crc32                uint32
 	skillDataCrc         uint32
 	skillDataCrc2        uint32
+	mask1                byte
+	mask2                uint16
 	keyDown              uint32
 	finalAfterSlashBlast int
 	shadowPartner        int
@@ -39,25 +44,27 @@ type AttackInfo struct {
 	serialAttackSkillId  int
 	unknown2             int
 	attackAction         int
-	left                 int
+	left                 bool
 	anotherCrc           uint32
 	attackActionType     byte
 	attackSpeed          byte
 	attackTime           uint32
 	damageInfo           []DamageInfo
-	targetX              uint16
-	targetY              uint16
+	characterX           uint16
+	characterY           uint16
 	grenadeX             uint16
 	grenadeY             uint16
 	reserveSpark         uint32
 	javlin               bool
 	properBulletPosition uint16
-	pnCashItemPos        uint16
+	cashBulletPosition   uint16
 	nShootRange          byte
 	bulletItemId         uint32
 	dragon               bool
 	dragonX              uint16
 	dragonY              uint16
+	bulletX              uint16
+	bulletY              uint16
 }
 
 func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(r *request.Reader) {
@@ -68,8 +75,8 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 			m.dr1 = r.ReadUint32()
 		}
 		numAttackedAndDamageMask := r.ReadByte()
-		hits := numAttackedAndDamageMask & 0xF
-		damage := uint32((numAttackedAndDamageMask >> 4) & 0xF)
+		m.hits = numAttackedAndDamageMask & 0xF
+		m.damage = uint32((numAttackedAndDamageMask >> 4) & 0xF)
 
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			m.dr2 = r.ReadUint32()
@@ -101,15 +108,15 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 
 		if skill.IsKeyDownSkill(skill.Id(m.skillId)) {
 			m.keyDown = r.ReadUint32()
-		} else if skill.IsChargeSkill(skill.Id(m.skillId)) {
+		} else if skill.NeedsCharging(skill.Id(m.skillId)) {
 			m.keyDown = r.ReadUint32()
 		}
-		mask1 := r.ReadByte()
-		m.finalAfterSlashBlast = int(mask1 & 0x07)       // Extract lowest 3 bits (0b00000111)
-		m.shadowPartner = int((mask1 >> 3) & 0x01)       // Extract bit 3
-		m.unknown1 = int((mask1 >> 4) & 0x01)            // Extract bit 4
-		m.serialAttackSkillId = int((mask1 >> 5) & 0x01) // Extract bit 5 (boolean flag)
-		m.unknown2 = int((mask1 >> 7) & 0x7F)            // Extract bits 7-13 (7-bit value)
+		m.mask1 = r.ReadByte()
+		m.finalAfterSlashBlast = int(m.mask1 & 0x07)       // Extract lowest 3 bits (0b00000111)
+		m.shadowPartner = int((m.mask1 >> 3) & 0x01)       // Extract bit 3
+		m.unknown1 = int((m.mask1 >> 4) & 0x01)            // Extract bit 4
+		m.serialAttackSkillId = int((m.mask1 >> 5) & 0x01) // Extract bit 5 (boolean flag)
+		m.unknown2 = int((m.mask1 >> 7) & 0x7F)            // Extract bits 7-13 (7-bit value)
 
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			if m.attackType == AttackTypeRanged {
@@ -117,9 +124,9 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 			}
 		}
 
-		mask2 := r.ReadUint16()
-		m.attackAction = int(mask2 & 0x7FFF) // Extract lower 15 bits
-		m.left = int((mask2 >> 15) & 0x01)   // Extract bit 15
+		m.mask2 = r.ReadUint16()
+		m.attackAction = int(m.mask2 & 0x7FFF) // Extract lower 15 bits
+		m.left = int((m.mask2>>15)&0x01) == 1  // Extract bit 15
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			m.anotherCrc = r.ReadUint32()
 		}
@@ -137,7 +144,7 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 				_ = r.ReadUint32()
 			}
 			m.properBulletPosition = r.ReadUint16()
-			m.pnCashItemPos = r.ReadUint16()
+			m.cashBulletPosition = r.ReadUint16()
 			m.nShootRange = r.ReadByte()
 
 			if m.javlin && !skill.IsShootSkillNotConsumingBullet(skill.Id(m.skillId)) {
@@ -149,18 +156,23 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 			}
 		}
 
-		for range damage {
-			di := NewDamageInfo(hits)
+		for range m.damage {
+			di := NewDamageInfo(m.hits)
 			di.Decode(l, t, options)(r)
 			m.damageInfo = append(m.damageInfo, *di)
 		}
 
-		m.targetX = r.ReadUint16()
-		m.targetY = r.ReadUint16()
-		if skill.Id(m.skillId) == skill.NightWalkerStage3PoisonBomb {
+		m.characterX = r.ReadUint16()
+		m.characterY = r.ReadUint16()
+		if m.attackType == AttackTypeRanged {
+			m.bulletX = r.ReadUint16()
+			m.bulletY = r.ReadUint16()
+		}
+
+		if skill.Id(m.skillId) == skill.NightWalkerStage3PoisonBombId {
 			m.grenadeX = r.ReadUint16()
 			m.grenadeY = r.ReadUint16()
-		} else if skill.Id(m.skillId) == skill.ThunderBreakerStage3Spark {
+		} else if skill.Id(m.skillId) == skill.ThunderBreakerStage3SparkId {
 			m.reserveSpark = r.ReadUint32()
 		}
 		if m.attackType == AttackTypeMagic {
@@ -175,4 +187,64 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 
 func (m *AttackInfo) DamageInfo() []DamageInfo {
 	return m.damageInfo
+}
+
+func (m *AttackInfo) SkillId() uint32 {
+	return m.skillId
+}
+
+func (m *AttackInfo) SkillLevel() byte {
+	return m.skillLevel
+}
+
+func (m *AttackInfo) Hits() byte {
+	return m.hits
+}
+
+func (m *AttackInfo) Damage() uint32 {
+	return m.damage
+}
+
+func (m *AttackInfo) Option() byte {
+	return m.mask1
+}
+
+func (m *AttackInfo) Left() bool {
+	return m.left
+}
+
+func (m *AttackInfo) AttackAction() int {
+	return m.attackAction
+}
+
+func (m *AttackInfo) ActionSpeed() byte {
+	return m.attackSpeed
+}
+
+func (m *AttackInfo) BulletItemId() uint32 {
+	return m.bulletItemId
+}
+
+func (m *AttackInfo) Keydown() uint32 {
+	return m.keyDown
+}
+
+func (m *AttackInfo) AttackType() AttackType {
+	return m.attackType
+}
+
+func (m *AttackInfo) ProperBulletPosition() uint16 {
+	return m.properBulletPosition
+}
+
+func (m *AttackInfo) CashBulletPosition() uint16 {
+	return m.cashBulletPosition
+}
+
+func (m *AttackInfo) BulletX() uint16 {
+	return m.bulletX
+}
+
+func (m *AttackInfo) BulletY() uint16 {
+	return m.bulletY
 }

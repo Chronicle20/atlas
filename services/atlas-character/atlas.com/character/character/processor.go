@@ -1105,7 +1105,7 @@ func ProcessLevelChange(l logrus.FieldLogger) func(ctx context.Context) func(db 
 						return err
 					}
 
-					effectiveLevel := c.Level()
+					effectiveLevel := c.Level() - amount
 
 					for i := range amount {
 						effectiveLevel = effectiveLevel + i + 1

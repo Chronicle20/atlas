@@ -66,3 +66,7 @@ func (m Model) StatUps() []statup.Model {
 func (m Model) X() int16 {
 	return m.x
 }
+
+func (m Model) Y() int16 {
+	return m.y
+}

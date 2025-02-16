@@ -896,12 +896,13 @@ func RequestDistributeAp(l logrus.FieldLogger) func(ctx context.Context) func(db
 	}
 }
 
-func getMaxHpGrowth(_ logrus.FieldLogger) func(ctx context.Context) func(c Model) (uint16, error) {
-	return func(_ context.Context) func(c Model) (uint16, error) {
+func getMaxHpGrowth(l logrus.FieldLogger) func(ctx context.Context) func(c Model) (uint16, error) {
+	return func(ctx context.Context) func(c Model) (uint16, error) {
 		return func(c Model) (uint16, error) {
 			if c.MaxHP() >= 30000 || c.HPMPUsed() > 9999 {
 				return c.MaxHP(), errors.New("max ap to hp")
 			}
+			var improvingHPSkillId skill.Id
 			resMax := c.MaxHP()
 			if job.IsA(job.Id(c.JobId()),
 				job.WarriorId,
@@ -910,7 +911,11 @@ func getMaxHpGrowth(_ logrus.FieldLogger) func(ctx context.Context) func(c Model
 				job.SpearmanId, job.DragonKnightId, job.DarkKnightId,
 				job.DawnWarriorStage1Id, job.DawnWarriorStage2Id, job.DawnWarriorStage3Id, job.DawnWarriorStage4Id,
 				job.AranStage1Id, job.AranStage2Id, job.AranStage3Id, job.AranStage4Id) {
-				// TODO include MAX_HP_INCREASE skill
+				if job.IsCygnus(job.Id(c.JobId())) {
+					improvingHPSkillId = skill.DawnWarriorStage1ImprovedMaxHpIncreaseId
+				} else {
+					improvingHPSkillId = skill.WarriorImprovedMaxHpIncreaseId
+				}
 				resMax += 20
 			} else if job.IsA(job.Id(c.JobId()),
 				job.MagicianId,
@@ -934,22 +939,35 @@ func getMaxHpGrowth(_ logrus.FieldLogger) func(ctx context.Context) func(c Model
 				job.BrawlerId, job.MarauderId, job.BuccaneerId,
 				job.GunslingerId, job.OutlawId, job.CorsairId,
 				job.ThunderBreakerStage1Id, job.ThunderBreakerStage2Id, job.ThunderBreakerStage3Id, job.ThunderBreakerStage4Id) {
-				// TODO include IMPROVE_MAX_HP
+				if job.IsCygnus(job.Id(c.JobId())) {
+					improvingHPSkillId = skill.ThunderBreakerStage2ImprovedMaxHpIncreaseId
+				} else {
+					improvingHPSkillId = skill.BrawlerImproveMaxHpId
+				}
 				resMax += 18
 			} else {
 				resMax += 8
+			}
+
+			if improvingHPSkillId > 0 {
+				var improvingHPSkillLevel = c.GetSkillLevel(uint32(improvingHPSkillId))
+				se, err := skill3.GetEffect(l)(ctx)(uint32(improvingHPSkillId), improvingHPSkillLevel)
+				if err == nil {
+					resMax = uint16(int16(resMax) + se.Y())
+				}
 			}
 			return resMax, nil
 		}
 	}
 }
 
-func getMaxMpGrowth(_ logrus.FieldLogger) func(ctx context.Context) func(c Model) (uint16, error) {
-	return func(_ context.Context) func(c Model) (uint16, error) {
+func getMaxMpGrowth(l logrus.FieldLogger) func(ctx context.Context) func(c Model) (uint16, error) {
+	return func(ctx context.Context) func(c Model) (uint16, error) {
 		return func(c Model) (uint16, error) {
 			if c.MaxMP() >= 30000 || c.HPMPUsed() > 9999 {
 				return c.MaxMP(), errors.New("max ap to mp")
 			}
+			var improvingMPSkillId skill.Id
 			resMax := c.MaxMP()
 			if job.IsA(job.Id(c.JobId()),
 				job.WarriorId,
@@ -958,6 +976,11 @@ func getMaxMpGrowth(_ logrus.FieldLogger) func(ctx context.Context) func(c Model
 				job.SpearmanId, job.DragonKnightId, job.DarkKnightId,
 				job.DawnWarriorStage1Id, job.DawnWarriorStage2Id, job.DawnWarriorStage3Id, job.DawnWarriorStage4Id,
 				job.AranStage1Id, job.AranStage2Id, job.AranStage3Id, job.AranStage4Id) {
+				if job.IsA(job.Id(c.JobId()), job.CrusaderId, job.WhiteKnightId) {
+					improvingMPSkillId = skill.WhiteKnightImprovingMpRecoveryId
+				} else if job.IsA(job.Id(c.JobId()), job.DawnWarriorStage3Id, job.DawnWarriorStage4Id) {
+					improvingMPSkillId = skill.DawnWarriorStage3ImprovedMpRecoveryId
+				}
 				resMax += 2
 			} else if job.IsA(job.Id(c.JobId()),
 				job.MagicianId,
@@ -965,7 +988,11 @@ func getMaxMpGrowth(_ logrus.FieldLogger) func(ctx context.Context) func(c Model
 				job.IceLightningWizardId, job.IceLightningMagicianId, job.IceLightningArchMagicianId,
 				job.ClericId, job.PriestId, job.BishopId,
 				job.BlazeWizardStage1Id, job.BlazeWizardStage2Id, job.BlazeWizardStage3Id, job.BlazeWizardStage4Id) {
-				// TODO include INCREASING_MAX_MP skill
+				if job.IsCygnus(job.Id(c.JobId())) {
+					improvingMPSkillId = skill.BlazeWizardStage1ImprovedMaxMpIncreaseId
+				} else {
+					improvingMPSkillId = skill.MagicianImprovedMaxMpIncreaseId
+				}
 				resMax += 18
 			} else if job.IsA(job.Id(c.JobId()),
 				job.BowmanId,
@@ -988,6 +1015,15 @@ func getMaxMpGrowth(_ logrus.FieldLogger) func(ctx context.Context) func(c Model
 			}
 			// TODO this needs to incorporate computed total intelligence (buffs, weapons, etc)
 			resMax += uint16(math.Ceil(float64(c.Intelligence()) / 10))
+
+			if improvingMPSkillId > 0 {
+				var improvingMPSkillLevel = c.GetSkillLevel(uint32(improvingMPSkillId))
+				se, err := skill3.GetEffect(l)(ctx)(uint32(improvingMPSkillId), improvingMPSkillLevel)
+				if err == nil {
+					resMax = uint16(int16(resMax) + se.X())
+				}
+			}
+
 			return resMax, nil
 		}
 	}

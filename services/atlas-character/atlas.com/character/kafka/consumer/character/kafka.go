@@ -29,14 +29,6 @@ const (
 	ExperienceDistributionTypeRainbowWeek  = "RAINBOW_WEEK"
 	ExperienceDistributionTypePartyRing    = "PARTY_RING"
 	ExperienceDistributionTypeCakePie      = "CAKE_PIE"
-
-	EnvCommandTopicMovement   = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
-	MovementTypeNormal        = "NORMAL"
-	MovementTypeTeleport      = "TELEPORT"
-	MovementTypeStartFallDown = "START_FALL_DOWN"
-	MovementTypeFlyingBlock   = "FLYING_BLOCK"
-	MovementTypeJump          = "JUMP"
-	MovementTypeStatChange    = "STAT_CHANGE"
 )
 
 type command[E any] struct {
@@ -109,6 +101,40 @@ type changeMPBody struct {
 	ChannelId byte  `json:"channelId"`
 	Amount    int16 `json:"amount"`
 }
+
+const (
+	EnvEventTopicCharacterStatus = "EVENT_TOPIC_CHARACTER_STATUS"
+	StatusEventTypeJobChanged    = "JOB_CHANGED"
+	StatusEventTypeLevelChanged  = "LEVEL_CHANGED"
+)
+
+type statusEvent[E any] struct {
+	WorldId     byte   `json:"worldId"`
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
+}
+
+type jobChangedStatusEventBody struct {
+	ChannelId byte   `json:"channelId"`
+	JobId     uint16 `json:"jobId"`
+}
+
+type levelChangedStatusEventBody struct {
+	ChannelId byte `json:"channelId"`
+	Amount    byte `json:"amount"`
+	Current   byte `json:"current"`
+}
+
+const (
+	EnvCommandTopicMovement   = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
+	MovementTypeNormal        = "NORMAL"
+	MovementTypeTeleport      = "TELEPORT"
+	MovementTypeStartFallDown = "START_FALL_DOWN"
+	MovementTypeFlyingBlock   = "FLYING_BLOCK"
+	MovementTypeJump          = "JUMP"
+	MovementTypeStatChange    = "STAT_CHANGE"
+)
 
 type movementCommand struct {
 	WorldId     byte               `json:"worldId"`

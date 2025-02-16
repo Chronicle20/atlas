@@ -6,16 +6,20 @@ import (
 	"atlas-character/equipment"
 	"atlas-character/equipment/slot"
 	"atlas-character/inventory"
-	"atlas-character/job"
 	"atlas-character/kafka/producer"
 	"atlas-character/portal"
+	skill2 "atlas-character/skill"
+	skill3 "atlas-character/skill/data"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas-constants/job"
+	"github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"math"
+	"math/rand"
 	"regexp"
 )
 
@@ -143,6 +147,18 @@ func InventoryModelDecorator(l logrus.FieldLogger) func(db *gorm.DB) func(ctx co
 				}
 				return CloneModel(m).SetEquipment(es).SetInventory(i).Build()
 			}
+		}
+	}
+}
+
+func SkillModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model.Decorator[Model] {
+	return func(ctx context.Context) model.Decorator[Model] {
+		return func(m Model) Model {
+			ms, err := skill2.GetByCharacterId(l)(ctx)(m.Id())
+			if err != nil {
+				return m
+			}
+			return CloneModel(m).SetSkills(ms).Build()
 		}
 	}
 }
@@ -880,52 +896,134 @@ func RequestDistributeAp(l logrus.FieldLogger) func(ctx context.Context) func(db
 	}
 }
 
-func getMaxHpGrowth(_ logrus.FieldLogger) func(ctx context.Context) func(c Model) (uint16, error) {
-	return func(_ context.Context) func(c Model) (uint16, error) {
+func getMaxHpGrowth(l logrus.FieldLogger) func(ctx context.Context) func(c Model) (uint16, error) {
+	return func(ctx context.Context) func(c Model) (uint16, error) {
 		return func(c Model) (uint16, error) {
 			if c.MaxHP() >= 30000 || c.HPMPUsed() > 9999 {
 				return c.MaxHP(), errors.New("max ap to hp")
 			}
+			var improvingHPSkillId skill.Id
 			resMax := c.MaxHP()
-			if job.IsA(c.JobId(), job.Warrior, job.DawnWarrior1, job.Aran1) {
-				// TODO include MAX_HP_INCREASE skill
+			if job.IsA(job.Id(c.JobId()),
+				job.WarriorId,
+				job.FighterId, job.CrusaderId, job.HeroId,
+				job.PageId, job.CrusaderId, job.WhiteKnightId,
+				job.SpearmanId, job.DragonKnightId, job.DarkKnightId,
+				job.DawnWarriorStage1Id, job.DawnWarriorStage2Id, job.DawnWarriorStage3Id, job.DawnWarriorStage4Id,
+				job.AranStage1Id, job.AranStage2Id, job.AranStage3Id, job.AranStage4Id) {
+				if job.IsCygnus(job.Id(c.JobId())) {
+					improvingHPSkillId = skill.DawnWarriorStage1ImprovedMaxHpIncreaseId
+				} else {
+					improvingHPSkillId = skill.WarriorImprovedMaxHpIncreaseId
+				}
 				resMax += 20
-			} else if job.IsA(c.JobId(), job.Magician, job.BlazeWizard1) {
+			} else if job.IsA(job.Id(c.JobId()),
+				job.MagicianId,
+				job.FirePoisonWizardId, job.FirePoisonMagicianId, job.FirePoisonArchMagicianId,
+				job.IceLightningWizardId, job.IceLightningMagicianId, job.IceLightningArchMagicianId,
+				job.ClericId, job.PriestId, job.BishopId,
+				job.BlazeWizardStage1Id, job.BlazeWizardStage2Id, job.BlazeWizardStage3Id, job.BlazeWizardStage4Id) {
 				resMax += 6
-			} else if job.IsA(c.JobId(), job.Bowman, job.WindArcher1, job.Thief, job.NightWalker1) {
+			} else if job.IsA(job.Id(c.JobId()),
+				job.BowmanId,
+				job.HunterId, job.RangerId, job.BowmasterId,
+				job.CrossbowmanId, job.SniperId, job.MarksmanId,
+				job.WindArcherStage1Id, job.WindArcherStage2Id, job.WindArcherStage3Id, job.WindArcherStage4Id,
+				job.RogueId,
+				job.AssassinId, job.HermitId, job.NightLordId,
+				job.BanditId, job.ChiefBanditId, job.ShadowerId,
+				job.NightWalkerStage1Id, job.NightWalkerStage2Id, job.NightWalkerStage3Id, job.NightWalkerStage4Id) {
 				resMax += 16
-			} else if job.IsA(c.JobId(), job.Pirate, job.ThunderBreaker1) {
-				// TODO include IMPROVE_MAX_HP
+			} else if job.IsA(job.Id(c.JobId()),
+				job.PirateId,
+				job.BrawlerId, job.MarauderId, job.BuccaneerId,
+				job.GunslingerId, job.OutlawId, job.CorsairId,
+				job.ThunderBreakerStage1Id, job.ThunderBreakerStage2Id, job.ThunderBreakerStage3Id, job.ThunderBreakerStage4Id) {
+				if job.IsCygnus(job.Id(c.JobId())) {
+					improvingHPSkillId = skill.ThunderBreakerStage2ImprovedMaxHpIncreaseId
+				} else {
+					improvingHPSkillId = skill.BrawlerImproveMaxHpId
+				}
 				resMax += 18
 			} else {
 				resMax += 8
+			}
+
+			if improvingHPSkillId > 0 {
+				var improvingHPSkillLevel = c.GetSkillLevel(uint32(improvingHPSkillId))
+				se, err := skill3.GetEffect(l)(ctx)(uint32(improvingHPSkillId), improvingHPSkillLevel)
+				if err == nil {
+					resMax = uint16(int16(resMax) + se.Y())
+				}
 			}
 			return resMax, nil
 		}
 	}
 }
 
-func getMaxMpGrowth(_ logrus.FieldLogger) func(ctx context.Context) func(c Model) (uint16, error) {
-	return func(_ context.Context) func(c Model) (uint16, error) {
+func getMaxMpGrowth(l logrus.FieldLogger) func(ctx context.Context) func(c Model) (uint16, error) {
+	return func(ctx context.Context) func(c Model) (uint16, error) {
 		return func(c Model) (uint16, error) {
 			if c.MaxMP() >= 30000 || c.HPMPUsed() > 9999 {
 				return c.MaxMP(), errors.New("max ap to mp")
 			}
+			var improvingMPSkillId skill.Id
 			resMax := c.MaxMP()
-			if job.IsA(c.JobId(), job.Warrior, job.DawnWarrior1, job.Aran1) {
+			if job.IsA(job.Id(c.JobId()),
+				job.WarriorId,
+				job.FighterId, job.CrusaderId, job.HeroId,
+				job.PageId, job.CrusaderId, job.WhiteKnightId,
+				job.SpearmanId, job.DragonKnightId, job.DarkKnightId,
+				job.DawnWarriorStage1Id, job.DawnWarriorStage2Id, job.DawnWarriorStage3Id, job.DawnWarriorStage4Id,
+				job.AranStage1Id, job.AranStage2Id, job.AranStage3Id, job.AranStage4Id) {
+				if job.IsA(job.Id(c.JobId()), job.CrusaderId, job.WhiteKnightId) {
+					improvingMPSkillId = skill.WhiteKnightImprovingMpRecoveryId
+				} else if job.IsA(job.Id(c.JobId()), job.DawnWarriorStage3Id, job.DawnWarriorStage4Id) {
+					improvingMPSkillId = skill.DawnWarriorStage3ImprovedMpRecoveryId
+				}
 				resMax += 2
-			} else if job.IsA(c.JobId(), job.Magician, job.BlazeWizard1) {
-				// TODO include INCREASING_MAX_MP skill
+			} else if job.IsA(job.Id(c.JobId()),
+				job.MagicianId,
+				job.FirePoisonWizardId, job.FirePoisonMagicianId, job.FirePoisonArchMagicianId,
+				job.IceLightningWizardId, job.IceLightningMagicianId, job.IceLightningArchMagicianId,
+				job.ClericId, job.PriestId, job.BishopId,
+				job.BlazeWizardStage1Id, job.BlazeWizardStage2Id, job.BlazeWizardStage3Id, job.BlazeWizardStage4Id) {
+				if job.IsCygnus(job.Id(c.JobId())) {
+					improvingMPSkillId = skill.BlazeWizardStage1ImprovedMaxMpIncreaseId
+				} else {
+					improvingMPSkillId = skill.MagicianImprovedMaxMpIncreaseId
+				}
 				resMax += 18
-			} else if job.IsA(c.JobId(), job.Bowman, job.WindArcher1, job.Thief, job.NightWalker1) {
+			} else if job.IsA(job.Id(c.JobId()),
+				job.BowmanId,
+				job.HunterId, job.RangerId, job.BowmasterId,
+				job.CrossbowmanId, job.SniperId, job.MarksmanId,
+				job.WindArcherStage1Id, job.WindArcherStage2Id, job.WindArcherStage3Id, job.WindArcherStage4Id,
+				job.RogueId,
+				job.AssassinId, job.HermitId, job.NightLordId,
+				job.BanditId, job.ChiefBanditId, job.ShadowerId,
+				job.NightWalkerStage1Id, job.NightWalkerStage2Id, job.NightWalkerStage3Id, job.NightWalkerStage4Id) {
 				resMax += 10
-			} else if job.IsA(c.JobId(), job.Pirate, job.ThunderBreaker1) {
+			} else if job.IsA(
+				job.PirateId,
+				job.BrawlerId, job.MarauderId, job.BuccaneerId,
+				job.GunslingerId, job.OutlawId, job.CorsairId,
+				job.ThunderBreakerStage1Id, job.ThunderBreakerStage2Id, job.ThunderBreakerStage3Id, job.ThunderBreakerStage4Id) {
 				resMax += 14
 			} else {
 				resMax += 6
 			}
 			// TODO this needs to incorporate computed total intelligence (buffs, weapons, etc)
 			resMax += uint16(math.Ceil(float64(c.Intelligence()) / 10))
+
+			if improvingMPSkillId > 0 {
+				var improvingMPSkillLevel = c.GetSkillLevel(uint32(improvingMPSkillId))
+				se, err := skill3.GetEffect(l)(ctx)(uint32(improvingMPSkillId), improvingMPSkillLevel)
+				if err == nil {
+					resMax = uint16(int16(resMax) + se.X())
+				}
+			}
+
 			return resMax, nil
 		}
 	}
@@ -946,6 +1044,7 @@ func ChangeHP(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) 
 					if err != nil {
 						return err
 					}
+					// TODO consider effective (temporary) Max HP.
 					adjusted := enforceBounds(amount, c.HP(), c.MaxHP(), 0)
 					l.Debugf("Attempting to adjust character [%d] health by [%d] to [%d].", characterId, amount, adjusted)
 					return dynamicUpdate(tx)(SetHealth(adjusted))(t.Id())(c)
@@ -967,10 +1066,11 @@ func ChangeMP(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) 
 		return func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
 			return func(worldId byte, channelId byte, characterId uint32, amount int16) error {
 				txErr := db.Transaction(func(tx *gorm.DB) error {
-					c, err := GetById(ctx)(db)()(characterId)
+					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
 						return err
 					}
+					// TODO consider effective (temporary) Max MP.
 					adjusted := enforceBounds(amount, c.MP(), c.MaxMP(), 0)
 					l.Debugf("Attempting to adjust character [%d] mana by [%d] to [%d].", characterId, amount, adjusted)
 					return dynamicUpdate(tx)(SetMana(adjusted))(t.Id())(c)
@@ -983,4 +1083,242 @@ func ChangeMP(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) 
 			}
 		}
 	}
+}
+
+func ProcessLevelChange(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount byte) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount byte) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount byte) error {
+			return func(worldId byte, channelId byte, characterId uint32, amount byte) error {
+				var addedAP uint16
+				var addedSP uint32
+				var addedHP uint16
+				var addedMP uint16
+
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					c, err := GetById(ctx)(tx)(SkillModelDecorator(l)(ctx))(characterId)
+					if err != nil {
+						return err
+					}
+
+					effectiveLevel := c.Level()
+
+					for i := range amount {
+						effectiveLevel = effectiveLevel + i + 1
+						addedAP += computeOnLevelAddedAP(job.Id(c.JobId()), effectiveLevel)
+						addedSP += computeOnLevelAddedSP(job.Id(c.JobId()))
+						// TODO could potentially pre-compute HP and MP so you don't incur loop cost
+						aHP, aMP := computeOnLevelAddedHPandMP(l)(ctx)(c)
+						addedHP += aHP
+						addedMP += aMP
+					}
+
+					l.Debugf("As a result of processing a level change of [%d]. Character [%d] will gain [%d] AP, [%d] SP, [%d] HP, and [%d] MP.", amount, characterId, addedAP, addedSP, addedHP, addedMP)
+					sb := getSkillBook(job.Id(c.JobId()))
+					return dynamicUpdate(tx)(SetAP(c.AP()+addedAP), SetSP(c.SP(sb)+addedSP, uint32(sb)), SetHealth(c.MaxHP()+addedHP), SetMaxHP(c.MaxHP()+addedHP), SetMana(c.MaxMP()+addedMP), SetMaxMP(c.MaxMP()+addedMP))(t.Id())(c)
+				})
+				if txErr != nil {
+					return txErr
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(worldId, channelId, characterId, []string{"AVAILABLE_AP", "AVAILABLE_SP", "HP", "MAX_HP", "MP", "MAX_MP"}))
+				return nil
+			}
+		}
+	}
+}
+
+func computeOnLevelAddedAP(jobId job.Id, level byte) uint16 {
+	toGain := uint16(5)
+	if job.IsCygnus(jobId) {
+		if level > 10 {
+			if level <= 17 {
+				toGain += 2
+			} else if level < 77 {
+				toGain += 1
+			}
+		}
+	}
+	return toGain
+}
+
+func computeOnLevelAddedSP(jobId job.Id) uint32 {
+	if job.IsBeginner(jobId) {
+		return 0
+	}
+	return 3
+}
+
+func computeOnLevelAddedHPandMP(l logrus.FieldLogger) func(ctx context.Context) func(c Model) (uint16, uint16) {
+	return func(ctx context.Context) func(c Model) (uint16, uint16) {
+		return func(c Model) (uint16, uint16) {
+			var addedHP uint16
+			var addedMP uint16
+			var improvingHPSkillId skill.Id
+			var improvingMPSkillId skill.Id
+
+			randBoundFunc := func(lower uint16, upper uint16) uint16 {
+				return uint16(rand.Float32()*float32(upper-lower+1)) + lower
+			}
+
+			if job.IsBeginner(job.Id(c.JobId())) {
+				addedHP = randBoundFunc(12, 16)
+				addedMP = randBoundFunc(10, 12)
+			} else if job.IsA(job.Id(c.JobId()),
+				job.WarriorId,
+				job.FighterId, job.CrusaderId, job.HeroId,
+				job.PageId, job.CrusaderId, job.WhiteKnightId,
+				job.SpearmanId, job.DragonKnightId, job.DarkKnightId,
+				job.DawnWarriorStage1Id, job.DawnWarriorStage2Id, job.DawnWarriorStage3Id, job.DawnWarriorStage4Id) {
+				if job.IsCygnus(job.Id(c.JobId())) {
+					improvingHPSkillId = skill.DawnWarriorStage1ImprovedMaxHpIncreaseId
+				} else {
+					improvingHPSkillId = skill.WarriorImprovedMaxHpIncreaseId
+				}
+				if job.IsA(job.Id(c.JobId()), job.CrusaderId, job.WhiteKnightId) {
+					improvingMPSkillId = skill.WhiteKnightImprovingMpRecoveryId
+				} else if job.IsA(job.Id(c.JobId()), job.DawnWarriorStage3Id, job.DawnWarriorStage4Id) {
+					improvingMPSkillId = skill.DawnWarriorStage3ImprovedMpRecoveryId
+				}
+				addedHP = randBoundFunc(24, 28)
+				addedMP = randBoundFunc(4, 6)
+			} else if job.IsA(job.Id(c.JobId()),
+				job.MagicianId,
+				job.FirePoisonWizardId, job.FirePoisonMagicianId, job.FirePoisonArchMagicianId,
+				job.IceLightningWizardId, job.IceLightningMagicianId, job.IceLightningArchMagicianId,
+				job.ClericId, job.PriestId, job.BishopId,
+				job.BlazeWizardStage1Id, job.BlazeWizardStage2Id, job.BlazeWizardStage3Id, job.BlazeWizardStage4Id) {
+				if job.IsCygnus(job.Id(c.JobId())) {
+					improvingMPSkillId = skill.BlazeWizardStage1ImprovedMaxMpIncreaseId
+				} else {
+					improvingMPSkillId = skill.MagicianImprovedMaxMpIncreaseId
+				}
+				addedHP = randBoundFunc(10, 14)
+				addedMP = randBoundFunc(22, 24)
+			} else if job.IsA(job.Id(c.JobId()),
+				job.BowmanId,
+				job.HunterId, job.RangerId, job.BowmasterId,
+				job.CrossbowmanId, job.SniperId, job.MarksmanId,
+				job.WindArcherStage1Id, job.WindArcherStage2Id, job.WindArcherStage3Id, job.WindArcherStage4Id,
+				job.RogueId,
+				job.AssassinId, job.HermitId, job.NightLordId,
+				job.BanditId, job.ChiefBanditId, job.ShadowerId,
+				job.NightWalkerStage1Id, job.NightWalkerStage2Id, job.NightWalkerStage3Id, job.NightWalkerStage4Id) {
+				addedHP = randBoundFunc(20, 24)
+				addedMP = randBoundFunc(14, 16)
+			} else if job.IsA(job.Id(c.JobId()), job.GmId, job.SuperGmId) {
+				addedHP = 30000
+				addedMP = 30000
+			} else if job.IsA(
+				job.PirateId,
+				job.BrawlerId, job.MarauderId, job.BuccaneerId,
+				job.GunslingerId, job.OutlawId, job.CorsairId,
+				job.ThunderBreakerStage1Id, job.ThunderBreakerStage2Id, job.ThunderBreakerStage3Id, job.ThunderBreakerStage4Id) {
+				if job.IsCygnus(job.Id(c.JobId())) {
+					improvingHPSkillId = skill.ThunderBreakerStage2ImprovedMaxHpIncreaseId
+				} else {
+					improvingHPSkillId = skill.BrawlerImproveMaxHpId
+				}
+				addedHP = randBoundFunc(22, 28)
+				addedMP = randBoundFunc(18, 23)
+			} else if job.IsA(job.Id(c.JobId()), job.AranStage1Id, job.AranStage2Id, job.AranStage3Id, job.AranStage4Id) {
+				addedHP = randBoundFunc(44, 48)
+				addedMP = randBoundFunc(4, 8)
+			}
+
+			if improvingHPSkillId > 0 {
+				var improvingHPSkillLevel = c.GetSkillLevel(uint32(improvingHPSkillId))
+				se, err := skill3.GetEffect(l)(ctx)(uint32(improvingHPSkillId), improvingHPSkillLevel)
+				if err == nil {
+					addedHP = uint16(int16(addedHP) + se.X())
+				}
+			}
+			if improvingMPSkillId > 0 {
+				var improvingMPSkillLevel = c.GetSkillLevel(uint32(improvingMPSkillId))
+				se, err := skill3.GetEffect(l)(ctx)(uint32(improvingMPSkillId), improvingMPSkillLevel)
+				if err == nil {
+					addedMP = uint16(int16(addedMP) + se.X())
+				}
+			}
+			return addedHP, addedMP
+		}
+	}
+}
+
+func ProcessJobChange(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
+			return func(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
+				var addedAP uint16
+				var addedSP uint32
+				var addedHP uint16
+				var addedMP uint16
+
+				randBoundFunc := func(lower uint16, upper uint16) uint16 {
+					return uint16(rand.Float32()*float32(upper-lower+1)) + lower
+				}
+
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					c, err := GetById(ctx)(tx)(SkillModelDecorator(l)(ctx))(characterId)
+					if err != nil {
+						return err
+					}
+
+					// TODO award job change AP is this only Cygnus?
+					if job.IsCygnus(job.Id(jobId)) {
+						addedAP = 7
+					}
+
+					addedSP = 1
+					if job.IsA(job.Id(jobId), job.EvanId, job.EvanStage1Id, job.EvanStage2Id, job.EvanStage3Id, job.EvanStage4Id, job.EvanStage5Id, job.EvanStage6Id, job.EvanStage7Id, job.EvanStage8Id, job.EvanStage9Id, job.EvanStage10Id) {
+						addedAP += 2
+					} else if job.IsFourthJob(job.Id(jobId)) {
+						addedSP += 2
+					}
+
+					if job.IsA(job.Id(jobId), job.WarriorId, job.DawnWarriorStage1Id, job.AranStage1Id) {
+						addedHP = randBoundFunc(200, 250)
+					} else if job.IsA(job.Id(jobId), job.MagicianId, job.BlazeWizardStage1Id, job.EvanStage1Id) {
+						addedMP = randBoundFunc(100, 150)
+					} else if job.IsA(job.Id(jobId), job.BowmanId, job.RogueId, job.PirateId, job.WindArcherStage1Id, job.NightWalkerStage1Id, job.ThunderBreakerStage1Id) {
+						addedHP = randBoundFunc(100, 150)
+						addedMP = randBoundFunc(25, 50)
+					} else if job.IsA(job.Id(jobId),
+						job.FighterId, job.CrusaderId, job.HeroId,
+						job.PageId, job.CrusaderId, job.WhiteKnightId,
+						job.SpearmanId, job.DragonKnightId, job.DarkKnightId,
+						job.DawnWarriorStage2Id, job.DawnWarriorStage3Id, job.DawnWarriorStage4Id,
+						job.AranStage2Id, job.AranStage3Id, job.AranStage4Id) {
+						addedHP = randBoundFunc(300, 350)
+					} else if job.IsA(job.Id(jobId),
+						job.FirePoisonWizardId, job.FirePoisonMagicianId, job.FirePoisonArchMagicianId,
+						job.IceLightningWizardId, job.IceLightningMagicianId, job.IceLightningArchMagicianId,
+						job.ClericId, job.PriestId, job.BishopId,
+						job.BlazeWizardStage2Id, job.BlazeWizardStage3Id, job.BlazeWizardStage4Id,
+						job.EvanStage2Id, job.EvanStage3Id, job.EvanStage4Id, job.EvanStage5Id, job.EvanStage6Id, job.EvanStage7Id, job.EvanStage8Id, job.EvanStage9Id, job.EvanStage10Id) {
+						addedMP = randBoundFunc(450, 500)
+					} else if !job.IsBeginner(job.Id(jobId)) {
+						addedHP = randBoundFunc(300, 350)
+						addedMP = randBoundFunc(150, 200)
+					}
+
+					l.Debugf("As a result of processing a job change to [%d]. Character [%d] will gain [%d] AP, [%d] SP, [%d] HP, and [%d] MP.", jobId, characterId, addedAP, addedSP, addedHP, addedMP)
+					sb := getSkillBook(job.Id(c.JobId()))
+					return dynamicUpdate(tx)(SetAP(c.AP()+addedAP), SetSP(c.SP(sb)+addedSP, uint32(sb)), SetHealth(c.MaxHP()+addedHP), SetMaxHP(c.MaxHP()+addedHP), SetMana(c.MaxMP()+addedMP), SetMaxMP(c.MaxMP()+addedMP))(t.Id())(c)
+				})
+				if txErr != nil {
+					return txErr
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(worldId, channelId, characterId, []string{"AVAILABLE_AP", "AVAILABLE_SP", "HP", "MAX_HP", "MP", "MAX_MP"}))
+				return nil
+			}
+		}
+	}
+}
+
+func getSkillBook(jobId job.Id) int {
+	if jobId >= job.EvanStage2Id && jobId <= job.EvanStage10Id {
+		return int(jobId - 2209)
+	}
+	return 0
 }

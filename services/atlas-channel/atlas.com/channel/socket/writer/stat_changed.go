@@ -4,6 +4,7 @@ import (
 	"atlas-channel/socket/model"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
+	"sort"
 )
 
 const (
@@ -37,6 +38,10 @@ func StatChangedBody(l logrus.FieldLogger) func(updates []model.StatUpdate, excl
 	return func(updates []model.StatUpdate, exclRequestSent bool) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteBool(exclRequestSent)
+
+			sort.Slice(updates, func(i, j int) bool {
+				return getStatIndex(l)(options, updates[i].Stat()) < getStatIndex(l)(options, updates[j].Stat())
+			})
 
 			updateMask := uint32(0)
 			for _, u := range updates {

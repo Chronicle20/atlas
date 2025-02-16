@@ -566,7 +566,7 @@ func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(db *go
 				}
 
 				l.Debugf("Attempting to award character [%d] [%d] experience.", characterId, amount)
-				willLevel := false
+				awardedLevels := byte(0)
 				current := uint32(0)
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)()(characterId)
@@ -574,11 +574,11 @@ func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(db *go
 						return err
 					}
 
-					if c.Experience()+amount >= GetExperienceNeededForLevel(c.Level()) {
-						current = c.Experience() + amount - GetExperienceNeededForLevel(c.Level())
-						willLevel = true
-					} else {
-						current = c.Experience() + amount
+					curLevel := c.Level()
+					current = c.Experience() + amount
+					for current > GetExperienceNeededForLevel(curLevel) {
+						current -= GetExperienceNeededForLevel(curLevel)
+						curLevel += 1
 					}
 
 					err = dynamicUpdate(tx)(SetExperience(current))(t.Id())(c)
@@ -594,8 +594,8 @@ func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(db *go
 
 				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(experienceChangedEventProvider(characterId, worldId, channelId, experience, current))
 				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(worldId, channelId, characterId, []string{"EXPERIENCE"}))
-				if willLevel {
-					_ = producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(awardLevelCommandProvider(characterId, worldId, channelId, 1))
+				if awardedLevels > 0 {
+					_ = producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(awardLevelCommandProvider(characterId, worldId, channelId, awardedLevels))
 				}
 				return nil
 			}
@@ -1094,6 +1094,9 @@ func ProcessLevelChange(l logrus.FieldLogger) func(ctx context.Context) func(db 
 				var addedSP uint32
 				var addedHP uint16
 				var addedMP uint16
+				var addedStr uint16
+				var addedDex uint16
+				var sus = []string{"AVAILABLE_AP", "AVAILABLE_SP", "HP", "MAX_HP", "MP", "MAX_MP"}
 
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)(SkillModelDecorator(l)(ctx))(characterId)
@@ -1105,7 +1108,23 @@ func ProcessLevelChange(l logrus.FieldLogger) func(ctx context.Context) func(db 
 
 					for i := range amount {
 						effectiveLevel = effectiveLevel + i + 1
-						addedAP += computeOnLevelAddedAP(job.Id(c.JobId()), effectiveLevel)
+
+						if t.Region() == "GMS" && t.MajorVersion() == 83 {
+							// TODO properly define this range. For these versions, Beginner, Noblesse, and Legend AP are auto assigned.
+							if job.IsBeginner(job.Id(c.JobId())) && effectiveLevel < 11 {
+								if effectiveLevel < 6 {
+									addedStr += 5
+								} else {
+									addedStr += 4
+									addedDex += 1
+								}
+							} else {
+								addedAP += computeOnLevelAddedAP(job.Id(c.JobId()), effectiveLevel)
+							}
+						} else {
+							addedAP += computeOnLevelAddedAP(job.Id(c.JobId()), effectiveLevel)
+						}
+
 						addedSP += computeOnLevelAddedSP(job.Id(c.JobId()))
 						// TODO could potentially pre-compute HP and MP so you don't incur loop cost
 						aHP, aMP := computeOnLevelAddedHPandMP(l)(ctx)(c)
@@ -1115,12 +1134,31 @@ func ProcessLevelChange(l logrus.FieldLogger) func(ctx context.Context) func(db 
 
 					l.Debugf("As a result of processing a level change of [%d]. Character [%d] will gain [%d] AP, [%d] SP, [%d] HP, and [%d] MP.", amount, characterId, addedAP, addedSP, addedHP, addedMP)
 					sb := getSkillBook(job.Id(c.JobId()))
-					return dynamicUpdate(tx)(SetAP(c.AP()+addedAP), SetSP(c.SP(sb)+addedSP, uint32(sb)), SetHealth(c.MaxHP()+addedHP), SetMaxHP(c.MaxHP()+addedHP), SetMana(c.MaxMP()+addedMP), SetMaxMP(c.MaxMP()+addedMP))(t.Id())(c)
+
+					var eufs = []EntityUpdateFunction{
+						SetAP(c.AP() + addedAP),
+						SetSP(c.SP(sb)+addedSP, uint32(sb)),
+						SetHealth(c.MaxHP() + addedHP),
+						SetMaxHP(c.MaxHP() + addedHP),
+						SetMana(c.MaxMP() + addedMP),
+						SetMaxMP(c.MaxMP() + addedMP),
+					}
+
+					if addedStr > 0 {
+						eufs = append(eufs, SetStrength(c.Strength()+addedStr))
+						sus = append(sus, "STRENGTH")
+					}
+					if addedDex > 0 {
+						eufs = append(eufs, SetDexterity(c.Dexterity()+addedDex))
+						sus = append(sus, "DEXTERITY")
+					}
+
+					return dynamicUpdate(tx)(eufs...)(t.Id())(c)
 				})
 				if txErr != nil {
 					return txErr
 				}
-				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(worldId, channelId, characterId, []string{"AVAILABLE_AP", "AVAILABLE_SP", "HP", "MAX_HP", "MP", "MAX_MP"}))
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(worldId, channelId, characterId, sus))
 				return nil
 			}
 		}
@@ -1142,6 +1180,7 @@ func computeOnLevelAddedAP(jobId job.Id, level byte) uint16 {
 }
 
 func computeOnLevelAddedSP(jobId job.Id) uint32 {
+	// TODO need to account for 6 beginner skill levels
 	if job.IsBeginner(jobId) {
 		return 0
 	}

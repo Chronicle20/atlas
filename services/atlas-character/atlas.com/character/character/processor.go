@@ -1207,3 +1207,16 @@ func computeAddedHPandMP(l logrus.FieldLogger) func(ctx context.Context) func(c 
 		}
 	}
 }
+
+func ProcessJobChange(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
+		return func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
+			return func(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
+				// TODO award job change AP?
+				// TODO award job change SP.
+				// TODO award job change HP / MP increase
+				return nil
+			}
+		}
+	}
+}

@@ -41,6 +41,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent)))
 			t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLevelChangedStatusEvent(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleJobChangedStatusEvent(db))))
 		}
 	}
 }
@@ -173,6 +174,15 @@ func handleLevelChangedStatusEvent(db *gorm.DB) message.Handler[statusEvent[leve
 			return
 		}
 		_ = character.ProcessLevelChange(l)(ctx)(db)(e.WorldId, e.Body.ChannelId, e.CharacterId, e.Body.Amount)
+	}
+}
+
+func handleJobChangedStatusEvent(db *gorm.DB) message.Handler[statusEvent[jobChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[jobChangedStatusEventBody]) {
+		if e.Type != StatusEventTypeJobChanged {
+			return
+		}
+		_ = character.ProcessJobChange(l)(ctx)(db)(e.WorldId, e.Body.ChannelId, e.CharacterId, e.Body.JobId)
 	}
 }
 

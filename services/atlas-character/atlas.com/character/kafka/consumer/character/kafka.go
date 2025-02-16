@@ -104,6 +104,7 @@ type changeMPBody struct {
 
 const (
 	EnvEventTopicCharacterStatus = "EVENT_TOPIC_CHARACTER_STATUS"
+	StatusEventTypeJobChanged    = "JOB_CHANGED"
 	StatusEventTypeLevelChanged  = "LEVEL_CHANGED"
 )
 
@@ -112,6 +113,11 @@ type statusEvent[E any] struct {
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
+}
+
+type jobChangedStatusEventBody struct {
+	ChannelId byte   `json:"channelId"`
+	JobId     uint16 `json:"jobId"`
 }
 
 type levelChangedStatusEventBody struct {

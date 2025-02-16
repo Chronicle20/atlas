@@ -239,6 +239,7 @@ func produceWriters() []string {
 		writer.CharacterAttackRanged,
 		writer.CharacterAttackMagic,
 		writer.CharacterAttackEnergy,
+		writer.CharacterDamage,
 	}
 }
 

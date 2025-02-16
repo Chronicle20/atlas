@@ -915,7 +915,7 @@ func RequestDistributeSp(l logrus.FieldLogger) func(ctx context.Context) func(db
 						return errors.New("unable to locate job from skill")
 					}
 					sb := getSkillBook(sjid.Id())
-					if c.SP(sb) <= uint32(amount) {
+					if c.SP(sb) < uint32(amount) {
 						return errors.New("not enough sp")
 					}
 					return dynamicUpdate(tx)(SetSP(c.SP(sb)-uint32(amount), uint32(sb)))(t.Id())(c)

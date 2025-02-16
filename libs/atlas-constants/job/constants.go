@@ -1283,3 +1283,7 @@ func IsFourthJob(jobId Id) bool {
 	}
 	return j.IsFourthJob()
 }
+
+func IsBeginner(jobId Id) bool {
+	return IsA(jobId, BeginnerId, NoblesseId, LegendId, EvanId)
+}

@@ -22,6 +22,7 @@ func CharacterDamageBody(l logrus.FieldLogger) func(ctx context.Context) func(c 
 				if di.AttackIdx() == model.DamageTypePhysical || di.AttackIdx() == model.DamageTypeMagic {
 					w.WriteInt(di.MonsterTemplateId())
 					w.WriteBool(di.Left())
+
 					stance := false
 					w.WriteBool(stance)
 					if stance {
@@ -38,11 +39,11 @@ func CharacterDamageBody(l logrus.FieldLogger) func(ctx context.Context) func(c 
 							w.WriteInt16(0)
 							w.WriteInt16(0)
 						}
-						if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-							w.WriteByte(0) // bGuard
-						}
-						w.WriteByte(0) // something that on &1 and &2 may relate to stance
 					}
+					if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+						w.WriteByte(0) // bGuard
+					}
+					w.WriteByte(0) // something that on &1 and &2 may relate to stance
 				}
 				w.WriteInt32(di.Damage())
 				if di.Damage() == -1 {

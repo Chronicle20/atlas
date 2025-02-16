@@ -50,7 +50,7 @@ type DamageTakenInfo struct {
 	expression        byte
 }
 
-func (d DamageTakenInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(r *request.Reader) {
+func (d *DamageTakenInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(r *request.Reader) {
 	return func(r *request.Reader) {
 		d.updateTime = r.ReadUint32()
 		d.nAttackIdx = DamageType(r.ReadInt8())
@@ -89,30 +89,30 @@ func (d DamageTakenInfo) Decode(l logrus.FieldLogger, t tenant.Model, options ma
 	}
 }
 
-func (d DamageTakenInfo) AttackIdx() DamageType {
+func (d *DamageTakenInfo) AttackIdx() DamageType {
 	return d.nAttackIdx
 }
 
-func (d DamageTakenInfo) Damage() int32 {
+func (d *DamageTakenInfo) Damage() int32 {
 	return d.damage
 }
 
-func (d DamageTakenInfo) MonsterTemplateId() uint32 {
+func (d *DamageTakenInfo) MonsterTemplateId() uint32 {
 	return d.monsterTemplateId
 }
 
-func (d DamageTakenInfo) Left() bool {
+func (d *DamageTakenInfo) Left() bool {
 	return d.left
 }
 
-func (d DamageTakenInfo) PowerGuard() bool {
+func (d *DamageTakenInfo) PowerGuard() bool {
 	return d.bPowerGuard
 }
 
-func (d DamageTakenInfo) HitX() int16 {
+func (d *DamageTakenInfo) HitX() int16 {
 	return d.hitX
 }
 
-func (d DamageTakenInfo) HitY() int16 {
+func (d *DamageTakenInfo) HitY() int16 {
 	return d.hitY
 }

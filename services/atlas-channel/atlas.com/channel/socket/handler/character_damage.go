@@ -44,5 +44,7 @@ func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			}
 			return nil
 		})
+
+		_ = character.ChangeHP(l)(ctx)(s.WorldId(), s.ChannelId(), s.CharacterId(), -int16(di.Damage()))
 	}
 }

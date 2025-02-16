@@ -277,6 +277,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterMeleeAttackHandle] = handler.CharacterMeleeAttackHandleFunc
 	handlerMap[handler.CharacterRangedAttackHandle] = handler.CharacterRangedAttackHandleFunc
 	handlerMap[handler.CharacterMagicAttackHandle] = handler.CharacterMagicAttackHandleFunc
+	handlerMap[handler.CharacterDamageHandle] = handler.CharacterDamageHandleFunc
 	return handlerMap
 }
 

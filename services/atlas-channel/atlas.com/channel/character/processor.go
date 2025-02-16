@@ -172,3 +172,19 @@ func RequestDropMeso(l logrus.FieldLogger) func(ctx context.Context) func(worldI
 		}
 	}
 }
+
+func ChangeHP(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
+		return func(worldId byte, channelId byte, characterId uint32, amount int16) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeHPCommandProvider(worldId, channelId, characterId, amount))
+		}
+	}
+}
+
+func ChangeMP(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
+		return func(worldId byte, channelId byte, characterId uint32, amount int16) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeMPCommandProvider(worldId, channelId, characterId, amount))
+		}
+	}
+}

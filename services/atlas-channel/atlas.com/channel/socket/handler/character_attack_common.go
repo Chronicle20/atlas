@@ -74,6 +74,34 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						return nil
 					})
 
+					// TODO apply cooldown
+					// TODO cancel dark sight / wind walk
+					// TODO apply combo orbs (add or consume)
+					// TODO decrease HP from DragonKnight Sacrifice
+					// TODO apply attack effect (heal, mp consumption, dispel, cure all, combo reset, etc)
+					// TODO destroy Chief Bandit exploded mesos
+					// TODO apply Pick Pocket
+					// TODO increase HP from Energy Drain, Vampire, or Drain
+					// TODO apply Bandit Steal
+					// TODO Fire Demon ice weaken
+					// TODO Ice Demon fire weaken
+					// TODO Homing Beacon / Bullseye
+					// TODO Flame Thrower
+					// TODO Snow Charge
+					// TODO Hamstring
+					// TODO Slow
+					// TODO Blind
+					// TODO Paladin / White Knight charges
+					// TODO Combo Drain
+					// TODO Mortal Blow
+					// TODO Three Snails consumption
+					// TODO Heavens Hammer
+					// TODO ComboTempest
+					// TODO BodyPressure
+					// TODO Monster Weapon Atk Reflect
+					// TODO Monster Magic Atk Reflect
+					// TODO Apply MPEater
+
 					return nil
 				}
 			}

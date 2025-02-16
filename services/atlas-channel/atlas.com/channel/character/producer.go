@@ -35,6 +35,34 @@ func requestDropMesoCommandProvider(worldId byte, channelId byte, mapId uint32, 
 	return producer.SingleMessageProvider(key, value)
 }
 
+func changeHPCommandProvider(worldId byte, channelId byte, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[changeHPCommandBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        CommandChangeHP,
+		Body: changeHPCommandBody{
+			ChannelId: channelId,
+			Amount:    amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func changeMPCommandProvider(worldId byte, channelId byte, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[changeMPCommandBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        CommandChangeMP,
+		Body: changeMPCommandBody{
+			ChannelId: channelId,
+			Amount:    amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func move(worldId byte, channelId byte, mapId uint32, characterId uint32, mm model2.Movement) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 

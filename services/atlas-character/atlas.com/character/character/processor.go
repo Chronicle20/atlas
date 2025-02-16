@@ -579,6 +579,7 @@ func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(db *go
 					for current > GetExperienceNeededForLevel(curLevel) {
 						current -= GetExperienceNeededForLevel(curLevel)
 						curLevel += 1
+						awardedLevels += 1
 					}
 
 					err = dynamicUpdate(tx)(SetExperience(current))(t.Id())(c)

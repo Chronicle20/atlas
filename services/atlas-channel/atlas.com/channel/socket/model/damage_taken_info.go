@@ -32,11 +32,11 @@ type DamageTakenInfo struct {
 	updateTime        uint32
 	nAttackIdx        DamageType
 	nMagicElemAttr    DamageElementType
-	damage            uint32
+	damage            int32
 	obstacleData      int16
 	monsterTemplateId uint32
 	monsterId         uint32
-	direction         byte
+	left              bool
 	nX                byte
 	bGuard            bool
 	relativeDir       byte
@@ -55,15 +55,12 @@ func (d DamageTakenInfo) Decode(l logrus.FieldLogger, t tenant.Model, options ma
 		d.updateTime = r.ReadUint32()
 		d.nAttackIdx = DamageType(r.ReadInt8())
 		d.nMagicElemAttr = DamageElementType(r.ReadInt8())
-		d.damage = r.ReadUint32()
+		d.damage = r.ReadInt32()
 
-		if d.nAttackIdx == DamageTypeObstacle {
-			// not a monster, but an obstacle?
-			d.obstacleData = r.ReadInt16()
-		} else if d.nAttackIdx == DamageTypePhysical || d.nAttackIdx == DamageTypeMagic {
+		if d.nAttackIdx == DamageTypePhysical || d.nAttackIdx == DamageTypeMagic {
 			d.monsterTemplateId = r.ReadUint32()
 			d.monsterId = r.ReadUint32()
-			d.direction = r.ReadByte()
+			d.left = r.ReadBool()
 
 			d.nX = r.ReadByte()
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
@@ -77,14 +74,45 @@ func (d DamageTakenInfo) Decode(l logrus.FieldLogger, t tenant.Model, options ma
 			d.hitY = r.ReadInt16()
 			d.characterX = r.ReadInt16()
 			d.characterY = r.ReadInt16()
+		} else {
+			// not a monster, but an obstacle?
+			d.obstacleData = r.ReadInt16()
 		}
 		d.expression = r.ReadByte()
 
 		l.Debugf("Character [%d] has taken [%d] damage. updateTime [%d], nAttackIdx [%d], nMagicElemAttr [%d] obstacleData [%d]"+
-			", monsterTemplate [%d], monsterId [%d], direction [%d], nX [%d], bGuard [%t], relativeDir [%d], bPowerGuard [%t], monsterId2 [%d], "+
+			", monsterTemplate [%d], monsterId [%d], left [%t], nX [%d], bGuard [%t], relativeDir [%d], bPowerGuard [%t], monsterId2 [%d], "+
 			"powerGuard [%t], hit x,y [%d,%d], character x,y [%d, %d], expression [%d].",
-			d.characterId, d.damage, d.updateTime, d.nAttackIdx, d.nMagicElemAttr, d.obstacleData, d.monsterTemplateId, d.monsterId, d.direction, d.nX,
+			d.characterId, d.damage, d.updateTime, d.nAttackIdx, d.nMagicElemAttr, d.obstacleData, d.monsterTemplateId, d.monsterId, d.left, d.nX,
 			d.bGuard, d.relativeDir, d.bPowerGuard, d.monsterId2, d.powerGuard, d.hitX, d.hitY, d.characterX, d.characterY, d.expression)
 
 	}
+}
+
+func (d DamageTakenInfo) AttackIdx() DamageType {
+	return d.nAttackIdx
+}
+
+func (d DamageTakenInfo) Damage() int32 {
+	return d.damage
+}
+
+func (d DamageTakenInfo) MonsterTemplateId() uint32 {
+	return d.monsterTemplateId
+}
+
+func (d DamageTakenInfo) Left() bool {
+	return d.left
+}
+
+func (d DamageTakenInfo) PowerGuard() bool {
+	return d.bPowerGuard
+}
+
+func (d DamageTakenInfo) HitX() int16 {
+	return d.hitX
+}
+
+func (d DamageTakenInfo) HitY() int16 {
+	return d.hitY
 }

@@ -928,7 +928,7 @@ func RequestDistributeSp(l logrus.FieldLogger) func(ctx context.Context) func(db
 				if val := c.GetSkill(skillId); val.Id() != skillId {
 					_ = skill2.RequestCreate(l)(ctx)(characterId, skillId, byte(amount), 0, time.Time{})
 				} else {
-					_ = skill2.RequestUpdate(l)(ctx)(characterId, skillId, byte(amount), val.MasterLevel(), val.Expiration())
+					_ = skill2.RequestUpdate(l)(ctx)(characterId, skillId, val.Level()+byte(amount), val.MasterLevel(), val.Expiration())
 				}
 				return nil
 			}

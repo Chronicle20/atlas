@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-character/equipment"
 	"atlas-character/inventory"
+	"atlas-character/skill"
 	"github.com/Chronicle20/atlas-constants/job"
 	"strconv"
 	"strings"
@@ -39,6 +40,7 @@ type Model struct {
 	gm                 int
 	equipment          equipment.Model
 	inventory          inventory.Model
+	skills             []skill.Model
 }
 
 func (m Model) HP() uint16 {
@@ -82,19 +84,11 @@ func (m Model) Level() byte {
 }
 
 func (m Model) MaxClassLevel() byte {
-	if m.Cygnus() {
+	if job.IsCygnus(job.Id(m.jobId)) {
 		return 120
 	} else {
 		return 200
 	}
-}
-
-func (m Model) Cygnus() bool {
-	return m.JobType() == 1
-}
-
-func (m Model) JobType() uint16 {
-	return m.jobId / 1000
 }
 
 func (m Model) Experience() uint32 {
@@ -198,6 +192,15 @@ func (m Model) GetEquipment() equipment.Model {
 	return m.equipment
 }
 
+func (m Model) GetSkillLevel(skillId uint32) byte {
+	for _, s := range m.skills {
+		if s.Id() == skillId {
+			return s.Level()
+		}
+	}
+	return 0
+}
+
 type modelBuilder struct {
 	id                 uint32
 	accountId          uint32
@@ -229,6 +232,7 @@ type modelBuilder struct {
 	meso               uint32
 	equipment          equipment.Model
 	inventory          inventory.Model
+	skills             []skill.Model
 }
 
 func NewModelBuilder() *modelBuilder {
@@ -267,6 +271,7 @@ func CloneModel(m Model) *modelBuilder {
 		meso:               m.meso,
 		equipment:          m.equipment,
 		inventory:          m.inventory,
+		skills:             m.skills,
 	}
 }
 
@@ -436,6 +441,7 @@ func (c *modelBuilder) Build() Model {
 		meso:               c.meso,
 		equipment:          c.equipment,
 		inventory:          c.inventory,
+		skills:             c.skills,
 	}
 }
 
@@ -451,5 +457,10 @@ func (c *modelBuilder) SetInventory(i inventory.Model) *modelBuilder {
 
 func (c *modelBuilder) SetEquipment(e equipment.Model) *modelBuilder {
 	c.equipment = e
+	return c
+}
+
+func (c *modelBuilder) SetSkills(s []skill.Model) *modelBuilder {
+	c.skills = s
 	return c
 }

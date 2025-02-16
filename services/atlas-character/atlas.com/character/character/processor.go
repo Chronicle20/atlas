@@ -926,9 +926,9 @@ func RequestDistributeSp(l logrus.FieldLogger) func(ctx context.Context) func(db
 				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{"AVAILABLE_SP"}))
 
 				if val := c.GetSkill(skillId); val.Id() != skillId {
-					_ = skill2.RequestUpdate(l)(ctx)(characterId, skillId, byte(amount), val.MasterLevel(), val.Expiration())
-				} else {
 					_ = skill2.RequestCreate(l)(ctx)(characterId, skillId, byte(amount), 0, time.Time{})
+				} else {
+					_ = skill2.RequestUpdate(l)(ctx)(characterId, skillId, byte(amount), val.MasterLevel(), val.Expiration())
 				}
 				return nil
 			}

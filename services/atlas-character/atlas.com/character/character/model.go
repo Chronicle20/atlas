@@ -3,7 +3,7 @@ package character
 import (
 	"atlas-character/equipment"
 	"atlas-character/inventory"
-	"atlas-character/job"
+	"github.com/Chronicle20/atlas-constants/job"
 	"strconv"
 	"strings"
 )
@@ -110,7 +110,7 @@ func (m Model) Id() uint32 {
 }
 
 func (m Model) IsBeginner() bool {
-	return m.jobId == job.Beginner || m.jobId == job.Noblesse || m.jobId == job.Legend
+	return job.IsBeginner(job.Id(m.JobId()))
 }
 
 func (m Model) AP() uint16 {

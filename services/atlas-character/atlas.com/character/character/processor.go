@@ -6,17 +6,18 @@ import (
 	"atlas-character/equipment"
 	"atlas-character/equipment/slot"
 	"atlas-character/inventory"
-	"atlas-character/job"
 	"atlas-character/kafka/producer"
 	"atlas-character/portal"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"math"
 	"regexp"
+	"strconv"
 )
 
 var blockedNameErr = errors.New("blocked name")
@@ -887,14 +888,37 @@ func getMaxHpGrowth(_ logrus.FieldLogger) func(ctx context.Context) func(c Model
 				return c.MaxHP(), errors.New("max ap to hp")
 			}
 			resMax := c.MaxHP()
-			if job.IsA(c.JobId(), job.Warrior, job.DawnWarrior1, job.Aran1) {
+			if job.IsA(job.Id(c.JobId()),
+				job.WarriorId,
+				job.FighterId, job.CrusaderId, job.HeroId,
+				job.PageId, job.CrusaderId, job.WhiteKnightId,
+				job.SpearmanId, job.DragonKnightId, job.DarkKnightId,
+				job.DawnWarriorStage1Id, job.DawnWarriorStage2Id, job.DawnWarriorStage3Id, job.DawnWarriorStage4Id,
+				job.AranStage1Id, job.AranStage2Id, job.AranStage3Id, job.AranStage4Id) {
 				// TODO include MAX_HP_INCREASE skill
 				resMax += 20
-			} else if job.IsA(c.JobId(), job.Magician, job.BlazeWizard1) {
+			} else if job.IsA(job.Id(c.JobId()),
+				job.MagicianId,
+				job.FirePoisonWizardId, job.FirePoisonMagicianId, job.FirePoisonArchMagicianId,
+				job.IceLightningWizardId, job.IceLightningMagicianId, job.IceLightningArchMagicianId,
+				job.ClericId, job.PriestId, job.BishopId,
+				job.BlazeWizardStage1Id, job.BlazeWizardStage2Id, job.BlazeWizardStage3Id, job.BlazeWizardStage4Id) {
 				resMax += 6
-			} else if job.IsA(c.JobId(), job.Bowman, job.WindArcher1, job.Thief, job.NightWalker1) {
+			} else if job.IsA(job.Id(c.JobId()),
+				job.BowmanId,
+				job.HunterId, job.RangerId, job.BowmasterId,
+				job.CrossbowmanId, job.SniperId, job.MarksmanId,
+				job.WindArcherStage1Id, job.WindArcherStage2Id, job.WindArcherStage3Id, job.WindArcherStage4Id,
+				job.RogueId,
+				job.AssassinId, job.HermitId, job.NightLordId,
+				job.BanditId, job.ChiefBanditId, job.ShadowerId,
+				job.NightWalkerStage1Id, job.NightWalkerStage2Id, job.NightWalkerStage3Id, job.NightWalkerStage4Id) {
 				resMax += 16
-			} else if job.IsA(c.JobId(), job.Pirate, job.ThunderBreaker1) {
+			} else if job.IsA(job.Id(c.JobId()),
+				job.PirateId,
+				job.BrawlerId, job.MarauderId, job.BuccaneerId,
+				job.GunslingerId, job.OutlawId, job.CorsairId,
+				job.ThunderBreakerStage1Id, job.ThunderBreakerStage2Id, job.ThunderBreakerStage3Id, job.ThunderBreakerStage4Id) {
 				// TODO include IMPROVE_MAX_HP
 				resMax += 18
 			} else {
@@ -912,14 +936,37 @@ func getMaxMpGrowth(_ logrus.FieldLogger) func(ctx context.Context) func(c Model
 				return c.MaxMP(), errors.New("max ap to mp")
 			}
 			resMax := c.MaxMP()
-			if job.IsA(c.JobId(), job.Warrior, job.DawnWarrior1, job.Aran1) {
+			if job.IsA(job.Id(c.JobId()),
+				job.WarriorId,
+				job.FighterId, job.CrusaderId, job.HeroId,
+				job.PageId, job.CrusaderId, job.WhiteKnightId,
+				job.SpearmanId, job.DragonKnightId, job.DarkKnightId,
+				job.DawnWarriorStage1Id, job.DawnWarriorStage2Id, job.DawnWarriorStage3Id, job.DawnWarriorStage4Id,
+				job.AranStage1Id, job.AranStage2Id, job.AranStage3Id, job.AranStage4Id) {
 				resMax += 2
-			} else if job.IsA(c.JobId(), job.Magician, job.BlazeWizard1) {
+			} else if job.IsA(job.Id(c.JobId()),
+				job.MagicianId,
+				job.FirePoisonWizardId, job.FirePoisonMagicianId, job.FirePoisonArchMagicianId,
+				job.IceLightningWizardId, job.IceLightningMagicianId, job.IceLightningArchMagicianId,
+				job.ClericId, job.PriestId, job.BishopId,
+				job.BlazeWizardStage1Id, job.BlazeWizardStage2Id, job.BlazeWizardStage3Id, job.BlazeWizardStage4Id) {
 				// TODO include INCREASING_MAX_MP skill
 				resMax += 18
-			} else if job.IsA(c.JobId(), job.Bowman, job.WindArcher1, job.Thief, job.NightWalker1) {
+			} else if job.IsA(job.Id(c.JobId()),
+				job.BowmanId,
+				job.HunterId, job.RangerId, job.BowmasterId,
+				job.CrossbowmanId, job.SniperId, job.MarksmanId,
+				job.WindArcherStage1Id, job.WindArcherStage2Id, job.WindArcherStage3Id, job.WindArcherStage4Id,
+				job.RogueId,
+				job.AssassinId, job.HermitId, job.NightLordId,
+				job.BanditId, job.ChiefBanditId, job.ShadowerId,
+				job.NightWalkerStage1Id, job.NightWalkerStage2Id, job.NightWalkerStage3Id, job.NightWalkerStage4Id) {
 				resMax += 10
-			} else if job.IsA(c.JobId(), job.Pirate, job.ThunderBreaker1) {
+			} else if job.IsA(
+				job.PirateId,
+				job.BrawlerId, job.MarauderId, job.BuccaneerId,
+				job.GunslingerId, job.OutlawId, job.CorsairId,
+				job.ThunderBreakerStage1Id, job.ThunderBreakerStage2Id, job.ThunderBreakerStage3Id, job.ThunderBreakerStage4Id) {
 				resMax += 14
 			} else {
 				resMax += 6

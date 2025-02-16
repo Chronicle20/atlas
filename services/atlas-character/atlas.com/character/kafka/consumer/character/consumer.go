@@ -36,6 +36,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDropMeso(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestChangeFame(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDistributeAp(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDistributeSp(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeHP(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMP(db))))
 			t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
@@ -141,6 +142,15 @@ func handleRequestDistributeAp(db *gorm.DB) message.Handler[command[requestDistr
 			return
 		}
 		_ = character.RequestDistributeAp(l)(ctx)(db)(c.CharacterId, ds)
+	}
+}
+
+func handleRequestDistributeSp(db *gorm.DB) message.Handler[command[requestDistributeSpCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[requestDistributeSpCommandBody]) {
+		if c.Type != CommandRequestDistributeSp {
+			return
+		}
+		_ = character.RequestDistributeSp(l)(ctx)(db)(c.CharacterId, c.Body.SkillId, c.Body.Amount)
 	}
 }
 

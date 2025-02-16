@@ -993,6 +993,7 @@ func ChangeHP(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) 
 					if err != nil {
 						return err
 					}
+					// TODO consider effective (temporary) Max HP.
 					adjusted := enforceBounds(amount, c.HP(), c.MaxHP(), 0)
 					l.Debugf("Attempting to adjust character [%d] health by [%d] to [%d].", characterId, amount, adjusted)
 					return dynamicUpdate(tx)(SetHealth(adjusted))(t.Id())(c)
@@ -1014,10 +1015,11 @@ func ChangeMP(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) 
 		return func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
 			return func(worldId byte, channelId byte, characterId uint32, amount int16) error {
 				txErr := db.Transaction(func(tx *gorm.DB) error {
-					c, err := GetById(ctx)(db)()(characterId)
+					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
 						return err
 					}
+					// TODO consider effective (temporary) Max MP.
 					adjusted := enforceBounds(amount, c.MP(), c.MaxMP(), 0)
 					l.Debugf("Attempting to adjust character [%d] mana by [%d] to [%d].", characterId, amount, adjusted)
 					return dynamicUpdate(tx)(SetMana(adjusted))(t.Id())(c)

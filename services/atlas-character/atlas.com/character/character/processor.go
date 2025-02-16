@@ -566,7 +566,7 @@ func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(db *go
 				}
 
 				l.Debugf("Attempting to award character [%d] [%d] experience.", characterId, amount)
-				willLevel := false
+				awardedLevels := byte(0)
 				current := uint32(0)
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)()(characterId)
@@ -574,11 +574,11 @@ func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(db *go
 						return err
 					}
 
-					if c.Experience()+amount >= GetExperienceNeededForLevel(c.Level()) {
-						current = c.Experience() + amount - GetExperienceNeededForLevel(c.Level())
-						willLevel = true
-					} else {
-						current = c.Experience() + amount
+					curLevel := c.Level()
+					current = c.Experience() + amount
+					for current > GetExperienceNeededForLevel(curLevel) {
+						current -= GetExperienceNeededForLevel(curLevel)
+						curLevel += 1
 					}
 
 					err = dynamicUpdate(tx)(SetExperience(current))(t.Id())(c)
@@ -594,8 +594,8 @@ func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(db *go
 
 				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(experienceChangedEventProvider(characterId, worldId, channelId, experience, current))
 				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(worldId, channelId, characterId, []string{"EXPERIENCE"}))
-				if willLevel {
-					_ = producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(awardLevelCommandProvider(characterId, worldId, channelId, 1))
+				if awardedLevels > 0 {
+					_ = producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(awardLevelCommandProvider(characterId, worldId, channelId, awardedLevels))
 				}
 				return nil
 			}

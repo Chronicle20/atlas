@@ -1287,3 +1287,11 @@ func IsFourthJob(jobId Id) bool {
 func IsBeginner(jobId Id) bool {
 	return IsA(jobId, BeginnerId, NoblesseId, LegendId, EvanId)
 }
+
+func Type(jobId Id) uint16 {
+	return uint16(jobId / 1000)
+}
+
+func IsCygnus(jobId Id) bool {
+	return Type(jobId) == 1
+}

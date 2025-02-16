@@ -20,6 +20,20 @@ func requestDistributeApCommandProvider(worldId byte, characterId uint32, distri
 	return producer.SingleMessageProvider(key, value)
 }
 
+func requestDistributeSpCommandProvider(worldId byte, characterId uint32, skillId uint32, amount int8) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[requestDistributeSpCommandBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        CommandRequestDistributeSp,
+		Body: requestDistributeSpCommandBody{
+			SkillId: skillId,
+			Amount:  amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func requestDropMesoCommandProvider(worldId byte, channelId byte, mapId uint32, characterId uint32, amount uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &command[requestDropMesoCommandBody]{

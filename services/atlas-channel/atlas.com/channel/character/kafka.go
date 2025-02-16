@@ -3,6 +3,7 @@ package character
 const (
 	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
 	CommandRequestDistributeAp = "REQUEST_DISTRIBUTE_AP"
+	CommandRequestDistributeSp = "REQUEST_DISTRIBUTE_SP"
 	CommandRequestDropMeso     = "REQUEST_DROP_MESO"
 	CommandChangeHP            = "CHANGE_HP"
 	CommandChangeMP            = "CHANGE_MP"
@@ -38,6 +39,11 @@ type DistributePair struct {
 
 type requestDistributeApCommandBody struct {
 	Distributions []DistributePair `json:"distributions"`
+}
+
+type requestDistributeSpCommandBody struct {
+	SkillId uint32 `json:"skilId"`
+	Amount  int8   `json:"amount"`
 }
 
 type requestDropMesoCommandBody struct {

@@ -188,3 +188,11 @@ func ChangeMP(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte,
 		}
 	}
 }
+
+func RequestDistributeSp(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
+	return func(ctx context.Context) func(worldId byte, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
+		return func(worldId byte, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestDistributeSpCommandProvider(worldId, characterId, skillId, amount))
+		}
+	}
+}

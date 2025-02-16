@@ -1033,3 +1033,32 @@ func ChangeMP(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) 
 		}
 	}
 }
+
+func ProcessLevelChange(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount byte) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount byte) error {
+		return func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount byte) error {
+			return func(worldId byte, channelId byte, characterId uint32, amount byte) error {
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					_, err := GetById(ctx)(tx)()(characterId)
+					if err != nil {
+						return err
+					}
+
+					for i := range amount {
+						// Identify AP gained
+						// Identify SP gained
+						// Adjust HP and MP
+						l.Debugf(strconv.Itoa(int(i)))
+					}
+
+					return nil
+				})
+				if txErr != nil {
+					return txErr
+				}
+				// TODO announce updates
+				return nil
+			}
+		}
+	}
+}

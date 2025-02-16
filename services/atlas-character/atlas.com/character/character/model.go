@@ -192,6 +192,15 @@ func (m Model) GetEquipment() equipment.Model {
 	return m.equipment
 }
 
+func (m Model) GetSkill(skillId uint32) skill.Model {
+	for _, s := range m.skills {
+		if s.Id() == skillId {
+			return s
+		}
+	}
+	return skill.Model{}
+}
+
 func (m Model) GetSkillLevel(skillId uint32) byte {
 	for _, s := range m.skills {
 		if s.Id() == skillId {

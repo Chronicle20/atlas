@@ -21,6 +21,7 @@ import (
 	"math"
 	"math/rand"
 	"regexp"
+	"time"
 )
 
 var blockedNameErr = errors.New("blocked name")
@@ -892,6 +893,44 @@ func RequestDistributeAp(l logrus.FieldLogger) func(ctx context.Context) func(db
 					_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, stat))
 					return nil
 				})
+			}
+		}
+	}
+}
+
+func RequestDistributeSp(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, skillId uint32, amount int8) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, skillId uint32, amount int8) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, skillId uint32, amount int8) error {
+			var c Model
+			return func(characterId uint32, skillId uint32, amount int8) error {
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					var err error
+					c, err = GetById(ctx)(db)(SkillModelDecorator(l)(ctx))(characterId)
+					if err != nil {
+						return err
+					}
+					sjid, ok := job.FromSkillId(skill.Id(skillId))
+					if !ok {
+						return errors.New("unable to locate job from skill")
+					}
+					sb := getSkillBook(sjid.Id())
+					if c.SP(sb) <= uint32(amount) {
+						return errors.New("not enough sp")
+					}
+					return dynamicUpdate(tx)(SetSP(c.SP(sb)-uint32(amount), uint32(sb)))(t.Id())(c)
+				})
+				if txErr != nil {
+					return txErr
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{"AVAILABLE_SP"}))
+
+				if val := c.GetSkill(skillId); val.Id() != skillId {
+					_ = skill2.RequestUpdate(l)(ctx)(characterId, skillId, byte(amount), val.MasterLevel(), val.Expiration())
+				} else {
+					_ = skill2.RequestCreate(l)(ctx)(characterId, skillId, byte(amount), 0, time.Time{})
+				}
+				return nil
 			}
 		}
 	}

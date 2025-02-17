@@ -62,3 +62,11 @@ type Model struct {
 func (m Model) StatUps() []statup.Model {
 	return m.statups
 }
+
+func (m Model) HPConsume() uint16 {
+	return m.hpCon
+}
+
+func (m Model) MPConsume() uint16 {
+	return m.mpCon
+}

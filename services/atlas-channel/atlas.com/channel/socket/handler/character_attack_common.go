@@ -6,6 +6,8 @@ import (
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
 	"atlas-channel/session"
+	skill2 "atlas-channel/skill"
+	"atlas-channel/skill/effect"
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
@@ -35,6 +37,18 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						if sk.Id() == 0 {
 							l.Errorf("Character [%d] attempting to attack with skill [%d] which they do not own.", s.CharacterId(), ai.SkillId())
 							return session.Destroy(l, ctx, session.GetRegistry())(s)
+						}
+
+						var se effect.Model
+						se, err = skill2.GetEffect(l)(ctx)(ai.SkillId(), sk.Level())
+						if err != nil {
+							return err
+						}
+						if se.HPConsume() > 0 {
+							_ = character.ChangeHP(l)(ctx)(s.WorldId(), s.ChannelId(), s.CharacterId(), -int16(se.HPConsume()))
+						}
+						if se.MPConsume() > 0 {
+							_ = character.ChangeMP(l)(ctx)(s.WorldId(), s.ChannelId(), s.CharacterId(), -int16(se.MPConsume()))
 						}
 					}
 

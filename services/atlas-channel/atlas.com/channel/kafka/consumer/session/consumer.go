@@ -3,6 +3,7 @@ package session
 import (
 	"atlas-channel/buddylist"
 	"atlas-channel/character"
+	"atlas-channel/character/buff"
 	"atlas-channel/character/key"
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
@@ -127,10 +128,6 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 	return func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
-			setFieldFunc := session.Announce(l)(ctx)(wp)(writer.SetField)
-			characterKeyMapFunc := session.Announce(l)(ctx)(wp)(writer.CharacterKeyMap)
-			buddyOperationFunc := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)
-			guildOperationFunc := session.Announce(l)(ctx)(wp)(writer.GuildOperation)
 			return func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					if params.CharacterId <= 0 {
@@ -156,12 +153,12 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					session.EmitCreated(producer.ProviderImpl(l)(ctx))(s)
 
 					l.Debugf("Writing SetField for character [%d].", c.Id())
-					err = setFieldFunc(s, writer.SetFieldBody(l, t)(s.ChannelId(), c, bl))
+					err = session.Announce(l)(ctx)(wp)(writer.SetField)(s, writer.SetFieldBody(l, t)(s.ChannelId(), c, bl))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 					}
 					go func() {
-						err := buddyOperationFunc(s, writer.BuddyListUpdateBody(l, t)(bl.Buddies()))
+						err := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(s, writer.BuddyListUpdateBody(l, t)(bl.Buddies()))
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
@@ -169,26 +166,36 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					go func() {
 						g, _ := guild.GetByMemberId(l)(ctx)(c.Id())
 						if g.Id() != 0 {
-							err := guildOperationFunc(s, writer.GuildInfoBody(l, t)(g))
+							err := session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildInfoBody(l, t)(g))
 							if err != nil {
 								l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 							}
 						}
 					}()
 					go func() {
-						km, err := model.CollectToMap[key.Model, int32, key.Model](key.ByCharacterIdProvider(l)(ctx)(params.CharacterId), func(m key.Model) int32 {
+						km, err := model.CollectToMap[key.Model, int32, key.Model](key.ByCharacterIdProvider(l)(ctx)(s.CharacterId()), func(m key.Model) int32 {
 							return m.Key()
 						}, func(m key.Model) key.Model {
 							return m
 						})()
 						if err != nil {
-							l.WithError(err).Errorf("Unable to show key map for character [%d].", params.CharacterId)
+							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 							return
 						}
 
-						err = characterKeyMapFunc(s, writer.CharacterKeyMapBody(km))
+						err = session.Announce(l)(ctx)(wp)(writer.CharacterKeyMap)(s, writer.CharacterKeyMapBody(km))
 						if err != nil {
-							l.WithError(err).Errorf("Unable to show key map for character [%d].", params.CharacterId)
+							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
+						}
+					}()
+					go func() {
+						bs, err := buff.GetByCharacterId(l)(ctx)(s.CharacterId())
+						if err != nil {
+							l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
+						}
+						err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(s, writer.CharacterBuffGiveBody(l)(ctx)(bs))
+						if err != nil {
+							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
 					}()
 					return nil

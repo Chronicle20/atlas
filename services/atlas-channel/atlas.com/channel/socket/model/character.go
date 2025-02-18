@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
+	"sort"
 	"time"
 )
 
@@ -14,6 +15,10 @@ type CharacterTemporaryStatType struct {
 	shift   uint
 	mask    tool.Uint128
 	disease bool
+}
+
+func (t CharacterTemporaryStatType) Shift() uint {
+	return t.shift
 }
 
 func NewCharacterTemporaryStatType(shift uint, disease bool) CharacterTemporaryStatType {
@@ -168,6 +173,21 @@ func CharacterTemporaryStatTypeByName(tenant tenant.Model) func(name character.T
 }
 
 type CharacterTemporaryStatValue struct {
+	sourceId uint32
+	value    int32
+	duration int32
+}
+
+func (v CharacterTemporaryStatValue) Value() int32 {
+	return v.value
+}
+
+func (v CharacterTemporaryStatValue) SourceId() uint32 {
+	return v.sourceId
+}
+
+func (v CharacterTemporaryStatValue) Duration() int32 {
+	return v.duration
 }
 
 type CharacterTemporaryStatBase struct {
@@ -267,6 +287,36 @@ type CharacterTemporaryStat struct {
 	stats map[CharacterTemporaryStatType]CharacterTemporaryStatValue
 }
 
+func NewCharacterTemporaryStat() *CharacterTemporaryStat {
+	return &CharacterTemporaryStat{
+		stats: make(map[CharacterTemporaryStatType]CharacterTemporaryStatValue),
+	}
+}
+
+func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Model) func(name string, sourceId uint32, amount int32, duration int32) {
+	return func(t tenant.Model) func(name string, sourceId uint32, amount int32, duration int32) {
+		return func(name string, sourceId uint32, amount int32, duration int32) {
+			st, err := CharacterTemporaryStatTypeByName(t)(character.TemporaryStatType(name))
+			if err != nil {
+				l.WithError(err).Errorf("Attempting to add buff [%s], but cannot find it.", name)
+				return
+			}
+			v := CharacterTemporaryStatValue{
+				sourceId: sourceId,
+				value:    amount,
+				duration: duration,
+			}
+			if e, ok := m.stats[st]; ok {
+				if v.Value() > e.Value() {
+					m.stats[st] = v
+				}
+			} else {
+				m.stats[st] = v
+			}
+		}
+	}
+}
+
 func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
 	temporaryStatGetter := CharacterTemporaryStatTypeByName(t)
 	return func(w *response.Writer) {
@@ -284,6 +334,10 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, t tenant.Model, op
 		applyMask(character.TemporaryStatTypeHomingBeacon)
 		applyMask(character.TemporaryStatTypeUndead)
 
+		for s := range m.stats {
+			mask = mask.Or(s.mask)
+		}
+
 		// TODO gather active buffs
 		w.WriteInt(uint32(mask.H >> 32))
 		w.WriteInt(uint32(mask.H & 0xFFFFFFFF))
@@ -291,6 +345,26 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, t tenant.Model, op
 		w.WriteInt(uint32(mask.L & 0xFFFFFFFF))
 
 		// TODO write active buffs
+		keys := make([]CharacterTemporaryStatType, 0)
+		for k := range m.stats {
+			keys = append(keys, k)
+		}
+
+		sort.Slice(keys, func(i, j int) bool {
+			return keys[i].Shift() < keys[j].Shift()
+		})
+
+		// Create a slice of values sorted by the keys' index
+		sortedValues := make([]CharacterTemporaryStatValue, 0)
+		for _, k := range keys {
+			sortedValues = append(sortedValues, m.stats[k])
+		}
+
+		for _, v := range sortedValues {
+			w.WriteInt16(int16(v.Value()))
+			w.WriteInt(v.SourceId())
+			w.WriteInt32(v.Duration())
+		}
 
 		w.WriteByte(0) // nDefenseAtt
 		w.WriteByte(0) // nDefenseState

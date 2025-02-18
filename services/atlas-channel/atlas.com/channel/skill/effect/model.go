@@ -70,3 +70,7 @@ func (m Model) HPConsume() uint16 {
 func (m Model) MPConsume() uint16 {
 	return m.mpCon
 }
+
+func (m Model) Duration() int32 {
+	return m.duration
+}

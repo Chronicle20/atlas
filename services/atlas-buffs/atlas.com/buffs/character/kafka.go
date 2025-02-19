@@ -1,5 +1,7 @@
 package character
 
+import "time"
+
 const (
 	EnvEventStatusTopic        = "EVENT_TOPIC_CHARACTER_BUFF_STATUS"
 	EventStatusTypeBuffApplied = "APPLIED"
@@ -14,9 +16,11 @@ type statusEvent[E any] struct {
 }
 
 type appliedStatusEventBody struct {
-	SourceId uint32       `json:"sourceId"`
-	Duration int32        `json:"duration"`
-	Changes  []statChange `json:"changes"`
+	SourceId  uint32       `json:"sourceId"`
+	Duration  int32        `json:"duration"`
+	Changes   []statChange `json:"changes"`
+	CreatedAt time.Time    `json:"createdAt"`
+	ExpiresAt time.Time    `json:"expiresAt"`
 }
 
 type statChange struct {
@@ -25,7 +29,9 @@ type statChange struct {
 }
 
 type expiredStatusEventBody struct {
-	SourceId uint32       `json:"sourceId"`
-	Duration int32        `json:"duration"`
-	Changes  []statChange `json:"changes"`
+	SourceId  uint32       `json:"sourceId"`
+	Duration  int32        `json:"duration"`
+	Changes   []statChange `json:"changes"`
+	CreatedAt time.Time    `json:"createdAt"`
+	ExpiresAt time.Time    `json:"expiresAt"`
 }

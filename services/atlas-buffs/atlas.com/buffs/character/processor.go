@@ -20,8 +20,8 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, ch
 	return func(ctx context.Context) func(worldId byte, characterId uint32, sourceId uint32, duration int32, changes []stat.Model) error {
 		t := tenant.MustFromContext(ctx)
 		return func(worldId byte, characterId uint32, sourceId uint32, duration int32, changes []stat.Model) error {
-			_ = GetRegistry().Apply(t, worldId, characterId, sourceId, duration, changes)
-			_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(appliedStatusEventProvider(worldId, characterId, sourceId, duration, changes))
+			b := GetRegistry().Apply(t, worldId, characterId, sourceId, duration, changes)
+			_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(appliedStatusEventProvider(worldId, characterId, sourceId, duration, changes, b.CreatedAt(), b.ExpiresAt()))
 			return nil
 		}
 	}
@@ -35,7 +35,7 @@ func Cancel(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, c
 			if errors.Is(err, ErrNotFound) {
 				return nil
 			}
-			_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Duration(), b.Changes()))
+			_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt()))
 			return nil
 		}
 	}
@@ -55,7 +55,7 @@ func ExpireBuffs(l logrus.FieldLogger) func(ctx context.Context) error {
 					ebs := GetRegistry().GetExpired(t, c.Id())
 					for _, eb := range ebs {
 						l.Debugf("Expired buff for character [%d] from [%d].", c.Id(), eb.SourceId())
-						_ = producer.ProviderImpl(l)(tctx)(EnvEventStatusTopic)(expiredStatusEventProvider(c.WorldId(), c.Id(), eb.SourceId(), eb.Duration(), eb.Changes()))
+						_ = producer.ProviderImpl(l)(tctx)(EnvEventStatusTopic)(expiredStatusEventProvider(c.WorldId(), c.Id(), eb.SourceId(), eb.Duration(), eb.Changes(), eb.CreatedAt(), eb.ExpiresAt()))
 					}
 				}
 			}()

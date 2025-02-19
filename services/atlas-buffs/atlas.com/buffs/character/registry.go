@@ -28,7 +28,7 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) Apply(t tenant.Model, worldId byte, characterId uint32, sourceId uint32, duration int32, changes []stat.Model) Model {
+func (r *Registry) Apply(t tenant.Model, worldId byte, characterId uint32, sourceId uint32, duration int32, changes []stat.Model) buff.Model {
 	r.lock.Lock()
 
 	var cm map[uint32]Model
@@ -56,11 +56,12 @@ func (r *Registry) Apply(t tenant.Model, worldId byte, characterId uint32, sourc
 			buffs:       make(map[uint32]buff.Model),
 		}
 	}
-	m.buffs[sourceId] = buff.NewBuff(sourceId, duration, changes)
+	b := buff.NewBuff(sourceId, duration, changes)
+	m.buffs[sourceId] = b
 
 	cm[characterId] = m
 	cml.Unlock()
-	return m
+	return b
 }
 
 func (r *Registry) Get(t tenant.Model, id uint32) (Model, error) {

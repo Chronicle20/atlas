@@ -40,7 +40,7 @@ func handleApply(l logrus.FieldLogger, ctx context.Context, c command[applyComma
 		statChanges = append(statChanges, stat.NewStat(cs.Type, cs.Amount))
 	}
 
-	_ = character.Apply(l)(ctx)(c.WorldId, c.CharacterId, c.Body.SourceId, c.Body.Duration, statChanges)
+	_ = character.Apply(l)(ctx)(c.WorldId, c.CharacterId, c.Body.FromId, c.Body.SourceId, c.Body.Duration, statChanges)
 }
 
 func handleCancel(l logrus.FieldLogger, ctx context.Context, c command[cancelCommandBody]) {

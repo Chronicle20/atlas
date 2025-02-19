@@ -43,7 +43,7 @@ func AdaptHandler[M any](config Config[M]) handler.Handler {
 		tem := model.Map[kafka.Message, M](adapt[M])(model.FixedProvider(msg))
 		m, err := tem()
 		if err != nil {
-			return true, err
+			return true, nil
 		}
 
 		process := config.validator(l, ctx, m)

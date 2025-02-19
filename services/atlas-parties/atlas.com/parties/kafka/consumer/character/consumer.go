@@ -8,20 +8,26 @@ import (
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 )
 
-const consumerStatusEvent = "character_status"
-
-func StatusEventConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerStatusEvent)(EnvEventTopicCharacterStatus)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("character_status_event")(EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func LoginStatusRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogin))
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+		var t string
+		t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogin)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMapChangedStatusEventLogout)))
+	}
 }
 
 func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventLoginBody]) {
@@ -34,11 +40,6 @@ func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, event sta
 	}
 }
 
-func LogoutStatusRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout))
-}
-
 func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventLogoutBody]) {
 	if event.Type != EventCharacterStatusTypeLogout {
 		return
@@ -47,11 +48,6 @@ func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event st
 	if err != nil {
 		l.WithError(err).Errorf("Unable to process logout for character [%d].", event.CharacterId)
 	}
-}
-
-func MapChangedStatusRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleMapChangedStatusEventLogout))
 }
 
 func handleMapChangedStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventMapChangedBody]) {

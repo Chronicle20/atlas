@@ -8,20 +8,28 @@ import (
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 )
 
-const consumerCommand = "party_command"
-
-func CommandConsumer(l logrus.FieldLogger) func(groupId string) consumer.Config {
-	return func(groupId string) consumer.Config {
-		return consumer2.NewConfig(l)(consumerCommand)(EnvCommandTopic)(groupId)
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("party_command")(EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+		}
 	}
 }
 
-func CreateCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleCreate))
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+		var t string
+		t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreate)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleJoin)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLeave)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeLeader)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestInvite)))
+	}
 }
 
 func handleCreate(l logrus.FieldLogger, ctx context.Context, c commandEvent[createCommandBody]) {
@@ -34,11 +42,6 @@ func handleCreate(l logrus.FieldLogger, ctx context.Context, c commandEvent[crea
 	}
 }
 
-func JoinCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleJoin))
-}
-
 func handleJoin(l logrus.FieldLogger, ctx context.Context, c commandEvent[joinCommandBody]) {
 	if c.Type != CommandPartyJoin {
 		return
@@ -47,11 +50,6 @@ func handleJoin(l logrus.FieldLogger, ctx context.Context, c commandEvent[joinCo
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to join party [%d].", c.ActorId, c.Body.PartyId)
 	}
-}
-
-func LeaveCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleLeave))
 }
 
 func handleLeave(l logrus.FieldLogger, ctx context.Context, c commandEvent[leaveCommandBody]) {
@@ -74,11 +72,6 @@ func handleLeave(l logrus.FieldLogger, ctx context.Context, c commandEvent[leave
 	}
 }
 
-func ChangeLeaderCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleChangeLeader))
-}
-
 func handleChangeLeader(l logrus.FieldLogger, ctx context.Context, c commandEvent[changeLeaderBody]) {
 	if c.Type != CommandPartyChangeLeader {
 		return
@@ -87,11 +80,6 @@ func handleChangeLeader(l logrus.FieldLogger, ctx context.Context, c commandEven
 	if err != nil {
 		l.WithError(err).Errorf("Unable to establish [%d] as leader of party [%d].", c.Body.LeaderId, c.Body.PartyId)
 	}
-}
-
-func RequestInviteCommandRegister(l logrus.FieldLogger) (string, handler.Handler) {
-	t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
-	return t, message.AdaptHandler(message.PersistentConfig(handleRequestInvite))
 }
 
 func handleRequestInvite(l logrus.FieldLogger, ctx context.Context, c commandEvent[requestInviteBody]) {

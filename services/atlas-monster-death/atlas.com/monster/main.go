@@ -8,7 +8,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/consumer"
 )
 
-const serviceName = "atlas-monster"
+const serviceName = "atlas-monster-death"
 const consumerGroupId = "Monster Death Service"
 
 func main() {

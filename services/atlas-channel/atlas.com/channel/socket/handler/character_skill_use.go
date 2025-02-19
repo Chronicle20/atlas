@@ -106,6 +106,7 @@ func GetSkillHandler(id skill.Id) (handler.Handler, bool) {
 		skillHandlerMap[skill.AssassinClawBoosterId] = handler.UseWeaponBooster
 		skillHandlerMap[skill.AssassinHasteId] = handler.UseSkillHaste
 		skillHandlerMap[skill.HermitMesoUpId] = handler.UseMesoUp
+		skillHandlerMap[skill.HermitShadowPartnerId] = handler.UseShadowPartner
 		skillHandlerMap[skill.BanditDaggerBoosterId] = handler.UseWeaponBooster
 		skillHandlerMap[skill.BanditHasteId] = handler.UseSkillHaste
 		skillHandlerMap[skill.BrawlerKnucklerBoosterId] = handler.UseWeaponBooster
@@ -117,6 +118,7 @@ func GetSkillHandler(id skill.Id) (handler.Handler, bool) {
 		skillHandlerMap[skill.BlazeWizardStage2SpellBoosterId] = handler.UseWeaponBooster
 		skillHandlerMap[skill.WindArcherStage2BowBoosterId] = handler.UseWeaponBooster
 		skillHandlerMap[skill.NightWalkerStage2HasteId] = handler.UseSkillHaste
+		skillHandlerMap[skill.NightWalkerStage3ShadowPartnerId] = handler.UseShadowPartner
 		skillHandlerMap[skill.LegendRecoveryId] = handler.UseBeginnerRecovery
 		skillHandlerMap[skill.LegendNimbleFeetId] = handler.UseNimbleFeet
 		skillHandlerMap[skill.AranStage1PolearmBoosterId] = handler.UseWeaponBooster

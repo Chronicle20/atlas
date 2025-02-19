@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character/buff"
 	"atlas-channel/character/buff/stat"
 	consumer2 "atlas-channel/kafka/consumer"
+	_map "atlas-channel/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -62,8 +63,17 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 
 			err := session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(s, writer.CharacterBuffGiveBody(l)(ctx)(bs))
 			if err != nil {
-				l.WithError(err).Errorf("Unable to write character [%d] buffs.", e.CharacterId)
+				l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
 			}
+
+			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), func(os session.Model) error {
+				err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGiveForeign)(os, writer.CharacterBuffGiveForeignBody(l)(ctx)(e.CharacterId, bs))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
+					return err
+				}
+				return nil
+			})
 			return nil
 		})
 	}
@@ -94,6 +104,15 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write character [%d] cancelled buffs.", e.CharacterId)
 			}
+
+			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), func(os session.Model) error {
+				err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffCancelForeign)(os, writer.CharacterBuffCancelForeignBody(l)(ctx)(e.CharacterId, ebs))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
+					return err
+				}
+				return nil
+			})
 			return nil
 		})
 	}

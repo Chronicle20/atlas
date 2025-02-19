@@ -24,7 +24,7 @@ func UseBeginnerRecovery(l logrus.FieldLogger) func(ctx context.Context) func(wo
 				_ = skill.ApplyCooldown(l)(ctx)(worldId, channelId, info.SkillId(), effect.Cooldown())(characterId)
 			}
 
-			_ = buff.Apply(l)(ctx)(worldId, channelId, info.SkillId(), effect.Duration(), effect.StatUps())(characterId)
+			_ = buff.Apply(l)(ctx)(worldId, channelId, characterId, info.SkillId(), effect.Duration(), effect.StatUps())(characterId)
 			return nil
 		}
 	}

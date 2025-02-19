@@ -19,7 +19,7 @@ func UseWeaponBooster(l logrus.FieldLogger) func(ctx context.Context) func(world
 				_ = character.ChangeMP(l)(ctx)(worldId, channelId, characterId, -int16(effect.MPConsume()))
 			}
 
-			applyBuffFunc := buff.Apply(l)(ctx)(worldId, channelId, info.SkillId(), effect.Duration(), effect.StatUps())
+			applyBuffFunc := buff.Apply(l)(ctx)(worldId, channelId, characterId, info.SkillId(), effect.Duration(), effect.StatUps())
 
 			_ = applyBuffFunc(characterId)
 			return nil

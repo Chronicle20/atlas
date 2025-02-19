@@ -3,7 +3,6 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
-	"atlas-channel/party"
 	"atlas-channel/skill/effect"
 	"atlas-channel/socket/model"
 	"context"
@@ -20,19 +19,10 @@ func UseSkillHaste(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 				_ = character.ChangeMP(l)(ctx)(worldId, channelId, characterId, -int16(effect.MPConsume()))
 			}
 
-			_ = buff.Apply(l)(ctx)(worldId, channelId, characterId, info.SkillId(), effect.Duration(), effect.StatUps())
+			applyBuffFunc := buff.Apply(l)(ctx)(worldId, channelId, info.SkillId(), effect.Duration(), effect.StatUps())
 
-			if info.AffectedPartyMemberBitmap() > 0 && info.AffectedPartyMemberBitmap() < 128 {
-				p, err := party.GetByMemberId(l)(ctx)(characterId)
-				if err == nil {
-					for _, m := range p.Members() {
-						if m.Id() != characterId && m.ChannelId() == channelId && m.MapId() == mapId {
-							// TODO restrict to those in range, based on bitmap
-							_ = buff.Apply(l)(ctx)(worldId, channelId, m.Id(), info.SkillId(), effect.Duration(), effect.StatUps())
-						}
-					}
-				}
-			}
+			_ = applyBuffFunc(characterId)
+			_ = applyToParty(l)(ctx)(worldId, channelId, mapId, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
 
 			return nil
 		}

@@ -7,6 +7,7 @@ import (
 	writer2 "atlas-channel/configuration/writer"
 	account2 "atlas-channel/kafka/consumer/account"
 	"atlas-channel/kafka/consumer/buddylist"
+	"atlas-channel/kafka/consumer/buff"
 	"atlas-channel/kafka/consumer/chair"
 	"atlas-channel/kafka/consumer/channel"
 	"atlas-channel/kafka/consumer/character"
@@ -96,6 +97,7 @@ func main() {
 	drop.InitConsumers(l)(cmf)(consumerGroupId)
 	reactor.InitConsumers(l)(cmf)(consumerGroupId)
 	skill.InitConsumers(l)(cmf)(consumerGroupId)
+	buff.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
@@ -166,6 +168,7 @@ func main() {
 				drop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				reactor.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				skill.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				buff.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.IpAddress, c.Port)
@@ -240,6 +243,8 @@ func produceWriters() []string {
 		writer.CharacterAttackMagic,
 		writer.CharacterAttackEnergy,
 		writer.CharacterDamage,
+		writer.CharacterBuffGive,
+		writer.CharacterBuffCancel,
 	}
 }
 
@@ -282,6 +287,8 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterHealOverTimeHandle] = handler.CharacterHealOverTimeHandleFunc
 	handlerMap[handler.CharacterDamageHandle] = handler.CharacterDamageHandleFunc
 	handlerMap[handler.CharacterDistributeSpHandle] = handler.CharacterDistributeSpHandleFunc
+	handlerMap[handler.CharacterUseSkillHandle] = handler.CharacterUseSkillHandleFunc
+	handlerMap[handler.CharacterBuffCancelHandle] = handler.CharacterBuffCancelHandleFunc
 	return handlerMap
 }
 

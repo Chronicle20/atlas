@@ -34,7 +34,7 @@ func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.M
 				w.WriteByte(0)
 			}
 
-			cts := model.CharacterTemporaryStat{}
+			cts := model.NewCharacterTemporaryStat()
 			cts.Encode(l, t, options)(w)
 
 			w.WriteShort(c.JobId())

@@ -4,7 +4,7 @@ go 1.23.1
 
 require (
 	github.com/Chronicle20/atlas-constants v1.0.11
-	github.com/Chronicle20/atlas-kafka v1.1.4
+	github.com/Chronicle20/atlas-kafka v1.1.5
 	github.com/Chronicle20/atlas-model v1.2.1
 	github.com/Chronicle20/atlas-rest v1.2.6
 	github.com/Chronicle20/atlas-socket v1.2.2

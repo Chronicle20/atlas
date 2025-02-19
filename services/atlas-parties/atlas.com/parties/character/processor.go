@@ -6,7 +6,7 @@ import (
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -63,6 +63,24 @@ func Logout(l logrus.FieldLogger) func(ctx context.Context) func(characterId uin
 				}
 			}
 
+			return nil
+		}
+	}
+}
+
+func ChannelChange(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, channelId byte) error {
+	return func(ctx context.Context) func(characterId uint32, channelId byte) error {
+		return func(characterId uint32, channelId byte) error {
+			t := tenant.MustFromContext(ctx)
+			c, err := GetById(l)(ctx)(characterId)
+			if err != nil {
+				l.WithError(err).Warnf("Unable to locate character [%d] in registry.", characterId)
+				return err
+			}
+
+			l.Debugf("Setting character [%d] to be in channel [%d] in registry.", characterId, channelId)
+			fn := func(m Model) Model { return Model.ChangeChannel(m, channelId) }
+			c = GetRegistry().Update(t, c.Id(), fn)
 			return nil
 		}
 	}

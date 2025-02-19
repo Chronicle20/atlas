@@ -3,7 +3,6 @@ package invite
 const (
 	EnvEventStatusTopic           = "EVENT_TOPIC_INVITE_STATUS"
 	EventInviteStatusTypeAccepted = "ACCEPTED"
-	EventInviteStatusTypeRejected = "REJECTED"
 
 	InviteTypeParty = "PARTY"
 )

@@ -99,7 +99,7 @@ func ParsePartyId(l logrus.FieldLogger, next PartyIdHandler) http.HandlerFunc {
 
 type MemberIdHandler func(memberId uint32) http.HandlerFunc
 
-func ParseMemberId(l logrus.FieldLogger, next PartyIdHandler) http.HandlerFunc {
+func ParseMemberId(l logrus.FieldLogger, next MemberIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		memberId, err := strconv.Atoi(mux.Vars(r)["memberId"])
 		if err != nil {

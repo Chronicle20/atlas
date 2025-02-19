@@ -1,7 +1,7 @@
 package main
 
 import (
-	"atlas-parties/character"
+	"atlas-parties/kafka/consumer/character"
 	"atlas-parties/kafka/consumer/invite"
 	party2 "atlas-parties/kafka/consumer/party"
 	"atlas-parties/logger"

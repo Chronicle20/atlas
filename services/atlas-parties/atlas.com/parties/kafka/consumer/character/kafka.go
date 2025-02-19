@@ -1,10 +1,11 @@
 package character
 
 const (
-	EnvEventTopicCharacterStatus       = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeLogin      = "LOGIN"
-	EventCharacterStatusTypeLogout     = "LOGOUT"
-	EventCharacterStatusTypeMapChanged = "MAP_CHANGED"
+	EnvEventTopicCharacterStatus           = "EVENT_TOPIC_CHARACTER_STATUS"
+	EventCharacterStatusTypeLogin          = "LOGIN"
+	EventCharacterStatusTypeLogout         = "LOGOUT"
+	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
+	EventCharacterStatusTypeMapChanged     = "MAP_CHANGED"
 )
 
 type statusEvent[E any] struct {
@@ -22,6 +23,12 @@ type statusEventLoginBody struct {
 type statusEventLogoutBody struct {
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
+}
+
+type statusEventChannelChangedBody struct {
+	ChannelId    byte   `json:"channelId"`
+	OldChannelId byte   `json:"oldChannelId"`
+	MapId        uint32 `json:"mapId"`
 }
 
 type statusEventMapChangedBody struct {

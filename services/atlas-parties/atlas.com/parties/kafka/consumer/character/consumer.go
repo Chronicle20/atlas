@@ -26,6 +26,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogin)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMapChangedStatusEventLogout)))
 	}
 }
@@ -47,6 +48,16 @@ func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event st
 	err := character.Logout(l)(ctx)(event.CharacterId)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to process logout for character [%d].", event.CharacterId)
+	}
+}
+
+func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventChannelChangedBody]) {
+	if e.Type != EventCharacterStatusTypeChannelChanged {
+		return
+	}
+	err := character.ChannelChange(l)(ctx)(e.CharacterId, e.Body.ChannelId)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to process channel changed for character [%d].", e.CharacterId)
 	}
 }
 

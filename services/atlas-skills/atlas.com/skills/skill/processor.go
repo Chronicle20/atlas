@@ -15,7 +15,8 @@ func byCharacterIdProvider(ctx context.Context) func(db *gorm.DB) func(character
 	t := tenant.MustFromContext(ctx)
 	return func(db *gorm.DB) func(characterId uint32) model.Provider[[]Model] {
 		return func(characterId uint32) model.Provider[[]Model] {
-			return model.SliceMap(Make)(getByCharacterId(t.Id(), characterId)(db))()
+			mp := model.SliceMap(Make)(getByCharacterId(t.Id(), characterId)(db))()
+			return model.SliceMap(model.Decorate(model.Decorators(CooldownDecorator(ctx)(characterId))))(mp)()
 		}
 	}
 }
@@ -28,11 +29,25 @@ func GetByCharacterId(ctx context.Context) func(db *gorm.DB) func(characterId ui
 	}
 }
 
-func byIdProvider(ctx context.Context) func(db *gorm.DB) func(id uint32, threadId uint32) model.Provider[Model] {
+func byIdProvider(ctx context.Context) func(db *gorm.DB) func(characterId uint32, id uint32) model.Provider[Model] {
 	t := tenant.MustFromContext(ctx)
-	return func(db *gorm.DB) func(id uint32, threadId uint32) model.Provider[Model] {
-		return func(id uint32, threadId uint32) model.Provider[Model] {
-			return model.Map(Make)(getById(t.Id(), id, threadId)(db))
+	return func(db *gorm.DB) func(characterId uint32, id uint32) model.Provider[Model] {
+		return func(characterId uint32, id uint32) model.Provider[Model] {
+			mp := model.Map(Make)(getById(t.Id(), characterId, id)(db))
+			return model.Map(model.Decorate(model.Decorators(CooldownDecorator(ctx)(characterId))))(mp)
+		}
+	}
+}
+
+func CooldownDecorator(ctx context.Context) func(characterId uint32) model.Decorator[Model] {
+	t := tenant.MustFromContext(ctx)
+	return func(characterId uint32) model.Decorator[Model] {
+		return func(m Model) Model {
+			ct, err := GetRegistry().Get(t, characterId, m.Id())
+			if err != nil {
+				return m
+			}
+			return m.SetCooldown(ct)
 		}
 	}
 }
@@ -122,5 +137,46 @@ func Update(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 				return s, nil
 			}
 		}
+	}
+}
+
+func SetCooldown(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, skillId uint32, cooldown uint32) (Model, error) {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, skillId uint32, cooldown uint32) (Model, error) {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, skillId uint32, cooldown uint32) (Model, error) {
+			return func(characterId uint32, skillId uint32, cooldown uint32) (Model, error) {
+				l.Debugf("Applying cooldown of [%d] for character [%d] skill [%d].", cooldown, characterId, skillId)
+				err := GetRegistry().Apply(t, characterId, skillId, cooldown)
+				if err != nil {
+					return Model{}, err
+				}
+				s, err := GetById(ctx)(db)(characterId, skillId)
+				if err != nil {
+					return Model{}, err
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventCooldownAppliedProvider(characterId, s.Id(), s.CooldownExpiresAt()))
+				return s, nil
+			}
+		}
+	}
+}
+
+func ExpireCooldowns(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) {
+	return func(ctx context.Context) func(db *gorm.DB) {
+		return func(db *gorm.DB) {
+			for _, s := range GetRegistry().GetAll() {
+				if s.CooldownExpiresAt().Before(time.Now()) {
+					_ = GetRegistry().Clear(s.Tenant(), s.CharacterId(), s.SkillId())
+					_ = producer.ProviderImpl(l)(tenant.WithContext(ctx, s.Tenant()))(EnvStatusEventTopic)(statusEventCooldownExpiredProvider(s.CharacterId(), s.SkillId()))
+				}
+			}
+		}
+	}
+}
+
+func ClearAll(ctx context.Context) func(characterId uint32) error {
+	t := tenant.MustFromContext(ctx)
+	return func(characterId uint32) error {
+		return GetRegistry().ClearAll(t, characterId)
 	}
 }

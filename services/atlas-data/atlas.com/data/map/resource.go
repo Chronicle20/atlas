@@ -235,7 +235,6 @@ func handleGetMapDropPositionRequest(d *rest.HandlerDependency, c *rest.HandlerC
 			}
 
 			server.Marshal[point.RestModel](d.Logger())(w)(c.ServerInformation())(res)
-			w.WriteHeader(http.StatusCreated)
 		}
 	})
 }

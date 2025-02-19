@@ -1,8 +1,9 @@
 package character
 
 const (
-	EnvCommandTopic  = "COMMAND_TOPIC_CHARACTER_BUFF"
-	CommandTypeApply = "APPLY"
+	EnvCommandTopic   = "COMMAND_TOPIC_CHARACTER_BUFF"
+	CommandTypeApply  = "APPLY"
+	CommandTypeCancel = "CANCEL"
 )
 
 type command[E any] struct {
@@ -22,4 +23,8 @@ type applyCommandBody struct {
 type statChange struct {
 	Type   string `json:"type"`
 	Amount int32  `json:"amount"`
+}
+
+type cancelCommandBody struct {
+	SourceId uint32 `json:"sourceId"`
 }

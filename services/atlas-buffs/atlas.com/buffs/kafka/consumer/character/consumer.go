@@ -26,6 +26,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		var t string
 		t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleApply)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancel)))
 	}
 }
 
@@ -40,4 +41,12 @@ func handleApply(l logrus.FieldLogger, ctx context.Context, c command[applyComma
 	}
 
 	_ = character.Apply(l)(ctx)(c.WorldId, c.CharacterId, c.Body.SourceId, c.Body.Duration, statChanges)
+}
+
+func handleCancel(l logrus.FieldLogger, ctx context.Context, c command[cancelCommandBody]) {
+	if c.Type != CommandTypeCancel {
+		return
+	}
+
+	_ = character.Cancel(l)(ctx)(c.WorldId, c.CharacterId, c.Body.SourceId)
 }

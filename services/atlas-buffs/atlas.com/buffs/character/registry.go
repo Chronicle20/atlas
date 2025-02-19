@@ -112,6 +112,34 @@ func (r *Registry) GetCharacters(t tenant.Model) []Model {
 	return res
 }
 
+func (r *Registry) Cancel(t tenant.Model, characterId uint32, sourceId uint32) {
+	var tl *sync.RWMutex
+	var ok bool
+	if tl, ok = r.tenantLock[t]; !ok {
+		r.lock.Lock()
+		tl = &sync.RWMutex{}
+		r.characterReg[t] = make(map[uint32]Model)
+		r.tenantLock[t] = tl
+		r.lock.Unlock()
+	}
+
+	tl.Lock()
+	defer tl.Unlock()
+	var c Model
+	if c, ok = r.characterReg[t][characterId]; !ok {
+		return
+	}
+	var not = make(map[uint32]buff.Model)
+	for id, m := range c.buffs {
+		if m.SourceId() != sourceId {
+			not[id] = m
+		}
+	}
+	c.buffs = not
+	r.characterReg[t][characterId] = c
+	return
+}
+
 func (r *Registry) GetExpired(t tenant.Model, characterId uint32) []buff.Model {
 	var tl *sync.RWMutex
 	var ok bool

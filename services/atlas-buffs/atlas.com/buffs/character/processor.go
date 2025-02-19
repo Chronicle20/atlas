@@ -8,6 +8,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func GetById(ctx context.Context) func(characterId uint32) (Model, error) {
+	t := tenant.MustFromContext(ctx)
+	return func(characterId uint32) (Model, error) {
+		return GetRegistry().Get(t, characterId)
+	}
+}
+
 func Apply(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, characterId uint32, sourceId uint32, duration int32, changes []stat.Model) error {
 	return func(ctx context.Context) func(worldId byte, characterId uint32, sourceId uint32, duration int32, changes []stat.Model) error {
 		t := tenant.MustFromContext(ctx)
@@ -19,10 +26,14 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, ch
 	}
 }
 
-func GetById(ctx context.Context) func(characterId uint32) (Model, error) {
-	t := tenant.MustFromContext(ctx)
-	return func(characterId uint32) (Model, error) {
-		return GetRegistry().Get(t, characterId)
+func Cancel(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, characterId uint32, sourceId uint32) error {
+	return func(ctx context.Context) func(worldId byte, characterId uint32, sourceId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(worldId byte, characterId uint32, sourceId uint32) error {
+			GetRegistry().Cancel(t, characterId, sourceId)
+			_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(expiredStatusEventProvider(worldId, characterId, sourceId))
+			return nil
+		}
 	}
 }
 
@@ -39,6 +50,7 @@ func ExpireBuffs(l logrus.FieldLogger) func(ctx context.Context) error {
 				for _, c := range GetRegistry().GetCharacters(t) {
 					ebs := GetRegistry().GetExpired(t, c.Id())
 					for _, eb := range ebs {
+						l.Debugf("Expired buff for character [%d] from [%d].", c.Id(), eb.SourceId())
 						_ = producer.ProviderImpl(l)(tctx)(EnvEventStatusTopic)(expiredStatusEventProvider(c.WorldId(), c.Id(), eb.SourceId()))
 					}
 				}

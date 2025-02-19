@@ -24,12 +24,21 @@ func appliedStatusEventProvider(worldId byte, characterId uint32, sourceId uint3
 		Body: appliedStatusEventBody{
 			SourceId: sourceId,
 			Duration: duration,
+			Changes:  statups,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func expiredStatusEventProvider(worldId byte, characterId uint32, sourceId uint32) model.Provider[[]kafka.Message] {
+func expiredStatusEventProvider(worldId byte, characterId uint32, sourceId uint32, duration int32, changes []stat.Model) model.Provider[[]kafka.Message] {
+	statups := make([]statChange, 0)
+	for _, su := range changes {
+		statups = append(statups, statChange{
+			Type:   su.Type(),
+			Amount: su.Amount(),
+		})
+	}
+
 	key := producer.CreateKey(int(characterId))
 	value := &statusEvent[expiredStatusEventBody]{
 		WorldId:     worldId,
@@ -37,6 +46,8 @@ func expiredStatusEventProvider(worldId byte, characterId uint32, sourceId uint3
 		Type:        EventStatusTypeBuffExpired,
 		Body: expiredStatusEventBody{
 			SourceId: sourceId,
+			Duration: duration,
+			Changes:  statups,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

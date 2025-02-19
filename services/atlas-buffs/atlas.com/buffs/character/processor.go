@@ -4,6 +4,7 @@ import (
 	"atlas-buffs/buff/stat"
 	"atlas-buffs/kafka/producer"
 	"context"
+	"errors"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -30,8 +31,11 @@ func Cancel(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, c
 	return func(ctx context.Context) func(worldId byte, characterId uint32, sourceId uint32) error {
 		t := tenant.MustFromContext(ctx)
 		return func(worldId byte, characterId uint32, sourceId uint32) error {
-			GetRegistry().Cancel(t, characterId, sourceId)
-			_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(expiredStatusEventProvider(worldId, characterId, sourceId))
+			b, err := GetRegistry().Cancel(t, characterId, sourceId)
+			if errors.Is(err, ErrNotFound) {
+				return nil
+			}
+			_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Duration(), b.Changes()))
 			return nil
 		}
 	}
@@ -51,7 +55,7 @@ func ExpireBuffs(l logrus.FieldLogger) func(ctx context.Context) error {
 					ebs := GetRegistry().GetExpired(t, c.Id())
 					for _, eb := range ebs {
 						l.Debugf("Expired buff for character [%d] from [%d].", c.Id(), eb.SourceId())
-						_ = producer.ProviderImpl(l)(tctx)(EnvEventStatusTopic)(expiredStatusEventProvider(c.WorldId(), c.Id(), eb.SourceId()))
+						_ = producer.ProviderImpl(l)(tctx)(EnvEventStatusTopic)(expiredStatusEventProvider(c.WorldId(), c.Id(), eb.SourceId(), eb.Duration(), eb.Changes()))
 					}
 				}
 			}()

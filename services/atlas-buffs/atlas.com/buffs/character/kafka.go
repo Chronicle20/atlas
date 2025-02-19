@@ -25,5 +25,7 @@ type statChange struct {
 }
 
 type expiredStatusEventBody struct {
-	SourceId uint32 `json:"sourceId"`
+	SourceId uint32       `json:"sourceId"`
+	Duration int32        `json:"duration"`
+	Changes  []statChange `json:"changes"`
 }

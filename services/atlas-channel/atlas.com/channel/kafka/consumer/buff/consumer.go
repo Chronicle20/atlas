@@ -3,15 +3,11 @@ package buff
 import (
 	"atlas-channel/character/buff"
 	"atlas-channel/character/buff/stat"
-	"atlas-channel/character/skill"
 	consumer2 "atlas-channel/kafka/consumer"
 	"atlas-channel/server"
 	"atlas-channel/session"
-	skill2 "atlas-channel/skill"
-	"atlas-channel/skill/effect"
 	"atlas-channel/socket/writer"
 	"context"
-	"errors"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -57,11 +53,14 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 		}
 
 		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
-			bs, err := buff.GetByCharacterId(l)(ctx)(s.CharacterId())
-			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
+			bs := make([]buff.Model, 0)
+			changes := make([]stat.Model, 0)
+			for _, cm := range e.Body.Changes {
+				changes = append(changes, stat.NewStat(cm.Type, cm.Amount))
 			}
-			err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(s, writer.CharacterBuffGiveBody(l)(ctx)(bs))
+			bs = append(bs, buff.NewBuff(e.Body.SourceId, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt))
+
+			err := session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(s, writer.CharacterBuffGiveBody(l)(ctx)(bs))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write character [%d] buffs.", e.CharacterId)
 			}
@@ -84,48 +83,18 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
-			ss, err := skill.GetByCharacterId(l)(ctx)(s.CharacterId())
-			if err != nil {
-				return err
+			ebs := make([]buff.Model, 0)
+			changes := make([]stat.Model, 0)
+			for _, cm := range e.Body.Changes {
+				changes = append(changes, stat.NewStat(cm.Type, cm.Amount))
 			}
-			var sm skill.Model
-			for _, rs := range ss {
-				if rs.Id() == e.Body.SourceId {
-					sm = rs
-				}
-			}
-			if sm.Id() != e.Body.SourceId {
-				return errors.New("does not possess skill")
-			}
-			se, err := skill2.GetEffect(l)(ctx)(sm.Id(), sm.Level())
-			if err != nil {
-				return err
-			}
+			ebs = append(ebs, buff.NewBuff(e.Body.SourceId, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt))
 
-			ebs := getExpiredBuffEffects(sm.Id(), se)
-
-			bs, err := buff.GetByCharacterId(l)(ctx)(s.CharacterId())
-			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
-				return err
-			}
-
-			res := append(bs, ebs)
-
-			err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffCancel)(s, writer.CharacterBuffCancelBody(l)(ctx)(res))
+			err := session.Announce(l)(ctx)(wp)(writer.CharacterBuffCancel)(s, writer.CharacterBuffCancelBody(l)(ctx)(ebs))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write character [%d] cancelled buffs.", e.CharacterId)
 			}
 			return nil
 		})
 	}
-}
-
-func getExpiredBuffEffects(skillId uint32, se effect.Model) buff.Model {
-	changes := make([]stat.Model, 0)
-	for _, su := range se.StatUps() {
-		changes = append(changes, stat.NewStat(su.Mask(), su.Amount()))
-	}
-
-	return buff.NewBuff(skillId, se.Duration(), changes)
 }

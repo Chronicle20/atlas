@@ -25,14 +25,20 @@ func (m Model) CreatedAt() time.Time {
 	return m.createdAt
 }
 
+func (m Model) Expired() bool {
+	return m.expiresAt.Before(time.Now())
+}
+
 func (m Model) ExpiresAt() time.Time {
 	return m.expiresAt
 }
 
-func NewBuff(sourceId uint32, duration int32, changes []stat.Model) Model {
+func NewBuff(sourceId uint32, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) Model {
 	return Model{
-		sourceId: sourceId,
-		duration: duration,
-		changes:  changes,
+		sourceId:  sourceId,
+		duration:  duration,
+		changes:   changes,
+		createdAt: createdAt,
+		expiresAt: expiresAt,
 	}
 }

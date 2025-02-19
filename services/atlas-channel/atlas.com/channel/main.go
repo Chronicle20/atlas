@@ -244,6 +244,7 @@ func produceWriters() []string {
 		writer.CharacterAttackEnergy,
 		writer.CharacterDamage,
 		writer.CharacterBuffGive,
+		writer.CharacterBuffCancel,
 	}
 }
 
@@ -287,6 +288,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterDamageHandle] = handler.CharacterDamageHandleFunc
 	handlerMap[handler.CharacterDistributeSpHandle] = handler.CharacterDistributeSpHandleFunc
 	handlerMap[handler.CharacterUseSkillHandle] = handler.CharacterUseSkillHandleFunc
+	handlerMap[handler.CharacterBuffCancelHandle] = handler.CharacterBuffCancelHandleFunc
 	return handlerMap
 }
 

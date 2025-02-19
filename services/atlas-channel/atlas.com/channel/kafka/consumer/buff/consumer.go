@@ -1,8 +1,10 @@
 package buff
 
 import (
+	"atlas-channel/character/buff"
 	consumer2 "atlas-channel/kafka/consumer"
 	"atlas-channel/server"
+	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -48,6 +50,18 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 		if sc.WorldId() != e.WorldId {
 			return
 		}
+
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+			bs, err := buff.GetByCharacterId(l)(ctx)(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
+			}
+			err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(s, writer.CharacterBuffGiveBody(l)(ctx)(bs))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write character [%d] buffs.", e.CharacterId)
+			}
+			return nil
+		})
 	}
 }
 
@@ -64,6 +78,16 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 		if sc.WorldId() != e.WorldId {
 			return
 		}
-
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+			bs, err := buff.GetByCharacterId(l)(ctx)(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
+			}
+			err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffCancel)(s, writer.CharacterBuffCancelBody(l)(ctx)(bs))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write character [%d] cancelled buffs.", e.CharacterId)
+			}
+			return nil
+		})
 	}
 }

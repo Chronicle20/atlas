@@ -32,3 +32,11 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, ch
 		}
 	}
 }
+
+func Cancel(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, sourceId uint32) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, sourceId uint32) error {
+		return func(worldId byte, channelId byte, characterId uint32, sourceId uint32) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(cancelCommandProvider(worldId, channelId, characterId, sourceId))
+		}
+	}
+}

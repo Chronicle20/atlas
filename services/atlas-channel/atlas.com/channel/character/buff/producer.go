@@ -30,3 +30,17 @@ func applyCommandProvider(worldId byte, channelId byte, characterId uint32, sour
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func cancelCommandProvider(worldId byte, channelId byte, characterId uint32, sourceId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[cancelCommandBody]{
+		WorldId:     worldId,
+		ChannelId:   channelId,
+		CharacterId: characterId,
+		Type:        CommandTypeCancel,
+		Body: cancelCommandBody{
+			SourceId: sourceId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -317,12 +317,11 @@ func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Mod
 	}
 }
 
-func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	temporaryStatGetter := CharacterTemporaryStatTypeByName(t)
+func (m *CharacterTemporaryStat) EncodeMask(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		mask := tool.Uint128{}
 		applyMask := func(name character.TemporaryStatType) {
-			if val, err := temporaryStatGetter(name); err == nil {
+			if val, err := CharacterTemporaryStatTypeByName(t)(name); err == nil {
 				mask = mask.Or(val.mask)
 			}
 		}
@@ -338,13 +337,17 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, t tenant.Model, op
 			mask = mask.Or(s.mask)
 		}
 
-		// TODO gather active buffs
 		w.WriteInt(uint32(mask.H >> 32))
 		w.WriteInt(uint32(mask.H & 0xFFFFFFFF))
 		w.WriteInt(uint32(mask.L >> 32))
 		w.WriteInt(uint32(mask.L & 0xFFFFFFFF))
+	}
+}
 
-		// TODO write active buffs
+func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+	return func(w *response.Writer) {
+		m.EncodeMask(l, t, options)(w)
+
 		keys := make([]CharacterTemporaryStatType, 0)
 		for k := range m.stats {
 			keys = append(keys, k)

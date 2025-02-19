@@ -5,13 +5,13 @@ import (
 	"atlas-channel/socket/model"
 	"context"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterBuffGive = "CharacterBuffGive"
+const CharacterBuffCancel = "CharacterBuffCancel"
 
-func CharacterBuffGiveBody(l logrus.FieldLogger) func(ctx context.Context) func(buffs []buff.Model) BodyProducer {
+func CharacterBuffCancelBody(l logrus.FieldLogger) func(ctx context.Context) func(buffs []buff.Model) BodyProducer {
 	return func(ctx context.Context) func(buffs []buff.Model) BodyProducer {
 		t := tenant.MustFromContext(ctx)
 		return func(buffs []buff.Model) BodyProducer {
@@ -22,9 +22,8 @@ func CharacterBuffGiveBody(l logrus.FieldLogger) func(ctx context.Context) func(
 						cts.AddStat(l)(t)(c.Type(), b.SourceId(), c.Amount(), b.Duration())
 					}
 				}
-				cts.Encode(l, t, options)(w)
-				w.WriteShort(0) // tDelay
-				w.WriteByte(0)  // MovementAffectingStat
+				cts.EncodeMask(l, t, options)(w)
+				w.WriteByte(0) // tSwallowBuffTime
 				return w.Bytes()
 			}
 		}

@@ -281,7 +281,7 @@ func Damage(l logrus.FieldLogger) func(ctx context.Context) func(id uint32, char
 				return
 			}
 			if !m.Alive() {
-				l.Errorf("Character [%d] trying to apply damage to an already dead monster [%d].", characterId, id)
+				l.Debugf("Character [%d] trying to apply damage to an already dead monster [%d].", characterId, id)
 				return
 			}
 

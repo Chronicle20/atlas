@@ -173,9 +173,9 @@ func CharacterTemporaryStatTypeByName(tenant tenant.Model) func(name character.T
 }
 
 type CharacterTemporaryStatValue struct {
-	sourceId uint32
-	value    int32
-	duration int32
+	sourceId  uint32
+	value     int32
+	expiresAt time.Time
 }
 
 func (v CharacterTemporaryStatValue) Value() int32 {
@@ -186,8 +186,8 @@ func (v CharacterTemporaryStatValue) SourceId() uint32 {
 	return v.sourceId
 }
 
-func (v CharacterTemporaryStatValue) Duration() int32 {
-	return v.duration
+func (v CharacterTemporaryStatValue) ExpiresAt() time.Time {
+	return v.expiresAt
 }
 
 type CharacterTemporaryStatBase struct {
@@ -293,18 +293,18 @@ func NewCharacterTemporaryStat() *CharacterTemporaryStat {
 	}
 }
 
-func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Model) func(name string, sourceId uint32, amount int32, duration int32) {
-	return func(t tenant.Model) func(name string, sourceId uint32, amount int32, duration int32) {
-		return func(name string, sourceId uint32, amount int32, duration int32) {
+func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Model) func(name string, sourceId uint32, amount int32, expiresAt time.Time) {
+	return func(t tenant.Model) func(name string, sourceId uint32, amount int32, expiresAt time.Time) {
+		return func(name string, sourceId uint32, amount int32, expiresAt time.Time) {
 			st, err := CharacterTemporaryStatTypeByName(t)(character.TemporaryStatType(name))
 			if err != nil {
 				l.WithError(err).Errorf("Attempting to add buff [%s], but cannot find it.", name)
 				return
 			}
 			v := CharacterTemporaryStatValue{
-				sourceId: sourceId,
-				value:    amount,
-				duration: duration,
+				sourceId:  sourceId,
+				value:     amount,
+				expiresAt: expiresAt,
 			}
 			if e, ok := m.stats[st]; ok {
 				if v.Value() > e.Value() {
@@ -366,7 +366,8 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, t tenant.Model, op
 		for _, v := range sortedValues {
 			w.WriteInt16(int16(v.Value()))
 			w.WriteInt(v.SourceId())
-			w.WriteInt32(int32(time.Duration(v.Duration()) * time.Millisecond))
+			et := int32(v.ExpiresAt().Sub(time.Now()).Milliseconds())
+			w.WriteInt32(et)
 		}
 
 		w.WriteByte(0) // nDefenseAtt

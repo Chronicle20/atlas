@@ -19,7 +19,7 @@ func CharacterBuffGiveBody(l logrus.FieldLogger) func(ctx context.Context) func(
 				cts := model.NewCharacterTemporaryStat()
 				for _, b := range buffs {
 					for _, c := range b.Changes() {
-						cts.AddStat(l)(t)(c.Type(), b.SourceId(), c.Amount(), b.Duration())
+						cts.AddStat(l)(t)(c.Type(), b.SourceId(), c.Amount(), b.ExpiresAt())
 					}
 				}
 				cts.Encode(l, t, options)(w)

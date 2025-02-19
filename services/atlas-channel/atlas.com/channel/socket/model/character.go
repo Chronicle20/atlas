@@ -366,7 +366,7 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, t tenant.Model, op
 		for _, v := range sortedValues {
 			w.WriteInt16(int16(v.Value()))
 			w.WriteInt(v.SourceId())
-			w.WriteInt32(v.Duration())
+			w.WriteInt32(int32(time.Duration(v.Duration()) * time.Millisecond))
 		}
 
 		w.WriteByte(0) // nDefenseAtt

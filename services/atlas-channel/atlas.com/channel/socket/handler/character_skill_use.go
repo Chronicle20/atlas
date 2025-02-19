@@ -92,6 +92,7 @@ func GetSkillHandler(id skill.Id) (handler.Handler, bool) {
 	skillHandlerOnce.Do(func() {
 		skillHandlerMap = make(map[skill.Id]handler.Handler)
 		skillHandlerMap[skill.AssassinHasteId] = handler.UseSkillHaste
+		skillHandlerMap[skill.HermitMesoUpId] = handler.UseMesoUp
 		skillHandlerMap[skill.BanditHasteId] = handler.UseSkillHaste
 		skillHandlerMap[skill.NightWalkerStage2HasteId] = handler.UseSkillHaste
 	})

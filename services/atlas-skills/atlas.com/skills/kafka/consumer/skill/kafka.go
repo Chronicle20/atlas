@@ -6,6 +6,7 @@ const (
 	EnvCommandTopic          = "COMMAND_TOPIC_SKILL"
 	CommandTypeRequestCreate = "REQUEST_CREATE"
 	CommandTypeRequestUpdate = "REQUEST_UPDATE"
+	CommandTypeSetCooldown   = "SET_COOLDOWN"
 )
 
 type command[E any] struct {
@@ -26,4 +27,9 @@ type requestUpdateBody struct {
 	Level       byte      `json:"level"`
 	MasterLevel byte      `json:"masterLevel"`
 	Expiration  time.Time `json:"expiration"`
+}
+
+type setCooldownBody struct {
+	SkillId  uint32 `json:"skillId"`
+	Cooldown uint32 `json:"cooldown"`
 }

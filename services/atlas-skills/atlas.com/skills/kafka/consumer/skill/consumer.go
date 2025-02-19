@@ -28,6 +28,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestCreate(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestUpdate(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandSetCooldown(db))))
 		}
 	}
 }
@@ -55,5 +56,15 @@ func handleCommandRequestUpdate(db *gorm.DB) message.Handler[command[requestUpda
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update skill [%d] for character [%d].", c.Body.SkillId, c.CharacterId)
 		}
+	}
+}
+
+func handleCommandSetCooldown(db *gorm.DB) message.Handler[command[setCooldownBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[setCooldownBody]) {
+		if c.Type != CommandTypeSetCooldown {
+			return
+		}
+
+		_, _ = skill.SetCooldown(l)(ctx)(db)(c.CharacterId, c.Body.SkillId, c.Body.Cooldown)
 	}
 }

@@ -2,10 +2,12 @@ package main
 
 import (
 	"atlas-skills/database"
+	"atlas-skills/kafka/consumer/character"
 	skill2 "atlas-skills/kafka/consumer/skill"
 	"atlas-skills/logger"
 	"atlas-skills/service"
 	"atlas-skills/skill"
+	"atlas-skills/tasks"
 	"atlas-skills/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -49,7 +51,11 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	skill2.InitConsumers(l)(cmf)(consumerGroupId)
+	character.InitConsumers(l)(cmf)(consumerGroupId)
 	skill2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+
+	go tasks.Register(tasks.NewExpirationTask(l, db, 1000))
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), skill.InitResource(GetServer())(db))
 

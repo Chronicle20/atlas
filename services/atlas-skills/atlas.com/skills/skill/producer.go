@@ -66,3 +66,27 @@ func statusEventUpdatedProvider(characterId uint32, id uint32, level byte, maste
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func statusEventCooldownAppliedProvider(characterId uint32, id uint32, cooldownExpiresAt time.Time) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &statusEvent[statusEventCooldownAppliedBody]{
+		CharacterId: characterId,
+		SkillId:     id,
+		Type:        StatusEventTypeCooldownApplied,
+		Body: statusEventCooldownAppliedBody{
+			CooldownExpiresAt: cooldownExpiresAt,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func statusEventCooldownExpiredProvider(characterId uint32, id uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &statusEvent[statusEventCooldownExpiredBody]{
+		CharacterId: characterId,
+		SkillId:     id,
+		Type:        StatusEventTypeCooldownExpired,
+		Body:        statusEventCooldownExpiredBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

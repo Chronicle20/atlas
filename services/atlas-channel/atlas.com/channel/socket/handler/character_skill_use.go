@@ -91,6 +91,8 @@ func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 func GetSkillHandler(id skill.Id) (handler.Handler, bool) {
 	skillHandlerOnce.Do(func() {
 		skillHandlerMap = make(map[skill.Id]handler.Handler)
+		skillHandlerMap[skill.BeginnerRecoveryId] = handler.UseBeginnerRecovery
+		skillHandlerMap[skill.BeginnerNimbleFeetId] = handler.UseNimbleFeet
 		skillHandlerMap[skill.FighterSwordBoosterId] = handler.UseWeaponBooster
 		skillHandlerMap[skill.FighterAxeBoosterId] = handler.UseWeaponBooster
 		skillHandlerMap[skill.PageSwordBoosterId] = handler.UseWeaponBooster
@@ -108,12 +110,18 @@ func GetSkillHandler(id skill.Id) (handler.Handler, bool) {
 		skillHandlerMap[skill.BanditHasteId] = handler.UseSkillHaste
 		skillHandlerMap[skill.BrawlerKnucklerBoosterId] = handler.UseWeaponBooster
 		skillHandlerMap[skill.GunslingerGunBoosterId] = handler.UseWeaponBooster
+		skillHandlerMap[skill.NoblesseRecoveryId] = handler.UseBeginnerRecovery
+		skillHandlerMap[skill.NoblesseNimbleFeetId] = handler.UseNimbleFeet
 		skillHandlerMap[skill.ThunderBreakerStage2KnuckleBoosterId] = handler.UseWeaponBooster
 		skillHandlerMap[skill.DawnWarriorStage2SwordBoosterId] = handler.UseWeaponBooster
 		skillHandlerMap[skill.BlazeWizardStage2SpellBoosterId] = handler.UseWeaponBooster
 		skillHandlerMap[skill.WindArcherStage2BowBoosterId] = handler.UseWeaponBooster
 		skillHandlerMap[skill.NightWalkerStage2HasteId] = handler.UseSkillHaste
+		skillHandlerMap[skill.LegendRecoveryId] = handler.UseBeginnerRecovery
+		skillHandlerMap[skill.LegendNimbleFeetId] = handler.UseNimbleFeet
 		skillHandlerMap[skill.AranStage1PolearmBoosterId] = handler.UseWeaponBooster
+		skillHandlerMap[skill.EvanRecoveryId] = handler.UseBeginnerRecovery
+		skillHandlerMap[skill.EvanNimbleFeetId] = handler.UseNimbleFeet
 		skillHandlerMap[skill.EvanStage6MagicBoosterId] = handler.UseWeaponBooster
 	})
 	h, ok := skillHandlerMap[id]

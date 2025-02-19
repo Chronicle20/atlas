@@ -60,7 +60,7 @@ func AdaptHandler(l logrus.FieldLogger) func(t tenant.Model, wp writer.Producer)
 
 				s, ok := session.GetRegistry().Get(t.Id(), sessionId)
 				if !ok {
-					sl.Errorf("Unable to locate session %d", sessionId)
+					sl.Errorf("Unable to locate session %s", sessionId.String())
 					return
 				}
 

@@ -74,3 +74,7 @@ func (m Model) MPConsume() uint16 {
 func (m Model) Duration() int32 {
 	return m.duration
 }
+
+func (m Model) Cooldown() uint32 {
+	return m.cooldown
+}

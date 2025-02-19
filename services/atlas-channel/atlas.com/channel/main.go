@@ -245,6 +245,7 @@ func produceWriters() []string {
 		writer.CharacterDamage,
 		writer.CharacterBuffGive,
 		writer.CharacterBuffCancel,
+		writer.CharacterSkillCooldown,
 	}
 }
 

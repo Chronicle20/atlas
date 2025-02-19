@@ -24,3 +24,11 @@ func (m Model) Changes() []stat.Model {
 func (m Model) Duration() int32 {
 	return m.duration
 }
+
+func NewBuff(sourceId uint32, duration int32, changes []stat.Model) Model {
+	return Model{
+		sourceId: sourceId,
+		duration: duration,
+		changes:  changes,
+	}
+}

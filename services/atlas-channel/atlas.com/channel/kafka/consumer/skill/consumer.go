@@ -32,6 +32,8 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreated(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdated(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCooldownApplied(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCooldownExpired(sc, wp))))
 			}
 		}
 	}
@@ -73,6 +75,68 @@ func announceSkillUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp
 			return func(skillId uint32, level byte, masterLevel byte, expiration time.Time) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					err := session.Announce(l)(ctx)(wp)(writer.CharacterSkillChange)(s, writer.CharacterSkillChangeBody(l, tenant.MustFromContext(ctx))(true, skillId, level, masterLevel, expiration, true))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to update character [%d] skill [%d].", s.CharacterId(), skillId)
+					}
+					return err
+				}
+			}
+		}
+	}
+}
+
+func handleCooldownApplied(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventCooldownAppliedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCooldownAppliedBody]) {
+		if e.Type != StatusEventTypeCooldownApplied {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, announceSkillCooldown(l)(ctx)(wp)(e.SkillId, e.Body.CooldownExpiresAt))
+	}
+}
+
+func announceSkillCooldown(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(skillId uint32, cooldownExpiresAt time.Time) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32, cooldownExpiresAt time.Time) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(skillId uint32, cooldownExpiresAt time.Time) model.Operator[session.Model] {
+			return func(skillId uint32, cooldownExpiresAt time.Time) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := session.Announce(l)(ctx)(wp)(writer.CharacterSkillCooldown)(s, writer.CharacterSkillCooldownBody(l, tenant.MustFromContext(ctx))(skillId, cooldownExpiresAt))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to update character [%d] skill [%d].", s.CharacterId(), skillId)
+					}
+					return err
+				}
+			}
+		}
+	}
+}
+
+func handleCooldownExpired(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventCooldownExpiredBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCooldownExpiredBody]) {
+		if e.Type != StatusEventTypeCooldownExpired {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, announceSkillCooldownReset(l)(ctx)(wp)(e.SkillId))
+	}
+}
+
+func announceSkillCooldownReset(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(skillId uint32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(skillId uint32) model.Operator[session.Model] {
+			return func(skillId uint32) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := session.Announce(l)(ctx)(wp)(writer.CharacterSkillCooldown)(s, writer.CharacterSkillCooldownBody(l, tenant.MustFromContext(ctx))(skillId, time.Time{}))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to update character [%d] skill [%d].", s.CharacterId(), skillId)
 					}

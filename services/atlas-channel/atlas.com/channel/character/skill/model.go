@@ -7,10 +7,11 @@ import (
 )
 
 type Model struct {
-	id          uint32
-	level       byte
-	masterLevel byte
-	expiration  time.Time
+	id                uint32
+	level             byte
+	masterLevel       byte
+	expiration        time.Time
+	cooldownExpiresAt time.Time
 }
 
 func (m Model) Id() uint32 {
@@ -34,4 +35,12 @@ func (m Model) IsFourthJob() bool {
 		return j.IsFourthJob()
 	}
 	return false
+}
+
+func (m Model) OnCooldown() bool {
+	return time.Now().Before(m.cooldownExpiresAt)
+}
+
+func (m Model) CooldownExpiresAt() time.Time {
+	return m.cooldownExpiresAt
 }

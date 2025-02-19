@@ -7,7 +7,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func applyCommandProvider(worldId byte, channelId byte, characterId uint32, sourceId uint32, duration int32, statups []statup.Model) model.Provider[[]kafka.Message] {
+func applyCommandProvider(worldId byte, channelId byte, characterId uint32, fromId uint32, sourceId uint32, duration int32, statups []statup.Model) model.Provider[[]kafka.Message] {
 	changes := make([]statChange, 0)
 	for _, su := range statups {
 		changes = append(changes, statChange{
@@ -23,6 +23,7 @@ func applyCommandProvider(worldId byte, channelId byte, characterId uint32, sour
 		CharacterId: characterId,
 		Type:        CommandTypeApply,
 		Body: applyCommandBody{
+			FromId:   fromId,
 			SourceId: sourceId,
 			Duration: duration,
 			Changes:  changes,

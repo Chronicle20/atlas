@@ -2,6 +2,7 @@ package writer
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/buff"
 	"atlas-channel/character/equipment"
 	"atlas-channel/character/equipment/slot"
 	"atlas-channel/guild"
@@ -14,8 +15,8 @@ import (
 
 const CharacterSpawn = "CharacterSpawn"
 
-func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.Model, g guild.Model, enteringField bool) BodyProducer {
-	return func(c character.Model, g guild.Model, enteringField bool) BodyProducer {
+func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) BodyProducer {
+	return func(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(c.Id())
 			w.WriteByte(c.Level())
@@ -35,7 +36,12 @@ func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.M
 			}
 
 			cts := model.NewCharacterTemporaryStat()
-			cts.Encode(l, t, options)(w)
+			for _, b := range bs {
+				for _, ch := range b.Changes() {
+					cts.AddStat(l)(t)(ch.Type(), b.SourceId(), ch.Amount(), b.ExpiresAt())
+				}
+			}
+			cts.EncodeForeign(l, t, options)(w)
 
 			w.WriteShort(c.JobId())
 

@@ -25,10 +25,12 @@ func GetByCharacterId(l logrus.FieldLogger) func(ctx context.Context) func(chara
 	}
 }
 
-func Apply(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, sourceId uint32, duration int32, statups []statup.Model) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, sourceId uint32, duration int32, statups []statup.Model) error {
-		return func(worldId byte, channelId byte, characterId uint32, sourceId uint32, duration int32, statups []statup.Model) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(applyCommandProvider(worldId, channelId, characterId, sourceId, duration, statups))
+func Apply(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, fromId uint32, sourceId uint32, duration int32, statups []statup.Model) model.Operator[uint32] {
+	return func(ctx context.Context) func(worldId byte, channelId byte, fromId uint32, sourceId uint32, duration int32, statups []statup.Model) model.Operator[uint32] {
+		return func(worldId byte, channelId byte, fromId uint32, sourceId uint32, duration int32, statups []statup.Model) model.Operator[uint32] {
+			return func(characterId uint32) error {
+				return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(applyCommandProvider(worldId, channelId, characterId, fromId, sourceId, duration, statups))
+			}
 		}
 	}
 }

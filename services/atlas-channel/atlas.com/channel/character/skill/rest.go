@@ -6,10 +6,11 @@ import (
 )
 
 type RestModel struct {
-	Id          uint32    `json:"-"`
-	Level       byte      `json:"level"`
-	MasterLevel byte      `json:"masterLevel"`
-	Expiration  time.Time `json:"expiration"`
+	Id                uint32    `json:"-"`
+	Level             byte      `json:"level"`
+	MasterLevel       byte      `json:"masterLevel"`
+	Expiration        time.Time `json:"expiration"`
+	CooldownExpiresAt time.Time `json:"cooldownExpiresAt"`
 }
 
 func (r RestModel) GetName() string {
@@ -31,9 +32,10 @@ func (r *RestModel) SetID(strId string) error {
 
 func Extract(rm RestModel) (Model, error) {
 	return Model{
-		id:          rm.Id,
-		level:       rm.Level,
-		masterLevel: rm.MasterLevel,
-		expiration:  rm.Expiration,
+		id:                rm.Id,
+		level:             rm.Level,
+		masterLevel:       rm.MasterLevel,
+		expiration:        rm.Expiration,
+		cooldownExpiresAt: rm.CooldownExpiresAt,
 	}, nil
 }

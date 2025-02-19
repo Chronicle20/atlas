@@ -208,18 +208,29 @@ func WriteQuestInfo(tenant tenant.Model) func(w *response.Writer, c character.Mo
 
 func WriteSkillInfo(tenant tenant.Model) func(w *response.Writer, c character.Model) {
 	return func(w *response.Writer, c character.Model) {
+		var onCooldown []int
+
 		w.WriteShort(uint16(len(c.Skills())))
-		for _, s := range c.Skills() {
+		for i, s := range c.Skills() {
 			w.WriteInt(s.Id())
 			w.WriteInt(uint32(s.Level()))
 			w.WriteInt64(msTime(s.Expiration()))
 			if s.IsFourthJob() {
 				w.WriteInt(uint32(s.MasterLevel()))
 			}
+			if s.OnCooldown() {
+				onCooldown = append(onCooldown, i)
+			}
 		}
 
 		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
-			w.WriteShort(0) // cooldowns
+			w.WriteShort(uint16(len(onCooldown)))
+			for _, i := range onCooldown {
+				s := c.Skills()[i]
+				w.WriteInt(s.Id())
+				cd := uint32(s.CooldownExpiresAt().Sub(time.Now()).Seconds())
+				w.WriteShort(uint16(cd))
+			}
 		}
 	}
 }

@@ -2,6 +2,7 @@ package _map
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/buff"
 	"atlas-channel/drop"
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
@@ -109,7 +110,13 @@ func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 			spawnCharacterFunc := session.Announce(l)(ctx)(wp)(writer.CharacterSpawn)
 			return func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					err := spawnCharacterFunc(s, writer.CharacterSpawnBody(l, tenant.MustFromContext(ctx))(c, g, enteringField))
+					bs, err := buff.GetByCharacterId(l)(ctx)(c.Id())
+					if err != nil {
+						l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
+						return err
+					}
+
+					err = spawnCharacterFunc(s, writer.CharacterSpawnBody(l, tenant.MustFromContext(ctx))(c, bs, g, enteringField))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to spawn character [%d] for [%d]", c.Id(), s.CharacterId())
 						return err

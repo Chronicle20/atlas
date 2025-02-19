@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func UseSkillHaste(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, info model.SkillUsageInfo, effect effect.Model) error {
+func UseWeaponBooster(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, info model.SkillUsageInfo, effect effect.Model) error {
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, info model.SkillUsageInfo, effect effect.Model) error {
 		return func(worldId byte, channelId byte, mapId uint32, characterId uint32, info model.SkillUsageInfo, effect effect.Model) error {
 			if effect.HPConsume() > 0 {
@@ -22,8 +22,6 @@ func UseSkillHaste(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 			applyBuffFunc := buff.Apply(l)(ctx)(worldId, channelId, characterId, info.SkillId(), effect.Duration(), effect.StatUps())
 
 			_ = applyBuffFunc(characterId)
-			_ = applyToParty(l)(ctx)(worldId, channelId, mapId, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
-
 			return nil
 		}
 	}

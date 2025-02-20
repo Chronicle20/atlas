@@ -6,6 +6,7 @@ import (
 	"atlas-channel/character/skill"
 	"atlas-channel/pet"
 	"github.com/Chronicle20/atlas-constants/job"
+	"github.com/Chronicle20/atlas-constants/world"
 	"strconv"
 	"strings"
 )
@@ -13,7 +14,7 @@ import (
 type Model struct {
 	id                 uint32
 	accountId          uint32
-	worldId            byte
+	worldId            world.Id
 	name               string
 	gender             byte
 	skinColor          byte
@@ -240,7 +241,7 @@ func (m Model) Stance() byte {
 	return m.stance
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 

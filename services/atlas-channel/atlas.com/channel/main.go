@@ -38,6 +38,8 @@ import (
 	"atlas-channel/tracing"
 	"context"
 	"fmt"
+	channel2 "github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	socket2 "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/request"
@@ -134,7 +136,7 @@ func main() {
 		for _, w := range s.Worlds {
 			for _, c := range w.Channels {
 				var sc server.Model
-				sc, err = server.New(t, w.Id, c.Id)
+				sc, err = server.New(t, world.Id(w.Id), channel2.Id(c.Id))
 				if err != nil {
 					continue
 				}

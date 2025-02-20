@@ -7,6 +7,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -49,7 +50,7 @@ func handleThreadCreated(sc server.Model, wp writer.Producer) message.Handler[st
 		if !t.Is(tenant.MustFromContext(ctx)) {
 			return
 		}
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
@@ -66,7 +67,7 @@ func handleThreadUpdated(sc server.Model, wp writer.Producer) message.Handler[st
 		if !t.Is(tenant.MustFromContext(ctx)) {
 			return
 		}
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
@@ -83,7 +84,7 @@ func handleThreadReplyAdded(sc server.Model, wp writer.Producer) message.Handler
 		if !t.Is(tenant.MustFromContext(ctx)) {
 			return
 		}
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
@@ -100,7 +101,7 @@ func handleThreadReplyDeleted(sc server.Model, wp writer.Producer) message.Handl
 		if !t.Is(tenant.MustFromContext(ctx)) {
 			return
 		}
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))

@@ -7,6 +7,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"fmt"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -42,7 +44,7 @@ func handleSimpleConversationCommand(sc server.Model, wp writer.Producer) messag
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), c.WorldId, c.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(c.WorldId), channel.Id(c.ChannelId)) {
 			return
 		}
 

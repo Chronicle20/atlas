@@ -70,6 +70,6 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 
 		l.Debugf("Character [%d] attempting to enter portal [%s] at [%d,%d] heading to [%d]. FieldKey [%d].", s.CharacterId(), portalName, x, y, targetId, fieldKey)
 		l.Debugf("Unused [%d], Premium [%d], Chase [%t], TargetX [%d], TargetY [%d]", unused, premium, chase, targetX, targetY)
-		_ = portal.Enter(l, ctx, producer.ProviderImpl(l)(ctx))(s.WorldId(), s.ChannelId(), s.MapId(), portalName, s.CharacterId())
+		_ = portal.Enter(l, ctx, producer.ProviderImpl(l)(ctx))(s.Map(), portalName, s.CharacterId())
 	}
 }

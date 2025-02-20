@@ -67,7 +67,7 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		}
 
 		l.Debugf("Character [%d] using skill [%d] at level [%d].", s.CharacterId(), sui.SkillId(), sui.SkillLevel())
-		err = h(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), *sui, se)
+		err = h(l)(ctx)(s.Map(), s.CharacterId(), *sui, se)
 		if err != nil {
 			l.WithError(err).Errorf("Character [%d] failed to use skill [%d].", s.CharacterId(), sui.SkillId())
 			return
@@ -75,7 +75,7 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 
 		session.IfPresentByCharacterId(t, s.WorldId(), s.ChannelId())(s.CharacterId(), announceSkillUse(l)(ctx)(wp)(sui.SkillId(), c.Level(), sui.SkillLevel()))
 
-		_ = _map.ForOtherSessionsInMap(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), announceForeignSkillUse(l)(ctx)(wp)(s.CharacterId(), sui.SkillId(), c.Level(), sui.SkillLevel()))
+		_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), announceForeignSkillUse(l)(ctx)(wp)(s.CharacterId(), sui.SkillId(), c.Level(), sui.SkillLevel()))
 
 		_ = enableActions(l)(ctx)(wp)(s)
 	}

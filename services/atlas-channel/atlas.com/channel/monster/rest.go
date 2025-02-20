@@ -1,6 +1,11 @@
 package monster
 
-import "strconv"
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"strconv"
+)
 
 type RestModel struct {
 	Id                 string        `json:"-"`
@@ -47,9 +52,9 @@ func Extract(m RestModel) (Model, error) {
 
 	return Model{
 		uniqueId:           uint32(id),
-		worldId:            m.WorldId,
-		channelId:          m.ChannelId,
-		mapId:              m.MapId,
+		worldId:            world.Id(m.WorldId),
+		channelId:          channel.Id(m.ChannelId),
+		mapId:              _map.Id(m.MapId),
 		hp:                 m.Hp,
 		mp:                 m.Mp,
 		monsterId:          m.MonsterId,

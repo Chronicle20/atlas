@@ -16,6 +16,6 @@ func CharacterDropMesoHandleFunc(l logrus.FieldLogger, ctx context.Context, _ wr
 		updateTime := r.ReadUint32()
 		amount := r.ReadUint32()
 		l.Debugf("Character [%d] attempting to drop [%d] meso. updateTime [%d].", s.CharacterId(), amount, updateTime)
-		_ = character.RequestDropMeso(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), amount)
+		_ = character.RequestDropMeso(l)(ctx)(s.Map(), s.CharacterId(), amount)
 	}
 }

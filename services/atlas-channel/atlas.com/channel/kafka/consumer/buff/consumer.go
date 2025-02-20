@@ -9,6 +9,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -45,11 +46,7 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -66,7 +63,7 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 				l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
 			}
 
-			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), func(os session.Model) error {
+			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), func(os session.Model) error {
 				err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGiveForeign)(os, writer.CharacterBuffGiveForeignBody(l)(ctx)(e.CharacterId, bs))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
@@ -85,13 +82,10 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
-		if sc.WorldId() != e.WorldId {
-			return
-		}
+
 		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
 			ebs := make([]buff.Model, 0)
 			changes := make([]stat.Model, 0)
@@ -105,7 +99,7 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 				l.WithError(err).Errorf("Unable to write character [%d] cancelled buffs.", e.CharacterId)
 			}
 
-			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), func(os session.Model) error {
+			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), func(os session.Model) error {
 				err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffCancelForeign)(os, writer.CharacterBuffCancelForeignBody(l)(ctx)(e.CharacterId, ebs))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)

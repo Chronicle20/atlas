@@ -5,6 +5,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -30,7 +33,7 @@ func ByIdModelProvider(tenant tenant.Model) func(sessionId uuid.UUID) model.Prov
 	}
 }
 
-func IfPresentById(tenant tenant.Model, worldId byte, channelId byte) func(sessionId uuid.UUID, f model.Operator[Model]) {
+func IfPresentById(tenant tenant.Model, worldId world.Id, channelId channel.Id) func(sessionId uuid.UUID, f model.Operator[Model]) {
 	return func(sessionId uuid.UUID, f model.Operator[Model]) {
 		s, err := ByIdModelProvider(tenant)(sessionId)()
 		if err != nil {
@@ -50,7 +53,7 @@ func ByCharacterIdModelProvider(tenant tenant.Model) func(characterId uint32) mo
 }
 
 // IfPresentByCharacterId executes an Operator if a session exists for the characterId
-func IfPresentByCharacterId(tenant tenant.Model, worldId byte, channelId byte) func(characterId uint32, f model.Operator[Model]) {
+func IfPresentByCharacterId(tenant tenant.Model, worldId world.Id, channelId channel.Id) func(characterId uint32, f model.Operator[Model]) {
 	return func(characterId uint32, f model.Operator[Model]) {
 		s, err := ByCharacterIdModelProvider(tenant)(characterId)()
 		if err != nil {
@@ -131,7 +134,7 @@ func SetCharacterId(characterId uint32) func(tenantId uuid.UUID, id uuid.UUID) M
 	}
 }
 
-func SetMapId(mapId uint32) func(tenantId uuid.UUID, id uuid.UUID) Model {
+func SetMapId(mapId _map.Id) func(tenantId uuid.UUID, id uuid.UUID) Model {
 	return func(tenantId uuid.UUID, id uuid.UUID) Model {
 		s := Model{}
 		var ok bool

@@ -10,6 +10,8 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -60,15 +62,11 @@ func handleError(sc server.Model, wp writer.Producer) message.Handler[statusEven
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.ActorId, announceGuildError(l)(ctx)(wp)(e.Body.Error))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, announceGuildError(l)(ctx)(wp)(e.Body.Error))
 	}
 }
 
@@ -96,11 +94,7 @@ func handleTitlesUpdated(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -131,11 +125,7 @@ func handleMemberJoined(sc server.Model, wp writer.Producer) message.Handler[sta
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -149,10 +139,10 @@ func handleMemberJoined(sc server.Model, wp writer.Producer) message.Handler[sta
 		_ = session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline, guild.NotMember(e.Body.CharacterId))), announceMemberJoined(l)(ctx)(wp)(e.GuildId, e.Body.CharacterId, e.Body.Name, e.Body.JobId, e.Body.Level, e.Body.Title, e.Body.Online, e.Body.AllianceTitle))
 
 		// Update character to show they are not in guild.
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, announceGuildInfo(l)(ctx)(wp)(g))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, announceGuildInfo(l)(ctx)(wp)(g))
 
 		// Update characters in map that x is in guild.
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, _map.ForSessionsInSessionsMap(l)(ctx)(func(oid uint32) model.Operator[session.Model] {
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, _map.ForSessionsInSessionsMap(l)(ctx)(func(oid uint32) model.Operator[session.Model] {
 			return announceForeignGuildInfo(l)(ctx)(wp)(e.Body.CharacterId, g)
 		}))
 	}
@@ -220,11 +210,7 @@ func handleMemberLeft(sc server.Model, wp writer.Producer) message.Handler[statu
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -245,10 +231,10 @@ func handleMemberLeft(sc server.Model, wp writer.Producer) message.Handler[statu
 		_ = session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline, guild.NotMember(e.Body.CharacterId))), af)
 
 		// Update character to show they are not in guild.
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, announceGuildInfo(l)(ctx)(wp)(guild.Model{}))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, announceGuildInfo(l)(ctx)(wp)(guild.Model{}))
 
 		// Update characters in map that x is no longer in guild.
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, _map.ForSessionsInSessionsMap(l)(ctx)(func(oid uint32) model.Operator[session.Model] {
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, _map.ForSessionsInSessionsMap(l)(ctx)(func(oid uint32) model.Operator[session.Model] {
 			return announceForeignGuildInfo(l)(ctx)(wp)(e.Body.CharacterId, guild.Model{})
 		}))
 	}
@@ -294,11 +280,7 @@ func handleCapacityUpdated(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -329,11 +311,7 @@ func handleNoticeUpdated(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -364,11 +342,7 @@ func handleMemberTitleUpdated(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -416,11 +390,7 @@ func handleMemberStatusUpdated(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -468,11 +438,7 @@ func handleEmblemUpdated(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -532,17 +498,13 @@ func handleRequestAgreement(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
 		p, err := party.GetByMemberId(l)(ctx)(e.Body.ActorId)
 		if err != nil {
-			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.ActorId, announceGuildError(l)(ctx)(wp)(writer.GuildOperationCreateError))
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, announceGuildError(l)(ctx)(wp)(writer.GuildOperationCreateError))
 			return
 		}
 		_ = session.ForEachByCharacterId(sc.Tenant())(party.GetMemberIds(l)(ctx)(p.Id(), model.Filters[party.MemberModel]()), requestGuildNameAgreement(l)(ctx)(wp)(p.Id(), p.LeaderName(), e.Body.ProposedName))
@@ -573,11 +535,7 @@ func handleDisbanded(sc server.Model, wp writer.Producer) message.Handler[status
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -617,11 +575,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -647,7 +601,7 @@ func handleRequestEmblem(sc server.Model, wp writer.Producer) message.Handler[co
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), c.Body.WorldId, c.Body.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(c.Body.WorldId), channel.Id(c.Body.ChannelId)) {
 			return
 		}
 
@@ -676,7 +630,7 @@ func handleRequestName(sc server.Model, wp writer.Producer) message.Handler[comm
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), c.Body.WorldId, c.Body.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(c.Body.WorldId), channel.Id(c.Body.ChannelId)) {
 			return
 		}
 

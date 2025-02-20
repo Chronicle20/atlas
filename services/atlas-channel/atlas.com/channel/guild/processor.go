@@ -4,6 +4,7 @@ import (
 	"atlas-channel/guild/member"
 	"atlas-channel/kafka/producer"
 	"context"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -69,11 +70,11 @@ func GetMemberIds(l logrus.FieldLogger) func(ctx context.Context) func(guildId u
 	}
 }
 
-func RequestCreate(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, name string) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, name string) error {
-		return func(worldId byte, channelId byte, mapId uint32, characterId uint32, name string) error {
-			l.Debugf("Character [%d] attempting to create guild [%s] in world [%d] channel [%d] map [%d].", characterId, name, worldId, channelId, mapId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestCreateProvider(worldId, channelId, mapId, characterId, name))
+func RequestCreate(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, name string) error {
+	return func(ctx context.Context) func(m _map.Model, characterId uint32, name string) error {
+		return func(m _map.Model, characterId uint32, name string) error {
+			l.Debugf("Character [%d] attempting to create guild [%s] in world [%d] channel [%d] map [%d].", characterId, name, m.WorldId(), m.ChannelId(), m.MapId())
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestCreateProvider(m, characterId, name))
 		}
 	}
 }

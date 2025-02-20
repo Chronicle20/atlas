@@ -3,22 +3,23 @@ package chair
 import (
 	"atlas-channel/kafka/producer"
 	"context"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/sirupsen/logrus"
 )
 
-func Use(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, chairType string, chairId uint32, characterId uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, chairType string, chairId uint32, characterId uint32) error {
-		return func(worldId byte, channelId byte, mapId uint32, chairType string, chairId uint32, characterId uint32) error {
-			l.Debugf("Character [%d] attempting to use map [%d] [%s] chair [%d].", characterId, mapId, chairType, chairId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(commandUseProvider(worldId, channelId, mapId, chairType, chairId, characterId))
+func Use(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, chairType string, chairId uint32, characterId uint32) error {
+	return func(ctx context.Context) func(m _map.Model, chairType string, chairId uint32, characterId uint32) error {
+		return func(m _map.Model, chairType string, chairId uint32, characterId uint32) error {
+			l.Debugf("Character [%d] attempting to use map [%d] [%s] chair [%d].", characterId, m.MapId(), chairType, chairId)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(commandUseProvider(m, chairType, chairId, characterId))
 		}
 	}
 }
 
-func Cancel(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
-		return func(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(commandCancelProvider(worldId, channelId, mapId, characterId))
+func Cancel(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32) error {
+	return func(ctx context.Context) func(m _map.Model, characterId uint32) error {
+		return func(m _map.Model, characterId uint32) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(commandCancelProvider(m, characterId))
 		}
 	}
 }

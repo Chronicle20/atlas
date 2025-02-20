@@ -20,7 +20,7 @@ func NPCStartConversationHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
 			return
 		}
-		_ = npc.StartConversation(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), n.Template(), s.CharacterId())
+		_ = npc.StartConversation(l)(ctx)(s.Map(), n.Template(), s.CharacterId())
 
 	}
 }

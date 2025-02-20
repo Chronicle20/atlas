@@ -1,9 +1,15 @@
 package monster
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 type Model struct {
-	worldId            byte
-	channelId          byte
-	mapId              uint32
+	worldId            world.Id
+	channelId          channel.Id
+	mapId              _map.Id
 	uniqueId           uint32
 	hp                 uint32
 	mp                 uint32
@@ -48,15 +54,15 @@ func (m Model) Team() int8 {
 	return m.team
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
-func (m Model) ChannelId() byte {
+func (m Model) ChannelId() channel.Id {
 	return m.channelId
 }
 
-func (m Model) MapId() uint32 {
+func (m Model) MapId() _map.Id {
 	return m.mapId
 }
 

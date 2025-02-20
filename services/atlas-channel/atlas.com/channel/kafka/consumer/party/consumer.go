@@ -8,6 +8,8 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -54,7 +56,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 
@@ -97,7 +99,7 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 
@@ -126,11 +128,11 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 	}
 }
 
-func partyLeft(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
+func partyLeft(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			partyLeftFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
-			return func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
+			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					err := partyLeftFunc(s, writer.PartyLeftBody(l)(p, tc, forChannel))
 					if err != nil {
@@ -155,7 +157,7 @@ func handleExpel(sc server.Model, wp writer.Producer) message.Handler[statusEven
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 
@@ -184,11 +186,11 @@ func handleExpel(sc server.Model, wp writer.Producer) message.Handler[statusEven
 	}
 }
 
-func partyExpel(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
+func partyExpel(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			partyExpelFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
-			return func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
+			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					err := partyExpelFunc(s, writer.PartyExpelBody(l)(p, tc, forChannel))
 					if err != nil {
@@ -213,7 +215,7 @@ func handleDisband(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 
@@ -236,11 +238,11 @@ func handleDisband(sc server.Model, wp writer.Producer) message.Handler[statusEv
 	}
 }
 
-func partyDisband(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, tc character.Model, forChannel byte) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, tc character.Model, forChannel byte) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(partyId uint32, tc character.Model, forChannel byte) model.Operator[session.Model] {
+func partyDisband(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(partyId uint32, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			partyDisbandFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
-			return func(partyId uint32, tc character.Model, forChannel byte) model.Operator[session.Model] {
+			return func(partyId uint32, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					err := partyDisbandFunc(s, writer.PartyDisbandBody(l)(partyId, tc, forChannel))
 					if err != nil {
@@ -265,7 +267,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 
@@ -290,11 +292,11 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 	}
 }
 
-func partyJoined(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
+func partyJoined(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			partyJoinedFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
-			return func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
+			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					err := partyJoinedFunc(s, writer.PartyJoinBody(l)(p, tc, forChannel))
 					if err != nil {
@@ -319,7 +321,7 @@ func handleChangeLeader(sc server.Model, wp writer.Producer) message.Handler[sta
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 
@@ -371,7 +373,7 @@ func handleError(sc server.Model, wp writer.Producer) message.Handler[statusEven
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 

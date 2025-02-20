@@ -1,6 +1,9 @@
 package party
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/manyminds/api2go/jsonapi"
 	"strconv"
 )
@@ -104,9 +107,9 @@ func ExtractMember(rm MemberRestModel) (MemberModel, error) {
 		name:      rm.Name,
 		level:     rm.Level,
 		jobId:     rm.JobId,
-		worldId:   rm.WorldId,
-		channelId: rm.ChannelId,
-		mapId:     rm.MapId,
+		worldId:   world.Id(rm.WorldId),
+		channelId: channel.Id(rm.ChannelId),
+		mapId:     _map.Id(rm.MapId),
 		online:    rm.Online,
 	}, nil
 }

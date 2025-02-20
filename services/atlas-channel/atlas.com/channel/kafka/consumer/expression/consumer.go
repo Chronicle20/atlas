@@ -7,6 +7,9 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map2 "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -38,18 +41,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 
 func handleEvent(sc server.Model, wp writer.Producer) message.Handler[expressionEvent] {
 	return func(l logrus.FieldLogger, ctx context.Context, e expressionEvent) {
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
-			return
-		}
-		if sc.ChannelId() != e.ChannelId {
-			return
-		}
-		_ = _map.ForOtherSessionsInMap(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.CharacterId, func(s session.Model) error {
+		_ = _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.CharacterId, func(s session.Model) error {
 			characterExpressionFunc := session.Announce(l)(ctx)(wp)(writer.CharacterExpression)
 			err := characterExpressionFunc(s, writer.CharacterExpressionBody(e.CharacterId, e.Expression))
 			if err != nil {

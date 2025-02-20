@@ -14,6 +14,6 @@ const CharacterChairPortableHandle = "CharacterChairPortableHandle"
 func CharacterChairPortableHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		itemId := r.ReadUint32()
-		_ = chair.Use(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), chair.ChairTypePortable, itemId, s.CharacterId())
+		_ = chair.Use(l)(ctx)(s.Map(), chair.ChairTypePortable, itemId, s.CharacterId())
 	}
 }

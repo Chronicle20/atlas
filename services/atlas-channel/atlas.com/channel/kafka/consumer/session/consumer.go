@@ -13,6 +13,7 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -148,7 +149,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					s = session.SetAccountId(c.AccountId())(t.Id(), s.SessionId())
 					s = session.SetCharacterId(c.Id())(t.Id(), s.SessionId())
 					s = session.SetGm(c.Gm())(t.Id(), s.SessionId())
-					s = session.SetMapId(c.MapId())(t.Id(), s.SessionId())
+					s = session.SetMapId(_map.Id(c.MapId()))(t.Id(), s.SessionId())
 
 					session.EmitCreated(producer.ProviderImpl(l)(ctx))(s)
 

@@ -36,7 +36,7 @@ func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			return
 		}
 
-		_ = _map.ForOtherSessionsInMap(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), func(os session.Model) error {
+		_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), func(os session.Model) error {
 			err = session.Announce(l)(ctx)(wp)(writer.CharacterDamage)(os, writer.CharacterDamageBody(l)(ctx)(c, *di))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] has been damaged to character [%d].", s.CharacterId(), os.CharacterId())
@@ -45,6 +45,6 @@ func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			return nil
 		})
 
-		_ = character.ChangeHP(l)(ctx)(s.WorldId(), s.ChannelId(), s.CharacterId(), -int16(di.Damage()))
+		_ = character.ChangeHP(l)(ctx)(s.Map(), s.CharacterId(), -int16(di.Damage()))
 	}
 }

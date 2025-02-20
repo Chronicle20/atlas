@@ -2,12 +2,13 @@ package buff
 
 import (
 	"atlas-channel/skill/effect/statup"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func applyCommandProvider(worldId byte, channelId byte, characterId uint32, fromId uint32, sourceId uint32, duration int32, statups []statup.Model) model.Provider[[]kafka.Message] {
+func applyCommandProvider(m _map.Model, characterId uint32, fromId uint32, sourceId uint32, duration int32, statups []statup.Model) model.Provider[[]kafka.Message] {
 	changes := make([]statChange, 0)
 	for _, su := range statups {
 		changes = append(changes, statChange{
@@ -18,8 +19,8 @@ func applyCommandProvider(worldId byte, channelId byte, characterId uint32, from
 
 	key := producer.CreateKey(int(characterId))
 	value := &command[applyCommandBody]{
-		WorldId:     worldId,
-		ChannelId:   channelId,
+		WorldId:     byte(m.WorldId()),
+		ChannelId:   byte(m.ChannelId()),
 		CharacterId: characterId,
 		Type:        CommandTypeApply,
 		Body: applyCommandBody{
@@ -32,11 +33,11 @@ func applyCommandProvider(worldId byte, channelId byte, characterId uint32, from
 	return producer.SingleMessageProvider(key, value)
 }
 
-func cancelCommandProvider(worldId byte, channelId byte, characterId uint32, sourceId uint32) model.Provider[[]kafka.Message] {
+func cancelCommandProvider(m _map.Model, characterId uint32, sourceId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &command[cancelCommandBody]{
-		WorldId:     worldId,
-		ChannelId:   channelId,
+		WorldId:     byte(m.WorldId()),
+		ChannelId:   byte(m.ChannelId()),
 		CharacterId: characterId,
 		Type:        CommandTypeCancel,
 		Body: cancelCommandBody{

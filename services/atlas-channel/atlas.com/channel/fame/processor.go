@@ -3,13 +3,14 @@ package fame
 import (
 	"atlas-channel/kafka/producer"
 	"context"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/sirupsen/logrus"
 )
 
-func RequestChange(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32, targetId uint32, amount int8) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32, targetId uint32, amount int8) error {
-		return func(worldId byte, channelId byte, characterId uint32, mapId uint32, targetId uint32, amount int8) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestChangeFameCommandProvider(worldId, channelId, characterId, mapId, targetId, amount))
+func RequestChange(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, targetId uint32, amount int8) error {
+	return func(ctx context.Context) func(m _map.Model, characterId uint32, targetId uint32, amount int8) error {
+		return func(m _map.Model, characterId uint32, targetId uint32, amount int8) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestChangeFameCommandProvider(m, characterId, targetId, amount))
 		}
 	}
 }

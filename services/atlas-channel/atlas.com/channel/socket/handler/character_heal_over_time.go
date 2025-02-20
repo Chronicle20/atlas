@@ -25,10 +25,10 @@ func CharacterHealOverTimeHandleFunc(l logrus.FieldLogger, ctx context.Context, 
 		}
 		l.Debugf("Character [%d] received [%d] HP and [%d] MP over time. updateTime [%d], 5120 [%d], b [%d]", s.CharacterId(), hp, mp, updateTime, val, b)
 		if hp != 0 {
-			_ = character.ChangeHP(l)(ctx)(s.WorldId(), s.ChannelId(), s.CharacterId(), hp)
+			_ = character.ChangeHP(l)(ctx)(s.Map(), s.CharacterId(), hp)
 		}
 		if mp != 0 {
-			_ = character.ChangeMP(l)(ctx)(s.WorldId(), s.ChannelId(), s.CharacterId(), mp)
+			_ = character.ChangeMP(l)(ctx)(s.Map(), s.CharacterId(), mp)
 		}
 	}
 }

@@ -180,7 +180,7 @@ func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 							l.WithError(err).Errorf("Unable to issue appearance update for character [%d] to others in map.", s.CharacterId())
 							errChannels <- err
 						}
-						errChannels <- _map.ForSessionsInMap(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), updateAppearance(l)(ctx)(wp)(c))
+						errChannels <- _map.ForSessionsInMap(l)(ctx)(s.Map(), updateAppearance(l)(ctx)(wp)(c))
 					}()
 
 					var err error

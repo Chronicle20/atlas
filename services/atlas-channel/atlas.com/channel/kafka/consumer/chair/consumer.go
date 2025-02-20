@@ -9,6 +9,9 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map2 "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -46,12 +49,12 @@ func handleStatusEventUsed(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
 		if e.ChairType == chair.ChairTypePortable {
-			_ = _map.ForOtherSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), e.MapId, e.Body.CharacterId, showChair(l)(ctx)(wp)(e.Body.CharacterId, e.ChairId))
+			_ = _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.Body.CharacterId, showChair(l)(ctx)(wp)(e.Body.CharacterId, e.ChairId))
 
 			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
 				err := session.Announce(l)(ctx)(wp)(writer.StatChanged)(s, writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true))
@@ -99,7 +102,7 @@ func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
@@ -129,10 +132,10 @@ func handleStatusEventCancelled(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
-		_ = _map.ForOtherSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), e.MapId, e.Body.CharacterId, showChair(l)(ctx)(wp)(e.Body.CharacterId, 0))
+		_ = _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.Body.CharacterId, showChair(l)(ctx)(wp)(e.Body.CharacterId, 0))
 
 		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
 			err := session.Announce(l)(ctx)(wp)(writer.CharacterSitResult)(s, writer.CharacterCancelSitBody())

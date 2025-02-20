@@ -8,6 +8,8 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -49,7 +51,7 @@ func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[statu
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 
@@ -79,12 +81,7 @@ func handleLogoutEvent(sc server.Model, wp writer.Producer) message.Handler[stat
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -102,17 +99,17 @@ func handleLogoutEvent(sc server.Model, wp writer.Producer) message.Handler[stat
 
 		go func() {
 			for _, m := range p.Members() {
-				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 			}
 		}()
 	}
 }
 
-func partyUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
+func partyUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			partyUpdateFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
-			return func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
+			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					err := partyUpdateFunc(s, writer.PartyUpdateBody(l)(p, tc, forChannel))
 					if err != nil {

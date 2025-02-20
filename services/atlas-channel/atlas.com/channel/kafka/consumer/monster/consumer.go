@@ -9,6 +9,9 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map2 "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -46,22 +49,22 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 }
 
 func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventCreatedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventCreatedBody]) {
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.ChannelId) {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCreatedBody]) {
+		if e.Type != EventStatusCreated {
 			return
 		}
 
-		if event.Type != EventStatusCreated {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
-		m, err := monster.GetById(l)(ctx)(event.UniqueId)
+		m, err := monster.GetById(l)(ctx)(e.UniqueId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being spawned.", event.UniqueId)
+			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being spawned.", e.UniqueId)
 			return
 		}
 
-		_map.ForSessionsInMap(l)(ctx)(event.WorldId, event.ChannelId, event.MapId, spawnForSession(l)(ctx)(wp)(m))
+		_ = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), spawnForSession(l)(ctx)(wp)(m))
 	}
 }
 
@@ -84,16 +87,16 @@ func spawnForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 }
 
 func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventDestroyedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventDestroyedBody]) {
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.ChannelId) {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventDestroyedBody]) {
+		if e.Type != EventStatusDestroyed {
 			return
 		}
 
-		if event.Type != EventStatusDestroyed {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
-		_map.ForSessionsInMap(l)(ctx)(event.WorldId, event.ChannelId, event.MapId, destroyForSession(l)(ctx)(wp)(event.UniqueId))
+		_ = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), destroyForSession(l)(ctx)(wp)(e.UniqueId))
 	}
 }
 
@@ -115,16 +118,16 @@ func destroyForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 }
 
 func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventKilledBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventKilledBody]) {
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.ChannelId) {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventKilledBody]) {
+		if e.Type != EventStatusKilled {
 			return
 		}
 
-		if event.Type != EventStatusKilled {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
-		_map.ForSessionsInMap(l)(ctx)(event.WorldId, event.ChannelId, event.MapId, killForSession(l)(ctx)(wp)(event.UniqueId))
+		_ = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), killForSession(l)(ctx)(wp)(e.UniqueId))
 	}
 }
 
@@ -146,22 +149,22 @@ func killForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writ
 }
 
 func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventStartControlBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventStartControlBody]) {
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.ChannelId) {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventStartControlBody]) {
+		if e.Type != EventStatusStartControl {
 			return
 		}
 
-		if event.Type != EventStatusStartControl {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
-		m, err := monster.GetById(l)(ctx)(event.UniqueId)
+		m, err := monster.GetById(l)(ctx)(e.UniqueId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being controlled.", event.UniqueId)
+			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being controlled.", e.UniqueId)
 			return
 		}
 
-		session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(event.Body.ActorId, startControlForSession(l)(ctx)(wp)(m))
+		session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, startControlForSession(l)(ctx)(wp)(m))
 	}
 }
 
@@ -184,22 +187,22 @@ func startControlForSession(l logrus.FieldLogger) func(ctx context.Context) func
 }
 
 func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventStopControlBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventStopControlBody]) {
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.ChannelId) {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventStopControlBody]) {
+		if e.Type != EventStatusStopControl {
 			return
 		}
 
-		if event.Type != EventStatusStopControl {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
-		m, err := monster.GetById(l)(ctx)(event.UniqueId)
+		m, err := monster.GetById(l)(ctx)(e.UniqueId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being controlled.", event.UniqueId)
+			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being controlled.", e.UniqueId)
 			return
 		}
 
-		session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(event.Body.ActorId, stopControlForSession(l)(ctx)(wp)(m))
+		session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, stopControlForSession(l)(ctx)(wp)(m))
 	}
 }
 
@@ -222,18 +225,18 @@ func stopControlForSession(l logrus.FieldLogger) func(ctx context.Context) func(
 }
 
 func handleMovementEvent(sc server.Model, wp writer.Producer) message.Handler[movementEvent] {
-	return func(l logrus.FieldLogger, ctx context.Context, event movementEvent) {
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.ChannelId) {
+	return func(l logrus.FieldLogger, ctx context.Context, e movementEvent) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
-		m, err := monster.GetById(l)(ctx)(event.UniqueId)
+		m, err := monster.GetById(l)(ctx)(e.UniqueId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve the monster [%d] moving.", event.UniqueId)
+			l.WithError(err).Errorf("Unable to retrieve the monster [%d] moving.", e.UniqueId)
 			return
 		}
 
-		_map.ForOtherSessionsInMap(l)(ctx)(event.WorldId, event.ChannelId, m.MapId(), event.ObserverId, showMovementForSession(l)(ctx)(wp)(event))
+		_ = _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(m.MapId()), e.ObserverId, showMovementForSession(l)(ctx)(wp)(e))
 	}
 }
 

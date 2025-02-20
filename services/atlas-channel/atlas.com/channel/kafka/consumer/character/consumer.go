@@ -9,6 +9,9 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map2 "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -57,7 +60,7 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 
@@ -143,7 +146,7 @@ func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l log
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.Body.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(event.WorldId), channel.Id(event.Body.ChannelId)) {
 			return
 		}
 
@@ -164,9 +167,9 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						return err
 					}
 
-					s = session.SetMapId(event.Body.TargetMapId)(t.Id(), s.SessionId())
+					s = session.SetMapId(_map2.Id(event.Body.TargetMapId))(t.Id(), s.SessionId())
 
-					err = setFieldFunc(s, writer.WarpToMapBody(l, t)(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp()))
+					err = setFieldFunc(s, writer.WarpToMapBody(l, t)(s.ChannelId(), _map2.Id(event.Body.TargetMapId), event.Body.TargetPortalId, c.Hp()))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 						return err
@@ -184,7 +187,7 @@ func handleStatusEventExperienceChanged(sc server.Model, wp writer.Producer) mes
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.Body.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.Body.ChannelId)) {
 			return
 		}
 
@@ -255,12 +258,7 @@ func handleStatusEventFameChanged(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -328,7 +326,7 @@ func handleStatusEventMesoChanged(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 
@@ -365,17 +363,17 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
+		if sc.WorldId() != world.Id(e.WorldId) {
 			return
 		}
 
-		if sc.ChannelId() != e.Body.ChannelId {
+		if sc.ChannelId() != channel.Id(e.Body.ChannelId) {
 			return
 		}
 
 		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
 			_ = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(s, writer.CharacterLevelUpEffectBody(l)())
-			_ = _map.ForOtherSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), s.MapId(), s.CharacterId(), func(os session.Model) error {
+			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), func(os session.Model) error {
 				return session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(os, writer.CharacterLevelUpEffectForeignBody(l)(s.CharacterId()))
 			})
 			return nil
@@ -385,13 +383,13 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 }
 
 func handleMovementEvent(sc server.Model, wp writer.Producer) message.Handler[movementEvent] {
-	return func(l logrus.FieldLogger, ctx context.Context, event movementEvent) {
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.ChannelId) {
+	return func(l logrus.FieldLogger, ctx context.Context, e movementEvent) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
-		mv := model2.Movement{StartX: event.Movement.StartX, StartY: event.Movement.StartY}
-		for _, elem := range event.Movement.Elements {
+		mv := model2.Movement{StartX: e.Movement.StartX, StartY: e.Movement.StartY}
+		for _, elem := range e.Movement.Elements {
 			if elem.TypeStr == MovementTypeNormal {
 				mv.Elements = append(mv.Elements, &model2.NormalElement{
 					Element: model2.Element{
@@ -526,7 +524,7 @@ func handleMovementEvent(sc server.Model, wp writer.Producer) message.Handler[mo
 			}
 		}
 
-		_map.ForOtherSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), event.MapId, event.CharacterId, showMovementForSession(l)(ctx)(wp)(event.CharacterId, mv))
+		_map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.CharacterId, showMovementForSession(l)(ctx)(wp)(e.CharacterId, mv))
 	}
 }
 

@@ -9,6 +9,9 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map2 "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -40,22 +43,22 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 }
 
 func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[chatEvent[generalChatBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, event chatEvent[generalChatBody]) {
-		if event.Type != ChatTypeGeneral {
+	return func(l logrus.FieldLogger, ctx context.Context, e chatEvent[generalChatBody]) {
+		if e.Type != ChatTypeGeneral {
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)()(event.CharacterId)
+		c, err := character.GetById(l)(ctx)()(e.CharacterId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve character [%d] chatting.", event.CharacterId)
+			l.WithError(err).Errorf("Unable to retrieve character [%d] chatting.", e.CharacterId)
 			return
 		}
 
-		_ = _map.ForSessionsInMap(l)(ctx)(event.WorldId, event.ChannelId, event.MapId, showGeneralChatForSession(l)(ctx)(wp)(event, c.Gm()))
+		_ = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), showGeneralChatForSession(l)(ctx)(wp)(e, c.Gm()))
 	}
 }
 
@@ -83,7 +86,7 @@ func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[chatEv
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 

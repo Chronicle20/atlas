@@ -6,6 +6,7 @@ import (
 	"atlas-channel/character/equipment/slot"
 	"atlas-channel/character/inventory/equipable"
 	"atlas-channel/character/inventory/item"
+	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -18,8 +19,8 @@ import (
 
 const SetField = "SetField"
 
-func WarpToMapBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byte, mapId uint32, portalId uint32, hp uint16) BodyProducer {
-	return func(channelId byte, mapId uint32, portalId uint32, hp uint16) BodyProducer {
+func WarpToMapBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId channel.Id, mapId _map.Id, portalId uint32, hp uint16) BodyProducer {
+	return func(channelId channel.Id, mapId _map.Id, portalId uint32, hp uint16) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
 				w.WriteShort(0) // decode opt, loop with 2 decode 4s
@@ -35,7 +36,7 @@ func WarpToMapBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byt
 				w.WriteShort(0) // nNotifierCheck
 				w.WriteByte(0)  // revive
 			}
-			w.WriteInt(mapId)
+			w.WriteInt(uint32(mapId))
 			w.WriteByte(byte(portalId))
 			w.WriteShort(hp)
 			if tenant.Region() == "GMS" && tenant.MajorVersion() > 28 {
@@ -51,8 +52,8 @@ func WarpToMapBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byt
 	}
 }
 
-func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId byte, c character.Model, bl buddylist.Model) BodyProducer {
-	return func(channelId byte, c character.Model, bl buddylist.Model) BodyProducer {
+func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId channel.Id, c character.Model, bl buddylist.Model) BodyProducer {
+	return func(channelId channel.Id, c character.Model, bl buddylist.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
 				w.WriteShort(0) // decode opt, loop with 2 decode 4s

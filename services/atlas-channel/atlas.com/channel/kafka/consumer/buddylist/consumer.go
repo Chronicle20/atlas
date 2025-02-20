@@ -48,16 +48,11 @@ func handleStatusEventBuddyAdded(sc server.Model, wp writer.Producer) message.Ha
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != world.Id(c.WorldId) {
-			return
-		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(c.CharacterId, redrawBuddyList(l)(ctx)(wp)())
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, redrawBuddyList(l)(ctx)(wp)())
 	}
 }
 
@@ -91,16 +86,11 @@ func handleStatusEventBuddyRemoved(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != world.Id(c.WorldId) {
-			return
-		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(c.CharacterId, redrawBuddyList(l)(ctx)(wp)())
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, redrawBuddyList(l)(ctx)(wp)())
 	}
 }
 
@@ -110,16 +100,11 @@ func handleStatusEventBuddyUpdated(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != world.Id(c.WorldId) {
-			return
-		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(c.CharacterId, updateBuddy(l)(ctx)(wp)(c.Body.CharacterId, c.Body.Group, c.Body.CharacterName, c.Body.ChannelId, c.Body.InShop))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, updateBuddy(l)(ctx)(wp)(c.Body.CharacterId, c.Body.Group, c.Body.CharacterName, c.Body.ChannelId, c.Body.InShop))
 	}
 }
 
@@ -148,16 +133,11 @@ func handleStatusEventBuddyChannelChange(sc server.Model, wp writer.Producer) me
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != world.Id(c.WorldId) {
-			return
-		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyChannelChange(l)(ctx)(wp)(c.Body.CharacterId, c.Body.ChannelId))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyChannelChange(l)(ctx)(wp)(c.Body.CharacterId, c.Body.ChannelId))
 	}
 }
 
@@ -185,16 +165,11 @@ func handleStatusEventBuddyCapacityChange(sc server.Model, wp writer.Producer) m
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != world.Id(c.WorldId) {
-			return
-		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyCapacityChange(l)(ctx)(wp)(c.Body.Capacity))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyCapacityChange(l)(ctx)(wp)(c.Body.Capacity))
 	}
 }
 
@@ -222,16 +197,11 @@ func handleStatusEventBuddyError(sc server.Model, wp writer.Producer) message.Ha
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != world.Id(c.WorldId) {
-			return
-		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyError(l)(ctx)(wp)(c.Body.Error))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyError(l)(ctx)(wp)(c.Body.Error))
 	}
 }
 

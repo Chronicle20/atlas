@@ -55,12 +55,7 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != world.Id(e.WorldId) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -321,12 +316,7 @@ func handleStatusEventMesoChanged(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != world.Id(e.WorldId) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -358,20 +348,11 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.Body.ChannelId)) {
 			return
 		}
 
-		if sc.WorldId() != world.Id(e.WorldId) {
-			return
-		}
-
-		if sc.ChannelId() != channel.Id(e.Body.ChannelId) {
-			return
-		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
 			_ = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(s, writer.CharacterLevelUpEffectBody(l)())
 			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), func(os session.Model) error {
 				return session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(os, writer.CharacterLevelUpEffectForeignBody(l)(s.CharacterId()))

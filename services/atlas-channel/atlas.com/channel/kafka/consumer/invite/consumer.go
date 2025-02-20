@@ -44,12 +44,7 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != world.Id(e.WorldId) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -69,7 +64,7 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 		}
 
 		if eventHandler != nil {
-			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.TargetId, eventHandler)
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.TargetId, eventHandler)
 		}
 	}
 }
@@ -132,12 +127,7 @@ func handleRejectedStatusEvent(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != world.Id(e.WorldId) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -157,7 +147,7 @@ func handleRejectedStatusEvent(sc server.Model, wp writer.Producer) message.Hand
 		}
 
 		if eventHandler != nil {
-			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.OriginatorId, eventHandler)
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.OriginatorId, eventHandler)
 		}
 	}
 }

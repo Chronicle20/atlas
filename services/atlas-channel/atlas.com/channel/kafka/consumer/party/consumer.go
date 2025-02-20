@@ -51,12 +51,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != world.Id(e.WorldId) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -66,7 +61,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(p.LeaderId(), partyCreated(l)(ctx)(wp)(e.PartyId))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(p.LeaderId(), partyCreated(l)(ctx)(wp)(e.PartyId))
 	}
 }
 
@@ -94,12 +89,7 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != world.Id(e.WorldId) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -118,11 +108,11 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 		// For remaining party members.
 		go func() {
 			for _, m := range p.Members() {
-				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 			}
 		}()
 		go func() {
-			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 		}()
 
 	}
@@ -152,12 +142,7 @@ func handleExpel(sc server.Model, wp writer.Producer) message.Handler[statusEven
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != world.Id(e.WorldId) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -176,11 +161,11 @@ func handleExpel(sc server.Model, wp writer.Producer) message.Handler[statusEven
 		// For remaining party members.
 		go func() {
 			for _, m := range p.Members() {
-				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 			}
 		}()
 		go func() {
-			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 		}()
 
 	}
@@ -210,12 +195,7 @@ func handleDisband(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != world.Id(e.WorldId) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -228,11 +208,11 @@ func handleDisband(sc server.Model, wp writer.Producer) message.Handler[statusEv
 		// For remaining party members.
 		go func() {
 			for _, m := range e.Body.Members {
-				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
+				session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
 			}
 		}()
 		go func() {
-			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
 		}()
 
 	}
@@ -262,12 +242,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != world.Id(e.WorldId) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -286,7 +261,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 		// For remaining party members.
 		for _, m := range p.Members() {
 			go func() {
-				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), partyJoined(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyJoined(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 			}()
 		}
 	}
@@ -316,12 +291,7 @@ func handleChangeLeader(sc server.Model, wp writer.Producer) message.Handler[sta
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != world.Id(e.WorldId) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -334,11 +304,11 @@ func handleChangeLeader(sc server.Model, wp writer.Producer) message.Handler[sta
 		// For remaining party members.
 		go func() {
 			for _, m := range p.Members() {
-				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
+				session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
 			}
 		}()
 		go func() {
-			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
+			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
 		}()
 
 	}
@@ -368,16 +338,11 @@ func handleError(sc server.Model, wp writer.Producer) message.Handler[statusEven
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != world.Id(e.WorldId) {
-			return
-		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, partyError(l)(ctx)(wp)(e.Body.Type, e.Body.CharacterName))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, partyError(l)(ctx)(wp)(e.Body.Type, e.Body.CharacterName))
 	}
 }
 

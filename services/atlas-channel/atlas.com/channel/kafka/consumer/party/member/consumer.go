@@ -46,12 +46,7 @@ func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[statu
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != world.Id(e.WorldId) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -69,7 +64,7 @@ func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[statu
 
 		go func() {
 			for _, m := range p.Members() {
-				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 			}
 		}()
 	}

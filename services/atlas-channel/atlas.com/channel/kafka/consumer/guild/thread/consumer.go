@@ -46,14 +46,11 @@ func handleThreadCreated(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
-		if sc.WorldId() != world.Id(e.WorldId) {
-			return
-		}
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 	}
 }
 
@@ -63,14 +60,11 @@ func handleThreadUpdated(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
-		if sc.WorldId() != world.Id(e.WorldId) {
-			return
-		}
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 	}
 }
 
@@ -80,14 +74,11 @@ func handleThreadReplyAdded(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
-		if sc.WorldId() != world.Id(e.WorldId) {
-			return
-		}
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 	}
 }
 
@@ -97,14 +88,11 @@ func handleThreadReplyDeleted(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
-		if sc.WorldId() != world.Id(e.WorldId) {
-			return
-		}
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 	}
 }
 

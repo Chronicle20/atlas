@@ -1295,3 +1295,10 @@ func Type(jobId Id) uint16 {
 func IsCygnus(jobId Id) bool {
 	return Type(jobId) == 1
 }
+
+func GetSkillBook(jobId Id) int {
+	if jobId >= EvanStage2Id && jobId <= EvanStage10Id {
+		return int(jobId - 2209)
+	}
+	return 0
+}

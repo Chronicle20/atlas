@@ -63,14 +63,10 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			SetPlayerDrop(e.Body.PlayerDrop).
 			Build()
 
-		_ = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), func(s session.Model) error {
-			l.Debugf("Spawning [%d] drop [%d] for character [%d].", d.ItemId(), d.Id(), s.CharacterId())
-			err := session.Announce(l)(ctx)(wp)(writer.DropSpawn)(s, writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeFresh, 0))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to spawn drop [%d] for character [%d].", d.Id(), s.CharacterId())
-			}
-			return err
-		})
+		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.DropSpawn)(writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeFresh, 0)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to spawn drop [%d] for characters in map [%d].", d.Id(), e.MapId)
+		}
 	}
 }
 
@@ -84,14 +80,12 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		_ = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), func(s session.Model) error {
-			l.Debugf("Despawning drop [%d] for character [%d].", e.DropId, s.CharacterId())
-			err := session.Announce(l)(ctx)(wp)(writer.DropDestroy)(s, writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypeExpire, s.CharacterId(), -1))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to destroy drop [%d] for character [%d].", e.DropId, s.CharacterId())
-			}
-			return err
+		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), func(s session.Model) error {
+			return session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypeExpire, s.CharacterId(), -1))(s)
 		})
+		if err != nil {
+			l.WithError(err).Errorf("Unable to destroy drop [%d] for characters in map [%d].", e.DropId, e.MapId)
+		}
 	}
 }
 
@@ -118,7 +112,7 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 					bp = writer.CharacterStatusMessageOperationDropPickUpStackableItemBody(l)(e.Body.ItemId, e.Body.Quantity)
 				}
 
-				err := session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(s, bp)
+				err := session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(bp)(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write status message to character [%d] picking up drop [%d].", s.CharacterId(), e.DropId)
 				}
@@ -127,13 +121,10 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 		}()
 
 		go func() {
-			_ = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), func(s session.Model) error {
-				err := session.Announce(l)(ctx)(wp)(writer.DropDestroy)(s, writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypePickUp, e.Body.CharacterId, -1))
-				if err != nil {
-					l.WithError(err).Errorf("Unable to pick up drop [%d] for character [%d].", e.DropId, s.CharacterId())
-				}
-				return err
-			})
+			err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypePickUp, e.Body.CharacterId, -1)))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to pick up drop [%d] for characters in map [%d].", e.DropId, e.MapId)
+			}
 		}()
 	}
 }

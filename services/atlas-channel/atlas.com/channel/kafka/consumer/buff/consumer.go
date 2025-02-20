@@ -58,13 +58,13 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 			}
 			bs = append(bs, buff.NewBuff(e.Body.SourceId, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt))
 
-			err := session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(s, writer.CharacterBuffGiveBody(l)(ctx)(bs))
+			err := session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(writer.CharacterBuffGiveBody(l)(ctx)(bs))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
 			}
 
 			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), func(os session.Model) error {
-				err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGiveForeign)(os, writer.CharacterBuffGiveForeignBody(l)(ctx)(e.CharacterId, bs))
+				err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGiveForeign)(writer.CharacterBuffGiveForeignBody(l)(ctx)(e.CharacterId, bs))(os)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
 					return err
@@ -94,13 +94,13 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			}
 			ebs = append(ebs, buff.NewBuff(e.Body.SourceId, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt))
 
-			err := session.Announce(l)(ctx)(wp)(writer.CharacterBuffCancel)(s, writer.CharacterBuffCancelBody(l)(ctx)(ebs))
+			err := session.Announce(l)(ctx)(wp)(writer.CharacterBuffCancel)(writer.CharacterBuffCancelBody(l)(ctx)(ebs))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write character [%d] cancelled buffs.", e.CharacterId)
 			}
 
 			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), func(os session.Model) error {
-				err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffCancelForeign)(os, writer.CharacterBuffCancelForeignBody(l)(ctx)(e.CharacterId, ebs))
+				err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffCancelForeign)(writer.CharacterBuffCancelForeignBody(l)(ctx)(e.CharacterId, ebs))(os)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
 					return err

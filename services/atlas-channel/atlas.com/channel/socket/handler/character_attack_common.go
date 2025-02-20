@@ -80,7 +80,7 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							return errors.New("unhandled attack type")
 						}
 
-						err = session.Announce(l)(ctx)(wp)(writerName)(os, bodyProducer)
+						err = session.Announce(l)(ctx)(wp)(writerName)(bodyProducer)(os)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to announce character [%d] is attacking to character [%d].", s.CharacterId(), os.CharacterId())
 							return err

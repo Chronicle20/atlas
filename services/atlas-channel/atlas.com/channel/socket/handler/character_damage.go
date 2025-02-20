@@ -36,14 +36,10 @@ func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			return
 		}
 
-		_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), func(os session.Model) error {
-			err = session.Announce(l)(ctx)(wp)(writer.CharacterDamage)(os, writer.CharacterDamageBody(l)(ctx)(c, *di))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to announce character [%d] has been damaged to character [%d].", s.CharacterId(), os.CharacterId())
-				return err
-			}
-			return nil
-		})
+		err = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterDamage)(writer.CharacterDamageBody(l)(ctx)(c, *di)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce character [%d] has been damaged to foreign characters in map [%d].", s.CharacterId(), s.MapId())
+		}
 
 		_ = character.ChangeHP(l)(ctx)(s.Map(), s.CharacterId(), -int16(di.Damage()))
 	}

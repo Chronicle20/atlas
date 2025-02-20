@@ -64,23 +64,18 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		_ = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), spawnForSession(l)(ctx)(wp)(m))
+		err = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), spawnForSession(l)(ctx)(wp)(m))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to spawn monster [%d] for characters in map [%d].", m.UniqueId(), e.MapId)
+		}
 	}
 }
 
 func spawnForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
-			spawnMonsterFunc := session.Announce(l)(ctx)(wp)(writer.SpawnMonster)
 			return func(m monster.Model) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					l.Debugf("Spawning [%d] monster [%d] for character [%d].", m.MonsterId(), m.UniqueId(), s.CharacterId())
-					err := spawnMonsterFunc(s, writer.SpawnMonsterBody(l, tenant.MustFromContext(ctx))(m, false))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to spawn monster [%d] for character [%d].", m.UniqueId(), s.CharacterId())
-					}
-					return err
-				}
+				return session.Announce(l)(ctx)(wp)(writer.SpawnMonster)(writer.SpawnMonsterBody(l, tenant.MustFromContext(ctx))(m, false))
 			}
 		}
 	}
@@ -96,22 +91,18 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		_ = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), destroyForSession(l)(ctx)(wp)(e.UniqueId))
+		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), destroyForSession(l)(ctx)(wp)(e.UniqueId))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to destroy monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
+		}
 	}
 }
 
 func destroyForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(uniqueId uint32) model.Operator[session.Model] {
-			destroyMonsterFunc := session.Announce(l)(ctx)(wp)(writer.DestroyMonster)
 			return func(uniqueId uint32) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := destroyMonsterFunc(s, writer.DestroyMonsterBody(l, tenant.MustFromContext(ctx))(uniqueId, writer.DestroyMonsterTypeFadeOut))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to destroy monster [%d] for character [%d].", uniqueId, s.CharacterId())
-					}
-					return err
-				}
+				return session.Announce(l)(ctx)(wp)(writer.DestroyMonster)(writer.DestroyMonsterBody(l, tenant.MustFromContext(ctx))(uniqueId, writer.DestroyMonsterTypeFadeOut))
 			}
 		}
 	}
@@ -127,22 +118,18 @@ func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		_ = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), killForSession(l)(ctx)(wp)(e.UniqueId))
+		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), killForSession(l)(ctx)(wp)(e.UniqueId))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to kill monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
+		}
 	}
 }
 
 func killForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(uniqueId uint32) model.Operator[session.Model] {
-			destroyMonsterFunc := session.Announce(l)(ctx)(wp)(writer.DestroyMonster)
 			return func(uniqueId uint32) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := destroyMonsterFunc(s, writer.DestroyMonsterBody(l, tenant.MustFromContext(ctx))(uniqueId, writer.DestroyMonsterTypeFadeOut))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to kill monster [%d] for character [%d].", uniqueId, s.CharacterId())
-					}
-					return err
-				}
+				return session.Announce(l)(ctx)(wp)(writer.DestroyMonster)(writer.DestroyMonsterBody(l, tenant.MustFromContext(ctx))(uniqueId, writer.DestroyMonsterTypeFadeOut))
 			}
 		}
 	}
@@ -160,27 +147,22 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 
 		m, err := monster.GetById(l)(ctx)(e.UniqueId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being controlled.", e.UniqueId)
+			l.WithError(err).Errorf("Unable to start control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
 			return
 		}
 
-		session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, startControlForSession(l)(ctx)(wp)(m))
+		err = session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, startControlForSession(l)(ctx)(wp)(m))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to start control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
+		}
 	}
 }
 
 func startControlForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
-			controlMonsterFunc := session.Announce(l)(ctx)(wp)(writer.ControlMonster)
 			return func(m monster.Model) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					l.Debugf("Starting control of [%d] monster [%d] for character [%d].", m.MonsterId(), m.UniqueId(), s.CharacterId())
-					err := controlMonsterFunc(s, writer.StartControlMonsterBody(l, tenant.MustFromContext(ctx))(m, false))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to control monster [%d] for character [%d].", m.UniqueId(), s.CharacterId())
-					}
-					return err
-				}
+				return session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StartControlMonsterBody(l, tenant.MustFromContext(ctx))(m, false))
 			}
 		}
 	}
@@ -198,27 +180,22 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 
 		m, err := monster.GetById(l)(ctx)(e.UniqueId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being controlled.", e.UniqueId)
+			l.WithError(err).Errorf("Unable to stop control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
 			return
 		}
 
-		session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, stopControlForSession(l)(ctx)(wp)(m))
+		err = session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, stopControlForSession(l)(ctx)(wp)(m))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to stop control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
+		}
 	}
 }
 
 func stopControlForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
-			controlMonsterFunc := session.Announce(l)(ctx)(wp)(writer.ControlMonster)
 			return func(m monster.Model) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					l.Debugf("Stopping control of [%d] monster [%d] for character [%d].", m.MonsterId(), m.UniqueId(), s.CharacterId())
-					err := controlMonsterFunc(s, writer.StopControlMonsterBody(l, tenant.MustFromContext(ctx))(m))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to control monster [%d] for character [%d].", m.UniqueId(), s.CharacterId())
-					}
-					return err
-				}
+				return session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StopControlMonsterBody(l, tenant.MustFromContext(ctx))(m))
 			}
 		}
 	}
@@ -236,14 +213,16 @@ func handleMovementEvent(sc server.Model, wp writer.Producer) message.Handler[mo
 			return
 		}
 
-		_ = _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(m.MapId()), e.ObserverId, showMovementForSession(l)(ctx)(wp)(e))
+		err = _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(m.MapId()), e.ObserverId, showMovementForSession(l)(ctx)(wp)(e))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to move monster [%d] for characters in map [%d].", e.UniqueId, m.MapId())
+		}
 	}
 }
 
 func showMovementForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event movementEvent) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(event movementEvent) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(event movementEvent) model.Operator[session.Model] {
-			moveMonsterFunc := session.Announce(l)(ctx)(wp)(writer.MoveMonster)
 			return func(event movementEvent) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					l.Debugf("Writing monster [%d] movement for session [%s].", event.UniqueId, s.SessionId().String())
@@ -392,13 +371,9 @@ func showMovementForSession(l logrus.FieldLogger) func(ctx context.Context) func
 						}
 					}
 
-					err := moveMonsterFunc(s, writer.MoveMonsterBody(l, tenant.MustFromContext(ctx))(event.UniqueId,
+					return session.Announce(l)(ctx)(wp)(writer.MoveMonster)(writer.MoveMonsterBody(l, tenant.MustFromContext(ctx))(event.UniqueId,
 						false, event.SkillPossible, false, event.Skill, event.SkillId,
-						event.SkillLevel, mt, ra, mv))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to move monster [%d] for character [%d].", event.UniqueId, s.CharacterId())
-					}
-					return err
+						event.SkillLevel, mt, ra, mv))(s)
 				}
 			}
 		}

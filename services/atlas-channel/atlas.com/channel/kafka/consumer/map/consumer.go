@@ -83,7 +83,10 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			// spawn new character for others
 			for k := range cms {
 				if k != s.CharacterId() {
-					session.IfPresentByCharacterId(tenant.MustFromContext(ctx), s.WorldId(), s.ChannelId())(k, spawnCharacterForSession(l)(ctx)(wp)(cms[s.CharacterId()], g, true))
+					err = session.IfPresentByCharacterId(tenant.MustFromContext(ctx), s.WorldId(), s.ChannelId())(k, spawnCharacterForSession(l)(ctx)(wp)(cms[s.CharacterId()], g, true))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to spawn character [%d] for [%d]", s.CharacterId(), k)
+					}
 				}
 			}
 
@@ -91,17 +94,40 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			for k, v := range cms {
 				if k != s.CharacterId() {
 					kg, _ := guild.GetByMemberId(l)(ctx)(k)
-					_ = spawnCharacterForSession(l)(ctx)(wp)(v, kg, false)(s)
+					err = spawnCharacterForSession(l)(ctx)(wp)(v, kg, false)(s)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to spawn character [%d] for [%d]", v.Id(), s.CharacterId())
+					}
 				}
 			}
 
-			go npc.ForEachInMap(l)(ctx)(m.MapId(), spawnNPCForSession(l)(ctx)(wp)(s))
+			go func() {
+				err = npc.ForEachInMap(l)(ctx)(m.MapId(), spawnNPCForSession(l)(ctx)(wp)(s))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to spawn npcs for character [%d].", s.CharacterId())
+				}
+			}()
 
-			go monster.ForEachInMap(l)(ctx)(m, spawnMonsterForSession(l)(ctx)(wp)(s))
+			go func() {
+				err = monster.ForEachInMap(l)(ctx)(m, spawnMonsterForSession(l)(ctx)(wp)(s))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to spawn monsters for character [%d].", s.CharacterId())
+				}
+			}()
 
-			go drop.ForEachInMap(l)(ctx)(m, spawnDropsForSession(l)(ctx)(wp)(s))
+			go func() {
+				err = drop.ForEachInMap(l)(ctx)(m, spawnDropsForSession(l)(ctx)(wp)(s))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to spawn drops for character [%d].", s.CharacterId())
+				}
+			}()
 
-			go reactor.ForEachInMap(l)(ctx)(m, spawnReactorsForSession(l)(ctx)(wp)(s))
+			go func() {
+				err = reactor.ForEachInMap(l)(ctx)(m, spawnReactorsForSession(l)(ctx)(wp)(s))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to spawn reactors for character [%d].", s.CharacterId())
+				}
+			}()
 			return nil
 		}
 	}
@@ -110,7 +136,6 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
-			spawnCharacterFunc := session.Announce(l)(ctx)(wp)(writer.CharacterSpawn)
 			return func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					bs, err := buff.GetByCharacterId(l)(ctx)(c.Id())
@@ -118,12 +143,7 @@ func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 						bs = make([]buff.Model, 0)
 					}
 
-					err = spawnCharacterFunc(s, writer.CharacterSpawnBody(l, tenant.MustFromContext(ctx))(c, bs, g, enteringField))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to spawn character [%d] for [%d]", c.Id(), s.CharacterId())
-						return err
-					}
-					return nil
+					return session.Announce(l)(ctx)(wp)(writer.CharacterSpawn)(writer.CharacterSpawnBody(l, tenant.MustFromContext(ctx))(c, bs, g, enteringField))(s)
 				}
 			}
 		}
@@ -149,7 +169,10 @@ func handleStatusEventCharacterExit(sc server.Model, wp writer.Producer) func(l 
 		}
 
 		l.Debugf("Character [%d] has left map [%d] in worldId [%d] channelId [%d].", e.Body.CharacterId, e.MapId, e.WorldId, e.ChannelId)
-		_ = _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.Body.CharacterId, despawnForSession(l)(ctx)(wp)(e.Body.CharacterId))
+		err := _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.Body.CharacterId, despawnForSession(l)(ctx)(wp)(e.Body.CharacterId))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to despawn character [%d] for characters in map [%d].", e.Body.CharacterId, e.MapId)
+		}
 		return
 	}
 }
@@ -157,15 +180,8 @@ func handleStatusEventCharacterExit(sc server.Model, wp writer.Producer) func(l 
 func despawnForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(id uint32) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(id uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(id uint32) model.Operator[session.Model] {
-			despawnCharacterFunc := session.Announce(l)(ctx)(wp)(writer.CharacterDespawn)
 			return func(id uint32) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := despawnCharacterFunc(s, writer.CharacterDespawnBody(id))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to despawn character [%d] for character [%d].", id, s.CharacterId())
-					}
-					return err
-				}
+				return session.Announce(l)(ctx)(wp)(writer.CharacterDespawn)(writer.CharacterDespawnBody(id))
 			}
 		}
 	}
@@ -174,20 +190,13 @@ func despawnForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 func spawnNPCForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[npc.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[npc.Model] {
 		return func(wp writer.Producer) func(s session.Model) model.Operator[npc.Model] {
-			spawnNPCFunc := session.Announce(l)(ctx)(wp)(writer.SpawnNPC)
-			spawnNPCRequestControllerFunc := session.Announce(l)(ctx)(wp)(writer.SpawnNPCRequestController)
 			return func(s session.Model) model.Operator[npc.Model] {
 				return func(n npc.Model) error {
-					err := spawnNPCFunc(s, writer.SpawnNPCBody(l)(n))
+					err := session.Announce(l)(ctx)(wp)(writer.SpawnNPC)(writer.SpawnNPCBody(l)(n))(s)
 					if err != nil {
-						l.WithError(err).Errorf("Unable to spawn npc [%d] for character [%d].", n.Template(), s.CharacterId())
 						return err
 					}
-					err = spawnNPCRequestControllerFunc(s, writer.SpawnNPCRequestControllerBody(l)(n, true))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to spawn npc [%d] for character [%d].", n.Template(), s.CharacterId())
-					}
-					return err
+					return session.Announce(l)(ctx)(wp)(writer.SpawnNPCRequestController)(writer.SpawnNPCRequestControllerBody(l)(n, true))(s)
 				}
 			}
 		}
@@ -197,15 +206,9 @@ func spawnNPCForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 func spawnMonsterForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 		return func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
-			spawnMonsterFunc := session.Announce(l)(ctx)(wp)(writer.SpawnMonster)
 			return func(s session.Model) model.Operator[monster.Model] {
 				return func(m monster.Model) error {
-					l.Debugf("Spawning [%d] monster [%d] for character [%d].", m.MonsterId(), m.UniqueId(), s.CharacterId())
-					err := spawnMonsterFunc(s, writer.SpawnMonsterBody(l, tenant.MustFromContext(ctx))(m, false))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to spawn monster [%d] for character [%d].", m.UniqueId(), s.CharacterId())
-					}
-					return err
+					return session.Announce(l)(ctx)(wp)(writer.SpawnMonster)(writer.SpawnMonsterBody(l, tenant.MustFromContext(ctx))(m, false))(s)
 				}
 			}
 		}
@@ -217,12 +220,7 @@ func spawnDropsForSession(l logrus.FieldLogger) func(ctx context.Context) func(w
 		return func(wp writer.Producer) func(s session.Model) model.Operator[drop.Model] {
 			return func(s session.Model) model.Operator[drop.Model] {
 				return func(d drop.Model) error {
-					l.Debugf("Spawning [%d] drop [%d] for character [%d].", d.ItemId(), d.Id(), s.CharacterId())
-					err := session.Announce(l)(ctx)(wp)(writer.DropSpawn)(s, writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeExisting, 0))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to spawn drop [%d] for character [%d].", d.Id(), s.CharacterId())
-					}
-					return err
+					return session.Announce(l)(ctx)(wp)(writer.DropSpawn)(writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeExisting, 0))(s)
 				}
 			}
 		}
@@ -234,12 +232,7 @@ func spawnReactorsForSession(l logrus.FieldLogger) func(ctx context.Context) fun
 		return func(wp writer.Producer) func(s session.Model) model.Operator[reactor.Model] {
 			return func(s session.Model) model.Operator[reactor.Model] {
 				return func(r reactor.Model) error {
-					l.Debugf("Spawning [%d] reactor [%d] for character [%d].", r.Classification(), r.Id(), s.CharacterId())
-					err := session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(s, writer.ReactorSpawnBody(l, tenant.MustFromContext(ctx))(r))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to spawn reactor [%d] for character [%d].", r.Id(), s.CharacterId())
-					}
-					return err
+					return session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody(l, tenant.MustFromContext(ctx))(r))(s)
 				}
 			}
 		}

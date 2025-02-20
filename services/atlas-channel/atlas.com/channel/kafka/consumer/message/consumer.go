@@ -58,23 +58,18 @@ func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[chat
 			return
 		}
 
-		_ = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), showGeneralChatForSession(l)(ctx)(wp)(e, c.Gm()))
+		err = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), showGeneralChatForSession(l)(ctx)(wp)(e, c.Gm()))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to send message from character [%d] to map [%d].", e.CharacterId, e.MapId)
+		}
 	}
 }
 
 func showGeneralChatForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
-			generalChatFunc := session.Announce(l)(ctx)(wp)(writer.CharacterGeneralChat)
 			return func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := generalChatFunc(s, writer.CharacterGeneralChatBody(event.CharacterId, gm, event.Message, event.Body.BalloonOnly))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to write message to rest of map.")
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.CharacterGeneralChat)(writer.CharacterGeneralChatBody(event.CharacterId, gm, event.Message, event.Body.BalloonOnly))
 			}
 		}
 	}
@@ -97,7 +92,10 @@ func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[chatEv
 		}
 
 		for _, cid := range e.Body.Recipients {
-			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(cid, sendMultiChat(l)(ctx)(wp)(c.Name(), e.Message, message2.MultiChatTypeStrToInd(e.Type)))
+			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(cid, sendMultiChat(l)(ctx)(wp)(c.Name(), e.Message, message2.MultiChatTypeStrToInd(e.Type)))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)
+			}
 		}
 	}
 }
@@ -105,15 +103,8 @@ func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[chatEv
 func sendMultiChat(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(name string, message string, mode byte) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(name string, message string, mode byte) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(name string, message string, mode byte) model.Operator[session.Model] {
-			multiChatFunc := session.Announce(l)(ctx)(wp)(writer.CharacterMultiChat)
 			return func(name string, message string, mode byte) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := multiChatFunc(s, writer.CharacterMultiChatBody(name, message, mode))
-					if err != nil {
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.CharacterMultiChat)(writer.CharacterMultiChatBody(name, message, mode))
 			}
 		}
 	}

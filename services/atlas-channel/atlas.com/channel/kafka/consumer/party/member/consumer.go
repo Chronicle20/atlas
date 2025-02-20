@@ -64,7 +64,10 @@ func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[statu
 
 		go func() {
 			for _, m := range p.Members() {
-				session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce character [%d] triggered party [%d] update.", m.Id(), p.Id())
+				}
 			}
 		}()
 	}
@@ -94,7 +97,10 @@ func handleLogoutEvent(sc server.Model, wp writer.Producer) message.Handler[stat
 
 		go func() {
 			for _, m := range p.Members() {
-				session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce character [%d] triggered party [%d] update.", m.Id(), p.Id())
+				}
 			}
 		}()
 	}
@@ -103,16 +109,8 @@ func handleLogoutEvent(sc server.Model, wp writer.Producer) message.Handler[stat
 func partyUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-			partyUpdateFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
 			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := partyUpdateFunc(s, writer.PartyUpdateBody(l)(p, tc, forChannel))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to announce character [%d] triggered party [%d] update.", s.CharacterId(), p.Id())
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyUpdateBody(l)(p, tc, forChannel))
 			}
 		}
 	}

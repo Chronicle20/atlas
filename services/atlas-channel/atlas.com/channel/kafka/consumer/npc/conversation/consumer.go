@@ -48,23 +48,18 @@ func handleSimpleConversationCommand(sc server.Model, wp writer.Producer) messag
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, announceSimpleConversation(l)(ctx)(wp)(c.NpcId, getNPCTalkType(c.Body.Type), c.Message, getNPCTalkEnd(c.Body.Type), getNPCTalkSpeaker(c.Speaker)))
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, announceSimpleConversation(l)(ctx)(wp)(c.NpcId, getNPCTalkType(c.Body.Type), c.Message, getNPCTalkEnd(c.Body.Type), getNPCTalkSpeaker(c.Speaker)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, c.CharacterId)
+		}
 	}
 }
 
 func announceSimpleConversation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
-			npcConversationFunc := session.Announce(l)(ctx)(wp)(writer.NPCConversation)
 			return func(npcId uint32, talkType byte, message string, endType []byte, speaker byte) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := npcConversationFunc(s, writer.NPCConversationBody(l)(npcId, talkType, message, endType, speaker))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l)(npcId, talkType, message, endType, speaker))
 			}
 		}
 	}

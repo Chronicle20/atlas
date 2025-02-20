@@ -45,15 +45,9 @@ func handleEvent(sc server.Model, wp writer.Producer) message.Handler[expression
 			return
 		}
 
-		_ = _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.CharacterId, func(s session.Model) error {
-			characterExpressionFunc := session.Announce(l)(ctx)(wp)(writer.CharacterExpression)
-			err := characterExpressionFunc(s, writer.CharacterExpressionBody(e.CharacterId, e.Expression))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to announce character [%d] expression [%d] change to [%d].", e.CharacterId, e.Expression, s.CharacterId())
-				return err
-			}
-			return nil
-		})
-
+		err := _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.CharacterId, session.Announce(l)(ctx)(wp)(writer.CharacterExpression)(writer.CharacterExpressionBody(e.CharacterId, e.Expression)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce character [%d] expression [%d] change to characters in map [%d].", e.CharacterId, e.Expression, e.MapId)
+		}
 	}
 }

@@ -33,16 +33,16 @@ func ByIdModelProvider(tenant tenant.Model) func(sessionId uuid.UUID) model.Prov
 	}
 }
 
-func IfPresentById(tenant tenant.Model, worldId world.Id, channelId channel.Id) func(sessionId uuid.UUID, f model.Operator[Model]) {
-	return func(sessionId uuid.UUID, f model.Operator[Model]) {
+func IfPresentById(tenant tenant.Model, worldId world.Id, channelId channel.Id) func(sessionId uuid.UUID, f model.Operator[Model]) error {
+	return func(sessionId uuid.UUID, f model.Operator[Model]) error {
 		s, err := ByIdModelProvider(tenant)(sessionId)()
 		if err != nil {
-			return
+			return nil
 		}
 		if s.WorldId() != worldId || s.ChannelId() != channelId {
-			return
+			return nil
 		}
-		_ = f(s)
+		return f(s)
 	}
 }
 
@@ -53,16 +53,16 @@ func ByCharacterIdModelProvider(tenant tenant.Model) func(characterId uint32) mo
 }
 
 // IfPresentByCharacterId executes an Operator if a session exists for the characterId
-func IfPresentByCharacterId(tenant tenant.Model, worldId world.Id, channelId channel.Id) func(characterId uint32, f model.Operator[Model]) {
-	return func(characterId uint32, f model.Operator[Model]) {
+func IfPresentByCharacterId(tenant tenant.Model, worldId world.Id, channelId channel.Id) func(characterId uint32, f model.Operator[Model]) error {
+	return func(characterId uint32, f model.Operator[Model]) error {
 		s, err := ByCharacterIdModelProvider(tenant)(characterId)()
 		if err != nil {
-			return
+			return nil
 		}
 		if s.WorldId() != worldId || s.ChannelId() != channelId {
-			return
+			return nil
 		}
-		_ = f(s)
+		return f(s)
 	}
 }
 
@@ -85,23 +85,25 @@ func ForEachByCharacterId(tenant tenant.Model) func(provider model.Provider[[]ui
 	}
 }
 
-func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
-	return func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
-		return func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
-			return func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
-				return func(s Model, bodyProducer writer.BodyProducer) error {
-					w, err := writerProducer(l, writerName)
-					if err != nil {
-						return err
-					}
+func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(bodyProducer writer.BodyProducer) model.Operator[Model] {
+	return func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(bodyProducer writer.BodyProducer) model.Operator[Model] {
+		return func(writerProducer writer.Producer) func(writerName string) func(bodyProducer writer.BodyProducer) model.Operator[Model] {
+			return func(writerName string) func(bodyProducer writer.BodyProducer) model.Operator[Model] {
+				return func(bodyProducer writer.BodyProducer) model.Operator[Model] {
+					return func(s Model) error {
+						w, err := writerProducer(l, writerName)
+						if err != nil {
+							return err
+						}
 
-					if lock, ok := GetRegistry().GetLock(tenant.MustFromContext(ctx), s.SessionId()); ok {
-						lock.Lock()
-						err = s.announceEncrypted(w(l)(bodyProducer))
-						lock.Unlock()
-						return err
+						if lock, ok := GetRegistry().GetLock(tenant.MustFromContext(ctx), s.SessionId()); ok {
+							lock.Lock()
+							err = s.announceEncrypted(w(l)(bodyProducer))
+							lock.Unlock()
+							return err
+						}
+						return errors.New("invalid session")
 					}
-					return errors.New("invalid session")
 				}
 			}
 		}

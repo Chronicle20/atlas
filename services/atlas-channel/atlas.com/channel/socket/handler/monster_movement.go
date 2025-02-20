@@ -16,8 +16,6 @@ const MonsterMovementHandle = "MonsterMovementHandle"
 
 func MonsterMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
-	moveMonsterAckFunc := session.Announce(l)(ctx)(wp)(writer.MoveMonsterAck)
-	moveMonsterCommandFunc := producer.ProviderImpl(l)(ctx)(monster.EnvCommandMovement)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		uniqueId := r.ReadUint32()
 
@@ -66,14 +64,14 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		}
 
 		l.Debugf("Monster [%d] moved. MoveId [%d], dwFlag [%d], nActionAndDir [%d], skillData [%d].", uniqueId, moveId, dwFlag, nActionAndDir, skillData)
-		err = moveMonsterAckFunc(s, writer.MoveMonsterAckBody(l, t)(uniqueId, moveId, uint16(m.MP()), false, 0, 0))
+		err = session.Announce(l)(ctx)(wp)(writer.MoveMonsterAck)(writer.MoveMonsterAckBody(l, t)(uniqueId, moveId, uint16(m.MP()), false, 0, 0))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to ack monster [%d] movement for character [%d].", m.UniqueId(), s.CharacterId())
 		}
 
 		monsterMoveStartResult := dwFlag > 0
 
-		err = moveMonsterCommandFunc(monster.Move(s.Map(), m.UniqueId(), s.CharacterId(), monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, mp))
+		err = producer.ProviderImpl(l)(ctx)(monster.EnvCommandMovement)(monster.Move(s.Map(), m.UniqueId(), s.CharacterId(), monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, mp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to distribute monster movement to other services.")
 		}

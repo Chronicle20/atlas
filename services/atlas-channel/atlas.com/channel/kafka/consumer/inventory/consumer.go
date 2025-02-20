@@ -61,7 +61,6 @@ func handleInventoryAddEvent(sc server.Model, wp writer.Producer) message.Handle
 func addToInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
-			inventoryChangeFunc := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)
 			return func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					var bp writer.BodyProducer
@@ -90,7 +89,7 @@ func addToInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writ
 						}
 						bp = writer.CharacterInventoryAddCashItemBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, i, false)
 					}
-					err := inventoryChangeFunc(s, bp)
+					err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to add [%d] to slot [%d] for character [%d].", event.Body.ItemId, event.Slot, s.CharacterId())
 					}
@@ -102,38 +101,34 @@ func addToInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writ
 }
 
 func handleInventoryUpdateEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemUpdateBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemUpdateBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e inventoryChangedEvent[inventoryChangedItemUpdateBody]) {
+		if e.Type != ChangedTypeUpdate {
+			return
+		}
+
 		t := sc.Tenant()
 		if !t.Is(tenant.MustFromContext(ctx)) {
 			return
 		}
 
-		if event.Type != ChangedTypeUpdate {
+		inventoryType, ok := inventory.TypeFromItemId(e.Body.ItemId)
+		if !ok {
+			l.Errorf("Unable to identify inventory type by item [%d].", e.Body.ItemId)
 			return
 		}
 
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(event.CharacterId, updateInInventory(l)(ctx)(wp)(event))
+		err := session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, updateInInventory(l)(ctx)(wp)(inventoryType, e.Slot, e.Body.Quantity))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", e.Body.ItemId, e.Slot, e.CharacterId)
+		}
 	}
 }
 
-func updateInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemUpdateBody]) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemUpdateBody]) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemUpdateBody]) model.Operator[session.Model] {
-			inventoryChangeFunc := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)
-			return func(event inventoryChangedEvent[inventoryChangedItemUpdateBody]) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					inventoryType, ok := inventory.TypeFromItemId(event.Body.ItemId)
-					if !ok {
-						l.Errorf("Unable to identify inventory type by item [%d].", event.Body.ItemId)
-						return errors.New("unable to identify inventory type")
-					}
-
-					err := inventoryChangeFunc(s, writer.CharacterInventoryUpdateBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, event.Body.Quantity, false))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", event.Body.ItemId, event.Slot, s.CharacterId())
-					}
-					return err
-				}
+func updateInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(inventoryType inventory.Type, slot int16, quantity uint32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(inventoryType inventory.Type, slot int16, quantity uint32) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(inventoryType inventory.Type, slot int16, quantity uint32) model.Operator[session.Model] {
+			return func(inventoryType inventory.Type, slot int16, quantity uint32) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryUpdateBody(tenant.MustFromContext(ctx))(byte(inventoryType), slot, quantity, false))
 			}
 		}
 	}
@@ -141,12 +136,12 @@ func updateInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 
 func handleInventoryMoveEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemMoveBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemMoveBody]) {
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if event.Type != ChangedTypeMove {
 			return
 		}
 
-		if event.Type != ChangedTypeMove {
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
 			return
 		}
 
@@ -157,7 +152,6 @@ func handleInventoryMoveEvent(sc server.Model, wp writer.Producer) message.Handl
 func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
-			inventoryChangeFunc := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)
 			return func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					errChannels := make(chan error, 2)
@@ -168,7 +162,7 @@ func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 							return
 						}
 
-						err := inventoryChangeFunc(s, writer.CharacterInventoryMoveBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, event.Body.OldSlot, false))
+						err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryMoveBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, event.Body.OldSlot, false))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to move [%d] in slot [%d] to [%d] for character [%d].", event.Body.ItemId, event.Body.OldSlot, event.Slot, s.CharacterId())
 						}
@@ -200,53 +194,42 @@ func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 func updateAppearance(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(c character.Model) model.Operator[session.Model] {
-			appearanceUpdateFunc := session.Announce(l)(ctx)(wp)(writer.CharacterAppearanceUpdate)
 			return func(c character.Model) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := appearanceUpdateFunc(s, writer.CharacterAppearanceUpdateBody(tenant.MustFromContext(ctx))(c))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to issue appearance update for character [%d] to others in map.", s.CharacterId())
-					}
-					return err
-				}
+				return session.Announce(l)(ctx)(wp)(writer.CharacterAppearanceUpdate)(writer.CharacterAppearanceUpdateBody(tenant.MustFromContext(ctx))(c))
 			}
 		}
 	}
 }
 
 func handleInventoryRemoveEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemRemoveBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemRemoveBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e inventoryChangedEvent[inventoryChangedItemRemoveBody]) {
+		if e.Type != ChangedTypeRemove {
+			return
+		}
+
 		t := sc.Tenant()
 		if !t.Is(tenant.MustFromContext(ctx)) {
 			return
 		}
 
-		if event.Type != ChangedTypeRemove {
+		inventoryType, ok := inventory.TypeFromItemId(e.Body.ItemId)
+		if !ok {
+			l.Errorf("Unable to identify inventory type by item [%d].", e.Body.ItemId)
 			return
 		}
 
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(event.CharacterId, removeFromInventory(l)(ctx)(wp)(event))
+		err := session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, removeFromInventory(l)(ctx)(wp)(inventoryType, e.Slot))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to remove [%d] in slot [%d] for character [%d].", e.Body.ItemId, e.Slot, e.CharacterId)
+		}
 	}
 }
 
-func removeFromInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemRemoveBody]) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemRemoveBody]) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemRemoveBody]) model.Operator[session.Model] {
-			inventoryChangeFunc := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)
-			return func(event inventoryChangedEvent[inventoryChangedItemRemoveBody]) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					inventoryType, ok := inventory.TypeFromItemId(event.Body.ItemId)
-					if !ok {
-						l.Errorf("Unable to identify inventory type by item [%d].", event.Body.ItemId)
-						return errors.New("unable to identify inventory type")
-					}
-
-					err := inventoryChangeFunc(s, writer.CharacterInventoryRemoveBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, false))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to remove [%d] in slot [%d] for character [%d].", event.Body.ItemId, event.Slot, s.CharacterId())
-					}
-					return err
-				}
+func removeFromInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(inventoryType inventory.Type, slot int16) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(inventoryType inventory.Type, slot int16) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(inventoryType inventory.Type, slot int16) model.Operator[session.Model] {
+			return func(inventoryType inventory.Type, slot int16) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRemoveBody(tenant.MustFromContext(ctx))(byte(inventoryType), slot, false))
 			}
 		}
 	}

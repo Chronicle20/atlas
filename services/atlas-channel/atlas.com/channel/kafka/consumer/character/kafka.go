@@ -69,6 +69,12 @@ type experienceDistributions struct {
 	Attr1          uint32 `json:"attr1"`
 }
 
+type levelChangedStatusEventBody struct {
+	ChannelId byte `json:"channelId"`
+	Amount    byte `json:"amount"`
+	Current   byte `json:"current"`
+}
+
 type fameChangedStatusEventBody struct {
 	ActorId   uint32 `json:"actorId"`
 	ActorType string `json:"actorType"`

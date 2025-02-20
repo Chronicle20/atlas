@@ -38,6 +38,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventExperienceChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventFameChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMesoChanged(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLevelChanged(sc, wp))))
 				t, _ = topic.EnvProvider(l)(EnvEventTopicMovement)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp))))
 			}
@@ -350,6 +351,36 @@ func mesoChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 				}
 			}
 		}
+	}
+}
+
+func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[levelChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[levelChangedStatusEventBody]) {
+		if e.Type != StatusEventTypeLevelChanged {
+			return
+		}
+
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		if sc.WorldId() != e.WorldId {
+			return
+		}
+
+		if sc.ChannelId() != e.Body.ChannelId {
+			return
+		}
+
+		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+			_ = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(s, writer.CharacterLevelUpEffectBody(l)())
+			_ = _map.ForOtherSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), s.MapId(), s.CharacterId(), func(os session.Model) error {
+				return session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(os, writer.CharacterLevelUpEffectForeignBody(l)(s.CharacterId()))
+			})
+			return nil
+		})
+
 	}
 }
 

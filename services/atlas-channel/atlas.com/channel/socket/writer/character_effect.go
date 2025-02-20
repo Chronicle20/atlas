@@ -203,6 +203,391 @@ func CharacterProtectOnDieItemUseEffectForeignBody(l logrus.FieldLogger) func(ch
 	}
 }
 
+func CharacterPlayPortalSoundEffectEffectBody(l logrus.FieldLogger) func() BodyProducer {
+	return func() BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectPlayPortalSoundEffect))
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterPlayPortalSoundEffectEffectForeignBody(l logrus.FieldLogger) func(characterId uint32) BodyProducer {
+	return func(characterId uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterPlayPortalSoundEffectEffectBody(l)()(w, options)
+		}
+	}
+}
+
+func CharacterJobChangedEffectBody(l logrus.FieldLogger) func() BodyProducer {
+	return func() BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectJobChanged))
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterJobChangedEffectForeignBody(l logrus.FieldLogger) func(characterId uint32) BodyProducer {
+	return func(characterId uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterJobChangedEffectBody(l)()(w, options)
+		}
+	}
+}
+
+func CharacterQuestCompleteEffectBody(l logrus.FieldLogger) func() BodyProducer {
+	return func() BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectQuestComplete))
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterQuestCompleteEffectForeignBody(l logrus.FieldLogger) func(characterId uint32) BodyProducer {
+	return func(characterId uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterQuestCompleteEffectBody(l)()(w, options)
+		}
+	}
+}
+
+// TODO this will crash for some reason
+func CharacterIncDecHPEffectBody(l logrus.FieldLogger) func(delta int8) BodyProducer {
+	return func(delta int8) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectIncDecHPEffect))
+			w.WriteInt8(delta)
+			return w.Bytes()
+		}
+	}
+}
+
+// TODO this will crash for some reason
+func CharacterIncDecHPEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, delta int8) BodyProducer {
+	return func(characterId uint32, delta int8) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterIncDecHPEffectBody(l)(delta)(w, options)
+		}
+	}
+}
+
+func CharacterBuffItemEffectBody(l logrus.FieldLogger) func(itemId uint32) BodyProducer {
+	return func(itemId uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectBuffItemEffect))
+			w.WriteInt(itemId)
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterBuffItemEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, itemId uint32) BodyProducer {
+	return func(characterId uint32, itemId uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterBuffItemEffectBody(l)(itemId)(w, options)
+		}
+	}
+}
+
+// TODO this will crash for some reason
+func CharacterSquibEffectBody(l logrus.FieldLogger) func(message string) BodyProducer {
+	return func(message string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectSquibEffect))
+			w.WriteAsciiString(message)
+			return w.Bytes()
+		}
+	}
+}
+
+// TODO this will crash for some reason
+func CharacterSquibEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, message string) BodyProducer {
+	return func(characterId uint32, message string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterSquibEffectBody(l)(message)(w, options)
+		}
+	}
+}
+
+func CharacterMonsterBookCardGetEffectBody(l logrus.FieldLogger) func() BodyProducer {
+	return func() BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectMonsterBookCardGet))
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterMonsterBookCardGetEffectForeignBody(l logrus.FieldLogger) func(characterId uint32) BodyProducer {
+	return func(characterId uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterMonsterBookCardGetEffectBody(l)()(w, options)
+		}
+	}
+}
+
+func CharacterLotteryUseEffectBody(l logrus.FieldLogger) func(itemId uint32, success bool, message string) BodyProducer {
+	return func(itemId uint32, success bool, message string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectLotteryUse))
+			w.WriteInt(itemId)
+			w.WriteBool(success)
+			if success {
+				w.WriteAsciiString(message)
+			}
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterLotteryUseEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, itemId uint32, success bool, message string) BodyProducer {
+	return func(characterId uint32, itemId uint32, success bool, message string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterLotteryUseEffectBody(l)(itemId, success, message)(w, options)
+		}
+	}
+}
+
+func CharacterItemLevelUpEffectBody(l logrus.FieldLogger) func() BodyProducer {
+	return func() BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectItemLevelUp))
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterItemLevelUpEffectForeignBody(l logrus.FieldLogger) func(characterId uint32) BodyProducer {
+	return func(characterId uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterItemLevelUpEffectBody(l)()(w, options)
+		}
+	}
+}
+
+func CharacterItemMakerEffectBody(l logrus.FieldLogger) func(state uint32) BodyProducer {
+	return func(state uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectItemMaker))
+			w.WriteInt(state)
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterItemMakerEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, state uint32) BodyProducer {
+	return func(characterId uint32, state uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterItemMakerEffectBody(l)(state)(w, options)
+		}
+	}
+}
+
+// TODO this will crash for some reason
+func CharacterExpItemConsumedEffectBody(l logrus.FieldLogger) func() BodyProducer {
+	return func() BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectExpItemConsumed))
+			return w.Bytes()
+		}
+	}
+}
+
+// TODO this will crash for some reason
+func CharacterExpItemConsumedEffectForeignBody(l logrus.FieldLogger) func(characterId uint32) BodyProducer {
+	return func(characterId uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterExpItemConsumedEffectBody(l)()(w, options)
+		}
+	}
+}
+
+func CharacterReservedEffectBody(l logrus.FieldLogger) func(message string) BodyProducer {
+	return func(message string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectReservedEffect))
+			w.WriteAsciiString(message)
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterReservedEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, message string) BodyProducer {
+	return func(characterId uint32, message string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterReservedEffectBody(l)(message)(w, options)
+		}
+	}
+}
+
+func CharacterReservedEffectBody(l logrus.FieldLogger) func(message string) BodyProducer {
+	return func(message string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectReservedEffect))
+			w.WriteAsciiString(message)
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterReservedEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, message string) BodyProducer {
+	return func(characterId uint32, message string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterReservedEffectBody(l)(message)(w, options)
+		}
+	}
+}
+
+func CharacterConsumeEffectBody(l logrus.FieldLogger) func(itemId uint32) BodyProducer {
+	return func(itemId uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectConsumeEffect))
+			w.WriteInt(itemId)
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterConsumeEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, itemId uint32) BodyProducer {
+	return func(characterId uint32, itemId uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterConsumeEffectBody(l)(itemId)(w, options)
+		}
+	}
+}
+
+func CharacterUpgradeTombItemUseEffectBody(l logrus.FieldLogger) func(usesRemaining byte) BodyProducer {
+	return func(usesRemaining byte) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectUpgradeTombItemUse))
+			w.WriteByte(usesRemaining)
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterUpgradeTombItemUseEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, usesRemaining byte) BodyProducer {
+	return func(characterId uint32, usesRemaining byte) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterUpgradeTombItemUseEffectBody(l)(usesRemaining)(w, options)
+		}
+	}
+}
+
+func CharacterBattlefieldItemUseEffectBody(l logrus.FieldLogger) func(message string) BodyProducer {
+	return func(message string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectBattlefieldItemUse))
+			w.WriteAsciiString(message)
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterBattlefieldItemUseEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, message string) BodyProducer {
+	return func(characterId uint32, message string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterBattlefieldItemUseEffectBody(l)(message)(w, options)
+		}
+	}
+}
+
+func CharacterAvatarOrientedEffectBody(l logrus.FieldLogger) func(message string) BodyProducer {
+	return func(message string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectAvatarOriented))
+			w.WriteAsciiString(message)
+			w.WriteInt(0) // unused
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterAvatarOrientedEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, message string) BodyProducer {
+	return func(characterId uint32, message string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterAvatarOrientedEffectBody(l)(message)(w, options)
+		}
+	}
+}
+
+func CharacterIncubatorUseEffectBody(l logrus.FieldLogger) func(itemId uint32, message string) BodyProducer {
+	return func(itemId uint32, message string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectIncubatorUse))
+			w.WriteInt(itemId)
+			w.WriteAsciiString(message)
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterIncubatorUseEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, itemId uint32, message string) BodyProducer {
+	return func(characterId uint32, itemId uint32, message string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterIncubatorUseEffectBody(l)(itemId, message)(w, options)
+		}
+	}
+}
+
+func CharacterPlaySoundWithMuteBackgroundMusicEffectBody(l logrus.FieldLogger) func(songName string) BodyProducer {
+	return func(songName string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectPlaySoundWithMuteBackgroundMusic))
+			w.WriteAsciiString(songName)
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterPlaySoundWithMuteBackgroundMusicEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, songName string) BodyProducer {
+	return func(characterId uint32, songName string) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterPlaySoundWithMuteBackgroundMusicEffectBody(l)(songName)(w, options)
+		}
+	}
+}
+
+func CharacterSoulStoneUseEffectBody(l logrus.FieldLogger) func() BodyProducer {
+	return func() BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectSoulStoneUse))
+			return w.Bytes()
+		}
+	}
+}
+
+func CharacterSoulStoneUseEffectForeignBody(l logrus.FieldLogger) func(characterId uint32) BodyProducer {
+	return func(characterId uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			return CharacterSoulStoneUseEffectBody(l)()(w, options)
+		}
+	}
+}
+
 func getCharacterEffect(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
 	return func(options map[string]interface{}, key string) byte {
 		var genericCodes interface{}

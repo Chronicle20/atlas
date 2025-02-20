@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/character"
 	skill2 "atlas-channel/character/skill"
+	_map "atlas-channel/map"
 	"atlas-channel/session"
 	skill3 "atlas-channel/skill"
 	"atlas-channel/skill/handler"
@@ -10,6 +11,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-constants/skill"
+	model2 "github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -68,7 +70,13 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		err = h(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), *sui, se)
 		if err != nil {
 			l.WithError(err).Errorf("Character [%d] failed to use skill [%d].", s.CharacterId(), sui.SkillId())
+			return
 		}
+
+		session.IfPresentByCharacterId(t, s.WorldId(), s.ChannelId())(s.CharacterId(), announceSkillUse(l)(ctx)(wp)(sui.SkillId(), c.Level(), sui.SkillLevel()))
+
+		_ = _map.ForOtherSessionsInMap(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), announceForeignSkillUse(l)(ctx)(wp)(s.CharacterId(), sui.SkillId(), c.Level(), sui.SkillLevel()))
+
 		_ = enableActions(l)(ctx)(wp)(s)
 	}
 }
@@ -83,6 +91,30 @@ func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					return err
 				}
 				return nil
+			}
+		}
+	}
+}
+
+func announceSkillUse(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
+		return func(wp writer.Producer) func(skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
+			return func(skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
+				return func(s session.Model) error {
+					return session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(s, writer.CharacterSkillUseEffectBody(l)(skillId, characterLevel, skillLevel, false, false, false))
+				}
+			}
+		}
+	}
+}
+
+func announceForeignSkillUse(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
+		return func(wp writer.Producer) func(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
+			return func(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
+				return func(s session.Model) error {
+					return session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(s, writer.CharacterSkillUseEffectForeignBody(l)(characterId, skillId, characterLevel, skillLevel, false, false, false))
+				}
 			}
 		}
 	}

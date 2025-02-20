@@ -248,6 +248,8 @@ func produceWriters() []string {
 		writer.CharacterBuffCancel,
 		writer.CharacterBuffCancelForeign,
 		writer.CharacterSkillCooldown,
+		writer.CharacterEffect,
+		writer.CharacterEffectForeign,
 	}
 }
 

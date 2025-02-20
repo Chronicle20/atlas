@@ -62,6 +62,7 @@ func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l
 func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(mapId uint32) model.Operator[session.Model] {
 	return func(mapId uint32) model.Operator[session.Model] {
 		return func(s session.Model) error {
+
 			l.Debugf("Processing character [%d] entering map [%d].", s.CharacterId(), mapId)
 			ids, err := _map.GetCharacterIdsInMap(l)(ctx)(s.WorldId(), s.ChannelId(), mapId)
 			if err != nil {
@@ -112,8 +113,7 @@ func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 				return func(s session.Model) error {
 					bs, err := buff.GetByCharacterId(l)(ctx)(c.Id())
 					if err != nil {
-						l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
-						return err
+						bs = make([]buff.Model, 0)
 					}
 
 					err = spawnCharacterFunc(s, writer.CharacterSpawnBody(l, tenant.MustFromContext(ctx))(c, bs, g, enteringField))

@@ -435,25 +435,6 @@ func CharacterReservedEffectForeignBody(l logrus.FieldLogger) func(characterId u
 	}
 }
 
-func CharacterReservedEffectBody(l logrus.FieldLogger) func(message string) BodyProducer {
-	return func(message string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectReservedEffect))
-			w.WriteAsciiString(message)
-			return w.Bytes()
-		}
-	}
-}
-
-func CharacterReservedEffectForeignBody(l logrus.FieldLogger) func(characterId uint32, message string) BodyProducer {
-	return func(characterId uint32, message string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteInt(characterId)
-			return CharacterReservedEffectBody(l)(message)(w, options)
-		}
-	}
-}
-
 func CharacterConsumeEffectBody(l logrus.FieldLogger) func(itemId uint32) BodyProducer {
 	return func(itemId uint32) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {

@@ -207,13 +207,26 @@ func GetSkillHandler(id skill.Id) (handler.Handler, bool) {
 		skillHandlerMap[skill.BrawlerMPRecoveryId] = handler.UseMPRecovery
 		skillHandlerMap[skill.BrawlerKnucklerBoosterId] = handler.UseWeaponBooster
 		skillHandlerMap[skill.BrawlerOakBarrelId] = handler.UseOakBarrel
-		
+		skillHandlerMap[skill.MarauderEnergyChargeId] = handler.UseEnergyCharge
+		skillHandlerMap[skill.MarauderTransformationId] = handler.UseTransformation
 		skillHandlerMap[skill.BuccaneerMapleWarriorId] = handler.UseMapleWarrior
+		skillHandlerMap[skill.BuccaneerSuperTransformationId] = handler.UseSuperTransformation
+		skillHandlerMap[skill.BuccaneerSnatchId] = handler.UseSnatch
+		skillHandlerMap[skill.BuccaneerSpeedInfusionId] = handler.UseSpeedInfusion
+		skillHandlerMap[skill.BuccaneerTimeLeapId] = handler.UseTimeLeap
 		skillHandlerMap[skill.GunslingerGunBoosterId] = handler.UseWeaponBooster
+		skillHandlerMap[skill.GunslingerWingsId] = handler.UseWings
+		skillHandlerMap[skill.OutlawOctopusId] = handler.UseSummon
+		skillHandlerMap[skill.OutlawGaviotaId] = handler.UseSummon
+		skillHandlerMap[skill.OutlawHomingBeaconId] = handler.UseHomingBeacon
 		skillHandlerMap[skill.CorsairMapleWarriorId] = handler.UseMapleWarrior
+		skillHandlerMap[skill.CorsairWrathOfTheOctopiId] = handler.UseSummon
+		skillHandlerMap[skill.CorsairBattleshipId] = handler.UseBattleship
+		skillHandlerMap[skill.CorsairSpeedInfusionId] = handler.UseSpeedInfusion
 		skillHandlerMap[skill.NoblesseRecoveryId] = handler.UseBeginnerRecovery
 		skillHandlerMap[skill.NoblesseNimbleFeetId] = handler.UseNimbleFeet
 		skillHandlerMap[skill.ThunderBreakerStage2KnuckleBoosterId] = handler.UseWeaponBooster
+		skillHandlerMap[skill.ThunderBreakerStage3SpeedInfusionId] = handler.UseSpeedInfusion
 		skillHandlerMap[skill.DawnWarriorStage2SwordBoosterId] = handler.UseWeaponBooster
 		skillHandlerMap[skill.DawnWarriorStage2RageId] = handler.UseRage
 		skillHandlerMap[skill.BlazeWizardStage1MagicGuardId] = handler.UseMagicGuard

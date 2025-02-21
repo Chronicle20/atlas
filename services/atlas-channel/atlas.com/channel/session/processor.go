@@ -91,7 +91,7 @@ func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProduce
 			return func(writerName string) func(bodyProducer writer.BodyProducer) model.Operator[Model] {
 				return func(bodyProducer writer.BodyProducer) model.Operator[Model] {
 					return func(s Model) error {
-						w, err := writerProducer(l, writerName)
+						w, err := writerProducer(writerName)
 						if err != nil {
 							return err
 						}

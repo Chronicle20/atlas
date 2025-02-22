@@ -1,21 +1,21 @@
 package configuration
 
 import (
+	"atlas-npc-conversations/configuration/tenant"
 	"atlas-npc-conversations/rest"
 	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/google/uuid"
 )
 
 const (
-	Resource  = "configurations"
-	ByService = Resource + "/%s?id=%s"
+	Resource   = "configurations"
+	AllTenants = Resource + "/tenants"
 )
 
 func getBaseRequest() string {
 	return requests.RootUrl("CONFIGURATIONS")
 }
 
-func requestByService(serviceId uuid.UUID, serviceType string) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByService, serviceType, serviceId.String()))
+func requestAllTenants() requests.Request[[]tenant.RestModel] {
+	return rest.MakeGetRequest[[]tenant.RestModel](fmt.Sprintf(getBaseRequest() + AllTenants))
 }

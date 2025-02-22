@@ -27,11 +27,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")), os.Getenv("SERVICE_TYPE"))
-	config, err := configuration.Get()
-	if err != nil {
-		l.WithError(err).Fatal("Unable to successfully load configuration.")
-	}
+	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
@@ -40,9 +36,9 @@ func main() {
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	npc.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
-	for _, s := range config.Servers {
-		for _, sct := range s.Scripts {
-			registry.GetRegistry().InitScript(s.TenantId, sct.NPCId, sct.Impl)
+	for _, s := range configuration.GetTenantConfigs() {
+		for _, sct := range s.NPCs {
+			registry.GetRegistry().InitScript(uuid.MustParse(s.Id), sct.NPCId, sct.Impl)
 		}
 	}
 

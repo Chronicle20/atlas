@@ -9,13 +9,14 @@ import (
 
 const (
 	Resource  = "configurations"
-	ByService = Resource + "/%s?id=%s"
+	ByService = Resource + "/services/%s"
+	ForTenant = Resource + "/tenants/%s"
 )
 
 func getBaseRequest() string {
 	return requests.RootUrl("CONFIGURATIONS")
 }
 
-func requestByService(serviceId uuid.UUID, serviceType string) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByService, serviceType, serviceId.String()))
+func requestByService(serviceId uuid.UUID) requests.Request[RestModel] {
+	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByService, serviceId.String()))
 }

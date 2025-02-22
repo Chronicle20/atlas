@@ -22,7 +22,7 @@ func NewExpirationTask(l logrus.FieldLogger, interval time.Duration) *Expiration
 
 func (t *ExpirationTask) Run() {
 	var expire time.Duration
-	c, err := configuration.Get()
+	c, err := configuration.GetServiceConfig()
 	if err != nil {
 		expire = time.Duration(3) * time.Minute
 	} else {

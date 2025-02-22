@@ -9,25 +9,24 @@ import (
 )
 
 var once sync.Once
-var config *RestModel
+var serviceConfig *RestModel
 
-func Get() (*RestModel, error) {
-	if config == nil {
+func GetServiceConfig() (*RestModel, error) {
+	if serviceConfig == nil {
 		log.Fatalf("Configuration not initialized.")
 	}
-	return config, nil
-
+	return serviceConfig, nil
 }
 
-func Init(l logrus.FieldLogger) func(ctx context.Context) func(serviceId uuid.UUID, serviceType string) {
-	return func(ctx context.Context) func(serviceId uuid.UUID, serviceType string) {
-		return func(serviceId uuid.UUID, serviceType string) {
+func Init(l logrus.FieldLogger) func(ctx context.Context) func(serviceId uuid.UUID) {
+	return func(ctx context.Context) func(serviceId uuid.UUID) {
+		return func(serviceId uuid.UUID) {
 			once.Do(func() {
-				c, err := requestByService(serviceId, serviceType)(l, ctx)
+				c, err := requestByService(serviceId)(l, ctx)
 				if err != nil {
 					log.Fatalf("Could not retrieve configuration.")
 				}
-				config = &c
+				serviceConfig = &c
 			})
 		}
 	}

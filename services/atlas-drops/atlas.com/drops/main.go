@@ -54,8 +54,8 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")), os.Getenv("SERVICE_TYPE"))
-	config, err := configuration.Get()
+	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")))
+	config, err := configuration.GetServiceConfig()
 	if err != nil {
 		l.WithError(err).Fatal("Unable to successfully load configuration.")
 	}

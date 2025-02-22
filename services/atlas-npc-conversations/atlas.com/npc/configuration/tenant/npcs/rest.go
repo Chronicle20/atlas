@@ -1,4 +1,4 @@
-package npc
+package npcs
 
 type RestModel struct {
 	NPCId uint32 `json:"npcId"`

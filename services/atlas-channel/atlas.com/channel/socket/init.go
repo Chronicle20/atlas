@@ -10,19 +10,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"net"
-	"strconv"
 	"sync"
 )
 
-func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, sc server.Model, ipAddress string, port string) {
-	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, sc server.Model, ipAddress string, portStr string) {
+func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, sc server.Model, ipAddress string, port int) {
+	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, sc server.Model, ipAddress string, port int) {
 		go func() {
-			port, err := strconv.Atoi(portStr)
-			if err != nil {
-				l.WithError(err).Errorf("Socket service [port] is configured incorrectly")
-				return
-			}
-
 			l.Infof("Creating channel socket service for [%s] on port [%d].", sc.String(), port)
 
 			hasMapleEncryption := true
@@ -40,7 +33,7 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 			l.Debugf("Service locale [%d].", locale)
 
 			go func() {
-				err = socket.Run(l, ctx, wg,
+				err := socket.Run(l, ctx, wg,
 					socket.SetHandlers(hp),
 					socket.SetPort(port),
 					socket.SetCreator(session.Create(l, session.GetRegistry(), t)(sc.WorldId(), sc.ChannelId(), locale)),
@@ -59,7 +52,7 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 
 			sctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(ctx, "startup")
 
-			err = channel.Register(l)(sctx)(sc.WorldId(), sc.ChannelId(), ipAddress, portStr)
+			err := channel.Register(l)(sctx)(sc.WorldId(), sc.ChannelId(), ipAddress, port)
 			if err != nil {
 				l.WithError(err).Errorf("Socket service registration error.")
 			}

@@ -3,8 +3,8 @@ package main
 import (
 	"atlas-channel/account"
 	"atlas-channel/configuration"
-	handler2 "atlas-channel/configuration/handler"
-	writer2 "atlas-channel/configuration/writer"
+	handler2 "atlas-channel/configuration/tenant/socket/handler"
+	writer2 "atlas-channel/configuration/tenant/socket/writer"
 	account2 "atlas-channel/kafka/consumer/account"
 	"atlas-channel/kafka/consumer/buddylist"
 	"atlas-channel/kafka/consumer/buff"
@@ -66,8 +66,8 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")), os.Getenv("SERVICE_TYPE"))
-	config, err := configuration.Get()
+	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")))
+	config, err := configuration.GetServiceConfig()
 	if err != nil {
 		l.WithError(err).Fatal("Unable to successfully load configuration.")
 	}
@@ -103,21 +103,15 @@ func main() {
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
-	for _, s := range config.Channels {
-		majorVersion, err := strconv.Atoi(s.Version.Major)
+	for _, ten := range config.Tenants {
+		tenantId := uuid.MustParse(ten.Id)
+		tenantConfig, err := configuration.GetTenantConfig(tenantId)
 		if err != nil {
-			l.WithError(err).Errorf("Socket service [majorVersion] is configured incorrectly")
-			continue
-		}
-
-		minorVersion, err := strconv.Atoi(s.Version.Minor)
-		if err != nil {
-			l.WithError(err).Errorf("Socket service [minorVersion] is configured incorrectly")
 			continue
 		}
 
 		var t tenant.Model
-		t, err = tenant.Register(s.TenantId, s.Region, uint16(majorVersion), uint16(minorVersion))
+		t, err = tenant.Register(tenantId, tenantConfig.Region, tenantConfig.MajorVersion, tenantConfig.MinorVersion)
 		if err != nil {
 			continue
 		}
@@ -133,7 +127,7 @@ func main() {
 			rw = socket2.ByteReadWriter{}
 		}
 
-		for _, w := range s.Worlds {
+		for _, w := range ten.Worlds {
 			for _, c := range w.Channels {
 				var sc server.Model
 				sc, err = server.New(t, world.Id(w.Id), channel2.Id(c.Id))
@@ -148,10 +142,10 @@ func main() {
 					WithField("world.id", sc.WorldId()).
 					WithField("channel.id", sc.ChannelId())
 
-				wp := produceWriterProducer(fl)(s.Writers, writerList, rw)
+				wp := produceWriterProducer(fl)(tenantConfig.Socket.Writers, writerList, rw)
 				account2.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				buddylist.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				channel.InitHandlers(fl)(sc)(config.IpAddress, c.Port)(consumer.GetManager().RegisterHandler)
+				channel.InitHandlers(fl)(sc)(ten.IPAddress, c.Port)(consumer.GetManager().RegisterHandler)
 				character.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				expression.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				guild.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
@@ -172,8 +166,8 @@ func main() {
 				skill.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				buff.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
-				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
-				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, config.IpAddress, c.Port)
+				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
+				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, ten.IPAddress, c.Port)
 			}
 		}
 	}
@@ -340,7 +334,6 @@ func handlerProducer(l logrus.FieldLogger) func(adapter handler.Adapter) func(ha
 
 				var h handler.MessageHandler
 				if h, ok = hm[hc.Handler]; !ok {
-					l.Warnf("Unable to locate handler [%s].", hc.Handler)
 					continue
 				}
 

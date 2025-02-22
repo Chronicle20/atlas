@@ -7,17 +7,11 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
-func Register(l logrus.FieldLogger) func(ctx context.Context) func(worldId world.Id, channelId channel.Id, ipAddress string, port string) error {
-	return func(ctx context.Context) func(worldId world.Id, channelId channel.Id, ipAddress string, port string) error {
-		return func(worldId world.Id, channelId channel.Id, ipAddress string, portStr string) error {
-			port, err := strconv.Atoi(portStr)
-			if err != nil {
-				l.WithError(err).Errorf("Port [%s] is not a valid number.", portStr)
-				return err
-			}
+func Register(l logrus.FieldLogger) func(ctx context.Context) func(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
+	return func(ctx context.Context) func(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
+		return func(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
 			return registerChannel(l)(ctx)(worldId, channelId, ipAddress, port)
 		}
 	}

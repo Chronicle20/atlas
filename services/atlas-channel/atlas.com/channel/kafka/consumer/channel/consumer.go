@@ -22,9 +22,9 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(ipAddress string, port string) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(sc server.Model) func(ipAddress string, port string) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(ipAddress string, port string) func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(ipAddress string, port int) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(sc server.Model) func(ipAddress string, port int) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(ipAddress string, port int) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
 				t, _ = topic.EnvProvider(l)(EnvCommandTopicChannelStatus)()
@@ -34,7 +34,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(ipAddress str
 	}
 }
 
-func handleCommandStatus(sc server.Model, ipAddress string, port string) message.Handler[channelStatusCommand] {
+func handleCommandStatus(sc server.Model, ipAddress string, port int) message.Handler[channelStatusCommand] {
 	return func(l logrus.FieldLogger, ctx context.Context, c channelStatusCommand) {
 		st := sc.Tenant()
 		mt := tenant.MustFromContext(ctx)

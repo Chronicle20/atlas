@@ -62,19 +62,13 @@ func handleCreatedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) 
 			s = session.SetAccountId(a.Id())(t.Id(), s.SessionId())
 			session.SessionCreated(producer.ProviderImpl(l)(ctx), t)(s)
 
-			c, err := configuration.Get()
-			if err != nil {
-				l.WithError(err).Errorf("Unable to get configuration.")
-				return err
-			}
-
-			sc, err := c.FindServer(t.Id())
+			sc, err := configuration.GetTenantConfig(t.Id())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to find server configuration.")
 				return err
 			}
 
-			err = session.Announce(l)(wp)(writer.AuthSuccess)(s, writer.AuthSuccessBody(t)(a.Id(), a.Name(), a.Gender(), sc.UsesPIN, a.PIC()))
+			err = session.Announce(l)(wp)(writer.AuthSuccess)(s, writer.AuthSuccessBody(t)(a.Id(), a.Name(), a.Gender(), sc.UsesPin, a.PIC()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show successful authorization for account %d", a.Id())
 				return err

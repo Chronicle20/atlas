@@ -1,19 +1,19 @@
 package configuration
 
 import (
-	"atlas-login/configuration/login"
 	"atlas-login/configuration/task"
+	"errors"
 	"github.com/google/uuid"
 )
 
 type RestModel struct {
 	Id      uuid.UUID         `json:"-"`
 	Tasks   []task.RestModel  `json:"tasks"`
-	Servers []login.RestModel `json:"servers"`
+	Tenants []TenantRestModel `json:"tenants"`
 }
 
 func (r RestModel) GetName() string {
-	return "configurations"
+	return "services"
 }
 
 func (r RestModel) GetID() string {
@@ -27,4 +27,18 @@ func (r *RestModel) SetID(strId string) error {
 	}
 	r.Id = id
 	return nil
+}
+
+type TenantRestModel struct {
+	Id   string `json:"id"`
+	Port int    `json:"port"`
+}
+
+func (r *RestModel) FindTask(name string) (task.RestModel, error) {
+	for _, v := range r.Tasks {
+		if v.Type == name {
+			return v, nil
+		}
+	}
+	return task.RestModel{}, errors.New("task not found")
 }

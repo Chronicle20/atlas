@@ -8,19 +8,12 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"net"
-	"strconv"
 	"sync"
 )
 
-func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, t tenant.Model, port string) {
-	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, t tenant.Model, portStr string) {
+func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, t tenant.Model, port int) {
+	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, t tenant.Model, port int) {
 		go func() {
-			port, err := strconv.Atoi(portStr)
-			if err != nil {
-				l.WithError(err).Errorf("Socket service [port] is configured incorrectly")
-				return
-			}
-
 			l.Infof("Creating login socket service for [%s] [%d.%d] on port [%d].", t.Region(), t.MajorVersion(), t.MinorVersion(), port)
 
 			hasMapleEncryption := true
@@ -40,7 +33,7 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 				wg.Add(1)
 				defer wg.Done()
 
-				err = socket.Run(l, ctx, wg,
+				err := socket.Run(l, ctx, wg,
 					socket.SetHandlers(hp),
 					socket.SetPort(port),
 					socket.SetCreator(session.Create(l, session.GetRegistry())(t, locale)),

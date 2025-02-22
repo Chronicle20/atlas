@@ -151,3 +151,17 @@ func ParseTenantId(l logrus.FieldLogger, next TenantIdHandler) http.HandlerFunc 
 		next(tenantId)(w, r)
 	}
 }
+
+type ServiceIdHandler func(serviceId uuid.UUID) http.HandlerFunc
+
+func ParseServiceId(l logrus.FieldLogger, next ServiceIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		serviceId, err := uuid.Parse(mux.Vars(r)["serviceId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse serviceId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(serviceId)(w, r)
+	}
+}

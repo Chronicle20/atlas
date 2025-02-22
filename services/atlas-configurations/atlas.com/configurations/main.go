@@ -4,6 +4,7 @@ import (
 	"atlas-configurations/database"
 	"atlas-configurations/logger"
 	"atlas-configurations/service"
+	"atlas-configurations/services"
 	"atlas-configurations/templates"
 	"atlas-configurations/tenants"
 	"atlas-configurations/tracing"
@@ -43,9 +44,9 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(templates.Migration, tenants.Migration))
+	db := database.Connect(l, database.SetMigrations(templates.Migration, tenants.Migration, services.Migration))
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), templates.InitResource(GetServer())(db), tenants.InitResource(GetServer())(db))
+	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), templates.InitResource(GetServer())(db), tenants.InitResource(GetServer())(db), services.InitResource(GetServer())(db))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

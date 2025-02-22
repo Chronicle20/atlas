@@ -56,14 +56,10 @@ func main() {
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), channel.InitResource(GetServer()), world.InitResource(GetServer()))
 
 	l.Infof("Service started.")
-	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")), os.Getenv("SERVICE_TYPE"))
-	config, err := configuration.Get()
-	if err != nil {
-		l.WithError(err).Fatal("Unable to load configuration.")
-	}
+	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")))
 
 	ctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
-	channel.RequestStatus(l)(ctx)(*config)
+	channel.RequestStatus(l)(ctx)()
 	span.End()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

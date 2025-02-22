@@ -44,15 +44,15 @@ func ByWorldIdProvider(ctx context.Context) func(worldId byte) model.Provider[Mo
 			return model.ErrorProvider[Model](errWorldNotFound)
 		}
 
-		c, err := configuration.Get()
+		c, err := configuration.GetTenantConfig(t.Id())
 		if err != nil {
 			return model.ErrorProvider[Model](err)
 		}
 
-		wc, err := c.FindWorld(t.Id(), worldId)
-		if err != nil {
-			return model.ErrorProvider[Model](err)
+		if len(c.Worlds) <= 0 || int(worldId) >= len(c.Worlds) {
+			return model.ErrorProvider[Model](errors.New("world not found"))
 		}
+		wc := c.Worlds[worldId]
 		m := Model{
 			id:                 worldId,
 			name:               wc.Name,

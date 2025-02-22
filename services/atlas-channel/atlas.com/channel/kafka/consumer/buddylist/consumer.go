@@ -7,6 +7,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -47,39 +48,13 @@ func handleStatusEventBuddyAdded(sc server.Model, wp writer.Producer) message.Ha
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != c.WorldId {
-			return
-		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(c.CharacterId, redrawBuddyList(l)(ctx)(wp)())
-	}
-}
-
-func redrawBuddyList(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func() model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func() model.Operator[session.Model] {
-		t := tenant.MustFromContext(ctx)
-		return func(wp writer.Producer) func() model.Operator[session.Model] {
-			buddyOperationFunc := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)
-			return func() model.Operator[session.Model] {
-				return func(s session.Model) error {
-					bl, err := buddylist.GetById(l)(ctx)(s.CharacterId())
-					if err != nil {
-						return err
-					}
-
-					err = buddyOperationFunc(s, writer.BuddyListUpdateBody(l, t)(bl.Buddies()))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to write character [%d] buddy list.", s.CharacterId())
-						return err
-					}
-					return nil
-				}
-			}
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, redrawBuddyList(l)(ctx)(wp)())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.CharacterId)
 		}
 	}
 }
@@ -90,16 +65,36 @@ func handleStatusEventBuddyRemoved(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != c.WorldId {
-			return
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, redrawBuddyList(l)(ctx)(wp)())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.CharacterId)
 		}
+	}
+}
 
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(c.CharacterId, redrawBuddyList(l)(ctx)(wp)())
+func redrawBuddyList(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func() model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func() model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
+		return func(wp writer.Producer) func() model.Operator[session.Model] {
+			return func() model.Operator[session.Model] {
+				return func(s session.Model) error {
+					bl, err := buddylist.GetById(l)(ctx)(s.CharacterId())
+					if err != nil {
+						return err
+					}
+
+					err = session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyListUpdateBody(l, t)(bl.Buddies()))(s)
+					if err != nil {
+						return err
+					}
+					return nil
+				}
+			}
+		}
 	}
 }
 
@@ -109,16 +104,14 @@ func handleStatusEventBuddyUpdated(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != c.WorldId {
-			return
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, updateBuddy(l)(ctx)(wp)(c.Body.CharacterId, c.Body.Group, c.Body.CharacterName, c.Body.ChannelId, c.Body.InShop))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce character [%d] buddy [%d] channel change to [%d].", c.CharacterId, c.Body.CharacterId, c.Body.ChannelId)
 		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(c.CharacterId, updateBuddy(l)(ctx)(wp)(c.Body.CharacterId, c.Body.Group, c.Body.CharacterName, c.Body.ChannelId, c.Body.InShop))
 	}
 }
 
@@ -126,16 +119,8 @@ func updateBuddy(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, group string, characterName string, channelId int8, inShop bool) model.Operator[session.Model] {
 		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(characterId uint32, group string, characterName string, channelId int8, inShop bool) model.Operator[session.Model] {
-			buddyOperationFunc := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)
 			return func(characterId uint32, group string, characterName string, channelId int8, inShop bool) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := buddyOperationFunc(s, writer.BuddyUpdateBody(l, t)(characterId, group, characterName, channelId, inShop))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to announce character [%d] buddy [%d] channel change to [%d].", s.CharacterId(), characterId, channelId)
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyUpdateBody(l, t)(characterId, group, characterName, channelId, inShop))
 			}
 		}
 	}
@@ -147,32 +132,22 @@ func handleStatusEventBuddyChannelChange(sc server.Model, wp writer.Producer) me
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != c.WorldId {
-			return
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyChannelChange(l)(ctx)(wp)(c.Body.CharacterId, c.Body.ChannelId))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce character [%d] buddy [%d] channel change to [%d].", c.CharacterId, c.Body.CharacterId, c.Body.ChannelId)
 		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyChannelChange(l)(ctx)(wp)(c.Body.CharacterId, c.Body.ChannelId))
 	}
 }
 
 func buddyChannelChange(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, channelId int8) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, channelId int8) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(characterId uint32, channelId int8) model.Operator[session.Model] {
-			buddyOperationFunc := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)
 			return func(characterId uint32, channelId int8) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := buddyOperationFunc(s, writer.BuddyChannelChangeBody(l)(characterId, channelId))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to announce character [%d] buddy [%d] channel change to [%d].", s.CharacterId(), characterId, channelId)
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyChannelChangeBody(l)(characterId, channelId))
 			}
 		}
 	}
@@ -184,32 +159,22 @@ func handleStatusEventBuddyCapacityChange(sc server.Model, wp writer.Producer) m
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != c.WorldId {
-			return
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyCapacityChange(l)(ctx)(wp)(c.Body.Capacity))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce character [%d] buddy list capacity [%d] update.", c.CharacterId, c.Body.Capacity)
 		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyCapacityChange(l)(ctx)(wp)(c.Body.Capacity))
 	}
 }
 
 func buddyCapacityChange(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(capacity byte) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(capacity byte) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(capacity byte) model.Operator[session.Model] {
-			buddyOperationFunc := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)
 			return func(capacity byte) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := buddyOperationFunc(s, writer.BuddyCapacityUpdateBody(l)(capacity))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to announce character [%d] buddy list capacity [%d] update.", s.CharacterId(), capacity)
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyCapacityUpdateBody(l)(capacity))
 			}
 		}
 	}
@@ -221,32 +186,22 @@ func handleStatusEventBuddyError(sc server.Model, wp writer.Producer) message.Ha
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(c.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != c.WorldId {
-			return
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyError(l)(ctx)(wp)(c.Body.Error))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce character [%d] error [%s].", c.CharacterId, c.Body.Error)
 		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(c.CharacterId, buddyError(l)(ctx)(wp)(c.Body.Error))
 	}
 }
 
 func buddyError(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(errorCode string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(errorCode string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(errorCode string) model.Operator[session.Model] {
-			buddyOperationFunc := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)
 			return func(errorCode string) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := buddyOperationFunc(s, writer.BuddyErrorBody(l)(errorCode))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to announce character [%d] error [%s].", s.CharacterId(), errorCode)
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyErrorBody(l)(errorCode))
 			}
 		}
 	}

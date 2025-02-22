@@ -48,6 +48,6 @@ func CharacterMoveHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer
 
 		mp := model.Movement{}
 		mp.Decode(l, t, readerOptions)(r)
-		character.Move(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), mp)
+		character.Move(l)(ctx)(s.Map(), s.CharacterId(), mp)
 	}
 }

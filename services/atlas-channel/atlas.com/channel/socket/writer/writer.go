@@ -10,8 +10,6 @@ type BodyProducer func(w *response.Writer, options map[string]interface{}) []byt
 
 type BodyFunc func(l logrus.FieldLogger) func(rem BodyProducer) []byte
 
-type HeaderFunc func(opWriter func(w *response.Writer), options map[string]interface{}) BodyFunc
-
 func MessageGetter(opWriter func(w *response.Writer), options map[string]interface{}) BodyFunc {
 	return func(l logrus.FieldLogger) func(rem BodyProducer) []byte {
 		return func(rem BodyProducer) []byte {
@@ -22,10 +20,10 @@ func MessageGetter(opWriter func(w *response.Writer), options map[string]interfa
 	}
 }
 
-type Producer func(l logrus.FieldLogger, name string) (BodyFunc, error)
+type Producer func(name string) (BodyFunc, error)
 
 func ProducerGetter(wm map[string]BodyFunc) Producer {
-	return func(l logrus.FieldLogger, name string) (BodyFunc, error) {
+	return func(name string) (BodyFunc, error) {
 		if w, ok := wm[name]; ok {
 			return w, nil
 		}

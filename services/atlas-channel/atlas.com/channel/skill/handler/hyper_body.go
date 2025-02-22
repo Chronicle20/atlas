@@ -6,23 +6,24 @@ import (
 	"atlas-channel/skill/effect"
 	"atlas-channel/socket/model"
 	"context"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/sirupsen/logrus"
 )
 
-func UseHyperBody(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, info model.SkillUsageInfo, effect effect.Model) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, info model.SkillUsageInfo, effect effect.Model) error {
-		return func(worldId byte, channelId byte, mapId uint32, characterId uint32, info model.SkillUsageInfo, effect effect.Model) error {
+func UseHyperBody(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, info model.SkillUsageInfo, effect effect.Model) error {
+	return func(ctx context.Context) func(m _map.Model, characterId uint32, info model.SkillUsageInfo, effect effect.Model) error {
+		return func(m _map.Model, characterId uint32, info model.SkillUsageInfo, effect effect.Model) error {
 			if effect.HPConsume() > 0 {
-				_ = character.ChangeHP(l)(ctx)(worldId, channelId, characterId, -int16(effect.HPConsume()))
+				_ = character.ChangeHP(l)(ctx)(m, characterId, -int16(effect.HPConsume()))
 			}
 			if effect.MPConsume() > 0 {
-				_ = character.ChangeMP(l)(ctx)(worldId, channelId, characterId, -int16(effect.MPConsume()))
+				_ = character.ChangeMP(l)(ctx)(m, characterId, -int16(effect.MPConsume()))
 			}
 
-			applyBuffFunc := buff.Apply(l)(ctx)(worldId, channelId, characterId, info.SkillId(), effect.Duration(), effect.StatUps())
+			applyBuffFunc := buff.Apply(l)(ctx)(m, characterId, info.SkillId(), effect.Duration(), effect.StatUps())
 
 			_ = applyBuffFunc(characterId)
-			_ = applyToParty(l)(ctx)(worldId, channelId, mapId, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
+			_ = applyToParty(l)(ctx)(m, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
 
 			return nil
 		}

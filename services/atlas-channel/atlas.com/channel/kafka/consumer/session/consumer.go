@@ -13,6 +13,7 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -83,27 +84,22 @@ func handleChannelChange(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		session.IfPresentById(t, sc.WorldId(), sc.ChannelId())(e.SessionId, processChannelChangeReturn(l)(ctx)(wp)(e.AccountId, e.Body.State, e.Body.Params))
+		if len(e.Body.Params.IPAddress) <= 0 {
+			return
+		}
+
+		err := session.IfPresentById(t, sc.WorldId(), sc.ChannelId())(e.SessionId, processChannelChangeReturn(l)(ctx)(wp)(e.AccountId, e.Body.State, e.Body.Params))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to write change channel.")
+		}
 	}
 }
 
 func processChannelChangeReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.ChannelChange) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.ChannelChange) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(accountId uint32, state uint8, params model2.ChannelChange) model.Operator[session.Model] {
-			channelChangeFunc := session.Announce(l)(ctx)(wp)(writer.ChannelChange)
 			return func(accountId uint32, state uint8, params model2.ChannelChange) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					if len(params.IPAddress) <= 0 {
-						return nil
-					}
-
-					err := channelChangeFunc(s, writer.ChannelChangeBody(params.IPAddress, params.Port))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to write change channel.")
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.ChannelChange)(writer.ChannelChangeBody(params.IPAddress, params.Port))
 			}
 		}
 	}
@@ -148,17 +144,17 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					s = session.SetAccountId(c.AccountId())(t.Id(), s.SessionId())
 					s = session.SetCharacterId(c.Id())(t.Id(), s.SessionId())
 					s = session.SetGm(c.Gm())(t.Id(), s.SessionId())
-					s = session.SetMapId(c.MapId())(t.Id(), s.SessionId())
+					s = session.SetMapId(_map.Id(c.MapId()))(t.Id(), s.SessionId())
 
 					session.EmitCreated(producer.ProviderImpl(l)(ctx))(s)
 
 					l.Debugf("Writing SetField for character [%d].", c.Id())
-					err = session.Announce(l)(ctx)(wp)(writer.SetField)(s, writer.SetFieldBody(l, t)(s.ChannelId(), c, bl))
+					err = session.Announce(l)(ctx)(wp)(writer.SetField)(writer.SetFieldBody(l, t)(s.ChannelId(), c, bl))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 					}
 					go func() {
-						err := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(s, writer.BuddyListUpdateBody(l, t)(bl.Buddies()))
+						err := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyListUpdateBody(l, t)(bl.Buddies()))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
@@ -166,7 +162,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					go func() {
 						g, _ := guild.GetByMemberId(l)(ctx)(c.Id())
 						if g.Id() != 0 {
-							err := session.Announce(l)(ctx)(wp)(writer.GuildOperation)(s, writer.GuildInfoBody(l, t)(g))
+							err := session.Announce(l)(ctx)(wp)(writer.GuildOperation)(writer.GuildInfoBody(l, t)(g))(s)
 							if err != nil {
 								l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 							}
@@ -183,7 +179,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							return
 						}
 
-						err = session.Announce(l)(ctx)(wp)(writer.CharacterKeyMap)(s, writer.CharacterKeyMapBody(km))
+						err = session.Announce(l)(ctx)(wp)(writer.CharacterKeyMap)(writer.CharacterKeyMapBody(km))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}
@@ -193,7 +189,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if err != nil {
 							l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
 						}
-						err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(s, writer.CharacterBuffGiveBody(l)(ctx)(bs))
+						err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(writer.CharacterBuffGiveBody(l)(ctx)(bs))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}

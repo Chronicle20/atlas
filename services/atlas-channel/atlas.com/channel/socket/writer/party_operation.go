@@ -3,6 +3,7 @@ package writer
 import (
 	"atlas-channel/character"
 	"atlas-channel/party"
+	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
@@ -37,8 +38,8 @@ func PartyCreatedBody(l logrus.FieldLogger) func(partyId uint32) BodyProducer {
 	}
 }
 
-func PartyLeftBody(l logrus.FieldLogger) func(p party.Model, t character.Model, forChannel byte) BodyProducer {
-	return func(p party.Model, t character.Model, forChannel byte) BodyProducer {
+func PartyLeftBody(l logrus.FieldLogger) func(p party.Model, t character.Model, forChannel channel.Id) BodyProducer {
+	return func(p party.Model, t character.Model, forChannel channel.Id) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getPartyOperation(l)(options, PartyOperationLeave))
 			w.WriteInt(p.Id())
@@ -51,8 +52,8 @@ func PartyLeftBody(l logrus.FieldLogger) func(p party.Model, t character.Model, 
 	}
 }
 
-func PartyExpelBody(l logrus.FieldLogger) func(p party.Model, t character.Model, forChannel byte) BodyProducer {
-	return func(p party.Model, t character.Model, forChannel byte) BodyProducer {
+func PartyExpelBody(l logrus.FieldLogger) func(p party.Model, t character.Model, forChannel channel.Id) BodyProducer {
+	return func(p party.Model, t character.Model, forChannel channel.Id) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getPartyOperation(l)(options, PartyOperationExpel))
 			w.WriteInt(p.Id())
@@ -65,8 +66,8 @@ func PartyExpelBody(l logrus.FieldLogger) func(p party.Model, t character.Model,
 	}
 }
 
-func PartyDisbandBody(l logrus.FieldLogger) func(partyId uint32, t character.Model, forChannel byte) BodyProducer {
-	return func(partyId uint32, t character.Model, forChannel byte) BodyProducer {
+func PartyDisbandBody(l logrus.FieldLogger) func(partyId uint32, t character.Model, forChannel channel.Id) BodyProducer {
+	return func(partyId uint32, t character.Model, forChannel channel.Id) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getPartyOperation(l)(options, PartyOperationDisband))
 			w.WriteInt(partyId)
@@ -78,8 +79,8 @@ func PartyDisbandBody(l logrus.FieldLogger) func(partyId uint32, t character.Mod
 	}
 }
 
-func PartyJoinBody(l logrus.FieldLogger) func(p party.Model, t character.Model, forChannel byte) BodyProducer {
-	return func(p party.Model, t character.Model, forChannel byte) BodyProducer {
+func PartyJoinBody(l logrus.FieldLogger) func(p party.Model, t character.Model, forChannel channel.Id) BodyProducer {
+	return func(p party.Model, t character.Model, forChannel channel.Id) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getPartyOperation(l)(options, PartyOperationJoin))
 			w.WriteInt(p.Id())
@@ -89,8 +90,8 @@ func PartyJoinBody(l logrus.FieldLogger) func(p party.Model, t character.Model, 
 	}
 }
 
-func PartyUpdateBody(l logrus.FieldLogger) func(p party.Model, t character.Model, forChannel byte) BodyProducer {
-	return func(p party.Model, t character.Model, forChannel byte) BodyProducer {
+func PartyUpdateBody(l logrus.FieldLogger) func(p party.Model, t character.Model, forChannel channel.Id) BodyProducer {
+	return func(p party.Model, t character.Model, forChannel channel.Id) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getPartyOperation(l)(options, PartyOperationUpdate))
 			w.WriteInt(p.Id())
@@ -132,7 +133,7 @@ func PartyInviteBody(l logrus.FieldLogger) func(partyId uint32, originatorName s
 	}
 }
 
-func WriteParty(w *response.Writer, p party.Model, forChannel byte) []byte {
+func WriteParty(w *response.Writer, p party.Model, forChannel channel.Id) []byte {
 	for _, m := range p.Members() {
 		w.WriteInt(m.Id())
 	}
@@ -176,7 +177,7 @@ func WriteParty(w *response.Writer, p party.Model, forChannel byte) []byte {
 
 	for _, m := range p.Members() {
 		if forChannel == m.ChannelId() {
-			w.WriteInt(m.MapId())
+			w.WriteInt(uint32(m.MapId()))
 		} else {
 			w.WriteInt(0)
 		}

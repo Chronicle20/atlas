@@ -4,6 +4,8 @@ import (
 	as "atlas-channel/account/session"
 	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -12,8 +14,8 @@ import (
 	"net"
 )
 
-func Create(l logrus.FieldLogger, r *Registry, tenant tenant.Model) func(worldId byte, channelId byte, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
-	return func(worldId byte, channelId byte, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
+func Create(l logrus.FieldLogger, r *Registry, tenant tenant.Model) func(worldId world.Id, channelId channel.Id, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
+	return func(worldId world.Id, channelId channel.Id, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
 		return func(sessionId uuid.UUID, conn net.Conn) {
 			fl := l.WithField("session", sessionId)
 			fl.Debugf("Creating session.")

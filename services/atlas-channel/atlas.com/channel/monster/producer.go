@@ -2,16 +2,17 @@ package monster
 
 import (
 	model2 "atlas-channel/socket/model"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func damageCommandProvider(worldId byte, channelId byte, monsterId uint32, characterId uint32, damage uint32) model.Provider[[]kafka.Message] {
+func damageCommandProvider(m _map.Model, monsterId uint32, characterId uint32, damage uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(monsterId))
 	value := &command[damageCommandBody]{
-		WorldId:   worldId,
-		ChannelId: channelId,
+		WorldId:   byte(m.WorldId()),
+		ChannelId: byte(m.ChannelId()),
 		MonsterId: monsterId,
 		Type:      CommandTypeDamage,
 		Body: damageCommandBody{
@@ -22,7 +23,7 @@ func damageCommandProvider(worldId byte, channelId byte, monsterId uint32, chara
 	return producer.SingleMessageProvider(key, value)
 }
 
-func Move(worldId byte, channelId byte, uniqueId uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget model2.MultiTargetForBall, randTimes model2.RandTimeForAreaAttack, mm model2.Movement) model.Provider[[]kafka.Message] {
+func Move(ma _map.Model, uniqueId uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget model2.MultiTargetForBall, randTimes model2.RandTimeForAreaAttack, mm model2.Movement) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(uniqueId))
 	ps := make([]position, 0)
 	for _, p := range multiTarget.Targets {
@@ -175,8 +176,8 @@ func Move(worldId byte, channelId byte, uniqueId uint32, observerId uint32, skil
 	}
 
 	value := &movementCommand{
-		WorldId:       worldId,
-		ChannelId:     channelId,
+		WorldId:       byte(ma.WorldId()),
+		ChannelId:     byte(ma.ChannelId()),
 		UniqueId:      uniqueId,
 		ObserverId:    observerId,
 		SkillPossible: skillPossible,

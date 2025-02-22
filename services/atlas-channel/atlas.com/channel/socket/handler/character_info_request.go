@@ -15,7 +15,6 @@ const CharacterInfoRequestHandle = "CharacterInfoRequestHandle"
 
 func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
-	characterInfoFunc := session.Announce(l)(ctx)(wp)(writer.CharacterInfo)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		updateTime := r.ReadUint32()
 		characterId := r.ReadUint32()
@@ -29,7 +28,7 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		}
 		g, _ := guild.GetByMemberId(l)(ctx)(characterId)
 
-		err = characterInfoFunc(s, writer.CharacterInfoBody(t)(c, g))
+		err = session.Announce(l)(ctx)(wp)(writer.CharacterInfo)(writer.CharacterInfoBody(t)(c, g))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write character information.")
 		}

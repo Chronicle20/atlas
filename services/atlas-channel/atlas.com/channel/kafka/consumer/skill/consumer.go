@@ -50,7 +50,10 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, announceSkillUpdate(l)(ctx)(wp)(e.SkillId, e.Body.Level, e.Body.MasterLevel, e.Body.Expiration))
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, announceSkillUpdate(l)(ctx)(wp)(e.SkillId, e.Body.Level, e.Body.MasterLevel, e.Body.Expiration))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to update character [%d] skill [%d].", e.CharacterId, e.SkillId)
+		}
 	}
 }
 
@@ -65,7 +68,10 @@ func handleUpdated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, announceSkillUpdate(l)(ctx)(wp)(e.SkillId, e.Body.Level, e.Body.MasterLevel, e.Body.Expiration))
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, announceSkillUpdate(l)(ctx)(wp)(e.SkillId, e.Body.Level, e.Body.MasterLevel, e.Body.Expiration))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to update character [%d] skill [%d].", e.CharacterId, e.SkillId)
+		}
 	}
 }
 
@@ -73,13 +79,7 @@ func announceSkillUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp
 	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32, level byte, masterLevel byte, expiration time.Time) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(skillId uint32, level byte, masterLevel byte, expiration time.Time) model.Operator[session.Model] {
 			return func(skillId uint32, level byte, masterLevel byte, expiration time.Time) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := session.Announce(l)(ctx)(wp)(writer.CharacterSkillChange)(s, writer.CharacterSkillChangeBody(l, tenant.MustFromContext(ctx))(true, skillId, level, masterLevel, expiration, true))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to update character [%d] skill [%d].", s.CharacterId(), skillId)
-					}
-					return err
-				}
+				return session.Announce(l)(ctx)(wp)(writer.CharacterSkillChange)(writer.CharacterSkillChangeBody(l, tenant.MustFromContext(ctx))(true, skillId, level, masterLevel, expiration, true))
 			}
 		}
 	}
@@ -96,7 +96,10 @@ func handleCooldownApplied(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, announceSkillCooldown(l)(ctx)(wp)(e.SkillId, e.Body.CooldownExpiresAt))
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, announceSkillCooldown(l)(ctx)(wp)(e.SkillId, e.Body.CooldownExpiresAt))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to update character [%d] skill [%d].", e.CharacterId, e.SkillId)
+		}
 	}
 }
 
@@ -104,13 +107,7 @@ func announceSkillCooldown(l logrus.FieldLogger) func(ctx context.Context) func(
 	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32, cooldownExpiresAt time.Time) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(skillId uint32, cooldownExpiresAt time.Time) model.Operator[session.Model] {
 			return func(skillId uint32, cooldownExpiresAt time.Time) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := session.Announce(l)(ctx)(wp)(writer.CharacterSkillCooldown)(s, writer.CharacterSkillCooldownBody(l, tenant.MustFromContext(ctx))(skillId, cooldownExpiresAt))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to update character [%d] skill [%d].", s.CharacterId(), skillId)
-					}
-					return err
-				}
+				return session.Announce(l)(ctx)(wp)(writer.CharacterSkillCooldown)(writer.CharacterSkillCooldownBody(l, tenant.MustFromContext(ctx))(skillId, cooldownExpiresAt))
 			}
 		}
 	}
@@ -127,7 +124,10 @@ func handleCooldownExpired(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, announceSkillCooldownReset(l)(ctx)(wp)(e.SkillId))
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, announceSkillCooldownReset(l)(ctx)(wp)(e.SkillId))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to update character [%d] skill [%d].", e.CharacterId, e.SkillId)
+		}
 	}
 }
 
@@ -135,13 +135,7 @@ func announceSkillCooldownReset(l logrus.FieldLogger) func(ctx context.Context) 
 	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(skillId uint32) model.Operator[session.Model] {
 			return func(skillId uint32) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := session.Announce(l)(ctx)(wp)(writer.CharacterSkillCooldown)(s, writer.CharacterSkillCooldownBody(l, tenant.MustFromContext(ctx))(skillId, time.Time{}))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to update character [%d] skill [%d].", s.CharacterId(), skillId)
-					}
-					return err
-				}
+				return session.Announce(l)(ctx)(wp)(writer.CharacterSkillCooldown)(writer.CharacterSkillCooldownBody(l, tenant.MustFromContext(ctx))(skillId, time.Time{}))
 			}
 		}
 	}

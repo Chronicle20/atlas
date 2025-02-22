@@ -1,6 +1,9 @@
 package session
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-socket/crypto"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -12,10 +15,10 @@ import (
 type Model struct {
 	id          uuid.UUID
 	accountId   uint32
-	worldId     byte
-	channelId   byte
 	characterId uint32
-	mapId       uint32
+	worldId     world.Id
+	channelId   channel.Id
+	mapId       _map.Id
 	gm          bool
 	con         net.Conn
 	send        crypto.AESOFB
@@ -87,12 +90,6 @@ func (s *Model) setCharacterId(id uint32) Model {
 	return ns
 }
 
-func (s *Model) setMapId(id uint32) Model {
-	ns := CloneSession(*s)
-	ns.mapId = id
-	return ns
-}
-
 func (s *Model) setGm(gm bool) Model {
 	ns := CloneSession(*s)
 	ns.gm = gm
@@ -105,10 +102,6 @@ func (s *Model) SessionId() uuid.UUID {
 
 func (s *Model) AccountId() uint32 {
 	return s.accountId
-}
-
-func (s *Model) MapId() uint32 {
-	return s.mapId
 }
 
 func (s *Model) Tenant() tenant.Model {
@@ -141,24 +134,38 @@ func (s *Model) GetRemoteAddress() net.Addr {
 	return s.con.RemoteAddr()
 }
 
-func (s *Model) setWorldId(worldId byte) Model {
+func (s *Model) setWorldId(worldId world.Id) Model {
 	ns := CloneSession(*s)
 	ns.worldId = worldId
 	return ns
 }
 
-func (s *Model) setChannelId(channelId byte) Model {
+func (s *Model) setChannelId(channelId channel.Id) Model {
 	ns := CloneSession(*s)
 	ns.channelId = channelId
 	return ns
 }
 
-func (s *Model) WorldId() byte {
+func (s *Model) setMapId(id _map.Id) Model {
+	ns := CloneSession(*s)
+	ns.mapId = id
+	return ns
+}
+
+func (s *Model) WorldId() world.Id {
 	return s.worldId
 }
 
-func (s *Model) ChannelId() byte {
+func (s *Model) ChannelId() channel.Id {
 	return s.channelId
+}
+
+func (s *Model) MapId() _map.Id {
+	return s.mapId
+}
+
+func (s *Model) Map() _map.Model {
+	return _map.NewModel(s.worldId)(s.channelId)(s.mapId)
 }
 
 func (s *Model) updateLastRequest() Model {

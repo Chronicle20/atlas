@@ -8,6 +8,8 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -49,12 +51,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -64,23 +61,18 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(p.LeaderId(), partyCreated(l)(ctx)(wp)(e.PartyId))
+		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(p.LeaderId(), partyCreated(l)(ctx)(wp)(e.PartyId))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce party [%d] created to character [%d].", e.PartyId, p.LeaderId())
+		}
 	}
 }
 
 func partyCreated(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(partyId uint32) model.Operator[session.Model] {
-			partyCreatedFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
 			return func(partyId uint32) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := partyCreatedFunc(s, writer.PartyCreatedBody(l)(partyId))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to announce party [%d] created to character [%d].", partyId, s.CharacterId())
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyCreatedBody(l)(partyId))
 			}
 		}
 	}
@@ -92,12 +84,7 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -116,29 +103,27 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 		// For remaining party members.
 		go func() {
 			for _, m := range p.Members() {
-				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce character [%d] has left party [%d].", tc.Id(), p.Id())
+				}
 			}
 		}()
 		go func() {
-			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce character [%d] has left party [%d].", tc.Id(), p.Id())
+			}
 		}()
 
 	}
 }
 
-func partyLeft(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-			partyLeftFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
-			return func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := partyLeftFunc(s, writer.PartyLeftBody(l)(p, tc, forChannel))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to announce character [%d] left party [%d].", s.CharacterId(), p.Id())
-						return err
-					}
-					return nil
-				}
+func partyLeft(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyLeftBody(l)(p, tc, forChannel))
 			}
 		}
 	}
@@ -150,12 +135,7 @@ func handleExpel(sc server.Model, wp writer.Producer) message.Handler[statusEven
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -174,29 +154,27 @@ func handleExpel(sc server.Model, wp writer.Producer) message.Handler[statusEven
 		// For remaining party members.
 		go func() {
 			for _, m := range p.Members() {
-				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce character [%d] was expelled from party [%d].", tc.Id(), p.Id())
+				}
 			}
 		}()
 		go func() {
-			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce character [%d] was expelled from party [%d].", tc.Id(), p.Id())
+			}
 		}()
 
 	}
 }
 
-func partyExpel(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-			partyExpelFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
-			return func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := partyExpelFunc(s, writer.PartyExpelBody(l)(p, tc, forChannel))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to announce character [%d] expel party [%d].", s.CharacterId(), p.Id())
-						return err
-					}
-					return nil
-				}
+func partyExpel(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyExpelBody(l)(p, tc, forChannel))
 			}
 		}
 	}
@@ -208,12 +186,7 @@ func handleDisband(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -226,29 +199,27 @@ func handleDisband(sc server.Model, wp writer.Producer) message.Handler[statusEv
 		// For remaining party members.
 		go func() {
 			for _, m := range e.Body.Members {
-				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
+				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce character [%d] the party [%d] was disbanded.", m, e.PartyId)
+				}
 			}
 		}()
 		go func() {
-			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
+			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce character [%d] the party [%d] was disbanded.", e.ActorId, e.PartyId)
+			}
 		}()
 
 	}
 }
 
-func partyDisband(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, tc character.Model, forChannel byte) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, tc character.Model, forChannel byte) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(partyId uint32, tc character.Model, forChannel byte) model.Operator[session.Model] {
-			partyDisbandFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
-			return func(partyId uint32, tc character.Model, forChannel byte) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := partyDisbandFunc(s, writer.PartyDisbandBody(l)(partyId, tc, forChannel))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to announce character [%d] left party [%d].", s.CharacterId(), partyId)
-						return err
-					}
-					return nil
-				}
+func partyDisband(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(partyId uint32, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+			return func(partyId uint32, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyDisbandBody(l)(partyId, tc, forChannel))
 			}
 		}
 	}
@@ -260,12 +231,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -284,25 +250,20 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 		// For remaining party members.
 		for _, m := range p.Members() {
 			go func() {
-				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), partyJoined(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyJoined(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce party [%d] joined party [%d].", e.PartyId, p.Id())
+				}
 			}()
 		}
 	}
 }
 
-func partyJoined(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-			partyJoinedFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
-			return func(p party.Model, tc character.Model, forChannel byte) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := partyJoinedFunc(s, writer.PartyJoinBody(l)(p, tc, forChannel))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to announce character [%d] joined party [%d].", s.CharacterId(), p.Id())
-						return err
-					}
-					return nil
-				}
+func partyJoined(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyJoinBody(l)(p, tc, forChannel))
 			}
 		}
 	}
@@ -314,12 +275,7 @@ func handleChangeLeader(sc server.Model, wp writer.Producer) message.Handler[sta
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -332,11 +288,17 @@ func handleChangeLeader(sc server.Model, wp writer.Producer) message.Handler[sta
 		// For remaining party members.
 		go func() {
 			for _, m := range p.Members() {
-				session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(m.Id(), partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
+				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce change party [%d] leadership to [%d].", e.PartyId, e.Body.CharacterId)
+				}
 			}
 		}()
 		go func() {
-			session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
+			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce change party [%d] leadership to [%d].", e.PartyId, e.Body.CharacterId)
+			}
 		}()
 
 	}
@@ -345,16 +307,8 @@ func handleChangeLeader(sc server.Model, wp writer.Producer) message.Handler[sta
 func partyChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, targetCharacterId uint32, disconnected bool) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, targetCharacterId uint32, disconnected bool) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(partyId uint32, targetCharacterId uint32, disconnected bool) model.Operator[session.Model] {
-			partyChangeLeaderFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
 			return func(partyId uint32, targetCharacterId uint32, disconnected bool) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := partyChangeLeaderFunc(s, writer.PartyChangeLeaderBody(l)(targetCharacterId, disconnected))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to announce change party [%d] leadership to [%d].", partyId, s.CharacterId())
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyChangeLeaderBody(l)(targetCharacterId, disconnected))
 			}
 		}
 	}
@@ -366,31 +320,19 @@ func handleError(sc server.Model, wp writer.Producer) message.Handler[statusEven
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
-			return
-		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, partyError(l)(ctx)(wp)(e.Body.Type, e.Body.CharacterName))
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, partyError(l)(ctx)(wp)(e.Body.Type, e.Body.CharacterName))
 	}
 }
 
 func partyError(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
-			partyOperationFunc := session.Announce(l)(ctx)(wp)(writer.PartyOperation)
 			return func(errorType string, name string) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := partyOperationFunc(s, writer.PartyErrorBody(l)(errorType, name))
-					if err != nil {
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody(l)(errorType, name))
 			}
 		}
 	}

@@ -7,6 +7,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -45,14 +46,14 @@ func handleThreadCreated(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
-		if sc.WorldId() != e.WorldId {
-			return
+
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", e.ThreadId, e.ActorId)
 		}
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 	}
 }
 
@@ -62,14 +63,14 @@ func handleThreadUpdated(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
-		if sc.WorldId() != e.WorldId {
-			return
+
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", e.ThreadId, e.ActorId)
 		}
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 	}
 }
 
@@ -79,14 +80,14 @@ func handleThreadReplyAdded(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
-		if sc.WorldId() != e.WorldId {
-			return
+
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", e.ThreadId, e.ActorId)
 		}
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 	}
 }
 
@@ -96,34 +97,27 @@ func handleThreadReplyDeleted(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
-		if sc.WorldId() != e.WorldId {
-			return
+
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", e.ThreadId, e.ActorId)
 		}
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 	}
 }
 
 func refreshThread(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(guildId uint32, threadId uint32) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(guildId uint32, threadId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(guildId uint32, threadId uint32) model.Operator[session.Model] {
-			guildBBSFunc := session.Announce(l)(ctx)(wp)(writer.GuildBBS)
 			return func(guildId uint32, threadId uint32) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					t, err := thread.GetById(l)(ctx)(guildId, threadId)
 					if err != nil {
-						l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", t.Id(), s.CharacterId())
 						return err
 					}
-					err = guildBBSFunc(s, writer.GuildBBSThreadBody(l)(t))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", t.Id(), s.CharacterId())
-						return err
-					}
-					return nil
+					return session.Announce(l)(ctx)(wp)(writer.GuildBBS)(writer.GuildBBSThreadBody(l)(t))(s)
 				}
 			}
 		}

@@ -3,6 +3,7 @@ package skill
 import (
 	"atlas-channel/kafka/producer"
 	"context"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -24,9 +25,9 @@ func GetByCharacterId(l logrus.FieldLogger) func(ctx context.Context) func(chara
 	}
 }
 
-func ApplyCooldown(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, skillId uint32, cooldown uint32) model.Operator[uint32] {
-	return func(ctx context.Context) func(worldId byte, channelId byte, skillId uint32, cooldown uint32) model.Operator[uint32] {
-		return func(worldId byte, channelId byte, skillId uint32, cooldown uint32) model.Operator[uint32] {
+func ApplyCooldown(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, skillId uint32, cooldown uint32) model.Operator[uint32] {
+	return func(ctx context.Context) func(m _map.Model, skillId uint32, cooldown uint32) model.Operator[uint32] {
+		return func(m _map.Model, skillId uint32, cooldown uint32) model.Operator[uint32] {
 			return func(characterId uint32) error {
 				return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(setCooldownCommandProvider(characterId, skillId, cooldown))
 			}

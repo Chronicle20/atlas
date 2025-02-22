@@ -17,9 +17,6 @@ const CashShopEntryHandle = "CashShopEntryHandle"
 
 func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
-	cashShopOpenFunc := session.Announce(l)(ctx)(wp)(writer.CashShopOpen)
-	//cashShopOperationFunc := session.Announce(l)(wp)(writer.CashShopOperation)
-	cashShopCashQueryResultFunc := session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		updateTime := r.ReadUint32()
 		l.Debugf("Character [%d] is attempting to enter the cash shop. update_time [%d].", s.CharacterId(), updateTime)
@@ -48,27 +45,27 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			return
 		}
 
-		err = cashShopOpenFunc(s, writer.CashShopOpenBody(l)(t, a, c, bl))
+		err = session.Announce(l)(ctx)(wp)(writer.CashShopOpen)(writer.CashShopOpenBody(l)(t, a, c, bl))(s)
 		if err != nil {
 			return
 		}
 
-		//err = cashShopOperationFunc(s, writer.CashShopCashInventoryBody(l)(s.Tenant()))
+		//err = session.Announce(l)(wp)(writer.CashShopOperation)(s, writer.CashShopCashInventoryBody(l)(s.Tenant()))
 		//if err != nil {
 		//	return
 		//}
 		//
-		//err = cashShopOperationFunc(s, writer.CashShopCashGiftsBody(l)(s.Tenant()))
+		//err = session.Announce(l)(wp)(writer.CashShopOperation)(s, writer.CashShopCashGiftsBody(l)(s.Tenant()))
 		//if err != nil {
 		//	return
 		//}
 		//
-		//err = cashShopOperationFunc(s, writer.CashShopWishListBody(l)(s.Tenant()))
+		//err = session.Announce(l)(wp)(writer.CashShopOperation)(s, writer.CashShopWishListBody(l)(s.Tenant()))
 		//if err != nil {
 		//	return
 		//}
 
-		err = cashShopCashQueryResultFunc(s, writer.CashShopCashQueryResultBody(l)(t))
+		err = session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)(writer.CashShopCashQueryResultBody(l)(t))(s)
 		if err != nil {
 			return
 		}

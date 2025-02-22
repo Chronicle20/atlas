@@ -34,7 +34,7 @@ func CharacterInventoryMoveHandleFunc(l logrus.FieldLogger, ctx context.Context,
 			return
 		}
 		if destination == 0 {
-			err := inventory.Drop(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), inventoryType, source, count)
+			err := inventory.Drop(l)(ctx)(s.Map(), s.CharacterId(), inventoryType, source, count)
 			if err != nil {
 				l.WithError(err).Errorf("Error dropping [%d] item from slot [%d] for character [%d].", count, source, s.CharacterId())
 			}

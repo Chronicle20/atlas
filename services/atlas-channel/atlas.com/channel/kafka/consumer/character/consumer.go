@@ -9,6 +9,9 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map2 "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -52,12 +55,7 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -125,7 +123,7 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 						su = append(su, model2.NewStatUpdate(update, value))
 					}
 
-					err = session.Announce(l)(ctx)(wp)(writer.StatChanged)(s, writer.StatChangedBody(l)(su, exclRequestSent))
+					err = session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(su, exclRequestSent))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
 						return err
@@ -143,7 +141,7 @@ func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l log
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.Body.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(event.WorldId), channel.Id(event.Body.ChannelId)) {
 			return
 		}
 
@@ -155,7 +153,6 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	return func(ctx context.Context) func(wp writer.Producer) func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
 		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
-			setFieldFunc := session.Announce(l)(ctx)(wp)(writer.SetField)
 			return func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					c, err := character.GetById(l)(ctx)()(s.CharacterId())
@@ -164,9 +161,9 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						return err
 					}
 
-					s = session.SetMapId(event.Body.TargetMapId)(t.Id(), s.SessionId())
+					s = session.SetMapId(_map2.Id(event.Body.TargetMapId))(t.Id(), s.SessionId())
 
-					err = setFieldFunc(s, writer.WarpToMapBody(l, t)(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp()))
+					err = session.Announce(l)(ctx)(wp)(writer.SetField)(writer.WarpToMapBody(l, t)(s.ChannelId(), _map2.Id(event.Body.TargetMapId), event.Body.TargetPortalId, c.Hp()))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 						return err
@@ -184,7 +181,7 @@ func handleStatusEventExperienceChanged(sc server.Model, wp writer.Producer) mes
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.Body.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.Body.ChannelId)) {
 			return
 		}
 
@@ -237,7 +234,7 @@ func announceExperienceGain(l logrus.FieldLogger) func(ctx context.Context) func
 						}
 					}
 
-					err := session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(s, writer.CharacterStatusMessageOperationIncreaseExperienceBody(l, t)(c))
+					err := session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationIncreaseExperienceBody(l, t)(c))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to announce experience gain to character [%d].", s.CharacterId())
 						return err
@@ -255,12 +252,7 @@ func handleStatusEventFameChanged(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		if sc.WorldId() != e.WorldId {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
@@ -275,8 +267,14 @@ func handleStatusEventFameChanged(sc server.Model, wp writer.Producer) message.H
 				return
 			}
 
-			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, receiveFame(l)(ctx)(wp)(ac.Name(), e.Body.Amount))
-			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, giveFame(l)(ctx)(wp)(c.Name(), e.Body.Amount, c.Fame()))
+			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, receiveFame(l)(ctx)(wp)(ac.Name(), e.Body.Amount))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", e.CharacterId, e.Body.Amount, ac.Name())
+			}
+			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, giveFame(l)(ctx)(wp)(c.Name(), e.Body.Amount, c.Fame()))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", e.Body.ActorId, e.Body.Amount, c.Name())
+			}
 		}
 	}
 }
@@ -284,16 +282,8 @@ func handleStatusEventFameChanged(sc server.Model, wp writer.Producer) message.H
 func receiveFame(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(fromName string, amount int8) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(fromName string, amount int8) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(fromName string, amount int8) model.Operator[session.Model] {
-			fameResponseFunc := session.Announce(l)(ctx)(wp)(writer.FameResponse)
 			return func(fromName string, amount int8) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := fameResponseFunc(s, writer.ReceiveFameResponseBody(l)(fromName, amount))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", s.CharacterId(), amount, fromName)
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.FameResponse)(writer.ReceiveFameResponseBody(l)(fromName, amount))
 			}
 		}
 	}
@@ -302,16 +292,8 @@ func receiveFame(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 func giveFame(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(toName string, amount int8, total int16) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(toName string, amount int8, total int16) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(toName string, amount int8, total int16) model.Operator[session.Model] {
-			fameResponseFunc := session.Announce(l)(ctx)(wp)(writer.FameResponse)
 			return func(toName string, amount int8, total int16) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := fameResponseFunc(s, writer.GiveFameResponseBody(l)(toName, amount, total))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", s.CharacterId(), amount, toName)
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.FameResponse)(writer.GiveFameResponseBody(l)(toName, amount, total))
 			}
 		}
 	}
@@ -323,32 +305,22 @@ func handleStatusEventMesoChanged(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
-			return
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, mesoChanged(l)(ctx)(wp)(e.Body.Amount))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to notify character [%d] they received meso [%d].", e.CharacterId, e.Body.Amount)
 		}
-
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, mesoChanged(l)(ctx)(wp)(e.Body.Amount))
 	}
 }
 
 func mesoChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(amount int32) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(amount int32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(amount int32) model.Operator[session.Model] {
-			characterStatusMessageFunc := session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)
 			return func(amount int32) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := characterStatusMessageFunc(s, writer.CharacterStatusMessageOperationIncreaseMesoBody(l)(amount))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to notify character [%d] they received meso [%d].", s.CharacterId(), amount)
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationIncreaseMesoBody(l)(amount))
 			}
 		}
 	}
@@ -360,24 +332,13 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.Body.ChannelId)) {
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
-			return
-		}
-
-		if sc.ChannelId() != e.Body.ChannelId {
-			return
-		}
-
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
-			_ = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(s, writer.CharacterLevelUpEffectBody(l)())
-			_ = _map.ForOtherSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), s.MapId(), s.CharacterId(), func(os session.Model) error {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(os, writer.CharacterLevelUpEffectForeignBody(l)(s.CharacterId()))
-			})
+		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+			_ = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterLevelUpEffectBody(l)())(s)
+			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterLevelUpEffectForeignBody(l)(s.CharacterId())))
 			return nil
 		})
 
@@ -385,13 +346,13 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 }
 
 func handleMovementEvent(sc server.Model, wp writer.Producer) message.Handler[movementEvent] {
-	return func(l logrus.FieldLogger, ctx context.Context, event movementEvent) {
-		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.ChannelId) {
+	return func(l logrus.FieldLogger, ctx context.Context, e movementEvent) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
-		mv := model2.Movement{StartX: event.Movement.StartX, StartY: event.Movement.StartY}
-		for _, elem := range event.Movement.Elements {
+		mv := model2.Movement{StartX: e.Movement.StartX, StartY: e.Movement.StartY}
+		for _, elem := range e.Movement.Elements {
 			if elem.TypeStr == MovementTypeNormal {
 				mv.Elements = append(mv.Elements, &model2.NormalElement{
 					Element: model2.Element{
@@ -526,22 +487,18 @@ func handleMovementEvent(sc server.Model, wp writer.Producer) message.Handler[mo
 			}
 		}
 
-		_map.ForOtherSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), event.MapId, event.CharacterId, showMovementForSession(l)(ctx)(wp)(event.CharacterId, mv))
+		err := _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.CharacterId, showMovementForSession(l)(ctx)(wp)(e.CharacterId, mv))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to move character [%d] for characters in map [%d].", e.CharacterId, e.MapId)
+		}
 	}
 }
 
 func showMovementForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
-			moveCharacterFunc := session.Announce(l)(ctx)(wp)(writer.CharacterMovement)
 			return func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := moveCharacterFunc(s, writer.CharacterMovementBody(l, tenant.MustFromContext(ctx))(characterId, m))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to move character [%d] for character [%d].", characterId, s.CharacterId())
-					}
-					return err
-				}
+				return session.Announce(l)(ctx)(wp)(writer.CharacterMovement)(writer.CharacterMovementBody(l, tenant.MustFromContext(ctx))(characterId, m))
 			}
 		}
 	}

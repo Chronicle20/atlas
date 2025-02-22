@@ -9,6 +9,9 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map2 "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -46,48 +49,47 @@ func handleStatusEventUsed(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
 		if e.ChairType == chair.ChairTypePortable {
-			_ = _map.ForOtherSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), e.MapId, e.Body.CharacterId, showChair(l)(ctx)(wp)(e.Body.CharacterId, e.ChairId))
+			err := _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.Body.CharacterId, showChairForeign(l)(ctx)(wp)(e.Body.CharacterId, e.ChairId))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to show [%d] using chair [%d] to those in map [%d].", e.Body.CharacterId, e.ChairId, e.MapId)
+			}
 
-			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
-				err := session.Announce(l)(ctx)(wp)(writer.StatChanged)(s, writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true))
-				if err != nil {
-					l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
-					return err
-				}
-				return nil
-			})
+			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, enableActions(l)(ctx)(wp))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, e.Body.CharacterId)
+			}
 			return
 		}
 		if e.ChairType == chair.ChairTypeFixed {
-			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
-				err := session.Announce(l)(ctx)(wp)(writer.CharacterSitResult)(s, writer.CharacterSitBody(uint16(e.ChairId)))
-				if err != nil {
-					l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.CharacterSitResult, s.CharacterId())
-					return err
-				}
-				return nil
-			})
+			err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, showChair(l)(ctx)(wp)(e.ChairId))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.CharacterSitResult, e.Body.CharacterId)
+			}
 			return
 		}
 	}
 }
 
-func showChair(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, chairId uint32) model.Operator[session.Model] {
+func showChair(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(chairId uint32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(chairId uint32) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(chairId uint32) model.Operator[session.Model] {
+			return func(chairId uint32) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(writer.CharacterSitResult)(writer.CharacterSitBody(uint16(chairId)))
+			}
+		}
+	}
+}
+
+func showChairForeign(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, chairId uint32) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, chairId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(characterId uint32, chairId uint32) model.Operator[session.Model] {
 			return func(characterId uint32, chairId uint32) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := session.Announce(l)(ctx)(wp)(writer.CharacterShowChair)(s, writer.CharacterShowChairBody(characterId, chairId))
-					if err != nil {
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.CharacterShowChair)(writer.CharacterShowChairBody(characterId, chairId))
 			}
 		}
 	}
@@ -99,27 +101,30 @@ func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
 		if e.Body.Type != ErrorTypeInternal {
-			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
-				l.Errorf("Character [%d] attempting to perform chair action they cannot.", s.CharacterId())
-				return session.Destroy(l, ctx, session.GetRegistry())(s)
-			})
+			_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, session.Destroy(l, ctx, session.GetRegistry()))
+			l.Errorf("Character [%d] attempting to perform chair action they cannot.", e.Body.CharacterId)
+			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
-			l.Warnf("Internal issue performing character [%d] sit action.", s.CharacterId())
-			err := session.Announce(l)(ctx)(wp)(writer.StatChanged)(s, writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
-				return err
-			}
-			return nil
-		})
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, enableActions(l)(ctx)(wp))
+		l.Warnf("Internal issue performing character [%d] sit action.", e.Body.CharacterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, e.Body.CharacterId)
+		}
 		return
+	}
+}
+
+func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
+		return func(wp writer.Producer) func(s session.Model) error {
+			return session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true))
+		}
 	}
 }
 
@@ -129,18 +134,36 @@ func handleStatusEventCancelled(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
-		_ = _map.ForOtherSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), e.MapId, e.Body.CharacterId, showChair(l)(ctx)(wp)(e.Body.CharacterId, 0))
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
-			err := session.Announce(l)(ctx)(wp)(writer.CharacterSitResult)(s, writer.CharacterCancelSitBody())
-			if err != nil {
-				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.CharacterSitResult, s.CharacterId())
-				return err
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, cancelChair(l)(ctx)(wp))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.CharacterSitResult, e.Body.CharacterId)
+		}
+
+		err = _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.Body.CharacterId, cancelChairForeign(l)(ctx)(wp)(e.Body.CharacterId))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to write foreign character [%d] sit result completely to [%d].", e.Body.CharacterId, e.MapId)
+		}
+	}
+}
+
+func cancelChair(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
+		return func(wp writer.Producer) model.Operator[session.Model] {
+			return session.Announce(l)(ctx)(wp)(writer.CharacterSitResult)(writer.CharacterCancelSitBody())
+		}
+	}
+}
+
+func cancelChairForeign(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(characterId uint32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(characterId uint32) model.Operator[session.Model] {
+			return func(characterId uint32) model.Operator[session.Model] {
+				return showChairForeign(l)(ctx)(wp)(characterId, 0)
 			}
-			return nil
-		})
+		}
 	}
 }

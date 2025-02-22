@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character/equipment"
 	"atlas-channel/character/inventory"
 	"atlas-channel/pet"
+	"github.com/Chronicle20/atlas-constants/world"
 	"strconv"
 )
 
@@ -75,7 +76,7 @@ func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:                 rm.Id,
 		accountId:          rm.AccountId,
-		worldId:            rm.WorldId,
+		worldId:            world.Id(rm.WorldId),
 		name:               rm.Name,
 		gender:             rm.Gender,
 		skinColor:          rm.SkinColor,

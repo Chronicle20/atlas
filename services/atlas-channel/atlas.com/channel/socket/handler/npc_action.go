@@ -15,7 +15,6 @@ const NPCActionHandle = "NPCActionHandle"
 
 func NPCActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
-	npcActionFunc := session.Announce(l)(ctx)(wp)(writer.NPCAction)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		objectId := r.ReadUint32()
 		unk := r.ReadByte()
@@ -31,14 +30,13 @@ func NPCActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 		if len(rest) > 0 {
 			mp := model.Movement{}
 			mp.Decode(l, t, readerOptions)(r)
-			err = npcActionFunc(s, writer.NPCActionMoveBody(l, t)(objectId, unk, unk2, mp))
+			err = session.Announce(l)(ctx)(wp)(writer.NPCAction)(writer.NPCActionMoveBody(l, t)(objectId, unk, unk2, mp))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to move npc [%d] for character [%d].", n.Template(), s.CharacterId())
-				return
 			}
 			return
 		}
-		err = npcActionFunc(s, writer.NPCActionAnimationBody(l)(objectId, unk, unk2))
+		err = session.Announce(l)(ctx)(wp)(writer.NPCAction)(writer.NPCActionAnimationBody(l)(objectId, unk, unk2))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to animate npc [%d] for character [%d].", n.Template(), s.CharacterId())
 			return

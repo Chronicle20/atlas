@@ -6,6 +6,8 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -41,35 +43,22 @@ func handleFameEventStatusError(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.Body.ChannelId)) {
 			return
 		}
 
-		if sc.WorldId() != e.WorldId {
-			return
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, fameResponseError(l)(ctx)(wp)(e.Body.Error))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to fame error [%s] response to character [%d].", e.Body.Error, e.CharacterId)
 		}
-		if sc.ChannelId() != e.Body.ChannelId {
-			return
-		}
-
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, fameResponseError(l)(ctx)(wp)(e.Body.Error))
 	}
 }
 
 func fameResponseError(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
-			fameResponseFunc := session.Announce(l)(ctx)(wp)(writer.FameResponse)
 			return func(errCode string) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					err := fameResponseFunc(s, writer.FameResponseErrorBody(l)(errCode))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to fame error [%s] response to character [%d].", errCode, s.CharacterId())
-						return err
-					}
-					return nil
-				}
+				return session.Announce(l)(ctx)(wp)(writer.FameResponse)(writer.FameResponseErrorBody(l)(errCode))
 			}
 		}
 	}

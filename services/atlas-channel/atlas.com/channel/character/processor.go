@@ -9,6 +9,7 @@ import (
 	"atlas-channel/socket/model"
 	"context"
 	"errors"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	model2 "github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -48,11 +49,11 @@ func SkillModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model2.
 	}
 }
 
-func Move(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, mm model.Movement) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, mm model.Movement) {
+func Move(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, mm model.Movement) {
+	return func(ctx context.Context) func(m _map.Model, characterId uint32, mm model.Movement) {
 		moveCharacterCommandFunc := producer.ProviderImpl(l)(ctx)(EnvCommandTopicMovement)
-		return func(worldId byte, channelId byte, mapId uint32, characterId uint32, mm model.Movement) {
-			err := moveCharacterCommandFunc(move(worldId, channelId, mapId, characterId, mm))
+		return func(m _map.Model, characterId uint32, mm model.Movement) {
+			err := moveCharacterCommandFunc(move(m, characterId, mm))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to distribute character movement to other services.")
 			}
@@ -126,9 +127,9 @@ type DistributePacket struct {
 	Value uint32
 }
 
-func RequestDistributeAp(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
-	return func(ctx context.Context) func(worldId byte, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
-		return func(worldId byte, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
+func RequestDistributeAp(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
+	return func(ctx context.Context) func(m _map.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
+		return func(m _map.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
 			var distributions = make([]DistributePair, 0)
 			for _, d := range distributes {
 				a, err := abilityFromFlag(d.Flag)
@@ -142,7 +143,7 @@ func RequestDistributeAp(l logrus.FieldLogger) func(ctx context.Context) func(wo
 					Amount:  int8(d.Value),
 				})
 			}
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestDistributeApCommandProvider(worldId, characterId, distributions))
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestDistributeApCommandProvider(m, characterId, distributions))
 		}
 	}
 }
@@ -165,34 +166,34 @@ func abilityFromFlag(flag uint32) (string, error) {
 	return "", errors.New("invalid flag")
 }
 
-func RequestDropMeso(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, amount uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, amount uint32) error {
-		return func(worldId byte, channelId byte, mapId uint32, characterId uint32, amount uint32) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestDropMesoCommandProvider(worldId, channelId, mapId, characterId, amount))
+func RequestDropMeso(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, amount uint32) error {
+	return func(ctx context.Context) func(m _map.Model, characterId uint32, amount uint32) error {
+		return func(m _map.Model, characterId uint32, amount uint32) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestDropMesoCommandProvider(m, characterId, amount))
 		}
 	}
 }
 
-func ChangeHP(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
-		return func(worldId byte, channelId byte, characterId uint32, amount int16) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeHPCommandProvider(worldId, channelId, characterId, amount))
+func ChangeHP(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, amount int16) error {
+	return func(ctx context.Context) func(m _map.Model, characterId uint32, amount int16) error {
+		return func(m _map.Model, characterId uint32, amount int16) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeHPCommandProvider(m, characterId, amount))
 		}
 	}
 }
 
-func ChangeMP(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
-		return func(worldId byte, channelId byte, characterId uint32, amount int16) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeMPCommandProvider(worldId, channelId, characterId, amount))
+func ChangeMP(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, amount int16) error {
+	return func(ctx context.Context) func(m _map.Model, characterId uint32, amount int16) error {
+		return func(m _map.Model, characterId uint32, amount int16) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeMPCommandProvider(m, characterId, amount))
 		}
 	}
 }
 
-func RequestDistributeSp(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
-	return func(ctx context.Context) func(worldId byte, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
-		return func(worldId byte, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestDistributeSpCommandProvider(worldId, characterId, skillId, amount))
+func RequestDistributeSp(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
+	return func(ctx context.Context) func(m _map.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
+		return func(m _map.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestDistributeSpCommandProvider(m, characterId, skillId, amount))
 		}
 	}
 }

@@ -8,6 +8,9 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map2 "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -44,7 +47,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
@@ -57,14 +60,10 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			SetDirection(e.Body.Direction).
 			Build()
 
-		_ = _map.ForSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), e.MapId, func(s session.Model) error {
-			l.Debugf("Spawning [%d] reactor [%d] for character [%d].", r.Classification(), r.Id(), s.CharacterId())
-			err := session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(s, writer.ReactorSpawnBody(l, tenant.MustFromContext(ctx))(r))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to spawn reactor [%d] for character [%d].", r.Id(), s.CharacterId())
-			}
-			return err
-		})
+		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody(l, tenant.MustFromContext(ctx))(r)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to spawn reactor [%d] for characters in map [%d].", r.Id(), e.MapId)
+		}
 	}
 }
 
@@ -74,17 +73,13 @@ func handleDestroyed(sc server.Model, wp writer.Producer) message.Handler[status
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}
 
-		_ = _map.ForSessionsInMap(l)(ctx)(sc.WorldId(), sc.ChannelId(), e.MapId, func(s session.Model) error {
-			l.Debugf("Destroying reactor [%d] for character [%d].", e.ReactorId, s.CharacterId())
-			err := session.Announce(l)(ctx)(wp)(writer.ReactorDestroy)(s, writer.ReactorDestroyBody(l, tenant.MustFromContext(ctx))(e.ReactorId, e.Body.State, e.Body.X, e.Body.Y))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to destroy reactor [%d] for character [%d].", e.ReactorId, s.CharacterId())
-			}
-			return err
-		})
+		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.ReactorDestroy)(writer.ReactorDestroyBody(l, tenant.MustFromContext(ctx))(e.ReactorId, e.Body.State, e.Body.X, e.Body.Y)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to destroy reactor [%d] for characters in map [%d].", e.ReactorId, e.MapId)
+		}
 	}
 }

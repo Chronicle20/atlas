@@ -1,20 +1,21 @@
 package guild
 
 import (
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func requestCreateProvider(worldId byte, channelId byte, mapId uint32, characterId uint32, name string) model.Provider[[]kafka.Message] {
+func requestCreateProvider(m _map.Model, characterId uint32, name string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &command[requestCreateBody]{
 		CharacterId: characterId,
 		Type:        CommandTypeRequestCreate,
 		Body: requestCreateBody{
-			WorldId:   worldId,
-			ChannelId: channelId,
-			MapId:     mapId,
+			WorldId:   byte(m.WorldId()),
+			ChannelId: byte(m.ChannelId()),
+			MapId:     uint32(m.MapId()),
 			Name:      name,
 		},
 	}

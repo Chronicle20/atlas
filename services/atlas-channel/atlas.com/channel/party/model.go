@@ -1,5 +1,11 @@
 package party
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 type Model struct {
 	id       uint32
 	leaderId uint32
@@ -32,9 +38,9 @@ type MemberModel struct {
 	name      string
 	level     byte
 	jobId     uint16
-	worldId   byte
-	channelId byte
-	mapId     uint32
+	worldId   world.Id
+	channelId channel.Id
+	mapId     _map.Id
 	online    bool
 }
 
@@ -58,10 +64,10 @@ func (m MemberModel) Online() bool {
 	return m.online
 }
 
-func (m MemberModel) ChannelId() byte {
+func (m MemberModel) ChannelId() channel.Id {
 	return m.channelId
 }
 
-func (m MemberModel) MapId() uint32 {
+func (m MemberModel) MapId() _map.Id {
 	return m.mapId
 }

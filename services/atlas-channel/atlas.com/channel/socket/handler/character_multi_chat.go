@@ -26,19 +26,19 @@ func CharacterMultiChatHandleFunc(l logrus.FieldLogger, ctx context.Context, _ w
 
 		l.Debugf("Character [%d] issued message [%s]. type [%d], recipientCount [%d]. recipients [%s].", s.CharacterId(), chatText, chatType, recipientCount, recipientStr)
 		if chatType == 0 {
-			_ = message.BuddyChat(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), chatText, recipients)
+			_ = message.BuddyChat(l)(ctx)(s.Map(), s.CharacterId(), chatText, recipients)
 			return
 		}
 		if chatType == 1 {
-			_ = message.PartyChat(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), chatText, recipients)
+			_ = message.PartyChat(l)(ctx)(s.Map(), s.CharacterId(), chatText, recipients)
 			return
 		}
 		if chatType == 2 {
-			_ = message.GuildChat(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), chatText, recipients)
+			_ = message.GuildChat(l)(ctx)(s.Map(), s.CharacterId(), chatText, recipients)
 			return
 		}
 		if chatType == 3 {
-			_ = message.AllianceChat(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), chatText, recipients)
+			_ = message.AllianceChat(l)(ctx)(s.Map(), s.CharacterId(), chatText, recipients)
 			return
 		}
 	}

@@ -3,6 +3,7 @@ package portal
 import (
 	"atlas-channel/rest"
 	"fmt"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
@@ -15,6 +16,6 @@ func getBaseRequest() string {
 	return requests.RootUrl("DATA")
 }
 
-func requestInMapByName(mapId uint32, name string) requests.Request[[]RestModel] {
+func requestInMapByName(mapId _map.Id, name string) requests.Request[[]RestModel] {
 	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+portalsByName, mapId, name))
 }

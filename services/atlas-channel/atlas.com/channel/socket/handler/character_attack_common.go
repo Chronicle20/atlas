@@ -45,23 +45,23 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							return err
 						}
 						if se.HPConsume() > 0 {
-							_ = character.ChangeHP(l)(ctx)(s.WorldId(), s.ChannelId(), s.CharacterId(), -int16(se.HPConsume()))
+							_ = character.ChangeHP(l)(ctx)(s.Map(), s.CharacterId(), -int16(se.HPConsume()))
 						}
 						if se.MPConsume() > 0 {
-							_ = character.ChangeMP(l)(ctx)(s.WorldId(), s.ChannelId(), s.CharacterId(), -int16(se.MPConsume()))
+							_ = character.ChangeMP(l)(ctx)(s.Map(), s.CharacterId(), -int16(se.MPConsume()))
 						}
 					}
 
 					for _, di := range ai.DamageInfo() {
 						for _, d := range di.Damages() {
-							err := monster.Damage(l)(ctx)(s.WorldId(), s.ChannelId(), di.MonsterId(), s.CharacterId(), d)
+							err := monster.Damage(l)(ctx)(s.Map(), di.MonsterId(), s.CharacterId(), d)
 							if err != nil {
 								l.WithError(err).Errorf("Unable to apply damage [%d] to monster [%d] from character [%d].", d, di.MonsterId(), s.CharacterId())
 							}
 						}
 					}
 
-					_ = _map.ForOtherSessionsInMap(l)(ctx)(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId(), func(os session.Model) error {
+					_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), func(os session.Model) error {
 						var writerName string
 						var bodyProducer writer.BodyProducer
 						if ai.AttackType() == model2.AttackTypeMelee {
@@ -80,7 +80,7 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							return errors.New("unhandled attack type")
 						}
 
-						err = session.Announce(l)(ctx)(wp)(writerName)(os, bodyProducer)
+						err = session.Announce(l)(ctx)(wp)(writerName)(bodyProducer)(os)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to announce character [%d] is attacking to character [%d].", s.CharacterId(), os.CharacterId())
 							return err

@@ -2,16 +2,17 @@ package character
 
 import (
 	model2 "atlas-channel/socket/model"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func requestDistributeApCommandProvider(worldId byte, characterId uint32, distributions []DistributePair) model.Provider[[]kafka.Message] {
+func requestDistributeApCommandProvider(m _map.Model, characterId uint32, distributions []DistributePair) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &command[requestDistributeApCommandBody]{
 		CharacterId: characterId,
-		WorldId:     worldId,
+		WorldId:     byte(m.WorldId()),
 		Type:        CommandRequestDistributeAp,
 		Body: requestDistributeApCommandBody{
 			Distributions: distributions,
@@ -20,11 +21,11 @@ func requestDistributeApCommandProvider(worldId byte, characterId uint32, distri
 	return producer.SingleMessageProvider(key, value)
 }
 
-func requestDistributeSpCommandProvider(worldId byte, characterId uint32, skillId uint32, amount int8) model.Provider[[]kafka.Message] {
+func requestDistributeSpCommandProvider(m _map.Model, characterId uint32, skillId uint32, amount int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &command[requestDistributeSpCommandBody]{
 		CharacterId: characterId,
-		WorldId:     worldId,
+		WorldId:     byte(m.WorldId()),
 		Type:        CommandRequestDistributeSp,
 		Body: requestDistributeSpCommandBody{
 			SkillId: skillId,
@@ -34,50 +35,50 @@ func requestDistributeSpCommandProvider(worldId byte, characterId uint32, skillI
 	return producer.SingleMessageProvider(key, value)
 }
 
-func requestDropMesoCommandProvider(worldId byte, channelId byte, mapId uint32, characterId uint32, amount uint32) model.Provider[[]kafka.Message] {
+func requestDropMesoCommandProvider(m _map.Model, characterId uint32, amount uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &command[requestDropMesoCommandBody]{
 		CharacterId: characterId,
-		WorldId:     worldId,
+		WorldId:     byte(m.WorldId()),
 		Type:        CommandRequestDropMeso,
 		Body: requestDropMesoCommandBody{
-			ChannelId: channelId,
-			MapId:     mapId,
+			ChannelId: byte(m.ChannelId()),
+			MapId:     uint32(m.MapId()),
 			Amount:    amount,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func changeHPCommandProvider(worldId byte, channelId byte, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
+func changeHPCommandProvider(m _map.Model, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &command[changeHPCommandBody]{
 		CharacterId: characterId,
-		WorldId:     worldId,
+		WorldId:     byte(m.WorldId()),
 		Type:        CommandChangeHP,
 		Body: changeHPCommandBody{
-			ChannelId: channelId,
+			ChannelId: byte(m.ChannelId()),
 			Amount:    amount,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func changeMPCommandProvider(worldId byte, channelId byte, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
+func changeMPCommandProvider(m _map.Model, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &command[changeMPCommandBody]{
 		CharacterId: characterId,
-		WorldId:     worldId,
+		WorldId:     byte(m.WorldId()),
 		Type:        CommandChangeMP,
 		Body: changeMPCommandBody{
-			ChannelId: channelId,
+			ChannelId: byte(m.ChannelId()),
 			Amount:    amount,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func move(worldId byte, channelId byte, mapId uint32, characterId uint32, mm model2.Movement) model.Provider[[]kafka.Message] {
+func move(ma _map.Model, characterId uint32, mm model2.Movement) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 
 	m := movement{StartX: mm.StartX, StartY: mm.StartY}
@@ -226,9 +227,9 @@ func move(worldId byte, channelId byte, mapId uint32, characterId uint32, mm mod
 	}
 
 	value := &movementCommand{
-		WorldId:     worldId,
-		ChannelId:   channelId,
-		MapId:       mapId,
+		WorldId:     byte(ma.WorldId()),
+		ChannelId:   byte(ma.ChannelId()),
+		MapId:       uint32(ma.MapId()),
 		CharacterId: characterId,
 		Movement:    m,
 	}

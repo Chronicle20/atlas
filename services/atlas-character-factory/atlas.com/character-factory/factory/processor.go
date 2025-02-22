@@ -3,6 +3,7 @@ package factory
 import (
 	"atlas-character-factory/character"
 	"atlas-character-factory/configuration"
+	"atlas-character-factory/configuration/tenant/characters/template"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/async"
@@ -26,61 +27,69 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 				return character.Model{}, errors.New("must provide valid job index")
 			}
 
-			c, err := configuration.Get()
-			if err != nil {
-				l.WithError(err).Errorf("Unable to find template validation configuration")
-				return character.Model{}, err
-			}
 			t := tenant.MustFromContext(ctx)
-			tc, err := c.FindTemplate(t.Id(), input.JobIndex, input.SubJobIndex, input.Gender)
+			tc, err := configuration.GetTenantConfig(t.Id())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to find template validation configuration")
 				return character.Model{}, err
 			}
 
-			if !validFace(tc.Face, input.Face) {
+			var found = false
+			var template template.RestModel
+			for _, ref := range tc.Characters.Templates {
+				if ref.JobIndex == input.JobIndex && ref.SubJobIndex == input.SubJobIndex && ref.Gender == input.Gender {
+					found = true
+					template = ref
+				}
+			}
+			if !found {
+				l.WithError(err).Errorf("Unable to find template validation configuration")
+				return character.Model{}, err
+			}
+
+			if !validFace(template.Faces, input.Face) {
 				l.Errorf("Chosen face [%d] is not valid for job [%d].", input.Face, input.JobIndex)
 				return character.Model{}, errors.New("chosen face is not valid for job")
 			}
 
-			if !validHair(tc.Hair, input.Hair) {
+			if !validHair(template.Hairs, input.Hair) {
 				l.Errorf("Chosen hair [%d] is not valid for job [%d].", input.Hair, input.JobIndex)
 				return character.Model{}, errors.New("chosen hair is not valid for job")
 			}
 
-			if !validHairColor(tc.HairColor, input.HairColor) {
+			if !validHairColor(template.HairColors, input.HairColor) {
 				l.Errorf("Chosen hair color [%d] is not valid for job [%d].", input.HairColor, input.JobIndex)
 				return character.Model{}, errors.New("chosen hair color is not valid for job")
 			}
 
-			if !validSkinColor(tc.SkinColor, uint32(input.SkinColor)) {
+			if !validSkinColor(template.SkinColors, uint32(input.SkinColor)) {
 				l.Errorf("Chosen skin color [%d] is not valid for job [%d]", input.SkinColor, input.JobIndex)
 				return character.Model{}, errors.New("chosen skin color is not valid for job")
 			}
 
-			if !validTop(tc.Top, input.Top) {
+			if !validTop(template.Tops, input.Top) {
 				l.Errorf("Chosen top [%d] is not valid for job [%d]", input.Top, input.JobIndex)
 				return character.Model{}, errors.New("chosen top is not valid for job")
 			}
 
-			if !validBottom(tc.Bottom, input.Bottom) {
+			if !validBottom(template.Bottoms, input.Bottom) {
 				l.Errorf("Chosen bottom [%d] is not valid for job [%d]", input.Bottom, input.JobIndex)
 				return character.Model{}, errors.New("chosen bottom is not valid for job")
 			}
 
-			if !validShoes(tc.Shoes, input.Shoes) {
+			if !validShoes(template.Shoes, input.Shoes) {
 				l.Errorf("Chosen shoes [%d] is not valid for job [%d]", input.Shoes, input.JobIndex)
 				return character.Model{}, errors.New("chosen shoes is not valid for job")
 			}
 
-			if !validWeapon(tc.Weapon, input.Weapon) {
+			if !validWeapon(template.Weapons, input.Weapon) {
 				l.Errorf("Chosen weapon [%d] is not valid for job [%d]", input.Weapon, input.JobIndex)
 				return character.Model{}, errors.New("chosen weapon is not valid for job")
 			}
 
 			asyncCreate := func(actx context.Context, rchan chan uint32, echan chan error) {
 				character.AwaitCreated(l)(input.Name)(actx, rchan, echan)
-				_, err = character.Create(l)(actx)(input.AccountId, input.WorldId, input.Name, input.Gender, tc.MapId, input.JobIndex, input.SubJobIndex, input.Face, input.Hair, input.HairColor, input.SkinColor)
+				_, err = character.Create(l)(actx)(input.AccountId, input.WorldId, input.Name, input.Gender, template.MapId, input.JobIndex, input.SubJobIndex, input.Face, input.Hair, input.HairColor, input.SkinColor)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to create character from seed.")
 					echan <- err
@@ -103,7 +112,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				createInventoryItems(l)(ctx)(cid, tc.StartingInventory)
+				createInventoryItems(l)(ctx)(cid, template.Items)
 			}()
 
 			wg.Wait()

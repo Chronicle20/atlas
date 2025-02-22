@@ -2,6 +2,7 @@ package tenants
 
 import (
 	"atlas-configurations/tenants/characters"
+	"atlas-configurations/tenants/npcs"
 	"atlas-configurations/tenants/socket"
 	"atlas-configurations/tenants/worlds"
 )
@@ -14,6 +15,7 @@ type RestModel struct {
 	UsesPin      bool                 `json:"usesPin"`
 	Socket       socket.RestModel     `json:"socket"`
 	Characters   characters.RestModel `json:"characters"`
+	NPCs         []npcs.RestModel     `json:"npcs"`
 	Worlds       []worlds.RestModel   `json:"worlds"`
 }
 

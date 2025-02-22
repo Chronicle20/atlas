@@ -3,8 +3,8 @@ package main
 import (
 	"atlas-login/account"
 	"atlas-login/configuration"
-	handler2 "atlas-login/configuration/handler"
-	writer2 "atlas-login/configuration/writer"
+	handler2 "atlas-login/configuration/tenant/socket/handler"
+	writer2 "atlas-login/configuration/tenant/socket/writer"
 	session2 "atlas-login/kafka/consumer/session"
 	"atlas-login/logger"
 	"atlas-login/service"
@@ -41,8 +41,8 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")), os.Getenv("SERVICE_TYPE"))
-	config, err := configuration.Get()
+	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")))
+	config, err := configuration.GetServiceConfig()
 	if err != nil {
 		l.WithError(err).Fatal("Unable to successfully load configuration.")
 	}
@@ -58,21 +58,15 @@ func main() {
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
-	for _, s := range config.Servers {
+	for _, ten := range config.Tenants {
+		tenantId := uuid.MustParse(ten.Id)
+		tenantConfig, err := configuration.GetTenantConfig(tenantId)
+		if err != nil {
+			continue
+		}
+
 		var t tenant.Model
-		majorVersion, err := strconv.Atoi(s.Version.Major)
-		if err != nil {
-			l.WithError(err).Errorf("Socket service [majorVersion] is configured incorrectly")
-			continue
-		}
-
-		minorVersion, err := strconv.Atoi(s.Version.Minor)
-		if err != nil {
-			l.WithError(err).Errorf("Socket service [minorVersion] is configured incorrectly")
-			continue
-		}
-
-		t, err = tenant.Register(s.TenantId, s.Region, uint16(majorVersion), uint16(minorVersion))
+		t, err = tenant.Register(tenantId, tenantConfig.Region, tenantConfig.MajorVersion, tenantConfig.MinorVersion)
 		if err != nil {
 			continue
 		}
@@ -93,13 +87,13 @@ func main() {
 			rw = socket2.ByteReadWriter{}
 		}
 
-		wp := produceWriterProducer(fl)(s.Writers, writerList, rw)
-		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(s.Handlers, validatorMap, handlerMap)
+		wp := produceWriterProducer(fl)(tenantConfig.Socket.Writers, writerList, rw)
+		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
 
 		account.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler)
 		session2.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler)
 
-		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, t, s.Port)
+		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, t, ten.Port)
 	}
 	span.End()
 
@@ -219,7 +213,6 @@ func handlerProducer(l logrus.FieldLogger) func(adapter handler.Adapter) func(ha
 
 				var h handler.MessageHandler
 				if h, ok = hm[hc.Handler]; !ok {
-					l.Warnf("Unable to locate handler [%s].", hc.Handler)
 					continue
 				}
 

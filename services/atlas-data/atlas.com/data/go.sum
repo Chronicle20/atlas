@@ -12,6 +12,8 @@ github.com/Chronicle20/atlas-constants v1.0.9 h1:RoN9cH9F3DwXeve0BQp+suzN1rzkcQb
 github.com/Chronicle20/atlas-constants v1.0.9/go.mod h1:iBrQ04uVlMm1Tw0e0shhxwXng0zBtUsSSgSuXr/QhCU=
 github.com/Chronicle20/atlas-constants v1.0.11 h1:wBkbzsnyD+4/BM0PPSK4iyDZP57C09fw7mJAh4L2Zss=
 github.com/Chronicle20/atlas-constants v1.0.11/go.mod h1:iBrQ04uVlMm1Tw0e0shhxwXng0zBtUsSSgSuXr/QhCU=
+github.com/Chronicle20/atlas-constants v1.0.12 h1:mxISq0ynVp1aujsggxTQWGgNSfZqN+r/cZLFyxfA3Qc=
+github.com/Chronicle20/atlas-constants v1.0.12/go.mod h1:iBrQ04uVlMm1Tw0e0shhxwXng0zBtUsSSgSuXr/QhCU=
 github.com/Chronicle20/atlas-model v1.2.1 h1:F/SYo4PAHd1BuZz5/RV65V4uv5wXHzE95LE4nkmhO4g=
 github.com/Chronicle20/atlas-model v1.2.1/go.mod h1:5FNYT/ypml+goxft0XCACTEp6666yys+l6LTxSPeh1k=
 github.com/Chronicle20/atlas-rest v1.2.4 h1:MgDW03g12Fw9k3Q/4obi2xK3vutxCzM2g4KZJGYAIk8=

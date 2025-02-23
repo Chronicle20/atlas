@@ -47,7 +47,7 @@ export function TenantSwitcher({
                 <span className="truncate font-semibold">
                   {activeTenant.id}
                 </span>
-                                <span className="truncate text-xs">{activeTenant.attributes.region}</span>
+                                <span className="truncate text-xs">{activeTenant.attributes.region} - {activeTenant.attributes.majorVersion}.{activeTenant.attributes.minorVersion}</span>
                             </div>
                             <ChevronsUpDown className="ml-auto"/>
                         </SidebarMenuButton>

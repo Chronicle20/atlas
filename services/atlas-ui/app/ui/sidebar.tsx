@@ -2,17 +2,19 @@
 
 import {useState} from "react";
 import Link from "next/link";
-import {ChevronDown, ChevronRight} from "lucide-react";
+import {ChevronDown, ChevronRight, ChartNoAxesCombined, Cog, MonitorCog} from "lucide-react";
 
 const menuItems = [
     {
         title: "Dashboard",
+        icon: ChartNoAxesCombined,
         children: [
             {title: "Overview", href: "/dashboard/overview"},
         ],
     },
     {
         title: "Operations",
+        icon: Cog,
         children: [
             {title: "Accounts", href: "/account"},
             {title: "Characters", href: "/character"},
@@ -21,6 +23,7 @@ const menuItems = [
     },
     {
         title: "Administration",
+        icon: MonitorCog,
         children: [
             {title: "Tenants", href: "/tenant"},
         ],
@@ -48,6 +51,7 @@ export default function Sidebar() {
                             className="flex items-center justify-between w-full p-3 text-left hover:bg-nord-2 hover:text-nord-5"
                             onClick={() => toggleMenu(item.title)}
                         >
+                            <item.icon size={16}/>
                             {item.title}
                             {openMenus[item.title] ? <ChevronDown size={16}/> : <ChevronRight size={16}/>}
                         </button>

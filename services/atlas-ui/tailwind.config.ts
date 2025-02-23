@@ -14,5 +14,7 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('tailwind-nord'),
+  ],
 } satisfies Config;

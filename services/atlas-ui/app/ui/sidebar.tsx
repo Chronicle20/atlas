@@ -6,7 +6,7 @@ import {ChevronDown, ChevronRight, ChartNoAxesCombined, Cog, MonitorCog} from "l
 
 const menuItems = [
     {
-        title: "Dashboard",
+        title: "Dashboards",
         icon: ChartNoAxesCombined,
         children: [
             {title: "Overview", href: "/dashboard/overview"},
@@ -39,11 +39,11 @@ export default function Sidebar() {
 
     return (
         <div className="w-[201px] h-screen bg-nord-0 text-nord-9 flex flex-col border-r border-nord-2 pr-px">
-            <div className="w-[200px] h-[200px] bg-nord-0 flex items-center justify-center">
-                <Link key="/" href="/">
+            <Link key="/" href="/">
+                <div className="w-[200px] h-[200px] bg-nord-0 flex items-center justify-center">
                     LOGO
-                </Link>
-            </div>
+                </div>
+            </Link>
             <nav>
                 {menuItems.map((item) => (
                     <div className="bg-nord-1" key={item.title}>

@@ -119,8 +119,8 @@ export function AppSidebar() {
                     <SidebarGroupContent>
                         <SidebarMenu>
                             {items.map((item) => (
-                                <Collapsible>
-                                <SidebarMenuItem key={item.title} className="group/collapsible">
+                                <Collapsible key={item.title}>
+                                <SidebarMenuItem className="group/collapsible">
                                     <CollapsibleTrigger asChild>
                                     <SidebarMenuButton asChild>
                                         <a href={item.url}>

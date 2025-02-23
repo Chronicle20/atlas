@@ -15,6 +15,7 @@ import {
 import {ChartNoAxesCombined, Cog, MonitorCog} from "lucide-react";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import Link from "next/link";
+import AppSidebarFooter from "@/components/app-sidebar-footer";
 
 // Menu items.
 const items = [
@@ -110,7 +111,9 @@ export function AppSidebar() {
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
-            <SidebarFooter />
+            <SidebarFooter>
+                <AppSidebarFooter/>
+            </SidebarFooter>
         </Sidebar>
     )
 }

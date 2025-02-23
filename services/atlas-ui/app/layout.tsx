@@ -18,7 +18,7 @@ export default function RootLayout({children,}: Readonly<{ children: React.React
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <SidebarProvider>
                 <AppSidebar/>
-                <main className="w-full">
+                <main className="w-full flex min-h-svh flex-1 flex-col">
                     <div className="flex items-center h-12 justify-between px-2">
                         <SidebarToggle/>
                         <ThemeToggle/>

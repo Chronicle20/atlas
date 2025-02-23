@@ -28,42 +28,12 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
     // Simulate an API call to fetch tenants
     const fetchTenants = async () => {
-        // const data = await fetch("/api/configurations/tenants");
-        // const json = await data.json();
-        setTenants([
-            {
-                id: "1e800451-586c-40cb-94c1-e277f97e7c2c",
-                attributes: {
-                    region: "GMS",
-                    majorVersion: 12,
-                    minorVersion: 1,
-                },
-            },
-            {
-                id: "a3fe2199-1bd2-40f7-ba6a-d89d712848b5",
-                attributes: {
-                    region: "GMS",
-                    majorVersion: 83,
-                    minorVersion: 1,
-                },
-            },
-            {
-                id: "74e95941-84d3-4e12-bf18-67adafb36ba6",
-                attributes: {
-                    region: "GMS",
-                    majorVersion: 87,
-                    minorVersion: 1,
-                },
-            },
-            {
-                id: "03b7429a-3d62-4f4c-b511-677772853424",
-                attributes: {
-                    region: "JMS",
-                    majorVersion: 185,
-                    minorVersion: 1,
-                },
-            },
-        ]); // Assuming the data is under the "data" property in your API response
+        const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
+        const response = await fetch(rootUrl + "/api/configurations/tenants");
+        const data = await response.json();
+        if (data?.data) {
+            setTenants(data.data);
+        }
     };
 
     // Fetch tenant data (you can replace this with your actual data fetching logic)

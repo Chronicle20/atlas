@@ -133,7 +133,7 @@ export function AppSidebar() {
                                     <SidebarMenuSub>
                                         {item.children.map((child) => (
                                             <SidebarMenuSubItem key={child.title}>
-                                                <SidebarMenuSubButton>
+                                                <SidebarMenuSubButton asChild>
                                                     <a href={child.url}>
                                                         <span>{child.title}</span>
                                                     </a>

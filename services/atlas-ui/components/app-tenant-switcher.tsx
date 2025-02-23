@@ -9,7 +9,6 @@ import {
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
-    DropdownMenuShortcut,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -18,21 +17,19 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar"
+import {useTenant} from "@/context/tenant-context";
+import {useEffect} from "react";
 
-type Tenant = {
-    tenants: {
-        id: string;
-        attributes: {
-            region: string;
-        };
-    }[]
-};
-
-export function TenantSwitcher({
-                                   tenants,
-                               }: { tenants: Tenant[] }) {
+export function TenantSwitcher() {
     const {isMobile} = useSidebar()
-    const [activeTenant, setActiveTenant] = React.useState(tenants[0])
+    const {tenants, activeTenant, setActiveTenant, fetchTenants} = useTenant()
+
+    useEffect(() => {
+        // Fetch tenants if not already available
+        if (tenants?.length === 0) {
+            fetchTenants();
+        }
+    }, [tenants, fetchTenants]);
 
     return (
         <SidebarMenu>
@@ -45,9 +42,10 @@ export function TenantSwitcher({
                         >
                             <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">
-                  {activeTenant.id}
+                  {activeTenant?.id}
                 </span>
-                                <span className="truncate text-xs">{activeTenant.attributes.region} - {activeTenant.attributes.majorVersion}.{activeTenant.attributes.minorVersion}</span>
+                                <span
+                                    className="truncate text-xs">{activeTenant?.attributes.region} - {activeTenant?.attributes.majorVersion}.{activeTenant?.attributes.minorVersion}</span>
                             </div>
                             <ChevronsUpDown className="ml-auto"/>
                         </SidebarMenuButton>
@@ -61,7 +59,7 @@ export function TenantSwitcher({
                         <DropdownMenuLabel className="text-xs text-muted-foreground">
                             Tenants
                         </DropdownMenuLabel>
-                        {tenants.map((tenant, index) => (
+                        {tenants?.map((tenant, index) => (
                             <DropdownMenuItem
                                 key={tenant.id}
                                 onClick={() => setActiveTenant(tenant)}

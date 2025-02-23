@@ -1,9 +1,13 @@
-export default function Home() {
-  return (
-      <div className="flex flex-1 flex-col gap-4 p-2 pt-0">
+"use client"
 
-    <div className="min-h-[100vh] flex-1 rounded-xl bg-sidebar md:min-h-min">
-    </div>
-      </div>
-  );
+import {useTenant} from "@/context/tenant-context";
+
+export default function Home() {
+    const {activeTenant} = useTenant()
+
+    return (
+        <div>
+            {activeTenant?.id}
+        </div>
+    );
 }

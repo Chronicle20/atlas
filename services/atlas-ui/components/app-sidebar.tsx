@@ -19,41 +19,6 @@ import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/
 import Link from "next/link";
 import {TenantSwitcher} from "@/components/app-tenant-switcher";
 
-const tenants = [
-    {
-        id: "1e800451-586c-40cb-94c1-e277f97e7c2c",
-        attributes: {
-            region: "GMS",
-            majorVersion: 12,
-            minorVersion: 1,
-        },
-    },
-    {
-        id: "a3fe2199-1bd2-40f7-ba6a-d89d712848b5",
-        attributes: {
-            region: "GMS",
-            majorVersion: 83,
-            minorVersion: 1,
-        },
-    },
-    {
-        id: "74e95941-84d3-4e12-bf18-67adafb36ba6",
-        attributes: {
-            region: "GMS",
-            majorVersion: 87,
-            minorVersion: 1,
-        },
-    },
-    {
-        id: "03b7429a-3d62-4f4c-b511-677772853424",
-        attributes: {
-            region: "JMS",
-            majorVersion: 185,
-            minorVersion: 1,
-        },
-    },
-];
-
 // Menu items.
 const items = [
     {
@@ -112,7 +77,7 @@ export function AppSidebar() {
                     LOGO
                 </div>
                 </Link>
-                <TenantSwitcher tenants={tenants} />
+                <TenantSwitcher />
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>

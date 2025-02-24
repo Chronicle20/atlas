@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"time"
 )
 
 func Migration(db *gorm.DB) error {
-	return db.AutoMigrate(&Entity{})
+	return db.AutoMigrate(&Entity{}, &HistoryEntity{})
 }
 
 type Entity struct {
@@ -20,4 +21,15 @@ type Entity struct {
 
 func (e Entity) TableName() string {
 	return "tenants"
+}
+
+type HistoryEntity struct {
+	Id        uuid.UUID       `gorm:"type:uuid;default:uuid_generate_v4()"`
+	TenantId  uuid.UUID       `gorm:"type:uuid"`
+	Data      json.RawMessage `gorm:"type:json;not null"`
+	CreatedAt time.Time       `gorm:"type:timestamp;not null"`
+}
+
+func (e HistoryEntity) TableName() string {
+	return "tenant_history"
 }

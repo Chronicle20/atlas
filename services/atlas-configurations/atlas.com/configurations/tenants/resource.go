@@ -17,6 +17,22 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r := router.PathPrefix("/configurations/tenants").Subrouter()
 			r.HandleFunc("", rest.RegisterHandler(l)(si)("get_configuration_tenants", handleGetConfigurationTenants(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{tenantId}", rest.RegisterHandler(l)(si)("get_configuration_tenant", handleGetConfigurationTenant(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{tenantId}", rest.RegisterInputHandler[RestModel](l)(si)("update_configuration_tenant", handleUpdateConfigurationTenant(db))).Methods(http.MethodPatch)
+		}
+	}
+}
+
+func handleGetConfigurationTenants(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			cts, err := GetAll(d.Logger())(d.Context())(db)()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to get configuration tenants.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(cts)
 		}
 	}
 }
@@ -38,17 +54,16 @@ func handleGetConfigurationTenant(db *gorm.DB) rest.GetHandler {
 	}
 }
 
-func handleGetConfigurationTenants(db *gorm.DB) rest.GetHandler {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			cts, err := GetAll(d.Logger())(d.Context())(db)()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Unable to get configuration tenants.")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
+func handleUpdateConfigurationTenant(db *gorm.DB) rest.InputHandler[RestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				err := UpdateById(d.Logger())(d.Context())(db)(tenantId, input)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to update configuration tenant.")
+					w.WriteHeader(http.StatusInternalServerError)
+				}
 			}
-
-			server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(cts)
-		}
+		})
 	}
 }

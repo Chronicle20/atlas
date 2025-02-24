@@ -9,6 +9,13 @@ type Tenant = {
         majorVersion: number;
         minorVersion: number;
         usesPin: boolean;
+        worlds: {
+            name: string;
+            flag: string;
+            serverMessage: string;
+            eventMessage: string;
+            whyAmIRecommended: string;
+        }[];
     };
 };
 

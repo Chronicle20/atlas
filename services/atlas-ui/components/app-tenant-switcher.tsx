@@ -18,18 +18,10 @@ import {
     useSidebar,
 } from "@/components/ui/sidebar"
 import {useTenant} from "@/context/tenant-context";
-import {useEffect} from "react";
 
 export function TenantSwitcher() {
     const {isMobile} = useSidebar()
-    const {tenants, activeTenant, setActiveTenant, fetchTenants} = useTenant()
-
-    useEffect(() => {
-        // Fetch tenants if not already available
-        if (tenants?.length === 0) {
-            fetchTenants();
-        }
-    }, [tenants, fetchTenants]);
+    const {tenants, activeTenant, setActiveTenant} = useTenant()
 
     return (
         <SidebarMenu>

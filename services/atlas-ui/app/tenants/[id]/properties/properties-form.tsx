@@ -9,8 +9,7 @@ import { z } from "zod"
 import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import { Switch } from "@/components/ui/switch";
-import {useEffect} from "react";
-
+import {useEffect, useState} from "react";
 
 const propertiesFormSchema = z.object({
     region: z
@@ -55,7 +54,43 @@ export function PropertiesForm() {
         }
     }, [tenant, form.reset, form]);
 
-    function onSubmit(data: PropertiesFormValues) {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState("");
+
+    const onSubmit = async (data) => {
+        try {
+            const input ={
+                data: {
+                    id: tenant?.id,
+                    type: "tenants",
+                    attributes: {
+                        region: data.region,
+                        majorVersion: data.major,
+                        minorVersion: data.minor,
+                        usesPin: data.usesPin,
+                        characters: tenant?.attributes.characters,
+                        socket: tenant?.attributes.socket,
+                        worlds: tenant?.attributes.worlds,
+                    },
+                },
+            };
+
+            const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
+            const response = await fetch(rootUrl + "/api/configurations/tenants/" + tenant?.id, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(input),
+            });
+            if (!response.ok) {
+                throw new Error("Failed to submit data.");
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsSubmitting(false);
+        }
     }
 
     return (

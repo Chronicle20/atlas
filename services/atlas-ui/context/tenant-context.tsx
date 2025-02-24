@@ -27,6 +27,17 @@ type Tenant = {
                 skills: number[];
             }[];
         };
+        socket: {
+            handlers: {
+                opCode: string;
+                validator: string;
+                handler: string;
+            }[];
+            writers: {
+                opCode: string;
+                writer: string;
+            }[];
+        }
         worlds: {
             name: string;
             flag: string;

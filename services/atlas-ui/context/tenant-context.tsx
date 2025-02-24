@@ -9,6 +9,24 @@ type Tenant = {
         majorVersion: number;
         minorVersion: number;
         usesPin: boolean;
+        characters: {
+            templates: {
+                jobIndex: number;
+                subJobIndex: number;
+                gender: number;
+                mapId: number;
+                faces: number[];
+                hairs: number[];
+                hairColors: number[];
+                skinColors: number[];
+                tops: number[];
+                bottoms: number[];
+                shoes: number[];
+                weapons: number[];
+                items: number[];
+                skills: number[];
+            }[];
+        };
         worlds: {
             name: string;
             flag: string;

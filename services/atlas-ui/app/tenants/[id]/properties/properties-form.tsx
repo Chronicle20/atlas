@@ -9,6 +9,7 @@ import { z } from "zod"
 import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import { Switch } from "@/components/ui/switch";
+import {useEffect} from "react";
 
 
 const propertiesFormSchema = z.object({
@@ -35,13 +36,24 @@ export function PropertiesForm() {
     const form = useForm<PropertiesFormValues>({
         resolver: zodResolver(propertiesFormSchema),
         defaultValues: {
-            region: tenant?.attributes.region,
-            major: tenant?.attributes.majorVersion,
-            minor: tenant?.attributes.minorVersion,
-            usesPin: tenant?.attributes.usesPin,
+            region: "",
+            major: 0,
+            minor: 0,
+            usesPin: false,
         },
         mode: "onChange",
     })
+
+    useEffect(() => {
+        if (tenant) {
+            form.reset({
+                region: tenant?.attributes.region,
+                major: tenant?.attributes.majorVersion,
+                minor: tenant?.attributes.minorVersion,
+                usesPin: tenant?.attributes.usesPin,
+            });
+        }
+    }, [tenant, form.reset, form]);
 
     function onSubmit(data: PropertiesFormValues) {
     }

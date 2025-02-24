@@ -39,7 +39,7 @@ const items = [
         children: [
             {
                 title: "Accounts",
-                url: "/account"
+                url: "/accounts"
             },
             {
                 title: "Characters",

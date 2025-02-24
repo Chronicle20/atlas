@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react";
+import {useEffect} from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import {useTenant} from "@/context/tenant-context";
 
 export function HandlersForm() {
     const { id } = useParams(); // Get tenants ID from URL
-    const {tenants} = useTenant()
+    const {tenants, updateTenant} = useTenant()
     const tenant = tenants.find((t) => t.id === id);
 
     const form = useForm({
@@ -39,9 +39,18 @@ export function HandlersForm() {
         });
     }, [tenant, form.reset, form]);
 
+    const onSubmit = async (data) => {
+        await updateTenant(tenant, {
+            socket: {
+                handlers: data.handlers,
+                writers: tenant?.attributes.socket.writers,
+            },
+        });
+    }
+
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit((data) => console.log(data))} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 {fields.map((field, index) => (
                     <div key={field.id} className="border p-4 rounded-md space-y-2">
                         <FormField

@@ -9,7 +9,7 @@ import { z } from "zod"
 import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import { Switch } from "@/components/ui/switch";
-import {useEffect, useState} from "react";
+import {useEffect} from "react";
 
 const propertiesFormSchema = z.object({
     region: z
@@ -29,8 +29,8 @@ type PropertiesFormValues = z.infer<typeof propertiesFormSchema>
 
 export function PropertiesForm() {
     const { id } = useParams(); // Get tenants ID from URL
-    const {tenants} = useTenant()
-    const tenant = tenants.find((t) => t.id === id);
+    const {tenants, updateTenant} = useTenant()
+    let tenant = tenants.find((t) => t.id === id);
 
     const form = useForm<PropertiesFormValues>({
         resolver: zodResolver(propertiesFormSchema),
@@ -54,43 +54,19 @@ export function PropertiesForm() {
         }
     }, [tenant, form.reset, form]);
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [error, setError] = useState("");
-
     const onSubmit = async (data) => {
-        try {
-            const input ={
-                data: {
-                    id: tenant?.id,
-                    type: "tenants",
-                    attributes: {
-                        region: data.region,
-                        majorVersion: data.major,
-                        minorVersion: data.minor,
-                        usesPin: data.usesPin,
-                        characters: tenant?.attributes.characters,
-                        socket: tenant?.attributes.socket,
-                        worlds: tenant?.attributes.worlds,
-                    },
-                },
-            };
-
-            const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
-            const response = await fetch(rootUrl + "/api/configurations/tenants/" + tenant?.id, {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(input),
-            });
-            if (!response.ok) {
-                throw new Error("Failed to submit data.");
-            }
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setIsSubmitting(false);
-        }
+        tenant = await updateTenant(tenant, {
+            region: data.region,
+            majorVersion: data.major,
+            minorVersion: data.minor,
+            usesPin: data.usesPin,
+        });
+        form.reset({
+            region: tenant?.attributes.region,
+            major: tenant?.attributes.majorVersion,
+            minor: tenant?.attributes.minorVersion,
+            usesPin: tenant?.attributes.usesPin,
+        });
     }
 
     return (

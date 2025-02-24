@@ -116,7 +116,7 @@ export function WorldsForm() {
                         <Button type="button" variant="destructive" onClick={() => remove(index)}>Remove</Button>
                     </div>
                 ))}
-                <Button type="button" onClick={() => append({ name: "", flag: "", eventMessage: "", serverMessage: "" })}>
+                <Button type="button" onClick={() => append({ name: "", flag: "", eventMessage: "", serverMessage: "", whyAmIRecommended: "", })}>
                     Add World
                 </Button>
                 <Button type="submit">Submit</Button>

@@ -114,16 +114,14 @@ export function TenantProvider({children}: { children: ReactNode }) {
                 },
             };
 
-            console.log(input);
+            const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
+            const response = await fetch(`${rootUrl}/api/configurations/tenants/${tenant.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(input),
+            });
 
-            // const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
-            // const response = await fetch(`${rootUrl}/api/configurations/tenants/${tenant.id}`, {
-            //     method: "PATCH",
-            //     headers: { "Content-Type": "application/json" },
-            //     body: JSON.stringify(input),
-            // });
-            //
-            // if (!response.ok) throw new Error("Failed to submit data.");
+            if (!response.ok) throw new Error("Failed to submit data.");
 
             // If the request is successful, update the local tenant state
             return { ...tenant, attributes: { ...tenant.attributes, ...updatedAttributes } };

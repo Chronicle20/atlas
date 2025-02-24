@@ -58,11 +58,11 @@ const items = [
         children: [
             {
                 title: "Tenants",
-                url: "/tenant"
+                url: "/tenants"
             },
             {
                 title: "Templates",
-                url: "/template"
+                url: "/templates"
             },
         ],
     },

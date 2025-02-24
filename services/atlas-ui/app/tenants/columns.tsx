@@ -51,7 +51,7 @@ export const columns: ColumnDef<Tenant>[] = [
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem>
-                            <a href={"/tenant/" + row.getValue("id")}>
+                            <a href={"/tenants/" + row.getValue("id") + "/properties"}>
                                 <span>View Tenant</span>
                             </a>
                         </DropdownMenuItem>

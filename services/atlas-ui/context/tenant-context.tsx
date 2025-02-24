@@ -8,6 +8,7 @@ type Tenant = {
         region: string;
         majorVersion: number;
         minorVersion: number;
+        usesPin: boolean;
     };
 };
 
@@ -36,15 +37,15 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    // Fetch tenant data (you can replace this with your actual data fetching logic)
+    // Fetch tenants data (you can replace this with your actual data fetching logic)
     useEffect(() => {
         fetchTenants();
     }, []);
 
-    // Set the default active tenant when tenants data is available
+    // Set the default active tenants when tenants data is available
     useEffect(() => {
         if (tenants.length > 0) {
-            setActiveTenant(tenants[0]); // Set first tenant as default
+            setActiveTenant(tenants[0]); // Set first tenants as default
         }
     }, [tenants]);
 
@@ -55,7 +56,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     );
 }
 
-// Hook to use tenant context
+// Hook to use tenants context
 export function useTenant() {
     const context = useContext(TenantContext);
     if (!context) {

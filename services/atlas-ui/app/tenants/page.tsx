@@ -1,8 +1,8 @@
 "use client"
 
 import {useTenant} from "@/context/tenant-context";
-import {DataTable} from "@/app/tenant/data-table";
-import {columns} from "@/app/tenant/columns";
+import {DataTable} from "@/app/tenants/data-table";
+import {columns} from "@/app/tenants/columns";
 
 export default function Page() {
     const {tenants} = useTenant()

@@ -71,7 +71,7 @@ export function PropertiesForm() {
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                     control={form.control}
                     name="region"
@@ -123,8 +123,9 @@ export function PropertiesForm() {
                 <FormField
                     control={form.control}
                     name="usesPin"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    render={({field}) => (
+                        <FormItem
+                            className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                             <div className="space-y-0.5">
                                 <FormLabel>Uses PIN system</FormLabel>
                                 <FormDescription>
@@ -140,7 +141,9 @@ export function PropertiesForm() {
                         </FormItem>
                     )}
                 />
-                <Button type="submit">Update Properties</Button>
+                <div className="flex flex-row gap-2 justify-end">
+                    <Button type="submit">Save</Button>
+                </div>
             </form>
         </Form>
     );

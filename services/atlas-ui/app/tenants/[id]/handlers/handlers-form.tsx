@@ -1,15 +1,16 @@
 "use client"
 
 import {useEffect} from "react";
-import { useForm, useFieldArray } from "react-hook-form";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import {useFieldArray, useForm} from "react-hook-form";
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
+import {Input} from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
+import {X} from "lucide-react";
 
 export function HandlersForm() {
-    const { id } = useParams(); // Get tenants ID from URL
+    const {id} = useParams(); // Get tenants ID from URL
     const {tenants, updateTenant} = useTenant()
     const tenant = tenants.find((t) => t.id === id);
 
@@ -23,7 +24,7 @@ export function HandlersForm() {
         }
     });
 
-    const { fields, append, remove } = useFieldArray({
+    const {fields, append, remove} = useFieldArray({
         control: form.control,
         name: "handlers"
     });
@@ -52,54 +53,60 @@ export function HandlersForm() {
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 {fields.map((field, index) => (
-                    <div key={field.id} className="border p-4 rounded-md space-y-2">
+                    <div key={field.id}
+                         className="border p-4 rounded-md relative gap-2 flex flex-row justify-stretch">
                         <FormField
                             control={form.control}
                             name={`handlers.${index}.opCode`}
-                            render={({ field }) => (
+                            render={({field}) => (
                                 <FormItem>
                                     <FormLabel>Operation Code</FormLabel>
                                     <FormControl>
                                         <Input placeholder="0x00" {...field} />
                                     </FormControl>
-                                    <FormMessage />
+                                    <FormMessage/>
                                 </FormItem>
                             )}
                         />
                         <FormField
                             control={form.control}
                             name={`handlers.${index}.validator`}
-                            render={({ field }) => (
+                            render={({field}) => (
                                 <FormItem>
                                     <FormLabel>Validator</FormLabel>
                                     <FormControl>
                                         <Input {...field} />
                                     </FormControl>
-                                    <FormMessage />
+                                    <FormMessage/>
                                 </FormItem>
                             )}
                         />
                         <FormField
                             control={form.control}
                             name={`handlers.${index}.handler`}
-                            render={({ field }) => (
+                            render={({field}) => (
                                 <FormItem>
                                     <FormLabel>Handler</FormLabel>
                                     <FormControl>
                                         <Input {...field} />
                                     </FormControl>
-                                    <FormMessage />
+                                    <FormMessage/>
                                 </FormItem>
                             )}
                         />
 
-                        <Button type="button" variant="destructive" onClick={() => remove(index)}>Remove</Button>
+                        <Button type="button" className="absolute top-0 right-0" variant="ghost" size="icon"
+                                onClick={() => remove(index)}>
+                            <X/>
+                        </Button>
                     </div>
                 ))}
-                <Button type="button" onClick={() => append({ opCode: "", validator: "", handler: "", })}>
-                    Add Handler
-                </Button>
-                <Button type="submit">Submit</Button>
+                <div className="flex flex-row gap-2 justify-between">
+                    <Button type="button" onClick={() => append({opCode: "", validator: "", handler: "",})}>
+                        Add
+                    </Button>
+                    <Button type="submit">Save</Button>
+                </div>
             </form>
         </Form>
     );

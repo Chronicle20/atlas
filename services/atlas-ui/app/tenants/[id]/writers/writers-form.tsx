@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
+import {X} from "lucide-react";
 
 export function WritersForm() {
     const { id } = useParams(); // Get tenants ID from URL
@@ -56,42 +57,47 @@ export function WritersForm() {
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 {fields.map((field, index) => (
-                    <div key={field.id} className="border p-4 rounded-md space-y-2">
+                    <div key={field.id} className="border p-4 rounded-md gap-2 relative flex flex-row justify-stretch">
                         <FormField
                             control={form.control}
                             name={`writers.${index}.opCode`}
-                            render={({ field }) => (
+                            render={({field}) => (
                                 <FormItem>
                                     <FormLabel>Operation Code</FormLabel>
                                     <FormControl>
                                         <Input placeholder="0x00" {...field} />
                                     </FormControl>
-                                    <FormMessage />
+                                    <FormMessage/>
                                 </FormItem>
                             )}
                         />
                         <FormField
                             control={form.control}
                             name={`writers.${index}.writer`}
-                            render={({ field }) => (
+                            render={({field}) => (
                                 <FormItem>
                                     <FormLabel>Writer</FormLabel>
                                     <FormControl>
                                         <Input {...field} />
                                     </FormControl>
-                                    <FormMessage />
+                                    <FormMessage/>
                                 </FormItem>
                             )}
                         />
 
-                        <Button type="button" variant="destructive" onClick={() => remove(index)}>Remove</Button>
+                        <Button type="button" className="absolute top-0 right-0" variant="ghost" size="icon"
+                                onClick={() => remove(index)}>
+                            <X/>
+                        </Button>
                     </div>
                 ))}
-                <Button type="button" onClick={() => append({ opCode: "", writer: "", })}>
-                    Add Writer
-                </Button>
-                <Button type="submit">Submit</Button>
+                <div className="flex flex-row gap-2 justify-between">
+                    <Button type="button" onClick={() => append({opCode: "", writer: "",})}>
+                        Add
+                    </Button>
+                    <Button type="submit">Save</Button>
+                </div>
             </form>
         </Form>
-    );
+);
 }

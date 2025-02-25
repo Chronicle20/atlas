@@ -19,10 +19,34 @@ export function TemplatesForm() {
 
     useEffect(() => {
         const loadTemplates = async () => {
+            if (!id) return; // Ensure id is available
+
+            setLoading(true); // Show loading while fetching
+
             try {
-                const data : Template[] = await fetchTemplates();
-                const template = data.find((t) => t.id === id);
+                const data: Template[] = await fetchTemplates();
+
+                const template = data.data.find((t) => String(t.id) === String(id));
                 setTemplate(template);
+
+                form.reset({
+                    templates: template.attributes.characters.templates.map(template => ({
+                        jobIndex: template.jobIndex || 0,
+                        subJobIndex: template.subJobIndex || 0,
+                        gender: template.gender || 0,
+                        mapId: template.mapId || 0,
+                        faces: template.faces || [],
+                        hairs: template.hairs || [],
+                        hairColors: template.hairColors || [],
+                        skinColors: template.skinColors || [],
+                        tops: template.tops || [],
+                        bottoms: template.bottoms || [],
+                        shoes: template.shoes || [],
+                        weapons: template.weapons || [],
+                        items: template.items || [],
+                        skills: template.skills || [],
+                    })),
+                });
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -31,9 +55,28 @@ export function TemplatesForm() {
         };
 
         loadTemplates();
-    }, []);
+    }, [id]);
 
-    const form = useForm({
+    interface FormValues {
+        templates: {
+            jobIndex: number;
+            subJobIndex: number;
+            gender: number;
+            mapId: number;
+            faces: number[];
+            hairs: number[];
+            hairColors: number[];
+            skinColors: number[];
+            tops: number[];
+            bottoms: number[];
+            shoes: number[];
+            weapons: number[];
+            items: number[];
+            skills: number[];
+        }[];
+    }
+
+    const form = useForm<FormValues>({
         defaultValues: {
             templates: template?.attributes.characters.templates.map(template => ({
                 jobIndex: template.jobIndex || 0,
@@ -59,28 +102,7 @@ export function TemplatesForm() {
         name: "templates"
     });
 
-    useEffect(() => {
-        form.reset({
-            templates: template?.attributes.characters.templates.map(template => ({
-                jobIndex: template.jobIndex || 0,
-                subJobIndex: template.subJobIndex || 0,
-                gender: template.gender || 0,
-                mapId: template.mapId || 0,
-                faces: template.faces || [],
-                hairs: template.hairs || [],
-                hairColors: template.hairColors || [],
-                skinColors: template.skinColors || [],
-                tops: template.tops || [],
-                bottoms: template.bottoms || [],
-                shoes: template.shoes || [],
-                weapons: template.weapons || [],
-                items: template.items || [],
-                skills: template.skills || [],
-            }))
-        });
-    }, [template, form.reset, form]);
-
-    const onSubmit = async (data) => {
+    const onSubmit = async (data: FormValues) => {
         await updateTemplate(template, {
             characters: {
                 templates: data.templates,

@@ -36,10 +36,22 @@ export function PropertiesForm() {
 
     useEffect(() => {
         const loadTemplates = async () => {
+            if (!id) return; // Ensure id is available
+
+            setLoading(true); // Show loading while fetching
+
             try {
-                const data : Template[] = await fetchTemplates();
-                const template = data.find((t) => t.id === id);
+                const data: Template[] = await fetchTemplates();
+
+                const template = data.data.find((t) => String(t.id) === String(id));
                 setTemplate(template);
+
+                form.reset({
+                    region: template.region || "",
+                    major: template.majorVersion || "",
+                    minor: template.minorVersion || "",
+                    usesPin: template.usesPin,
+                });
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -48,7 +60,7 @@ export function PropertiesForm() {
         };
 
         loadTemplates();
-    }, []);
+    }, [id]);
 
     const form = useForm<PropertiesFormValues>({
         resolver: zodResolver(propertiesFormSchema),
@@ -61,17 +73,7 @@ export function PropertiesForm() {
         mode: "onChange",
     })
 
-    useEffect(() => {
-        if (template) {
-            form.reset({
-                region: template?.attributes.region,
-                major: template?.attributes.majorVersion,
-                minor: template?.attributes.minorVersion,
-            });
-        }
-    }, [template, form.reset, form]);
-
-    const onSubmit = async (data) => {
+    const onSubmit = async (data : PropertiesFormValues) => {
         await updateTemplate(template, {
             region: data.region,
             majorVersion: data.major,
@@ -133,6 +135,27 @@ export function PropertiesForm() {
                                 The MapleStory minor version.
                             </FormDescription>
                             <FormMessage/>
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="usesPin"
+                    render={({field}) => (
+                        <FormItem
+                            className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                            <div className="space-y-0.5">
+                                <FormLabel>Uses PIN system</FormLabel>
+                                <FormDescription>
+                                    Receive emails about new products, features, and more.
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
                         </FormItem>
                     )}
                 />

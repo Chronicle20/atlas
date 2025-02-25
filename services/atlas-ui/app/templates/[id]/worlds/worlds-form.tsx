@@ -18,10 +18,25 @@ export function WorldsForm() {
 
     useEffect(() => {
         const loadTemplates = async () => {
+            if (!id) return; // Ensure id is available
+
+            setLoading(true); // Show loading while fetching
+
             try {
-                const data : Template[] = await fetchTemplates();
-                const template = data.find((t) => t.id === id);
+                const data: Template[] = await fetchTemplates();
+
+                const template = data.data.find((t) => String(t.id) === String(id));
                 setTemplate(template);
+
+                form.reset({
+                    worlds: template.attributes.worlds.map(world => ({
+                        name: world.name || "",
+                        flag: world.flag || "",
+                        eventMessage: world.eventMessage || "",
+                        serverMessage: world.serverMessage || "",
+                        whyAmIRecommended: world.whyAmIRecommended || "",
+                    })),
+                });
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -30,9 +45,19 @@ export function WorldsForm() {
         };
 
         loadTemplates();
-    }, []);
+    }, [id]);
 
-    const form = useForm({
+    interface FormValues {
+        worlds: {
+            name: string;
+            flag: string;
+            eventMessage: string;
+            serverMessage: string;
+            whyAmIRecommended: string;
+        }[];
+    }
+
+    const form = useForm<FormValues>({
         defaultValues: {
             worlds: template?.attributes.worlds.map(world => ({
                 name: world.name || "",
@@ -49,20 +74,7 @@ export function WorldsForm() {
         name: "worlds"
     });
 
-    // Reset form values when `worlds` data changes
-    useEffect(() => {
-        form.reset({
-            worlds: template?.attributes.worlds.map(world => ({
-                name: world.name || "",
-                flag: world.flag || "",
-                eventMessage: world.eventMessage || "",
-                serverMessage: world.serverMessage || "",
-                whyAmIRecommended: world.whyAmIRecommended || "",
-            }))
-        });
-    }, [template, form.reset, form]);
-
-    const onSubmit = async (data) => {
+    const onSubmit = async (data: FormValues) => {
         await updateTemplate(template, {
             worlds: data.worlds,
         });

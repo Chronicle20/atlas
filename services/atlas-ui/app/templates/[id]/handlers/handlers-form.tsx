@@ -18,10 +18,23 @@ export function HandlersForm() {
 
     useEffect(() => {
         const loadTemplates = async () => {
+            if (!id) return; // Ensure id is available
+
+            setLoading(true); // Show loading while fetching
+
             try {
-                const data : Template[] = await fetchTemplates();
-                const template = data.find((t) => t.id === id);
+                const data: Template[] = await fetchTemplates();
+
+                const template = data.data.find((t) => String(t.id) === String(id));
                 setTemplate(template);
+
+                form.reset({
+                    handlers: template.attributes.socket.handlers.map(handler => ({
+                        opCode: handler.opCode || "",
+                        writer: handler.writer || "",
+                        handler: handler.handler || "",
+                    })),
+                });
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -30,15 +43,19 @@ export function HandlersForm() {
         };
 
         loadTemplates();
-    }, []);
+    }, [id]);
 
-    const form = useForm({
+    interface FormValues {
+        handlers: {
+            opCode: string;
+            writer: string;
+            handler: string;
+        }[];
+    }
+
+    const form = useForm<FormValues>({
         defaultValues: {
-            handlers: template?.attributes.socket.handlers.map(handler => ({
-                opCode: handler.opCode || "",
-                validator: handler.validator || "",
-                handler: handler.handler || "",
-            }))
+            handlers: [],
         }
     });
 
@@ -47,18 +64,7 @@ export function HandlersForm() {
         name: "handlers"
     });
 
-    // Reset form values when `handlers` data changes
-    useEffect(() => {
-        form.reset({
-            handlers: template?.attributes.socket.handlers.map(handler => ({
-                opCode: handler.opCode || "",
-                validator: handler.validator || "",
-                handler: handler.handler || "",
-            }))
-        });
-    }, [template, form.reset, form]);
-
-    const onSubmit = async (data) => {
+    const onSubmit = async (data: FormValues) => {
         await updateTemplate(template, {
             socket: {
                 handlers: data.handlers,

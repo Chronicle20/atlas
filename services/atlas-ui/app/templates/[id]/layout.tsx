@@ -19,9 +19,14 @@ export default function TemplateDetailLayout({ children }: TemplateDetailLayoutP
 
     useEffect(() => {
         const loadTemplates = async () => {
+            if (!id) return; // Ensure id is available
+
+            setLoading(true); // Show loading while fetching
+
             try {
-                const data : Template[] = await fetchTemplates();
-                const template = data.find((t) => t.id === id);
+                const data: Template[] = await fetchTemplates();
+
+                const template = data.data.find((t) => String(t.id) === String(id));
                 setTemplate(template);
             } catch (err) {
                 setError(err.message);
@@ -31,7 +36,7 @@ export default function TemplateDetailLayout({ children }: TemplateDetailLayoutP
         };
 
         loadTemplates();
-    }, []);
+    }, [id]);
 
     const sidebarNavItems = [
         {

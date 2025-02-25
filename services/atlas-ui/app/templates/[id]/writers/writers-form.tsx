@@ -1,16 +1,16 @@
 "use client"
 
 import {useEffect, useState} from "react";
-import { useForm, useFieldArray } from "react-hook-form";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import {useFieldArray, useForm} from "react-hook-form";
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
+import {Input} from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {X} from "lucide-react";
 import {fetchTemplates, Template, updateTemplate} from "@/lib/templates";
 
 export function WritersForm() {
-    const { id } = useParams(); // Get templates ID from URL
+    const {id} = useParams(); // Get templates ID from URL
 
     const [template, setTemplate] = useState<Template>();
     const [loading, setLoading] = useState(true);
@@ -18,10 +18,22 @@ export function WritersForm() {
 
     useEffect(() => {
         const loadTemplates = async () => {
+            if (!id) return; // Ensure id is available
+
+            setLoading(true); // Show loading while fetching
+
             try {
-                const data : Template[] = await fetchTemplates();
-                const template = data.find((t) => t.id === id);
+                const data: Template[] = await fetchTemplates();
+
+                const template = data.data.find((t) => String(t.id) === String(id));
                 setTemplate(template);
+
+                form.reset({
+                    writers: template.attributes.socket.writers.map(writer => ({
+                        opCode: writer.opCode || "",
+                        writer: writer.writer || "",
+                    })),
+                });
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -30,33 +42,27 @@ export function WritersForm() {
         };
 
         loadTemplates();
-    }, []);
+    }, [id]);
 
-    const form = useForm({
+    interface FormValues {
+        writers: {
+            opCode: string;
+            writer: string;
+        }[];
+    }
+
+    const form = useForm<FormValues>({
         defaultValues: {
-            writers: template?.attributes.socket.writers.map(writer => ({
-                opCode: writer.opCode || "",
-                writer: writer.writer || "",
-            }))
+            writers: [],
         }
     });
 
-    const { fields, append, remove } = useFieldArray({
+    const {fields, append, remove} = useFieldArray({
         control: form.control,
         name: "writers"
     });
 
-    // Reset form values when `writers` data changes
-    useEffect(() => {
-        form.reset({
-            writers: template?.attributes.socket.writers.map(writer => ({
-                opCode: writer.opCode || "",
-                writer: writer.writer || "",
-            }))
-        });
-    }, [template, form.reset, form]);
-
-    const onSubmit = async (data) => {
+    const onSubmit = async (data: FormValues) => {
         await updateTemplate(template, {
             socket: {
                 handlers: template?.attributes.socket.handlers,
@@ -111,5 +117,5 @@ export function WritersForm() {
                 </div>
             </form>
         </Form>
-);
+    );
 }

@@ -31,7 +31,7 @@ export function HandlersForm() {
                 form.reset({
                     handlers: template.attributes.socket.handlers.map(handler => ({
                         opCode: handler.opCode || "",
-                        writer: handler.writer || "",
+                        validator: handler.validator || "",
                         handler: handler.handler || "",
                     })),
                 });
@@ -48,7 +48,7 @@ export function HandlersForm() {
     interface FormValues {
         handlers: {
             opCode: string;
-            writer: string;
+            validator: string;
             handler: string;
         }[];
     }

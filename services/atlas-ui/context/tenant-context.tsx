@@ -36,12 +36,12 @@ type Tenant = {
                 opCode: string;
                 validator: string;
                 handler: string;
-                options: any;
+                options: unknown;
             }[];
             writers: {
                 opCode: string;
                 writer: string;
-                options: any;
+                options: unknown;
             }[];
         }
         worlds: {

@@ -19,6 +19,7 @@ export function HandlersForm() {
             opCode: string;
             validator: string;
             handler: string;
+            options: unknown;
         }[];
     }
 
@@ -52,7 +53,7 @@ export function HandlersForm() {
         await updateTenant(tenant, {
             socket: {
                 handlers: data.handlers,
-                writers: tenant?.attributes.socket.writers,
+                writers: tenant?.attributes.socket.writers || [],
             },
         });
     }
@@ -110,7 +111,7 @@ export function HandlersForm() {
                     </div>
                 ))}
                 <div className="flex flex-row gap-2 justify-between">
-                    <Button type="button" onClick={() => append({opCode: "", validator: "", handler: "",})}>
+                    <Button type="button" onClick={() => append({opCode: "", validator: "", handler: "", options: null})}>
                         Add
                     </Button>
                     <Button type="submit">Save</Button>

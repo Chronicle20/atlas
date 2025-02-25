@@ -1,7 +1,7 @@
 "use client"
 
 import {useEffect, useState} from "react";
-import {useForm, useFieldArray} from "react-hook-form";
+import {useForm, useFieldArray, UseFormReturn, useWatch, Path, FieldValues} from "react-hook-form";
 import {Form, FormField, FormItem, FormLabel, FormControl, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
@@ -9,30 +9,16 @@ import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import {X, Plus} from "lucide-react"
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {CharacterTemplate} from "@/lib/templates";
+
+interface FormValues {
+    templates: CharacterTemplate[];
+}
 
 export function TemplatesForm() {
     const {id} = useParams(); // Get tenants ID from URL
     const {tenants, updateTenant} = useTenant()
     const tenant = tenants.find((t) => t.id === id);
-
-    interface FormValues {
-        templates: {
-            jobIndex: number;
-            subJobIndex: number;
-            gender: number;
-            mapId: number;
-            faces: number[];
-            hairs: number[];
-            hairColors: number[];
-            skinColors: number[];
-            tops: number[];
-            bottoms: number[];
-            shoes: number[];
-            weapons: number[];
-            items: number[];
-            skills: number[];
-        }[];
-    }
 
     const form = useForm<FormValues>({
         defaultValues: {
@@ -149,16 +135,17 @@ export function TemplatesForm() {
                                 </FormItem>
                             )}
                         />
-                        <NumbersField templateIndex={index} templateProperty={"faces"} form={form}/>
-                        <NumbersField templateIndex={index} templateProperty={"hairs"} form={form}/>
-                        <NumbersField templateIndex={index} templateProperty={"hairColors"} form={form}/>
-                        <NumbersField templateIndex={index} templateProperty={"skinColors"} form={form}/>
-                        <NumbersField templateIndex={index} templateProperty={"tops"} form={form}/>
-                        <NumbersField templateIndex={index} templateProperty={"bottoms"} form={form}/>
-                        <NumbersField templateIndex={index} templateProperty={"shoes"} form={form}/>
-                        <NumbersField templateIndex={index} templateProperty={"weapons"} form={form}/>
-                        <NumbersField templateIndex={index} templateProperty={"items"} form={form}/>
-                        <NumbersField templateIndex={index} templateProperty={"skills"} form={form}/>
+
+                        <NumbersField form={form} name={`templates.${index}.faces`} title="Faces"/>
+                        <NumbersField form={form} name={`templates.${index}.hairs`} title="Hairs"/>
+                        <NumbersField form={form} name={`templates.${index}.hairColors`} title="Hair Colors"/>
+                        <NumbersField form={form} name={`templates.${index}.skinColors`} title="Skin Colors"/>
+                        <NumbersField form={form} name={`templates.${index}.tops`} title="Tops"/>
+                        <NumbersField form={form} name={`templates.${index}.bottoms`} title="Bottoms"/>
+                        <NumbersField form={form} name={`templates.${index}.shoes`} title="Shoes"/>
+                        <NumbersField form={form} name={`templates.${index}.weapons`} title="Weapons"/>
+                        <NumbersField form={form} name={`templates.${index}.items`} title="Items"/>
+                        <NumbersField form={form} name={`templates.${index}.skills`} title="Skills"/>
                         <Button type="button" className="absolute top-0 right-0" variant="ghost" size="icon"
                                 onClick={() => remove(index)}>
                             <X/>
@@ -173,40 +160,39 @@ export function TemplatesForm() {
     );
 }
 
-interface NumbersFieldProps {
-    templateIndex: number
-    templateProperty: string
-    form: any
+interface NumbersFieldProps<T extends FieldValues> {
+    form: UseFormReturn<T>;
+    name: Path<T>;
+    title: string;
 }
 
-// Component to handle numbers for a specific world
-function NumbersField({templateIndex, templateProperty, form}: NumbersFieldProps) {
-    const {fields, append, remove} = useFieldArray({
-        control: form.control,
-        name: `templates.${templateIndex}.${templateProperty}`
-    });
-
-    const values = form.watch(`templates.${templateIndex}.${templateProperty}`);
-
-    const [isDialogOpen, setDialogOpen] = useState(false);
+function NumbersField<T extends FieldValues>({form, name, title}: NumbersFieldProps<T>) {
+    const values = useWatch({control: form.control, name}) as number[] || [];
     const [newValue, setNewValue] = useState("");
 
+    const [isDialogOpen, setDialogOpen] = useState(false);
+
     const handleAdd = () => {
-        if (newValue.trim() !== "") {
-            append(newValue);
+        if (newValue.trim() !== "" && !isNaN(Number(newValue))) {
+            // @ts-expect-error dont want to fix
+            form.setValue(name, [...values, Number(newValue)]);
             setNewValue("");
-            setDialogOpen(false);
         }
+    };
+
+    const handleRemove = (index: number) => {
+        // @ts-expect-error dont want to fix
+        form.setValue(name, values.filter((_, i) => i !== index));
     };
 
     return (
         <div className="border p-2 rounded-md">
-            <FormLabel>{templateProperty ? templateProperty.charAt(0).toUpperCase() + templateProperty.slice(1) : ""}</FormLabel>
+            <FormLabel>{title}</FormLabel>
             <div className="flex flex-row p-2 justify-start gap-2">
-                {fields.map((field, index) => (
-                    <div key={field.id} className="flex items-center">
-                        <Button type="button" variant="outline" onClick={() => remove(index)}>
-                            {values[index]}
+                {values.map((value, index) => (
+                    <div key={index} className="flex items-center">
+                        <Button type="button" variant="outline" onClick={() => handleRemove(index)}>
+                            {value}
                             <X/>
                         </Button>
                     </div>

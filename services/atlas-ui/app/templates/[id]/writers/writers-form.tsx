@@ -49,6 +49,7 @@ export function WritersForm() {
         writers: {
             opCode: string;
             writer: string;
+            options: unknown;
         }[];
     }
 
@@ -60,7 +61,7 @@ export function WritersForm() {
     const onSubmit = async (data: FormValues) => {
         await updateTemplate(template, {
             socket: {
-                handlers: template?.attributes.socket.handlers,
+                handlers: template?.attributes.socket.handlers || [],
                 writers: data.writers,
             },
         });
@@ -108,7 +109,7 @@ export function WritersForm() {
                     </div>
                 ))}
                 <div className="flex flex-row gap-2 justify-between">
-                    <Button type="button" onClick={() => append({opCode: "", writer: "",})}>
+                    <Button type="button" onClick={() => append({opCode: "", writer: "", options: null})}>
                         Add
                     </Button>
                     <Button type="submit">Save</Button>

@@ -12,7 +12,7 @@ export default function Page() {
         const loadTemplates = async () => {
             try {
                 const data = await fetchTemplates();
-                setTemplates(data.data);
+                setTemplates(data);
             } catch (error) {
                 console.error(error);
             }

@@ -4,23 +4,9 @@ import {useTenant} from "@/context/tenant-context";
 import {DataTable} from "@/components/data-table";
 import {columns} from "@/app/accounts/columns";
 import {act, useEffect, useState} from "react";
+import {Account, fetchAccounts} from "@/lib/accounts";
 
-interface Account {
-    id: string;
-    attributes: {
-        name: string;
-        pin: string;
-        pic: string;
-        loggedIn: number;
-        lastLogin: number;
-        gender: number;
-        banned: boolean;
-        tos: boolean;
-        language: string;
-        country: string;
-        characterSlots: number;
-    };
-}
+
 
 export default function Page() {
     const {activeTenant} = useTenant();
@@ -31,32 +17,14 @@ export default function Page() {
     useEffect(() => {
         if (!activeTenant) return;
 
-        const fetchAccounts = async () => {
-            try {
-                const headers = new Headers();
-                headers.set("TENANT_ID", activeTenant?.id);
-                headers.set("REGION", activeTenant?.attributes.region);
-                headers.set("MAJOR_VERSION", String(activeTenant?.attributes.majorVersion));
-                headers.set("MINOR_VERSION", String(activeTenant?.attributes.minorVersion));
+        setLoading(true);
 
-                const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
-                const response = await fetch(rootUrl + "/api/accounts/", {
-                    method: "GET",
-                    headers: headers,
-                });
-                if (!response.ok) {
-                    throw new Error("Failed to fetch accounts.");
-                }
-                const data = await response.json();
-                setAccounts(data.data);
-            } catch (err: any) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchAccounts();
+        fetchAccounts(activeTenant)
+            .then((data) => {
+                setAccounts(data);
+            })
+            .catch((err) => setError(err.message))
+            .finally(() => setLoading(false));
     }, [activeTenant]);
 
     return (

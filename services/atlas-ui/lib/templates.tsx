@@ -66,7 +66,7 @@ export async function fetchTemplates(): Promise<Template[]> {
 }
 
 
-export const updateTemplate = async (template: Template | undefined, updatedAttributes) => {
+export const updateTemplate = async (template: Template | undefined, updatedAttributes: any) => {
     if (!template) return;
 
     const input = {

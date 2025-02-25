@@ -17,19 +17,17 @@ export function WorldsForm() {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const loadTemplates = async () => {
-            if (!id) return; // Ensure id is available
+        if (!id) return; // Ensure id is available
 
-            setLoading(true); // Show loading while fetching
+        setLoading(true); // Show loading while fetching
 
-            try {
-                const data: Template[] = await fetchTemplates();
-
-                const template = data.data.find((t) => String(t.id) === String(id));
+        fetchTemplates()
+            .then((data) => {
+                const template = data.find((t) => String(t.id) === String(id));
                 setTemplate(template);
 
                 form.reset({
-                    worlds: template.attributes.worlds.map(world => ({
+                    worlds: template?.attributes.worlds.map(world => ({
                         name: world.name || "",
                         flag: world.flag || "",
                         eventMessage: world.eventMessage || "",
@@ -37,14 +35,11 @@ export function WorldsForm() {
                         whyAmIRecommended: world.whyAmIRecommended || "",
                     })),
                 });
-            } catch (err) {
+            })
+            .catch((err) => {
                 setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadTemplates();
+            })
+            .finally(() => setLoading(false));
     }, [id]);
 
     interface FormValues {

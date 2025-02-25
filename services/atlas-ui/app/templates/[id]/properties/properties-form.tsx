@@ -35,31 +35,26 @@ export function PropertiesForm() {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const loadTemplates = async () => {
-            if (!id) return; // Ensure id is available
+        if (!id) return; // Ensure id is available
 
-            setLoading(true); // Show loading while fetching
+        setLoading(true); // Show loading while fetching
 
-            try {
-                const data: Template[] = await fetchTemplates();
-
-                const template = data.data.find((t) => String(t.id) === String(id));
+        fetchTemplates()
+            .then((data) => {
+                const template = data.find((t) => String(t.id) === String(id));
                 setTemplate(template);
 
                 form.reset({
-                    region: template.region || "",
-                    major: template.majorVersion || "",
-                    minor: template.minorVersion || "",
-                    usesPin: template.usesPin,
+                    region: template?.attributes.region || "",
+                    major: template?.attributes.majorVersion || 0,
+                    minor: template?.attributes.minorVersion || 0,
+                    usesPin: template?.attributes.usesPin,
                 });
-            } catch (err) {
+            })
+            .catch((err) => {
                 setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadTemplates();
+            })
+            .finally(() => setLoading(false));
     }, [id]);
 
     const form = useForm<PropertiesFormValues>({
@@ -113,7 +108,7 @@ export function PropertiesForm() {
                         <FormItem>
                             <FormLabel>Major Version</FormLabel>
                             <FormControl>
-                                <Input placeholder={template?.attributes.majorVersion} {...field} />
+                                <Input type="number" placeholder={String(template?.attributes.majorVersion)} {...field} />
                             </FormControl>
                             <FormDescription>
                                 The MapleStory major version.
@@ -129,7 +124,7 @@ export function PropertiesForm() {
                         <FormItem>
                             <FormLabel>Minor Version</FormLabel>
                             <FormControl>
-                                <Input placeholder={template?.attributes.minorVersion} {...field} />
+                                <Input type="number" placeholder={String(template?.attributes.minorVersion)} {...field} />
                             </FormControl>
                             <FormDescription>
                                 The MapleStory minor version.

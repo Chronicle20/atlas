@@ -4,6 +4,7 @@ export interface Template {
         region: string;
         majorVersion: number;
         minorVersion: number;
+        usesPin: boolean;
         characters: {
             templates: {
                 jobIndex: number;
@@ -49,7 +50,7 @@ export interface Template {
     };
 }
 
-export const fetchTemplates = async () => {
+export async function fetchTemplates(): Promise<Template[]> {
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
     const response = await fetch(rootUrl + "/api/configurations/templates/", {
         method: "GET",
@@ -60,8 +61,9 @@ export const fetchTemplates = async () => {
     if (!response.ok) {
         throw new Error("Failed to fetch templates.");
     }
-    return response.json();
-};
+    const responseData = await response.json();
+    return responseData.data;
+}
 
 
 export const updateTemplate = async (template: Template | undefined, updatedAttributes) => {

@@ -54,6 +54,25 @@ type Tenant = {
     };
 };
 
+const empty: Tenant = {
+    id: "",
+    attributes: {
+        region: "",
+        majorVersion: 0,
+        minorVersion: 0,
+        usesPin: false,
+        characters: {
+            templates: [],
+        },
+        npcs: [],
+        socket: {
+            handlers: [],
+            writers: [],
+        },
+        worlds: [],
+    },
+};
+
 type TenantContextType = {
     tenants: Tenant[];
     activeTenant: Tenant | null;
@@ -98,8 +117,10 @@ export function TenantProvider({children}: { children: ReactNode }) {
         }
     };
 
-    const updateTenant = async (tenant : Tenant | undefined, updatedAttributes) => {
-        if (!tenant) return;
+    const updateTenant = async (tenant : Tenant | undefined, updatedAttributes: any): Promise<Tenant> => {
+        if (!tenant) {
+            return Promise.resolve(empty);
+        }
 
         setIsSubmitting(true);
         try {
@@ -126,11 +147,12 @@ export function TenantProvider({children}: { children: ReactNode }) {
             // If the request is successful, update the local tenant state
             return { ...tenant, attributes: { ...tenant.attributes, ...updatedAttributes } };
             // setTenant(updatedTenant);
-        } catch (err) {
-            setError(err.message);
+        } catch (err: any) {
+            setError(err);
         } finally {
             setIsSubmitting(false);
         }
+        return Promise.resolve(empty);
     };
 
     useEffect(() => {

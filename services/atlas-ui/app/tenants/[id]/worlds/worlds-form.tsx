@@ -14,7 +14,17 @@ export function WorldsForm() {
     const {tenants, updateTenant} = useTenant()
     const tenant = tenants.find((t) => t.id === id);
 
-    const form = useForm({
+    interface FormValues {
+        worlds: {
+            name: string;
+            flag: string;
+            eventMessage: string;
+            serverMessage: string;
+            whyAmIRecommended: string;
+        }[];
+    }
+
+    const form = useForm<FormValues>({
         defaultValues: {
             worlds: tenant?.attributes.worlds.map(world => ({
                 name: world.name || "",
@@ -44,7 +54,7 @@ export function WorldsForm() {
         });
     }, [tenant, form.reset, form]);
 
-    const onSubmit = async (data) => {
+    const onSubmit = async (data: FormValues) => {
         await updateTenant(tenant, {
             worlds: data.worlds,
         });

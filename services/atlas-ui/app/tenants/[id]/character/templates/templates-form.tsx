@@ -15,7 +15,26 @@ export function TemplatesForm() {
     const {tenants, updateTenant} = useTenant()
     const tenant = tenants.find((t) => t.id === id);
 
-    const form = useForm({
+    interface FormValues {
+        templates: {
+            jobIndex: number;
+            subJobIndex: number;
+            gender: number;
+            mapId: number;
+            faces: number[];
+            hairs: number[];
+            hairColors: number[];
+            skinColors: number[];
+            tops: number[];
+            bottoms: number[];
+            shoes: number[];
+            weapons: number[];
+            items: number[];
+            skills: number[];
+        }[];
+    }
+
+    const form = useForm<FormValues>({
         defaultValues: {
             templates: tenant?.attributes.characters.templates.map(template => ({
                 jobIndex: template.jobIndex || 0,
@@ -62,7 +81,7 @@ export function TemplatesForm() {
         });
     }, [tenant, form.reset, form]);
 
-    const onSubmit = async (data) => {
+    const onSubmit = async (data: FormValues) => {
         await updateTenant(tenant, {
             characters: {
                 templates: data.templates,
@@ -154,9 +173,15 @@ export function TemplatesForm() {
     );
 }
 
+interface NumbersFieldProps {
+    templateIndex: number
+    templateProperty: string
+    form: any
+}
+
 // Component to handle numbers for a specific world
-function NumbersField({templateIndex, templateProperty, form}) {
-    const {fields: fields, append: add, remove: remove} = useFieldArray({
+function NumbersField({templateIndex, templateProperty, form}: NumbersFieldProps) {
+    const {fields, append, remove} = useFieldArray({
         control: form.control,
         name: `templates.${templateIndex}.${templateProperty}`
     });
@@ -168,7 +193,7 @@ function NumbersField({templateIndex, templateProperty, form}) {
 
     const handleAdd = () => {
         if (newValue.trim() !== "") {
-            add(newValue);
+            append(newValue);
             setNewValue("");
             setDialogOpen(false);
         }

@@ -54,7 +54,7 @@ export function PropertiesForm() {
         }
     }, [tenant, form.reset, form]);
 
-    const onSubmit = async (data) => {
+    const onSubmit = async (data: PropertiesFormValues) => {
         tenant = await updateTenant(tenant, {
             region: data.region,
             majorVersion: data.major,
@@ -95,7 +95,7 @@ export function PropertiesForm() {
                         <FormItem>
                             <FormLabel>Major Version</FormLabel>
                             <FormControl>
-                                <Input placeholder={tenant?.attributes.majorVersion} {...field} />
+                                <Input type="number" placeholder={String(tenant?.attributes.majorVersion)} {...field} />
                             </FormControl>
                             <FormDescription>
                                 The MapleStory major version.
@@ -111,7 +111,7 @@ export function PropertiesForm() {
                         <FormItem>
                             <FormLabel>Minor Version</FormLabel>
                             <FormControl>
-                                <Input placeholder={tenant?.attributes.minorVersion} {...field} />
+                                <Input type="number" placeholder={String(tenant?.attributes.minorVersion)} {...field} />
                             </FormControl>
                             <FormDescription>
                                 The MapleStory minor version.

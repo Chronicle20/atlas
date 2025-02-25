@@ -14,7 +14,14 @@ export function WritersForm() {
     const {tenants, updateTenant} = useTenant()
     let tenant = tenants.find((t) => t.id === id);
 
-    const form = useForm({
+    interface FormValues {
+        writers: {
+            opCode: string;
+            writer: string;
+        }[];
+    }
+
+    const form = useForm<FormValues>({
         defaultValues: {
             writers: tenant?.attributes.socket.writers.map(writer => ({
                 opCode: writer.opCode || "",
@@ -38,7 +45,7 @@ export function WritersForm() {
         });
     }, [tenant, form.reset, form]);
 
-    const onSubmit = async (data) => {
+    const onSubmit = async (data : FormValues) => {
         tenant = await updateTenant(tenant, {
             socket: {
                 handlers: tenant?.attributes.socket.handlers,

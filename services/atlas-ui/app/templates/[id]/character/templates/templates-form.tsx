@@ -9,6 +9,7 @@ import {useParams} from "next/navigation";
 import {X, Plus} from "lucide-react"
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {fetchTemplates, Template, updateTemplate} from "@/lib/templates";
+import {ColumnDef} from "@tanstack/react-table";
 
 export function TemplatesForm() {
     const { id } = useParams(); // Get templates ID from URL
@@ -18,19 +19,17 @@ export function TemplatesForm() {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const loadTemplates = async () => {
-            if (!id) return; // Ensure id is available
+        if (!id) return; // Ensure id is available
 
-            setLoading(true); // Show loading while fetching
+        setLoading(true); // Show loading while fetching
 
-            try {
-                const data: Template[] = await fetchTemplates();
-
-                const template = data.data.find((t) => String(t.id) === String(id));
+        fetchTemplates()
+            .then((data) => {
+                const template = data.find((t) => String(t.id) === String(id));
                 setTemplate(template);
 
                 form.reset({
-                    templates: template.attributes.characters.templates.map(template => ({
+                    templates: template?.attributes.characters.templates.map(template => ({
                         jobIndex: template.jobIndex || 0,
                         subJobIndex: template.subJobIndex || 0,
                         gender: template.gender || 0,
@@ -47,14 +46,11 @@ export function TemplatesForm() {
                         skills: template.skills || [],
                     })),
                 });
-            } catch (err) {
+            })
+            .catch((err) => {
                 setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadTemplates();
+            })
+            .finally(() => setLoading(false));
     }, [id]);
 
     interface FormValues {
@@ -194,9 +190,15 @@ export function TemplatesForm() {
     );
 }
 
+interface NumbersFieldProps {
+    templateIndex: number
+    templateProperty: string
+    form: any
+}
+
 // Component to handle numbers for a specific world
-function NumbersField({templateIndex, templateProperty, form}) {
-    const {fields: fields, append: add, remove: remove} = useFieldArray({
+function NumbersField({templateIndex, templateProperty, form}: NumbersFieldProps) {
+    const {fields, append, remove} = useFieldArray({
         control: form.control,
         name: `templates.${templateIndex}.${templateProperty}`
     });
@@ -208,7 +210,7 @@ function NumbersField({templateIndex, templateProperty, form}) {
 
     const handleAdd = () => {
         if (newValue.trim() !== "") {
-            add(newValue);
+            append(newValue);
             setNewValue("");
             setDialogOpen(false);
         }

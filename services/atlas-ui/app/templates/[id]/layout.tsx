@@ -18,24 +18,19 @@ export default function TemplateDetailLayout({ children }: TemplateDetailLayoutP
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const loadTemplates = async () => {
-            if (!id) return; // Ensure id is available
+        if (!id) return; // Ensure id is available
 
-            setLoading(true); // Show loading while fetching
+        setLoading(true); // Show loading while fetching
 
-            try {
-                const data: Template[] = await fetchTemplates();
-
-                const template = data.data.find((t) => String(t.id) === String(id));
+        fetchTemplates()
+            .then((data) => {
+                const template = data.find((t) => String(t.id) === String(id));
                 setTemplate(template);
-            } catch (err) {
+            })
+            .catch((err) => {
                 setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadTemplates();
+            })
+            .finally(() => setLoading(false));
     }, [id]);
 
     const sidebarNavItems = [

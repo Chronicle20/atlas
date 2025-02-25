@@ -14,7 +14,15 @@ export function HandlersForm() {
     const {tenants, updateTenant} = useTenant()
     const tenant = tenants.find((t) => t.id === id);
 
-    const form = useForm({
+    interface FormValues {
+        handlers: {
+            opCode: string;
+            validator: string;
+            handler: string;
+        }[];
+    }
+
+    const form = useForm<FormValues>({
         defaultValues: {
             handlers: tenant?.attributes.socket.handlers.map(handler => ({
                 opCode: handler.opCode || "",
@@ -40,7 +48,7 @@ export function HandlersForm() {
         });
     }, [tenant, form.reset, form]);
 
-    const onSubmit = async (data) => {
+    const onSubmit = async (data: FormValues) => {
         await updateTenant(tenant, {
             socket: {
                 handlers: data.handlers,

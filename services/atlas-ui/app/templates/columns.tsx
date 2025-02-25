@@ -23,6 +23,10 @@ export type Template = {
 
 export const columns: ColumnDef<Template>[] = [
     {
+        accessorKey: "id",
+        header: "Id",
+    },
+    {
         accessorKey: "attributes.region",
         header: "Region",
     },

@@ -1,0 +1,92 @@
+export interface Template {
+    id: string;
+    attributes: {
+        region: string;
+        majorVersion: number;
+        minorVersion: number;
+        characters: {
+            templates: {
+                jobIndex: number;
+                subJobIndex: number;
+                gender: number;
+                mapId: number;
+                faces: number[];
+                hairs: number[];
+                hairColors: number[];
+                skinColors: number[];
+                tops: number[];
+                bottoms: number[];
+                shoes: number[];
+                weapons: number[];
+                items: number[];
+                skills: number[];
+            }[];
+        };
+        npcs: {
+            npcId: number;
+            impl: string;
+        }[];
+        socket: {
+            handlers: {
+                opCode: string;
+                validator: string;
+                handler: string;
+                options: any;
+            }[];
+            writers: {
+                opCode: string;
+                writer: string;
+                options: any;
+            }[];
+        }
+        worlds: {
+            name: string;
+            flag: string;
+            serverMessage: string;
+            eventMessage: string;
+            whyAmIRecommended: string;
+        }[];
+    };
+}
+
+export const fetchTemplates = async () => {
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
+    const response = await fetch(rootUrl + "/api/configurations/templates/", {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    if (!response.ok) {
+        throw new Error("Failed to fetch templates.");
+    }
+    return response.json();
+};
+
+
+export const updateTemplate = async (template: Template | undefined, updatedAttributes) => {
+    if (!template) return;
+
+    const input = {
+        data: {
+            id: template.id,
+            type: "templates",
+            attributes: {
+                ...template.attributes,
+                ...updatedAttributes,
+            },
+        },
+    };
+
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
+    const response = await fetch(`${rootUrl}/api/configurations/templates/${template.id}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(input),
+    });
+
+    if (!response.ok) throw new Error("Failed to submit data.");
+
+    // If the request is successful, update the local template state
+    return {...template, attributes: {...template.attributes, ...updatedAttributes}};
+};

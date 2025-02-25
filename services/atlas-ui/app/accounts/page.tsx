@@ -33,16 +33,16 @@ export default function Page() {
 
         const fetchAccounts = async () => {
             try {
+                const headers = new Headers();
+                headers.set("TENANT_ID", activeTenant?.id);
+                headers.set("REGION", activeTenant?.attributes.region);
+                headers.set("MAJOR_VERSION", String(activeTenant?.attributes.majorVersion));
+                headers.set("MINOR_VERSION", String(activeTenant?.attributes.minorVersion));
+
                 const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
                 const response = await fetch(rootUrl + "/api/accounts/", {
                     method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "TENANT_ID": activeTenant?.id,
-                        "REGION": activeTenant?.attributes.region,
-                        "MAJOR_VERSION": activeTenant?.attributes.majorVersion,
-                        "MINOR_VERSION": activeTenant?.attributes.minorVersion,
-                    },
+                    headers: headers,
                 });
                 if (!response.ok) {
                     throw new Error("Failed to fetch accounts.");

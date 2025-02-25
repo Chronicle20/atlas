@@ -57,26 +57,18 @@ interface Template {
 }
 
 export default function Page() {
-    const {activeTenant} = useTenant();
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!activeTenant) return;
-
         const fetchTemplates = async () => {
             try {
                 const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
-                console.log(activeTenant?.id);
                 const response = await fetch(rootUrl + "/api/configurations/templates", {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",
-                        "TENANT_ID": activeTenant?.id,
-                        "REGION": activeTenant?.attributes.region,
-                        "MAJOR_VERSION": activeTenant?.attributes.majorVersion,
-                        "MINOR_VERSION": activeTenant?.attributes.minorVersion,
                     },
                 });
                 if (!response.ok) {
@@ -92,7 +84,7 @@ export default function Page() {
         };
 
         fetchTemplates();
-    }, [activeTenant]);
+    }, []);
 
     return (
         <div className="flex flex-col flex-1 container mx-auto p-5 h-full">

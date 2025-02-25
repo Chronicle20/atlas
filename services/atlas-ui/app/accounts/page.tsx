@@ -34,7 +34,6 @@ export default function Page() {
         const fetchAccounts = async () => {
             try {
                 const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
-                console.log(activeTenant?.id);
                 const response = await fetch(rootUrl + "/api/accounts/", {
                     method: "GET",
                     headers: {

@@ -16,6 +16,12 @@ export function WritersForm() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const form = useForm<FormValues>({
+        defaultValues: {
+            writers: [],
+        }
+    });
+
     useEffect(() => {
         if (!id) return; // Ensure id is available
 
@@ -37,7 +43,7 @@ export function WritersForm() {
                 setError(err.message);
             })
             .finally(() => setLoading(false));
-    }, [id]);
+    }, [id, form]);
 
     interface FormValues {
         writers: {
@@ -45,12 +51,6 @@ export function WritersForm() {
             writer: string;
         }[];
     }
-
-    const form = useForm<FormValues>({
-        defaultValues: {
-            writers: [],
-        }
-    });
 
     const {fields, append, remove} = useFieldArray({
         control: form.control,
@@ -65,6 +65,9 @@ export function WritersForm() {
             },
         });
     }
+
+    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
+    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
 
     return (
         <Form {...form}>

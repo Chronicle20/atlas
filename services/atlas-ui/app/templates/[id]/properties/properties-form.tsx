@@ -34,6 +34,17 @@ export function PropertiesForm() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const form = useForm<PropertiesFormValues>({
+        resolver: zodResolver(propertiesFormSchema),
+        defaultValues: {
+            region: "",
+            major: 0,
+            minor: 0,
+            usesPin: false,
+        },
+        mode: "onChange",
+    });
+
     useEffect(() => {
         if (!id) return; // Ensure id is available
 
@@ -55,18 +66,7 @@ export function PropertiesForm() {
                 setError(err.message);
             })
             .finally(() => setLoading(false));
-    }, [id]);
-
-    const form = useForm<PropertiesFormValues>({
-        resolver: zodResolver(propertiesFormSchema),
-        defaultValues: {
-            region: "",
-            major: 0,
-            minor: 0,
-            usesPin: false,
-        },
-        mode: "onChange",
-    })
+    }, [id, form]);
 
     const onSubmit = async (data : PropertiesFormValues) => {
         await updateTemplate(template, {
@@ -81,6 +81,9 @@ export function PropertiesForm() {
             minor: template?.attributes.minorVersion,
         });
     }
+
+    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
+    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
 
     return (
         <Form {...form}>

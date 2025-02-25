@@ -54,7 +54,10 @@ export default function TemplateDetailLayout({ children }: TemplateDetailLayoutP
             title: "Worlds",
             href: "/templates/" + id + "/worlds",
         },
-    ]
+    ];
+
+    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
+    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
 
     return (
         <>

@@ -16,6 +16,18 @@ export function WorldsForm() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const form = useForm<FormValues>({
+        defaultValues: {
+            worlds: template?.attributes.worlds.map(world => ({
+                name: world.name || "",
+                flag: world.flag || "",
+                eventMessage: world.eventMessage || "",
+                serverMessage: world.serverMessage || "",
+                whyAmIRecommended: world.whyAmIRecommended || "",
+            }))
+        }
+    });
+
     useEffect(() => {
         if (!id) return; // Ensure id is available
 
@@ -40,7 +52,7 @@ export function WorldsForm() {
                 setError(err.message);
             })
             .finally(() => setLoading(false));
-    }, [id]);
+    }, [id, form]);
 
     interface FormValues {
         worlds: {
@@ -52,18 +64,6 @@ export function WorldsForm() {
         }[];
     }
 
-    const form = useForm<FormValues>({
-        defaultValues: {
-            worlds: template?.attributes.worlds.map(world => ({
-                name: world.name || "",
-                flag: world.flag || "",
-                eventMessage: world.eventMessage || "",
-                serverMessage: world.serverMessage || "",
-                whyAmIRecommended: world.whyAmIRecommended || "",
-            }))
-        }
-    });
-
     const {fields, append, remove} = useFieldArray({
         control: form.control,
         name: "worlds"
@@ -74,6 +74,9 @@ export function WorldsForm() {
             worlds: data.worlds,
         });
     }
+
+    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
+    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
 
     return (
         <Form {...form}>

@@ -3,9 +3,8 @@
 import {useTenant} from "@/context/tenant-context";
 import {DataTable} from "@/components/data-table";
 import {columns} from "@/app/accounts/columns";
-import {act, useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import {Account, fetchAccounts} from "@/lib/accounts";
-
 
 
 export default function Page() {
@@ -26,6 +25,9 @@ export default function Page() {
             .catch((err) => setError(err.message))
             .finally(() => setLoading(false));
     }, [activeTenant]);
+
+    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
+    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
 
     return (
         <div className="flex flex-col flex-1 container mx-auto p-5 h-full">

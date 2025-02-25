@@ -16,6 +16,12 @@ export function HandlersForm() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const form = useForm<FormValues>({
+        defaultValues: {
+            handlers: [],
+        }
+    });
+
     useEffect(() => {
         if (!id) return; // Ensure id is available
 
@@ -38,7 +44,7 @@ export function HandlersForm() {
                 setError(err.message);
             })
             .finally(() => setLoading(false));
-    }, [id]);
+    }, [id, form]);
 
     interface FormValues {
         handlers: {
@@ -47,12 +53,6 @@ export function HandlersForm() {
             handler: string;
         }[];
     }
-
-    const form = useForm<FormValues>({
-        defaultValues: {
-            handlers: [],
-        }
-    });
 
     const {fields, append, remove} = useFieldArray({
         control: form.control,
@@ -67,6 +67,9 @@ export function HandlersForm() {
             },
         });
     }
+
+    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
+    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
 
     return (
         <Form {...form}>

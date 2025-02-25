@@ -51,7 +51,7 @@ export function TenantSwitcher() {
                         <DropdownMenuLabel className="text-xs text-muted-foreground">
                             Tenants
                         </DropdownMenuLabel>
-                        {tenants?.map((tenant, index) => (
+                        {tenants?.map((tenant) => (
                             <DropdownMenuItem
                                 key={tenant.id}
                                 onClick={() => setActiveTenant(tenant)}

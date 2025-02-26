@@ -55,7 +55,7 @@ export interface Template {
 }
 
 export async function fetchTemplates(): Promise<Template[]> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
     const response = await fetch(rootUrl + "/api/configurations/templates/", {
         method: "GET",
         headers: {
@@ -84,7 +84,7 @@ export const updateTemplate = async (template: Template | undefined, updatedAttr
         },
     };
 
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
     const response = await fetch(`${rootUrl}/api/configurations/templates/${template.id}`, {
         method: "PATCH",
         headers: {"Content-Type": "application/json"},

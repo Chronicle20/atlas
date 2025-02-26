@@ -19,7 +19,7 @@ export interface Account {
 }
 
 export async function fetchAccounts(tenant: Tenant): Promise<Account[]> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
     const response = await fetch(rootUrl + "/api/accounts/", {
         method: "GET",
         headers: tenantHeaders(tenant),

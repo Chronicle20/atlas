@@ -101,7 +101,7 @@ export function TenantProvider({children}: { children: ReactNode }) {
 
         setLoading(true);
         try {
-            const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
+            const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
             const response = await fetch(rootUrl + "/api/configurations/tenants");
             const data = await response.json();
             if (data?.data) {
@@ -135,7 +135,7 @@ export function TenantProvider({children}: { children: ReactNode }) {
                 },
             };
 
-            const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
+            const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
             const response = await fetch(`${rootUrl}/api/configurations/tenants/${tenant.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },

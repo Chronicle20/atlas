@@ -2,7 +2,7 @@
 
 import {useTenant} from "@/context/tenant-context";
 import {DataTable} from "@/components/data-table";
-import {getColumns} from "@/app/characters/columns";
+import {getColumns, hiddenColumns} from "@/app/characters/columns";
 import {useEffect, useState} from "react";
 import {Character, fetchCharacters} from "@/lib/characters";
 
@@ -39,7 +39,7 @@ export default function Page() {
                 </div>
             </div>
             <div className="mt-4">
-                <DataTable columns={columns} data={characters}/>
+                <DataTable columns={columns} data={characters} initialVisibilityState={hiddenColumns}/>
             </div>
         </div>
     );

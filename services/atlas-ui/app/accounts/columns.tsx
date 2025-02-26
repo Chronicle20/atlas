@@ -1,9 +1,9 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
+import {Badge} from "@/components/ui/badge";
 
-// This type is used to define the shape of our data.
-// You can use a Zod schema here if you want.
 export type Account = {
     id: string
     attributes: {
@@ -14,10 +14,13 @@ export type Account = {
     }
 }
 
+export const hiddenColumns = ["id", "attributes.gm"];
+
 export const columns: ColumnDef<Account>[] = [
     {
         accessorKey: "id",
         header: "Id",
+        enableHiding: false,
     },
     {
         accessorKey: "attributes.name",
@@ -26,6 +29,28 @@ export const columns: ColumnDef<Account>[] = [
     {
         accessorKey: "attributes.gender",
         header: "Gender",
+        cell: ({getValue}) => {
+            const value = getValue();
+            const num = Number(value);
+            let name = String(value);
+            if (!isNaN(num)) {
+                name = num === 0 ? "Male" : "Female";
+            }
+            return (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Badge variant="secondary">
+                                {name}
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{String(value)}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            );
+        }
     },
     {
         accessorKey: "attributes.banned",

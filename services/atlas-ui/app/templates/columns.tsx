@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
 import {MoreHorizontal} from "lucide-react";
+import Link from "next/link";
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
@@ -51,9 +52,9 @@ export const columns: ColumnDef<Template>[] = [
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem>
-                            <a href={"/templates/" + row.getValue("id") + "/properties"}>
+                            <Link href={"/templates/" + row.getValue("id") + "/properties"}>
                                 <span>View Template</span>
-                            </a>
+                            </Link>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>

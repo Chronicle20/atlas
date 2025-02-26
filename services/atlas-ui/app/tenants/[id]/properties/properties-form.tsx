@@ -10,6 +10,7 @@ import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import { Switch } from "@/components/ui/switch";
 import {useEffect} from "react";
+import {updateTenant} from "@/lib/tenants";
 
 const propertiesFormSchema = z.object({
     region: z
@@ -29,7 +30,7 @@ type PropertiesFormValues = z.infer<typeof propertiesFormSchema>
 
 export function PropertiesForm() {
     const { id } = useParams(); // Get tenants ID from URL
-    const {tenants, updateTenant} = useTenant()
+    const {tenants} = useTenant()
     let tenant = tenants.find((t) => t.id === id);
 
     const form = useForm<PropertiesFormValues>({

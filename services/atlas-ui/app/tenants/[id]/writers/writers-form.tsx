@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import {X} from "lucide-react";
+import {updateTenant} from "@/lib/tenants";
 
 export function WritersForm() {
     const { id } = useParams(); // Get tenants ID from URL
-    const {tenants, updateTenant} = useTenant()
+    const {tenants} = useTenant()
     let tenant = tenants.find((t) => t.id === id);
 
     interface FormValues {
@@ -49,7 +50,7 @@ export function WritersForm() {
     const onSubmit = async (data : FormValues) => {
         tenant = await updateTenant(tenant, {
             socket: {
-                handlers: tenant?.attributes.socket.handlers,
+                handlers: tenant?.attributes.socket.handlers || [],
                 writers: data.writers,
             },
         });

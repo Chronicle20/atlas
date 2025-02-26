@@ -10,6 +10,7 @@ import {useTenant} from "@/context/tenant-context";
 import {X, Plus} from "lucide-react"
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {CharacterTemplate} from "@/lib/templates";
+import {updateTenant} from "@/lib/tenants";
 
 interface FormValues {
     templates: CharacterTemplate[];
@@ -17,7 +18,7 @@ interface FormValues {
 
 export function TemplatesForm() {
     const {id} = useParams(); // Get tenants ID from URL
-    const {tenants, updateTenant} = useTenant()
+    const {tenants} = useTenant()
     const tenant = tenants.find((t) => t.id === id);
 
     const form = useForm<FormValues>({

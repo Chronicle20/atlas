@@ -2,7 +2,7 @@
 
 import {useTenant} from "@/context/tenant-context";
 import {DataTable} from "@/components/data-table";
-import {columns} from "@/app/characters/columns";
+import {getColumns} from "@/app/characters/columns";
 import {useEffect, useState} from "react";
 import {Character, fetchCharacters} from "@/lib/characters";
 
@@ -28,6 +28,8 @@ export default function Page() {
 
     if (loading) return <div>Loading...</div>; // Show loading message while fetching data
     if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
+
+    const columns = getColumns({tenant: activeTenant});
 
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">

@@ -36,7 +36,7 @@ export interface Character {
 }
 
 export async function fetchCharacters(tenant: Tenant): Promise<Character[]> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
     const response = await fetch(rootUrl + "/api/characters/", {
         method: "GET",
         headers: tenantHeaders(tenant),

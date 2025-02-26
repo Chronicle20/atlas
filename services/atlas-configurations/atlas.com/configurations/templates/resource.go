@@ -15,9 +15,22 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			r := router.PathPrefix("/configurations/templates").Subrouter()
+			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)("create_configuration_template", handleCreateConfigurationTemplate(db))).Methods(http.MethodPost)
 			r.HandleFunc("", rest.RegisterHandler(l)(si)("get_configuration_template", handleGetConfigurationTemplate(db))).Methods(http.MethodGet).Queries("region", "{region}", "majorVersion", "{majorVersion}", "minorVersion", "{minorVersion}")
 			r.HandleFunc("", rest.RegisterHandler(l)(si)("get_configuration_templates", handleGetConfigurationTemplates(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{tenantId}", rest.RegisterInputHandler[RestModel](l)(si)("update_configuration_template", handleUpdateConfigurationTemplate(db))).Methods(http.MethodPatch)
+		}
+	}
+}
+
+func handleCreateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			err := Create(d.Logger())(d.Context())(db)(input)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to create configuration tenant.")
+				w.WriteHeader(http.StatusInternalServerError)
+			}
 		}
 	}
 }

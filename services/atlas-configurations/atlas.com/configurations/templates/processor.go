@@ -53,6 +53,26 @@ func GetByRegionAndVersion(_ logrus.FieldLogger) func(ctx context.Context) func(
 	}
 }
 
+func Create(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(input RestModel) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(input RestModel) error {
+		return func(db *gorm.DB) func(input RestModel) error {
+			return func(input RestModel) error {
+				res, err := json.Marshal(input)
+				if err != nil {
+					return err
+				}
+				rm := &json.RawMessage{}
+				err = rm.UnmarshalJSON(res)
+				if err != nil {
+					return err
+				}
+
+				return db.Transaction(create(input.Region, input.MajorVersion, input.MinorVersion, *rm))
+			}
+		}
+	}
+}
+
 func UpdateById(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(templateId uuid.UUID, input RestModel) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(templateId uuid.UUID, input RestModel) error {
 		return func(db *gorm.DB) func(templateId uuid.UUID, input RestModel) error {

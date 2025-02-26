@@ -126,7 +126,7 @@ export function PropertiesForm() {
                     name="usesPin"
                     render={({field}) => (
                         <FormItem
-                            className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                            className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-xs">
                             <div className="space-y-0.5">
                                 <FormLabel>Uses PIN system</FormLabel>
                                 <FormDescription>

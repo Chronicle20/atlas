@@ -18,17 +18,14 @@ jobs:
           node-version: '20'
 
       - name: Install Dependencies
-        working-directory: path/to/your/react-app  # Adjust to your React app's path
         run: npm install
 
       - name: Build React App
-        working-directory: path/to/your/react-app
         run: npm run build
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker Image
-        working-directory: path/to/your/react-app
         run: |
-          docker build -t react-app:test .
+          docker build -t atlas-ui:test .

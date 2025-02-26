@@ -152,6 +152,20 @@ func ParseTenantId(l logrus.FieldLogger, next TenantIdHandler) http.HandlerFunc 
 	}
 }
 
+type TemplateIdHandler func(templateId uuid.UUID) http.HandlerFunc
+
+func ParseTemplateId(l logrus.FieldLogger, next TemplateIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		templateId, err := uuid.Parse(mux.Vars(r)["templateId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse templateId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(templateId)(w, r)
+	}
+}
+
 type ServiceIdHandler func(serviceId uuid.UUID) http.HandlerFunc
 
 func ParseServiceId(l logrus.FieldLogger, next ServiceIdHandler) http.HandlerFunc {

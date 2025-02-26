@@ -8,7 +8,7 @@ export default function Page() {
     const {tenants} = useTenant()
 
     return (
-        <div className="flex flex-col flex-1 container mx-auto p-5 h-full">
+        <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
             <div className="items-center justify-between space-y-2">
                 <div>
                     <h2 className="text-2xl font-bold tracking-tight">Tenants</h2>

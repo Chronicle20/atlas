@@ -19,13 +19,13 @@ export default function RootLayout({children,}: Readonly<{ children: React.React
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
                 <SidebarProvider>
                     <AppSidebar/>
-                    <main className="w-full flex min-h-svh flex-1 flex-col">
+                    <main className="w-full flex h-screen flex-1 flex-col gap-2 pt-2">
                         <div className="flex items-center h-12 justify-between px-2">
                             <SidebarToggle/>
                             <ThemeToggle/>
                         </div>
-                        <div className="flex flex-1 flex-col gap-4 p-2 pt-0">
-                            <div className="min-h-[100vh] flex-1 rounded-xl bg-sidebar md:min-h-min">
+                        <div className="flex flex-1 flex-col overflow-hidden gap-4 p-2 pt-0">
+                            <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-sidebar">
                                 {children}
                             </div>
                         </div>

@@ -1,28 +1,44 @@
 "use client"
 
 import {useEffect, useState} from "react";
-import {useForm, useFieldArray, UseFormReturn, useWatch, Path, FieldValues, PathValue} from "react-hook-form";
+import {useForm, useFieldArray, UseFormReturn, FieldValues, Path, useWatch, PathValue} from "react-hook-form";
 import {Form, FormField, FormItem, FormLabel, FormControl, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
-import {useTenant} from "@/context/tenant-context";
 import {X, Plus} from "lucide-react"
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {CharacterTemplate} from "@/lib/templates";
+import {fetchTemplates, Template, updateTemplate} from "@/lib/templates";
 
 interface FormValues {
-    templates: CharacterTemplate[];
+    templates: {
+        jobIndex: number;
+        subJobIndex: number;
+        gender: number;
+        mapId: number;
+        faces: number[];
+        hairs: number[];
+        hairColors: number[];
+        skinColors: number[];
+        tops: number[];
+        bottoms: number[];
+        shoes: number[];
+        weapons: number[];
+        items: number[];
+        skills: number[];
+    }[];
 }
 
 export function TemplatesForm() {
-    const {id} = useParams(); // Get tenants ID from URL
-    const {tenants, updateTenant} = useTenant()
-    const tenant = tenants.find((t) => t.id === id);
+    const { id } = useParams(); // Get templates ID from URL
+
+    const [template, setTemplate] = useState<Template>();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     const form = useForm<FormValues>({
         defaultValues: {
-            templates: tenant?.attributes.characters.templates.map(template => ({
+            templates: template?.attributes.characters.templates.map(template => ({
                 jobIndex: template.jobIndex || 0,
                 subJobIndex: template.subJobIndex || 0,
                 gender: template.gender || 0,
@@ -41,39 +57,54 @@ export function TemplatesForm() {
         }
     });
 
+    useEffect(() => {
+        if (!id) return; // Ensure id is available
+
+        setLoading(true); // Show loading while fetching
+
+        fetchTemplates()
+            .then((data) => {
+                const template = data.find((t) => String(t.id) === String(id));
+                setTemplate(template);
+
+                form.reset({
+                    templates: template?.attributes.characters.templates.map(template => ({
+                        jobIndex: template.jobIndex || 0,
+                        subJobIndex: template.subJobIndex || 0,
+                        gender: template.gender || 0,
+                        mapId: template.mapId || 0,
+                        faces: template.faces || [],
+                        hairs: template.hairs || [],
+                        hairColors: template.hairColors || [],
+                        skinColors: template.skinColors || [],
+                        tops: template.tops || [],
+                        bottoms: template.bottoms || [],
+                        shoes: template.shoes || [],
+                        weapons: template.weapons || [],
+                        items: template.items || [],
+                        skills: template.skills || [],
+                    })),
+                });
+            })
+            .catch((err) => setError(err.message))
+            .finally(() => setLoading(false));
+    }, [id, form]);
+
     const {fields, remove} = useFieldArray({
         control: form.control,
         name: "templates"
     });
 
-    useEffect(() => {
-        form.reset({
-            templates: tenant?.attributes.characters.templates.map(template => ({
-                jobIndex: template.jobIndex || 0,
-                subJobIndex: template.subJobIndex || 0,
-                gender: template.gender || 0,
-                mapId: template.mapId || 0,
-                faces: template.faces || [],
-                hairs: template.hairs || [],
-                hairColors: template.hairColors || [],
-                skinColors: template.skinColors || [],
-                tops: template.tops || [],
-                bottoms: template.bottoms || [],
-                shoes: template.shoes || [],
-                weapons: template.weapons || [],
-                items: template.items || [],
-                skills: template.skills || [],
-            }))
-        });
-    }, [tenant, form.reset, form]);
-
     const onSubmit = async (data: FormValues) => {
-        await updateTenant(tenant, {
+        await updateTemplate(template, {
             characters: {
                 templates: data.templates,
             },
         });
     }
+
+    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
+    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
 
     return (
         <Form {...form}>
@@ -135,7 +166,6 @@ export function TemplatesForm() {
                                 </FormItem>
                             )}
                         />
-
                         <NumbersField form={form} name={`templates.${index}.faces`} title="Faces"/>
                         <NumbersField form={form} name={`templates.${index}.hairs`} title="Hairs"/>
                         <NumbersField form={form} name={`templates.${index}.hairColors`} title="Hair Colors"/>

@@ -1,18 +1,50 @@
 "use client"
 
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 import {useFieldArray, useForm} from "react-hook-form";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
-import {useTenant} from "@/context/tenant-context";
 import {X} from "lucide-react";
+import {fetchTemplates, Template, updateTemplate} from "@/lib/templates";
 
 export function HandlersForm() {
-    const {id} = useParams(); // Get tenants ID from URL
-    const {tenants, updateTenant} = useTenant()
-    const tenant = tenants.find((t) => t.id === id);
+    const { id } = useParams(); // Get templates ID from URL
+
+    const [template, setTemplate] = useState<Template>();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const form = useForm<FormValues>({
+        defaultValues: {
+            handlers: [],
+        }
+    });
+
+    useEffect(() => {
+        if (!id) return; // Ensure id is available
+
+        setLoading(true); // Show loading while fetching
+
+        fetchTemplates()
+            .then((data) => {
+                const template = data.find((t) => String(t.id) === String(id));
+                setTemplate(template);
+
+                form.reset({
+                    handlers: template?.attributes.socket.handlers.map(handler => ({
+                        opCode: handler.opCode || "",
+                        validator: handler.validator || "",
+                        handler: handler.handler || "",
+                    })),
+                });
+            })
+            .catch((err) => {
+                setError(err.message);
+            })
+            .finally(() => setLoading(false));
+    }, [id, form]);
 
     interface FormValues {
         handlers: {
@@ -23,40 +55,22 @@ export function HandlersForm() {
         }[];
     }
 
-    const form = useForm<FormValues>({
-        defaultValues: {
-            handlers: tenant?.attributes.socket.handlers.map(handler => ({
-                opCode: handler.opCode || "",
-                validator: handler.validator || "",
-                handler: handler.handler || "",
-            }))
-        }
-    });
-
     const {fields, append, remove} = useFieldArray({
         control: form.control,
         name: "handlers"
     });
 
-    // Reset form values when `handlers` data changes
-    useEffect(() => {
-        form.reset({
-            handlers: tenant?.attributes.socket.handlers.map(handler => ({
-                opCode: handler.opCode || "",
-                validator: handler.validator || "",
-                handler: handler.handler || "",
-            }))
-        });
-    }, [tenant, form.reset, form]);
-
     const onSubmit = async (data: FormValues) => {
-        await updateTenant(tenant, {
+        await updateTemplate(template, {
             socket: {
                 handlers: data.handlers,
-                writers: tenant?.attributes.socket.writers || [],
+                writers: template?.attributes.socket.writers || [],
             },
         });
     }
+
+    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
+    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
 
     return (
         <Form {...form}>

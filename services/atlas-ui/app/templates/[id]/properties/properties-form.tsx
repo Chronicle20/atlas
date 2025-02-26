@@ -7,9 +7,9 @@ import {useForm} from "react-hook-form";
 import { Input } from "@/components/ui/input"
 import { z } from "zod"
 import {useParams} from "next/navigation";
-import {useTenant} from "@/context/tenant-context";
 import { Switch } from "@/components/ui/switch";
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
+import {fetchTemplates, Template, updateTemplate} from "@/lib/templates";
 
 const propertiesFormSchema = z.object({
     region: z
@@ -28,9 +28,11 @@ const propertiesFormSchema = z.object({
 type PropertiesFormValues = z.infer<typeof propertiesFormSchema>
 
 export function PropertiesForm() {
-    const { id } = useParams(); // Get tenants ID from URL
-    const {tenants, updateTenant} = useTenant()
-    let tenant = tenants.find((t) => t.id === id);
+    const { id } = useParams(); // Get templates ID from URL
+
+    const [template, setTemplate] = useState<Template>();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     const form = useForm<PropertiesFormValues>({
         resolver: zodResolver(propertiesFormSchema),
@@ -41,33 +43,47 @@ export function PropertiesForm() {
             usesPin: false,
         },
         mode: "onChange",
-    })
+    });
 
     useEffect(() => {
-        if (tenant) {
-            form.reset({
-                region: tenant?.attributes.region,
-                major: tenant?.attributes.majorVersion,
-                minor: tenant?.attributes.minorVersion,
-                usesPin: tenant?.attributes.usesPin,
-            });
-        }
-    }, [tenant, form.reset, form]);
+        if (!id) return; // Ensure id is available
 
-    const onSubmit = async (data: PropertiesFormValues) => {
-        tenant = await updateTenant(tenant, {
+        setLoading(true); // Show loading while fetching
+
+        fetchTemplates()
+            .then((data) => {
+                const template = data.find((t) => String(t.id) === String(id));
+                setTemplate(template);
+
+                form.reset({
+                    region: template?.attributes.region || "",
+                    major: template?.attributes.majorVersion || 0,
+                    minor: template?.attributes.minorVersion || 0,
+                    usesPin: template?.attributes.usesPin,
+                });
+            })
+            .catch((err) => {
+                setError(err.message);
+            })
+            .finally(() => setLoading(false));
+    }, [id, form]);
+
+    const onSubmit = async (data : PropertiesFormValues) => {
+        await updateTemplate(template, {
             region: data.region,
             majorVersion: data.major,
             minorVersion: data.minor,
             usesPin: data.usesPin,
         });
         form.reset({
-            region: tenant?.attributes.region,
-            major: tenant?.attributes.majorVersion,
-            minor: tenant?.attributes.minorVersion,
-            usesPin: tenant?.attributes.usesPin,
+            region: template?.attributes.region,
+            major: template?.attributes.majorVersion,
+            minor: template?.attributes.minorVersion,
         });
     }
+
+    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
+    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
 
     return (
         <Form {...form}>
@@ -79,7 +95,7 @@ export function PropertiesForm() {
                         <FormItem>
                             <FormLabel>Region</FormLabel>
                             <FormControl>
-                                <Input placeholder={tenant?.attributes.region} {...field} />
+                                <Input placeholder={template?.attributes.region} {...field} />
                             </FormControl>
                             <FormDescription>
                                 The MapleStory region.
@@ -95,7 +111,7 @@ export function PropertiesForm() {
                         <FormItem>
                             <FormLabel>Major Version</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder={String(tenant?.attributes.majorVersion)} {...field} />
+                                <Input type="number" placeholder={String(template?.attributes.majorVersion)} {...field} />
                             </FormControl>
                             <FormDescription>
                                 The MapleStory major version.
@@ -111,7 +127,7 @@ export function PropertiesForm() {
                         <FormItem>
                             <FormLabel>Minor Version</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder={String(tenant?.attributes.minorVersion)} {...field} />
+                                <Input type="number" placeholder={String(template?.attributes.minorVersion)} {...field} />
                             </FormControl>
                             <FormDescription>
                                 The MapleStory minor version.

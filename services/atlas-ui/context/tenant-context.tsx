@@ -1,6 +1,6 @@
 "use client";
 
-import {createContext, useContext, useState, ReactNode, useEffect} from "react";
+import {createContext, useContext, useState, ReactNode, useEffect, useRef} from "react";
 
 type Tenant = {
     id: string;
@@ -27,15 +27,21 @@ type Tenant = {
                 skills: number[];
             }[];
         };
+        npcs: {
+            npcId: number;
+            impl: string;
+        }[];
         socket: {
             handlers: {
                 opCode: string;
                 validator: string;
                 handler: string;
+                options: unknown;
             }[];
             writers: {
                 opCode: string;
                 writer: string;
+                options: unknown;
             }[];
         }
         worlds: {
@@ -48,30 +54,115 @@ type Tenant = {
     };
 };
 
+const empty: Tenant = {
+    id: "",
+    attributes: {
+        region: "",
+        majorVersion: 0,
+        minorVersion: 0,
+        usesPin: false,
+        characters: {
+            templates: [],
+        },
+        npcs: [],
+        socket: {
+            handlers: [],
+            writers: [],
+        },
+        worlds: [],
+    },
+};
+
 type TenantContextType = {
     tenants: Tenant[];
     activeTenant: Tenant | null;
     setActiveTenant: (tenant: Tenant) => void;
     fetchTenants: () => Promise<void>;
+    updateTenant: (tenant: Tenant | undefined, updatedAttributes: any) => Promise<Tenant>;
 };
 
 // Create Context
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 // Provider Component
-export function TenantProvider({ children }: { children: ReactNode }) {
+export function TenantProvider({children}: { children: ReactNode }) {
     const [activeTenant, setActiveTenant] = useState<Tenant | null>(null);
     const [tenants, setTenants] = useState<Tenant[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState(null);
+
+    const hasFetched = useRef(false);
 
     // Simulate an API call to fetch tenants
     const fetchTenants = async () => {
-        const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
-        const response = await fetch(rootUrl + "/api/configurations/tenants");
-        const data = await response.json();
-        if (data?.data) {
-            setTenants(data.data);
+        if (hasFetched.current) return;
+        hasFetched.current = true;
+
+        setLoading(true);
+        try {
+            const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
+            const response = await fetch(rootUrl + "/api/configurations/tenants");
+            const data = await response.json();
+            if (data?.data) {
+                setTenants(data.data);
+                if (!activeTenant) {
+                    setActiveTenant(data.data[0] || null); // Set first tenant as default
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching tenants:", error);
+        } finally {
+            setLoading(false);
         }
     };
+
+    const updateTenant = async (tenant : Tenant | undefined, updatedAttributes: any): Promise<Tenant> => {
+        if (!tenant) {
+            return Promise.resolve(empty);
+        }
+
+        setIsSubmitting(true);
+        try {
+            const input = {
+                data: {
+                    id: tenant.id,
+                    type: "tenants",
+                    attributes: {
+                        ...tenant.attributes,
+                        ...updatedAttributes,
+                    },
+                },
+            };
+
+            const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || "http://localhost:3000";
+            const response = await fetch(`${rootUrl}/api/configurations/tenants/${tenant.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(input),
+            });
+
+            if (!response.ok) throw new Error("Failed to submit data.");
+
+            // If the request is successful, update the local tenant state
+            return { ...tenant, attributes: { ...tenant.attributes, ...updatedAttributes } };
+            // setTenant(updatedTenant);
+        } catch (err: any) {
+            setError(err);
+        } finally {
+            setIsSubmitting(false);
+        }
+        return Promise.resolve(empty);
+    };
+
+    useEffect(() => {
+        console.log("TenantProvider Mounted");
+
+        return () => {
+            console.log("TenantProvider Unmounted");
+        };
+    }, []);
+
 
     // Fetch tenants data (you can replace this with your actual data fetching logic)
     useEffect(() => {
@@ -86,7 +177,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     }, [tenants]);
 
     return (
-        <TenantContext.Provider value={{ tenants, activeTenant, setActiveTenant, fetchTenants }}>
+        <TenantContext.Provider value={{tenants, activeTenant, setActiveTenant, fetchTenants, updateTenant}}>
             {children}
         </TenantContext.Provider>
     );

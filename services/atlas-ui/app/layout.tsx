@@ -16,8 +16,8 @@ export default function RootLayout({children,}: Readonly<{ children: React.React
 
         <html lang="en" suppressHydrationWarning>
         <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <TenantProvider>
+        <TenantProvider>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
                 <SidebarProvider>
                     <AppSidebar/>
                     <main className="w-full flex min-h-svh flex-1 flex-col">
@@ -32,8 +32,8 @@ export default function RootLayout({children,}: Readonly<{ children: React.React
                         </div>
                     </main>
                 </SidebarProvider>
-            </TenantProvider>
-        </ThemeProvider>
+            </ThemeProvider>
+        </TenantProvider>
         </body>
         </html>
     );

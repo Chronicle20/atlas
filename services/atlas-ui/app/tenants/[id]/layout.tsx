@@ -52,7 +52,7 @@ export default function TenantDetailLayout({ children }: TenantDetailLayoutProps
                     <aside className="-mx-4 lg:w-1/5">
                         <DetailSidebar items={sidebarNavItems} />
                     </aside>
-                    <div className="flex-1 lg:max-w-2xl">{children}</div>
+                    <div className="flex-1 lg:max-w-4xl">{children}</div>
                 </div>
             </div>
         </>

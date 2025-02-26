@@ -1,18 +1,49 @@
 "use client"
 
-import {useEffect} from "react";
-import { useForm, useFieldArray } from "react-hook-form";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import {useEffect, useState} from "react";
+import {useFieldArray, useForm} from "react-hook-form";
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
+import {Input} from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
-import {useTenant} from "@/context/tenant-context";
 import {X} from "lucide-react";
+import {fetchTemplates, Template, updateTemplate} from "@/lib/templates";
 
 export function WritersForm() {
-    const { id } = useParams(); // Get tenants ID from URL
-    const {tenants, updateTenant} = useTenant()
-    let tenant = tenants.find((t) => t.id === id);
+    const {id} = useParams(); // Get templates ID from URL
+
+    const [template, setTemplate] = useState<Template>();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const form = useForm<FormValues>({
+        defaultValues: {
+            writers: [],
+        }
+    });
+
+    useEffect(() => {
+        if (!id) return; // Ensure id is available
+
+        setLoading(true); // Show loading while fetching
+
+        fetchTemplates()
+            .then((data) => {
+                const template = data.find((t) => String(t.id) === String(id));
+                setTemplate(template);
+
+                form.reset({
+                    writers: template?.attributes.socket.writers.map(writer => ({
+                        opCode: writer.opCode || "",
+                        writer: writer.writer || "",
+                    })),
+                });
+            })
+            .catch((err) => {
+                setError(err.message);
+            })
+            .finally(() => setLoading(false));
+    }, [id, form]);
 
     interface FormValues {
         writers: {
@@ -22,44 +53,22 @@ export function WritersForm() {
         }[];
     }
 
-    const form = useForm<FormValues>({
-        defaultValues: {
-            writers: tenant?.attributes.socket.writers.map(writer => ({
-                opCode: writer.opCode || "",
-                writer: writer.writer || "",
-            }))
-        }
-    });
-
-    const { fields, append, remove } = useFieldArray({
+    const {fields, append, remove} = useFieldArray({
         control: form.control,
         name: "writers"
     });
 
-    // Reset form values when `writers` data changes
-    useEffect(() => {
-        form.reset({
-            writers: tenant?.attributes.socket.writers.map(writer => ({
-                opCode: writer.opCode || "",
-                writer: writer.writer || "",
-            }))
-        });
-    }, [tenant, form.reset, form]);
-
-    const onSubmit = async (data : FormValues) => {
-        tenant = await updateTenant(tenant, {
+    const onSubmit = async (data: FormValues) => {
+        await updateTemplate(template, {
             socket: {
-                handlers: tenant?.attributes.socket.handlers,
+                handlers: template?.attributes.socket.handlers || [],
                 writers: data.writers,
             },
         });
-        form.reset({
-            writers: tenant?.attributes.socket.writers.map(writer => ({
-                opCode: writer.opCode || "",
-                writer: writer.writer || "",
-            }))
-        });
     }
+
+    if (loading) return <div>Loading...</div>; // Show loading message while fetching data
+    if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
 
     return (
         <Form {...form}>
@@ -107,5 +116,5 @@ export function WritersForm() {
                 </div>
             </form>
         </Form>
-);
+    );
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import {useTenant} from "@/context/tenant-context";
-import {DataTable} from "@/app/tenants/data-table";
+import {DataTable} from "@/components/data-table";
 import {columns} from "@/app/tenants/columns";
 
 export default function Page() {

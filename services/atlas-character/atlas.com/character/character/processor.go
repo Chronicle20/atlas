@@ -133,6 +133,21 @@ func GetForName(db *gorm.DB) func(ctx context.Context) func(name string, decorat
 	}
 }
 
+func allProvider(db *gorm.DB, tenant tenant.Model) func() model.Provider[[]Model] {
+	return func() model.Provider[[]Model] {
+		return entitySliceModelMapperFunc(getAll(tenant.Id())(db))(model.ParallelMap())
+	}
+}
+
+func GetAll(db *gorm.DB) func(ctx context.Context) func(decorators ...model.Decorator[Model]) ([]Model, error) {
+	return func(ctx context.Context) func(decorators ...model.Decorator[Model]) ([]Model, error) {
+		return func(decorators ...model.Decorator[Model]) ([]Model, error) {
+			t := tenant.MustFromContext(ctx)
+			return model.SliceMap(model.Decorate[Model](decorators))(allProvider(db, t)())(model.ParallelMap())()
+		}
+	}
+}
+
 func InventoryModelDecorator(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) model.Decorator[Model] {
 	return func(db *gorm.DB) func(ctx context.Context) model.Decorator[Model] {
 		return func(ctx context.Context) model.Decorator[Model] {

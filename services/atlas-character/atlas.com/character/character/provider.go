@@ -37,6 +37,17 @@ func getForName(tenantId uuid.UUID, name string) database.EntityProvider[[]entit
 	}
 }
 
+func getAll(tenantId uuid.UUID) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
+		var results []entity
+		err := db.Where("tenant_id = ?", tenantId).Find(&results).Error
+		if err != nil {
+			return model.ErrorProvider[[]entity](err)
+		}
+		return model.FixedProvider(results)
+	}
+}
+
 func modelFromEntity(e entity) (Model, error) {
 	r := NewModelBuilder().
 		SetId(e.ID).

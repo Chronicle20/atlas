@@ -15,31 +15,43 @@ import (
 	"strings"
 )
 
-const (
-	GetCharactersForAccountInWorld = "get_characters_for_account_in_world"
-	GetCharactersByMap             = "get_characters_by_map"
-	GetCharactersByName            = "get_characters_by_name"
-	GetCharacter                   = "get_character"
-	DeleteCharacter                = "delete_character"
-	CreateCharacter                = "create_character"
-)
-
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerGet := rest.RegisterHandler(l)(db)(si)
 			r := router.PathPrefix("/characters").Subrouter()
-			r.HandleFunc("", registerGet(GetCharactersForAccountInWorld, handleGetCharactersForAccountInWorld)).Methods(http.MethodGet).Queries("accountId", "{accountId}", "worldId", "{worldId}", "include", "{include}")
-			r.HandleFunc("", registerGet(GetCharactersForAccountInWorld, handleGetCharactersForAccountInWorld)).Methods(http.MethodGet).Queries("accountId", "{accountId}", "worldId", "{worldId}")
-			r.HandleFunc("", registerGet(GetCharactersByMap, handleGetCharactersByMap)).Methods(http.MethodGet).Queries("worldId", "{worldId}", "mapId", "{mapId}", "include", "{include}")
-			r.HandleFunc("", registerGet(GetCharactersByMap, handleGetCharactersByMap)).Methods(http.MethodGet).Queries("worldId", "{worldId}", "mapId", "{mapId}")
-			r.HandleFunc("", registerGet(GetCharactersByName, handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}", "include", "{include}")
-			r.HandleFunc("", registerGet(GetCharactersByName, handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}")
-			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)(CreateCharacter, handleCreateCharacter)).Methods(http.MethodPost)
-			r.HandleFunc("/{characterId}", registerGet(GetCharacter, handleGetCharacter)).Methods(http.MethodGet).Queries("include", "{include}")
-			r.HandleFunc("/{characterId}", registerGet(GetCharacter, handleGetCharacter)).Methods(http.MethodGet)
-			r.HandleFunc("/{characterId}", rest.RegisterHandler(l)(db)(si)(DeleteCharacter, handleDeleteCharacter)).Methods(http.MethodDelete)
+			r.HandleFunc("", registerGet("get_characters_for_account_in_world", handleGetCharactersForAccountInWorld)).Methods(http.MethodGet).Queries("accountId", "{accountId}", "worldId", "{worldId}", "include", "{include}")
+			r.HandleFunc("", registerGet("get_characters_for_account_in_world", handleGetCharactersForAccountInWorld)).Methods(http.MethodGet).Queries("accountId", "{accountId}", "worldId", "{worldId}")
+			r.HandleFunc("", registerGet("get_characters_by_map", handleGetCharactersByMap)).Methods(http.MethodGet).Queries("worldId", "{worldId}", "mapId", "{mapId}", "include", "{include}")
+			r.HandleFunc("", registerGet("get_characters_by_map", handleGetCharactersByMap)).Methods(http.MethodGet).Queries("worldId", "{worldId}", "mapId", "{mapId}")
+			r.HandleFunc("", registerGet("get_characters_by_name", handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}", "include", "{include}")
+			r.HandleFunc("", registerGet("get_characters_by_name", handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}")
+			r.HandleFunc("", registerGet("get_characters", handleGetCharacters)).Methods(http.MethodGet)
+			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)("create_character", handleCreateCharacter)).Methods(http.MethodPost)
+			r.HandleFunc("/{characterId}", registerGet("get_character", handleGetCharacter)).Methods(http.MethodGet).Queries("include", "{include}")
+			r.HandleFunc("/{characterId}", registerGet("get_character", handleGetCharacter)).Methods(http.MethodGet)
+			r.HandleFunc("/{characterId}", rest.RegisterHandler(l)(db)(si)("delete_character", handleDeleteCharacter)).Methods(http.MethodDelete)
 		}
+	}
+}
+
+func handleGetCharacters(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cs, err := GetAll(d.DB())(d.Context())(decoratorsFromInclude(r, d, c)...)
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Unable to get characters.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		res, err := model.SliceMap(Transform)(model.FixedProvider(cs))(model.ParallelMap())()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Creating REST model.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
 	}
 }
 

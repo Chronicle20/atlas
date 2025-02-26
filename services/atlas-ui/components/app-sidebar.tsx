@@ -43,11 +43,11 @@ const items = [
             },
             {
                 title: "Characters",
-                url: "/character"
+                url: "/characters"
             },
             {
                 title: "Drops",
-                url: "/drop"
+                url: "/drops"
             }
         ],
     },

@@ -1,7 +1,7 @@
 "use client"
 
 import {useEffect, useState} from "react";
-import {useForm, useFieldArray, UseFormReturn, useWatch, Path, FieldValues} from "react-hook-form";
+import {useForm, useFieldArray, UseFormReturn, useWatch, Path, FieldValues, PathValue} from "react-hook-form";
 import {Form, FormField, FormItem, FormLabel, FormControl, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
@@ -174,15 +174,13 @@ function NumbersField<T extends FieldValues>({form, name, title}: NumbersFieldPr
 
     const handleAdd = () => {
         if (newValue.trim() !== "" && !isNaN(Number(newValue))) {
-            // @ts-expect-error dont want to fix
-            form.setValue(name, [...values, Number(newValue)]);
+            form.setValue(name, [...values, Number(newValue)] as PathValue<T, typeof name>);
             setNewValue("");
         }
     };
 
     const handleRemove = (index: number) => {
-        // @ts-expect-error dont want to fix
-        form.setValue(name, values.filter((_, i) => i !== index));
+        form.setValue(name, values.filter((_, i) => i !== index) as PathValue<T, typeof name>);
     };
 
     return (

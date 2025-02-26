@@ -8,10 +8,11 @@ import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import {X} from "lucide-react";
+import {updateTenant} from "@/lib/tenants";
 
 export function WorldsForm() {
     const {id} = useParams(); // Get tenants ID from URL
-    const {tenants, updateTenant} = useTenant()
+    const {tenants} = useTenant()
     const tenant = tenants.find((t) => t.id === id);
 
     interface FormValues {

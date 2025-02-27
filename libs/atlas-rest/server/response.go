@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/manyminds/api2go/jsonapi"
+	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )

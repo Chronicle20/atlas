@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"github.com/Chronicle20/atlas-rest/retry"
-	"github.com/manyminds/api2go/jsonapi"
+	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )

@@ -1,7 +1,7 @@
 package requests
 
 import (
-	"github.com/manyminds/api2go/jsonapi"
+	"github.com/jtumidanski/api2go/jsonapi"
 	"io"
 	"net/http"
 )

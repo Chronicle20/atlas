@@ -12,9 +12,7 @@ import (
 	"context"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 import "gorm.io/gorm"
 
@@ -51,18 +49,18 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")), os.Getenv("SERVICE_TYPE"))
-	c, err := configuration.Get()
-	if err != nil {
-		l.WithError(err).Fatal("Unable to successfully load configuration.")
-	}
+	//configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")), os.Getenv("SERVICE_TYPE"))
+	//c, err := configuration.Get()
+	//if err != nil {
+	//	l.WithError(err).Fatal("Unable to successfully load configuration.")
+	//}
 
 	db := database.Connect(l, database.SetMigrations(drop.Migration, drop2.Migration))
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), drop.InitResource(GetServer())(db), continent.InitResource(GetServer())(db))
 
-	initializeMonsterDrops(l)(*c)(db)
-	initializeContinentDrops(l)(*c)(db)
+	//initializeMonsterDrops(l)(*c)(db)
+	//initializeContinentDrops(l)(*c)(db)
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

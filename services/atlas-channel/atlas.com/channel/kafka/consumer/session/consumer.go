@@ -12,6 +12,7 @@ import (
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
+	"atlas-channel/world"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -190,6 +191,16 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
 						}
 						err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(writer.CharacterBuffGiveBody(l)(ctx)(bs))(s)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
+						}
+					}()
+					go func() {
+						w, err := world.GetById(l, ctx)(byte(s.WorldId()))
+						if err != nil {
+							return
+						}
+						err = session.Announce(l)(ctx)(wp)(writer.WorldMessage)(writer.WorldMessageTopScrollBody(l, t)(w.Message()))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}

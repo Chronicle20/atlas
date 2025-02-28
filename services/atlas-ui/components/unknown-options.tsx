@@ -38,13 +38,27 @@ export function OptionsField<T extends FieldValues>({form, path}: OptionsFieldPr
 
     const handleAddOptionChild = (opt: string, key: string, value: string) => {
         const currentOptions = form.getValues(path) || {};
-        const updatedOptions = {
-            ...currentOptions,
-            [opt]: {
-                ...currentOptions[opt],
-                [key]: value
-            }
-        };
+
+        let updatedOptions;
+        if (value.trim() !== "" && !isNaN(Number(value))) {
+            updatedOptions = {
+                ...currentOptions,
+                [opt]: {
+                    ...currentOptions[opt],
+                    [key]: Number(value)
+                }
+            };
+        } else {
+            updatedOptions = {
+                ...currentOptions,
+                [opt]: {
+                    ...currentOptions[opt],
+                    [key]: value
+                }
+            };
+        }
+
+
         setOption("");
         setNewKey("");
         setNewValue("");

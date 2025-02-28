@@ -10,6 +10,7 @@ import {useTenant} from "@/context/tenant-context";
 import {Plus, X} from "lucide-react";
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {OptionsField} from "@/components/unknown-options";
+import {updateTenant} from "@/lib/tenants";
 
 export function WritersForm() {
     const {id} = useParams(); // Get tenants ID from URL
@@ -51,22 +52,19 @@ export function WritersForm() {
     }, [tenant, form.reset, form]);
 
     const onSubmit = async (data: FormValues) => {
-        // tenant = await updateTenant(tenant, {
-        //     socket: {
-        //         handlers: tenant?.attributes.socket.handlers || [],
-        //         writers: data.writers,
-        //     },
-        // });
-        // form.reset({
-        //     writers: tenant?.attributes.socket.writers.map(writer => ({
-        //         opCode: writer.opCode || "",
-        //         writer: writer.writer || "",
-        //         options: writer.options,
-        //     }))
-        // });
+        tenant = await updateTenant(tenant, {
+            socket: {
+                handlers: tenant?.attributes.socket.handlers || [],
+                writers: data.writers,
+            },
+        });
         form.reset({
-            writers: data.writers
-        })
+            writers: tenant?.attributes.socket.writers.map(writer => ({
+                opCode: writer.opCode || "",
+                writer: writer.writer || "",
+                options: writer.options,
+            }))
+        });
     }
 
     return (

@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-account/account"
 	"atlas-account/database"
+	account2 "atlas-account/kafka/consumer/account"
 	session2 "atlas-account/kafka/consumer/session"
 	"atlas-account/logger"
 	"atlas-account/service"
@@ -50,9 +51,9 @@ func main() {
 	db := database.Connect(l, database.SetMigrations(account.Migration))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
-	account.InitConsumers(l)(cmf)(consumerGroupId)
+	account2.InitConsumers(l)(cmf)(consumerGroupId)
 	session2.InitConsumers(l)(cmf)(consumerGroupId)
-	account.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	session2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), account.InitResource(GetServer())(db))

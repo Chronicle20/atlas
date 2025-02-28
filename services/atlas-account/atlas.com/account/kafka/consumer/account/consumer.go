@@ -1,6 +1,7 @@
 package account
 
 import (
+	"atlas-account/account"
 	consumer2 "atlas-account/kafka/consumer"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -31,11 +32,11 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 }
 
 func handleCreateAccountCommand(db *gorm.DB) message.Handler[createCommand] {
-	return func(l logrus.FieldLogger, ctx context.Context, command createCommand) {
-		l.Debugf("Received create account command name [%s] password [%s].", command.Name, command.Password)
-		_, err := Create(l, db, ctx)(command.Name, command.Password)
+	return func(l logrus.FieldLogger, ctx context.Context, c createCommand) {
+		l.Debugf("Received create account command name [%s] password [%s].", c.Name, c.Password)
+		_, err := account.Create(l, db, ctx)(c.Name, c.Password)
 		if err != nil {
-			l.WithError(err).Errorf("Error processing command to create account [%s].", command.Name)
+			l.WithError(err).Errorf("Error processing command to create account [%s].", c.Name)
 			return
 		}
 	}

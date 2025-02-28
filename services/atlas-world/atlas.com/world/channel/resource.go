@@ -8,7 +8,7 @@ import (
 	"github.com/Chronicle20/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/gorilla/mux"
-	"github.com/manyminds/api2go/jsonapi"
+	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"

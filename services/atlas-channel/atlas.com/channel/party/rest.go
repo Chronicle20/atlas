@@ -1,6 +1,8 @@
 package party
 
 import (
+	"encoding/json"
+	"errors"
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -80,6 +82,37 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 			})
 		}
 	}
+	return nil
+}
+
+func (r *RestModel) SetReferencedStructs(references []jsonapi.Data) error {
+	refMap := make(map[string]json.RawMessage)
+
+	for _, ref := range references {
+		if ref.Type == "members" {
+			refMap[ref.ID] = ref.Attributes
+		}
+	}
+
+	if len(refMap) < len(r.Members) {
+		return errors.New("included structs did not fully populate members")
+	}
+
+	var nm []MemberRestModel
+	for _, m := range r.Members {
+		if val, ok := refMap[m.GetID()]; ok {
+			mrm := MemberRestModel{}
+			if err := json.Unmarshal(val, &mrm); err != nil {
+				return err
+			}
+			err := mrm.SetID(m.GetID())
+			if err != nil {
+				return err
+			}
+			nm = append(nm, mrm)
+		}
+	}
+	r.Members = nm
 	return nil
 }
 

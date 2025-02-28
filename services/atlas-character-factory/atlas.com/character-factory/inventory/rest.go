@@ -4,7 +4,7 @@ import (
 	"atlas-character-factory/equipable"
 	"atlas-character-factory/inventory/item"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/manyminds/api2go/jsonapi"
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type RestModel struct {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
-	"github.com/manyminds/api2go/jsonapi"
+	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"

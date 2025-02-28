@@ -246,6 +246,7 @@ func produceWriters() []string {
 		writer.CharacterSkillCooldown,
 		writer.CharacterEffect,
 		writer.CharacterEffectForeign,
+		writer.WorldMessage,
 	}
 }
 

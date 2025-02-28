@@ -10,7 +10,7 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
-	"github.com/manyminds/api2go/jsonapi"
+	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
@@ -21,6 +21,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 		registerGet := rest.RegisterHandler(l)(si)
 
 		r := router.PathPrefix("/data/maps").Subrouter()
+		r.HandleFunc("", registerGet("get_maps", handleGetMapsRequest)).Methods(http.MethodGet)
 		r.HandleFunc("/{mapId}", registerGet("get_map", handleGetMapRequest)).Methods(http.MethodGet)
 		r.HandleFunc("/{mapId}/portals", registerGet("get_map_portals_by_name", handleGetMapPortalsByNameRequest)).Queries("name", "{name}").Methods(http.MethodGet)
 		r.HandleFunc("/{mapId}/portals", registerGet("get_map_portals", handleGetMapPortalsRequest)).Methods(http.MethodGet)
@@ -31,6 +32,27 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 		r.HandleFunc("/{mapId}/npcs/{npcId}", registerGet("get_map_npc", handleGetMapNPCRequest)).Methods(http.MethodGet)
 		r.HandleFunc("/{mapId}/monsters", registerGet("get_map_monsters", handleGetMapMonstersRequest)).Methods(http.MethodGet)
 		r.HandleFunc("/{mapId}/drops/position", rest.RegisterInputHandler[DropPositionRestModel](l)(si)("get_map_drop_position", handleGetMapDropPositionRequest)).Methods(http.MethodPost)
+	}
+}
+
+func handleGetMapsRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		m, err := GetAll(d.Context())()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		res, err := model.SliceMap(Transform)(model.FixedProvider(m))()()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Creating REST model.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 	}
 }
 

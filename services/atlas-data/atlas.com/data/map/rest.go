@@ -2,7 +2,7 @@ package _map
 
 import (
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/manyminds/api2go/jsonapi"
+	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
 )
 

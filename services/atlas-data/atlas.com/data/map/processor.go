@@ -27,6 +27,27 @@ func RegisterMap(l logrus.FieldLogger) func(ctx context.Context) func(path strin
 	}
 }
 
+func allProvider(ctx context.Context) model.Provider[[]Model] {
+	t := tenant.MustFromContext(ctx)
+	return func() ([]Model, error) {
+		m, err := GetMapModelRegistry().GetAll(t)
+		if err == nil {
+			return m, nil
+		}
+		nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
+		if err != nil {
+			return []Model{}, err
+		}
+		return GetMapModelRegistry().GetAll(nt)
+	}
+}
+
+func GetAll(ctx context.Context) func() ([]Model, error) {
+	return func() ([]Model, error) {
+		return allProvider(ctx)()
+	}
+}
+
 func byIdProvider(ctx context.Context) func(mapId uint32) model.Provider[Model] {
 	t := tenant.MustFromContext(ctx)
 	return func(mapId uint32) model.Provider[Model] {

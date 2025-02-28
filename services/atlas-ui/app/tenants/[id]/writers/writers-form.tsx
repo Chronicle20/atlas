@@ -1,14 +1,13 @@
 "use client"
 
-import {useEffect, useState} from "react";
-import {FieldValues, Path, PathValue, useFieldArray, useForm, UseFormReturn, useWatch} from "react-hook-form";
+import {useEffect} from "react";
+import {useFieldArray, useForm} from "react-hook-form";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
-import {Plus, X} from "lucide-react";
-import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {X} from "lucide-react";
 import {OptionsField} from "@/components/unknown-options";
 import {updateTenant} from "@/lib/tenants";
 

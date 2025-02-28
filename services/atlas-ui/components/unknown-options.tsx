@@ -30,7 +30,7 @@ export function OptionsField<T extends FieldValues>({form, path}: OptionsFieldPr
         const updatedOptions = {...form.getValues(path)};
         delete updatedOptions[key];
         if (Object.entries(updatedOptions).length === 0) {
-            form.setValue(path, undefined);
+            form.setValue(path, undefined as PathValue<T, Path<T>>);
         } else {
             form.setValue(path, updatedOptions);
         }
@@ -44,6 +44,7 @@ export function OptionsField<T extends FieldValues>({form, path}: OptionsFieldPr
             updatedOptions = {
                 ...currentOptions,
                 [opt]: {
+                    // @ts-expect-error just let me do magic
                     ...currentOptions[opt],
                     [key]: Number(value)
                 }
@@ -52,6 +53,7 @@ export function OptionsField<T extends FieldValues>({form, path}: OptionsFieldPr
             updatedOptions = {
                 ...currentOptions,
                 [opt]: {
+                    // @ts-expect-error just let me do magic
                     ...currentOptions[opt],
                     [key]: value
                 }
@@ -118,7 +120,7 @@ export function OptionsField<T extends FieldValues>({form, path}: OptionsFieldPr
                             <FormLabel>{opt}</FormLabel>
                             <div className="flex flex-row flex-wrap p-2 justify-start gap-2">
                                 {Object.entries(optValue)
-                                    .sort(([keyA, valA], [keyB, valB]) => (valA > valB ? 1 : -1))
+                                    .sort(([, valA], [, valB]) => (valA > valB ? 1 : -1))
                                     .map(([key, value]) => (
                                         <div key={key} className="flex items-center">
                                             <Button type="button" variant="outline"

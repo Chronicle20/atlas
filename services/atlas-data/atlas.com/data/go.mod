@@ -5,11 +5,11 @@ go 1.23.1
 require (
 	github.com/Chronicle20/atlas-constants v1.0.12
 	github.com/Chronicle20/atlas-model v1.2.1
-	github.com/Chronicle20/atlas-rest v1.2.6
+	github.com/Chronicle20/atlas-rest v1.2.8
 	github.com/Chronicle20/atlas-tenant v1.0.4
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
-	github.com/manyminds/api2go v0.0.0-20220325145637-95b4fb838cf6
+	github.com/jtumidanski/api2go v1.0.2
 	github.com/sirupsen/logrus v1.9.3
 	go.elastic.co/ecslogrus v1.0.0
 	go.opentelemetry.io/otel v1.34.0

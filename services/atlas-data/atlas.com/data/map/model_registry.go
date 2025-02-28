@@ -55,3 +55,27 @@ func (r *MapModelRegistry) Get(t tenant.Model, mapId uint32) (Model, error) {
 	}
 	return Model{}, errors.New("not found")
 }
+
+func (r *MapModelRegistry) GetAll(t tenant.Model) ([]Model, error) {
+	if _, ok := r.tenantLock[t]; !ok {
+		r.lock.Lock()
+		r.tenantLock[t] = &sync.RWMutex{}
+		r.registry[t] = make(map[uint32]Model)
+		r.lock.Unlock()
+	}
+
+	r.tenantLock[t].RLock()
+	defer r.tenantLock[t].RUnlock()
+
+	var res = make([]Model, 0)
+	var tr map[uint32]Model
+	var ok bool
+	if tr, ok = r.registry[t]; !ok || len(tr) == 0 {
+		return res, errors.New("not found")
+	}
+
+	for _, m := range tr {
+		res = append(res, m)
+	}
+	return res, nil
+}

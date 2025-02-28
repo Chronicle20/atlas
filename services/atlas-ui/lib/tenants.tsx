@@ -61,7 +61,7 @@ export async function fetchTenants(): Promise<Tenant[]> {
 
     const responseData = await response.json();
     return responseData.data;
-};
+}
 
 export const updateTenant = async (tenant: Tenant | undefined, updatedAttributes: Partial<TenantAttributes>) => {
     if (!tenant) return;

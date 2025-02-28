@@ -8,6 +8,7 @@ import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {X} from "lucide-react";
 import {fetchTemplates, Template, updateTemplate} from "@/lib/templates";
+import {OptionsField} from "@/components/unknown-options";
 
 export function WritersForm() {
     const {id} = useParams(); // Get templates ID from URL
@@ -36,6 +37,7 @@ export function WritersForm() {
                     writers: template?.attributes.socket.writers.map(writer => ({
                         opCode: writer.opCode || "",
                         writer: writer.writer || "",
+                        options: writer.options,
                     })),
                 });
             })
@@ -74,34 +76,36 @@ export function WritersForm() {
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 {fields.map((field, index) => (
-                    <div key={field.id} className="border p-4 rounded-md gap-2 relative flex flex-row justify-stretch">
-                        <FormField
-                            control={form.control}
-                            name={`writers.${index}.opCode`}
-                            render={({field}) => (
-                                <FormItem>
-                                    <FormLabel>Operation Code</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="0x00" {...field} />
-                                    </FormControl>
-                                    <FormMessage/>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name={`writers.${index}.writer`}
-                            render={({field}) => (
-                                <FormItem>
-                                    <FormLabel>Writer</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} />
-                                    </FormControl>
-                                    <FormMessage/>
-                                </FormItem>
-                            )}
-                        />
-
+                    <div key={field.id} className="border p-4 rounded-md gap-2 relative flex flex-col justify-stretch">
+                        <div className="gap-2 flex flex-row justify-stretch">
+                            <FormField
+                                control={form.control}
+                                name={`writers.${index}.opCode`}
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel>Operation Code</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="0x00" {...field} />
+                                        </FormControl>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name={`writers.${index}.writer`}
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel>Writer</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} />
+                                        </FormControl>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <OptionsField form={form} path={`writers.${index}.options`}/>
                         <Button type="button" className="absolute top-0 right-0" variant="ghost" size="icon"
                                 onClick={() => remove(index)}>
                             <X/>

@@ -9,6 +9,7 @@ import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import {X} from "lucide-react";
 import {updateTenant} from "@/lib/tenants";
+import {OptionsField} from "@/components/unknown-options";
 
 export function HandlersForm() {
     const {id} = useParams(); // Get tenants ID from URL
@@ -30,6 +31,7 @@ export function HandlersForm() {
                 opCode: handler.opCode || "",
                 validator: handler.validator || "",
                 handler: handler.handler || "",
+                options: handler.options,
             }))
         }
     });
@@ -46,6 +48,7 @@ export function HandlersForm() {
                 opCode: handler.opCode || "",
                 validator: handler.validator || "",
                 handler: handler.handler || "",
+                options: handler.options,
             }))
         });
     }, [tenant, form.reset, form]);
@@ -63,48 +66,49 @@ export function HandlersForm() {
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 {fields.map((field, index) => (
-                    <div key={field.id}
-                         className="border p-4 rounded-md relative gap-2 flex flex-row justify-stretch">
-                        <FormField
-                            control={form.control}
-                            name={`handlers.${index}.opCode`}
-                            render={({field}) => (
-                                <FormItem>
-                                    <FormLabel>Operation Code</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="0x00" {...field} />
-                                    </FormControl>
-                                    <FormMessage/>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name={`handlers.${index}.validator`}
-                            render={({field}) => (
-                                <FormItem>
-                                    <FormLabel>Validator</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} />
-                                    </FormControl>
-                                    <FormMessage/>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name={`handlers.${index}.handler`}
-                            render={({field}) => (
-                                <FormItem>
-                                    <FormLabel>Handler</FormLabel>
-                                    <FormControl>
-                                        <Input {...field} />
-                                    </FormControl>
-                                    <FormMessage/>
-                                </FormItem>
-                            )}
-                        />
-
+                    <div key={field.id} className="border p-4 rounded-md gap-2 relative flex flex-col justify-stretch">
+                        <div className="gap-2 flex flex-row justify-stretch">
+                            <FormField
+                                control={form.control}
+                                name={`handlers.${index}.opCode`}
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel>Operation Code</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="0x00" {...field} />
+                                        </FormControl>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name={`handlers.${index}.validator`}
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel>Validator</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} />
+                                        </FormControl>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name={`handlers.${index}.handler`}
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel>Handler</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} />
+                                        </FormControl>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <OptionsField form={form} path={`handlers.${index}.options`}/>
                         <Button type="button" className="absolute top-0 right-0" variant="ghost" size="icon"
                                 onClick={() => remove(index)}>
                             <X/>
@@ -112,7 +116,8 @@ export function HandlersForm() {
                     </div>
                 ))}
                 <div className="flex flex-row gap-2 justify-between">
-                    <Button type="button" onClick={() => append({opCode: "", validator: "", handler: "", options: null})}>
+                    <Button type="button"
+                            onClick={() => append({opCode: "", validator: "", handler: "", options: null})}>
                         Add
                     </Button>
                     <Button type="submit">Save</Button>

@@ -66,7 +66,21 @@ export async function fetchTemplates(): Promise<Template[]> {
         throw new Error("Failed to fetch templates.");
     }
     const responseData = await response.json();
-    return responseData.data;
+    return responseData.data.map((template: Template) => ({
+        ...template,
+        attributes: {
+            ...template.attributes,
+            socket: {
+                ...template.attributes.socket,
+                handlers: [...template.attributes.socket.handlers].sort(
+                    (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
+                ),
+                writers: [...template.attributes.socket.writers].sort(
+                    (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
+                ),
+            },
+        },
+    }));
 }
 
 

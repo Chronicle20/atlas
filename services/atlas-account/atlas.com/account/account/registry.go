@@ -182,6 +182,14 @@ func (l *Registry) Logout(key AccountKey, sk ServiceKey) bool {
 	return false
 }
 
+func (l *Registry) Terminate(key AccountKey) bool {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	l.sessions[key] = make(map[ServiceKey]StateValue)
+	return true
+}
+
 func (l *Registry) GetExpiredInTransition(timeout time.Duration) []AccountKey {
 	l.lock.RLock()
 	defer l.lock.RUnlock()

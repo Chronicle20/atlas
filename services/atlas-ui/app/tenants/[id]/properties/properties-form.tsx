@@ -57,19 +57,18 @@ export function PropertiesForm() {
     }, [tenant, form.reset, form]);
 
     const onSubmit = async (data: PropertiesFormValues) => {
-        updateTenant(tenant, {
+        tenant = await updateTenant(tenant, {
             region: data.region,
             majorVersion: data.major,
             minorVersion: data.minor,
             usesPin: data.usesPin,
-        }).then((tenant) => {
-            toast.success("Successfully saved tenant.");
-            form.reset({
-                region: tenant?.attributes.region,
-                major: tenant?.attributes.majorVersion,
-                minor: tenant?.attributes.minorVersion,
-                usesPin: tenant?.attributes.usesPin,
-            });
+        });
+        toast.success("Successfully saved tenant.");
+        form.reset({
+            region: tenant?.attributes.region,
+            major: tenant?.attributes.majorVersion,
+            minor: tenant?.attributes.minorVersion,
+            usesPin: tenant?.attributes.usesPin,
         });
     }
 

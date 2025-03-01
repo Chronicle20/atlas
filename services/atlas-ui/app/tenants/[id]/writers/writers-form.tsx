@@ -52,20 +52,19 @@ export function WritersForm() {
     }, [tenant, form.reset, form]);
 
     const onSubmit = async (data: FormValues) => {
-        updateTenant(tenant, {
+        tenant = await updateTenant(tenant, {
             socket: {
                 handlers: tenant?.attributes.socket.handlers || [],
                 writers: data.writers,
             },
-        }).then((tenant) => {
-            toast.success("Successfully saved tenant.");
-            form.reset({
-                writers: tenant?.attributes.socket.writers.map(writer => ({
-                    opCode: writer.opCode || "",
-                    writer: writer.writer || "",
-                    options: writer.options,
-                }))
-            });
+        });
+        toast.success("Successfully saved tenant.");
+        form.reset({
+            writers: tenant?.attributes.socket.writers.map(writer => ({
+                opCode: writer.opCode || "",
+                writer: writer.writer || "",
+                options: writer.options,
+            }))
         });
     }
 

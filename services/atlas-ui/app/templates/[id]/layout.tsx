@@ -6,6 +6,7 @@ import {DetailSidebar} from "@/components/detail-sidebar";
 import {fetchTemplates, Template} from "@/lib/templates";
 import {useEffect, useState} from "react";
 import {ScrollArea} from "@/components/ui/scroll-area";
+import {Toaster} from "sonner";
 
 interface TemplateDetailLayoutProps {
     children: React.ReactNode
@@ -79,6 +80,7 @@ export default function TemplateDetailLayout({ children }: TemplateDetailLayoutP
                     </ScrollArea>
                 </div>
             </div>
+            <Toaster richColors/>
         </>
     )
 }

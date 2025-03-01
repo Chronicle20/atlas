@@ -10,6 +10,7 @@ import {useParams} from "next/navigation";
 import { Switch } from "@/components/ui/switch";
 import {useEffect, useState} from "react";
 import {fetchTemplates, Template, updateTemplate} from "@/lib/templates";
+import {toast} from "sonner";
 
 const propertiesFormSchema = z.object({
     region: z
@@ -69,11 +70,13 @@ export function PropertiesForm() {
     }, [id, form]);
 
     const onSubmit = async (data : PropertiesFormValues) => {
-        await updateTemplate(template, {
+        updateTemplate(template, {
             region: data.region,
             majorVersion: data.major,
             minorVersion: data.minor,
             usesPin: data.usesPin,
+        }).then(() => {
+            toast.success("Successfully saved template.");
         });
         form.reset({
             region: template?.attributes.region,

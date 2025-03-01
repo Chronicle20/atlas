@@ -5,6 +5,7 @@ import {useTenant} from "@/context/tenant-context";
 import {Separator} from "@/components/ui/separator";
 import {DetailSidebar} from "@/components/detail-sidebar";
 import {ScrollArea} from "@/components/ui/scroll-area";
+import {Toaster} from "sonner";
 
 interface TenantDetailLayoutProps {
     children: React.ReactNode
@@ -58,6 +59,7 @@ export default function TenantDetailLayout({ children }: TenantDetailLayoutProps
                     </ScrollArea>
                 </div>
             </div>
+            <Toaster richColors/>
         </>
     )
 }

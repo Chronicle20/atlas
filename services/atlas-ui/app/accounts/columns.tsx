@@ -8,13 +8,15 @@ import {Button} from "@/components/ui/button";
 import {MoreHorizontal} from "lucide-react";
 import {Account, terminateAccountSession} from "@/lib/accounts";
 import {Tenant} from "@/lib/tenants";
+import {toast} from "sonner";
 
-const onLogout = (tenant: Tenant | null, id: string) => {
+const onLogout = (tenant: Tenant | null, id: string, name: string) => {
     if (tenant === null) {
         return
     }
 
     terminateAccountSession(tenant, id);
+    toast.success("Successfully logged out " + name);
 };
 
 interface ColumnProps {
@@ -111,7 +113,7 @@ export const getColumns = ({tenant}: ColumnProps): ColumnDef<Account>[] => {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem disabled={row.original.attributes.loggedIn === 0} onClick={() => {onLogout(tenant, row.getValue("id"))}}>
+                            <DropdownMenuItem disabled={row.original.attributes.loggedIn === 0} onClick={() => {onLogout(tenant, row.original.id, row.original.attributes.name)}}>
                                 Logout
                             </DropdownMenuItem>
                         </DropdownMenuContent>

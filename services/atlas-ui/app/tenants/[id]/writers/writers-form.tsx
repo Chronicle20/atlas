@@ -10,6 +10,7 @@ import {useTenant} from "@/context/tenant-context";
 import {X} from "lucide-react";
 import {OptionsField} from "@/components/unknown-options";
 import {updateTenant} from "@/lib/tenants";
+import {toast} from "sonner";
 
 export function WritersForm() {
     const {id} = useParams(); // Get tenants ID from URL
@@ -57,6 +58,7 @@ export function WritersForm() {
                 writers: data.writers,
             },
         });
+        toast.success("Successfully saved tenant.");
         form.reset({
             writers: tenant?.attributes.socket.writers.map(writer => ({
                 opCode: writer.opCode || "",

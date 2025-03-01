@@ -8,6 +8,7 @@ import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {X} from "lucide-react";
 import {fetchTemplates, Template, updateTemplate} from "@/lib/templates";
+import {toast} from "sonner";
 
 export function WorldsForm() {
     const {id} = useParams(); // Get templates ID from URL
@@ -70,8 +71,10 @@ export function WorldsForm() {
     });
 
     const onSubmit = async (data: FormValues) => {
-        await updateTemplate(template, {
+        updateTemplate(template, {
             worlds: data.worlds,
+        }).then(() => {
+            toast.success("Successfully saved template.");
         });
     }
 

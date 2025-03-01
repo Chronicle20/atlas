@@ -10,6 +10,7 @@ import {useTenant} from "@/context/tenant-context";
 import {X} from "lucide-react";
 import {updateTenant} from "@/lib/tenants";
 import {OptionsField} from "@/components/unknown-options";
+import {toast} from "sonner";
 
 export function HandlersForm() {
     const {id} = useParams(); // Get tenants ID from URL
@@ -54,11 +55,13 @@ export function HandlersForm() {
     }, [tenant, form.reset, form]);
 
     const onSubmit = async (data: FormValues) => {
-        await updateTenant(tenant, {
+        updateTenant(tenant, {
             socket: {
                 handlers: data.handlers,
                 writers: tenant?.attributes.socket.writers || [],
             },
+        }).then(() => {
+            toast.success("Successfully saved tenant.");
         });
     }
 

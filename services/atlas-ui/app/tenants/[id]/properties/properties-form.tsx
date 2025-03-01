@@ -1,16 +1,17 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import {Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import {Button} from "@/components/ui/button"
+import {Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form"
 import {zodResolver} from "@hookform/resolvers/zod";
 import {useForm} from "react-hook-form";
-import { Input } from "@/components/ui/input"
-import { z } from "zod"
+import {Input} from "@/components/ui/input"
+import {z} from "zod"
 import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
-import { Switch } from "@/components/ui/switch";
+import {Switch} from "@/components/ui/switch";
 import {useEffect} from "react";
 import {updateTenant} from "@/lib/tenants";
+import {toast} from "sonner";
 
 const propertiesFormSchema = z.object({
     region: z
@@ -29,7 +30,7 @@ const propertiesFormSchema = z.object({
 type PropertiesFormValues = z.infer<typeof propertiesFormSchema>
 
 export function PropertiesForm() {
-    const { id } = useParams(); // Get tenants ID from URL
+    const {id} = useParams(); // Get tenants ID from URL
     const {tenants} = useTenant()
     let tenant = tenants.find((t) => t.id === id);
 
@@ -62,6 +63,7 @@ export function PropertiesForm() {
             minorVersion: data.minor,
             usesPin: data.usesPin,
         });
+        toast.success("Successfully saved tenant.");
         form.reset({
             region: tenant?.attributes.region,
             major: tenant?.attributes.majorVersion,

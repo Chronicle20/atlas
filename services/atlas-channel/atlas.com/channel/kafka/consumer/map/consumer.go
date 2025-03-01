@@ -1,6 +1,7 @@
 package _map
 
 import (
+	"atlas-channel/chalkboard"
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/drop"
@@ -131,6 +132,13 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			}()
 
 			go func() {
+				err = chalkboard.ForEachInMap(l)(ctx)(m, spawnChalkboardsForSession(l)(ctx)(wp)(s))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to spawn drops for character [%d].", s.CharacterId())
+				}
+			}()
+
+			go func() {
 				imf := party.OtherMemberInMap(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId())
 				oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.ByMemberIdProvider(l)(ctx)(s.CharacterId())))
 				err = session.ForEachByCharacterId(s.Tenant())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(s.CharacterId(), cms[s.CharacterId()].Hp(), cms[s.CharacterId()].MaxHp())))
@@ -247,6 +255,18 @@ func spawnReactorsForSession(l logrus.FieldLogger) func(ctx context.Context) fun
 			return func(s session.Model) model.Operator[reactor.Model] {
 				return func(r reactor.Model) error {
 					return session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody(l, tenant.MustFromContext(ctx))(r))(s)
+				}
+			}
+		}
+	}
+}
+
+func spawnChalkboardsForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[chalkboard.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[chalkboard.Model] {
+		return func(wp writer.Producer) func(s session.Model) model.Operator[chalkboard.Model] {
+			return func(s session.Model) model.Operator[chalkboard.Model] {
+				return func(c chalkboard.Model) error {
+					return session.Announce(l)(ctx)(wp)(writer.ChalkboardUse)(writer.ChalkboardUseBody(c.Id(), c.Message()))(s)
 				}
 			}
 		}

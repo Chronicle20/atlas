@@ -188,15 +188,10 @@ func Update(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(account
 }
 
 func Login(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(sessionId uuid.UUID, accountId uint32, issuer string) error {
+	t := tenant.MustFromContext(ctx)
 	return func(sessionId uuid.UUID, accountId uint32, issuer string) error {
 		a, err := GetById(db)(ctx)(accountId)
 		if err != nil {
-			return err
-		}
-
-		t, err := tenant.FromContext(ctx)()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate tenant.")
 			return err
 		}
 
@@ -213,15 +208,10 @@ func Login(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(sessionI
 }
 
 func Logout(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(sessionId uuid.UUID, accountId uint32, issuer string) error {
+	t := tenant.MustFromContext(ctx)
 	return func(sessionId uuid.UUID, accountId uint32, issuer string) error {
 		a, err := GetById(db)(ctx)(accountId)
 		if err != nil {
-			return err
-		}
-
-		t, err := tenant.FromContext(ctx)()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate tenant.")
 			return err
 		}
 

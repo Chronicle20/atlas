@@ -248,6 +248,7 @@ func produceWriters() []string {
 		writer.CharacterEffectForeign,
 		writer.WorldMessage,
 		writer.MonsterHealth,
+		writer.PartyMemberHP,
 	}
 }
 

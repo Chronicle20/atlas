@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
+	"atlas-channel/party"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
@@ -59,19 +60,41 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, statChanged(l)(ctx)(wp)(e.Body.ExclRequestSent, e.Body.Updates))
+		c, err := character.GetById(l)(ctx)()(e.CharacterId)
+		if err != nil {
+			return
+		}
+
+		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, statChanged(l)(ctx)(wp)(c, e.Body.ExclRequestSent, e.Body.Updates))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to issue stat changed to character [%d].", e.CharacterId)
+		}
+
+		var hpChange bool
+		for _, u := range e.Body.Updates {
+			if u == writer.StatHp || u == writer.StatMaxHp {
+				hpChange = true
+			}
+		}
+		if hpChange {
+			p, err := party.GetByMemberId(l)(ctx)(e.CharacterId)
+			if err != nil {
+				return
+			}
+			idProvider := party.GetMemberIds(l)(ctx)(p.Id(), model.Filters[party.MemberModel](party.OtherMemberInMap(sc.WorldId(), sc.ChannelId(), _map2.Id(c.MapId()), c.Id())))
+			err = session.ForEachByCharacterId(sc.Tenant())(idProvider, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(c.Id(), c.Hp(), c.MaxHp())))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce character [%d] health to party members.", c.Id())
+			}
+		}
 	}
 }
 
-func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
-			return func(exclRequestSent bool, updates []string) model.Operator[session.Model] {
+func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []string) model.Operator[session.Model] {
+			return func(c character.Model, exclRequestSent bool, updates []string) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					c, err := character.GetById(l)(ctx)()(s.CharacterId())
-					if err != nil {
-						return err
-					}
 					var su = make([]model2.StatUpdate, 0)
 					for _, update := range updates {
 						value := int64(0)
@@ -123,7 +146,7 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 						su = append(su, model2.NewStatUpdate(update, value))
 					}
 
-					err = session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(su, exclRequestSent))(s)
+					err := session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(su, exclRequestSent))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
 						return err

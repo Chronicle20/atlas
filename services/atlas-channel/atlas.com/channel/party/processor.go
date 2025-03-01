@@ -118,3 +118,9 @@ func MemberInMap(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Fi
 		return m.online && m.worldId == worldId && m.channelId == channelId && m.mapId == mapId
 	}
 }
+
+func OtherMemberInMap(worldId world.Id, channelId channel.Id, mapId _map.Id, characterId uint32) model.Filter[MemberModel] {
+	return func(m MemberModel) bool {
+		return m.online && m.worldId == worldId && m.channelId == channelId && m.mapId == mapId && m.id != characterId
+	}
+}

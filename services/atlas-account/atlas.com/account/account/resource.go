@@ -21,7 +21,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r := router.PathPrefix("/accounts").Subrouter()
 			r.HandleFunc("/", registerInput("create_account", handleCreateAccount)).Methods(http.MethodPost)
 			r.HandleFunc("/", register("get_account_by_name", handleGetAccountByName)).Queries("name", "{name}").Methods(http.MethodGet)
-			r.HandleFunc("/", register("get_account_by_name", handleGetAccounts)).Methods(http.MethodGet)
+			r.HandleFunc("/", register("get_accounts", handleGetAccounts)).Methods(http.MethodGet)
 			r.HandleFunc("/{accountId}", register("get_account", handleGetAccountById)).Methods(http.MethodGet)
 			r.HandleFunc("/{accountId}", registerInput("update_account", handleUpdateAccount)).Methods(http.MethodPatch)
 		}
@@ -50,7 +50,10 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
 }
@@ -84,7 +87,10 @@ func handleGetAccountByName(d *rest.HandlerDependency, c *rest.HandlerContext) h
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
 }
@@ -104,7 +110,10 @@ func handleGetAccounts(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 	}
 }
 
@@ -117,7 +126,10 @@ func handleGetAccountById(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
 }

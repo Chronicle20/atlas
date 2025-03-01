@@ -55,6 +55,7 @@ func Extract(m RestModel) (Model, error) {
 		worldId:            world.Id(m.WorldId),
 		channelId:          channel.Id(m.ChannelId),
 		mapId:              _map.Id(m.MapId),
+		maxHp:              m.MaxHp,
 		hp:                 m.Hp,
 		mp:                 m.Mp,
 		monsterId:          m.MonsterId,

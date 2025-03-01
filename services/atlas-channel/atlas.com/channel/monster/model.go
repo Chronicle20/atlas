@@ -11,6 +11,7 @@ type Model struct {
 	channelId          channel.Id
 	mapId              _map.Id
 	uniqueId           uint32
+	maxHp              uint32
 	hp                 uint32
 	mp                 uint32
 	monsterId          uint32
@@ -68,4 +69,12 @@ func (m Model) MapId() _map.Id {
 
 func (m Model) MP() uint32 {
 	return m.mp
+}
+
+func (m Model) HP() uint32 {
+	return m.hp
+}
+
+func (m Model) MaxHP() uint32 {
+	return m.maxHp
 }

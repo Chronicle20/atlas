@@ -25,8 +25,20 @@ export async function fetchAccounts(tenant: Tenant): Promise<Account[]> {
         headers: tenantHeaders(tenant),
     });
     if (!response.ok) {
-        throw new Error("Failed to fetch templates.");
+        throw new Error("Failed to fetch accounts.");
     }
     const responseData = await response.json();
     return responseData.data;
+}
+
+export async function terminateAccountSession(tenant: Tenant, accountId: string): Promise<void> {
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    const response = await fetch(rootUrl + "/api/accounts/" + accountId + "/session", {
+        method: "DELETE",
+        headers: tenantHeaders(tenant),
+    });
+    if (!response.ok) {
+        throw new Error("Failed to delete account session.");
+    }
+    return Promise.resolve();
 }

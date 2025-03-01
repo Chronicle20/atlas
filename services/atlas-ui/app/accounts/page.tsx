@@ -2,9 +2,10 @@
 
 import {useTenant} from "@/context/tenant-context";
 import {DataTable} from "@/components/data-table";
-import {columns, hiddenColumns} from "@/app/accounts/columns";
+import {hiddenColumns} from "@/app/accounts/columns";
 import {useEffect, useState} from "react";
 import {Account, fetchAccounts} from "@/lib/accounts";
+import {getColumns} from "@/app/accounts/columns";
 
 
 export default function Page() {
@@ -28,6 +29,8 @@ export default function Page() {
 
     if (loading) return <div>Loading...</div>; // Show loading message while fetching data
     if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
+
+    const columns = getColumns({tenant: activeTenant});
 
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">

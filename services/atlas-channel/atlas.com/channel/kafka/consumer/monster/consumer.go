@@ -4,6 +4,7 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
+	"atlas-channel/party"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
@@ -38,6 +39,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				t, _ = topic.EnvProvider(l)(EnvEventTopicStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCreated(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDestroyed(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDamaged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventKilled(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventStartControl(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventStopControl(sc, wp))))
@@ -104,6 +106,35 @@ func destroyForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 			return func(uniqueId uint32) model.Operator[session.Model] {
 				return session.Announce(l)(ctx)(wp)(writer.DestroyMonster)(writer.DestroyMonsterBody(l, tenant.MustFromContext(ctx))(uniqueId, writer.DestroyMonsterTypeFadeOut))
 			}
+		}
+	}
+}
+
+func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventDamagedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventDamagedBody]) {
+		if e.Type != EventStatusDamaged {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+			return
+		}
+
+		m, err := monster.GetById(l)(ctx)(e.UniqueId)
+		if err != nil {
+			return
+		}
+
+		var idProvider = model.FixedProvider([]uint32{e.Body.ActorId})
+
+		p, err := party.GetByMemberId(l)(ctx)(e.Body.ActorId)
+		if err == nil {
+			idProvider = party.GetMemberIds(l)(ctx)(p.Id(), model.Filters[party.MemberModel](party.MemberInMap(sc.WorldId(), sc.ChannelId(), _map2.Id(e.MapId))))
+		}
+
+		err = session.ForEachByCharacterId(sc.Tenant())(idProvider, session.Announce(l)(ctx)(wp)(writer.MonsterHealth)(writer.MonsterHealthBody(m)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce monster [%d] health.", e.UniqueId)
 		}
 	}
 }

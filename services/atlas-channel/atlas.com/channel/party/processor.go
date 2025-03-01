@@ -3,6 +3,9 @@ package party
 import (
 	"atlas-channel/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -107,5 +110,11 @@ func GetMemberIds(l logrus.FieldLogger) func(ctx context.Context) func(partyId u
 			}
 			return model.FixedProvider(ids)
 		}
+	}
+}
+
+func MemberInMap(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Filter[MemberModel] {
+	return func(m MemberModel) bool {
+		return m.online && m.worldId == worldId && m.channelId == channelId && m.mapId == mapId
 	}
 }

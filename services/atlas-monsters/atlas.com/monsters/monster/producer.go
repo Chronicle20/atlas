@@ -36,6 +36,23 @@ func stopControlStatusEventProvider(worldId byte, channelId byte, mapId uint32, 
 	return statusEventProvider(worldId, channelId, mapId, uniqueId, monsterId, EventMonsterStatusStopControl, statusEventStopControlBody{ActorId: characterId})
 }
 
+func damagedStatusEventProvider(worldId byte, channelId byte, mapId uint32, uniqueId uint32, monsterId uint32, x int16, y int16, actorId uint32, damageSummary []entry) model.Provider[[]kafka.Message] {
+	var damageEntries []damageEntry
+	for _, e := range damageSummary {
+		damageEntries = append(damageEntries, damageEntry{
+			CharacterId: e.CharacterId,
+			Damage:      e.Damage,
+		})
+	}
+
+	return statusEventProvider(worldId, channelId, mapId, uniqueId, monsterId, EventMonsterStatusDamaged, statusEventDamagedBody{
+		X:             x,
+		Y:             y,
+		ActorId:       actorId,
+		DamageEntries: damageEntries,
+	})
+}
+
 func killedStatusEventProvider(worldId byte, channelId byte, mapId uint32, uniqueId uint32, monsterId uint32, x int16, y int16, killerId uint32, damageSummary []entry) model.Provider[[]kafka.Message] {
 	var damageEntries []damageEntry
 	for _, e := range damageSummary {

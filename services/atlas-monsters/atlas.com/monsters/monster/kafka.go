@@ -8,6 +8,7 @@ const (
 	EventMonsterStatusDestroyed    = "DESTROYED"
 	EventMonsterStatusStartControl = "START_CONTROL"
 	EventMonsterStatusStopControl  = "STOP_CONTROL"
+	EventMonsterStatusDamaged      = "DAMAGED"
 	EventMonsterStatusKilled       = "KILLED"
 
 	MovementTypeNormal        = "NORMAL"
@@ -42,6 +43,13 @@ type statusEventStartControlBody struct {
 
 type statusEventStopControlBody struct {
 	ActorId uint32 `json:"actorId"`
+}
+
+type statusEventDamagedBody struct {
+	X             int16         `json:"x"`
+	Y             int16         `json:"y"`
+	ActorId       uint32        `json:"actorId"`
+	DamageEntries []damageEntry `json:"damageEntries"`
 }
 
 type statusEventKilledBody struct {

@@ -324,7 +324,10 @@ func Damage(l logrus.FieldLogger) func(ctx context.Context) func(id uint32, char
 				}
 			}
 
-			// TODO broadcast HP bar update
+			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster.WorldId(), s.Monster.ChannelId(), s.Monster.MapId(), s.Monster.UniqueId(), s.Monster.MonsterId(), s.Monster.X(), s.Monster.Y(), s.CharacterId, s.Monster.DamageSummary()))
+			if err != nil {
+				l.WithError(err).Errorf("Monster [%d] damaged, but unable to display that for the characters in the map.", s.Monster.UniqueId())
+			}
 		}
 	}
 }

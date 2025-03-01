@@ -27,6 +27,38 @@ export const columns: ColumnDef<Account>[] = [
         header: "Name",
     },
     {
+        accessorKey: "attributes.loggedIn",
+        header: "State",
+        cell: ({getValue}) => {
+            const value = getValue();
+            const num = Number(value);
+            let name = String(value);
+            if (!isNaN(num)) {
+                if (num === 0) {
+                    name = "Logged Out";
+                } else if (num === 1) {
+                    name = "Logged In";
+                } else {
+                    name = "In Transition";
+                }
+            }
+            return (
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Badge variant="secondary">
+                                {name}
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>{String(value)}</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            );
+        }
+    },
+    {
         accessorKey: "attributes.gender",
         header: "Gender",
         cell: ({getValue}) => {

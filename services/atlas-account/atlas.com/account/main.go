@@ -4,7 +4,6 @@ import (
 	"atlas-account/account"
 	"atlas-account/database"
 	account2 "atlas-account/kafka/consumer/account"
-	session2 "atlas-account/kafka/consumer/session"
 	"atlas-account/logger"
 	"atlas-account/service"
 	"atlas-account/tasks"
@@ -52,9 +51,7 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	account2.InitConsumers(l)(cmf)(consumerGroupId)
-	session2.InitConsumers(l)(cmf)(consumerGroupId)
 	account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	session2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), account.InitResource(GetServer())(db))
 

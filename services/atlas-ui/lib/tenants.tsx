@@ -60,7 +60,21 @@ export async function fetchTenants(): Promise<Tenant[]> {
     }
 
     const responseData = await response.json();
-    return responseData.data;
+    return responseData.data.map((tenant: Tenant) => ({
+        ...tenant,
+        attributes: {
+            ...tenant.attributes,
+            socket: {
+                ...tenant.attributes.socket,
+                handlers: [...tenant.attributes.socket.handlers].sort(
+                    (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
+                ),
+                writers: [...tenant.attributes.socket.writers].sort(
+                    (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
+                ),
+            },
+        },
+    }));
 }
 
 export const updateTenant = async (tenant: Tenant | undefined, updatedAttributes: Partial<TenantAttributes>) => {

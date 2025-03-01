@@ -12,13 +12,6 @@ import (
 	"net/http"
 )
 
-const (
-	createAccount    = "create_account"
-	getAccountByName = "get_account_by_name"
-	getAccountById   = "get_account"
-	updateAccount    = "update_account"
-)
-
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
@@ -26,11 +19,11 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			registerInput := rest.RegisterInputHandler[RestModel](l)(db)(si)
 
 			r := router.PathPrefix("/accounts").Subrouter()
-			r.HandleFunc("/", registerInput(createAccount, handleCreateAccount)).Methods(http.MethodPost)
-			r.HandleFunc("/", register(getAccountByName, handleGetAccountByName)).Queries("name", "{name}").Methods(http.MethodGet)
-			r.HandleFunc("/", register(getAccountByName, handleGetAccounts)).Methods(http.MethodGet)
-			r.HandleFunc("/{accountId}", register(getAccountById, handleGetAccountById)).Methods(http.MethodGet)
-			r.HandleFunc("/{accountId}", registerInput(updateAccount, handleUpdateAccount)).Methods(http.MethodPatch)
+			r.HandleFunc("/", registerInput("create_account", handleCreateAccount)).Methods(http.MethodPost)
+			r.HandleFunc("/", register("get_account_by_name", handleGetAccountByName)).Queries("name", "{name}").Methods(http.MethodGet)
+			r.HandleFunc("/", register("get_accounts", handleGetAccounts)).Methods(http.MethodGet)
+			r.HandleFunc("/{accountId}", register("get_account", handleGetAccountById)).Methods(http.MethodGet)
+			r.HandleFunc("/{accountId}", registerInput("update_account", handleUpdateAccount)).Methods(http.MethodPatch)
 		}
 	}
 }
@@ -57,7 +50,10 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
 }
@@ -91,7 +87,10 @@ func handleGetAccountByName(d *rest.HandlerDependency, c *rest.HandlerContext) h
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
 }
@@ -111,7 +110,10 @@ func handleGetAccounts(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 	}
 }
 
@@ -124,7 +126,10 @@ func handleGetAccountById(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
 }

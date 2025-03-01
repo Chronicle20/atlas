@@ -37,12 +37,12 @@ MINOR_VERSION:1
 
 #### Get Account - By ID
 
-```/api/aos/accounts/{accountId}```
+```/accounts/{accountId}```
 
 #### Get Account - By Name
 
-```/api/aos/accounts?name={name}```
+```/accounts?name={name}```
 
 #### Login
 
-```/api/aos/logins/```
+```/logins/```

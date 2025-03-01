@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	Resource   = "parties"
-	ByMemberId = Resource + "?filter[members.id]=%d"
-	ById       = Resource + "/%d"
-	Members    = ById + "/members"
+	Resource        = "parties"
+	ByMemberId      = Resource + "?filter[members.id]=%d"
+	ById            = Resource + "/%d"
+	MembersResource = ById + "/members"
 )
 
 func getBaseRequest() string {
@@ -26,5 +26,5 @@ func requestByMemberId(id uint32) requests.Request[[]RestModel] {
 }
 
 func requestMembers(id uint32) requests.Request[[]MemberRestModel] {
-	return rest.MakeGetRequest[[]MemberRestModel](fmt.Sprintf(getBaseRequest()+Members, id))
+	return rest.MakeGetRequest[[]MemberRestModel](fmt.Sprintf(getBaseRequest()+MembersResource, id))
 }

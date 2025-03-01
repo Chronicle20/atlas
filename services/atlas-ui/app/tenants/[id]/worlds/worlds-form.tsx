@@ -9,6 +9,7 @@ import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import {X} from "lucide-react";
 import {updateTenant} from "@/lib/tenants";
+import {toast} from "sonner";
 
 export function WorldsForm() {
     const {id} = useParams(); // Get tenants ID from URL
@@ -56,8 +57,10 @@ export function WorldsForm() {
     }, [tenant, form.reset, form]);
 
     const onSubmit = async (data: FormValues) => {
-        await updateTenant(tenant, {
+        updateTenant(tenant, {
             worlds: data.worlds,
+        }).then(() => {
+            toast.success("Successfully saved tenant.");
         });
     }
 

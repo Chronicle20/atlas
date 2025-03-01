@@ -9,6 +9,7 @@ import {useParams} from "next/navigation";
 import {X} from "lucide-react";
 import {fetchTemplates, Template, updateTemplate} from "@/lib/templates";
 import {OptionsField} from "@/components/unknown-options";
+import {toast} from "sonner";
 
 export function WritersForm() {
     const {id} = useParams(); // Get templates ID from URL
@@ -61,11 +62,13 @@ export function WritersForm() {
     });
 
     const onSubmit = async (data: FormValues) => {
-        await updateTemplate(template, {
+        updateTemplate(template, {
             socket: {
                 handlers: template?.attributes.socket.handlers || [],
                 writers: data.writers,
             },
+        }).then(() => {
+            toast.success("Successfully saved template.");
         });
     }
 

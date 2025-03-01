@@ -9,6 +9,7 @@ import {useParams} from "next/navigation";
 import {X, Plus} from "lucide-react"
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {fetchTemplates, Template, updateTemplate} from "@/lib/templates";
+import {toast} from "sonner";
 
 interface FormValues {
     templates: {
@@ -96,10 +97,12 @@ export function TemplatesForm() {
     });
 
     const onSubmit = async (data: FormValues) => {
-        await updateTemplate(template, {
+        updateTemplate(template, {
             characters: {
                 templates: data.templates,
             },
+        }).then(() => {
+            toast.success("Successfully saved template.");
         });
     }
 

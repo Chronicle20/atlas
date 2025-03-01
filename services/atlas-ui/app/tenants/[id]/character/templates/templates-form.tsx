@@ -11,6 +11,7 @@ import {X, Plus} from "lucide-react"
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {CharacterTemplate} from "@/lib/templates";
 import {updateTenant} from "@/lib/tenants";
+import {toast} from "sonner";
 
 interface FormValues {
     templates: CharacterTemplate[];
@@ -69,10 +70,12 @@ export function TemplatesForm() {
     }, [tenant, form.reset, form]);
 
     const onSubmit = async (data: FormValues) => {
-        await updateTenant(tenant, {
+        updateTenant(tenant, {
             characters: {
                 templates: data.templates,
             },
+        }).then(() => {
+            toast.success("Successfully saved tenant.");
         });
     }
 

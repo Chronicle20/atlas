@@ -6,6 +6,7 @@ import {hiddenColumns} from "@/app/accounts/columns";
 import {useEffect, useState} from "react";
 import {Account, fetchAccounts} from "@/lib/accounts";
 import {getColumns} from "@/app/accounts/columns";
+import {Toaster} from "sonner";
 
 
 export default function Page() {
@@ -42,6 +43,7 @@ export default function Page() {
             <div className="mt-4">
                 <DataTable columns={columns} data={accounts} initialVisibilityState={hiddenColumns}/>
             </div>
+            <Toaster richColors/>
         </div>
     );
 }

@@ -24,6 +24,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("/", register("get_accounts", handleGetAccounts)).Methods(http.MethodGet)
 			r.HandleFunc("/{accountId}", register("get_account", handleGetAccountById)).Methods(http.MethodGet)
 			r.HandleFunc("/{accountId}", registerInput("update_account", handleUpdateAccount)).Methods(http.MethodPatch)
+			r.HandleFunc("/{accountId}/session", register("delete_account_session", handleDeleteAccountSession)).Methods(http.MethodDelete)
 		}
 	}
 }
@@ -60,7 +61,7 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 
 func handleCreateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicCreateAccount)(createCommandProvider(input.Name, input.Password))
+		_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCreateAccountCommandTopic)(createCommandProvider(input.Name, input.Password))
 		w.WriteHeader(http.StatusAccepted)
 	}
 }
@@ -130,6 +131,15 @@ func handleGetAccountById(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
+	})
+}
+
+func handleDeleteAccountSession(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvSessionCommandTopic)(logoutCommandProvider(accountId))
+			w.WriteHeader(http.StatusAccepted)
 		}
 	})
 }

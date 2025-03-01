@@ -1,6 +1,7 @@
 package account
 
 import (
+	"atlas-account/configuration"
 	"atlas-account/kafka/producer"
 	"context"
 	"errors"
@@ -12,6 +13,15 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"time"
+)
+
+const (
+	SystemError       = "SYSTEM_ERROR"
+	NotRegistered     = "NOT_REGISTERED"
+	DeletedOrBlocked  = "DELETED_OR_BLOCKED"
+	AlreadyLoggedIn   = "ALREADY_LOGGED_IN"
+	IncorrectPassword = "INCORRECT_PASSWORD"
+	TooManyAttempts   = "TOO_MANY_ATTEMPTS"
 )
 
 type IdOperator func(tenant.Model, uint32) error
@@ -135,7 +145,7 @@ func Create(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(name st
 			return Model{}, err
 		}
 		l.Debugf("Created account [%d] for [%s].", m.Id(), m.Name())
-		_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicAccountStatus)(createdEventProvider()(m.Id(), name))
+		_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicStatus)(createdEventProvider()(m.Id(), name))
 		return m, nil
 	}
 }
@@ -188,15 +198,10 @@ func Update(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(account
 }
 
 func Login(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(sessionId uuid.UUID, accountId uint32, issuer string) error {
+	t := tenant.MustFromContext(ctx)
 	return func(sessionId uuid.UUID, accountId uint32, issuer string) error {
 		a, err := GetById(db)(ctx)(accountId)
 		if err != nil {
-			return err
-		}
-
-		t, err := tenant.FromContext(ctx)()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate tenant.")
 			return err
 		}
 
@@ -205,7 +210,7 @@ func Login(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(sessionI
 		err = Get().Login(ak, sk)
 		if err == nil {
 			l.Debugf("State transition triggered a login.")
-			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicAccountStatus)(loggedInEventProvider()(a.Id(), a.Name()))
+			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicStatus)(loggedInEventProvider()(a.Id(), a.Name()))
 			return err
 		}
 		return err
@@ -213,24 +218,26 @@ func Login(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(sessionI
 }
 
 func Logout(l logrus.FieldLogger, db *gorm.DB, ctx context.Context) func(sessionId uuid.UUID, accountId uint32, issuer string) error {
+	t := tenant.MustFromContext(ctx)
 	return func(sessionId uuid.UUID, accountId uint32, issuer string) error {
 		a, err := GetById(db)(ctx)(accountId)
 		if err != nil {
 			return err
 		}
 
-		t, err := tenant.FromContext(ctx)()
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate tenant.")
-			return err
+		if sessionId == uuid.Nil {
+			ok := Get().Terminate(AccountKey{Tenant: t, AccountId: accountId})
+			if !ok {
+				return errors.New("error while logging out")
+			}
+		} else {
+			ok := Get().Logout(AccountKey{Tenant: t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
+			if !ok {
+				return errors.New("error while logging out")
+			}
 		}
-
-		ok := Get().Logout(AccountKey{Tenant: t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
-		if ok {
-			l.Debugf("Logging out [%d] for [%s] via session [%s].", accountId, issuer, sessionId.String())
-			return sendLogoutEvent(l)(ctx)("state transition")(a)
-		}
-		return errors.New("error while logging out")
+		l.Debugf("Logging out [%d] for [%s] via session [%s].", accountId, issuer, sessionId.String())
+		return sendLogoutEvent(l)(ctx)("state transition")(a)
 	}
 }
 
@@ -264,8 +271,128 @@ func sendLogoutEvent(l logrus.FieldLogger) func(ctx context.Context) func(trigge
 		return func(trigger string) model.Operator[Model] {
 			return func(a Model) error {
 				l.Debugf("Logging out [%d] [%s]. Triggered by [%s].", a.Id(), a.Name(), trigger)
-				return producer.ProviderImpl(l)(ctx)(EnvEventTopicAccountStatus)(loggedOutEventProvider()(a.Id(), a.Name()))
+				return producer.ProviderImpl(l)(ctx)(EnvEventTopicStatus)(loggedOutEventProvider()(a.Id(), a.Name()))
 			}
 		}
 	}
+}
+
+func AttemptLogin(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(sessionId uuid.UUID, name string, password string) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(sessionId uuid.UUID, name string, password string) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(sessionId uuid.UUID, name string, password string) error {
+			return func(sessionId uuid.UUID, name string, password string) error {
+				l.Debugf("Attemting login for [%s].", name)
+				if checkLoginAttempts(sessionId) > 4 {
+					l.Warnf("Session [%s] has attempted to log into (or create) an account too many times.", sessionId.String())
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(errorStatusProvider(sessionId, 0, TooManyAttempts))
+					return nil
+				}
+
+				c, err := configuration.Get()
+				if err != nil {
+					l.WithError(err).Errorf("Error reading needed configuration.")
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(errorStatusProvider(sessionId, 0, SystemError))
+					return err
+				}
+
+				a, err := GetOrCreate(l, db, ctx)(name, password, c.AutomaticRegister)
+				if err != nil && !c.AutomaticRegister {
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(errorStatusProvider(sessionId, 0, NotRegistered))
+					return nil
+				}
+				if err != nil {
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(errorStatusProvider(sessionId, 0, SystemError))
+					return err
+				}
+
+				if a.Banned() {
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(errorStatusProvider(sessionId, a.Id(), DeletedOrBlocked))
+					return nil
+				}
+
+				// TODO implement ip, mac, and temporary banning practices
+
+				if a.State() != StateNotLoggedIn {
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(errorStatusProvider(sessionId, a.Id(), AlreadyLoggedIn))
+					return nil
+				} else if a.Password()[0] == uint8('$') && a.Password()[1] == uint8('2') && bcrypt.CompareHashAndPassword([]byte(a.Password()), []byte(password)) == nil {
+					// TODO implement tos tracking
+				} else {
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(errorStatusProvider(sessionId, a.Id(), IncorrectPassword))
+					return nil
+				}
+
+				err = Login(l, db, ctx)(sessionId, a.Id(), ServiceLogin)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to record login.")
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(errorStatusProvider(sessionId, a.Id(), SystemError))
+				}
+
+				l.Debugf("Login successful for [%s].", name)
+
+				if !a.TOS() && t.Region() != "JMS" {
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(requestLicenseAgreementStatusProvider(sessionId, a.Id()))
+					return nil
+				}
+				return producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(createdStatusProvider(sessionId, a.Id()))
+			}
+		}
+	}
+}
+
+func ProgressState(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(sessionId uuid.UUID, issuer string, accountId uint32, state State, params interface{}) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(sessionId uuid.UUID, issuer string, accountId uint32, state State, params interface{}) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(sessionId uuid.UUID, issuer string, accountId uint32, state State, params interface{}) error {
+			return func(sessionId uuid.UUID, issuer string, accountId uint32, state State, params interface{}) error {
+				a, err := GetById(db)(ctx)(accountId)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to locate account a session is being created for.")
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(errorStatusProvider(sessionId, a.Id(), NotRegistered))
+					return err
+				}
+
+				l.Debugf("Received request to progress state for account [%d] to state [%d] from state [%d].", accountId, state, a.State())
+				for k, v := range Get().GetStates(AccountKey{Tenant: t, AccountId: accountId}) {
+					l.Debugf("Has state [%d] for [%s] via session [%s].", v.State, k.Service, k.SessionId.String())
+				}
+				if a.State() == StateNotLoggedIn {
+					_ = producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(errorStatusProvider(sessionId, a.Id(), SystemError))
+					return errors.New("not logged in")
+				}
+				if state == StateNotLoggedIn {
+					err = Logout(l, db, ctx)(sessionId, accountId, issuer)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to logout account.")
+						_ = producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(errorStatusProvider(sessionId, a.Id(), SystemError))
+						return err
+					}
+					return producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(stateChangedStatusProvider(sessionId, a.Id(), StateNotLoggedIn, params))
+				}
+				if state == StateLoggedIn {
+					err = Login(l, db, ctx)(sessionId, accountId, issuer)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to login account.")
+						_ = producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(errorStatusProvider(sessionId, a.Id(), SystemError))
+						return err
+					}
+					return producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(stateChangedStatusProvider(sessionId, a.Id(), StateLoggedIn, params))
+				}
+				if state == StateTransition {
+					err = Get().Transition(AccountKey{Tenant: t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
+					if err == nil {
+						l.Debugf("State transition triggered a transition.")
+					}
+					return producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(stateChangedStatusProvider(sessionId, a.Id(), StateTransition, params))
+				}
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventSessionStatusTopic)(errorStatusProvider(sessionId, 0, SystemError))
+				return errors.New("invalid state")
+			}
+		}
+	}
+}
+
+func checkLoginAttempts(sessionId uuid.UUID) byte {
+	return 0
 }

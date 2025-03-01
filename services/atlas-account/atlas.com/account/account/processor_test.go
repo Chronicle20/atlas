@@ -2,7 +2,7 @@ package account
 
 import (
 	"context"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/crypto/bcrypt"
 	"testing"

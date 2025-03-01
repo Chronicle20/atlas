@@ -129,7 +129,9 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 
 		p, err := party.GetByMemberId(l)(ctx)(e.Body.ActorId)
 		if err == nil {
-			idProvider = party.GetMemberIds(l)(ctx)(p.Id(), model.Filters[party.MemberModel](party.MemberInMap(sc.WorldId(), sc.ChannelId(), _map2.Id(e.MapId))))
+			mimf := party.MemberInMap(sc.WorldId(), sc.ChannelId(), _map2.Id(e.MapId))
+			mp := party.FilteredMemberProvider(mimf)(model.FixedProvider(p))
+			idProvider = party.MemberToMemberIdMapper(mp)
 		}
 
 		err = session.ForEachByCharacterId(sc.Tenant())(idProvider, session.Announce(l)(ctx)(wp)(writer.MonsterHealth)(writer.MonsterHealthBody(m)))

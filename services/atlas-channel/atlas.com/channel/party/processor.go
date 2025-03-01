@@ -75,42 +75,28 @@ func byIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(partyId u
 func GetByMemberId(l logrus.FieldLogger) func(ctx context.Context) func(memberId uint32) (Model, error) {
 	return func(ctx context.Context) func(memberId uint32) (Model, error) {
 		return func(memberId uint32) (Model, error) {
-			return model.First[Model](byMemberIdProvider(l)(ctx)(memberId), model.Filters[Model]())
+			return ByMemberIdProvider(l)(ctx)(memberId)()
 		}
 	}
 }
 
-func byMemberIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(memberId uint32) model.Provider[[]Model] {
-	return func(ctx context.Context) func(memberId uint32) model.Provider[[]Model] {
-		return func(memberId uint32) model.Provider[[]Model] {
-			return requests.SliceProvider[RestModel, Model](l, ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
+func ByMemberIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(memberId uint32) model.Provider[Model] {
+	return func(ctx context.Context) func(memberId uint32) model.Provider[Model] {
+		return func(memberId uint32) model.Provider[Model] {
+			rp := requests.SliceProvider[RestModel, Model](l, ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
+			return model.FirstProvider(rp, model.Filters[Model]())
 		}
 	}
 }
 
-func GetMemberIds(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, filters []model.Filter[MemberModel]) model.Provider[[]uint32] {
-	return func(ctx context.Context) func(partyId uint32, filters []model.Filter[MemberModel]) model.Provider[[]uint32] {
-		return func(partyId uint32, filters []model.Filter[MemberModel]) model.Provider[[]uint32] {
-			g, err := GetById(l)(ctx)(partyId)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve party [%d].", partyId)
-				return model.ErrorProvider[[]uint32](err)
-			}
-			ids := make([]uint32, 0)
-			for _, m := range g.Members() {
-				ok := true
-				for _, f := range filters {
-					if !f(m) {
-						ok = false
-					}
-				}
-				if ok {
-					ids = append(ids, m.Id())
-				}
-			}
-			return model.FixedProvider(ids)
-		}
+func FilteredMemberProvider(filters ...model.Filter[MemberModel]) func(p model.Provider[Model]) model.Provider[[]MemberModel] {
+	return func(p model.Provider[Model]) model.Provider[[]MemberModel] {
+		return model.FilteredProvider(model.Map(model.Always(Model.Members))(p), filters)
 	}
+}
+
+func MemberToMemberIdMapper(mp model.Provider[[]MemberModel]) model.Provider[[]uint32] {
+	return model.SliceMap(model.Always(MemberModel.Id))(mp)(model.ParallelMap())
 }
 
 func MemberInMap(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Filter[MemberModel] {

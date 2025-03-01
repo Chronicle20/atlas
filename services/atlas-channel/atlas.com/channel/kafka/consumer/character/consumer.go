@@ -77,12 +77,9 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			}
 		}
 		if hpChange {
-			p, err := party.GetByMemberId(l)(ctx)(e.CharacterId)
-			if err != nil {
-				return
-			}
-			idProvider := party.GetMemberIds(l)(ctx)(p.Id(), model.Filters[party.MemberModel](party.OtherMemberInMap(sc.WorldId(), sc.ChannelId(), _map2.Id(c.MapId()), c.Id())))
-			err = session.ForEachByCharacterId(sc.Tenant())(idProvider, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(c.Id(), c.Hp(), c.MaxHp())))
+			imf := party.OtherMemberInMap(sc.WorldId(), sc.ChannelId(), _map2.Id(c.MapId()), c.Id())
+			oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.ByMemberIdProvider(l)(ctx)(e.CharacterId)))
+			err = session.ForEachByCharacterId(sc.Tenant())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(c.Id(), c.Hp(), c.MaxHp())))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] health to party members.", c.Id())
 			}

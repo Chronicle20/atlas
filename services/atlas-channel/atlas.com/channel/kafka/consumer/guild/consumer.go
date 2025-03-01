@@ -457,7 +457,9 @@ func handleRequestAgreement(sc server.Model, wp writer.Producer) message.Handler
 			}
 			return
 		}
-		err = session.ForEachByCharacterId(sc.Tenant())(party.GetMemberIds(l)(ctx)(p.Id(), model.Filters[party.MemberModel]()), requestGuildNameAgreement(l)(ctx)(wp)(p.Id(), p.LeaderName(), e.Body.ProposedName))
+		imf := party.OtherMemberInMap(sc.WorldId(), sc.ChannelId(), p.Leader().MapId(), p.LeaderId())
+		mip := party.FilteredMemberProvider(imf)(model.FixedProvider(p))
+		err = session.ForEachByCharacterId(sc.Tenant())(party.MemberToMemberIdMapper(mip), requestGuildNameAgreement(l)(ctx)(wp)(p.Id(), p.LeaderName(), e.Body.ProposedName))
 		if err != nil {
 			l.Debugf("Unable to announce to party members that the guild [%s] is being created.", e.Body.ProposedName)
 		}

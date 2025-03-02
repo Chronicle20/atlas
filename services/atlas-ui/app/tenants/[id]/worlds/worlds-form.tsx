@@ -14,7 +14,7 @@ import {toast} from "sonner";
 export function WorldsForm() {
     const {id} = useParams(); // Get tenants ID from URL
     const {tenants} = useTenant()
-    const tenant = tenants.find((t) => t.id === id);
+    let tenant = tenants.find((t) => t.id === id);
 
     interface FormValues {
         worlds: {
@@ -57,10 +57,12 @@ export function WorldsForm() {
     }, [tenant, form.reset, form]);
 
     const onSubmit = async (data: FormValues) => {
-        updateTenant(tenant, {
+        tenant = await updateTenant(tenant, {
             worlds: data.worlds,
-        }).then(() => {
-            toast.success("Successfully saved tenant.");
+        });
+        toast.success("Successfully saved tenant.");
+        form.reset({
+            worlds: tenant?.attributes.worlds,
         });
     }
 

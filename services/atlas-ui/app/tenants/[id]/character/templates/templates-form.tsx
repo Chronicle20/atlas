@@ -1,13 +1,13 @@
 "use client"
 
 import {useEffect, useState} from "react";
-import {useForm, useFieldArray, UseFormReturn, useWatch, Path, FieldValues, PathValue} from "react-hook-form";
-import {Form, FormField, FormItem, FormLabel, FormControl, FormMessage} from "@/components/ui/form";
+import {FieldValues, Path, PathValue, useFieldArray, useForm, UseFormReturn, useWatch} from "react-hook-form";
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
-import {X, Plus} from "lucide-react"
+import {Plus, X} from "lucide-react"
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {CharacterTemplate} from "@/lib/templates";
 import {updateTenant} from "@/lib/tenants";
@@ -20,7 +20,7 @@ interface FormValues {
 export function TemplatesForm() {
     const {id} = useParams(); // Get tenants ID from URL
     const {tenants} = useTenant()
-    const tenant = tenants.find((t) => t.id === id);
+    let tenant = tenants.find((t) => t.id === id);
 
     const form = useForm<FormValues>({
         defaultValues: {
@@ -70,12 +70,14 @@ export function TemplatesForm() {
     }, [tenant, form.reset, form]);
 
     const onSubmit = async (data: FormValues) => {
-        updateTenant(tenant, {
+        tenant = await updateTenant(tenant, {
             characters: {
                 templates: data.templates,
             },
-        }).then(() => {
-            toast.success("Successfully saved tenant.");
+        });
+        toast.success("Successfully saved tenant.");
+        form.reset({
+            templates: tenant?.attributes.characters.templates,
         });
     }
 

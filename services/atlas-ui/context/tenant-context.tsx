@@ -30,12 +30,13 @@ export function TenantProvider({children}: { children: ReactNode }) {
 
     // Fetch tenants data (you can replace this with your actual data fetching logic)
     useEffect(() => {
-        fetchTenants().then((data) => {
-            setTenants(data);
-            if (!activeTenant) {
-                setActiveTenant(data[0] || null); // Set first tenant as default
-            }
-        })
+        fetchTenants()
+            .then((data) => {
+                setTenants(data);
+                if (!activeTenant) {
+                    setActiveTenant(data[0] || null); // Set first tenant as default
+                }
+            })
             .catch((err) => setError(err.message))
             .finally(() => setLoading(false));
     }, []);

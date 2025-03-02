@@ -2,9 +2,9 @@ package writer
 
 import "github.com/Chronicle20/atlas-socket/response"
 
-const CharacterMultiChat = "CharacterMultiChat"
+const CharacterChatMulti = "CharacterChatMulti"
 
-func CharacterMultiChatBody(from string, message string, mode byte) BodyProducer {
+func CharacterChatMultiBody(from string, message string, mode byte) BodyProducer {
 	return func(w *response.Writer, options map[string]interface{}) []byte {
 		w.WriteByte(mode)
 		w.WriteAsciiString(from)

@@ -34,3 +34,17 @@ func multiChatCommandProvider(m _map.Model, characterId uint32, message string, 
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func whisperChatCommandProvider(m _map.Model, characterId uint32, message string, recipientName string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := chatCommand[whisperChatBody]{
+		WorldId:     byte(m.WorldId()),
+		ChannelId:   byte(m.ChannelId()),
+		MapId:       uint32(m.MapId()),
+		CharacterId: characterId,
+		Message:     message,
+		Type:        ChatTypeWhisper,
+		Body:        whisperChatBody{RecipientName: recipientName},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

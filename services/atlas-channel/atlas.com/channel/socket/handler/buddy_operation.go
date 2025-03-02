@@ -41,13 +41,13 @@ func BuddyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			}
 
 			tc, err := character.GetByName(l, ctx)(name)
-			if err != nil || len(tc) < 1 || s.WorldId() != tc[0].WorldId() {
+			if err != nil || s.WorldId() != tc.WorldId() {
 				l.WithError(err).Errorf("Unable to locate buddy character [%d] is attempting to add.", s.CharacterId())
 				// TODO send error to requester
 				return
 			}
 
-			err = buddylist.RequestAdd(l)(ctx)(s.CharacterId(), s.WorldId(), tc[0].Id(), group)
+			err = buddylist.RequestAdd(l)(ctx)(s.CharacterId(), s.WorldId(), tc.Id(), group)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to request buddy addition for character [%d].", s.CharacterId())
 			}

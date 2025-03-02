@@ -131,12 +131,12 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			target := r.ReadAsciiString()
 
 			c, err := character.GetByName(l, ctx)(target)
-			if err != nil || len(c) == 0 {
+			if err != nil {
 				l.Errorf("Unable to locate character [%s] to invite.", target)
 				// TODO announce error
 				return
 			}
-			_ = guild.RequestInvite(l)(ctx)(g.Id(), s.CharacterId(), c[0].Id())
+			_ = guild.RequestInvite(l)(ctx)(g.Id(), s.CharacterId(), c.Id())
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationJoin) {

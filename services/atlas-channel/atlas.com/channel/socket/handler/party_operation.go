@@ -80,7 +80,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 		if isPartyOperation(l)(readerOptions, op, PartyOperationInvite) {
 			name := r.ReadAsciiString()
 			cs, err := character.GetByName(l, ctx)(name)
-			if err != nil || len(cs) < 1 {
+			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to party.", name)
 				err := session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody(l)("UNABLE_TO_FIND_THE_CHARACTER", name))(s)
 				if err != nil {
@@ -88,18 +88,18 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 				}
 			}
 
-			os, err := session.GetByCharacterId(s.Tenant())(cs[0].Id())
+			os, err := session.GetByCharacterId(s.Tenant())(cs.Id())
 			if err != nil || s.WorldId() != os.WorldId() || s.ChannelId() != os.ChannelId() {
-				l.WithError(err).Errorf("Character [%d] not in channel. Cannot invite to party.", cs[0].Id())
+				l.WithError(err).Errorf("Character [%d] not in channel. Cannot invite to party.", cs.Id())
 				err = session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody(l)("UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL", name))(s)
 				if err != nil {
 				}
 				return
 			}
 
-			err = party.RequestInvite(l)(ctx)(s.CharacterId(), cs[0].Id())
+			err = party.RequestInvite(l)(ctx)(s.CharacterId(), cs.Id())
 			if err != nil {
-				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to join party.", s.CharacterId(), cs[0].Id())
+				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to join party.", s.CharacterId(), cs.Id())
 			}
 			return
 		}

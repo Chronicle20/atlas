@@ -60,21 +60,31 @@ export async function fetchTenants(): Promise<Tenant[]> {
     }
 
     const responseData = await response.json();
-    return responseData.data.map((tenant: Tenant) => ({
-        ...tenant,
-        attributes: {
-            ...tenant.attributes,
-            socket: {
-                ...tenant.attributes.socket,
-                handlers: [...tenant.attributes.socket.handlers].sort(
-                    (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
-                ),
-                writers: [...tenant.attributes.socket.writers].sort(
-                    (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
-                ),
+    return responseData.data
+        .map((tenant: Tenant) => ({
+            ...tenant,
+            attributes: {
+                ...tenant.attributes,
+                socket: {
+                    ...tenant.attributes.socket,
+                    handlers: [...tenant.attributes.socket.handlers].sort(
+                        (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
+                    ),
+                    writers: [...tenant.attributes.socket.writers].sort(
+                        (a, b) => parseInt(a.opCode, 16) - parseInt(b.opCode, 16)
+                    ),
+                },
             },
-        },
-    }));
+        }))
+        .sort((a : Tenant, b : Tenant) => {
+            if (a.attributes.region !== b.attributes.region) {
+                return a.attributes.region.localeCompare(b.attributes.region);
+            }
+            if (a.attributes.majorVersion !== b.attributes.majorVersion) {
+                return a.attributes.majorVersion - b.attributes.majorVersion;
+            }
+            return a.attributes.minorVersion - b.attributes.minorVersion;
+        });
 }
 
 export const updateTenant = async (tenant: Tenant | undefined, updatedAttributes: Partial<TenantAttributes>) => {

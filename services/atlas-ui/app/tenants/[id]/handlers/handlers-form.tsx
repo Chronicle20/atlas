@@ -15,7 +15,7 @@ import {toast} from "sonner";
 export function HandlersForm() {
     const {id} = useParams(); // Get tenants ID from URL
     const {tenants} = useTenant()
-    const tenant = tenants.find((t) => t.id === id);
+    let tenant = tenants.find((t) => t.id === id);
 
     interface FormValues {
         handlers: {
@@ -55,12 +55,19 @@ export function HandlersForm() {
     }, [tenant, form.reset, form]);
 
     const onSubmit = async (data: FormValues) => {
-        updateTenant(tenant, {
+        tenant = await updateTenant(tenant, {
             socket: {
                 handlers: data.handlers,
                 writers: tenant?.attributes.socket.writers || [],
             },
-        }).then(() => {
+        });
+        toast.success("Successfully saved tenant.");
+        form.reset({
+            handlers: tenant?.attributes.socket.handlers,
+        });
+
+
+        updateTenant(tenant, {}).then(() => {
             toast.success("Successfully saved tenant.");
         });
     }

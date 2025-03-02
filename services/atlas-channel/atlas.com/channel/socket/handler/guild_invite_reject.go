@@ -21,12 +21,12 @@ func GuildInviteRejectHandleFunc(l logrus.FieldLogger, ctx context.Context, _ wr
 		l.Debugf("Rejecting guild invite from [%s]. unk [%d].", from, unk)
 
 		cs, err := character.GetByName(l, ctx)(from)
-		if err != nil || len(cs) < 1 {
+		if err != nil {
 			l.WithError(err).Errorf("Unable to locate character by name [%s]. Invite will be stuck", from)
 			return
 		}
 
-		err = invite.Reject(l)(ctx)(s.CharacterId(), s.WorldId(), invite.InviteTypeGuild, cs[0].Id())
+		err = invite.Reject(l)(ctx)(s.CharacterId(), s.WorldId(), invite.InviteTypeGuild, cs.Id())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue invite rejection command for character [%d].", s.CharacterId())
 		}

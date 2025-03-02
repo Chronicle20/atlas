@@ -2,6 +2,7 @@ package message
 
 import (
 	consumer2 "atlas-messages/kafka/consumer"
+	message2 "atlas-messages/message"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -25,6 +26,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		t, _ = topic.EnvProvider(l)(EnvCommandTopicChat)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleGeneralChat)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMultiChat)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleWhisperChat)))
 	}
 }
 
@@ -32,12 +34,19 @@ func handleGeneralChat(l logrus.FieldLogger, ctx context.Context, event chatComm
 	if event.Type != ChatTypeGeneral {
 		return
 	}
-	_ = HandleGeneral(l)(ctx)(event.WorldId, event.ChannelId, event.MapId, event.CharacterId, event.Message, event.Body.BalloonOnly)
+	_ = message2.HandleGeneral(l)(ctx)(event.WorldId, event.ChannelId, event.MapId, event.CharacterId, event.Message, event.Body.BalloonOnly)
 }
 
 func handleMultiChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[multiChatBody]) {
-	if e.Type == ChatTypeGeneral {
+	if e.Type == ChatTypeGeneral || e.Type == ChatTypeWhisper {
 		return
 	}
-	_ = HandleMulti(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.CharacterId, e.Message, e.Type, e.Body.Recipients)
+	_ = message2.HandleMulti(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.CharacterId, e.Message, e.Type, e.Body.Recipients)
+}
+
+func handleWhisperChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[whisperChatBody]) {
+	if e.Type != ChatTypeWhisper {
+		return
+	}
+	_ = message2.HandleWhisper(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.CharacterId, e.Message, e.Body.RecipientName)
 }

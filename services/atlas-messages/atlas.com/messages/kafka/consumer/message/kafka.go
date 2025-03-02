@@ -1,7 +1,7 @@
 package message
 
 const (
-	EnvEventTopicChat = "EVENT_TOPIC_CHARACTER_CHAT"
+	EnvCommandTopicChat = "COMMAND_TOPIC_CHARACTER_CHAT"
 
 	ChatTypeGeneral  = "GENERAL"
 	ChatTypeBuddy    = "BUDDY"
@@ -11,7 +11,7 @@ const (
 	ChatTypeWhisper  = "WHISPER"
 )
 
-type chatEvent[E any] struct {
+type chatCommand[E any] struct {
 	WorldId     byte   `json:"worldId"`
 	ChannelId   byte   `json:"channelId"`
 	MapId       uint32 `json:"mapId"`
@@ -30,5 +30,5 @@ type multiChatBody struct {
 }
 
 type whisperChatBody struct {
-	Recipient uint32 `json:"recipient"`
+	RecipientName string `json:"recipientName"`
 }

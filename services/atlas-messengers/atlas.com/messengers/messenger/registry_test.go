@@ -21,7 +21,7 @@ func TestSunnyDayCreate(t *testing.T) {
 		t.Fatal("Failed to generate correct initial members.")
 	}
 
-	if p.members[0] != characterId {
+	if p.members[0].Id() != characterId {
 		t.Fatal("Failed to generate correct initial members.")
 	}
 }
@@ -42,7 +42,7 @@ func TestMultiMessengerCreate(t *testing.T) {
 		t.Fatal("Failed to generate correct initial members.")
 	}
 
-	if p.members[0] != character1Id {
+	if p.members[0].Id() != character1Id {
 		t.Fatal("Failed to generate correct initial members.")
 	}
 
@@ -55,7 +55,7 @@ func TestMultiMessengerCreate(t *testing.T) {
 		t.Fatal("Failed to generate correct initial members.")
 	}
 
-	if p.members[0] != character2Id {
+	if p.members[0].Id() != character2Id {
 		t.Fatal("Failed to generate correct initial members.")
 	}
 }
@@ -77,7 +77,7 @@ func TestMultiTenantCreate(t *testing.T) {
 		t.Fatal("Failed to generate correct initial members.")
 	}
 
-	if p.members[0] != character1Id {
+	if p.members[0].Id() != character1Id {
 		t.Fatal("Failed to generate correct initial members.")
 	}
 
@@ -90,7 +90,7 @@ func TestMultiTenantCreate(t *testing.T) {
 		t.Fatal("Failed to generate correct initial members.")
 	}
 
-	if p.members[0] != character2Id {
+	if p.members[0].Id() != character2Id {
 		t.Fatal("Failed to generate correct initial members.")
 	}
 }

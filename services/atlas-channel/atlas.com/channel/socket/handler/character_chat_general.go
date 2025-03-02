@@ -10,9 +10,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterGeneralChatHandle = "CharacterGeneralChatHandle"
+const CharacterChatGeneralHandle = "CharacterChatGeneralHandle"
 
-func CharacterGeneralChatHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func CharacterChatGeneralHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		var updateTime = uint32(0)

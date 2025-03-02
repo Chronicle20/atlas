@@ -10,9 +10,9 @@ import (
 	"strconv"
 )
 
-const CharacterMultiChatHandle = "CharacterMultiChatHandle"
+const CharacterChatMultiHandle = "CharacterChatMultiHandle"
 
-func CharacterMultiChatHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func CharacterChatMultiHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		chatType := r.ReadByte()
 		recipientCount := r.ReadByte()

@@ -267,12 +267,12 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.ChannelChangeHandle] = handler.ChannelChangeHandleFunc
 	handlerMap[handler.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
 	handlerMap[handler.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
-	handlerMap[handler.CharacterGeneralChatHandle] = handler.CharacterGeneralChatHandleFunc
+	handlerMap[handler.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
 	handlerMap[handler.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[handler.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
 	handlerMap[handler.PartyOperationHandle] = handler.PartyOperationHandleFunc
 	handlerMap[handler.PartyInviteRejectHandle] = handler.PartyInviteRejectHandleFunc
-	handlerMap[handler.CharacterMultiChatHandle] = handler.CharacterMultiChatHandleFunc
+	handlerMap[handler.CharacterChatMultiHandle] = handler.CharacterChatMultiHandleFunc
 	handlerMap[handler.CharacterKeyMapChangeHandle] = handler.CharacterKeyMapChangeHandleFunc
 	handlerMap[handler.BuddyOperationHandle] = handler.BuddyOperationHandleFunc
 	handlerMap[handler.CharacterExpressionHandle] = handler.CharacterExpressionHandleFunc
@@ -299,6 +299,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterBuffCancelHandle] = handler.CharacterBuffCancelHandleFunc
 	handlerMap[handler.CharacterCashItemUseHandle] = handler.CharacterCashItemUseHandleFunc
 	handlerMap[handler.ChalkboardCloseHandle] = handler.ChalkboardCloseHandleHandleFunc
+	handlerMap[handler.CharacterChatWhisperHandle] = handler.CharacterChatWhisperHandleFunc
 	return handlerMap
 }
 

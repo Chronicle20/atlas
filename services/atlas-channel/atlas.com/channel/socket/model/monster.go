@@ -167,7 +167,7 @@ type Monster struct {
 	phase                uint32
 }
 
-func NewMonster(x int16, y int16, stance byte, fh int16, team int8) Monster {
+func NewMonster(x int16, y int16, stance byte, fh int16, appearType MonsterAppearType, team int8) Monster {
 	return Monster{
 		monsterTemporaryStat: MonsterTemporaryStat{},
 		x:                    x,
@@ -175,7 +175,7 @@ func NewMonster(x int16, y int16, stance byte, fh int16, team int8) Monster {
 		moveAction:           stance,
 		foothold:             0,
 		homeFoothold:         fh,
-		appearType:           MonsterAppearTypeNormal,
+		appearType:           appearType,
 		appearTypeOption:     0,
 		team:                 team,
 		effectItemId:         0,

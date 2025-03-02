@@ -77,7 +77,7 @@ func spawnForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 	return func(ctx context.Context) func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
 			return func(m monster.Model) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.SpawnMonster)(writer.SpawnMonsterBody(l, tenant.MustFromContext(ctx))(m, false))
+				return session.Announce(l)(ctx)(wp)(writer.SpawnMonster)(writer.SpawnMonsterBody(l, tenant.MustFromContext(ctx))(m, true))
 			}
 		}
 	}

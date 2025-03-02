@@ -20,6 +20,7 @@ const (
 	WhisperModeFind            = WhisperMode(5)
 	WhisperModeChat            = WhisperMode(6)
 	WhisperModeBuddyWindowFind = WhisperMode(68)
+	WhisperModeMacroNotice     = WhisperMode(134)
 )
 
 func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {

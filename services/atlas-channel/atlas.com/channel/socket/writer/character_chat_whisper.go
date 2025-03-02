@@ -16,6 +16,9 @@ const (
 	WhisperModeReceive               = WhisperMode(0x12)
 	WhisperModeFindResult            = WhisperMode(0x09)
 	WhisperModeBuddyWindowFindResult = WhisperMode(0x48)
+	WhisperModeUnk1                  = WhisperMode(0x8A)
+	WhisperModeError                 = WhisperMode(0x22)
+	WhisperModeWeather               = WhisperMode(0x92)
 
 	WhisperFindResultModeError            = WhisperFindResultMode(0)
 	WhisperFindResultModeMap              = WhisperFindResultMode(1)
@@ -92,6 +95,25 @@ func CharacterChatWhisperReceiptBody(from character.Model, channelId byte, messa
 		w.WriteAsciiString(from.Name())
 		w.WriteByte(channelId)
 		w.WriteBool(from.Gm())
+		w.WriteAsciiString(message)
+		return w.Bytes()
+	}
+}
+
+func CharacterChatWhisperErrorBody(targetName string, whispersDisabled bool) BodyProducer {
+	return func(w *response.Writer, options map[string]interface{}) []byte {
+		w.WriteByte(byte(WhisperModeError))
+		w.WriteAsciiString(targetName)
+		w.WriteBool(!whispersDisabled)
+		return w.Bytes()
+	}
+}
+
+func CharacterChatWhisperWeatherBody(fromName string, message string) BodyProducer {
+	return func(w *response.Writer, options map[string]interface{}) []byte {
+		w.WriteByte(byte(WhisperModeWeather))
+		w.WriteAsciiString(fromName)
+		w.WriteBool(true)
 		w.WriteAsciiString(message)
 		return w.Bytes()
 	}

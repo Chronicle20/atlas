@@ -8,16 +8,9 @@ const (
 	ChatTypeBuddy    = "BUDDY"
 	ChatTypeParty    = "PARTY"
 	ChatTypeGuild    = "GUILD"
-	ChatTypeAlliance = "Alliance"
+	ChatTypeAlliance = "ALLIANCE"
+	ChatTypeWhisper  = "WHISPER"
 )
-
-type generalChatBody struct {
-	BalloonOnly bool `json:"balloonOnly"`
-}
-
-type multiChatBody struct {
-	Recipients []uint32 `json:"recipients"`
-}
 
 type chatEvent[E any] struct {
 	WorldId     byte   `json:"worldId"`
@@ -27,4 +20,16 @@ type chatEvent[E any] struct {
 	Message     string `json:"message"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
+}
+
+type generalChatBody struct {
+	BalloonOnly bool `json:"balloonOnly"`
+}
+
+type multiChatBody struct {
+	Recipients []uint32 `json:"recipients"`
+}
+
+type whisperChatBody struct {
+	Recipient uint32 `json:"recipient"`
 }

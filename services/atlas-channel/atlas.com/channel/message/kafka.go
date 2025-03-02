@@ -7,7 +7,8 @@ const (
 	ChatTypeBuddy    = "BUDDY"
 	ChatTypeParty    = "PARTY"
 	ChatTypeGuild    = "GUILD"
-	ChatTypeAlliance = "Alliance"
+	ChatTypeAlliance = "ALLIANCE"
+	ChatTypeWhisper  = "WHISPER"
 )
 
 type chatCommand[E any] struct {
@@ -26,4 +27,8 @@ type generalChatBody struct {
 
 type multiChatBody struct {
 	Recipients []uint32 `json:"recipients"`
+}
+
+type whisperChatBody struct {
+	RecipientName string `json:"recipientName"`
 }

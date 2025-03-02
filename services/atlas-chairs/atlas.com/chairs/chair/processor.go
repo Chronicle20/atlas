@@ -5,24 +5,23 @@ import (
 	"atlas-chairs/map/data"
 	"context"
 	"errors"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"math"
 )
 
-func GetById(ctx context.Context) func(characterId uint32) (Model, error) {
-	t := tenant.MustFromContext(ctx)
-	return func(characterId uint32) (Model, error) {
-		return GetRegistry().Get(t, characterId)
+func GetById(characterId uint32) (Model, error) {
+	m, ok := GetRegistry().Get(characterId)
+	if !ok {
+		return Model{}, errors.New("not found")
 	}
+	return m, nil
 }
 
 func Set(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, chairType string, chairId uint32, characterId uint32) error {
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, chairType string, chairId uint32, characterId uint32) error {
-		t := tenant.MustFromContext(ctx)
 		return func(worldId byte, channelId byte, mapId uint32, chairType string, chairId uint32, characterId uint32) error {
 			l.Debugf("Attempting to sit in chair [%d] for character [%d].", chairId, characterId)
-			_, err := GetById(ctx)(characterId)
+			_, err := GetById(characterId)
 			if err == nil {
 				l.Errorf("Character [%d] already sitting on chair.", characterId)
 				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicStatus)(statusEventErrorProvider(worldId, channelId, mapId, chairType, chairId, characterId, ErrorTypeAlreadySitting))
@@ -57,40 +56,30 @@ func Set(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, chan
 			}
 
 			c := Model{
-				worldId:   worldId,
-				channelId: channelId,
-				mapId:     mapId,
 				id:        chairId,
 				chairType: chairType,
 			}
 
-			_, err = GetRegistry().Set(t, characterId, c)
-			if err != nil {
-				l.WithError(err).Errorf("Character [%d] unable to sit on chair.", characterId)
-				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicStatus)(statusEventErrorProvider(worldId, channelId, mapId, chairType, chairId, characterId, ErrorTypeInternal))
-				return err
-			}
+			GetRegistry().Set(characterId, c)
 			return producer.ProviderImpl(l)(ctx)(EnvEventTopicStatus)(statusEventUsedProvider(worldId, channelId, mapId, chairType, chairId, characterId))
 		}
 	}
 }
 
-func Clear(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, mapId uint32) error {
-	return func(ctx context.Context) func(characterId uint32, mapId uint32) error {
-		t := tenant.MustFromContext(ctx)
-		return func(characterId uint32, mapId uint32) error {
+func Clear(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32) error {
+		return func(worldId byte, channelId byte, characterId uint32, mapId uint32) error {
 			l.Debugf("Attempting to clear for character [%d].", characterId)
-			c, err := GetById(ctx)(characterId)
+			c, err := GetById(characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to get chair for character [%d].", characterId)
 				return err
 			}
-			err = GetRegistry().Clear(t, characterId)
-			if err != nil {
-				l.WithError(err).Errorf("Failed to clear chair [%d] for character [%d].", c.Id(), characterId)
-				return err
+			existed := GetRegistry().Clear(characterId)
+			if existed {
+				return producer.ProviderImpl(l)(ctx)(EnvEventTopicStatus)(statusEventCancelledProvider(worldId, channelId, mapId, c.Type(), c.Id(), characterId))
 			}
-			return producer.ProviderImpl(l)(ctx)(EnvEventTopicStatus)(statusEventCancelledProvider(c.WorldId(), c.ChannelId(), mapId, c.Type(), c.Id(), characterId))
+			return nil
 		}
 	}
 }

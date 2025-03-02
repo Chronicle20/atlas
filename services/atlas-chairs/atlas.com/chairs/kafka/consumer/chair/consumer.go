@@ -40,5 +40,5 @@ func handleCommandCancelChair(l logrus.FieldLogger, ctx context.Context, c comma
 	if c.Type != CommandCancelChair {
 		return
 	}
-	_ = chair.Clear(l)(ctx)(c.Body.CharacterId, c.MapId)
+	_ = chair.Clear(l)(ctx)(c.WorldId, c.ChannelId, c.Body.CharacterId, c.MapId)
 }

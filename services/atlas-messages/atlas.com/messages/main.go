@@ -5,8 +5,8 @@ import (
 	"atlas-messages/command/character"
 	"atlas-messages/command/character/inventory"
 	"atlas-messages/command/map"
+	message2 "atlas-messages/kafka/consumer/message"
 	"atlas-messages/logger"
-	"atlas-messages/message"
 	"atlas-messages/service"
 	"atlas-messages/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -33,8 +33,8 @@ func main() {
 	command.Registry().Add(character.ChangeJobCommandProducer)
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
-	message.InitConsumers(l)(cmf)(consumerGroupId)
-	message.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	message2.InitConsumers(l)(cmf)(consumerGroupId)
+	message2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

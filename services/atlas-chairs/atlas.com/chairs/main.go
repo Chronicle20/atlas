@@ -1,16 +1,38 @@
 package main
 
 import (
+	chair2 "atlas-chairs/chair"
 	"atlas-chairs/kafka/consumer/chair"
 	"atlas-chairs/kafka/consumer/character"
 	"atlas-chairs/logger"
 	"atlas-chairs/service"
 	"atlas-chairs/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas-rest/server"
 )
 
 const serviceName = "atlas-chairs"
 const consumerGroupId = "Chairs Service"
+
+type Server struct {
+	baseUrl string
+	prefix  string
+}
+
+func (s Server) GetBaseURL() string {
+	return s.baseUrl
+}
+
+func (s Server) GetPrefix() string {
+	return s.prefix
+}
+
+func GetServer() Server {
+	return Server{
+		baseUrl: "",
+		prefix:  "/api/",
+	}
+}
 
 func main() {
 	l := logger.CreateLogger(serviceName)
@@ -28,6 +50,8 @@ func main() {
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	chair.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+
+	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), chair2.InitResource(GetServer()))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

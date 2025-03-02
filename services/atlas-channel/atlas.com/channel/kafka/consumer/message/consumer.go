@@ -69,7 +69,7 @@ func showGeneralChatForSession(l logrus.FieldLogger) func(ctx context.Context) f
 	return func(ctx context.Context) func(wp writer.Producer) func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
 			return func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterGeneralChat)(writer.CharacterGeneralChatBody(event.CharacterId, gm, event.Message, event.Body.BalloonOnly))
+				return session.Announce(l)(ctx)(wp)(writer.CharacterChatGeneral)(writer.CharacterChatGeneralBody(event.CharacterId, gm, event.Message, event.Body.BalloonOnly))
 			}
 		}
 	}
@@ -104,7 +104,7 @@ func sendMultiChat(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	return func(ctx context.Context) func(wp writer.Producer) func(name string, message string, mode byte) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(name string, message string, mode byte) model.Operator[session.Model] {
 			return func(name string, message string, mode byte) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterMultiChat)(writer.CharacterMultiChatBody(name, message, mode))
+				return session.Announce(l)(ctx)(wp)(writer.CharacterChatMulti)(writer.CharacterChatMultiBody(name, message, mode))
 			}
 		}
 	}

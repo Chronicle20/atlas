@@ -212,14 +212,14 @@ func produceWriters() []string {
 		writer.MoveMonster,
 		writer.MoveMonsterAck,
 		writer.CharacterSpawn,
-		writer.CharacterGeneralChat,
+		writer.CharacterChatGeneral,
 		writer.CharacterMovement,
 		writer.CharacterInfo,
 		writer.CharacterInventoryChange,
 		writer.CharacterAppearanceUpdate,
 		writer.CharacterDespawn,
 		writer.PartyOperation,
-		writer.CharacterMultiChat,
+		writer.CharacterChatMulti,
 		writer.CharacterKeyMap,
 		writer.BuddyOperation,
 		writer.CharacterExpression,
@@ -253,6 +253,7 @@ func produceWriters() []string {
 		writer.MonsterHealth,
 		writer.PartyMemberHP,
 		writer.ChalkboardUse,
+		writer.CharacterChatWhisper,
 	}
 }
 

@@ -61,6 +61,8 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 			eventHandler = handleBuddyCreatedStatusEvent(l)(ctx)(wp)(e.Body.TargetId, e.ReferenceId, rc.Name())
 		} else if e.InviteType == InviteTypeGuild {
 			eventHandler = handleGuildCreatedStatusEvent(l)(ctx)(wp)(e.ReferenceId, rc.Name())
+		} else if e.InviteType == InviteTypeMessenger {
+			eventHandler = handleMessengerCreatedStatusEvent(l)(ctx)(wp)(e.ReferenceId, rc.Name())
 		}
 
 		if eventHandler != nil {
@@ -95,6 +97,16 @@ func handleGuildCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Contex
 		return func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
 			return func(originatorId uint32, originatorName string) model.Operator[session.Model] {
 				return session.Announce(l)(ctx)(wp)(writer.GuildOperation)(writer.GuildInviteBody(l)(originatorId, originatorName))
+			}
+		}
+	}
+}
+
+func handleMessengerCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+			return func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteBody(originatorName, originatorId))
 			}
 		}
 	}

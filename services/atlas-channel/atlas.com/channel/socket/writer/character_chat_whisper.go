@@ -12,9 +12,10 @@ type WhisperMode byte
 type WhisperFindResultMode byte
 
 const (
-	WhisperModeSend       = WhisperMode(0x0A)
-	WhisperModeReceive    = WhisperMode(0x12)
-	WhisperModeFindResult = WhisperMode(0x09)
+	WhisperModeSend                  = WhisperMode(0x0A)
+	WhisperModeReceive               = WhisperMode(0x12)
+	WhisperModeFindResult            = WhisperMode(0x09)
+	WhisperModeBuddyWindowFindResult = WhisperMode(0x48)
 
 	WhisperFindResultModeError            = WhisperFindResultMode(0)
 	WhisperFindResultModeMap              = WhisperFindResultMode(1)
@@ -23,9 +24,9 @@ const (
 	WhisperFindResultModeUnable2          = WhisperFindResultMode(4)
 )
 
-func CharacterChatWhisperFindResultInCashShopBody(targetName string) BodyProducer {
+func CharacterChatWhisperFindResultInCashShopBody(mode WhisperMode, targetName string) BodyProducer {
 	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(byte(WhisperModeFindResult))
+		w.WriteByte(byte(mode))
 		w.WriteAsciiString(targetName)
 		w.WriteByte(byte(WhisperFindResultModeCashShop))
 		w.WriteInt32(-1)
@@ -33,21 +34,23 @@ func CharacterChatWhisperFindResultInCashShopBody(targetName string) BodyProduce
 	}
 }
 
-func CharacterChatWhisperFindResultInMapBody(target character.Model, mapId uint32) BodyProducer {
+func CharacterChatWhisperFindResultInMapBody(mode WhisperMode, target character.Model, mapId uint32) BodyProducer {
 	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(byte(WhisperModeFindResult))
+		w.WriteByte(byte(mode))
 		w.WriteAsciiString(target.Name())
 		w.WriteByte(byte(WhisperFindResultModeMap))
 		w.WriteInt(mapId)
-		w.WriteInt32(int32(target.X()))
-		w.WriteInt32(int32(target.Y()))
+		if mode == WhisperModeFindResult {
+			w.WriteInt32(int32(target.X()))
+			w.WriteInt32(int32(target.Y()))
+		}
 		return w.Bytes()
 	}
 }
 
-func CharacterChatWhisperFindResultInOtherChannelBody(targetName string, channelId byte) BodyProducer {
+func CharacterChatWhisperFindResultInOtherChannelBody(mode WhisperMode, targetName string, channelId byte) BodyProducer {
 	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(byte(WhisperModeFindResult))
+		w.WriteByte(byte(mode))
 		w.WriteAsciiString(targetName)
 		w.WriteByte(byte(WhisperFindResultModeDifferentChannel))
 		w.WriteInt(uint32(channelId))
@@ -55,9 +58,9 @@ func CharacterChatWhisperFindResultInOtherChannelBody(targetName string, channel
 	}
 }
 
-func CharacterChatWhisperFindResultErrorBody(targetName string) BodyProducer {
+func CharacterChatWhisperFindResultErrorBody(mode WhisperMode, targetName string) BodyProducer {
 	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(byte(WhisperModeFindResult))
+		w.WriteByte(byte(mode))
 		w.WriteAsciiString(targetName)
 		w.WriteByte(byte(WhisperFindResultModeError))
 		w.WriteInt(0)

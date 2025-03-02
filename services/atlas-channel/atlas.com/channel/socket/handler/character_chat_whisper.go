@@ -6,6 +6,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -16,9 +17,9 @@ const CharacterChatWhisperHandle = "CharacterChatWhisperHandle"
 type WhisperMode byte
 
 const (
-	WhisperModeFind       = WhisperMode(5)
-	WhisperModeChat       = WhisperMode(6)
-	WhisperModeFindFriend = WhisperMode(68)
+	WhisperModeFind            = WhisperMode(5)
+	WhisperModeChat            = WhisperMode(6)
+	WhisperModeBuddyWindowFind = WhisperMode(68)
 )
 
 func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -32,27 +33,8 @@ func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		targetName := r.ReadAsciiString()
 		msg := ""
 
-		if mode == WhisperModeFind || mode == WhisperModeFindFriend {
-			tc, err := character.GetByName(l, ctx)(targetName)
-			if err != nil {
-				_ = session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(writer.CharacterChatWhisperFindResultErrorBody(targetName))(s)
-				return
-			}
-			// TODO query cash shop.
-			cs := false
-			if cs {
-				_ = session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(writer.CharacterChatWhisperFindResultInCashShopBody(targetName))(s)
-				return
-			}
-
-			_, err = session.GetByCharacterId(t)(tc.Id())
-			if err == nil {
-				_ = session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(writer.CharacterChatWhisperFindResultInMapBody(tc, tc.MapId()))(s)
-				return
-			}
-
-			// TODO find a way to look up remote channel.
-			_ = session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(writer.CharacterChatWhisperFindResultInOtherChannelBody(targetName, 0))(s)
+		if mode == WhisperModeFind || mode == WhisperModeBuddyWindowFind {
+			_ = produceFindResultBody(l)(ctx)(wp)(mode, targetName)(s)
 		}
 		if mode == WhisperModeChat {
 			msg = r.ReadAsciiString()
@@ -64,5 +46,41 @@ func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 		l.Warnf("Character [%d] using unhandled whipser mode [%d]. Target [%s], Message [%s], UpdateTime [%d]", s.CharacterId(), mode, targetName, msg, updateTime)
+	}
+}
+
+func produceFindResultBody(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(mode WhisperMode, targetName string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(mode WhisperMode, targetName string) model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
+		return func(wp writer.Producer) func(mode WhisperMode, targetName string) model.Operator[session.Model] {
+			return func(mode WhisperMode, targetName string) model.Operator[session.Model] {
+				var resultMode writer.WhisperMode
+				if mode == WhisperModeBuddyWindowFind {
+					resultMode = writer.WhisperModeBuddyWindowFindResult
+				} else {
+					resultMode = writer.WhisperModeFindResult
+				}
+
+				af := session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)
+
+				tc, err := character.GetByName(l, ctx)(targetName)
+				if err != nil {
+					return af(writer.CharacterChatWhisperFindResultErrorBody(resultMode, targetName))
+				}
+				// TODO query cash shop.
+				cs := false
+				if cs {
+					return af(writer.CharacterChatWhisperFindResultInCashShopBody(resultMode, targetName))
+				}
+
+				_, err = session.GetByCharacterId(t)(tc.Id())
+				if err == nil {
+					return af(writer.CharacterChatWhisperFindResultInMapBody(resultMode, tc, tc.MapId()))
+				}
+
+				// TODO find a way to look up remote channel.
+				return af(writer.CharacterChatWhisperFindResultInOtherChannelBody(resultMode, targetName, 0))
+			}
+		}
 	}
 }

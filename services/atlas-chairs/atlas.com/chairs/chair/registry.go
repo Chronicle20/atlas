@@ -15,6 +15,7 @@ var once sync.Once
 func GetRegistry() *Registry {
 	once.Do(func() {
 		registry = &Registry{}
+		registry.characterRegister = make(map[uint32]Model)
 	})
 	return registry
 }

@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
+	"atlas-channel/messenger"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -152,33 +153,59 @@ func handleInventoryMoveEvent(sc server.Model, wp writer.Producer) message.Handl
 func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
-			return func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
+			return func(e inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					errChannels := make(chan error, 2)
+					c, err := character.GetByIdWithInventory(l)(ctx)()(s.CharacterId())
+					if err != nil {
+						l.WithError(err).Errorf("Unable to issue appearance update for character [%d] to others in map.", s.CharacterId())
+						return err
+					}
+
+					errChannels := make(chan error, 3)
 					go func() {
-						inventoryType, ok := inventory.TypeFromItemId(event.Body.ItemId)
+						inventoryType, ok := inventory.TypeFromItemId(e.Body.ItemId)
 						if !ok {
-							l.Errorf("Unable to identify inventory type by item [%d].", event.Body.ItemId)
+							l.Errorf("Unable to identify inventory type by item [%d].", e.Body.ItemId)
 							return
 						}
 
-						err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryMoveBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, event.Body.OldSlot, false))(s)
+						err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryMoveBody(tenant.MustFromContext(ctx))(byte(inventoryType), e.Slot, e.Body.OldSlot, false))(s)
 						if err != nil {
-							l.WithError(err).Errorf("Unable to move [%d] in slot [%d] to [%d] for character [%d].", event.Body.ItemId, event.Body.OldSlot, event.Slot, s.CharacterId())
+							l.WithError(err).Errorf("Unable to move [%d] in slot [%d] to [%d] for character [%d].", e.Body.ItemId, e.Body.OldSlot, e.Slot, s.CharacterId())
 						}
 						errChannels <- err
 					}()
 					go func() {
-						c, err := character.GetByIdWithInventory(l)(ctx)()(s.CharacterId())
-						if err != nil {
-							l.WithError(err).Errorf("Unable to issue appearance update for character [%d] to others in map.", s.CharacterId())
-							errChannels <- err
-						}
 						errChannels <- _map.ForSessionsInMap(l)(ctx)(s.Map(), updateAppearance(l)(ctx)(wp)(c))
 					}()
+					go func() {
+						it, ok := inventory.TypeFromItemId(e.Body.ItemId)
+						if !ok || it != inventory.TypeValueEquip {
+							return
+						}
 
-					var err error
-					for i := 0; i < 2; i++ {
+						if e.Slot > 0 && e.Body.OldSlot > 0 {
+							return
+						}
+
+						m, err := messenger.GetByMemberId(l)(ctx)(e.CharacterId)
+						if err != nil {
+							return
+						}
+						um, err := m.FindMember(e.CharacterId)
+						if err != nil {
+							return
+						}
+
+						for _, mm := range m.Members() {
+							_ = session.IfPresentByCharacterId(s.Tenant(), s.WorldId(), s.ChannelId())(mm.Id(), func(os session.Model) error {
+								return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationUpdateBody(ctx)(um.Slot(), c, byte(s.ChannelId())))(os)
+							})
+						}
+						errChannels <- err
+					}()
+
+					for i := 0; i < 3; i++ {
 						select {
 						case <-errChannels:
 							err = <-errChannels

@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/invite"
+	"atlas-channel/message"
 	"atlas-channel/messenger"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -97,6 +98,20 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 		if mode == MessengerOperationChat {
 			msg := r.ReadAsciiString()
 			l.Debugf("Character [%d] sending message [%s] to messenger.", s.CharacterId(), msg)
+			m, err := messenger.GetByMemberId(l)(ctx)(s.CharacterId())
+			if err != nil {
+				return
+			}
+			rids := make([]uint32, 0)
+			for _, mm := range m.Members() {
+				if mm.Id() != s.CharacterId() {
+					rids = append(rids, mm.Id())
+				}
+			}
+			err = message.MessengerChat(l)(ctx)(s.Map(), s.CharacterId(), msg, rids)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to relay messenger [%d] to recipients.", m.Id())
+			}
 			return
 		}
 	}

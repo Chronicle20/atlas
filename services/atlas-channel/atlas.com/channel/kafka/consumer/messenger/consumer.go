@@ -103,18 +103,18 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 
 		p, err := messenger.GetById(l)(ctx)(e.MessengerId)
 		if err != nil {
-			l.WithError(err).Errorf("Received left event for messenger [%d] which does not exist.", e.MessengerId)
+			l.WithError(err).Errorf("Received joined event for messenger [%d] which does not exist.", e.MessengerId)
 			return
 		}
 		mm, err := p.FindMember(e.ActorId)
 		if err != nil {
-			l.WithError(err).Errorf("Received left event for messenger [%d] which does not exist.", e.MessengerId)
+			l.WithError(err).Errorf("Received joined event for messenger [%d] which does not exist.", e.MessengerId)
 			return
 		}
 
 		tc, err := character.GetByIdWithInventory(l)(ctx)()(e.ActorId)
 		if err != nil {
-			l.WithError(err).Errorf("Received join event for character [%d] which does not exist.", e.ActorId)
+			l.WithError(err).Errorf("Received joined event for character [%d] which does not exist.", e.ActorId)
 			return
 		}
 

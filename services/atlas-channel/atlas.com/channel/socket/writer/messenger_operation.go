@@ -89,14 +89,14 @@ func MessengerOperationChatBody(message string) BodyProducer {
 	}
 }
 
-func MessengerOperationUpdateBody(ctx context.Context) func(position byte, c character.Model, fromCharacter string, channelId byte) BodyProducer {
+func MessengerOperationUpdateBody(ctx context.Context) func(position byte, c character.Model, channelId byte) BodyProducer {
 	t := tenant.MustFromContext(ctx)
-	return func(position byte, c character.Model, fromCharacter string, channelId byte) BodyProducer {
+	return func(position byte, c character.Model, channelId byte) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(byte(MessengerOperationModeUpdate))
 			w.WriteByte(position)
 			WriteCharacterLook(t)(w, c, true)
-			w.WriteAsciiString(fromCharacter)
+			w.WriteAsciiString(c.Name())
 			w.WriteByte(channelId)
 			w.WriteByte(0x00)
 			return w.Bytes()

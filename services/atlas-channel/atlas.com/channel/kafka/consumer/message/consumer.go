@@ -38,6 +38,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleGeneralChat(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMultiChat(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleWhisperChat(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMessengerChat(sc, wp))))
 			}
 		}
 	}
@@ -142,6 +143,26 @@ func handleWhisperChat(sc server.Model, wp writer.Producer) message.Handler[chat
 		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.Recipient, session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(bp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.CharacterId, e.Body.Recipient)
+		}
+	}
+}
+
+func handleMessengerChat(sc server.Model, wp writer.Producer) message.Handler[chatEvent[multiChatBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e chatEvent[multiChatBody]) {
+		if e.Type != ChatTypeMessenger {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+			return
+		}
+
+		for _, cid := range e.Body.Recipients {
+			bp := session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationChatBody(e.Message))
+			err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(cid, bp)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)
+			}
 		}
 	}
 }

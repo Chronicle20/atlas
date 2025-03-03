@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
+	"sync"
 )
 
 const StartMessengerId = uint32(1000000000)
@@ -59,9 +60,14 @@ func GetById(ctx context.Context) func(messengerId uint32) (Model, error) {
 	}
 }
 
+var createAndJoinLock = sync.RWMutex{}
+
 func Create(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) (Model, error) {
 	return func(ctx context.Context) func(characterId uint32) (Model, error) {
 		return func(characterId uint32) (Model, error) {
+			createAndJoinLock.Lock()
+			defer createAndJoinLock.Unlock()
+
 			t := tenant.MustFromContext(ctx)
 			c, err := character.GetById(l)(ctx)(characterId)
 			if err != nil {
@@ -275,6 +281,9 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint
 func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(actorId uint32, characterId uint32) error {
 	return func(ctx context.Context) func(actorId uint32, characterId uint32) error {
 		return func(actorId uint32, characterId uint32) error {
+			createAndJoinLock.Lock()
+			defer createAndJoinLock.Unlock()
+
 			a, err := character.GetById(l)(ctx)(actorId)
 			if err != nil {
 				l.WithError(err).Errorf("Error getting character [%d].", actorId)

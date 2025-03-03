@@ -39,7 +39,7 @@ func handleGeneralChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[
 }
 
 func handleMultiChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[multiChatBody]) {
-	if e.Type == ChatTypeGeneral || e.Type == ChatTypeWhisper {
+	if e.Type != ChatTypeBuddy && e.Type != ChatTypeParty && e.Type != ChatTypeGuild && e.Type != ChatTypeAlliance {
 		return
 	}
 	_ = message2.HandleMulti(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.CharacterId, e.Message, e.Type, e.Body.Recipients)

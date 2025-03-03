@@ -39,6 +39,11 @@ type statusEventDestroyedBody struct {
 
 type statusEventStartControlBody struct {
 	ActorId uint32 `json:"actorId"`
+	X       int16  `json:"x"`
+	Y       int16  `json:"y"`
+	Stance  byte   `json:"stance"`
+	FH      int16  `json:"fh"`
+	Team    int8   `json:"team"`
 }
 
 type statusEventStopControlBody struct {
@@ -67,6 +72,7 @@ type damageEntry struct {
 type movementEvent struct {
 	WorldId       byte       `json:"worldId"`
 	ChannelId     byte       `json:"channelId"`
+	MapId         uint32     `json:"mapId"`
 	UniqueId      uint32     `json:"uniqueId"`
 	ObserverId    uint32     `json:"observerId"`
 	SkillPossible bool       `json:"skillPossible"`

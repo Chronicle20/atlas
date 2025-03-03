@@ -177,7 +177,7 @@ func StartControl(l logrus.FieldLogger) func(ctx context.Context) func(uniqueId 
 			t := tenant.MustFromContext(ctx)
 			m, err = GetMonsterRegistry().ControlMonster(t, m.UniqueId(), controllerId)
 			if err == nil {
-				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(startControlStatusEventProvider(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId(), m.ControlCharacterId()))
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMonsterStatus)(startControlStatusEventProvider(m))
 			}
 			return m, err
 		}
@@ -251,17 +251,17 @@ func FoldMovement(summary MovementSummary, e Element) (MovementSummary, error) {
 	return res, nil
 }
 
-func Move(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, id uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randomTimes []int32, movement Movement) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, id uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randomTimes []int32, movement Movement) error {
+func Move(l logrus.FieldLogger) func(ctx context.Context) func(id uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randomTimes []int32, movement Movement) error {
+	return func(ctx context.Context) func(id uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randomTimes []int32, movement Movement) error {
 		t := tenant.MustFromContext(ctx)
-		return func(worldId byte, channelId byte, id uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randomTimes []int32, movement Movement) error {
+		return func(id uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randomTimes []int32, movement Movement) error {
 			ms, err := model.Fold(model.FixedProvider(movement.Elements), MovementSummaryProvider, FoldMovement)()
 			if err != nil {
 				return err
 			}
-			GetMonsterRegistry().MoveMonster(t, id, ms.X, ms.Y, ms.Stance)
+			m := GetMonsterRegistry().MoveMonster(t, id, ms.X, ms.Y, ms.Stance)
 
-			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicMovement)(movementEventProvider(worldId, channelId, id, observerId, skillPossible, skill, skillId, skillLevel, multiTarget, randomTimes, movement))
+			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicMovement)(movementEventProvider(m.WorldId(), m.ChannelId(), m.MapId(), id, observerId, skillPossible, skill, skillId, skillLevel, multiTarget, randomTimes, movement))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to relay monster [%d] movement to other characters in map.", id)
 				return err

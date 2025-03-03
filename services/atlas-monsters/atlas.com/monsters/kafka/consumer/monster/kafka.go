@@ -23,8 +23,6 @@ type damageCommandBody struct {
 }
 
 type movementCommand struct {
-	WorldId       byte               `json:"worldId"`
-	ChannelId     byte               `json:"channelId"`
 	UniqueId      uint32             `json:"uniqueId"`
 	ObserverId    uint32             `json:"observerId"`
 	SkillPossible bool               `json:"skillPossible"`

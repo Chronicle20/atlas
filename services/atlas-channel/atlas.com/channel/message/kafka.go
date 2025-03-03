@@ -3,12 +3,13 @@ package message
 const (
 	EnvCommandTopicChat = "COMMAND_TOPIC_CHARACTER_CHAT"
 
-	ChatTypeGeneral  = "GENERAL"
-	ChatTypeBuddy    = "BUDDY"
-	ChatTypeParty    = "PARTY"
-	ChatTypeGuild    = "GUILD"
-	ChatTypeAlliance = "ALLIANCE"
-	ChatTypeWhisper  = "WHISPER"
+	ChatTypeGeneral   = "GENERAL"
+	ChatTypeBuddy     = "BUDDY"
+	ChatTypeParty     = "PARTY"
+	ChatTypeGuild     = "GUILD"
+	ChatTypeAlliance  = "ALLIANCE"
+	ChatTypeWhisper   = "WHISPER"
+	ChatTypeMessenger = "MESSENGER"
 )
 
 type chatCommand[E any] struct {
@@ -31,4 +32,8 @@ type multiChatBody struct {
 
 type whisperChatBody struct {
 	RecipientName string `json:"recipientName"`
+}
+
+type messengerChatBody struct {
+	Recipients []uint32 `json:"recipients"`
 }

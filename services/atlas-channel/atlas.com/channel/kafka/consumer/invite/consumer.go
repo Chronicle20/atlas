@@ -61,6 +61,8 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 			eventHandler = handleBuddyCreatedStatusEvent(l)(ctx)(wp)(e.Body.TargetId, e.ReferenceId, rc.Name())
 		} else if e.InviteType == InviteTypeGuild {
 			eventHandler = handleGuildCreatedStatusEvent(l)(ctx)(wp)(e.ReferenceId, rc.Name())
+		} else if e.InviteType == InviteTypeMessenger {
+			eventHandler = handleMessengerCreatedStatusEvent(l)(ctx)(wp)(e.ReferenceId, rc.Name())
 		}
 
 		if eventHandler != nil {
@@ -100,6 +102,16 @@ func handleGuildCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Contex
 	}
 }
 
+func handleMessengerCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+			return func(originatorId uint32, originatorName string) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteBody(originatorName, originatorId))
+			}
+		}
+	}
+}
+
 func handleRejectedStatusEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[rejectedEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[rejectedEventBody]) {
 		if e.Type != EventInviteStatusTypeRejected {
@@ -123,6 +135,8 @@ func handleRejectedStatusEvent(sc server.Model, wp writer.Producer) message.Hand
 			// TODO send rejection to requesting character.
 		} else if e.InviteType == InviteTypeGuild {
 			eventHandler = handleGuildRejectedStatusEvent(l)(ctx)(wp)(rc.Name())
+		} else if e.InviteType == InviteTypeMessenger {
+			eventHandler = handleMessengerRejectedStatusEvent(l)(ctx)(wp)(rc.Name())
 		}
 
 		if eventHandler != nil {
@@ -146,6 +160,16 @@ func handleGuildRejectedStatusEvent(l logrus.FieldLogger) func(ctx context.Conte
 		return func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
 			return func(targetName string) model.Operator[session.Model] {
 				return session.Announce(l)(ctx)(wp)(writer.GuildOperation)(writer.GuildErrorBody2(l)(writer.GuildOperationInviteDenied, targetName))
+			}
+		}
+	}
+}
+
+func handleMessengerRejectedStatusEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
+			return func(targetName string) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteDeclinedBody(targetName, 0))
 			}
 		}
 	}

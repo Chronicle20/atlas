@@ -78,3 +78,11 @@ func WhisperChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Mod
 		}
 	}
 }
+
+func MessengerChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
+	return func(ctx context.Context) func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
+		return func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopicChat)(messengerChatCommandProvider(m, characterId, message, recipients))
+		}
+	}
+}

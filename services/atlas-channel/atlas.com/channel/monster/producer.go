@@ -23,7 +23,7 @@ func damageCommandProvider(m _map.Model, monsterId uint32, characterId uint32, d
 	return producer.SingleMessageProvider(key, value)
 }
 
-func Move(ma _map.Model, uniqueId uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget model2.MultiTargetForBall, randTimes model2.RandTimeForAreaAttack, mm model2.Movement) model.Provider[[]kafka.Message] {
+func Move(uniqueId uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget model2.MultiTargetForBall, randTimes model2.RandTimeForAreaAttack, mm model2.Movement) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(uniqueId))
 	ps := make([]position, 0)
 	for _, p := range multiTarget.Targets {
@@ -176,8 +176,6 @@ func Move(ma _map.Model, uniqueId uint32, observerId uint32, skillPossible bool,
 	}
 
 	value := &movementCommand{
-		WorldId:       byte(ma.WorldId()),
-		ChannelId:     byte(ma.ChannelId()),
 		UniqueId:      uniqueId,
 		ObserverId:    observerId,
 		SkillPossible: skillPossible,

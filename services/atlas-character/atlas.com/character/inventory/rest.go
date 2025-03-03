@@ -18,7 +18,7 @@ type RestModel struct {
 type EquipableRestModel struct {
 	Type     string                `json:"-"`
 	Capacity uint32                `json:"capacity"`
-	Items    []equipable.RestModel `json:"items"`
+	Items    []equipable.RestModel `json:"-"`
 }
 
 func (r EquipableRestModel) GetName() string {
@@ -27,6 +27,11 @@ func (r EquipableRestModel) GetName() string {
 
 func (r EquipableRestModel) GetID() string {
 	return r.Type
+}
+
+func (r *EquipableRestModel) SetID(strType string) error {
+	r.Type = strType
+	return nil
 }
 
 func (r EquipableRestModel) GetReferences() []jsonapi.Reference {
@@ -59,10 +64,22 @@ func (r EquipableRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	return result
 }
 
+func (r *EquipableRestModel) SetToOneReferenceID(name, ID string) error {
+	return nil
+}
+
+func (r *EquipableRestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+	return nil
+}
+
+func (r *EquipableRestModel) SetReferencedStructs(references []jsonapi.Data) error {
+	return nil
+}
+
 type ItemRestModel struct {
 	Type     string           `json:"-"`
 	Capacity uint32           `json:"capacity"`
-	Items    []item.RestModel `json:"items"`
+	Items    []item.RestModel `json:"-"`
 }
 
 func (r ItemRestModel) GetName() string {
@@ -71,6 +88,11 @@ func (r ItemRestModel) GetName() string {
 
 func (r ItemRestModel) GetID() string {
 	return r.Type
+}
+
+func (r *ItemRestModel) SetID(strType string) error {
+	r.Type = strType
+	return nil
 }
 
 func (r ItemRestModel) GetReferences() []jsonapi.Reference {
@@ -101,6 +123,18 @@ func (r ItemRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	}
 
 	return result
+}
+
+func (r *ItemRestModel) SetToOneReferenceID(name, ID string) error {
+	return nil
+}
+
+func (r *ItemRestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+	return nil
+}
+
+func (r *ItemRestModel) SetReferencedStructs(references []jsonapi.Data) error {
+	return nil
 }
 
 func Transform(m Model) (RestModel, error) {

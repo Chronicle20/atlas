@@ -46,3 +46,115 @@ func (m Model) ReferenceId() uint32 {
 func ReferenceId(m Model) (uint32, error) {
 	return m.ReferenceId(), nil
 }
+
+type ModelBuilder struct {
+	model Model
+}
+
+func NewModelBuilder() *ModelBuilder {
+	return &ModelBuilder{}
+}
+
+func (b *ModelBuilder) SetID(id uint32) *ModelBuilder {
+	b.model.id = id
+	return b
+}
+
+func (b *ModelBuilder) SetItemId(itemId uint32) *ModelBuilder {
+	b.model.itemId = itemId
+	return b
+}
+
+func (b *ModelBuilder) SetSlot(slot int16) *ModelBuilder {
+	b.model.slot = slot
+	return b
+}
+
+func (b *ModelBuilder) SetReferenceId(referenceId uint32) *ModelBuilder {
+	b.model.referenceId = referenceId
+	return b
+}
+
+func (b *ModelBuilder) SetStrength(strength uint16) *ModelBuilder {
+	b.model.strength = strength
+	return b
+}
+
+func (b *ModelBuilder) SetDexterity(dexterity uint16) *ModelBuilder {
+	b.model.dexterity = dexterity
+	return b
+}
+
+func (b *ModelBuilder) SetIntelligence(intelligence uint16) *ModelBuilder {
+	b.model.intelligence = intelligence
+	return b
+}
+
+func (b *ModelBuilder) SetLuck(luck uint16) *ModelBuilder {
+	b.model.luck = luck
+	return b
+}
+
+func (b *ModelBuilder) SetHP(hp uint16) *ModelBuilder {
+	b.model.hp = hp
+	return b
+}
+
+func (b *ModelBuilder) SetMP(mp uint16) *ModelBuilder {
+	b.model.mp = mp
+	return b
+}
+
+func (b *ModelBuilder) SetWeaponAttack(weaponAttack uint16) *ModelBuilder {
+	b.model.weaponAttack = weaponAttack
+	return b
+}
+
+func (b *ModelBuilder) SetMagicAttack(magicAttack uint16) *ModelBuilder {
+	b.model.magicAttack = magicAttack
+	return b
+}
+
+func (b *ModelBuilder) SetWeaponDefense(weaponDefense uint16) *ModelBuilder {
+	b.model.weaponDefense = weaponDefense
+	return b
+}
+
+func (b *ModelBuilder) SetMagicDefense(magicDefense uint16) *ModelBuilder {
+	b.model.magicDefense = magicDefense
+	return b
+}
+
+func (b *ModelBuilder) SetAccuracy(accuracy uint16) *ModelBuilder {
+	b.model.accuracy = accuracy
+	return b
+}
+
+func (b *ModelBuilder) SetAvoidability(avoidability uint16) *ModelBuilder {
+	b.model.avoidability = avoidability
+	return b
+}
+
+func (b *ModelBuilder) SetHands(hands uint16) *ModelBuilder {
+	b.model.hands = hands
+	return b
+}
+
+func (b *ModelBuilder) SetSpeed(speed uint16) *ModelBuilder {
+	b.model.speed = speed
+	return b
+}
+
+func (b *ModelBuilder) SetJump(jump uint16) *ModelBuilder {
+	b.model.jump = jump
+	return b
+}
+
+func (b *ModelBuilder) SetSlots(slots uint16) *ModelBuilder {
+	b.model.slots = slots
+	return b
+}
+
+func (b *ModelBuilder) Build() Model {
+	return b.model
+}

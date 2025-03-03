@@ -49,7 +49,7 @@ func EquipableFolder(m EquipableModel, em equipable.Model) (EquipableModel, erro
 	return m, nil
 }
 
-func foldProperty[M any, N any](setter func(sm N) M) model.Transformer[N, M] {
+func FoldProperty[M any, N any](setter func(sm N) M) model.Transformer[N, M] {
 	return func(n N) (M, error) {
 		return setter(n), nil
 	}
@@ -67,19 +67,19 @@ func foldInventory(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Cont
 				switch Type(ent.InventoryType) {
 				case TypeValueEquip:
 					ep := equipable.InInventoryProvider(l)(db)(ctx)(ent.ID)
-					return model.Map(foldProperty(ref.SetEquipable))(model.Fold(ep, NewEquipableModel(ent.ID, ent.Capacity), EquipableFolder))()
+					return model.Map(FoldProperty(ref.SetEquipable))(model.Fold(ep, NewEquipableModel(ent.ID, ent.Capacity), EquipableFolder))()
 				case TypeValueUse:
 					ip := item.ByInventoryProvider(db)(ctx)(ent.ID)
-					return model.Map(foldProperty(ref.SetUseable))(model.Fold(ip, NewItemModel(ent.ID, TypeValueUse, ent.Capacity), ItemFolder))()
+					return model.Map(FoldProperty(ref.SetUseable))(model.Fold(ip, NewItemModel(ent.ID, TypeValueUse, ent.Capacity), ItemFolder))()
 				case TypeValueSetup:
 					ip := item.ByInventoryProvider(db)(ctx)(ent.ID)
-					return model.Map(foldProperty(ref.SetSetup))(model.Fold(ip, NewItemModel(ent.ID, TypeValueSetup, ent.Capacity), ItemFolder))()
+					return model.Map(FoldProperty(ref.SetSetup))(model.Fold(ip, NewItemModel(ent.ID, TypeValueSetup, ent.Capacity), ItemFolder))()
 				case TypeValueETC:
 					ip := item.ByInventoryProvider(db)(ctx)(ent.ID)
-					return model.Map(foldProperty(ref.SetEtc))(model.Fold(ip, NewItemModel(ent.ID, TypeValueETC, ent.Capacity), ItemFolder))()
+					return model.Map(FoldProperty(ref.SetEtc))(model.Fold(ip, NewItemModel(ent.ID, TypeValueETC, ent.Capacity), ItemFolder))()
 				case TypeValueCash:
 					ip := item.ByInventoryProvider(db)(ctx)(ent.ID)
-					return model.Map(foldProperty(ref.SetCash))(model.Fold(ip, NewItemModel(ent.ID, TypeValueCash, ent.Capacity), ItemFolder))()
+					return model.Map(FoldProperty(ref.SetCash))(model.Fold(ip, NewItemModel(ent.ID, TypeValueCash, ent.Capacity), ItemFolder))()
 				}
 				return ref, errors.New("unknown inventory type")
 			}

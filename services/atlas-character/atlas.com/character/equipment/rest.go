@@ -31,78 +31,97 @@ func Transform(m Model) (RestModel, error) {
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = hat.SetID(slot.TypeHat)
 	medal, err := slot.Transform(m.medal)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = medal.SetID(slot.TypeMedal)
 	forehead, err := slot.Transform(m.forehead)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = forehead.SetID(slot.TypeForehead)
 	ring1, err := slot.Transform(m.ring1)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = ring1.SetID(slot.TypeRing1)
 	ring2, err := slot.Transform(m.ring2)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = ring2.SetID(slot.TypeRing2)
 	eye, err := slot.Transform(m.eye)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = eye.SetID(slot.TypeEye)
 	earring, err := slot.Transform(m.earring)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = earring.SetID(slot.TypeEarring)
 	shoulder, err := slot.Transform(m.shoulder)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = shoulder.SetID(slot.TypeShoulder)
 	cape, err := slot.Transform(m.cape)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = cape.SetID(slot.TypeCape)
 	top, err := slot.Transform(m.top)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = top.SetID(slot.TypeTop)
 	pendant, err := slot.Transform(m.pendant)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = pendant.SetID(slot.TypePendant)
 	weapon, err := slot.Transform(m.weapon)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = weapon.SetID(slot.TypeWeapon)
 	shield, err := slot.Transform(m.shield)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = shield.SetID(slot.TypeShield)
 	gloves, err := slot.Transform(m.gloves)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = gloves.SetID(slot.TypeGloves)
 	bottom, err := slot.Transform(m.bottom)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = bottom.SetID(slot.TypeBottom)
 	belt, err := slot.Transform(m.belt)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = belt.SetID(slot.TypeBelt)
 	ring3, err := slot.Transform(m.ring3)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = ring3.SetID(slot.TypeRing3)
 	ring4, err := slot.Transform(m.ring4)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = ring4.SetID(slot.TypeRing4)
 	shoes, err := slot.Transform(m.shoes)
 	if err != nil {
 		return RestModel{}, err
 	}
+	_ = shoes.SetID(slot.TypeShoes)
 	rm := RestModel{
 		Hat:      hat,
 		Medal:    medal,

@@ -2,12 +2,82 @@ package slot
 
 import (
 	"atlas-character/equipable"
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type RestModel struct {
+	Type          string               `json:"-"`
 	Position      Position             `json:"position"`
-	Equipable     *equipable.RestModel `json:"equipable"`
-	CashEquipable *equipable.RestModel `json:"cashEquipable"`
+	Equipable     *equipable.RestModel `json:"-"`
+	CashEquipable *equipable.RestModel `json:"-"`
+}
+
+func (r RestModel) GetName() string {
+	return "equipment"
+}
+
+func (r RestModel) GetID() string {
+	return r.Type
+}
+
+func (r *RestModel) SetID(strType string) error {
+	r.Type = strType
+	return nil
+}
+
+func (r RestModel) GetReferences() []jsonapi.Reference {
+	return []jsonapi.Reference{
+		{
+			Type: "equipable",
+			Name: "equipable",
+		},
+		{
+			Type: "cashEquipable",
+			Name: "cashEquipable",
+		},
+	}
+}
+
+func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
+	var result []jsonapi.ReferenceID
+	if r.Equipable != nil {
+		result = append(result, jsonapi.ReferenceID{
+			ID:   r.Equipable.GetID(),
+			Type: "equipable",
+			Name: "equipable",
+		})
+	}
+	if r.CashEquipable != nil {
+		result = append(result, jsonapi.ReferenceID{
+			ID:   r.CashEquipable.GetID(),
+			Type: "cashEquipable",
+			Name: "cashEquipable",
+		})
+	}
+	return result
+}
+
+func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
+	var result []jsonapi.MarshalIdentifier
+	if r.Equipable != nil {
+		result = append(result, r.Equipable)
+	}
+	if r.CashEquipable != nil {
+		result = append(result, r.CashEquipable)
+	}
+	return result
+}
+
+func (r *RestModel) SetToOneReferenceID(name, ID string) error {
+	return nil
+}
+
+func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+	return nil
+}
+
+func (r *RestModel) SetReferencedStructs(references []jsonapi.Data) error {
+	return nil
 }
 
 func Transform(model Model) (RestModel, error) {

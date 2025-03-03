@@ -30,7 +30,7 @@ func ForSessionsInSessionsMap(l logrus.FieldLogger) func(ctx context.Context) fu
 	return func(ctx context.Context) func(f func(oid uint32) model.Operator[session.Model]) model.Operator[session.Model] {
 		return func(f func(oid uint32) model.Operator[session.Model]) model.Operator[session.Model] {
 			return func(s session.Model) error {
-				return session.ForEachByCharacterId(tenant.MustFromContext(ctx))(CharacterIdsInMapModelProvider(l)(ctx)(s.Map()), f(s.CharacterId()))
+				return session.ForEachByCharacterId(tenant.MustFromContext(ctx), s.WorldId(), s.ChannelId())(CharacterIdsInMapModelProvider(l)(ctx)(s.Map()), f(s.CharacterId()))
 			}
 		}
 	}
@@ -39,7 +39,7 @@ func ForSessionsInSessionsMap(l logrus.FieldLogger) func(ctx context.Context) fu
 func ForSessionsInMap(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, o model.Operator[session.Model]) error {
 	return func(ctx context.Context) func(m _map.Model, o model.Operator[session.Model]) error {
 		return func(m _map.Model, o model.Operator[session.Model]) error {
-			return session.ForEachByCharacterId(tenant.MustFromContext(ctx))(CharacterIdsInMapModelProvider(l)(ctx)(m), o)
+			return session.ForEachByCharacterId(tenant.MustFromContext(ctx), m.WorldId(), m.ChannelId())(CharacterIdsInMapModelProvider(l)(ctx)(m), o)
 		}
 	}
 }
@@ -62,7 +62,7 @@ func ForOtherSessionsInMap(l logrus.FieldLogger) func(ctx context.Context) func(
 	return func(ctx context.Context) func(m _map.Model, referenceCharacterId uint32, o model.Operator[session.Model]) error {
 		return func(m _map.Model, referenceCharacterId uint32, o model.Operator[session.Model]) error {
 			p := OtherCharacterIdsInMapModelProvider(l)(ctx)(m, referenceCharacterId)
-			return session.ForEachByCharacterId(tenant.MustFromContext(ctx))(p, o)
+			return session.ForEachByCharacterId(tenant.MustFromContext(ctx), m.WorldId(), m.ChannelId())(p, o)
 		}
 	}
 }

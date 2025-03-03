@@ -46,20 +46,17 @@ func IfPresentById(tenant tenant.Model, worldId world.Id, channelId channel.Id) 
 	}
 }
 
-func ByCharacterIdModelProvider(tenant tenant.Model) func(characterId uint32) model.Provider[Model] {
+func ByCharacterIdModelProvider(tenant tenant.Model, worldId world.Id, channelId channel.Id) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
-		return model.FirstProvider[Model](AllInTenantProvider(tenant), model.Filters(CharacterIdFilter(characterId)))
+		return model.FirstProvider[Model](AllInTenantProvider(tenant), model.Filters(CharacterIdFilter(characterId), WorldIdFilter(worldId), ChannelIdFilter(channelId)))
 	}
 }
 
 // IfPresentByCharacterId executes an Operator if a session exists for the characterId
 func IfPresentByCharacterId(tenant tenant.Model, worldId world.Id, channelId channel.Id) func(characterId uint32, f model.Operator[Model]) error {
 	return func(characterId uint32, f model.Operator[Model]) error {
-		s, err := ByCharacterIdModelProvider(tenant)(characterId)()
+		s, err := ByCharacterIdModelProvider(tenant, worldId, channelId)(characterId)()
 		if err != nil {
-			return nil
-		}
-		if s.WorldId() != worldId || s.ChannelId() != channelId {
 			return nil
 		}
 		return f(s)
@@ -72,16 +69,28 @@ func CharacterIdFilter(referenceId uint32) model.Filter[Model] {
 	}
 }
 
-// GetByCharacterId gets a session (if one exists) for the given characterId
-func GetByCharacterId(tenant tenant.Model) func(characterId uint32) (Model, error) {
-	return func(characterId uint32) (Model, error) {
-		return ByCharacterIdModelProvider(tenant)(characterId)()
+func WorldIdFilter(worldId world.Id) model.Filter[Model] {
+	return func(model Model) bool {
+		return model.WorldId() == worldId
 	}
 }
 
-func ForEachByCharacterId(tenant tenant.Model) func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
+func ChannelIdFilter(channelId channel.Id) model.Filter[Model] {
+	return func(model Model) bool {
+		return model.ChannelId() == channelId
+	}
+}
+
+// GetByCharacterId gets a session (if one exists) for the given characterId
+func GetByCharacterId(tenant tenant.Model, worldId world.Id, channelId channel.Id) func(characterId uint32) (Model, error) {
+	return func(characterId uint32) (Model, error) {
+		return ByCharacterIdModelProvider(tenant, worldId, channelId)(characterId)()
+	}
+}
+
+func ForEachByCharacterId(tenant tenant.Model, worldId world.Id, channelId channel.Id) func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
 	return func(provider model.Provider[[]uint32], f model.Operator[Model]) error {
-		return model.ForEachSlice(model.SliceMap[uint32, Model](GetByCharacterId(tenant))(provider)(), f, model.ParallelExecute())
+		return model.ForEachSlice(model.SliceMap[uint32, Model](GetByCharacterId(tenant, worldId, channelId))(provider)(), f, model.ParallelExecute())
 	}
 }
 

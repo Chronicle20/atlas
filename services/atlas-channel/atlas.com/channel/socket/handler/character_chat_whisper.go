@@ -36,6 +36,7 @@ func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 
 		if mode == WhisperModeFind || mode == WhisperModeBuddyWindowFind {
 			_ = produceFindResultBody(l)(ctx)(wp)(mode, targetName)(s)
+			return
 		}
 		if mode == WhisperModeChat {
 			msg = r.ReadAsciiString()

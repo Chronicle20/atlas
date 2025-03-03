@@ -71,7 +71,7 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 
 		monsterMoveStartResult := dwFlag > 0
 
-		err = producer.ProviderImpl(l)(ctx)(monster.EnvCommandMovement)(monster.Move(s.Map(), m.UniqueId(), s.CharacterId(), monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, mp))
+		err = producer.ProviderImpl(l)(ctx)(monster.EnvCommandMovement)(monster.Move(m.UniqueId(), s.CharacterId(), monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, mp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to distribute monster movement to other services.")
 		}

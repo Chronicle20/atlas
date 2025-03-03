@@ -179,25 +179,17 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		m, err := monster.GetById(l)(ctx)(e.UniqueId)
+		m := monster.NewModelBuilder(e.UniqueId, world.Id(e.WorldId), channel.Id(e.ChannelId), _map2.Id(e.MapId), e.MonsterId).
+			SetControlCharacterId(e.Body.ActorId).
+			SetX(e.Body.X).SetY(e.Body.Y).
+			SetStance(e.Body.Stance).
+			SetFH(e.Body.FH).
+			SetTeam(e.Body.Team).
+			Build()
+		sf := session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StartControlMonsterBody(l, tenant.MustFromContext(ctx))(m, false))
+		err := session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to start control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
-			return
-		}
-
-		err = session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, startControlForSession(l)(ctx)(wp)(m))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to start control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
-		}
-	}
-}
-
-func startControlForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
-			return func(m monster.Model) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StartControlMonsterBody(l, tenant.MustFromContext(ctx))(m, false))
-			}
 		}
 	}
 }
@@ -212,25 +204,12 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		m, err := monster.GetById(l)(ctx)(e.UniqueId)
+		m := monster.NewModelBuilder(e.UniqueId, world.Id(e.WorldId), channel.Id(e.ChannelId), _map2.Id(e.MapId), e.MonsterId).
+			Build()
+		sf := session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StopControlMonsterBody(l, tenant.MustFromContext(ctx))(m))
+		err := session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to stop control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
-			return
-		}
-
-		err = session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, stopControlForSession(l)(ctx)(wp)(m))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to stop control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
-		}
-	}
-}
-
-func stopControlForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(m monster.Model) model.Operator[session.Model] {
-			return func(m monster.Model) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StopControlMonsterBody(l, tenant.MustFromContext(ctx))(m))
-			}
 		}
 	}
 }
@@ -241,15 +220,9 @@ func handleMovementEvent(sc server.Model, wp writer.Producer) message.Handler[mo
 			return
 		}
 
-		m, err := monster.GetById(l)(ctx)(e.UniqueId)
+		err := _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.ObserverId, showMovementForSession(l)(ctx)(wp)(e))
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve the monster [%d] moving.", e.UniqueId)
-			return
-		}
-
-		err = _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(m.MapId()), e.ObserverId, showMovementForSession(l)(ctx)(wp)(e))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to move monster [%d] for characters in map [%d].", e.UniqueId, m.MapId())
+			l.WithError(err).Errorf("Unable to move monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
 	}
 }

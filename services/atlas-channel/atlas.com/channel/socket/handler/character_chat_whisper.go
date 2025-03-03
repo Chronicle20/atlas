@@ -53,35 +53,36 @@ func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 
 func produceFindResultBody(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(mode WhisperMode, targetName string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(mode WhisperMode, targetName string) model.Operator[session.Model] {
-		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(mode WhisperMode, targetName string) model.Operator[session.Model] {
 			return func(mode WhisperMode, targetName string) model.Operator[session.Model] {
-				var resultMode writer.WhisperMode
-				if mode == WhisperModeBuddyWindowFind {
-					resultMode = writer.WhisperModeBuddyWindowFindResult
-				} else {
-					resultMode = writer.WhisperModeFindResult
-				}
+				return func(s session.Model) error {
+					var resultMode writer.WhisperMode
+					if mode == WhisperModeBuddyWindowFind {
+						resultMode = writer.WhisperModeBuddyWindowFindResult
+					} else {
+						resultMode = writer.WhisperModeFindResult
+					}
 
-				af := session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)
+					af := session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)
 
-				tc, err := character.GetByName(l, ctx)(targetName)
-				if err != nil {
-					return af(writer.CharacterChatWhisperFindResultErrorBody(resultMode, targetName))
-				}
-				// TODO query cash shop.
-				cs := false
-				if cs {
-					return af(writer.CharacterChatWhisperFindResultInCashShopBody(resultMode, targetName))
-				}
+					tc, err := character.GetByName(l, ctx)(targetName)
+					if err != nil {
+						return af(writer.CharacterChatWhisperFindResultErrorBody(resultMode, targetName))(s)
+					}
+					// TODO query cash shop.
+					cs := false
+					if cs {
+						return af(writer.CharacterChatWhisperFindResultInCashShopBody(resultMode, targetName))(s)
+					}
 
-				_, err = session.GetByCharacterId(t)(tc.Id())
-				if err == nil {
-					return af(writer.CharacterChatWhisperFindResultInMapBody(resultMode, tc, tc.MapId()))
-				}
+					_, err = session.GetByCharacterId(s.Tenant(), s.WorldId(), s.ChannelId())(tc.Id())
+					if err == nil {
+						return af(writer.CharacterChatWhisperFindResultInMapBody(resultMode, tc, tc.MapId()))(s)
+					}
 
-				// TODO find a way to look up remote channel.
-				return af(writer.CharacterChatWhisperFindResultInOtherChannelBody(resultMode, targetName, 0))
+					// TODO find a way to look up remote channel.
+					return af(writer.CharacterChatWhisperFindResultInOtherChannelBody(resultMode, targetName, 0))(s)
+				}
 			}
 		}
 	}

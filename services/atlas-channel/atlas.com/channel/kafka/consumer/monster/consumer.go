@@ -134,7 +134,7 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 			idProvider = party.MemberToMemberIdMapper(mp)
 		}
 
-		err = session.ForEachByCharacterId(sc.Tenant())(idProvider, session.Announce(l)(ctx)(wp)(writer.MonsterHealth)(writer.MonsterHealthBody(m)))
+		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(idProvider, session.Announce(l)(ctx)(wp)(writer.MonsterHealth)(writer.MonsterHealthBody(m)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce monster [%d] health.", e.UniqueId)
 		}

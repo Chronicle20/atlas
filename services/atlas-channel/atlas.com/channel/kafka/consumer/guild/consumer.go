@@ -93,7 +93,7 @@ func handleTitlesUpdated(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		err := session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceTitlesUpdated(l)(ctx)(wp)(e.GuildId, e.Body.Titles))
+		err := session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceTitlesUpdated(l)(ctx)(wp)(e.GuildId, e.Body.Titles))
 		if err != nil {
 			l.Debugf("Unable to announce title update to [%d] guild.", e.GuildId)
 		}
@@ -127,7 +127,7 @@ func handleMemberJoined(sc server.Model, wp writer.Producer) message.Handler[sta
 		}
 
 		// Inform members that guild member joined.
-		err = session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline, guild.NotMember(e.Body.CharacterId))), announceMemberJoined(l)(ctx)(wp)(e.GuildId, e.Body.CharacterId, e.Body.Name, e.Body.JobId, e.Body.Level, e.Body.Title, e.Body.Online, e.Body.AllianceTitle))
+		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline, guild.NotMember(e.Body.CharacterId))), announceMemberJoined(l)(ctx)(wp)(e.GuildId, e.Body.CharacterId, e.Body.Name, e.Body.JobId, e.Body.Level, e.Body.Title, e.Body.Online, e.Body.AllianceTitle))
 		if err != nil {
 			l.Debugf("Unable to announce character [%d] joined guild [%d] to current guild members.", e.Body.CharacterId, e.GuildId)
 		}
@@ -212,7 +212,7 @@ func handleMemberLeft(sc server.Model, wp writer.Producer) message.Handler[statu
 		}
 
 		// Inform members that guild member left.
-		err = session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline, guild.NotMember(e.Body.CharacterId))), af)
+		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline, guild.NotMember(e.Body.CharacterId))), af)
 		if err != nil {
 			l.Debugf("Unable to announce to guild [%d] that character [%d] has left.", e.GuildId, e.Body.CharacterId)
 		}
@@ -263,7 +263,7 @@ func handleCapacityUpdated(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		err := session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceCapacityChanged(l)(ctx)(wp)(e.GuildId, e.Body.Capacity))
+		err := session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceCapacityChanged(l)(ctx)(wp)(e.GuildId, e.Body.Capacity))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce to guild [%d] members that the capacity has changed to [%d].", e.GuildId, e.Body.Capacity)
 		}
@@ -290,7 +290,7 @@ func handleNoticeUpdated(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		err := session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceNoticeChanged(l)(ctx)(wp)(e.GuildId, e.Body.Notice))
+		err := session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceNoticeChanged(l)(ctx)(wp)(e.GuildId, e.Body.Notice))
 		if err != nil {
 			l.Debugf("Unable to guild [%d] members that the notice has changed to [%s].", e.GuildId, e.Body.Notice)
 		}
@@ -323,7 +323,7 @@ func handleMemberTitleUpdated(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		err = session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceMemberTitleChanged(l)(ctx)(wp)(g, e.Body.CharacterId, e.Body.Title))
+		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceMemberTitleChanged(l)(ctx)(wp)(g, e.Body.CharacterId, e.Body.Title))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue guild [%d] member [%d] title [%d].", e.GuildId, e.Body.CharacterId, e.Body.Title)
 		}
@@ -363,7 +363,7 @@ func handleMemberStatusUpdated(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 
-		err = session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceMemberStatusUpdated(l)(ctx)(wp)(g, e.Body.CharacterId, e.Body.Online))
+		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceMemberStatusUpdated(l)(ctx)(wp)(g, e.Body.CharacterId, e.Body.Online))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce guild [%d] member [%d] status update to [%t].", e.GuildId, e.Body.CharacterId, e.Body.Online)
 		}
@@ -404,13 +404,13 @@ func handleEmblemUpdated(sc server.Model, wp writer.Producer) message.Handler[st
 		}
 
 		// Inform members that the emblem changed.
-		err = session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceEmblemChanged(l)(ctx)(wp)(g.Id(), e.Body.Logo, e.Body.LogoColor, e.Body.LogoBackground, e.Body.LogoBackgroundColor))
+		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceEmblemChanged(l)(ctx)(wp)(g.Id(), e.Body.Logo, e.Body.LogoColor, e.Body.LogoBackground, e.Body.LogoBackgroundColor))
 		if err != nil {
 			l.Debugf("Unable to announce to guild [%d] members the emblem has changed.", e.GuildId)
 		}
 
 		// Inform foreign characters that the members emblem has changed.
-		err = session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), _map.ForSessionsInSessionsMap(l)(ctx)(func(memberId uint32) model.Operator[session.Model] {
+		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), _map.ForSessionsInSessionsMap(l)(ctx)(func(memberId uint32) model.Operator[session.Model] {
 			return announceForeignEmblemChanged(l)(ctx)(wp)(memberId, e.Body.Logo, e.Body.LogoColor, e.Body.LogoBackground, e.Body.LogoBackgroundColor)
 		}))
 		if err != nil {
@@ -459,7 +459,7 @@ func handleRequestAgreement(sc server.Model, wp writer.Producer) message.Handler
 		}
 		imf := party.OtherMemberInMap(sc.WorldId(), sc.ChannelId(), p.Leader().MapId(), p.LeaderId())
 		mip := party.FilteredMemberProvider(imf)(model.FixedProvider(p))
-		err = session.ForEachByCharacterId(sc.Tenant())(party.MemberToMemberIdMapper(mip), requestGuildNameAgreement(l)(ctx)(wp)(p.Id(), p.LeaderName(), e.Body.ProposedName))
+		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(party.MemberToMemberIdMapper(mip), requestGuildNameAgreement(l)(ctx)(wp)(p.Id(), p.LeaderName(), e.Body.ProposedName))
 		if err != nil {
 			l.Debugf("Unable to announce to party members that the guild [%s] is being created.", e.Body.ProposedName)
 		}
@@ -487,18 +487,18 @@ func handleDisbanded(sc server.Model, wp writer.Producer) message.Handler[status
 		}
 
 		// Inform foreign characters that guild was left.
-		_ = session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), _map.ForSessionsInSessionsMap(l)(ctx)(func(memberId uint32) model.Operator[session.Model] {
+		_ = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), _map.ForSessionsInSessionsMap(l)(ctx)(func(memberId uint32) model.Operator[session.Model] {
 			return announceForeignGuildInfo(l)(ctx)(wp)(memberId, guild.Model{})
 		}))
 
 		// Inform members that guild was disbanded.
-		err := session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceGuildDisband(l)(ctx)(wp)(e.GuildId))
+		err := session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceGuildDisband(l)(ctx)(wp)(e.GuildId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce to guild [%d] members that it has disbanded.", e.GuildId)
 		}
 
 		// Write empty guild information to character.
-		err = session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceGuildInfo(l)(ctx)(wp)(guild.Model{}))
+		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceGuildInfo(l)(ctx)(wp)(guild.Model{}))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce empty guild information to former guild members.")
 		}
@@ -532,12 +532,12 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 		}
 
 		// Inform foreign characters that guild was joined.
-		_ = session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), _map.ForSessionsInSessionsMap(l)(ctx)(func(memberId uint32) model.Operator[session.Model] {
+		_ = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), _map.ForSessionsInSessionsMap(l)(ctx)(func(memberId uint32) model.Operator[session.Model] {
 			return announceForeignGuildInfo(l)(ctx)(wp)(memberId, g)
 		}))
 
 		// Write guild information to character.
-		err = session.ForEachByCharacterId(sc.Tenant())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceGuildInfo(l)(ctx)(wp)(g))
+		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceGuildInfo(l)(ctx)(wp)(g))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce guild [%d] information to current guild members.", g.Id())
 		}

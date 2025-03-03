@@ -79,7 +79,7 @@ func CreateMonster(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 			t := tenant.MustFromContext(ctx)
 			m := GetMonsterRegistry().CreateMonster(t, worldId, channelId, mapId, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.HP(), ma.MP())
 
-			cid, err := GetControllerCandidate(l)(ctx)(worldId, channelId, mapId)
+			cid, err := GetControllerCandidate(l)(ctx)(worldId, channelId, mapId, _map.CharacterIdsInMapProvider(l)(ctx)(worldId, channelId, mapId))
 			if err == nil {
 				l.Debugf("Created monster [%d] with id [%d] will be controlled by [%d].", m.MonsterId(), m.UniqueId(), cid)
 				m, err = StartControl(l)(ctx)(m.UniqueId(), cid)
@@ -95,29 +95,31 @@ func CreateMonster(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 	}
 }
 
-func FindNextController(l logrus.FieldLogger) func(ctx context.Context) model.Operator[Model] {
-	return func(ctx context.Context) model.Operator[Model] {
-		return func(m Model) error {
-			cid, err := GetControllerCandidate(l)(ctx)(m.WorldId(), m.ChannelId(), m.MapId())
-			if err != nil {
+func FindNextController(l logrus.FieldLogger) func(ctx context.Context) func(idp model.Provider[[]uint32]) model.Operator[Model] {
+	return func(ctx context.Context) func(idp model.Provider[[]uint32]) model.Operator[Model] {
+		return func(idp model.Provider[[]uint32]) model.Operator[Model] {
+			return func(m Model) error {
+				cid, err := GetControllerCandidate(l)(ctx)(m.WorldId(), m.ChannelId(), m.MapId(), idp)
+				if err != nil {
+					return err
+				}
+
+				_, err = StartControl(l)(ctx)(m.UniqueId(), cid)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in world [%d] channel [%d] map [%d].", cid, m.UniqueId(), m.WorldId(), m.ChannelId(), m.MapId())
+				}
 				return err
 			}
-
-			_, err = StartControl(l)(ctx)(m.UniqueId(), cid)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in world [%d] channel [%d] map [%d].", cid, m.UniqueId(), m.WorldId(), m.ChannelId(), m.MapId())
-			}
-			return err
 		}
 	}
 }
 
-func GetControllerCandidate(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) (uint32, error) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) (uint32, error) {
-		return func(worldId byte, channelId byte, mapId uint32) (uint32, error) {
+func GetControllerCandidate(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, idp model.Provider[[]uint32]) (uint32, error) {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, idp model.Provider[[]uint32]) (uint32, error) {
+		return func(worldId byte, channelId byte, mapId uint32, idp model.Provider[[]uint32]) (uint32, error) {
 			l.Debugf("Identifying controller candidate for monsters in world [%d] channel [%d] map [%d].", worldId, channelId, mapId)
 
-			controlCounts, err := model.CollectToMap(_map.CharacterIdsInMapProvider(l)(ctx)(worldId, channelId, mapId), characterIdKey, zeroValue)()
+			controlCounts, err := model.CollectToMap(idp, characterIdKey, zeroValue)()
 			if err != nil {
 				l.WithError(err).Errorf("Unable to initialize controller candidate map.")
 				return 0, err

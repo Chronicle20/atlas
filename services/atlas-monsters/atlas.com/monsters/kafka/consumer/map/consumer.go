@@ -2,6 +2,7 @@ package _map
 
 import (
 	consumer2 "atlas-monsters/kafka/consumer"
+	_map "atlas-monsters/map"
 	"atlas-monsters/monster"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -29,21 +30,26 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	}
 }
 
-func handleStatusEventCharacterEnter(l logrus.FieldLogger, ctx context.Context, event statusEvent[characterEnter]) {
-	if event.Type != EventTopicMapStatusTypeCharacterEnter {
+func handleStatusEventCharacterEnter(l logrus.FieldLogger, ctx context.Context, e statusEvent[characterEnter]) {
+	if e.Type != EventTopicMapStatusTypeCharacterEnter {
 		return
 	}
 
-	provider := monster.NotControlledInMapProvider(ctx)(event.WorldId, event.ChannelId, event.MapId)
-	_ = model.ForEachSlice(provider, monster.FindNextController(l)(ctx), model.ParallelExecute())
+	provider := monster.NotControlledInMapProvider(ctx)(e.WorldId, e.ChannelId, e.MapId)
+	_ = model.ForEachSlice(provider, monster.FindNextController(l)(ctx)(_map.CharacterIdsInMapProvider(l)(ctx)(e.WorldId, e.ChannelId, e.MapId)), model.ParallelExecute())
 }
 
-func handleStatusEventCharacterExit(l logrus.FieldLogger, ctx context.Context, event statusEvent[characterExit]) {
-	if event.Type != EventTopicMapStatusTypeCharacterExit {
+func handleStatusEventCharacterExit(l logrus.FieldLogger, ctx context.Context, e statusEvent[characterExit]) {
+	if e.Type != EventTopicMapStatusTypeCharacterExit {
 		return
 	}
 
-	provider := monster.ControlledByCharacterInMapProvider(ctx)(event.WorldId, event.ChannelId, event.MapId, event.Body.CharacterId)
+	ocids, err := _map.CharacterIdsInMapProvider(l)(ctx)(e.WorldId, e.ChannelId, e.MapId)()
+	if err != nil {
+		return
+	}
+
+	provider := monster.ControlledByCharacterInMapProvider(ctx)(e.WorldId, e.ChannelId, e.MapId, e.Body.CharacterId)
 	_ = model.ForEachSlice(provider, monster.StopControl(l)(ctx), model.ParallelExecute())
-	_ = model.ForEachSlice(provider, monster.FindNextController(l)(ctx))
+	_ = model.ForEachSlice(provider, monster.FindNextController(l)(ctx)(model.FixedProvider(ocids)), model.ParallelExecute())
 }

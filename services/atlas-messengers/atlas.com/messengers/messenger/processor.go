@@ -21,7 +21,7 @@ var ErrNotIn = errors.New("not in messenger")
 var ErrNotAsBeginner = errors.New("not as beginner")
 var ErrNotAsGm = errors.New("not as gm")
 
-func allProvider(ctx context.Context) model.Provider[[]Model] {
+func AllProvider(ctx context.Context) model.Provider[[]Model] {
 	return func() ([]Model, error) {
 		t := tenant.MustFromContext(ctx)
 		return GetRegistry().GetAll(t), nil
@@ -50,7 +50,7 @@ func MemberFilter(memberId uint32) model.Filter[Model] {
 
 func GetSlice(ctx context.Context) func(filters ...model.Filter[Model]) ([]Model, error) {
 	return func(filters ...model.Filter[Model]) ([]Model, error) {
-		return model.FilteredProvider(allProvider(ctx), model.Filters[Model](filters...))()
+		return model.FilteredProvider(AllProvider(ctx), model.Filters[Model](filters...))()
 	}
 }
 

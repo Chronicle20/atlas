@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-messengers/character"
 	consumer2 "atlas-messengers/kafka/consumer"
+	"atlas-messengers/messenger"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -30,23 +31,31 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	}
 }
 
-func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventLoginBody]) {
-	if event.Type != EventCharacterStatusTypeLogin {
+func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventLoginBody]) {
+	if e.Type != EventCharacterStatusTypeLogin {
 		return
 	}
-	err := character.Login(l)(ctx)(event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
+	err := character.Login(l)(ctx)(e.WorldId, e.Body.ChannelId, e.Body.MapId, e.CharacterId)
 	if err != nil {
-		l.WithError(err).Errorf("Unable to process login for character [%d].", event.CharacterId)
+		l.WithError(err).Errorf("Unable to process login for character [%d].", e.CharacterId)
 	}
 }
 
-func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventLogoutBody]) {
-	if event.Type != EventCharacterStatusTypeLogout {
+func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventLogoutBody]) {
+	if e.Type != EventCharacterStatusTypeLogout {
 		return
 	}
-	err := character.Logout(l)(ctx)(event.CharacterId)
+	err := character.Logout(l)(ctx)(e.CharacterId)
 	if err != nil {
-		l.WithError(err).Errorf("Unable to process logout for character [%d].", event.CharacterId)
+		l.WithError(err).Errorf("Unable to process logout for character [%d].", e.CharacterId)
+	}
+	m, err := model.FirstProvider(messenger.AllProvider(ctx), model.Filters(messenger.MemberFilter(e.CharacterId)))()
+	if err != nil {
+		return
+	}
+	_, err = messenger.Leave(l)(ctx)(m.Id(), e.CharacterId)
+	if err != nil {
+		return
 	}
 }
 

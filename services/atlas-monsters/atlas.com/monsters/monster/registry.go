@@ -123,7 +123,7 @@ func (r *Registry) GetMonstersInMap(tenant tenant.Model, worldId byte, channelId
 	return result
 }
 
-func (r *Registry) MoveMonster(tenant tenant.Model, uniqueId uint32, endX int16, endY int16, stance byte) {
+func (r *Registry) MoveMonster(tenant tenant.Model, uniqueId uint32, endX int16, endY int16, stance byte) Model {
 	monKey := MonsterKey{Tenant: tenant, MonsterId: uniqueId}
 
 	r.monsterLock.Lock()
@@ -132,7 +132,9 @@ func (r *Registry) MoveMonster(tenant tenant.Model, uniqueId uint32, endX int16,
 	if val, ok := r.monsterReg[monKey]; ok {
 		m := val.Move(endX, endY, stance)
 		r.monsterReg[monKey] = m
+		return m
 	}
+	return Model{}
 }
 
 func (r *Registry) ControlMonster(tenant tenant.Model, uniqueId uint32, characterId uint32) (Model, error) {

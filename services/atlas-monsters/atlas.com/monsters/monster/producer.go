@@ -28,8 +28,15 @@ func statusEventProvider[E any](worldId byte, channelId byte, mapId uint32, uniq
 	return producer.SingleMessageProvider(key, value)
 }
 
-func startControlStatusEventProvider(worldId byte, channelId byte, mapId uint32, uniqueId uint32, monsterId uint32, characterId uint32) model.Provider[[]kafka.Message] {
-	return statusEventProvider(worldId, channelId, mapId, uniqueId, monsterId, EventMonsterStatusStartControl, statusEventStartControlBody{ActorId: characterId})
+func startControlStatusEventProvider(m Model) model.Provider[[]kafka.Message] {
+	return statusEventProvider(m.WorldId(), m.ChannelId(), m.MapId(), m.UniqueId(), m.MonsterId(), EventMonsterStatusStartControl, statusEventStartControlBody{
+		ActorId: m.ControlCharacterId(),
+		X:       m.X(),
+		Y:       m.Y(),
+		Stance:  m.Stance(),
+		FH:      m.Fh(),
+		Team:    m.Team(),
+	})
 }
 
 func stopControlStatusEventProvider(worldId byte, channelId byte, mapId uint32, uniqueId uint32, monsterId uint32, characterId uint32) model.Provider[[]kafka.Message] {
@@ -70,13 +77,14 @@ func killedStatusEventProvider(worldId byte, channelId byte, mapId uint32, uniqu
 	})
 }
 
-func movementEventProvider(worldId byte, channelId byte, uniqueId uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randTimes []int32, movement Movement) model.Provider[[]kafka.Message] {
+func movementEventProvider(worldId byte, channelId byte, mapId uint32, uniqueId uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randTimes []int32, movement Movement) model.Provider[[]kafka.Message] {
 
 	key := producer.CreateKey(int(uniqueId))
 
 	value := &movementEvent{
 		WorldId:       worldId,
 		ChannelId:     channelId,
+		MapId:         mapId,
 		UniqueId:      uniqueId,
 		ObserverId:    observerId,
 		SkillPossible: skillPossible,

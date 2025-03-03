@@ -40,5 +40,5 @@ func handleDamageCommand(l logrus.FieldLogger, ctx context.Context, c command[da
 }
 
 func handleMovementCommand(l logrus.FieldLogger, ctx context.Context, c movementCommand) {
-	_ = monster.Move(l)(ctx)(c.WorldId, c.ChannelId, c.UniqueId, c.ObserverId, c.SkillPossible, c.Skill, c.SkillId, c.SkillLevel, c.MultiTarget, c.RandomTimes, c.Movement)
+	_ = monster.Move(l)(ctx)(c.UniqueId, c.ObserverId, c.SkillPossible, c.Skill, c.SkillId, c.SkillLevel, c.MultiTarget, c.RandomTimes, c.Movement)
 }

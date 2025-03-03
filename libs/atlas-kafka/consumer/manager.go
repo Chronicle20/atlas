@@ -82,10 +82,11 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 		}
 
 		r := m.rp(kafka.ReaderConfig{
-			Brokers: c.brokers,
-			Topic:   c.topic,
-			GroupID: c.groupId,
-			MaxWait: c.maxWait,
+			Brokers:     c.brokers,
+			Topic:       c.topic,
+			GroupID:     c.groupId,
+			MaxWait:     c.maxWait,
+			StartOffset: c.startOffset,
 		})
 
 		con := &Consumer{

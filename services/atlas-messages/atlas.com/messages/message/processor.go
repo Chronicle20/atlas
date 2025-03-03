@@ -99,3 +99,21 @@ func HandleWhisper(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 		}
 	}
 }
+
+func HandleMessenger(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, recipients []uint32) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, recipients []uint32) error {
+		return func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, recipients []uint32) error {
+			c, err := character.GetById(l)(ctx)(characterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to locate character chatting [%d].", characterId)
+				return err
+			}
+
+			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicChat)(messengerChatEventProvider(worldId, channelId, mapId, characterId, message, recipients))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to relay message from character [%d].", c.Id())
+			}
+			return err
+		}
+	}
+}

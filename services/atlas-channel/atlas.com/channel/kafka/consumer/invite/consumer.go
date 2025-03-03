@@ -135,6 +135,8 @@ func handleRejectedStatusEvent(sc server.Model, wp writer.Producer) message.Hand
 			// TODO send rejection to requesting character.
 		} else if e.InviteType == InviteTypeGuild {
 			eventHandler = handleGuildRejectedStatusEvent(l)(ctx)(wp)(rc.Name())
+		} else if e.InviteType == InviteTypeMessenger {
+			eventHandler = handleMessengerRejectedStatusEvent(l)(ctx)(wp)(rc.Name())
 		}
 
 		if eventHandler != nil {
@@ -158,6 +160,16 @@ func handleGuildRejectedStatusEvent(l logrus.FieldLogger) func(ctx context.Conte
 		return func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
 			return func(targetName string) model.Operator[session.Model] {
 				return session.Announce(l)(ctx)(wp)(writer.GuildOperation)(writer.GuildErrorBody2(l)(writer.GuildOperationInviteDenied, targetName))
+			}
+		}
+	}
+}
+
+func handleMessengerRejectedStatusEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
+			return func(targetName string) model.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteDeclinedBody(targetName, 0))
 			}
 		}
 	}

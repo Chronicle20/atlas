@@ -63,11 +63,11 @@ func MessengerOperationInviteBody(fromName string, messengerId uint32) BodyProdu
 	}
 }
 
-func MessengerOperationInviteSentBody(message string, mode byte) BodyProducer {
+func MessengerOperationInviteSentBody(message string, success bool) BodyProducer {
 	return func(w *response.Writer, options map[string]interface{}) []byte {
 		w.WriteByte(byte(MessengerOperationModeInviteSent))
 		w.WriteAsciiString(message)
-		w.WriteByte(mode)
+		w.WriteBool(success)
 		return w.Bytes()
 	}
 }

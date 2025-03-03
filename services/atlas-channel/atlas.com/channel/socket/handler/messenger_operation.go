@@ -23,7 +23,7 @@ const (
 	MessengerOperationChat          = MessengerOperation(6)
 )
 
-func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		mode := MessengerOperation(r.ReadByte())
 		if mode == MessengerOperationAnswerInvite {
@@ -60,29 +60,32 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ w
 			tc, err := character.GetByName(l, ctx)(targetCharacter)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to messenger.", targetCharacter)
-				return
-			}
-
-			os, err := session.GetByCharacterId(s.Tenant())(tc.Id())
-			if err != nil || s.WorldId() != os.WorldId() || s.ChannelId() != os.ChannelId() {
-				l.WithError(err).Errorf("Character [%d] not in channel. Cannot invite to messenger.", tc.Id())
+				err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteSentBody(targetCharacter, false))(s)
+				if err != nil {
+					l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
+				}
 				return
 			}
 
 			err = messenger.RequestInvite(l)(ctx)(s.CharacterId(), tc.Id())
 			if err != nil {
-				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to join messenger.", s.CharacterId(), tc.Id())
+				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
+			}
+
+			err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteSentBody(targetCharacter, true))(s)
+			if err != nil {
+				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
 			}
 			return
 		}
 		if mode == MessengerOperationDeclineInvite {
-			fromCharacter := r.ReadAsciiString()
-			other := r.ReadAsciiString()
-			zero := r.ReadByte()
-			l.Debugf("Character [%d] rejected [%s] invite to messenger. Other [%s], Zero [%d]", s.CharacterId(), fromCharacter, other, zero)
-			tc, err := character.GetByName(l, ctx)(other)
+			fromName := r.ReadAsciiString()
+			myName := r.ReadAsciiString()
+			alwaysZero := r.ReadByte()
+			l.Debugf("Character [%d] rejected [%s] invite to messenger. Other [%s], Zero [%d]", s.CharacterId(), fromName, myName, alwaysZero)
+			tc, err := character.GetByName(l, ctx)(fromName)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to messenger.", other)
+				l.WithError(err).Errorf("Unable to locate character by name [%s] to reject invitation of.", fromName)
 				return
 			}
 			err = invite.Reject(l)(ctx)(s.CharacterId(), s.WorldId(), invite.InviteTypeMessenger, tc.Id())

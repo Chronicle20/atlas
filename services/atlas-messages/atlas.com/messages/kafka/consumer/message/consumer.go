@@ -27,14 +27,15 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleGeneralChat)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMultiChat)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleWhisperChat)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMessengerChat)))
 	}
 }
 
-func handleGeneralChat(l logrus.FieldLogger, ctx context.Context, event chatCommand[generalChatBody]) {
-	if event.Type != ChatTypeGeneral {
+func handleGeneralChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[generalChatBody]) {
+	if e.Type != ChatTypeGeneral {
 		return
 	}
-	_ = message2.HandleGeneral(l)(ctx)(event.WorldId, event.ChannelId, event.MapId, event.CharacterId, event.Message, event.Body.BalloonOnly)
+	_ = message2.HandleGeneral(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.CharacterId, e.Message, e.Body.BalloonOnly)
 }
 
 func handleMultiChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[multiChatBody]) {
@@ -49,4 +50,11 @@ func handleWhisperChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[
 		return
 	}
 	_ = message2.HandleWhisper(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.CharacterId, e.Message, e.Body.RecipientName)
+}
+
+func handleMessengerChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[messengerChatBody]) {
+	if e.Type != ChatTypeMessenger {
+		return
+	}
+	_ = message2.HandleMessenger(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.CharacterId, e.Message, e.Body.Recipients)
 }

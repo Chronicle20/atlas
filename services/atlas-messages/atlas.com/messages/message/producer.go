@@ -47,3 +47,17 @@ func whisperChatEventProvider(worldId byte, channelId byte, mapId uint32, charac
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func messengerChatEventProvider(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, recipients []uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := chatEvent[messengerChatBody]{
+		WorldId:     worldId,
+		ChannelId:   channelId,
+		MapId:       mapId,
+		CharacterId: characterId,
+		Message:     message,
+		Type:        ChatTypeMessenger,
+		Body:        messengerChatBody{Recipients: recipients},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

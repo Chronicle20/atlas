@@ -41,7 +41,7 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 				return
 			}
 
-			err = cashshop.Exit(l)(ctx)(s.CharacterId(), s.WorldId())
+			err = cashshop.Exit(l)(ctx)(s.CharacterId(), s.Map())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce [%d] has returned from cash shop.", s.CharacterId())
 			}

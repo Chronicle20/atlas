@@ -14,4 +14,6 @@ type statusEvent[E any] struct {
 
 type characterMovementBody struct {
 	CharacterId uint32 `json:"characterId"`
+	ChannelId   byte   `json:"channelId"`
+	MapId       uint32 `json:"mapId"`
 }

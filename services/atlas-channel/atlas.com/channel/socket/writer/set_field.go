@@ -7,6 +7,7 @@ import (
 	"atlas-channel/character/inventory/equipable"
 	"atlas-channel/character/inventory/item"
 	"github.com/Chronicle20/atlas-constants/channel"
+	item2 "github.com/Chronicle20/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -277,50 +278,25 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 		}
 
 		// regular equipment
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Hat())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Medal())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Forehead())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Ring1())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Ring2())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Eye())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Earring())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Shoulder())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Cape())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Top())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Pendant())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Weapon())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Shield())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Gloves())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Bottom())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Belt())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Ring3())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Ring4())
-		WriteEquipableIfPresent(tenant)(w, character.Equipment().Shoes())
+		for _, t := range slot.Types {
+			if s, ok := character.Equipment().Get(t); ok {
+				WriteEquipableIfPresent(tenant)(w, s)
+			}
+		}
+
 		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 			w.WriteShort(0)
 		} else {
 			w.WriteByte(0)
 		}
+
 		// cash equipment
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Hat())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Medal())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Forehead())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Ring1())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Ring2())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Eye())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Earring())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Shoulder())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Cape())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Top())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Pendant())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Weapon())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Shield())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Gloves())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Bottom())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Belt())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Ring3())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Ring4())
-		WriteCashEquipableIfPresent(tenant)(w, character.Equipment().Shoes())
+		for _, t := range slot.Types {
+			if s, ok := character.Equipment().Get(t); ok {
+				WriteCashEquipableIfPresent(tenant)(w, s)
+			}
+		}
+
 		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 			w.WriteShort(0)
 		} else {
@@ -439,21 +415,43 @@ func WriteCashEquipableInfo(tenant tenant.Model) func(w *response.Writer, zeroPo
 	}
 }
 
+var cashItemId = int64(777000000)
+
 func WriteCashItemInfo(_ tenant.Model) func(w *response.Writer, zeroPosition bool) model.Operator[item.Model] {
 	return func(w *response.Writer, zeroPosition bool) model.Operator[item.Model] {
 		return func(i item.Model) error {
+			cashItemId += 1
 			if !zeroPosition {
 				w.WriteInt8(int8(i.Slot()))
 			}
-			w.WriteByte(2)
+			if item2.GetClassification(item2.Id(i.ItemId())) != item2.Classification(500) {
+				w.WriteByte(2)
+			} else {
+				w.WriteByte(3)
+			}
 			w.WriteInt(i.ItemId())
 			w.WriteBool(true)
-			w.WriteLong(777000000) // pet id, ring id, or incremental number
-			w.WriteLong(uint64(getTime(i.Expiration())))
-			w.WriteShort(uint16(i.Quantity()))
-			w.WriteAsciiString(i.Owner())
-			w.WriteShort(i.Flag())
-			return nil
+			if item2.GetClassification(item2.Id(i.ItemId())) != item2.Classification(500) {
+				w.WriteInt64(cashItemId) // pet id, ring id, or incremental number
+				w.WriteInt64(getTime(i.Expiration()))
+				w.WriteShort(uint16(i.Quantity()))
+				w.WriteAsciiString(i.Owner())
+				w.WriteShort(i.Flag())
+				return nil
+			} else {
+				w.WriteInt64(1)
+				w.WriteInt64(msTime(time.Now().Add(12 * time.Hour)))
+				WritePaddedString(w, "Mini Yeti", 13)
+				w.WriteByte(1)   // level
+				w.WriteShort(0)  // tameness
+				w.WriteByte(100) // fullness
+				w.WriteInt64(msTime(time.Now().Add(24 * time.Hour)))
+				w.WriteShort(0)   // attribute
+				w.WriteShort(0)   // skill
+				w.WriteInt(18000) // remaining life
+				w.WriteShort(0)   // attribute
+				return nil
+			}
 		}
 	}
 }
@@ -467,7 +465,7 @@ func WriteItemInfo(_ tenant.Model) func(w *response.Writer, zeroPosition bool) m
 			w.WriteByte(2)
 			w.WriteInt(i.ItemId())
 			w.WriteBool(false)
-			w.WriteLong(uint64(getTime(i.Expiration())))
+			w.WriteInt64(getTime(i.Expiration()))
 			w.WriteShort(uint16(i.Quantity()))
 			w.WriteAsciiString(i.Owner())
 			w.WriteShort(i.Flag())

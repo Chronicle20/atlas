@@ -49,7 +49,7 @@ func requestCreate(accountId uint32, worldId byte, name string, gender byte, map
 		Intelligence: 4,
 		Luck:         4,
 	}
-	return rest.MakePostRequest[RestModel](fmt.Sprintf(getBaseRequest()+resource), i)
+	return rest.MakePostRequest[RestModel](getBaseRequest()+resource, i)
 }
 
 func requestCreateItem(characterId uint32, itemId uint32) requests.Request[item.RestModel] {

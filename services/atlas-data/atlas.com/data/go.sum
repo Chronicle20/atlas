@@ -1,5 +1,3 @@
-github.com/Chronicle20/atlas-constants v1.0.12 h1:mxISq0ynVp1aujsggxTQWGgNSfZqN+r/cZLFyxfA3Qc=
-github.com/Chronicle20/atlas-constants v1.0.12/go.mod h1:iBrQ04uVlMm1Tw0e0shhxwXng0zBtUsSSgSuXr/QhCU=
 github.com/Chronicle20/atlas-constants v1.0.13 h1:JEDEYbuT5/lhLiA8LP/U++hSmYdv8o+Ix+vD92K+3gs=
 github.com/Chronicle20/atlas-constants v1.0.13/go.mod h1:iBrQ04uVlMm1Tw0e0shhxwXng0zBtUsSSgSuXr/QhCU=
 github.com/Chronicle20/atlas-model v1.2.1 h1:F/SYo4PAHd1BuZz5/RV65V4uv5wXHzE95LE4nkmhO4g=
@@ -34,8 +32,6 @@ github.com/gorilla/mux v1.8.1 h1:TuBL49tXwgrFYWhqrNgrUNEY92u81SPhu7sTdzQEiWY=
 github.com/gorilla/mux v1.8.1/go.mod h1:AKf9I4AEqPTmMytcMc0KkNouC66V3BtZ4qD5fmWSiMQ=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.1 h1:e9Rjr40Z98/clHv5Yg79Is0NtosR5LXRvdr7o/6NwbA=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.1/go.mod h1:tIxuGz/9mpox++sgp9fJjHO0+q1X9/UOWd798aAm22M=
-github.com/jtumidanski/api2go v1.0.2 h1:IUjaUw90/IVzFDGOGF7sCqlPXPJGv1F19xpmjaK5PQA=
-github.com/jtumidanski/api2go v1.0.2/go.mod h1:zW20JAl5i6+DsWyEfg8CaWO7Z1jBBierOg6sz7GEcQY=
 github.com/jtumidanski/api2go v1.0.3 h1:i4vfInzsyScoEJooj4sWPzn4kwBvE6a7eNFAf4IK4Yg=
 github.com/jtumidanski/api2go v1.0.3/go.mod h1:zW20JAl5i6+DsWyEfg8CaWO7Z1jBBierOg6sz7GEcQY=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=

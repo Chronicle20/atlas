@@ -76,7 +76,7 @@ func (r RestModel) GetReferences() []jsonapi.Reference {
 }
 
 var equipmentIds = []string{"hat", "medal", "forehead", "ring1", "ring2", "eye", "earring", "shoulder", "cape", "top", "pendant", "weapon", "shield", "gloves", "bottom", "belt", "ring3", "ring4", "shoes"}
-var inventoryIds = []string{"equipable", "useable", "setup", "etc", "cash"}
+var inventoryIds = []string{inventory.TypeEquip, inventory.TypeUse, inventory.TypeSetup, inventory.TypeETC, inventory.TypeCash}
 
 func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
 	var result []jsonapi.ReferenceID
@@ -198,20 +198,20 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 	}
 	if name == "inventories" {
 		for _, id := range IDs {
-			if id == "equipable" {
-				r.Inventory.Equipable = inventory.EquipableRestModel{Type: inventory.TypeEquip}
+			if id == inventory.TypeEquip {
+				r.Inventory.Equipable = inventory.EquipableRestModel{Type: id}
 			}
-			if id == "useable" {
-				r.Inventory.Useable = inventory.ItemRestModel{Type: inventory.TypeUse}
+			if id == inventory.TypeUse {
+				r.Inventory.Useable = inventory.ItemRestModel{Type: id}
 			}
-			if id == "setup" {
-				r.Inventory.Setup = inventory.ItemRestModel{Type: inventory.TypeSetup}
+			if id == inventory.TypeSetup {
+				r.Inventory.Setup = inventory.ItemRestModel{Type: id}
 			}
-			if id == "etc" {
-				r.Inventory.Etc = inventory.ItemRestModel{Type: inventory.TypeETC}
+			if id == inventory.TypeETC {
+				r.Inventory.Etc = inventory.ItemRestModel{Type: id}
 			}
-			if id == "cash" {
-				r.Inventory.Cash = inventory.ItemRestModel{Type: inventory.TypeCash}
+			if id == inventory.TypeCash {
+				r.Inventory.Cash = inventory.ItemRestModel{Type: id}
 			}
 		}
 		return nil
@@ -219,9 +219,175 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 	return nil
 }
 
-func (r *RestModel) SetReferencedStructs(references []jsonapi.Data) error {
-	var
+func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+	if refMap, ok := references["equipment"]; ok {
+		for _, id := range equipmentIds {
+			var data jsonapi.Data
+			if data, ok = refMap[id]; ok {
+				var srm slot.RestModel
+				if id == slot.TypeHat {
+					srm = r.Equipment.Hat
+				}
+				if id == slot.TypeMedal {
+					srm = r.Equipment.Medal
+				}
+				if id == slot.TypeForehead {
+					srm = r.Equipment.Forehead
+				}
+				if id == slot.TypeRing1 {
+					srm = r.Equipment.Ring1
+				}
+				if id == slot.TypeRing2 {
+					srm = r.Equipment.Ring2
+				}
+				if id == slot.TypeEye {
+					srm = r.Equipment.Eye
+				}
+				if id == slot.TypeEarring {
+					srm = r.Equipment.Earring
+				}
+				if id == slot.TypeShoulder {
+					srm = r.Equipment.Shoulder
+				}
+				if id == slot.TypeCape {
+					srm = r.Equipment.Cape
+				}
+				if id == slot.TypeTop {
+					srm = r.Equipment.Top
+				}
+				if id == slot.TypePendant {
+					srm = r.Equipment.Pendant
+				}
+				if id == slot.TypeWeapon {
+					srm = r.Equipment.Weapon
+				}
+				if id == slot.TypeShield {
+					srm = r.Equipment.Shield
+				}
+				if id == slot.TypeGloves {
+					srm = r.Equipment.Gloves
+				}
+				if id == slot.TypeBelt {
+					srm = r.Equipment.Belt
+				}
+				if id == slot.TypeRing3 {
+					srm = r.Equipment.Ring3
+				}
+				if id == slot.TypeRing4 {
+					srm = r.Equipment.Ring4
+				}
+				if id == slot.TypeShoes {
+					srm = r.Equipment.Shoes
+				}
 
+				err := jsonapi.ProcessIncludeData(&srm, data, references)
+				if err != nil {
+					return err
+				}
+
+				if id == slot.TypeHat {
+					r.Equipment.Hat = srm
+				}
+				if id == slot.TypeMedal {
+					r.Equipment.Medal = srm
+				}
+				if id == slot.TypeForehead {
+					r.Equipment.Forehead = srm
+				}
+				if id == slot.TypeRing1 {
+					r.Equipment.Ring1 = srm
+				}
+				if id == slot.TypeRing2 {
+					r.Equipment.Ring2 = srm
+				}
+				if id == slot.TypeEye {
+					r.Equipment.Eye = srm
+				}
+				if id == slot.TypeEarring {
+					r.Equipment.Earring = srm
+				}
+				if id == slot.TypeShoulder {
+					r.Equipment.Shoulder = srm
+				}
+				if id == slot.TypeCape {
+					r.Equipment.Cape = srm
+				}
+				if id == slot.TypeTop {
+					r.Equipment.Top = srm
+				}
+				if id == slot.TypePendant {
+					r.Equipment.Pendant = srm
+				}
+				if id == slot.TypeWeapon {
+					r.Equipment.Weapon = srm
+				}
+				if id == slot.TypeShield {
+					r.Equipment.Shield = srm
+				}
+				if id == slot.TypeGloves {
+					r.Equipment.Gloves = srm
+				}
+				if id == slot.TypeBelt {
+					r.Equipment.Belt = srm
+				}
+				if id == slot.TypeRing3 {
+					r.Equipment.Ring3 = srm
+				}
+				if id == slot.TypeRing4 {
+					r.Equipment.Ring4 = srm
+				}
+				if id == slot.TypeShoes {
+					r.Equipment.Shoes = srm
+				}
+			}
+		}
+	}
+	if refMap, ok := references["inventories"]; ok {
+		for _, id := range inventoryIds {
+			var data jsonapi.Data
+			if data, ok = refMap[id]; ok {
+				if id == inventory.TypeEquip {
+					srm := r.Inventory.Equipable
+					err := jsonapi.ProcessIncludeData(&srm, data, references)
+					if err != nil {
+						return err
+					}
+					r.Inventory.Equipable = srm
+					continue
+				} else {
+					var srm inventory.ItemRestModel
+					if id == inventory.TypeUse {
+						srm = r.Inventory.Useable
+					}
+					if id == inventory.TypeSetup {
+						srm = r.Inventory.Setup
+					}
+					if id == inventory.TypeETC {
+						srm = r.Inventory.Etc
+					}
+					if id == inventory.TypeCash {
+						srm = r.Inventory.Cash
+					}
+					err := jsonapi.ProcessIncludeData(&srm, data, references)
+					if err != nil {
+						return err
+					}
+					if id == inventory.TypeUse {
+						r.Inventory.Useable = srm
+					}
+					if id == inventory.TypeSetup {
+						r.Inventory.Setup = srm
+					}
+					if id == inventory.TypeETC {
+						r.Inventory.Etc = srm
+					}
+					if id == inventory.TypeCash {
+						r.Inventory.Cash = srm
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 

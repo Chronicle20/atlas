@@ -2,7 +2,9 @@ package slot
 
 import (
 	"atlas-character/equipable"
+	"encoding/json"
 	"github.com/jtumidanski/api2go/jsonapi"
+	"strconv"
 )
 
 type RestModel struct {
@@ -25,17 +27,17 @@ func (r *RestModel) SetID(strType string) error {
 	return nil
 }
 
+var References = []string{"equipable", "cashEquipable"}
+
 func (r RestModel) GetReferences() []jsonapi.Reference {
-	return []jsonapi.Reference{
-		{
-			Type: "equipable",
-			Name: "equipable",
-		},
-		{
-			Type: "cashEquipable",
-			Name: "cashEquipable",
-		},
+	references := make([]jsonapi.Reference, 0)
+	for _, ref := range References {
+		references = append(references, jsonapi.Reference{
+			Type: ref,
+			Name: ref,
+		})
 	}
+	return references
 }
 
 func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
@@ -69,6 +71,22 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 }
 
 func (r *RestModel) SetToOneReferenceID(name, ID string) error {
+	if name == "equipable" {
+		id, err := strconv.Atoi(ID)
+		if err != nil {
+			return err
+		}
+		r.Equipable = &equipable.RestModel{Id: uint32(id)}
+		return nil
+	}
+	if name == "cashEquipable" {
+		id, err := strconv.Atoi(ID)
+		if err != nil {
+			return err
+		}
+		r.CashEquipable = &equipable.RestModel{Id: uint32(id)}
+		return nil
+	}
 	return nil
 }
 
@@ -76,7 +94,31 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 	return nil
 }
 
-func (r *RestModel) SetReferencedStructs(references []jsonapi.Data) error {
+func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+	if refMap, ok := references["equipables"]; ok {
+		for _, ref := range r.GetReferencedIDs() {
+			var data jsonapi.Data
+			if data, ok = refMap[ref.ID]; ok {
+				var erm *equipable.RestModel
+				if ref.Type == "equipable" {
+					erm = r.Equipable
+				}
+				if ref.Type == "cashEquipable" {
+					erm = r.CashEquipable
+				}
+				err := json.Unmarshal(data.Attributes, erm)
+				if err != nil {
+					return err
+				}
+				if ref.Type == "equipable" {
+					r.Equipable = erm
+				}
+				if ref.Type == "cashEquipable" {
+					r.CashEquipable = erm
+				}
+			}
+		}
+	}
 	return nil
 }
 

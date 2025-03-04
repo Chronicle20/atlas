@@ -43,6 +43,10 @@ func (m Model) ReferenceId() uint32 {
 	return m.referenceId
 }
 
+func (m Model) Strength() uint16 {
+	return m.strength
+}
+
 func ReferenceId(m Model) (uint32, error) {
 	return m.ReferenceId(), nil
 }

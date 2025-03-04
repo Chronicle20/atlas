@@ -74,6 +74,39 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 	if om.Id() != im.Id() {
 		t.Fatalf("Failed to unmarshal rest model")
 	}
+
+	// do some basic tests
+	if im.Id() != om.Id() {
+		t.Fatalf("Input and output ids do not match")
+	}
+	if im.Name() != om.Name() {
+		t.Fatalf("Input and output names do not match")
+	}
+	if im.GetEquipment().Hat().Equipable.ItemId() != om.GetEquipment().Hat().Equipable.ItemId() {
+		t.Fatalf("Equipment does not match")
+	}
+	if im.GetEquipment().Hat().Equipable.Strength() != om.GetEquipment().Hat().Equipable.Strength() {
+		t.Fatalf("Equipment does not match")
+	}
+	if im.GetEquipment().Weapon().Equipable.ItemId() != om.GetEquipment().Weapon().Equipable.ItemId() {
+		t.Fatalf("Equipment does not match")
+	}
+	if len(im.GetInventory().Equipable().Items()) != len(om.GetInventory().Equipable().Items()) {
+		t.Fatalf("Inventory does not match")
+	}
+	if len(im.GetInventory().Useable().Items()) != len(om.GetInventory().Useable().Items()) {
+		t.Fatalf("Inventory does not match")
+	}
+	if len(im.GetInventory().Setup().Items()) != len(om.GetInventory().Setup().Items()) {
+		t.Fatalf("Inventory does not match")
+	}
+	if len(im.GetInventory().Etc().Items()) != len(om.GetInventory().Etc().Items()) {
+		t.Fatalf("Inventory does not match")
+	}
+	if len(im.GetInventory().Cash().Items()) != len(om.GetInventory().Cash().Items()) {
+		t.Fatalf("Inventory does not match")
+	}
+
 }
 
 func createTestInventory() (inventory.Model, error) {

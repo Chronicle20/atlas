@@ -79,6 +79,8 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/jtumidanski/api2go v1.0.2 h1:IUjaUw90/IVzFDGOGF7sCqlPXPJGv1F19xpmjaK5PQA=
 github.com/jtumidanski/api2go v1.0.2/go.mod h1:zW20JAl5i6+DsWyEfg8CaWO7Z1jBBierOg6sz7GEcQY=
+github.com/jtumidanski/api2go v1.0.3 h1:i4vfInzsyScoEJooj4sWPzn4kwBvE6a7eNFAf4IK4Yg=
+github.com/jtumidanski/api2go v1.0.3/go.mod h1:zW20JAl5i6+DsWyEfg8CaWO7Z1jBBierOg6sz7GEcQY=
 github.com/julienschmidt/httprouter v1.3.0 h1:U0609e9tgbseu3rBINet9P48AI/D3oJs4dN7jwJOQ1U=
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/klauspost/compress v1.15.9/go.mod h1:PhcZ0MbTNciWF3rruxRgKxI5NkcHHrHUDtV4Yw2GlzU=

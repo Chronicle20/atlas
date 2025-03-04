@@ -1,8 +1,6 @@
 module atlas-character
 
-go 1.24
-
-toolchain go1.24.0
+go 1.24.1
 
 require (
 	github.com/Chronicle20/atlas-constants v1.0.13

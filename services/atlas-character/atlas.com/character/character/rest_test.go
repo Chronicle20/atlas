@@ -4,6 +4,7 @@ import (
 	"atlas-character/character"
 	"atlas-character/equipable"
 	"atlas-character/equipment"
+	"atlas-character/equipment/slot"
 	"atlas-character/inventory"
 	"atlas-character/inventory/item"
 	"github.com/Chronicle20/atlas-model/model"
@@ -82,13 +83,10 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 	if im.Name() != om.Name() {
 		t.Fatalf("Input and output names do not match")
 	}
-	if im.GetEquipment().Hat().Equipable.ItemId() != om.GetEquipment().Hat().Equipable.ItemId() {
+	if !sameEquipment(im, om, slot.TypeHat) {
 		t.Fatalf("Equipment does not match")
 	}
-	if im.GetEquipment().Hat().Equipable.Strength() != om.GetEquipment().Hat().Equipable.Strength() {
-		t.Fatalf("Equipment does not match")
-	}
-	if im.GetEquipment().Weapon().Equipable.ItemId() != om.GetEquipment().Weapon().Equipable.ItemId() {
+	if !sameEquipment(im, om, slot.TypeWeapon) {
 		t.Fatalf("Equipment does not match")
 	}
 	if len(im.GetInventory().Equipable().Items()) != len(om.GetInventory().Equipable().Items()) {
@@ -106,7 +104,102 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 	if len(im.GetInventory().Cash().Items()) != len(om.GetInventory().Cash().Items()) {
 		t.Fatalf("Inventory does not match")
 	}
+}
 
+func sameEquipment(m1 character.Model, m2 character.Model, slotType string) bool {
+	e1, ok := m1.GetEquipment().Get(slotType)
+	if !ok {
+		return false
+	}
+	e2, ok := m2.GetEquipment().Get(slotType)
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.Id() == e2.Equipable.Id()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.Id() == e2.Equipable.Id()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.ItemId() == e2.Equipable.ItemId()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.Slot() == e2.Equipable.Slot()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.ReferenceId() == e2.Equipable.ReferenceId()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.Strength() == e2.Equipable.Strength()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.Dexterity() == e2.Equipable.Dexterity()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.Intelligence() == e2.Equipable.Intelligence()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.Luck() == e2.Equipable.Luck()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.HP() == e2.Equipable.HP()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.MP() == e2.Equipable.MP()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.WeaponAttack() == e2.Equipable.WeaponAttack()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.MagicAttack() == e2.Equipable.MagicAttack()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.WeaponDefense() == e2.Equipable.WeaponDefense()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.MagicDefense() == e2.Equipable.MagicDefense()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.Accuracy() == e2.Equipable.Accuracy()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.Avoidability() == e2.Equipable.Avoidability()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.Hands() == e2.Equipable.Hands()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.Speed() == e2.Equipable.Speed()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.Jump() == e2.Equipable.Jump()
+	if !ok {
+		return false
+	}
+	ok = e1.Equipable.Slots() == e2.Equipable.Slots()
+	if !ok {
+		return false
+	}
+	return true
 }
 
 func createTestInventory() (inventory.Model, error) {
@@ -227,12 +320,12 @@ func createTestEquipment() equipment.Model {
 		SetSlot(-107).
 		Build()
 
-	eqm := equipment.NewModel().
-		SetHat(&hat).
-		SetTop(&top).
-		SetWeapon(&weapon).
-		SetBottom(&bottoms).
-		SetShoes(&shoes).
-		SetCashShoes(&cashShoes)
+	eqm := equipment.NewModel()
+	eqm.SetEquipable(slot.TypeHat, false, hat)
+	eqm.SetEquipable(slot.TypeTop, false, top)
+	eqm.SetEquipable(slot.TypeWeapon, false, weapon)
+	eqm.SetEquipable(slot.TypeBottom, false, bottoms)
+	eqm.SetEquipable(slot.TypeShoes, false, shoes)
+	eqm.SetEquipable(slot.TypeShoes, true, cashShoes)
 	return eqm
 }

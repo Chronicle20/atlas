@@ -16,7 +16,6 @@ const (
 	PositionEarring  Position = -4
 	PositionShoulder Position = 99
 	PositionCape     Position = -9
-	PositionOverall  Position = -5
 	PositionTop      Position = -5
 	PositionPendant  Position = -17
 	PositionWeapon   Position = -11
@@ -26,8 +25,32 @@ const (
 	PositionBelt     Position = -50
 	PositionRing3    Position = -15
 	PositionRing4    Position = -16
-	PositionShoes             = -7
+	PositionShoes    Position = -7
 )
+
+const (
+	TypeHat      = "hat"
+	TypeMedal    = "medal"
+	TypeForehead = "forehead"
+	TypeRing1    = "ring1"
+	TypeRing2    = "ring2"
+	TypeEye      = "eye"
+	TypeEarring  = "earring"
+	TypeShoulder = "shoulder"
+	TypeCape     = "cape"
+	TypeTop      = "top"
+	TypePendant  = "pendant"
+	TypeWeapon   = "weapon"
+	TypeShield   = "shield"
+	TypeGloves   = "gloves"
+	TypeBottom   = "pants"
+	TypeBelt     = "belt"
+	TypeRing3    = "ring3"
+	TypeRing4    = "ring4"
+	TypeShoes    = "shoes"
+)
+
+var Types = []string{TypeHat, TypeMedal, TypeForehead, TypeRing1, TypeRing2, TypeEye, TypeEarring, TypeShoulder, TypeCape, TypeTop, TypePendant, TypeWeapon, TypeShield, TypeGloves, TypeBottom, TypeBelt, TypeRing3, TypeRing4, TypeShoes}
 
 type Model struct {
 	Position      Position

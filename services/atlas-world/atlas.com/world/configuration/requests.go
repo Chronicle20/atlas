@@ -3,7 +3,6 @@ package configuration
 import (
 	"atlas-world/configuration/tenant"
 	"atlas-world/rest"
-	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

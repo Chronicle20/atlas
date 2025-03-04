@@ -1,6 +1,6 @@
 module atlas-parties
 
-go 1.23.1
+go 1.24.1
 
 require (
 	github.com/Chronicle20/atlas-kafka v1.1.6

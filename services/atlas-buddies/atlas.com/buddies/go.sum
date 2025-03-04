@@ -1,13 +1,11 @@
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/Chronicle20/atlas-kafka v1.1.5 h1:zjCoBbvycWwRCD/4ogr8zfp9uCYfmbbdhg4TmxOIGuM=
-github.com/Chronicle20/atlas-kafka v1.1.5/go.mod h1:gIUReYozVBJswQCsUu0xXD+rZE+alYhA/L7ATgxxBNc=
 github.com/Chronicle20/atlas-kafka v1.1.6 h1:7i2YavRuGK7b2j5DZVRhmHgwuua94pPEVg3JpzfLkec=
 github.com/Chronicle20/atlas-kafka v1.1.6/go.mod h1:gIUReYozVBJswQCsUu0xXD+rZE+alYhA/L7ATgxxBNc=
 github.com/Chronicle20/atlas-model v1.2.1 h1:F/SYo4PAHd1BuZz5/RV65V4uv5wXHzE95LE4nkmhO4g=
 github.com/Chronicle20/atlas-model v1.2.1/go.mod h1:5FNYT/ypml+goxft0XCACTEp6666yys+l6LTxSPeh1k=
-github.com/Chronicle20/atlas-rest v1.2.8 h1:eWLapf8h9LLDReucByGa+UgIGaS2Fh0CG9TGShfwbhk=
-github.com/Chronicle20/atlas-rest v1.2.8/go.mod h1:3edoNAfSFcpKmYlsjZXPWIfJTAGlPcFNH19AgBY2SCs=
+github.com/Chronicle20/atlas-rest v1.2.9 h1:39zdQJ+rBIssjhqL0P51v01OSYqs6vq/oQbMJrzRPT0=
+github.com/Chronicle20/atlas-rest v1.2.9/go.mod h1:r2AXc8SprTCKdqXjZLXFTr1RW/CDSaY9xVG8jwamfOU=
 github.com/Chronicle20/atlas-tenant v1.0.4 h1:zS+hK56eNTVDlvTvSFN4wo9hZQ9aM/6SxXzRL+9P2Zk=
 github.com/Chronicle20/atlas-tenant v1.0.4/go.mod h1:6DHjFyHY9wRfOuphFwmwklf50hYm74L7MlWH7wqgnRQ=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2 h1:5IcZpTvzydCQeHzK4Ef/D5rrSqwxob0t8PQPMybUNFM=
@@ -50,8 +48,6 @@ github.com/jinzhu/inflection v1.0.0 h1:K317FqzuhWc8YvSVlFMCCUb36O/S9MCKRDI7QkRKD
 github.com/jinzhu/inflection v1.0.0/go.mod h1:h+uFLlag+Qp1Va5pdKtLDYj+kHp5pxUVkryuEj+Srlc=
 github.com/jinzhu/now v1.1.5 h1:/o9tlHleP7gOFmsnYNz3RGnqzefHA47wQpKrrdTIwXQ=
 github.com/jinzhu/now v1.1.5/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
-github.com/jtumidanski/api2go v1.0.2 h1:IUjaUw90/IVzFDGOGF7sCqlPXPJGv1F19xpmjaK5PQA=
-github.com/jtumidanski/api2go v1.0.2/go.mod h1:zW20JAl5i6+DsWyEfg8CaWO7Z1jBBierOg6sz7GEcQY=
 github.com/jtumidanski/api2go v1.0.3 h1:i4vfInzsyScoEJooj4sWPzn4kwBvE6a7eNFAf4IK4Yg=
 github.com/jtumidanski/api2go v1.0.3/go.mod h1:zW20JAl5i6+DsWyEfg8CaWO7Z1jBBierOg6sz7GEcQY=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=

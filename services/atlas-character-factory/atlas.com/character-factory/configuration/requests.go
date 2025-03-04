@@ -3,7 +3,6 @@ package configuration
 import (
 	"atlas-character-factory/configuration/tenant"
 	"atlas-character-factory/rest"
-	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

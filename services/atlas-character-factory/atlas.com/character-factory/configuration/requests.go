@@ -17,5 +17,5 @@ func getBaseRequest() string {
 }
 
 func requestAllTenants() requests.Request[[]tenant.RestModel] {
-	return rest.MakeGetRequest[[]tenant.RestModel](fmt.Sprintf(getBaseRequest() + AllTenants))
+	return rest.MakeGetRequest[[]tenant.RestModel](getBaseRequest() + AllTenants)
 }

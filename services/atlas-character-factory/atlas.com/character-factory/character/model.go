@@ -42,6 +42,10 @@ func (m Model) Id() uint32 {
 	return m.id
 }
 
+func (m Model) GetEquipment() equipment.Model {
+	return m.equipment
+}
+
 type ItemGained struct {
 	ItemId uint32
 	Slot   int16

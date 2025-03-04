@@ -19,7 +19,8 @@ const (
 	TypeCash            = "CASH"
 )
 
-var Types = []Type{TypeValueEquip, TypeValueUse, TypeValueSetup, TypeValueETC, TypeValueCash}
+var TypeValues = []Type{TypeValueEquip, TypeValueUse, TypeValueSetup, TypeValueETC, TypeValueCash}
+var Types = []string{TypeEquip, TypeUse, TypeSetup, TypeETC, TypeCash}
 
 type Type int8
 

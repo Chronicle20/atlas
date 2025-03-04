@@ -5,6 +5,24 @@ import (
 	"atlas-login/character/inventory/item"
 )
 
+type Type int8
+
+const (
+	TypeValueEquip Type = 1
+	TypeValueUse   Type = 2
+	TypeValueSetup Type = 3
+	TypeValueETC   Type = 4
+	TypeValueCash  Type = 5
+	TypeEquip           = "EQUIP"
+	TypeUse             = "USE"
+	TypeSetup           = "SETUP"
+	TypeETC             = "ETC"
+	TypeCash            = "CASH"
+)
+
+var TypeValues = []Type{TypeValueEquip, TypeValueUse, TypeValueSetup, TypeValueETC, TypeValueCash}
+var Types = []string{TypeEquip, TypeUse, TypeSetup, TypeETC, TypeCash}
+
 type Model struct {
 	equipable EquipableModel
 	useable   ItemModel

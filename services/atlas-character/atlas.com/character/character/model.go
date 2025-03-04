@@ -210,6 +210,10 @@ func (m Model) GetSkillLevel(skillId uint32) byte {
 	return 0
 }
 
+func (m Model) GetInventory() inventory.Model {
+	return m.inventory
+}
+
 type modelBuilder struct {
 	id                 uint32
 	accountId          uint32

@@ -5,6 +5,7 @@ import (
 	"atlas-character/inventory/item"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/jtumidanski/api2go/jsonapi"
+	"strconv"
 )
 
 type RestModel struct {
@@ -18,7 +19,7 @@ type RestModel struct {
 type EquipableRestModel struct {
 	Type     string                `json:"-"`
 	Capacity uint32                `json:"capacity"`
-	Items    []equipable.RestModel `json:"items"`
+	Items    []equipable.RestModel `json:"-"`
 }
 
 func (r EquipableRestModel) GetName() string {
@@ -27,6 +28,11 @@ func (r EquipableRestModel) GetName() string {
 
 func (r EquipableRestModel) GetID() string {
 	return r.Type
+}
+
+func (r *EquipableRestModel) SetID(strType string) error {
+	r.Type = strType
+	return nil
 }
 
 func (r EquipableRestModel) GetReferences() []jsonapi.Reference {
@@ -59,10 +65,45 @@ func (r EquipableRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	return result
 }
 
+func (r *EquipableRestModel) SetToOneReferenceID(name, ID string) error {
+	return nil
+}
+
+func (r *EquipableRestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+	if name == "equipables" {
+		for _, idStr := range IDs {
+			id, err := strconv.Atoi(idStr)
+			if err != nil {
+				return err
+			}
+			r.Items = append(r.Items, equipable.RestModel{Id: uint32(id)})
+		}
+	}
+	return nil
+}
+
+func (r *EquipableRestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+	if refMap, ok := references["equipables"]; ok {
+		items := make([]equipable.RestModel, 0)
+		for _, ri := range r.Items {
+			if ref, ok := refMap[ri.GetID()]; ok {
+				wip := ri
+				err := jsonapi.ProcessIncludeData(&wip, ref, references)
+				if err != nil {
+					return err
+				}
+				items = append(items, wip)
+			}
+		}
+		r.Items = items
+	}
+	return nil
+}
+
 type ItemRestModel struct {
 	Type     string           `json:"-"`
 	Capacity uint32           `json:"capacity"`
-	Items    []item.RestModel `json:"items"`
+	Items    []item.RestModel `json:"-"`
 }
 
 func (r ItemRestModel) GetName() string {
@@ -71,6 +112,11 @@ func (r ItemRestModel) GetName() string {
 
 func (r ItemRestModel) GetID() string {
 	return r.Type
+}
+
+func (r *ItemRestModel) SetID(strType string) error {
+	r.Type = strType
+	return nil
 }
 
 func (r ItemRestModel) GetReferences() []jsonapi.Reference {
@@ -101,6 +147,41 @@ func (r ItemRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	}
 
 	return result
+}
+
+func (r *ItemRestModel) SetToOneReferenceID(name, ID string) error {
+	return nil
+}
+
+func (r *ItemRestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+	if name == "items" {
+		for _, idStr := range IDs {
+			id, err := strconv.Atoi(idStr)
+			if err != nil {
+				return err
+			}
+			r.Items = append(r.Items, item.RestModel{Id: uint32(id)})
+		}
+	}
+	return nil
+}
+
+func (r *ItemRestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+	if refMap, ok := references["items"]; ok {
+		items := make([]item.RestModel, 0)
+		for _, ri := range r.Items {
+			if ref, ok := refMap[ri.GetID()]; ok {
+				wip := ri
+				err := jsonapi.ProcessIncludeData(&wip, ref, references)
+				if err != nil {
+					return err
+				}
+				items = append(items, wip)
+			}
+		}
+		r.Items = items
+	}
+	return nil
 }
 
 func Transform(m Model) (RestModel, error) {

@@ -2,34 +2,10 @@ package slot
 
 import (
 	"errors"
-	"strings"
 )
 
-const (
-	TypeHat      = "hat"
-	TypeMedal    = "medal"
-	TypeForehead = "forehead"
-	TypeRing1    = "ring1"
-	TypeRing2    = "ring2"
-	TypeEye      = "eye"
-	TypeEarring  = "earring"
-	TypeShoulder = "shoulder"
-	TypeCape     = "cape"
-	TypeTop      = "top"
-	TypePendant  = "pendant"
-	TypeWeapon   = "weapon"
-	TypeShield   = "shield"
-	TypeGloves   = "gloves"
-	TypeBottom   = "pants"
-	TypeBelt     = "belt"
-	TypeRing3    = "ring3"
-	TypeRing4    = "ring4"
-	TypeShoes    = "shoes"
-	TypeOverall  = "overall"
-)
-
-func PositionFromType(slotType string) (Position, error) {
-	switch strings.ToLower(slotType) {
+func PositionFromType(slotType Type) (Position, error) {
+	switch slotType {
 	case TypeHat:
 		return PositionHat, nil
 	case TypeMedal:
@@ -48,8 +24,6 @@ func PositionFromType(slotType string) (Position, error) {
 		return PositionShoulder, nil
 	case TypeCape:
 		return PositionCape, nil
-	case TypeOverall:
-		return PositionOverall, nil
 	case TypeTop:
 		return PositionTop, nil
 	case TypePendant:
@@ -72,4 +46,48 @@ func PositionFromType(slotType string) (Position, error) {
 		return PositionShoes, nil
 	}
 	return PositionHat, errors.New("unable to map type to position")
+}
+
+func TypeFromPosition(position Position) (Type, error) {
+	switch position {
+	case PositionHat:
+		return TypeHat, nil
+	case PositionMedal:
+		return TypeMedal, nil
+	case PositionForehead:
+		return TypeForehead, nil
+	case PositionRing1:
+		return TypeRing1, nil
+	case PositionRing2:
+		return TypeRing2, nil
+	case PositionEye:
+		return TypeEye, nil
+	case PositionEarring:
+		return TypeEarring, nil
+	case PositionShoulder:
+		return TypeShoulder, nil
+	case PositionCape:
+		return TypeCape, nil
+	case PositionTop:
+		return TypeTop, nil
+	case PositionPendant:
+		return TypePendant, nil
+	case PositionWeapon:
+		return TypeWeapon, nil
+	case PositionShield:
+		return TypeShield, nil
+	case PositionGloves:
+		return TypeGloves, nil
+	case PositionBottom:
+		return TypeBottom, nil
+	case PositionBelt:
+		return TypeBelt, nil
+	case PositionRing3:
+		return TypeRing3, nil
+	case PositionRing4:
+		return TypeRing4, nil
+	case PositionShoes:
+		return TypeShoes, nil
+	}
+	return "", errors.New("unable to map position to type")
 }

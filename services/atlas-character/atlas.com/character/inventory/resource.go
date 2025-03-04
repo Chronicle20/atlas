@@ -127,12 +127,12 @@ func handleCreateItem(d *rest.HandlerDependency, _ *rest.HandlerContext, model i
 	})
 }
 
-type SlotTypeHandler func(slotType string) http.HandlerFunc
+type SlotTypeHandler func(slotType slot.Type) http.HandlerFunc
 
 func ParseSlotType(l logrus.FieldLogger, next SlotTypeHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if val, ok := mux.Vars(r)["slotType"]; ok {
-			next(val)(w, r)
+			next(slot.Type(val))(w, r)
 			return
 		}
 		l.Errorf("Unable to properly parse slotType from path.")
@@ -143,7 +143,7 @@ func ParseSlotType(l logrus.FieldLogger, next SlotTypeHandler) http.HandlerFunc 
 
 func handleEquipItem(d *rest.HandlerDependency, c *rest.HandlerContext, input equipable.RestModel) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return ParseSlotType(d.Logger(), func(slotType string) http.HandlerFunc {
+		return ParseSlotType(d.Logger(), func(slotType slot.Type) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				des, err := slot.PositionFromType(slotType)
 				if err != nil {
@@ -160,7 +160,7 @@ func handleEquipItem(d *rest.HandlerDependency, c *rest.HandlerContext, input eq
 
 func handleUnequipItem(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-		return ParseSlotType(d.Logger(), func(slotType string) http.HandlerFunc {
+		return ParseSlotType(d.Logger(), func(slotType slot.Type) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				des, err := slot.PositionFromType(slotType)
 				if err != nil {

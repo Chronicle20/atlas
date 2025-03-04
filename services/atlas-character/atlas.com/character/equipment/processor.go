@@ -15,11 +15,12 @@ func Delete(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) fu
 	return func(db *gorm.DB) func(ctx context.Context) func(m Model) error {
 		return func(ctx context.Context) func(m Model) error {
 			return func(m Model) error {
-				var equipables = []slot.Model{m.hat, m.medal, m.forehead, m.ring1, m.ring2, m.eye, m.earring, m.shoulder, m.cape, m.top, m.pendant, m.weapon, m.shield, m.gloves, m.bottom, m.belt, m.ring3, m.ring4, m.shoes}
-				for _, e := range equipables {
-					err := deleteBySlot(l)(db)(ctx)(e)
-					if err != nil {
-						return err
+				for _, t := range slot.Types {
+					if e, ok := m.Get(t); ok {
+						err := deleteBySlot(l)(db)(ctx)(e)
+						if err != nil {
+							return err
+						}
 					}
 				}
 				return nil

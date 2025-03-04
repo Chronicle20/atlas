@@ -49,7 +49,7 @@ func EquipableFolder(m EquipableModel, em equipable.Model) (EquipableModel, erro
 	return m, nil
 }
 
-func foldProperty[M any, N any](setter func(sm N) M) model.Transformer[N, M] {
+func FoldProperty[M any, N any](setter func(sm N) M) model.Transformer[N, M] {
 	return func(n N) (M, error) {
 		return setter(n), nil
 	}
@@ -67,19 +67,19 @@ func foldInventory(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Cont
 				switch Type(ent.InventoryType) {
 				case TypeValueEquip:
 					ep := equipable.InInventoryProvider(l)(db)(ctx)(ent.ID)
-					return model.Map(foldProperty(ref.SetEquipable))(model.Fold(ep, NewEquipableModel(ent.ID, ent.Capacity), EquipableFolder))()
+					return model.Map(FoldProperty(ref.SetEquipable))(model.Fold(ep, NewEquipableModel(ent.ID, ent.Capacity), EquipableFolder))()
 				case TypeValueUse:
 					ip := item.ByInventoryProvider(db)(ctx)(ent.ID)
-					return model.Map(foldProperty(ref.SetUseable))(model.Fold(ip, NewItemModel(ent.ID, TypeValueUse, ent.Capacity), ItemFolder))()
+					return model.Map(FoldProperty(ref.SetUseable))(model.Fold(ip, NewItemModel(ent.ID, TypeValueUse, ent.Capacity), ItemFolder))()
 				case TypeValueSetup:
 					ip := item.ByInventoryProvider(db)(ctx)(ent.ID)
-					return model.Map(foldProperty(ref.SetSetup))(model.Fold(ip, NewItemModel(ent.ID, TypeValueSetup, ent.Capacity), ItemFolder))()
+					return model.Map(FoldProperty(ref.SetSetup))(model.Fold(ip, NewItemModel(ent.ID, TypeValueSetup, ent.Capacity), ItemFolder))()
 				case TypeValueETC:
 					ip := item.ByInventoryProvider(db)(ctx)(ent.ID)
-					return model.Map(foldProperty(ref.SetEtc))(model.Fold(ip, NewItemModel(ent.ID, TypeValueETC, ent.Capacity), ItemFolder))()
+					return model.Map(FoldProperty(ref.SetEtc))(model.Fold(ip, NewItemModel(ent.ID, TypeValueETC, ent.Capacity), ItemFolder))()
 				case TypeValueCash:
 					ip := item.ByInventoryProvider(db)(ctx)(ent.ID)
-					return model.Map(foldProperty(ref.SetCash))(model.Fold(ip, NewItemModel(ent.ID, TypeValueCash, ent.Capacity), ItemFolder))()
+					return model.Map(FoldProperty(ref.SetCash))(model.Fold(ip, NewItemModel(ent.ID, TypeValueCash, ent.Capacity), ItemFolder))()
 				}
 				return ref, errors.New("unknown inventory type")
 			}
@@ -103,7 +103,7 @@ func Create(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) fu
 			return func(characterId uint32, defaultCapacity uint32) (Model, error) {
 				tenant := tenant.MustFromContext(ctx)
 				err := db.Transaction(func(tx *gorm.DB) error {
-					for _, t := range Types {
+					for _, t := range TypeValues {
 						_, err := create(db, tenant.Id(), characterId, int8(t), defaultCapacity)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to create inventory [%d] for character [%d].", t, characterId)
@@ -334,8 +334,8 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 									}
 									if actualDestination == int16(slot2.PositionBottom) {
 										l.Debugf("Item is a bottom, need to unequip an overall if its in the top slot.")
-										ip := model.Map(IsOverall)(inSlotProvider(int16(slot2.PositionOverall)))
-										resp, err = moveFromSlotToSlot(l)(ip, nextFreeSlotProvider, slotUpdater, characterInventoryMoveProvider(int16(slot2.PositionOverall)))()
+										ip := model.Map(IsOverall)(inSlotProvider(int16(slot2.PositionTop)))
+										resp, err = moveFromSlotToSlot(l)(ip, nextFreeSlotProvider, slotUpdater, characterInventoryMoveProvider(int16(slot2.PositionTop)))()
 										if err != nil && !errors.Is(err, notOverall) {
 											l.WithError(err).Errorf("Unable to move overall out of its slot.")
 											return err

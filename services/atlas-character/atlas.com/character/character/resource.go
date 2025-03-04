@@ -166,12 +166,6 @@ func handleGetCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 				return
 			}
 
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Getting character %d.", characterId)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
 			res, err := model.Map(Transform)(model.FixedProvider(cs))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")

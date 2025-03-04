@@ -10,39 +10,39 @@ import (
 )
 
 type RestModel struct {
-	Id                 uint32                    `json:"-"`
-	AccountId          uint32                    `json:"accountId"`
-	WorldId            byte                      `json:"worldId"`
-	Name               string                    `json:"name"`
-	Level              byte                      `json:"level"`
-	Experience         uint32                    `json:"experience"`
-	GachaponExperience uint32                    `json:"gachaponExperience"`
-	Strength           uint16                    `json:"strength"`
-	Dexterity          uint16                    `json:"dexterity"`
-	Intelligence       uint16                    `json:"intelligence"`
-	Luck               uint16                    `json:"luck"`
-	Hp                 uint16                    `json:"hp"`
-	MaxHp              uint16                    `json:"maxHp"`
-	Mp                 uint16                    `json:"mp"`
-	MaxMp              uint16                    `json:"maxMp"`
-	Meso               uint32                    `json:"meso"`
-	HpMpUsed           int                       `json:"hpMpUsed"`
-	JobId              uint16                    `json:"jobId"`
-	SkinColor          byte                      `json:"skinColor"`
-	Gender             byte                      `json:"gender"`
-	Fame               int16                     `json:"fame"`
-	Hair               uint32                    `json:"hair"`
-	Face               uint32                    `json:"face"`
-	Ap                 uint16                    `json:"ap"`
-	Sp                 string                    `json:"sp"`
-	MapId              uint32                    `json:"mapId"`
-	SpawnPoint         uint32                    `json:"spawnPoint"`
-	Gm                 int                       `json:"gm"`
-	X                  int16                     `json:"x"`
-	Y                  int16                     `json:"y"`
-	Stance             byte                      `json:"stance"`
-	Equipment          map[string]slot.RestModel `json:"-"`
-	Inventory          inventory.RestModel       `json:"-"`
+	Id                 uint32                       `json:"-"`
+	AccountId          uint32                       `json:"accountId"`
+	WorldId            byte                         `json:"worldId"`
+	Name               string                       `json:"name"`
+	Level              byte                         `json:"level"`
+	Experience         uint32                       `json:"experience"`
+	GachaponExperience uint32                       `json:"gachaponExperience"`
+	Strength           uint16                       `json:"strength"`
+	Dexterity          uint16                       `json:"dexterity"`
+	Intelligence       uint16                       `json:"intelligence"`
+	Luck               uint16                       `json:"luck"`
+	Hp                 uint16                       `json:"hp"`
+	MaxHp              uint16                       `json:"maxHp"`
+	Mp                 uint16                       `json:"mp"`
+	MaxMp              uint16                       `json:"maxMp"`
+	Meso               uint32                       `json:"meso"`
+	HpMpUsed           int                          `json:"hpMpUsed"`
+	JobId              uint16                       `json:"jobId"`
+	SkinColor          byte                         `json:"skinColor"`
+	Gender             byte                         `json:"gender"`
+	Fame               int16                        `json:"fame"`
+	Hair               uint32                       `json:"hair"`
+	Face               uint32                       `json:"face"`
+	Ap                 uint16                       `json:"ap"`
+	Sp                 string                       `json:"sp"`
+	MapId              uint32                       `json:"mapId"`
+	SpawnPoint         uint32                       `json:"spawnPoint"`
+	Gm                 int                          `json:"gm"`
+	X                  int16                        `json:"x"`
+	Y                  int16                        `json:"y"`
+	Stance             byte                         `json:"stance"`
+	Equipment          map[slot.Type]slot.RestModel `json:"-"`
+	Inventory          inventory.RestModel          `json:"-"`
 }
 
 func (r RestModel) GetName() string {
@@ -81,7 +81,7 @@ func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
 	var result []jsonapi.ReferenceID
 	for _, eid := range slot.Types {
 		result = append(result, jsonapi.ReferenceID{
-			ID:   eid,
+			ID:   string(eid),
 			Type: "equipment",
 			Name: "equipment",
 		})
@@ -119,12 +119,12 @@ func (r *RestModel) SetToOneReferenceID(name, ID string) error {
 func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 	if name == "equipment" {
 		if r.Equipment == nil {
-			r.Equipment = make(map[string]slot.RestModel)
+			r.Equipment = make(map[slot.Type]slot.RestModel)
 		}
 
 		for _, id := range IDs {
 			rm := slot.RestModel{Type: id}
-			r.Equipment[id] = rm
+			r.Equipment[slot.Type(id)] = rm
 		}
 		return nil
 	}
@@ -155,7 +155,7 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 	if refMap, ok := references["equipment"]; ok {
 		for _, id := range slot.Types {
 			var data jsonapi.Data
-			if data, ok = refMap[id]; ok {
+			if data, ok = refMap[string(id)]; ok {
 				var srm = r.Equipment[id]
 				err := jsonapi.ProcessIncludeData(&srm, data, references)
 				if err != nil {
@@ -217,13 +217,13 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 func Transform(m Model) (RestModel, error) {
 	td := GetTemporalRegistry().GetById(m.Id())
 
-	eqp := make(map[string]slot.RestModel)
+	eqp := make(map[slot.Type]slot.RestModel)
 	for t, e := range m.GetEquipment().Slots() {
 		erm, err := slot.Transform(e)
 		if err != nil {
 			return RestModel{}, err
 		}
-		err = erm.SetID(t)
+		err = erm.SetID(string(t))
 		if err != nil {
 			return RestModel{}, err
 		}

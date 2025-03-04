@@ -6,12 +6,12 @@ import (
 )
 
 type Model struct {
-	slots map[string]slot.Model
+	slots map[slot.Type]slot.Model
 }
 
 func NewModel() Model {
 	m := Model{
-		slots: make(map[string]slot.Model),
+		slots: make(map[slot.Type]slot.Model),
 	}
 	for _, t := range slot.Types {
 		pos, err := slot.PositionFromType(t)
@@ -23,16 +23,16 @@ func NewModel() Model {
 	return m
 }
 
-func (m Model) Get(slotType string) (slot.Model, bool) {
+func (m Model) Get(slotType slot.Type) (slot.Model, bool) {
 	val, ok := m.slots[slotType]
 	return val, ok
 }
 
-func (m *Model) Set(slotType string, val slot.Model) {
+func (m *Model) Set(slotType slot.Type, val slot.Model) {
 	m.slots[slotType] = val
 }
 
-func (m *Model) SetEquipable(slotType string, cash bool, val equipable.Model) {
+func (m *Model) SetEquipable(slotType slot.Type, cash bool, val equipable.Model) {
 	if cash {
 		m.slots[slotType] = m.slots[slotType].SetCashEquipable(&val)
 	} else {
@@ -40,6 +40,6 @@ func (m *Model) SetEquipable(slotType string, cash bool, val equipable.Model) {
 	}
 }
 
-func (m Model) Slots() map[string]slot.Model {
+func (m Model) Slots() map[slot.Type]slot.Model {
 	return m.slots
 }

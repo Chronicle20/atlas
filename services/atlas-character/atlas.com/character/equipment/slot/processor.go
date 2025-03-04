@@ -2,11 +2,10 @@ package slot
 
 import (
 	"errors"
-	"strings"
 )
 
-func PositionFromType(slotType string) (Position, error) {
-	switch strings.ToLower(slotType) {
+func PositionFromType(slotType Type) (Position, error) {
+	switch slotType {
 	case TypeHat:
 		return PositionHat, nil
 	case TypeMedal:
@@ -49,7 +48,7 @@ func PositionFromType(slotType string) (Position, error) {
 	return PositionHat, errors.New("unable to map type to position")
 }
 
-func TypeFromPosition(position Position) (string, error) {
+func TypeFromPosition(position Position) (Type, error) {
 	switch position {
 	case PositionHat:
 		return TypeHat, nil

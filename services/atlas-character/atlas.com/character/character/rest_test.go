@@ -106,7 +106,7 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 	}
 }
 
-func sameEquipment(m1 character.Model, m2 character.Model, slotType string) bool {
+func sameEquipment(m1 character.Model, m2 character.Model, slotType slot.Type) bool {
 	e1, ok := m1.GetEquipment().Get(slotType)
 	if !ok {
 		return false

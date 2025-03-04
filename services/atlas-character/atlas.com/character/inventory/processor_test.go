@@ -109,8 +109,8 @@ func TestAdjustingEquipment(t *testing.T) {
 	}
 
 	// Equip Overall. This should take tops place, and unequip bottom. Top should be in overall slot, bottom should be in first available.
-	equipFunc(overall.Slot())(equipment.FixedDestinationProvider(int16(slot.PositionOverall)))
-	equippedOverall, err := equipable.GetBySlot(db)(tctx)(c.Id(), int16(slot.PositionOverall))
+	equipFunc(overall.Slot())(equipment.FixedDestinationProvider(int16(slot.PositionTop)))
+	equippedOverall, err := equipable.GetBySlot(db)(tctx)(c.Id(), int16(slot.PositionTop))
 	if err != nil {
 		t.Fatalf("Failed to retreive created item.")
 	}
@@ -160,8 +160,8 @@ func TestAdjustingEquipment(t *testing.T) {
 	}
 
 	// Equip Overall. This should take tops place, and unequip bottom. Top should be in overall slot, bottom should be in first available.
-	equipFunc(3)(equipment.FixedDestinationProvider(int16(slot.PositionOverall)))
-	equippedOverall, err = equipable.GetBySlot(db)(tctx)(c.Id(), int16(slot.PositionOverall))
+	equipFunc(3)(equipment.FixedDestinationProvider(int16(slot.PositionTop)))
+	equippedOverall, err = equipable.GetBySlot(db)(tctx)(c.Id(), int16(slot.PositionTop))
 	if err != nil {
 		t.Fatalf("Failed to retreive created item.")
 	}

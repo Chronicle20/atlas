@@ -19,7 +19,7 @@ func requestCreate(itemId uint32) requests.Request[RestModel] {
 	input := &RestModel{
 		ItemId: itemId,
 	}
-	return rest.MakePostRequest[RestModel](fmt.Sprintf(getBaseRequest()+equipmentResource), input)
+	return rest.MakePostRequest[RestModel](getBaseRequest()+equipmentResource, input)
 }
 
 func requestById(equipmentId uint32) requests.Request[RestModel] {

@@ -50,6 +50,8 @@ github.com/jtumidanski/api2go v1.0.2 h1:IUjaUw90/IVzFDGOGF7sCqlPXPJGv1F19xpmjaK5
 github.com/jtumidanski/api2go v1.0.2/go.mod h1:zW20JAl5i6+DsWyEfg8CaWO7Z1jBBierOg6sz7GEcQY=
 github.com/jtumidanski/api2go v1.0.3 h1:i4vfInzsyScoEJooj4sWPzn4kwBvE6a7eNFAf4IK4Yg=
 github.com/jtumidanski/api2go v1.0.3/go.mod h1:zW20JAl5i6+DsWyEfg8CaWO7Z1jBBierOg6sz7GEcQY=
+github.com/jtumidanski/api2go v1.0.4 h1:RR6bFmnmp8Tg5GhAo4KcmnsVWnWIxYhA5YypPoXLkJA=
+github.com/jtumidanski/api2go v1.0.4/go.mod h1:zW20JAl5i6+DsWyEfg8CaWO7Z1jBBierOg6sz7GEcQY=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=

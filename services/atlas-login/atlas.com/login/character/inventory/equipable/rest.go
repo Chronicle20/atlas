@@ -32,6 +32,31 @@ func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
+func Transform(m Model) (RestModel, error) {
+	rm := RestModel{
+		Id:            m.id,
+		ItemId:        m.itemId,
+		Slot:          m.slot,
+		Strength:      m.strength,
+		Dexterity:     m.dexterity,
+		Intelligence:  m.intelligence,
+		Luck:          m.luck,
+		HP:            m.hp,
+		MP:            m.mp,
+		WeaponAttack:  m.weaponAttack,
+		MagicAttack:   m.magicAttack,
+		WeaponDefense: m.weaponDefense,
+		MagicDefense:  m.magicDefense,
+		Accuracy:      m.accuracy,
+		Avoidability:  m.avoidability,
+		Hands:         m.hands,
+		Speed:         m.speed,
+		Jump:          m.jump,
+		Slots:         m.slots,
+	}
+	return rm, nil
+}
+
 func Extract(model RestModel) (Model, error) {
 	return Model{
 		id:            model.Id,

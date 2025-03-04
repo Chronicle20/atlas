@@ -139,25 +139,11 @@ func writeEquips(tenant tenant.Model) func(w *response.Writer, equips map[slot.P
 
 func getEquippedItemSlotMap(e equipment.Model) map[slot.Position]uint32 {
 	var equips = make(map[slot.Position]uint32)
-	addEquipmentIfPresent(equips, e.Hat())
-	addEquipmentIfPresent(equips, e.Medal())
-	addEquipmentIfPresent(equips, e.Forehead())
-	addEquipmentIfPresent(equips, e.Ring1())
-	addEquipmentIfPresent(equips, e.Ring2())
-	addEquipmentIfPresent(equips, e.Eye())
-	addEquipmentIfPresent(equips, e.Earring())
-	addEquipmentIfPresent(equips, e.Shoulder())
-	addEquipmentIfPresent(equips, e.Cape())
-	addEquipmentIfPresent(equips, e.Top())
-	addEquipmentIfPresent(equips, e.Pendant())
-	addEquipmentIfPresent(equips, e.Weapon())
-	addEquipmentIfPresent(equips, e.Shield())
-	addEquipmentIfPresent(equips, e.Gloves())
-	addEquipmentIfPresent(equips, e.Bottom())
-	addEquipmentIfPresent(equips, e.Belt())
-	addEquipmentIfPresent(equips, e.Ring3())
-	addEquipmentIfPresent(equips, e.Ring4())
-	addEquipmentIfPresent(equips, e.Shoes())
+	for _, t := range slot.Types {
+		if s, ok := e.Get(t); ok {
+			addEquipmentIfPresent(equips, s)
+		}
+	}
 	return equips
 }
 
@@ -173,25 +159,11 @@ func addEquipmentIfPresent(slotMap map[slot.Position]uint32, pi slot.Model) {
 
 func getMaskedEquippedItemSlotMap(e equipment.Model) map[slot.Position]uint32 {
 	var equips = make(map[slot.Position]uint32)
-	addMaskedEquippedItemIfPresent(equips, e.Hat())
-	addMaskedEquippedItemIfPresent(equips, e.Medal())
-	addMaskedEquippedItemIfPresent(equips, e.Forehead())
-	addMaskedEquippedItemIfPresent(equips, e.Ring1())
-	addMaskedEquippedItemIfPresent(equips, e.Ring2())
-	addMaskedEquippedItemIfPresent(equips, e.Eye())
-	addMaskedEquippedItemIfPresent(equips, e.Earring())
-	addMaskedEquippedItemIfPresent(equips, e.Shoulder())
-	addMaskedEquippedItemIfPresent(equips, e.Cape())
-	addMaskedEquippedItemIfPresent(equips, e.Top())
-	addMaskedEquippedItemIfPresent(equips, e.Pendant())
-	addMaskedEquippedItemIfPresent(equips, e.Weapon())
-	addMaskedEquippedItemIfPresent(equips, e.Shield())
-	addMaskedEquippedItemIfPresent(equips, e.Gloves())
-	addMaskedEquippedItemIfPresent(equips, e.Bottom())
-	addMaskedEquippedItemIfPresent(equips, e.Belt())
-	addMaskedEquippedItemIfPresent(equips, e.Ring3())
-	addMaskedEquippedItemIfPresent(equips, e.Ring4())
-	addMaskedEquippedItemIfPresent(equips, e.Shoes())
+	for _, t := range slot.Types {
+		if s, ok := e.Get(t); ok {
+			addMaskedEquippedItemIfPresent(equips, s)
+		}
+	}
 	return equips
 }
 

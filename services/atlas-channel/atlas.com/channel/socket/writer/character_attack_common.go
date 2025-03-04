@@ -2,6 +2,7 @@ package writer
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/equipment/slot"
 	"atlas-channel/character/skill"
 	skill3 "atlas-channel/skill"
 	"atlas-channel/socket/model"
@@ -60,9 +61,12 @@ func WriteCommonAttackBody(l logrus.FieldLogger) func(ctx context.Context) func(
 
 					nMastery := byte(0)
 					weaponId := uint32(0)
-					if e := c.Equipment().Weapon().Equipable; e != nil {
-						weaponId = e.ItemId()
+					if ew, ok := c.Equipment().Get(slot.TypeWeapon); ok {
+						if we := ew.Equipable; we != nil {
+							weaponId = we.ItemId()
+						}
 					}
+
 					if weaponId > 0 {
 						nMastery = computeMasteryForWeapon(l)(ctx)(weaponId, job.Id(c.JobId()), skill2.Id(ai.SkillId()), c.Skills())
 					}

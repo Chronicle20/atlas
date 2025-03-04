@@ -2,6 +2,7 @@ package writer
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/equipment/slot"
 	"atlas-channel/guild"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
@@ -34,11 +35,15 @@ func CharacterInfoBody(tenant tenant.Model) func(c character.Model, g guild.Mode
 				w.WriteInt(0) // total cards
 				w.WriteInt(0) // cover
 			}
-			if mi := c.Equipment().Medal().Equipable; mi != nil {
-				w.WriteInt(mi.ItemId())
-			} else {
-				w.WriteInt(0)
+
+			medalId := uint32(0)
+			if em, ok := c.Equipment().Get(slot.TypeMedal); ok {
+				if me := em.Equipable; me != nil {
+					medalId = me.ItemId()
+				}
 			}
+			w.WriteInt(medalId)
+			
 			w.WriteShort(0) // medal quests
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
 				w.WriteInt(0) // chair

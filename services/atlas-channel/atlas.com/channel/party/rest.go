@@ -1,8 +1,6 @@
 package party
 
 import (
-	"encoding/json"
-	"errors"
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -85,40 +83,30 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 	return nil
 }
 
-func (r *RestModel) SetReferencedStructs(references []jsonapi.Data) error {
-	refMap := make(map[string]json.RawMessage)
-
-	for _, ref := range references {
-		if ref.Type == "members" {
-			refMap[ref.ID] = ref.Attributes
-		}
-	}
-
-	if len(refMap) < len(r.Members) {
-		return errors.New("included structs did not fully populate members")
-	}
-
-	var nm []MemberRestModel
-	for _, m := range r.Members {
-		if val, ok := refMap[m.GetID()]; ok {
-			mrm := MemberRestModel{}
-			if err := json.Unmarshal(val, &mrm); err != nil {
-				return err
+func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+	if refMap, ok := references["members"]; ok {
+		var nm []MemberRestModel
+		for _, m := range r.Members {
+			if data, ok := refMap[m.GetID()]; ok {
+				srm := MemberRestModel{}
+				err := jsonapi.ProcessIncludeData(&srm, data, references)
+				if err != nil {
+					return err
+				}
+				err = srm.SetID(m.GetID())
+				if err != nil {
+					return err
+				}
+				nm = append(nm, srm)
 			}
-			err := mrm.SetID(m.GetID())
-			if err != nil {
-				return err
-			}
-			nm = append(nm, mrm)
 		}
+		r.Members = nm
 	}
-	r.Members = nm
 	return nil
 }
 
 func Extract(rm RestModel) (Model, error) {
 	var members = make([]MemberModel, 0)
-	// TODO this information is empty and need a second query ....
 	for _, m := range rm.Members {
 		mm, err := ExtractMember(m)
 		if err != nil {

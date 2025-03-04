@@ -75,8 +75,6 @@ func (r RestModel) GetReferences() []jsonapi.Reference {
 	}
 }
 
-var inventoryIds = []string{inventory.TypeEquip, inventory.TypeUse, inventory.TypeSetup, inventory.TypeETC, inventory.TypeCash}
-
 func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
 	var result []jsonapi.ReferenceID
 	for _, eid := range slot.Types {
@@ -86,7 +84,7 @@ func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
 			Name: "equipment",
 		})
 	}
-	for _, iid := range inventoryIds {
+	for _, iid := range inventory.Types {
 		result = append(result, jsonapi.ReferenceID{
 			ID:   iid,
 			Type: "inventories",
@@ -166,7 +164,7 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 		}
 	}
 	if refMap, ok := references["inventories"]; ok {
-		for _, id := range inventoryIds {
+		for _, id := range inventory.Types {
 			var data jsonapi.Data
 			if data, ok = refMap[id]; ok {
 				if id == inventory.TypeEquip {

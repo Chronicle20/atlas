@@ -103,7 +103,7 @@ func Create(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) fu
 			return func(characterId uint32, defaultCapacity uint32) (Model, error) {
 				tenant := tenant.MustFromContext(ctx)
 				err := db.Transaction(func(tx *gorm.DB) error {
-					for _, t := range Types {
+					for _, t := range TypeValues {
 						_, err := create(db, tenant.Id(), characterId, int8(t), defaultCapacity)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to create inventory [%d] for character [%d].", t, characterId)

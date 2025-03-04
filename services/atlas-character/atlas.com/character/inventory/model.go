@@ -7,6 +7,8 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 )
 
+type Type int8
+
 const (
 	TypeValueEquip Type = 1
 	TypeValueUse   Type = 2
@@ -20,9 +22,8 @@ const (
 	TypeCash            = "CASH"
 )
 
-var Types = []Type{TypeValueEquip, TypeValueUse, TypeValueSetup, TypeValueETC, TypeValueCash}
-
-type Type int8
+var TypeValues = []Type{TypeValueEquip, TypeValueUse, TypeValueSetup, TypeValueETC, TypeValueCash}
+var Types = []string{TypeEquip, TypeUse, TypeSetup, TypeETC, TypeCash}
 
 type Model struct {
 	equipable ItemHolder

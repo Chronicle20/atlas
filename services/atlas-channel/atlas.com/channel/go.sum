@@ -36,6 +36,8 @@ github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.1 h1:e9Rjr40Z98/clHv5Yg79Is0Ntos
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.1/go.mod h1:tIxuGz/9mpox++sgp9fJjHO0+q1X9/UOWd798aAm22M=
 github.com/jtumidanski/api2go v1.0.2 h1:IUjaUw90/IVzFDGOGF7sCqlPXPJGv1F19xpmjaK5PQA=
 github.com/jtumidanski/api2go v1.0.2/go.mod h1:zW20JAl5i6+DsWyEfg8CaWO7Z1jBBierOg6sz7GEcQY=
+github.com/jtumidanski/api2go v1.0.3 h1:i4vfInzsyScoEJooj4sWPzn4kwBvE6a7eNFAf4IK4Yg=
+github.com/jtumidanski/api2go v1.0.3/go.mod h1:zW20JAl5i6+DsWyEfg8CaWO7Z1jBBierOg6sz7GEcQY=
 github.com/klauspost/compress v1.15.9/go.mod h1:PhcZ0MbTNciWF3rruxRgKxI5NkcHHrHUDtV4Yw2GlzU=
 github.com/klauspost/compress v1.17.11 h1:In6xLpyWOi1+C7tXUUWv2ot1QvBjxevKAaI6IXrJmUc=
 github.com/klauspost/compress v1.17.11/go.mod h1:pMDklpSncoRMuLFrf1W9Ss9KT+0rH90U12bZKk7uwG0=

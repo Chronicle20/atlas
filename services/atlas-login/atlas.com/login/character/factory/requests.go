@@ -3,7 +3,6 @@ package factory
 import (
 	"atlas-login/character"
 	"atlas-login/rest"
-	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
@@ -37,5 +36,5 @@ func requestCreate(accountId uint32, worldId byte, name string, jobIndex uint32,
 		Intelligence: intelligence,
 		Luck:         luck,
 	}
-	return rest.MakePostRequest[character.RestModel](fmt.Sprintf(getBaseRequest()+Resource), i)
+	return rest.MakePostRequest[character.RestModel](getBaseRequest()+Resource, i)
 }

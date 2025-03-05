@@ -18,7 +18,7 @@ func getBaseRequest() string {
 }
 
 func requestAccounts() requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest() + AccountsResource))
+	return rest.MakeGetRequest[[]RestModel](getBaseRequest() + AccountsResource)
 }
 
 func requestAccountByName(name string) requests.Request[RestModel] {

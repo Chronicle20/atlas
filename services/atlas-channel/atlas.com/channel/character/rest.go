@@ -262,6 +262,9 @@ func Extract(m RestModel) (Model, error) {
 		sp:                 m.Sp,
 		mapId:              m.MapId,
 		gm:                 m.Gm,
+		x:                  m.X,
+		y:                  m.Y,
+		stance:             m.Stance,
 		equipment:          eqp,
 		inventory:          inv,
 	}, nil

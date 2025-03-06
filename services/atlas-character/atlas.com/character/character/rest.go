@@ -123,27 +123,29 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 		}
 
 		for _, id := range IDs {
-			rm := slot.RestModel{Type: id}
-			r.Equipment[slot.Type(id)] = rm
+			typ := strings.Split(id, "-")[1]
+			rm := slot.RestModel{Type: typ}
+			r.Equipment[slot.Type(typ)] = rm
 		}
 		return nil
 	}
 	if name == "inventories" {
 		for _, id := range IDs {
-			if id == inventory.TypeEquip {
-				r.Inventory.Equipable = inventory.EquipableRestModel{Type: id}
+			typ := strings.Split(id, "-")[1]
+			if typ == inventory.TypeEquip {
+				r.Inventory.Equipable = inventory.EquipableRestModel{Type: typ}
 			}
-			if id == inventory.TypeUse {
-				r.Inventory.Useable = inventory.ItemRestModel{Type: id}
+			if typ == inventory.TypeUse {
+				r.Inventory.Useable = inventory.ItemRestModel{Type: typ}
 			}
-			if id == inventory.TypeSetup {
-				r.Inventory.Setup = inventory.ItemRestModel{Type: id}
+			if typ == inventory.TypeSetup {
+				r.Inventory.Setup = inventory.ItemRestModel{Type: typ}
 			}
-			if id == inventory.TypeETC {
-				r.Inventory.Etc = inventory.ItemRestModel{Type: id}
+			if typ == inventory.TypeETC {
+				r.Inventory.Etc = inventory.ItemRestModel{Type: typ}
 			}
-			if id == inventory.TypeCash {
-				r.Inventory.Cash = inventory.ItemRestModel{Type: id}
+			if typ == inventory.TypeCash {
+				r.Inventory.Cash = inventory.ItemRestModel{Type: typ}
 			}
 		}
 		return nil

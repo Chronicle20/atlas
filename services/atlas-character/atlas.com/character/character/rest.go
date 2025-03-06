@@ -8,6 +8,7 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
+	"strings"
 )
 
 type RestModel struct {
@@ -152,23 +153,25 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 
 func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
 	if refMap, ok := references["equipment"]; ok {
-		for _, id := range slot.Types {
+		for _, rid := range r.GetReferencedIDs() {
 			var data jsonapi.Data
-			if data, ok = refMap[string(id)]; ok {
-				var srm = r.Equipment[id]
+			if data, ok = refMap[rid.ID]; ok {
+				typ := slot.Type(strings.Split(rid.ID, "-")[1])
+				var srm = r.Equipment[typ]
 				err := jsonapi.ProcessIncludeData(&srm, data, references)
 				if err != nil {
 					return err
 				}
-				r.Equipment[id] = srm
+				r.Equipment[typ] = srm
 			}
 		}
 	}
 	if refMap, ok := references["inventories"]; ok {
-		for _, id := range inventory.Types {
+		for _, rid := range r.GetReferencedIDs() {
 			var data jsonapi.Data
-			if data, ok = refMap[id]; ok {
-				if id == inventory.TypeEquip {
+			if data, ok = refMap[rid.ID]; ok {
+				typ := strings.Split(rid.ID, "-")[1]
+				if typ == inventory.TypeEquip {
 					srm := r.Inventory.Equipable
 					err := jsonapi.ProcessIncludeData(&srm, data, references)
 					if err != nil {
@@ -178,32 +181,32 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 					continue
 				} else {
 					var srm inventory.ItemRestModel
-					if id == inventory.TypeUse {
+					if typ == inventory.TypeUse {
 						srm = r.Inventory.Useable
 					}
-					if id == inventory.TypeSetup {
+					if typ == inventory.TypeSetup {
 						srm = r.Inventory.Setup
 					}
-					if id == inventory.TypeETC {
+					if typ == inventory.TypeETC {
 						srm = r.Inventory.Etc
 					}
-					if id == inventory.TypeCash {
+					if typ == inventory.TypeCash {
 						srm = r.Inventory.Cash
 					}
 					err := jsonapi.ProcessIncludeData(&srm, data, references)
 					if err != nil {
 						return err
 					}
-					if id == inventory.TypeUse {
+					if typ == inventory.TypeUse {
 						r.Inventory.Useable = srm
 					}
-					if id == inventory.TypeSetup {
+					if typ == inventory.TypeSetup {
 						r.Inventory.Setup = srm
 					}
-					if id == inventory.TypeETC {
+					if typ == inventory.TypeETC {
 						r.Inventory.Etc = srm
 					}
-					if id == inventory.TypeCash {
+					if typ == inventory.TypeCash {
 						r.Inventory.Cash = srm
 					}
 				}

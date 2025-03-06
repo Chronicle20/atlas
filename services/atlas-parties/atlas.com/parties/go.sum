@@ -8,6 +8,8 @@ github.com/Chronicle20/atlas-model v1.2.1 h1:F/SYo4PAHd1BuZz5/RV65V4uv5wXHzE95LE
 github.com/Chronicle20/atlas-model v1.2.1/go.mod h1:5FNYT/ypml+goxft0XCACTEp6666yys+l6LTxSPeh1k=
 github.com/Chronicle20/atlas-rest v1.2.10 h1:B4LtZIJRkJRaHq1TCLQ87IS/ezgPknjjEz2dnTKV64o=
 github.com/Chronicle20/atlas-rest v1.2.10/go.mod h1:/shIddzGu4n9yngFq2ngPZN/SSAHW5XEv3goGObrIws=
+github.com/Chronicle20/atlas-rest v1.2.11 h1:i0ezE3713n8x9T6zonMaxj0GHSNSh1wrmgI0RBX4Mgw=
+github.com/Chronicle20/atlas-rest v1.2.11/go.mod h1:bJJ70whCMx6pqwPpVDmqxjE7uhFJLYab+tKfIzHF0D4=
 github.com/Chronicle20/atlas-tenant v1.0.4 h1:zS+hK56eNTVDlvTvSFN4wo9hZQ9aM/6SxXzRL+9P2Zk=
 github.com/Chronicle20/atlas-tenant v1.0.4/go.mod h1:6DHjFyHY9wRfOuphFwmwklf50hYm74L7MlWH7wqgnRQ=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2 h1:5IcZpTvzydCQeHzK4Ef/D5rrSqwxob0t8PQPMybUNFM=

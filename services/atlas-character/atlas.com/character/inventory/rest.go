@@ -3,6 +3,7 @@ package inventory
 import (
 	"atlas-character/equipable"
 	"atlas-character/inventory/item"
+	"fmt"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
@@ -184,55 +185,57 @@ func (r *ItemRestModel) SetReferencedStructs(references map[string]map[string]js
 	return nil
 }
 
-func Transform(m Model) (RestModel, error) {
-	eqps, err := model.SliceMap(equipable.Transform)(model.FixedProvider(m.Equipable().items))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
-	}
-	stps, err := model.SliceMap(item.Transform)(model.FixedProvider(m.Setup().Items()))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
-	}
-	usps, err := model.SliceMap(item.Transform)(model.FixedProvider(m.Useable().Items()))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
-	}
-	etcs, err := model.SliceMap(item.Transform)(model.FixedProvider(m.Etc().Items()))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
-	}
-	cashs, err := model.SliceMap(item.Transform)(model.FixedProvider(m.Cash().Items()))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
-	}
+func Transform(characterId uint32) func(m Model) (RestModel, error) {
+	return func(m Model) (RestModel, error) {
+		eqps, err := model.SliceMap(equipable.Transform)(model.FixedProvider(m.Equipable().items))(model.ParallelMap())()
+		if err != nil {
+			return RestModel{}, err
+		}
+		usps, err := model.SliceMap(item.Transform)(model.FixedProvider(m.Useable().Items()))(model.ParallelMap())()
+		if err != nil {
+			return RestModel{}, err
+		}
+		stps, err := model.SliceMap(item.Transform)(model.FixedProvider(m.Setup().Items()))(model.ParallelMap())()
+		if err != nil {
+			return RestModel{}, err
+		}
+		etcs, err := model.SliceMap(item.Transform)(model.FixedProvider(m.Etc().Items()))(model.ParallelMap())()
+		if err != nil {
+			return RestModel{}, err
+		}
+		cashs, err := model.SliceMap(item.Transform)(model.FixedProvider(m.Cash().Items()))(model.ParallelMap())()
+		if err != nil {
+			return RestModel{}, err
+		}
 
-	return RestModel{
-		Equipable: EquipableRestModel{
-			Type:     TypeEquip,
-			Capacity: m.Equipable().Capacity(),
-			Items:    eqps,
-		},
-		Setup: ItemRestModel{
-			Type:     TypeSetup,
-			Capacity: m.Setup().Capacity(),
-			Items:    stps,
-		},
-		Useable: ItemRestModel{
-			Type:     TypeUse,
-			Capacity: m.Useable().Capacity(),
-			Items:    usps,
-		},
-		Etc: ItemRestModel{
-			Type:     TypeETC,
-			Capacity: m.Etc().Capacity(),
-			Items:    etcs,
-		},
-		Cash: ItemRestModel{
-			Type:     TypeCash,
-			Capacity: m.Cash().Capacity(),
-			Items:    cashs,
-		},
-	}, nil
+		return RestModel{
+			Equipable: EquipableRestModel{
+				Type:     fmt.Sprintf("%d-%s", characterId, TypeEquip),
+				Capacity: m.Equipable().Capacity(),
+				Items:    eqps,
+			},
+			Useable: ItemRestModel{
+				Type:     fmt.Sprintf("%d-%s", characterId, TypeUse),
+				Capacity: m.Useable().Capacity(),
+				Items:    usps,
+			},
+			Setup: ItemRestModel{
+				Type:     fmt.Sprintf("%d-%s", characterId, TypeSetup),
+				Capacity: m.Setup().Capacity(),
+				Items:    stps,
+			},
+			Etc: ItemRestModel{
+				Type:     fmt.Sprintf("%d-%s", characterId, TypeETC),
+				Capacity: m.Etc().Capacity(),
+				Items:    etcs,
+			},
+			Cash: ItemRestModel{
+				Type:     fmt.Sprintf("%d-%s", characterId, TypeCash),
+				Capacity: m.Cash().Capacity(),
+				Items:    cashs,
+			},
+		}, nil
+	}
 }
 
 func Extract(m RestModel) (Model, error) {

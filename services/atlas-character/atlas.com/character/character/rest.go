@@ -4,6 +4,7 @@ import (
 	"atlas-character/equipment"
 	"atlas-character/equipment/slot"
 	"atlas-character/inventory"
+	"fmt"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
@@ -79,14 +80,14 @@ func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
 	var result []jsonapi.ReferenceID
 	for _, eid := range slot.Types {
 		result = append(result, jsonapi.ReferenceID{
-			ID:   string(eid),
+			ID:   fmt.Sprintf("%d-%s", r.Id, eid),
 			Type: "equipment",
 			Name: "equipment",
 		})
 	}
 	for _, iid := range inventory.Types {
 		result = append(result, jsonapi.ReferenceID{
-			ID:   iid,
+			ID:   fmt.Sprintf("%d-%s", r.Id, iid),
 			Type: "inventories",
 			Name: "inventories",
 		})
@@ -221,14 +222,14 @@ func Transform(m Model) (RestModel, error) {
 		if err != nil {
 			return RestModel{}, err
 		}
-		err = erm.SetID(string(t))
+		err = erm.SetID(fmt.Sprintf("%d-%s", m.Id(), t))
 		if err != nil {
 			return RestModel{}, err
 		}
 		eqp[t] = erm
 	}
 
-	inv, err := inventory.Transform(m.inventory)
+	inv, err := inventory.Transform(m.Id())(m.GetInventory())
 	if err != nil {
 		return RestModel{}, err
 	}

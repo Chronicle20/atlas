@@ -27,6 +27,18 @@ func create(db *gorm.DB) func(t tenant.Model, characterId uint32, m Model) (Mode
 	}
 }
 
+func deleteByInventoryItemId(t tenant.Model, inventoryItemId uint32) func(db *gorm.DB) error {
+	return func(db *gorm.DB) error {
+		return db.Where(&Entity{TenantId: t.Id(), InventoryItemId: inventoryItemId}).Delete(&Entity{}).Error
+	}
+}
+
+func deleteForCharacter(t tenant.Model, characterId uint32) func(db *gorm.DB) error {
+	return func(db *gorm.DB) error {
+		return db.Where(&Entity{TenantId: t.Id(), CharacterId: characterId}).Delete(&Entity{}).Error
+	}
+}
+
 func modelFromEntity(e Entity) (Model, error) {
 	return NewModelBuilder(e.Id, e.InventoryItemId, e.TemplateId, e.Name).
 		SetLevel(e.Level).

@@ -28,6 +28,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			var t string
 			t, _ = topic.EnvProvider(l)(EnvEventInventoryChanged)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryAdd(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryDelete(db))))
 		}
 	}
 }
@@ -42,6 +43,20 @@ func handleInventoryAdd(db *gorm.DB) message.Handler[inventoryChangedEvent[inven
 			return
 		}
 
-		_ = pet.Create(l)(ctx)(db)(e.CharacterId, e.Body.ItemId, e.Slot)
+		_ = pet.CreateOnAward(l)(ctx)(db)(e.CharacterId, e.Body.ItemId, e.Slot)
+	}
+}
+
+func handleInventoryDelete(db *gorm.DB) message.Handler[inventoryChangedEvent[inventoryChangedItemRemoveBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e inventoryChangedEvent[inventoryChangedItemRemoveBody]) {
+		if e.Type != ChangedTypeRemove {
+			return
+		}
+
+		if item.GetClassification(item.Id(e.Body.ItemId)) != item.Classification(500) {
+			return
+		}
+
+		_ = pet.DeleteOnRemove(l)(ctx)(db)(e.CharacterId, e.Body.ItemId, e.Slot)
 	}
 }

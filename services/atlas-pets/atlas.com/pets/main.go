@@ -2,14 +2,18 @@ package main
 
 import (
 	"atlas-pets/database"
+	"atlas-pets/kafka/consumer/character"
+	"atlas-pets/kafka/consumer/inventory"
 	"atlas-pets/logger"
 	"atlas-pets/pet"
 	"atlas-pets/service"
 	"atlas-pets/tracing"
+	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
 const serviceName = "atlas-pets"
+const consumerGroupId = "Pets Service"
 
 type Server struct {
 	baseUrl string
@@ -42,7 +46,13 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	_ = database.Connect(l, database.SetMigrations(pet.Migration))
+	db := database.Connect(l, database.SetMigrations(pet.Migration))
+
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	character.InitConsumers(l)(cmf)(consumerGroupId)
+	inventory.InitConsumers(l)(cmf)(consumerGroupId)
+	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	inventory.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix())
 

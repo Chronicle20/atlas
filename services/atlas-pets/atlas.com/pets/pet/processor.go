@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16) error {
+func CreateOnAward(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16) error {
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16) error {
@@ -39,6 +39,44 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 				}
 				l.Debugf("Created pet [%d] for character [%d].", om.Id(), characterId)
 				return nil
+			}
+		}
+	}
+}
+
+func DeleteOnRemove(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16) error {
+			return func(characterId uint32, itemId uint32, slot int16) error {
+				it, ok := inventory.TypeFromItemId(itemId)
+				if !ok {
+					return errors.New("invalid item id")
+				}
+				i, err := item.GetItemBySlot(l)(ctx)(characterId, it, slot)
+				if err != nil {
+					return err
+				}
+
+				var om Model
+				txErr := db.Transaction(deleteByInventoryItemId(t, i.Id()))
+				if txErr != nil {
+					return txErr
+				}
+				l.Debugf("Deleted pet [%d] for character [%d].", om.Id(), characterId)
+				return nil
+			}
+		}
+	}
+}
+
+func DeleteForCharacter(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32) error {
+			return func(characterId uint32) error {
+				l.Debugf("Deleting all pets for character [%d], because the character has been deleted.", characterId)
+				return db.Transaction(deleteForCharacter(t, characterId))
 			}
 		}
 	}

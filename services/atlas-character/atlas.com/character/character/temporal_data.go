@@ -142,9 +142,9 @@ func (r *temporalRegistry) GetById(characterId uint32) *temporalData {
 }
 
 var once sync.Once
+var instance *temporalRegistry
 
 func GetTemporalRegistry() *temporalRegistry {
-	var instance *temporalRegistry
 	once.Do(func() {
 		instance = &temporalRegistry{
 			data:           make(map[uint32]*temporalData),

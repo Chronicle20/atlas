@@ -1,7 +1,9 @@
 package main
 
 import (
+	"atlas-pets/database"
 	"atlas-pets/logger"
+	"atlas-pets/pet"
 	"atlas-pets/service"
 	"atlas-pets/tracing"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -39,6 +41,8 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
+
+	_ = database.Connect(l, database.SetMigrations(pet.Migration))
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix())
 

@@ -3,7 +3,6 @@ package configuration
 import (
 	"atlas-npc-conversations/configuration/tenant"
 	"atlas-npc-conversations/rest"
-	"fmt"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
@@ -17,5 +16,5 @@ func getBaseRequest() string {
 }
 
 func requestAllTenants() requests.Request[[]tenant.RestModel] {
-	return rest.MakeGetRequest[[]tenant.RestModel](fmt.Sprintf(getBaseRequest() + AllTenants))
+	return rest.MakeGetRequest[[]tenant.RestModel](getBaseRequest() + AllTenants)
 }

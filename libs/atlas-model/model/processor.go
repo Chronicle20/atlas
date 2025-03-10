@@ -49,6 +49,15 @@ func Flip[A any, B any, C any](f func(A) func(B) C) func(B) func(A) C {
 	}
 }
 
+//goland:noinspection GoUnusedExportedFunction
+func FlipOperator[A any, B any](f func(A) Operator[B]) func(B) Operator[A] {
+	return func(b B) Operator[A] {
+		return func(a A) error {
+			return f(a)(b)
+		}
+	}
+}
+
 type ExecuteFuncConfigurator Decorator[ExecuteConfig]
 
 type ExecuteConfig struct {

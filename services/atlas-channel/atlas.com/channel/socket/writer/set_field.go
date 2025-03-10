@@ -466,7 +466,7 @@ func WritePetCashItemInfo(zeroPosition bool) func(p pet.Model) func(w *response.
 				w.WriteByte(3)
 				w.WriteInt(i.ItemId())
 				w.WriteBool(true)
-				w.WriteLong(uint64(p.Id()))
+				w.WriteLong(p.Id())
 				w.WriteInt64(msTime(time.Time{}))
 				WritePaddedString(w, p.Name(), 13)
 				w.WriteByte(p.Level())
@@ -613,7 +613,7 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 			writeForEachPet(w, character.Pets(), writePetId, writeEmptyPetId)
 		} else {
 			if len(character.Pets()) > 0 {
-				w.WriteLong(uint64(character.Pets()[0].Id())) // pet cash id
+				w.WriteLong(character.Pets()[0].Id()) // pet cash id
 			} else {
 				w.WriteLong(0)
 			}

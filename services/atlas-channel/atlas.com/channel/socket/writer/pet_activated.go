@@ -21,7 +21,7 @@ func PetSpawnBody(l logrus.FieldLogger) func(t tenant.Model) func(characterId ui
 				m := model2.Pet{
 					TemplateId:  p.TemplateId(),
 					Name:        p.Name(),
-					Id:          uint64(p.Id()),
+					Id:          p.Id(),
 					X:           p.X(),
 					Y:           p.Y(),
 					Stance:      p.Stance(),

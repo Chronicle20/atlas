@@ -3,7 +3,7 @@ package pet
 import "time"
 
 type Model struct {
-	id              uint32
+	id              uint64
 	inventoryItemId uint32
 	templateId      uint32
 	name            string
@@ -19,7 +19,7 @@ type Model struct {
 	stance          byte
 }
 
-func (m Model) Id() uint32 {
+func (m Model) Id() uint64 {
 	return m.id
 }
 
@@ -76,7 +76,7 @@ func (m Model) Stance() byte {
 }
 
 type ModelBuilder struct {
-	id              uint32
+	id              uint64
 	inventoryItemId uint32
 	templateId      uint32
 	name            string
@@ -92,7 +92,7 @@ type ModelBuilder struct {
 	stance          byte
 }
 
-func NewModelBuilder(id, inventoryItemId, templateId uint32, name string) *ModelBuilder {
+func NewModelBuilder(id uint64, inventoryItemId, templateId uint32, name string) *ModelBuilder {
 	return &ModelBuilder{
 		id:              id,
 		inventoryItemId: inventoryItemId,

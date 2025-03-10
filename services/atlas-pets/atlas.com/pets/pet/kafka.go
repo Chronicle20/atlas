@@ -9,7 +9,7 @@ const (
 )
 
 type statusEvent[E any] struct {
-	PetId   uint32 `json:"petId"`
+	PetId   uint64 `json:"petId"`
 	OwnerId uint32 `json:"ownerId"`
 	Type    string `json:"type"`
 	Body    E      `json:"body"`
@@ -31,6 +31,7 @@ type spawnedStatusEventBody struct {
 	X          int16  `json:"x"`
 	Y          int16  `json:"y"`
 	Stance     byte   `json:"stance"`
+	FH         int16  `json:"fh"`
 }
 
 type despawnedStatusEventBody struct {
@@ -56,7 +57,8 @@ type movementEvent struct {
 	WorldId   byte     `json:"worldId"`
 	ChannelId byte     `json:"channelId"`
 	MapId     uint32   `json:"mapId"`
-	PetId     uint32   `json:"petId"`
+	PetId     uint64   `json:"petId"`
+	Slot      byte     `json:"slot"`
 	OwnerId   uint32   `json:"ownerId"`
 	Movement  Movement `json:"movement"`
 }

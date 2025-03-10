@@ -7,7 +7,7 @@ import (
 )
 
 type RestModel struct {
-	Id              uint32    `json:"-"`
+	Id              uint64    `json:"-"`
 	InventoryItemId uint32    `json:"inventoryItemId"`
 	TemplateId      uint32    `json:"templateId"`
 	Name            string    `json:"name"`
@@ -21,6 +21,7 @@ type RestModel struct {
 	X               int16     `json:"x"`
 	Y               int16     `json:"y"`
 	Stance          byte      `json:"stance"`
+	FH              int16     `json:"fh"`
 }
 
 func (r RestModel) GetName() string {
@@ -36,7 +37,7 @@ func (r *RestModel) SetID(strId string) error {
 	if err != nil {
 		return err
 	}
-	r.Id = uint32(id)
+	r.Id = uint64(id)
 	return nil
 }
 
@@ -61,5 +62,6 @@ func Transform(m Model) (RestModel, error) {
 		X:               tm.X(),
 		Y:               tm.Y(),
 		Stance:          tm.Stance(),
+		FH:              tm.FH(),
 	}, nil
 }

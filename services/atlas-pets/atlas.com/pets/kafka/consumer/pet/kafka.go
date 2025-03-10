@@ -16,7 +16,7 @@ type movementCommand struct {
 	WorldId     byte         `json:"worldId"`
 	ChannelId   byte         `json:"channelId"`
 	MapId       uint32       `json:"mapId"`
-	PetId       uint32       `json:"petId"`
+	PetId       uint64       `json:"petId"`
 	CharacterId uint32       `json:"characterId"`
 	Movement    pet.Movement `json:"movement"`
 }

@@ -1,9 +1,9 @@
 package pet
 
 import (
-	"atlas-pets/character"
 	"atlas-pets/character/item"
 	"atlas-pets/kafka/producer"
+	"atlas-pets/pet/position"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/inventory"
@@ -14,18 +14,18 @@ import (
 	"gorm.io/gorm"
 )
 
-func ByIdProvider(ctx context.Context) func(db *gorm.DB) func(petId uint32) model.Provider[Model] {
+func ByIdProvider(ctx context.Context) func(db *gorm.DB) func(petId uint64) model.Provider[Model] {
 	t := tenant.MustFromContext(ctx)
-	return func(db *gorm.DB) func(petId uint32) model.Provider[Model] {
-		return func(petId uint32) model.Provider[Model] {
+	return func(db *gorm.DB) func(petId uint64) model.Provider[Model] {
+		return func(petId uint64) model.Provider[Model] {
 			return model.Map(modelFromEntity)(getById(t.Id(), petId)(db))
 		}
 	}
 }
 
-func GetById(ctx context.Context) func(db *gorm.DB) func(petId uint32) (Model, error) {
-	return func(db *gorm.DB) func(petId uint32) (Model, error) {
-		return func(petId uint32) (Model, error) {
+func GetById(ctx context.Context) func(db *gorm.DB) func(petId uint64) (Model, error) {
+	return func(db *gorm.DB) func(petId uint64) (Model, error) {
+		return func(petId uint64) (Model, error) {
 			return ByIdProvider(ctx)(db)(petId)()
 		}
 	}
@@ -148,19 +148,36 @@ func FoldMovementSummary(summary MovementSummary, e Element) (MovementSummary, e
 	return ms, nil
 }
 
-func Move(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint32) func(m _map.Model) func(ownerId uint32) func(movement Movement) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(petId uint32) func(m _map.Model) func(ownerId uint32) func(movement Movement) error {
-		return func(db *gorm.DB) func(petId uint32) func(m _map.Model) func(ownerId uint32) func(movement Movement) error {
-			return func(petId uint32) func(m _map.Model) func(ownerId uint32) func(movement Movement) error {
+func Move(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64) func(m _map.Model) func(ownerId uint32) func(movement Movement) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64) func(m _map.Model) func(ownerId uint32) func(movement Movement) error {
+		return func(db *gorm.DB) func(petId uint64) func(m _map.Model) func(ownerId uint32) func(movement Movement) error {
+			return func(petId uint64) func(m _map.Model) func(ownerId uint32) func(movement Movement) error {
 				return func(m _map.Model) func(ownerId uint32) func(movement Movement) error {
 					return func(ownerId uint32) func(movement Movement) error {
 						return func(movement Movement) error {
+							p, err := GetById(ctx)(db)(petId)
+							if err != nil {
+								l.WithError(err).Errorf("Movement issued for pet by character [%d], which pet [%d] does not exist.", ownerId, petId)
+								return err
+							}
+							if p.OwnerId() != ownerId {
+								l.WithError(err).Errorf("Character [%d] attempting to move other character [%d] pet [%d].", ownerId, p.OwnerId(), petId)
+								return errors.New("pet not owned by character")
+							}
+
 							msp := model.Fold(model.FixedProvider(movement.Elements), MovementSummaryProvider(movement.StartX, movement.StartY, GetTemporalRegistry().GetById(petId).Stance()), FoldMovementSummary)
-							err := model.For(msp, updateTemporal(petId))
+
+							err = model.For(msp, func(ms MovementSummary) error {
+								fh, err := position.GetBelow(l)(ctx)(uint32(m.MapId()), ms.X, ms.Y)()
+								if err != nil {
+									return err
+								}
+								return updateTemporal(petId, int16(fh.Id()))(ms)
+							})
 							if err != nil {
 								return err
 							}
-							return producer.ProviderImpl(l)(ctx)(EnvEventTopicMovement)(moveEventProvider(m, petId, ownerId, movement))
+							return producer.ProviderImpl(l)(ctx)(EnvEventTopicMovement)(moveEventProvider(m, p, movement))
 						}
 					}
 				}
@@ -169,72 +186,9 @@ func Move(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func
 	}
 }
 
-func updateTemporal(petId uint32) model.Operator[MovementSummary] {
+func updateTemporal(petId uint64, fh int16) model.Operator[MovementSummary] {
 	return func(ms MovementSummary) error {
-		GetTemporalRegistry().Update(petId, ms.X, ms.Y, ms.Stance)
+		GetTemporalRegistry().Update(petId, ms.X, ms.Y, ms.Stance, fh)
 		return nil
-	}
-}
-
-func OwnerEnterMap(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(ownerId uint32, m _map.Model) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(ownerId uint32, m _map.Model) error {
-		return func(db *gorm.DB) func(ownerId uint32, m _map.Model) error {
-			return func(ownerId uint32, m _map.Model) error {
-				c, err := character.GetById(l)(ctx)()(ownerId)
-				if err != nil {
-					return err
-				}
-				var ps []Model
-				txErr := db.Transaction(func(tx *gorm.DB) error {
-					ps, err = GetByOwner(ctx)(db)(ownerId)
-					if err != nil {
-						return err
-					}
-					for _, p := range ps {
-						GetTemporalRegistry().Update(p.Id(), c.X(), c.Y(), 0)
-					}
-					return nil
-				})
-				if txErr != nil {
-					return txErr
-				}
-				for _, p := range ps {
-					td := GetTemporalRegistry().GetById(p.Id())
-					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(spawnEventProvider(p, td))
-				}
-				return nil
-			}
-		}
-	}
-}
-
-func OwnerExitMap(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(ownerId uint32, m _map.Model) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(ownerId uint32, m _map.Model) error {
-		return func(db *gorm.DB) func(ownerId uint32, m _map.Model) error {
-			return func(ownerId uint32, m _map.Model) error {
-				c, err := character.GetById(l)(ctx)()(ownerId)
-				if err != nil {
-					return err
-				}
-				var ps []Model
-				txErr := db.Transaction(func(tx *gorm.DB) error {
-					ps, err = GetByOwner(ctx)(db)(ownerId)
-					if err != nil {
-						return err
-					}
-					for _, p := range ps {
-						GetTemporalRegistry().Update(p.Id(), c.X(), c.Y(), 0)
-					}
-					return nil
-				})
-				if txErr != nil {
-					return txErr
-				}
-				for _, p := range ps {
-					_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(despawnEventProvider(p))
-				}
-				return nil
-			}
-		}
 	}
 }

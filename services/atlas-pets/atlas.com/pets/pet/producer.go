@@ -23,6 +23,7 @@ func spawnEventProvider(m Model, tm *temporalData) model.Provider[[]kafka.Messag
 			X:          tm.X(),
 			Y:          tm.Y(),
 			Stance:     tm.Stance(),
+			FH:         tm.FH(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -46,14 +47,15 @@ func despawnEventProvider(m Model) model.Provider[[]kafka.Message] {
 	return producer.SingleMessageProvider(key, value)
 }
 
-func moveEventProvider(m _map.Model, petId uint32, ownerId uint32, mov Movement) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(ownerId))
+func moveEventProvider(m _map.Model, p Model, mov Movement) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(p.OwnerId()))
 	value := &movementEvent{
 		WorldId:   byte(m.WorldId()),
 		ChannelId: byte(m.ChannelId()),
 		MapId:     uint32(m.MapId()),
-		PetId:     petId,
-		OwnerId:   ownerId,
+		PetId:     p.Id(),
+		Slot:      p.Slot(),
+		OwnerId:   p.OwnerId(),
 		Movement:  mov,
 	}
 	return producer.SingleMessageProvider(key, value)

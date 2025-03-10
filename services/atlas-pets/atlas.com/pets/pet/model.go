@@ -52,6 +52,10 @@ func (m Model) OwnerId() uint32 {
 	return m.ownerId
 }
 
+func (m Model) Lead() bool {
+	return m.lead
+}
+
 func (m Model) Slot() byte {
 	return m.slot
 }

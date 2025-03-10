@@ -142,7 +142,7 @@ func WriteCharacterEquipment(tenant tenant.Model) func(w *response.Writer, chara
 			writeForEachPet(w, character.Pets(), writePetItemId, writeEmptyPetItemId)
 		} else {
 			if len(character.Pets()) > 0 {
-				w.WriteLong(character.Pets()[0].Id()) // pet cash id
+				w.WriteLong(uint64(character.Pets()[0].Id())) // pet cash id
 			} else {
 				w.WriteLong(0)
 			}
@@ -210,7 +210,7 @@ func addEquipmentIfPresent(slotMap map[slot.Position]uint32, pi slot.Model) {
 }
 
 func writePetItemId(w *response.Writer, p pet.Model) {
-	w.WriteInt(p.ItemId())
+	w.WriteInt(p.TemplateId())
 }
 
 func writeEmptyPetItemId(w *response.Writer) {
@@ -218,9 +218,20 @@ func writeEmptyPetItemId(w *response.Writer) {
 }
 
 func writeForEachPet(w *response.Writer, ps []pet.Model, pe func(w *response.Writer, p pet.Model), pne func(w *response.Writer)) {
-	for i := 0; i < 3; i++ {
-		if ps != nil && len(ps) > i {
-			pe(w, ps[i])
+	for i := byte(1); i <= 3; i++ {
+		if ps == nil {
+			pne(w)
+			continue
+		}
+
+		var p *pet.Model
+		for _, rp := range ps {
+			if rp.Slot() == i {
+				p = &rp
+			}
+		}
+		if p != nil {
+			pe(w, *p)
 		} else {
 			pne(w)
 		}
@@ -228,7 +239,7 @@ func writeForEachPet(w *response.Writer, ps []pet.Model, pe func(w *response.Wri
 }
 
 func writePetId(w *response.Writer, pet pet.Model) {
-	w.WriteLong(pet.Id())
+	w.WriteLong(uint64(pet.Id()))
 }
 
 func writeEmptyPetId(w *response.Writer) {

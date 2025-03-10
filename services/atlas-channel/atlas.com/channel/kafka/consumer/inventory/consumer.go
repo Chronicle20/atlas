@@ -5,17 +5,20 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
 	"atlas-channel/messenger"
+	"atlas-channel/pet"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -45,27 +48,28 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 }
 
 func handleInventoryAddEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemAddBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, event inventoryChangedEvent[inventoryChangedItemAddBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e inventoryChangedEvent[inventoryChangedItemAddBody]) {
 		t := sc.Tenant()
 		if !t.Is(tenant.MustFromContext(ctx)) {
 			return
 		}
 
-		if event.Type != ChangedTypeAdd {
+		if e.Type != ChangedTypeAdd {
 			return
 		}
 
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(event.CharacterId, addToInventory(l)(ctx)(wp)(event))
+		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, addToInventory(l)(ctx)(wp)(e))
 
 	}
 }
 
 func addToInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
 			return func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					var bp writer.BodyProducer
+					var itemWriter model.Operator[*response.Writer]
 					inventoryType, ok := inventory.TypeFromItemId(event.Body.ItemId)
 					if !ok {
 						l.Errorf("Unable to identify inventory type by item [%d].", event.Body.ItemId)
@@ -77,21 +81,30 @@ func addToInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writ
 						if err != nil {
 							return err
 						}
-						bp = writer.CharacterInventoryAddEquipableBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, e, false)
+						itemWriter = model.FlipOperator(writer.WriteEquipableInfo(t)(true))(e)
 					} else if inventoryType == 2 || inventoryType == 3 || inventoryType == 4 {
 						i, err := character.GetItemInSlot(l)(ctx)(s.CharacterId(), byte(inventoryType), event.Slot)()
 						if err != nil {
 							return err
 						}
-						bp = writer.CharacterInventoryAddItemBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, i, false)
+						itemWriter = model.FlipOperator(writer.WriteItemInfo(true))(i)
 					} else if inventoryType == 5 {
 						i, err := character.GetItemInSlot(l)(ctx)(s.CharacterId(), byte(inventoryType), event.Slot)()
 						if err != nil {
 							return err
 						}
-						bp = writer.CharacterInventoryAddCashItemBody(tenant.MustFromContext(ctx))(byte(inventoryType), event.Slot, i, false)
+
+						if item.GetClassification(item.Id(i.ItemId())) == item.Classification(500) {
+							p, err := pet.GetByOwnerItem(l)(ctx)(event.CharacterId, i.Id())
+							if err != nil {
+								return err
+							}
+							itemWriter = model.FlipOperator(writer.WritePetCashItemInfo(true)(p))(i)
+						} else {
+							itemWriter = model.FlipOperator(writer.WriteCashItemInfo(true))(i)
+						}
 					}
-					err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)
+					err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryAddBody(byte(inventoryType), event.Slot, false)(itemWriter))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to add [%d] to slot [%d] for character [%d].", event.Body.ItemId, event.Slot, s.CharacterId())
 					}
@@ -156,7 +169,7 @@ func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 		return func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 			return func(e inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					c, err := character.GetByIdWithInventory(l)(ctx)()(s.CharacterId())
+					c, err := character.GetByIdWithInventory(l)(ctx)(character.PetModelDecorator(l)(ctx))(s.CharacterId())
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue appearance update for character [%d] to others in map.", s.CharacterId())
 						return err

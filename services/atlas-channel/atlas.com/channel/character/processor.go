@@ -6,6 +6,7 @@ import (
 	"atlas-channel/character/inventory/item"
 	"atlas-channel/character/skill"
 	"atlas-channel/kafka/producer"
+	"atlas-channel/pet"
 	"atlas-channel/socket/model"
 	"context"
 	"errors"
@@ -45,6 +46,18 @@ func SkillModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model2.
 				return m
 			}
 			return m.SetSkills(ms)
+		}
+	}
+}
+
+func PetModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model2.Decorator[Model] {
+	return func(ctx context.Context) model2.Decorator[Model] {
+		return func(m Model) Model {
+			ms, err := pet.GetByOwner(l)(ctx)(m.Id())
+			if err != nil {
+				return m
+			}
+			return m.SetPets(ms)
 		}
 	}
 }

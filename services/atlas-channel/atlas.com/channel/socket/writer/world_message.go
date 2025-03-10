@@ -1,8 +1,6 @@
 package writer
 
 import (
-	"atlas-channel/character/inventory/equipable"
-	"atlas-channel/character/inventory/item"
 	"fmt"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -144,51 +142,6 @@ func SlotAsIntOperator(slot int16) model.Operator[*response.Writer] {
 	return func(w *response.Writer) error {
 		w.WriteInt32(int32(slot))
 		return nil
-	}
-}
-
-func EquipableOperator(l logrus.FieldLogger) func(t tenant.Model) func(i *equipable.Model) model.Operator[*response.Writer] {
-	return func(t tenant.Model) func(i *equipable.Model) model.Operator[*response.Writer] {
-		return func(i *equipable.Model) model.Operator[*response.Writer] {
-			return func(w *response.Writer) error {
-				if i == nil {
-					l.Warnf("Item should be provided for Gachapon mode.")
-					return WriteEquipableInfo(t)(w, true)(equipable.Model{})
-				} else {
-					return WriteEquipableInfo(t)(w, true)(*i)
-				}
-			}
-		}
-	}
-}
-
-func ItemOperator(l logrus.FieldLogger) func(t tenant.Model) func(i *item.Model) model.Operator[*response.Writer] {
-	return func(t tenant.Model) func(i *item.Model) model.Operator[*response.Writer] {
-		return func(i *item.Model) model.Operator[*response.Writer] {
-			return func(w *response.Writer) error {
-				if i == nil {
-					l.Warnf("Received item should be provided for Gachapon mode.")
-					return WriteItemInfo(t)(w, true)(item.Model{})
-				} else {
-					return WriteItemInfo(t)(w, true)(*i)
-				}
-			}
-		}
-	}
-}
-
-func CashItemOperator(l logrus.FieldLogger) func(t tenant.Model) func(i *item.Model) model.Operator[*response.Writer] {
-	return func(t tenant.Model) func(i *item.Model) model.Operator[*response.Writer] {
-		return func(i *item.Model) model.Operator[*response.Writer] {
-			return func(w *response.Writer) error {
-				if i == nil {
-					l.Warnf("Received item should be provided for Gachapon mode.")
-					return WriteCashItemInfo(t)(w, true)(item.Model{})
-				} else {
-					return WriteCashItemInfo(t)(w, true)(*i)
-				}
-			}
-		}
 	}
 }
 

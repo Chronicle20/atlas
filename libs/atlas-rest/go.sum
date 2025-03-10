@@ -1,5 +1,7 @@
 github.com/Chronicle20/atlas-model v1.2.1 h1:F/SYo4PAHd1BuZz5/RV65V4uv5wXHzE95LE4nkmhO4g=
 github.com/Chronicle20/atlas-model v1.2.1/go.mod h1:5FNYT/ypml+goxft0XCACTEp6666yys+l6LTxSPeh1k=
+github.com/Chronicle20/atlas-model v1.2.2 h1:y49e+UaZ2diXVcDX84FdWat/5THIPmOr9IKqCr/TVwQ=
+github.com/Chronicle20/atlas-model v1.2.2/go.mod h1:5FNYT/ypml+goxft0XCACTEp6666yys+l6LTxSPeh1k=
 github.com/Chronicle20/atlas-tenant v1.0.4 h1:zS+hK56eNTVDlvTvSFN4wo9hZQ9aM/6SxXzRL+9P2Zk=
 github.com/Chronicle20/atlas-tenant v1.0.4/go.mod h1:6DHjFyHY9wRfOuphFwmwklf50hYm74L7MlWH7wqgnRQ=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

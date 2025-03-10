@@ -106,6 +106,30 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			}
 
 			go func() {
+				for k, v := range cms {
+					if k != s.CharacterId() {
+						for _, p := range v.Pets() {
+							err = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(tenant.MustFromContext(ctx))(k, p))(s)
+							if err != nil {
+								l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", k, s.CharacterId())
+							}
+						}
+					}
+				}
+			}()
+
+			go func() {
+				for k := range cms {
+					for _, p := range cms[s.CharacterId()].Pets() {
+						err = session.IfPresentByCharacterId(tenant.MustFromContext(ctx), s.WorldId(), s.ChannelId())(k, session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(tenant.MustFromContext(ctx))(s.CharacterId(), p)))
+						if err != nil {
+							l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", s.CharacterId(), k)
+						}
+					}
+				}
+			}()
+
+			go func() {
 				err = npc.ForEachInMap(l)(ctx)(m.MapId(), spawnNPCForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn npcs for character [%d].", s.CharacterId())

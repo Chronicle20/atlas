@@ -26,6 +26,7 @@ import (
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/party"
 	"atlas-channel/kafka/consumer/party/member"
+	"atlas-channel/kafka/consumer/pet"
 	"atlas-channel/kafka/consumer/reactor"
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/kafka/consumer/skill"
@@ -104,6 +105,7 @@ func main() {
 	buff.InitConsumers(l)(cmf)(consumerGroupId)
 	chalkboard.InitConsumers(l)(cmf)(consumerGroupId)
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
+	pet.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
@@ -171,6 +173,7 @@ func main() {
 				buff.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				chalkboard.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				messenger.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				pet.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, ten.IPAddress, c.Port)
@@ -258,6 +261,7 @@ func produceWriters() []string {
 		writer.ChalkboardUse,
 		writer.CharacterChatWhisper,
 		writer.MessengerOperation,
+		writer.PetActivated,
 	}
 }
 

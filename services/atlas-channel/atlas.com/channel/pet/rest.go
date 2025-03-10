@@ -17,6 +17,9 @@ type RestModel struct {
 	OwnerId         uint32    `json:"ownerId"`
 	Lead            bool      `json:"lead"`
 	Slot            byte      `json:"slot"`
+	X               int16     `json:"x"`
+	Y               int16     `json:"y"`
+	Stance          byte      `json:"stance"`
 }
 
 func (r RestModel) GetName() string {
@@ -49,5 +52,8 @@ func Extract(rm RestModel) (Model, error) {
 		ownerId:         rm.OwnerId,
 		lead:            rm.Lead,
 		slot:            rm.Slot,
+		x:               rm.X,
+		y:               rm.Y,
+		stance:          rm.Stance,
 	}, nil
 }

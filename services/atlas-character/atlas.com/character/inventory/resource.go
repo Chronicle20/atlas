@@ -67,7 +67,9 @@ func handleGetItemBySlot(d *rest.HandlerDependency, c *rest.HandlerContext) http
 								return
 							}
 
-							server.Marshal[equipable.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+							query := r.URL.Query()
+							queryParams := jsonapi.ParseQueryFields(&query)
+							server.MarshalResponse[equipable.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 							return
 						}
 					}
@@ -100,7 +102,9 @@ func handleGetItemBySlot(d *rest.HandlerDependency, c *rest.HandlerContext) http
 							return
 						}
 
-						server.Marshal[item.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+						query := r.URL.Query()
+						queryParams := jsonapi.ParseQueryFields(&query)
+						server.MarshalResponse[item.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 						return
 					}
 				}

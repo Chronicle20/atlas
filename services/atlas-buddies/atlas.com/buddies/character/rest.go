@@ -1,6 +1,9 @@
 package character
 
-import "strconv"
+import (
+	"github.com/jtumidanski/api2go/jsonapi"
+	"strconv"
+)
 
 type RestModel struct {
 	Id   uint32 `json:"-"`

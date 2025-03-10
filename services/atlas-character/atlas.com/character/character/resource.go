@@ -51,7 +51,9 @@ func handleGetCharacters(d *rest.HandlerDependency, c *rest.HandlerContext) http
 			return
 		}
 
-		server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 	}
 }
 
@@ -84,7 +86,9 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 			return
 		}
 
-		server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 	}
 }
 
@@ -126,7 +130,9 @@ func handleGetCharactersByMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 			return
 		}
 
-		server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 	}
 }
 
@@ -153,7 +159,9 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 			return
 		}
 
-		server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 	}
 }
 
@@ -173,7 +181,9 @@ func handleGetCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 				return
 			}
 
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
 }
@@ -205,7 +215,9 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			return
 		}
 
-		server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 	}
 }
 

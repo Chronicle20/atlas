@@ -40,7 +40,7 @@ func PetDespawnBody(l logrus.FieldLogger) func(characterId uint32, p pet.Model) 
 	return func(characterId uint32, p pet.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(characterId)
-			w.WriteByte(p.Slot())
+			w.WriteByte(p.Slot() - 1)
 			w.WriteBool(false)
 			return w.Bytes()
 		}

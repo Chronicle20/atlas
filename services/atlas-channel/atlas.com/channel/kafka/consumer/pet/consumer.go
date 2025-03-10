@@ -7,6 +7,7 @@ import (
 	"atlas-channel/pet"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -38,6 +39,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				var t string
 				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawned(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDespawned(sc, wp))))
 				t, _ = topic.EnvProvider(l)(EnvEventTopicMovement)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp))))
 			}
@@ -51,27 +53,64 @@ func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		//s, err := session.GetByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId)
-		//if err != nil {
-		//	return
-		//}
-		//
-		//p := pet.NewModelBuilder(e.PetId, 0, e.Body.TemplateId, e.Body.Name).
-		//	SetSlot(e.Body.Slot).
-		//	SetLevel(e.Body.Level).
-		//	SetTameness(e.Body.Tameness).
-		//	SetFullness(e.Body.Fullness).
-		//	SetX(e.Body.X).
-		//	SetY(e.Body.Y).
-		//	SetStance(e.Body.Stance).
-		//	Build()
-		//
-		//go func() {
-		//	_ = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(sc.Tenant())(s.CharacterId(), p))(s)
-		//}()
-		//go func() {
-		//	_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(sc.Tenant())(s.CharacterId(), p)))
-		//}()
+		s, err := session.GetByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId)
+		if err != nil {
+			return
+		}
+
+		p := pet.NewModelBuilder(e.PetId, 0, e.Body.TemplateId, e.Body.Name).
+			SetSlot(e.Body.Slot).
+			SetLevel(e.Body.Level).
+			SetTameness(e.Body.Tameness).
+			SetFullness(e.Body.Fullness).
+			SetX(e.Body.X).
+			SetY(e.Body.Y).
+			SetStance(e.Body.Stance).
+			SetFoothold(e.Body.FH).
+			Build()
+
+		go func() {
+			_ = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(sc.Tenant())(s.CharacterId(), p))(s)
+			err = enableActions(l)(ctx)(wp)(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+			}
+		}()
+		go func() {
+			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(sc.Tenant())(s.CharacterId(), p)))
+		}()
+	}
+}
+
+func handleDespawned(sc server.Model, wp writer.Producer) message.Handler[statusEvent[despawnedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[despawnedStatusEventBody]) {
+		if e.Type != StatusEventTypeDespawned {
+			return
+		}
+
+		s, err := session.GetByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId)
+		if err != nil {
+			return
+		}
+
+		go func() {
+			_ = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(s.CharacterId(), e.Body.Slot, writer.PetDespawnModeNormal))(s)
+			err = enableActions(l)(ctx)(wp)(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+			}
+		}()
+		go func() {
+			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(s.CharacterId(), e.Body.Slot, writer.PetDespawnModeNormal)))
+		}()
+	}
+}
+
+func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
+		return func(wp writer.Producer) func(s session.Model) error {
+			return session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true))
+		}
 	}
 }
 

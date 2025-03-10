@@ -10,12 +10,22 @@ import (
 
 const PetActivated = "PetActivated"
 
+type PetDespawnMode byte
+
+const (
+	PetDespawnModeNormal  = PetDespawnMode(0)
+	PetDespawnModeHungry  = PetDespawnMode(1)
+	PetDespawnModeExpired = PetDespawnMode(2)
+	PetDespawnModeUnk1    = PetDespawnMode(3)
+	PetDespawnModeUnk2    = PetDespawnMode(4)
+)
+
 func PetSpawnBody(l logrus.FieldLogger) func(t tenant.Model) func(characterId uint32, p pet.Model) BodyProducer {
 	return func(t tenant.Model) func(characterId uint32, p pet.Model) BodyProducer {
 		return func(characterId uint32, p pet.Model) BodyProducer {
 			return func(w *response.Writer, options map[string]interface{}) []byte {
 				w.WriteInt(characterId)
-				w.WriteByte(p.Slot() - 1)
+				w.WriteInt8(p.Slot())
 				w.WriteBool(true)
 				w.WriteBool(true) // show?
 				m := model2.Pet{
@@ -36,13 +46,12 @@ func PetSpawnBody(l logrus.FieldLogger) func(t tenant.Model) func(characterId ui
 	}
 }
 
-func PetDespawnBody(l logrus.FieldLogger) func(characterId uint32, p pet.Model) BodyProducer {
-	return func(characterId uint32, p pet.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteInt(characterId)
-			w.WriteByte(p.Slot() - 1)
-			w.WriteBool(false)
-			return w.Bytes()
-		}
+func PetDespawnBody(characterId uint32, slot int8, mode PetDespawnMode) BodyProducer {
+	return func(w *response.Writer, options map[string]interface{}) []byte {
+		w.WriteInt(characterId)
+		w.WriteInt8(slot)
+		w.WriteBool(false)
+		w.WriteByte(byte(mode))
+		return w.Bytes()
 	}
 }

@@ -9,6 +9,30 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+func spawnProvider(characterId uint32, petId uint64, lead bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(petId))
+	value := &commandEvent[spawnCommandBody]{
+		ActorId: characterId,
+		PetId:   petId,
+		Type:    CommandPetSpawn,
+		Body: spawnCommandBody{
+			Lead: lead,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func despawnProvider(characterId uint32, petId uint64) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(petId))
+	value := &commandEvent[despawnCommandBody]{
+		ActorId: characterId,
+		PetId:   petId,
+		Type:    CommandPetDespawn,
+		Body:    despawnCommandBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func Move(petId uint64, ma _map.Model, characterId uint32, mm model2.Movement) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(petId))
 

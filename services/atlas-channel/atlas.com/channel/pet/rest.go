@@ -16,7 +16,7 @@ type RestModel struct {
 	Expiration      time.Time `json:"expiration"`
 	OwnerId         uint32    `json:"ownerId"`
 	Lead            bool      `json:"lead"`
-	Slot            byte      `json:"slot"`
+	Slot            int8      `json:"slot"`
 	X               int16     `json:"x"`
 	Y               int16     `json:"y"`
 	Stance          byte      `json:"stance"`

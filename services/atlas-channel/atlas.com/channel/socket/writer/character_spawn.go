@@ -237,7 +237,7 @@ func writeEmptyPetItemId(w *response.Writer) {
 }
 
 func writeForEachPet(w *response.Writer, ps []pet.Model, pe func(w *response.Writer, p pet.Model), pne func(w *response.Writer)) {
-	for i := byte(1); i <= 3; i++ {
+	for i := int8(0); i < 3; i++ {
 		if ps == nil {
 			pne(w)
 			continue

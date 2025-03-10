@@ -1,6 +1,7 @@
 package pet
 
 import (
+	"atlas-channel/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -34,5 +35,23 @@ func GetByOwnerItem(l logrus.FieldLogger) func(ctx context.Context) func(ownerId
 func InventoryItemIdFilter(inventoryItemId uint32) model.Filter[Model] {
 	return func(m Model) bool {
 		return m.InventoryItemId() == inventoryItemId
+	}
+}
+
+func Spawn(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, petId uint64, lead bool) error {
+	return func(ctx context.Context) func(characterId uint32, petId uint64, lead bool) error {
+		return func(characterId uint32, petId uint64, lead bool) error {
+			l.Debugf("Character [%d] attempting to spawn pet [%d]", characterId, petId)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(spawnProvider(characterId, petId, lead))
+		}
+	}
+}
+
+func Despawn(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, petId uint64) error {
+	return func(ctx context.Context) func(characterId uint32, petId uint64) error {
+		return func(characterId uint32, petId uint64) error {
+			l.Debugf("Character [%d] attempting to despawn pet [%d].", characterId, petId)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(despawnProvider(characterId, petId))
+		}
 	}
 }

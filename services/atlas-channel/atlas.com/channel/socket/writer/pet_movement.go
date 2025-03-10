@@ -14,7 +14,7 @@ func PetMovementBody(l logrus.FieldLogger, t tenant.Model) func(p pet.Model, mov
 	return func(p pet.Model, movement model.Movement) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(p.OwnerId())
-			w.WriteByte(p.Slot() - 1)
+			w.WriteInt8(p.Slot())
 			movement.Encode(l, t, options)(w)
 			return w.Bytes()
 		}

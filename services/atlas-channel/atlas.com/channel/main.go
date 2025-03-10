@@ -312,6 +312,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterChatWhisperHandle] = handler.CharacterChatWhisperHandleFunc
 	handlerMap[handler.MessengerOperationHandle] = handler.MessengerOperationHandleFunc
 	handlerMap[handler.PetMovementHandle] = handler.PetMovementHandleFunc
+	handlerMap[handler.PetSpawnHandle] = handler.PetSpawnHandleFunc
 	return handlerMap
 }
 

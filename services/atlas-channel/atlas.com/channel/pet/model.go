@@ -13,7 +13,7 @@ type Model struct {
 	expiration      time.Time
 	ownerId         uint32
 	lead            bool
-	slot            byte
+	slot            int8
 	x               int16
 	y               int16
 	stance          byte
@@ -60,7 +60,7 @@ func (m Model) Lead() bool {
 	return m.lead
 }
 
-func (m Model) Slot() byte {
+func (m Model) Slot() int8 {
 	return m.slot
 }
 
@@ -91,7 +91,7 @@ type ModelBuilder struct {
 	expiration      time.Time
 	ownerId         uint32
 	lead            bool
-	slot            byte
+	slot            int8
 	x               int16
 	y               int16
 	stance          byte
@@ -137,7 +137,7 @@ func (b *ModelBuilder) SetLead(lead bool) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetSlot(slot byte) *ModelBuilder {
+func (b *ModelBuilder) SetSlot(slot int8) *ModelBuilder {
 	b.slot = slot
 	return b
 }
@@ -175,4 +175,9 @@ func (b *ModelBuilder) Build() Model {
 		stance:          b.stance,
 		fh:              b.fh,
 	}
+}
+
+func (b *ModelBuilder) SetFoothold(fh int16) *ModelBuilder {
+	b.fh = fh
+	return b
 }

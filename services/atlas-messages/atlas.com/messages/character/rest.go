@@ -1,6 +1,7 @@
 package character
 
 import (
+	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
 )
 

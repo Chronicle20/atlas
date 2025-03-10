@@ -56,6 +56,41 @@ func (r *ForeignRestModel) SetID(idStr string) error {
 	return nil
 }
 
+func (r ForeignRestModel) GetReferences() []jsonapi.Reference {
+	return []jsonapi.Reference{
+		{
+			Type: "equipment",
+			Name: "equipment",
+		},
+		{
+			Type: "inventories",
+			Name: "inventories",
+		},
+	}
+}
+
+func (r ForeignRestModel) GetReferencedIDs() []jsonapi.ReferenceID {
+	var result []jsonapi.ReferenceID
+	return result
+}
+
+func (r ForeignRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
+	var result []jsonapi.MarshalIdentifier
+	return result
+}
+
+func (r *ForeignRestModel) SetToOneReferenceID(name, ID string) error {
+	return nil
+}
+
+func (r *ForeignRestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+	return nil
+}
+
+func (r *ForeignRestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+	return nil
+}
+
 func ExtractForeign(rm ForeignRestModel) (ForeignModel, error) {
 	return ForeignModel{
 		id:      rm.Id,

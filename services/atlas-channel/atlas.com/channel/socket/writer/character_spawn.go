@@ -70,12 +70,31 @@ func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.M
 
 			w.WriteShort(0) // fh
 			w.WriteByte(0)  // bShowAdminEffect
-			w.WriteByte(0)  // end of pets
-			w.WriteInt(1)   // mount level
-			w.WriteInt(0)   // mount exp
-			w.WriteInt(0)   // mount tiredness
-			w.WriteByte(0)  // mini room
-			w.WriteByte(0)  // ad board
+
+			// TODO clean this up.
+			writeForEachPet(w, c.Pets(), func(w *response.Writer, p pet.Model) {
+				m := model.Pet{
+					TemplateId:  p.TemplateId(),
+					Name:        p.Name(),
+					Id:          p.Id(),
+					X:           p.X(),
+					Y:           p.Y(),
+					Stance:      p.Stance(),
+					Foothold:    p.Fh(),
+					NameTag:     0,
+					ChatBalloon: 0,
+				}
+				w.WriteBool(true)
+				m.Encode(l, t, options)(w)
+			}, func(w *response.Writer) {
+			})
+			w.WriteByte(0) // end of pets
+
+			w.WriteInt(1)  // mount level
+			w.WriteInt(0)  // mount exp
+			w.WriteInt(0)  // mount tiredness
+			w.WriteByte(0) // mini room
+			w.WriteByte(0) // ad board
 
 			// TODO GMS - JMS have different ring encoding/decoding
 			w.WriteByte(0) // couple ring

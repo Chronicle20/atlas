@@ -17,6 +17,7 @@ type Model struct {
 	x               int16
 	y               int16
 	stance          byte
+	fh              int16
 }
 
 func (m Model) Id() uint64 {
@@ -75,6 +76,10 @@ func (m Model) Stance() byte {
 	return m.stance
 }
 
+func (m Model) Fh() int16 {
+	return m.fh
+}
+
 type ModelBuilder struct {
 	id              uint64
 	inventoryItemId uint32
@@ -90,6 +95,7 @@ type ModelBuilder struct {
 	x               int16
 	y               int16
 	stance          byte
+	fh              int16
 }
 
 func NewModelBuilder(id uint64, inventoryItemId, templateId uint32, name string) *ModelBuilder {
@@ -167,5 +173,6 @@ func (b *ModelBuilder) Build() Model {
 		x:               b.x,
 		y:               b.y,
 		stance:          b.stance,
+		fh:              b.fh,
 	}
 }

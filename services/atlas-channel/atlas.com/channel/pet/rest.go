@@ -20,6 +20,7 @@ type RestModel struct {
 	X               int16     `json:"x"`
 	Y               int16     `json:"y"`
 	Stance          byte      `json:"stance"`
+	FH              int16     `json:"fh"`
 }
 
 func (r RestModel) GetName() string {
@@ -55,5 +56,6 @@ func Extract(rm RestModel) (Model, error) {
 		x:               rm.X,
 		y:               rm.Y,
 		stance:          rm.Stance,
+		fh:              rm.FH,
 	}, nil
 }

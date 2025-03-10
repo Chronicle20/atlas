@@ -6,8 +6,9 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,7 +22,11 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		petInfo := r.ReadBool()
 		l.Debugf("Received info request for character [%d]. UpdateTime [%d]. PetInfo [%t].", characterId, updateTime, petInfo)
 
-		c, err := character.GetById(l)(ctx)()(characterId)
+		decorators := make([]model.Decorator[character.Model], 0)
+		if petInfo {
+			decorators = append(decorators, character.PetModelDecorator(l)(ctx))
+		}
+		c, err := character.GetById(l)(ctx)(decorators...)(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] being requested.", characterId)
 			return

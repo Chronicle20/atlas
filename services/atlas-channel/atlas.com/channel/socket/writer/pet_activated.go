@@ -25,7 +25,7 @@ func PetSpawnBody(l logrus.FieldLogger) func(t tenant.Model) func(characterId ui
 					X:           p.X(),
 					Y:           p.Y(),
 					Stance:      p.Stance(),
-					Foothold:    34,
+					Foothold:    p.Fh(),
 					NameTag:     0,
 					ChatBalloon: 0,
 				}

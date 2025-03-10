@@ -1,6 +1,7 @@
 package pet
 
 import (
+	"errors"
 	"strconv"
 	"time"
 )
@@ -17,6 +18,9 @@ type RestModel struct {
 	OwnerId         uint32    `json:"ownerId"`
 	Lead            bool      `json:"lead"`
 	Slot            byte      `json:"slot"`
+	X               int16     `json:"x"`
+	Y               int16     `json:"y"`
+	Stance          byte      `json:"stance"`
 }
 
 func (r RestModel) GetName() string {
@@ -37,6 +41,11 @@ func (r *RestModel) SetID(strId string) error {
 }
 
 func Transform(m Model) (RestModel, error) {
+	tm := GetTemporalRegistry().GetById(m.Id())
+	if tm == nil {
+		return RestModel{}, errors.New("temporal data not found")
+	}
+
 	return RestModel{
 		Id:              m.id,
 		InventoryItemId: m.inventoryItemId,
@@ -49,5 +58,8 @@ func Transform(m Model) (RestModel, error) {
 		OwnerId:         m.ownerId,
 		Lead:            m.lead,
 		Slot:            m.slot,
+		X:               tm.X(),
+		Y:               tm.Y(),
+		Stance:          tm.Stance(),
 	}, nil
 }

@@ -12,7 +12,7 @@ func Migration(db *gorm.DB) error {
 
 type Entity struct {
 	TenantId        uuid.UUID `gorm:"not null;"`
-	CharacterId     uint32    `gorm:"not null;"`
+	OwnerId         uint32    `gorm:"not null;"`
 	Id              uint32    `gorm:"primary_key;auto_increment"`
 	InventoryItemId uint32    `gorm:"not null"`
 	TemplateId      uint32    `gorm:"not null"`
@@ -21,6 +21,8 @@ type Entity struct {
 	Tameness        uint16    `gorm:"not null;default:0"`
 	Fullness        byte      `gorm:"not null;default:100"`
 	Expiration      time.Time `gorm:"not null;"`
+	Lead            bool      `json:"lead"`
+	Slot            byte      `gorm:"not null;default:0"`
 }
 
 func (e Entity) TableName() string {

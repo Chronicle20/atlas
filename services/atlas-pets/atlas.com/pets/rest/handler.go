@@ -106,17 +106,3 @@ func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.Handle
 		next(uint32(characterId))(w, r)
 	}
 }
-
-type InventoryTypeHandler func(inventoryType int8) http.HandlerFunc
-
-func ParseInventoryType(l logrus.FieldLogger, next InventoryTypeHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		inventoryType, err := strconv.Atoi(mux.Vars(r)["inventoryType"])
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse inventoryType from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(int8(inventoryType))(w, r)
-	}
-}

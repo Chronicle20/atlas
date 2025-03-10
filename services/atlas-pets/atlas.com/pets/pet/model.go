@@ -11,6 +11,9 @@ type Model struct {
 	tameness        uint16
 	fullness        byte
 	expiration      time.Time
+	ownerId         uint32
+	lead            bool
+	slot            byte
 }
 
 func (m Model) Id() uint32 {
@@ -45,6 +48,14 @@ func (m Model) Expiration() time.Time {
 	return m.expiration
 }
 
+func (m Model) OwnerId() uint32 {
+	return m.ownerId
+}
+
+func (m Model) Slot() byte {
+	return m.slot
+}
+
 type ModelBuilder struct {
 	id              uint32
 	inventoryItemId uint32
@@ -54,9 +65,12 @@ type ModelBuilder struct {
 	tameness        uint16
 	fullness        byte
 	expiration      time.Time
+	ownerId         uint32
+	lead            bool
+	slot            byte
 }
 
-func NewModelBuilder(id, inventoryItemId, templateId uint32, name string) *ModelBuilder {
+func NewModelBuilder(id, inventoryItemId, templateId uint32, name string, ownerId uint32) *ModelBuilder {
 	return &ModelBuilder{
 		id:              id,
 		inventoryItemId: inventoryItemId,
@@ -66,6 +80,9 @@ func NewModelBuilder(id, inventoryItemId, templateId uint32, name string) *Model
 		tameness:        0,
 		fullness:        100,
 		expiration:      time.Now().Add(720 * time.Hour),
+		ownerId:         ownerId,
+		lead:            false,
+		slot:            0,
 	}
 }
 
@@ -89,6 +106,16 @@ func (b *ModelBuilder) SetExpiration(expiration time.Time) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetSlot(slot byte) *ModelBuilder {
+	b.slot = slot
+	return b
+}
+
+func (b *ModelBuilder) SetLead(lead bool) *ModelBuilder {
+	b.lead = lead
+	return b
+}
+
 // Build returns the constructed Model instance
 func (b *ModelBuilder) Build() Model {
 	return Model{
@@ -100,5 +127,8 @@ func (b *ModelBuilder) Build() Model {
 		tameness:        b.tameness,
 		fullness:        b.fullness,
 		expiration:      b.expiration,
+		ownerId:         b.ownerId,
+		lead:            b.lead,
+		slot:            b.slot,
 	}
 }

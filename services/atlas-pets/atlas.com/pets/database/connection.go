@@ -1,7 +1,7 @@
 package database
 
 import (
-	"atlas-account/retry"
+	"atlas-pets/retry"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"

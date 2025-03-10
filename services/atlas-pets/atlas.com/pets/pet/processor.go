@@ -1,6 +1,7 @@
 package pet
 
 import (
+	"atlas-pets/character"
 	"atlas-pets/character/item"
 	"atlas-pets/kafka/producer"
 	"atlas-pets/pet/position"
@@ -48,6 +49,18 @@ func GetByOwner(ctx context.Context) func(db *gorm.DB) func(ownerId uint32) ([]M
 	}
 }
 
+func SpawnedByOwnerProvider(ctx context.Context) func(db *gorm.DB) func(ownerId uint32) model.Provider[[]Model] {
+	return func(db *gorm.DB) func(ownerId uint32) model.Provider[[]Model] {
+		return func(ownerId uint32) model.Provider[[]Model] {
+			return model.FilteredProvider(ByOwnerProvider(ctx)(db)(ownerId), model.Filters[Model](Spawned))
+		}
+	}
+}
+
+func Spawned(m Model) bool {
+	return m.Slot() >= 0
+}
+
 func CreateOnAward(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16) error {
 		t := tenant.MustFromContext(ctx)
@@ -66,7 +79,7 @@ func CreateOnAward(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					// TODO lookup name
 					im := NewModelBuilder(0, i.Id(), itemId, "Great Pet", characterId)
-					om, err = create(db)(t, characterId, im.Build())
+					om, err = create(tx)(t, characterId, im.Build())
 					if err != nil {
 						return err
 					}
@@ -190,5 +203,138 @@ func updateTemporal(petId uint64, fh int16) model.Operator[MovementSummary] {
 	return func(ms MovementSummary) error {
 		GetTemporalRegistry().Update(petId, ms.X, ms.Y, ms.Stance, fh)
 		return nil
+	}
+}
+
+func Spawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32, lead bool) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32, lead bool) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(petId uint64, actorId uint32, lead bool) error {
+			return func(petId uint64, actorId uint32, lead bool) error {
+				var p Model
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					var err error
+					p, err = GetById(ctx)(tx)(petId)
+					if err != nil {
+						return err
+					}
+					if p.OwnerId() != actorId {
+						return errors.New("pet not owned by character")
+					}
+
+					l.Debugf("Attempting to spawn [%d] for character [%d].", petId, actorId)
+
+					sps, err := SpawnedByOwnerProvider(ctx)(tx)(actorId)()
+					if err != nil {
+						return err
+					}
+
+					slot := int8(-1)
+					if lead {
+						l.Debugf("Pet [%d] will be the new leader.", petId)
+						if len(sps) >= 3 {
+							return errors.New("too many spawned pets")
+						}
+						for _, sp := range sps {
+							l.Debugf("Attempting to move existing spawned pet [%d] from [%d] to [%d].", petId, sp.Slot(), sp.Slot()+1)
+							err = updateSlot(tx)(t, sp.Id(), sp.Slot()+1)
+							if err != nil {
+								return err
+							}
+						}
+						slot = 0
+					} else {
+						l.Debugf("Finding minimal open slot for [%d].", petId)
+						for i := int8(0); i < 3; i++ {
+							found := false
+							for _, sp := range sps {
+								if sp.Slot() == i {
+									found = true
+									break
+								}
+							}
+							if !found {
+								slot = i
+								break
+							}
+						}
+					}
+					l.Debugf("Attempting to move pet [%d] to slot [%d].", petId, slot)
+					err = updateSlot(tx)(t, petId, slot)
+					if err != nil {
+						return err
+					}
+					p = p.SetSlot(slot)
+					return nil
+				})
+				if txErr != nil {
+					return txErr
+				}
+
+				c, err := character.GetById(l)(ctx)()(actorId)
+				if err == nil {
+					fh, err := position.GetBelow(l)(ctx)(c.MapId(), c.X(), c.Y())()
+					if err == nil {
+						GetTemporalRegistry().Update(petId, c.X(), c.Y(), 0, int16(fh.Id()))
+					}
+				}
+				td := GetTemporalRegistry().GetById(p.Id())
+				// TODO this may need to update the slot of existing pets.
+				return producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(spawnEventProvider(p, td))
+			}
+		}
+	}
+}
+
+func Despawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(petId uint64, actorId uint32) error {
+			return func(petId uint64, actorId uint32) error {
+				var p Model
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					var err error
+					p, err = GetById(ctx)(tx)(petId)
+					if err != nil {
+						return err
+					}
+					if p.OwnerId() != actorId {
+						return errors.New("pet not owned by character")
+					}
+
+					l.Debugf("Attempting to despawn [%d] for character [%d].", petId, actorId)
+
+					sps, err := SpawnedByOwnerProvider(ctx)(tx)(actorId)()
+					if err != nil {
+						return err
+					}
+
+					if p.Lead() {
+						l.Debugf("Shifting pets to the left.")
+						for i := p.Slot() + 1; i < 3; i++ {
+							for _, sp := range sps {
+								if sp.Slot() == i {
+									err = updateSlot(tx)(t, sp.Id(), sp.Slot()-1)
+									if err != nil {
+										return err
+									}
+								}
+							}
+						}
+					}
+					err = updateSlot(tx)(t, petId, -1)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
+				if txErr != nil {
+					return txErr
+				}
+
+				// TODO this may need to update the slot of existing pets.
+				return producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(despawnEventProvider(p))
+			}
+		}
 	}
 }

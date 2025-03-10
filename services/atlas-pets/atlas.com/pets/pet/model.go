@@ -13,7 +13,7 @@ type Model struct {
 	expiration      time.Time
 	ownerId         uint32
 	lead            bool
-	slot            byte
+	slot            int8
 }
 
 func (m Model) Id() uint64 {
@@ -56,8 +56,12 @@ func (m Model) Lead() bool {
 	return m.lead
 }
 
-func (m Model) Slot() byte {
+func (m Model) Slot() int8 {
 	return m.slot
+}
+
+func (m Model) SetSlot(slot int8) Model {
+	return Clone(m).SetSlot(slot).Build()
 }
 
 type ModelBuilder struct {
@@ -71,7 +75,7 @@ type ModelBuilder struct {
 	expiration      time.Time
 	ownerId         uint32
 	lead            bool
-	slot            byte
+	slot            int8
 }
 
 func NewModelBuilder(id uint64, inventoryItemId uint32, templateId uint32, name string, ownerId uint32) *ModelBuilder {
@@ -86,8 +90,18 @@ func NewModelBuilder(id uint64, inventoryItemId uint32, templateId uint32, name 
 		expiration:      time.Now().Add(720 * time.Hour),
 		ownerId:         ownerId,
 		lead:            false,
-		slot:            0,
+		slot:            -1,
 	}
+}
+
+func Clone(m Model) *ModelBuilder {
+	return NewModelBuilder(m.Id(), m.InventoryItemId(), m.TemplateId(), m.Name(), m.OwnerId()).
+		SetLevel(m.Level()).
+		SetTameness(m.Tameness()).
+		SetFullness(m.Fullness()).
+		SetExpiration(m.Expiration()).
+		SetLead(m.Lead()).
+		SetSlot(m.Slot())
 }
 
 func (b *ModelBuilder) SetLevel(level byte) *ModelBuilder {
@@ -110,7 +124,7 @@ func (b *ModelBuilder) SetExpiration(expiration time.Time) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetSlot(slot byte) *ModelBuilder {
+func (b *ModelBuilder) SetSlot(slot int8) *ModelBuilder {
 	b.slot = slot
 	return b
 }

@@ -19,6 +19,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
+			rf(consumer2.NewConfig(l)("pet_command")(EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 			rf(consumer2.NewConfig(l)("pet_movement_command")(EnvCommandTopicMovement)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
@@ -28,8 +29,35 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
+			t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawnCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDespawnCommand(db))))
 			t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand(db))))
+		}
+	}
+}
+
+func handleSpawnCommand(db *gorm.DB) message.Handler[commandEvent[spawnCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[spawnCommandBody]) {
+		if c.Type != CommandPetSpawn {
+			return
+		}
+		err := pet.Spawn(l)(ctx)(db)(c.PetId, c.ActorId, c.Body.Lead)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to spawn pet [%d] for character [%d].", c.PetId, c.ActorId)
+		}
+	}
+}
+
+func handleDespawnCommand(db *gorm.DB) message.Handler[commandEvent[despawnCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[despawnCommandBody]) {
+		if c.Type != CommandPetDespawn {
+			return
+		}
+		err := pet.Despawn(l)(ctx)(db)(c.PetId, c.ActorId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to spawn pet [%d] for character [%d].", c.PetId, c.ActorId)
 		}
 	}
 }

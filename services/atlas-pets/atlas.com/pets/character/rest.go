@@ -94,6 +94,7 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 func Extract(m RestModel) (Model, error) {
 	return Model{
 		id:     m.Id,
+		mapId:  m.MapId,
 		x:      m.X,
 		y:      m.Y,
 		stance: m.Stance,

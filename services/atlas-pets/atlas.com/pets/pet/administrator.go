@@ -1,6 +1,7 @@
 package pet
 
 import (
+	"errors"
 	"github.com/Chronicle20/atlas-tenant"
 	"gorm.io/gorm"
 )
@@ -24,6 +25,24 @@ func create(db *gorm.DB) func(t tenant.Model, ownerId uint32, m Model) (Model, e
 			return Model{}, err
 		}
 		return modelFromEntity(*e)
+	}
+}
+
+func updateSlot(db *gorm.DB) func(t tenant.Model, petId uint64, slot int8) error {
+	return func(t tenant.Model, petId uint64, slot int8) error {
+		result := db.Model(&Entity{}).
+			Where("tenant_id = ? AND id = ?", t.Id(), petId).
+			Update("slot", slot)
+
+		if result.Error != nil {
+			return result.Error
+		}
+
+		if result.RowsAffected == 0 {
+			return errors.New("no entity found or slot is already set to the given value")
+		}
+
+		return nil
 	}
 }
 

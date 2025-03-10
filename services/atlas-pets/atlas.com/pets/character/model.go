@@ -2,6 +2,7 @@ package character
 
 type Model struct {
 	id     uint32
+	mapId  uint32
 	x      int16
 	y      int16
 	stance byte
@@ -17,4 +18,8 @@ func (m Model) Y() int16 {
 
 func (m Model) Stance() byte {
 	return m.stance
+}
+
+func (m Model) MapId() uint32 {
+	return m.mapId
 }

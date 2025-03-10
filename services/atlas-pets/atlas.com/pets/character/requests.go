@@ -8,7 +8,7 @@ import (
 
 const (
 	Resource = "characters"
-	ById     = Resource + "/%d?fields[characters]=x,y,stance"
+	ById     = Resource + "/%d?fields[characters]=mapId,x,y,stance"
 )
 
 func getBaseRequest() string {

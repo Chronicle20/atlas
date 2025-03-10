@@ -24,7 +24,7 @@ type deletedStatusEventBody struct {
 type spawnedStatusEventBody struct {
 	TemplateId uint32 `json:"templateId"`
 	Name       string `json:"name"`
-	Slot       byte   `json:"slot"`
+	Slot       int8   `json:"slot"`
 	Level      byte   `json:"level"`
 	Tameness   uint16 `json:"tameness"`
 	Fullness   byte   `json:"fullness"`
@@ -37,7 +37,7 @@ type spawnedStatusEventBody struct {
 type despawnedStatusEventBody struct {
 	TemplateId uint32 `json:"templateId"`
 	Name       string `json:"name"`
-	Slot       byte   `json:"slot"`
+	Slot       int8   `json:"slot"`
 	Level      byte   `json:"level"`
 	Tameness   uint16 `json:"tameness"`
 	Fullness   byte   `json:"fullness"`
@@ -58,7 +58,7 @@ type movementEvent struct {
 	ChannelId byte     `json:"channelId"`
 	MapId     uint32   `json:"mapId"`
 	PetId     uint64   `json:"petId"`
-	Slot      byte     `json:"slot"`
+	Slot      int8     `json:"slot"`
 	OwnerId   uint32   `json:"ownerId"`
 	Movement  Movement `json:"movement"`
 }

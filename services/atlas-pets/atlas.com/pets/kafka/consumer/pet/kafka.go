@@ -3,6 +3,26 @@ package pet
 import "atlas-pets/pet"
 
 const (
+	EnvCommandTopic   = "COMMAND_TOPIC_PET"
+	CommandPetSpawn   = "SPAWN"
+	CommandPetDespawn = "DESPAWN"
+)
+
+type commandEvent[E any] struct {
+	ActorId uint32 `json:"actorId"`
+	PetId   uint64 `json:"petId"`
+	Type    string `json:"type"`
+	Body    E      `json:"body"`
+}
+
+type spawnCommandBody struct {
+	Lead bool `json:"lead"`
+}
+
+type despawnCommandBody struct {
+}
+
+const (
 	EnvCommandTopicMovement   = "COMMAND_TOPIC_PET_MOVEMENT"
 	MovementTypeNormal        = "NORMAL"
 	MovementTypeTeleport      = "TELEPORT"

@@ -22,7 +22,7 @@ type Entity struct {
 	Fullness        byte      `gorm:"not null;default:100"`
 	Expiration      time.Time `gorm:"not null;"`
 	Lead            bool      `json:"lead"`
-	Slot            byte      `gorm:"not null;default:0"`
+	Slot            int8      `gorm:"not null;default:-1"`
 }
 
 func (e Entity) TableName() string {

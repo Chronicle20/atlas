@@ -56,7 +56,7 @@ func handleDespawnCommand(db *gorm.DB) message.Handler[commandEvent[despawnComma
 		if c.Type != CommandPetDespawn {
 			return
 		}
-		err := pet.Despawn(l)(ctx)(db)(c.PetId, c.ActorId)
+		err := pet.Despawn(l)(ctx)(db)(c.PetId, c.ActorId, MovementTypeNormal)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn pet [%d] for character [%d].", c.PetId, c.ActorId)
 		}

@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-messages/character/skill"
 	"atlas-messages/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
@@ -8,26 +9,34 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) (Model, error) {
-	return func(ctx context.Context) func(characterId uint32) (Model, error) {
-		return func(characterId uint32) (Model, error) {
-			return requests.Provider[RestModel, Model](l, ctx)(requestById(characterId), Extract)()
+func GetById(l logrus.FieldLogger) func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
+	return func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
+		return func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
+			return func(characterId uint32) (Model, error) {
+				p := requests.Provider[RestModel, Model](l, ctx)(requestById(characterId), Extract)
+				return model.Map(model.Decorate(decorators))(p)()
+			}
 		}
 	}
 }
 
-func byNameProvider(l logrus.FieldLogger) func(ctx context.Context) func(name string) model.Provider[[]Model] {
-	return func(ctx context.Context) func(name string) model.Provider[[]Model] {
-		return func(name string) model.Provider[[]Model] {
-			return requests.SliceProvider[RestModel, Model](l, ctx)(requestByName(name), Extract, model.Filters[Model]())
+func byNameProvider(l logrus.FieldLogger) func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(name string) model.Provider[[]Model] {
+	return func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(name string) model.Provider[[]Model] {
+		return func(decorators ...model.Decorator[Model]) func(name string) model.Provider[[]Model] {
+			return func(name string) model.Provider[[]Model] {
+				ps := requests.SliceProvider[RestModel, Model](l, ctx)(requestByName(name), Extract, model.Filters[Model]())
+				return model.SliceMap(model.Decorate(decorators))(ps)(model.ParallelMap())
+			}
 		}
 	}
 }
 
-func GetByName(l logrus.FieldLogger) func(ctx context.Context) func(name string) (Model, error) {
-	return func(ctx context.Context) func(name string) (Model, error) {
-		return func(name string) (Model, error) {
-			return model.First(byNameProvider(l)(ctx)(name), model.Filters[Model]())
+func GetByName(l logrus.FieldLogger) func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(name string) (Model, error) {
+	return func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(name string) (Model, error) {
+		return func(decorators ...model.Decorator[Model]) func(name string) (Model, error) {
+			return func(name string) (Model, error) {
+				return model.First(byNameProvider(l)(ctx)(decorators...)(name), model.Filters[Model]())
+			}
 		}
 	}
 }
@@ -35,11 +44,23 @@ func GetByName(l logrus.FieldLogger) func(ctx context.Context) func(name string)
 func IdByNameProvider(l logrus.FieldLogger) func(ctx context.Context) func(name string) model.Provider[uint32] {
 	return func(ctx context.Context) func(name string) model.Provider[uint32] {
 		return func(name string) model.Provider[uint32] {
-			c, err := GetByName(l)(ctx)(name)
+			c, err := GetByName(l)(ctx)()(name)
 			if err != nil {
 				return model.ErrorProvider[uint32](err)
 			}
 			return model.FixedProvider(c.Id())
+		}
+	}
+}
+
+func SkillModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model.Decorator[Model] {
+	return func(ctx context.Context) model.Decorator[Model] {
+		return func(m Model) Model {
+			ms, err := skill.GetByCharacterId(l)(ctx)(m.Id())
+			if err != nil {
+				return m
+			}
+			return m.SetSkills(ms)
 		}
 	}
 }

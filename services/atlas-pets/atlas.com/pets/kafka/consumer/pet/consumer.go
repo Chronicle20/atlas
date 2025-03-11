@@ -33,14 +33,17 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawnCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDespawnCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAttemptCommandCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardClosenessCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardFullnessCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardLevelCommand(db))))
 			t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand(db))))
 		}
 	}
 }
 
-func handleSpawnCommand(db *gorm.DB) message.Handler[commandEvent[spawnCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[spawnCommandBody]) {
+func handleSpawnCommand(db *gorm.DB) message.Handler[command[spawnCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[spawnCommandBody]) {
 		if c.Type != CommandPetSpawn {
 			return
 		}
@@ -51,8 +54,8 @@ func handleSpawnCommand(db *gorm.DB) message.Handler[commandEvent[spawnCommandBo
 	}
 }
 
-func handleDespawnCommand(db *gorm.DB) message.Handler[commandEvent[despawnCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[despawnCommandBody]) {
+func handleDespawnCommand(db *gorm.DB) message.Handler[command[despawnCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[despawnCommandBody]) {
 		if c.Type != CommandPetDespawn {
 			return
 		}
@@ -63,8 +66,8 @@ func handleDespawnCommand(db *gorm.DB) message.Handler[commandEvent[despawnComma
 	}
 }
 
-func handleAttemptCommandCommand(db *gorm.DB) message.Handler[commandEvent[attemptCommandCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[attemptCommandCommandBody]) {
+func handleAttemptCommandCommand(db *gorm.DB) message.Handler[command[attemptCommandCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[attemptCommandCommandBody]) {
 		if c.Type != CommandPetAttemptCommand {
 			return
 		}
@@ -72,6 +75,33 @@ func handleAttemptCommandCommand(db *gorm.DB) message.Handler[commandEvent[attem
 		if err != nil {
 			l.WithError(err).Errorf("Unable to attempt command for pet [%d] by character [%d].", c.PetId, c.ActorId)
 		}
+	}
+}
+
+func handleAwardClosenessCommand(db *gorm.DB) message.Handler[command[awardClosenessCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[awardClosenessCommandBody]) {
+		if c.Type != CommandAwardCloseness {
+			return
+		}
+		_ = pet.AwardCloseness(l)(ctx)(db)(c.PetId, c.Body.Amount, c.ActorId)
+	}
+}
+
+func handleAwardFullnessCommand(db *gorm.DB) message.Handler[command[awardFullnessCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[awardFullnessCommandBody]) {
+		if c.Type != CommandAwardFullness {
+			return
+		}
+		_ = pet.AwardFullness(l)(ctx)(db)(c.PetId, c.Body.Amount, c.ActorId)
+	}
+}
+
+func handleAwardLevelCommand(db *gorm.DB) message.Handler[command[awardLevelCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[awardLevelCommandBody]) {
+		if c.Type != CommandAwardLevel {
+			return
+		}
+		_ = pet.AwardLevel(l)(ctx)(db)(c.PetId, c.Body.Amount, c.ActorId)
 	}
 }
 

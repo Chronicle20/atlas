@@ -64,6 +64,24 @@ func updateCloseness(db *gorm.DB) func(t tenant.Model, petId uint64, closeness u
 	}
 }
 
+func updateLevel(db *gorm.DB) func(t tenant.Model, petId uint64, level byte) error {
+	return func(t tenant.Model, petId uint64, level byte) error {
+		result := db.Model(&Entity{}).
+			Where("tenant_id = ? AND id = ?", t.Id(), petId).
+			Update("level", level)
+
+		if result.Error != nil {
+			return result.Error
+		}
+
+		if result.RowsAffected == 0 {
+			return errors.New("no entity found or level is already set to the given value")
+		}
+
+		return nil
+	}
+}
+
 func updateFullness(db *gorm.DB) func(t tenant.Model, petId uint64, fullness byte) error {
 	return func(t tenant.Model, petId uint64, fullness byte) error {
 		result := db.Model(&Entity{}).

@@ -18,6 +18,8 @@ import (
 	"math/rand"
 )
 
+var petExpTable = []uint16{1, 1, 3, 6, 14, 31, 60, 108, 181, 287, 434, 632, 891, 1224, 1642, 2161, 2793, 3557, 4467, 5542, 6801, 8263, 9950, 11882, 14084, 16578, 19391, 22547, 26074, 30000}
+
 func ByIdProvider(ctx context.Context) func(db *gorm.DB) func(petId uint64) model.Provider[Model] {
 	t := tenant.MustFromContext(ctx)
 	return func(db *gorm.DB) func(petId uint64) model.Provider[Model] {
@@ -344,54 +346,44 @@ func Despawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) f
 
 func AttemptCommand(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32, commandId byte, byName bool) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32, commandId byte, byName bool) error {
-		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(petId uint64, actorId uint32, commandId byte, byName bool) error {
 			return func(petId uint64, actorId uint32, commandId byte, byName bool) error {
 				var success bool
-				var p Model
-				txErr := db.Transaction(func(tx *gorm.DB) error {
-					var err error
-					p, err = GetById(ctx)(tx)(petId)
-					if err != nil {
-						return err
-					}
-					if p.OwnerId() != actorId {
-						return errors.New("pet not owned by character")
-					}
-					if p.Slot() < 0 {
-						return errors.New("pet not active")
-					}
-
-					pdm, err := data.GetById(l)(ctx)(p.TemplateId())
-					if err != nil {
-						return err
-					}
-					var psm *data.SkillModel
-					psid := fmt.Sprintf("%d-%d", p.TemplateId(), commandId)
-					for _, rps := range pdm.Skills() {
-						if rps.Id() == psid {
-							psm = &rps
-							break
-						}
-					}
-					if psm == nil {
-						return errors.New("no such pet skill")
-					}
-					if rand.Intn(100) < int(psm.Probability()) {
-						success = true
-						err = updateCloseness(tx)(t, petId, p.Closeness()+psm.Increase())
-						if err != nil {
-							return err
-						}
-					} else {
-						success = false
-					}
-					return nil
-				})
-				if txErr != nil {
-					return txErr
+				p, err := GetById(ctx)(db)(petId)
+				if err != nil {
+					return err
 				}
-				// TODO issue stat update
+				if p.OwnerId() != actorId {
+					return errors.New("pet not owned by character")
+				}
+				if p.Slot() < 0 {
+					return errors.New("pet not active")
+				}
+
+				pdm, err := data.GetById(l)(ctx)(p.TemplateId())
+				if err != nil {
+					return err
+				}
+				var psm *data.SkillModel
+				psid := fmt.Sprintf("%d-%d", p.TemplateId(), commandId)
+				for _, rps := range pdm.Skills() {
+					if rps.Id() == psid {
+						psm = &rps
+						break
+					}
+				}
+				if psm == nil {
+					return errors.New("no such pet skill")
+				}
+				if rand.Intn(100) < int(psm.Probability()) {
+					success = true
+				} else {
+					success = false
+				}
+				err = AwardCloseness(l)(ctx)(db)(petId, psm.Increase(), actorId)
+				if err != nil {
+					return err
+				}
 				return producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(commandResponseEventProvider(p, commandId, success))
 			}
 		}
@@ -403,6 +395,7 @@ func EvaluateHunger(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(ownerId uint32) error {
 			return func(ownerId uint32) error {
+				fullnessChanged := make([]Model, 0)
 				despawned := make([]Model, 0)
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					ps, err := SpawnedByOwnerProvider(ctx)(tx)(ownerId)()
@@ -423,6 +416,9 @@ func EvaluateHunger(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 						if err != nil {
 							return err
 						}
+						if byte(newFullness) != p.Fullness() {
+							fullnessChanged = append(fullnessChanged, p)
+						}
 						if newFullness <= 5 {
 							despawned = append(despawned, p)
 						}
@@ -431,6 +427,12 @@ func EvaluateHunger(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 				})
 				if txErr != nil {
 					return txErr
+				}
+				for _, p := range fullnessChanged {
+					err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(fullnessChangedEventProvider(p))
+					if err != nil {
+						return err
+					}
 				}
 				for _, p := range despawned {
 					err := Despawn(l)(ctx)(db)(p.Id(), p.OwnerId(), DespawnReasonHunger)
@@ -457,6 +459,135 @@ func ClearPositions(ctx context.Context) func(db *gorm.DB) func(ownerId uint32) 
 				}
 				return nil
 			})
+		}
+	}
+}
+
+func AwardCloseness(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, amount uint16, actorId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, amount uint16, actorId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(petId uint64, amount uint16, actorId uint32) error {
+			return func(petId uint64, amount uint16, actorId uint32) error {
+				var p Model
+				awardLevel := false
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					var err error
+					p, err = GetById(ctx)(tx)(petId)
+					if err != nil {
+						return err
+					}
+					newCloseness := p.Closeness() + amount
+					level := p.Level()
+
+					if newCloseness > petExpTable[p.Level()] {
+						if p.Level() >= 30 {
+							newCloseness = petExpTable[len(petExpTable)-1]
+						} else {
+							awardLevel = true
+							newCloseness = newCloseness - petExpTable[p.Level()]
+						}
+					}
+					err = updateCloseness(tx)(t, petId, newCloseness)
+					if err != nil {
+						return err
+					}
+					if awardLevel {
+						level += 1
+						err = updateLevel(tx)(t, petId, level)
+						if err != nil {
+							return err
+						}
+					}
+					p = Clone(p).SetCloseness(newCloseness).SetLevel(level).Build()
+					return nil
+				})
+				if txErr != nil {
+					return txErr
+				}
+				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(closenessChangedEventProvider(p))
+				if err != nil {
+					return err
+				}
+				if awardLevel {
+					err = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(levelChangedEventProvider(p))
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			}
+		}
+	}
+}
+
+func AwardFullness(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, amount byte, actorId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, amount byte, actorId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(petId uint64, amount byte, actorId uint32) error {
+			return func(petId uint64, amount byte, actorId uint32) error {
+				var p Model
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					var err error
+					p, err = GetById(ctx)(tx)(petId)
+					if err != nil {
+						return err
+					}
+					newFullness := p.Fullness() + amount
+					if newFullness > 100 {
+						newFullness = 100
+					}
+					err = updateFullness(tx)(t, petId, newFullness)
+					if err != nil {
+						return err
+					}
+					p = Clone(p).SetFullness(newFullness).Build()
+					return nil
+				})
+				if txErr != nil {
+					return txErr
+				}
+				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(fullnessChangedEventProvider(p))
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+		}
+	}
+}
+
+func AwardLevel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, amount byte, actorId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, amount byte, actorId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(petId uint64, amount byte, actorId uint32) error {
+			return func(petId uint64, amount byte, actorId uint32) error {
+				var p Model
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					var err error
+					p, err = GetById(ctx)(tx)(petId)
+					if err != nil {
+						return err
+					}
+					newLevel := p.Level() + amount
+					if newLevel > 30 {
+						newLevel = 30
+					}
+					err = updateLevel(tx)(t, petId, newLevel)
+					if err != nil {
+						return err
+					}
+					p = Clone(p).SetLevel(newLevel).Build()
+					return nil
+				})
+				if txErr != nil {
+					return txErr
+				}
+				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(levelChangedEventProvider(p))
+				if err != nil {
+					return err
+				}
+				return nil
+			}
 		}
 	}
 }

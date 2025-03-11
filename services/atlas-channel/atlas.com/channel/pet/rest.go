@@ -11,7 +11,7 @@ type RestModel struct {
 	TemplateId      uint32    `json:"templateId"`
 	Name            string    `json:"name"`
 	Level           byte      `json:"level"`
-	Tameness        uint16    `json:"tameness"`
+	Closeness       uint16    `json:"closeness"`
 	Fullness        byte      `json:"fullness"`
 	Expiration      time.Time `json:"expiration"`
 	OwnerId         uint32    `json:"ownerId"`
@@ -47,7 +47,7 @@ func Extract(rm RestModel) (Model, error) {
 		templateId:      rm.TemplateId,
 		name:            rm.Name,
 		level:           rm.Level,
-		tameness:        rm.Tameness,
+		closeness:       rm.Closeness,
 		fullness:        rm.Fullness,
 		expiration:      rm.Expiration,
 		ownerId:         rm.OwnerId,

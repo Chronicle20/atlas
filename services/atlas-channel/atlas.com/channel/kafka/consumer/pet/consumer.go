@@ -63,7 +63,7 @@ func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			SetOwnerID(e.OwnerId).
 			SetSlot(e.Body.Slot).
 			SetLevel(e.Body.Level).
-			SetTameness(e.Body.Tameness).
+			SetCloseness(e.Body.Closeness).
 			SetFullness(e.Body.Fullness).
 			SetX(e.Body.X).
 			SetY(e.Body.Y).
@@ -129,7 +129,7 @@ func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[
 			p := pet.NewModelBuilder(e.PetId, 0, 0, "").
 				SetOwnerID(e.OwnerId).
 				SetSlot(e.Body.Slot).
-				SetTameness(e.Body.Tameness).
+				SetCloseness(e.Body.Closeness).
 				SetFullness(e.Body.Fullness).
 				Build()
 			_ = _map.ForSessionsInMap(l)(ctx)(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetCommandResponseBody(p, e.Body.CommandId, e.Body.Success, false)))

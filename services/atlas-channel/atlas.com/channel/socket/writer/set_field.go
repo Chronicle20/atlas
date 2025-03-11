@@ -470,7 +470,7 @@ func WritePetCashItemInfo(zeroPosition bool) func(p pet.Model) func(w *response.
 				w.WriteInt64(msTime(time.Time{}))
 				WritePaddedString(w, p.Name(), 13)
 				w.WriteByte(p.Level())
-				w.WriteShort(p.Tameness())
+				w.WriteShort(p.Closeness())
 				w.WriteByte(p.Fullness())
 				w.WriteInt64(msTime(p.Expiration()))
 				w.WriteShort(0)   // attribute

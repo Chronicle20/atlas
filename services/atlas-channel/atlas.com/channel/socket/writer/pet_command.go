@@ -11,7 +11,7 @@ func PetCommandResponseBody(p pet.Model, animation byte, success bool, balloon b
 	return func(w *response.Writer, options map[string]interface{}) []byte {
 		w.WriteInt(p.OwnerId())
 		w.WriteInt8(p.Slot())
-		w.WriteByte(0) // TODO
+		w.WriteByte(0) // TODO 1 if this is a closeness increasing item??
 		w.WriteByte(animation)
 		w.WriteBool(success)
 		w.WriteBool(balloon)

@@ -33,7 +33,7 @@ func CharacterInfoBody(tenant tenant.Model) func(c character.Model, g guild.Mode
 				w.WriteInt(p.TemplateId())
 				w.WriteAsciiString(p.Name())
 				w.WriteByte(p.Level())
-				w.WriteShort(p.Tameness())
+				w.WriteShort(p.Closeness())
 				w.WriteByte(p.Fullness())
 				w.WriteShort(0) // skill
 				w.WriteInt(0)   // itemId

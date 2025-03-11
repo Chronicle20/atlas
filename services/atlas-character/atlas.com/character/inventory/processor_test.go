@@ -65,6 +65,22 @@ func testProducer(output *[]kafka.Message) producer.Provider {
 	}
 }
 
+func positionTop() slot.Position {
+	s, err := slot.GetSlotByType("top")
+	if err != nil {
+		panic(err)
+	}
+	return s.Position
+}
+
+func positionBottom() slot.Position {
+	s, err := slot.GetSlotByType("pants")
+	if err != nil {
+		panic(err)
+	}
+	return s.Position
+}
+
 func TestAdjustingEquipment(t *testing.T) {
 	l := testLogger()
 	db := testDatabase(t)
@@ -89,8 +105,8 @@ func TestAdjustingEquipment(t *testing.T) {
 	equipFunc := inventory.EquipItemForCharacter(l)(db)(tctx)(model.Flip(equipable.GetNextFreeSlot(l))(tctx))(testProducer(&equipMessages))(c.Id())
 
 	// Equip Top to start.
-	equipFunc(top.Slot())(equipment.FixedDestinationProvider(int16(slot.PositionTop)))
-	equippedTop, err := equipable.GetBySlot(db)(tctx)(c.Id(), int16(slot.PositionTop))
+	equipFunc(top.Slot())(equipment.FixedDestinationProvider(int16(positionTop())))
+	equippedTop, err := equipable.GetBySlot(db)(tctx)(c.Id(), int16(positionTop()))
 	if err != nil {
 		t.Fatalf("Failed to retreive created item.")
 	}
@@ -99,8 +115,8 @@ func TestAdjustingEquipment(t *testing.T) {
 	}
 
 	// Equip Bottom to start.
-	equipFunc(bottom.Slot())(equipment.FixedDestinationProvider(int16(slot.PositionBottom)))
-	equippedBottom, err := equipable.GetBySlot(db)(tctx)(c.Id(), int16(slot.PositionBottom))
+	equipFunc(bottom.Slot())(equipment.FixedDestinationProvider(int16(positionBottom())))
+	equippedBottom, err := equipable.GetBySlot(db)(tctx)(c.Id(), int16(positionBottom()))
 	if err != nil {
 		t.Fatalf("Failed to retreive created item.")
 	}
@@ -109,8 +125,8 @@ func TestAdjustingEquipment(t *testing.T) {
 	}
 
 	// Equip Overall. This should take tops place, and unequip bottom. Top should be in overall slot, bottom should be in first available.
-	equipFunc(overall.Slot())(equipment.FixedDestinationProvider(int16(slot.PositionTop)))
-	equippedOverall, err := equipable.GetBySlot(db)(tctx)(c.Id(), int16(slot.PositionTop))
+	equipFunc(overall.Slot())(equipment.FixedDestinationProvider(int16(positionTop())))
+	equippedOverall, err := equipable.GetBySlot(db)(tctx)(c.Id(), int16(positionTop()))
 	if err != nil {
 		t.Fatalf("Failed to retreive created item.")
 	}
@@ -133,8 +149,8 @@ func TestAdjustingEquipment(t *testing.T) {
 	}
 
 	// Equip Top next. Overall should take tops place, top should be equipped.
-	equipFunc(3)(equipment.FixedDestinationProvider(int16(slot.PositionTop)))
-	equippedTop, err = equipable.GetBySlot(db)(tctx)(c.Id(), int16(slot.PositionTop))
+	equipFunc(3)(equipment.FixedDestinationProvider(int16(positionTop())))
+	equippedTop, err = equipable.GetBySlot(db)(tctx)(c.Id(), int16(positionTop()))
 	if err != nil {
 		t.Fatalf("Failed to retreive created item.")
 	}
@@ -150,8 +166,8 @@ func TestAdjustingEquipment(t *testing.T) {
 	}
 
 	// Equip Bottom again.
-	equipFunc(1)(equipment.FixedDestinationProvider(int16(slot.PositionBottom)))
-	equippedBottom, err = equipable.GetBySlot(db)(tctx)(c.Id(), int16(slot.PositionBottom))
+	equipFunc(1)(equipment.FixedDestinationProvider(int16(positionBottom())))
+	equippedBottom, err = equipable.GetBySlot(db)(tctx)(c.Id(), int16(positionBottom()))
 	if err != nil {
 		t.Fatalf("Failed to retreive created item.")
 	}
@@ -160,8 +176,8 @@ func TestAdjustingEquipment(t *testing.T) {
 	}
 
 	// Equip Overall. This should take tops place, and unequip bottom. Top should be in overall slot, bottom should be in first available.
-	equipFunc(3)(equipment.FixedDestinationProvider(int16(slot.PositionTop)))
-	equippedOverall, err = equipable.GetBySlot(db)(tctx)(c.Id(), int16(slot.PositionTop))
+	equipFunc(3)(equipment.FixedDestinationProvider(int16(positionTop())))
+	equippedOverall, err = equipable.GetBySlot(db)(tctx)(c.Id(), int16(positionTop()))
 	if err != nil {
 		t.Fatalf("Failed to retreive created item.")
 	}
@@ -184,8 +200,8 @@ func TestAdjustingEquipment(t *testing.T) {
 	}
 
 	// Equip Bottom again, overall should go to next free slot.
-	equipFunc(1)(equipment.FixedDestinationProvider(int16(slot.PositionBottom)))
-	equippedBottom, err = equipable.GetBySlot(db)(tctx)(c.Id(), int16(slot.PositionBottom))
+	equipFunc(1)(equipment.FixedDestinationProvider(int16(positionBottom())))
+	equippedBottom, err = equipable.GetBySlot(db)(tctx)(c.Id(), int16(positionBottom()))
 	if err != nil {
 		t.Fatalf("Failed to retreive created item.")
 	}
@@ -201,8 +217,8 @@ func TestAdjustingEquipment(t *testing.T) {
 	}
 
 	// Equip Top next.
-	equipFunc(3)(equipment.FixedDestinationProvider(int16(slot.PositionTop)))
-	equippedTop, err = equipable.GetBySlot(db)(tctx)(c.Id(), int16(slot.PositionTop))
+	equipFunc(3)(equipment.FixedDestinationProvider(int16(positionTop())))
+	equippedTop, err = equipable.GetBySlot(db)(tctx)(c.Id(), int16(positionTop()))
 	if err != nil {
 		t.Fatalf("Failed to retreive created item.")
 	}
@@ -212,7 +228,7 @@ func TestAdjustingEquipment(t *testing.T) {
 
 	var unequipMessages = make([]kafka.Message, 0)
 	unequipFunc := inventory.UnequipItemForCharacter(l)(db)(tctx)(model.Flip(equipable.GetNextFreeSlot(l))(tctx))(testProducer(&unequipMessages))(c.Id())
-	unequipFunc(int16(slot.PositionTop))
+	unequipFunc(int16(positionTop()))
 	equippedTop, err = equipable.GetBySlot(db)(tctx)(c.Id(), 2)
 	if err != nil {
 		t.Fatalf("Failed to retreive created item.")
@@ -220,7 +236,7 @@ func TestAdjustingEquipment(t *testing.T) {
 	if !validateEquipable(equippedTop, EquipableItemIdValidator(1040010)) {
 		t.Fatalf("Unequiping of Top failed validation.")
 	}
-	unequipFunc(int16(slot.PositionBottom))
+	unequipFunc(int16(positionBottom()))
 	equippedBottom, err = equipable.GetBySlot(db)(tctx)(c.Id(), 3)
 	if err != nil {
 		t.Fatalf("Failed to retreive created item.")

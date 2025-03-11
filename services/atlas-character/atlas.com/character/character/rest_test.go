@@ -83,10 +83,10 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 	if im.Name() != om.Name() {
 		t.Fatalf("Input and output names do not match")
 	}
-	if !sameEquipment(im, om, slot.TypeHat) {
+	if !sameEquipment(im, om, "hat") {
 		t.Fatalf("Equipment does not match")
 	}
-	if !sameEquipment(im, om, slot.TypeWeapon) {
+	if !sameEquipment(im, om, "weapon") {
 		t.Fatalf("Equipment does not match")
 	}
 	if len(im.GetInventory().Equipable().Items()) != len(om.GetInventory().Equipable().Items()) {
@@ -321,11 +321,11 @@ func createTestEquipment() equipment.Model {
 		Build()
 
 	eqm := equipment.NewModel()
-	eqm.SetEquipable(slot.TypeHat, false, hat)
-	eqm.SetEquipable(slot.TypeTop, false, top)
-	eqm.SetEquipable(slot.TypeWeapon, false, weapon)
-	eqm.SetEquipable(slot.TypeBottom, false, bottoms)
-	eqm.SetEquipable(slot.TypeShoes, false, shoes)
-	eqm.SetEquipable(slot.TypeShoes, true, cashShoes)
+	eqm.SetEquipable("hat", false, hat)
+	eqm.SetEquipable("top", false, top)
+	eqm.SetEquipable("weapon", false, weapon)
+	eqm.SetEquipable("pants", false, bottoms)
+	eqm.SetEquipable("shoes", false, shoes)
+	eqm.SetEquipable("shoes", true, cashShoes)
 	return eqm
 }

@@ -79,9 +79,9 @@ func (r RestModel) GetReferences() []jsonapi.Reference {
 
 func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
 	var result []jsonapi.ReferenceID
-	for _, eid := range slot.Types {
+	for _, s := range slot.Slots {
 		result = append(result, jsonapi.ReferenceID{
-			ID:   fmt.Sprintf("%d-%s", r.Id, eid),
+			ID:   fmt.Sprintf("%d-%s", r.Id, s.Type),
 			Type: "equipment",
 			Name: "equipment",
 		})
@@ -104,8 +104,8 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	result = append(result, r.Inventory.Etc)
 	result = append(result, r.Inventory.Cash)
 
-	for _, t := range slot.Types {
-		if val, ok := r.Equipment[t]; ok {
+	for _, s := range slot.Slots {
+		if val, ok := r.Equipment[s.Type]; ok {
 			result = append(result, val)
 		}
 	}

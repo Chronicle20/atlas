@@ -4,6 +4,7 @@ import (
 	"atlas-messages/command"
 	"atlas-messages/command/character"
 	"atlas-messages/command/character/inventory"
+	"atlas-messages/command/character/skill"
 	"atlas-messages/command/map"
 	message2 "atlas-messages/kafka/consumer/message"
 	"atlas-messages/logger"
@@ -30,6 +31,8 @@ func main() {
 	command.Registry().Add(inventory.AwardItemCommandProducer)
 	command.Registry().Add(character.AwardExperienceCommandProducer)
 	command.Registry().Add(character.AwardLevelCommandProducer)
+	command.Registry().Add(skill.MaxSkillCommandProducer)
+	command.Registry().Add(skill.ResetSkillCommandProducer)
 	command.Registry().Add(character.ChangeJobCommandProducer)
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())

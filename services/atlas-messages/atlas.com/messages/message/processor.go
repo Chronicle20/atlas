@@ -12,7 +12,7 @@ import (
 func HandleGeneral(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, balloonOnly bool) error {
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, balloonOnly bool) error {
 		return func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, balloonOnly bool) error {
-			c, err := character.GetById(l)(ctx)(actorId)
+			c, err := character.GetById(l)(ctx)()(actorId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character chatting [%d].", actorId)
 				return err
@@ -39,7 +39,7 @@ func HandleGeneral(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 func HandleMulti(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, chatType string, recipients []uint32) error {
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, chatType string, recipients []uint32) error {
 		return func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, chatType string, recipients []uint32) error {
-			c, err := character.GetById(l)(ctx)(actorId)
+			c, err := character.GetById(l)(ctx)()(actorId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character chatting [%d].", actorId)
 				return err
@@ -66,7 +66,7 @@ func HandleMulti(l logrus.FieldLogger) func(ctx context.Context) func(worldId by
 func HandleWhisper(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipientName string) error {
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipientName string) error {
 		return func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipientName string) error {
-			c, err := character.GetById(l)(ctx)(actorId)
+			c, err := character.GetById(l)(ctx)()(actorId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character chatting [%d].", actorId)
 				return err
@@ -81,7 +81,7 @@ func HandleWhisper(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 				return err
 			}
 
-			tc, err := character.GetByName(l)(ctx)(recipientName)
+			tc, err := character.GetByName(l)(ctx)()(recipientName)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate recipient [%s].", recipientName)
 				return err
@@ -103,7 +103,7 @@ func HandleWhisper(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 func HandleMessenger(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipients []uint32) error {
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipients []uint32) error {
 		return func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipients []uint32) error {
-			c, err := character.GetById(l)(ctx)(actorId)
+			c, err := character.GetById(l)(ctx)()(actorId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character chatting [%d].", actorId)
 				return err

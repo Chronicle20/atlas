@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-messages/character/skill"
 	"strconv"
 	"strings"
 )
@@ -34,6 +35,7 @@ type Model struct {
 	spawnPoint         uint32
 	gm                 int
 	meso               uint32
+	skills             []skill.Model
 }
 
 func (m Model) Gm() bool {
@@ -218,4 +220,42 @@ func (m Model) Stance() byte {
 
 func (m Model) WorldId() byte {
 	return m.worldId
+}
+
+func (m Model) SetSkills(ms []skill.Model) Model {
+	return Model{
+		id:                 m.id,
+		accountId:          m.accountId,
+		worldId:            m.worldId,
+		name:               m.name,
+		gender:             m.gender,
+		skinColor:          m.skinColor,
+		face:               m.face,
+		hair:               m.hair,
+		level:              m.level,
+		jobId:              m.jobId,
+		strength:           m.strength,
+		dexterity:          m.dexterity,
+		intelligence:       m.intelligence,
+		luck:               m.luck,
+		hp:                 m.hp,
+		maxHp:              m.maxHp,
+		mp:                 m.mp,
+		maxMp:              m.maxMp,
+		hpMpUsed:           m.hpMpUsed,
+		ap:                 m.ap,
+		sp:                 m.sp,
+		experience:         m.experience,
+		fame:               m.fame,
+		gachaponExperience: m.gachaponExperience,
+		mapId:              m.mapId,
+		spawnPoint:         m.spawnPoint,
+		gm:                 m.gm,
+		meso:               m.meso,
+		skills:             ms,
+	}
+}
+
+func (m Model) Skills() []skill.Model {
+	return m.skills
 }

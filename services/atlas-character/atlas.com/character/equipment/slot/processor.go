@@ -44,6 +44,26 @@ func PositionFromType(slotType Type) (Position, error) {
 		return PositionRing4, nil
 	case TypeShoes:
 		return PositionShoes, nil
+	case TypePetRing1:
+		return PositionPetRing1, nil
+	case TypePetPouch:
+		return PositionPetPouch, nil
+	case TypePetMesoMagnet:
+		return PositionPetMesoMagnet, nil
+	case TypePetHP:
+		return PositionPetHP, nil
+	case TypePetMP:
+		return PositionPetMP, nil
+	case TypePetShoes:
+		return PositionPetShoes, nil
+	case TypePetBinocular:
+		return PositionPetBinocular, nil
+	case TypePetMagicScales:
+		return PositionPetMagicScales, nil
+	case TypePetRing2:
+		return PositionPetRing2, nil
+	case TypePetItemIgnore:
+		return PositionPetItemIgnore, nil
 	}
 	return PositionHat, errors.New("unable to map type to position")
 }
@@ -88,6 +108,26 @@ func TypeFromPosition(position Position) (Type, error) {
 		return TypeRing4, nil
 	case PositionShoes:
 		return TypeShoes, nil
+	case PositionPetRing1:
+		return TypePetRing1, nil
+	case PositionPetPouch:
+		return TypePetPouch, nil
+	case PositionPetMesoMagnet:
+		return TypePetMesoMagnet, nil
+	case PositionPetHP:
+		return TypePetHP, nil
+	case PositionPetMP:
+		return TypePetMP, nil
+	case PositionPetShoes:
+		return TypePetShoes, nil
+	case PositionPetBinocular:
+		return TypePetBinocular, nil
+	case PositionPetMagicScales:
+		return TypePetMagicScales, nil
+	case PositionPetRing2:
+		return TypePetRing2, nil
+	case PositionPetItemIgnore:
+		return TypePetItemIgnore, nil
 	}
 	return "", errors.New("unable to map position to type")
 }

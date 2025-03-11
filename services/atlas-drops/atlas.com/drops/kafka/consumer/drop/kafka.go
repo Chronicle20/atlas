@@ -55,6 +55,7 @@ type requestReservationCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 	CharacterX  int16  `json:"characterX"`
 	CharacterY  int16  `json:"characterY"`
+	PetSlot     int8   `json:"petSlot"`
 }
 
 type cancelReservationCommandBody struct {

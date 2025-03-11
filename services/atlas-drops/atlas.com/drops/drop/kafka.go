@@ -45,6 +45,7 @@ type pickedUpStatusEventBody struct {
 	EquipmentId uint32 `json:"equipmentId"`
 	Quantity    uint32 `json:"quantity"`
 	Meso        uint32 `json:"meso"`
+	PetSlot     int8   `json:"petSlot"`
 }
 
 type reservedStatusEventBody struct {

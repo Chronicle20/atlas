@@ -70,7 +70,7 @@ func handleRequestReservation(l logrus.FieldLogger, ctx context.Context, c comma
 	if c.Type != CommandTypeRequestReservation {
 		return
 	}
-	_ = drop.Reserve(l)(ctx)(c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId)
+	_ = drop.Reserve(l)(ctx)(c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId, c.Body.PetSlot)
 }
 
 func handleCancelReservation(l logrus.FieldLogger, ctx context.Context, c command[cancelReservationCommandBody]) {

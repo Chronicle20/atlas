@@ -443,3 +443,20 @@ func EvaluateHunger(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 		}
 	}
 }
+
+func ClearPositions(ctx context.Context) func(db *gorm.DB) func(ownerId uint32) error {
+	return func(db *gorm.DB) func(ownerId uint32) error {
+		return func(ownerId uint32) error {
+			return db.Transaction(func(tx *gorm.DB) error {
+				ps, err := GetByOwner(ctx)(tx)(ownerId)
+				if err != nil {
+					return err
+				}
+				for _, p := range ps {
+					GetTemporalRegistry().Remove(p.Id())
+				}
+				return nil
+			})
+		}
+	}
+}

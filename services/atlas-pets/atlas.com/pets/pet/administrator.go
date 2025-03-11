@@ -101,5 +101,6 @@ func modelFromEntity(e Entity) (Model, error) {
 		SetFullness(e.Fullness).
 		SetExpiration(e.Expiration).
 		SetSlot(e.Slot).
+		SetLead(e.Lead).
 		Build(), nil
 }

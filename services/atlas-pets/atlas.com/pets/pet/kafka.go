@@ -1,12 +1,15 @@
 package pet
 
 const (
-	EnvStatusEventTopic            = "EVENT_TOPIC_PET_STATUS"
-	StatusEventTypeCreated         = "CREATED"
-	StatusEventTypeDeleted         = "DELETED"
-	StatusEventTypeSpawned         = "SPAWNED"
-	StatusEventTypeDespawned       = "DESPAWNED"
-	StatusEventTypeCommandResponse = "COMMAND_RESPONSE"
+	EnvStatusEventTopic             = "EVENT_TOPIC_PET_STATUS"
+	StatusEventTypeCreated          = "CREATED"
+	StatusEventTypeDeleted          = "DELETED"
+	StatusEventTypeSpawned          = "SPAWNED"
+	StatusEventTypeDespawned        = "DESPAWNED"
+	StatusEventTypeCommandResponse  = "COMMAND_RESPONSE"
+	StatusEventTypeClosenessChanged = "CLOSENESS_CHANGED"
+	StatusEventTypeFullnessChanged  = "FULLNESS_CHANGED"
+	StatusEventTypeLevelChanged     = "LEVEL_CHANGED"
 
 	DespawnReasonNormal  = "NORMAL"
 	DespawnReasonHunger  = "HUNGER"
@@ -55,6 +58,21 @@ type commandResponseStatusEventBody struct {
 	Fullness  byte   `json:"fullness"`
 	CommandId byte   `json:"commandId"`
 	Success   bool   `json:"success"`
+}
+
+type closenessChangedStatusEventBody struct {
+	Slot      int8   `json:"slot"`
+	Closeness uint16 `json:"closeness"`
+}
+
+type fullnessChangedStatusEventBody struct {
+	Slot     int8 `json:"slot"`
+	Fullness byte `json:"fullness"`
+}
+
+type levelChangedStatusEventBody struct {
+	Slot  int8 `json:"slot"`
+	Level byte `json:"level"`
 }
 
 const (

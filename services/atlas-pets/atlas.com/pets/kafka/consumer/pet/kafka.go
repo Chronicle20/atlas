@@ -7,9 +7,12 @@ const (
 	CommandPetSpawn          = "SPAWN"
 	CommandPetDespawn        = "DESPAWN"
 	CommandPetAttemptCommand = "ATTEMPT_COMMAND"
+	CommandAwardCloseness    = "AWARD_CLOSENESS"
+	CommandAwardFullness     = "AWARD_FULLNESS"
+	CommandAwardLevel        = "AWARD_LEVEL"
 )
 
-type commandEvent[E any] struct {
+type command[E any] struct {
 	ActorId uint32 `json:"actorId"`
 	PetId   uint64 `json:"petId"`
 	Type    string `json:"type"`
@@ -26,6 +29,18 @@ type despawnCommandBody struct {
 type attemptCommandCommandBody struct {
 	CommandId byte `json:"commandId"`
 	ByName    bool `json:"byName"`
+}
+
+type awardClosenessCommandBody struct {
+	Amount uint16 `json:"amount"`
+}
+
+type awardFullnessCommandBody struct {
+	Amount byte `json:"amount"`
+}
+
+type awardLevelCommandBody struct {
+	Amount byte `json:"amount"`
 }
 
 const (

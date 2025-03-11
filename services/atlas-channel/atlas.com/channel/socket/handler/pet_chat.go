@@ -1,7 +1,7 @@
 package handler
 
 import (
-	_map "atlas-channel/map"
+	"atlas-channel/message"
 	"atlas-channel/pet"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -32,6 +32,6 @@ func PetChatHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Prod
 		if p.OwnerId() != s.CharacterId() {
 			return
 		}
-		_ = _map.ForSessionsInMap(l)(ctx)(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetChat)(writer.PetChatBody(p, nType, nAction, msg, false)))
+		_ = message.PetChat(l)(ctx)(s.Map(), petId, msg, s.CharacterId(), p.Slot(), nType, nAction, false)
 	}
 }

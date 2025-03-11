@@ -55,15 +55,15 @@ func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[chat
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)()(e.CharacterId)
+		c, err := character.GetById(l)(ctx)()(e.ActorId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve character [%d] chatting.", e.CharacterId)
+			l.WithError(err).Errorf("Unable to retrieve character [%d] chatting.", e.ActorId)
 			return
 		}
 
 		err = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), showGeneralChatForSession(l)(ctx)(wp)(e, c.Gm()))
 		if err != nil {
-			l.WithError(err).Errorf("Unable to send message from character [%d] to map [%d].", e.CharacterId, e.MapId)
+			l.WithError(err).Errorf("Unable to send message from character [%d] to map [%d].", e.ActorId, e.MapId)
 		}
 	}
 }
@@ -72,7 +72,7 @@ func showGeneralChatForSession(l logrus.FieldLogger) func(ctx context.Context) f
 	return func(ctx context.Context) func(wp writer.Producer) func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
 			return func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterChatGeneral)(writer.CharacterChatGeneralBody(event.CharacterId, gm, event.Message, event.Body.BalloonOnly))
+				return session.Announce(l)(ctx)(wp)(writer.CharacterChatGeneral)(writer.CharacterChatGeneralBody(event.ActorId, gm, event.Message, event.Body.BalloonOnly))
 			}
 		}
 	}
@@ -88,9 +88,9 @@ func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[chatEv
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)()(e.CharacterId)
+		c, err := character.GetById(l)(ctx)()(e.ActorId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve character [%d] chatting.", e.CharacterId)
+			l.WithError(err).Errorf("Unable to retrieve character [%d] chatting.", e.ActorId)
 			return
 		}
 
@@ -123,9 +123,9 @@ func handleWhisperChat(sc server.Model, wp writer.Producer) message.Handler[chat
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)()(e.CharacterId)
+		c, err := character.GetById(l)(ctx)()(e.ActorId)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve character [%d] sending whisper.", e.CharacterId)
+			l.WithError(err).Errorf("Unable to retrieve character [%d] sending whisper.", e.ActorId)
 			return
 		}
 		tc, err := character.GetById(l)(ctx)()(e.Body.Recipient)
@@ -135,15 +135,15 @@ func handleWhisperChat(sc server.Model, wp writer.Producer) message.Handler[chat
 		}
 
 		bp := writer.CharacterChatWhisperSendResultBody(tc, true)
-		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(bp))
+		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(bp))
 		if err != nil {
-			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.CharacterId, e.Body.Recipient)
+			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.ActorId, e.Body.Recipient)
 		}
 
 		bp = writer.CharacterChatWhisperReceiptBody(c, e.ChannelId, e.Message)
 		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.Recipient, session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(bp))
 		if err != nil {
-			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.CharacterId, e.Body.Recipient)
+			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.ActorId, e.Body.Recipient)
 		}
 	}
 }

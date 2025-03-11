@@ -113,7 +113,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		tc, err := character.GetByIdWithInventory(l)(ctx)()(e.ActorId)
+		tc, err := character.GetByIdWithInventory(l)(ctx)(character.PetModelDecorator(l)(ctx))(e.ActorId)
 		if err != nil {
 			l.WithError(err).Errorf("Received joined event for character [%d] which does not exist.", e.ActorId)
 			return
@@ -143,7 +143,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 					if m.Id() == e.ActorId {
 						continue
 					}
-					mc, err := character.GetByIdWithInventory(l)(ctx)()(m.Id())
+					mc, err := character.GetByIdWithInventory(l)(ctx)(character.PetModelDecorator(l)(ctx))(m.Id())
 					if err != nil {
 						continue
 					}

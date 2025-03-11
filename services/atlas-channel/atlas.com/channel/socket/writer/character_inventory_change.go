@@ -1,8 +1,7 @@
 package writer
 
 import (
-	"atlas-channel/character/inventory/equipable"
-	"atlas-channel/character/inventory/item"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 )
@@ -18,43 +17,15 @@ const (
 	InventoryChangeModeRemove = InventoryChangeMode(3)
 )
 
-func CharacterInventoryAddEquipableBody(tenant tenant.Model) func(inventoryType byte, slot int16, e equipable.Model, silent bool) BodyProducer {
-	return func(inventoryType byte, slot int16, e equipable.Model, silent bool) BodyProducer {
+func CharacterInventoryAddBody(inventoryType byte, slot int16, silent bool) func(itemWriter model.Operator[*response.Writer]) BodyProducer {
+	return func(itemWriter model.Operator[*response.Writer]) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteBool(!silent)
 			w.WriteByte(1) // size
 			w.WriteByte(byte(InventoryChangeModeAdd))
 			w.WriteByte(inventoryType)
 			w.WriteInt16(slot)
-			_ = WriteEquipableInfo(tenant)(w, true)(e)
-			return w.Bytes()
-		}
-	}
-}
-
-func CharacterInventoryAddItemBody(tenant tenant.Model) func(inventoryType byte, slot int16, e item.Model, silent bool) BodyProducer {
-	return func(inventoryType byte, slot int16, e item.Model, silent bool) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteBool(!silent)
-			w.WriteByte(1) // size
-			w.WriteByte(byte(InventoryChangeModeAdd))
-			w.WriteByte(inventoryType)
-			w.WriteInt16(slot)
-			_ = WriteItemInfo(tenant)(w, true)(e)
-			return w.Bytes()
-		}
-	}
-}
-
-func CharacterInventoryAddCashItemBody(tenant tenant.Model) func(inventoryType byte, slot int16, e item.Model, silent bool) BodyProducer {
-	return func(inventoryType byte, slot int16, e item.Model, silent bool) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteBool(!silent)
-			w.WriteByte(1) // size
-			w.WriteByte(byte(InventoryChangeModeAdd))
-			w.WriteByte(inventoryType)
-			w.WriteInt16(slot)
-			_ = WriteCashItemInfo(tenant)(w, true)(e)
+			_ = itemWriter(w)
 			return w.Bytes()
 		}
 	}

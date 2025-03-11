@@ -7,58 +7,58 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func generalChatCommandProvider(m _map.Model, characterId uint32, message string, balloonOnly bool) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
+func generalChatCommandProvider(m _map.Model, actorId uint32, message string, balloonOnly bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(actorId))
 	value := chatCommand[generalChatBody]{
-		WorldId:     byte(m.WorldId()),
-		ChannelId:   byte(m.ChannelId()),
-		MapId:       uint32(m.MapId()),
-		CharacterId: characterId,
-		Message:     message,
-		Type:        ChatTypeGeneral,
-		Body:        generalChatBody{BalloonOnly: balloonOnly},
+		WorldId:   byte(m.WorldId()),
+		ChannelId: byte(m.ChannelId()),
+		MapId:     uint32(m.MapId()),
+		ActorId:   actorId,
+		Message:   message,
+		Type:      ChatTypeGeneral,
+		Body:      generalChatBody{BalloonOnly: balloonOnly},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func multiChatCommandProvider(m _map.Model, characterId uint32, message string, chatType string, recipients []uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
+func multiChatCommandProvider(m _map.Model, actorId uint32, message string, chatType string, recipients []uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(actorId))
 	value := chatCommand[multiChatBody]{
-		WorldId:     byte(m.WorldId()),
-		ChannelId:   byte(m.ChannelId()),
-		MapId:       uint32(m.MapId()),
-		CharacterId: characterId,
-		Message:     message,
-		Type:        chatType,
-		Body:        multiChatBody{Recipients: recipients},
+		WorldId:   byte(m.WorldId()),
+		ChannelId: byte(m.ChannelId()),
+		MapId:     uint32(m.MapId()),
+		ActorId:   actorId,
+		Message:   message,
+		Type:      chatType,
+		Body:      multiChatBody{Recipients: recipients},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func whisperChatCommandProvider(m _map.Model, characterId uint32, message string, recipientName string) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
+func whisperChatCommandProvider(m _map.Model, actorId uint32, message string, recipientName string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(actorId))
 	value := chatCommand[whisperChatBody]{
-		WorldId:     byte(m.WorldId()),
-		ChannelId:   byte(m.ChannelId()),
-		MapId:       uint32(m.MapId()),
-		CharacterId: characterId,
-		Message:     message,
-		Type:        ChatTypeWhisper,
-		Body:        whisperChatBody{RecipientName: recipientName},
+		WorldId:   byte(m.WorldId()),
+		ChannelId: byte(m.ChannelId()),
+		MapId:     uint32(m.MapId()),
+		ActorId:   actorId,
+		Message:   message,
+		Type:      ChatTypeWhisper,
+		Body:      whisperChatBody{RecipientName: recipientName},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func messengerChatCommandProvider(m _map.Model, characterId uint32, message string, recipients []uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
+func messengerChatCommandProvider(m _map.Model, actorId uint32, message string, recipients []uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(actorId))
 	value := chatCommand[messengerChatBody]{
-		WorldId:     byte(m.WorldId()),
-		ChannelId:   byte(m.ChannelId()),
-		MapId:       uint32(m.MapId()),
-		CharacterId: characterId,
-		Message:     message,
-		Type:        ChatTypeMessenger,
-		Body:        messengerChatBody{Recipients: recipients},
+		WorldId:   byte(m.WorldId()),
+		ChannelId: byte(m.ChannelId()),
+		MapId:     uint32(m.MapId()),
+		ActorId:   actorId,
+		Message:   message,
+		Type:      ChatTypeMessenger,
+		Body:      messengerChatBody{Recipients: recipients},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

@@ -23,66 +23,66 @@ func MultiChatTypeStrToInd(chatType string) byte {
 	return 99
 }
 
-func GeneralChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, message string, balloonOnly bool) error {
-	return func(ctx context.Context) func(m _map.Model, characterId uint32, message string, balloonOnly bool) error {
-		return func(m _map.Model, characterId uint32, message string, balloonOnly bool) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopicChat)(generalChatCommandProvider(m, characterId, message, balloonOnly))
+func GeneralChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, actorId uint32, message string, balloonOnly bool) error {
+	return func(ctx context.Context) func(m _map.Model, actorId uint32, message string, balloonOnly bool) error {
+		return func(m _map.Model, actorId uint32, message string, balloonOnly bool) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopicChat)(generalChatCommandProvider(m, actorId, message, balloonOnly))
 		}
 	}
 }
 
-func BuddyChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-	return func(ctx context.Context) func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-		return func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-			return MultiChat(l)(ctx)(m, characterId, message, ChatTypeBuddy, recipients)
+func BuddyChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+	return func(ctx context.Context) func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+		return func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+			return MultiChat(l)(ctx)(m, actorId, message, ChatTypeBuddy, recipients)
 		}
 	}
 }
 
-func PartyChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-	return func(ctx context.Context) func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-		return func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-			return MultiChat(l)(ctx)(m, characterId, message, ChatTypeParty, recipients)
+func PartyChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+	return func(ctx context.Context) func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+		return func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+			return MultiChat(l)(ctx)(m, actorId, message, ChatTypeParty, recipients)
 		}
 	}
 }
 
-func GuildChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-	return func(ctx context.Context) func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-		return func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-			return MultiChat(l)(ctx)(m, characterId, message, ChatTypeGuild, recipients)
+func GuildChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+	return func(ctx context.Context) func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+		return func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+			return MultiChat(l)(ctx)(m, actorId, message, ChatTypeGuild, recipients)
 		}
 	}
 }
 
-func AllianceChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-	return func(ctx context.Context) func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-		return func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-			return MultiChat(l)(ctx)(m, characterId, message, ChatTypeAlliance, recipients)
+func AllianceChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+	return func(ctx context.Context) func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+		return func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+			return MultiChat(l)(ctx)(m, actorId, message, ChatTypeAlliance, recipients)
 		}
 	}
 }
 
-func MultiChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, message string, chatType string, recipients []uint32) error {
-	return func(ctx context.Context) func(m _map.Model, characterId uint32, message string, chatType string, recipients []uint32) error {
-		return func(m _map.Model, characterId uint32, message string, chatType string, recipients []uint32) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopicChat)(multiChatCommandProvider(m, characterId, message, chatType, recipients))
+func MultiChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, actorId uint32, message string, chatType string, recipients []uint32) error {
+	return func(ctx context.Context) func(m _map.Model, actorId uint32, message string, chatType string, recipients []uint32) error {
+		return func(m _map.Model, actorId uint32, message string, chatType string, recipients []uint32) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopicChat)(multiChatCommandProvider(m, actorId, message, chatType, recipients))
 		}
 	}
 }
 
-func WhisperChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, message string, recipientName string) error {
-	return func(ctx context.Context) func(m _map.Model, characterId uint32, message string, recipientName string) error {
-		return func(m _map.Model, characterId uint32, message string, recipientName string) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopicChat)(whisperChatCommandProvider(m, characterId, message, recipientName))
+func WhisperChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, actorId uint32, message string, recipientName string) error {
+	return func(ctx context.Context) func(m _map.Model, actorId uint32, message string, recipientName string) error {
+		return func(m _map.Model, actorId uint32, message string, recipientName string) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopicChat)(whisperChatCommandProvider(m, actorId, message, recipientName))
 		}
 	}
 }
 
-func MessengerChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-	return func(ctx context.Context) func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-		return func(m _map.Model, characterId uint32, message string, recipients []uint32) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopicChat)(messengerChatCommandProvider(m, characterId, message, recipients))
+func MessengerChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+	return func(ctx context.Context) func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+		return func(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopicChat)(messengerChatCommandProvider(m, actorId, message, recipients))
 		}
 	}
 }

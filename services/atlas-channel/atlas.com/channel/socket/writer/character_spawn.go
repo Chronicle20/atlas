@@ -70,12 +70,31 @@ func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.M
 
 			w.WriteShort(0) // fh
 			w.WriteByte(0)  // bShowAdminEffect
-			w.WriteByte(0)  // end of pets
-			w.WriteInt(1)   // mount level
-			w.WriteInt(0)   // mount exp
-			w.WriteInt(0)   // mount tiredness
-			w.WriteByte(0)  // mini room
-			w.WriteByte(0)  // ad board
+
+			// TODO clean this up.
+			writeForEachPet(w, c.Pets(), func(w *response.Writer, p pet.Model) {
+				m := model.Pet{
+					TemplateId:  p.TemplateId(),
+					Name:        p.Name(),
+					Id:          p.Id(),
+					X:           p.X(),
+					Y:           p.Y(),
+					Stance:      p.Stance(),
+					Foothold:    p.Fh(),
+					NameTag:     0,
+					ChatBalloon: 0,
+				}
+				w.WriteBool(true)
+				m.Encode(l, t, options)(w)
+			}, func(w *response.Writer) {
+			})
+			w.WriteByte(0) // end of pets
+
+			w.WriteInt(1)  // mount level
+			w.WriteInt(0)  // mount exp
+			w.WriteInt(0)  // mount tiredness
+			w.WriteByte(0) // mini room
+			w.WriteByte(0) // ad board
 
 			// TODO GMS - JMS have different ring encoding/decoding
 			w.WriteByte(0) // couple ring
@@ -210,7 +229,7 @@ func addEquipmentIfPresent(slotMap map[slot.Position]uint32, pi slot.Model) {
 }
 
 func writePetItemId(w *response.Writer, p pet.Model) {
-	w.WriteInt(p.ItemId())
+	w.WriteInt(p.TemplateId())
 }
 
 func writeEmptyPetItemId(w *response.Writer) {
@@ -218,9 +237,20 @@ func writeEmptyPetItemId(w *response.Writer) {
 }
 
 func writeForEachPet(w *response.Writer, ps []pet.Model, pe func(w *response.Writer, p pet.Model), pne func(w *response.Writer)) {
-	for i := 0; i < 3; i++ {
-		if ps != nil && len(ps) > i {
-			pe(w, ps[i])
+	for i := int8(0); i < 3; i++ {
+		if ps == nil {
+			pne(w)
+			continue
+		}
+
+		var p *pet.Model
+		for _, rp := range ps {
+			if rp.Slot() == i {
+				p = &rp
+			}
+		}
+		if p != nil {
+			pe(w, *p)
 		} else {
 			pne(w)
 		}

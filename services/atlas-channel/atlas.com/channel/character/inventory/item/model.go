@@ -46,3 +46,7 @@ func (m Model) ThrowingStar() bool {
 func (m Model) Bullet() bool {
 	return item.IsBullet(item.Id(m.ItemId()))
 }
+
+func (m Model) Id() uint32 {
+	return m.id
+}

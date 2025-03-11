@@ -4,6 +4,7 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
+	"atlas-channel/movement"
 	"atlas-channel/party"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -242,145 +243,10 @@ func showMovementForSession(l logrus.FieldLogger) func(ctx context.Context) func
 						ra.Times = append(ra.Times, t)
 					}
 
-					mv := model2.Movement{StartX: event.Movement.StartX, StartY: event.Movement.StartY}
-					for _, elem := range event.Movement.Elements {
-						if elem.TypeStr == MovementTypeNormal {
-							mv.Elements = append(mv.Elements, &model2.NormalElement{
-								Element: model2.Element{
-									StartX:      elem.StartX,
-									StartY:      elem.StartY,
-									BMoveAction: elem.MoveAction,
-									BStat:       elem.Stat,
-									X:           elem.X,
-									Y:           elem.Y,
-									Vx:          elem.VX,
-									Vy:          elem.VY,
-									Fh:          elem.FH,
-									FhFallStart: elem.FHFallStart,
-									XOffset:     elem.XOffset,
-									YOffset:     elem.YOffset,
-									TElapse:     elem.TimeElapsed,
-									ElemType:    elem.TypeVal,
-								},
-							})
-						} else if elem.TypeStr == MovementTypeTeleport {
-							mv.Elements = append(mv.Elements, &model2.TeleportElement{
-								Element: model2.Element{
-									StartX:      elem.StartX,
-									StartY:      elem.StartY,
-									BMoveAction: elem.MoveAction,
-									BStat:       elem.Stat,
-									X:           elem.X,
-									Y:           elem.Y,
-									Vx:          elem.VX,
-									Vy:          elem.VY,
-									Fh:          elem.FH,
-									FhFallStart: elem.FHFallStart,
-									XOffset:     elem.XOffset,
-									YOffset:     elem.YOffset,
-									TElapse:     elem.TimeElapsed,
-									ElemType:    elem.TypeVal,
-								},
-							})
-						} else if elem.TypeStr == MovementTypeStartFallDown {
-							mv.Elements = append(mv.Elements, &model2.StartFallDownElement{
-								Element: model2.Element{
-									StartX:      elem.StartX,
-									StartY:      elem.StartY,
-									BMoveAction: elem.MoveAction,
-									BStat:       elem.Stat,
-									X:           elem.X,
-									Y:           elem.Y,
-									Vx:          elem.VX,
-									Vy:          elem.VY,
-									Fh:          elem.FH,
-									FhFallStart: elem.FHFallStart,
-									XOffset:     elem.XOffset,
-									YOffset:     elem.YOffset,
-									TElapse:     elem.TimeElapsed,
-									ElemType:    elem.TypeVal,
-								},
-							})
-						} else if elem.TypeStr == MovementTypeFlyingBlock {
-							mv.Elements = append(mv.Elements, &model2.FlyingBlockElement{
-								Element: model2.Element{
-									StartX:      elem.StartX,
-									StartY:      elem.StartY,
-									BMoveAction: elem.MoveAction,
-									BStat:       elem.Stat,
-									X:           elem.X,
-									Y:           elem.Y,
-									Vx:          elem.VX,
-									Vy:          elem.VY,
-									Fh:          elem.FH,
-									FhFallStart: elem.FHFallStart,
-									XOffset:     elem.XOffset,
-									YOffset:     elem.YOffset,
-									TElapse:     elem.TimeElapsed,
-									ElemType:    elem.TypeVal,
-								},
-							})
-						} else if elem.TypeStr == MovementTypeJump {
-							mv.Elements = append(mv.Elements, &model2.JumpElement{
-								Element: model2.Element{
-									StartX:      elem.StartX,
-									StartY:      elem.StartY,
-									BMoveAction: elem.MoveAction,
-									BStat:       elem.Stat,
-									X:           elem.X,
-									Y:           elem.Y,
-									Vx:          elem.VX,
-									Vy:          elem.VY,
-									Fh:          elem.FH,
-									FhFallStart: elem.FHFallStart,
-									XOffset:     elem.XOffset,
-									YOffset:     elem.YOffset,
-									TElapse:     elem.TimeElapsed,
-									ElemType:    elem.TypeVal,
-								},
-							})
-						} else if elem.TypeStr == MovementTypeStatChange {
-							mv.Elements = append(mv.Elements, &model2.StatChangeElement{
-								Element: model2.Element{
-									StartX:      elem.StartX,
-									StartY:      elem.StartY,
-									BMoveAction: elem.MoveAction,
-									BStat:       elem.Stat,
-									X:           elem.X,
-									Y:           elem.Y,
-									Vx:          elem.VX,
-									Vy:          elem.VY,
-									Fh:          elem.FH,
-									FhFallStart: elem.FHFallStart,
-									XOffset:     elem.XOffset,
-									YOffset:     elem.YOffset,
-									TElapse:     elem.TimeElapsed,
-									ElemType:    elem.TypeVal,
-								},
-							})
-						} else {
-							mv.Elements = append(mv.Elements, &model2.Element{
-								StartX:      elem.StartX,
-								StartY:      elem.StartY,
-								BMoveAction: elem.MoveAction,
-								BStat:       elem.Stat,
-								X:           elem.X,
-								Y:           elem.Y,
-								Vx:          elem.VX,
-								Vy:          elem.VY,
-								Fh:          elem.FH,
-								FhFallStart: elem.FHFallStart,
-								XOffset:     elem.XOffset,
-								YOffset:     elem.YOffset,
-								TElapse:     elem.TimeElapsed,
-								ElemType:    elem.TypeVal,
-							})
-						}
-					}
-
+					mv := movement.ProduceMovementForSocket(event.Movement)
 					return session.Announce(l)(ctx)(wp)(writer.MoveMonster)(writer.MoveMonsterBody(l, tenant.MustFromContext(ctx))(event.UniqueId,
 						false, event.SkillPossible, false, event.Skill, event.SkillId,
-						event.SkillLevel, mt, ra, mv))(s)
+						event.SkillLevel, mt, ra, *mv))(s)
 				}
 			}
 		}

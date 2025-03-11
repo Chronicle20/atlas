@@ -76,7 +76,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				return err
 			}
 
-			cp := model.SliceMap(character.GetByIdWithInventory(l)(ctx)())(model.FixedProvider(ids))(model.ParallelMap())
+			cp := model.SliceMap(character.GetByIdWithInventory(l)(ctx)(character.PetModelDecorator(l)(ctx)))(model.FixedProvider(ids))(model.ParallelMap())
 			cms, err := model.CollectToMap(cp, GetId, GetModel)()
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve character details for characters in map.")
@@ -104,6 +104,34 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 					}
 				}
 			}
+
+			go func() {
+				for k, v := range cms {
+					if k != s.CharacterId() {
+						for _, p := range v.Pets() {
+							if p.Slot() >= 0 {
+								err = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(tenant.MustFromContext(ctx))(p))(s)
+								if err != nil {
+									l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", k, s.CharacterId())
+								}
+							}
+						}
+					}
+				}
+			}()
+
+			go func() {
+				for k := range cms {
+					for _, p := range cms[s.CharacterId()].Pets() {
+						if p.Slot() >= 0 {
+							err = session.IfPresentByCharacterId(tenant.MustFromContext(ctx), s.WorldId(), s.ChannelId())(k, session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(tenant.MustFromContext(ctx))(p)))
+							if err != nil {
+								l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", s.CharacterId(), k)
+							}
+						}
+					}
+				}
+			}()
 
 			go func() {
 				err = npc.ForEachInMap(l)(ctx)(m.MapId(), spawnNPCForSession(l)(ctx)(wp)(s))

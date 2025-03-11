@@ -61,9 +61,12 @@ func WriteCommonAttackBody(l logrus.FieldLogger) func(ctx context.Context) func(
 
 					nMastery := byte(0)
 					weaponId := uint32(0)
-					if ew, ok := c.Equipment().Get(slot.TypeWeapon); ok {
-						if we := ew.Equipable; we != nil {
-							weaponId = we.ItemId()
+					ws, err := slot.GetSlotByType("weapon")
+					if err == nil {
+						if ew, ok := c.Equipment().Get(ws.Type); ok {
+							if we := ew.Equipable; we != nil {
+								weaponId = we.ItemId()
+							}
 						}
 					}
 

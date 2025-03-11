@@ -44,6 +44,7 @@ type despawnedStatusEventBody struct {
 	Level      byte   `json:"level"`
 	Closeness  uint16 `json:"closeness"`
 	Fullness   byte   `json:"fullness"`
+	Reason     string `json:"reason"`
 }
 
 type commandResponseStatusEventBody struct {

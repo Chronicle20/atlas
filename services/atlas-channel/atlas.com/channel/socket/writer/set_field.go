@@ -280,8 +280,8 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 		}
 
 		// regular equipment
-		for _, t := range slot.Types {
-			if s, ok := character.Equipment().Get(t); ok {
+		for _, t := range slot.Slots {
+			if s, ok := character.Equipment().Get(t.Type); ok {
 				WriteEquipableIfPresent(tenant)(w, s)
 			}
 		}
@@ -293,8 +293,8 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 		}
 
 		// cash equipment
-		for _, t := range slot.Types {
-			if s, ok := character.Equipment().Get(t); ok {
+		for _, t := range slot.Slots {
+			if s, ok := character.Equipment().Get(t.Type); ok {
 				WriteCashEquipableIfPresent(tenant)(w, s)
 			}
 		}

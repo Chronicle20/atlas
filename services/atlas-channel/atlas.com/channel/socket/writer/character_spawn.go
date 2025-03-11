@@ -192,8 +192,8 @@ func writeEquips(tenant tenant.Model) func(w *response.Writer, equips map[slot.P
 
 func getEquippedItemSlotMap(e equipment.Model) map[slot.Position]uint32 {
 	var equips = make(map[slot.Position]uint32)
-	for _, t := range slot.Types {
-		if s, ok := e.Get(t); ok {
+	for _, t := range slot.Slots {
+		if s, ok := e.Get(t.Type); ok {
 			addEquipmentIfPresent(equips, s)
 		}
 	}
@@ -202,8 +202,8 @@ func getEquippedItemSlotMap(e equipment.Model) map[slot.Position]uint32 {
 
 func getMaskedEquippedItemSlotMap(e equipment.Model) map[slot.Position]uint32 {
 	var equips = make(map[slot.Position]uint32)
-	for _, t := range slot.Types {
-		if s, ok := e.Get(t); ok {
+	for _, t := range slot.Slots {
+		if s, ok := e.Get(t.Type); ok {
 			addMaskedEquippedItemIfPresent(equips, s)
 		}
 	}

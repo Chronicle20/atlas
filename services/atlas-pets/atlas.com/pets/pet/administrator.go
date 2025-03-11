@@ -15,7 +15,7 @@ func create(db *gorm.DB) func(t tenant.Model, ownerId uint32, m Model) (Model, e
 			TemplateId:      m.TemplateId(),
 			Name:            m.Name(),
 			Level:           m.Level(),
-			Tameness:        m.Tameness(),
+			Closeness:       m.Closeness(),
 			Fullness:        m.Fullness(),
 			Expiration:      m.Expiration(),
 		}
@@ -46,18 +46,18 @@ func updateSlot(db *gorm.DB) func(t tenant.Model, petId uint64, slot int8) error
 	}
 }
 
-func updateTameness(db *gorm.DB) func(t tenant.Model, petId uint64, tameness uint16) error {
-	return func(t tenant.Model, petId uint64, tameness uint16) error {
+func updateCloseness(db *gorm.DB) func(t tenant.Model, petId uint64, closeness uint16) error {
+	return func(t tenant.Model, petId uint64, closeness uint16) error {
 		result := db.Model(&Entity{}).
 			Where("tenant_id = ? AND id = ?", t.Id(), petId).
-			Update("tameness", tameness)
+			Update("closeness", closeness)
 
 		if result.Error != nil {
 			return result.Error
 		}
 
 		if result.RowsAffected == 0 {
-			return errors.New("no entity found or tameness is already set to the given value")
+			return errors.New("no entity found or closeness is already set to the given value")
 		}
 
 		return nil
@@ -79,7 +79,7 @@ func deleteForCharacter(t tenant.Model, ownerId uint32) func(db *gorm.DB) error 
 func modelFromEntity(e Entity) (Model, error) {
 	return NewModelBuilder(e.Id, e.InventoryItemId, e.TemplateId, e.Name, e.OwnerId).
 		SetLevel(e.Level).
-		SetTameness(e.Tameness).
+		SetCloseness(e.Closeness).
 		SetFullness(e.Fullness).
 		SetExpiration(e.Expiration).
 		SetSlot(e.Slot).

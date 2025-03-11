@@ -379,7 +379,7 @@ func AttemptCommand(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 					}
 					if rand.Intn(100) < int(psm.Probability()) {
 						success = true
-						err = updateTameness(tx)(t, petId, p.Tameness()+psm.Increase())
+						err = updateCloseness(tx)(t, petId, p.Closeness()+psm.Increase())
 						if err != nil {
 							return err
 						}

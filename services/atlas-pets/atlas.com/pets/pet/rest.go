@@ -12,7 +12,7 @@ type RestModel struct {
 	TemplateId      uint32    `json:"templateId"`
 	Name            string    `json:"name"`
 	Level           byte      `json:"level"`
-	Tameness        uint16    `json:"tameness"`
+	Closeness       uint16    `json:"closeness"`
 	Fullness        byte      `json:"fullness"`
 	Expiration      time.Time `json:"expiration"`
 	OwnerId         uint32    `json:"ownerId"`
@@ -53,7 +53,7 @@ func Transform(m Model) (RestModel, error) {
 		TemplateId:      m.templateId,
 		Name:            m.name,
 		Level:           m.level,
-		Tameness:        m.tameness,
+		Closeness:       m.closeness,
 		Fullness:        m.fullness,
 		Expiration:      m.expiration,
 		OwnerId:         m.ownerId,

@@ -27,7 +27,7 @@ type spawnedStatusEventBody struct {
 	Name       string `json:"name"`
 	Slot       int8   `json:"slot"`
 	Level      byte   `json:"level"`
-	Tameness   uint16 `json:"tameness"`
+	Closeness  uint16 `json:"closeness"`
 	Fullness   byte   `json:"fullness"`
 	X          int16  `json:"x"`
 	Y          int16  `json:"y"`
@@ -40,13 +40,13 @@ type despawnedStatusEventBody struct {
 	Name       string `json:"name"`
 	Slot       int8   `json:"slot"`
 	Level      byte   `json:"level"`
-	Tameness   uint16 `json:"tameness"`
+	Closeness  uint16 `json:"closeness"`
 	Fullness   byte   `json:"fullness"`
 }
 
 type commandResponseStatusEventBody struct {
 	Slot      int8   `json:"slot"`
-	Tameness  uint16 `json:"tameness"`
+	Closeness uint16 `json:"closeness"`
 	Fullness  byte   `json:"fullness"`
 	CommandId byte   `json:"commandId"`
 	Success   bool   `json:"success"`

@@ -18,7 +18,7 @@ func spawnEventProvider(m Model, tm *temporalData) model.Provider[[]kafka.Messag
 			Name:       m.Name(),
 			Slot:       m.Slot(),
 			Level:      m.Level(),
-			Tameness:   m.Tameness(),
+			Closeness:  m.Closeness(),
 			Fullness:   m.Fullness(),
 			X:          tm.X(),
 			Y:          tm.Y(),
@@ -40,7 +40,7 @@ func despawnEventProvider(m Model) model.Provider[[]kafka.Message] {
 			Name:       m.Name(),
 			Slot:       m.Slot(),
 			Level:      m.Level(),
-			Tameness:   m.Tameness(),
+			Closeness:  m.Closeness(),
 			Fullness:   m.Fullness(),
 		},
 	}
@@ -55,7 +55,7 @@ func commandResponseEventProvider(m Model, commandId byte, success bool) model.P
 		Type:    StatusEventTypeCommandResponse,
 		Body: commandResponseStatusEventBody{
 			Slot:      m.Slot(),
-			Tameness:  m.Tameness(),
+			Closeness: m.Closeness(),
 			Fullness:  m.Fullness(),
 			CommandId: commandId,
 			Success:   success,

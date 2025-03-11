@@ -8,7 +8,7 @@ type Model struct {
 	templateId      uint32
 	name            string
 	level           byte
-	tameness        uint16
+	closeness       uint16
 	fullness        byte
 	expiration      time.Time
 	ownerId         uint32
@@ -36,8 +36,8 @@ func (m Model) Level() byte {
 	return m.level
 }
 
-func (m Model) Tameness() uint16 {
-	return m.tameness
+func (m Model) Closeness() uint16 {
+	return m.closeness
 }
 
 func (m Model) Fullness() byte {
@@ -70,7 +70,7 @@ type ModelBuilder struct {
 	templateId      uint32
 	name            string
 	level           byte
-	tameness        uint16
+	closeness       uint16
 	fullness        byte
 	expiration      time.Time
 	ownerId         uint32
@@ -85,7 +85,7 @@ func NewModelBuilder(id uint64, inventoryItemId uint32, templateId uint32, name 
 		templateId:      templateId,
 		name:            name,
 		level:           1,
-		tameness:        0,
+		closeness:       0,
 		fullness:        100,
 		expiration:      time.Now().Add(2160 * time.Hour),
 		ownerId:         ownerId,
@@ -97,7 +97,7 @@ func NewModelBuilder(id uint64, inventoryItemId uint32, templateId uint32, name 
 func Clone(m Model) *ModelBuilder {
 	return NewModelBuilder(m.Id(), m.InventoryItemId(), m.TemplateId(), m.Name(), m.OwnerId()).
 		SetLevel(m.Level()).
-		SetTameness(m.Tameness()).
+		SetCloseness(m.Closeness()).
 		SetFullness(m.Fullness()).
 		SetExpiration(m.Expiration()).
 		SetLead(m.Lead()).
@@ -109,8 +109,8 @@ func (b *ModelBuilder) SetLevel(level byte) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetTameness(tameness uint16) *ModelBuilder {
-	b.tameness = tameness
+func (b *ModelBuilder) SetCloseness(closeness uint16) *ModelBuilder {
+	b.closeness = closeness
 	return b
 }
 
@@ -142,7 +142,7 @@ func (b *ModelBuilder) Build() Model {
 		templateId:      b.templateId,
 		name:            b.name,
 		level:           b.level,
-		tameness:        b.tameness,
+		closeness:       b.closeness,
 		fullness:        b.fullness,
 		expiration:      b.expiration,
 		ownerId:         b.ownerId,

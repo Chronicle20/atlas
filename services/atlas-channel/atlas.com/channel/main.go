@@ -317,6 +317,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.PetSpawnHandle] = handler.PetSpawnHandleFunc
 	handlerMap[handler.PetCommandHandle] = handler.PetCommandHandleFunc
 	handlerMap[handler.PetChatHandle] = handler.PetChatHandleFunc
+	handlerMap[handler.PetDropPickUpHandle] = handler.PetDropPickUpHandleFunc
 	return handlerMap
 }
 

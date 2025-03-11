@@ -7,6 +7,10 @@ const (
 	StatusEventTypeSpawned         = "SPAWNED"
 	StatusEventTypeDespawned       = "DESPAWNED"
 	StatusEventTypeCommandResponse = "COMMAND_RESPONSE"
+
+	DespawnReasonNormal  = "NORMAL"
+	DespawnReasonHunger  = "HUNGER"
+	DespawnReasonExpired = "EXPIRED"
 )
 
 type statusEvent[E any] struct {
@@ -42,6 +46,7 @@ type despawnedStatusEventBody struct {
 	Level      byte   `json:"level"`
 	Closeness  uint16 `json:"closeness"`
 	Fullness   byte   `json:"fullness"`
+	Reason     string `json:"reason"`
 }
 
 type commandResponseStatusEventBody struct {

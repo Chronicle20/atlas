@@ -2,7 +2,7 @@ package data
 
 type Model struct {
 	id     uint64
-	hungry uint32
+	hunger uint32
 	cash   bool
 	life   uint32
 	skills []SkillModel
@@ -12,8 +12,8 @@ func (m Model) Id() uint64 {
 	return m.id
 }
 
-func (m Model) Hungry() uint32 {
-	return m.hungry
+func (m Model) Hunger() uint32 {
+	return m.hunger
 }
 
 func (m Model) Cash() bool {

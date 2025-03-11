@@ -29,7 +29,7 @@ func spawnEventProvider(m Model, tm *temporalData) model.Provider[[]kafka.Messag
 	return producer.SingleMessageProvider(key, value)
 }
 
-func despawnEventProvider(m Model) model.Provider[[]kafka.Message] {
+func despawnEventProvider(m Model, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
 	value := &statusEvent[despawnedStatusEventBody]{
 		PetId:   m.Id(),
@@ -42,6 +42,7 @@ func despawnEventProvider(m Model) model.Provider[[]kafka.Message] {
 			Level:      m.Level(),
 			Closeness:  m.Closeness(),
 			Fullness:   m.Fullness(),
+			Reason:     reason,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

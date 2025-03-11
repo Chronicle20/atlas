@@ -289,11 +289,11 @@ func Spawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fun
 	}
 }
 
-func Despawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32) error {
+func Despawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32, reason string) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32, reason string) error {
 		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(petId uint64, actorId uint32) error {
-			return func(petId uint64, actorId uint32) error {
+		return func(db *gorm.DB) func(petId uint64, actorId uint32, reason string) error {
+			return func(petId uint64, actorId uint32, reason string) error {
 				var p Model
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					var err error
@@ -336,7 +336,7 @@ func Despawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) f
 				}
 
 				// TODO this may need to update the slot of existing pets.
-				return producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(despawnEventProvider(p))
+				return producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(despawnEventProvider(p, reason))
 			}
 		}
 	}
@@ -393,6 +393,52 @@ func AttemptCommand(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 				}
 				// TODO issue stat update
 				return producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(commandResponseEventProvider(p, commandId, success))
+			}
+		}
+	}
+}
+
+func EvaluateHunger(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(ownerId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(ownerId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(ownerId uint32) error {
+			return func(ownerId uint32) error {
+				despawned := make([]Model, 0)
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					ps, err := SpawnedByOwnerProvider(ctx)(tx)(ownerId)()
+					if err != nil {
+						return err
+					}
+					for _, p := range ps {
+						var pdm data.Model
+						pdm, err = data.GetById(l)(ctx)(p.TemplateId())
+						if err != nil {
+							return err
+						}
+						newFullness := int16(p.Fullness()) - int16(pdm.Hunger())
+						if newFullness < 0 {
+							newFullness = 0
+						}
+						err = updateFullness(tx)(t, p.Id(), byte(newFullness))
+						if err != nil {
+							return err
+						}
+						if newFullness <= 5 {
+							despawned = append(despawned, p)
+						}
+					}
+					return nil
+				})
+				if txErr != nil {
+					return txErr
+				}
+				for _, p := range despawned {
+					err := Despawn(l)(ctx)(db)(p.Id(), p.OwnerId(), DespawnReasonHunger)
+					if err != nil {
+						return err
+					}
+				}
+				return nil
 			}
 		}
 	}

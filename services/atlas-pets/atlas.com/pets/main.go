@@ -8,9 +8,11 @@ import (
 	"atlas-pets/logger"
 	"atlas-pets/pet"
 	"atlas-pets/service"
+	"atlas-pets/tasks"
 	"atlas-pets/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"time"
 )
 
 const serviceName = "atlas-pets"
@@ -58,6 +60,8 @@ func main() {
 	pet2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), pet.InitResource(GetServer())(db))
+
+	go tasks.Register(l, tdm.Context())(pet.NewHungerTask(l, db, time.Minute*time.Duration(3)))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

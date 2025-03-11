@@ -5,6 +5,7 @@ import (
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"sync"
+	"sync/atomic"
 )
 
 type dropRegistry struct {
@@ -45,6 +46,15 @@ type mapKey struct {
 	mapId     uint32
 }
 
+func getNextUniqueId() uint32 {
+	id := atomic.AddUint32(&uniqueId, 1)
+	if id > 2000000000 {
+		atomic.StoreUint32(&uniqueId, 1000000001)
+		return 1000000001
+	}
+	return id
+}
+
 func (d *dropRegistry) CreateDrop(mb *ModelBuilder) Model {
 	t := mb.Tenant()
 	mk := mapKey{
@@ -55,15 +65,7 @@ func (d *dropRegistry) CreateDrop(mb *ModelBuilder) Model {
 	}
 
 	d.lock.Lock()
-	ids := existingIds(d.dropMap)
-	currentUniqueId := uniqueId
-	for contains(ids, currentUniqueId) {
-		currentUniqueId = currentUniqueId + 1
-		if currentUniqueId > 2000000000 {
-			currentUniqueId = 1000000001
-		}
-		uniqueId = currentUniqueId
-	}
+	currentUniqueId := getNextUniqueId()
 
 	drop := mb.SetId(currentUniqueId).SetStatus(StatusAvailable).Build()
 
@@ -79,15 +81,13 @@ func (d *dropRegistry) CreateDrop(mb *ModelBuilder) Model {
 }
 
 func (d *dropRegistry) lockMap(mk mapKey) {
-	if lock, ok := d.mapLocks[mk]; ok {
-		lock.Lock()
-	} else {
-		d.lock.Lock()
-		mapMutex := sync.Mutex{}
-		d.mapLocks[mk] = &mapMutex
-		mapMutex.Lock()
-		d.lock.Unlock()
+	d.lock.Lock()
+	if _, exists := d.mapLocks[mk]; !exists {
+		d.mapLocks[mk] = &sync.Mutex{}
 	}
+	lock := d.mapLocks[mk]
+	d.lock.Unlock()
+	lock.Lock()
 }
 
 func (d *dropRegistry) unlockMap(mk mapKey) {
@@ -97,15 +97,13 @@ func (d *dropRegistry) unlockMap(mk mapKey) {
 }
 
 func (d *dropRegistry) lockDrop(dropId uint32) {
-	if lock, ok := d.dropLocks[dropId]; ok {
-		lock.Lock()
-	} else {
-		d.lock.Lock()
-		dropMutex := sync.Mutex{}
-		d.dropLocks[dropId] = &dropMutex
-		dropMutex.Lock()
-		d.lock.Unlock()
+	d.lock.Lock()
+	if _, exists := d.dropLocks[dropId]; !exists {
+		d.dropLocks[dropId] = &sync.Mutex{}
 	}
+	lock := d.dropLocks[dropId]
+	d.lock.Unlock()
+	lock.Lock()
 }
 
 func (d *dropRegistry) unlockDrop(dropId uint32) {
@@ -202,9 +200,8 @@ func (d *dropRegistry) RemoveDrop(dropId uint32) (Model, error) {
 			d.dropsInMap[mk] = remove(d.dropsInMap[mk], index)
 		}
 	}
-	d.unlockMap(mk)
-
 	d.unlockDrop(dropId)
+	d.unlockMap(mk)
 	return drop, nil
 }
 
@@ -228,10 +225,8 @@ func (d *dropRegistry) GetDropsForMap(tenant tenant.Model, worldId byte, channel
 	}
 	drops := make([]Model, 0)
 	d.lockMap(mk)
-	for _, dropId := range d.dropsInMap[mk] {
-		if drop, ok := d.getDrop(dropId); ok {
-			drops = append(drops, drop)
-		}
+	for i, dropId := range d.dropsInMap[mk] {
+		drops[i], _ = d.dropMap[dropId]
 	}
 	d.unlockMap(mk)
 	return drops, nil
@@ -245,23 +240,6 @@ func (d *dropRegistry) GetAllDrops() []Model {
 	}
 	d.lock.RUnlock()
 	return drops
-}
-
-func existingIds(drops map[uint32]Model) []uint32 {
-	var ids []uint32
-	for i := range drops {
-		ids = append(ids, i)
-	}
-	return ids
-}
-
-func contains(ids []uint32, id uint32) bool {
-	for _, element := range ids {
-		if element == id {
-			return true
-		}
-	}
-	return false
 }
 
 func indexOf(uniqueId uint32, data []uint32) int {

@@ -15,8 +15,8 @@ func Delete(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) fu
 	return func(db *gorm.DB) func(ctx context.Context) func(m Model) error {
 		return func(ctx context.Context) func(m Model) error {
 			return func(m Model) error {
-				for _, t := range slot.Types {
-					if e, ok := m.Get(t); ok {
+				for _, s := range slot.Slots {
+					if e, ok := m.Get(s.Type); ok {
 						err := deleteBySlot(l)(db)(ctx)(e)
 						if err != nil {
 							return err

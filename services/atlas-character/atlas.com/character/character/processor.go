@@ -186,11 +186,11 @@ func FoldEquipable(m equipment.Model, e equipable.Model) (equipment.Model, error
 		s += 100
 		cash = true
 	}
-	t, err := slot.TypeFromPosition(slot.Position(s))
+	t, err := slot.GetSlotByPosition(slot.Position(s))
 	if err != nil {
 		return m, err
 	}
-	m.SetEquipable(t, cash, e)
+	m.SetEquipable(t.Type, cash, e)
 	return m, nil
 }
 

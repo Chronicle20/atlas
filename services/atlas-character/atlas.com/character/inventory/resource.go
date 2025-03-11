@@ -149,13 +149,13 @@ func handleEquipItem(d *rest.HandlerDependency, c *rest.HandlerContext, input eq
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return ParseSlotType(d.Logger(), func(slotType slot.Type) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				des, err := slot.PositionFromType(slotType)
+				des, err := slot.GetSlotByType(slotType)
 				if err != nil {
 					d.Logger().Errorf("Slot type [%s] does not map to a valid equipment position.", slotType)
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicEquipItem)(equipItemCommandProvider(characterId, input.Slot, int16(des)))
+				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicEquipItem)(equipItemCommandProvider(characterId, input.Slot, int16(des.Position)))
 				w.WriteHeader(http.StatusAccepted)
 			}
 		})
@@ -166,13 +166,13 @@ func handleUnequipItem(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return ParseSlotType(d.Logger(), func(slotType slot.Type) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				des, err := slot.PositionFromType(slotType)
+				des, err := slot.GetSlotByType(slotType)
 				if err != nil {
 					d.Logger().Errorf("Slot type [%s] does not map to a valid equipment position.", slotType)
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicUnequipItem)(unequipItemCommandProvider(characterId, int16(des)))
+				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicUnequipItem)(unequipItemCommandProvider(characterId, int16(des.Position)))
 				w.WriteHeader(http.StatusAccepted)
 			}
 		})

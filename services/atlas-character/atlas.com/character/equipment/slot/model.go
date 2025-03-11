@@ -2,79 +2,83 @@ package slot
 
 import (
 	"atlas-character/equipable"
+	"errors"
+	"sync"
 )
 
 type Position int16
 
-const (
-	PositionHat            Position = -1
-	PositionMedal          Position = -49
-	PositionForehead       Position = -2
-	PositionRing1          Position = -12
-	PositionRing2          Position = -13
-	PositionEye            Position = -3
-	PositionEarring        Position = -4
-	PositionShoulder       Position = 99
-	PositionCape           Position = -9
-	PositionTop            Position = -5
-	PositionPendant        Position = -17
-	PositionWeapon         Position = -11
-	PositionShield         Position = -10
-	PositionGloves         Position = -8
-	PositionBottom         Position = -6
-	PositionBelt           Position = -50
-	PositionRing3          Position = -15
-	PositionRing4          Position = -16
-	PositionShoes          Position = -7
-	PositionPetRing1       Position = -21
-	PositionPetPouch       Position = -22
-	PositionPetMesoMagnet  Position = -23
-	PositionPetHP          Position = -24
-	PositionPetMP          Position = -25
-	PositionPetShoes       Position = -26
-	PositionPetBinocular   Position = -27
-	PositionPetMagicScales Position = -28
-	PositionPetRing2       Position = -29
-	PositionPetItemIgnore  Position = -46
-)
-
 type Type string
 
-const (
-	TypeHat            = Type("hat")
-	TypeMedal          = Type("medal")
-	TypeForehead       = Type("forehead")
-	TypeRing1          = Type("ring1")
-	TypeRing2          = Type("ring2")
-	TypeEye            = Type("eye")
-	TypeEarring        = Type("earring")
-	TypeShoulder       = Type("shoulder")
-	TypeCape           = Type("cape")
-	TypeTop            = Type("top")
-	TypePendant        = Type("pendant")
-	TypeWeapon         = Type("weapon")
-	TypeShield         = Type("shield")
-	TypeGloves         = Type("gloves")
-	TypeBottom         = Type("pants")
-	TypeBelt           = Type("belt")
-	TypeRing3          = Type("ring3")
-	TypeRing4          = Type("ring4")
-	TypeShoes          = Type("shoes")
-	TypePetRing1       = Type("petRing1")
-	TypePetPouch       = Type("petPouch")
-	TypePetMesoMagnet  = Type("petMesoMagnet")
-	TypePetHP          = Type("petHP")
-	TypePetMP          = Type("petMP")
-	TypePetShoes       = Type("petShoes")
-	TypePetBinocular   = Type("petBinocular")
-	TypePetMagicScales = Type("petMagicScales")
-	TypePetRing2       = Type("petRing2")
-	TypePetItemIgnore  = Type("petItemIgnore")
+type Slot struct {
+	Type     Type
+	Position Position
+}
+
+var Slots = []Slot{
+	{Type: "hat", Position: -1},
+	{Type: "medal", Position: -49},
+	{Type: "forehead", Position: -2},
+	{Type: "ring1", Position: -12},
+	{Type: "ring2", Position: -13},
+	{Type: "eye", Position: -3},
+	{Type: "earring", Position: -4},
+	{Type: "shoulder", Position: 99},
+	{Type: "cape", Position: -9},
+	{Type: "top", Position: -5},
+	{Type: "pendant", Position: -17},
+	{Type: "weapon", Position: -11},
+	{Type: "shield", Position: -10},
+	{Type: "gloves", Position: -8},
+	{Type: "pants", Position: -6},
+	{Type: "belt", Position: -50},
+	{Type: "ring3", Position: -15},
+	{Type: "ring4", Position: -16},
+	{Type: "shoes", Position: -7},
+	{Type: "petRing1", Position: -21},
+	{Type: "petPouch", Position: -22},
+	{Type: "petMesoMagnet", Position: -23},
+	{Type: "petHP", Position: -24},
+	{Type: "petMP", Position: -25},
+	{Type: "petShoes", Position: -26},
+	{Type: "petBinocular", Position: -27},
+	{Type: "petMagicScales", Position: -28},
+	{Type: "petRing2", Position: -29},
+	{Type: "petItemIgnore", Position: -46},
+}
+
+var (
+	typeToSlot     map[Type]Slot
+	positionToSlot map[Position]Slot
+	once           sync.Once
 )
 
-var Types = []Type{TypeHat, TypeMedal, TypeForehead, TypeRing1, TypeRing2, TypeEye, TypeEarring, TypeShoulder, TypeCape,
-	TypeTop, TypePendant, TypeWeapon, TypeShield, TypeGloves, TypeBottom, TypeBelt, TypeRing3, TypeRing4, TypeShoes,
-	TypePetRing1, TypePetPouch, TypePetMesoMagnet, TypePetHP, TypePetMP, TypePetShoes, TypePetBinocular, TypePetMagicScales, TypePetRing2, TypePetItemIgnore}
+func initializeMaps() {
+	once.Do(func() {
+		typeToSlot = make(map[Type]Slot)
+		positionToSlot = make(map[Position]Slot)
+		for _, slot := range Slots {
+			typeToSlot[slot.Type] = slot
+			positionToSlot[slot.Position] = slot
+		}
+	})
+}
+
+func GetSlotByType(slotType Type) (Slot, error) {
+	initializeMaps()
+	if slot, found := typeToSlot[slotType]; found {
+		return slot, nil
+	}
+	return Slot{}, errors.New("unknown slot type")
+}
+
+func GetSlotByPosition(position Position) (Slot, error) {
+	initializeMaps()
+	if slot, found := positionToSlot[position]; found {
+		return slot, nil
+	}
+	return Slot{}, errors.New("unknown position")
+}
 
 type Model struct {
 	Position      Position

@@ -323,19 +323,30 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 									}
 									nextFreeSlotProvider := freeSlotProvider(tx)(invId)
 
+									ts, err := slot2.GetSlotByType("top")
+									if err != nil {
+										l.WithError(err).Errorf("Unable to find pants slot")
+										return err
+									}
+									ps, err := slot2.GetSlotByType("pants")
+									if err != nil {
+										l.WithError(err).Errorf("Unable to find pants slot")
+										return err
+									}
+
 									if e.ItemId()/10000 == 105 {
 										l.Debugf("Item is an overall, we also need to unequip the bottom.")
-										resp, err = moveFromSlotToSlot(l)(inSlotProvider(int16(slot2.PositionBottom)), nextFreeSlotProvider, slotUpdater, characterInventoryMoveProvider(int16(slot2.PositionBottom)))()
+										resp, err = moveFromSlotToSlot(l)(inSlotProvider(int16(ps.Position)), nextFreeSlotProvider, slotUpdater, characterInventoryMoveProvider(int16(ps.Position)))()
 										if err != nil {
 											l.WithError(err).Errorf("Unable to move bottom out of its slot.")
 											return err
 										}
 										events = model.MergeSliceProvider(events, model.FixedProvider(resp))
 									}
-									if actualDestination == int16(slot2.PositionBottom) {
+									if actualDestination == int16(ps.Position) {
 										l.Debugf("Item is a bottom, need to unequip an overall if its in the top slot.")
-										ip := model.Map(IsOverall)(inSlotProvider(int16(slot2.PositionTop)))
-										resp, err = moveFromSlotToSlot(l)(ip, nextFreeSlotProvider, slotUpdater, characterInventoryMoveProvider(int16(slot2.PositionTop)))()
+										ip := model.Map(IsOverall)(inSlotProvider(int16(ts.Position)))
+										resp, err = moveFromSlotToSlot(l)(ip, nextFreeSlotProvider, slotUpdater, characterInventoryMoveProvider(int16(ts.Position)))()
 										if err != nil && !errors.Is(err, notOverall) {
 											l.WithError(err).Errorf("Unable to move overall out of its slot.")
 											return err

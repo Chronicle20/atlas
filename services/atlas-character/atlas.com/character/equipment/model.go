@@ -13,12 +13,8 @@ func NewModel() Model {
 	m := Model{
 		slots: make(map[slot.Type]slot.Model),
 	}
-	for _, t := range slot.Types {
-		pos, err := slot.PositionFromType(t)
-		if err != nil {
-			continue
-		}
-		m.slots[t] = slot.Model{Position: pos}
+	for _, s := range slot.Slots {
+		m.slots[s.Type] = slot.Model{Position: s.Position}
 	}
 	return m
 }

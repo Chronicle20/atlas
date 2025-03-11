@@ -35,26 +35,26 @@ func handleGeneralChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[
 	if e.Type != ChatTypeGeneral {
 		return
 	}
-	_ = message2.HandleGeneral(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.CharacterId, e.Message, e.Body.BalloonOnly)
+	_ = message2.HandleGeneral(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.ActorId, e.Message, e.Body.BalloonOnly)
 }
 
 func handleMultiChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[multiChatBody]) {
 	if e.Type != ChatTypeBuddy && e.Type != ChatTypeParty && e.Type != ChatTypeGuild && e.Type != ChatTypeAlliance {
 		return
 	}
-	_ = message2.HandleMulti(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.CharacterId, e.Message, e.Type, e.Body.Recipients)
+	_ = message2.HandleMulti(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.ActorId, e.Message, e.Type, e.Body.Recipients)
 }
 
 func handleWhisperChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[whisperChatBody]) {
 	if e.Type != ChatTypeWhisper {
 		return
 	}
-	_ = message2.HandleWhisper(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.CharacterId, e.Message, e.Body.RecipientName)
+	_ = message2.HandleWhisper(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.ActorId, e.Message, e.Body.RecipientName)
 }
 
 func handleMessengerChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[messengerChatBody]) {
 	if e.Type != ChatTypeMessenger {
 		return
 	}
-	_ = message2.HandleMessenger(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.CharacterId, e.Message, e.Body.Recipients)
+	_ = message2.HandleMessenger(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.ActorId, e.Message, e.Body.Recipients)
 }

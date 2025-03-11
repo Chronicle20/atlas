@@ -13,13 +13,13 @@ const (
 )
 
 type chatCommand[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	MapId       uint32 `json:"mapId"`
-	CharacterId uint32 `json:"characterId"`
-	Message     string `json:"message"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId   byte   `json:"worldId"`
+	ChannelId byte   `json:"channelId"`
+	MapId     uint32 `json:"mapId"`
+	ActorId   uint32 `json:"actorId"`
+	Message   string `json:"message"`
+	Type      string `json:"type"`
+	Body      E      `json:"body"`
 }
 
 type generalChatBody struct {

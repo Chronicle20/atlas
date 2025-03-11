@@ -9,12 +9,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func HandleGeneral(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, balloonOnly bool) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, balloonOnly bool) error {
-		return func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, balloonOnly bool) error {
-			c, err := character.GetById(l)(ctx)(characterId)
+func HandleGeneral(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, balloonOnly bool) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, balloonOnly bool) error {
+		return func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, balloonOnly bool) error {
+			c, err := character.GetById(l)(ctx)(actorId)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to locate character chatting [%d].", characterId)
+				l.WithError(err).Errorf("Unable to locate character chatting [%d].", actorId)
 				return err
 			}
 
@@ -27,7 +27,7 @@ func HandleGeneral(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 				return err
 			}
 
-			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicChat)(generalChatEventProvider(worldId, channelId, mapId, characterId, message, balloonOnly))
+			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicChat)(generalChatEventProvider(worldId, channelId, mapId, actorId, message, balloonOnly))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to relay message from character [%d].", c.Id())
 			}
@@ -36,12 +36,12 @@ func HandleGeneral(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 	}
 }
 
-func HandleMulti(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, chatType string, recipients []uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, chatType string, recipients []uint32) error {
-		return func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, chatType string, recipients []uint32) error {
-			c, err := character.GetById(l)(ctx)(characterId)
+func HandleMulti(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, chatType string, recipients []uint32) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, chatType string, recipients []uint32) error {
+		return func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, chatType string, recipients []uint32) error {
+			c, err := character.GetById(l)(ctx)(actorId)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to locate character chatting [%d].", characterId)
+				l.WithError(err).Errorf("Unable to locate character chatting [%d].", actorId)
 				return err
 			}
 
@@ -54,7 +54,7 @@ func HandleMulti(l logrus.FieldLogger) func(ctx context.Context) func(worldId by
 				return err
 			}
 
-			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicChat)(multiChatEventProvider(worldId, channelId, mapId, characterId, message, chatType, recipients))
+			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicChat)(multiChatEventProvider(worldId, channelId, mapId, actorId, message, chatType, recipients))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to relay message from character [%d].", c.Id())
 			}
@@ -63,12 +63,12 @@ func HandleMulti(l logrus.FieldLogger) func(ctx context.Context) func(worldId by
 	}
 }
 
-func HandleWhisper(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, recipientName string) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, recipientName string) error {
-		return func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, recipientName string) error {
-			c, err := character.GetById(l)(ctx)(characterId)
+func HandleWhisper(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipientName string) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipientName string) error {
+		return func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipientName string) error {
+			c, err := character.GetById(l)(ctx)(actorId)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to locate character chatting [%d].", characterId)
+				l.WithError(err).Errorf("Unable to locate character chatting [%d].", actorId)
 				return err
 			}
 
@@ -91,7 +91,7 @@ func HandleWhisper(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 				return errors.New("not in world")
 			}
 
-			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicChat)(whisperChatEventProvider(worldId, channelId, mapId, characterId, message, tc.Id()))
+			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicChat)(whisperChatEventProvider(worldId, channelId, mapId, actorId, message, tc.Id()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to relay message from character [%d].", c.Id())
 			}
@@ -100,16 +100,16 @@ func HandleWhisper(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 	}
 }
 
-func HandleMessenger(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, recipients []uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, recipients []uint32) error {
-		return func(worldId byte, channelId byte, mapId uint32, characterId uint32, message string, recipients []uint32) error {
-			c, err := character.GetById(l)(ctx)(characterId)
+func HandleMessenger(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipients []uint32) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipients []uint32) error {
+		return func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipients []uint32) error {
+			c, err := character.GetById(l)(ctx)(actorId)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to locate character chatting [%d].", characterId)
+				l.WithError(err).Errorf("Unable to locate character chatting [%d].", actorId)
 				return err
 			}
 
-			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicChat)(messengerChatEventProvider(worldId, channelId, mapId, characterId, message, recipients))
+			err = producer.ProviderImpl(l)(ctx)(EnvEventTopicChat)(messengerChatEventProvider(worldId, channelId, mapId, actorId, message, recipients))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to relay message from character [%d].", c.Id())
 			}

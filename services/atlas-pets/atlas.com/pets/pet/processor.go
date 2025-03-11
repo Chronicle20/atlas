@@ -4,15 +4,18 @@ import (
 	"atlas-pets/character"
 	"atlas-pets/character/item"
 	"atlas-pets/kafka/producer"
+	"atlas-pets/pet/data"
 	"atlas-pets/pet/position"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"math/rand"
 )
 
 func ByIdProvider(ctx context.Context) func(db *gorm.DB) func(petId uint64) model.Provider[Model] {
@@ -334,6 +337,62 @@ func Despawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) f
 
 				// TODO this may need to update the slot of existing pets.
 				return producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(despawnEventProvider(p))
+			}
+		}
+	}
+}
+
+func AttemptCommand(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32, commandId byte, byName bool) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32, commandId byte, byName bool) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(petId uint64, actorId uint32, commandId byte, byName bool) error {
+			return func(petId uint64, actorId uint32, commandId byte, byName bool) error {
+				var success bool
+				var p Model
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					var err error
+					p, err = GetById(ctx)(tx)(petId)
+					if err != nil {
+						return err
+					}
+					if p.OwnerId() != actorId {
+						return errors.New("pet not owned by character")
+					}
+					if p.Slot() < 0 {
+						return errors.New("pet not active")
+					}
+
+					pdm, err := data.GetById(l)(ctx)(p.TemplateId())
+					if err != nil {
+						return err
+					}
+					var psm *data.SkillModel
+					psid := fmt.Sprintf("%d-%d", p.TemplateId(), commandId)
+					for _, rps := range pdm.Skills() {
+						if rps.Id() == psid {
+							psm = &rps
+							break
+						}
+					}
+					if psm == nil {
+						return errors.New("no such pet skill")
+					}
+					if rand.Intn(100) < int(psm.Probability()) {
+						success = true
+						err = updateTameness(tx)(t, petId, p.Tameness()+psm.Increase())
+						if err != nil {
+							return err
+						}
+					} else {
+						success = false
+					}
+					return nil
+				})
+				if txErr != nil {
+					return txErr
+				}
+				// TODO issue stat update
+				return producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(commandResponseEventProvider(p, commandId, success))
 			}
 		}
 	}

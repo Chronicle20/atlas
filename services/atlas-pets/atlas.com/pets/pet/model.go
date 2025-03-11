@@ -87,7 +87,7 @@ func NewModelBuilder(id uint64, inventoryItemId uint32, templateId uint32, name 
 		level:           1,
 		tameness:        0,
 		fullness:        100,
-		expiration:      time.Now().Add(720 * time.Hour),
+		expiration:      time.Now().Add(2160 * time.Hour),
 		ownerId:         ownerId,
 		lead:            false,
 		slot:            -1,

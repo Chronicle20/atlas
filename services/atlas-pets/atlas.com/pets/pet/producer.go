@@ -47,6 +47,23 @@ func despawnEventProvider(m Model) model.Provider[[]kafka.Message] {
 	return producer.SingleMessageProvider(key, value)
 }
 
+func commandResponseEventProvider(m Model, commandId byte, success bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.OwnerId()))
+	value := &statusEvent[commandResponseStatusEventBody]{
+		PetId:   m.Id(),
+		OwnerId: m.OwnerId(),
+		Type:    StatusEventTypeCommandResponse,
+		Body: commandResponseStatusEventBody{
+			Slot:      m.Slot(),
+			Tameness:  m.Tameness(),
+			Fullness:  m.Fullness(),
+			CommandId: commandId,
+			Success:   success,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func moveEventProvider(m _map.Model, p Model, mov Movement) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(p.OwnerId()))
 	value := &movementEvent{

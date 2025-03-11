@@ -32,6 +32,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawnCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDespawnCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAttemptCommandCommand(db))))
 			t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand(db))))
 		}
@@ -58,6 +59,18 @@ func handleDespawnCommand(db *gorm.DB) message.Handler[commandEvent[despawnComma
 		err := pet.Despawn(l)(ctx)(db)(c.PetId, c.ActorId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn pet [%d] for character [%d].", c.PetId, c.ActorId)
+		}
+	}
+}
+
+func handleAttemptCommandCommand(db *gorm.DB) message.Handler[commandEvent[attemptCommandCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[attemptCommandCommandBody]) {
+		if c.Type != CommandPetAttemptCommand {
+			return
+		}
+		err := pet.AttemptCommand(l)(ctx)(db)(c.PetId, c.ActorId, c.Body.CommandId, c.Body.ByName)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to attempt command for pet [%d] by character [%d].", c.PetId, c.ActorId)
 		}
 	}
 }

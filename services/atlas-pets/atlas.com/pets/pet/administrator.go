@@ -46,6 +46,24 @@ func updateSlot(db *gorm.DB) func(t tenant.Model, petId uint64, slot int8) error
 	}
 }
 
+func updateTameness(db *gorm.DB) func(t tenant.Model, petId uint64, tameness uint16) error {
+	return func(t tenant.Model, petId uint64, tameness uint16) error {
+		result := db.Model(&Entity{}).
+			Where("tenant_id = ? AND id = ?", t.Id(), petId).
+			Update("tameness", tameness)
+
+		if result.Error != nil {
+			return result.Error
+		}
+
+		if result.RowsAffected == 0 {
+			return errors.New("no entity found or tameness is already set to the given value")
+		}
+
+		return nil
+	}
+}
+
 func deleteByInventoryItemId(t tenant.Model, inventoryItemId uint32) func(db *gorm.DB) error {
 	return func(db *gorm.DB) error {
 		return db.Where(&Entity{TenantId: t.Id(), InventoryItemId: inventoryItemId}).Delete(&Entity{}).Error

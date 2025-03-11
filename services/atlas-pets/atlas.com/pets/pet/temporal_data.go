@@ -133,6 +133,12 @@ func (r *temporalRegistry) GetById(petId uint64) *temporalData {
 	return &temporalData{}
 }
 
+func (r *temporalRegistry) Remove(petId uint64) {
+	r.lockPet(petId)
+	defer r.unlockPet(petId)
+	delete(r.data, petId)
+}
+
 var once sync.Once
 var instance *temporalRegistry
 

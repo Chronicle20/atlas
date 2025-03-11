@@ -28,10 +28,10 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			var t string
 			t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterDeleted(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogin)))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout)))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged)))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged)))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogin(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged(db))))
 		}
 	}
 }
@@ -46,30 +46,42 @@ func handleCharacterDeleted(db *gorm.DB) message.Handler[statusEvent[statusEvent
 	}
 }
 
-func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventLoginBody]) {
-	if e.Type == StatusEventTypeLogin {
-		l.Debugf("Character [%d] has logged in. worldId [%d] channelId [%d] mapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
-		character.Enter(ctx)(e.WorldId, e.Body.ChannelId, e.Body.MapId, e.CharacterId)
+func handleStatusEventLogin(db *gorm.DB) message.Handler[statusEvent[statusEventLoginBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventLoginBody]) {
+		if e.Type == StatusEventTypeLogin {
+			l.Debugf("Character [%d] has logged in. worldId [%d] channelId [%d] mapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
+			character.Enter(ctx)(e.WorldId, e.Body.ChannelId, e.Body.MapId, e.CharacterId)
+			_ = pet.ClearPositions(ctx)(db)(e.CharacterId)
+		}
 	}
 }
 
-func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventLogoutBody]) {
-	if e.Type == StatusEventTypeLogout {
-		l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
-		character.Exit(ctx)(e.WorldId, e.Body.ChannelId, e.Body.MapId, e.CharacterId)
+func handleStatusEventLogout(db *gorm.DB) message.Handler[statusEvent[statusEventLogoutBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventLogoutBody]) {
+		if e.Type == StatusEventTypeLogout {
+			l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
+			character.Exit(ctx)(e.WorldId, e.Body.ChannelId, e.Body.MapId, e.CharacterId)
+			_ = pet.ClearPositions(ctx)(db)(e.CharacterId)
+		}
 	}
 }
 
-func handleStatusEventMapChanged(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventMapChangedBody]) {
-	if e.Type == StatusEventTypeMapChanged {
-		l.Debugf("Character [%d] has changed maps. worldId [%d] channelId [%d] oldMapId [%d] newMapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldMapId, e.Body.TargetMapId)
-		character.TransitionMap(ctx)(e.WorldId, e.Body.ChannelId, e.Body.TargetMapId, e.CharacterId, e.Body.OldMapId)
+func handleStatusEventMapChanged(db *gorm.DB) message.Handler[statusEvent[statusEventMapChangedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventMapChangedBody]) {
+		if e.Type == StatusEventTypeMapChanged {
+			l.Debugf("Character [%d] has changed maps. worldId [%d] channelId [%d] oldMapId [%d] newMapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldMapId, e.Body.TargetMapId)
+			character.TransitionMap(ctx)(e.WorldId, e.Body.ChannelId, e.Body.TargetMapId, e.CharacterId, e.Body.OldMapId)
+			_ = pet.ClearPositions(ctx)(db)(e.CharacterId)
+		}
 	}
 }
 
-func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, e statusEvent[changeChannelEventLoginBody]) {
-	if e.Type == StatusEventTypeChannelChanged {
-		l.Debugf("Character [%d] has changed channels. worldId [%d] channelId [%d] oldChannelId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldChannelId)
-		character.TransitionChannel(ctx)(e.WorldId, e.Body.ChannelId, e.Body.OldChannelId, e.CharacterId, e.Body.MapId)
+func handleStatusEventChannelChanged(db *gorm.DB) message.Handler[statusEvent[changeChannelEventLoginBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[changeChannelEventLoginBody]) {
+		if e.Type == StatusEventTypeChannelChanged {
+			l.Debugf("Character [%d] has changed channels. worldId [%d] channelId [%d] oldChannelId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldChannelId)
+			character.TransitionChannel(ctx)(e.WorldId, e.Body.ChannelId, e.Body.OldChannelId, e.CharacterId, e.Body.MapId)
+			_ = pet.ClearPositions(ctx)(db)(e.CharacterId)
+		}
 	}
 }

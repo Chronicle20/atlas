@@ -46,7 +46,7 @@ func expiredEventStatusProvider(worldId byte, channelId byte, mapId uint32, drop
 	return producer.SingleMessageProvider(key, value)
 }
 
-func pickedUpEventStatusProvider(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32, itemId uint32, equipmentId uint32, quantity uint32, meso uint32) model.Provider[[]kafka.Message] {
+func pickedUpEventStatusProvider(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32, itemId uint32, equipmentId uint32, quantity uint32, meso uint32, petSlot int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))
 	value := &statusEvent[pickedUpStatusEventBody]{
 		WorldId:   worldId,
@@ -60,6 +60,7 @@ func pickedUpEventStatusProvider(worldId byte, channelId byte, mapId uint32, dro
 			EquipmentId: equipmentId,
 			Quantity:    quantity,
 			Meso:        meso,
+			PetSlot:     petSlot,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

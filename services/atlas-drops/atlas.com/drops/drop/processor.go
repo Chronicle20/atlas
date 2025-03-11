@@ -40,10 +40,10 @@ func SpawnForCharacter(l logrus.FieldLogger) func(ctx context.Context) func(mb *
 	}
 }
 
-func Reserve(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
-		return func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
-			d, err := GetRegistry().ReserveDrop(dropId, characterId)
+func Reserve(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32, petSlot int8) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32, petSlot int8) error {
+		return func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32, petSlot int8) error {
+			d, err := GetRegistry().ReserveDrop(dropId, characterId, petSlot)
 			if err == nil {
 				l.Debugf("Reserving [%d] for [%d].", dropId, characterId)
 				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicDropStatus)(reservedEventStatusProvider(worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso()))
@@ -72,7 +72,7 @@ func Gather(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, c
 			d, err := GetRegistry().RemoveDrop(dropId)
 			if err == nil {
 				l.Debugf("Gathering [%d] for [%d].", dropId, characterId)
-				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicDropStatus)(pickedUpEventStatusProvider(worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso()))
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicDropStatus)(pickedUpEventStatusProvider(worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso(), d.PetSlot()))
 			}
 			return err
 		}

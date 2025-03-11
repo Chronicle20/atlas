@@ -31,6 +31,7 @@ type Model struct {
 	dropperY     int16
 	playerDrop   bool
 	status       string
+	petSlot      int8
 }
 
 func (m Model) Id() uint32 {
@@ -95,10 +96,12 @@ func (m Model) Status() string {
 
 func (m Model) CancelReservation() {
 	m.status = StatusAvailable
+	m.petSlot = -1
 }
 
-func (m Model) Reserve() {
+func (m Model) Reserve(petSlot int8) {
 	m.status = StatusReserved
+	m.petSlot = petSlot
 }
 
 func (m Model) MapId() uint32 {
@@ -125,6 +128,10 @@ func (m Model) Tenant() tenant.Model {
 	return m.tenant
 }
 
+func (m Model) PetSlot() int8 {
+	return m.petSlot
+}
+
 type ModelBuilder struct {
 	tenant       tenant.Model
 	id           uint32
@@ -146,6 +153,7 @@ type ModelBuilder struct {
 	dropperY     int16
 	playerDrop   bool
 	status       string
+	petSlot      int8
 }
 
 func NewModelBuilder(tenant tenant.Model, worldId byte, channelId byte, mapId uint32) *ModelBuilder {
@@ -155,6 +163,7 @@ func NewModelBuilder(tenant tenant.Model, worldId byte, channelId byte, mapId ui
 		channelId: channelId,
 		mapId:     mapId,
 		dropTime:  time.Now(),
+		petSlot:   -1,
 	}
 }
 
@@ -218,6 +227,11 @@ func (b *ModelBuilder) SetStatus(status string) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetPetSlot(petSlot int8) *ModelBuilder {
+	b.petSlot = petSlot
+	return b
+}
+
 func (b *ModelBuilder) Clone(m Model) *ModelBuilder {
 	b.tenant = m.Tenant()
 	b.id = m.Id()
@@ -239,6 +253,7 @@ func (b *ModelBuilder) Clone(m Model) *ModelBuilder {
 	b.dropperY = m.DropperY()
 	b.playerDrop = m.PlayerDrop()
 	b.status = m.Status()
+	b.petSlot = m.PetSlot()
 	return b
 }
 
@@ -264,6 +279,7 @@ func (b *ModelBuilder) Build() Model {
 		dropperY:     b.dropperY,
 		playerDrop:   b.playerDrop,
 		status:       b.status,
+		petSlot:      b.petSlot,
 	}
 }
 

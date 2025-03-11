@@ -25,10 +25,10 @@ func ForEachInMap(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Mo
 	}
 }
 
-func RequestReservation(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, dropId uint32, characterId uint32, characterX int16, characterY int16) error {
-	return func(ctx context.Context) func(m _map.Model, dropId uint32, characterId uint32, characterX int16, characterY int16) error {
-		return func(m _map.Model, dropId uint32, characterId uint32, characterX int16, characterY int16) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestReservationCommandProvider(m, dropId, characterId, characterX, characterY))
+func RequestReservation(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, dropId uint32, characterId uint32, characterX int16, characterY int16, petSlot int8) error {
+	return func(ctx context.Context) func(m _map.Model, dropId uint32, characterId uint32, characterX int16, characterY int16, petSlot int8) error {
+		return func(m _map.Model, dropId uint32, characterId uint32, characterX int16, characterY int16, petSlot int8) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestReservationCommandProvider(m, dropId, characterId, characterX, characterY, petSlot))
 		}
 	}
 }

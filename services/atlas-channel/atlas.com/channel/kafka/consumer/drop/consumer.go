@@ -122,7 +122,7 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 		}()
 
 		go func() {
-			err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypePickUp, e.Body.CharacterId, -1)))
+			err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypePickUp, e.Body.CharacterId, e.Body.PetSlot)))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to pick up drop [%d] for characters in map [%d].", e.DropId, e.MapId)
 			}

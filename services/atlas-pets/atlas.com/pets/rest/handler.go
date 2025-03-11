@@ -106,3 +106,18 @@ func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.Handle
 		next(uint32(characterId))(w, r)
 	}
 }
+
+type PetIdHandler func(petId uint64) http.HandlerFunc
+
+func ParsePetId(l logrus.FieldLogger, next PetIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		petId, err := strconv.Atoi(vars["petId"])
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing petId as uint64")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint64(petId))(w, r)
+	}
+}

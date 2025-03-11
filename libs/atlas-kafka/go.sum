@@ -6,6 +6,8 @@ github.com/Chronicle20/atlas-tenant v1.0.3 h1:Peg20t68yC1SR9sj3F0dobKi84Zlz761lg
 github.com/Chronicle20/atlas-tenant v1.0.3/go.mod h1:dUx28T5cxvNGxbnJEDufWq7484Hr5a2kCwk5ja24BYw=
 github.com/Chronicle20/atlas-tenant v1.0.4 h1:zS+hK56eNTVDlvTvSFN4wo9hZQ9aM/6SxXzRL+9P2Zk=
 github.com/Chronicle20/atlas-tenant v1.0.4/go.mod h1:6DHjFyHY9wRfOuphFwmwklf50hYm74L7MlWH7wqgnRQ=
+github.com/Chronicle20/atlas-tenant v1.0.5 h1:fBloCBSkHZHAR7Q7beeNMgPjdc8dDWJH+e9Upb86zfk=
+github.com/Chronicle20/atlas-tenant v1.0.5/go.mod h1:Wdxg0VW0n8r6PDUe4Ju78bZHB5JZ2ervyovOW+PS5Gc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

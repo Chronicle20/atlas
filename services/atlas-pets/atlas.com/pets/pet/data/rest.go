@@ -104,7 +104,7 @@ func Transform(m Model) (RestModel, error) {
 	}
 	return RestModel{
 		Id:     m.id,
-		Hungry: m.hungry,
+		Hungry: m.hunger,
 		Cash:   m.cash,
 		Life:   m.life,
 		Skills: srms,
@@ -118,7 +118,7 @@ func Extract(rm RestModel) (Model, error) {
 	}
 	return Model{
 		id:     rm.Id,
-		hungry: rm.Hungry,
+		hunger: rm.Hungry,
 		cash:   rm.Cash,
 		life:   rm.Life,
 		skills: sms,

@@ -397,3 +397,46 @@ func AttemptCommand(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 		}
 	}
 }
+
+func EvaluateHunger(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(ownerId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(ownerId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(ownerId uint32) error {
+			return func(ownerId uint32) error {
+				despawned := make([]Model, 0)
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					ps, err := SpawnedByOwnerProvider(ctx)(tx)(ownerId)()
+					if err != nil {
+						return err
+					}
+					for _, p := range ps {
+						var pdm data.Model
+						pdm, err = data.GetById(l)(ctx)(p.TemplateId())
+						if err != nil {
+							return err
+						}
+						newFullness := p.Fullness() - byte(pdm.Hunger())
+						err = updateFullness(tx)(t, p.Id(), newFullness)
+						if err != nil {
+							return err
+						}
+						if newFullness <= 5 {
+							despawned = append(despawned, p)
+						}
+					}
+					return nil
+				})
+				if txErr != nil {
+					return txErr
+				}
+				for _, p := range despawned {
+					err := Despawn(l)(ctx)(db)(p.Id(), p.OwnerId())
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			}
+		}
+	}
+}

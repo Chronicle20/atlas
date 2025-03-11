@@ -6,6 +6,7 @@ import (
 	"atlas-data/logger"
 	_map "atlas-data/map"
 	"atlas-data/monster"
+	"atlas-data/pet"
 	"atlas-data/reactor"
 	"atlas-data/service"
 	"atlas-data/skill"
@@ -75,7 +76,8 @@ func main() {
 		monster.InitResource(GetServer()),
 		equipment.InitResource(GetServer()),
 		reactor.InitResource(GetServer()),
-		skill.InitResource(GetServer()))
+		skill.InitResource(GetServer()),
+		pet.InitResource(GetServer()))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

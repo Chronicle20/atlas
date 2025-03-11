@@ -5,6 +5,7 @@ import (
 	_map "atlas-data/map"
 	"atlas-data/monster"
 	"atlas-data/npc"
+	"atlas-data/pet"
 	"atlas-data/reactor"
 	"atlas-data/skill"
 	"context"
@@ -40,33 +41,22 @@ func RegisterData(l logrus.FieldLogger) func(ctx context.Context) error {
 		uiWzMapPath := filepath.Join(dir, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "UI.wz", "UIWindow.img.xml")
 		_ = monster.GetMonsterGaugeRegistry().Init(t, uiWzMapPath)
 
-		var wg sync.WaitGroup
-		wg.Add(1)
-		go func() {
-			_ = RegisterAllData(l)(ctx)(dir, filepath.Join("Map.wz", "Map"), true, _map.RegisterMap)()
-			wg.Done()
-		}()
-		wg.Add(1)
-		go func() {
-			_ = RegisterAllData(l)(ctx)(dir, "Mob.wz", false, monster.RegisterMonster)()
-			wg.Done()
-		}()
-		wg.Add(1)
-		go func() {
-			_ = RegisterAllData(l)(ctx)(dir, "Character.wz", true, equipment.RegisterEquipment)()
-			wg.Done()
-		}()
-		wg.Add(1)
-		go func() {
-			_ = RegisterAllData(l)(ctx)(dir, "Reactor.wz", true, reactor.RegisterReactor)()
-			wg.Done()
-		}()
-		wg.Add(1)
-		go func() {
-			_ = RegisterAllData(l)(ctx)(dir, "Skill.wz", false, skill.RegisterSkill)()
-			wg.Done()
-		}()
+		registers := make([]func() error, 0)
+		registers = append(registers, RegisterAllData(l)(ctx)(dir, filepath.Join("Map.wz", "Map"), true, _map.RegisterMap))
+		registers = append(registers, RegisterAllData(l)(ctx)(dir, "Mob.wz", false, monster.RegisterMonster))
+		registers = append(registers, RegisterAllData(l)(ctx)(dir, "Character.wz", true, equipment.RegisterEquipment))
+		registers = append(registers, RegisterAllData(l)(ctx)(dir, "Reactor.wz", true, reactor.RegisterReactor))
+		registers = append(registers, RegisterAllData(l)(ctx)(dir, "Skill.wz", false, skill.RegisterSkill))
+		registers = append(registers, RegisterAllData(l)(ctx)(dir, filepath.Join("Item.wz", "Pet"), false, pet.RegisterPet))
 
+		var wg sync.WaitGroup
+		for _, register := range registers {
+			wg.Add(1)
+			go func() {
+				_ = register()
+				wg.Done()
+			}()
+		}
 		wg.Wait()
 
 		_ = _map.GetMapStringRegistry().Clear(t)

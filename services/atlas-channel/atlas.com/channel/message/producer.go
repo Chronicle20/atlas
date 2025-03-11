@@ -62,3 +62,23 @@ func messengerChatCommandProvider(m _map.Model, actorId uint32, message string, 
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func petChatCommandProvider(m _map.Model, petId uint64, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(petId))
+	value := chatCommand[petChatBody]{
+		WorldId:   byte(m.WorldId()),
+		ChannelId: byte(m.ChannelId()),
+		MapId:     uint32(m.MapId()),
+		ActorId:   uint32(petId),
+		Message:   message,
+		Type:      ChatTypePet,
+		Body: petChatBody{
+			OwnerId: ownerId,
+			PetSlot: petSlot,
+			Type:    nType,
+			Action:  nAction,
+			Balloon: balloon,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

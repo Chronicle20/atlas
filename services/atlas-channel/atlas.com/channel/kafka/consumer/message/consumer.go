@@ -5,6 +5,7 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
 	message2 "atlas-channel/message"
+	"atlas-channel/pet"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -40,6 +41,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMultiChat(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleWhisperChat(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMessengerChat(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handlePetChat(sc, wp))))
 			}
 		}
 	}
@@ -148,8 +150,8 @@ func handleWhisperChat(sc server.Model, wp writer.Producer) message.Handler[chat
 	}
 }
 
-func handleMessengerChat(sc server.Model, wp writer.Producer) message.Handler[chatEvent[multiChatBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e chatEvent[multiChatBody]) {
+func handleMessengerChat(sc server.Model, wp writer.Producer) message.Handler[chatEvent[messengerChatBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e chatEvent[messengerChatBody]) {
 		if e.Type != ChatTypeMessenger {
 			return
 		}
@@ -165,5 +167,25 @@ func handleMessengerChat(sc server.Model, wp writer.Producer) message.Handler[ch
 				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)
 			}
 		}
+	}
+}
+
+func handlePetChat(sc server.Model, wp writer.Producer) message.Handler[chatEvent[petChatBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e chatEvent[petChatBody]) {
+		if e.Type != ChatTypePet {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+			return
+		}
+
+		s, err := session.GetByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.OwnerId)
+		if err != nil {
+			return
+		}
+
+		p := pet.NewModelBuilder(uint64(e.ActorId), 0, 0, "").SetOwnerID(e.Body.OwnerId).SetSlot(e.Body.PetSlot).Build()
+		_ = _map.ForSessionsInMap(l)(ctx)(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetChat)(writer.PetChatBody(p, e.Body.Type, e.Body.Action, e.Message, e.Body.Balloon)))
 	}
 }

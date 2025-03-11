@@ -86,3 +86,11 @@ func MessengerChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.M
 		}
 	}
 }
+
+func PetChat(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, petId uint64, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error {
+	return func(ctx context.Context) func(m _map.Model, petId uint64, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error {
+		return func(m _map.Model, petId uint64, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopicChat)(petChatCommandProvider(m, petId, message, ownerId, petSlot, nType, nAction, balloon))
+		}
+	}
+}

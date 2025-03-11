@@ -61,7 +61,7 @@ func main() {
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), pet.InitResource(GetServer())(db))
 
-	go tasks.Register(l, tdm.Context())(pet.NewHungerTask(l, db, time.Second*time.Duration(30)))
+	go tasks.Register(l, tdm.Context())(pet.NewHungerTask(l, db, time.Minute*time.Duration(3)))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

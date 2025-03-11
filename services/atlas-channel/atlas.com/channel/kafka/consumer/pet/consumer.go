@@ -96,14 +96,14 @@ func handleDespawned(sc server.Model, wp writer.Producer) message.Handler[status
 		}
 
 		go func() {
-			_ = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(s.CharacterId(), e.Body.Slot, writer.PetDespawnModeNormal))(s)
+			_ = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(l)(s.CharacterId(), e.Body.Slot, e.Body.Reason))(s)
 			err = enableActions(l)(ctx)(wp)(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
 			}
 		}()
 		go func() {
-			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(s.CharacterId(), e.Body.Slot, writer.PetDespawnModeNormal)))
+			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(l)(s.CharacterId(), e.Body.Slot, e.Body.Reason)))
 		}()
 	}
 }

@@ -70,7 +70,7 @@ func Gather(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, c
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
 		return func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
 			d, err := GetRegistry().RemoveDrop(dropId)
-			if err == nil {
+			if d.Id() == 0 || err == nil {
 				l.Debugf("Gathering [%d] for [%d].", dropId, characterId)
 				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicDropStatus)(pickedUpEventStatusProvider(worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso(), d.PetSlot()))
 			}

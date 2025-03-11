@@ -94,14 +94,12 @@ func (m Model) Status() string {
 	return m.status
 }
 
-func (m Model) CancelReservation() {
-	m.status = StatusAvailable
-	m.petSlot = -1
+func (m Model) CancelReservation() Model {
+	return CloneModelBuilder(m).SetStatus(StatusAvailable).SetPetSlot(-1).Build()
 }
 
-func (m Model) Reserve(petSlot int8) {
-	m.status = StatusReserved
-	m.petSlot = petSlot
+func (m Model) Reserve(petSlot int8) Model {
+	return CloneModelBuilder(m).SetStatus(StatusReserved).SetPetSlot(petSlot).Build()
 }
 
 func (m Model) MapId() uint32 {

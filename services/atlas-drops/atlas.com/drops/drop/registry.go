@@ -10,7 +10,7 @@ import (
 type dropRegistry struct {
 	lock sync.RWMutex
 
-	dropMap          map[uint32]*Model
+	dropMap          map[uint32]Model
 	dropReservations map[uint32]uint32
 
 	dropLocks map[uint32]*sync.Mutex
@@ -28,7 +28,7 @@ func GetRegistry() *dropRegistry {
 	once.Do(func() {
 		registry = &dropRegistry{
 			lock:             sync.RWMutex{},
-			dropMap:          make(map[uint32]*Model),
+			dropMap:          make(map[uint32]Model),
 			dropLocks:        make(map[uint32]*sync.Mutex),
 			mapLocks:         make(map[mapKey]*sync.Mutex),
 			dropsInMap:       make(map[mapKey][]uint32),
@@ -67,7 +67,7 @@ func (d *dropRegistry) CreateDrop(mb *ModelBuilder) Model {
 
 	drop := mb.SetId(currentUniqueId).SetStatus(StatusAvailable).Build()
 
-	d.dropMap[drop.Id()] = &drop
+	d.dropMap[drop.Id()] = drop
 	d.lock.Unlock()
 
 	d.lockDrop(currentUniqueId)
@@ -114,8 +114,8 @@ func (d *dropRegistry) unlockDrop(dropId uint32) {
 	}
 }
 
-func (d *dropRegistry) getDrop(dropId uint32) (*Model, bool) {
-	var drop *Model
+func (d *dropRegistry) getDrop(dropId uint32) (Model, bool) {
+	var drop Model
 	var ok bool
 	d.lock.RLock()
 	drop, ok = d.dropMap[dropId]
@@ -125,31 +125,28 @@ func (d *dropRegistry) getDrop(dropId uint32) (*Model, bool) {
 
 func (d *dropRegistry) CancelDropReservation(dropId uint32, characterId uint32) {
 	d.lockDrop(dropId)
+	defer d.unlockDrop(dropId)
 
 	drop, ok := d.getDrop(dropId)
 	if !ok {
-		d.unlockDrop(dropId)
 		return
 	}
 
 	if val, ok := d.dropReservations[dropId]; ok {
 		if val != characterId {
-			d.unlockDrop(dropId)
 			return
 		}
 	} else {
-		d.unlockDrop(dropId)
 		return
 	}
 
 	if drop.Status() != StatusReserved {
-		d.unlockDrop(dropId)
 		return
 	}
 
-	drop.CancelReservation()
+	drop = drop.CancelReservation()
+	d.dropMap[drop.Id()] = drop
 	delete(d.dropReservations, dropId)
-	d.unlockDrop(dropId)
 }
 
 func (d *dropRegistry) ReserveDrop(dropId uint32, characterId uint32, petSlot int8) (Model, error) {
@@ -162,26 +159,27 @@ func (d *dropRegistry) ReserveDrop(dropId uint32, characterId uint32, petSlot in
 	}
 
 	if drop.Status() == StatusAvailable {
-		drop.Reserve(petSlot)
+		drop = drop.Reserve(petSlot)
+		d.dropMap[drop.Id()] = drop
 		d.dropReservations[dropId] = characterId
-		return *drop, nil
+		return drop, nil
 	} else {
 		if locker, ok := d.dropReservations[dropId]; ok && locker == characterId {
-			return *drop, nil
+			return drop, nil
 		} else {
 			return Model{}, errors.New("reserved by another party")
 		}
 	}
 }
 
-func (d *dropRegistry) RemoveDrop(dropId uint32) (*Model, error) {
-	var drop *Model
+func (d *dropRegistry) RemoveDrop(dropId uint32) (Model, error) {
+	var drop Model
 	d.lockDrop(dropId)
 
 	drop, ok := d.getDrop(dropId)
 	if !ok {
 		d.unlockDrop(dropId)
-		return nil, nil
+		return Model{}, nil
 	}
 
 	d.lock.Lock()
@@ -218,7 +216,7 @@ func (d *dropRegistry) GetDrop(dropId uint32) (Model, error) {
 		return Model{}, errors.New("drop not found")
 	}
 	d.unlockDrop(dropId)
-	return *drop, nil
+	return drop, nil
 }
 
 func (d *dropRegistry) GetDropsForMap(tenant tenant.Model, worldId byte, channelId byte, mapId uint32) ([]Model, error) {
@@ -232,7 +230,7 @@ func (d *dropRegistry) GetDropsForMap(tenant tenant.Model, worldId byte, channel
 	d.lockMap(mk)
 	for _, dropId := range d.dropsInMap[mk] {
 		if drop, ok := d.getDrop(dropId); ok {
-			drops = append(drops, *drop)
+			drops = append(drops, drop)
 		}
 	}
 	d.unlockMap(mk)
@@ -243,13 +241,13 @@ func (d *dropRegistry) GetAllDrops() []Model {
 	var drops []Model
 	d.lock.RLock()
 	for _, drop := range d.dropMap {
-		drops = append(drops, *drop)
+		drops = append(drops, drop)
 	}
 	d.lock.RUnlock()
 	return drops
 }
 
-func existingIds(drops map[uint32]*Model) []uint32 {
+func existingIds(drops map[uint32]Model) []uint32 {
 	var ids []uint32
 	for i := range drops {
 		ids = append(ids, i)

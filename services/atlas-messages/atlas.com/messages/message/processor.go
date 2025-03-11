@@ -117,3 +117,16 @@ func HandleMessenger(l logrus.FieldLogger) func(ctx context.Context) func(worldI
 		}
 	}
 }
+
+func HandlePet(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error {
+	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error {
+		return func(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error {
+			l.Debugf("Character [%d] pet [%d] sent message [%s].", ownerId, actorId, message)
+			err := producer.ProviderImpl(l)(ctx)(EnvEventTopicChat)(petChatEventProvider(worldId, channelId, mapId, actorId, message, ownerId, petSlot, nType, nAction, balloon))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to relay message from character [%d] pet [%d].", ownerId, actorId)
+			}
+			return err
+		}
+	}
+}

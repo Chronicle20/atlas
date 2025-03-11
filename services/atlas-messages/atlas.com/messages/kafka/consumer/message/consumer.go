@@ -28,6 +28,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMultiChat)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleWhisperChat)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMessengerChat)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handlePetChat)))
 	}
 }
 
@@ -57,4 +58,11 @@ func handleMessengerChat(l logrus.FieldLogger, ctx context.Context, e chatComman
 		return
 	}
 	_ = message2.HandleMessenger(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.ActorId, e.Message, e.Body.Recipients)
+}
+
+func handlePetChat(l logrus.FieldLogger, ctx context.Context, e chatCommand[petChatBody]) {
+	if e.Type != ChatTypePet {
+		return
+	}
+	_ = message2.HandlePet(l)(ctx)(e.WorldId, e.ChannelId, e.MapId, e.ActorId, e.Message, e.Body.OwnerId, e.Body.PetSlot, e.Body.Type, e.Body.Action, e.Body.Balloon)
 }

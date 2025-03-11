@@ -52,9 +52,12 @@ func CharacterInfoBody(tenant tenant.Model) func(c character.Model, g guild.Mode
 			}
 
 			medalId := uint32(0)
-			if em, ok := c.Equipment().Get(slot.TypeMedal); ok {
-				if me := em.Equipable; me != nil {
-					medalId = me.ItemId()
+			ms, err := slot.GetSlotByType("medal")
+			if err == nil {
+				if em, ok := c.Equipment().Get(ms.Type); ok {
+					if me := em.Equipable; me != nil {
+						medalId = me.ItemId()
+					}
 				}
 			}
 			w.WriteInt(medalId)

@@ -3,11 +3,12 @@ package pet
 import "atlas-channel/movement"
 
 const (
-	EnvStatusEventTopic      = "EVENT_TOPIC_PET_STATUS"
-	StatusEventTypeCreated   = "CREATED"
-	StatusEventTypeDeleted   = "DELETED"
-	StatusEventTypeSpawned   = "SPAWNED"
-	StatusEventTypeDespawned = "DESPAWNED"
+	EnvStatusEventTopic            = "EVENT_TOPIC_PET_STATUS"
+	StatusEventTypeCreated         = "CREATED"
+	StatusEventTypeDeleted         = "DELETED"
+	StatusEventTypeSpawned         = "SPAWNED"
+	StatusEventTypeDespawned       = "DESPAWNED"
+	StatusEventTypeCommandResponse = "COMMAND_RESPONSE"
 )
 
 type statusEvent[E any] struct {
@@ -43,6 +44,14 @@ type despawnedStatusEventBody struct {
 	Level      byte   `json:"level"`
 	Tameness   uint16 `json:"tameness"`
 	Fullness   byte   `json:"fullness"`
+}
+
+type commandResponseStatusEventBody struct {
+	Slot      int8   `json:"slot"`
+	Tameness  uint16 `json:"tameness"`
+	Fullness  byte   `json:"fullness"`
+	CommandId byte   `json:"commandId"`
+	Success   bool   `json:"success"`
 }
 
 const (

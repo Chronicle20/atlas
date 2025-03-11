@@ -3,9 +3,10 @@ package pet
 import "atlas-channel/movement"
 
 const (
-	EnvCommandTopic   = "COMMAND_TOPIC_PET"
-	CommandPetSpawn   = "SPAWN"
-	CommandPetDespawn = "DESPAWN"
+	EnvCommandTopic          = "COMMAND_TOPIC_PET"
+	CommandPetSpawn          = "SPAWN"
+	CommandPetDespawn        = "DESPAWN"
+	CommandPetAttemptCommand = "ATTEMPT_COMMAND"
 )
 
 type commandEvent[E any] struct {
@@ -20,6 +21,11 @@ type spawnCommandBody struct {
 }
 
 type despawnCommandBody struct {
+}
+
+type attemptCommandCommandBody struct {
+	CommandId byte `json:"commandId"`
+	ByName    bool `json:"byName"`
 }
 
 const (

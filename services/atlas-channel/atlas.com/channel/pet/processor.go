@@ -55,3 +55,12 @@ func Despawn(l logrus.FieldLogger) func(ctx context.Context) func(characterId ui
 		}
 	}
 }
+
+func AttemptCommand(l logrus.FieldLogger) func(ctx context.Context) func(petId uint64, commandId byte, byName bool, characterId uint32) error {
+	return func(ctx context.Context) func(petId uint64, commandId byte, byName bool, characterId uint32) error {
+		return func(petId uint64, commandId byte, byName bool, characterId uint32) error {
+			l.Debugf("Character [%d] triggered pet [%d] command. byName [%t], command [%d]", characterId, petId, byName, commandId)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(attemptCommandProvider(petId, commandId, byName, characterId))
+		}
+	}
+}

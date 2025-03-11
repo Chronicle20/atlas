@@ -18,7 +18,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -40,6 +40,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawned(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDespawned(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandResponse(sc, wp))))
 				t, _ = topic.EnvProvider(l)(EnvEventTopicMovement)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp))))
 			}
@@ -59,6 +60,7 @@ func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[statusEv
 		}
 
 		p := pet.NewModelBuilder(e.PetId, 0, e.Body.TemplateId, e.Body.Name).
+			SetOwnerID(e.OwnerId).
 			SetSlot(e.Body.Slot).
 			SetLevel(e.Body.Level).
 			SetTameness(e.Body.Tameness).
@@ -70,14 +72,14 @@ func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			Build()
 
 		go func() {
-			_ = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(sc.Tenant())(s.CharacterId(), p))(s)
+			_ = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(sc.Tenant())(p))(s)
 			err = enableActions(l)(ctx)(wp)(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
 			}
 		}()
 		go func() {
-			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(sc.Tenant())(s.CharacterId(), p)))
+			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(sc.Tenant())(p)))
 		}()
 	}
 }
@@ -102,6 +104,35 @@ func handleDespawned(sc server.Model, wp writer.Producer) message.Handler[status
 		}()
 		go func() {
 			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(s.CharacterId(), e.Body.Slot, writer.PetDespawnModeNormal)))
+		}()
+	}
+}
+
+func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[statusEvent[commandResponseStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[commandResponseStatusEventBody]) {
+		if e.Type != StatusEventTypeCommandResponse {
+			return
+		}
+
+		s, err := session.GetByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId)
+		if err != nil {
+			return
+		}
+
+		go func() {
+			err = enableActions(l)(ctx)(wp)(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+			}
+		}()
+		go func() {
+			p := pet.NewModelBuilder(e.PetId, 0, 0, "").
+				SetOwnerID(e.OwnerId).
+				SetSlot(e.Body.Slot).
+				SetTameness(e.Body.Tameness).
+				SetFullness(e.Body.Fullness).
+				Build()
+			_ = _map.ForSessionsInMap(l)(ctx)(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetCommandResponseBody(p, e.Body.CommandId, e.Body.Success, false)))
 		}()
 	}
 }

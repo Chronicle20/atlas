@@ -20,11 +20,11 @@ const (
 	PetDespawnModeUnk2    = PetDespawnMode(4)
 )
 
-func PetSpawnBody(l logrus.FieldLogger) func(t tenant.Model) func(characterId uint32, p pet.Model) BodyProducer {
-	return func(t tenant.Model) func(characterId uint32, p pet.Model) BodyProducer {
-		return func(characterId uint32, p pet.Model) BodyProducer {
+func PetSpawnBody(l logrus.FieldLogger) func(t tenant.Model) func(p pet.Model) BodyProducer {
+	return func(t tenant.Model) func(p pet.Model) BodyProducer {
+		return func(p pet.Model) BodyProducer {
 			return func(w *response.Writer, options map[string]interface{}) []byte {
-				w.WriteInt(characterId)
+				w.WriteInt(p.OwnerId())
 				w.WriteInt8(p.Slot())
 				w.WriteBool(true)
 				w.WriteBool(true) // show?

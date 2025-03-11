@@ -264,6 +264,7 @@ func produceWriters() []string {
 		writer.PetActivated,
 		writer.PetMovement,
 		writer.PetCommandResponse,
+		writer.PetChat,
 	}
 }
 
@@ -315,6 +316,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.PetMovementHandle] = handler.PetMovementHandleFunc
 	handlerMap[handler.PetSpawnHandle] = handler.PetSpawnHandleFunc
 	handlerMap[handler.PetCommandHandle] = handler.PetCommandHandleFunc
+	handlerMap[handler.PetChatHandle] = handler.PetChatHandleFunc
 	return handlerMap
 }
 

@@ -8,6 +8,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func ByIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(petId uint64) model.Provider[Model] {
+	return func(ctx context.Context) func(petId uint64) model.Provider[Model] {
+		return func(petId uint64) model.Provider[Model] {
+			return requests.Provider[RestModel, Model](l, ctx)(requestById(petId), Extract)
+		}
+	}
+}
+
+func GetById(l logrus.FieldLogger) func(ctx context.Context) func(petId uint64) (Model, error) {
+	return func(ctx context.Context) func(petId uint64) (Model, error) {
+		return func(petId uint64) (Model, error) {
+			return ByIdProvider(l)(ctx)(petId)()
+		}
+	}
+}
+
 func ByOwnerProvider(l logrus.FieldLogger) func(ctx context.Context) func(ownerId uint32) model.Provider[[]Model] {
 	return func(ctx context.Context) func(ownerId uint32) model.Provider[[]Model] {
 		return func(ownerId uint32) model.Provider[[]Model] {

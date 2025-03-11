@@ -49,7 +49,7 @@ func handleEquipItemCommand(db *gorm.DB) message.Handler[equipItemCommand] {
 		l.Debugf("Received equip item command. characterId [%d] source [%d] destination [%d]", c.CharacterId, c.Source, c.Destination)
 		fsp := model.Flip(equipable.GetNextFreeSlot(l))(ctx)
 		ep := producer.ProviderImpl(l)(ctx)
-		dp := equipment.GetEquipmentDestination(l)(ctx)
+		dp := equipment.GetEquipmentDestination(l)(ctx)(c.Destination)
 		inventory.EquipItemForCharacter(l)(db)(ctx)(fsp)(ep)(c.CharacterId)(c.Source)(dp)
 	}
 }

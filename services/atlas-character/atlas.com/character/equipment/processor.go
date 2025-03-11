@@ -53,29 +53,36 @@ func FixedDestinationProvider(destination int16) DestinationProvider {
 	}
 }
 
-func GetEquipmentDestination(l logrus.FieldLogger) func(ctx context.Context) DestinationProvider {
-	return func(ctx context.Context) DestinationProvider {
-		return func(itemId uint32) model.Provider[int16] {
-			slots, err := information.GetById(l, ctx)(itemId)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve destination slots for item [%d].", itemId)
-				return model.ErrorProvider[int16](err)
-			} else if len(slots) <= 0 {
-				l.Errorf("Unable to retrieve destination slots for item [%d].", itemId)
-				return model.ErrorProvider[int16](err)
-			}
-			is, err := statistics.GetById(l, ctx)(itemId)
-			if err != nil {
-				return model.ErrorProvider[int16](err)
-			}
+func GetEquipmentDestination(l logrus.FieldLogger) func(ctx context.Context) func(suggested int16) DestinationProvider {
+	return func(ctx context.Context) func(suggested int16) DestinationProvider {
+		return func(suggested int16) DestinationProvider {
+			return func(itemId uint32) model.Provider[int16] {
+				slots, err := information.GetById(l, ctx)(itemId)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to retrieve destination slots for item [%d].", itemId)
+					return model.ErrorProvider[int16](err)
+				} else if len(slots) <= 0 {
+					l.Errorf("Unable to retrieve destination slots for item [%d].", itemId)
+					return model.ErrorProvider[int16](err)
+				}
+				is, err := statistics.GetById(l, ctx)(itemId)
+				if err != nil {
+					return model.ErrorProvider[int16](err)
+				}
+				slot := slots[0]
 
-			destination := int16(0)
-			if is.Cash() {
-				destination = slots[0].Slot() - 100
-			} else {
-				destination = slots[0].Slot()
+				destination := int16(0)
+				if is.Cash() {
+					if slot.Name() == "PET_EQUIP" {
+						destination = suggested
+					} else {
+						destination = slot.Slot() - 100
+					}
+				} else {
+					destination = slot.Slot()
+				}
+				return model.FixedProvider(destination)
 			}
-			return model.FixedProvider(destination)
 		}
 	}
 }

@@ -9,13 +9,13 @@ import (
 type DropDestroyType byte
 
 const (
-	DropDestroy            = "DropDestroy"
-	DropDestroyTypeExpire  = DropDestroyType(0)
-	DropDestroyTypeNone    = DropDestroyType(1)
-	DropDestroyTypePickUp  = DropDestroyType(2)
-	DropDestroyTypeUnk1    = DropDestroyType(3)
-	DropDestroyTypeExplode = DropDestroyType(4)
-	DropDestroyTypeUnk2    = DropDestroyType(5)
+	DropDestroy              = "DropDestroy"
+	DropDestroyTypeExpire    = DropDestroyType(0)
+	DropDestroyTypeNone      = DropDestroyType(1)
+	DropDestroyTypePickUp    = DropDestroyType(2)
+	DropDestroyTypeUnk1      = DropDestroyType(3)
+	DropDestroyTypeExplode   = DropDestroyType(4)
+	DropDestroyTypePetPickUp = DropDestroyType(5)
 )
 
 func DropDestroyBody(l logrus.FieldLogger, t tenant.Model) func(dropId uint32, destroyType DropDestroyType, characterId uint32, petSlot int8) BodyProducer {

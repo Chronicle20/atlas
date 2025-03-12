@@ -516,6 +516,7 @@ func Move(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func
 func moveItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(eventProducer producer.Provider) func(inventoryType byte) AssetMover {
 	return func(db *gorm.DB) func(ctx context.Context) func(eventProducer producer.Provider) func(inventoryType byte) AssetMover {
 		return func(ctx context.Context) func(eventProducer producer.Provider) func(inventoryType byte) AssetMover {
+			t := tenant.MustFromContext(ctx)
 			return func(eventProducer producer.Provider) func(inventoryType byte) AssetMover {
 				return func(inventoryType byte) AssetMover {
 					return func(characterId uint32) func(source int16) func(destination int16) error {
@@ -552,6 +553,8 @@ func moveItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) 
 									l.Debugf("Attempting to move item that is in the temporary position to where the item that was just equipped was.")
 									resp, _ = moveFromSlotToSlot(l)(inSlotProvider(temporarySlot()), model.FixedProvider(source), slotUpdater, noOpInventoryItemMoveProvider)()
 									events = model.MergeSliceProvider(events, model.FixedProvider(resp))
+
+									GetReservationRegistry().SwapReservation(t, characterId, inventoryType, source, destination)
 									return nil
 								})
 								if txErr != nil {
@@ -646,6 +649,7 @@ func Drop(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func
 func dropItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(inventoryType byte) AssetDropper {
 	return func(db *gorm.DB) func(ctx context.Context) func(inventoryType byte) AssetDropper {
 		return func(ctx context.Context) func(inventoryType byte) AssetDropper {
+			t := tenant.MustFromContext(ctx)
 			return func(inventoryType byte) AssetDropper {
 				return func(worldId byte, channelId byte, mapId uint32, characterId uint32, x int16, y int16, source int16, quantity int16) error {
 					l.Debugf("Received request to drop item at [%d] for character [%d].", source, characterId)
@@ -669,7 +673,9 @@ func dropItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) 
 							return err
 						}
 
-						initialQuantity := i.Quantity()
+						reservedQty := GetReservationRegistry().GetReservedQuantity(t, characterId, inventoryType, source)
+
+						initialQuantity := i.Quantity() - reservedQty
 
 						if initialQuantity <= uint32(quantity) {
 							err = item.DeleteById(tx)(ctx)(i.Id())

@@ -1,11 +1,14 @@
 package inventory
 
+import "github.com/google/uuid"
+
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_INVENTORY"
-	CommandEquip    = "EQUIP"
-	CommandUnequip  = "UNEQUIP"
-	CommandMove     = "MOVE"
-	CommandDrop     = "DROP"
+	EnvCommandTopic       = "COMMAND_TOPIC_INVENTORY"
+	CommandEquip          = "EQUIP"
+	CommandUnequip        = "UNEQUIP"
+	CommandMove           = "MOVE"
+	CommandDrop           = "DROP"
+	CommandRequestReserve = "REQUEST_RESERVE"
 )
 
 type command[E any] struct {
@@ -36,4 +39,11 @@ type dropCommandBody struct {
 	MapId     uint32 `json:"mapId"`
 	Source    int16  `json:"source"`
 	Quantity  int16  `json:"quantity"`
+}
+
+type requestReserveCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	Source        int16     `json:"source"`
+	ItemId        uint32    `json:"itemId"`
+	Quantity      int16     `json:"quantity"`
 }

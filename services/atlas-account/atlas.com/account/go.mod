@@ -6,7 +6,7 @@ require (
 	github.com/Chronicle20/atlas-kafka v1.1.8
 	github.com/Chronicle20/atlas-model v1.2.2
 	github.com/Chronicle20/atlas-rest v1.2.12
-	github.com/Chronicle20/atlas-tenant v1.0.4
+	github.com/Chronicle20/atlas-tenant v1.0.5
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jtumidanski/api2go v1.0.4

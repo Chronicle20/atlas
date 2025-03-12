@@ -2,12 +2,13 @@ package inventory
 
 import (
 	"atlas-character/database"
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func get(tenantId uuid.UUID, characterId uint32, inventoryType Type) database.EntityProvider[entity] {
+func get(tenantId uuid.UUID, characterId uint32, inventoryType inventory.Type) database.EntityProvider[entity] {
 	return func(db *gorm.DB) model.Provider[entity] {
 		return database.Query[entity](db, &entity{TenantId: tenantId, CharacterId: characterId, InventoryType: int8(inventoryType)})
 	}

@@ -6,6 +6,7 @@ import (
 	"atlas-character/inventory/item"
 	"atlas-character/kafka/producer"
 	"atlas-character/rest"
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
@@ -57,7 +58,7 @@ func handleGetItemBySlot(d *rest.HandlerDependency, c *rest.HandlerContext) http
 					return
 				}
 
-				if Type(inventoryType) == TypeValueEquip {
+				if inventory.Type(inventoryType) == inventory.TypeValueEquip {
 					for _, i := range inv.Equipable().Items() {
 						if i.Slot() == int16(slot) {
 							res, err := model.Map(equipable.Transform)(model.FixedProvider(i))()
@@ -78,14 +79,14 @@ func handleGetItemBySlot(d *rest.HandlerDependency, c *rest.HandlerContext) http
 				}
 
 				var m ItemModel
-				switch Type(inventoryType) {
-				case TypeValueUse:
+				switch inventory.Type(inventoryType) {
+				case inventory.TypeValueUse:
 					m = inv.Useable()
-				case TypeValueSetup:
+				case inventory.TypeValueSetup:
 					m = inv.Setup()
-				case TypeValueETC:
+				case inventory.TypeValueETC:
 					m = inv.Etc()
-				case TypeValueCash:
+				case inventory.TypeValueCash:
 					m = inv.Cash()
 				default:
 					d.Logger().WithError(err).Errorf("Unable to get inventory for character [%d].", characterId)
@@ -119,7 +120,7 @@ func handleCreateItem(d *rest.HandlerDependency, _ *rest.HandlerContext, model i
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return rest.ParseInventoryType(d.Logger(), func(inventoryType int8) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				err := CreateItem(d.Logger())(d.DB())(d.Context())(producer.ProviderImpl(d.Logger())(d.Context()))(characterId, Type(inventoryType), model.ItemId, model.Quantity)
+				err := CreateItem(d.Logger())(d.DB())(d.Context())(producer.ProviderImpl(d.Logger())(d.Context()))(characterId, inventory.Type(inventoryType), model.ItemId, model.Quantity)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return

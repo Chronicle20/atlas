@@ -11,6 +11,7 @@ import (
 	"atlas-character/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
@@ -34,10 +35,10 @@ func ByCharacterIdProvider(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 func supplier() (Model, error) {
 	return Model{
 		equipable: EquipableModel{},
-		useable:   ItemModel{mType: TypeValueUse},
-		setup:     ItemModel{mType: TypeValueSetup},
-		etc:       ItemModel{mType: TypeValueETC},
-		cash:      ItemModel{mType: TypeValueCash},
+		useable:   ItemModel{mType: inventory.TypeValueUse},
+		setup:     ItemModel{mType: inventory.TypeValueSetup},
+		etc:       ItemModel{mType: inventory.TypeValueETC},
+		cash:      ItemModel{mType: inventory.TypeValueCash},
 	}, nil
 }
 
@@ -64,22 +65,22 @@ func foldInventory(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Cont
 	return func(db *gorm.DB) func(ctx context.Context) func(ref Model, ent entity) (Model, error) {
 		return func(ctx context.Context) func(ref Model, ent entity) (Model, error) {
 			return func(ref Model, ent entity) (Model, error) {
-				switch Type(ent.InventoryType) {
-				case TypeValueEquip:
+				switch inventory.Type(ent.InventoryType) {
+				case inventory.TypeValueEquip:
 					ep := equipable.InInventoryProvider(l)(db)(ctx)(ent.ID)
 					return model.Map(FoldProperty(ref.SetEquipable))(model.Fold(ep, NewEquipableModel(ent.ID, ent.Capacity), EquipableFolder))()
-				case TypeValueUse:
+				case inventory.TypeValueUse:
 					ip := item.ByInventoryProvider(db)(ctx)(ent.ID)
-					return model.Map(FoldProperty(ref.SetUseable))(model.Fold(ip, NewItemModel(ent.ID, TypeValueUse, ent.Capacity), ItemFolder))()
-				case TypeValueSetup:
+					return model.Map(FoldProperty(ref.SetUseable))(model.Fold(ip, NewItemModel(ent.ID, inventory.TypeValueUse, ent.Capacity), ItemFolder))()
+				case inventory.TypeValueSetup:
 					ip := item.ByInventoryProvider(db)(ctx)(ent.ID)
-					return model.Map(FoldProperty(ref.SetSetup))(model.Fold(ip, NewItemModel(ent.ID, TypeValueSetup, ent.Capacity), ItemFolder))()
-				case TypeValueETC:
+					return model.Map(FoldProperty(ref.SetSetup))(model.Fold(ip, NewItemModel(ent.ID, inventory.TypeValueSetup, ent.Capacity), ItemFolder))()
+				case inventory.TypeValueETC:
 					ip := item.ByInventoryProvider(db)(ctx)(ent.ID)
-					return model.Map(FoldProperty(ref.SetEtc))(model.Fold(ip, NewItemModel(ent.ID, TypeValueETC, ent.Capacity), ItemFolder))()
-				case TypeValueCash:
+					return model.Map(FoldProperty(ref.SetEtc))(model.Fold(ip, NewItemModel(ent.ID, inventory.TypeValueETC, ent.Capacity), ItemFolder))()
+				case inventory.TypeValueCash:
 					ip := item.ByInventoryProvider(db)(ctx)(ent.ID)
-					return model.Map(FoldProperty(ref.SetCash))(model.Fold(ip, NewItemModel(ent.ID, TypeValueCash, ent.Capacity), ItemFolder))()
+					return model.Map(FoldProperty(ref.SetCash))(model.Fold(ip, NewItemModel(ent.ID, inventory.TypeValueCash, ent.Capacity), ItemFolder))()
 				}
 				return ref, errors.New("unknown inventory type")
 			}
@@ -122,11 +123,11 @@ func Create(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) fu
 	}
 }
 
-func CreateItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(eventProducer producer.Provider) func(characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
-	return func(db *gorm.DB) func(ctx context.Context) func(eventProducer producer.Provider) func(characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
-		return func(ctx context.Context) func(eventProducer producer.Provider) func(characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
-			return func(eventProducer producer.Provider) func(characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
-				return func(characterId uint32, inventoryType Type, itemId uint32, quantity uint32) error {
+func CreateItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(eventProducer producer.Provider) func(characterId uint32, inventoryType inventory.Type, itemId uint32, quantity uint32) error {
+	return func(db *gorm.DB) func(ctx context.Context) func(eventProducer producer.Provider) func(characterId uint32, inventoryType inventory.Type, itemId uint32, quantity uint32) error {
+		return func(ctx context.Context) func(eventProducer producer.Provider) func(characterId uint32, inventoryType inventory.Type, itemId uint32, quantity uint32) error {
+			return func(eventProducer producer.Provider) func(characterId uint32, inventoryType inventory.Type, itemId uint32, quantity uint32) error {
+				return func(characterId uint32, inventoryType inventory.Type, itemId uint32, quantity uint32) error {
 					expectedInventoryType := math.Floor(float64(itemId) / 1000000)
 					if expectedInventoryType != float64(inventoryType) {
 						l.Errorf("Provided inventoryType [%d] does not match expected one [%d] for itemId [%d].", inventoryType, uint32(expectedInventoryType), itemId)
@@ -157,7 +158,7 @@ func CreateItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context
 						var nac asset.Creator
 						var aqu asset.QuantityUpdater
 
-						if inventoryType == TypeValueEquip {
+						if inventoryType == inventory.TypeValueEquip {
 							eap = asset.NoOpSliceProvider
 							smp = OfOneSlotMaxProvider
 							nac = equipable.CreateItem(l)(tx)(ctx)(statistics2.Create(l)(ctx))(characterId)(invId, int8(inventoryType))(itemId)
@@ -190,9 +191,9 @@ func CreateItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context
 	}
 }
 
-func GetInventoryIdByType(db *gorm.DB) func(ctx context.Context) func(characterId uint32, inventoryType Type) model.Provider[uint32] {
-	return func(ctx context.Context) func(characterId uint32, inventoryType Type) model.Provider[uint32] {
-		return func(characterId uint32, inventoryType Type) model.Provider[uint32] {
+func GetInventoryIdByType(db *gorm.DB) func(ctx context.Context) func(characterId uint32, inventoryType inventory.Type) model.Provider[uint32] {
+	return func(ctx context.Context) func(characterId uint32, inventoryType inventory.Type) model.Provider[uint32] {
+		return func(characterId uint32, inventoryType inventory.Type) model.Provider[uint32] {
 			t := tenant.MustFromContext(ctx)
 			e, err := get(t.Id(), characterId, inventoryType)(db)()
 			if err != nil {
@@ -276,7 +277,7 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 								var err error
 
 								l.Debugf("Received request to equip item at [%d] for character [%d].", source, characterId)
-								invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
+								invLock := GetLockRegistry().GetById(characterId, inventory.TypeValueEquip)
 								invLock.Lock()
 								defer invLock.Unlock()
 
@@ -316,9 +317,9 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 
 									l.Debugf("Now verifying other inventory operations that may be necessary.")
 
-									invId, err := GetInventoryIdByType(tx)(ctx)(characterId, TypeValueEquip)()
+									invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventory.TypeValueEquip)()
 									if err != nil {
-										l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", TypeValueEquip, characterId)
+										l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventory.TypeValueEquip, characterId)
 										return err
 									}
 									nextFreeSlotProvider := freeSlotProvider(tx)(invId)
@@ -412,7 +413,7 @@ func UnequipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx co
 					return func(characterId uint32) func(oldSlot int16) {
 						return func(oldSlot int16) {
 							l.Debugf("Received request to unequip item at [%d] for character [%d].", oldSlot, characterId)
-							invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
+							invLock := GetLockRegistry().GetById(characterId, inventory.TypeValueEquip)
 							invLock.Lock()
 							defer invLock.Unlock()
 
@@ -422,9 +423,9 @@ func UnequipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx co
 								slotUpdater := equipable.UpdateSlot(tx)(ctx)
 								characterInventoryMoveProvider := inventoryItemMoveProvider(characterId)
 
-								invId, err := GetInventoryIdByType(tx)(ctx)(characterId, TypeValueEquip)()
+								invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventory.TypeValueEquip)()
 								if err != nil {
-									l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", TypeValueEquip, characterId)
+									l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventory.TypeValueEquip, characterId)
 									return err
 								}
 
@@ -452,10 +453,10 @@ func UnequipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx co
 	}
 }
 
-func DeleteInventory(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(characterId uint32, inventoryType Type, itemIdProvider model.Provider[[]uint32], itemDeleter func(db *gorm.DB) func(ctx context.Context) model.Operator[uint32]) error {
-	return func(db *gorm.DB) func(ctx context.Context) func(characterId uint32, inventoryType Type, itemIdProvider model.Provider[[]uint32], itemDeleter func(db *gorm.DB) func(ctx context.Context) model.Operator[uint32]) error {
-		return func(ctx context.Context) func(characterId uint32, inventoryType Type, itemIdProvider model.Provider[[]uint32], itemDeleter func(db *gorm.DB) func(ctx context.Context) model.Operator[uint32]) error {
-			return func(characterId uint32, inventoryType Type, itemIdProvider model.Provider[[]uint32], itemDeleter func(db *gorm.DB) func(ctx context.Context) model.Operator[uint32]) error {
+func DeleteInventory(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(characterId uint32, inventoryType inventory.Type, itemIdProvider model.Provider[[]uint32], itemDeleter func(db *gorm.DB) func(ctx context.Context) model.Operator[uint32]) error {
+	return func(db *gorm.DB) func(ctx context.Context) func(characterId uint32, inventoryType inventory.Type, itemIdProvider model.Provider[[]uint32], itemDeleter func(db *gorm.DB) func(ctx context.Context) model.Operator[uint32]) error {
+		return func(ctx context.Context) func(characterId uint32, inventoryType inventory.Type, itemIdProvider model.Provider[[]uint32], itemDeleter func(db *gorm.DB) func(ctx context.Context) model.Operator[uint32]) error {
+			return func(characterId uint32, inventoryType inventory.Type, itemIdProvider model.Provider[[]uint32], itemDeleter func(db *gorm.DB) func(ctx context.Context) model.Operator[uint32]) error {
 				invLock := GetLockRegistry().GetById(characterId, inventoryType)
 				invLock.Lock()
 				defer invLock.Unlock()
@@ -478,7 +479,7 @@ func DeleteEquipableInventory(l logrus.FieldLogger) func(db *gorm.DB) func(ctx c
 		return func(ctx context.Context) func(characterId uint32, m EquipableModel) error {
 			return func(characterId uint32, m EquipableModel) error {
 				idp := model.SliceMap(equipable.ReferenceId)(model.FixedProvider(m.Items()))(model.ParallelMap())
-				return DeleteInventory(l)(db)(ctx)(characterId, TypeValueEquip, idp, equipable.DeleteByReferenceId(l))
+				return DeleteInventory(l)(db)(ctx)(characterId, inventory.TypeValueEquip, idp, equipable.DeleteByReferenceId(l))
 			}
 		}
 	}
@@ -525,7 +526,7 @@ func moveItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) 
 								characterInventoryMoveProvider := inventoryItemMoveProvider(characterId)
 
 								l.Debugf("Received request to move item at [%d] to [%d] for character [%d].", source, destination, characterId)
-								invLock := GetLockRegistry().GetById(characterId, Type(inventoryType))
+								invLock := GetLockRegistry().GetById(characterId, inventory.Type(inventoryType))
 								invLock.Lock()
 								defer invLock.Unlock()
 
@@ -535,7 +536,7 @@ func moveItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) 
 								txErr := db.Transaction(func(tx *gorm.DB) error {
 									slotUpdater := item.UpdateSlot(tx)(ctx)
 
-									invId, err := GetInventoryIdByType(tx)(ctx)(characterId, Type(inventoryType))()
+									invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventory.Type(inventoryType))()
 									if err != nil {
 										l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 										return err
@@ -589,7 +590,7 @@ func moveEquip(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context)
 					return func(source int16) func(destination int16) error {
 						return func(destination int16) error {
 							l.Debugf("Received request to move item at [%d] to [%d] for character [%d].", source, destination, characterId)
-							invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
+							invLock := GetLockRegistry().GetById(characterId, inventory.TypeValueEquip)
 							invLock.Lock()
 							defer invLock.Unlock()
 
@@ -653,7 +654,7 @@ func dropItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) 
 			return func(inventoryType byte) AssetDropper {
 				return func(worldId byte, channelId byte, mapId uint32, characterId uint32, x int16, y int16, source int16, quantity int16) error {
 					l.Debugf("Received request to drop item at [%d] for character [%d].", source, characterId)
-					invLock := GetLockRegistry().GetById(characterId, Type(inventoryType))
+					invLock := GetLockRegistry().GetById(characterId, inventory.Type(inventoryType))
 					invLock.Lock()
 					defer invLock.Unlock()
 
@@ -661,7 +662,7 @@ func dropItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) 
 
 					var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
 					txErr := db.Transaction(func(tx *gorm.DB) error {
-						invId, err := GetInventoryIdByType(tx)(ctx)(characterId, Type(inventoryType))()
+						invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventory.Type(inventoryType))()
 						if err != nil {
 							l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 							return err
@@ -720,7 +721,7 @@ func dropEquip(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context)
 		return func(ctx context.Context) AssetDropper {
 			return func(worldId byte, channelId byte, mapId uint32, characterId uint32, x int16, y int16, source int16, quantity int16) error {
 				l.Debugf("Received request to drop item at [%d] for character [%d].", source, characterId)
-				invLock := GetLockRegistry().GetById(characterId, TypeValueEquip)
+				invLock := GetLockRegistry().GetById(characterId, inventory.TypeValueEquip)
 				invLock.Lock()
 				defer invLock.Unlock()
 
@@ -764,7 +765,7 @@ func AttemptItemPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.
 	return func(db *gorm.DB) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, quantity uint32) error {
 		return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, quantity uint32) error {
 			return func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, quantity uint32) error {
-				inventoryType := Type(math.Floor(float64(itemId) / 1000000))
+				inventoryType := inventory.Type(math.Floor(float64(itemId) / 1000000))
 				if quantity == 0 {
 					quantity = 1
 				}
@@ -816,7 +817,11 @@ func AttemptEquipmentPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx con
 	return func(db *gorm.DB) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, equipmentId uint32) error {
 		return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, equipmentId uint32) error {
 			return func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, equipmentId uint32) error {
-				inventoryType := Type(math.Floor(float64(itemId) / 1000000))
+				inventoryType, ok := inventory.TypeFromItemId(itemId)
+				if !ok {
+					return errors.New("invalid inventory item")
+				}
+
 				if 1 != inventoryType {
 					l.Errorf("Provided inventoryType [%d] does not match expected one [%d] for itemId [%d].", inventoryType, 1, itemId)
 					return errors.New("invalid inventory type")

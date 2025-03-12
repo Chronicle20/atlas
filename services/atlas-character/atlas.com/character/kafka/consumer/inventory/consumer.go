@@ -34,6 +34,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUnequipItemCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMoveItemCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDropItemCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestReserveItemCommand(db))))
 		}
 	}
 }
@@ -83,5 +84,14 @@ func handleDropItemCommand(db *gorm.DB) message.Handler[command[dropCommandBody]
 
 		td := character.GetTemporalRegistry().GetById(c.CharacterId)
 		_ = inventory.Drop(l)(db)(ctx)(c.InventoryType)(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.CharacterId, td.X(), td.Y(), c.Body.Source, c.Body.Quantity)
+	}
+}
+
+func handleRequestReserveItemCommand(db *gorm.DB) message.Handler[command[requestReserveCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[requestReserveCommandBody]) {
+		if c.Type != CommandRequestReserve {
+			return
+		}
+		_ = inventory.RequestReserve(l)(ctx)(db)(c.CharacterId, c.InventoryType, c.Body.Source, c.Body.ItemId, c.Body.Quantity, c.Body.TransactionId)
 	}
 }

@@ -14,10 +14,12 @@ import (
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"math"
+	"time"
 )
 
 func ByCharacterIdProvider(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(characterId uint32) model.Provider[Model] {
@@ -862,6 +864,45 @@ func AttemptEquipmentPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx con
 				}
 				_ = producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(events)
 				_ = drop.RequestPickUp(l)(ctx)(worldId, channelId, mapId, dropId, characterId)
+				return nil
+			}
+		}
+	}
+}
+
+func RequestReserve(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType byte, slot int16, itemId uint32, quantity int16, transactionId uuid.UUID) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType byte, slot int16, itemId uint32, quantity int16, transactionId uuid.UUID) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, inventoryType byte, slot int16, itemId uint32, quantity int16, transactionId uuid.UUID) error {
+			return func(characterId uint32, inventoryType byte, slot int16, itemId uint32, quantity int16, transactionId uuid.UUID) error {
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					invLock := GetLockRegistry().GetById(characterId, inventory.Type(inventoryType))
+					invLock.Lock()
+					defer invLock.Unlock()
+
+					invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventory.Type(inventoryType))()
+					if err != nil {
+						l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
+						return err
+					}
+					i, err := item.GetBySlot(tx)(ctx)(invId, slot)
+					if err != nil {
+						return err
+					}
+					if i.ItemId() != itemId {
+						return errors.New("item id does not match")
+					}
+					reservedQuantity := GetReservationRegistry().GetReservedQuantity(t, characterId, inventoryType, slot)
+
+					if i.Quantity()-reservedQuantity < uint32(quantity) {
+						return errors.New("not enough available quantity")
+					}
+					GetReservationRegistry().AddReservation(t, transactionId, characterId, inventoryType, slot, itemId, uint32(quantity), time.Second*time.Duration(30))
+					return nil
+				})
+				if txErr != nil {
+					return txErr
+				}
 				return nil
 			}
 		}

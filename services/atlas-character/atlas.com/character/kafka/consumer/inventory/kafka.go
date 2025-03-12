@@ -1,37 +1,49 @@
 package inventory
 
+import "github.com/google/uuid"
+
 const (
-	EnvCommandTopicEquipItem   = "COMMAND_TOPIC_EQUIP_ITEM"
-	EnvCommandTopicUnequipItem = "COMMAND_TOPIC_UNEQUIP_ITEM"
-	EnvCommandTopicMoveItem    = "COMMAND_TOPIC_MOVE_ITEM"
-	EnvCommandTopicDropItem    = "COMMAND_TOPIC_DROP_ITEM"
+	EnvCommandTopic       = "COMMAND_TOPIC_INVENTORY"
+	CommandEquip          = "EQUIP"
+	CommandUnequip        = "UNEQUIP"
+	CommandMove           = "MOVE"
+	CommandDrop           = "DROP"
+	CommandRequestReserve = "REQUEST_RESERVE"
 )
 
-type equipItemCommand struct {
-	CharacterId uint32 `json:"characterId"`
-	Source      int16  `json:"source"`
-	Destination int16  `json:"destination"`
-}
-
-type unequipItemCommand struct {
-	CharacterId uint32 `json:"characterId"`
-	Source      int16  `json:"source"`
-	Destination int16  `json:"destination"`
-}
-
-type moveItemCommand struct {
+type command[E any] struct {
 	CharacterId   uint32 `json:"characterId"`
 	InventoryType byte   `json:"inventoryType"`
-	Source        int16  `json:"source"`
-	Destination   int16  `json:"destination"`
+	Type          string `json:"type"`
+	Body          E      `json:"body"`
 }
 
-type dropItemCommand struct {
-	WorldId       byte   `json:"worldId"`
-	ChannelId     byte   `json:"channelId"`
-	MapId         uint32 `json:"mapId"`
-	CharacterId   uint32 `json:"characterId"`
-	InventoryType byte   `json:"inventoryType"`
-	Source        int16  `json:"source"`
-	Quantity      int16  `json:"quantity"`
+type equipCommandBody struct {
+	Source      int16 `json:"source"`
+	Destination int16 `json:"destination"`
+}
+
+type unequipCommandBody struct {
+	Source      int16 `json:"source"`
+	Destination int16 `json:"destination"`
+}
+
+type moveCommandBody struct {
+	Source      int16 `json:"source"`
+	Destination int16 `json:"destination"`
+}
+
+type dropCommandBody struct {
+	WorldId   byte   `json:"worldId"`
+	ChannelId byte   `json:"channelId"`
+	MapId     uint32 `json:"mapId"`
+	Source    int16  `json:"source"`
+	Quantity  int16  `json:"quantity"`
+}
+
+type requestReserveCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	Source        int16     `json:"source"`
+	ItemId        uint32    `json:"itemId"`
+	Quantity      int16     `json:"quantity"`
 }

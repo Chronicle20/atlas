@@ -171,7 +171,7 @@ func handleUnequipItem(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopic)(unequipItemCommandProvider(characterId, int16(des.Position)))
+				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopic)(unequipItemCommandProvider(characterId, int16(des.Position), 0))
 				w.WriteHeader(http.StatusAccepted)
 			}
 		})

@@ -21,7 +21,7 @@ func equipItemCommandProvider(characterId uint32, source int16, destination int1
 	return producer.SingleMessageProvider(key, value)
 }
 
-func unequipItemCommandProvider(characterId uint32, source int16) model.Provider[[]kafka.Message] {
+func unequipItemCommandProvider(characterId uint32, source int16, destination int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &command[unequipCommandBody]{
 		CharacterId:   characterId,

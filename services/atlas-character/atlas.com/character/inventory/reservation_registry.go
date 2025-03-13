@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"sync"
@@ -10,7 +11,7 @@ import (
 type ReservationKey struct {
 	tenant        tenant.Model
 	characterId   uint32
-	inventoryType byte
+	inventoryType inventory.Type
 	slot          int16
 }
 
@@ -22,7 +23,7 @@ func (k ReservationKey) Tenant() tenant.Model {
 	return k.tenant
 }
 
-func NewReservationKey(tenant tenant.Model, characterId uint32, inventoryType byte, slot int16) ReservationKey {
+func NewReservationKey(tenant tenant.Model, characterId uint32, inventoryType inventory.Type, slot int16) ReservationKey {
 	return ReservationKey{tenant: tenant, characterId: characterId, inventoryType: inventoryType, slot: slot}
 }
 
@@ -60,7 +61,7 @@ func GetReservationRegistry() *ReservationRegistry {
 	return instance
 }
 
-func (r *ReservationRegistry) AddReservation(t tenant.Model, transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, itemId uint32, quantity uint32, expiry time.Duration) {
+func (r *ReservationRegistry) AddReservation(t tenant.Model, transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, itemId uint32, quantity uint32, expiry time.Duration) {
 	key := ReservationKey{t, characterId, inventoryType, slot}
 
 	r.lock.Lock()
@@ -76,7 +77,7 @@ func (r *ReservationRegistry) AddReservation(t tenant.Model, transactionId uuid.
 	r.reservations[key] = append(r.reservations[key], reservation)
 }
 
-func (r *ReservationRegistry) RemoveReservation(t tenant.Model, transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16) {
+func (r *ReservationRegistry) RemoveReservation(t tenant.Model, transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) {
 	key := ReservationKey{t, characterId, inventoryType, slot}
 
 	r.lock.Lock()
@@ -101,7 +102,7 @@ func (r *ReservationRegistry) RemoveReservation(t tenant.Model, transactionId uu
 	}
 }
 
-func (r *ReservationRegistry) SwapReservation(t tenant.Model, characterId uint32, inventoryType byte, oldSlot int16, newSlot int16) {
+func (r *ReservationRegistry) SwapReservation(t tenant.Model, characterId uint32, inventoryType inventory.Type, oldSlot int16, newSlot int16) {
 	oldKey := NewReservationKey(t, characterId, inventoryType, oldSlot)
 	newKey := NewReservationKey(t, characterId, inventoryType, newSlot)
 
@@ -138,7 +139,7 @@ func (r *ReservationRegistry) ExpireReservations() {
 	}
 }
 
-func (r *ReservationRegistry) GetReservedQuantity(t tenant.Model, characterId uint32, inventoryType byte, slot int16) uint32 {
+func (r *ReservationRegistry) GetReservedQuantity(t tenant.Model, characterId uint32, inventoryType inventory.Type, slot int16) uint32 {
 	key := NewReservationKey(t, characterId, inventoryType, slot)
 
 	r.lock.RLock()

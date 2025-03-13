@@ -8,6 +8,7 @@ import (
 	consumer2 "atlas-character/kafka/consumer"
 	"atlas-character/kafka/producer"
 	"context"
+	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -72,7 +73,7 @@ func handleMoveItemCommand(db *gorm.DB) message.Handler[command[moveCommandBody]
 			return
 		}
 
-		_ = inventory.Move(l)(db)(ctx)(producer.ProviderImpl(l)(ctx))(c.InventoryType)(c.CharacterId)(c.Body.Source)(c.Body.Destination)
+		_ = inventory.Move(l)(db)(ctx)(producer.ProviderImpl(l)(ctx))(inventory2.Type(c.InventoryType))(c.CharacterId)(c.Body.Source)(c.Body.Destination)
 	}
 }
 
@@ -83,7 +84,7 @@ func handleDropItemCommand(db *gorm.DB) message.Handler[command[dropCommandBody]
 		}
 
 		td := character.GetTemporalRegistry().GetById(c.CharacterId)
-		_ = inventory.Drop(l)(db)(ctx)(c.InventoryType)(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.CharacterId, td.X(), td.Y(), c.Body.Source, c.Body.Quantity)
+		_ = inventory.Drop(l)(db)(ctx)(inventory2.Type(c.InventoryType))(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.CharacterId, td.X(), td.Y(), c.Body.Source, c.Body.Quantity)
 	}
 }
 
@@ -92,6 +93,6 @@ func handleRequestReserveItemCommand(db *gorm.DB) message.Handler[command[reques
 		if c.Type != CommandRequestReserve {
 			return
 		}
-		_ = inventory.RequestReserve(l)(ctx)(db)(c.CharacterId, c.InventoryType, c.Body.Source, c.Body.ItemId, c.Body.Quantity, c.Body.TransactionId)
+		_ = inventory.RequestReserve(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), c.Body.Source, c.Body.ItemId, c.Body.Quantity, c.Body.TransactionId)
 	}
 }

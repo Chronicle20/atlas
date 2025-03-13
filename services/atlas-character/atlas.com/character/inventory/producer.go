@@ -115,3 +115,21 @@ func inventoryItemRemoveProvider(characterId uint32, itemId uint32, slot int16) 
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func inventoryItemReserveProvider(characterId uint32) func(itemId uint32) func(quantity uint32, slot int16) model.Provider[[]kafka.Message] {
+	return func(itemId uint32) func(quantity uint32, slot int16) model.Provider[[]kafka.Message] {
+		return func(quantity uint32, slot int16) model.Provider[[]kafka.Message] {
+			key := producer.CreateKey(int(characterId))
+			value := &inventoryChangedEvent[inventoryChangedItemReserveBody]{
+				CharacterId: characterId,
+				Slot:        slot,
+				Type:        ChangedTypeReserve,
+				Body: inventoryChangedItemReserveBody{
+					ItemId:   itemId,
+					Quantity: quantity,
+				},
+			}
+			return producer.SingleMessageProvider(key, value)
+		}
+	}
+}

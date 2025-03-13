@@ -876,6 +876,7 @@ func RequestReserve(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, inventoryType byte, slot int16, itemId uint32, quantity int16, transactionId uuid.UUID) error {
 			return func(characterId uint32, inventoryType byte, slot int16, itemId uint32, quantity int16, transactionId uuid.UUID) error {
+				var events = model.FixedProvider([]kafka.Message{})
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					invLock := GetLockRegistry().GetById(characterId, inventory.Type(inventoryType))
 					invLock.Lock()
@@ -899,12 +900,17 @@ func RequestReserve(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 						return errors.New("not enough available quantity")
 					}
 					GetReservationRegistry().AddReservation(t, transactionId, characterId, inventoryType, slot, itemId, uint32(quantity), time.Second*time.Duration(30))
+					events = model.MergeSliceProvider(events, inventoryItemReserveProvider(characterId)(itemId)(uint32(quantity), slot))
 					return nil
 				})
 				if txErr != nil {
 					return txErr
 				}
-				return nil
+				err := producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(events)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
+				}
+				return err
 			}
 		}
 	}

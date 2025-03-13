@@ -30,6 +30,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			t, _ = topic.EnvProvider(l)(EnvEventInventoryChanged)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryAdd(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryDelete(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryReserve(db))))
 		}
 	}
 }
@@ -40,7 +41,7 @@ func handleInventoryAdd(db *gorm.DB) message.Handler[inventoryChangedEvent[inven
 			return
 		}
 
-		if inventory.Type(e.InventoryType) != inventory.TypeValueEquip {
+		if inventory.Type(e.InventoryType) != inventory.TypeValueCash {
 			return
 		}
 
@@ -58,7 +59,7 @@ func handleInventoryDelete(db *gorm.DB) message.Handler[inventoryChangedEvent[in
 			return
 		}
 
-		if inventory.Type(e.InventoryType) != inventory.TypeValueEquip {
+		if inventory.Type(e.InventoryType) != inventory.TypeValueCash {
 			return
 		}
 
@@ -67,5 +68,22 @@ func handleInventoryDelete(db *gorm.DB) message.Handler[inventoryChangedEvent[in
 		}
 
 		_ = pet.DeleteOnRemove(l)(ctx)(db)(e.CharacterId, e.Body.ItemId, e.Slot)
+	}
+}
+
+func handleInventoryReserve(db *gorm.DB) message.Handler[inventoryChangedEvent[inventoryChangedItemReserveBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e inventoryChangedEvent[inventoryChangedItemReserveBody]) {
+		if e.Type != ChangedTypeReserve {
+			return
+		}
+
+		if inventory.Type(e.InventoryType) != inventory.TypeValueUse {
+			return
+		}
+
+		if item.GetClassification(item.Id(e.Body.ItemId)) != item.Classification(212) {
+			return
+		}
+
 	}
 }

@@ -3,10 +3,11 @@ package inventory
 const (
 	EnvEventInventoryChanged = "EVENT_TOPIC_INVENTORY_CHANGED"
 
-	ChangedTypeAdd    = "INVENTORY_CHANGED_TYPE_ADD"
-	ChangedTypeUpdate = "INVENTORY_CHANGED_TYPE_UPDATE"
-	ChangedTypeRemove = "INVENTORY_CHANGED_TYPE_REMOVE"
-	ChangedTypeMove   = "INVENTORY_CHANGED_TYPE_MOVE"
+	ChangedTypeAdd     = "INVENTORY_CHANGED_TYPE_ADD"
+	ChangedTypeUpdate  = "INVENTORY_CHANGED_TYPE_UPDATE"
+	ChangedTypeRemove  = "INVENTORY_CHANGED_TYPE_REMOVE"
+	ChangedTypeMove    = "INVENTORY_CHANGED_TYPE_MOVE"
+	ChangedTypeReserve = "INVENTORY_CHANGED_TYPE_RESERVE"
 )
 
 type inventoryChangedEvent[M any] struct {
@@ -34,4 +35,9 @@ type inventoryChangedItemMoveBody struct {
 
 type inventoryChangedItemRemoveBody struct {
 	ItemId uint32 `json:"itemId"`
+}
+
+type inventoryChangedItemReserveBody struct {
+	ItemId   uint32 `json:"itemId"`
+	Quantity uint32 `json:"quantity"`
 }

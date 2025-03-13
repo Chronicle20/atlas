@@ -14,7 +14,9 @@ type RouteInitializer func(*mux.Router, logrus.FieldLogger)
 //
 //goland:noinspection GoUnusedExportedFunction
 func CreateService(l *logrus.Logger, ctx context.Context, wg *sync.WaitGroup, basePath string, initializers ...RouteInitializer) {
-	New(l, ctx, wg).
+	New(l).
+		WithContext(ctx).
+		WithWaitGroup(wg).
 		SetBasePath(basePath).
 		SetRouteInitializers(initializers...).
 		Run()

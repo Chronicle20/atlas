@@ -24,7 +24,9 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGTERM, syscall.SIGHUP)
 
-	server.New(l, ctx, wg).
+	server.New(l).
+		WithContext(ctx).
+		WithWaitGroup(wg).
 		SetPort("4000").
 		AddRouteInitializer(func(router *mux.Router, l logrus.FieldLogger) {
 			r := router.PathPrefix("/first").Subrouter()

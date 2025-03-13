@@ -37,7 +37,9 @@ func NewServer(cl *logrus.Logger, ctx context.Context, wg *sync.WaitGroup, route
 		configurator(config)
 	}
 
-	New(cl, ctx, wg).
+	New(cl).
+		WithContext(ctx).
+		WithWaitGroup(wg).
 		SetRouterProducer(routerProducer).
 		SetReadTimeout(config.readTimeout).
 		SetWriteTimeout(config.writeTimeout).
@@ -78,11 +80,11 @@ type Builder struct {
 	routerProducer    RouteProducer
 }
 
-func New(l *logrus.Logger, ctx context.Context, wg *sync.WaitGroup) *Builder {
+func New(l *logrus.Logger) *Builder {
 	sb := &Builder{}
 	sb.l = l.WithFields(logrus.Fields{"originator": "HTTPServer"})
-	sb.ctx = ctx
-	sb.wg = wg
+	sb.ctx = context.Background()
+	sb.wg = &sync.WaitGroup{}
 	sb.w = l.Writer()
 	sb.readTimeout = time.Duration(5) * time.Second
 	sb.writeTimeout = time.Duration(10) * time.Second
@@ -94,6 +96,16 @@ func New(l *logrus.Logger, ctx context.Context, wg *sync.WaitGroup) *Builder {
 	sb.routerProducer = func(l logrus.FieldLogger) http.Handler {
 		return ProduceRoutes(sb.basePath, sb.routeInitializers...)(l)
 	}
+	return sb
+}
+
+func (sb *Builder) WithContext(ctx context.Context) *Builder {
+	sb.ctx = ctx
+	return sb
+}
+
+func (sb *Builder) WithWaitGroup(wg *sync.WaitGroup) *Builder {
+	sb.wg = wg
 	return sb
 }
 

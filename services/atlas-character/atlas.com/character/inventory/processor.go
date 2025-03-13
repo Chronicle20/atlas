@@ -11,15 +11,16 @@ import (
 	"atlas-character/kafka/producer"
 	"context"
 	"errors"
+	"math"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"math"
-	"time"
 )
 
 func ByCharacterIdProvider(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(characterId uint32) model.Provider[Model] {
@@ -28,7 +29,7 @@ func ByCharacterIdProvider(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 			folder := foldInventory(l)(db)(ctx)
 			return func(characterId uint32) model.Provider[Model] {
 				t := tenant.MustFromContext(ctx)
-				return model.Fold[entity, Model](getByCharacter(t.Id(), characterId)(db), supplier, folder)
+				return model.Fold(getByCharacter(t.Id(), characterId)(db), supplier, folder)
 			}
 		}
 	}
@@ -145,7 +146,7 @@ func CreateItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context
 					invLock.Lock()
 					defer invLock.Unlock()
 
-					var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+					var events = model.FixedProvider([]kafka.Message{})
 					err := db.Transaction(func(tx *gorm.DB) error {
 						invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventoryType)()
 						if err != nil {
@@ -220,7 +221,7 @@ func CreateAsset(l logrus.FieldLogger) func(existingAssetProvider model.Provider
 			return model.ErrorProvider[[]kafka.Message](err)
 		}
 
-		var result = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+		var result = model.FixedProvider([]kafka.Message{})
 
 		existingItems, err := existingAssetProvider()
 		if err != nil {
@@ -283,7 +284,7 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 								invLock.Lock()
 								defer invLock.Unlock()
 
-								var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+								var events = model.FixedProvider([]kafka.Message{})
 
 								err = db.Transaction(func(tx *gorm.DB) error {
 									inSlotProvider := equipable.AssetBySlotProvider(tx)(ctx)(characterId)
@@ -419,7 +420,7 @@ func UnequipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx co
 							invLock.Lock()
 							defer invLock.Unlock()
 
-							var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+							var events = model.FixedProvider([]kafka.Message{})
 							txErr := db.Transaction(func(tx *gorm.DB) error {
 								inSlotProvider := equipable.AssetBySlotProvider(tx)(ctx)(characterId)
 								slotUpdater := equipable.UpdateSlot(tx)(ctx)
@@ -463,7 +464,7 @@ func DeleteInventory(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Co
 				invLock.Lock()
 				defer invLock.Unlock()
 				return db.Transaction(func(tx *gorm.DB) error {
-					err := model.ForEachSlice[uint32](itemIdProvider, itemDeleter(tx)(ctx))
+					err := model.ForEachSlice(itemIdProvider, itemDeleter(tx)(ctx))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to delete items in inventory.")
 						return err
@@ -534,7 +535,7 @@ func moveItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) 
 
 								// TODO need to combine quantities if moving to the same item type.
 
-								var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+								var events = model.FixedProvider([]kafka.Message{})
 								txErr := db.Transaction(func(tx *gorm.DB) error {
 									slotUpdater := item.UpdateSlot(tx)(ctx)
 
@@ -596,7 +597,7 @@ func moveEquip(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context)
 							invLock.Lock()
 							defer invLock.Unlock()
 
-							var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+							var events = model.FixedProvider([]kafka.Message{})
 							txErr := db.Transaction(func(tx *gorm.DB) error {
 								inSlotProvider := equipable.AssetBySlotProvider(tx)(ctx)(characterId)
 								slotUpdater := equipable.UpdateSlot(tx)(ctx)
@@ -662,7 +663,7 @@ func dropItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) 
 
 					var i item.Model
 
-					var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+					var events = model.FixedProvider([]kafka.Message{})
 					txErr := db.Transaction(func(tx *gorm.DB) error {
 						invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventory.Type(inventoryType))()
 						if err != nil {
@@ -729,7 +730,7 @@ func dropEquip(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context)
 
 				var e equipable.Model
 
-				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+				var events = model.FixedProvider([]kafka.Message{})
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					var err error
 					e, err = equipable.GetBySlot(tx)(ctx)(characterId, source)
@@ -777,7 +778,7 @@ func AttemptItemPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.
 				invLock.Lock()
 				defer invLock.Unlock()
 
-				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+				var events = model.FixedProvider([]kafka.Message{})
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventoryType)()
 					if err != nil {
@@ -824,7 +825,7 @@ func AttemptEquipmentPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx con
 					return errors.New("invalid inventory item")
 				}
 
-				if 1 != inventoryType {
+				if inventoryType != inventory.TypeValueEquip {
 					l.Errorf("Provided inventoryType [%d] does not match expected one [%d] for itemId [%d].", inventoryType, 1, itemId)
 					return errors.New("invalid inventory type")
 				}
@@ -834,7 +835,7 @@ func AttemptEquipmentPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx con
 				invLock.Lock()
 				defer invLock.Unlock()
 
-				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+				var events = model.FixedProvider([]kafka.Message{})
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventoryType)()
 					if err != nil {

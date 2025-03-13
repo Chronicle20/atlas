@@ -6,6 +6,9 @@ import (
 	"atlas-character/inventory/item"
 	"atlas-character/kafka/producer"
 	"atlas-character/rest"
+	"net/http"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -13,8 +16,6 @@ import (
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
-	"strconv"
 )
 
 const (
@@ -110,7 +111,6 @@ func handleGetItemBySlot(d *rest.HandlerDependency, c *rest.HandlerContext) http
 					}
 				}
 				w.WriteHeader(http.StatusNotFound)
-				return
 			}
 		})
 	})
@@ -126,7 +126,6 @@ func handleCreateItem(d *rest.HandlerDependency, _ *rest.HandlerContext, model i
 					return
 				}
 				w.WriteHeader(http.StatusAccepted)
-				return
 			}
 		})
 	})
@@ -142,7 +141,6 @@ func ParseSlotType(l logrus.FieldLogger, next SlotTypeHandler) http.HandlerFunc 
 		}
 		l.Errorf("Unable to properly parse slotType from path.")
 		w.WriteHeader(http.StatusBadRequest)
-		return
 	}
 }
 

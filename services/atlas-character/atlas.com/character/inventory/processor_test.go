@@ -59,9 +59,7 @@ func testProducer(output *[]kafka.Message) producer.Provider {
 			if err != nil {
 				return err
 			}
-			for _, r := range res {
-				*output = append(*output, r)
-			}
+			*output = append(*output, res...)
 			return nil
 		}
 	}

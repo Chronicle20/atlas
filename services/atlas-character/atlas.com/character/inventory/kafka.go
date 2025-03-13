@@ -1,27 +1,38 @@
 package inventory
 
 const (
-	EnvCommandTopicEquipItem   = "COMMAND_TOPIC_EQUIP_ITEM"
-	EnvCommandTopicUnequipItem = "COMMAND_TOPIC_UNEQUIP_ITEM"
-	EnvEventInventoryChanged   = "EVENT_TOPIC_INVENTORY_CHANGED"
+	EnvCommandTopic = "COMMAND_TOPIC_INVENTORY"
+	CommandEquip    = "EQUIP"
+	CommandUnequip  = "UNEQUIP"
+	CommandMove     = "MOVE"
+	CommandDrop     = "DROP"
+)
+
+type command[E any] struct {
+	CharacterId   uint32 `json:"characterId"`
+	InventoryType byte   `json:"inventoryType"`
+	Type          string `json:"type"`
+	Body          E      `json:"body"`
+}
+
+type equipCommandBody struct {
+	Source      int16 `json:"source"`
+	Destination int16 `json:"destination"`
+}
+
+type unequipCommandBody struct {
+	Source      int16 `json:"source"`
+	Destination int16 `json:"destination"`
+}
+
+const (
+	EnvEventInventoryChanged = "EVENT_TOPIC_INVENTORY_CHANGED"
 
 	ChangedTypeAdd    = "INVENTORY_CHANGED_TYPE_ADD"
 	ChangedTypeUpdate = "INVENTORY_CHANGED_TYPE_UPDATE"
 	ChangedTypeRemove = "INVENTORY_CHANGED_TYPE_REMOVE"
 	ChangedTypeMove   = "INVENTORY_CHANGED_TYPE_MOVE"
 )
-
-type equipItemCommand struct {
-	CharacterId uint32 `json:"characterId"`
-	Source      int16  `json:"source"`
-	Destination int16  `json:"destination"`
-}
-
-type unequipItemCommand struct {
-	CharacterId uint32 `json:"characterId"`
-	Source      int16  `json:"source"`
-	Destination int16  `json:"destination"`
-}
 
 type inventoryChangedEvent[M any] struct {
 	CharacterId uint32 `json:"characterId"`

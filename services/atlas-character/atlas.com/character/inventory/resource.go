@@ -154,7 +154,7 @@ func handleEquipItem(d *rest.HandlerDependency, c *rest.HandlerContext, input eq
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicEquipItem)(equipItemCommandProvider(characterId, input.Slot, int16(des.Position)))
+				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopic)(equipItemCommandProvider(characterId, input.Slot, int16(des.Position)))
 				w.WriteHeader(http.StatusAccepted)
 			}
 		})
@@ -171,7 +171,7 @@ func handleUnequipItem(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 					w.WriteHeader(http.StatusBadRequest)
 					return
 				}
-				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopicUnequipItem)(unequipItemCommandProvider(characterId, int16(des.Position)))
+				_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCommandTopic)(unequipItemCommandProvider(characterId, int16(des.Position)))
 				w.WriteHeader(http.StatusAccepted)
 			}
 		})

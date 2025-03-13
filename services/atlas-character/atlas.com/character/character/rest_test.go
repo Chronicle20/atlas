@@ -7,12 +7,14 @@ import (
 	"atlas-character/equipment/slot"
 	"atlas-character/inventory"
 	"atlas-character/inventory/item"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-rest/server"
-	"github.com/jtumidanski/api2go/jsonapi"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type Server struct {
@@ -196,10 +198,7 @@ func sameEquipment(m1 character.Model, m2 character.Model, slotType slot.Type) b
 		return false
 	}
 	ok = e1.Equipable.Slots() == e2.Equipable.Slots()
-	if !ok {
-		return false
-	}
-	return true
+	return ok
 }
 
 func createTestInventory() (inventory.Model, error) {
@@ -227,7 +226,7 @@ func createTestInventory() (inventory.Model, error) {
 		item.NewModelBuilder().SetID(23).SetItemId(2000000).SetSlot(2).SetQuantity(3).Build(),
 		item.NewModelBuilder().SetID(24).SetItemId(2010009).SetSlot(3).SetQuantity(5).Build(),
 	}
-	usm, err := model.Fold(model.FixedProvider(useItems), inventory.NewItemModel(inv.Useable().Id(), inventory.TypeValueUse, inv.Useable().Capacity()), inventory.ItemFolder)()
+	usm, err := model.Fold(model.FixedProvider(useItems), inventory.NewItemModel(inv.Useable().Id(), inventory2.TypeValueUse, inv.Useable().Capacity()), inventory.ItemFolder)()
 	if err != nil {
 		return inventory.Model{}, err
 	}
@@ -236,7 +235,7 @@ func createTestInventory() (inventory.Model, error) {
 		item.NewModelBuilder().SetID(8).SetItemId(3010046).SetSlot(2).SetQuantity(1).Build(),
 		item.NewModelBuilder().SetID(9).SetItemId(3010003).SetSlot(1).SetQuantity(1).Build(),
 	}
-	sem, err := model.Fold(model.FixedProvider(setupItems), inventory.NewItemModel(inv.Setup().Id(), inventory.TypeValueSetup, inv.Setup().Capacity()), inventory.ItemFolder)()
+	sem, err := model.Fold(model.FixedProvider(setupItems), inventory.NewItemModel(inv.Setup().Id(), inventory2.TypeValueSetup, inv.Setup().Capacity()), inventory.ItemFolder)()
 	if err != nil {
 		return inventory.Model{}, err
 	}
@@ -253,7 +252,7 @@ func createTestInventory() (inventory.Model, error) {
 		item.NewModelBuilder().SetID(30).SetItemId(4000019).SetSlot(4).SetQuantity(29).Build(),
 		item.NewModelBuilder().SetID(50).SetItemId(4006001).SetSlot(10).SetQuantity(100).Build(),
 	}
-	etm, err := model.Fold(model.FixedProvider(etcItems), inventory.NewItemModel(inv.Etc().Id(), inventory.TypeValueETC, inv.Etc().Capacity()), inventory.ItemFolder)()
+	etm, err := model.Fold(model.FixedProvider(etcItems), inventory.NewItemModel(inv.Etc().Id(), inventory2.TypeValueETC, inv.Etc().Capacity()), inventory.ItemFolder)()
 	if err != nil {
 		return inventory.Model{}, err
 	}
@@ -262,7 +261,7 @@ func createTestInventory() (inventory.Model, error) {
 		item.NewModelBuilder().SetID(53).SetItemId(5000020).SetSlot(2).SetQuantity(1).Build(),
 		item.NewModelBuilder().SetID(51).SetItemId(5370000).SetSlot(1).SetQuantity(1).Build(),
 	}
-	cam, err := model.Fold(model.FixedProvider(cashItems), inventory.NewItemModel(inv.Cash().Id(), inventory.TypeValueCash, inv.Cash().Capacity()), inventory.ItemFolder)()
+	cam, err := model.Fold(model.FixedProvider(cashItems), inventory.NewItemModel(inv.Cash().Id(), inventory2.TypeValueCash, inv.Cash().Capacity()), inventory.ItemFolder)()
 	if err != nil {
 		return inventory.Model{}, err
 	}

@@ -11,6 +11,9 @@ import (
 	"atlas-character/inventory/item"
 	"atlas-character/kafka/producer"
 	"context"
+	"testing"
+
+	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	producer2 "github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -20,7 +23,6 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"testing"
 )
 
 func testDatabase(t *testing.T) *gorm.DB {
@@ -276,7 +278,7 @@ func createAndVerifyMockEquip(t *testing.T) func(l logrus.FieldLogger) func(db *
 								return make([]kafka.Message, 0), nil
 							}
 						}
-						err := createMockEquipAsset(l)(db)(ctx)(iap)(characterId)(int8(inventory.TypeValueEquip))(itemId)
+						err := createMockEquipAsset(l)(db)(ctx)(iap)(characterId)(int8(inventory2.TypeValueEquip))(itemId)
 						if err != nil {
 							t.Fatalf("Failed to create item: %v", err)
 						}
@@ -307,7 +309,7 @@ func createMockEquipAsset(l logrus.FieldLogger) func(db *gorm.DB) func(ctx conte
 				return func(characterId uint32) func(inventoryType int8) func(itemId uint32) error {
 					return func(inventoryType int8) func(itemId uint32) error {
 						return func(itemId uint32) error {
-							invId, err := inventory.GetInventoryIdByType(db)(ctx)(characterId, inventory.Type(inventoryType))()
+							invId, err := inventory.GetInventoryIdByType(db)(ctx)(characterId, inventory2.Type(inventoryType))()
 							if err != nil {
 								l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 								return err
@@ -347,7 +349,7 @@ func createMockItemAsset(l logrus.FieldLogger) func(db *gorm.DB) func(ctx contex
 				return func(inventoryType int8) func(itemId uint32) func(quantity uint32) error {
 					return func(itemId uint32) func(quantity uint32) error {
 						return func(quantity uint32) error {
-							invId, err := inventory.GetInventoryIdByType(db)(ctx)(characterId, inventory.Type(inventoryType))()
+							invId, err := inventory.GetInventoryIdByType(db)(ctx)(characterId, inventory2.Type(inventoryType))()
 							if err != nil {
 								l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 								return err

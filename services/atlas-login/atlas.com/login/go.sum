@@ -14,6 +14,8 @@ github.com/Chronicle20/atlas-rest v1.2.11 h1:i0ezE3713n8x9T6zonMaxj0GHSNSh1wrmgI
 github.com/Chronicle20/atlas-rest v1.2.11/go.mod h1:bJJ70whCMx6pqwPpVDmqxjE7uhFJLYab+tKfIzHF0D4=
 github.com/Chronicle20/atlas-rest v1.2.12 h1:K/fEfExSGU3odM6PzySE/TA8xquov/Gkq+cplmyav4I=
 github.com/Chronicle20/atlas-rest v1.2.12/go.mod h1:oUf5041BZuP/NXsbl/D+clqdSbeL5tcOwzWZ4dpMKEg=
+github.com/Chronicle20/atlas-rest v1.2.13 h1:ARH9GnmUxHav33SoEE3uV/9ua9iE2jQAzXHN5DO3kY4=
+github.com/Chronicle20/atlas-rest v1.2.13/go.mod h1:HGSrWFDC9DR1p/eCXXdHwh7wwKbmIOm9EeTH25DHUKI=
 github.com/Chronicle20/atlas-socket v1.2.2 h1:K1UwLOzFmfb8XL2FRsbjU8yIY10Xht/WBPaMW5VqMHU=
 github.com/Chronicle20/atlas-socket v1.2.2/go.mod h1:xG8pctn0m74+iI94eeK8S2VecRNJsDoOQyr8TYIIT70=
 github.com/Chronicle20/atlas-socket v1.2.3 h1:Ov3fT1VKrtaWeX7MeUeX73Ddq/D0ZqT/VYKHwkOujW8=

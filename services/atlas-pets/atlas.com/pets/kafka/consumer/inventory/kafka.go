@@ -11,11 +11,12 @@ const (
 )
 
 type inventoryChangedEvent[M any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Slot        int16  `json:"slot"`
-	Type        string `json:"type"`
-	Body        M      `json:"body"`
-	Silent      bool   `json:"silent"`
+	CharacterId   uint32 `json:"characterId"`
+	InventoryType int8   `json:"inventoryType"`
+	Slot          int16  `json:"slot"`
+	Type          string `json:"type"`
+	Body          M      `json:"body"`
+	Silent        bool   `json:"silent"`
 }
 
 type inventoryChangedItemAddBody struct {

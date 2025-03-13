@@ -4,6 +4,7 @@ import (
 	consumer2 "atlas-pets/kafka/consumer"
 	"atlas-pets/pet"
 	"context"
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -39,6 +40,10 @@ func handleInventoryAdd(db *gorm.DB) message.Handler[inventoryChangedEvent[inven
 			return
 		}
 
+		if inventory.Type(e.InventoryType) != inventory.TypeValueEquip {
+			return
+		}
+
 		if item.GetClassification(item.Id(e.Body.ItemId)) != item.Classification(500) {
 			return
 		}
@@ -50,6 +55,10 @@ func handleInventoryAdd(db *gorm.DB) message.Handler[inventoryChangedEvent[inven
 func handleInventoryDelete(db *gorm.DB) message.Handler[inventoryChangedEvent[inventoryChangedItemRemoveBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e inventoryChangedEvent[inventoryChangedItemRemoveBody]) {
 		if e.Type != ChangedTypeRemove {
+			return
+		}
+
+		if inventory.Type(e.InventoryType) != inventory.TypeValueEquip {
 			return
 		}
 

@@ -4,7 +4,7 @@ go 1.24.1
 
 require (
 	github.com/Chronicle20/atlas-model v1.2.2
-	github.com/Chronicle20/atlas-rest v1.2.12
+	github.com/Chronicle20/atlas-rest v1.2.13
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jtumidanski/api2go v1.0.4
@@ -17,7 +17,7 @@ require (
 )
 
 require (
-	github.com/Chronicle20/atlas-tenant v1.0.4 // indirect
+	github.com/Chronicle20/atlas-tenant v1.0.5 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect

@@ -17,6 +17,7 @@ import (
 	"atlas-character/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"os"
 	"time"
 )
 import _ "net/http/pprof"
@@ -69,7 +70,14 @@ func main() {
 		drop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	}
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), character.InitResource(GetServer())(db), inventory.InitResource(GetServer())(db))
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(character.InitResource(GetServer())(db)).
+		AddRouteInitializer(inventory.InitResource(GetServer())(db)).
+		Run()
 
 	go tasks.Register(l, tdm.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000)))
 

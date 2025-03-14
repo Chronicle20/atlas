@@ -41,6 +41,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawned(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDespawned(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandResponse(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleClosenessChanged(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleFullnessChanged(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLevelChanged(sc, wp))))
 				t, _ = topic.EnvProvider(l)(EnvEventTopicMovement)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp))))
 			}
@@ -134,6 +137,74 @@ func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[
 				Build()
 			_ = _map.ForSessionsInMap(l)(ctx)(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetCommandResponseBody(p, e.Body.CommandId, e.Body.Success, false)))
 		}()
+	}
+}
+
+func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[closenessChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[closenessChangedStatusEventBody]) {
+		if e.Type != StatusEventTypeClosenessChanged {
+			return
+		}
+	}
+}
+
+func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[fullnessChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[fullnessChangedStatusEventBody]) {
+		if e.Type != StatusEventTypeFullnessChanged {
+			return
+		}
+
+		p := pet.NewModelBuilder(e.PetId, 0, 0, "").
+			SetOwnerID(e.OwnerId).
+			SetSlot(e.Body.Slot).
+			SetFullness(e.Body.Fullness).
+			Build()
+
+		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			return _map.ForSessionsInMap(l)(ctx)(s.Map(), func(os session.Model) error {
+				if e.Body.Amount > 0 {
+					err := session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetFoodResponseBody(p, 0, true, false))(os)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to issue pet [%d] response to food.", p.Id())
+					}
+					return err
+				} else {
+					return nil
+				}
+			})
+		})
+	}
+}
+
+func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[levelChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[levelChangedStatusEventBody]) {
+		if e.Type != StatusEventTypeLevelChanged {
+			return
+		}
+
+		p := pet.NewModelBuilder(e.PetId, 0, 0, "").
+			SetOwnerID(e.OwnerId).
+			SetSlot(e.Body.Slot).
+			SetLevel(e.Body.Level).
+			Build()
+
+		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			return _map.ForSessionsInMap(l)(ctx)(s.Map(), func(os session.Model) error {
+				if s.CharacterId() == os.CharacterId() {
+					err := session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterPetEffectBody(l)(byte(e.Body.Slot), 0))(os)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to issue pet [%d] level up.", p.Id())
+					}
+					return err
+				} else {
+					err := session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterPetEffectForeignBody(l)(s.CharacterId(), byte(e.Body.Slot), 0))(os)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to issue pet [%d] level up.", p.Id())
+					}
+					return err
+				}
+			})
+		})
 	}
 }
 

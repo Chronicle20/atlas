@@ -3,12 +3,15 @@ package pet
 import "atlas-channel/movement"
 
 const (
-	EnvStatusEventTopic            = "EVENT_TOPIC_PET_STATUS"
-	StatusEventTypeCreated         = "CREATED"
-	StatusEventTypeDeleted         = "DELETED"
-	StatusEventTypeSpawned         = "SPAWNED"
-	StatusEventTypeDespawned       = "DESPAWNED"
-	StatusEventTypeCommandResponse = "COMMAND_RESPONSE"
+	EnvStatusEventTopic             = "EVENT_TOPIC_PET_STATUS"
+	StatusEventTypeCreated          = "CREATED"
+	StatusEventTypeDeleted          = "DELETED"
+	StatusEventTypeSpawned          = "SPAWNED"
+	StatusEventTypeDespawned        = "DESPAWNED"
+	StatusEventTypeCommandResponse  = "COMMAND_RESPONSE"
+	StatusEventTypeClosenessChanged = "CLOSENESS_CHANGED"
+	StatusEventTypeFullnessChanged  = "FULLNESS_CHANGED"
+	StatusEventTypeLevelChanged     = "LEVEL_CHANGED"
 )
 
 type statusEvent[E any] struct {
@@ -53,6 +56,24 @@ type commandResponseStatusEventBody struct {
 	Fullness  byte   `json:"fullness"`
 	CommandId byte   `json:"commandId"`
 	Success   bool   `json:"success"`
+}
+
+type closenessChangedStatusEventBody struct {
+	Slot      int8   `json:"slot"`
+	Closeness uint16 `json:"closeness"`
+	Amount    int16  `json:"amount"`
+}
+
+type fullnessChangedStatusEventBody struct {
+	Slot     int8 `json:"slot"`
+	Fullness byte `json:"fullness"`
+	Amount   int8 `json:"amount"`
+}
+
+type levelChangedStatusEventBody struct {
+	Slot   int8 `json:"slot"`
+	Level  byte `json:"level"`
+	Amount int8 `json:"amount"`
 }
 
 const (

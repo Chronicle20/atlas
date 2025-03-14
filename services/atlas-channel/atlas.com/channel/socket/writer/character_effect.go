@@ -42,6 +42,9 @@ const (
 	CharacterEffectDeliveryQuestItemUse             = "DELIVERY_QUEST_ITEM_USE"
 	CharacterEffectRepeatEffectRemove               = "REPEAT_REPEAT_EFFECT"
 	CharacterEffectEvolutionRing                    = "EVOLUTION_RING"
+
+	PetEffectLevelUp   = byte(0)
+	PetEffectDisappear = byte(1)
 )
 
 func CharacterLevelUpEffectBody(l logrus.FieldLogger) func() BodyProducer {

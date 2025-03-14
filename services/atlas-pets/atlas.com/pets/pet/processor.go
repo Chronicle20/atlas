@@ -3,6 +3,8 @@ package pet
 import (
 	"atlas-pets/character"
 	"atlas-pets/character/item"
+	"atlas-pets/consumable"
+	inventory2 "atlas-pets/inventory"
 	"atlas-pets/kafka/producer"
 	"atlas-pets/pet/data"
 	"atlas-pets/pet/position"
@@ -13,9 +15,11 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"math/rand"
+	"sort"
 )
 
 var petExpTable = []uint16{1, 1, 3, 6, 14, 31, 60, 108, 181, 287, 434, 632, 891, 1224, 1642, 2161, 2793, 3557, 4467, 5542, 6801, 8263, 9950, 11882, 14084, 16578, 19391, 22547, 26074, 30000}
@@ -64,6 +68,33 @@ func SpawnedByOwnerProvider(ctx context.Context) func(db *gorm.DB) func(ownerId 
 
 func Spawned(m Model) bool {
 	return m.Slot() >= 0
+}
+
+func HungryByOwnerProvider(ctx context.Context) func(db *gorm.DB) func(ownerId uint32) model.Provider[[]Model] {
+	return func(db *gorm.DB) func(ownerId uint32) model.Provider[[]Model] {
+		return func(ownerId uint32) model.Provider[[]Model] {
+			return model.FilteredProvider(SpawnedByOwnerProvider(ctx)(db)(ownerId), model.Filters[Model](Hungry))
+		}
+	}
+}
+
+func Hungry(m Model) bool {
+	return m.Fullness() < 100
+}
+
+func HungriestByOwnerProvider(ctx context.Context) func(db *gorm.DB) func(ownerId uint32) model.Provider[Model] {
+	return func(db *gorm.DB) func(ownerId uint32) model.Provider[Model] {
+		return func(ownerId uint32) model.Provider[Model] {
+			ps, err := HungryByOwnerProvider(ctx)(db)(ownerId)()
+			if err != nil {
+				return model.ErrorProvider[Model](err)
+			}
+			sort.Slice(ps, func(i, j int) bool {
+				return ps[i].Fullness() < ps[j].Fullness()
+			})
+			return model.FixedProvider(ps[0])
+		}
+	}
 }
 
 func CreateOnAward(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16) error {
@@ -587,6 +618,41 @@ func AwardLevel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 					return err
 				}
 				return nil
+			}
+		}
+	}
+}
+
+func ConsumeItem(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
+		return func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
+			return func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
+				var p *Model
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					var err error
+					rp, err := HungriestByOwnerProvider(ctx)(tx)(characterId)()
+					if err != nil {
+						return err
+					}
+					p = &rp
+
+					ci, err := consumable.GetById(l)(ctx)(itemId)
+					if err != nil {
+						return err
+					}
+
+					inc := byte(0)
+					if val, ok := ci.GetSpec(consumable.SpecTypeInc); ok {
+						inc = byte(val)
+					}
+
+					return AwardFullness(l)(ctx)(tx)(p.Id(), inc, characterId)
+				})
+				if txErr != nil || p == nil {
+					_ = inventory2.CancelItemReservation(l)(ctx)(characterId, inventory.TypeValueUse, transactionId, slot)
+					return txErr
+				}
+				return inventory2.ConsumeItem(l)(ctx)(characterId, inventory.TypeValueUse, transactionId, slot)
 			}
 		}
 	}

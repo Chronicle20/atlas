@@ -85,5 +85,6 @@ func handleInventoryReserve(db *gorm.DB) message.Handler[inventoryChangedEvent[i
 			return
 		}
 
+		_ = pet.ConsumeItem(l)(ctx)(db)(e.CharacterId, e.Body.ItemId, e.Slot, e.Body.Quantity, e.Body.TransactionId)
 	}
 }

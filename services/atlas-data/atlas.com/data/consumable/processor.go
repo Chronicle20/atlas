@@ -1,4 +1,4 @@
-package pet
+package consumable
 
 import (
 	"context"
@@ -8,14 +8,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func RegisterPet(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
+func RegisterConsumable(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
 	return func(ctx context.Context) func(path string) {
 		t := tenant.MustFromContext(ctx)
 		return func(path string) {
-			m, err := ReadFromFile(l)(ctx)(path)()
-			if err == nil {
-				l.Debugf("Processed pet [%d].", m.Id())
-				_ = GetPetModelRegistry().Add(t, m)
+			ms, err := ReadFromFile(l)(ctx)(path)()
+			if err != nil {
+				return
+			}
+			for _, m := range ms {
+				l.Debugf("Processed consumable [%d].", m.Id())
+				_ = GetConsumableModelRegistry().Add(t, m)
 			}
 		}
 	}
@@ -24,7 +27,7 @@ func RegisterPet(l logrus.FieldLogger) func(ctx context.Context) func(path strin
 func allProvider(ctx context.Context) model.Provider[[]Model] {
 	t := tenant.MustFromContext(ctx)
 	return func() ([]Model, error) {
-		m, err := GetPetModelRegistry().GetAll(t)
+		m, err := GetConsumableModelRegistry().GetAll(t)
 		if err == nil {
 			return m, nil
 		}
@@ -32,7 +35,7 @@ func allProvider(ctx context.Context) model.Provider[[]Model] {
 		if err != nil {
 			return []Model{}, err
 		}
-		return GetPetModelRegistry().GetAll(nt)
+		return GetConsumableModelRegistry().GetAll(nt)
 	}
 }
 
@@ -42,11 +45,11 @@ func GetAll(ctx context.Context) func() ([]Model, error) {
 	}
 }
 
-func byIdProvider(ctx context.Context) func(petId uint32) model.Provider[Model] {
+func byIdProvider(ctx context.Context) func(consumableId uint32) model.Provider[Model] {
 	t := tenant.MustFromContext(ctx)
-	return func(petId uint32) model.Provider[Model] {
+	return func(consumableId uint32) model.Provider[Model] {
 		return func() (Model, error) {
-			m, err := GetPetModelRegistry().Get(t, petId)
+			m, err := GetConsumableModelRegistry().Get(t, consumableId)
 			if err == nil {
 				return m, nil
 			}
@@ -54,13 +57,13 @@ func byIdProvider(ctx context.Context) func(petId uint32) model.Provider[Model] 
 			if err != nil {
 				return Model{}, err
 			}
-			return GetPetModelRegistry().Get(nt, petId)
+			return GetConsumableModelRegistry().Get(nt, consumableId)
 		}
 	}
 }
 
-func GetById(ctx context.Context) func(petId uint32) (Model, error) {
-	return func(petId uint32) (Model, error) {
-		return byIdProvider(ctx)(petId)()
+func GetById(ctx context.Context) func(consumableId uint32) (Model, error) {
+	return func(consumableId uint32) (Model, error) {
+		return byIdProvider(ctx)(consumableId)()
 	}
 }

@@ -1,6 +1,7 @@
 package data
 
 import (
+	"atlas-data/consumable"
 	"atlas-data/equipment"
 	_map "atlas-data/map"
 	"atlas-data/monster"
@@ -48,6 +49,7 @@ func RegisterData(l logrus.FieldLogger) func(ctx context.Context) error {
 		registers = append(registers, RegisterAllData(l)(ctx)(dir, "Reactor.wz", true, reactor.RegisterReactor))
 		registers = append(registers, RegisterAllData(l)(ctx)(dir, "Skill.wz", false, skill.RegisterSkill))
 		registers = append(registers, RegisterAllData(l)(ctx)(dir, filepath.Join("Item.wz", "Pet"), false, pet.RegisterPet))
+		registers = append(registers, RegisterAllData(l)(ctx)(dir, filepath.Join("Item.wz", "Consume"), false, consumable.RegisterConsumable))
 
 		var wg sync.WaitGroup
 		for _, register := range registers {

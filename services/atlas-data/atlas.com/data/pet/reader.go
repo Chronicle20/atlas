@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func parsePetId(filePath string) (uint64, error) {
+func parsePetId(filePath string) (uint32, error) {
 	baseName := filepath.Base(filePath)
 	if !strings.HasSuffix(baseName, ".img.xml") {
 		return 0, fmt.Errorf("file does not match expected format: %s", filePath)
@@ -21,12 +21,11 @@ func parsePetId(filePath string) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return uint64(id), nil
+	return uint32(id), nil
 }
 
 func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path string) model.Provider[Model] {
 	return func(ctx context.Context) func(path string) model.Provider[Model] {
-		//t := tenant.MustFromContext(ctx)
 		return func(path string) model.Provider[Model] {
 			petId, err := parsePetId(path)
 			if err != nil {

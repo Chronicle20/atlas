@@ -45,6 +45,7 @@ type RestModel struct {
 	Effect          string             `json:"effect"`
 	MonsterHP       uint32             `json:"monsterHP"`
 	WorldMsg        string             `json:"worldMsg"`
+	Increase        uint32             `json:"increase"`
 	IncreasePDD     uint32             `json:"increasePDD"`
 	IncreaseMDD     uint32             `json:"increaseMDD"`
 	IncreaseACC     uint32             `json:"increaseACC"`
@@ -128,6 +129,7 @@ func Transform(m Model) (RestModel, error) {
 		Effect:          m.effect,
 		MonsterHP:       m.monsterHp,
 		WorldMsg:        m.worldMsg,
+		Increase:        m.inc,
 		IncreasePDD:     m.incPDD,
 		IncreaseMDD:     m.incMDD,
 		IncreaseACC:     m.incACC,

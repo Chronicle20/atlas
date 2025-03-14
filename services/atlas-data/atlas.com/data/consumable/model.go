@@ -72,6 +72,7 @@ type Model struct {
 	effect          string
 	monsterHp       uint32
 	worldMsg        string
+	inc             uint32
 	incPDD          uint32
 	incMDD          uint32
 	incACC          uint32

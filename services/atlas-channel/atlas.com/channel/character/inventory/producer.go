@@ -56,7 +56,7 @@ func dropItemCommandProvider(m _map.Model, characterId uint32, inventoryType byt
 	value := &command[dropCommandBody]{
 		CharacterId:   characterId,
 		InventoryType: inventoryType,
-		Type:          CommandMove,
+		Type:          CommandDrop,
 		Body: dropCommandBody{
 			WorldId:   byte(m.WorldId()),
 			ChannelId: byte(m.ChannelId()),

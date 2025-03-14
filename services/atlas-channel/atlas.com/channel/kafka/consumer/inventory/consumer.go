@@ -106,7 +106,8 @@ func addToInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writ
 							itemWriter = model.FlipOperator(writer.WriteCashItemInfo(true))(i)
 						}
 					}
-					err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryAddBody(byte(inventoryType), event.Slot, false)(itemWriter))(s)
+					bp := writer.CharacterInventoryChangeBody(false, writer.InventoryAddBodyWriter(inventoryType, event.Slot, itemWriter))
+					err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to add [%d] to slot [%d] for character [%d].", event.Body.ItemId, event.Slot, s.CharacterId())
 					}
@@ -134,19 +135,10 @@ func handleInventoryUpdateEvent(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		err := session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, updateInInventory(l)(ctx)(wp)(inventoryType, e.Slot, e.Body.Quantity))
+		so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryChangeBody(false, writer.InventoryUpdateBodyWriter(inventoryType, e.Slot, e.Body.Quantity)))
+		err := session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, so)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", e.Body.ItemId, e.Slot, e.CharacterId)
-		}
-	}
-}
-
-func updateInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(inventoryType inventory.Type, slot int16, quantity uint32) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(inventoryType inventory.Type, slot int16, quantity uint32) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(inventoryType inventory.Type, slot int16, quantity uint32) model.Operator[session.Model] {
-			return func(inventoryType inventory.Type, slot int16, quantity uint32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryUpdateBody(tenant.MustFromContext(ctx))(byte(inventoryType), slot, quantity, false))
-			}
 		}
 	}
 }
@@ -185,7 +177,7 @@ func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 							return
 						}
 
-						err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryMoveBody(tenant.MustFromContext(ctx))(byte(inventoryType), e.Slot, e.Body.OldSlot, false))(s)
+						err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryChangeBody(false, writer.InventoryMoveBodyWriter(inventoryType, e.Slot, e.Body.OldSlot)))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to move [%d] in slot [%d] to [%d] for character [%d].", e.Body.ItemId, e.Body.OldSlot, e.Slot, s.CharacterId())
 						}
@@ -272,7 +264,7 @@ func removeFromInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp
 	return func(ctx context.Context) func(wp writer.Producer) func(inventoryType inventory.Type, slot int16) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(inventoryType inventory.Type, slot int16) model.Operator[session.Model] {
 			return func(inventoryType inventory.Type, slot int16) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRemoveBody(tenant.MustFromContext(ctx))(byte(inventoryType), slot, false))
+				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryChangeBody(false, writer.InventoryRemoveBodyWriter(inventoryType, slot)))
 			}
 		}
 	}

@@ -188,17 +188,17 @@ func ParseSkillId(l logrus.FieldLogger, next SkillIdHandler) http.HandlerFunc {
 	}
 }
 
-type PetIdHandler func(petId uint64) http.HandlerFunc
+type ItemIdHandler func(itemId uint32) http.HandlerFunc
 
-func ParsePetId(l logrus.FieldLogger, next PetIdHandler) http.HandlerFunc {
+func ParseItemId(l logrus.FieldLogger, next ItemIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		petId, err := strconv.Atoi(vars["petId"])
+		itemId, err := strconv.Atoi(vars["itemId"])
 		if err != nil {
-			l.WithError(err).Errorf("Error parsing petId as uint64")
+			l.WithError(err).Errorf("Error parsing itemId as uint32")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		next(uint64(petId))(w, r)
+		next(uint32(itemId))(w, r)
 	}
 }

@@ -1,4 +1,4 @@
-package pet
+package consumable
 
 import (
 	"atlas-data/rest"
@@ -14,13 +14,13 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(router *mux.Router, l logrus.FieldLogger) {
 		registerGet := rest.RegisterHandler(l)(si)
 
-		r := router.PathPrefix("/data/pets").Subrouter()
-		r.HandleFunc("", registerGet("get_pets", handleGetPetsRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{itemId}", registerGet("get_pet", handleGetPetRequest)).Methods(http.MethodGet)
+		r := router.PathPrefix("/data/consumables").Subrouter()
+		r.HandleFunc("", registerGet("get_consumables", handleGetConsumablesRequest)).Methods(http.MethodGet)
+		r.HandleFunc("/{itemId}", registerGet("get_consumable", handleGetConsumableRequest)).Methods(http.MethodGet)
 	}
 }
 
-func handleGetPetsRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleGetConsumablesRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		m, err := GetAll(d.Context())()
 		if err != nil {
@@ -41,12 +41,12 @@ func handleGetPetsRequest(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 	}
 }
 
-func handleGetPetRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleGetConsumableRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			m, err := GetById(d.Context())(itemId)
 			if err != nil {
-				d.Logger().WithError(err).Debugf("Unable to locate pet %d.", itemId)
+				d.Logger().WithError(err).Debugf("Unable to locate consumable %d.", itemId)
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}

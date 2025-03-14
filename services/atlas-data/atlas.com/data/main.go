@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-data/consumable"
 	"atlas-data/data"
 	"atlas-data/equipment"
 	"atlas-data/logger"
@@ -63,6 +64,7 @@ func main() {
 
 	ts, err := collectUniqueFiles(dir)
 	if err != nil {
+		l.WithError(err).Fatal("Unable to collect unique files.")
 		return
 	}
 	for _, t := range ts {
@@ -70,14 +72,20 @@ func main() {
 		_ = data.RegisterData(l)(tctx)
 	}
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(),
-		data.InitResource(GetServer()),
-		_map.InitResource(GetServer()),
-		monster.InitResource(GetServer()),
-		equipment.InitResource(GetServer()),
-		reactor.InitResource(GetServer()),
-		skill.InitResource(GetServer()),
-		pet.InitResource(GetServer()))
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(data.InitResource(GetServer())).
+		AddRouteInitializer(_map.InitResource(GetServer())).
+		AddRouteInitializer(monster.InitResource(GetServer())).
+		AddRouteInitializer(equipment.InitResource(GetServer())).
+		AddRouteInitializer(reactor.InitResource(GetServer())).
+		AddRouteInitializer(skill.InitResource(GetServer())).
+		AddRouteInitializer(pet.InitResource(GetServer())).
+		AddRouteInitializer(consumable.InitResource(GetServer())).
+		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

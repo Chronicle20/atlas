@@ -1,7 +1,7 @@
 package pet
 
 type Model struct {
-	id     uint64
+	id     uint32
 	hungry uint32
 	cash   bool
 	life   uint32
@@ -14,7 +14,7 @@ type SkillModel struct {
 	probability uint16
 }
 
-func (m Model) Id() uint64 {
+func (m Model) Id() uint32 {
 	return m.id
 }
 

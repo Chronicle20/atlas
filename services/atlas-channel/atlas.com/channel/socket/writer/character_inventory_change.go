@@ -6,7 +6,6 @@ import (
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 )
 
 const CharacterInventoryChange = "CharacterInventoryChange"
@@ -20,80 +19,69 @@ const (
 	InventoryChangeModeRemove = InventoryChangeMode(3)
 )
 
-func CharacterInventoryAddBody(inventoryType byte, slot int16, silent bool) func(itemWriter model.Operator[*response.Writer]) BodyProducer {
-	return func(itemWriter model.Operator[*response.Writer]) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteBool(!silent)
-			w.WriteByte(1) // size
-			w.WriteByte(byte(InventoryChangeModeAdd))
-			w.WriteByte(inventoryType)
-			w.WriteInt16(slot)
-			_ = itemWriter(w)
-			return w.Bytes()
+type InventoryChangeWriter model.Operator[*response.Writer]
+
+func CharacterInventoryChangeBody(silent bool, writers ...InventoryChangeWriter) BodyProducer {
+	return func(w *response.Writer, options map[string]interface{}) []byte {
+		w.WriteBool(!silent)
+		w.WriteByte(byte(len(writers)))
+		for _, wf := range writers {
+			_ = wf(w)
 		}
+		return w.Bytes()
 	}
 }
 
-func CharacterInventoryUpdateBody(_ tenant.Model) func(inventoryType byte, slot int16, quantity uint32, silent bool) BodyProducer {
-	return func(inventoryType byte, slot int16, quantity uint32, silent bool) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteBool(!silent)
-			w.WriteByte(1) // size
-			w.WriteByte(byte(InventoryChangeModeUpdate))
-			w.WriteByte(inventoryType)
-			w.WriteInt16(slot)
-			w.WriteShort(uint16(quantity))
-			return w.Bytes()
-		}
+func InventoryAddBodyWriter(inventoryType inventory.Type, slot int16, itemWriter model.Operator[*response.Writer]) InventoryChangeWriter {
+	return func(w *response.Writer) error {
+		w.WriteByte(byte(InventoryChangeModeAdd))
+		w.WriteByte(byte(inventoryType))
+		w.WriteInt16(slot)
+		return itemWriter(w)
 	}
 }
 
-func CharacterInventoryMoveBody(_ tenant.Model) func(inventoryType byte, slot int16, oldSlot int16, silent bool) BodyProducer {
-	return func(inventoryType byte, slot int16, oldSlot int16, silent bool) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteBool(!silent)
-			w.WriteByte(1) // size
-			w.WriteByte(byte(InventoryChangeModeMove))
-			w.WriteByte(inventoryType)
-			w.WriteInt16(oldSlot)
-			w.WriteInt16(slot)
-			addMovement := int8(-1)
-			if slot < 0 {
-				addMovement = 2
-			} else if oldSlot < 0 {
-				addMovement = 1
-			}
-			w.WriteInt8(addMovement)
-			return w.Bytes()
-		}
+func InventoryUpdateBodyWriter(inventoryType inventory.Type, slot int16, quantity uint32) InventoryChangeWriter {
+	return func(w *response.Writer) error {
+		w.WriteByte(byte(InventoryChangeModeUpdate))
+		w.WriteByte(byte(inventoryType))
+		w.WriteInt16(slot)
+		w.WriteShort(uint16(quantity))
+		return nil
 	}
 }
 
-func CharacterInventoryRemoveBody(_ tenant.Model) func(inventoryType byte, slot int16, silent bool) BodyProducer {
-	return func(inventoryType byte, slot int16, silent bool) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteBool(!silent)
-			w.WriteByte(1) // size
-			w.WriteByte(byte(InventoryChangeModeRemove))
-			w.WriteByte(inventoryType)
-			w.WriteInt16(slot)
-			w.WriteInt8(2)
-			return w.Bytes()
+func InventoryMoveBodyWriter(inventoryType inventory.Type, slot int16, oldSlot int16) InventoryChangeWriter {
+	return func(w *response.Writer) error {
+		w.WriteByte(byte(InventoryChangeModeMove))
+		w.WriteByte(byte(inventoryType))
+		w.WriteInt16(oldSlot)
+		w.WriteInt16(slot)
+		addMovement := int8(-1)
+		if slot < 0 {
+			addMovement = 2
+		} else if oldSlot < 0 {
+			addMovement = 1
 		}
+		w.WriteInt8(addMovement)
+		return nil
+	}
+}
+
+func InventoryRemoveBodyWriter(inventoryType inventory.Type, slot int16) InventoryChangeWriter {
+	return func(w *response.Writer) error {
+		w.WriteByte(byte(InventoryChangeModeRemove))
+		w.WriteByte(byte(inventoryType))
+		w.WriteInt16(slot)
+		return nil
 	}
 }
 
 func CharacterInventoryRefreshPet(p pet.Model, i item.Model) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteBool(true)
-		w.WriteByte(2)
-		w.WriteByte(byte(InventoryChangeModeRemove))
-		w.WriteByte(byte(inventory.TypeValueCash))
-		w.WriteInt16(i.Slot())
-		w.WriteByte(byte(InventoryChangeModeAdd))
-		w.WriteByte(byte(inventory.TypeValueCash))
-		w.WriteInt16(i.Slot())
-		_ = WritePetCashItemInfo(true)(p)(w)(i)
-		return w.Bytes()
+	pw := model.FlipOperator(WritePetCashItemInfo(true)(p))(i)
+	writers := []InventoryChangeWriter{
+		InventoryRemoveBodyWriter(inventory.TypeValueCash, i.Slot()),
+		InventoryAddBodyWriter(inventory.TypeValueCash, i.Slot(), pw),
 	}
+	return CharacterInventoryChangeBody(true, writers...)
 }

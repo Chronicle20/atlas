@@ -519,12 +519,11 @@ func AwardCloseness(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 					newCloseness := p.Closeness() + amount
 					level := p.Level()
 
-					if newCloseness > petExpTable[p.Level()] {
+					if newCloseness >= petExpTable[p.Level()] {
 						if p.Level() >= 30 {
 							newCloseness = petExpTable[len(petExpTable)-1]
 						} else {
 							awardLevel = true
-							newCloseness = newCloseness - petExpTable[p.Level()]
 						}
 					}
 					err = updateCloseness(tx)(t, petId, newCloseness)

@@ -147,8 +147,8 @@ func CharacterPetEffectBody(l logrus.FieldLogger) func(petIndex byte, effectType
 	return func(petIndex byte, effectType byte) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectPet))
-			w.WriteByte(petIndex)
 			w.WriteByte(effectType)
+			w.WriteByte(petIndex)
 			return w.Bytes()
 		}
 	}

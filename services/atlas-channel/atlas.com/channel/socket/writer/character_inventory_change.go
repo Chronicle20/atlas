@@ -1,6 +1,9 @@
 package writer
 
 import (
+	"atlas-channel/character/inventory/item"
+	"atlas-channel/pet"
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
@@ -77,5 +80,20 @@ func CharacterInventoryRemoveBody(_ tenant.Model) func(inventoryType byte, slot 
 			w.WriteInt8(2)
 			return w.Bytes()
 		}
+	}
+}
+
+func CharacterInventoryRefreshPet(p pet.Model, i item.Model) BodyProducer {
+	return func(w *response.Writer, options map[string]interface{}) []byte {
+		w.WriteBool(true)
+		w.WriteByte(2)
+		w.WriteByte(byte(InventoryChangeModeRemove))
+		w.WriteByte(byte(inventory.TypeValueCash))
+		w.WriteInt16(i.Slot())
+		w.WriteByte(byte(InventoryChangeModeAdd))
+		w.WriteByte(byte(inventory.TypeValueCash))
+		w.WriteInt16(i.Slot())
+		_ = WritePetCashItemInfo(true)(p)(w)(i)
+		return w.Bytes()
 	}
 }

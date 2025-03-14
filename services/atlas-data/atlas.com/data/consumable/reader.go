@@ -80,7 +80,6 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 				m.effect = i.GetString("effect", "")
 				m.monsterHp = uint32(i.GetIntegerWithDefault("mobHP", 0))
 				m.worldMsg = i.GetString("worldMsg", "")
-				m.inc = uint32(i.GetIntegerWithDefault("inc", 0))
 				m.incPDD = uint32(i.GetIntegerWithDefault("incPDD", 0))
 				m.incMDD = uint32(i.GetIntegerWithDefault("incMDD", 0))
 				m.incACC = uint32(i.GetIntegerWithDefault("incACC", 0))

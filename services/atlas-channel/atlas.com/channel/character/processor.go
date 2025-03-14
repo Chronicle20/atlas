@@ -14,6 +14,7 @@ import (
 	model2 "github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
+	"sort"
 )
 
 func GetById(l logrus.FieldLogger) func(ctx context.Context) func(decorators ...model2.Decorator[Model]) func(characterId uint32) (Model, error) {
@@ -57,6 +58,12 @@ func PetModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model2.De
 			if err != nil {
 				return m
 			}
+			if len(ms) == 0 {
+				return m
+			}
+			sort.Slice(ms, func(i, j int) bool {
+				return ms[i].Slot() < ms[j].Slot()
+			})
 			return m.SetPets(ms)
 		}
 	}

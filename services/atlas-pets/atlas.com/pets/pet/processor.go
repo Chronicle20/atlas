@@ -89,6 +89,10 @@ func HungriestByOwnerProvider(ctx context.Context) func(db *gorm.DB) func(ownerI
 			if err != nil {
 				return model.ErrorProvider[Model](err)
 			}
+			if len(ps) == 0 {
+				return model.ErrorProvider[Model](errors.New("empty slice"))
+			}
+
 			sort.Slice(ps, func(i, j int) bool {
 				return ps[i].Fullness() < ps[j].Fullness()
 			})

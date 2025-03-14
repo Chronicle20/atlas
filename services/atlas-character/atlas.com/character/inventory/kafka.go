@@ -1,34 +1,50 @@
 package inventory
 
-const (
-	EnvCommandTopicEquipItem   = "COMMAND_TOPIC_EQUIP_ITEM"
-	EnvCommandTopicUnequipItem = "COMMAND_TOPIC_UNEQUIP_ITEM"
-	EnvEventInventoryChanged   = "EVENT_TOPIC_INVENTORY_CHANGED"
+import "github.com/google/uuid"
 
-	ChangedTypeAdd    = "INVENTORY_CHANGED_TYPE_ADD"
-	ChangedTypeUpdate = "INVENTORY_CHANGED_TYPE_UPDATE"
-	ChangedTypeRemove = "INVENTORY_CHANGED_TYPE_REMOVE"
-	ChangedTypeMove   = "INVENTORY_CHANGED_TYPE_MOVE"
+const (
+	EnvCommandTopic = "COMMAND_TOPIC_INVENTORY"
+	CommandEquip    = "EQUIP"
+	CommandUnequip  = "UNEQUIP"
+	CommandMove     = "MOVE"
+	CommandDrop     = "DROP"
 )
 
-type equipItemCommand struct {
-	CharacterId uint32 `json:"characterId"`
-	Source      int16  `json:"source"`
-	Destination int16  `json:"destination"`
+type command[E any] struct {
+	CharacterId   uint32 `json:"characterId"`
+	InventoryType byte   `json:"inventoryType"`
+	Type          string `json:"type"`
+	Body          E      `json:"body"`
 }
 
-type unequipItemCommand struct {
-	CharacterId uint32 `json:"characterId"`
-	Source      int16  `json:"source"`
-	Destination int16  `json:"destination"`
+type equipCommandBody struct {
+	Source      int16 `json:"source"`
+	Destination int16 `json:"destination"`
 }
+
+type unequipCommandBody struct {
+	Source      int16 `json:"source"`
+	Destination int16 `json:"destination"`
+}
+
+const (
+	EnvEventInventoryChanged = "EVENT_TOPIC_INVENTORY_CHANGED"
+
+	ChangedTypeAdd                  = "ADDED"
+	ChangedTypeUpdate               = "UPDATED"
+	ChangedTypeRemove               = "REMOVED"
+	ChangedTypeMove                 = "MOVED"
+	ChangedTypeReserve              = "RESERVED"
+	ChangedTypeReservationCancelled = "RESERVATION_CANCELLED"
+)
 
 type inventoryChangedEvent[M any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Slot        int16  `json:"slot"`
-	Type        string `json:"type"`
-	Body        M      `json:"body"`
-	Silent      bool   `json:"silent"`
+	CharacterId   uint32 `json:"characterId"`
+	InventoryType int8   `json:"inventoryType"`
+	Slot          int16  `json:"slot"`
+	Type          string `json:"type"`
+	Body          M      `json:"body"`
+	Silent        bool   `json:"silent"`
 }
 
 type inventoryChangedItemAddBody struct {
@@ -48,4 +64,15 @@ type inventoryChangedItemMoveBody struct {
 
 type inventoryChangedItemRemoveBody struct {
 	ItemId uint32 `json:"itemId"`
+}
+
+type inventoryChangedItemReserveBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	ItemId        uint32    `json:"itemId"`
+	Quantity      uint32    `json:"quantity"`
+}
+
+type inventoryChangedItemReservationCancelledBody struct {
+	ItemId   uint32 `json:"itemId"`
+	Quantity uint32 `json:"quantity"`
 }

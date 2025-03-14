@@ -7,16 +7,17 @@ import (
 	"atlas-character/inventory/item"
 	"atlas-character/kafka/producer"
 	"context"
+	"testing"
+
 	producer2 "github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"testing"
 )
 
 func testDatabase(t *testing.T) *gorm.DB {
@@ -53,9 +54,7 @@ func testProducer(output *[]kafka.Message) producer.Provider {
 			if err != nil {
 				return err
 			}
-			for _, r := range res {
-				*output = append(*output, r)
-			}
+			*output = append(*output, res...)
 			return nil
 		}
 	}

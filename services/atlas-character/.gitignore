@@ -1,5 +1,4 @@
-﻿atlas.com/account/.idea
-.idea
-atlas.com/character/.env
-atlas.com/character/.env
+﻿.idea
 .env
+.vscode
+__debug_bin*

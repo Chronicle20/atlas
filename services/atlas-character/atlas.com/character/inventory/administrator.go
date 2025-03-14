@@ -24,6 +24,6 @@ func deleteByType(db *gorm.DB, tenantId uuid.UUID, characterId uint32, inventory
 	return db.Where(&entity{TenantId: tenantId, CharacterId: characterId, InventoryType: inventoryType}).Delete(&entity{}).Error
 }
 
-func delete(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
+func deleteById(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
 	return db.Where(&entity{TenantId: tenantId, ID: id}).Delete(&entity{}).Error
 }

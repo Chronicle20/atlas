@@ -4,25 +4,19 @@ import (
 	"atlas-character/equipable"
 	"atlas-character/inventory/item"
 	"errors"
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 )
 
-type Type int8
-
 const (
-	TypeValueEquip Type = 1
-	TypeValueUse   Type = 2
-	TypeValueSetup Type = 3
-	TypeValueETC   Type = 4
-	TypeValueCash  Type = 5
-	TypeEquip           = "EQUIP"
-	TypeUse             = "USE"
-	TypeSetup           = "SETUP"
-	TypeETC             = "ETC"
-	TypeCash            = "CASH"
+	TypeEquip = "EQUIP"
+	TypeUse   = "USE"
+	TypeSetup = "SETUP"
+	TypeETC   = "ETC"
+	TypeCash  = "CASH"
 )
 
-var TypeValues = []Type{TypeValueEquip, TypeValueUse, TypeValueSetup, TypeValueETC, TypeValueCash}
+var TypeValues = []inventory.Type{inventory.TypeValueEquip, inventory.TypeValueUse, inventory.TypeValueSetup, inventory.TypeValueETC, inventory.TypeValueCash}
 var Types = []string{TypeEquip, TypeUse, TypeSetup, TypeETC, TypeCash}
 
 type Model struct {
@@ -96,10 +90,10 @@ func (m Model) SetCash(um ItemModel) Model {
 func NewModel(defaultCapacity uint32) Model {
 	return Model{
 		equipable: EquipableModel{capacity: defaultCapacity},
-		useable:   ItemModel{mType: TypeValueUse, capacity: defaultCapacity},
-		setup:     ItemModel{mType: TypeValueSetup, capacity: defaultCapacity},
-		etc:       ItemModel{mType: TypeValueETC, capacity: defaultCapacity},
-		cash:      ItemModel{mType: TypeValueCash, capacity: defaultCapacity},
+		useable:   ItemModel{mType: inventory.TypeValueUse, capacity: defaultCapacity},
+		setup:     ItemModel{mType: inventory.TypeValueSetup, capacity: defaultCapacity},
+		etc:       ItemModel{mType: inventory.TypeValueETC, capacity: defaultCapacity},
+		cash:      ItemModel{mType: inventory.TypeValueCash, capacity: defaultCapacity},
 	}
 }
 
@@ -144,12 +138,12 @@ func (m EquipableModel) SetItems(items []equipable.Model) ItemHolder {
 
 type ItemModel struct {
 	id       uint32
-	mType    Type
+	mType    inventory.Type
 	capacity uint32
 	items    []item.Model
 }
 
-func NewItemModel(id uint32, mType Type, capacity uint32) model.Provider[ItemModel] {
+func NewItemModel(id uint32, mType inventory.Type, capacity uint32) model.Provider[ItemModel] {
 	return func() (ItemModel, error) {
 		return ItemModel{id: id, mType: mType, capacity: capacity}, nil
 	}
@@ -164,7 +158,7 @@ func (m ItemModel) SetId(id uint32) ItemHolder {
 	return m
 }
 
-func (m ItemModel) Type() Type {
+func (m ItemModel) Type() inventory.Type {
 	return m.mType
 }
 
@@ -194,17 +188,17 @@ func GetInventoryType(itemId uint32) (int8, bool) {
 	return 0, false
 }
 
-func (m Model) GetHolderByType(inventoryType Type) (ItemHolder, error) {
+func (m Model) GetHolderByType(inventoryType inventory.Type) (ItemHolder, error) {
 	switch inventoryType {
-	case TypeValueEquip:
+	case inventory.TypeValueEquip:
 		return m.equipable, nil
-	case TypeValueUse:
+	case inventory.TypeValueUse:
 		return m.useable, nil
-	case TypeValueSetup:
+	case inventory.TypeValueSetup:
 		return m.setup, nil
-	case TypeValueETC:
+	case inventory.TypeValueETC:
 		return m.etc, nil
-	case TypeValueCash:
+	case inventory.TypeValueCash:
 		return m.cash, nil
 	}
 	return nil, errors.New("invalid inventory type")

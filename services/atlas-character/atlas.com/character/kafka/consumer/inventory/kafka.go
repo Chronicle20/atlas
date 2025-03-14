@@ -3,12 +3,14 @@ package inventory
 import "github.com/google/uuid"
 
 const (
-	EnvCommandTopic       = "COMMAND_TOPIC_INVENTORY"
-	CommandEquip          = "EQUIP"
-	CommandUnequip        = "UNEQUIP"
-	CommandMove           = "MOVE"
-	CommandDrop           = "DROP"
-	CommandRequestReserve = "REQUEST_RESERVE"
+	EnvCommandTopic          = "COMMAND_TOPIC_INVENTORY"
+	CommandEquip             = "EQUIP"
+	CommandUnequip           = "UNEQUIP"
+	CommandMove              = "MOVE"
+	CommandDrop              = "DROP"
+	CommandRequestReserve    = "REQUEST_RESERVE"
+	CommandConsume           = "CONSUME"
+	CommandCancelReservation = "CANCEL_RESERVATION"
 )
 
 type command[E any] struct {
@@ -46,4 +48,14 @@ type requestReserveCommandBody struct {
 	Source        int16     `json:"source"`
 	ItemId        uint32    `json:"itemId"`
 	Quantity      int16     `json:"quantity"`
+}
+
+type consumeCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	Slot          int16     `json:"slot"`
+}
+
+type cancelReservationCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	Slot          int16     `json:"slot"`
 }

@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"errors"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -77,7 +78,7 @@ func (r *ReservationRegistry) AddReservation(t tenant.Model, transactionId uuid.
 	r.reservations[key] = append(r.reservations[key], reservation)
 }
 
-func (r *ReservationRegistry) RemoveReservation(t tenant.Model, transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) {
+func (r *ReservationRegistry) RemoveReservation(t tenant.Model, transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) (Reservation, error) {
 	key := ReservationKey{t, characterId, inventoryType, slot}
 
 	r.lock.Lock()
@@ -85,13 +86,16 @@ func (r *ReservationRegistry) RemoveReservation(t tenant.Model, transactionId uu
 
 	reservations, exists := r.reservations[key]
 	if !exists {
-		return
+		return Reservation{}, errors.New("does not exist")
 	}
 
+	var removed Reservation
 	newReservations := make([]Reservation, 0, len(reservations))
 	for _, res := range reservations {
 		if res.Id() != transactionId {
 			newReservations = append(newReservations, res)
+		} else {
+			removed = res
 		}
 	}
 
@@ -100,6 +104,7 @@ func (r *ReservationRegistry) RemoveReservation(t tenant.Model, transactionId uu
 	} else {
 		delete(r.reservations, key)
 	}
+	return removed, nil
 }
 
 func (r *ReservationRegistry) SwapReservation(t tenant.Model, characterId uint32, inventoryType inventory.Type, oldSlot int16, newSlot int16) {

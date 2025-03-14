@@ -4,6 +4,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -130,10 +131,10 @@ func inventoryItemRemoveProvider(characterId uint32) func(inventoryType inventor
 	}
 }
 
-func inventoryItemReserveProvider(characterId uint32) func(inventoryType inventory.Type) func(itemId uint32) func(quantity uint32, slot int16) model.Provider[[]kafka.Message] {
-	return func(inventoryType inventory.Type) func(itemId uint32) func(quantity uint32, slot int16) model.Provider[[]kafka.Message] {
-		return func(itemId uint32) func(quantity uint32, slot int16) model.Provider[[]kafka.Message] {
-			return func(quantity uint32, slot int16) model.Provider[[]kafka.Message] {
+func inventoryItemReserveProvider(characterId uint32) func(inventoryType inventory.Type) func(itemId uint32) func(quantity uint32, slot int16, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	return func(inventoryType inventory.Type) func(itemId uint32) func(quantity uint32, slot int16, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+		return func(itemId uint32) func(quantity uint32, slot int16, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+			return func(quantity uint32, slot int16, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 				key := producer.CreateKey(int(characterId))
 				value := &inventoryChangedEvent[inventoryChangedItemReserveBody]{
 					CharacterId:   characterId,
@@ -141,6 +142,28 @@ func inventoryItemReserveProvider(characterId uint32) func(inventoryType invento
 					Slot:          slot,
 					Type:          ChangedTypeReserve,
 					Body: inventoryChangedItemReserveBody{
+						TransactionId: transactionId,
+						ItemId:        itemId,
+						Quantity:      quantity,
+					},
+				}
+				return producer.SingleMessageProvider(key, value)
+			}
+		}
+	}
+}
+
+func inventoryItemCancelReservationProvider(characterId uint32) func(inventoryType inventory.Type) func(itemId uint32) func(quantity uint32, slot int16) model.Provider[[]kafka.Message] {
+	return func(inventoryType inventory.Type) func(itemId uint32) func(quantity uint32, slot int16) model.Provider[[]kafka.Message] {
+		return func(itemId uint32) func(quantity uint32, slot int16) model.Provider[[]kafka.Message] {
+			return func(quantity uint32, slot int16) model.Provider[[]kafka.Message] {
+				key := producer.CreateKey(int(characterId))
+				value := &inventoryChangedEvent[inventoryChangedItemReservationCancelledBody]{
+					CharacterId:   characterId,
+					InventoryType: int8(inventoryType),
+					Slot:          slot,
+					Type:          ChangedTypeReservationCancelled,
+					Body: inventoryChangedItemReservationCancelledBody{
 						ItemId:   itemId,
 						Quantity: quantity,
 					},

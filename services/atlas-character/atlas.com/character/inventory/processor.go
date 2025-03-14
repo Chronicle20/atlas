@@ -900,7 +900,7 @@ func RequestReserve(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 						return errors.New("not enough available quantity")
 					}
 					GetReservationRegistry().AddReservation(t, transactionId, characterId, inventoryType, slot, itemId, uint32(quantity), time.Second*time.Duration(30))
-					events = model.MergeSliceProvider(events, inventoryItemReserveProvider(characterId)(inventoryType)(itemId)(uint32(quantity), slot))
+					events = model.MergeSliceProvider(events, inventoryItemReserveProvider(characterId)(inventoryType)(itemId)(uint32(quantity), slot, transactionId))
 					return nil
 				})
 				if txErr != nil {
@@ -911,6 +911,94 @@ func RequestReserve(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 					l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
 				}
 				return err
+			}
+		}
+	}
+}
+
+func ConsumeItem(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
+			return func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
+				res, err := GetReservationRegistry().RemoveReservation(t, transactionId, characterId, inventoryType, slot)
+				if err != nil {
+					return nil
+				}
+
+				l.Debugf("Received request to consume item at [%d] for character [%d].", slot, characterId)
+				invLock := GetLockRegistry().GetById(characterId, inventoryType)
+				invLock.Lock()
+				defer invLock.Unlock()
+
+				var i item.Model
+
+				var events = model.FixedProvider([]kafka.Message{})
+
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventoryType)()
+					if err != nil {
+						l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
+						return err
+					}
+
+					i, err = item.GetBySlot(tx)(ctx)(invId, slot)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to retrieve item in slot [%d].", slot)
+						return err
+					}
+
+					reservedQty := GetReservationRegistry().GetReservedQuantity(t, characterId, inventoryType, slot)
+
+					initialQuantity := i.Quantity() - reservedQty
+
+					if initialQuantity <= uint32(1) {
+						err = item.DeleteById(tx)(ctx)(i.Id())
+						if err != nil {
+							l.WithError(err).Errorf("Unable to consume item in slot [%d].", slot)
+							return err
+						}
+						events = model.MergeSliceProvider(events, inventoryItemRemoveProvider(characterId)(inventoryType)(i.ItemId(), i.Slot()))
+						return nil
+					}
+
+					newQuantity := initialQuantity - res.Quantity()
+					err = item.UpdateQuantity(tx)(ctx)(i.Id(), newQuantity)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to consume [%d] item in slot [%d].", res.Quantity(), slot)
+						return err
+					}
+					events = model.MergeSliceProvider(events, inventoryItemUpdateProvider(characterId)(inventoryType)(i.ItemId())(newQuantity, i.Slot()))
+					return nil
+				})
+				if txErr != nil {
+					return txErr
+				}
+				err = producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(events)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
+					return err
+				}
+				return nil
+			}
+		}
+	}
+}
+
+func CancelReservation(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
+			return func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
+				res, err := GetReservationRegistry().RemoveReservation(t, transactionId, characterId, inventoryType, slot)
+				if err != nil {
+					return nil
+				}
+				err = producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(inventoryItemCancelReservationProvider(characterId)(inventoryType)(res.ItemId())(res.Quantity(), slot))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
+				}
+				return nil
 			}
 		}
 	}

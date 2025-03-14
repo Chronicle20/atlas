@@ -36,6 +36,8 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMoveItemCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDropItemCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestReserveItemCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleConsumeItemCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelItemReservationCommand(db))))
 		}
 	}
 }
@@ -94,5 +96,23 @@ func handleRequestReserveItemCommand(db *gorm.DB) message.Handler[command[reques
 			return
 		}
 		_ = inventory.RequestReserve(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), c.Body.Source, c.Body.ItemId, c.Body.Quantity, c.Body.TransactionId)
+	}
+}
+
+func handleConsumeItemCommand(db *gorm.DB) message.Handler[command[consumeCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[consumeCommandBody]) {
+		if c.Type != CommandConsume {
+			return
+		}
+		_ = inventory.ConsumeItem(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), c.Body.TransactionId, c.Body.Slot)
+	}
+}
+
+func handleCancelItemReservationCommand(db *gorm.DB) message.Handler[command[cancelReservationCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[cancelReservationCommandBody]) {
+		if c.Type != CommandCancelReservation {
+			return
+		}
+		_ = inventory.CancelReservation(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), c.Body.TransactionId, c.Body.Slot)
 	}
 }

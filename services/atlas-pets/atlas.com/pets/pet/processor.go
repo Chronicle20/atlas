@@ -430,6 +430,7 @@ func EvaluateHunger(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(ownerId uint32) error {
 			return func(ownerId uint32) error {
+				original := make(map[uint64]Model)
 				fullnessChanged := make([]Model, 0)
 				despawned := make([]Model, 0)
 				txErr := db.Transaction(func(tx *gorm.DB) error {
@@ -438,6 +439,8 @@ func EvaluateHunger(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 						return err
 					}
 					for _, p := range ps {
+						original[p.Id()] = p
+
 						var pdm data.Model
 						pdm, err = data.GetById(l)(ctx)(p.TemplateId())
 						if err != nil {
@@ -464,7 +467,9 @@ func EvaluateHunger(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 					return txErr
 				}
 				for _, p := range fullnessChanged {
-					err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(fullnessChangedEventProvider(p))
+					op := original[p.Id()]
+					change := int8(int16(op.Fullness()) - int16(p.Fullness()))
+					err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(fullnessChangedEventProvider(p, change))
 					if err != nil {
 						return err
 					}
@@ -539,12 +544,12 @@ func AwardCloseness(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 				if txErr != nil {
 					return txErr
 				}
-				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(closenessChangedEventProvider(p))
+				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(closenessChangedEventProvider(p, int16(amount)))
 				if err != nil {
 					return err
 				}
 				if awardLevel {
-					err = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(levelChangedEventProvider(p))
+					err = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(levelChangedEventProvider(p, 1))
 					if err != nil {
 						return err
 					}
@@ -581,7 +586,7 @@ func AwardFullness(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 				if txErr != nil {
 					return txErr
 				}
-				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(fullnessChangedEventProvider(p))
+				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(fullnessChangedEventProvider(p, int8(amount)))
 				if err != nil {
 					return err
 				}
@@ -617,7 +622,7 @@ func AwardLevel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 				if txErr != nil {
 					return txErr
 				}
-				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(levelChangedEventProvider(p))
+				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(levelChangedEventProvider(p, int8(amount)))
 				if err != nil {
 					return err
 				}

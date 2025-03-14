@@ -63,16 +63,19 @@ type commandResponseStatusEventBody struct {
 type closenessChangedStatusEventBody struct {
 	Slot      int8   `json:"slot"`
 	Closeness uint16 `json:"closeness"`
+	Amount    int16  `json:"amount"`
 }
 
 type fullnessChangedStatusEventBody struct {
 	Slot     int8 `json:"slot"`
 	Fullness byte `json:"fullness"`
+	Amount   int8 `json:"amount"`
 }
 
 type levelChangedStatusEventBody struct {
-	Slot  int8 `json:"slot"`
-	Level byte `json:"level"`
+	Slot   int8 `json:"slot"`
+	Level  byte `json:"level"`
+	Amount int8 `json:"amount"`
 }
 
 const (

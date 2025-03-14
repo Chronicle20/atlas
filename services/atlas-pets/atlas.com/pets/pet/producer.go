@@ -65,7 +65,7 @@ func commandResponseEventProvider(m Model, commandId byte, success bool) model.P
 	return producer.SingleMessageProvider(key, value)
 }
 
-func closenessChangedEventProvider(m Model) model.Provider[[]kafka.Message] {
+func closenessChangedEventProvider(m Model, amount int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
 	value := &statusEvent[closenessChangedStatusEventBody]{
 		PetId:   m.Id(),
@@ -74,12 +74,13 @@ func closenessChangedEventProvider(m Model) model.Provider[[]kafka.Message] {
 		Body: closenessChangedStatusEventBody{
 			Slot:      m.Slot(),
 			Closeness: m.Closeness(),
+			Amount:    amount,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func fullnessChangedEventProvider(m Model) model.Provider[[]kafka.Message] {
+func fullnessChangedEventProvider(m Model, amount int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
 	value := &statusEvent[fullnessChangedStatusEventBody]{
 		PetId:   m.Id(),
@@ -88,20 +89,22 @@ func fullnessChangedEventProvider(m Model) model.Provider[[]kafka.Message] {
 		Body: fullnessChangedStatusEventBody{
 			Slot:     m.Slot(),
 			Fullness: m.Fullness(),
+			Amount:   amount,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func levelChangedEventProvider(m Model) model.Provider[[]kafka.Message] {
+func levelChangedEventProvider(m Model, amount int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
 	value := &statusEvent[levelChangedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
 		Type:    StatusEventTypeLevelChanged,
 		Body: levelChangedStatusEventBody{
-			Slot:  m.Slot(),
-			Level: m.Level(),
+			Slot:   m.Slot(),
+			Level:  m.Level(),
+			Amount: amount,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

@@ -52,6 +52,10 @@ func (d *temporalData) FH() int16 {
 	return d.fh
 }
 
+func NewTemporalData() *temporalData {
+	return &temporalData{fh: 1}
+}
+
 type temporalRegistry struct {
 	data     map[uint64]*temporalData
 	mutex    *sync.RWMutex
@@ -63,7 +67,7 @@ func (r *temporalRegistry) UpdatePosition(petId uint64, x int16, y int16, fh int
 	if val, ok := r.data[petId]; ok {
 		r.data[petId] = val.UpdatePosition(x, y, fh)
 	} else {
-		r.data[petId] = &temporalData{}
+		r.data[petId] = NewTemporalData()
 	}
 	r.unlockPet(petId)
 }
@@ -107,7 +111,7 @@ func (r *temporalRegistry) Update(petId uint64, x int16, y int16, stance byte, f
 	if val, ok := r.data[petId]; ok {
 		r.data[petId] = val.Update(x, y, stance, fh)
 	} else {
-		r.data[petId] = &temporalData{}
+		r.data[petId] = NewTemporalData()
 	}
 	r.unlockPet(petId)
 }
@@ -117,7 +121,7 @@ func (r *temporalRegistry) UpdateStance(petId uint64, stance byte) {
 	if val, ok := r.data[petId]; ok {
 		r.data[petId] = val.UpdateStance(stance)
 	} else {
-		r.data[petId] = &temporalData{}
+		r.data[petId] = NewTemporalData()
 	}
 	r.unlockPet(petId)
 }
@@ -130,7 +134,7 @@ func (r *temporalRegistry) GetById(petId uint64) *temporalData {
 	if result != nil {
 		return result
 	}
-	return &temporalData{}
+	return NewTemporalData()
 }
 
 func (r *temporalRegistry) Remove(petId uint64) {

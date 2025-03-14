@@ -1,6 +1,8 @@
 package pet
 
 import (
+	"atlas-channel/character"
+	"atlas-channel/character/inventory/item"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
 	"atlas-channel/movement"
@@ -140,11 +142,47 @@ func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[
 	}
 }
 
+func announcePetStatUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
+			return func(p pet.Model) model.Operator[session.Model] {
+				c, err := character.GetByIdWithInventory(l)(ctx)()(p.OwnerId())
+				if err != nil {
+					return func(s session.Model) error {
+						return err
+					}
+				}
+
+				var i item.Model
+				for _, ii := range c.Inventory().Cash().Items() {
+					if ii.Id() == p.InventoryItemId() {
+						i = ii
+					}
+				}
+				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshPet(p, i))
+			}
+		}
+	}
+}
+
 func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[closenessChangedStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[closenessChangedStatusEventBody]) {
 		if e.Type != StatusEventTypeClosenessChanged {
 			return
 		}
+
+		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			p, err := pet.GetById(l)(ctx)(e.PetId)
+			if err != nil {
+				return err
+			}
+
+			err = announcePetStatUpdate(l)(ctx)(wp)(p)(s)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
 	}
 }
 
@@ -154,13 +192,17 @@ func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		p := pet.NewModelBuilder(e.PetId, 0, 0, "").
-			SetOwnerID(e.OwnerId).
-			SetSlot(e.Body.Slot).
-			SetFullness(e.Body.Fullness).
-			Build()
-
 		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			p, err := pet.GetById(l)(ctx)(e.PetId)
+			if err != nil {
+				return err
+			}
+
+			err = announcePetStatUpdate(l)(ctx)(wp)(p)(s)
+			if err != nil {
+				return err
+			}
+
 			return _map.ForSessionsInMap(l)(ctx)(s.Map(), func(os session.Model) error {
 				if e.Body.Amount > 0 {
 					err := session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetFoodResponseBody(p, 0, true, false))(os)
@@ -182,22 +224,26 @@ func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[sta
 			return
 		}
 
-		p := pet.NewModelBuilder(e.PetId, 0, 0, "").
-			SetOwnerID(e.OwnerId).
-			SetSlot(e.Body.Slot).
-			SetLevel(e.Body.Level).
-			Build()
-
 		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			p, err := pet.GetById(l)(ctx)(e.PetId)
+			if err != nil {
+				return err
+			}
+
+			err = announcePetStatUpdate(l)(ctx)(wp)(p)(s)
+			if err != nil {
+				return err
+			}
+
 			return _map.ForSessionsInMap(l)(ctx)(s.Map(), func(os session.Model) error {
 				if s.CharacterId() == os.CharacterId() {
-					err := session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterPetEffectBody(l)(byte(e.Body.Slot), 0))(os)
+					err = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterPetEffectBody(l)(byte(e.Body.Slot), 0))(os)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue pet [%d] level up.", p.Id())
 					}
 					return err
 				} else {
-					err := session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterPetEffectForeignBody(l)(s.CharacterId(), byte(e.Body.Slot), 0))(os)
+					err = session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterPetEffectForeignBody(l)(s.CharacterId(), byte(e.Body.Slot), 0))(os)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue pet [%d] level up.", p.Id())
 					}

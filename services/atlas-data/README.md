@@ -7,7 +7,7 @@ A RESTful resource which provides data services for Mushroom game data. The serv
 
 ## Environment
 
-- JAEGER_HOST - Jaeger [host]:[port]
+- JAEGER_HOST_PORT - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
 - GAME_DATA_ROOT_DIR - Root directory of game data
 

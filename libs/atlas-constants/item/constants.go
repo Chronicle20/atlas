@@ -9,8 +9,18 @@ type Classification uint32
 type WeaponType byte
 
 const (
-	ClassificationThrowingStar             = Classification(207)
+	ClassificationConsumableTownWarp       = Classification(203)
+	ClassificationConsumableScroll         = Classification(204)
+	ClassificationConsumableArrow          = Classification(206)
+	ClassificationConsumableThrowingStar   = Classification(207)
+	ClassificationConsumableMegaphone      = Classification(208)
+	ClassificationConsumableSummoningSack  = Classification(210)
+	ClassificationConsumablePetFood        = Classification(212)
+	ClassificationConsumableTransformation = Classification(221)
+	ClassificationConsumableSkillBook      = Classification(228)
+	ClassificationConsumableMasteryBook    = Classification(229)
 	ClassificationBullet                   = Classification(233)
+	ClassificationConsumableMonsterCard    = Classification(238)
 	ClassificationTeleportRock             = Classification(504)
 	ClassificationPointReset               = Classification(505)
 	ClassificationItemImprints             = Classification(506)
@@ -110,7 +120,7 @@ func GetWeaponType(itemId Id) WeaponType {
 }
 
 func IsThrowingStar(itemId Id) bool {
-	return GetClassification(itemId) == ClassificationThrowingStar
+	return GetClassification(itemId) == ClassificationConsumableThrowingStar
 }
 
 func IsBullet(itemId Id) bool {

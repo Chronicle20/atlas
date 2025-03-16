@@ -12,7 +12,6 @@ import (
 	"atlas-data/reactor"
 	"atlas-data/skill"
 	"context"
-	"errors"
 	"fmt"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -139,9 +138,38 @@ func InstructWorker(l logrus.FieldLogger) func(ctx context.Context) func(workerN
 
 func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(name string, path string) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(name string, path string) error {
+		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(name string, path string) error {
 			return func(name string, path string) error {
 				l.Debugf("Starting worker [%s] at [%s].", name, path)
+				if name == WorkerMap {
+					stringWzMapPath := filepath.Join(path, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "String.wz", "Map.img.xml")
+					_ = _map.GetMapStringRegistry().Init(t, stringWzMapPath)
+					stringWzMapPath = filepath.Join(path, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "String.wz", "Npc.img.xml")
+					_ = npc.GetNpcStringRegistry().Init(t, stringWzMapPath)
+					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Map.wz", "Map"), true, _map.RegisterMap)()
+					_ = _map.GetMapStringRegistry().Clear(t)
+					_ = npc.GetNpcStringRegistry().Clear(t)
+				} else if name == WorkerMonster {
+					stringWzMapPath := filepath.Join(path, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "String.wz", "Mob.img.xml")
+					_ = monster.GetMonsterStringRegistry().Init(t, stringWzMapPath)
+					uiWzMapPath := filepath.Join(path, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "UI.wz", "UIWindow.img.xml")
+					_ = monster.GetMonsterGaugeRegistry().Init(t, uiWzMapPath)
+					_ = RegisterAllData(l)(ctx)(path, "Mob.wz", false, monster.RegisterMonster)()
+					_ = monster.GetMonsterStringRegistry().Clear(t)
+					_ = monster.GetMonsterGaugeRegistry().Clear(t)
+				} else if name == WorkerCharacter {
+					_ = RegisterAllData(l)(ctx)(path, "Character.wz", true, equipment.RegisterEquipment)()
+				} else if name == WorkerReactor {
+					_ = RegisterAllData(l)(ctx)(path, "Reactor.wz", true, reactor.RegisterReactor)()
+				} else if name == WorkerSkill {
+					_ = RegisterAllData(l)(ctx)(path, "Skill.wz", false, skill.RegisterSkill)()
+				} else if name == WorkerPet {
+					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Pet"), false, pet.RegisterPet)()
+				} else if name == WorkerConsume {
+					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Consume"), false, consumable.RegisterConsumable)()
+				}
+
 				return nil
 			}
 		}
@@ -149,63 +177,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 }
 
 type Worker func() error
-
-func RegisterData(l logrus.FieldLogger) func(ctx context.Context) error {
-	return func(ctx context.Context) error {
-		t := tenant.MustFromContext(ctx)
-		l.Debugf("Attempting to ingest data for tenant.")
-
-		dir, exists := os.LookupEnv("GAME_DATA_ROOT_DIR")
-		if !exists {
-			l.Errorf("Unable to retrieve [GAME_DATA_ROOT_DIR] configuration necessary to ingest data.")
-			return errors.New("env not found")
-		}
-
-		stringWzMapPath := filepath.Join(dir, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "String.wz", "Map.img.xml")
-		_ = _map.GetMapStringRegistry().Init(t, stringWzMapPath)
-		stringWzMapPath = filepath.Join(dir, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "String.wz", "Npc.img.xml")
-		_ = npc.GetNpcStringRegistry().Init(t, stringWzMapPath)
-		stringWzMapPath = filepath.Join(dir, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "String.wz", "Mob.img.xml")
-		_ = monster.GetMonsterStringRegistry().Init(t, stringWzMapPath)
-		uiWzMapPath := filepath.Join(dir, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "UI.wz", "UIWindow.img.xml")
-		_ = monster.GetMonsterGaugeRegistry().Init(t, uiWzMapPath)
-
-		registers := make([]Worker, 0)
-		registers = append(registers, RegisterAllData(l)(ctx)(dir, filepath.Join("Map.wz", "Map"), true, _map.RegisterMap))
-		registers = append(registers, RegisterAllData(l)(ctx)(dir, "Mob.wz", false, monster.RegisterMonster))
-		registers = append(registers, RegisterAllData(l)(ctx)(dir, "Character.wz", true, equipment.RegisterEquipment))
-		registers = append(registers, RegisterAllData(l)(ctx)(dir, "Reactor.wz", true, reactor.RegisterReactor))
-		registers = append(registers, RegisterAllData(l)(ctx)(dir, "Skill.wz", false, skill.RegisterSkill))
-		registers = append(registers, RegisterAllData(l)(ctx)(dir, filepath.Join("Item.wz", "Pet"), false, pet.RegisterPet))
-		registers = append(registers, RegisterAllData(l)(ctx)(dir, filepath.Join("Item.wz", "Consume"), false, consumable.RegisterConsumable))
-
-		var wg sync.WaitGroup
-		for _, register := range registers {
-			wg.Add(1)
-			go func() {
-				_ = register()
-				wg.Done()
-			}()
-		}
-		wg.Wait()
-
-		_ = _map.GetMapStringRegistry().Clear(t)
-		_ = npc.GetNpcStringRegistry().Clear(t)
-		_ = monster.GetMonsterStringRegistry().Clear(t)
-		_ = monster.GetMonsterGaugeRegistry().Clear(t)
-
-		return nil
-	}
-}
-
 type RegisterFunc func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string)
 
 func RegisterAllData(l logrus.FieldLogger) func(ctx context.Context) func(rootDir string, wzFileName string, nested bool, rf RegisterFunc) Worker {
 	return func(ctx context.Context) func(rootDir string, wzFileName string, nested bool, rf RegisterFunc) Worker {
-		t := tenant.MustFromContext(ctx)
 		return func(rootDir string, wzFileName string, nested bool, rf RegisterFunc) Worker {
 			return func() error {
-				baseDir := filepath.Join(rootDir, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), wzFileName)
+				baseDir := filepath.Join(rootDir, wzFileName)
 				if _, err := os.Stat(baseDir); os.IsNotExist(err) {
 					l.Debugf("Unable to locate directory. Expected [%s]", baseDir)
 					return err

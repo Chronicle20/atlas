@@ -25,14 +25,18 @@ func GetModelRegistry() *ModelRegistry {
 	return mmReg
 }
 
-func (r *ModelRegistry) Add(t tenant.Model, m Model) error {
+func (r *ModelRegistry) ensureTenantLock(t tenant.Model) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
 		r.tenantLock[t] = &sync.RWMutex{}
 		r.registry[t] = make(map[uint32]Model)
-		r.lock.Unlock()
 	}
+}
 
+func (r *ModelRegistry) Add(t tenant.Model, m Model) error {
+	r.ensureTenantLock(t)
 	r.tenantLock[t].Lock()
 	defer r.tenantLock[t].Unlock()
 	r.registry[t][m.Id()] = m
@@ -40,13 +44,7 @@ func (r *ModelRegistry) Add(t tenant.Model, m Model) error {
 }
 
 func (r *ModelRegistry) Get(t tenant.Model, monsterId uint32) (Model, error) {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]Model)
-		r.lock.Unlock()
-	}
-
+	r.ensureTenantLock(t)
 	r.tenantLock[t].RLock()
 	defer r.tenantLock[t].RUnlock()
 

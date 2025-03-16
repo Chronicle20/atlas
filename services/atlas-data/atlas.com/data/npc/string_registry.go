@@ -35,14 +35,18 @@ func GetNpcStringRegistry() *NpcStringRegistry {
 	return nsReg
 }
 
-func (r *NpcStringRegistry) Clear(t tenant.Model) error {
+func (r *NpcStringRegistry) ensureTenantLock(t tenant.Model) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
 		r.tenantLock[t] = &sync.RWMutex{}
 		r.registry[t] = make(map[uint32]NpcString)
-		r.lock.Unlock()
 	}
+}
 
+func (r *NpcStringRegistry) Clear(t tenant.Model) error {
+	r.ensureTenantLock(t)
 	r.tenantLock[t].Lock()
 	defer r.tenantLock[t].Unlock()
 	delete(r.registry, t)
@@ -51,15 +55,13 @@ func (r *NpcStringRegistry) Clear(t tenant.Model) error {
 }
 
 func (r *NpcStringRegistry) Init(t tenant.Model, path string) error {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]NpcString)
-		r.lock.Unlock()
-	}
-
+	r.ensureTenantLock(t)
 	r.tenantLock[t].Lock()
 	defer r.tenantLock[t].Unlock()
+
+	if len(r.registry[t]) != 0 {
+		return nil
+	}
 
 	exml, err := xml.Read(path)
 	if err != nil {
@@ -79,12 +81,7 @@ func (r *NpcStringRegistry) Init(t tenant.Model, path string) error {
 }
 
 func (r *NpcStringRegistry) Read(t tenant.Model, npcId uint32) (NpcString, error) {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]NpcString)
-		r.lock.Unlock()
-	}
+	r.ensureTenantLock(t)
 	r.tenantLock[t].RLock()
 	defer r.tenantLock[t].RUnlock()
 	if val, ok := r.registry[t][npcId]; ok {

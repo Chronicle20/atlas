@@ -70,3 +70,16 @@ func (r *Registry[I, M]) GetAll(t tenant.Model) ([]M, error) {
 	}
 	return res, nil
 }
+
+func (r *Registry[I, M]) Clear(t tenant.Model) error {
+	r.ensureTenantLock(t)
+	r.tenantLock[t].Lock()
+	defer r.tenantLock[t].Unlock()
+	delete(r.registry, t)
+	r.registry[t] = make(map[I]M)
+	return nil
+}
+
+func (r *Registry[I, M]) Count() int {
+	return len(r.registry)
+}

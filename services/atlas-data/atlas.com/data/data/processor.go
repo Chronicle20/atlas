@@ -143,18 +143,14 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 			return func(name string, path string) error {
 				l.Debugf("Starting worker [%s] at [%s].", name, path)
 				if name == WorkerMap {
-					stringWzMapPath := filepath.Join(path, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "String.wz", "Map.img.xml")
-					_ = _map.GetMapStringRegistry().Init(t, stringWzMapPath)
-					stringWzMapPath = filepath.Join(path, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "String.wz", "Npc.img.xml")
-					_ = npc.GetNpcStringRegistry().Init(t, stringWzMapPath)
+					_ = _map.InitString(t, filepath.Join(path, "String.wz", "Map.img.xml"))
+					_ = npc.InitString(t, filepath.Join(path, "String.wz", "Npc.img.xml"))
 					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Map.wz", "Map"), true, _map.RegisterMap)()
 					_ = _map.GetMapStringRegistry().Clear(t)
 					_ = npc.GetNpcStringRegistry().Clear(t)
 				} else if name == WorkerMonster {
-					stringWzMapPath := filepath.Join(path, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "String.wz", "Mob.img.xml")
-					_ = monster.GetMonsterStringRegistry().Init(t, stringWzMapPath)
-					uiWzMapPath := filepath.Join(path, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "UI.wz", "UIWindow.img.xml")
-					_ = monster.GetMonsterGaugeRegistry().Init(t, uiWzMapPath)
+					_ = monster.InitString(t, filepath.Join(path, "String.wz", "Mob.img.xml"))
+					_ = monster.InitGauge(t, filepath.Join(path, "UI.wz", "UIWindow.img.xml"))
 					_ = RegisterAllData(l)(ctx)(path, "Mob.wz", false, monster.RegisterMonster)()
 					_ = monster.GetMonsterStringRegistry().Clear(t)
 					_ = monster.GetMonsterGaugeRegistry().Clear(t)

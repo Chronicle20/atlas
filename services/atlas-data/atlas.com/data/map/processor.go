@@ -21,7 +21,7 @@ func RegisterMap(l logrus.FieldLogger) func(ctx context.Context) func(path strin
 			m, err := ReadFromFile(l)(ctx)(path)()
 			if err == nil {
 				l.Debugf("Processed map [%d].", m.Id())
-				_ = GetMapModelRegistry().Add(t, m)
+				_ = GetModelRegistry().Add(t, m)
 			}
 		}
 	}
@@ -30,7 +30,7 @@ func RegisterMap(l logrus.FieldLogger) func(ctx context.Context) func(path strin
 func allProvider(ctx context.Context) model.Provider[[]Model] {
 	t := tenant.MustFromContext(ctx)
 	return func() ([]Model, error) {
-		m, err := GetMapModelRegistry().GetAll(t)
+		m, err := GetModelRegistry().GetAll(t)
 		if err == nil {
 			return m, nil
 		}
@@ -38,7 +38,7 @@ func allProvider(ctx context.Context) model.Provider[[]Model] {
 		if err != nil {
 			return []Model{}, err
 		}
-		return GetMapModelRegistry().GetAll(nt)
+		return GetModelRegistry().GetAll(nt)
 	}
 }
 
@@ -52,7 +52,7 @@ func byIdProvider(ctx context.Context) func(mapId uint32) model.Provider[Model] 
 	t := tenant.MustFromContext(ctx)
 	return func(mapId uint32) model.Provider[Model] {
 		return func() (Model, error) {
-			m, err := GetMapModelRegistry().Get(t, mapId)
+			m, err := GetModelRegistry().Get(t, mapId)
 			if err == nil {
 				return m, nil
 			}
@@ -60,7 +60,7 @@ func byIdProvider(ctx context.Context) func(mapId uint32) model.Provider[Model] 
 			if err != nil {
 				return Model{}, err
 			}
-			return GetMapModelRegistry().Get(nt, mapId)
+			return GetModelRegistry().Get(nt, mapId)
 		}
 	}
 }

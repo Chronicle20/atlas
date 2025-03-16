@@ -19,7 +19,7 @@ func byIdProvider(ctx context.Context) func(mapId uint32) model.Provider[Model] 
 	t := tenant.MustFromContext(ctx)
 	return func(mapId uint32) model.Provider[Model] {
 		return func() (Model, error) {
-			m, err := GetMonsterModelRegistry().Get(t, mapId)
+			m, err := GetModelRegistry().Get(t, mapId)
 			if err == nil {
 				return m, nil
 			}
@@ -27,7 +27,7 @@ func byIdProvider(ctx context.Context) func(mapId uint32) model.Provider[Model] 
 			if err != nil {
 				return Model{}, err
 			}
-			return GetMonsterModelRegistry().Get(nt, mapId)
+			return GetModelRegistry().Get(nt, mapId)
 		}
 	}
 }
@@ -59,7 +59,7 @@ func RegisterMonster(l logrus.FieldLogger) func(ctx context.Context) func(path s
 			m, err := ReadFromFile(l)(ctx)(path)()
 			if err == nil {
 				l.Debugf("Processed monster [%d].", m.Id())
-				_ = GetMonsterModelRegistry().Add(t, m)
+				_ = GetModelRegistry().Add(t, m)
 			}
 		}
 	}

@@ -18,7 +18,7 @@ func RegisterConsumable(l logrus.FieldLogger) func(ctx context.Context) func(pat
 			}
 			for _, m := range ms {
 				l.Debugf("Processed consumable [%d].", m.Id())
-				_ = GetConsumableModelRegistry().Add(t, m)
+				_ = GetModelRegistry().Add(t, m)
 			}
 		}
 	}
@@ -27,7 +27,7 @@ func RegisterConsumable(l logrus.FieldLogger) func(ctx context.Context) func(pat
 func allProvider(ctx context.Context) model.Provider[[]Model] {
 	t := tenant.MustFromContext(ctx)
 	return func() ([]Model, error) {
-		m, err := GetConsumableModelRegistry().GetAll(t)
+		m, err := GetModelRegistry().GetAll(t)
 		if err == nil {
 			return m, nil
 		}
@@ -35,7 +35,7 @@ func allProvider(ctx context.Context) model.Provider[[]Model] {
 		if err != nil {
 			return []Model{}, err
 		}
-		return GetConsumableModelRegistry().GetAll(nt)
+		return GetModelRegistry().GetAll(nt)
 	}
 }
 
@@ -49,7 +49,7 @@ func byIdProvider(ctx context.Context) func(consumableId uint32) model.Provider[
 	t := tenant.MustFromContext(ctx)
 	return func(consumableId uint32) model.Provider[Model] {
 		return func() (Model, error) {
-			m, err := GetConsumableModelRegistry().Get(t, consumableId)
+			m, err := GetModelRegistry().Get(t, consumableId)
 			if err == nil {
 				return m, nil
 			}
@@ -57,7 +57,7 @@ func byIdProvider(ctx context.Context) func(consumableId uint32) model.Provider[
 			if err != nil {
 				return Model{}, err
 			}
-			return GetConsumableModelRegistry().Get(nt, consumableId)
+			return GetModelRegistry().Get(nt, consumableId)
 		}
 	}
 }

@@ -15,7 +15,7 @@ func RegisterPet(l logrus.FieldLogger) func(ctx context.Context) func(path strin
 			m, err := ReadFromFile(l)(ctx)(path)()
 			if err == nil {
 				l.Debugf("Processed pet [%d].", m.Id())
-				_ = GetPetModelRegistry().Add(t, m)
+				_ = GetModelRegistry().Add(t, m)
 			}
 		}
 	}
@@ -24,7 +24,7 @@ func RegisterPet(l logrus.FieldLogger) func(ctx context.Context) func(path strin
 func allProvider(ctx context.Context) model.Provider[[]Model] {
 	t := tenant.MustFromContext(ctx)
 	return func() ([]Model, error) {
-		m, err := GetPetModelRegistry().GetAll(t)
+		m, err := GetModelRegistry().GetAll(t)
 		if err == nil {
 			return m, nil
 		}
@@ -32,7 +32,7 @@ func allProvider(ctx context.Context) model.Provider[[]Model] {
 		if err != nil {
 			return []Model{}, err
 		}
-		return GetPetModelRegistry().GetAll(nt)
+		return GetModelRegistry().GetAll(nt)
 	}
 }
 
@@ -46,7 +46,7 @@ func byIdProvider(ctx context.Context) func(petId uint32) model.Provider[Model] 
 	t := tenant.MustFromContext(ctx)
 	return func(petId uint32) model.Provider[Model] {
 		return func() (Model, error) {
-			m, err := GetPetModelRegistry().Get(t, petId)
+			m, err := GetModelRegistry().Get(t, petId)
 			if err == nil {
 				return m, nil
 			}
@@ -54,7 +54,7 @@ func byIdProvider(ctx context.Context) func(petId uint32) model.Provider[Model] 
 			if err != nil {
 				return Model{}, err
 			}
-			return GetPetModelRegistry().Get(nt, petId)
+			return GetModelRegistry().Get(nt, petId)
 		}
 	}
 }

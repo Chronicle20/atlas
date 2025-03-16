@@ -2,10 +2,13 @@ package main
 
 import (
 	"atlas-data/data"
+	"atlas-data/database"
+	data2 "atlas-data/kafka/consumer/data"
 	"atlas-data/logger"
 	"atlas-data/service"
 	"atlas-data/tracing"
 	"errors"
+	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -16,6 +19,7 @@ import (
 )
 
 const serviceName = "atlas-data"
+const consumerGroupId = "Data Service"
 
 type Server struct {
 	baseUrl string
@@ -48,6 +52,8 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
+	db := database.Connect(l)
+
 	//dir, exists := os.LookupEnv("GAME_DATA_ROOT_DIR")
 	//if !exists {
 	//	l.Errorf("Unable to retrieve [GAME_DATA_ROOT_DIR] configuration necessary to ingest data.")
@@ -63,6 +69,10 @@ func main() {
 	//	tctx := tenant.WithContext(context.Background(), t)
 	//	_ = data.RegisterData(l)(tctx)
 	//}
+
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	data2.InitConsumers(l)(cmf)(consumerGroupId)
+	data2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.New(l).
 		WithContext(tdm.Context()).

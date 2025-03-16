@@ -1,8 +1,10 @@
 package data
 
 import (
+	"archive/zip"
 	"atlas-data/consumable"
 	"atlas-data/equipment"
+	"atlas-data/kafka/producer"
 	_map "atlas-data/map"
 	"atlas-data/monster"
 	"atlas-data/npc"
@@ -14,11 +16,137 @@ import (
 	"fmt"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+	"io"
 	"io/fs"
+	"mime/multipart"
 	"os"
 	"path/filepath"
 	"sync"
 )
+
+const (
+	WorkerMap       = "MAP"
+	WorkerMonster   = "MONSTER"
+	WorkerCharacter = "CHARACTER"
+	WorkerReactor   = "REACTOR"
+	WorkerSkill     = "SKILL"
+	WorkerPet       = "PET"
+	WorkerConsume   = "CONSUME"
+)
+
+var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume}
+
+func ProcessZip(l logrus.FieldLogger) func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
+	return func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
+		t := tenant.MustFromContext(ctx)
+		return func(file multipart.File, handler *multipart.FileHeader) error {
+			uploadDir := os.Getenv("ZIP_DIR")
+
+			// Save ZIP file to disk
+			tenantDir := filepath.Join(uploadDir, t.Id().String(), t.Region())
+			zipPath := filepath.Join(tenantDir, handler.Filename)
+
+			if err := os.MkdirAll(tenantDir, os.ModePerm); err != nil {
+				return err
+			}
+
+			outFile, err := os.Create(zipPath)
+			if err != nil {
+				return err
+			}
+			defer outFile.Close()
+
+			// Stream file contents to disk
+			_, err = io.Copy(outFile, file)
+			if err != nil {
+				return err
+			}
+
+			err = unzip(zipPath, tenantDir)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to unzip [%s].", zipPath)
+				return err
+			}
+
+			l.Debugf("Unzipped to [%s].", zipPath)
+
+			for _, wn := range Workers {
+				err = InstructWorker(l)(ctx)(wn, filepath.Join(tenantDir, fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion())))
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}
+}
+
+func unzip(zipPath, dest string) error {
+	// Open the ZIP file
+	r, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	// Ensure destination directory exists
+	if err := os.MkdirAll(dest, os.ModePerm); err != nil {
+		return err
+	}
+
+	// Extract each file
+	for _, file := range r.File {
+		filePath := filepath.Join(dest, file.Name)
+
+		// Ensure parent directories exist
+		if file.FileInfo().IsDir() {
+			os.MkdirAll(filePath, os.ModePerm)
+			continue
+		} else {
+			os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
+		}
+
+		// Extract file contents
+		destFile, err := os.Create(filePath)
+		if err != nil {
+			return err
+		}
+		defer destFile.Close()
+
+		srcFile, err := file.Open()
+		if err != nil {
+			return err
+		}
+		defer srcFile.Close()
+
+		_, err = io.Copy(destFile, srcFile)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func InstructWorker(l logrus.FieldLogger) func(ctx context.Context) func(workerName string, path string) error {
+	return func(ctx context.Context) func(workerName string, path string) error {
+		return func(workerName string, path string) error {
+			l.Debugf("Sending notification to start worker [%s] at [%s].", workerName, path)
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(startWorkerCommandProvider(workerName, path))
+		}
+	}
+}
+
+func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(name string, path string) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(name string, path string) error {
+		return func(db *gorm.DB) func(name string, path string) error {
+			return func(name string, path string) error {
+				l.Debugf("Starting worker [%s] at [%s].", name, path)
+				return nil
+			}
+		}
+	}
+}
 
 type Worker func() error
 
@@ -42,7 +170,7 @@ func RegisterData(l logrus.FieldLogger) func(ctx context.Context) error {
 		uiWzMapPath := filepath.Join(dir, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()), "UI.wz", "UIWindow.img.xml")
 		_ = monster.GetMonsterGaugeRegistry().Init(t, uiWzMapPath)
 
-		registers := make([]func() error, 0)
+		registers := make([]Worker, 0)
 		registers = append(registers, RegisterAllData(l)(ctx)(dir, filepath.Join("Map.wz", "Map"), true, _map.RegisterMap))
 		registers = append(registers, RegisterAllData(l)(ctx)(dir, "Mob.wz", false, monster.RegisterMonster))
 		registers = append(registers, RegisterAllData(l)(ctx)(dir, "Character.wz", true, equipment.RegisterEquipment))

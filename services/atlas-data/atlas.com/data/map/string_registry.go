@@ -66,6 +66,10 @@ func (r *MapStringRegistry) Init(t tenant.Model, path string) error {
 	r.tenantLock[t].Lock()
 	defer r.tenantLock[t].Unlock()
 
+	if len(r.registry[t]) != 0 {
+		return nil
+	}
+
 	exml, err := xml.Read(path)
 	if err != nil {
 		return err

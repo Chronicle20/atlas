@@ -25,14 +25,18 @@ func GetConsumableModelRegistry() *ConsumableModelRegistry {
 	return mmReg
 }
 
-func (r *ConsumableModelRegistry) Add(t tenant.Model, m Model) error {
+func (r *ConsumableModelRegistry) ensureTenantLock(t tenant.Model) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
 		r.tenantLock[t] = &sync.RWMutex{}
 		r.registry[t] = make(map[uint32]Model)
-		r.lock.Unlock()
 	}
+}
 
+func (r *ConsumableModelRegistry) Add(t tenant.Model, m Model) error {
+	r.ensureTenantLock(t)
 	r.tenantLock[t].Lock()
 	defer r.tenantLock[t].Unlock()
 	r.registry[t][m.Id()] = m
@@ -40,13 +44,7 @@ func (r *ConsumableModelRegistry) Add(t tenant.Model, m Model) error {
 }
 
 func (r *ConsumableModelRegistry) Get(t tenant.Model, consumableId uint32) (Model, error) {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]Model)
-		r.lock.Unlock()
-	}
-
+	r.ensureTenantLock(t)
 	r.tenantLock[t].RLock()
 	defer r.tenantLock[t].RUnlock()
 
@@ -57,13 +55,7 @@ func (r *ConsumableModelRegistry) Get(t tenant.Model, consumableId uint32) (Mode
 }
 
 func (r *ConsumableModelRegistry) GetAll(t tenant.Model) ([]Model, error) {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]Model)
-		r.lock.Unlock()
-	}
-
+	r.ensureTenantLock(t)
 	r.tenantLock[t].RLock()
 	defer r.tenantLock[t].RUnlock()
 

@@ -25,14 +25,18 @@ func GetEquipmentModelRegistry() *EquipmentModelRegistry {
 	return mmReg
 }
 
-func (r *EquipmentModelRegistry) Add(t tenant.Model, m Model) error {
+func (r *EquipmentModelRegistry) ensureTenantLock(t tenant.Model) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
 		r.tenantLock[t] = &sync.RWMutex{}
 		r.registry[t] = make(map[uint32]Model)
-		r.lock.Unlock()
 	}
+}
 
+func (r *EquipmentModelRegistry) Add(t tenant.Model, m Model) error {
+	r.ensureTenantLock(t)
 	r.tenantLock[t].Lock()
 	defer r.tenantLock[t].Unlock()
 	r.registry[t][m.Id()] = m
@@ -40,13 +44,7 @@ func (r *EquipmentModelRegistry) Add(t tenant.Model, m Model) error {
 }
 
 func (r *EquipmentModelRegistry) Get(t tenant.Model, equipmentId uint32) (Model, error) {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]Model)
-		r.lock.Unlock()
-	}
-
+	r.ensureTenantLock(t)
 	r.tenantLock[t].RLock()
 	defer r.tenantLock[t].RUnlock()
 

@@ -27,14 +27,18 @@ func GetMonsterGaugeRegistry() *MonsterGaugeRegistry {
 	return mgReg
 }
 
-func (r *MonsterGaugeRegistry) Clear(t tenant.Model) error {
+func (r *MonsterGaugeRegistry) ensureTenantLock(t tenant.Model) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
 		r.tenantLock[t] = &sync.RWMutex{}
 		r.registry[t] = make(map[uint32]bool)
-		r.lock.Unlock()
 	}
+}
 
+func (r *MonsterGaugeRegistry) Clear(t tenant.Model) error {
+	r.ensureTenantLock(t)
 	r.tenantLock[t].Lock()
 	defer r.tenantLock[t].Unlock()
 	delete(r.registry, t)
@@ -43,15 +47,13 @@ func (r *MonsterGaugeRegistry) Clear(t tenant.Model) error {
 }
 
 func (r *MonsterGaugeRegistry) Init(t tenant.Model, path string) error {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]bool)
-		r.lock.Unlock()
-	}
-
+	r.ensureTenantLock(t)
 	r.tenantLock[t].Lock()
 	defer r.tenantLock[t].Unlock()
+
+	if len(r.registry[t]) != 0 {
+		return nil
+	}
 
 	exml, err := xml.Read(path)
 	if err != nil {
@@ -74,12 +76,7 @@ func (r *MonsterGaugeRegistry) Init(t tenant.Model, path string) error {
 }
 
 func (r *MonsterGaugeRegistry) Read(t tenant.Model, monsterId uint32) (bool, error) {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]bool)
-		r.lock.Unlock()
-	}
+	r.ensureTenantLock(t)
 	r.tenantLock[t].RLock()
 	defer r.tenantLock[t].RUnlock()
 	if val, ok := r.registry[t][monsterId]; ok {

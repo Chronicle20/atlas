@@ -25,6 +25,16 @@ func GetPetModelRegistry() *PetModelRegistry {
 	return mmReg
 }
 
+func (r *PetModelRegistry) ensureTenantLock(t tenant.Model) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	if _, ok := r.tenantLock[t]; !ok {
+		r.tenantLock[t] = &sync.RWMutex{}
+		r.registry[t] = make(map[uint32]Model)
+	}
+}
+
 func (r *PetModelRegistry) Add(t tenant.Model, m Model) error {
 	if _, ok := r.tenantLock[t]; !ok {
 		r.lock.Lock()
@@ -40,13 +50,7 @@ func (r *PetModelRegistry) Add(t tenant.Model, m Model) error {
 }
 
 func (r *PetModelRegistry) Get(t tenant.Model, petId uint32) (Model, error) {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]Model)
-		r.lock.Unlock()
-	}
-
+	r.ensureTenantLock(t)
 	r.tenantLock[t].RLock()
 	defer r.tenantLock[t].RUnlock()
 
@@ -57,13 +61,7 @@ func (r *PetModelRegistry) Get(t tenant.Model, petId uint32) (Model, error) {
 }
 
 func (r *PetModelRegistry) GetAll(t tenant.Model) ([]Model, error) {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]Model)
-		r.lock.Unlock()
-	}
-
+	r.ensureTenantLock(t)
 	r.tenantLock[t].RLock()
 	defer r.tenantLock[t].RUnlock()
 

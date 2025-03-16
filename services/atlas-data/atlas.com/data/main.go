@@ -1,11 +1,18 @@
 package main
 
 import (
+	"atlas-data/consumable"
 	"atlas-data/data"
 	"atlas-data/database"
+	"atlas-data/equipment"
 	data2 "atlas-data/kafka/consumer/data"
 	"atlas-data/logger"
+	_map "atlas-data/map"
+	"atlas-data/monster"
+	"atlas-data/pet"
+	"atlas-data/reactor"
 	"atlas-data/service"
+	"atlas-data/skill"
 	"atlas-data/tracing"
 	"errors"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -80,13 +87,13 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(data.InitResource(GetServer())).
-		//AddRouteInitializer(_map.InitResource(GetServer())).
-		//AddRouteInitializer(monster.InitResource(GetServer())).
-		//AddRouteInitializer(equipment.InitResource(GetServer())).
-		//AddRouteInitializer(reactor.InitResource(GetServer())).
-		//AddRouteInitializer(skill.InitResource(GetServer())).
-		//AddRouteInitializer(pet.InitResource(GetServer())).
-		//AddRouteInitializer(consumable.InitResource(GetServer())).
+		AddRouteInitializer(_map.InitResource(GetServer())).
+		AddRouteInitializer(monster.InitResource(GetServer())).
+		AddRouteInitializer(equipment.InitResource(GetServer())).
+		AddRouteInitializer(reactor.InitResource(GetServer())).
+		AddRouteInitializer(skill.InitResource(GetServer())).
+		AddRouteInitializer(pet.InitResource(GetServer())).
+		AddRouteInitializer(consumable.InitResource(GetServer())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

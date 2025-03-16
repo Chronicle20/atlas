@@ -99,7 +99,7 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 			m.explosiveReward = node.GetIntegerWithDefault("explosiveReward", 0) > 0
 			m.ffaLoot = node.GetIntegerWithDefault("publicReward", 0) > 0
 			m.undead = node.GetIntegerWithDefault("undead", 0) > 0
-			ms, err := GetMonsterStringRegistry().Read(t, monsterId)
+			ms, err := GetMonsterStringRegistry().Get(t, monsterId)
 			if err != nil {
 				return model.ErrorProvider[Model](err)
 			}
@@ -215,11 +215,11 @@ func getAnimationTimes(node *xml.Node) map[string]uint32 {
 }
 
 func getHPBarBoss(t tenant.Model, monsterId uint32) bool {
-	g, err := GetMonsterGaugeRegistry().Read(t, monsterId)
+	g, err := GetMonsterGaugeRegistry().Get(t, monsterId)
 	if err != nil {
 		return false
 	}
-	return g
+	return g.Exists()
 }
 
 func getFirstAttack(node *xml.Node) bool {

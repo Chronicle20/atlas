@@ -1,91 +1,55 @@
 package npc
 
 import (
+	"atlas-data/registry"
 	"atlas-data/xml"
-	"errors"
 	"github.com/Chronicle20/atlas-tenant"
 	"strconv"
 	"sync"
 )
 
 type NpcString struct {
+	id   uint32
 	name string
+}
+
+func (m NpcString) Id() uint32 {
+	return m.id
 }
 
 func (m NpcString) Name() string {
 	return m.name
 }
 
-type NpcStringRegistry struct {
-	lock sync.Mutex
-
-	registry   map[tenant.Model]map[uint32]NpcString
-	tenantLock map[tenant.Model]*sync.RWMutex
-}
-
-var nsReg *NpcStringRegistry
+var nsReg *registry.Registry[uint32, NpcString]
 var nsOnce sync.Once
 
-func GetNpcStringRegistry() *NpcStringRegistry {
+func GetNpcStringRegistry() *registry.Registry[uint32, NpcString] {
 	nsOnce.Do(func() {
-		nsReg = &NpcStringRegistry{}
-		nsReg.registry = make(map[tenant.Model]map[uint32]NpcString)
-		nsReg.tenantLock = make(map[tenant.Model]*sync.RWMutex)
+		nsReg = registry.NewRegistry[uint32, NpcString]()
 	})
 	return nsReg
 }
 
-func (r *NpcStringRegistry) ensureTenantLock(t tenant.Model) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	if _, ok := r.tenantLock[t]; !ok {
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]NpcString)
-	}
-}
-
-func (r *NpcStringRegistry) Clear(t tenant.Model) error {
-	r.ensureTenantLock(t)
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
-	delete(r.registry, t)
-	r.registry[t] = make(map[uint32]NpcString)
-	return nil
-}
-
-func (r *NpcStringRegistry) Init(t tenant.Model, path string) error {
-	r.ensureTenantLock(t)
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
-
-	if len(r.registry[t]) != 0 {
-		return nil
-	}
-
+func InitString(t tenant.Model, path string) error {
 	exml, err := xml.Read(path)
 	if err != nil {
 		return err
 	}
 
 	for _, mxml := range exml.ChildNodes {
-		id, err := strconv.Atoi(mxml.Name)
+		var id int
+		id, err = strconv.Atoi(mxml.Name)
 		if err != nil {
 			return err
 		}
-		r.registry[t][uint32(id)] = NpcString{
+		err = GetNpcStringRegistry().Add(t, NpcString{
+			id:   uint32(id),
 			name: mxml.GetString("name", "MISSINGNO"),
+		})
+		if err != nil {
+			return err
 		}
 	}
 	return nil
-}
-
-func (r *NpcStringRegistry) Read(t tenant.Model, npcId uint32) (NpcString, error) {
-	r.ensureTenantLock(t)
-	r.tenantLock[t].RLock()
-	defer r.tenantLock[t].RUnlock()
-	if val, ok := r.registry[t][npcId]; ok {
-		return val, nil
-	}
-	return NpcString{}, errors.New("not found")
 }

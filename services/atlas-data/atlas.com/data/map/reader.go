@@ -292,7 +292,7 @@ func getSeats(exml *xml.Node) uint32 {
 }
 
 func getPlaceName(tenant tenant.Model, mapId uint32) string {
-	md, err := GetMapStringRegistry().Read(tenant, mapId)
+	md, err := GetMapStringRegistry().Get(tenant, mapId)
 	if err != nil {
 		return ""
 	}
@@ -300,7 +300,7 @@ func getPlaceName(tenant tenant.Model, mapId uint32) string {
 }
 
 func getStreetName(tenant tenant.Model, mapId uint32) string {
-	md, err := GetMapStringRegistry().Read(tenant, mapId)
+	md, err := GetMapStringRegistry().Get(tenant, mapId)
 	if err != nil {
 		return ""
 	}
@@ -412,7 +412,7 @@ func getLife(t tenant.Model, exml *xml.Node) ([]monster.Model, []npc.Model) {
 			}
 			monsters = append(monsters, monster)
 		} else if lifeType == "n" {
-			nn, err := npc2.GetNpcStringRegistry().Read(t, uint32(id))
+			nn, err := npc2.GetNpcStringRegistry().Get(t, uint32(id))
 			if err != nil {
 				continue
 			}

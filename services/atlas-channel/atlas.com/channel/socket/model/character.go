@@ -226,7 +226,7 @@ func ValueSourceLevelForeignValueWriter(v CharacterTemporaryStatValue) func(w *r
 
 type CharacterTemporaryStatValue struct {
 	statType  CharacterTemporaryStatType
-	sourceId  uint32
+	sourceId  int32
 	value     int32
 	expiresAt time.Time
 }
@@ -235,7 +235,7 @@ func (v CharacterTemporaryStatValue) Value() int32 {
 	return v.value
 }
 
-func (v CharacterTemporaryStatValue) SourceId() uint32 {
+func (v CharacterTemporaryStatValue) SourceId() int32 {
 	return v.sourceId
 }
 
@@ -350,9 +350,9 @@ func NewCharacterTemporaryStat() *CharacterTemporaryStat {
 	}
 }
 
-func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Model) func(n string, sourceId uint32, amount int32, expiresAt time.Time) {
-	return func(t tenant.Model) func(n string, sourceId uint32, amount int32, expiresAt time.Time) {
-		return func(n string, sourceId uint32, amount int32, expiresAt time.Time) {
+func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Model) func(n string, sourceId int32, amount int32, expiresAt time.Time) {
+	return func(t tenant.Model) func(n string, sourceId int32, amount int32, expiresAt time.Time) {
+		return func(n string, sourceId int32, amount int32, expiresAt time.Time) {
 			name := character.TemporaryStatType(n)
 			st, err := CharacterTemporaryStatTypeByName(t)(name)
 			if err != nil {
@@ -361,7 +361,7 @@ func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Mod
 			}
 			v := CharacterTemporaryStatValue{
 				statType:  st,
-				sourceId:  sourceId,
+				sourceId:  -sourceId,
 				value:     amount,
 				expiresAt: expiresAt,
 			}
@@ -424,7 +424,7 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, t tenant.Model, op
 
 		for _, v := range sortedValues {
 			w.WriteInt16(int16(v.Value()))
-			w.WriteInt(v.SourceId())
+			w.WriteInt32(v.SourceId())
 			et := int32(v.ExpiresAt().Sub(time.Now()).Milliseconds())
 			w.WriteInt32(et)
 		}

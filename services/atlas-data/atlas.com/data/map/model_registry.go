@@ -1,81 +1,16 @@
 package _map
 
 import (
-	"errors"
-	"github.com/Chronicle20/atlas-tenant"
+	"atlas-data/registry"
 	"sync"
 )
 
-type MapModelRegistry struct {
-	lock sync.Mutex
-
-	registry   map[tenant.Model]map[uint32]Model
-	tenantLock map[tenant.Model]*sync.RWMutex
-}
-
-var mmReg *MapModelRegistry
+var mmReg *registry.Registry[uint32, Model]
 var mmOnce sync.Once
 
-func GetMapModelRegistry() *MapModelRegistry {
+func GetModelRegistry() *registry.Registry[uint32, Model] {
 	mmOnce.Do(func() {
-		mmReg = &MapModelRegistry{}
-		mmReg.registry = make(map[tenant.Model]map[uint32]Model)
-		mmReg.tenantLock = make(map[tenant.Model]*sync.RWMutex)
+		mmReg = registry.NewRegistry[uint32, Model]()
 	})
 	return mmReg
-}
-
-func (r *MapModelRegistry) Add(t tenant.Model, m Model) error {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]Model)
-		r.lock.Unlock()
-	}
-
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
-	r.registry[t][m.Id()] = m
-	return nil
-}
-
-func (r *MapModelRegistry) Get(t tenant.Model, mapId uint32) (Model, error) {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]Model)
-		r.lock.Unlock()
-	}
-
-	r.tenantLock[t].RLock()
-	defer r.tenantLock[t].RUnlock()
-
-	if val, ok := r.registry[t][mapId]; ok {
-		return val, nil
-	}
-	return Model{}, errors.New("not found")
-}
-
-func (r *MapModelRegistry) GetAll(t tenant.Model) ([]Model, error) {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]Model)
-		r.lock.Unlock()
-	}
-
-	r.tenantLock[t].RLock()
-	defer r.tenantLock[t].RUnlock()
-
-	var res = make([]Model, 0)
-	var tr map[uint32]Model
-	var ok bool
-	if tr, ok = r.registry[t]; !ok || len(tr) == 0 {
-		return res, errors.New("not found")
-	}
-
-	for _, m := range tr {
-		res = append(res, m)
-	}
-	return res, nil
 }

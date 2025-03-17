@@ -5,7 +5,11 @@ meta {
 }
 
 patch {
-  url: {{scheme}}://{{host}}:{{port}}/api/data/data
-  body: none
+  url: {{scheme}}://{{host}}:{{port}}/api/data
+  body: multipartForm
   auth: none
+}
+
+body:multipart-form {
+  : @file(/home/tumidanski/gms83.1.zip)
 }

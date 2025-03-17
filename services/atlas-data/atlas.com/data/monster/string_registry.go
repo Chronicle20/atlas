@@ -1,94 +1,55 @@
 package monster
 
 import (
+	"atlas-data/registry"
 	"atlas-data/xml"
-	"errors"
 	"github.com/Chronicle20/atlas-tenant"
 	"strconv"
 	"sync"
 )
 
 type MonsterString struct {
+	id   uint32
 	name string
+}
+
+func (m MonsterString) GetId() uint32 {
+	return m.id
 }
 
 func (m MonsterString) Name() string {
 	return m.name
 }
 
-type MonsterStringRegistry struct {
-	lock sync.Mutex
-
-	registry   map[tenant.Model]map[uint32]MonsterString
-	tenantLock map[tenant.Model]*sync.RWMutex
-}
-
-var msReg *MonsterStringRegistry
+var msReg *registry.Registry[uint32, MonsterString]
 var msOnce sync.Once
 
-func GetMonsterStringRegistry() *MonsterStringRegistry {
+func GetMonsterStringRegistry() *registry.Registry[uint32, MonsterString] {
 	msOnce.Do(func() {
-		msReg = &MonsterStringRegistry{}
-		msReg.registry = make(map[tenant.Model]map[uint32]MonsterString)
-		msReg.tenantLock = make(map[tenant.Model]*sync.RWMutex)
+		msReg = registry.NewRegistry[uint32, MonsterString]()
 	})
 	return msReg
 }
 
-func (r *MonsterStringRegistry) Clear(t tenant.Model) error {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]MonsterString)
-		r.lock.Unlock()
-	}
-
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
-	delete(r.registry, t)
-	r.registry[t] = make(map[uint32]MonsterString)
-	return nil
-}
-
-func (r *MonsterStringRegistry) Init(t tenant.Model, path string) error {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]MonsterString)
-		r.lock.Unlock()
-	}
-
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
-
+func InitString(t tenant.Model, path string) error {
 	exml, err := xml.Read(path)
 	if err != nil {
 		return err
 	}
 
 	for _, mxml := range exml.ChildNodes {
-		id, err := strconv.Atoi(mxml.Name)
+		var id int
+		id, err = strconv.Atoi(mxml.Name)
 		if err != nil {
 			return err
 		}
-		r.registry[t][uint32(id)] = MonsterString{
+		err = GetMonsterStringRegistry().Add(t, MonsterString{
+			id:   uint32(id),
 			name: mxml.GetString("name", "MISSINGNO"),
+		})
+		if err != nil {
+			return err
 		}
 	}
 	return nil
-}
-
-func (r *MonsterStringRegistry) Read(t tenant.Model, monsterId uint32) (MonsterString, error) {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]MonsterString)
-		r.lock.Unlock()
-	}
-	r.tenantLock[t].RLock()
-	defer r.tenantLock[t].RUnlock()
-	if val, ok := r.registry[t][monsterId]; ok {
-		return val, nil
-	}
-	return MonsterString{}, errors.New("not found")
 }

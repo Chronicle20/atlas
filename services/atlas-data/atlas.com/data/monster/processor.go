@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"atlas-data/document"
 	"atlas-data/element"
 	"atlas-data/xml"
 	"context"
@@ -9,32 +10,51 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"math"
 	"path/filepath"
 	"strconv"
 	"strings"
 )
 
-func byIdProvider(ctx context.Context) func(mapId uint32) model.Provider[Model] {
-	t := tenant.MustFromContext(ctx)
-	return func(mapId uint32) model.Provider[Model] {
-		return func() (Model, error) {
-			m, err := GetMonsterModelRegistry().Get(t, mapId)
-			if err == nil {
-				return m, nil
-			}
-			nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
-			if err != nil {
+var DocType = "MONSTER"
+
+func byIdProvider(ctx context.Context) func(db *gorm.DB) func(id uint32) model.Provider[Model] {
+	return func(db *gorm.DB) func(id uint32) model.Provider[Model] {
+		t := tenant.MustFromContext(ctx)
+		return func(id uint32) model.Provider[Model] {
+			return func() (Model, error) {
+				m, err := GetModelRegistry().Get(t, id)
+				if err == nil {
+					return m, nil
+				}
+				m, err = document.Get[Model](ctx)(db)(DocType, id)
+				if err == nil {
+					_ = GetModelRegistry().Add(t, m)
+					return m, nil
+				}
+				nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
+				m, err = GetModelRegistry().Get(nt, id)
+				if err == nil {
+					return m, nil
+				}
+				nctx := tenant.WithContext(ctx, nt)
+				m, err = document.Get[Model](nctx)(db)(DocType, id)
+				if err == nil {
+					_ = GetModelRegistry().Add(nt, m)
+					return m, nil
+				}
 				return Model{}, err
 			}
-			return GetMonsterModelRegistry().Get(nt, mapId)
 		}
 	}
 }
 
-func GetById(ctx context.Context) func(mapId uint32) (Model, error) {
-	return func(mapId uint32) (Model, error) {
-		return byIdProvider(ctx)(mapId)()
+func GetById(ctx context.Context) func(db *gorm.DB) func(id uint32) (Model, error) {
+	return func(db *gorm.DB) func(id uint32) (Model, error) {
+		return func(id uint32) (Model, error) {
+			return byIdProvider(ctx)(db)(id)()
+		}
 	}
 }
 
@@ -52,14 +72,19 @@ func parseMonsterId(filePath string) (uint32, error) {
 
 }
 
-func RegisterMonster(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-	return func(ctx context.Context) func(path string) {
-		t := tenant.MustFromContext(ctx)
-		return func(path string) {
-			m, err := ReadFromFile(l)(ctx)(path)()
-			if err == nil {
-				l.Debugf("Processed monster [%d].", m.Id())
-				_ = GetMonsterModelRegistry().Add(t, m)
+func RegisterMonster(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
+	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
+		return func(ctx context.Context) func(path string) {
+			return func(path string) {
+				m, err := ReadFromFile(l)(ctx)(path)()
+				if err != nil {
+					return
+				}
+				err = document.Create(ctx)(db)(DocType, m.GetId(), &m)
+				if err != nil {
+					return
+				}
+				l.Debugf("Processed monster [%d].", m.GetId())
 			}
 		}
 	}
@@ -84,49 +109,49 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 			if err != nil {
 				return model.ErrorProvider[Model](err)
 			}
-			m := &Model{id: monsterId}
-			m.hp = uint32(node.GetIntegerWithDefault("maxHP", math.MaxInt32))
-			m.friendly = node.GetIntegerWithDefault("damagedByMob", 0) == 1
-			m.weaponAttack = uint32(node.GetIntegerWithDefault("PADamage", 0))
-			m.weaponDefense = uint32(node.GetIntegerWithDefault("PDDamage", 0))
-			m.magicAttack = uint32(node.GetIntegerWithDefault("MADamage", 0))
-			m.magicDefense = uint32(node.GetIntegerWithDefault("MDDamage", 0))
-			m.mp = uint32(node.GetIntegerWithDefault("maxMP", 0))
-			m.experience = uint32(node.GetIntegerWithDefault("exp", 0))
-			m.level = uint32(node.GetIntegerWithDefault("level", 0))
-			m.removeAfter = uint32(node.GetIntegerWithDefault("removeAfter", 0))
-			m.boss = node.GetIntegerWithDefault("boss", 0) > 0
-			m.explosiveReward = node.GetIntegerWithDefault("explosiveReward", 0) > 0
-			m.ffaLoot = node.GetIntegerWithDefault("publicReward", 0) > 0
-			m.undead = node.GetIntegerWithDefault("undead", 0) > 0
-			ms, err := GetMonsterStringRegistry().Read(t, monsterId)
+			m := &Model{Id: monsterId}
+			m.HP = uint32(node.GetIntegerWithDefault("maxHP", math.MaxInt32))
+			m.Friendly = node.GetIntegerWithDefault("damagedByMob", 0) == 1
+			m.WeaponAttack = uint32(node.GetIntegerWithDefault("PADamage", 0))
+			m.WeaponDefense = uint32(node.GetIntegerWithDefault("PDDamage", 0))
+			m.MagicAttack = uint32(node.GetIntegerWithDefault("MADamage", 0))
+			m.MagicDefense = uint32(node.GetIntegerWithDefault("MDDamage", 0))
+			m.MP = uint32(node.GetIntegerWithDefault("maxMP", 0))
+			m.Experience = uint32(node.GetIntegerWithDefault("exp", 0))
+			m.Level = uint32(node.GetIntegerWithDefault("level", 0))
+			m.RemoveAfter = uint32(node.GetIntegerWithDefault("removeAfter", 0))
+			m.Boss = node.GetIntegerWithDefault("boss", 0) > 0
+			m.ExplosiveReward = node.GetIntegerWithDefault("explosiveReward", 0) > 0
+			m.FFALoot = node.GetIntegerWithDefault("publicReward", 0) > 0
+			m.Undead = node.GetIntegerWithDefault("undead", 0) > 0
+			ms, err := GetMonsterStringRegistry().Get(t, monsterId)
 			if err != nil {
 				return model.ErrorProvider[Model](err)
 			}
 
-			m.name = ms.Name()
-			m.buffToGive = uint32(node.GetIntegerWithDefault("buff", 0))
-			m.cp = uint32(node.GetIntegerWithDefault("getCP", 0))
-			m.removeOnMiss = node.GetIntegerWithDefault("removeOnMiss", 0) > 0
-			m.coolDamage = getCoolDamage(node)
-			m.loseItems = getLoseItems(node)
-			m.selfDestruction = getSelfDestruction(node)
-			m.firstAttack = getFirstAttack(node)
-			m.dropPeriod = uint32(node.GetIntegerWithDefault("dropItemPeriod", 0) * 10000)
+			m.Name = ms.Name()
+			m.BuffToGive = uint32(node.GetIntegerWithDefault("buff", 0))
+			m.CP = uint32(node.GetIntegerWithDefault("getCP", 0))
+			m.RemoveOnMiss = node.GetIntegerWithDefault("removeOnMiss", 0) > 0
+			m.CoolDamage = getCoolDamage(node)
+			m.LoseItems = getLoseItems(node)
+			m.SelfDestruction = getSelfDestruction(node)
+			m.FirstAttack = getFirstAttack(node)
+			m.DropPeriod = uint32(node.GetIntegerWithDefault("dropItemPeriod", 0) * 10000)
 			hpBarBoss := getHPBarBoss(t, monsterId)
 			if hpBarBoss {
-				m.tagColor = byte(node.GetIntegerWithDefault("hpTagColor", 0))
-				m.tagBackgroundColor = byte(node.GetIntegerWithDefault("hpTagBgcolor", 0))
+				m.TagColor = byte(node.GetIntegerWithDefault("hpTagColor", 0))
+				m.TagBackgroundColor = byte(node.GetIntegerWithDefault("hpTagBgcolor", 0))
 			} else {
-				m.tagColor = 0
-				m.tagBackgroundColor = 0
+				m.TagColor = 0
+				m.TagBackgroundColor = 0
 			}
-			m.animationTimes = getAnimationTimes(exml)
-			m.revives = getRevives(node)
-			m.resistances = getResistances(node)
-			m.skills = getSkills(node)
-			m.banish = getBanish(node)
-			m.fixedStance = getFixedStance(exml, node)
+			m.AnimationTimes = getAnimationTimes(exml)
+			m.Revives = getRevives(node)
+			m.Resistances = getResistances(node)
+			m.Skills = getSkills(node)
+			m.Banish = getBanish(node)
+			m.FixedStance = getFixedStance(exml, node)
 			return model.FixedProvider(*m)
 		}
 	}
@@ -153,9 +178,9 @@ func getBanish(node *xml.Node) *Banish {
 	mapId := uint32(b.GetIntegerWithDefault("banMap/0/field", 0))
 	portal := b.GetString("banMap/0/portal", "sp")
 	return &Banish{
-		message:    message,
-		mapId:      mapId,
-		portalName: portal,
+		Message:    message,
+		MapId:      mapId,
+		PortalName: portal,
 	}
 }
 
@@ -169,8 +194,8 @@ func getSkills(node *xml.Node) []Skill {
 		skillId := uint32(c.GetIntegerWithDefault("skill", 0))
 		level := uint32(c.GetIntegerWithDefault("level", 0))
 		results = append(results, Skill{
-			id:    skillId,
-			level: level,
+			Id:    skillId,
+			Level: level,
 		})
 	}
 	return results
@@ -215,11 +240,11 @@ func getAnimationTimes(node *xml.Node) map[string]uint32 {
 }
 
 func getHPBarBoss(t tenant.Model, monsterId uint32) bool {
-	g, err := GetMonsterGaugeRegistry().Read(t, monsterId)
+	g, err := GetMonsterGaugeRegistry().Get(t, monsterId)
 	if err != nil {
 		return false
 	}
-	return g
+	return g.Exists()
 }
 
 func getFirstAttack(node *xml.Node) bool {
@@ -239,9 +264,9 @@ func getSelfDestruction(node *xml.Node) *SelfDestruction {
 	removeAfter := c.GetIntegerWithDefault("removeAfter", -1)
 	hp := c.GetIntegerWithDefault("hp", -1)
 	return &SelfDestruction{
-		action:      action,
-		removeAfter: removeAfter,
-		hp:          hp,
+		Action:      action,
+		RemoveAfter: removeAfter,
+		HP:          hp,
 	}
 }
 
@@ -265,9 +290,9 @@ func getLoseItem(node xml.Node) LoseItem {
 	chance := byte(node.GetIntegerWithDefault("prop", 0))
 	x := byte(node.GetIntegerWithDefault("x", 0))
 	return LoseItem{
-		itemId: id,
-		chance: chance,
-		x:      x,
+		ItemId: id,
+		Chance: chance,
+		X:      x,
 	}
 }
 
@@ -278,5 +303,5 @@ func getCoolDamage(node *xml.Node) *CoolDamage {
 	}
 	damage := uint32(c.GetIntegerWithDefault("coolDamage", 0))
 	probability := uint32(c.GetIntegerWithDefault("coolDamageProb", 0))
-	return &CoolDamage{damage: damage, probability: probability}
+	return &CoolDamage{Damage: damage, Probability: probability}
 }

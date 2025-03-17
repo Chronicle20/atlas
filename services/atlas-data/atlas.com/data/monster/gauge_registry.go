@@ -1,58 +1,37 @@
 package monster
 
 import (
+	"atlas-data/registry"
 	"atlas-data/xml"
-	"errors"
 	"github.com/Chronicle20/atlas-tenant"
 	"strconv"
 	"sync"
 )
 
-type MonsterGaugeRegistry struct {
-	lock sync.Mutex
-
-	registry   map[tenant.Model]map[uint32]bool
-	tenantLock map[tenant.Model]*sync.RWMutex
+type Gauge struct {
+	id     uint32
+	exists bool
 }
 
-var mgReg *MonsterGaugeRegistry
+func (g Gauge) GetId() uint32 {
+	return g.id
+}
+
+func (g Gauge) Exists() bool {
+	return g.exists
+}
+
+var mgReg *registry.Registry[uint32, Gauge]
 var mgOnce sync.Once
 
-func GetMonsterGaugeRegistry() *MonsterGaugeRegistry {
+func GetMonsterGaugeRegistry() *registry.Registry[uint32, Gauge] {
 	mgOnce.Do(func() {
-		mgReg = &MonsterGaugeRegistry{}
-		mgReg.registry = make(map[tenant.Model]map[uint32]bool)
-		mgReg.tenantLock = make(map[tenant.Model]*sync.RWMutex)
+		mgReg = registry.NewRegistry[uint32, Gauge]()
 	})
 	return mgReg
 }
 
-func (r *MonsterGaugeRegistry) Clear(t tenant.Model) error {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]bool)
-		r.lock.Unlock()
-	}
-
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
-	delete(r.registry, t)
-	r.registry[t] = make(map[uint32]bool)
-	return nil
-}
-
-func (r *MonsterGaugeRegistry) Init(t tenant.Model, path string) error {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]bool)
-		r.lock.Unlock()
-	}
-
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
-
+func InitGauge(t tenant.Model, path string) error {
 	exml, err := xml.Read(path)
 	if err != nil {
 		return err
@@ -63,27 +42,15 @@ func (r *MonsterGaugeRegistry) Init(t tenant.Model, path string) error {
 	}
 
 	for _, mxml := range d.CanvasNodes {
-		idStr := mxml.Name
-		id, err := strconv.Atoi(idStr)
+		var id int
+		id, err = strconv.Atoi(mxml.Name)
 		if err != nil {
 			return err
 		}
-		r.registry[t][uint32(id)] = true
+		err = GetMonsterGaugeRegistry().Add(t, Gauge{id: uint32(id), exists: true})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
-}
-
-func (r *MonsterGaugeRegistry) Read(t tenant.Model, monsterId uint32) (bool, error) {
-	if _, ok := r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		r.tenantLock[t] = &sync.RWMutex{}
-		r.registry[t] = make(map[uint32]bool)
-		r.lock.Unlock()
-	}
-	r.tenantLock[t].RLock()
-	defer r.tenantLock[t].RUnlock()
-	if val, ok := r.registry[t][monsterId]; ok {
-		return val, nil
-	}
-	return false, errors.New("not found")
 }

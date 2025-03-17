@@ -57,7 +57,7 @@ func Transform(m Model) (RestModel, error) {
 		Fullness:        m.fullness,
 		Expiration:      m.expiration,
 		OwnerId:         m.ownerId,
-		Lead:            m.lead,
+		Lead:            m.Lead(),
 		Slot:            m.slot,
 		X:               tm.X(),
 		Y:               tm.Y(),

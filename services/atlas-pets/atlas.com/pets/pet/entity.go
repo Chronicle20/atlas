@@ -21,7 +21,6 @@ type Entity struct {
 	Closeness       uint16    `gorm:"not null;default:0"`
 	Fullness        byte      `gorm:"not null;default:100"`
 	Expiration      time.Time `gorm:"not null;"`
-	Lead            bool      `json:"lead"`
 	Slot            int8      `gorm:"not null;default:-1"`
 }
 

@@ -1,6 +1,7 @@
 package skill
 
 import (
+	"atlas-data/document"
 	"atlas-data/skill/effect"
 	"atlas-data/skill/effect/statup"
 	"atlas-data/xml"
@@ -15,32 +16,51 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"math"
 	"path/filepath"
 	"strconv"
 	"strings"
 )
 
-func byIdProvider(ctx context.Context) func(mapId uint32) model.Provider[Model] {
-	t := tenant.MustFromContext(ctx)
-	return func(mapId uint32) model.Provider[Model] {
-		return func() (Model, error) {
-			m, err := GetModelRegistry().Get(t, mapId)
-			if err == nil {
-				return m, nil
-			}
-			nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
-			if err != nil {
+var DocType = "SKILL"
+
+func byIdProvider(ctx context.Context) func(db *gorm.DB) func(id uint32) model.Provider[Model] {
+	return func(db *gorm.DB) func(id uint32) model.Provider[Model] {
+		t := tenant.MustFromContext(ctx)
+		return func(id uint32) model.Provider[Model] {
+			return func() (Model, error) {
+				m, err := GetModelRegistry().Get(t, id)
+				if err == nil {
+					return m, nil
+				}
+				m, err = document.Get[Model](ctx)(db)(DocType, id)
+				if err == nil {
+					_ = GetModelRegistry().Add(t, m)
+					return m, nil
+				}
+				nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
+				m, err = GetModelRegistry().Get(nt, id)
+				if err == nil {
+					return m, nil
+				}
+				nctx := tenant.WithContext(ctx, nt)
+				m, err = document.Get[Model](nctx)(db)(DocType, id)
+				if err == nil {
+					_ = GetModelRegistry().Add(nt, m)
+					return m, nil
+				}
 				return Model{}, err
 			}
-			return GetModelRegistry().Get(nt, mapId)
 		}
 	}
 }
 
-func GetById(ctx context.Context) func(mapId uint32) (Model, error) {
-	return func(mapId uint32) (Model, error) {
-		return byIdProvider(ctx)(mapId)()
+func GetById(ctx context.Context) func(db *gorm.DB) func(id uint32) (Model, error) {
+	return func(db *gorm.DB) func(id uint32) (Model, error) {
+		return func(id uint32) (Model, error) {
+			return byIdProvider(ctx)(db)(id)()
+		}
 	}
 }
 
@@ -58,15 +78,20 @@ func parseJobId(filePath string) (uint32, error) {
 
 }
 
-func RegisterSkill(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-	return func(ctx context.Context) func(path string) {
-		t := tenant.MustFromContext(ctx)
-		return func(path string) {
-			ms, err := ReadFromFile(l)(ctx)(path)()
-			if err == nil {
+func RegisterSkill(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
+	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
+		return func(ctx context.Context) func(path string) {
+			return func(path string) {
+				ms, err := ReadFromFile(l)(ctx)(path)()
+				if err != nil {
+					return
+				}
 				for _, m := range ms {
-					l.Debugf("Processed skill [%d].", m.Id())
-					_ = GetModelRegistry().Add(t, m)
+					err = document.Create(ctx)(db)(DocType, m.GetId(), &m)
+					if err != nil {
+						return
+					}
+					l.Debugf("Processed skill [%d].", m.GetId())
 				}
 			}
 		}
@@ -138,11 +163,11 @@ func produceSkill(l logrus.FieldLogger) func(ctx context.Context) func(jobId uin
 				es = getEffects(skillId, buff, level.ChildNodes)
 			}
 			m := Model{
-				id:            uint32(skillId),
-				action:        action,
-				element:       element,
-				animationTime: 0,
-				effects:       es,
+				Id:            uint32(skillId),
+				Action:        action,
+				Element:       element,
+				AnimationTime: 0,
+				Effects:       es,
 			}
 
 			return m, nil

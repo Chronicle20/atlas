@@ -3,29 +3,13 @@ package skill
 import "atlas-data/skill/effect"
 
 type Model struct {
-	id            uint32
-	action        bool
-	element       string
-	animationTime uint32
-	effects       []effect.Model
+	Id            uint32         `json:"id"`
+	Action        bool           `json:"action"`
+	Element       string         `json:"element"`
+	AnimationTime uint32         `json:"animation_time"`
+	Effects       []effect.Model `json:"effects"`
 }
 
-func (m Model) Effects() []effect.Model {
-	return m.effects
-}
-
-func (m Model) Id() uint32 {
-	return m.id
-}
-
-func (m Model) Action() bool {
-	return m.action
-}
-
-func (m Model) Element() string {
-	return m.element
-}
-
-func (m Model) AnimationTime() uint32 {
-	return m.animationTime
+func (m Model) GetId() uint32 {
+	return m.Id
 }

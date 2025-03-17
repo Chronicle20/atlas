@@ -98,16 +98,30 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 }
 
 func Transform(m Model) (RestModel, error) {
-	srms, err := model.SliceMap(TransformSkill)(model.FixedProvider(m.Skills()))(model.ParallelMap())()
+	srms, err := model.SliceMap(TransformSkill)(model.FixedProvider(m.Skills))(model.ParallelMap())()
 	if err != nil {
 		return RestModel{}, err
 	}
 	return RestModel{
-		Id:     m.id,
-		Hungry: m.hungry,
-		Cash:   m.cash,
-		Life:   m.life,
+		Id:     m.Id,
+		Hungry: m.Hungry,
+		Cash:   m.Cash,
+		Life:   m.Life,
 		Skills: srms,
+	}, nil
+}
+
+func Extract(rm RestModel) (Model, error) {
+	srs, err := model.SliceMap(ExtractSkill)(model.FixedProvider(rm.Skills))(model.ParallelMap())()
+	if err != nil {
+		return Model{}, err
+	}
+	return Model{
+		Id:     rm.Id,
+		Hungry: rm.Hungry,
+		Cash:   rm.Cash,
+		Life:   rm.Life,
+		Skills: srs,
 	}, nil
 }
 
@@ -132,8 +146,16 @@ func (r *SkillRestModel) SetID(id string) error {
 
 func TransformSkill(m SkillModel) (SkillRestModel, error) {
 	return SkillRestModel{
-		Id:          m.id,
-		Increase:    m.increase,
-		Probability: m.probability,
+		Id:          m.Id,
+		Increase:    m.Increase,
+		Probability: m.Probability,
+	}, nil
+}
+
+func ExtractSkill(rm SkillRestModel) (SkillModel, error) {
+	return SkillModel{
+		Id:          rm.Id,
+		Increase:    rm.Increase,
+		Probability: rm.Probability,
 	}, nil
 }

@@ -1,6 +1,7 @@
 package equipment
 
 import (
+	"atlas-data/document"
 	"atlas-data/xml"
 	"context"
 	"fmt"
@@ -8,31 +9,50 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"path/filepath"
 	"strconv"
 	"strings"
 )
 
-func byIdProvider(ctx context.Context) func(mapId uint32) model.Provider[Model] {
-	t := tenant.MustFromContext(ctx)
-	return func(mapId uint32) model.Provider[Model] {
-		return func() (Model, error) {
-			m, err := GetEquipmentModelRegistry().Get(t, mapId)
-			if err == nil {
-				return m, nil
-			}
-			nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
-			if err != nil {
+var DocType = "EQUIPMENT"
+
+func byIdProvider(ctx context.Context) func(db *gorm.DB) func(id uint32) model.Provider[Model] {
+	return func(db *gorm.DB) func(id uint32) model.Provider[Model] {
+		t := tenant.MustFromContext(ctx)
+		return func(id uint32) model.Provider[Model] {
+			return func() (Model, error) {
+				m, err := GetModelRegistry().Get(t, id)
+				if err == nil {
+					return m, nil
+				}
+				m, err = document.Get[Model](ctx)(db)(DocType, id)
+				if err == nil {
+					_ = GetModelRegistry().Add(t, m)
+					return m, nil
+				}
+				nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
+				m, err = GetModelRegistry().Get(nt, id)
+				if err == nil {
+					return m, nil
+				}
+				nctx := tenant.WithContext(ctx, nt)
+				m, err = document.Get[Model](nctx)(db)(DocType, id)
+				if err == nil {
+					_ = GetModelRegistry().Add(nt, m)
+					return m, nil
+				}
 				return Model{}, err
 			}
-			return GetEquipmentModelRegistry().Get(nt, mapId)
 		}
 	}
 }
 
-func GetById(ctx context.Context) func(mapId uint32) (Model, error) {
-	return func(mapId uint32) (Model, error) {
-		return byIdProvider(ctx)(mapId)()
+func GetById(ctx context.Context) func(db *gorm.DB) func(id uint32) (Model, error) {
+	return func(db *gorm.DB) func(id uint32) (Model, error) {
+		return func(id uint32) (Model, error) {
+			return byIdProvider(ctx)(db)(id)()
+		}
 	}
 }
 
@@ -50,14 +70,20 @@ func parseItemId(filePath string) (uint32, error) {
 
 }
 
-func RegisterEquipment(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-	return func(ctx context.Context) func(path string) {
-		t := tenant.MustFromContext(ctx)
-		return func(path string) {
-			m, err := ReadFromFile(l)(ctx)(path)()
-			if err == nil {
-				l.Debugf("Processed equipment [%d].", m.Id())
-				_ = GetEquipmentModelRegistry().Add(t, m)
+func RegisterEquipment(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
+	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
+		return func(ctx context.Context) func(path string) {
+			return func(path string) {
+				m, err := ReadFromFile(l)(ctx)(path)()
+				if err != nil {
+					return
+				}
+				err = document.Create(ctx)(db)(DocType, m.GetId(), &m)
+				if err != nil {
+					return
+				}
+
+				l.Debugf("Processed equipment [%d].", m.GetId())
 			}
 		}
 	}
@@ -89,32 +115,32 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 				}
 			}
 			if info == nil {
-				return model.FixedProvider(Model{itemId: itemId})
+				return model.FixedProvider(Model{ItemId: itemId})
 			}
 
 			slotStr := info.GetString("islot", "")
 
 			m := Model{
-				itemId:        itemId,
-				strength:      info.GetShort("incSTR", 0),
-				dexterity:     info.GetShort("incDEX", 0),
-				intelligence:  info.GetShort("incINT", 0),
-				luck:          info.GetShort("incLUK", 0),
-				weaponAttack:  info.GetShort("incPAD", 0),
-				weaponDefense: info.GetShort("incPDD", 0),
-				magicAttack:   info.GetShort("incMAD", 0),
-				magicDefense:  info.GetShort("incMDD", 0),
-				accuracy:      info.GetShort("incACC", 0),
-				avoidability:  info.GetShort("incEVA", 0),
-				speed:         info.GetShort("incSpeed", 0),
-				jump:          info.GetShort("incJump", 0),
-				hp:            info.GetShort("incMHP", 0),
-				mp:            info.GetShort("incMMP", 0),
-				slots:         info.GetShort("tuc", 0),
-				cash:          info.GetBool("cash", false),
-				slotName:      getNameFromWz(slotStr),
-				slotWz:        slotStr,
-				slotIndex:     getSlotsFromWz(slotStr),
+				ItemId:        itemId,
+				Strength:      info.GetShort("incSTR", 0),
+				Dexterity:     info.GetShort("incDEX", 0),
+				Intelligence:  info.GetShort("incINT", 0),
+				Luck:          info.GetShort("incLUK", 0),
+				WeaponAttack:  info.GetShort("incPAD", 0),
+				WeaponDefense: info.GetShort("incPDD", 0),
+				MagicAttack:   info.GetShort("incMAD", 0),
+				MagicDefense:  info.GetShort("incMDD", 0),
+				Accuracy:      info.GetShort("incACC", 0),
+				Avoidability:  info.GetShort("incEVA", 0),
+				Speed:         info.GetShort("incSpeed", 0),
+				Jump:          info.GetShort("incJump", 0),
+				HP:            info.GetShort("incMHP", 0),
+				MP:            info.GetShort("incMMP", 0),
+				Slots:         info.GetShort("tuc", 0),
+				Cash:          info.GetBool("cash", false),
+				SlotName:      getNameFromWz(slotStr),
+				SlotWz:        slotStr,
+				SlotIndex:     getSlotsFromWz(slotStr),
 			}
 			return model.FixedProvider(m)
 		}

@@ -16,10 +16,10 @@ func GetById(ctx context.Context) func(characterId uint32) (Model, error) {
 	}
 }
 
-func Apply(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, characterId uint32, fromId uint32, sourceId uint32, duration int32, changes []stat.Model) error {
-	return func(ctx context.Context) func(worldId byte, characterId uint32, fromId uint32, sourceId uint32, duration int32, changes []stat.Model) error {
+func Apply(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, characterId uint32, fromId uint32, sourceId int32, duration int32, changes []stat.Model) error {
+	return func(ctx context.Context) func(worldId byte, characterId uint32, fromId uint32, sourceId int32, duration int32, changes []stat.Model) error {
 		t := tenant.MustFromContext(ctx)
-		return func(worldId byte, characterId uint32, fromId uint32, sourceId uint32, duration int32, changes []stat.Model) error {
+		return func(worldId byte, characterId uint32, fromId uint32, sourceId int32, duration int32, changes []stat.Model) error {
 			b := GetRegistry().Apply(t, worldId, characterId, sourceId, duration, changes)
 			_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(appliedStatusEventProvider(worldId, characterId, fromId, sourceId, duration, changes, b.CreatedAt(), b.ExpiresAt()))
 			return nil
@@ -27,10 +27,10 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, ch
 	}
 }
 
-func Cancel(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, characterId uint32, sourceId uint32) error {
-	return func(ctx context.Context) func(worldId byte, characterId uint32, sourceId uint32) error {
+func Cancel(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, characterId uint32, sourceId int32) error {
+	return func(ctx context.Context) func(worldId byte, characterId uint32, sourceId int32) error {
 		t := tenant.MustFromContext(ctx)
-		return func(worldId byte, characterId uint32, sourceId uint32) error {
+		return func(worldId byte, characterId uint32, sourceId int32) error {
 			b, err := GetRegistry().Cancel(t, characterId, sourceId)
 			if errors.Is(err, ErrNotFound) {
 				return nil

@@ -28,7 +28,7 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) Apply(t tenant.Model, worldId byte, characterId uint32, sourceId uint32, duration int32, changes []stat.Model) buff.Model {
+func (r *Registry) Apply(t tenant.Model, worldId byte, characterId uint32, sourceId int32, duration int32, changes []stat.Model) buff.Model {
 	r.lock.Lock()
 
 	var cm map[uint32]Model
@@ -53,7 +53,7 @@ func (r *Registry) Apply(t tenant.Model, worldId byte, characterId uint32, sourc
 			tenant:      t,
 			worldId:     worldId,
 			characterId: characterId,
-			buffs:       make(map[uint32]buff.Model),
+			buffs:       make(map[int32]buff.Model),
 		}
 	}
 	b := buff.NewBuff(sourceId, duration, changes)
@@ -113,7 +113,7 @@ func (r *Registry) GetCharacters(t tenant.Model) []Model {
 	return res
 }
 
-func (r *Registry) Cancel(t tenant.Model, characterId uint32, sourceId uint32) (buff.Model, error) {
+func (r *Registry) Cancel(t tenant.Model, characterId uint32, sourceId int32) (buff.Model, error) {
 	var tl *sync.RWMutex
 	var ok bool
 	if tl, ok = r.tenantLock[t]; !ok {
@@ -131,7 +131,7 @@ func (r *Registry) Cancel(t tenant.Model, characterId uint32, sourceId uint32) (
 		return buff.Model{}, ErrNotFound
 	}
 	var b buff.Model
-	var not = make(map[uint32]buff.Model)
+	var not = make(map[int32]buff.Model)
 	for id, m := range c.buffs {
 		if m.SourceId() != sourceId {
 			not[id] = m
@@ -165,7 +165,7 @@ func (r *Registry) GetExpired(t tenant.Model, characterId uint32) []buff.Model {
 	if c, ok = r.characterReg[t][characterId]; !ok {
 		return make([]buff.Model, 0)
 	}
-	var not = make(map[uint32]buff.Model)
+	var not = make(map[int32]buff.Model)
 	var res = make([]buff.Model, 0)
 	for id, m := range c.buffs {
 		if m.Expired() {

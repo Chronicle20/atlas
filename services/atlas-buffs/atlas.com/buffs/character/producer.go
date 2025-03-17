@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func appliedStatusEventProvider(worldId byte, characterId uint32, fromId uint32, sourceId uint32, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) model.Provider[[]kafka.Message] {
+func appliedStatusEventProvider(worldId byte, characterId uint32, fromId uint32, sourceId int32, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) model.Provider[[]kafka.Message] {
 	statups := make([]statChange, 0)
 	for _, su := range changes {
 		statups = append(statups, statChange{
@@ -34,7 +34,7 @@ func appliedStatusEventProvider(worldId byte, characterId uint32, fromId uint32,
 	return producer.SingleMessageProvider(key, value)
 }
 
-func expiredStatusEventProvider(worldId byte, characterId uint32, sourceId uint32, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) model.Provider[[]kafka.Message] {
+func expiredStatusEventProvider(worldId byte, characterId uint32, sourceId int32, duration int32, changes []stat.Model, createdAt time.Time, expiresAt time.Time) model.Provider[[]kafka.Message] {
 	statups := make([]statChange, 0)
 	for _, su := range changes {
 		statups = append(statups, statChange{

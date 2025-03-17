@@ -9,10 +9,10 @@ type Model struct {
 	tenant      tenant.Model
 	worldId     byte
 	characterId uint32
-	buffs       map[uint32]buff.Model
+	buffs       map[int32]buff.Model
 }
 
-func (m Model) Buffs() map[uint32]buff.Model {
+func (m Model) Buffs() map[int32]buff.Model {
 	return m.buffs
 }
 

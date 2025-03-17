@@ -46,6 +46,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleClosenessChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleFullnessChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLevelChanged(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSlotChanged(sc, wp))))
 				t, _ = topic.EnvProvider(l)(EnvEventTopicMovement)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp))))
 			}
@@ -75,17 +76,32 @@ func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			SetStance(e.Body.Stance).
 			SetFoothold(e.Body.FH).
 			Build()
+		_ = announceSpawn(l)(ctx)(wp)(p)(s)
+	}
+}
 
-		go func() {
-			_ = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(sc.Tenant())(p))(s)
-			err = enableActions(l)(ctx)(wp)(s)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+func announceSpawn(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
+		return func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
+			return func(p pet.Model) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := enableActions(l)(ctx)(wp)(s)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+					}
+					err = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p))(s)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to write pet spawned to character.")
+					}
+					err = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p)))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to write pet spawned to other characters.")
+					}
+					return nil
+				}
 			}
-		}()
-		go func() {
-			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(sc.Tenant())(p)))
-		}()
+		}
 	}
 }
 
@@ -99,17 +115,31 @@ func handleDespawned(sc server.Model, wp writer.Producer) message.Handler[status
 		if err != nil {
 			return
 		}
+		_ = announceDespawn(l)(ctx)(wp)(e.Body.OldSlot, e.Body.Reason)(s)
+	}
+}
 
-		go func() {
-			_ = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(l)(s.CharacterId(), e.Body.Slot, e.Body.Reason))(s)
-			err = enableActions(l)(ctx)(wp)(s)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+func announceDespawn(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(slot int8, reason string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(slot int8, reason string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(slot int8, reason string) model.Operator[session.Model] {
+			return func(slot int8, reason string) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					err := enableActions(l)(ctx)(wp)(s)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+					}
+					err = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(l)(s.CharacterId(), slot, reason))(s)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to write pet despawned to character.")
+					}
+					err = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(l)(s.CharacterId(), slot, reason)))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to write pet despawned to other characters.")
+					}
+					return nil
+				}
 			}
-		}()
-		go func() {
-			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(l)(s.CharacterId(), e.Body.Slot, e.Body.Reason)))
-		}()
+		}
 	}
 }
 
@@ -250,6 +280,56 @@ func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[sta
 					return err
 				}
 			})
+		})
+	}
+}
+
+func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[slotChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[slotChangedStatusEventBody]) {
+		if e.Type != StatusEventTypeSlotChanged {
+			return
+		}
+
+		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			stat := ""
+			sn := int64(0)
+			if e.Body.NewSlot < 0 {
+				sn = 0
+				if e.Body.OldSlot == 0 {
+					stat = writer.StatPetSn1
+				} else if e.Body.OldSlot == 1 {
+					stat = writer.StatPetSn2
+				} else if e.Body.OldSlot == 2 {
+					stat = writer.StatPetSn3
+				}
+			} else if e.Body.NewSlot == 0 {
+				stat = writer.StatPetSn1
+				sn = int64(e.PetId)
+			} else if e.Body.NewSlot == 1 {
+				stat = writer.StatPetSn2
+				sn = int64(e.PetId)
+			} else {
+				stat = writer.StatPetSn3
+				sn = int64(e.PetId)
+			}
+
+			err := session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)([]model2.StatUpdate{model2.NewStatUpdate(stat, sn)}, true))(s)
+			if err != nil {
+				return err
+			}
+
+			if e.Body.OldSlot >= 0 && e.Body.NewSlot >= 0 {
+				p, err := pet.GetById(l)(ctx)(e.PetId)
+				if err != nil {
+					return err
+				}
+
+				if e.Body.OldSlot > e.Body.NewSlot {
+					_ = announceDespawn(l)(ctx)(wp)(e.Body.OldSlot, writer.PetDespawnModeNormal)(s)
+				}
+				_ = announceSpawn(l)(ctx)(wp)(p)(s)
+			}
+			return nil
 		})
 	}
 }

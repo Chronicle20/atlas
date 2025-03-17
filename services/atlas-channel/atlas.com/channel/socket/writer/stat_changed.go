@@ -34,7 +34,6 @@ const (
 )
 
 func StatChangedBody(l logrus.FieldLogger) func(updates []model.StatUpdate, exclRequestSent bool) BodyProducer {
-	// TODO this should transmit stats
 	return func(updates []model.StatUpdate, exclRequestSent bool) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteBool(exclRequestSent)

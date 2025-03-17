@@ -1,5 +1,7 @@
 package data
 
+import "github.com/jtumidanski/api2go/jsonapi"
+
 type RestModel struct {
 	Id                string  `json:"-"`
 	Name              string  `json:"name"`
@@ -38,6 +40,14 @@ func (r *RestModel) SetID(idStr string) error {
 }
 
 func (r *RestModel) SetToOneReferenceID(name string, ID string) error {
+	return nil
+}
+
+func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+	return nil
+}
+
+func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
 	return nil
 }
 

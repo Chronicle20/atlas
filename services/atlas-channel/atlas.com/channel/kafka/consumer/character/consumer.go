@@ -104,7 +104,11 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 						} else if update == writer.StatHair {
 							value = int64(c.Hair())
 						} else if update == writer.StatPetSn1 {
-							value = int64(0)
+							if len(c.Pets()) > 0 {
+								value = int64(c.Pets()[0].Id())
+							} else {
+								value = int64(0)
+							}
 						} else if update == writer.StatLevel {
 							value = int64(c.Level())
 						} else if update == writer.StatJob {
@@ -136,9 +140,17 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 						} else if update == writer.StatMeso {
 							value = int64(c.Meso())
 						} else if update == writer.StatPetSn2 {
-							value = int64(0)
+							if len(c.Pets()) > 1 {
+								value = int64(c.Pets()[1].Id())
+							} else {
+								value = int64(0)
+							}
 						} else if update == writer.StatPetSn3 {
-							value = int64(0)
+							if len(c.Pets()) > 2 {
+								value = int64(c.Pets()[2].Id())
+							} else {
+								value = int64(0)
+							}
 						} else if update == writer.StatGachaponExperience {
 							value = int64(c.GachaponExperience())
 						}

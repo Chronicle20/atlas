@@ -12,7 +12,6 @@ type Model struct {
 	fullness        byte
 	expiration      time.Time
 	ownerId         uint32
-	lead            bool
 	slot            int8
 }
 
@@ -53,7 +52,7 @@ func (m Model) OwnerId() uint32 {
 }
 
 func (m Model) Lead() bool {
-	return m.lead
+	return m.Slot() == 0
 }
 
 func (m Model) Slot() int8 {
@@ -74,7 +73,6 @@ type ModelBuilder struct {
 	fullness        byte
 	expiration      time.Time
 	ownerId         uint32
-	lead            bool
 	slot            int8
 }
 
@@ -89,7 +87,6 @@ func NewModelBuilder(id uint64, inventoryItemId uint32, templateId uint32, name 
 		fullness:        100,
 		expiration:      time.Now().Add(2160 * time.Hour),
 		ownerId:         ownerId,
-		lead:            false,
 		slot:            -1,
 	}
 }
@@ -100,7 +97,6 @@ func Clone(m Model) *ModelBuilder {
 		SetCloseness(m.Closeness()).
 		SetFullness(m.Fullness()).
 		SetExpiration(m.Expiration()).
-		SetLead(m.Lead()).
 		SetSlot(m.Slot())
 }
 
@@ -129,11 +125,6 @@ func (b *ModelBuilder) SetSlot(slot int8) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetLead(lead bool) *ModelBuilder {
-	b.lead = lead
-	return b
-}
-
 // Build returns the constructed Model instance
 func (b *ModelBuilder) Build() Model {
 	return Model{
@@ -146,7 +137,6 @@ func (b *ModelBuilder) Build() Model {
 		fullness:        b.fullness,
 		expiration:      b.expiration,
 		ownerId:         b.ownerId,
-		lead:            b.lead,
 		slot:            b.slot,
 	}
 }

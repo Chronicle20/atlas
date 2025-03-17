@@ -321,6 +321,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.PetFoodHandle] = handler.PetFoodHandleFunc
 	handlerMap[handler.CharacterItemUseHandle] = handler.CharacterItemUseHandleFunc
 	handlerMap[handler.CharacterItemCancelHandle] = handler.CharacterItemCancelHandleFunc
+	handlerMap[handler.CharacterItemUseTownScrollHandle] = handler.CharacterItemUseTownScrollHandleFunc
 	return handlerMap
 }
 

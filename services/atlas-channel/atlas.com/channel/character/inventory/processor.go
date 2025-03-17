@@ -41,9 +41,10 @@ func Drop(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, cha
 	}
 }
 
-func RequestItemConsume(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, itemId uint32, slot int16) error {
-	return func(ctx context.Context) func(characterId uint32, itemId uint32, slot int16) error {
-		return func(characterId uint32, itemId uint32, slot int16) error {
+func RequestItemConsume(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, itemId uint32, slot int16, updateTime uint32) error {
+	return func(ctx context.Context) func(characterId uint32, itemId uint32, slot int16, updateTime uint32) error {
+		return func(characterId uint32, itemId uint32, slot int16, updateTime uint32) error {
+			l.Debugf("Character [%d] using item [%d] from slot [%d]. updateTime [%d]", characterId, itemId, slot, updateTime)
 			inventoryType, ok := inventory.TypeFromItemId(itemId)
 			if !ok {
 				return errors.New("invalid item")

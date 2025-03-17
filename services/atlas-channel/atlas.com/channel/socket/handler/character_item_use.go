@@ -10,13 +10,22 @@ import (
 )
 
 const CharacterItemUseHandle = "CharacterItemUseHandle"
+const CharacterItemUseTownScrollHandle = "CharacterItemUseTownScrollHandle"
 
 func CharacterItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		updateTime := r.ReadUint32()
 		slot := r.ReadInt16()
 		itemId := r.ReadUint32()
-		l.Debugf("Character [%d] using item [%d] from slot [%d]. updateTime [%d]", s.CharacterId(), itemId, slot, updateTime)
-		_ = inventory.RequestItemConsume(l)(ctx)(s.CharacterId(), itemId, slot)
+		_ = inventory.RequestItemConsume(l)(ctx)(s.CharacterId(), itemId, slot, updateTime)
+	}
+}
+
+func CharacterItemUseTownScrollHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+		updateTime := r.ReadUint32()
+		slot := r.ReadInt16()
+		itemId := r.ReadUint32()
+		_ = inventory.RequestItemConsume(l)(ctx)(s.CharacterId(), itemId, slot, updateTime)
 	}
 }

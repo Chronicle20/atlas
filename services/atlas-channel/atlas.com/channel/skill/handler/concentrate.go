@@ -20,7 +20,7 @@ func UseConcentrate(l logrus.FieldLogger) func(ctx context.Context) func(m _map.
 				_ = character.ChangeMP(l)(ctx)(m, characterId, -int16(effect.MPConsume()))
 			}
 
-			_ = buff.Apply(l)(ctx)(m, characterId, info.SkillId(), effect.Duration(), effect.StatUps())(characterId)
+			_ = buff.Apply(l)(ctx)(m, characterId, int32(info.SkillId()), effect.Duration(), effect.StatUps())(characterId)
 
 			return nil
 		}

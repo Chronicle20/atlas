@@ -27,7 +27,7 @@ func UseShadowPartner(l logrus.FieldLogger) func(ctx context.Context) func(m _ma
 
 			// TODO consume summoning rock
 
-			_ = buff.Apply(l)(ctx)(m, characterId, info.SkillId(), effect.Duration(), effect.StatUps())(characterId)
+			_ = buff.Apply(l)(ctx)(m, characterId, int32(info.SkillId()), effect.Duration(), effect.StatUps())(characterId)
 			return nil
 		}
 	}

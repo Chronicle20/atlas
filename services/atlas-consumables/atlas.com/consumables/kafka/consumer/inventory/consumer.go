@@ -1,8 +1,9 @@
 package inventory
 
 import (
+	"atlas-consumables/consumable"
+	inventory2 "atlas-consumables/inventory"
 	consumer2 "atlas-consumables/kafka/consumer"
-	"atlas-consumables/pet"
 	"context"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
@@ -39,9 +40,15 @@ func handleInventoryReserve(l logrus.FieldLogger, ctx context.Context, e invento
 		return
 	}
 	l.Debugf("Character [%d] is attempting to consume item [%d].", e.CharacterId, e.Body.ItemId)
+	itemId := item.Id(e.Body.ItemId)
 
-	if item.GetClassification(item.Id(e.Body.ItemId)) == item.ClassificationConsumablePetFood {
-		_ = pet.ConsumeItem(l)(ctx)(e.CharacterId, e.Body.ItemId, e.Slot, e.Body.Quantity, e.Body.TransactionId)
+	if item.GetClassification(itemId) == item.Classification(200) || item.GetClassification(itemId) == item.Classification(201) || item.GetClassification(itemId) == item.Classification(202) {
+		_ = consumable.ConsumeStandard(l)(ctx)(e.CharacterId, e.Body.ItemId, e.Slot, e.Body.Quantity, e.Body.TransactionId)
+		return
+	} else if item.GetClassification(itemId) == item.ClassificationConsumablePetFood {
+		_ = consumable.ConsumePetFood(l)(ctx)(e.CharacterId, e.Body.ItemId, e.Slot, e.Body.Quantity, e.Body.TransactionId)
+		return
 	}
 
+	_ = inventory2.CancelItemReservation(l)(ctx)(e.CharacterId, inventory.TypeValueUse, e.Body.TransactionId, e.Slot)
 }

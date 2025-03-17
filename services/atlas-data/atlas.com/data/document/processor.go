@@ -48,7 +48,9 @@ func Get[M any](ctx context.Context) func(db *gorm.DB) func(docType string, docI
 		return func(docType string, docId uint32) (M, error) {
 			var res M
 			doc := Entity{}
-			err := db.Where(&Entity{TenantId: t.Id(), Type: docType, DocumentId: docId}).First(&doc).Error
+			err := db.
+				Where("tenant_id = ? AND type = ? AND document_id = ?", t.Id(), docType, docId).
+				First(&doc).Error
 			if err != nil {
 				return res, err
 			}

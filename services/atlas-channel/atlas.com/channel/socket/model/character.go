@@ -361,7 +361,7 @@ func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Mod
 			}
 			v := CharacterTemporaryStatValue{
 				statType:  st,
-				sourceId:  -sourceId,
+				sourceId:  sourceId,
 				value:     amount,
 				expiresAt: expiresAt,
 			}

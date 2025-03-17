@@ -16,6 +16,7 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"math/rand"
@@ -252,6 +253,7 @@ func Spawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fun
 		return func(db *gorm.DB) func(petId uint64, actorId uint32, lead bool) error {
 			return func(petId uint64, actorId uint32, lead bool) error {
 				var p Model
+				slotEvents := model.FixedProvider[[]kafka.Message]([]kafka.Message{})
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					var err error
 					p, err = GetById(ctx)(tx)(petId)
@@ -269,20 +271,24 @@ func Spawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fun
 						return err
 					}
 
-					slot := int8(-1)
+					newSlot := int8(-1)
 					if lead {
 						l.Debugf("Pet [%d] will be the new leader.", petId)
 						if len(sps) >= 3 {
 							return errors.New("too many spawned pets")
 						}
 						for _, sp := range sps {
-							l.Debugf("Attempting to move existing spawned pet [%d] from [%d] to [%d].", petId, sp.Slot(), sp.Slot()+1)
-							err = updateSlot(tx)(t, sp.Id(), sp.Slot()+1)
+							oldSlot := sp.Slot()
+							newSlot := oldSlot + 1
+							l.Debugf("Attempting to move existing spawned pet [%d] from [%d] to [%d].", sp.Id(), oldSlot, newSlot)
+							err = updateSlot(tx)(t, sp.Id(), newSlot)
 							if err != nil {
 								return err
 							}
+							sp = sp.SetSlot(newSlot)
+							slotEvents = model.MergeSliceProvider(slotEvents, slotChangedEventProvider(sp, oldSlot))
 						}
-						slot = 0
+						newSlot = 0
 					} else {
 						l.Debugf("Finding minimal open slot for [%d].", petId)
 						for i := int8(0); i < 3; i++ {
@@ -294,17 +300,19 @@ func Spawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fun
 								}
 							}
 							if !found {
-								slot = i
+								newSlot = i
 								break
 							}
 						}
 					}
-					l.Debugf("Attempting to move pet [%d] to slot [%d].", petId, slot)
-					err = updateSlot(tx)(t, petId, slot)
+					oldSlot := p.Slot()
+					l.Debugf("Attempting to move pet [%d] to slot [%d].", petId, newSlot)
+					err = updateSlot(tx)(t, petId, newSlot)
 					if err != nil {
 						return err
 					}
-					p = p.SetSlot(slot)
+					p = p.SetSlot(newSlot)
+					slotEvents = model.MergeSliceProvider(slotEvents, slotChangedEventProvider(p, oldSlot))
 					return nil
 				})
 				if txErr != nil {
@@ -319,8 +327,17 @@ func Spawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fun
 					}
 				}
 				td := GetTemporalRegistry().GetById(p.Id())
-				// TODO this may need to update the slot of existing pets.
-				return producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(spawnEventProvider(p, td))
+
+				err = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(spawnEventProvider(p, td))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to issue spawn events.")
+				}
+
+				err = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(slotEvents)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to issue slot change events.")
+				}
+				return err
 			}
 		}
 	}
@@ -332,6 +349,8 @@ func Despawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) f
 		return func(db *gorm.DB) func(petId uint64, actorId uint32, reason string) error {
 			return func(petId uint64, actorId uint32, reason string) error {
 				var p Model
+				var oldSlot int8
+				slotEvents := model.FixedProvider[[]kafka.Message]([]kafka.Message{})
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					var err error
 					p, err = GetById(ctx)(tx)(petId)
@@ -349,31 +368,49 @@ func Despawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) f
 						return err
 					}
 
-					if p.Lead() {
-						l.Debugf("Shifting pets to the left.")
-						for i := p.Slot() + 1; i < 3; i++ {
-							for _, sp := range sps {
-								if sp.Slot() == i {
-									err = updateSlot(tx)(t, sp.Id(), sp.Slot()-1)
-									if err != nil {
-										return err
-									}
+					l.Debugf("Shifting pets to the left.")
+					for i := p.Slot() + 1; i < 3; i++ {
+						for _, sp := range sps {
+							if sp.Slot() == i {
+								oldSlot := sp.Slot()
+								newSlot := oldSlot - 1
+
+								err = updateSlot(tx)(t, sp.Id(), newSlot)
+								if err != nil {
+									return err
 								}
+
+								sp = sp.SetSlot(newSlot)
+								slotEvents = model.MergeSliceProvider(slotEvents, slotChangedEventProvider(sp, oldSlot))
 							}
 						}
 					}
-					err = updateSlot(tx)(t, petId, -1)
+
+					oldSlot = p.Slot()
+					newSlot := int8(-1)
+					err = updateSlot(tx)(t, petId, newSlot)
 					if err != nil {
 						return err
 					}
+					p = p.SetSlot(newSlot)
+					slotEvents = model.MergeSliceProvider(slotEvents, slotChangedEventProvider(p, oldSlot))
 					return nil
 				})
 				if txErr != nil {
 					return txErr
 				}
 
-				// TODO this may need to update the slot of existing pets.
-				return producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(despawnEventProvider(p, reason))
+				var err error
+				err = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(despawnEventProvider(p, oldSlot, reason))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to issue despawn events.")
+				}
+
+				err = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(slotEvents)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to issue slot change events.")
+				}
+				return err
 			}
 		}
 	}

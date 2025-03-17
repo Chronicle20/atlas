@@ -29,7 +29,7 @@ func spawnEventProvider(m Model, tm *temporalData) model.Provider[[]kafka.Messag
 	return producer.SingleMessageProvider(key, value)
 }
 
-func despawnEventProvider(m Model, reason string) model.Provider[[]kafka.Message] {
+func despawnEventProvider(m Model, oldSlot int8, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
 	value := &statusEvent[despawnedStatusEventBody]{
 		PetId:   m.Id(),
@@ -42,6 +42,7 @@ func despawnEventProvider(m Model, reason string) model.Provider[[]kafka.Message
 			Level:      m.Level(),
 			Closeness:  m.Closeness(),
 			Fullness:   m.Fullness(),
+			OldSlot:    oldSlot,
 			Reason:     reason,
 		},
 	}
@@ -105,6 +106,20 @@ func levelChangedEventProvider(m Model, amount int8) model.Provider[[]kafka.Mess
 			Slot:   m.Slot(),
 			Level:  m.Level(),
 			Amount: amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func slotChangedEventProvider(m Model, oldSlot int8) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.OwnerId()))
+	value := &statusEvent[slotChangedStatusEventBody]{
+		PetId:   m.Id(),
+		OwnerId: m.OwnerId(),
+		Type:    StatusEventTypeSlotChanged,
+		Body: slotChangedStatusEventBody{
+			OldSlot: oldSlot,
+			NewSlot: m.Slot(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

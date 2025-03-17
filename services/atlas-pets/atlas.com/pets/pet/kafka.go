@@ -10,6 +10,7 @@ const (
 	StatusEventTypeClosenessChanged = "CLOSENESS_CHANGED"
 	StatusEventTypeFullnessChanged  = "FULLNESS_CHANGED"
 	StatusEventTypeLevelChanged     = "LEVEL_CHANGED"
+	StatusEventTypeSlotChanged      = "SLOT_CHANGED"
 
 	DespawnReasonNormal  = "NORMAL"
 	DespawnReasonHunger  = "HUNGER"
@@ -49,6 +50,7 @@ type despawnedStatusEventBody struct {
 	Level      byte   `json:"level"`
 	Closeness  uint16 `json:"closeness"`
 	Fullness   byte   `json:"fullness"`
+	OldSlot    int8   `json:"oldSlot"`
 	Reason     string `json:"reason"`
 }
 
@@ -76,6 +78,11 @@ type levelChangedStatusEventBody struct {
 	Slot   int8 `json:"slot"`
 	Level  byte `json:"level"`
 	Amount int8 `json:"amount"`
+}
+
+type slotChangedStatusEventBody struct {
+	OldSlot int8 `json:"oldSlot"`
+	NewSlot int8 `json:"newSlot"`
 }
 
 const (

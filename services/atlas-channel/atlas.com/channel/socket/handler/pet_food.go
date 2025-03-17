@@ -16,7 +16,6 @@ func PetFoodHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Produ
 		updateTime := r.ReadUint32()
 		slot := r.ReadInt16()
 		itemId := r.ReadUint32()
-		l.Debugf("Character [%d] attempting to use pet food item [%d]. updateTime [%d], slot [%d]", s.CharacterId(), itemId, updateTime, slot)
-		_ = inventory.RequestItemConsume(l)(ctx)(s.CharacterId(), itemId, slot)
+		_ = inventory.RequestItemConsume(l)(ctx)(s.CharacterId(), itemId, slot, updateTime)
 	}
 }

@@ -30,6 +30,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, fr
 	return func(ctx context.Context) func(m _map.Model, fromId uint32, sourceId int32, duration int32, statups []statup.Model) model.Operator[uint32] {
 		return func(m _map.Model, fromId uint32, sourceId int32, duration int32, statups []statup.Model) model.Operator[uint32] {
 			return func(characterId uint32) error {
+				l.Debugf("Character [%d] applying effect from source [%d].", characterId, sourceId)
 				return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(applyCommandProvider(m, characterId, fromId, sourceId, duration, statups))
 			}
 		}
@@ -39,6 +40,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, fr
 func Cancel(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, sourceId int32) error {
 	return func(ctx context.Context) func(m _map.Model, characterId uint32, sourceId int32) error {
 		return func(m _map.Model, characterId uint32, sourceId int32) error {
+			l.Debugf("Character [%d] cancelling effect from source [%d].", characterId, sourceId)
 			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(cancelCommandProvider(m, characterId, sourceId))
 		}
 	}

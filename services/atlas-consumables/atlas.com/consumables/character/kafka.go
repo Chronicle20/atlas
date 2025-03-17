@@ -7,15 +7,18 @@ const (
 )
 
 type command[E any] struct {
+	WorldId     byte   `json:"worldId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
 }
 
 type changeHPCommandBody struct {
-	Amount int16 `json:"amount"`
+	ChannelId byte  `json:"channelId"`
+	Amount    int16 `json:"amount"`
 }
 
 type changeMPCommandBody struct {
-	Amount int16 `json:"amount"`
+	ChannelId byte  `json:"channelId"`
+	Amount    int16 `json:"amount"`
 }

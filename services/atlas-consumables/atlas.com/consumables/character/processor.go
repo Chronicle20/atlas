@@ -20,6 +20,14 @@ func GetById(l logrus.FieldLogger) func(ctx context.Context) func(decorators ...
 	}
 }
 
+func ChangeMap(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, portalId uint32) error {
+	return func(ctx context.Context) func(m _map.Model, characterId uint32, portalId uint32) error {
+		return func(m _map.Model, characterId uint32, portalId uint32) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeMapProvider(m, characterId, portalId))
+		}
+	}
+}
+
 func ChangeHP(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, amount int16) error {
 	return func(ctx context.Context) func(m _map.Model, characterId uint32, amount int16) error {
 		return func(m _map.Model, characterId uint32, amount int16) error {

@@ -5,16 +5,21 @@ import (
 	"atlas-consumables/character/buff"
 	"atlas-consumables/character/buff/stat"
 	"atlas-consumables/inventory"
-	_map "atlas-consumables/map/character"
+	"atlas-consumables/map"
+	cim "atlas-consumables/map/character"
+	"atlas-consumables/map/data"
 	"atlas-consumables/pet"
 	"context"
 	ts "github.com/Chronicle20/atlas-constants/character"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
+	_map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"math"
 )
+
+type ItemConsumer func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error
 
 func GetById(l logrus.FieldLogger) func(ctx context.Context) func(itemId uint32) (Model, error) {
 	return func(ctx context.Context) func(itemId uint32) (Model, error) {
@@ -24,24 +29,21 @@ func GetById(l logrus.FieldLogger) func(ctx context.Context) func(itemId uint32)
 	}
 }
 
-func ConsumeStandard(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
-	return func(ctx context.Context) func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
+func ConsumeStandard(l logrus.FieldLogger) func(ctx context.Context) ItemConsumer {
+	return func(ctx context.Context) ItemConsumer {
 		return func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
 			c, err := character.GetById(l)(ctx)()(characterId)
 			if err != nil {
-				_ = inventory.CancelItemReservation(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, slot)
 				return err
 			}
 
-			m, err := _map.GetMap(characterId)
+			m, err := cim.GetMap(characterId)
 			if err != nil {
-				_ = inventory.CancelItemReservation(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, slot)
 				return err
 			}
 
 			ci, err := GetById(l)(ctx)(itemId)
 			if err != nil {
-				_ = inventory.CancelItemReservation(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, slot)
 				return err
 			}
 
@@ -128,18 +130,54 @@ func ConsumeStandard(l logrus.FieldLogger) func(ctx context.Context) func(charac
 	}
 }
 
-func ConsumePetFood(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
-	return func(ctx context.Context) func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
+func ConsumeTownScroll(l logrus.FieldLogger) func(ctx context.Context) ItemConsumer {
+	return func(ctx context.Context) ItemConsumer {
 		return func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
-			p, err := pet.HungriestByOwnerProvider(l)(ctx)(characterId)()
+			m, err := cim.GetMap(characterId)
 			if err != nil {
-				_ = inventory.CancelItemReservation(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, slot)
 				return err
 			}
 
 			ci, err := GetById(l)(ctx)(itemId)
 			if err != nil {
-				_ = inventory.CancelItemReservation(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, slot)
+				return err
+			}
+			toMapId := _map2.EmptyMapId
+			if val, ok := ci.GetSpec(SpecTypeMoveTo); ok && val > 0 {
+				toMapId = _map2.Id(val)
+			}
+			if toMapId == _map2.EmptyMapId {
+				mm, err := data.GetById(l)(ctx)(m.MapId())
+				if err != nil {
+					return err
+				}
+				toMapId = _map2.Id(mm.ReturnMapId())
+			}
+
+			err = inventory.ConsumeItem(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, slot)
+			if err != nil {
+				return err
+			}
+
+			err = _map.WarpRandom(l)(ctx)(_map2.NewModel(m.WorldId())(m.ChannelId())(toMapId))(characterId)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+}
+
+func ConsumePetFood(l logrus.FieldLogger) func(ctx context.Context) ItemConsumer {
+	return func(ctx context.Context) ItemConsumer {
+		return func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
+			p, err := pet.HungriestByOwnerProvider(l)(ctx)(characterId)()
+			if err != nil {
+				return err
+			}
+
+			ci, err := GetById(l)(ctx)(itemId)
+			if err != nil {
 				return err
 			}
 			inc := byte(0)

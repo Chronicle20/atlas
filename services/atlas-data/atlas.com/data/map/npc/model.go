@@ -1,15 +1,15 @@
 package npc
 
 type Model struct {
-	ObjectId uint32
-	Id       uint32
-	Name     string
-	Cy       int16
-	F        uint32
-	Fh       uint16
-	Rx0      int16
-	Rx1      int16
-	X        int16
-	Y        int16
-	Hide     bool
+	Id       string `json:"id"`
+	Template uint32 `json:"template"`
+	Name     string `json:"name"`
+	CY       int16  `json:"cy"`
+	F        uint32 `json:"f"`
+	FH       uint16 `json:"fh"`
+	RX0      int16  `json:"rx0"`
+	RX1      int16  `json:"rx1"`
+	X        int16  `json:"x"`
+	Y        int16  `json:"y"`
+	Hide     bool   `json:"hide"`
 }

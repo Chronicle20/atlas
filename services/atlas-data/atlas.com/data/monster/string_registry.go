@@ -13,7 +13,7 @@ type MonsterString struct {
 	name string
 }
 
-func (m MonsterString) Id() uint32 {
+func (m MonsterString) GetId() uint32 {
 	return m.id
 }
 

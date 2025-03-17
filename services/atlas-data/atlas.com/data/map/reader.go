@@ -63,59 +63,59 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 				//return Read(tenant, uint32(linkedMapId))
 			}
 
-			m := &Model{id: mapId}
-			m.returnMapId = uint32(i.GetIntegerWithDefault("returnMap", 0))
-			m.monsterRate = i.GetFloatWithDefault("mobRate", 0)
+			m := &Model{Id: mapId}
+			m.ReturnMapId = uint32(i.GetIntegerWithDefault("returnMap", 0))
+			m.MonsterRate = i.GetFloatWithDefault("mobRate", 0)
 
 			firstUserEnter := i.GetString("onFirstUserEnter", strconv.Itoa(int(mapId)))
 			if firstUserEnter == "" {
 				firstUserEnter = strconv.Itoa(int(mapId))
 			}
-			m.onFirstUserEnter = firstUserEnter
+			m.OnFirstUserEnter = firstUserEnter
 
 			onUserEnter := i.GetString("onUserEnter", strconv.Itoa(int(mapId)))
 			if onUserEnter == "" {
 				onUserEnter = strconv.Itoa(int(mapId))
 			}
-			m.onUserEnter = onUserEnter
+			m.OnUserEnter = onUserEnter
 
-			m.fieldLimit = uint32(i.GetIntegerWithDefault("fieldLimit", 0))
-			m.mobInterval = uint32(i.GetIntegerWithDefault("createMobInterval", 5000))
-			m.portals = getPortals(exml)
-			m.timeMob = getTimeMob(i)
-			m.mapArea = getMapArea(exml, i)
-			m.footholdTree = getFootholdTree(exml)
-			m.areas = getAreas(exml)
-			m.seats = getSeats(exml)
-			m.name = getPlaceName(t, mapId)
-			m.streetName = getStreetName(t, mapId)
-			m.clock = getClock(exml)
-			m.everLast = i.GetIntegerWithDefault("everlast", 0) > 0
-			m.town = i.GetIntegerWithDefault("town", 0) > 0
-			m.decHp = uint32(i.GetIntegerWithDefault("decHP", 0))
-			m.protectItem = uint32(i.GetIntegerWithDefault("protectItem", 0))
-			m.forcedReturnMapId = uint32(i.GetIntegerWithDefault("forcedReturn", 999999999))
-			m.boat = isBoat(exml)
-			m.timeLimit = i.GetIntegerWithDefault("timeLimit", -1)
-			m.fieldType = uint32(i.GetIntegerWithDefault("fieldType", 0))
-			m.mobCapacity = uint32(i.GetIntegerWithDefault("fixedMobCapacity", 500))
-			m.recovery = i.GetFloatWithDefault("recovery", 1)
-			m.backgroundTypes = getBackgroundTypes(exml)
-			m.reactors = getReactors(exml)
+			m.FieldLimit = uint32(i.GetIntegerWithDefault("fieldLimit", 0))
+			m.MobInterval = uint32(i.GetIntegerWithDefault("createMobInterval", 5000))
+			m.Portals = getPortals(exml)
+			m.TimeMob = getTimeMob(i)
+			m.MapArea = getMapArea(exml, i)
+			m.FootholdTree = getFootholdTree(exml)
+			m.Areas = getAreas(exml)
+			m.Seats = getSeats(exml)
+			m.Name = getPlaceName(t, mapId)
+			m.StreetName = getStreetName(t, mapId)
+			m.Clock = getClock(exml)
+			m.EverLast = i.GetIntegerWithDefault("everlast", 0) > 0
+			m.Town = i.GetIntegerWithDefault("town", 0) > 0
+			m.DecHp = uint32(i.GetIntegerWithDefault("decHP", 0))
+			m.ProtectItem = uint32(i.GetIntegerWithDefault("protectItem", 0))
+			m.ForcedReturnMapId = uint32(i.GetIntegerWithDefault("forcedReturn", 999999999))
+			m.Boat = isBoat(exml)
+			m.TimeLimit = i.GetIntegerWithDefault("timeLimit", -1)
+			m.FieldType = uint32(i.GetIntegerWithDefault("fieldType", 0))
+			m.MobCapacity = uint32(i.GetIntegerWithDefault("fixedMobCapacity", 500))
+			m.Recovery = i.GetFloatWithDefault("recovery", 1)
+			m.BackgroundTypes = getBackgroundTypes(exml)
+			m.Reactors = getReactors(exml)
 			monsters, npcs := getLife(t, exml)
-			m.monsters = monsters
-			m.npcs = npcs
+			m.Monsters = monsters
+			m.Npcs = npcs
 			//TODO player NPCS and CPQ support
 
-			lp := point.NewModel(m.mapArea.x, m.mapArea.y)
-			rp := point.NewModel(m.mapArea.x+m.mapArea.width, m.mapArea.y)
-			fallback := point.NewModel(m.mapArea.x+int16(math.Floor(float64(m.mapArea.width/2))), m.mapArea.y)
+			lp := &point.Model{X: m.MapArea.X, Y: m.MapArea.Y}
+			rp := &point.Model{X: m.MapArea.X + m.MapArea.Width, Y: m.MapArea.Y}
+			fallback := &point.Model{X: m.MapArea.X + int16(math.Floor(float64(m.MapArea.Width/2))), Y: m.MapArea.Y}
 
-			lp = bSearchDropPos(m.footholdTree, lp, fallback)
-			rp = bSearchDropPos(m.footholdTree, rp, fallback)
-			m.xLimit = XLimit{
-				min: uint32(lp.X() + 14),
-				max: uint32(rp.X() - 14),
+			lp = bSearchDropPos(m.FootholdTree, lp, fallback)
+			rp = bSearchDropPos(m.FootholdTree, rp, fallback)
+			m.XLimit = XLimit{
+				Min: uint32(lp.X + 14),
+				Max: uint32(rp.X - 14),
 			}
 			return model.FixedProvider(*m)
 		}
@@ -150,10 +150,10 @@ func getPortals(exml *xml.Node) []portal.Model {
 		}
 
 		portal := portal.Model{
-			Id:          pid,
+			Id:          strconv.Itoa(int(pid)),
 			Name:        c.GetString("pn", ""),
 			Target:      c.GetString("tn", ""),
-			PortalType:  pt,
+			Type:        pt,
 			X:           int16(c.GetIntegerWithDefault("x", 0)),
 			Y:           int16(c.GetFloatWithDefault("y", 0)),
 			TargetMapId: uint32(c.GetIntegerWithDefault("tm", 0)),
@@ -172,8 +172,8 @@ func getTimeMob(i *xml.Node) *TimeMob {
 	id := uint32(tm.GetIntegerWithDefault("id", 0))
 	message := tm.GetString("message", "")
 	return &TimeMob{
-		id:      id,
-		message: message,
+		Id:      id,
+		Message: message,
 	}
 }
 
@@ -190,28 +190,28 @@ func getMapArea(exml *xml.Node, i *xml.Node) Rectangle {
 			bounds[2] = int16(mm.GetIntegerWithDefault("height", 0))
 			bounds[3] = int16(mm.GetIntegerWithDefault("width", 0))
 			return Rectangle{
-				x:      bounds[0],
-				y:      bounds[1],
-				width:  bounds[3],
-				height: bounds[2],
+				X:      bounds[0],
+				Y:      bounds[1],
+				Width:  bounds[3],
+				Height: bounds[2],
 			}
 		} else {
 			dist := 1 << 18
 			return Rectangle{
-				x:      int16(-dist / 2),
-				y:      int16(-dist / 2),
-				width:  int16(dist),
-				height: int16(dist),
+				X:      int16(-dist / 2),
+				Y:      int16(-dist / 2),
+				Width:  int16(dist),
+				Height: int16(dist),
 			}
 		}
 	} else {
 		bounds[2] = int16(i.GetIntegerWithDefault("VRLeft", 0))
 		bounds[3] = int16(i.GetIntegerWithDefault("VRRight", 0))
 		return Rectangle{
-			x:      bounds[2],
-			y:      bounds[0],
-			width:  bounds[3] - bounds[2],
-			height: bounds[1] - bounds[0],
+			X:      bounds[2],
+			Y:      bounds[0],
+			Width:  bounds[3] - bounds[2],
+			Height: bounds[1] - bounds[0],
 		}
 	}
 }
@@ -237,9 +237,9 @@ func getFootholdTree(exml *xml.Node) *FootholdTree {
 						continue
 					}
 					foothold := Foothold{
-						id:     uint32(id),
-						first:  point.NewModel(x1, y1),
-						second: point.NewModel(x2, y2),
+						Id:     uint32(id),
+						First:  &point.Model{X: x1, Y: y1},
+						Second: &point.Model{X: x2, Y: y2},
 					}
 					if x1 < lx {
 						lx = x1
@@ -273,10 +273,10 @@ func getAreas(exml *xml.Node) []Rectangle {
 		x2 := int16(area.GetFloatWithDefault("x2", 0))
 		y2 := int16(area.GetIntegerWithDefault("y2", 0))
 		result := Rectangle{
-			x:      x1,
-			y:      y1,
-			width:  x2 - x1,
-			height: y2 - y1,
+			X:      x1,
+			Y:      y1,
+			Width:  x2 - x1,
+			Height: y2 - y1,
 		}
 		results = append(results, result)
 	}
@@ -329,7 +329,7 @@ func getBackgroundTypes(exml *xml.Node) []BackgroundType {
 			continue
 		}
 		backgroundType := bt.GetIntegerWithDefault("type", 0)
-		results = append(results, BackgroundType{layerNumber: uint32(layerNum), backgroundType: uint32(backgroundType)})
+		results = append(results, BackgroundType{LayerNumber: uint32(layerNum), BackgroundType: uint32(backgroundType)})
 	}
 
 	return results
@@ -397,15 +397,15 @@ func getLife(t tenant.Model, exml *xml.Node) ([]monster.Model, []npc.Model) {
 
 		if lifeType == "m" {
 			monster := monster.Model{
-				ObjectId: uint32(i + 1),
-				Id:       uint32(id),
+				Id:       uint32(i + 1),
+				Template: uint32(id),
 				MobTime:  mobTime,
 				Team:     team,
-				Cy:       cy,
+				CY:       cy,
 				F:        f,
-				Fh:       fh,
-				Rx0:      rx0,
-				Rx1:      rx1,
+				FH:       fh,
+				RX0:      rx0,
+				RX1:      rx1,
 				X:        x,
 				Y:        y,
 				Hide:     hide == 1,
@@ -418,14 +418,14 @@ func getLife(t tenant.Model, exml *xml.Node) ([]monster.Model, []npc.Model) {
 			}
 
 			npc := npc.Model{
-				ObjectId: uint32(i + 1),
-				Id:       uint32(id),
+				Id:       strconv.Itoa(i + 1),
+				Template: uint32(id),
 				Name:     nn.Name(),
-				Cy:       cy,
+				CY:       cy,
 				F:        f,
-				Fh:       fh,
-				Rx0:      rx0,
-				Rx1:      rx1,
+				FH:       fh,
+				RX0:      rx0,
+				RX1:      rx1,
 				X:        x,
 				Y:        y,
 				Hide:     hide == 1,

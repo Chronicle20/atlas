@@ -27,7 +27,14 @@ func (r *RestModel) SetID(strId string) error {
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		X: m.X(),
-		Y: m.Y(),
+		X: m.X,
+		Y: m.Y,
+	}, nil
+}
+
+func Extract(rm RestModel) (Model, error) {
+	return Model{
+		X: rm.X,
+		Y: rm.Y,
 	}, nil
 }

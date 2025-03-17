@@ -1,7 +1,5 @@
 package npc
 
-import "strconv"
-
 type RestModel struct {
 	Id       string `json:"-"`
 	Template uint32 `json:"template"`
@@ -24,18 +22,39 @@ func (r RestModel) GetID() string {
 	return r.Id
 }
 
+func (r *RestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:       strconv.Itoa(int(m.ObjectId)),
-		Template: m.Id,
+		Id:       m.Id,
+		Template: m.Template,
 		Name:     m.Name,
-		CY:       m.Cy,
+		CY:       m.CY,
 		F:        m.F,
-		FH:       m.Fh,
-		RX0:      m.Rx0,
-		RX1:      m.Rx1,
+		FH:       m.FH,
+		RX0:      m.RX0,
+		RX1:      m.RX1,
 		X:        m.X,
 		Y:        m.Y,
 		Hide:     m.Hide,
+	}, nil
+}
+
+func Extract(rm RestModel) (Model, error) {
+	return Model{
+		Id:       rm.Id,
+		Template: rm.Template,
+		Name:     rm.Name,
+		CY:       rm.CY,
+		F:        rm.F,
+		FH:       rm.FH,
+		RX0:      rm.RX0,
+		RX1:      rm.RX1,
+		X:        rm.X,
+		Y:        rm.Y,
+		Hide:     rm.Hide,
 	}, nil
 }

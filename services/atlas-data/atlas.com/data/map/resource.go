@@ -12,254 +12,279 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 )
 
-func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
-	return func(router *mux.Router, l logrus.FieldLogger) {
-		registerGet := rest.RegisterHandler(l)(si)
+func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
+	return func(si jsonapi.ServerInformation) server.RouteInitializer {
+		return func(router *mux.Router, l logrus.FieldLogger) {
+			registerGet := rest.RegisterHandler(l)(si)
 
-		r := router.PathPrefix("/data/maps").Subrouter()
-		r.HandleFunc("", registerGet("get_maps", handleGetMapsRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}", registerGet("get_map", handleGetMapRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/portals", registerGet("get_map_portals_by_name", handleGetMapPortalsByNameRequest)).Queries("name", "{name}").Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/portals", registerGet("get_map_portals", handleGetMapPortalsRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/portals/{portalId}", registerGet("get_map_portal", handleGetMapPortalRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/reactors", registerGet("get_map_reactors", handleGetMapReactorsRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/npcs", registerGet("get_map_npcs_by_object_id", handleGetMapNPCsByObjectIdRequest)).Queries("objectId", "{objectId}").Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/npcs", registerGet("get_map_npcs", handleGetMapNPCsRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/npcs/{npcId}", registerGet("get_map_npc", handleGetMapNPCRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/monsters", registerGet("get_map_monsters", handleGetMapMonstersRequest)).Methods(http.MethodGet)
-		r.HandleFunc("/{mapId}/drops/position", rest.RegisterInputHandler[DropPositionRestModel](l)(si)("get_map_drop_position", handleGetMapDropPositionRequest)).Methods(http.MethodPost)
-		r.HandleFunc("/{mapId}/footholds/below", rest.RegisterInputHandler[PositionRestModel](l)(si)("get_map_foothold_below", handleGetMapFootholdBelowRequest)).Methods(http.MethodPost)
+			r := router.PathPrefix("/data/maps").Subrouter()
+			r.HandleFunc("", registerGet("get_maps", handleGetMapsRequest(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{mapId}", registerGet("get_map", handleGetMapRequest(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{mapId}/portals", registerGet("get_map_portals_by_name", handleGetMapPortalsByNameRequest(db))).Queries("name", "{name}").Methods(http.MethodGet)
+			r.HandleFunc("/{mapId}/portals", registerGet("get_map_portals", handleGetMapPortalsRequest(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{mapId}/portals/{portalId}", registerGet("get_map_portal", handleGetMapPortalRequest(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{mapId}/reactors", registerGet("get_map_reactors", handleGetMapReactorsRequest(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{mapId}/npcs", registerGet("get_map_npcs_by_object_id", handleGetMapNPCsByObjectIdRequest(db))).Queries("objectId", "{objectId}").Methods(http.MethodGet)
+			r.HandleFunc("/{mapId}/npcs", registerGet("get_map_npcs", handleGetMapNPCsRequest(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{mapId}/npcs/{npcId}", registerGet("get_map_npc", handleGetMapNPCRequest(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{mapId}/monsters", registerGet("get_map_monsters", handleGetMapMonstersRequest(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{mapId}/drops/position", rest.RegisterInputHandler[DropPositionRestModel](l)(si)("get_map_drop_position", handleGetMapDropPositionRequest(db))).Methods(http.MethodPost)
+			r.HandleFunc("/{mapId}/footholds/below", rest.RegisterInputHandler[PositionRestModel](l)(si)("get_map_foothold_below", handleGetMapFootholdBelowRequest(db))).Methods(http.MethodPost)
+		}
 	}
 }
 
-func handleGetMapsRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		m, err := GetAll(d.Context())()
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+func handleGetMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			m, err := GetAll(d.Context())(db)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 
-		res, err := model.SliceMap(Transform)(model.FixedProvider(m))()()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+			res, err := model.SliceMap(Transform)(model.FixedProvider(m))()()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 
-		query := r.URL.Query()
-		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
 	}
 }
 
-func handleGetMapRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := GetById(d.Context())(mapId)
-			if err != nil {
-				d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-
-			res, err := model.Map(Transform)(model.FixedProvider(m))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
-		}
-	})
-}
-
-func handleGetMapPortalsByNameRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			vars := mux.Vars(r)
-			portalName := vars["name"]
-
-			ps, err := GetPortalsByName(d.Context())(mapId, portalName)
-			if err != nil {
-				d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-
-			res, err := model.SliceMap(portal.Transform)(model.FixedProvider(ps))(model.ParallelMap())()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			server.Marshal[[]portal.RestModel](d.Logger())(w)(c.ServerInformation())(res)
-		}
-	})
-}
-
-func handleGetMapPortalsRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			ps, err := GetPortals(d.Context())(mapId)
-			if err != nil {
-				d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-
-			res, err := model.SliceMap(portal.Transform)(model.FixedProvider(ps))(model.ParallelMap())()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			server.Marshal[[]portal.RestModel](d.Logger())(w)(c.ServerInformation())(res)
-		}
-	})
-}
-
-func handleGetMapPortalRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
-		return rest.ParsePortalId(d.Logger(), func(portalId uint32) http.HandlerFunc {
+func handleGetMapRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				p, err := GetPortalById(d.Context())(mapId, portalId)
+				m, err := GetById(d.Context())(db)(mapId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
 
-				res, err := model.Map(portal.Transform)(model.FixedProvider(p))()
+				res, err := model.Map(Transform)(model.FixedProvider(m))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 
-				server.Marshal[portal.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
 			}
 		})
-	})
+	}
 }
 
-func handleGetMapReactorsRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			rs, err := GetReactors(d.Context())(mapId)
-			if err != nil {
-				d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-
-			res, err := model.SliceMap(reactor.Transform)(model.FixedProvider(rs))(model.ParallelMap())()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			server.Marshal[[]reactor.RestModel](d.Logger())(w)(c.ServerInformation())(res)
-		}
-	})
-}
-
-func handleGetMapNPCsByObjectIdRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			vars := mux.Vars(r)
-			objectId, err := strconv.Atoi(vars["objectId"])
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Error parsing objectId as uint32")
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
-			ns, err := GetNpcsByObjectId(d.Context())(mapId, uint32(objectId))
-			res, err := model.SliceMap(npc.Transform)(model.FixedProvider(ns))(model.ParallelMap())()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			server.Marshal[[]npc.RestModel](d.Logger())(w)(c.ServerInformation())(res)
-		}
-	})
-}
-
-func handleGetMapNPCsRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			ns, err := GetNpcs(d.Context())(mapId)
-			res, err := model.SliceMap(npc.Transform)(model.FixedProvider(ns))(model.ParallelMap())()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			server.Marshal[[]npc.RestModel](d.Logger())(w)(c.ServerInformation())(res)
-		}
-	})
-}
-
-func handleGetMapNPCRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
-		return rest.ParseNPC(d.Logger(), func(npcId uint32) http.HandlerFunc {
+func handleGetMapPortalsByNameRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				ns, err := GetNpc(d.Context())(mapId, npcId)
-				res, err := model.Map(npc.Transform)(model.FixedProvider(ns))()
+				vars := mux.Vars(r)
+				portalName := vars["name"]
+
+				ps, err := GetPortalsByName(d.Context())(db)(mapId, portalName)
+				if err != nil {
+					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
+				res, err := model.SliceMap(portal.Transform)(model.FixedProvider(ps))(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 
-				server.Marshal[npc.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				server.Marshal[[]portal.RestModel](d.Logger())(w)(c.ServerInformation())(res)
 			}
 		})
-	})
+	}
 }
 
-func handleGetMapMonstersRequest(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			ms, err := GetMonsters(d.Context())(mapId)
-			res, err := model.SliceMap(monster.Transform)(model.FixedProvider(ms))(model.ParallelMap())()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
+func handleGetMapPortalsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				ps, err := GetPortals(d.Context())(db)(mapId)
+				if err != nil {
+					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
 
-			server.Marshal[[]monster.RestModel](d.Logger())(w)(c.ServerInformation())(res)
-		}
-	})
+				res, err := model.SliceMap(portal.Transform)(model.FixedProvider(ps))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				server.Marshal[[]portal.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			}
+		})
+	}
 }
 
-func handleGetMapDropPositionRequest(d *rest.HandlerDependency, c *rest.HandlerContext, input DropPositionRestModel) http.HandlerFunc {
-	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			p := calcDropPos(d.Context())(mapId, point.NewModel(input.InitialX, input.InitialY), point.NewModel(input.FallbackX, input.FallbackY))
-			res, err := model.Map(point.Transform)(model.FixedProvider(*p))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
+func handleGetMapPortalRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+			return rest.ParsePortalId(d.Logger(), func(portalId uint32) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					p, err := GetPortalById(d.Context())(db)(mapId, portalId)
+					if err != nil {
+						d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
 
-			server.Marshal[point.RestModel](d.Logger())(w)(c.ServerInformation())(res)
-		}
-	})
+					res, err := model.Map(portal.Transform)(model.FixedProvider(p))()
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Creating REST model.")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					server.Marshal[portal.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				}
+			})
+		})
+	}
+}
+
+func handleGetMapReactorsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				rs, err := GetReactors(d.Context())(db)(mapId)
+				if err != nil {
+					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
+				res, err := model.SliceMap(reactor.Transform)(model.FixedProvider(rs))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				server.Marshal[[]reactor.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			}
+		})
+	}
+}
+
+func handleGetMapNPCsByObjectIdRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				vars := mux.Vars(r)
+				objectId, err := strconv.Atoi(vars["objectId"])
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Error parsing objectId as uint32")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				ns, err := GetNpcsByObjectId(d.Context())(db)(mapId, uint32(objectId))
+				res, err := model.SliceMap(npc.Transform)(model.FixedProvider(ns))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				server.Marshal[[]npc.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			}
+		})
+	}
+}
+
+func handleGetMapNPCsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				ns, err := GetNpcs(d.Context())(db)(mapId)
+				res, err := model.SliceMap(npc.Transform)(model.FixedProvider(ns))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				server.Marshal[[]npc.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			}
+		})
+	}
+}
+
+func handleGetMapNPCRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+			return rest.ParseNPC(d.Logger(), func(npcId uint32) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					ns, err := GetNpc(d.Context())(db)(mapId, npcId)
+					res, err := model.Map(npc.Transform)(model.FixedProvider(ns))()
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Creating REST model.")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					server.Marshal[npc.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				}
+			})
+		})
+	}
+}
+
+func handleGetMapMonstersRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				ms, err := GetMonsters(d.Context())(db)(mapId)
+				res, err := model.SliceMap(monster.Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				server.Marshal[[]monster.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			}
+		})
+	}
+}
+
+func handleGetMapDropPositionRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, input DropPositionRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input DropPositionRestModel) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				p := calcDropPos(d.Context())(db)(mapId, &point.Model{X: input.InitialX, Y: input.InitialY}, &point.Model{X: input.FallbackX, Y: input.FallbackY})
+				res, err := model.Map(point.Transform)(model.FixedProvider(*p))()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				server.Marshal[point.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			}
+		})
+	}
 }
 
 type DropPositionRestModel struct {
@@ -287,31 +312,33 @@ func (r *DropPositionRestModel) SetID(strId string) error {
 	return nil
 }
 
-func handleGetMapFootholdBelowRequest(d *rest.HandlerDependency, c *rest.HandlerContext, i PositionRestModel) http.HandlerFunc {
-	return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := GetById(d.Context())(mapId)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			p := point.NewModel(i.X, i.Y)
-			fh := m.footholdTree.findBelow(p)
-			if fh == nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
+func handleGetMapFootholdBelowRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, i PositionRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, i PositionRestModel) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				m, err := GetById(d.Context())(db)(mapId)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				p := &point.Model{X: i.X, Y: i.Y}
+				fh := m.FootholdTree.findBelow(p)
+				if fh == nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 
-			rm := FootholdRestModel{
-				Id: fh.id,
-				X1: fh.first.X(),
-				Y1: fh.first.Y(),
-				X2: fh.second.X(),
-				Y2: fh.second.Y(),
+				rm := FootholdRestModel{
+					Id: fh.Id,
+					X1: fh.First.X,
+					Y1: fh.First.Y,
+					X2: fh.Second.X,
+					Y2: fh.Second.Y,
+				}
+				server.Marshal[FootholdRestModel](d.Logger())(w)(c.ServerInformation())(rm)
 			}
-			server.Marshal[FootholdRestModel](d.Logger())(w)(c.ServerInformation())(rm)
-		}
-	})
+		})
+	}
 }
 
 type PositionRestModel struct {

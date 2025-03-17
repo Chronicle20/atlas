@@ -7,7 +7,7 @@ import (
 )
 
 type Identifier[I comparable] interface {
-	Id() I
+	GetId() I
 }
 type Registry[I comparable, M Identifier[I]] struct {
 	lock       sync.Mutex
@@ -36,18 +36,18 @@ func (r *Registry[I, M]) Add(t tenant.Model, m M) error {
 	r.ensureTenantLock(t)
 	r.tenantLock[t].Lock()
 	defer r.tenantLock[t].Unlock()
-	r.registry[t][m.Id()] = m
+	r.registry[t][m.GetId()] = m
 	return nil
 }
 
-func (r *Registry[I, M]) Get(t tenant.Model, consumableId I) (M, error) {
+func (r *Registry[I, M]) Get(t tenant.Model, id I) (M, error) {
 	r.ensureTenantLock(t)
 	r.tenantLock[t].RLock()
 	defer r.tenantLock[t].RUnlock()
 
 	var val M
 	var ok bool
-	if val, ok = r.registry[t][consumableId]; ok {
+	if val, ok = r.registry[t][id]; ok {
 		return val, nil
 	}
 	return val, errors.New("not found")

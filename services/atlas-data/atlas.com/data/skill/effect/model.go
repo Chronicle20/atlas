@@ -3,64 +3,58 @@ package effect
 import "atlas-data/skill/effect/statup"
 
 type Model struct {
-	weaponAttack  int16
-	magicAttack   int16
-	weaponDefense int16
-	magicDefense  int16
-	accuracy      int16
-	avoidability  int16
-	speed         int16
-	jump          int16
-	hp            uint16
-	mp            uint16
-	hpr           float64
-	mpr           float64
-	mhprRate      uint16
-	mmprRate      uint16
-	mobSkill      uint16
-	mobSkillLevel uint16
-	mhpR          byte
-	mmpR          byte
-	hpCon         uint16
-	mpCon         uint16
-	duration      int32
-	target        uint32
-	barrier       int32
-	mob           uint32
-	overtime      bool
-	repeatEffect  bool
-	moveTo        int32
-	cp            uint32
-	nuffSkill     uint32
-	skill         bool
-	x             int16
-	y             int16
-	mobCount      uint32
-	moneyCon      uint32
-	cooldown      uint32
-	morphId       uint32
-	ghost         uint32
-	fatigue       uint32
-	berserk       uint32
-	booster       uint32
-	prop          float64
-	itemCon       uint32
-	itemConNo     uint32
-	damage        uint32
-	attackCount   uint32
-	fixDamage     int32
-	//LT Point
-	//RB Point
-	bulletCount          uint16
-	bulletConsume        uint16
-	mapProtection        byte
-	cureAbnormalStatuses []string
-	statups              []statup.Model
-	monsterStatus        map[string]uint32
-}
-
-func (m Model) StatUps() []statup.Model {
-	return m.statups
+	WeaponAttack         int16             `json:"weapon_attack"`
+	MagicAttack          int16             `json:"magic_attack"`
+	WeaponDefense        int16             `json:"weapon_defense"`
+	MagicDefense         int16             `json:"magic_defense"`
+	Accuracy             int16             `json:"accuracy"`
+	Avoidability         int16             `json:"avoidability"`
+	Speed                int16             `json:"speed"`
+	Jump                 int16             `json:"jump"`
+	HP                   uint16            `json:"hp"`
+	MP                   uint16            `json:"mp"`
+	HPR                  float64           `json:"hpr"`
+	MPR                  float64           `json:"mpr"`
+	MHPRRate             uint16            `json:"mhpr_rate"`
+	MMPRRate             uint16            `json:"mmpr_rate"`
+	MobSkill             uint16            `json:"mob_skill"`
+	MobSkillLevel        uint16            `json:"mob_skill_level"`
+	MHPR                 byte              `json:"mhp_r"`
+	MMPR                 byte              `json:"mmp_r"`
+	HPCon                uint16            `json:"hp_con"`
+	MPCon                uint16            `json:"mp_con"`
+	Duration             int32             `json:"duration"`
+	Target               uint32            `json:"target"`
+	Barrier              int32             `json:"barrier"`
+	Mob                  uint32            `json:"mob"`
+	Overtime             bool              `json:"overtime"`
+	RepeatEffect         bool              `json:"repeat_effect"`
+	MoveTo               int32             `json:"move_to"`
+	CP                   uint32            `json:"cp"`
+	NuffSkill            uint32            `json:"nuff_skill"`
+	Skill                bool              `json:"skill"`
+	X                    int16             `json:"x"`
+	Y                    int16             `json:"y"`
+	MobCount             uint32            `json:"mob_count"`
+	MoneyCon             uint32            `json:"money_con"`
+	Cooldown             uint32            `json:"cooldown"`
+	MorphId              uint32            `json:"morph_id"`
+	Ghost                uint32            `json:"ghost"`
+	Fatigue              uint32            `json:"fatigue"`
+	Berserk              uint32            `json:"berserk"`
+	Booster              uint32            `json:"booster"`
+	Prop                 float64           `json:"prop"`
+	ItemCon              uint32            `json:"item_con"`
+	ItemConNo            uint32            `json:"item_con_no"`
+	Damage               uint32            `json:"damage"`
+	AttackCount          uint32            `json:"attack_count"`
+	FixDamage            int32             `json:"fix_damage"`
+	BulletCount          uint16            `json:"bullet_count"`
+	BulletConsume        uint16            `json:"bullet_consume"`
+	MapProtection        byte              `json:"map_protection"`
+	CureAbnormalStatuses []string          `json:"cure_abnormal_statuses"`
+	Statups              []statup.Model    `json:"statups"`
+	MonsterStatus        map[string]uint32 `json:"monster_status"`
 }
 
 func NewModelBuilder() *ModelBuilder {
@@ -406,61 +400,60 @@ func (b *ModelBuilder) SetStatups(statups []statup.Model) *ModelBuilder {
 	b.statups = statups
 	return b
 }
-
 func (b *ModelBuilder) Build() Model {
 	return Model{
-		weaponAttack:         b.weaponAttack,
-		magicAttack:          b.magicAttack,
-		weaponDefense:        b.weaponDefense,
-		magicDefense:         b.magicDefense,
-		accuracy:             b.accuracy,
-		avoidability:         b.avoidability,
-		speed:                b.speed,
-		jump:                 b.jump,
-		hp:                   b.hp,
-		mp:                   b.mp,
-		hpr:                  b.hpr,
-		mpr:                  b.mpr,
-		mhprRate:             b.mhprRate,
-		mmprRate:             b.mmprRate,
-		mobSkill:             b.mobSkill,
-		mobSkillLevel:        b.mobSkillLevel,
-		mhpR:                 b.mhpR,
-		mmpR:                 b.mmpR,
-		hpCon:                b.hpCon,
-		mpCon:                b.mpCon,
-		duration:             b.duration,
-		target:               b.target,
-		barrier:              b.barrier,
-		mob:                  b.mob,
-		overtime:             b.overTime,
-		repeatEffect:         b.repeatEffect,
-		moveTo:               b.moveTo,
-		cp:                   b.cp,
-		nuffSkill:            b.nuffSkill,
-		skill:                b.skill,
-		x:                    b.x,
-		y:                    b.y,
-		mobCount:             b.mobCount,
-		moneyCon:             b.moneyCon,
-		cooldown:             b.cooldown,
-		morphId:              b.morphId,
-		ghost:                b.ghost,
-		fatigue:              b.fatigue,
-		berserk:              b.berserk,
-		booster:              b.booster,
-		prop:                 b.prop,
-		itemCon:              b.itemCon,
-		itemConNo:            b.itemConNo,
-		damage:               b.damage,
-		attackCount:          b.attackCount,
-		fixDamage:            b.fixDamage,
-		bulletCount:          b.bulletCount,
-		bulletConsume:        b.bulletConsume,
-		mapProtection:        b.mapProtection,
-		cureAbnormalStatuses: b.cureAbnormalStatuses,
-		statups:              b.statups,
-		monsterStatus:        b.monsterStatus,
+		WeaponAttack:         b.weaponAttack,
+		MagicAttack:          b.magicAttack,
+		WeaponDefense:        b.weaponDefense,
+		MagicDefense:         b.magicDefense,
+		Accuracy:             b.accuracy,
+		Avoidability:         b.avoidability,
+		Speed:                b.speed,
+		Jump:                 b.jump,
+		HP:                   b.hp,
+		MP:                   b.mp,
+		HPR:                  b.hpr,
+		MPR:                  b.mpr,
+		MHPRRate:             b.mhprRate,
+		MMPRRate:             b.mmprRate,
+		MobSkill:             b.mobSkill,
+		MobSkillLevel:        b.mobSkillLevel,
+		MHPR:                 b.mhpR,
+		MMPR:                 b.mmpR,
+		HPCon:                b.hpCon,
+		MPCon:                b.mpCon,
+		Duration:             b.duration,
+		Target:               b.target,
+		Barrier:              b.barrier,
+		Mob:                  b.mob,
+		Overtime:             b.overTime, // Kept lowercase `b.overTime` as per request
+		RepeatEffect:         b.repeatEffect,
+		MoveTo:               b.moveTo,
+		CP:                   b.cp,
+		NuffSkill:            b.nuffSkill,
+		Skill:                b.skill,
+		X:                    b.x,
+		Y:                    b.y,
+		MobCount:             b.mobCount,
+		MoneyCon:             b.moneyCon,
+		Cooldown:             b.cooldown,
+		MorphId:              b.morphId,
+		Ghost:                b.ghost,
+		Fatigue:              b.fatigue,
+		Berserk:              b.berserk,
+		Booster:              b.booster,
+		Prop:                 b.prop,
+		ItemCon:              b.itemCon,
+		ItemConNo:            b.itemConNo,
+		Damage:               b.damage,
+		AttackCount:          b.attackCount,
+		FixDamage:            b.fixDamage,
+		BulletCount:          b.bulletCount,
+		BulletConsume:        b.bulletConsume,
+		MapProtection:        b.mapProtection,
+		CureAbnormalStatuses: b.cureAbnormalStatuses,
+		Statups:              b.statups,
+		MonsterStatus:        b.monsterStatus,
 	}
 }
 

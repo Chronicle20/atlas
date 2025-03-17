@@ -36,6 +36,8 @@ const (
 
 var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume}
 
+//var Workers = []string{WorkerMap}
+
 func ProcessZip(l logrus.FieldLogger) func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
 	return func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
 		t := tenant.MustFromContext(ctx)
@@ -145,25 +147,25 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 				if name == WorkerMap {
 					_ = _map.InitString(t, filepath.Join(path, "String.wz", "Map.img.xml"))
 					_ = npc.InitString(t, filepath.Join(path, "String.wz", "Npc.img.xml"))
-					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Map.wz", "Map"), true, _map.RegisterMap)()
+					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Map.wz", "Map"), true, _map.RegisterMap(db))()
 					_ = _map.GetMapStringRegistry().Clear(t)
 					_ = npc.GetNpcStringRegistry().Clear(t)
 				} else if name == WorkerMonster {
 					_ = monster.InitString(t, filepath.Join(path, "String.wz", "Mob.img.xml"))
 					_ = monster.InitGauge(t, filepath.Join(path, "UI.wz", "UIWindow.img.xml"))
-					_ = RegisterAllData(l)(ctx)(path, "Mob.wz", false, monster.RegisterMonster)()
+					_ = RegisterAllData(l)(ctx)(path, "Mob.wz", false, monster.RegisterMonster(db))()
 					_ = monster.GetMonsterStringRegistry().Clear(t)
 					_ = monster.GetMonsterGaugeRegistry().Clear(t)
 				} else if name == WorkerCharacter {
-					_ = RegisterAllData(l)(ctx)(path, "Character.wz", true, equipment.RegisterEquipment)()
+					_ = RegisterAllData(l)(ctx)(path, "Character.wz", true, equipment.RegisterEquipment(db))()
 				} else if name == WorkerReactor {
-					_ = RegisterAllData(l)(ctx)(path, "Reactor.wz", true, reactor.RegisterReactor)()
+					_ = RegisterAllData(l)(ctx)(path, "Reactor.wz", true, reactor.RegisterReactor(db))()
 				} else if name == WorkerSkill {
-					_ = RegisterAllData(l)(ctx)(path, "Skill.wz", false, skill.RegisterSkill)()
+					_ = RegisterAllData(l)(ctx)(path, "Skill.wz", false, skill.RegisterSkill(db))()
 				} else if name == WorkerPet {
-					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Pet"), false, pet.RegisterPet)()
+					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Pet"), false, pet.RegisterPet(db))()
 				} else if name == WorkerConsume {
-					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Consume"), false, consumable.RegisterConsumable)()
+					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Consume"), false, consumable.RegisterConsumable(db))()
 				}
 
 				return nil

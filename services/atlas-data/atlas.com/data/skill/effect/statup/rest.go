@@ -7,7 +7,14 @@ type RestModel struct {
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Type:   m.buffType,
-		Amount: m.amount,
+		Type:   m.Type,
+		Amount: m.Amount,
+	}, nil
+}
+
+func Extract(rm RestModel) (Model, error) {
+	return Model{
+		Type:   rm.Type,
+		Amount: rm.Amount,
 	}, nil
 }

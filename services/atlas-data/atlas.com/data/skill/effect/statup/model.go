@@ -1,21 +1,13 @@
 package statup
 
 type Model struct {
-	buffType string
-	amount   int32
-}
-
-func (s Model) Mask() string {
-	return s.buffType
-}
-
-func (s Model) Amount() int32 {
-	return s.amount
+	Type   string `json:"type"`
+	Amount int32  `json:"amount"`
 }
 
 func NewModel(buffType string, amount int32) Model {
 	return Model{
-		buffType: buffType,
-		amount:   amount,
+		Type:   buffType,
+		Amount: amount,
 	}
 }

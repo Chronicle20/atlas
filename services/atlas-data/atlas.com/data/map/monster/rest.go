@@ -25,19 +25,45 @@ func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
+func (r *RestModel) SetID(idStr string) error {
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
+}
+
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:       m.ObjectId,
-		Template: m.Id,
+		Id:       m.Id,
+		Template: m.Template,
 		MobTime:  m.MobTime,
 		Team:     m.Team,
-		CY:       m.Cy,
+		CY:       m.CY,
 		F:        m.F,
-		FH:       m.Fh,
-		RX0:      m.Rx0,
-		RX1:      m.Rx1,
+		FH:       m.FH,
+		RX0:      m.RX0,
+		RX1:      m.RX1,
 		X:        m.X,
 		Y:        m.Y,
 		Hide:     m.Hide,
+	}, nil
+}
+
+func Extract(rm RestModel) (Model, error) {
+	return Model{
+		Id:       rm.Id,
+		Template: rm.Template,
+		MobTime:  rm.MobTime,
+		Team:     rm.Team,
+		CY:       rm.CY,
+		F:        rm.F,
+		FH:       rm.FH,
+		RX0:      rm.RX0,
+		RX1:      rm.RX1,
+		X:        rm.X,
+		Y:        rm.Y,
+		Hide:     rm.Hide,
 	}, nil
 }

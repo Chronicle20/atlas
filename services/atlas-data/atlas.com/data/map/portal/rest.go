@@ -1,7 +1,5 @@
 package portal
 
-import "strconv"
-
 type RestModel struct {
 	Id          string `json:"-"`
 	Name        string `json:"name"`
@@ -21,15 +19,33 @@ func (r RestModel) GetID() string {
 	return r.Id
 }
 
+func (r *RestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:          strconv.Itoa(int(m.Id)),
+		Id:          m.Id,
 		Name:        m.Name,
 		Target:      m.Target,
-		Type:        m.PortalType,
+		Type:        m.Type,
 		X:           m.X,
 		Y:           m.Y,
 		TargetMapId: m.TargetMapId,
 		ScriptName:  m.ScriptName,
+	}, nil
+}
+
+func Extract(rm RestModel) (Model, error) {
+	return Model{
+		Id:          rm.Id,
+		Name:        rm.Name,
+		Target:      rm.Target,
+		Type:        rm.Type,
+		X:           rm.X,
+		Y:           rm.Y,
+		TargetMapId: rm.TargetMapId,
+		ScriptName:  rm.ScriptName,
 	}, nil
 }

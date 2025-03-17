@@ -13,7 +13,7 @@ type Gauge struct {
 	exists bool
 }
 
-func (g Gauge) Id() uint32 {
+func (g Gauge) GetId() uint32 {
 	return g.id
 }
 

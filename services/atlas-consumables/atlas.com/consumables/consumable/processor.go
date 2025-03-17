@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"math"
 )
 
 func GetById(l logrus.FieldLogger) func(ctx context.Context) func(itemId uint32) (Model, error) {
@@ -26,6 +27,12 @@ func GetById(l logrus.FieldLogger) func(ctx context.Context) func(itemId uint32)
 func ConsumeStandard(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
 	return func(ctx context.Context) func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
 		return func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
+			c, err := character.GetById(l)(ctx)()(characterId)
+			if err != nil {
+				_ = inventory.CancelItemReservation(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, slot)
+				return err
+			}
+
 			m, err := _map.GetMap(characterId)
 			if err != nil {
 				_ = inventory.CancelItemReservation(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, slot)
@@ -60,7 +67,11 @@ func ConsumeStandard(l logrus.FieldLogger) func(ctx context.Context) func(charac
 			if val, ok := ci.GetSpec(SpecTypeHP); ok && val > 0 {
 				_ = character.ChangeHP(l)(ctx)(m, characterId, int16(val))
 			}
-			// hpr
+			if val, ok := ci.GetSpec(SpecTypeHPRecovery); ok && val > 0 {
+				pct := float64(val) / float64(100)
+				res := int16(math.Floor(float64(c.Hp()) * pct))
+				_ = character.ChangeHP(l)(ctx)(m, characterId, res)
+			}
 			if val, ok := ci.GetSpec(SpecTypeJump); ok && val > 0 {
 				statups = append(statups, stat.Model{
 					Type:   ts.TemporaryStatTypeJump,
@@ -82,7 +93,11 @@ func ConsumeStandard(l logrus.FieldLogger) func(ctx context.Context) func(charac
 			if val, ok := ci.GetSpec(SpecTypeMP); ok && val > 0 {
 				_ = character.ChangeMP(l)(ctx)(m, characterId, int16(val))
 			}
-			// mpr
+			if val, ok := ci.GetSpec(SpecTypeMPRecovery); ok && val > 0 {
+				pct := float64(val) / float64(100)
+				res := int16(math.Floor(float64(c.Mp()) * pct))
+				_ = character.ChangeMP(l)(ctx)(m, characterId, res)
+			}
 			if val, ok := ci.GetSpec(SpecTypeWeaponAttack); ok && val > 0 {
 				statups = append(statups, stat.Model{
 					Type:   ts.TemporaryStatTypeWeaponAttack,

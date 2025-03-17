@@ -3,8 +3,6 @@ package pet
 import (
 	"atlas-pets/character"
 	"atlas-pets/character/item"
-	"atlas-pets/consumable"
-	inventory2 "atlas-pets/inventory"
 	"atlas-pets/kafka/producer"
 	"atlas-pets/pet/data"
 	"atlas-pets/pet/position"
@@ -15,7 +13,6 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -663,41 +660,6 @@ func AwardLevel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 					return err
 				}
 				return nil
-			}
-		}
-	}
-}
-
-func ConsumeItem(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
-		return func(db *gorm.DB) func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
-			return func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
-				var p *Model
-				txErr := db.Transaction(func(tx *gorm.DB) error {
-					var err error
-					rp, err := HungriestByOwnerProvider(ctx)(tx)(characterId)()
-					if err != nil {
-						return err
-					}
-					p = &rp
-
-					ci, err := consumable.GetById(l)(ctx)(itemId)
-					if err != nil {
-						return err
-					}
-
-					inc := byte(0)
-					if val, ok := ci.GetSpec(consumable.SpecTypeInc); ok {
-						inc = byte(val)
-					}
-
-					return AwardFullness(l)(ctx)(tx)(p.Id(), inc, characterId)
-				})
-				if txErr != nil || p == nil {
-					_ = inventory2.CancelItemReservation(l)(ctx)(characterId, inventory.TypeValueUse, transactionId, slot)
-					return txErr
-				}
-				return inventory2.ConsumeItem(l)(ctx)(characterId, inventory.TypeValueUse, transactionId, slot)
 			}
 		}
 	}

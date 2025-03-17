@@ -69,7 +69,7 @@ func ConsumeStandard(l logrus.FieldLogger) func(ctx context.Context) func(charac
 			}
 			if val, ok := ci.GetSpec(SpecTypeHPRecovery); ok && val > 0 {
 				pct := float64(val) / float64(100)
-				res := int16(math.Floor(float64(c.Hp()) * pct))
+				res := int16(math.Floor(float64(c.MaxHp()) * pct))
 				_ = character.ChangeHP(l)(ctx)(m, characterId, res)
 			}
 			if val, ok := ci.GetSpec(SpecTypeJump); ok && val > 0 {
@@ -95,7 +95,7 @@ func ConsumeStandard(l logrus.FieldLogger) func(ctx context.Context) func(charac
 			}
 			if val, ok := ci.GetSpec(SpecTypeMPRecovery); ok && val > 0 {
 				pct := float64(val) / float64(100)
-				res := int16(math.Floor(float64(c.Mp()) * pct))
+				res := int16(math.Floor(float64(c.MaxMp()) * pct))
 				_ = character.ChangeMP(l)(ctx)(m, characterId, res)
 			}
 			if val, ok := ci.GetSpec(SpecTypeWeaponAttack); ok && val > 0 {

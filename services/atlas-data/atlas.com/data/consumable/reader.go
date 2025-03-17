@@ -38,68 +38,68 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 				}
 
 				m := Model{
-					id:             consumableId,
-					spec:           make(map[SpecType]int32),
-					monsterSummons: make(map[uint32]uint32),
-					skills:         make([]uint32, 0),
-					morphs:         make(map[uint32]uint32),
-					rewards:        make([]RewardModel, 0),
+					Id:             consumableId,
+					Spec:           make(map[SpecType]int32),
+					MonsterSummons: make(map[uint32]uint32),
+					Skills:         make([]uint32, 0),
+					Morphs:         make(map[uint32]uint32),
+					Rewards:        make([]RewardModel, 0),
 				}
-				m.tradeBlock = i.GetBool("tradeBlock", false)
-				m.price = uint32(i.GetIntegerWithDefault("price", 0))
-				m.unitPrice = uint32(i.GetIntegerWithDefault("unitPrice", 0))
-				m.slotMax = uint32(i.GetIntegerWithDefault("slotMax", 0))
-				m.timeLimited = i.GetBool("timeLimited", false)
-				m.notSale = i.GetBool("notSale", false)
-				m.quest = i.GetBool("quest", false)
-				m.only = i.GetBool("only", false)
-				m.success = uint32(i.GetIntegerWithDefault("success", 0))
-				m.cursed = uint32(i.GetIntegerWithDefault("cursed", 0))
-				m.create = uint32(i.GetIntegerWithDefault("create", 0))
-				m.masterLevel = uint32(i.GetIntegerWithDefault("masterLevel", 0))
-				m.reqSkillLevel = uint32(i.GetIntegerWithDefault("reqSkillLevel", 0))
-				m.tradeAvailable = i.GetBool("tradeAvailable", false)
-				m.noCancelMouse = i.GetBool("noCancelMouse", false)
-				m.pquest = i.GetBool("pquest", false)
-				m.left = i.GetIntegerWithDefault("left", 0)
-				m.right = i.GetIntegerWithDefault("right", 0)
-				m.top = i.GetIntegerWithDefault("top", 0)
-				m.bottom = i.GetIntegerWithDefault("bottom", 0)
-				m.bridleMsgType = uint32(i.GetIntegerWithDefault("bridleMsgType", 0))
-				m.bridleProp = uint32(i.GetIntegerWithDefault("bridleProp", 0))
-				m.bridlePropChg = i.GetFloatWithDefault("bridlePropChg", 0)
-				m.useDelay = uint32(i.GetIntegerWithDefault("useDelay", 0))
-				m.delayMsg = i.GetString("delayMsg", "")
-				m.incFatigue = i.GetIntegerWithDefault("incFatigue", 0)
-				m.npc = uint32(i.GetIntegerWithDefault("npc", 0))
-				m.runOnPickup = i.GetBool("runOnPickup", false)
-				m.monsterBook = i.GetBool("monsterBook", false)
-				m.monsterId = uint32(i.GetIntegerWithDefault("mob", 0))
-				m.bigSize = i.GetBool("bigSize", false)
-				m.tragetBlock = i.GetBool("tragetBlock", false)
-				m.effect = i.GetString("effect", "")
-				m.monsterHp = uint32(i.GetIntegerWithDefault("mobHP", 0))
-				m.worldMsg = i.GetString("worldMsg", "")
-				m.incPDD = uint32(i.GetIntegerWithDefault("incPDD", 0))
-				m.incMDD = uint32(i.GetIntegerWithDefault("incMDD", 0))
-				m.incACC = uint32(i.GetIntegerWithDefault("incACC", 0))
-				m.incMHP = uint32(i.GetIntegerWithDefault("incMHP", 0))
-				m.incMMP = uint32(i.GetIntegerWithDefault("incMMP", 0))
-				m.incPAD = uint32(i.GetIntegerWithDefault("incPAD", 0))
-				m.incMAD = uint32(i.GetIntegerWithDefault("incMAD", 0))
-				m.incEVA = uint32(i.GetIntegerWithDefault("incEVA", 0))
-				m.incLUK = uint32(i.GetIntegerWithDefault("incLUK", 0))
-				m.incDEX = uint32(i.GetIntegerWithDefault("incDEX", 0))
-				m.incINT = uint32(i.GetIntegerWithDefault("incINT", 0))
-				m.incSTR = uint32(i.GetIntegerWithDefault("incSTR", 0))
-				m.incSpeed = uint32(i.GetIntegerWithDefault("incSpeed", 0))
+				m.TradeBlock = i.GetBool("tradeBlock", false)
+				m.Price = uint32(i.GetIntegerWithDefault("price", 0))
+				m.UnitPrice = uint32(i.GetIntegerWithDefault("unitPrice", 0))
+				m.SlotMax = uint32(i.GetIntegerWithDefault("slotMax", 0))
+				m.TimeLimited = i.GetBool("timeLimited", false)
+				m.NotSale = i.GetBool("notSale", false)
+				m.Quest = i.GetBool("quest", false)
+				m.Only = i.GetBool("only", false)
+				m.Success = uint32(i.GetIntegerWithDefault("success", 0))
+				m.Cursed = uint32(i.GetIntegerWithDefault("cursed", 0))
+				m.Create = uint32(i.GetIntegerWithDefault("create", 0))
+				m.MasterLevel = uint32(i.GetIntegerWithDefault("masterLevel", 0))
+				m.ReqSkillLevel = uint32(i.GetIntegerWithDefault("reqSkillLevel", 0))
+				m.TradeAvailable = i.GetBool("tradeAvailable", false)
+				m.NoCancelMouse = i.GetBool("noCancelMouse", false)
+				m.Pquest = i.GetBool("pquest", false)
+				m.Left = i.GetIntegerWithDefault("left", 0)
+				m.Right = i.GetIntegerWithDefault("right", 0)
+				m.Top = i.GetIntegerWithDefault("top", 0)
+				m.Bottom = i.GetIntegerWithDefault("bottom", 0)
+				m.BridleMsgType = uint32(i.GetIntegerWithDefault("bridleMsgType", 0))
+				m.BridleProp = uint32(i.GetIntegerWithDefault("bridleProp", 0))
+				m.BridlePropChg = i.GetFloatWithDefault("bridlePropChg", 0)
+				m.UseDelay = uint32(i.GetIntegerWithDefault("useDelay", 0))
+				m.DelayMsg = i.GetString("delayMsg", "")
+				m.IncFatigue = i.GetIntegerWithDefault("incFatigue", 0)
+				m.Npc = uint32(i.GetIntegerWithDefault("npc", 0))
+				m.RunOnPickup = i.GetBool("runOnPickup", false)
+				m.MonsterBook = i.GetBool("monsterBook", false)
+				m.MonsterId = uint32(i.GetIntegerWithDefault("mob", 0))
+				m.BigSize = i.GetBool("bigSize", false)
+				m.TargetBlock = i.GetBool("tragetBlock", false)
+				m.Effect = i.GetString("effect", "")
+				m.MonsterHp = uint32(i.GetIntegerWithDefault("mobHP", 0))
+				m.WorldMsg = i.GetString("worldMsg", "")
+				m.IncPDD = uint32(i.GetIntegerWithDefault("incPDD", 0))
+				m.IncMDD = uint32(i.GetIntegerWithDefault("incMDD", 0))
+				m.IncACC = uint32(i.GetIntegerWithDefault("incACC", 0))
+				m.IncMHP = uint32(i.GetIntegerWithDefault("incMHP", 0))
+				m.IncMMP = uint32(i.GetIntegerWithDefault("incMMP", 0))
+				m.IncPAD = uint32(i.GetIntegerWithDefault("incPAD", 0))
+				m.IncMAD = uint32(i.GetIntegerWithDefault("incMAD", 0))
+				m.IncEVA = uint32(i.GetIntegerWithDefault("incEVA", 0))
+				m.IncLUK = uint32(i.GetIntegerWithDefault("incLUK", 0))
+				m.IncDEX = uint32(i.GetIntegerWithDefault("incDEX", 0))
+				m.IncINT = uint32(i.GetIntegerWithDefault("incINT", 0))
+				m.IncSTR = uint32(i.GetIntegerWithDefault("incSTR", 0))
+				m.IncSpeed = uint32(i.GetIntegerWithDefault("incSpeed", 0))
 
 				mos, err := cxml.ChildByName("mob")
 				if err == nil && mos != nil {
 					for _, mo := range mos.ChildNodes {
 						mid := uint32(mo.GetIntegerWithDefault("id", 0))
 						prob := uint32(mo.GetIntegerWithDefault("prob", 0))
-						m.monsterSummons[mid] = prob
+						m.MonsterSummons[mid] = prob
 					}
 				}
 
@@ -110,49 +110,49 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 						if err != nil {
 							return model.ErrorProvider[[]Model](err)
 						}
-						m.skills = append(m.skills, uint32(val))
+						m.Skills = append(m.Skills, uint32(val))
 					}
 				}
 
 				s, err := cxml.ChildByName("spec")
 				if err == nil && s != nil {
-					m.spec[SpecTypeHP] = s.GetIntegerWithDefault(string(SpecTypeHP), 0)
-					m.spec[SpecTypeMP] = s.GetIntegerWithDefault(string(SpecTypeMP), 0)
-					m.spec[SpecTypeHPRecovery] = s.GetIntegerWithDefault(string(SpecTypeHPRecovery), 0)
-					m.spec[SpecTypeMPRecovery] = s.GetIntegerWithDefault(string(SpecTypeMPRecovery), 0)
-					m.spec[SpecTypeMoveTo] = s.GetIntegerWithDefault(string(SpecTypeMoveTo), 0)
-					m.spec[SpecTypeWeaponAttack] = s.GetIntegerWithDefault(string(SpecTypeWeaponAttack), 0)
-					m.spec[SpecTypeMagicAttack] = s.GetIntegerWithDefault(string(SpecTypeMagicAttack), 0)
-					m.spec[SpecTypeWeaponDefense] = s.GetIntegerWithDefault(string(SpecTypeWeaponDefense), 0)
-					m.spec[SpecTypeMagicDefense] = s.GetIntegerWithDefault(string(SpecTypeMagicDefense), 0)
-					m.spec[SpecTypeSpeed] = s.GetIntegerWithDefault(string(SpecTypeSpeed), 0)
-					m.spec[SpecTypeEvasion] = s.GetIntegerWithDefault(string(SpecTypeEvasion), 0)
-					m.spec[SpecTypeAccuracy] = s.GetIntegerWithDefault(string(SpecTypeAccuracy), 0)
-					m.spec[SpecTypeJump] = s.GetIntegerWithDefault(string(SpecTypeJump), 0)
-					m.spec[SpecTypeTime] = s.GetIntegerWithDefault(string(SpecTypeTime), 0)
-					m.spec[SpecTypeThaw] = s.GetIntegerWithDefault(string(SpecTypeThaw), 0)
-					m.spec[SpecTypePoison] = s.GetIntegerWithDefault(string(SpecTypePoison), 0)
-					m.spec[SpecTypeDarkness] = s.GetIntegerWithDefault(string(SpecTypeDarkness), 0)
-					m.spec[SpecTypeWeakness] = s.GetIntegerWithDefault(string(SpecTypeWeakness), 0)
-					m.spec[SpecTypeSeal] = s.GetIntegerWithDefault(string(SpecTypeSeal), 0)
-					m.spec[SpecTypeCurse] = s.GetIntegerWithDefault(string(SpecTypeCurse), 0)
-					m.spec[SpecTypeReturnMap] = s.GetIntegerWithDefault(string(SpecTypeReturnMap), 0)
-					m.spec[SpecTypeIgnoreContinent] = s.GetIntegerWithDefault(string(SpecTypeIgnoreContinent), 0)
-					m.spec[SpecTypeMorph] = s.GetIntegerWithDefault(string(SpecTypeMorph), 0)
-					m.spec[SpecTypeRandomMoveInFieldSet] = s.GetIntegerWithDefault(string(SpecTypeRandomMoveInFieldSet), 0)
-					m.spec[SpecTypeExperienceBuff] = s.GetIntegerWithDefault(string(SpecTypeExperienceBuff), 0)
-					m.spec[SpecTypeInc] = s.GetIntegerWithDefault(string(SpecTypeInc), 0)
-					m.spec[SpecTypeOnlyPickup] = s.GetIntegerWithDefault(string(SpecTypeOnlyPickup), 0)
+					m.Spec[SpecTypeHP] = s.GetIntegerWithDefault(string(SpecTypeHP), 0)
+					m.Spec[SpecTypeMP] = s.GetIntegerWithDefault(string(SpecTypeMP), 0)
+					m.Spec[SpecTypeHPRecovery] = s.GetIntegerWithDefault(string(SpecTypeHPRecovery), 0)
+					m.Spec[SpecTypeMPRecovery] = s.GetIntegerWithDefault(string(SpecTypeMPRecovery), 0)
+					m.Spec[SpecTypeMoveTo] = s.GetIntegerWithDefault(string(SpecTypeMoveTo), 0)
+					m.Spec[SpecTypeWeaponAttack] = s.GetIntegerWithDefault(string(SpecTypeWeaponAttack), 0)
+					m.Spec[SpecTypeMagicAttack] = s.GetIntegerWithDefault(string(SpecTypeMagicAttack), 0)
+					m.Spec[SpecTypeWeaponDefense] = s.GetIntegerWithDefault(string(SpecTypeWeaponDefense), 0)
+					m.Spec[SpecTypeMagicDefense] = s.GetIntegerWithDefault(string(SpecTypeMagicDefense), 0)
+					m.Spec[SpecTypeSpeed] = s.GetIntegerWithDefault(string(SpecTypeSpeed), 0)
+					m.Spec[SpecTypeEvasion] = s.GetIntegerWithDefault(string(SpecTypeEvasion), 0)
+					m.Spec[SpecTypeAccuracy] = s.GetIntegerWithDefault(string(SpecTypeAccuracy), 0)
+					m.Spec[SpecTypeJump] = s.GetIntegerWithDefault(string(SpecTypeJump), 0)
+					m.Spec[SpecTypeTime] = s.GetIntegerWithDefault(string(SpecTypeTime), 0)
+					m.Spec[SpecTypeThaw] = s.GetIntegerWithDefault(string(SpecTypeThaw), 0)
+					m.Spec[SpecTypePoison] = s.GetIntegerWithDefault(string(SpecTypePoison), 0)
+					m.Spec[SpecTypeDarkness] = s.GetIntegerWithDefault(string(SpecTypeDarkness), 0)
+					m.Spec[SpecTypeWeakness] = s.GetIntegerWithDefault(string(SpecTypeWeakness), 0)
+					m.Spec[SpecTypeSeal] = s.GetIntegerWithDefault(string(SpecTypeSeal), 0)
+					m.Spec[SpecTypeCurse] = s.GetIntegerWithDefault(string(SpecTypeCurse), 0)
+					m.Spec[SpecTypeReturnMap] = s.GetIntegerWithDefault(string(SpecTypeReturnMap), 0)
+					m.Spec[SpecTypeIgnoreContinent] = s.GetIntegerWithDefault(string(SpecTypeIgnoreContinent), 0)
+					m.Spec[SpecTypeMorph] = s.GetIntegerWithDefault(string(SpecTypeMorph), 0)
+					m.Spec[SpecTypeRandomMoveInFieldSet] = s.GetIntegerWithDefault(string(SpecTypeRandomMoveInFieldSet), 0)
+					m.Spec[SpecTypeExperienceBuff] = s.GetIntegerWithDefault(string(SpecTypeExperienceBuff), 0)
+					m.Spec[SpecTypeInc] = s.GetIntegerWithDefault(string(SpecTypeInc), 0)
+					m.Spec[SpecTypeOnlyPickup] = s.GetIntegerWithDefault(string(SpecTypeOnlyPickup), 0)
 
 					ms, err := s.ChildByName("morphRandom")
 					if err == nil && ms != nil {
 						for _, mo := range ms.ChildNodes {
 							id := uint32(mo.GetIntegerWithDefault("morph", 0))
 							prob := uint32(mo.GetIntegerWithDefault("prob", 0))
-							m.morphs[id] = prob
+							m.Morphs[id] = prob
 						}
 					}
-					m.script = s.GetString("script", "")
+					m.Script = s.GetString("script", "")
 				}
 
 				r, err := cxml.ChildByName("reward")
@@ -161,7 +161,7 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 						itemId := uint32(ro.GetIntegerWithDefault("item", 0))
 						count := uint32(ro.GetIntegerWithDefault("count", 0))
 						prob := uint32(ro.GetIntegerWithDefault("prob", 0))
-						m.rewards = append(m.rewards, RewardModel{itemId, count, prob})
+						m.Rewards = append(m.Rewards, RewardModel{itemId, count, prob})
 					}
 				}
 

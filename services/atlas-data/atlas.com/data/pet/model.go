@@ -1,35 +1,19 @@
 package pet
 
 type Model struct {
-	id     uint32
-	hungry uint32
-	cash   bool
-	life   uint32
-	skills []SkillModel
+	Id     uint32       `json:"id"`
+	Hungry uint32       `json:"hungry"`
+	Cash   bool         `json:"cash"`
+	Life   uint32       `json:"life"`
+	Skills []SkillModel `json:"skills"`
+}
+
+func (m Model) GetId() uint32 {
+	return m.Id
 }
 
 type SkillModel struct {
-	id          string
-	increase    uint16
-	probability uint16
-}
-
-func (m Model) Id() uint32 {
-	return m.id
-}
-
-func (m Model) Hungry() uint32 {
-	return m.hungry
-}
-
-func (m Model) Cash() bool {
-	return m.cash
-}
-
-func (m Model) Life() uint32 {
-	return m.life
-}
-
-func (m Model) Skills() []SkillModel {
-	return m.skills
+	Id          string `json:"id"`
+	Increase    uint16 `json:"increase"`
+	Probability uint16 `json:"probability"`
 }

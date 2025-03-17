@@ -1,6 +1,7 @@
 package reactor
 
 import (
+	"atlas-data/document"
 	"atlas-data/xml"
 	"context"
 	"fmt"
@@ -8,31 +9,50 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"path/filepath"
 	"strconv"
 	"strings"
 )
 
-func byIdProvider(ctx context.Context) func(mapId uint32) model.Provider[Model] {
-	t := tenant.MustFromContext(ctx)
-	return func(mapId uint32) model.Provider[Model] {
-		return func() (Model, error) {
-			m, err := GetModelRegistry().Get(t, mapId)
-			if err == nil {
-				return m, nil
-			}
-			nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
-			if err != nil {
+var DocType = "REACTOR"
+
+func byIdProvider(ctx context.Context) func(db *gorm.DB) func(id uint32) model.Provider[Model] {
+	return func(db *gorm.DB) func(id uint32) model.Provider[Model] {
+		t := tenant.MustFromContext(ctx)
+		return func(id uint32) model.Provider[Model] {
+			return func() (Model, error) {
+				m, err := GetModelRegistry().Get(t, id)
+				if err == nil {
+					return m, nil
+				}
+				m, err = document.Get[Model](ctx)(db)(DocType, id)
+				if err == nil {
+					_ = GetModelRegistry().Add(t, m)
+					return m, nil
+				}
+				nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
+				m, err = GetModelRegistry().Get(nt, id)
+				if err == nil {
+					return m, nil
+				}
+				nctx := tenant.WithContext(ctx, nt)
+				m, err = document.Get[Model](nctx)(db)(DocType, id)
+				if err == nil {
+					_ = GetModelRegistry().Add(nt, m)
+					return m, nil
+				}
 				return Model{}, err
 			}
-			return GetModelRegistry().Get(nt, mapId)
 		}
 	}
 }
 
-func GetById(ctx context.Context) func(mapId uint32) (Model, error) {
-	return func(mapId uint32) (Model, error) {
-		return byIdProvider(ctx)(mapId)()
+func GetById(ctx context.Context) func(db *gorm.DB) func(id uint32) (Model, error) {
+	return func(db *gorm.DB) func(id uint32) (Model, error) {
+		return func(id uint32) (Model, error) {
+			return byIdProvider(ctx)(db)(id)()
+		}
 	}
 }
 
@@ -50,14 +70,20 @@ func parseReactorId(filePath string) (uint32, error) {
 
 }
 
-func RegisterReactor(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-	return func(ctx context.Context) func(path string) {
-		t := tenant.MustFromContext(ctx)
-		return func(path string) {
-			m, err := ReadFromFile(l)(ctx)(path)()
-			if err == nil {
-				l.Debugf("Processed reactor [%d].", m.Id())
-				_ = GetModelRegistry().Add(t, m)
+func RegisterReactor(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
+	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
+		return func(ctx context.Context) func(path string) {
+			return func(path string) {
+				m, err := ReadFromFile(l)(ctx)(path)()
+				if err != nil {
+					return
+				}
+				err = document.Create(ctx)(db)(DocType, m.GetId(), &m)
+				if err != nil {
+					return
+				}
+
+				l.Debugf("Processed reactor [%d].", m.GetId())
 			}
 		}
 	}
@@ -82,7 +108,7 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 				return model.ErrorProvider[Model](err)
 			}
 			if info == nil {
-				m := NewModel(reactorId).AddState(0, []ReactorState{{theType: 999, reactorItem: nil, activeSkills: nil, nextState: 0}}, -1)
+				m := NewModel(reactorId).AddState(0, []ReactorState{{Type: 999, ReactorItem: nil, ActiveSkills: nil, NextState: 0}}, -1)
 				return model.FixedProvider(m)
 			}
 
@@ -113,7 +139,7 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 						if t == 100 {
 							itemId := uint32(md.GetIntegerWithDefault("0", 0))
 							quantity := uint16(md.GetIntegerWithDefault("1", 0))
-							ri = &ReactorItem{itemId: itemId, quantity: quantity}
+							ri = &ReactorItem{ItemId: itemId, Quantity: quantity}
 							if !areaSet || loadArea {
 								m = m.SetTL(md.GetPoint("tl", 0, 0))
 								m = m.SetRB(md.GetPoint("rb", 0, 0))
@@ -128,7 +154,7 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 							}
 						}
 						ns := int8(md.GetIntegerWithDefault("state", 0))
-						sdl = append(sdl, ReactorState{theType: t, reactorItem: ri, activeSkills: skillIds, nextState: ns})
+						sdl = append(sdl, ReactorState{Type: t, ReactorItem: ri, ActiveSkills: skillIds, NextState: ns})
 					}
 
 					m = m.AddState(i, sdl, timeout)

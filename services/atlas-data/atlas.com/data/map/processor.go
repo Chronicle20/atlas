@@ -1,6 +1,7 @@
 package _map
 
 import (
+	"atlas-data/document"
 	"atlas-data/map/monster"
 	"atlas-data/map/npc"
 	"atlas-data/map/portal"
@@ -11,77 +12,122 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"math"
+	"strconv"
 )
 
-func RegisterMap(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-	return func(ctx context.Context) func(path string) {
+var DocType = "MAP"
+
+func RegisterMap(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
+	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
+		return func(ctx context.Context) func(path string) {
+			return func(path string) {
+				m, err := ReadFromFile(l)(ctx)(path)()
+				if err != nil {
+					return
+				}
+				err = document.Create(ctx)(db)(DocType, m.GetId(), &m)
+				if err != nil {
+					return
+				}
+				l.Debugf("Processed map [%d].", m.GetId())
+			}
+		}
+	}
+}
+
+func allProvider(ctx context.Context) func(db *gorm.DB) model.Provider[[]Model] {
+	return func(db *gorm.DB) model.Provider[[]Model] {
 		t := tenant.MustFromContext(ctx)
-		return func(path string) {
-			m, err := ReadFromFile(l)(ctx)(path)()
+		return func() ([]Model, error) {
+			ms, err := GetModelRegistry().GetAll(t)
 			if err == nil {
-				l.Debugf("Processed map [%d].", m.Id())
-				_ = GetModelRegistry().Add(t, m)
+				return ms, nil
 			}
-		}
-	}
-}
-
-func allProvider(ctx context.Context) model.Provider[[]Model] {
-	t := tenant.MustFromContext(ctx)
-	return func() ([]Model, error) {
-		m, err := GetModelRegistry().GetAll(t)
-		if err == nil {
-			return m, nil
-		}
-		nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
-		if err != nil {
-			return []Model{}, err
-		}
-		return GetModelRegistry().GetAll(nt)
-	}
-}
-
-func GetAll(ctx context.Context) func() ([]Model, error) {
-	return func() ([]Model, error) {
-		return allProvider(ctx)()
-	}
-}
-
-func byIdProvider(ctx context.Context) func(mapId uint32) model.Provider[Model] {
-	t := tenant.MustFromContext(ctx)
-	return func(mapId uint32) model.Provider[Model] {
-		return func() (Model, error) {
-			m, err := GetModelRegistry().Get(t, mapId)
+			ms, err = document.GetAll[RestModel, Model](ctx)(db)(Extract)(DocType)
 			if err == nil {
-				return m, nil
+				for _, m := range ms {
+					_ = GetModelRegistry().Add(t, m)
+				}
+				return ms, nil
 			}
+
 			nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
-			if err != nil {
+			ms, err = GetModelRegistry().GetAll(nt)
+			if err == nil {
+				return ms, nil
+			}
+
+			nctx := tenant.WithContext(ctx, nt)
+			ms, err = document.GetAll[RestModel, Model](nctx)(db)(Extract)(DocType)
+			if err == nil {
+				for _, m := range ms {
+					_ = GetModelRegistry().Add(t, m)
+				}
+				return ms, nil
+			}
+			return nil, err
+		}
+	}
+}
+
+func GetAll(ctx context.Context) func(db *gorm.DB) ([]Model, error) {
+	return func(db *gorm.DB) ([]Model, error) {
+		return allProvider(ctx)(db)()
+	}
+}
+
+func byIdProvider(ctx context.Context) func(db *gorm.DB) func(id uint32) model.Provider[Model] {
+	return func(db *gorm.DB) func(id uint32) model.Provider[Model] {
+		t := tenant.MustFromContext(ctx)
+		return func(id uint32) model.Provider[Model] {
+			return func() (Model, error) {
+				m, err := GetModelRegistry().Get(t, id)
+				if err == nil {
+					return m, nil
+				}
+				m, err = document.Get[Model](ctx)(db)(DocType, id)
+				if err == nil {
+					_ = GetModelRegistry().Add(t, m)
+					return m, nil
+				}
+				nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
+				m, err = GetModelRegistry().Get(nt, id)
+				if err == nil {
+					return m, nil
+				}
+				nctx := tenant.WithContext(ctx, nt)
+				m, err = document.Get[Model](nctx)(db)(DocType, id)
+				if err == nil {
+					_ = GetModelRegistry().Add(nt, m)
+					return m, nil
+				}
 				return Model{}, err
 			}
-			return GetModelRegistry().Get(nt, mapId)
 		}
 	}
 }
 
-func GetById(ctx context.Context) func(mapId uint32) (Model, error) {
-	return func(mapId uint32) (Model, error) {
-		return byIdProvider(ctx)(mapId)()
+func GetById(ctx context.Context) func(db *gorm.DB) func(id uint32) (Model, error) {
+	return func(db *gorm.DB) func(id uint32) (Model, error) {
+		return func(id uint32) (Model, error) {
+			return byIdProvider(ctx)(db)(id)()
+		}
 	}
 }
 
 func bSearchDropPos(tree *FootholdTree, initial *point.Model, fallback *point.Model) *point.Model {
 	var dropPos *point.Model
-	awayX := fallback.X()
-	homeX := initial.X()
-	y := initial.Y() - 85
+	awayX := fallback.X
+	homeX := initial.X
+	y := initial.Y - 85
 
 	for math.Abs(float64(homeX-awayX)) > 5 {
 		distanceX := awayX - homeX
 		dx := distanceX / 2
 		searchX := homeX + dx
-		res := calcPointBelow(tree, point.NewModel(searchX, y))
+		res := calcPointBelow(tree, &point.Model{X: searchX, Y: y})
 		if res != nil {
 			awayX = searchX
 			dropPos = res
@@ -102,18 +148,18 @@ func calcPointBelow(tree *FootholdTree, initial *point.Model) *point.Model {
 		return nil
 	}
 
-	dropY := fh.first.Y()
-	if !fh.isWall() && fh.first.Y() != fh.second.Y() {
-		s1 := math.Abs(float64(fh.second.Y() - fh.first.Y()))
-		s2 := math.Abs(float64(fh.second.X() - fh.first.X()))
-		s5 := math.Cos(math.Atan(s2/s1)) * (math.Abs(float64(initial.X()-fh.first.X())) / math.Cos(math.Atan(s1/s2)))
-		if fh.second.Y() < fh.first.Y() {
-			dropY = fh.first.Y() - int16(s5)
+	dropY := fh.First.Y
+	if !fh.isWall() && fh.First.Y != fh.Second.Y {
+		s1 := math.Abs(float64(fh.Second.Y - fh.First.Y))
+		s2 := math.Abs(float64(fh.Second.X - fh.First.X))
+		s5 := math.Cos(math.Atan(s2/s1)) * (math.Abs(float64(initial.X-fh.First.X)) / math.Cos(math.Atan(s1/s2)))
+		if fh.Second.Y < fh.First.Y {
+			dropY = fh.First.Y - int16(s5)
 		} else {
-			dropY = fh.first.Y() + int16(s5)
+			dropY = fh.First.Y + int16(s5)
 		}
 	}
-	ret := point.NewModel(initial.X(), dropY)
+	ret := &point.Model{X: initial.X, Y: dropY}
 	return ret
 }
 
@@ -127,17 +173,17 @@ func NewFootholdTree(lx int16, ly int16, ux int16, uy int16, configurations ...F
 	centerx := int16(math.Round(float64(ux-lx) / 2))
 	centery := int16(math.Round(float64(uy-ly) / 2))
 	ft := &FootholdTree{
-		northWest: nil,
-		northEast: nil,
-		southWest: nil,
-		southEast: nil,
-		footholds: make([]Foothold, 0),
-		p1:        point.NewModel(p1x, p1y),
-		p2:        point.NewModel(p2x, p2y),
-		center:    point.NewModel(centerx, centery),
-		depth:     0,
-		maxDropX:  0,
-		minDropX:  0,
+		NorthWest: nil,
+		NorthEast: nil,
+		SouthWest: nil,
+		SouthEast: nil,
+		Footholds: make([]Foothold, 0),
+		P1:        &point.Model{X: p1x, Y: p1y},
+		P2:        &point.Model{X: p2x, Y: p2y},
+		Center:    &point.Model{X: centerx, Y: centery},
+		Depth:     0,
+		MaxDropX:  0,
+		MinDropX:  0,
 	}
 
 	for _, configurator := range configurations {
@@ -148,7 +194,7 @@ func NewFootholdTree(lx int16, ly int16, ux int16, uy int16, configurations ...F
 
 func SetFootholdTreeDepth(depth uint32) FootholdTreeConfigurator {
 	return func(f *FootholdTree) {
-		f.depth = depth
+		f.Depth = depth
 	}
 }
 
@@ -160,68 +206,76 @@ func (f *FootholdTree) Insert(footholds []Foothold) *FootholdTree {
 }
 
 func (f *FootholdTree) InsertSingle(foothold Foothold) *FootholdTree {
-	if f.depth == 0 {
-		if foothold.first.X() > f.maxDropX {
-			f.maxDropX = foothold.first.X()
+	if f.Depth == 0 {
+		if foothold.First.X > f.MaxDropX {
+			f.MaxDropX = foothold.First.X
 		}
-		if foothold.first.X() < f.minDropX {
-			f.minDropX = foothold.first.X()
+		if foothold.First.X < f.MinDropX {
+			f.MinDropX = foothold.First.X
 		}
-		if foothold.second.X() > f.maxDropX {
-			f.maxDropX = foothold.second.X()
+		if foothold.Second.X > f.MaxDropX {
+			f.MaxDropX = foothold.Second.X
 		}
-		if foothold.second.X() < f.minDropX {
-			f.minDropX = foothold.second.X()
+		if foothold.Second.X < f.MinDropX {
+			f.MinDropX = foothold.Second.X
 		}
 
 	}
-	if f.depth == 8 || foothold.first.X() >= f.p1.X() && foothold.second.X() <= f.p2.X() && foothold.first.Y() >= f.p1.Y() && foothold.second.Y() <= f.p2.Y() {
-		f.footholds = append(f.footholds, foothold)
+	if f.Depth == 8 || foothold.First.X >= f.P1.X && foothold.Second.X <= f.P2.X && foothold.First.Y >= f.P1.Y && foothold.Second.Y <= f.P2.Y {
+		f.Footholds = append(f.Footholds, foothold)
 	} else {
-		if f.northWest == nil {
-			f.northWest = NewFootholdTree(f.p1.X(), f.p1.Y(), f.center.X(), f.center.Y(), SetFootholdTreeDepth(f.depth+1))
-			f.northEast = NewFootholdTree(f.center.X(), f.p1.Y(), f.p2.X(), f.center.Y(), SetFootholdTreeDepth(f.depth+1))
-			f.southWest = NewFootholdTree(f.p1.X(), f.center.Y(), f.center.X(), f.p2.Y(), SetFootholdTreeDepth(f.depth+1))
-			f.southEast = NewFootholdTree(f.center.X(), f.center.Y(), f.p2.X(), f.p2.Y(), SetFootholdTreeDepth(f.depth+1))
+		if f.NorthWest == nil {
+			f.NorthWest = NewFootholdTree(f.P1.X, f.P1.Y, f.Center.X, f.Center.Y, SetFootholdTreeDepth(f.Depth+1))
+			f.NorthEast = NewFootholdTree(f.Center.X, f.P1.Y, f.P2.X, f.Center.Y, SetFootholdTreeDepth(f.Depth+1))
+			f.SouthWest = NewFootholdTree(f.P1.X, f.Center.Y, f.Center.X, f.P2.Y, SetFootholdTreeDepth(f.Depth+1))
+			f.SouthEast = NewFootholdTree(f.Center.X, f.Center.Y, f.P2.X, f.P2.Y, SetFootholdTreeDepth(f.Depth+1))
 		}
-		if foothold.second.X() <= f.center.X() && foothold.second.Y() <= f.center.Y() {
-			f.northWest = f.northWest.InsertSingle(foothold)
-		} else if foothold.first.X() > f.center.X() && foothold.second.Y() <= f.center.Y() {
-			f.northEast = f.northEast.InsertSingle(foothold)
-		} else if foothold.second.X() <= f.center.X() && foothold.first.Y() > f.center.Y() {
-			f.southWest = f.southWest.InsertSingle(foothold)
+		if foothold.Second.X <= f.Center.X && foothold.Second.Y <= f.Center.Y {
+			f.NorthWest = f.NorthWest.InsertSingle(foothold)
+		} else if foothold.First.X > f.Center.X && foothold.Second.Y <= f.Center.Y {
+			f.NorthEast = f.NorthEast.InsertSingle(foothold)
+		} else if foothold.Second.X <= f.Center.X && foothold.First.Y > f.Center.Y {
+			f.SouthWest = f.SouthWest.InsertSingle(foothold)
 		} else {
-			f.southEast = f.southEast.InsertSingle(foothold)
+			f.SouthEast = f.SouthEast.InsertSingle(foothold)
 		}
 	}
 	return f
 }
 
-func portalProvider(ctx context.Context) func(mapId uint32) model.Provider[[]portal.Model] {
-	return func(mapId uint32) model.Provider[[]portal.Model] {
-		m, err := byIdProvider(ctx)(mapId)()
-		if err != nil {
-			return model.ErrorProvider[[]portal.Model](err)
+func portalProvider(ctx context.Context) func(db *gorm.DB) func(mapId uint32) model.Provider[[]portal.Model] {
+	return func(db *gorm.DB) func(mapId uint32) model.Provider[[]portal.Model] {
+		return func(mapId uint32) model.Provider[[]portal.Model] {
+			m, err := byIdProvider(ctx)(db)(mapId)()
+			if err != nil {
+				return model.ErrorProvider[[]portal.Model](err)
+			}
+			return model.FixedProvider(m.Portals)
 		}
-		return model.FixedProvider(m.portals)
 	}
 }
 
-func GetPortals(ctx context.Context) func(mapId uint32) ([]portal.Model, error) {
-	return func(mapId uint32) ([]portal.Model, error) {
-		return portalProvider(ctx)(mapId)()
+func GetPortals(ctx context.Context) func(db *gorm.DB) func(mapId uint32) ([]portal.Model, error) {
+	return func(db *gorm.DB) func(mapId uint32) ([]portal.Model, error) {
+		return func(mapId uint32) ([]portal.Model, error) {
+			return portalProvider(ctx)(db)(mapId)()
+		}
 	}
 }
 
-func GetPortalsByName(ctx context.Context) func(mapId uint32, name string) ([]portal.Model, error) {
-	return func(mapId uint32, name string) ([]portal.Model, error) {
-		return model.FilteredProvider(portalProvider(ctx)(mapId), model.Filters(PortalNameFilter(name)))()
+func GetPortalsByName(ctx context.Context) func(db *gorm.DB) func(mapId uint32, name string) ([]portal.Model, error) {
+	return func(db *gorm.DB) func(mapId uint32, name string) ([]portal.Model, error) {
+		return func(mapId uint32, name string) ([]portal.Model, error) {
+			return model.FilteredProvider(portalProvider(ctx)(db)(mapId), model.Filters(PortalNameFilter(name)))()
+		}
 	}
 }
 
-func GetPortalById(ctx context.Context) func(mapId uint32, portalId uint32) (portal.Model, error) {
-	return func(mapId uint32, portalId uint32) (portal.Model, error) {
-		return model.First(portalProvider(ctx)(mapId), model.Filters(PortalIdFilter(portalId)))
+func GetPortalById(ctx context.Context) func(db *gorm.DB) func(mapId uint32, portalId uint32) (portal.Model, error) {
+	return func(db *gorm.DB) func(mapId uint32, portalId uint32) (portal.Model, error) {
+		return func(mapId uint32, portalId uint32) (portal.Model, error) {
+			return model.First(portalProvider(ctx)(db)(mapId), model.Filters(PortalIdFilter(portalId)))
+		}
 	}
 }
 
@@ -233,102 +287,120 @@ func PortalNameFilter(portalName string) model.Filter[portal.Model] {
 
 func PortalIdFilter(portalId uint32) model.Filter[portal.Model] {
 	return func(p portal.Model) bool {
-		return p.Id == portalId
+		return p.Id == strconv.Itoa(int(portalId))
 	}
 }
 
-func reactorProvider(ctx context.Context) func(mapId uint32) model.Provider[[]reactor.Model] {
-	return func(mapId uint32) model.Provider[[]reactor.Model] {
-		m, err := byIdProvider(ctx)(mapId)()
-		if err != nil {
-			return model.ErrorProvider[[]reactor.Model](err)
+func reactorProvider(ctx context.Context) func(db *gorm.DB) func(mapId uint32) model.Provider[[]reactor.Model] {
+	return func(db *gorm.DB) func(mapId uint32) model.Provider[[]reactor.Model] {
+		return func(mapId uint32) model.Provider[[]reactor.Model] {
+			m, err := byIdProvider(ctx)(db)(mapId)()
+			if err != nil {
+				return model.ErrorProvider[[]reactor.Model](err)
+			}
+			return model.FixedProvider(m.Reactors)
 		}
-		return model.FixedProvider(m.reactors)
 	}
 }
 
-func GetReactors(ctx context.Context) func(mapId uint32) ([]reactor.Model, error) {
-	return func(mapId uint32) ([]reactor.Model, error) {
-		return reactorProvider(ctx)(mapId)()
-	}
-}
-
-func npcProvider(ctx context.Context) func(mapId uint32) model.Provider[[]npc.Model] {
-	return func(mapId uint32) model.Provider[[]npc.Model] {
-		m, err := byIdProvider(ctx)(mapId)()
-		if err != nil {
-			return model.ErrorProvider[[]npc.Model](err)
+func GetReactors(ctx context.Context) func(db *gorm.DB) func(mapId uint32) ([]reactor.Model, error) {
+	return func(db *gorm.DB) func(mapId uint32) ([]reactor.Model, error) {
+		return func(mapId uint32) ([]reactor.Model, error) {
+			return reactorProvider(ctx)(db)(mapId)()
 		}
-		return model.FixedProvider(m.npcs)
 	}
 }
 
-func GetNpcs(ctx context.Context) func(mapId uint32) ([]npc.Model, error) {
-	return func(mapId uint32) ([]npc.Model, error) {
-		return npcProvider(ctx)(mapId)()
+func npcProvider(ctx context.Context) func(db *gorm.DB) func(mapId uint32) model.Provider[[]npc.Model] {
+	return func(db *gorm.DB) func(mapId uint32) model.Provider[[]npc.Model] {
+		return func(mapId uint32) model.Provider[[]npc.Model] {
+			m, err := byIdProvider(ctx)(db)(mapId)()
+			if err != nil {
+				return model.ErrorProvider[[]npc.Model](err)
+			}
+			return model.FixedProvider(m.Npcs)
+		}
 	}
 }
 
-func GetNpcsByObjectId(ctx context.Context) func(mapId uint32, objectId uint32) ([]npc.Model, error) {
-	return func(mapId uint32, objectId uint32) ([]npc.Model, error) {
-		return model.FilteredProvider(npcProvider(ctx)(mapId), model.Filters(NPCObjectIdFilter(objectId)))()
+func GetNpcs(ctx context.Context) func(db *gorm.DB) func(mapId uint32) ([]npc.Model, error) {
+	return func(db *gorm.DB) func(mapId uint32) ([]npc.Model, error) {
+		return func(mapId uint32) ([]npc.Model, error) {
+			return npcProvider(ctx)(db)(mapId)()
+		}
 	}
 }
 
-func GetNpc(ctx context.Context) func(mapId uint32, npcId uint32) (npc.Model, error) {
-	return func(mapId uint32, npcId uint32) (npc.Model, error) {
-		return model.First(npcProvider(ctx)(mapId), model.Filters(NPCIdFilter(npcId)))
+func GetNpcsByObjectId(ctx context.Context) func(db *gorm.DB) func(mapId uint32, objectId uint32) ([]npc.Model, error) {
+	return func(db *gorm.DB) func(mapId uint32, objectId uint32) ([]npc.Model, error) {
+		return func(mapId uint32, objectId uint32) ([]npc.Model, error) {
+			return model.FilteredProvider(npcProvider(ctx)(db)(mapId), model.Filters(NPCObjectIdFilter(objectId)))()
+		}
+	}
+}
+
+func GetNpc(ctx context.Context) func(db *gorm.DB) func(mapId uint32, npcId uint32) (npc.Model, error) {
+	return func(db *gorm.DB) func(mapId uint32, npcId uint32) (npc.Model, error) {
+		return func(mapId uint32, npcId uint32) (npc.Model, error) {
+			return model.First(npcProvider(ctx)(db)(mapId), model.Filters(NPCIdFilter(npcId)))
+		}
 	}
 }
 
 func NPCIdFilter(id uint32) model.Filter[npc.Model] {
 	return func(n npc.Model) bool {
-		return n.Id == id
+		return n.Id == strconv.Itoa(int(id))
 	}
 }
 
 func NPCObjectIdFilter(id uint32) model.Filter[npc.Model] {
 	return func(n npc.Model) bool {
-		return n.ObjectId == id
+		return n.Template == id
 	}
 }
 
-func monsterProvider(ctx context.Context) func(mapId uint32) model.Provider[[]monster.Model] {
-	return func(mapId uint32) model.Provider[[]monster.Model] {
-		m, err := byIdProvider(ctx)(mapId)()
-		if err != nil {
-			return model.ErrorProvider[[]monster.Model](err)
+func monsterProvider(ctx context.Context) func(db *gorm.DB) func(mapId uint32) model.Provider[[]monster.Model] {
+	return func(db *gorm.DB) func(mapId uint32) model.Provider[[]monster.Model] {
+		return func(mapId uint32) model.Provider[[]monster.Model] {
+			m, err := byIdProvider(ctx)(db)(mapId)()
+			if err != nil {
+				return model.ErrorProvider[[]monster.Model](err)
+			}
+			return model.FixedProvider(m.Monsters)
 		}
-		return model.FixedProvider(m.monsters)
 	}
 }
 
-func GetMonsters(ctx context.Context) func(mapId uint32) ([]monster.Model, error) {
-	return func(mapId uint32) ([]monster.Model, error) {
-		return monsterProvider(ctx)(mapId)()
+func GetMonsters(ctx context.Context) func(db *gorm.DB) func(mapId uint32) ([]monster.Model, error) {
+	return func(db *gorm.DB) func(mapId uint32) ([]monster.Model, error) {
+		return func(mapId uint32) ([]monster.Model, error) {
+			return monsterProvider(ctx)(db)(mapId)()
+		}
 	}
 }
 
-func calcDropPos(ctx context.Context) func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
-	return func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
-		m, err := GetById(ctx)(mapId)
-		if err != nil {
-			return fallback
-		}
+func calcDropPos(ctx context.Context) func(db *gorm.DB) func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
+	return func(db *gorm.DB) func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
+		return func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
+			m, err := GetById(ctx)(db)(mapId)
+			if err != nil {
+				return fallback
+			}
 
-		rp := initial
-		if rp.X() < int16(m.xLimit.min) {
-			rp = rp.SetX(int16(m.xLimit.min))
-		} else if rp.X() > int16(m.xLimit.max) {
-			rp = rp.SetX(int16(m.xLimit.max))
+			rp := initial
+			if rp.X < int16(m.XLimit.Min) {
+				rp.X = int16(m.XLimit.Min)
+			} else if rp.X > int16(m.XLimit.Max) {
+				rp.X = int16(m.XLimit.Max)
+			}
+			ret := calcPointBelow(m.FootholdTree, &point.Model{X: rp.X, Y: rp.Y - 85})
+			if ret == nil {
+				ret = bSearchDropPos(m.FootholdTree, initial, fallback)
+			}
+			if !m.MapArea.contains(*ret) {
+				return fallback
+			}
+			return ret
 		}
-		ret := calcPointBelow(m.footholdTree, point.NewModel(rp.X(), rp.Y()-85))
-		if ret == nil {
-			ret = bSearchDropPos(m.footholdTree, initial, fallback)
-		}
-		if !m.mapArea.contains(*ret) {
-			return fallback
-		}
-		return ret
 	}
 }

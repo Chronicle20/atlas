@@ -43,10 +43,10 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 				return model.ErrorProvider[Model](err)
 			}
 
-			m := Model{id: petId}
-			m.hungry = uint32(i.GetIntegerWithDefault("hungry", 0))
-			m.cash = i.GetBool("cash", true)
-			m.life = uint32(i.GetIntegerWithDefault("life", 0))
+			m := Model{Id: petId}
+			m.Hungry = uint32(i.GetIntegerWithDefault("hungry", 0))
+			m.Cash = i.GetBool("cash", true)
+			m.Life = uint32(i.GetIntegerWithDefault("life", 0))
 
 			it, err := exml.ChildByName("interact")
 			if err != nil {
@@ -60,11 +60,11 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 					return model.ErrorProvider[Model](err)
 				}
 				sm := SkillModel{
-					id:          fmt.Sprintf("%d-%d", petId, sid),
-					increase:    uint16(s.GetIntegerWithDefault("inc", 0)),
-					probability: uint16(s.GetIntegerWithDefault("prob", 0)),
+					Id:          fmt.Sprintf("%d-%d", petId, sid),
+					Increase:    uint16(s.GetIntegerWithDefault("inc", 0)),
+					Probability: uint16(s.GetIntegerWithDefault("prob", 0)),
 				}
-				m.skills = append(m.skills, sm)
+				m.Skills = append(m.Skills, sm)
 			}
 			return model.FixedProvider(m)
 		}

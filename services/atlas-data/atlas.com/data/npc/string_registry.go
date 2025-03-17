@@ -13,7 +13,7 @@ type NpcString struct {
 	name string
 }
 
-func (m NpcString) Id() uint32 {
+func (m NpcString) GetId() uint32 {
 	return m.id
 }
 

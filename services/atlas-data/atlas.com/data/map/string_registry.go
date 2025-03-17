@@ -14,7 +14,7 @@ type MapString struct {
 	streetName string
 }
 
-func (m MapString) Id() uint32 {
+func (m MapString) GetId() uint32 {
 	return m.id
 }
 

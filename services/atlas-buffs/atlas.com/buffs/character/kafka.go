@@ -17,7 +17,7 @@ type statusEvent[E any] struct {
 
 type appliedStatusEventBody struct {
 	FromId    uint32       `json:"fromId"`
-	SourceId  uint32       `json:"sourceId"`
+	SourceId  int32        `json:"sourceId"`
 	Duration  int32        `json:"duration"`
 	Changes   []statChange `json:"changes"`
 	CreatedAt time.Time    `json:"createdAt"`
@@ -30,7 +30,7 @@ type statChange struct {
 }
 
 type expiredStatusEventBody struct {
-	SourceId  uint32       `json:"sourceId"`
+	SourceId  int32        `json:"sourceId"`
 	Duration  int32        `json:"duration"`
 	Changes   []statChange `json:"changes"`
 	CreatedAt time.Time    `json:"createdAt"`

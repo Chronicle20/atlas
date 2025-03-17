@@ -8,7 +8,7 @@ import (
 
 type RestModel struct {
 	Id        string           `json:"-"`
-	SourceId  uint32           `json:"sourceId"`
+	SourceId  int32            `json:"sourceId"`
 	Duration  int32            `json:"duration"`
 	Changes   []stat.RestModel `json:"changes"`
 	CreatedAt time.Time        `json:"createdAt"`

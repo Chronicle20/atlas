@@ -8,14 +8,14 @@ import (
 
 type Model struct {
 	id        uuid.UUID
-	sourceId  uint32
+	sourceId  int32
 	duration  int32
 	changes   []stat.Model
 	createdAt time.Time
 	expiresAt time.Time
 }
 
-func (m Model) SourceId() uint32 {
+func (m Model) SourceId() int32 {
 	return m.sourceId
 }
 
@@ -39,7 +39,7 @@ func (m Model) ExpiresAt() time.Time {
 	return m.expiresAt
 }
 
-func NewBuff(sourceId uint32, duration int32, changes []stat.Model) Model {
+func NewBuff(sourceId int32, duration int32, changes []stat.Model) Model {
 	return Model{
 		id:        uuid.New(),
 		sourceId:  sourceId,

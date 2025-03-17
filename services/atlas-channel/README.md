@@ -12,6 +12,8 @@ A RESTful resource which provides Channel services.
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
 - BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
+- SERVICE_ID=[uuid]
+- SERVICE_TYPE=channel-service
 - EVENT_TOPIC_ACCOUNT_STATUS - Kafka Topic for receiving account status events
 - EVENT_TOPIC_CHAIR_STATUS
 - EVENT_TOPIC_CHARACTER_GENERAL_CHAT - Kafka Topic for receiving character general chat events

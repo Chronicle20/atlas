@@ -1,15 +1,11 @@
 package pet
 
 import (
-	"atlas-consumables/consumable"
-	inventory2 "atlas-consumables/inventory"
 	"atlas-consumables/kafka/producer"
 	"context"
 	"errors"
-	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"sort"
 )
@@ -89,35 +85,10 @@ func HungriestByOwnerProvider(l logrus.FieldLogger) func(ctx context.Context) fu
 	}
 }
 
-func ConsumeItem(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
-	return func(ctx context.Context) func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
-		return func(characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) error {
-			p, err := HungriestByOwnerProvider(l)(ctx)(characterId)()
-			if err != nil {
-				_ = inventory2.CancelItemReservation(l)(ctx)(characterId, inventory.TypeValueUse, transactionId, slot)
-				return err
-			}
-
-			ci, err := consumable.GetById(l)(ctx)(itemId)
-			if err != nil {
-				_ = inventory2.CancelItemReservation(l)(ctx)(characterId, inventory.TypeValueUse, transactionId, slot)
-				return err
-			}
-			inc := byte(0)
-			if val, ok := ci.GetSpec(consumable.SpecTypeInc); ok {
-				inc = byte(val)
-			}
-
-			err = producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(awardFullnessCommandProvider(characterId, p.Id(), inc))
-			if err != nil {
-				return err
-			}
-
-			err = inventory2.ConsumeItem(l)(ctx)(characterId, inventory.TypeValueUse, transactionId, slot)
-			if err != nil {
-				return err
-			}
-			return nil
+func AwardFullness(l logrus.FieldLogger) func(ctx context.Context) func(actorId uint32, petId uint64, amount byte) error {
+	return func(ctx context.Context) func(actorId uint32, petId uint64, amount byte) error {
+		return func(actorId uint32, petId uint64, amount byte) error {
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(awardFullnessCommandProvider(actorId, petId, amount))
 		}
 	}
 }

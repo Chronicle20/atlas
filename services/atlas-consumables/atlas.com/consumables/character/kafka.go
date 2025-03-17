@@ -1,9 +1,10 @@
 package character
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_CHARACTER"
-	CommandChangeHP = "CHANGE_HP"
-	CommandChangeMP = "CHANGE_MP"
+	EnvCommandTopic  = "COMMAND_TOPIC_CHARACTER"
+	CommandChangeMap = "CHANGE_MAP"
+	CommandChangeHP  = "CHANGE_HP"
+	CommandChangeMP  = "CHANGE_MP"
 )
 
 type command[E any] struct {
@@ -21,4 +22,10 @@ type changeHPCommandBody struct {
 type changeMPCommandBody struct {
 	ChannelId byte  `json:"channelId"`
 	Amount    int16 `json:"amount"`
+}
+
+type changeMapBody struct {
+	ChannelId byte   `json:"channelId"`
+	MapId     uint32 `json:"mapId"`
+	PortalId  uint32 `json:"portalId"`
 }

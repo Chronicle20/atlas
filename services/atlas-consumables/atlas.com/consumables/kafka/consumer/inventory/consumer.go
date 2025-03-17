@@ -42,13 +42,32 @@ func handleInventoryReserve(l logrus.FieldLogger, ctx context.Context, e invento
 	l.Debugf("Character [%d] is attempting to consume item [%d].", e.CharacterId, e.Body.ItemId)
 	itemId := item.Id(e.Body.ItemId)
 
+	var itemConsumer consumable.ItemConsumer
+
 	if item.GetClassification(itemId) == item.Classification(200) || item.GetClassification(itemId) == item.Classification(201) || item.GetClassification(itemId) == item.Classification(202) {
-		_ = consumable.ConsumeStandard(l)(ctx)(e.CharacterId, e.Body.ItemId, e.Slot, e.Body.Quantity, e.Body.TransactionId)
-		return
+		itemConsumer = consumable.ConsumeStandard(l)(ctx)
+	} else if item.GetClassification(itemId) == item.ClassificationConsumableTownWarp {
+		itemConsumer = consumable.ConsumeTownScroll(l)(ctx)
 	} else if item.GetClassification(itemId) == item.ClassificationConsumablePetFood {
-		_ = consumable.ConsumePetFood(l)(ctx)(e.CharacterId, e.Body.ItemId, e.Slot, e.Body.Quantity, e.Body.TransactionId)
+		itemConsumer = consumable.ConsumePetFood(l)(ctx)
+	}
+
+	if itemConsumer == nil {
+		l.Debugf("Received unhandled request to consume item [%d] for [%d].", itemId, e.CharacterId)
+		err := inventory2.CancelItemReservation(l)(ctx)(e.CharacterId, inventory.TypeValueUse, e.Body.TransactionId, e.Slot)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to cancel item [%d] reservation for [%d].", itemId, e.CharacterId)
+		}
 		return
 	}
 
-	_ = inventory2.CancelItemReservation(l)(ctx)(e.CharacterId, inventory.TypeValueUse, e.Body.TransactionId, e.Slot)
+	err := itemConsumer(e.CharacterId, e.Body.ItemId, e.Slot, e.Body.Quantity, e.Body.TransactionId)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to consume item [%d] for character [%d].", itemId, e.CharacterId)
+		err = inventory2.CancelItemReservation(l)(ctx)(e.CharacterId, inventory.TypeValueUse, e.Body.TransactionId, e.Slot)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to cancel item [%d] reservation for [%d].", itemId, e.CharacterId)
+		}
+		return
+	}
 }

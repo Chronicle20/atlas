@@ -34,3 +34,18 @@ func changeMPCommandProvider(m _map.Model, characterId uint32, amount int16) mod
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func changeMapProvider(m _map.Model, characterId uint32, portalId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &command[changeMapBody]{
+		WorldId:     byte(m.WorldId()),
+		CharacterId: characterId,
+		Type:        CommandChangeMap,
+		Body: changeMapBody{
+			ChannelId: byte(m.ChannelId()),
+			MapId:     uint32(m.MapId()),
+			PortalId:  portalId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

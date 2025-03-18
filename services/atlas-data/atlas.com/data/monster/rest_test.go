@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -38,8 +39,8 @@ func TestRest(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	ctx := tenant.WithContext(context.Background(), tt)
 
-	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: 8510000, name: "Pianus"})
-	_, _ = GetMonsterGaugeRegistry().Add(tt, Gauge{id: 8510000, exists: true})
+	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(8510000), name: "Pianus"})
+	_, _ = GetMonsterGaugeRegistry().Add(tt, Gauge{id: strconv.Itoa(8510000), exists: true})
 
 	input, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(testXML)))()
 	if err != nil {

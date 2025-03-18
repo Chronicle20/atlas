@@ -427,12 +427,12 @@ func TestReader(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tt)
 
 	GetMapStringRegistry().Add(tt, MapString{
-		id:         50000,
+		id:         strconv.Itoa(50000),
 		mapName:    "Dangerous Forest",
 		streetName: "Maple Road",
 	})
-	npc2.GetNpcStringRegistry().Add(tt, npc2.NewNpcString(2003, "Robin"))
-	npc2.GetNpcStringRegistry().Add(tt, npc2.NewNpcString(2005, "Sam"))
+	npc2.GetNpcStringRegistry().Add(tt, npc2.NewNpcString(strconv.Itoa(2003), "Robin"))
+	npc2.GetNpcStringRegistry().Add(tt, npc2.NewNpcString(strconv.Itoa(2005), "Sam"))
 
 	var ok bool
 	rm, err := Read(l)(ctx)("", 0, fixedNodeProvider)()
@@ -501,7 +501,7 @@ func TestLinkedReader(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tt)
 
 	GetMapStringRegistry().Add(tt, MapString{
-		id:         100020100,
+		id:         strconv.Itoa(100020100),
 		mapName:    "Henesys Pig Farm",
 		streetName: "Mini Dungeon",
 	})

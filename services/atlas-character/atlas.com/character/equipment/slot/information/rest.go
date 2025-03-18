@@ -1,9 +1,7 @@
 package information
 
-import "strconv"
-
 type RestModel struct {
-	Id   uint32 `json:"-"`
+	Id   string `json:"-"`
 	Name string `json:"name"`
 	WZ   string `json:"WZ"`
 	Slot int16  `json:"slot"`
@@ -14,23 +12,19 @@ func (r RestModel) GetName() string {
 }
 
 func (r RestModel) GetID() string {
-	return strconv.Itoa(int(r.Id))
+	return r.Id
 }
 
-func (r *RestModel) SetID(strId string) error {
-	id, err := strconv.Atoi(strId)
-	if err != nil {
-		return err
-	}
-	r.Id = uint32(id)
+func (r *RestModel) SetID(id string) error {
+	r.Id = id
 	return nil
 }
 
 func Extract(m RestModel) (Model, error) {
 	return Model{
-		itemId: m.Id,
-		name:   m.Name,
-		wz:     m.WZ,
-		slot:   m.Slot,
+		id:   m.Id,
+		name: m.Name,
+		wz:   m.WZ,
+		slot: m.Slot,
 	}, nil
 }

@@ -412,6 +412,10 @@ type KeyProvider[M any, K comparable] func(m M) K
 //goland:noinspection GoUnusedExportedFunction
 type ValueProvider[M any, V any] func(m M) V
 
+func Identity[M any](m M) M {
+	return m
+}
+
 //goland:noinspection GoUnusedExportedFunction
 func CollectToMap[M any, K comparable, V any](mp Provider[[]M], kp KeyProvider[M, K], vp ValueProvider[M, V]) Provider[map[K]V] {
 	ms, err := mp()

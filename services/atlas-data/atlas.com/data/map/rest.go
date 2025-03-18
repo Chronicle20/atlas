@@ -5,13 +5,13 @@ import (
 	"atlas-data/map/npc"
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
-	"github.com/Chronicle20/atlas-model/model"
+	"atlas-data/point"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
 )
 
 type RestModel struct {
-	Id                string                    `json:"-"`
+	Id                uint32                    `json:"-"`
 	Name              string                    `json:"name"`
 	StreetName        string                    `json:"streetName"`
 	ReturnMapId       uint32                    `json:"returnMapId"`
@@ -21,6 +21,7 @@ type RestModel struct {
 	FieldLimit        uint32                    `json:"fieldLimit"`
 	MobInterval       uint32                    `json:"mobInterval"`
 	Portals           []portal.RestModel        `json:"-"`
+	TimeMob           *TimeMobRestModel         `json:"time_mob"`
 	MapArea           RectangleRestModel        `json:"mapArea"`
 	FootholdTree      FootholdTreeRestModel     `json:"footholdTree"`
 	Areas             []RectangleRestModel      `json:"areas"`
@@ -37,6 +38,7 @@ type RestModel struct {
 	MobCapacity       uint32                    `json:"mobCapacity"`
 	Recovery          float64                   `json:"recovery"`
 	BackgroundTypes   []BackgroundTypeRestModel `json:"backgroundTypes"`
+	XLimit            XLimitRestModel           `json:"x_limit"`
 	Reactors          []reactor.RestModel       `json:"-"`
 	NPCs              []npc.RestModel           `json:"-"`
 	Monsters          []monster.RestModel       `json:"-"`
@@ -47,11 +49,19 @@ func (r RestModel) GetName() string {
 }
 
 func (r RestModel) GetID() string {
+	return strconv.Itoa(int(r.Id))
+}
+
+func (r RestModel) GetId() uint32 {
 	return r.Id
 }
 
 func (r *RestModel) SetID(idStr string) error {
-	r.Id = idStr
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
 	return nil
 }
 
@@ -88,7 +98,7 @@ func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
 	}
 	for _, x := range r.NPCs {
 		rfs = append(rfs, jsonapi.ReferenceID{
-			ID:   x.Id,
+			ID:   strconv.Itoa(int(x.Id)),
 			Type: "npcs",
 			Name: "npcs",
 		})
@@ -181,7 +191,7 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 		res := make([]portal.RestModel, 0)
 		for _, rid := range r.GetReferencedIDs() {
 			var data jsonapi.Data
-			if data, ok = refMap[rid.ID]; ok {
+			if data, ok = refMap[rid.ID]; ok && data.Type == rid.Type {
 				var rm portal.RestModel
 				err := jsonapi.ProcessIncludeData(&rm, data, references)
 				if err != nil {
@@ -197,7 +207,7 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 		res := make([]reactor.RestModel, 0)
 		for _, rid := range r.GetReferencedIDs() {
 			var data jsonapi.Data
-			if data, ok = refMap[rid.ID]; ok {
+			if data, ok = refMap[rid.ID]; ok && data.Type == rid.Type {
 				var rm reactor.RestModel
 				err := jsonapi.ProcessIncludeData(&rm, data, references)
 				if err != nil {
@@ -213,7 +223,7 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 		res := make([]npc.RestModel, 0)
 		for _, rid := range r.GetReferencedIDs() {
 			var data jsonapi.Data
-			if data, ok = refMap[rid.ID]; ok {
+			if data, ok = refMap[rid.ID]; ok && data.Type == rid.Type {
 				var rm npc.RestModel
 				err := jsonapi.ProcessIncludeData(&rm, data, references)
 				if err != nil {
@@ -229,7 +239,7 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 		res := make([]monster.RestModel, 0)
 		for _, rid := range r.GetReferencedIDs() {
 			var data jsonapi.Data
-			if data, ok = refMap[rid.ID]; ok {
+			if data, ok = refMap[rid.ID]; ok && data.Type == rid.Type {
 				var rm monster.RestModel
 				err := jsonapi.ProcessIncludeData(&rm, data, references)
 				if err != nil {
@@ -244,151 +254,18 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 	return nil
 }
 
-func Transform(m Model) (RestModel, error) {
-	ps, err := model.SliceMap(portal.Transform)(model.FixedProvider(m.Portals))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
-	}
-
-	ma, err := TransformRectangle(m.MapArea)
-	if err != nil {
-		return RestModel{}, err
-	}
-
-	as, err := model.SliceMap(TransformRectangle)(model.FixedProvider(m.Areas))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
-	}
-
-	bt, err := model.SliceMap(TransformBackgroundType)(model.FixedProvider(m.BackgroundTypes))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
-	}
-
-	rs, err := model.SliceMap(reactor.Transform)(model.FixedProvider(m.Reactors))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
-	}
-
-	ns, err := model.SliceMap(npc.Transform)(model.FixedProvider(m.Npcs))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
-	}
-
-	ms, err := model.SliceMap(monster.Transform)(model.FixedProvider(m.Monsters))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
-	}
-
-	return RestModel{
-		Id:                strconv.Itoa(int(m.Id)),
-		Name:              m.Name,
-		StreetName:        m.StreetName,
-		ReturnMapId:       m.ReturnMapId,
-		MonsterRate:       m.MonsterRate,
-		OnFirstUserEnter:  m.OnFirstUserEnter,
-		OnUserEnter:       m.OnUserEnter,
-		FieldLimit:        m.FieldLimit,
-		MobInterval:       m.MobInterval,
-		Portals:           ps,
-		MapArea:           ma,
-		Areas:             as,
-		Seats:             m.Seats,
-		Clock:             m.Clock,
-		EverLast:          m.EverLast,
-		Town:              m.Town,
-		DecHP:             m.DecHp,
-		ProtectItem:       m.ProtectItem,
-		ForcedReturnMapId: m.ForcedReturnMapId,
-		Boat:              m.Boat,
-		TimeLimit:         m.TimeLimit,
-		FieldType:         m.FieldType,
-		MobCapacity:       m.MobCapacity,
-		Recovery:          m.Recovery,
-		BackgroundTypes:   bt,
-		Reactors:          rs,
-		NPCs:              ns,
-		Monsters:          ms,
-	}, nil
-}
-
-func Extract(rm RestModel) (Model, error) {
-	id, err := strconv.Atoi(rm.Id)
-	if err != nil {
-		return Model{}, err
-	}
-
-	ps, err := model.SliceMap(portal.Extract)(model.FixedProvider(rm.Portals))(model.ParallelMap())()
-	if err != nil {
-		return Model{}, err
-	}
-
-	ma, err := ExtractRectangle(rm.MapArea)
-	if err != nil {
-		return Model{}, err
-	}
-
-	as, err := model.SliceMap(ExtractRectangle)(model.FixedProvider(rm.Areas))(model.ParallelMap())()
-	if err != nil {
-		return Model{}, err
-	}
-
-	bt, err := model.SliceMap(ExtractBackgroundType)(model.FixedProvider(rm.BackgroundTypes))(model.ParallelMap())()
-	if err != nil {
-		return Model{}, err
-	}
-
-	rs, err := model.SliceMap(reactor.Extract)(model.FixedProvider(rm.Reactors))(model.ParallelMap())()
-	if err != nil {
-		return Model{}, err
-	}
-
-	ns, err := model.SliceMap(npc.Extract)(model.FixedProvider(rm.NPCs))(model.ParallelMap())()
-	if err != nil {
-		return Model{}, err
-	}
-
-	ms, err := model.SliceMap(monster.Extract)(model.FixedProvider(rm.Monsters))(model.ParallelMap())()
-	if err != nil {
-		return Model{}, err
-	}
-
-	return Model{
-		Id:                uint32(id),
-		Name:              rm.Name,
-		StreetName:        rm.StreetName,
-		ReturnMapId:       rm.ReturnMapId,
-		MonsterRate:       rm.MonsterRate,
-		OnFirstUserEnter:  rm.OnFirstUserEnter,
-		OnUserEnter:       rm.OnUserEnter,
-		FieldLimit:        rm.FieldLimit,
-		MobInterval:       rm.MobInterval,
-		Portals:           ps,
-		TimeMob:           nil,
-		MapArea:           ma,
-		FootholdTree:      nil,
-		Areas:             as,
-		Seats:             rm.Seats,
-		Clock:             rm.Clock,
-		EverLast:          rm.EverLast,
-		Town:              rm.Town,
-		DecHp:             rm.DecHP,
-		ProtectItem:       rm.ProtectItem,
-		ForcedReturnMapId: rm.ForcedReturnMapId,
-		Boat:              rm.Boat,
-		TimeLimit:         rm.TimeLimit,
-		FieldType:         rm.FieldType,
-		MobCapacity:       rm.MobCapacity,
-		Recovery:          rm.Recovery,
-		BackgroundTypes:   bt,
-		XLimit:            XLimit{},
-		Reactors:          rs,
-		Npcs:              ns,
-		Monsters:          ms,
-	}, nil
-}
-
 type FootholdTreeRestModel struct {
+	NorthWest *FootholdTreeRestModel `json:"north_west,omitempty"`
+	NorthEast *FootholdTreeRestModel `json:"north_east,omitempty"`
+	SouthWest *FootholdTreeRestModel `json:"south_west,omitempty"`
+	SouthEast *FootholdTreeRestModel `json:"south_east,omitempty"`
+	Footholds []FootholdRestModel    `json:"footholds"`
+	P1        *point.RestModel       `json:"p1,omitempty"`
+	P2        *point.RestModel       `json:"p2,omitempty"`
+	Center    *point.RestModel       `json:"center,omitempty"`
+	Depth     uint32                 `json:"depth"`
+	MaxDropX  int16                  `json:"max_drop_x"`
+	MinDropX  int16                  `json:"min_drop_x"`
 }
 
 type RectangleRestModel struct {
@@ -398,39 +275,7 @@ type RectangleRestModel struct {
 	Height int16 `json:"height"`
 }
 
-func TransformRectangle(m Rectangle) (RectangleRestModel, error) {
-	return RectangleRestModel{
-		X:      m.X,
-		Y:      m.Y,
-		Width:  m.Width,
-		Height: m.Height,
-	}, nil
-}
-
-func ExtractRectangle(rm RectangleRestModel) (Rectangle, error) {
-	return Rectangle{
-		X:      rm.X,
-		Y:      rm.Y,
-		Width:  rm.Width,
-		Height: rm.Height,
-	}, nil
-}
-
 type BackgroundTypeRestModel struct {
 	LayerNumber    uint32 `json:"layerNumber"`
 	BackgroundType uint32 `json:"backgroundType"`
-}
-
-func TransformBackgroundType(m BackgroundType) (BackgroundTypeRestModel, error) {
-	return BackgroundTypeRestModel{
-		LayerNumber:    m.LayerNumber,
-		BackgroundType: m.BackgroundType,
-	}, nil
-}
-
-func ExtractBackgroundType(m BackgroundTypeRestModel) (BackgroundType, error) {
-	return BackgroundType{
-		LayerNumber:    m.LayerNumber,
-		BackgroundType: m.BackgroundType,
-	}, nil
 }

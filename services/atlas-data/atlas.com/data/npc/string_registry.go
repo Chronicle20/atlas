@@ -13,6 +13,13 @@ type NpcString struct {
 	name string
 }
 
+func NewNpcString(id uint32, name string) NpcString {
+	return NpcString{
+		id:   id,
+		name: name,
+	}
+}
+
 func (m NpcString) GetId() uint32 {
 	return m.id
 }

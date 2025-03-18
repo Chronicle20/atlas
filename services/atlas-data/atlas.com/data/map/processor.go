@@ -355,7 +355,7 @@ func NPCIdFilter(id uint32) model.Filter[npc.Model] {
 
 func NPCObjectIdFilter(id uint32) model.Filter[npc.Model] {
 	return func(n npc.Model) bool {
-		return n.Template == id
+		return n.Id == strconv.Itoa(int(id))
 	}
 }
 

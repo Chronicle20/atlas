@@ -28,27 +28,3 @@ func (r *RestModel) SetID(strId string) error {
 	r.Id = uint32(id)
 	return nil
 }
-
-func Transform(m Model) (RestModel, error) {
-	return RestModel{
-		Id:             m.Id,
-		Classification: m.Classification,
-		Name:           m.Name,
-		X:              m.X,
-		Y:              m.Y,
-		Delay:          m.Delay,
-		Direction:      m.Direction,
-	}, nil
-}
-
-func Extract(rm RestModel) (Model, error) {
-	return Model{
-		Id:             rm.Id,
-		Classification: rm.Classification,
-		Name:           rm.Name,
-		X:              rm.X,
-		Y:              rm.Y,
-		Delay:          rm.Delay,
-		Direction:      rm.Direction,
-	}, nil
-}

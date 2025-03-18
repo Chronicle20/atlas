@@ -2,61 +2,6 @@ package effect
 
 import "atlas-data/skill/effect/statup"
 
-type Model struct {
-	WeaponAttack         int16             `json:"weapon_attack"`
-	MagicAttack          int16             `json:"magic_attack"`
-	WeaponDefense        int16             `json:"weapon_defense"`
-	MagicDefense         int16             `json:"magic_defense"`
-	Accuracy             int16             `json:"accuracy"`
-	Avoidability         int16             `json:"avoidability"`
-	Speed                int16             `json:"speed"`
-	Jump                 int16             `json:"jump"`
-	HP                   uint16            `json:"hp"`
-	MP                   uint16            `json:"mp"`
-	HPR                  float64           `json:"hpr"`
-	MPR                  float64           `json:"mpr"`
-	MHPRRate             uint16            `json:"mhpr_rate"`
-	MMPRRate             uint16            `json:"mmpr_rate"`
-	MobSkill             uint16            `json:"mob_skill"`
-	MobSkillLevel        uint16            `json:"mob_skill_level"`
-	MHPR                 byte              `json:"mhp_r"`
-	MMPR                 byte              `json:"mmp_r"`
-	HPCon                uint16            `json:"hp_con"`
-	MPCon                uint16            `json:"mp_con"`
-	Duration             int32             `json:"duration"`
-	Target               uint32            `json:"target"`
-	Barrier              int32             `json:"barrier"`
-	Mob                  uint32            `json:"mob"`
-	Overtime             bool              `json:"overtime"`
-	RepeatEffect         bool              `json:"repeat_effect"`
-	MoveTo               int32             `json:"move_to"`
-	CP                   uint32            `json:"cp"`
-	NuffSkill            uint32            `json:"nuff_skill"`
-	Skill                bool              `json:"skill"`
-	X                    int16             `json:"x"`
-	Y                    int16             `json:"y"`
-	MobCount             uint32            `json:"mob_count"`
-	MoneyCon             uint32            `json:"money_con"`
-	Cooldown             uint32            `json:"cooldown"`
-	MorphId              uint32            `json:"morph_id"`
-	Ghost                uint32            `json:"ghost"`
-	Fatigue              uint32            `json:"fatigue"`
-	Berserk              uint32            `json:"berserk"`
-	Booster              uint32            `json:"booster"`
-	Prop                 float64           `json:"prop"`
-	ItemCon              uint32            `json:"item_con"`
-	ItemConNo            uint32            `json:"item_con_no"`
-	Damage               uint32            `json:"damage"`
-	AttackCount          uint32            `json:"attack_count"`
-	FixDamage            int32             `json:"fix_damage"`
-	BulletCount          uint16            `json:"bullet_count"`
-	BulletConsume        uint16            `json:"bullet_consume"`
-	MapProtection        byte              `json:"map_protection"`
-	CureAbnormalStatuses []string          `json:"cure_abnormal_statuses"`
-	Statups              []statup.Model    `json:"statups"`
-	MonsterStatus        map[string]uint32 `json:"monster_status"`
-}
-
 func NewModelBuilder() *ModelBuilder {
 	return &ModelBuilder{}
 }
@@ -114,7 +59,7 @@ type ModelBuilder struct {
 	bulletConsume        uint16
 	mapProtection        byte
 	cureAbnormalStatuses []string
-	statups              []statup.Model
+	statups              []statup.RestModel
 	monsterStatus        map[string]uint32
 }
 
@@ -396,12 +341,12 @@ func (b *ModelBuilder) SetMonsterStatus(ms map[string]uint32) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetStatups(statups []statup.Model) *ModelBuilder {
+func (b *ModelBuilder) SetStatups(statups []statup.RestModel) *ModelBuilder {
 	b.statups = statups
 	return b
 }
-func (b *ModelBuilder) Build() Model {
-	return Model{
+func (b *ModelBuilder) Build() RestModel {
+	return RestModel{
 		WeaponAttack:         b.weaponAttack,
 		MagicAttack:          b.magicAttack,
 		WeaponDefense:        b.weaponDefense,
@@ -420,13 +365,13 @@ func (b *ModelBuilder) Build() Model {
 		MobSkillLevel:        b.mobSkillLevel,
 		MHPR:                 b.mhpR,
 		MMPR:                 b.mmpR,
-		HPCon:                b.hpCon,
-		MPCon:                b.mpCon,
+		HPConsume:            b.hpCon,
+		MPConsume:            b.mpCon,
 		Duration:             b.duration,
 		Target:               b.target,
 		Barrier:              b.barrier,
 		Mob:                  b.mob,
-		Overtime:             b.overTime, // Kept lowercase `b.overTime` as per request
+		OverTime:             b.overTime, // Kept lowercase `b.overTime` as per request
 		RepeatEffect:         b.repeatEffect,
 		MoveTo:               b.moveTo,
 		CP:                   b.cp,
@@ -435,7 +380,7 @@ func (b *ModelBuilder) Build() Model {
 		X:                    b.x,
 		Y:                    b.y,
 		MobCount:             b.mobCount,
-		MoneyCon:             b.moneyCon,
+		MoneyConsume:         b.moneyCon,
 		Cooldown:             b.cooldown,
 		MorphId:              b.morphId,
 		Ghost:                b.ghost,
@@ -443,8 +388,8 @@ func (b *ModelBuilder) Build() Model {
 		Berserk:              b.berserk,
 		Booster:              b.booster,
 		Prop:                 b.prop,
-		ItemCon:              b.itemCon,
-		ItemConNo:            b.itemConNo,
+		ItemConsume:          b.itemCon,
+		ItemConsumeAmount:    b.itemConNo,
 		Damage:               b.damage,
 		AttackCount:          b.attackCount,
 		FixDamage:            b.fixDamage,

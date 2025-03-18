@@ -1,4 +1,4 @@
-package registry
+package document
 
 import (
 	"errors"
@@ -6,16 +6,13 @@ import (
 	"sync"
 )
 
-type Identifier[I comparable] interface {
-	GetId() I
-}
-type Registry[I comparable, M Identifier[I]] struct {
+type Registry[I string, M Identifier[I]] struct {
 	lock       sync.Mutex
 	registry   map[tenant.Model]map[I]M
 	tenantLock map[tenant.Model]*sync.RWMutex
 }
 
-func NewRegistry[I comparable, M Identifier[I]]() *Registry[I, M] {
+func NewRegistry[I string, M Identifier[I]]() *Registry[I, M] {
 	return &Registry[I, M]{
 		registry:   make(map[tenant.Model]map[I]M),
 		tenantLock: make(map[tenant.Model]*sync.RWMutex),
@@ -32,12 +29,12 @@ func (r *Registry[I, M]) ensureTenantLock(t tenant.Model) {
 	}
 }
 
-func (r *Registry[I, M]) Add(t tenant.Model, m M) error {
+func (r *Registry[I, M]) Add(t tenant.Model, m M) (M, error) {
 	r.ensureTenantLock(t)
 	r.tenantLock[t].Lock()
 	defer r.tenantLock[t].Unlock()
-	r.registry[t][m.GetId()] = m
-	return nil
+	r.registry[t][m.GetID()] = m
+	return m, nil
 }
 
 func (r *Registry[I, M]) Get(t tenant.Model, id I) (M, error) {

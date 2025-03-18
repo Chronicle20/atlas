@@ -1,20 +1,19 @@
 package _map
 
 import (
-	"atlas-data/registry"
+	"atlas-data/document"
 	"atlas-data/xml"
 	"github.com/Chronicle20/atlas-tenant"
-	"strconv"
 	"sync"
 )
 
 type MapString struct {
-	id         uint32
+	id         string
 	mapName    string
 	streetName string
 }
 
-func (m MapString) GetId() uint32 {
+func (m MapString) GetID() string {
 	return m.id
 }
 
@@ -26,12 +25,12 @@ func (m MapString) StreetName() string {
 	return m.streetName
 }
 
-var msRg *registry.Registry[uint32, MapString]
+var msRg *document.Registry[string, MapString]
 var msOnce sync.Once
 
-func GetMapStringRegistry() *registry.Registry[uint32, MapString] {
+func GetMapStringRegistry() *document.Registry[string, MapString] {
 	msOnce.Do(func() {
-		msRg = registry.NewRegistry[uint32, MapString]()
+		msRg = document.NewRegistry[string, MapString]()
 	})
 	return msRg
 }
@@ -44,13 +43,8 @@ func InitString(t tenant.Model, path string) error {
 
 	for _, cat := range exml.ChildNodes {
 		for _, mxml := range cat.ChildNodes {
-			var id int
-			id, err = strconv.Atoi(mxml.Name)
-			if err != nil {
-				return err
-			}
-			err = GetMapStringRegistry().Add(t, MapString{
-				id:         uint32(id),
+			_, err = GetMapStringRegistry().Add(t, MapString{
+				id:         mxml.Name,
 				mapName:    mxml.GetString("mapName", ""),
 				streetName: mxml.GetString("streetName", ""),
 			})

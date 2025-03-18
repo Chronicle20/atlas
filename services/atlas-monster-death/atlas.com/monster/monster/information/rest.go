@@ -1,7 +1,9 @@
 package information
 
+import "strconv"
+
 type RestModel struct {
-	Id                 string            `json:"-"`
+	Id                 uint32            `json:"-"`
 	Name               string            `json:"name"`
 	HP                 uint32            `json:"hp"`
 	MP                 uint32            `json:"mp"`
@@ -36,6 +38,23 @@ type RestModel struct {
 	CoolDamage         coolDamage        `json:"cool_damage"`
 }
 
+func (r RestModel) GetName() string {
+	return "monsters"
+}
+
+func (r RestModel) GetID() string {
+	return strconv.Itoa(int(r.Id))
+}
+
+func (r *RestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
+}
+
 type loseItem struct {
 	Id     uint32 `json:"id"`
 	Chance byte   `json:"chance"`
@@ -62,19 +81,6 @@ type banish struct {
 	Message    string `json:"message"`
 	MapId      uint32 `json:"map_id"`
 	PortalName string `json:"portal_name"`
-}
-
-func (r RestModel) GetName() string {
-	return "monsters"
-}
-
-func (r RestModel) GetID() string {
-	return r.Id
-}
-
-func (r *RestModel) SetID(idStr string) error {
-	r.Id = idStr
-	return nil
 }
 
 func Extract(rm RestModel) (Model, error) {

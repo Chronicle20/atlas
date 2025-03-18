@@ -1,8 +1,39 @@
 package consumable
 
 import (
-	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
+)
+
+type SpecType string
+
+const (
+	SpecTypeHP                   = SpecType("hp")
+	SpecTypeMP                   = SpecType("mp")
+	SpecTypeHPRecovery           = SpecType("hpR")
+	SpecTypeMPRecovery           = SpecType("mpR")
+	SpecTypeMoveTo               = SpecType("moveTo")
+	SpecTypeWeaponAttack         = SpecType("pad")
+	SpecTypeMagicAttack          = SpecType("mad")
+	SpecTypeWeaponDefense        = SpecType("pdd")
+	SpecTypeMagicDefense         = SpecType("mdd")
+	SpecTypeSpeed                = SpecType("speed")
+	SpecTypeEvasion              = SpecType("eva")
+	SpecTypeAccuracy             = SpecType("acc")
+	SpecTypeJump                 = SpecType("jump")
+	SpecTypeTime                 = SpecType("time")
+	SpecTypeThaw                 = SpecType("thaw")
+	SpecTypePoison               = SpecType("poison")
+	SpecTypeDarkness             = SpecType("darkness")
+	SpecTypeWeakness             = SpecType("weakness")
+	SpecTypeSeal                 = SpecType("seal")
+	SpecTypeCurse                = SpecType("curse")
+	SpecTypeReturnMap            = SpecType("returnMapQR")
+	SpecTypeIgnoreContinent      = SpecType("ignoreContinent")
+	SpecTypeMorph                = SpecType("morph")
+	SpecTypeRandomMoveInFieldSet = SpecType("randomMoveInFieldSet")
+	SpecTypeExperienceBuff       = SpecType("expBuff")
+	SpecTypeInc                  = SpecType("inc")
+	SpecTypeOnlyPickup           = SpecType("onlyPickup")
 )
 
 type RestModel struct {
@@ -41,7 +72,7 @@ type RestModel struct {
 	MonsterBook     bool               `json:"monsterBook"`
 	MonsterId       uint32             `json:"monsterId"`
 	BigSize         bool               `json:"bigSize"`
-	TragetBlock     bool               `json:"tragetBlock"` // Assuming typo for "TargetBlock"
+	TargetBlock     bool               `json:"targetBlock"`
 	Effect          string             `json:"effect"`
 	MonsterHP       uint32             `json:"monsterHP"`
 	WorldMsg        string             `json:"worldMsg"`
@@ -73,6 +104,10 @@ func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
+func (r RestModel) GetId() uint32 {
+	return r.Id
+}
+
 func (r *RestModel) SetID(strId string) error {
 	id, err := strconv.Atoi(strId)
 	if err != nil {
@@ -82,157 +117,8 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
-func Extract(rm RestModel) (Model, error) {
-	rs, err := model.SliceMap(ExtractReward)(model.FixedProvider(rm.Rewards))(model.ParallelMap())()
-	if err != nil {
-		return Model{}, err
-	}
-	return Model{
-		Id:              rm.Id,
-		TradeBlock:      rm.TradeBlock,
-		Price:           rm.Price,
-		UnitPrice:       rm.UnitPrice,
-		SlotMax:         rm.SlotMax,
-		TimeLimited:     rm.TimeLimited,
-		NotSale:         rm.NotSale,
-		ReqLevel:        rm.ReqLevel,
-		Quest:           rm.Quest,
-		Only:            rm.Only,
-		ConsumeOnPickup: rm.ConsumeOnPickup,
-		Success:         rm.Success,
-		Cursed:          rm.Cursed,
-		Create:          rm.Create,
-		MasterLevel:     rm.MasterLevel,
-		ReqSkillLevel:   rm.ReqSkillLevel,
-		TradeAvailable:  rm.TradeAvailable,
-		NoCancelMouse:   rm.NoCancelMouse,
-		Pquest:          rm.Pquest,
-		Left:            rm.Left,
-		Right:           rm.Right,
-		Top:             rm.Top,
-		Bottom:          rm.Bottom,
-		BridleMsgType:   rm.BridleMsgType,
-		BridleProp:      rm.BridleProp,
-		BridlePropChg:   rm.BridlePropChg,
-		UseDelay:        rm.UseDelay,
-		DelayMsg:        rm.DelayMsg,
-		IncFatigue:      rm.IncFatigue,
-		Npc:             rm.Npc,
-		Script:          rm.Script,
-		RunOnPickup:     rm.RunOnPickup,
-		MonsterBook:     rm.MonsterBook,
-		MonsterId:       rm.MonsterId,
-		BigSize:         rm.BigSize,
-		TargetBlock:     rm.TragetBlock,
-		Effect:          rm.Effect,
-		MonsterHp:       rm.MonsterHP,
-		WorldMsg:        rm.WorldMsg,
-		IncPDD:          rm.IncreasePDD,
-		IncMDD:          rm.IncreaseMDD,
-		IncACC:          rm.IncreaseACC,
-		IncMHP:          rm.IncreaseMHP,
-		IncMMP:          rm.IncreaseMMP,
-		IncPAD:          rm.IncreasePAD,
-		IncMAD:          rm.IncreaseMAD,
-		IncEVA:          rm.IncreaseEVA,
-		IncLUK:          rm.IncreaseLUK,
-		IncDEX:          rm.IncreaseDEX,
-		IncINT:          rm.IncreaseINT,
-		IncSTR:          rm.IncreaseSTR,
-		IncSpeed:        rm.IncreaseSpeed,
-		Spec:            rm.Spec,
-		MonsterSummons:  rm.MonsterSummons,
-		Morphs:          rm.Morphs,
-		Skills:          rm.Skills,
-		Rewards:         rs,
-	}, nil
-}
-
-func Transform(m Model) (RestModel, error) {
-	rs, err := model.SliceMap(TransformReward)(model.FixedProvider(m.Rewards))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
-	}
-
-	return RestModel{
-		Id:              m.Id,
-		TradeBlock:      m.TradeBlock,
-		Price:           m.Price,
-		UnitPrice:       m.UnitPrice,
-		SlotMax:         m.SlotMax,
-		TimeLimited:     m.TimeLimited,
-		NotSale:         m.NotSale,
-		ReqLevel:        m.ReqLevel,
-		Quest:           m.Quest,
-		Only:            m.Only,
-		ConsumeOnPickup: m.ConsumeOnPickup,
-		Success:         m.Success,
-		Cursed:          m.Cursed,
-		Create:          m.Create,
-		MasterLevel:     m.MasterLevel,
-		ReqSkillLevel:   m.ReqSkillLevel,
-		TradeAvailable:  m.TradeAvailable,
-		NoCancelMouse:   m.NoCancelMouse,
-		Pquest:          m.Pquest,
-		Left:            m.Left,
-		Right:           m.Right,
-		Top:             m.Top,
-		Bottom:          m.Bottom,
-		BridleMsgType:   m.BridleMsgType,
-		BridleProp:      m.BridleProp,
-		BridlePropChg:   m.BridlePropChg,
-		UseDelay:        m.UseDelay,
-		DelayMsg:        m.DelayMsg,
-		IncFatigue:      m.IncFatigue,
-		Npc:             m.Npc,
-		Script:          m.Script,
-		RunOnPickup:     m.RunOnPickup,
-		MonsterBook:     m.MonsterBook,
-		MonsterId:       m.MonsterId,
-		BigSize:         m.BigSize,
-		TragetBlock:     m.TargetBlock,
-		Effect:          m.Effect,
-		MonsterHP:       m.MonsterHp,
-		WorldMsg:        m.WorldMsg,
-		IncreasePDD:     m.IncPDD,
-		IncreaseMDD:     m.IncMDD,
-		IncreaseACC:     m.IncACC,
-		IncreaseMHP:     m.IncMHP,
-		IncreaseMMP:     m.IncMMP,
-		IncreasePAD:     m.IncPAD,
-		IncreaseMAD:     m.IncMAD,
-		IncreaseEVA:     m.IncEVA,
-		IncreaseLUK:     m.IncLUK,
-		IncreaseDEX:     m.IncDEX,
-		IncreaseINT:     m.IncINT,
-		IncreaseSTR:     m.IncSTR,
-		IncreaseSpeed:   m.IncSpeed,
-		Spec:            m.Spec,
-		MonsterSummons:  m.MonsterSummons,
-		Morphs:          m.Morphs,
-		Skills:          m.Skills,
-		Rewards:         rs,
-	}, nil
-}
-
 type RewardRestModel struct {
 	ItemId uint32 `json:"itemId"`
 	Count  uint32 `json:"count"`
 	Prob   uint32 `json:"prob"`
-}
-
-func TransformReward(m RewardModel) (RewardRestModel, error) {
-	return RewardRestModel{
-		ItemId: m.ItemId,
-		Count:  m.Count,
-		Prob:   m.Prob,
-	}, nil
-}
-
-func ExtractReward(rm RewardRestModel) (RewardModel, error) {
-	return RewardModel{
-		ItemId: rm.ItemId,
-		Count:  rm.Count,
-		Prob:   rm.Prob,
-	}, nil
 }

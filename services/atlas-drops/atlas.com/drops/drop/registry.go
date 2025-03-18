@@ -225,8 +225,10 @@ func (d *dropRegistry) GetDropsForMap(tenant tenant.Model, worldId byte, channel
 	}
 	drops := make([]Model, 0)
 	d.lockMap(mk)
-	for i, dropId := range d.dropsInMap[mk] {
-		drops[i], _ = d.dropMap[dropId]
+	for _, dropId := range d.dropsInMap[mk] {
+		if drop, ok := d.getDrop(dropId); ok {
+			drops = append(drops, drop)
+		}
 	}
 	d.unlockMap(mk)
 	return drops, nil

@@ -2,7 +2,6 @@ package equipment
 
 import (
 	"atlas-data/rest"
-	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -28,20 +27,15 @@ func handleGetEquipmentStatistics(db *gorm.DB) func(d *rest.HandlerDependency, c
 		return rest.ParseEquipmentId(d.Logger(), func(equipmentId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				e, err := s.GetById(d.Context())(equipmentId)
+				res, err := s.GetById(d.Context())(equipmentId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get equipment.")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
-				res, err := model.Map(Transform)(model.FixedProvider(e))()
-				if err != nil {
-					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-
-				server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
 		})
 	}
@@ -52,20 +46,16 @@ func handleGetEquipmentSlots(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 		return rest.ParseEquipmentId(d.Logger(), func(equipmentId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				e, err := s.GetById(d.Context())(equipmentId)
+				res, err := s.GetById(d.Context())(equipmentId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get equipment.")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
-				res, err := model.Map(TransformSlot)(model.FixedProvider(e))()
-				if err != nil {
-					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
 
-				server.Marshal[[]SlotRestModel](d.Logger())(w)(c.ServerInformation())(res)
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]SlotRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res.EquipSlots)
 			}
 		})
 	}

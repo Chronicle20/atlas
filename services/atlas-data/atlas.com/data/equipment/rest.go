@@ -34,6 +34,10 @@ func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
+func (r RestModel) GetId() uint32 {
+	return r.Id
+}
+
 func (r *RestModel) SetID(strId string) error {
 	id, err := strconv.Atoi(strId)
 	if err != nil {
@@ -108,73 +112,6 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 	return nil
 }
 
-func Transform(m Model) (RestModel, error) {
-	es := make([]SlotRestModel, 0)
-	for _, i := range m.SlotIndex {
-		es = append(es, SlotRestModel{
-			Id:   m.SlotName,
-			Name: m.SlotName,
-			WZ:   m.SlotWz,
-			Slot: i,
-		})
-	}
-
-	return RestModel{
-		Id:            m.ItemId,
-		Strength:      m.Strength,
-		Dexterity:     m.Dexterity,
-		Intelligence:  m.Intelligence,
-		Luck:          m.Luck,
-		HP:            m.HP,
-		MP:            m.MP,
-		WeaponAttack:  m.WeaponAttack,
-		MagicAttack:   m.MagicAttack,
-		WeaponDefense: m.WeaponDefense,
-		MagicDefense:  m.MagicDefense,
-		Accuracy:      m.Accuracy,
-		Avoidability:  m.Avoidability,
-		Speed:         m.Speed,
-		Jump:          m.Jump,
-		Slots:         m.Slots,
-		Cash:          m.Cash,
-		EquipSlots:    es,
-	}, nil
-}
-
-func Extract(rm RestModel) (Model, error) {
-	sn := ""
-	sw := ""
-	is := make([]int16, 0)
-	for _, x := range rm.EquipSlots {
-		sn = x.Name
-		sw = x.WZ
-		is = append(is, x.Slot)
-	}
-
-	return Model{
-		ItemId:        rm.Id,
-		Strength:      rm.Strength,
-		Dexterity:     rm.Dexterity,
-		Intelligence:  rm.Intelligence,
-		Luck:          rm.Luck,
-		WeaponAttack:  rm.WeaponAttack,
-		WeaponDefense: rm.WeaponDefense,
-		MagicAttack:   rm.MagicAttack,
-		MagicDefense:  rm.MagicDefense,
-		Accuracy:      rm.Accuracy,
-		Avoidability:  rm.Avoidability,
-		Speed:         rm.Speed,
-		Jump:          rm.Jump,
-		HP:            rm.HP,
-		MP:            rm.MP,
-		Slots:         rm.Slots,
-		Cash:          rm.Cash,
-		SlotName:      sn,
-		SlotWz:        sw,
-		SlotIndex:     is,
-	}, nil
-}
-
 type SlotRestModel struct {
 	Id   string `json:"-"`
 	Name string `json:"name"`
@@ -193,18 +130,4 @@ func (r SlotRestModel) GetID() string {
 func (r *SlotRestModel) SetID(id string) error {
 	r.Id = id
 	return nil
-}
-
-func TransformSlot(m Model) ([]SlotRestModel, error) {
-	var results = make([]SlotRestModel, 0)
-	for _, s := range m.SlotIndex {
-		rm := SlotRestModel{
-			Id:   m.SlotName,
-			Name: m.SlotName,
-			WZ:   m.SlotWz,
-			Slot: s,
-		}
-		results = append(results, rm)
-	}
-	return results, nil
 }

@@ -22,10 +22,10 @@ import (
 
 func parseMapId(filePath string) (uint32, error) {
 	baseName := filepath.Base(filePath)
-	if !strings.HasSuffix(baseName, ".img.xml") {
+	if !strings.HasSuffix(baseName, ".img") {
 		return 0, fmt.Errorf("file does not match expected format: %s", filePath)
 	}
-	idStr := strings.TrimSuffix(baseName, ".img.xml")
+	idStr := strings.TrimSuffix(baseName, ".img")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return 0, err
@@ -33,37 +33,42 @@ func parseMapId(filePath string) (uint32, error) {
 	return uint32(id), nil
 }
 
-func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path string) model.Provider[Model] {
-	return func(ctx context.Context) func(path string) model.Provider[Model] {
+func Read(l logrus.FieldLogger) func(ctx context.Context) func(path string, id uint32, np xml.IdProvider) model.Provider[RestModel] {
+	return func(ctx context.Context) func(path string, id uint32, np xml.IdProvider) model.Provider[RestModel] {
 		t := tenant.MustFromContext(ctx)
-		return func(path string) model.Provider[Model] {
-			mapId, err := parseMapId(path)
+		return func(path string, id uint32, np xml.IdProvider) model.Provider[RestModel] {
+			exml, err := np(path, id)()
 			if err != nil {
-				return model.ErrorProvider[Model](err)
+				return model.ErrorProvider[RestModel](err)
+			}
+
+			mapId, err := parseMapId(exml.Name)
+			if err != nil {
+				return model.ErrorProvider[RestModel](err)
 			}
 			l.Debugf("Processing map [%d].", mapId)
 
-			exml, err := xml.Read(path)
-			if err != nil {
-				return model.ErrorProvider[Model](err)
-			}
-
 			i, err := exml.ChildByName("info")
 			if err != nil {
-				return model.ErrorProvider[Model](err)
+				return model.ErrorProvider[RestModel](err)
 			}
 
 			link := i.GetString("link", "")
 			if link != "" {
-				// TODO
-				//linkedMapId, err := strconv.Atoi(link)
-				//if err != nil {
-				//	return nil, err
-				//}
-				//return Read(tenant, uint32(linkedMapId))
+				var linkId int
+				linkId, err = strconv.Atoi(link)
+				if err != nil {
+					return model.ErrorProvider[RestModel](err)
+				}
+				ln, err := Read(l)(ctx)(path, uint32(linkId), np)()
+				if err != nil {
+					return model.ErrorProvider[RestModel](err)
+				}
+				ln.Id = mapId
+				return model.FixedProvider(ln)
 			}
 
-			m := &Model{Id: mapId}
+			m := &RestModel{Id: mapId}
 			m.ReturnMapId = uint32(i.GetIntegerWithDefault("returnMap", 0))
 			m.MonsterRate = i.GetFloatWithDefault("mobRate", 0)
 
@@ -92,7 +97,7 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 			m.Clock = getClock(exml)
 			m.EverLast = i.GetIntegerWithDefault("everlast", 0) > 0
 			m.Town = i.GetIntegerWithDefault("town", 0) > 0
-			m.DecHp = uint32(i.GetIntegerWithDefault("decHP", 0))
+			m.DecHP = uint32(i.GetIntegerWithDefault("decHP", 0))
 			m.ProtectItem = uint32(i.GetIntegerWithDefault("protectItem", 0))
 			m.ForcedReturnMapId = uint32(i.GetIntegerWithDefault("forcedReturn", 999999999))
 			m.Boat = isBoat(exml)
@@ -104,16 +109,16 @@ func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path stri
 			m.Reactors = getReactors(exml)
 			monsters, npcs := getLife(t, exml)
 			m.Monsters = monsters
-			m.Npcs = npcs
+			m.NPCs = npcs
 			//TODO player NPCS and CPQ support
 
-			lp := &point.Model{X: m.MapArea.X, Y: m.MapArea.Y}
-			rp := &point.Model{X: m.MapArea.X + m.MapArea.Width, Y: m.MapArea.Y}
-			fallback := &point.Model{X: m.MapArea.X + int16(math.Floor(float64(m.MapArea.Width/2))), Y: m.MapArea.Y}
+			lp := point.RestModel{X: m.MapArea.X, Y: m.MapArea.Y}
+			rp := point.RestModel{X: m.MapArea.X + m.MapArea.Width, Y: m.MapArea.Y}
+			fallback := point.RestModel{X: m.MapArea.X + int16(math.Floor(float64(m.MapArea.Width/2))), Y: m.MapArea.Y}
 
 			lp = bSearchDropPos(m.FootholdTree, lp, fallback)
 			rp = bSearchDropPos(m.FootholdTree, rp, fallback)
-			m.XLimit = XLimit{
+			m.XLimit = XLimitRestModel{
 				Min: uint32(lp.X + 14),
 				Max: uint32(rp.X - 14),
 			}
@@ -130,8 +135,8 @@ const (
 
 var portalId uint32
 
-func getPortals(exml *xml.Node) []portal.Model {
-	portals := make([]portal.Model, 0)
+func getPortals(exml xml.Node) []portal.RestModel {
+	portals := make([]portal.RestModel, 0)
 	p, err := exml.ChildByName("portal")
 	if err != nil {
 		return portals
@@ -149,7 +154,7 @@ func getPortals(exml *xml.Node) []portal.Model {
 			pid = uint32(pstr)
 		}
 
-		portal := portal.Model{
+		portal := portal.RestModel{
 			Id:          strconv.Itoa(int(pid)),
 			Name:        c.GetString("pn", ""),
 			Target:      c.GetString("tn", ""),
@@ -164,20 +169,20 @@ func getPortals(exml *xml.Node) []portal.Model {
 	return portals
 }
 
-func getTimeMob(i *xml.Node) *TimeMob {
+func getTimeMob(i *xml.Node) *TimeMobRestModel {
 	tm, err := i.ChildByName("timeMob")
 	if err != nil {
 		return nil
 	}
 	id := uint32(tm.GetIntegerWithDefault("id", 0))
 	message := tm.GetString("message", "")
-	return &TimeMob{
+	return &TimeMobRestModel{
 		Id:      id,
 		Message: message,
 	}
 }
 
-func getMapArea(exml *xml.Node, i *xml.Node) Rectangle {
+func getMapArea(exml xml.Node, i *xml.Node) RectangleRestModel {
 	bounds := make([]int16, 4)
 	bounds[0] = int16(i.GetIntegerWithDefault("VRTop", 0))
 	bounds[1] = int16(i.GetIntegerWithDefault("VRBottom", 0))
@@ -189,7 +194,7 @@ func getMapArea(exml *xml.Node, i *xml.Node) Rectangle {
 			bounds[1] = int16(mm.GetIntegerWithDefault("centerY", 0) * -1)
 			bounds[2] = int16(mm.GetIntegerWithDefault("height", 0))
 			bounds[3] = int16(mm.GetIntegerWithDefault("width", 0))
-			return Rectangle{
+			return RectangleRestModel{
 				X:      bounds[0],
 				Y:      bounds[1],
 				Width:  bounds[3],
@@ -197,7 +202,7 @@ func getMapArea(exml *xml.Node, i *xml.Node) Rectangle {
 			}
 		} else {
 			dist := 1 << 18
-			return Rectangle{
+			return RectangleRestModel{
 				X:      int16(-dist / 2),
 				Y:      int16(-dist / 2),
 				Width:  int16(dist),
@@ -207,7 +212,7 @@ func getMapArea(exml *xml.Node, i *xml.Node) Rectangle {
 	} else {
 		bounds[2] = int16(i.GetIntegerWithDefault("VRLeft", 0))
 		bounds[3] = int16(i.GetIntegerWithDefault("VRRight", 0))
-		return Rectangle{
+		return RectangleRestModel{
 			X:      bounds[2],
 			Y:      bounds[0],
 			Width:  bounds[3] - bounds[2],
@@ -216,8 +221,8 @@ func getMapArea(exml *xml.Node, i *xml.Node) Rectangle {
 	}
 }
 
-func getFootholdTree(exml *xml.Node) *FootholdTree {
-	footholds := make([]Foothold, 0)
+func getFootholdTree(exml xml.Node) FootholdTreeRestModel {
+	footholds := make([]FootholdRestModel, 0)
 	var lx int16
 	var ly int16
 	var ux int16
@@ -236,10 +241,10 @@ func getFootholdTree(exml *xml.Node) *FootholdTree {
 					if err != nil {
 						continue
 					}
-					foothold := Foothold{
+					foothold := FootholdRestModel{
 						Id:     uint32(id),
-						First:  &point.Model{X: x1, Y: y1},
-						Second: &point.Model{X: x2, Y: y2},
+						First:  &point.RestModel{X: x1, Y: y1},
+						Second: &point.RestModel{X: x2, Y: y2},
 					}
 					if x1 < lx {
 						lx = x1
@@ -258,11 +263,12 @@ func getFootholdTree(exml *xml.Node) *FootholdTree {
 			}
 		}
 	}
-	return NewFootholdTree(lx, ly, ux, uy).Insert(footholds)
+	fht := NewFootholdTree(lx, ly, ux, uy).Insert(footholds)
+	return *fht
 }
 
-func getAreas(exml *xml.Node) []Rectangle {
-	results := make([]Rectangle, 0)
+func getAreas(exml xml.Node) []RectangleRestModel {
+	results := make([]RectangleRestModel, 0)
 	a, err := exml.ChildByName("area")
 	if err != nil {
 		return results
@@ -272,7 +278,7 @@ func getAreas(exml *xml.Node) []Rectangle {
 		y1 := int16(area.GetIntegerWithDefault("y1", 0))
 		x2 := int16(area.GetFloatWithDefault("x2", 0))
 		y2 := int16(area.GetIntegerWithDefault("y2", 0))
-		result := Rectangle{
+		result := RectangleRestModel{
 			X:      x1,
 			Y:      y1,
 			Width:  x2 - x1,
@@ -283,7 +289,7 @@ func getAreas(exml *xml.Node) []Rectangle {
 	return results
 }
 
-func getSeats(exml *xml.Node) uint32 {
+func getSeats(exml xml.Node) uint32 {
 	s, err := exml.ChildByName("seat")
 	if err != nil {
 		return 0
@@ -307,18 +313,18 @@ func getStreetName(tenant tenant.Model, mapId uint32) string {
 	return md.StreetName()
 }
 
-func getClock(exml *xml.Node) bool {
+func getClock(exml xml.Node) bool {
 	_, err := exml.ChildByName("clock")
 	return err != nil
 }
 
-func isBoat(exml *xml.Node) bool {
+func isBoat(exml xml.Node) bool {
 	_, err := exml.ChildByName("shipObj")
 	return err != nil
 }
 
-func getBackgroundTypes(exml *xml.Node) []BackgroundType {
-	results := make([]BackgroundType, 0)
+func getBackgroundTypes(exml xml.Node) []BackgroundTypeRestModel {
+	results := make([]BackgroundTypeRestModel, 0)
 	bts, err := exml.ChildByName("back")
 	if err != nil {
 		return results
@@ -329,14 +335,14 @@ func getBackgroundTypes(exml *xml.Node) []BackgroundType {
 			continue
 		}
 		backgroundType := bt.GetIntegerWithDefault("type", 0)
-		results = append(results, BackgroundType{LayerNumber: uint32(layerNum), BackgroundType: uint32(backgroundType)})
+		results = append(results, BackgroundTypeRestModel{LayerNumber: uint32(layerNum), BackgroundType: uint32(backgroundType)})
 	}
 
 	return results
 }
 
-func getReactors(exml *xml.Node) []reactor.Model {
-	results := make([]reactor.Model, 0)
+func getReactors(exml xml.Node) []reactor.RestModel {
+	results := make([]reactor.RestModel, 0)
 	rd, err := exml.ChildByName("reactor")
 	if err != nil {
 		return results
@@ -355,7 +361,7 @@ func getReactors(exml *xml.Node) []reactor.Model {
 			continue
 		}
 
-		results = append(results, reactor.Model{
+		results = append(results, reactor.RestModel{
 			Id:             uid,
 			Classification: uint32(c),
 			Name:           name,
@@ -369,9 +375,9 @@ func getReactors(exml *xml.Node) []reactor.Model {
 	return results
 }
 
-func getLife(t tenant.Model, exml *xml.Node) ([]monster.Model, []npc.Model) {
-	monsters := make([]monster.Model, 0)
-	npcs := make([]npc.Model, 0)
+func getLife(t tenant.Model, exml xml.Node) ([]monster.RestModel, []npc.RestModel) {
+	monsters := make([]monster.RestModel, 0)
+	npcs := make([]npc.RestModel, 0)
 	ld, err := exml.ChildByName("life")
 	if err != nil {
 		return monsters, npcs
@@ -396,7 +402,7 @@ func getLife(t tenant.Model, exml *xml.Node) ([]monster.Model, []npc.Model) {
 		mobTime := uint32(life.GetIntegerWithDefault("mobTime", 0))
 
 		if lifeType == "m" {
-			monster := monster.Model{
+			monster := monster.RestModel{
 				Id:       uint32(i + 1),
 				Template: uint32(id),
 				MobTime:  mobTime,
@@ -417,8 +423,8 @@ func getLife(t tenant.Model, exml *xml.Node) ([]monster.Model, []npc.Model) {
 				continue
 			}
 
-			npc := npc.Model{
-				Id:       strconv.Itoa(i + 1),
+			npc := npc.RestModel{
+				Id:       uint32(i + 1),
 				Template: uint32(id),
 				Name:     nn.Name(),
 				CY:       cy,

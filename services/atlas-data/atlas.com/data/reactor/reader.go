@@ -66,10 +66,8 @@ func Read(l logrus.FieldLogger) func(path string, id uint32, np xml.IdProvider) 
 			if err != nil {
 				return model.ErrorProvider[RestModel](err)
 			}
-			m := RestModel{Id: reactorId}
-			m.StateInfo = ln.StateInfo
-			m.TimeoutInfo = ln.TimeoutInfo
-			return model.FixedProvider(m)
+			ln.Id = reactorId
+			return model.FixedProvider(ln)
 		}
 
 		loadArea := info.GetIntegerWithDefault("activateByTouch", 0) != 0

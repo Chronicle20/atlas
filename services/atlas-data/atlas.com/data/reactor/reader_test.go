@@ -300,7 +300,7 @@ const testXML = `
 </imgdir>
 `
 
-const linkedTextXML = `
+const linkTestXML = `
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <imgdir name="1020008.img">
   <imgdir name="info">
@@ -317,7 +317,7 @@ var fixedNodeProvider = func(path string, id uint32) model.Provider[xml.Node] {
 
 var linkedNodeProvider = func(path string, id uint32) model.Provider[xml.Node] {
 	if id == 0 {
-		return xml.FromByteArrayProvider([]byte(linkedTextXML))
+		return xml.FromByteArrayProvider([]byte(linkTestXML))
 	} else {
 		return xml.FromByteArrayProvider([]byte(testXML))
 	}

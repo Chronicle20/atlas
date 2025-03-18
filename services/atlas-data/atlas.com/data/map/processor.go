@@ -7,21 +7,25 @@ import (
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
 	"atlas-data/point"
+	"atlas-data/xml"
 	"context"
+	"fmt"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"math"
+	"path/filepath"
 	"strconv"
+	"strings"
 )
 
-func NewStorage(l logrus.FieldLogger, db *gorm.DB) *document.Storage[uint32, Model] {
+func NewStorage(l logrus.FieldLogger, db *gorm.DB) *document.Storage[uint32, RestModel] {
 	return document.NewStorage(l, db, GetModelRegistry(), "MAP")
 }
 
-func Register(s *document.Storage[uint32, Model]) func(ctx context.Context) func(r model.Provider[Model]) error {
-	return func(ctx context.Context) func(r model.Provider[Model]) error {
-		return func(r model.Provider[Model]) error {
+func Register(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(r model.Provider[RestModel]) error {
+	return func(ctx context.Context) func(r model.Provider[RestModel]) error {
+		return func(r model.Provider[RestModel]) error {
 			m, err := r()
 			if err != nil {
 				return err
@@ -35,19 +39,46 @@ func Register(s *document.Storage[uint32, Model]) func(ctx context.Context) func
 	}
 }
 
+func extractPathAndID(path string) (string, uint32, error) {
+	// Extract the base filename
+	base := filepath.Base(path)
+
+	// Trim the ".img.xml" extension
+	if !strings.HasSuffix(base, ".img.xml") {
+		return "", 0, fmt.Errorf("invalid file format: %s", base)
+	}
+	idStr := strings.TrimSuffix(base, ".img.xml")
+
+	// Convert to uint32
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return "", 0, fmt.Errorf("failed to convert ID to uint32: %w", err)
+	}
+
+	// Extract the directory
+	dir := filepath.Dir(path) + "/"
+
+	return dir, uint32(id), nil
+}
+
 // deprecated
 func RegisterMap(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
 	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
 		return func(ctx context.Context) func(path string) {
 			return func(path string) {
-				_ = Register(NewStorage(l, db))(ctx)(ReadFromFile(l)(ctx)(path))
+				parentPath, mapId, err := extractPathAndID(path)
+				if err != nil {
+					return
+				}
+				_ = Register(NewStorage(l, db))(ctx)(Read(l)(ctx)(parentPath, mapId, xml.FromParentPathProvider))
 			}
 		}
 	}
 }
 
-func bSearchDropPos(tree *FootholdTree, initial *point.Model, fallback *point.Model) *point.Model {
-	var dropPos *point.Model
+func bSearchDropPos(tree FootholdTreeRestModel, initial point.RestModel, fallback point.RestModel) point.RestModel {
+	set := false
+	var dropPos point.RestModel
 	awayX := fallback.X
 	homeX := initial.X
 	y := initial.Y - 85
@@ -56,25 +87,26 @@ func bSearchDropPos(tree *FootholdTree, initial *point.Model, fallback *point.Mo
 		distanceX := awayX - homeX
 		dx := distanceX / 2
 		searchX := homeX + dx
-		res := calcPointBelow(tree, &point.Model{X: searchX, Y: y})
-		if res != nil {
+		res, ok := calcPointBelow(tree, point.RestModel{X: searchX, Y: y})
+		if !ok {
 			awayX = searchX
 			dropPos = res
+			set = true
 		} else {
 			homeX = searchX
 		}
 	}
 
-	if dropPos != nil {
+	if set {
 		return dropPos
 	}
 	return fallback
 }
 
-func calcPointBelow(tree *FootholdTree, initial *point.Model) *point.Model {
+func calcPointBelow(tree FootholdTreeRestModel, initial point.RestModel) (point.RestModel, bool) {
 	fh := tree.findBelow(initial)
 	if fh == nil {
-		return nil
+		return point.RestModel{}, false
 	}
 
 	dropY := fh.First.Y
@@ -88,28 +120,27 @@ func calcPointBelow(tree *FootholdTree, initial *point.Model) *point.Model {
 			dropY = fh.First.Y + int16(s5)
 		}
 	}
-	ret := &point.Model{X: initial.X, Y: dropY}
-	return ret
+	return point.RestModel{X: initial.X, Y: dropY}, true
 }
 
-type FootholdTreeConfigurator func(f *FootholdTree)
+type FootholdTreeConfigurator func(f *FootholdTreeRestModel)
 
-func NewFootholdTree(lx int16, ly int16, ux int16, uy int16, configurations ...FootholdTreeConfigurator) *FootholdTree {
+func NewFootholdTree(lx int16, ly int16, ux int16, uy int16, configurations ...FootholdTreeConfigurator) *FootholdTreeRestModel {
 	p1x := lx
 	p1y := ly
 	p2x := ux
 	p2y := uy
 	centerx := int16(math.Round(float64(ux-lx) / 2))
 	centery := int16(math.Round(float64(uy-ly) / 2))
-	ft := &FootholdTree{
+	ft := &FootholdTreeRestModel{
 		NorthWest: nil,
 		NorthEast: nil,
 		SouthWest: nil,
 		SouthEast: nil,
-		Footholds: make([]Foothold, 0),
-		P1:        &point.Model{X: p1x, Y: p1y},
-		P2:        &point.Model{X: p2x, Y: p2y},
-		Center:    &point.Model{X: centerx, Y: centery},
+		Footholds: make([]FootholdRestModel, 0),
+		P1:        &point.RestModel{X: p1x, Y: p1y},
+		P2:        &point.RestModel{X: p2x, Y: p2y},
+		Center:    &point.RestModel{X: centerx, Y: centery},
 		Depth:     0,
 		MaxDropX:  0,
 		MinDropX:  0,
@@ -122,19 +153,19 @@ func NewFootholdTree(lx int16, ly int16, ux int16, uy int16, configurations ...F
 }
 
 func SetFootholdTreeDepth(depth uint32) FootholdTreeConfigurator {
-	return func(f *FootholdTree) {
+	return func(f *FootholdTreeRestModel) {
 		f.Depth = depth
 	}
 }
 
-func (f *FootholdTree) Insert(footholds []Foothold) *FootholdTree {
+func (f *FootholdTreeRestModel) Insert(footholds []FootholdRestModel) *FootholdTreeRestModel {
 	for _, foothold := range footholds {
 		f.InsertSingle(foothold)
 	}
 	return f
 }
 
-func (f *FootholdTree) InsertSingle(foothold Foothold) *FootholdTree {
+func (f *FootholdTreeRestModel) InsertSingle(foothold FootholdRestModel) *FootholdTreeRestModel {
 	if f.Depth == 0 {
 		if foothold.First.X > f.MaxDropX {
 			f.MaxDropX = foothold.First.X
@@ -172,148 +203,148 @@ func (f *FootholdTree) InsertSingle(foothold Foothold) *FootholdTree {
 	return f
 }
 
-func portalProvider(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) model.Provider[[]portal.Model] {
-	return func(ctx context.Context) func(mapId uint32) model.Provider[[]portal.Model] {
-		return func(mapId uint32) model.Provider[[]portal.Model] {
+func portalProvider(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(mapId uint32) model.Provider[[]portal.RestModel] {
+	return func(ctx context.Context) func(mapId uint32) model.Provider[[]portal.RestModel] {
+		return func(mapId uint32) model.Provider[[]portal.RestModel] {
 			m, err := s.ByIdProvider(ctx)(mapId)()
 			if err != nil {
-				return model.ErrorProvider[[]portal.Model](err)
+				return model.ErrorProvider[[]portal.RestModel](err)
 			}
 			return model.FixedProvider(m.Portals)
 		}
 	}
 }
 
-func GetPortals(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) ([]portal.Model, error) {
-	return func(ctx context.Context) func(mapId uint32) ([]portal.Model, error) {
-		return func(mapId uint32) ([]portal.Model, error) {
+func GetPortals(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(mapId uint32) ([]portal.RestModel, error) {
+	return func(ctx context.Context) func(mapId uint32) ([]portal.RestModel, error) {
+		return func(mapId uint32) ([]portal.RestModel, error) {
 			return portalProvider(s)(ctx)(mapId)()
 		}
 	}
 }
 
-func GetPortalsByName(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32, name string) ([]portal.Model, error) {
-	return func(ctx context.Context) func(mapId uint32, name string) ([]portal.Model, error) {
-		return func(mapId uint32, name string) ([]portal.Model, error) {
+func GetPortalsByName(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(mapId uint32, name string) ([]portal.RestModel, error) {
+	return func(ctx context.Context) func(mapId uint32, name string) ([]portal.RestModel, error) {
+		return func(mapId uint32, name string) ([]portal.RestModel, error) {
 			return model.FilteredProvider(portalProvider(s)(ctx)(mapId), model.Filters(PortalNameFilter(name)))()
 		}
 	}
 }
 
-func GetPortalById(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32, portalId uint32) (portal.Model, error) {
-	return func(ctx context.Context) func(mapId uint32, portalId uint32) (portal.Model, error) {
-		return func(mapId uint32, portalId uint32) (portal.Model, error) {
+func GetPortalById(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(mapId uint32, portalId uint32) (portal.RestModel, error) {
+	return func(ctx context.Context) func(mapId uint32, portalId uint32) (portal.RestModel, error) {
+		return func(mapId uint32, portalId uint32) (portal.RestModel, error) {
 			return model.First(portalProvider(s)(ctx)(mapId), model.Filters(PortalIdFilter(portalId)))
 		}
 	}
 }
 
-func PortalNameFilter(portalName string) model.Filter[portal.Model] {
-	return func(p portal.Model) bool {
+func PortalNameFilter(portalName string) model.Filter[portal.RestModel] {
+	return func(p portal.RestModel) bool {
 		return p.Name == portalName
 	}
 }
 
-func PortalIdFilter(portalId uint32) model.Filter[portal.Model] {
-	return func(p portal.Model) bool {
+func PortalIdFilter(portalId uint32) model.Filter[portal.RestModel] {
+	return func(p portal.RestModel) bool {
 		return p.Id == strconv.Itoa(int(portalId))
 	}
 }
 
-func reactorProvider(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) model.Provider[[]reactor.Model] {
-	return func(ctx context.Context) func(mapId uint32) model.Provider[[]reactor.Model] {
-		return func(mapId uint32) model.Provider[[]reactor.Model] {
+func reactorProvider(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(mapId uint32) model.Provider[[]reactor.RestModel] {
+	return func(ctx context.Context) func(mapId uint32) model.Provider[[]reactor.RestModel] {
+		return func(mapId uint32) model.Provider[[]reactor.RestModel] {
 			m, err := s.ByIdProvider(ctx)(mapId)()
 			if err != nil {
-				return model.ErrorProvider[[]reactor.Model](err)
+				return model.ErrorProvider[[]reactor.RestModel](err)
 			}
 			return model.FixedProvider(m.Reactors)
 		}
 	}
 }
 
-func GetReactors(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) ([]reactor.Model, error) {
-	return func(ctx context.Context) func(mapId uint32) ([]reactor.Model, error) {
-		return func(mapId uint32) ([]reactor.Model, error) {
+func GetReactors(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(mapId uint32) ([]reactor.RestModel, error) {
+	return func(ctx context.Context) func(mapId uint32) ([]reactor.RestModel, error) {
+		return func(mapId uint32) ([]reactor.RestModel, error) {
 			return reactorProvider(s)(ctx)(mapId)()
 		}
 	}
 }
 
-func npcProvider(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) model.Provider[[]npc.Model] {
-	return func(ctx context.Context) func(mapId uint32) model.Provider[[]npc.Model] {
-		return func(mapId uint32) model.Provider[[]npc.Model] {
+func npcProvider(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(mapId uint32) model.Provider[[]npc.RestModel] {
+	return func(ctx context.Context) func(mapId uint32) model.Provider[[]npc.RestModel] {
+		return func(mapId uint32) model.Provider[[]npc.RestModel] {
 			m, err := s.ByIdProvider(ctx)(mapId)()
 			if err != nil {
-				return model.ErrorProvider[[]npc.Model](err)
+				return model.ErrorProvider[[]npc.RestModel](err)
 			}
-			return model.FixedProvider(m.Npcs)
+			return model.FixedProvider(m.NPCs)
 		}
 	}
 }
 
-func GetNpcs(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) ([]npc.Model, error) {
-	return func(ctx context.Context) func(mapId uint32) ([]npc.Model, error) {
-		return func(mapId uint32) ([]npc.Model, error) {
+func GetNpcs(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(mapId uint32) ([]npc.RestModel, error) {
+	return func(ctx context.Context) func(mapId uint32) ([]npc.RestModel, error) {
+		return func(mapId uint32) ([]npc.RestModel, error) {
 			return npcProvider(s)(ctx)(mapId)()
 		}
 	}
 }
 
-func GetNpcsByObjectId(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32, objectId uint32) ([]npc.Model, error) {
-	return func(ctx context.Context) func(mapId uint32, objectId uint32) ([]npc.Model, error) {
-		return func(mapId uint32, objectId uint32) ([]npc.Model, error) {
+func GetNpcsByObjectId(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(mapId uint32, objectId uint32) ([]npc.RestModel, error) {
+	return func(ctx context.Context) func(mapId uint32, objectId uint32) ([]npc.RestModel, error) {
+		return func(mapId uint32, objectId uint32) ([]npc.RestModel, error) {
 			return model.FilteredProvider(npcProvider(s)(ctx)(mapId), model.Filters(NPCObjectIdFilter(objectId)))()
 		}
 	}
 }
 
-func GetNpc(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32, npcId uint32) (npc.Model, error) {
-	return func(ctx context.Context) func(mapId uint32, npcId uint32) (npc.Model, error) {
-		return func(mapId uint32, npcId uint32) (npc.Model, error) {
+func GetNpc(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(mapId uint32, npcId uint32) (npc.RestModel, error) {
+	return func(ctx context.Context) func(mapId uint32, npcId uint32) (npc.RestModel, error) {
+		return func(mapId uint32, npcId uint32) (npc.RestModel, error) {
 			return model.First(npcProvider(s)(ctx)(mapId), model.Filters(NPCIdFilter(npcId)))
 		}
 	}
 }
 
-func NPCIdFilter(id uint32) model.Filter[npc.Model] {
-	return func(n npc.Model) bool {
-		return n.Id == strconv.Itoa(int(id))
+func NPCIdFilter(id uint32) model.Filter[npc.RestModel] {
+	return func(n npc.RestModel) bool {
+		return n.Id == id
 	}
 }
 
-func NPCObjectIdFilter(id uint32) model.Filter[npc.Model] {
-	return func(n npc.Model) bool {
-		return n.Id == strconv.Itoa(int(id))
+func NPCObjectIdFilter(id uint32) model.Filter[npc.RestModel] {
+	return func(n npc.RestModel) bool {
+		return n.Id == id
 	}
 }
 
-func monsterProvider(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) model.Provider[[]monster.Model] {
-	return func(ctx context.Context) func(mapId uint32) model.Provider[[]monster.Model] {
-		return func(mapId uint32) model.Provider[[]monster.Model] {
+func monsterProvider(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(mapId uint32) model.Provider[[]monster.RestModel] {
+	return func(ctx context.Context) func(mapId uint32) model.Provider[[]monster.RestModel] {
+		return func(mapId uint32) model.Provider[[]monster.RestModel] {
 			m, err := s.ByIdProvider(ctx)(mapId)()
 			if err != nil {
-				return model.ErrorProvider[[]monster.Model](err)
+				return model.ErrorProvider[[]monster.RestModel](err)
 			}
 			return model.FixedProvider(m.Monsters)
 		}
 	}
 }
 
-func GetMonsters(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) ([]monster.Model, error) {
-	return func(ctx context.Context) func(mapId uint32) ([]monster.Model, error) {
-		return func(mapId uint32) ([]monster.Model, error) {
+func GetMonsters(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(mapId uint32) ([]monster.RestModel, error) {
+	return func(ctx context.Context) func(mapId uint32) ([]monster.RestModel, error) {
+		return func(mapId uint32) ([]monster.RestModel, error) {
 			return monsterProvider(s)(ctx)(mapId)()
 		}
 	}
 }
 
-func calcDropPos(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
-	return func(ctx context.Context) func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
-		return func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
+func calcDropPos(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(mapId uint32, initial point.RestModel, fallback point.RestModel) (point.RestModel, error) {
+	return func(ctx context.Context) func(mapId uint32, initial point.RestModel, fallback point.RestModel) (point.RestModel, error) {
+		return func(mapId uint32, initial point.RestModel, fallback point.RestModel) (point.RestModel, error) {
 			m, err := s.GetById(ctx)(mapId)
 			if err != nil {
-				return fallback
+				return fallback, nil
 			}
 
 			rp := initial
@@ -322,14 +353,14 @@ func calcDropPos(s *document.Storage[uint32, Model]) func(ctx context.Context) f
 			} else if rp.X > int16(m.XLimit.Max) {
 				rp.X = int16(m.XLimit.Max)
 			}
-			ret := calcPointBelow(m.FootholdTree, &point.Model{X: rp.X, Y: rp.Y - 85})
-			if ret == nil {
+			ret, ok := calcPointBelow(m.FootholdTree, point.RestModel{X: rp.X, Y: rp.Y - 85})
+			if ok {
 				ret = bSearchDropPos(m.FootholdTree, initial, fallback)
 			}
-			if !m.MapArea.contains(*ret) {
-				return fallback
+			if !m.MapArea.contains(ret) {
+				return fallback, nil
 			}
-			return ret
+			return ret, nil
 		}
 	}
 }

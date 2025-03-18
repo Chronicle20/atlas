@@ -46,6 +46,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(path string, id u
 			if err != nil {
 				return model.ErrorProvider[RestModel](err)
 			}
+
 			l.Debugf("Processing map [%d].", mapId)
 
 			i, err := exml.ChildByName("info")
@@ -298,7 +299,7 @@ func getSeats(exml xml.Node) uint32 {
 }
 
 func getPlaceName(tenant tenant.Model, mapId uint32) string {
-	md, err := GetMapStringRegistry().Get(tenant, mapId)
+	md, err := GetMapStringRegistry().Get(tenant, strconv.Itoa(int(mapId)))
 	if err != nil {
 		return ""
 	}
@@ -306,7 +307,7 @@ func getPlaceName(tenant tenant.Model, mapId uint32) string {
 }
 
 func getStreetName(tenant tenant.Model, mapId uint32) string {
-	md, err := GetMapStringRegistry().Get(tenant, mapId)
+	md, err := GetMapStringRegistry().Get(tenant, strconv.Itoa(int(mapId)))
 	if err != nil {
 		return ""
 	}
@@ -418,7 +419,7 @@ func getLife(t tenant.Model, exml xml.Node) ([]monster.RestModel, []npc.RestMode
 			}
 			monsters = append(monsters, monster)
 		} else if lifeType == "n" {
-			nn, err := npc2.GetNpcStringRegistry().Get(t, uint32(id))
+			nn, err := npc2.GetNpcStringRegistry().Get(t, strconv.Itoa(id))
 			if err != nil {
 				continue
 			}

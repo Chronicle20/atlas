@@ -7,34 +7,34 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type AllGetter[I uint32, M Identifier[I]] interface {
+type AllGetter[I string, M Identifier[I]] interface {
 	All(ctx context.Context) model.Provider[[]M]
 }
 
-type ByIdGetter[I uint32, M Identifier[I]] interface {
+type ByIdGetter[I string, M Identifier[I]] interface {
 	ById(ctx context.Context) func(id I) model.Provider[M]
 }
 
-type Adder[I uint32, M Identifier[I]] interface {
+type Adder[I string, M Identifier[I]] interface {
 	Add(ctx context.Context) func(m M) model.Provider[M]
 }
 
-type Clearer[I uint32, M Identifier[I]] interface {
+type Clearer[I string, M Identifier[I]] interface {
 	Clear(ctx context.Context) error
 }
 
-type Storer[I uint32, M Identifier[I]] interface {
+type Storer[I string, M Identifier[I]] interface {
 	AllGetter[I, M]
 	ByIdGetter[I, M]
 	Adder[I, M]
 }
 
-type RegStorage[I uint32, M Identifier[I]] struct {
+type RegStorage[I string, M Identifier[I]] struct {
 	l logrus.FieldLogger
 	r *Registry[I, M]
 }
 
-func NewRegStorage[I uint32, M Identifier[I]](l logrus.FieldLogger, r *Registry[I, M]) *RegStorage[I, M] {
+func NewRegStorage[I string, M Identifier[I]](l logrus.FieldLogger, r *Registry[I, M]) *RegStorage[I, M] {
 	return &RegStorage[I, M]{
 		l: l,
 		r: r,

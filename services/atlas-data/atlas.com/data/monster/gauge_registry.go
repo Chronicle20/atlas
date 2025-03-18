@@ -4,16 +4,15 @@ import (
 	"atlas-data/document"
 	"atlas-data/xml"
 	"github.com/Chronicle20/atlas-tenant"
-	"strconv"
 	"sync"
 )
 
 type Gauge struct {
-	id     uint32
+	id     string
 	exists bool
 }
 
-func (g Gauge) GetId() uint32 {
+func (g Gauge) GetID() string {
 	return g.id
 }
 
@@ -21,12 +20,12 @@ func (g Gauge) Exists() bool {
 	return g.exists
 }
 
-var mgReg *document.Registry[uint32, Gauge]
+var mgReg *document.Registry[string, Gauge]
 var mgOnce sync.Once
 
-func GetMonsterGaugeRegistry() *document.Registry[uint32, Gauge] {
+func GetMonsterGaugeRegistry() *document.Registry[string, Gauge] {
 	mgOnce.Do(func() {
-		mgReg = document.NewRegistry[uint32, Gauge]()
+		mgReg = document.NewRegistry[string, Gauge]()
 	})
 	return mgReg
 }
@@ -42,12 +41,7 @@ func InitGauge(t tenant.Model, path string) error {
 	}
 
 	for _, mxml := range d.CanvasNodes {
-		var id int
-		id, err = strconv.Atoi(mxml.Name)
-		if err != nil {
-			return err
-		}
-		_, err = GetMonsterGaugeRegistry().Add(t, Gauge{id: uint32(id), exists: true})
+		_, err = GetMonsterGaugeRegistry().Add(t, Gauge{id: mxml.Name, exists: true})
 		if err != nil {
 			return err
 		}

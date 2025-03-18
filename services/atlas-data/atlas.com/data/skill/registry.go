@@ -5,12 +5,12 @@ import (
 	"sync"
 )
 
-var mmReg *document.Registry[uint32, RestModel]
+var mmReg *document.Registry[string, RestModel]
 var mmOnce sync.Once
 
-func GetModelRegistry() *document.Registry[uint32, RestModel] {
+func GetModelRegistry() *document.Registry[string, RestModel] {
 	mmOnce.Do(func() {
-		mmReg = document.NewRegistry[uint32, RestModel]()
+		mmReg = document.NewRegistry[string, RestModel]()
 	})
 	return mmReg
 }

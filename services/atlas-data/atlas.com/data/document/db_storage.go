@@ -11,17 +11,17 @@ import (
 	"strconv"
 )
 
-type Identifier[I uint32] interface {
-	GetId() I
+type Identifier[I string] interface {
+	GetID() I
 }
 
-type DbStorage[I uint32, M Identifier[I]] struct {
+type DbStorage[I string, M Identifier[I]] struct {
 	l       logrus.FieldLogger
 	db      *gorm.DB
 	docType string
 }
 
-func NewDbStorage[I uint32, M Identifier[I]](l logrus.FieldLogger, db *gorm.DB, docType string) *DbStorage[I, M] {
+func NewDbStorage[I string, M Identifier[I]](l logrus.FieldLogger, db *gorm.DB, docType string) *DbStorage[I, M] {
 	return &DbStorage[I, M]{
 		l:       l,
 		db:      db,
@@ -40,7 +40,7 @@ func (s *DbStorage[I, M]) All(ctx context.Context) model.Provider[[]M] {
 
 	for _, doc := range docs {
 		var rm M
-		err = json.Unmarshal(doc.Content, &rm)
+		err = jsonapi.Unmarshal(doc.Content, &rm)
 		if err != nil {
 			return model.ErrorProvider[[]M](err)
 		}
@@ -61,7 +61,7 @@ func (s *DbStorage[I, M]) ById(ctx context.Context) func(id I) model.Provider[M]
 			return model.ErrorProvider[M](err)
 		}
 
-		err = json.Unmarshal(doc.Content, &res)
+		err = jsonapi.Unmarshal(doc.Content, &res)
 		if err != nil {
 			return model.ErrorProvider[M](err)
 		}
@@ -69,19 +69,48 @@ func (s *DbStorage[I, M]) ById(ctx context.Context) func(id I) model.Provider[M]
 	}
 }
 
+type Server struct {
+	baseUrl string
+	prefix  string
+}
+
+func (s Server) GetBaseURL() string {
+	return s.baseUrl
+}
+
+func (s Server) GetPrefix() string {
+	return s.prefix
+}
+
+func getServer() Server {
+	return Server{
+		baseUrl: "",
+		prefix:  "/api/",
+	}
+}
+
 func (s *DbStorage[I, M]) Add(ctx context.Context) func(m M) model.Provider[M] {
 	t := tenant.MustFromContext(ctx)
 	return func(m M) model.Provider[M] {
-		data, err := json.Marshal(m)
+		d, err := jsonapi.MarshalToStruct(m, getServer())
+		if err != nil {
+			return model.ErrorProvider[M](err)
+		}
+		data, err := json.Marshal(d)
 		if err != nil {
 			return model.ErrorProvider[M](err)
 		}
 
 		txErr := s.db.Transaction(func(tx *gorm.DB) error {
+			docId, err := strconv.Atoi(string(m.GetID()))
+			if err != nil {
+				return err
+			}
+
 			e := Entity{
 				TenantId:   t.Id(),
 				Type:       s.docType,
-				DocumentId: uint32(m.GetId()),
+				DocumentId: uint32(docId),
 				Content:    data,
 			}
 			if err = tx.Create(&e).Error; err != nil {
@@ -98,103 +127,12 @@ func (s *DbStorage[I, M]) Add(ctx context.Context) func(m M) model.Provider[M] {
 
 func (s *DbStorage[I, M]) Clear(ctx context.Context) error {
 	t := tenant.MustFromContext(ctx)
-	return s.db.Where(&Entity{TenantId: t.Id()}).Delete(&Entity{}).Error
+	return s.db.Where(&Entity{TenantId: t.Id(), Type: s.docType}).Delete(&Entity{}).Error
 }
 
-// deprecated
 func DeleteAll(ctx context.Context) func(db *gorm.DB) error {
 	t := tenant.MustFromContext(ctx)
 	return func(db *gorm.DB) error {
 		return db.Where(&Entity{TenantId: t.Id()}).Delete(&Entity{}).Error
-	}
-}
-
-// deprecated
-func Create(ctx context.Context) func(db *gorm.DB) func(docType string, docId uint32, object interface{}) error {
-	t := tenant.MustFromContext(ctx)
-	return func(db *gorm.DB) func(docType string, docId uint32, object interface{}) error {
-		return func(docType string, docId uint32, object interface{}) error {
-			data, err := json.Marshal(object)
-			if err != nil {
-				return err
-			}
-
-			return db.Transaction(func(tx *gorm.DB) error {
-				e := Entity{
-					TenantId:   t.Id(),
-					Type:       docType,
-					DocumentId: docId,
-					Content:    data,
-				}
-				if err = tx.Create(&e).Error; err != nil {
-					return err
-				}
-				return nil
-			})
-		}
-	}
-}
-
-// deprecated
-func Get[M any](ctx context.Context) func(db *gorm.DB) func(docType string, docId uint32) (M, error) {
-	t := tenant.MustFromContext(ctx)
-	return func(db *gorm.DB) func(docType string, docId uint32) (M, error) {
-		return func(docType string, docId uint32) (M, error) {
-			var res M
-			doc := Entity{}
-			err := db.
-				Where("tenant_id = ? AND type = ? AND document_id = ?", t.Id(), docType, docId).
-				First(&doc).Error
-			if err != nil {
-				return res, err
-			}
-
-			err = json.Unmarshal(doc.Content, &res)
-			if err != nil {
-				return res, err
-			}
-			return res, nil
-		}
-	}
-}
-
-// deprecated
-func GetAll[R any, M any](ctx context.Context) func(db *gorm.DB) func(tf model.Transformer[R, M]) func(docType string) ([]M, error) {
-	t := tenant.MustFromContext(ctx)
-	return func(db *gorm.DB) func(tf model.Transformer[R, M]) func(docType string) ([]M, error) {
-		return func(tf model.Transformer[R, M]) func(docType string) ([]M, error) {
-			return func(docType string) ([]M, error) {
-				results := make([]M, 0)
-				docs := make([]Entity, 0)
-				err := db.Where(&Entity{TenantId: t.Id(), Type: docType}).Find(&docs).Error
-				if err != nil {
-					return results, err
-				}
-
-				for _, doc := range docs {
-					var rm R
-					err = jsonapi.Unmarshal(doc.Content, &rm)
-					if err != nil {
-						return results, err
-					}
-					var obj interface{}
-					obj = &rm
-					if val, ok := obj.(jsonapi.UnmarshalIdentifier); ok {
-						err = val.SetID(strconv.Itoa(int(doc.DocumentId)))
-						if err != nil {
-							return results, err
-						}
-					}
-
-					var res M
-					res, err = tf(rm)
-					if err != nil {
-						return results, err
-					}
-					results = append(results, res)
-				}
-				return results, nil
-			}
-		}
 	}
 }

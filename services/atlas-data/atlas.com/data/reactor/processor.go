@@ -13,11 +13,11 @@ import (
 	"strings"
 )
 
-func NewStorage(l logrus.FieldLogger, db *gorm.DB) *document.Storage[uint32, RestModel] {
+func NewStorage(l logrus.FieldLogger, db *gorm.DB) *document.Storage[string, RestModel] {
 	return document.NewStorage(l, db, GetModelRegistry(), "REACTOR")
 }
 
-func Register(s *document.Storage[uint32, RestModel]) func(ctx context.Context) func(r model.Provider[RestModel]) error {
+func Register(s *document.Storage[string, RestModel]) func(ctx context.Context) func(r model.Provider[RestModel]) error {
 	return func(ctx context.Context) func(r model.Provider[RestModel]) error {
 		return func(r model.Provider[RestModel]) error {
 			m, err := r()
@@ -63,7 +63,7 @@ func RegisterReactor(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Co
 				if err != nil {
 					return
 				}
-				_ = Register(NewStorage(l, db))(ctx)(Read(l)(parentPath, reactorId, xml.FromParentPathProvider))
+				_ = Register(NewStorage(l, db))(ctx)(Read(l)(parentPath, reactorId, xml.FromParentPathProvider(7)))
 			}
 		}
 	}

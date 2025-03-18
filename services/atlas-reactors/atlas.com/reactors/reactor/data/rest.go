@@ -4,10 +4,11 @@ import (
 	"atlas-reactors/reactor/data/point"
 	"atlas-reactors/reactor/data/state"
 	"github.com/Chronicle20/atlas-model/model"
+	"strconv"
 )
 
 type RestModel struct {
-	Id          string                     `json:"-"`
+	Id          uint32                     `json:"-"`
 	TL          point.RestModel            `json:"tl"`
 	BR          point.RestModel            `json:"br"`
 	StateInfo   map[int8][]state.RestModel `json:"stateInfo"`
@@ -19,11 +20,15 @@ func (r RestModel) GetName() string {
 }
 
 func (r RestModel) GetID() string {
-	return r.Id
+	return strconv.Itoa(int(r.Id))
 }
 
-func (r *RestModel) SetID(id string) error {
-	r.Id = id
+func (r *RestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
 	return nil
 }
 

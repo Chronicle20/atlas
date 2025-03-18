@@ -34,9 +34,9 @@ const (
 	WorkerConsume   = "CONSUME"
 )
 
-var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume}
+//var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume}
 
-//var Workers = []string{WorkerMap}
+var Workers = []string{WorkerReactor}
 
 func ProcessZip(l logrus.FieldLogger) func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
 	return func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {

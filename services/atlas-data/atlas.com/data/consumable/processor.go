@@ -31,7 +31,6 @@ func Register(s *document.Storage[uint32, RestModel]) func(ctx context.Context) 
 	}
 }
 
-// deprecated
 func RegisterConsumable(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
 	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
 		return func(ctx context.Context) func(path string) {

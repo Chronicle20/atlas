@@ -3,9 +3,11 @@ package xml
 import (
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"github.com/Chronicle20/atlas-model/model"
 	"io"
 	"os"
+	"path/filepath"
 )
 
 // deprecated
@@ -15,6 +17,12 @@ func Read(path string) (*Node, error) {
 		return nil, err
 	}
 	return &n, nil
+}
+
+type IdProvider func(path string, id uint32) model.Provider[Node]
+
+func FromParentPathProvider(path string, id uint32) model.Provider[Node] {
+	return FromPathProvider(filepath.Join(path, fmt.Sprintf("%d.img.xml", id)))
 }
 
 func FromPathProvider(path string) model.Provider[Node] {

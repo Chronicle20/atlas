@@ -17,21 +17,21 @@ type RestModel struct {
 	Hide     bool   `json:"hide"`
 }
 
-func (rm RestModel) GetID() string {
-	return strconv.Itoa(int(rm.Id))
+func (r RestModel) GetName() string {
+	return "monsters"
 }
 
-func (rm *RestModel) SetID(idStr string) error {
+func (r RestModel) GetID() string {
+	return strconv.Itoa(int(r.Id))
+}
+
+func (r *RestModel) SetID(idStr string) error {
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return err
 	}
-	rm.Id = uint32(id)
+	r.Id = uint32(id)
 	return nil
-}
-
-func (rm RestModel) GetName() string {
-	return "monsters"
 }
 
 func Extract(rm RestModel) (SpawnPoint, error) {

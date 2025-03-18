@@ -59,7 +59,7 @@ type RestModel struct {
 	MapProtection        byte               `json:"mapProtection"`
 	CureAbnormalStatuses []string           `json:"cureAbnormalStatuses"`
 	Statups              []statup.RestModel `json:"statups"`
-	MonsterStatus        []monsterStatus    `json:"monsterStatus"`
+	MonsterStatus        map[string]uint32  `json:"monsterStatus"`
 	CardStats            cardItemUp         `json:"cardStats"`
 }
 
@@ -67,10 +67,6 @@ func Extract(rm RestModel) (Model, error) {
 	su, err := model.SliceMap(statup.Extract)(model.FixedProvider(rm.Statups))()()
 	if err != nil {
 		return Model{}, err
-	}
-	ms := make(map[string]uint32)
-	for _, v := range rm.MonsterStatus {
-		ms[v.Status] = v.Value
 	}
 
 	return Model{
@@ -125,13 +121,8 @@ func Extract(rm RestModel) (Model, error) {
 		mapProtection:        rm.MapProtection,
 		cureAbnormalStatuses: rm.CureAbnormalStatuses,
 		statups:              su,
-		monsterStatus:        ms,
+		monsterStatus:        rm.MonsterStatus,
 	}, nil
-}
-
-type monsterStatus struct {
-	Status string `json:"status"`
-	Value  uint32 `json:"value"`
 }
 
 type cardItemUp struct {

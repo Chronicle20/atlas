@@ -21,8 +21,16 @@ func Read(path string) (*Node, error) {
 
 type IdProvider func(path string, id uint32) model.Provider[Node]
 
-func FromParentPathProvider(path string, id uint32) model.Provider[Node] {
-	return FromPathProvider(filepath.Join(path, fmt.Sprintf("%d.img.xml", id)))
+func PadUint32(value uint32, digits uint8) string {
+	// Use %0Nd where N is the desired digit count
+	format := fmt.Sprintf("%%0%dd", digits)
+	return fmt.Sprintf(format, value)
+}
+
+func FromParentPathProvider(pad uint8) func(path string, id uint32) model.Provider[Node] {
+	return func(path string, id uint32) model.Provider[Node] {
+		return FromPathProvider(filepath.Join(path, fmt.Sprintf("%s.img.xml", PadUint32(id, pad))))
+	}
 }
 
 func FromPathProvider(path string) model.Provider[Node] {

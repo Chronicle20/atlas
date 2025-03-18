@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
 func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -26,7 +27,7 @@ func handleGetReactorRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 		return rest.ParseSkillId(d.Logger(), func(skillId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				res, err := s.GetById(d.Context())(skillId)
+				res, err := s.GetById(d.Context())(strconv.Itoa(int(skillId)))
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate skill %d.", skillId)
 					w.WriteHeader(http.StatusNotFound)

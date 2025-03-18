@@ -9,13 +9,13 @@ import (
 	"gorm.io/gorm"
 )
 
-type Storage[I uint32, M Identifier[I]] struct {
+type Storage[I string, M Identifier[I]] struct {
 	l      logrus.FieldLogger
 	regSto *RegStorage[I, M]
 	dbSto  *DbStorage[I, M]
 }
 
-func NewStorage[I uint32, M Identifier[I]](l logrus.FieldLogger, db *gorm.DB, r *Registry[I, M], docType string) *Storage[I, M] {
+func NewStorage[I string, M Identifier[I]](l logrus.FieldLogger, db *gorm.DB, r *Registry[I, M], docType string) *Storage[I, M] {
 	return &Storage[I, M]{
 		l:      l,
 		regSto: NewRegStorage(l, r),

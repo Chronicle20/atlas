@@ -34,9 +34,7 @@ const (
 	WorkerConsume   = "CONSUME"
 )
 
-//var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume}
-
-var Workers = []string{WorkerReactor}
+var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume}
 
 func ProcessZip(l logrus.FieldLogger) func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
 	return func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
@@ -143,29 +141,29 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(name string, path string) error {
 			return func(name string, path string) error {
-				l.Debugf("Starting worker [%s] at [%s].", name, path)
+				l.Infof("Starting worker [%s] at [%s].", name, path)
 				if name == WorkerMap {
 					_ = _map.InitString(t, filepath.Join(path, "String.wz", "Map.img.xml"))
 					_ = npc.InitString(t, filepath.Join(path, "String.wz", "Npc.img.xml"))
-					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Map.wz", "Map"), true, _map.RegisterMap(db))()
+					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Map.wz", "Map"), _map.RegisterMap(db))()
 					_ = _map.GetMapStringRegistry().Clear(t)
 					_ = npc.GetNpcStringRegistry().Clear(t)
 				} else if name == WorkerMonster {
 					_ = monster.InitString(t, filepath.Join(path, "String.wz", "Mob.img.xml"))
 					_ = monster.InitGauge(t, filepath.Join(path, "UI.wz", "UIWindow.img.xml"))
-					_ = RegisterAllData(l)(ctx)(path, "Mob.wz", false, monster.RegisterMonster(db))()
+					_ = RegisterAllData(l)(ctx)(path, "Mob.wz", monster.RegisterMonster(db))()
 					_ = monster.GetMonsterStringRegistry().Clear(t)
 					_ = monster.GetMonsterGaugeRegistry().Clear(t)
 				} else if name == WorkerCharacter {
-					_ = RegisterAllData(l)(ctx)(path, "Character.wz", true, equipment.RegisterEquipment(db))()
+					_ = RegisterAllData(l)(ctx)(path, "Character.wz", equipment.RegisterEquipment(db))()
 				} else if name == WorkerReactor {
-					_ = RegisterAllData(l)(ctx)(path, "Reactor.wz", true, reactor.RegisterReactor(db))()
+					_ = RegisterAllData(l)(ctx)(path, "Reactor.wz", reactor.RegisterReactor(db))()
 				} else if name == WorkerSkill {
-					_ = RegisterAllData(l)(ctx)(path, "Skill.wz", false, skill.RegisterSkill(db))()
+					_ = RegisterAllData(l)(ctx)(path, "Skill.wz", skill.RegisterSkill(db))()
 				} else if name == WorkerPet {
-					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Pet"), false, pet.RegisterPet(db))()
+					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Pet"), pet.RegisterPet(db))()
 				} else if name == WorkerConsume {
-					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Consume"), false, consumable.RegisterConsumable(db))()
+					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Consume"), consumable.RegisterConsumable(db))()
 				}
 
 				return nil
@@ -177,9 +175,9 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 type Worker func() error
 type RegisterFunc func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string)
 
-func RegisterAllData(l logrus.FieldLogger) func(ctx context.Context) func(rootDir string, wzFileName string, nested bool, rf RegisterFunc) Worker {
-	return func(ctx context.Context) func(rootDir string, wzFileName string, nested bool, rf RegisterFunc) Worker {
-		return func(rootDir string, wzFileName string, nested bool, rf RegisterFunc) Worker {
+func RegisterAllData(l logrus.FieldLogger) func(ctx context.Context) func(rootDir string, wzFileName string, rf RegisterFunc) Worker {
+	return func(ctx context.Context) func(rootDir string, wzFileName string, rf RegisterFunc) Worker {
+		return func(rootDir string, wzFileName string, rf RegisterFunc) Worker {
 			return func() error {
 				baseDir := filepath.Join(rootDir, wzFileName)
 				if _, err := os.Stat(baseDir); os.IsNotExist(err) {
@@ -208,30 +206,12 @@ func RegisterAllData(l logrus.FieldLogger) func(ctx context.Context) func(rootDi
 						return fmt.Errorf("error accessing path %s: %w", path, err)
 					}
 
-					if nested {
-						if d.IsDir() {
-							return filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
-								if err != nil {
-									return fmt.Errorf("error accessing file %s: %w", path, err)
-								}
-
-								if d.IsDir() {
-									return nil
-								}
-
-								fileChan <- path
-								return nil
-							})
-						}
-						return nil
-					} else {
-						if d.IsDir() {
-							return nil
-						}
-
-						fileChan <- path
+					if d.IsDir() {
 						return nil
 					}
+
+					fileChan <- path
+					return nil
 				})
 
 				// Close the file channel after walking the directory

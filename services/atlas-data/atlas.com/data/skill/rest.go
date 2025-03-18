@@ -21,10 +21,6 @@ func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
-func (r RestModel) GetId() uint32 {
-	return r.Id
-}
-
 func (r *RestModel) SetID(idStr string) error {
 	id, err := strconv.Atoi(idStr)
 	if err != nil {

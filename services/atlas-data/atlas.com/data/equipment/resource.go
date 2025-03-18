@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
 func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -27,7 +28,7 @@ func handleGetEquipmentStatistics(db *gorm.DB) func(d *rest.HandlerDependency, c
 		return rest.ParseEquipmentId(d.Logger(), func(equipmentId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				res, err := s.GetById(d.Context())(equipmentId)
+				res, err := s.GetById(d.Context())(strconv.Itoa(int(equipmentId)))
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get equipment.")
 					w.WriteHeader(http.StatusInternalServerError)
@@ -46,7 +47,7 @@ func handleGetEquipmentSlots(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 		return rest.ParseEquipmentId(d.Logger(), func(equipmentId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				res, err := s.GetById(d.Context())(equipmentId)
+				res, err := s.GetById(d.Context())(strconv.Itoa(int(equipmentId)))
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get equipment.")
 					w.WriteHeader(http.StatusInternalServerError)

@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
 func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -44,7 +45,7 @@ func handleGetPetRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 		return rest.ParseItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				res, err := s.GetById(d.Context())(itemId)
+				res, err := s.GetById(d.Context())(strconv.Itoa(int(itemId)))
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate pet %d.", itemId)
 					w.WriteHeader(http.StatusNotFound)

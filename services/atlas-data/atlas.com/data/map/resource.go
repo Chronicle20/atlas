@@ -60,7 +60,7 @@ func handleGetMapRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				res, err := s.GetById(d.Context())(mapId)
+				res, err := s.GetById(d.Context())(strconv.Itoa(int(mapId)))
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 					w.WriteHeader(http.StatusNotFound)
@@ -300,7 +300,7 @@ func handleGetMapFootholdBelowRequest(db *gorm.DB) func(d *rest.HandlerDependenc
 		return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				m, err := s.GetById(d.Context())(mapId)
+				m, err := s.GetById(d.Context())(strconv.Itoa(int(mapId)))
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return

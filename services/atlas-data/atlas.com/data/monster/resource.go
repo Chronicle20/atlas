@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
 func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -27,7 +28,7 @@ func handleGetMonsterRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 		return rest.ParseMonsterId(d.Logger(), func(monsterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				res, err := s.GetById(d.Context())(monsterId)
+				res, err := s.GetById(d.Context())(strconv.Itoa(int(monsterId)))
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate monster %d.", monsterId)
 					w.WriteHeader(http.StatusNotFound)
@@ -47,7 +48,7 @@ func handleGetMonsterLoseItemsRequest(db *gorm.DB) func(d *rest.HandlerDependenc
 		return rest.ParseMonsterId(d.Logger(), func(monsterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				res, err := s.GetById(d.Context())(monsterId)
+				res, err := s.GetById(d.Context())(strconv.Itoa(int(monsterId)))
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate monster %d.", monsterId)
 					w.WriteHeader(http.StatusNotFound)

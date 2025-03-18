@@ -43,7 +43,7 @@ func uploadData(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerCont
 				return
 			}
 			defer file.Close()
-
+			
 			err = document.DeleteAll(d.Context())(db)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)

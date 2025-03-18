@@ -1,14 +1,14 @@
 package data
 
 type Model struct {
-	id     uint64
+	id     uint32
 	hunger uint32
 	cash   bool
 	life   uint32
 	skills []SkillModel
 }
 
-func (m Model) Id() uint64 {
+func (m Model) Id() uint32 {
 	return m.id
 }
 

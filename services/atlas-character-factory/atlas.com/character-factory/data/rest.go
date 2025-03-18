@@ -3,12 +3,16 @@ package data
 type RestModel struct {
 	Id   string `json:"-"`
 	Name string `json:"name"`
-	WZ   string `json:"wz"`
+	WZ   string `json:"WZ"`
 	Slot int16  `json:"slot"`
 }
 
 func (r *RestModel) GetName() string {
 	return "slots"
+}
+
+func (r RestModel) GetID() string {
+	return r.Id
 }
 
 func (r *RestModel) SetID(id string) error {

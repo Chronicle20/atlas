@@ -114,7 +114,7 @@ type ModelBuilder struct {
 	bulletConsume        uint16
 	mapProtection        byte
 	cureAbnormalStatuses []string
-	statups              []statup.Model
+	statups              []statup.RestModel
 	monsterStatus        map[string]uint32
 }
 
@@ -396,12 +396,12 @@ func (b *ModelBuilder) SetMonsterStatus(ms map[string]uint32) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetStatups(statups []statup.Model) *ModelBuilder {
+func (b *ModelBuilder) SetStatups(statups []statup.RestModel) *ModelBuilder {
 	b.statups = statups
 	return b
 }
-func (b *ModelBuilder) Build() Model {
-	return Model{
+func (b *ModelBuilder) Build() RestModel {
+	return RestModel{
 		WeaponAttack:         b.weaponAttack,
 		MagicAttack:          b.magicAttack,
 		WeaponDefense:        b.weaponDefense,
@@ -420,13 +420,13 @@ func (b *ModelBuilder) Build() Model {
 		MobSkillLevel:        b.mobSkillLevel,
 		MHPR:                 b.mhpR,
 		MMPR:                 b.mmpR,
-		HPCon:                b.hpCon,
-		MPCon:                b.mpCon,
+		HPConsume:            b.hpCon,
+		MPConsume:            b.mpCon,
 		Duration:             b.duration,
 		Target:               b.target,
 		Barrier:              b.barrier,
 		Mob:                  b.mob,
-		Overtime:             b.overTime, // Kept lowercase `b.overTime` as per request
+		OverTime:             b.overTime, // Kept lowercase `b.overTime` as per request
 		RepeatEffect:         b.repeatEffect,
 		MoveTo:               b.moveTo,
 		CP:                   b.cp,
@@ -435,7 +435,7 @@ func (b *ModelBuilder) Build() Model {
 		X:                    b.x,
 		Y:                    b.y,
 		MobCount:             b.mobCount,
-		MoneyCon:             b.moneyCon,
+		MoneyConsume:         b.moneyCon,
 		Cooldown:             b.cooldown,
 		MorphId:              b.morphId,
 		Ghost:                b.ghost,
@@ -443,8 +443,8 @@ func (b *ModelBuilder) Build() Model {
 		Berserk:              b.berserk,
 		Booster:              b.booster,
 		Prop:                 b.prop,
-		ItemCon:              b.itemCon,
-		ItemConNo:            b.itemConNo,
+		ItemConsume:          b.itemCon,
+		ItemConsumeAmount:    b.itemConNo,
 		Damage:               b.damage,
 		AttackCount:          b.attackCount,
 		FixDamage:            b.fixDamage,

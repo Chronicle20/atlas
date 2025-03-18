@@ -1,13 +1,14 @@
 package position
 
-import "strconv"
+import (
+	"atlas-pets/point"
+	"strconv"
+)
 
 type FootholdRestModel struct {
-	Id uint32 `json:"-"`
-	X1 int16  `json:"x1"`
-	Y1 int16  `json:"y1"`
-	X2 int16  `json:"x2"`
-	Y2 int16  `json:"y2"`
+	Id     uint32           `json:"-"`
+	First  *point.RestModel `json:"first,omitempty"`
+	Second *point.RestModel `json:"second,omitempty"`
 }
 
 func (r FootholdRestModel) GetName() string {
@@ -30,10 +31,10 @@ func (r *FootholdRestModel) SetID(strId string) error {
 func Extract(rm FootholdRestModel) (Model, error) {
 	return Model{
 		id: rm.Id,
-		x1: rm.X1,
-		y1: rm.Y1,
-		x2: rm.X2,
-		y2: rm.Y2,
+		x1: rm.First.X,
+		y1: rm.First.Y,
+		x2: rm.Second.X,
+		y2: rm.Second.Y,
 	}, nil
 }
 

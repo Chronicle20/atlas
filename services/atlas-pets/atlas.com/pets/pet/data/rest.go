@@ -7,7 +7,7 @@ import (
 )
 
 type RestModel struct {
-	Id     uint64           `json:"-"`
+	Id     uint32           `json:"-"`
 	Hungry uint32           `json:"hungry"`
 	Cash   bool             `json:"cash"`
 	Life   uint32           `json:"life"`
@@ -27,7 +27,7 @@ func (r *RestModel) SetID(strId string) error {
 	if err != nil {
 		return err
 	}
-	r.Id = uint64(id)
+	r.Id = uint32(id)
 	return nil
 }
 

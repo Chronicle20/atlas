@@ -72,7 +72,6 @@ type Model struct {
 	effect          string
 	monsterHp       uint32
 	worldMsg        string
-	inc             uint32
 	incPDD          uint32
 	incMDD          uint32
 	incACC          uint32
@@ -95,10 +94,6 @@ type Model struct {
 
 func (m Model) Id() uint32 {
 	return m.id
-}
-
-func (m Model) Inc() uint32 {
-	return m.inc
 }
 
 func (m Model) GetSpec(specType SpecType) (int32, bool) {

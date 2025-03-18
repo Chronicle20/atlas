@@ -2,7 +2,6 @@ package skill
 
 import (
 	"atlas-data/rest"
-	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -27,21 +26,16 @@ func handleGetReactorRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 		return rest.ParseSkillId(d.Logger(), func(skillId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				m, err := s.GetById(d.Context())(skillId)
+				res, err := s.GetById(d.Context())(skillId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate skill %d.", skillId)
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
 
-				res, err := model.Map(Transform)(model.FixedProvider(m))()
-				if err != nil {
-					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-
-				server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
 		})
 	}

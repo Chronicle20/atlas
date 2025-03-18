@@ -3,36 +3,48 @@ package xml
 import (
 	"encoding/xml"
 	"errors"
-	"io/ioutil"
+	"github.com/Chronicle20/atlas-model/model"
+	"io"
 	"os"
 )
 
+// deprecated
 func Read(path string) (*Node, error) {
-	f, err := os.Open(path)
+	n, err := FromPathProvider(path)()
 	if err != nil {
 		return nil, err
+	}
+	return &n, nil
+}
+
+func FromPathProvider(path string) model.Provider[Node] {
+	f, err := os.Open(path)
+	if err != nil {
+		return model.ErrorProvider[Node](err)
 	}
 	defer f.Close()
 
 	stat, err := f.Stat()
 	if err != nil {
-		return nil, err
+		return model.ErrorProvider[Node](err)
 	}
 
 	if stat.IsDir() {
-		return nil, errors.New("not a valid xml file")
+		return model.ErrorProvider[Node](errors.New("not a valid xml file"))
 	}
 
-	byteValue, err := ioutil.ReadAll(f)
+	byteValue, err := io.ReadAll(f)
 	if err != nil {
-		return nil, err
+		return model.ErrorProvider[Node](err)
 	}
+	return FromByteArrayProvider(byteValue)
+}
 
-	var equipment Node
-	err = xml.Unmarshal(byteValue, &equipment)
+func FromByteArrayProvider(data []byte) model.Provider[Node] {
+	var n Node
+	err := xml.Unmarshal(data, &n)
 	if err != nil {
-		return nil, err
+		return model.ErrorProvider[Node](err)
 	}
-
-	return &equipment, nil
+	return model.FixedProvider(n)
 }

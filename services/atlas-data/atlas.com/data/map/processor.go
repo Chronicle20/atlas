@@ -82,17 +82,21 @@ func bSearchDropPos(tree FootholdTreeRestModel, initial point.RestModel, fallbac
 	homeX := initial.X
 	y := initial.Y - 85
 
-	for math.Abs(float64(homeX-awayX)) > 5 {
+	for {
 		distanceX := awayX - homeX
 		dx := distanceX / 2
 		searchX := homeX + dx
 		res, ok := calcPointBelow(tree, point.RestModel{X: searchX, Y: y})
-		if !ok {
+		if ok {
 			awayX = searchX
 			dropPos = res
 			set = true
 		} else {
 			homeX = searchX
+		}
+
+		if math.Abs(float64(homeX-awayX)) < 5 {
+			break
 		}
 	}
 

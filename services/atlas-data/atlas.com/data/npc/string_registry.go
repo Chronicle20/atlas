@@ -1,7 +1,7 @@
 package npc
 
 import (
-	"atlas-data/registry"
+	"atlas-data/document"
 	"atlas-data/xml"
 	"github.com/Chronicle20/atlas-tenant"
 	"strconv"
@@ -21,12 +21,12 @@ func (m NpcString) Name() string {
 	return m.name
 }
 
-var nsReg *registry.Registry[uint32, NpcString]
+var nsReg *document.Registry[uint32, NpcString]
 var nsOnce sync.Once
 
-func GetNpcStringRegistry() *registry.Registry[uint32, NpcString] {
+func GetNpcStringRegistry() *document.Registry[uint32, NpcString] {
 	nsOnce.Do(func() {
-		nsReg = registry.NewRegistry[uint32, NpcString]()
+		nsReg = document.NewRegistry[uint32, NpcString]()
 	})
 	return nsReg
 }
@@ -43,7 +43,7 @@ func InitString(t tenant.Model, path string) error {
 		if err != nil {
 			return err
 		}
-		err = GetNpcStringRegistry().Add(t, NpcString{
+		_, err = GetNpcStringRegistry().Add(t, NpcString{
 			id:   uint32(id),
 			name: mxml.GetString("name", "MISSINGNO"),
 		})

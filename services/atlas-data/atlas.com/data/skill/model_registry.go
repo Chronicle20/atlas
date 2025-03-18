@@ -1,16 +1,16 @@
 package skill
 
 import (
-	"atlas-data/registry"
+	"atlas-data/document"
 	"sync"
 )
 
-var mmReg *registry.Registry[uint32, Model]
+var mmReg *document.Registry[uint32, Model]
 var mmOnce sync.Once
 
-func GetModelRegistry() *registry.Registry[uint32, Model] {
+func GetModelRegistry() *document.Registry[uint32, Model] {
 	mmOnce.Do(func() {
-		mmReg = registry.NewRegistry[uint32, Model]()
+		mmReg = document.NewRegistry[uint32, Model]()
 	})
 	return mmReg
 }

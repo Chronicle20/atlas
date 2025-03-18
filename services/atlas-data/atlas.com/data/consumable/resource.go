@@ -26,7 +26,8 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 func handleGetConsumablesRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := GetAll(d.Context())(db)
+			s := NewStorage(d.Logger(), db)
+			m, err := s.GetAll(d.Context())
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -50,7 +51,8 @@ func handleGetConsumableRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, err := GetById(d.Context())(db)(itemId)
+				s := NewStorage(d.Logger(), db)
+				m, err := s.GetById(d.Context())(itemId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate consumable %d.", itemId)
 					w.WriteHeader(http.StatusNotFound)

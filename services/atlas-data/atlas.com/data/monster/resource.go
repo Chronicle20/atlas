@@ -27,7 +27,8 @@ func handleGetMonsterRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseMonsterId(d.Logger(), func(monsterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, err := GetById(d.Context())(db)(monsterId)
+				s := NewStorage(d.Logger(), db)
+				m, err := s.GetById(d.Context())(monsterId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate monster %d.", monsterId)
 					w.WriteHeader(http.StatusNotFound)
@@ -51,7 +52,8 @@ func handleGetMonsterLoseItemsRequest(db *gorm.DB) func(d *rest.HandlerDependenc
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseMonsterId(d.Logger(), func(monsterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, err := GetById(d.Context())(db)(monsterId)
+				s := NewStorage(d.Logger(), db)
+				m, err := s.GetById(d.Context())(monsterId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate monster %d.", monsterId)
 					w.WriteHeader(http.StatusNotFound)

@@ -1,7 +1,7 @@
 package monster
 
 import (
-	"atlas-data/registry"
+	"atlas-data/document"
 	"atlas-data/xml"
 	"github.com/Chronicle20/atlas-tenant"
 	"strconv"
@@ -21,12 +21,12 @@ func (g Gauge) Exists() bool {
 	return g.exists
 }
 
-var mgReg *registry.Registry[uint32, Gauge]
+var mgReg *document.Registry[uint32, Gauge]
 var mgOnce sync.Once
 
-func GetMonsterGaugeRegistry() *registry.Registry[uint32, Gauge] {
+func GetMonsterGaugeRegistry() *document.Registry[uint32, Gauge] {
 	mgOnce.Do(func() {
-		mgReg = registry.NewRegistry[uint32, Gauge]()
+		mgReg = document.NewRegistry[uint32, Gauge]()
 	})
 	return mgReg
 }
@@ -47,7 +47,7 @@ func InitGauge(t tenant.Model, path string) error {
 		if err != nil {
 			return err
 		}
-		err = GetMonsterGaugeRegistry().Add(t, Gauge{id: uint32(id), exists: true})
+		_, err = GetMonsterGaugeRegistry().Add(t, Gauge{id: uint32(id), exists: true})
 		if err != nil {
 			return err
 		}

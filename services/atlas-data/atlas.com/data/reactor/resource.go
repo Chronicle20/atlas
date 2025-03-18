@@ -26,7 +26,8 @@ func handleGetReactorRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseReactorId(d.Logger(), func(reactorId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, err := GetById(d.Context())(db)(reactorId)
+				s := NewStorage(d.Logger(), db)
+				m, err := s.GetById(d.Context())(reactorId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate reactor %d.", reactorId)
 					w.WriteHeader(http.StatusNotFound)

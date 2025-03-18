@@ -26,7 +26,8 @@ func handleGetReactorRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseSkillId(d.Logger(), func(skillId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, err := GetById(d.Context())(db)(skillId)
+				s := NewStorage(d.Logger(), db)
+				m, err := s.GetById(d.Context())(skillId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate skill %d.", skillId)
 					w.WriteHeader(http.StatusNotFound)

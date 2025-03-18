@@ -1,7 +1,7 @@
 package _map
 
 import (
-	"atlas-data/registry"
+	"atlas-data/document"
 	"atlas-data/xml"
 	"github.com/Chronicle20/atlas-tenant"
 	"strconv"
@@ -26,12 +26,12 @@ func (m MapString) StreetName() string {
 	return m.streetName
 }
 
-var msRg *registry.Registry[uint32, MapString]
+var msRg *document.Registry[uint32, MapString]
 var msOnce sync.Once
 
-func GetMapStringRegistry() *registry.Registry[uint32, MapString] {
+func GetMapStringRegistry() *document.Registry[uint32, MapString] {
 	msOnce.Do(func() {
-		msRg = registry.NewRegistry[uint32, MapString]()
+		msRg = document.NewRegistry[uint32, MapString]()
 	})
 	return msRg
 }
@@ -49,7 +49,7 @@ func InitString(t tenant.Model, path string) error {
 			if err != nil {
 				return err
 			}
-			err = GetMapStringRegistry().Add(t, MapString{
+			_, err = GetMapStringRegistry().Add(t, MapString{
 				id:         uint32(id),
 				mapName:    mxml.GetString("mapName", ""),
 				streetName: mxml.GetString("streetName", ""),

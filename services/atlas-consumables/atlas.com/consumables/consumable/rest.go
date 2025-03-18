@@ -41,11 +41,10 @@ type RestModel struct {
 	MonsterBook     bool               `json:"monsterBook"`
 	MonsterId       uint32             `json:"monsterId"`
 	BigSize         bool               `json:"bigSize"`
-	TragetBlock     bool               `json:"tragetBlock"` // Assuming typo for "TargetBlock"
+	TargetBlock     bool               `json:"targetBlock"`
 	Effect          string             `json:"effect"`
 	MonsterHP       uint32             `json:"monsterHP"`
 	WorldMsg        string             `json:"worldMsg"`
-	Increase        uint32             `json:"increase"`
 	IncreasePDD     uint32             `json:"increasePDD"`
 	IncreaseMDD     uint32             `json:"increaseMDD"`
 	IncreaseACC     uint32             `json:"increaseACC"`
@@ -124,11 +123,10 @@ func Extract(rm RestModel) (Model, error) {
 		monsterBook:     rm.MonsterBook,
 		monsterId:       rm.MonsterId,
 		bigSize:         rm.BigSize,
-		tragetBlock:     rm.TragetBlock,
+		tragetBlock:     rm.TargetBlock,
 		effect:          rm.Effect,
 		monsterHp:       rm.MonsterHP,
 		worldMsg:        rm.WorldMsg,
-		inc:             rm.Increase,
 		incPDD:          rm.IncreasePDD,
 		incMDD:          rm.IncreaseMDD,
 		incACC:          rm.IncreaseACC,

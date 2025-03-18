@@ -1,9 +1,12 @@
 package data
 
-import "github.com/jtumidanski/api2go/jsonapi"
+import (
+	"github.com/jtumidanski/api2go/jsonapi"
+	"strconv"
+)
 
 type RestModel struct {
-	Id          string `json:"-"`
+	Id          uint32 `json:"-"`
 	ReturnMapId uint32 `json:"returnMapId"`
 }
 
@@ -12,11 +15,15 @@ func (r RestModel) GetName() string {
 }
 
 func (r RestModel) GetID() string {
-	return r.Id
+	return strconv.Itoa(int(r.Id))
 }
 
 func (r *RestModel) SetID(idStr string) error {
-	r.Id = idStr
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
 	return nil
 }
 

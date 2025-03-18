@@ -13,9 +13,9 @@ func Migration(db *gorm.DB) error {
 
 type Entity struct {
 	Id           uuid.UUID       `gorm:"type:uuid;default:uuid_generate_v4()"`
-	Region       string          `json:"region"`
-	MajorVersion uint16          `json:"majorVersion"`
-	MinorVersion uint16          `json:"minorVersion"`
+	Region       string          `gorm:"not null"`
+	MajorVersion uint16          `gorm:"not null"`
+	MinorVersion uint16          `gorm:"not null"`
 	Data         json.RawMessage `gorm:"type:json;not null"`
 }
 

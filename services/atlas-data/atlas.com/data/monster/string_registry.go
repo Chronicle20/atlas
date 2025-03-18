@@ -1,7 +1,7 @@
 package monster
 
 import (
-	"atlas-data/registry"
+	"atlas-data/document"
 	"atlas-data/xml"
 	"github.com/Chronicle20/atlas-tenant"
 	"strconv"
@@ -21,12 +21,12 @@ func (m MonsterString) Name() string {
 	return m.name
 }
 
-var msReg *registry.Registry[uint32, MonsterString]
+var msReg *document.Registry[uint32, MonsterString]
 var msOnce sync.Once
 
-func GetMonsterStringRegistry() *registry.Registry[uint32, MonsterString] {
+func GetMonsterStringRegistry() *document.Registry[uint32, MonsterString] {
 	msOnce.Do(func() {
-		msReg = registry.NewRegistry[uint32, MonsterString]()
+		msReg = document.NewRegistry[uint32, MonsterString]()
 	})
 	return msReg
 }
@@ -43,7 +43,7 @@ func InitString(t tenant.Model, path string) error {
 		if err != nil {
 			return err
 		}
-		err = GetMonsterStringRegistry().Add(t, MonsterString{
+		_, err = GetMonsterStringRegistry().Add(t, MonsterString{
 			id:   uint32(id),
 			name: mxml.GetString("name", "MISSINGNO"),
 		})

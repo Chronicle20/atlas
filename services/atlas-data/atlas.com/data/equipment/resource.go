@@ -27,7 +27,8 @@ func handleGetEquipmentStatistics(db *gorm.DB) func(d *rest.HandlerDependency, c
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseEquipmentId(d.Logger(), func(equipmentId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				e, err := GetById(d.Context())(db)(equipmentId)
+				s := NewStorage(d.Logger(), db)
+				e, err := s.GetById(d.Context())(equipmentId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get equipment.")
 					w.WriteHeader(http.StatusInternalServerError)
@@ -50,7 +51,8 @@ func handleGetEquipmentSlots(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseEquipmentId(d.Logger(), func(equipmentId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				e, err := GetById(d.Context())(db)(equipmentId)
+				s := NewStorage(d.Logger(), db)
+				e, err := s.GetById(d.Context())(equipmentId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get equipment.")
 					w.WriteHeader(http.StatusInternalServerError)

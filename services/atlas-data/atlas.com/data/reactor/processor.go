@@ -6,8 +6,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"path/filepath"
@@ -15,43 +13,33 @@ import (
 	"strings"
 )
 
-var DocType = "REACTOR"
+func NewStorage(l logrus.FieldLogger, db *gorm.DB) *document.Storage[uint32, Model] {
+	return document.NewStorage(l, db, GetModelRegistry(), "REACTOR")
+}
 
-func byIdProvider(ctx context.Context) func(db *gorm.DB) func(id uint32) model.Provider[Model] {
-	return func(db *gorm.DB) func(id uint32) model.Provider[Model] {
-		t := tenant.MustFromContext(ctx)
-		return func(id uint32) model.Provider[Model] {
-			return func() (Model, error) {
-				m, err := GetModelRegistry().Get(t, id)
-				if err == nil {
-					return m, nil
-				}
-				m, err = document.Get[Model](ctx)(db)(DocType, id)
-				if err == nil {
-					_ = GetModelRegistry().Add(t, m)
-					return m, nil
-				}
-				nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
-				m, err = GetModelRegistry().Get(nt, id)
-				if err == nil {
-					return m, nil
-				}
-				nctx := tenant.WithContext(ctx, nt)
-				m, err = document.Get[Model](nctx)(db)(DocType, id)
-				if err == nil {
-					_ = GetModelRegistry().Add(nt, m)
-					return m, nil
-				}
-				return Model{}, err
+func Register(s *document.Storage[uint32, Model]) func(ctx context.Context) func(r model.Provider[Model]) error {
+	return func(ctx context.Context) func(r model.Provider[Model]) error {
+		return func(r model.Provider[Model]) error {
+			m, err := r()
+			if err != nil {
+				return err
 			}
+			_, err = s.Add(ctx)(m)()
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 }
 
-func GetById(ctx context.Context) func(db *gorm.DB) func(id uint32) (Model, error) {
-	return func(db *gorm.DB) func(id uint32) (Model, error) {
-		return func(id uint32) (Model, error) {
-			return byIdProvider(ctx)(db)(id)()
+// deprecated
+func RegisterReactor(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
+	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
+		return func(ctx context.Context) func(path string) {
+			return func(path string) {
+				_ = Register(NewStorage(l, db))(ctx)(ReadFromFile(l)(ctx)(path))
+			}
 		}
 	}
 }
@@ -68,25 +56,6 @@ func parseReactorId(filePath string) (uint32, error) {
 	}
 	return uint32(id), nil
 
-}
-
-func RegisterReactor(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-		return func(ctx context.Context) func(path string) {
-			return func(path string) {
-				m, err := ReadFromFile(l)(ctx)(path)()
-				if err != nil {
-					return
-				}
-				err = document.Create(ctx)(db)(DocType, m.GetId(), &m)
-				if err != nil {
-					return
-				}
-
-				l.Debugf("Processed reactor [%d].", m.GetId())
-			}
-		}
-	}
 }
 
 func ReadFromFile(l logrus.FieldLogger) func(ctx context.Context) func(path string) model.Provider[Model] {

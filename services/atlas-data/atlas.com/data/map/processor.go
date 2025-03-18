@@ -9,110 +9,39 @@ import (
 	"atlas-data/point"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"math"
 	"strconv"
 )
 
-var DocType = "MAP"
+func NewStorage(l logrus.FieldLogger, db *gorm.DB) *document.Storage[uint32, Model] {
+	return document.NewStorage(l, db, GetModelRegistry(), "MAP")
+}
 
+func Register(s *document.Storage[uint32, Model]) func(ctx context.Context) func(r model.Provider[Model]) error {
+	return func(ctx context.Context) func(r model.Provider[Model]) error {
+		return func(r model.Provider[Model]) error {
+			m, err := r()
+			if err != nil {
+				return err
+			}
+			_, err = s.Add(ctx)(m)()
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+}
+
+// deprecated
 func RegisterMap(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
 	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
 		return func(ctx context.Context) func(path string) {
 			return func(path string) {
-				m, err := ReadFromFile(l)(ctx)(path)()
-				if err != nil {
-					return
-				}
-				err = document.Create(ctx)(db)(DocType, m.GetId(), &m)
-				if err != nil {
-					return
-				}
-				l.Debugf("Processed map [%d].", m.GetId())
+				_ = Register(NewStorage(l, db))(ctx)(ReadFromFile(l)(ctx)(path))
 			}
-		}
-	}
-}
-
-func allProvider(ctx context.Context) func(db *gorm.DB) model.Provider[[]Model] {
-	return func(db *gorm.DB) model.Provider[[]Model] {
-		t := tenant.MustFromContext(ctx)
-		return func() ([]Model, error) {
-			ms, err := GetModelRegistry().GetAll(t)
-			if err == nil {
-				return ms, nil
-			}
-			ms, err = document.GetAll[RestModel, Model](ctx)(db)(Extract)(DocType)
-			if err == nil {
-				for _, m := range ms {
-					_ = GetModelRegistry().Add(t, m)
-				}
-				return ms, nil
-			}
-
-			nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
-			ms, err = GetModelRegistry().GetAll(nt)
-			if err == nil {
-				return ms, nil
-			}
-
-			nctx := tenant.WithContext(ctx, nt)
-			ms, err = document.GetAll[RestModel, Model](nctx)(db)(Extract)(DocType)
-			if err == nil {
-				for _, m := range ms {
-					_ = GetModelRegistry().Add(t, m)
-				}
-				return ms, nil
-			}
-			return nil, err
-		}
-	}
-}
-
-func GetAll(ctx context.Context) func(db *gorm.DB) ([]Model, error) {
-	return func(db *gorm.DB) ([]Model, error) {
-		return allProvider(ctx)(db)()
-	}
-}
-
-func byIdProvider(ctx context.Context) func(db *gorm.DB) func(id uint32) model.Provider[Model] {
-	return func(db *gorm.DB) func(id uint32) model.Provider[Model] {
-		t := tenant.MustFromContext(ctx)
-		return func(id uint32) model.Provider[Model] {
-			return func() (Model, error) {
-				m, err := GetModelRegistry().Get(t, id)
-				if err == nil {
-					return m, nil
-				}
-				m, err = document.Get[Model](ctx)(db)(DocType, id)
-				if err == nil {
-					_ = GetModelRegistry().Add(t, m)
-					return m, nil
-				}
-				nt, err := tenant.Create(uuid.Nil, t.Region(), t.MajorVersion(), t.MinorVersion())
-				m, err = GetModelRegistry().Get(nt, id)
-				if err == nil {
-					return m, nil
-				}
-				nctx := tenant.WithContext(ctx, nt)
-				m, err = document.Get[Model](nctx)(db)(DocType, id)
-				if err == nil {
-					_ = GetModelRegistry().Add(nt, m)
-					return m, nil
-				}
-				return Model{}, err
-			}
-		}
-	}
-}
-
-func GetById(ctx context.Context) func(db *gorm.DB) func(id uint32) (Model, error) {
-	return func(db *gorm.DB) func(id uint32) (Model, error) {
-		return func(id uint32) (Model, error) {
-			return byIdProvider(ctx)(db)(id)()
 		}
 	}
 }
@@ -243,10 +172,10 @@ func (f *FootholdTree) InsertSingle(foothold Foothold) *FootholdTree {
 	return f
 }
 
-func portalProvider(ctx context.Context) func(db *gorm.DB) func(mapId uint32) model.Provider[[]portal.Model] {
-	return func(db *gorm.DB) func(mapId uint32) model.Provider[[]portal.Model] {
+func portalProvider(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) model.Provider[[]portal.Model] {
+	return func(ctx context.Context) func(mapId uint32) model.Provider[[]portal.Model] {
 		return func(mapId uint32) model.Provider[[]portal.Model] {
-			m, err := byIdProvider(ctx)(db)(mapId)()
+			m, err := s.ByIdProvider(ctx)(mapId)()
 			if err != nil {
 				return model.ErrorProvider[[]portal.Model](err)
 			}
@@ -255,26 +184,26 @@ func portalProvider(ctx context.Context) func(db *gorm.DB) func(mapId uint32) mo
 	}
 }
 
-func GetPortals(ctx context.Context) func(db *gorm.DB) func(mapId uint32) ([]portal.Model, error) {
-	return func(db *gorm.DB) func(mapId uint32) ([]portal.Model, error) {
+func GetPortals(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) ([]portal.Model, error) {
+	return func(ctx context.Context) func(mapId uint32) ([]portal.Model, error) {
 		return func(mapId uint32) ([]portal.Model, error) {
-			return portalProvider(ctx)(db)(mapId)()
+			return portalProvider(s)(ctx)(mapId)()
 		}
 	}
 }
 
-func GetPortalsByName(ctx context.Context) func(db *gorm.DB) func(mapId uint32, name string) ([]portal.Model, error) {
-	return func(db *gorm.DB) func(mapId uint32, name string) ([]portal.Model, error) {
+func GetPortalsByName(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32, name string) ([]portal.Model, error) {
+	return func(ctx context.Context) func(mapId uint32, name string) ([]portal.Model, error) {
 		return func(mapId uint32, name string) ([]portal.Model, error) {
-			return model.FilteredProvider(portalProvider(ctx)(db)(mapId), model.Filters(PortalNameFilter(name)))()
+			return model.FilteredProvider(portalProvider(s)(ctx)(mapId), model.Filters(PortalNameFilter(name)))()
 		}
 	}
 }
 
-func GetPortalById(ctx context.Context) func(db *gorm.DB) func(mapId uint32, portalId uint32) (portal.Model, error) {
-	return func(db *gorm.DB) func(mapId uint32, portalId uint32) (portal.Model, error) {
+func GetPortalById(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32, portalId uint32) (portal.Model, error) {
+	return func(ctx context.Context) func(mapId uint32, portalId uint32) (portal.Model, error) {
 		return func(mapId uint32, portalId uint32) (portal.Model, error) {
-			return model.First(portalProvider(ctx)(db)(mapId), model.Filters(PortalIdFilter(portalId)))
+			return model.First(portalProvider(s)(ctx)(mapId), model.Filters(PortalIdFilter(portalId)))
 		}
 	}
 }
@@ -291,10 +220,10 @@ func PortalIdFilter(portalId uint32) model.Filter[portal.Model] {
 	}
 }
 
-func reactorProvider(ctx context.Context) func(db *gorm.DB) func(mapId uint32) model.Provider[[]reactor.Model] {
-	return func(db *gorm.DB) func(mapId uint32) model.Provider[[]reactor.Model] {
+func reactorProvider(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) model.Provider[[]reactor.Model] {
+	return func(ctx context.Context) func(mapId uint32) model.Provider[[]reactor.Model] {
 		return func(mapId uint32) model.Provider[[]reactor.Model] {
-			m, err := byIdProvider(ctx)(db)(mapId)()
+			m, err := s.ByIdProvider(ctx)(mapId)()
 			if err != nil {
 				return model.ErrorProvider[[]reactor.Model](err)
 			}
@@ -303,18 +232,18 @@ func reactorProvider(ctx context.Context) func(db *gorm.DB) func(mapId uint32) m
 	}
 }
 
-func GetReactors(ctx context.Context) func(db *gorm.DB) func(mapId uint32) ([]reactor.Model, error) {
-	return func(db *gorm.DB) func(mapId uint32) ([]reactor.Model, error) {
+func GetReactors(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) ([]reactor.Model, error) {
+	return func(ctx context.Context) func(mapId uint32) ([]reactor.Model, error) {
 		return func(mapId uint32) ([]reactor.Model, error) {
-			return reactorProvider(ctx)(db)(mapId)()
+			return reactorProvider(s)(ctx)(mapId)()
 		}
 	}
 }
 
-func npcProvider(ctx context.Context) func(db *gorm.DB) func(mapId uint32) model.Provider[[]npc.Model] {
-	return func(db *gorm.DB) func(mapId uint32) model.Provider[[]npc.Model] {
+func npcProvider(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) model.Provider[[]npc.Model] {
+	return func(ctx context.Context) func(mapId uint32) model.Provider[[]npc.Model] {
 		return func(mapId uint32) model.Provider[[]npc.Model] {
-			m, err := byIdProvider(ctx)(db)(mapId)()
+			m, err := s.ByIdProvider(ctx)(mapId)()
 			if err != nil {
 				return model.ErrorProvider[[]npc.Model](err)
 			}
@@ -323,26 +252,26 @@ func npcProvider(ctx context.Context) func(db *gorm.DB) func(mapId uint32) model
 	}
 }
 
-func GetNpcs(ctx context.Context) func(db *gorm.DB) func(mapId uint32) ([]npc.Model, error) {
-	return func(db *gorm.DB) func(mapId uint32) ([]npc.Model, error) {
+func GetNpcs(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) ([]npc.Model, error) {
+	return func(ctx context.Context) func(mapId uint32) ([]npc.Model, error) {
 		return func(mapId uint32) ([]npc.Model, error) {
-			return npcProvider(ctx)(db)(mapId)()
+			return npcProvider(s)(ctx)(mapId)()
 		}
 	}
 }
 
-func GetNpcsByObjectId(ctx context.Context) func(db *gorm.DB) func(mapId uint32, objectId uint32) ([]npc.Model, error) {
-	return func(db *gorm.DB) func(mapId uint32, objectId uint32) ([]npc.Model, error) {
+func GetNpcsByObjectId(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32, objectId uint32) ([]npc.Model, error) {
+	return func(ctx context.Context) func(mapId uint32, objectId uint32) ([]npc.Model, error) {
 		return func(mapId uint32, objectId uint32) ([]npc.Model, error) {
-			return model.FilteredProvider(npcProvider(ctx)(db)(mapId), model.Filters(NPCObjectIdFilter(objectId)))()
+			return model.FilteredProvider(npcProvider(s)(ctx)(mapId), model.Filters(NPCObjectIdFilter(objectId)))()
 		}
 	}
 }
 
-func GetNpc(ctx context.Context) func(db *gorm.DB) func(mapId uint32, npcId uint32) (npc.Model, error) {
-	return func(db *gorm.DB) func(mapId uint32, npcId uint32) (npc.Model, error) {
+func GetNpc(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32, npcId uint32) (npc.Model, error) {
+	return func(ctx context.Context) func(mapId uint32, npcId uint32) (npc.Model, error) {
 		return func(mapId uint32, npcId uint32) (npc.Model, error) {
-			return model.First(npcProvider(ctx)(db)(mapId), model.Filters(NPCIdFilter(npcId)))
+			return model.First(npcProvider(s)(ctx)(mapId), model.Filters(NPCIdFilter(npcId)))
 		}
 	}
 }
@@ -359,10 +288,10 @@ func NPCObjectIdFilter(id uint32) model.Filter[npc.Model] {
 	}
 }
 
-func monsterProvider(ctx context.Context) func(db *gorm.DB) func(mapId uint32) model.Provider[[]monster.Model] {
-	return func(db *gorm.DB) func(mapId uint32) model.Provider[[]monster.Model] {
+func monsterProvider(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) model.Provider[[]monster.Model] {
+	return func(ctx context.Context) func(mapId uint32) model.Provider[[]monster.Model] {
 		return func(mapId uint32) model.Provider[[]monster.Model] {
-			m, err := byIdProvider(ctx)(db)(mapId)()
+			m, err := s.ByIdProvider(ctx)(mapId)()
 			if err != nil {
 				return model.ErrorProvider[[]monster.Model](err)
 			}
@@ -371,18 +300,18 @@ func monsterProvider(ctx context.Context) func(db *gorm.DB) func(mapId uint32) m
 	}
 }
 
-func GetMonsters(ctx context.Context) func(db *gorm.DB) func(mapId uint32) ([]monster.Model, error) {
-	return func(db *gorm.DB) func(mapId uint32) ([]monster.Model, error) {
+func GetMonsters(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32) ([]monster.Model, error) {
+	return func(ctx context.Context) func(mapId uint32) ([]monster.Model, error) {
 		return func(mapId uint32) ([]monster.Model, error) {
-			return monsterProvider(ctx)(db)(mapId)()
+			return monsterProvider(s)(ctx)(mapId)()
 		}
 	}
 }
 
-func calcDropPos(ctx context.Context) func(db *gorm.DB) func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
-	return func(db *gorm.DB) func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
+func calcDropPos(s *document.Storage[uint32, Model]) func(ctx context.Context) func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
+	return func(ctx context.Context) func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
 		return func(mapId uint32, initial *point.Model, fallback *point.Model) *point.Model {
-			m, err := GetById(ctx)(db)(mapId)
+			m, err := s.GetById(ctx)(mapId)
 			if err != nil {
 				return fallback
 			}

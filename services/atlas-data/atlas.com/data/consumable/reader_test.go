@@ -4,6 +4,7 @@ import (
 	"atlas-data/xml"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus/hooks/test"
+	"strconv"
 	"testing"
 )
 
@@ -855,7 +856,7 @@ func TestReader(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
 	rms := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))
-	rmm, err := model.CollectToMap[RestModel, uint32, RestModel](rms, RestModel.GetId, Identity)()
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -867,7 +868,7 @@ func TestReader(t *testing.T) {
 	var ok bool
 	var spec int32
 
-	if rm, ok = rmm[2000000]; !ok {
+	if rm, ok = rmm[strconv.Itoa(2000000)]; !ok {
 		t.Fatalf("rmm[2000000] does not exist.")
 	}
 	if rm.Price != 25 {
@@ -880,7 +881,7 @@ func TestReader(t *testing.T) {
 		t.Fatalf("rmm.Spec[SpecTypeHP] = %d, want 50", spec)
 	}
 
-	if rm, ok = rmm[2000004]; !ok {
+	if rm, ok = rmm[strconv.Itoa(2000004)]; !ok {
 		t.Fatalf("rmm[2000004] does not exist.")
 	}
 	if rm.Price != 1000 {
@@ -899,7 +900,7 @@ func TestReader(t *testing.T) {
 		t.Fatalf("rmm.Spec[SpecTypeMPRecovery] = %d, want 50", spec)
 	}
 
-	if rm, ok = rmm[2000020]; !ok {
+	if rm, ok = rmm[strconv.Itoa(2000020)]; !ok {
 		t.Fatalf("rmm[2000020] does not exist.")
 	}
 	if rm.Price != 20 {
@@ -918,7 +919,7 @@ func TestReader(t *testing.T) {
 		t.Fatalf("rmm.Spec[SpecTypeHP] = %d, want 50", spec)
 	}
 
-	if rm, ok = rmm[2001000]; !ok {
+	if rm, ok = rmm[strconv.Itoa(2001000)]; !ok {
 		t.Fatalf("rmm[2001000] does not exist.")
 	}
 	if rm.Price != 1600 {
@@ -937,7 +938,7 @@ func TestReader(t *testing.T) {
 		t.Fatalf("rmm.Spec[SpecTypeMP] = %d, want 1000", spec)
 	}
 
-	if rm, ok = rmm[2002000]; !ok {
+	if rm, ok = rmm[strconv.Itoa(2002000)]; !ok {
 		t.Fatalf("rmm[02002000] does not exist.")
 	}
 	if rm.Price != 250 {

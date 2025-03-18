@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
+	"strconv"
 	"testing"
 )
 
@@ -1181,8 +1182,8 @@ func TestReader(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	ctx := tenant.WithContext(context.Background(), tt)
 
-	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: 8510000, name: "Pianus"})
-	_, _ = GetMonsterGaugeRegistry().Add(tt, Gauge{id: 8510000, exists: true})
+	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(8510000), name: "Pianus"})
+	_, _ = GetMonsterGaugeRegistry().Add(tt, Gauge{id: strconv.Itoa(8510000), exists: true})
 
 	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(testXML)))()
 	if err != nil {

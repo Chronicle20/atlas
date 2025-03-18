@@ -40,7 +40,7 @@ func TestRest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	irmm, err := model.CollectToMap[RestModel, uint32, RestModel](rms, RestModel.GetId, Identity)()
+	irmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,7 @@ func TestRest(t *testing.T) {
 	var output []RestModel
 	err = jsonapi.Unmarshal(body, &output)
 
-	ormm, err := model.CollectToMap[RestModel, uint32, RestModel](model.FixedProvider(output), RestModel.GetId, Identity)()
+	ormm, err := model.CollectToMap[RestModel, string, RestModel](model.FixedProvider(output), RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
 	}

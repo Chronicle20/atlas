@@ -5,6 +5,7 @@ import (
 	"atlas-data/xml"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus/hooks/test"
+	"strconv"
 	"testing"
 )
 
@@ -2758,7 +2759,7 @@ func TestReader(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
 	rms := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))
-	rmm, err := model.CollectToMap[RestModel, uint32, RestModel](rms, RestModel.GetId, Identity)()
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2770,7 +2771,7 @@ func TestReader(t *testing.T) {
 	var ef effect.RestModel
 	var ok bool
 
-	if rm, ok = rmm[1000]; !ok {
+	if rm, ok = rmm[strconv.Itoa(1000)]; !ok {
 		t.Fatal("rmm[1000] does not exist.")
 	}
 	if len(rm.Effects) != 3 {
@@ -2798,7 +2799,7 @@ func TestReader(t *testing.T) {
 		t.Fatalf("rm.Effects[2].FixDamage = %d, want 40", ef.FixDamage)
 	}
 
-	if rm, ok = rmm[1001]; !ok {
+	if rm, ok = rmm[strconv.Itoa(1001)]; !ok {
 		t.Fatal("rmm[1001] does not exist.")
 	}
 	if len(rm.Effects) != 3 {
@@ -2844,7 +2845,7 @@ func TestReader(t *testing.T) {
 		t.Fatalf("rm.Effects[2].Cooldown = %d, want 120", ef.Cooldown)
 	}
 
-	if rm, ok = rmm[1002]; !ok {
+	if rm, ok = rmm[strconv.Itoa(1002)]; !ok {
 		t.Fatal("rmm[1002] does not exist.")
 	}
 	if len(rm.Effects) != 3 {

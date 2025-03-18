@@ -1,7 +1,6 @@
 package pet
 
 import (
-	"github.com/Chronicle20/atlas-model/model"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
 )
@@ -20,6 +19,10 @@ func (r RestModel) GetName() string {
 
 func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
+}
+
+func (r RestModel) GetId() uint32 {
+	return r.Id
 }
 
 func (r *RestModel) SetID(strId string) error {
@@ -97,34 +100,6 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 	return nil
 }
 
-func Transform(m Model) (RestModel, error) {
-	srms, err := model.SliceMap(TransformSkill)(model.FixedProvider(m.Skills))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
-	}
-	return RestModel{
-		Id:     m.Id,
-		Hungry: m.Hungry,
-		Cash:   m.Cash,
-		Life:   m.Life,
-		Skills: srms,
-	}, nil
-}
-
-func Extract(rm RestModel) (Model, error) {
-	srs, err := model.SliceMap(ExtractSkill)(model.FixedProvider(rm.Skills))(model.ParallelMap())()
-	if err != nil {
-		return Model{}, err
-	}
-	return Model{
-		Id:     rm.Id,
-		Hungry: rm.Hungry,
-		Cash:   rm.Cash,
-		Life:   rm.Life,
-		Skills: srs,
-	}, nil
-}
-
 type SkillRestModel struct {
 	Id          string `json:"-"`
 	Increase    uint16 `json:"increase"`
@@ -142,20 +117,4 @@ func (r SkillRestModel) GetID() string {
 func (r *SkillRestModel) SetID(id string) error {
 	r.Id = id
 	return nil
-}
-
-func TransformSkill(m SkillModel) (SkillRestModel, error) {
-	return SkillRestModel{
-		Id:          m.Id,
-		Increase:    m.Increase,
-		Probability: m.Probability,
-	}, nil
-}
-
-func ExtractSkill(rm SkillRestModel) (SkillModel, error) {
-	return SkillModel{
-		Id:          rm.Id,
-		Increase:    rm.Increase,
-		Probability: rm.Probability,
-	}, nil
 }

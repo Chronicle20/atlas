@@ -534,9 +534,6 @@ func WriteEquipableInfo(tenant tenant.Model) func(zeroPosition bool) func(w *res
 				}
 				w.WriteInt(e.ItemId())
 				w.WriteBool(false)
-				if false {
-					w.WriteLong(0) // cash sn
-				}
 				w.WriteLong(uint64(getTime(e.Expiration())))
 				w.WriteByte(byte(e.Slots()))
 				w.WriteByte(e.Level())
@@ -562,27 +559,27 @@ func WriteEquipableInfo(tenant tenant.Model) func(zeroPosition bool) func(w *res
 				if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
 					w.WriteAsciiString(e.OwnerName())
 					w.WriteShort(e.Flags())
+				}
 
-					if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
+				if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
+					w.WriteByte(e.LevelUpType())
+					w.WriteByte(e.Level())
+					w.WriteInt(e.Experience())
+					w.WriteInt32(e.ViciousHammer())
+
+					if tenant.Region() == "JMS" {
 						w.WriteByte(0)
-						w.WriteByte(0)   // item level
-						w.WriteInt(0)    // expNibble
-						w.WriteInt32(-1) // durability
-
-						if tenant.Region() == "JMS" {
-							w.WriteByte(0)
-							w.WriteShort(0)
-							w.WriteShort(0)
-							w.WriteShort(0)
-							w.WriteShort(0)
-							w.WriteShort(0)
-							w.WriteInt(0)
-						}
-
-						w.WriteLong(0)
-						w.WriteLong(uint64(getTime(-2)))
-						w.WriteInt32(-1)
+						w.WriteShort(0)
+						w.WriteShort(0)
+						w.WriteShort(0)
+						w.WriteShort(0)
+						w.WriteShort(0)
+						w.WriteInt(0)
 					}
+
+					w.WriteLong(0)
+					w.WriteLong(uint64(getTime(-2)))
+					w.WriteInt32(-1)
 				}
 				return nil
 			}

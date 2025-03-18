@@ -2,8 +2,8 @@ package equipable
 
 type Model struct {
 	id            uint32
-	itemId        uint32
 	slot          int16
+	itemId        uint32
 	strength      uint16
 	dexterity     uint16
 	intelligence  uint16
@@ -20,6 +20,15 @@ type Model struct {
 	speed         uint16
 	jump          uint16
 	slots         uint16
+	hammersUsed   uint32
+}
+
+func (m Model) Id() uint32 {
+	return m.id
+}
+
+func (m Model) Slot() int16 {
+	return m.slot
 }
 
 func (m Model) ItemId() uint32 {
@@ -32,10 +41,6 @@ func (m Model) Expiration() int64 {
 
 func (m Model) Slots() uint16 {
 	return m.slots
-}
-
-func (m Model) Level() byte {
-	return 0
 }
 
 func (m Model) Strength() uint16 {
@@ -106,10 +111,18 @@ func (m Model) Flags() uint16 {
 	return 0
 }
 
-func (m Model) Slot() int16 {
-	return m.slot
+func (m Model) LevelUpType() byte {
+	return 0
 }
 
-func (m Model) Id() uint32 {
-	return m.id
+func (m Model) Level() byte {
+	return 0
+}
+
+func (m Model) Experience() uint32 {
+	return 0
+}
+
+func (m Model) ViciousHammer() int32 {
+	return 0
 }

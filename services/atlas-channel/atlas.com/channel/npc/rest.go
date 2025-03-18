@@ -16,7 +16,7 @@ type RestModel struct {
 	Hide     bool   `json:"hide"`
 }
 
-func (r *RestModel) GetName() string {
+func (r RestModel) GetName() string {
 	return "npcs"
 }
 
@@ -29,7 +29,6 @@ func (r *RestModel) SetID(idStr string) error {
 	if err != nil {
 		return err
 	}
-
 	r.Id = uint32(id)
 	return nil
 }

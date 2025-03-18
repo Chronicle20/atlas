@@ -7,7 +7,6 @@ import (
 )
 
 func startWorkerCommandProvider(name string, path string) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(0)
 	value := &command[startWorkerCommandBody]{
 		Type: CommandStartWorker,
 		Body: startWorkerCommandBody{
@@ -15,5 +14,5 @@ func startWorkerCommandProvider(name string, path string) model.Provider[[]kafka
 			Path: path,
 		},
 	}
-	return producer.SingleMessageProvider(key, value)
+	return producer.SingleMessageProvider(nil, value)
 }

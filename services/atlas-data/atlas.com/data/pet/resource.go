@@ -2,7 +2,6 @@ package pet
 
 import (
 	"atlas-data/rest"
-	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -27,15 +26,8 @@ func handleGetPetsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			s := NewStorage(d.Logger(), db)
-			m, err := s.GetAll(d.Context())
+			res, err := s.GetAll(d.Context())
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			res, err := model.SliceMap(Transform)(model.FixedProvider(m))()()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -52,17 +44,10 @@ func handleGetPetRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 		return rest.ParseItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				m, err := s.GetById(d.Context())(itemId)
+				res, err := s.GetById(d.Context())(itemId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate pet %d.", itemId)
 					w.WriteHeader(http.StatusNotFound)
-					return
-				}
-
-				res, err := model.Map(Transform)(model.FixedProvider(m))()
-				if err != nil {
-					d.Logger().WithError(err).Errorf("Creating REST model.")
-					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 

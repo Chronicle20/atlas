@@ -871,11 +871,17 @@ func AttemptEquipmentPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx con
 	}
 }
 
-func RequestReserve(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, slot int16, itemId uint32, quantity int16, transactionId uuid.UUID) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, slot int16, itemId uint32, quantity int16, transactionId uuid.UUID) error {
+type Reserve struct {
+	Slot     int16
+	ItemId   uint32
+	Quantity int16
+}
+
+func RequestReserve(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, reserves []Reserve, transactionId uuid.UUID) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, reserves []Reserve, transactionId uuid.UUID) error {
 		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, slot int16, itemId uint32, quantity int16, transactionId uuid.UUID) error {
-			return func(characterId uint32, inventoryType inventory.Type, slot int16, itemId uint32, quantity int16, transactionId uuid.UUID) error {
+		return func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, reserves []Reserve, transactionId uuid.UUID) error {
+			return func(characterId uint32, inventoryType inventory.Type, reserves []Reserve, transactionId uuid.UUID) error {
 				var events = model.FixedProvider([]kafka.Message{})
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					invLock := GetLockRegistry().GetById(characterId, inventoryType)
@@ -887,20 +893,26 @@ func RequestReserve(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 						l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 						return err
 					}
-					i, err := item.GetBySlot(tx)(ctx)(invId, slot)
-					if err != nil {
-						return err
-					}
-					if i.ItemId() != itemId {
-						return errors.New("item id does not match")
-					}
-					reservedQuantity := GetReservationRegistry().GetReservedQuantity(t, characterId, inventoryType, slot)
 
-					if i.Quantity()-reservedQuantity < uint32(quantity) {
-						return errors.New("not enough available quantity")
+					for _, res := range reserves {
+						i, err := item.GetBySlot(tx)(ctx)(invId, res.Slot)
+						if err != nil {
+							return err
+						}
+						if i.ItemId() != res.ItemId {
+							return errors.New("item id does not match")
+						}
+						reservedQuantity := GetReservationRegistry().GetReservedQuantity(t, characterId, inventoryType, res.Slot)
+
+						if i.Quantity()-reservedQuantity < uint32(res.Quantity) {
+							return errors.New("not enough available quantity")
+						}
+						_, err = GetReservationRegistry().AddReservation(t, transactionId, characterId, inventoryType, res.Slot, res.ItemId, uint32(res.Quantity), time.Second*time.Duration(30))
+						if err != nil {
+							return err
+						}
+						events = model.MergeSliceProvider(events, inventoryItemReserveProvider(characterId)(inventoryType)(res.ItemId)(uint32(res.Quantity), res.Slot, transactionId))
 					}
-					GetReservationRegistry().AddReservation(t, transactionId, characterId, inventoryType, slot, itemId, uint32(quantity), time.Second*time.Duration(30))
-					events = model.MergeSliceProvider(events, inventoryItemReserveProvider(characterId)(inventoryType)(itemId)(uint32(quantity), slot, transactionId))
 					return nil
 				})
 				if txErr != nil {

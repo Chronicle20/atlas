@@ -62,20 +62,22 @@ func GetReservationRegistry() *ReservationRegistry {
 	return instance
 }
 
-func (r *ReservationRegistry) AddReservation(t tenant.Model, transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, itemId uint32, quantity uint32, expiry time.Duration) {
+func (r *ReservationRegistry) AddReservation(t tenant.Model, transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, itemId uint32, quantity uint32, expiry time.Duration) (Reservation, error) {
 	key := ReservationKey{t, characterId, inventoryType, slot}
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	reservation := Reservation{
+	res := Reservation{
 		id:       transactionId,
 		itemId:   itemId,
 		quantity: quantity,
 		expiry:   time.Now().Add(expiry),
 	}
 
-	r.reservations[key] = append(r.reservations[key], reservation)
+	r.reservations[key] = append(r.reservations[key], res)
+
+	return res, nil
 }
 
 func (r *ReservationRegistry) RemoveReservation(t tenant.Model, transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) (Reservation, error) {

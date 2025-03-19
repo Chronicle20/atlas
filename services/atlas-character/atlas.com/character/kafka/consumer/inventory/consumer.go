@@ -95,7 +95,16 @@ func handleRequestReserveItemCommand(db *gorm.DB) message.Handler[command[reques
 		if c.Type != CommandRequestReserve {
 			return
 		}
-		_ = inventory.RequestReserve(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), c.Body.Source, c.Body.ItemId, c.Body.Quantity, c.Body.TransactionId)
+		reserves := make([]inventory.Reserve, 0)
+		for _, i := range c.Body.Items {
+			reserves = append(reserves, inventory.Reserve{
+				Slot:     i.Source,
+				ItemId:   i.ItemId,
+				Quantity: i.Quantity,
+			})
+		}
+
+		_ = inventory.RequestReserve(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), reserves, c.Body.TransactionId)
 	}
 }
 

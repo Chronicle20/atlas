@@ -44,10 +44,14 @@ type dropCommandBody struct {
 }
 
 type requestReserveCommandBody struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	Source        int16     `json:"source"`
-	ItemId        uint32    `json:"itemId"`
-	Quantity      int16     `json:"quantity"`
+	TransactionId uuid.UUID  `json:"transactionId"`
+	Items         []itemBody `json:"items"`
+}
+
+type itemBody struct {
+	Source   int16  `json:"source"`
+	ItemId   uint32 `json:"itemId"`
+	Quantity int16  `json:"quantity"`
 }
 
 type consumeCommandBody struct {

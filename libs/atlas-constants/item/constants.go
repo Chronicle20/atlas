@@ -137,7 +137,11 @@ func Is(itemId Id, references ...Id) bool {
 }
 
 const (
-	UseRedBeanPorridge = Id(2022001)
-	UseAirBubble       = Id(2022040)
-	UseSoftWhiteBun    = Id(2022186)
+	UseRedBeanPorridge        = Id(2022001)
+	UseAirBubble              = Id(2022040)
+	UseSoftWhiteBun           = Id(2022186)
+	WhiteScrollOnePercent     = Id(2049000)
+	WhiteScrollThreePerecent  = Id(2049001)
+	WhiteScrollFivePerecent   = Id(2049002)
+	WhiteScrollTwentyPerecent = Id(2049003)
 )

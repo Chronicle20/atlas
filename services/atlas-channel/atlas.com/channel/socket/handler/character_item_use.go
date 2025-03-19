@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"atlas-channel/character/inventory"
+	"atlas-channel/consumable"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -11,13 +11,14 @@ import (
 
 const CharacterItemUseHandle = "CharacterItemUseHandle"
 const CharacterItemUseTownScrollHandle = "CharacterItemUseTownScrollHandle"
+const CharacterItemUseScrollHandle = "CharacterItemUseScrollHandle"
 
 func CharacterItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		updateTime := r.ReadUint32()
 		slot := r.ReadInt16()
 		itemId := r.ReadUint32()
-		_ = inventory.RequestItemConsume(l)(ctx)(s.CharacterId(), itemId, slot, updateTime)
+		_ = consumable.RequestItemConsume(l)(ctx)(s.CharacterId(), itemId, slot, updateTime)
 	}
 }
 
@@ -26,6 +27,17 @@ func CharacterItemUseTownScrollHandleFunc(l logrus.FieldLogger, ctx context.Cont
 		updateTime := r.ReadUint32()
 		slot := r.ReadInt16()
 		itemId := r.ReadUint32()
-		_ = inventory.RequestItemConsume(l)(ctx)(s.CharacterId(), itemId, slot, updateTime)
+		_ = consumable.RequestItemConsume(l)(ctx)(s.CharacterId(), itemId, slot, updateTime)
+	}
+}
+
+func CharacterItemUseScrollHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+		updateTime := r.ReadUint32()
+		scrollSlot := r.ReadInt16()
+		equipSlot := r.ReadInt16()
+		whiteScroll := r.ReadInt16()&2 == 2
+		legendarySpirit := r.ReadBool()
+		_ = consumable.RequestScrollUse(l)(ctx)(s.CharacterId(), scrollSlot, equipSlot, whiteScroll, legendarySpirit, updateTime)
 	}
 }

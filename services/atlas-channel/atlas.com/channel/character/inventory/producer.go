@@ -5,7 +5,6 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -63,22 +62,6 @@ func dropItemCommandProvider(m _map.Model, characterId uint32, inventoryType byt
 			MapId:     uint32(m.MapId()),
 			Source:    source,
 			Quantity:  quantity,
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
-func requestReserveCommandProvider(characterId uint32, inventoryType byte, source int16, itemId uint32, quantity int16) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &command[requestReserveCommandBody]{
-		CharacterId:   characterId,
-		InventoryType: inventoryType,
-		Type:          CommandRequestReserve,
-		Body: requestReserveCommandBody{
-			TransactionId: uuid.New(),
-			Source:        source,
-			ItemId:        itemId,
-			Quantity:      quantity,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

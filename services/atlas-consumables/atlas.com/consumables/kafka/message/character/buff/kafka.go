@@ -6,7 +6,7 @@ const (
 	CommandTypeCancel = "CANCEL"
 )
 
-type command[E any] struct {
+type Command[E any] struct {
 	WorldId     byte   `json:"worldId"`
 	ChannelId   byte   `json:"channelId"`
 	CharacterId uint32 `json:"characterId"`
@@ -14,18 +14,18 @@ type command[E any] struct {
 	Body        E      `json:"body"`
 }
 
-type applyCommandBody struct {
+type ApplyCommandBody struct {
 	FromId   uint32       `json:"fromId"`
 	SourceId int32        `json:"sourceId"`
 	Duration int32        `json:"duration"`
-	Changes  []statChange `json:"changes"`
+	Changes  []StatChange `json:"changes"`
 }
 
-type statChange struct {
+type StatChange struct {
 	Type   string `json:"type"`
 	Amount int32  `json:"amount"`
 }
 
-type cancelCommandBody struct {
+type CancelCommandBody struct {
 	SourceId int32 `json:"sourceId"`
 }

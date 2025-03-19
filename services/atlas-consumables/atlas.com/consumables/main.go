@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-consumables/kafka/consumer/character"
+	"atlas-consumables/kafka/consumer/consumable"
 	"atlas-consumables/kafka/consumer/inventory"
 	"atlas-consumables/logger"
 	"atlas-consumables/service"
@@ -26,8 +27,9 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	inventory.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
-	inventory.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	consumable.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	consumable.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

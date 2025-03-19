@@ -1,6 +1,7 @@
 package character
 
 import (
+	character2 "atlas-consumables/kafka/message/character"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -9,11 +10,11 @@ import (
 
 func changeHPCommandProvider(m _map.Model, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[changeHPCommandBody]{
+	value := &character2.Command[character2.ChangeHPCommandBody]{
 		CharacterId: characterId,
 		WorldId:     byte(m.WorldId()),
-		Type:        CommandChangeHP,
-		Body: changeHPCommandBody{
+		Type:        character2.CommandChangeHP,
+		Body: character2.ChangeHPCommandBody{
 			ChannelId: byte(m.ChannelId()),
 			Amount:    amount,
 		},
@@ -23,11 +24,11 @@ func changeHPCommandProvider(m _map.Model, characterId uint32, amount int16) mod
 
 func changeMPCommandProvider(m _map.Model, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[changeMPCommandBody]{
+	value := &character2.Command[character2.ChangeMPCommandBody]{
 		CharacterId: characterId,
 		WorldId:     byte(m.WorldId()),
-		Type:        CommandChangeMP,
-		Body: changeMPCommandBody{
+		Type:        character2.CommandChangeMP,
+		Body: character2.ChangeMPCommandBody{
 			ChannelId: byte(m.ChannelId()),
 			Amount:    amount,
 		},
@@ -37,11 +38,11 @@ func changeMPCommandProvider(m _map.Model, characterId uint32, amount int16) mod
 
 func changeMapProvider(m _map.Model, characterId uint32, portalId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[changeMapBody]{
+	value := &character2.Command[character2.ChangeMapBody]{
 		WorldId:     byte(m.WorldId()),
 		CharacterId: characterId,
-		Type:        CommandChangeMap,
-		Body: changeMapBody{
+		Type:        character2.CommandChangeMap,
+		Body: character2.ChangeMapBody{
 			ChannelId: byte(m.ChannelId()),
 			MapId:     uint32(m.MapId()),
 			PortalId:  portalId,

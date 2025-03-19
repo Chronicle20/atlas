@@ -1,6 +1,8 @@
 package character
 
 import (
+	"atlas-consumables/character/equipment"
+	"atlas-consumables/character/inventory"
 	"strconv"
 	"strings"
 )
@@ -34,6 +36,8 @@ type Model struct {
 	spawnPoint         uint32
 	gm                 int
 	meso               uint32
+	equipment          equipment.Model
+	inventory          inventory.Model
 }
 
 func (m Model) Gm() bool {
@@ -218,4 +222,12 @@ func (m Model) Stance() byte {
 
 func (m Model) WorldId() byte {
 	return m.worldId
+}
+
+func (m Model) Equipment() equipment.Model {
+	return m.equipment
+}
+
+func (m Model) Inventory() inventory.Model {
+	return m.inventory
 }

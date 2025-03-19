@@ -1,6 +1,7 @@
 package pet
 
 import (
+	pet2 "atlas-consumables/kafka/message/pet"
 	"atlas-consumables/kafka/producer"
 	"context"
 	"errors"
@@ -88,7 +89,7 @@ func HungriestByOwnerProvider(l logrus.FieldLogger) func(ctx context.Context) fu
 func AwardFullness(l logrus.FieldLogger) func(ctx context.Context) func(actorId uint32, petId uint64, amount byte) error {
 	return func(ctx context.Context) func(actorId uint32, petId uint64, amount byte) error {
 		return func(actorId uint32, petId uint64, amount byte) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(awardFullnessCommandProvider(actorId, petId, amount))
+			return producer.ProviderImpl(l)(ctx)(pet2.EnvCommandTopic)(awardFullnessCommandProvider(actorId, petId, amount))
 		}
 	}
 }

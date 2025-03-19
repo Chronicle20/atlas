@@ -7,9 +7,10 @@ import (
 )
 
 const (
-	Resource = "characters"
-	ById     = Resource + "/%d"
-	ByName   = Resource + "?name=%s"
+	Resource          = "characters"
+	ById              = Resource + "/%d"
+	ByIdWithInventory = Resource + "/%d?include=inventory"
+	ByName            = Resource + "?name=%s"
 )
 
 func getBaseRequest() string {
@@ -18,6 +19,10 @@ func getBaseRequest() string {
 
 func requestById(id uint32) requests.Request[RestModel] {
 	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
+}
+
+func requestByIdWithInventory(id uint32) requests.Request[RestModel] {
+	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByIdWithInventory, id))
 }
 
 func requestByName(name string) requests.Request[[]RestModel] {

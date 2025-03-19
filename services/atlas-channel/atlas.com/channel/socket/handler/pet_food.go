@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"atlas-channel/character/inventory"
+	"atlas-channel/consumable"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -16,6 +16,6 @@ func PetFoodHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Produ
 		updateTime := r.ReadUint32()
 		slot := r.ReadInt16()
 		itemId := r.ReadUint32()
-		_ = inventory.RequestItemConsume(l)(ctx)(s.CharacterId(), itemId, slot, updateTime)
+		_ = consumable.RequestItemConsume(l)(ctx)(s.CharacterId(), itemId, slot, updateTime)
 	}
 }

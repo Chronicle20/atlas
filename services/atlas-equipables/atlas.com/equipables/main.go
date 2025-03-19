@@ -7,6 +7,7 @@ import (
 	"atlas-equipables/service"
 	"atlas-equipables/tracing"
 	"github.com/Chronicle20/atlas-rest/server"
+	"os"
 )
 
 const serviceName = "atlas-equipables"
@@ -44,7 +45,13 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(equipment.Migration))
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), equipment.InitResource(GetServer(), db))
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(equipment.InitResource(GetServer(), db)).
+		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

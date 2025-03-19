@@ -41,6 +41,21 @@ func create(db *gorm.DB, tenantId uuid.UUID, itemId uint32, strength uint16, dex
 	return makeEquipment(*e)
 }
 
+func update(db *gorm.DB, tenantId uuid.UUID, id uint32, updates map[string]interface{}) (Model, error) {
+	var e entity
+	err := db.Where("tenant_id = ? AND id = ?", tenantId, id).First(&e).Error
+	if err != nil {
+		return Model{}, err
+	}
+
+	err = db.Model(&e).Updates(updates).Error
+	if err != nil {
+		return Model{}, err
+	}
+
+	return makeEquipment(e)
+}
+
 func makeEquipment(e entity) (Model, error) {
 	r := NewBuilder(e.ID).
 		SetItemId(e.ItemId).

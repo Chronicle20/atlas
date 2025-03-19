@@ -32,29 +32,27 @@ func GetById(_ logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) f
 	}
 }
 
-func Create(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(itemId uint32, strength uint16, dexterity uint16, intelligence uint16, luck uint16,
-	hp uint16, mp uint16, weaponAttack uint16, magicAttack uint16, weaponDefense uint16, magicDefense uint16,
-	accuracy uint16, avoidability uint16, hands uint16, speed uint16, jump uint16, slots uint16) (Model, error) {
-	return func(db *gorm.DB) func(ctx context.Context) func(itemId uint32, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, weaponAttack uint16, magicAttack uint16, weaponDefense uint16, magicDefense uint16, accuracy uint16, avoidability uint16, hands uint16, speed uint16, jump uint16, slots uint16) (Model, error) {
-		return func(ctx context.Context) func(itemId uint32, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, weaponAttack uint16, magicAttack uint16, weaponDefense uint16, magicDefense uint16, accuracy uint16, avoidability uint16, hands uint16, speed uint16, jump uint16, slots uint16) (Model, error) {
-			return func(itemId uint32, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, weaponAttack uint16, magicAttack uint16, weaponDefense uint16, magicDefense uint16, accuracy uint16, avoidability uint16, hands uint16, speed uint16, jump uint16, slots uint16) (Model, error) {
-				l.Debugf("Creating equipable for item [%d].", itemId)
+func Create(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(i Model) (Model, error) {
+	return func(db *gorm.DB) func(ctx context.Context) func(i Model) (Model, error) {
+		return func(ctx context.Context) func(i Model) (Model, error) {
+			return func(i Model) (Model, error) {
+				l.Debugf("Creating equipable for item [%d].", i.ItemId())
 				t := tenant.MustFromContext(ctx)
-				if strength == 0 && dexterity == 0 && intelligence == 0 && luck == 0 && hp == 0 && mp == 0 && weaponAttack == 0 && weaponDefense == 0 &&
-					magicAttack == 0 && magicDefense == 0 && accuracy == 0 && avoidability == 0 && hands == 0 && speed == 0 && jump == 0 &&
-					slots == 0 {
-					ea, err := statistics.GetById(l, ctx)(itemId)
+				if i.Strength() == 0 && i.Dexterity() == 0 && i.Intelligence() == 0 && i.Luck() == 0 && i.HP() == 0 && i.MP() == 0 && i.WeaponAttack() == 0 && i.WeaponDefense() == 0 &&
+					i.MagicAttack() == 0 && i.MagicDefense() == 0 && i.Accuracy() == 0 && i.Avoidability() == 0 && i.Hands() == 0 && i.Speed() == 0 && i.Jump() == 0 &&
+					i.Slots() == 0 {
+					ea, err := statistics.GetById(l, ctx)(i.ItemId())
 					if err != nil {
-						l.WithError(err).Errorf("Unable to get equipment information for %d.", itemId)
+						l.WithError(err).Errorf("Unable to get equipment information for %d.", i.ItemId())
 						return Model{}, err
 					} else {
-						return create(db, t.Id(), itemId, ea.Strength(), ea.Dexterity(), ea.Intelligence(), ea.Luck(),
+						return create(db, t.Id(), i.ItemId(), ea.Strength(), ea.Dexterity(), ea.Intelligence(), ea.Luck(),
 							ea.HP(), ea.MP(), ea.WeaponAttack(), ea.MagicAttack(), ea.WeaponDefense(), ea.MagicDefense(), ea.Accuracy(),
 							ea.Avoidability(), ea.Hands(), ea.Speed(), ea.Jump(), ea.Slots())
 					}
 				} else {
-					return create(db, t.Id(), itemId, strength, dexterity, intelligence, luck, hp, mp, weaponAttack,
-						magicAttack, weaponDefense, magicDefense, accuracy, avoidability, hands, speed, jump, slots)
+					return create(db, t.Id(), i.ItemId(), i.Strength(), i.Dexterity(), i.Intelligence(), i.Luck(), i.HP(), i.MP(), i.WeaponAttack(),
+						i.MagicAttack(), i.WeaponDefense(), i.MagicDefense(), i.Accuracy(), i.Avoidability(), i.Hands(), i.Speed(), i.Jump(), i.Slots())
 				}
 			}
 		}
@@ -102,6 +100,76 @@ func getRandomStat(defaultValue uint16, max uint16) uint16 {
 	}
 	maxRange := math.Min(math.Ceil(float64(defaultValue)*0.1), float64(max))
 	return uint16(float64(defaultValue)-maxRange) + uint16(math.Floor(rand.Float64()*(maxRange*2.0+1.0)))
+}
+
+func UpdateById(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(i Model) (Model, error) {
+	return func(db *gorm.DB) func(ctx context.Context) func(i Model) (Model, error) {
+		return func(ctx context.Context) func(i Model) (Model, error) {
+			t := tenant.MustFromContext(ctx)
+			return func(i Model) (Model, error) {
+				var um Model
+				l.Debugf("Updating equipable [%d].", i.Id())
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					c, err := GetById(l)(tx)(ctx)(i.Id())
+					if err != nil {
+						return err
+					}
+					updates := make(map[string]interface{})
+					if i.Strength() != c.Strength() {
+						updates["strength"] = i.Strength()
+					}
+					if i.Dexterity() != c.Dexterity() {
+						updates["dexterity"] = i.Dexterity()
+					}
+					if i.Intelligence() != c.Intelligence() {
+						updates["intelligence"] = i.Intelligence()
+					}
+					if i.Luck() != c.Luck() {
+						updates["luck"] = i.Luck()
+					}
+					if i.HP() != c.HP() {
+						updates["hp"] = i.HP()
+					}
+					if i.MP() != c.MP() {
+						updates["mp"] = i.MP()
+					}
+					if i.WeaponAttack() != c.WeaponAttack() {
+						updates["weapon_attack"] = i.WeaponAttack()
+					}
+					if i.MagicAttack() != c.MagicAttack() {
+						updates["magic_attack"] = i.MagicAttack()
+					}
+					if i.WeaponDefense() != c.WeaponDefense() {
+						updates["weapon_defense"] = i.WeaponDefense()
+					}
+					if i.MagicDefense() != c.MagicDefense() {
+						updates["magic_defense"] = i.MagicDefense()
+					}
+					if i.Avoidability() != c.Avoidability() {
+						updates["avoidability"] = i.Avoidability()
+					}
+					if i.Hands() != c.Hands() {
+						updates["hands"] = i.Hands()
+					}
+					if i.Speed() != c.Speed() {
+						updates["speed"] = i.Speed()
+					}
+					if i.Jump() != c.Jump() {
+						updates["jump"] = i.Jump()
+					}
+					if i.Slots() != c.Slots() {
+						updates["slots"] = i.Slots()
+					}
+					um, err = update(tx, t.Id(), i.Id(), updates)
+					return err
+				})
+				if txErr != nil {
+					return Model{}, txErr
+				}
+				return um, nil
+			}
+		}
+	}
 }
 
 func DeleteById(_ logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(equipmentId uint32) error {

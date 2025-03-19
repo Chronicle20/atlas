@@ -62,3 +62,26 @@ func Transform(m Model) (RestModel, error) {
 		Slots:         m.slots,
 	}, nil
 }
+
+func Extract(rm RestModel) (Model, error) {
+	return Model{
+		id:            rm.Id,
+		itemId:        rm.ItemId,
+		strength:      rm.Strength,
+		dexterity:     rm.Dexterity,
+		intelligence:  rm.Intelligence,
+		luck:          rm.Luck,
+		hp:            rm.HP,
+		mp:            rm.MP,
+		weaponAttack:  rm.WeaponAttack,
+		magicAttack:   rm.MagicAttack,
+		weaponDefense: rm.WeaponDefense,
+		magicDefense:  rm.MagicDefense,
+		accuracy:      rm.Accuracy,
+		avoidability:  rm.Avoidability,
+		hands:         rm.Hands,
+		speed:         rm.Speed,
+		jump:          rm.Jump,
+		slots:         rm.Slots,
+	}, nil
+}

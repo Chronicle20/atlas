@@ -9,6 +9,7 @@ type Classification uint32
 type WeaponType byte
 
 const (
+	ClassificationOverall                  = Classification(105)
 	ClassificationConsumableTownWarp       = Classification(203)
 	ClassificationConsumableScroll         = Classification(204)
 	ClassificationConsumableArrow          = Classification(206)

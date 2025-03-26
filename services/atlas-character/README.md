@@ -28,6 +28,7 @@ A RESTful resource which provides character services.
 - EVENT_TOPIC_SESSION_STATUS - Kafka Topic for capturing session events
 - EVENT_TOPIC_CHARACTER_MOVEMENT - Kafka Topic for transmitting character movement events
 - EVENT_TOPIC_DROP_STATUS - Kafka Topic for transmitting drop status events
+- REST_PORT - Port number for the REST server
 
 ## API
 

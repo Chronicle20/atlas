@@ -436,27 +436,43 @@ func SetCanBeTraded(canBeTraded bool) Updater {
 	}
 }
 
-func SetLevelType(levelType byte) Updater {
+func AddLevelType(levelType int8) Updater {
 	return func(m Model) Model {
-		return CloneFromModel(m).SetLevelType(levelType).Build()
+		val := int16(m.LevelType()) + int16(levelType)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetLevelType(byte(val)).Build()
 	}
 }
 
-func SetLevel(level byte) Updater {
+func AddLevel(level int8) Updater {
 	return func(m Model) Model {
-		return CloneFromModel(m).SetLevel(level).Build()
+		val := int16(m.Level()) + int16(level)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetLevel(byte(val)).Build()
 	}
 }
 
-func SetExperience(experience uint32) Updater {
+func AddExperience(experience int32) Updater {
 	return func(m Model) Model {
-		return CloneFromModel(m).SetExperience(experience).Build()
+		val := int64(m.Experience()) + int64(experience)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetExperience(uint32(experience)).Build()
 	}
 }
 
-func SetHammersApplied(hammersApplied uint32) Updater {
+func AddHammersApplied(hammersApplied int32) Updater {
 	return func(m Model) Model {
-		return CloneFromModel(m).SetHammersApplied(hammersApplied).Build()
+		val := int64(m.HammersApplied()) + int64(hammersApplied)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetHammersApplied(uint32(hammersApplied)).Build()
 	}
 }
 

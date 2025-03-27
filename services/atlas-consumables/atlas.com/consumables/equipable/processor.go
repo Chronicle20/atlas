@@ -103,6 +103,12 @@ func AddSlots(amount int16) func(m *equipable.ChangeBody) {
 	}
 }
 
+func AddLevel(amount int8) func(m *equipable.ChangeBody) {
+	return func(m *equipable.ChangeBody) {
+		m.Level += amount
+	}
+}
+
 func ChangeStat(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, itemId uint32, slot int16, changes ...Change) error {
 	return func(ctx context.Context) func(characterId uint32, itemId uint32, slot int16, changes ...Change) error {
 		return func(characterId uint32, itemId uint32, slot int16, changes ...Change) error {

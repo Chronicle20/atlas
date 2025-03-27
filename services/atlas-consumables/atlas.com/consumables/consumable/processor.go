@@ -374,10 +374,11 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *item
 						equipable.AddMagicDefense(int16(ci.incMDD)),
 						equipable.AddAccuracy(int16(ci.incACC)),
 						equipable.AddAvoidability(int16(ci.incEVA)),
-						equipable.AddHands(int16(0)),
+						equipable.AddHands(0),
 						equipable.AddSpeed(int16(ci.incSpeed)),
 						equipable.AddJump(int16(ci.incJump)),
-						equipable.AddSlots(int16(-1)),
+						equipable.AddSlots(-1),
+						equipable.AddLevel(1),
 					)
 					if err != nil {
 						_ = CancelScroll(l)(ctx)(transactionId, characterId, scrollItem)

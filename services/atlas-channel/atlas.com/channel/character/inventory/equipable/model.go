@@ -1,26 +1,38 @@
 package equipable
 
+import "time"
+
 type Model struct {
-	id            uint32
-	slot          int16
-	itemId        uint32
-	strength      uint16
-	dexterity     uint16
-	intelligence  uint16
-	luck          uint16
-	hp            uint16
-	mp            uint16
-	weaponAttack  uint16
-	magicAttack   uint16
-	weaponDefense uint16
-	magicDefense  uint16
-	accuracy      uint16
-	avoidability  uint16
-	hands         uint16
-	speed         uint16
-	jump          uint16
-	slots         uint16
-	hammersUsed   uint32
+	id             uint32
+	slot           int16
+	itemId         uint32
+	strength       uint16
+	dexterity      uint16
+	intelligence   uint16
+	luck           uint16
+	hp             uint16
+	mp             uint16
+	weaponAttack   uint16
+	magicAttack    uint16
+	weaponDefense  uint16
+	magicDefense   uint16
+	accuracy       uint16
+	avoidability   uint16
+	hands          uint16
+	speed          uint16
+	jump           uint16
+	slots          uint16
+	ownerName      string
+	locked         bool
+	spikes         bool
+	karmaUsed      bool
+	cold           bool
+	canBeTraded    bool
+	levelType      byte
+	level          byte
+	experience     uint32
+	hammersApplied uint32
+	expiration     time.Time
 }
 
 func (m Model) Id() uint32 {
@@ -33,14 +45,6 @@ func (m Model) Slot() int16 {
 
 func (m Model) ItemId() uint32 {
 	return m.itemId
-}
-
-func (m Model) Expiration() int64 {
-	return -1
-}
-
-func (m Model) Slots() uint16 {
-	return m.slots
 }
 
 func (m Model) Strength() uint16 {
@@ -103,50 +107,105 @@ func (m Model) Jump() uint16 {
 	return m.jump
 }
 
+func (m Model) Slots() uint16 {
+	return m.slots
+}
+
 func (m Model) OwnerName() string {
-	return ""
+	return m.ownerName
 }
 
-func (m Model) Flags() uint16 {
-	return 0
+func (m Model) Locked() bool {
+	return m.locked
 }
 
-func (m Model) LevelUpType() byte {
-	return 0
+func (m Model) Spikes() bool {
+	return m.spikes
+}
+
+func (m Model) KarmaUsed() bool {
+	return m.karmaUsed
+}
+
+func (m Model) Cold() bool {
+	return m.cold
+}
+
+func (m Model) CanBeTraded() bool {
+	return m.canBeTraded
+}
+
+func (m Model) LevelType() byte {
+	return m.levelType
 }
 
 func (m Model) Level() byte {
-	return 0
+	return m.level
 }
 
 func (m Model) Experience() uint32 {
-	return 0
+	return m.experience
 }
 
-func (m Model) ViciousHammer() int32 {
-	return 0
+func (m Model) HammersApplied() uint32 {
+	return m.hammersApplied
+}
+
+func (m Model) Expiration() time.Time {
+	return m.expiration
+}
+
+func (m Model) Flags() uint16 {
+	flag := uint16(0)
+	if m.Locked() {
+		flag |= 0x01
+	}
+	if m.Spikes() {
+		flag |= 0x02
+	}
+	if m.Cold() {
+		flag |= 0x04
+	}
+	if m.CanBeTraded() {
+		flag |= 0x08
+	}
+	if m.KarmaUsed() {
+		flag |= 0x10
+	}
+	return flag
 }
 
 type ModelBuilder struct {
-	id            uint32
-	itemId        uint32
-	slot          int16
-	strength      uint16
-	dexterity     uint16
-	intelligence  uint16
-	luck          uint16
-	hp            uint16
-	mp            uint16
-	weaponAttack  uint16
-	magicAttack   uint16
-	weaponDefense uint16
-	magicDefense  uint16
-	accuracy      uint16
-	avoidability  uint16
-	hands         uint16
-	speed         uint16
-	jump          uint16
-	slots         uint16
+	id             uint32
+	itemId         uint32
+	slot           int16
+	strength       uint16
+	dexterity      uint16
+	intelligence   uint16
+	luck           uint16
+	hp             uint16
+	mp             uint16
+	weaponAttack   uint16
+	magicAttack    uint16
+	weaponDefense  uint16
+	magicDefense   uint16
+	accuracy       uint16
+	avoidability   uint16
+	hands          uint16
+	speed          uint16
+	jump           uint16
+	slots          uint16
+	ownerName      string
+	locked         bool
+	spikes         bool
+	karmaUsed      bool
+	cold           bool
+	canBeTraded    bool
+	levelType      byte
+	level          byte
+	experience     uint32
+	hammersApplied uint32
+	expiration     time.Time
 }
 
 func NewModelBuilder() *ModelBuilder {
@@ -155,25 +214,36 @@ func NewModelBuilder() *ModelBuilder {
 
 func CloneFromModel(m Model) *ModelBuilder {
 	return &ModelBuilder{
-		id:            m.Id(),
-		itemId:        m.ItemId(),
-		slot:          m.Slot(),
-		strength:      m.Strength(),
-		dexterity:     m.Dexterity(),
-		intelligence:  m.Intelligence(),
-		luck:          m.Luck(),
-		hp:            m.HP(),
-		mp:            m.MP(),
-		weaponAttack:  m.WeaponAttack(),
-		magicAttack:   m.MagicAttack(),
-		weaponDefense: m.WeaponDefense(),
-		magicDefense:  m.MagicDefense(),
-		accuracy:      m.Accuracy(),
-		avoidability:  m.Avoidability(),
-		hands:         m.Hands(),
-		speed:         m.Speed(),
-		jump:          m.Jump(),
-		slots:         m.Slots(),
+		id:             m.Id(),
+		itemId:         m.ItemId(),
+		slot:           m.Slot(),
+		strength:       m.Strength(),
+		dexterity:      m.Dexterity(),
+		intelligence:   m.Intelligence(),
+		luck:           m.Luck(),
+		hp:             m.HP(),
+		mp:             m.MP(),
+		weaponAttack:   m.WeaponAttack(),
+		magicAttack:    m.MagicAttack(),
+		weaponDefense:  m.WeaponDefense(),
+		magicDefense:   m.MagicDefense(),
+		accuracy:       m.Accuracy(),
+		avoidability:   m.Avoidability(),
+		hands:          m.Hands(),
+		speed:          m.Speed(),
+		jump:           m.Jump(),
+		slots:          m.Slots(),
+		ownerName:      m.OwnerName(),
+		locked:         m.Locked(),
+		spikes:         m.Spikes(),
+		karmaUsed:      m.KarmaUsed(),
+		cold:           m.Cold(),
+		canBeTraded:    m.CanBeTraded(),
+		levelType:      m.LevelType(),
+		level:          m.Level(),
+		experience:     m.Experience(),
+		hammersApplied: m.HammersApplied(),
+		expiration:     m.Expiration(),
 	}
 }
 
@@ -272,26 +342,92 @@ func (b *ModelBuilder) SetSlots(slots uint16) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetOwnerName(name string) *ModelBuilder {
+	b.ownerName = name
+	return b
+}
+
+func (b *ModelBuilder) SetLocked(locked bool) *ModelBuilder {
+	b.locked = locked
+	return b
+}
+
+func (b *ModelBuilder) SetSpikes(spikes bool) *ModelBuilder {
+	b.spikes = spikes
+	return b
+}
+
+func (b *ModelBuilder) SetKarmaUsed(karmaUsed bool) *ModelBuilder {
+	b.karmaUsed = karmaUsed
+	return b
+}
+
+func (b *ModelBuilder) SetCold(cold bool) *ModelBuilder {
+	b.cold = cold
+	return b
+}
+
+func (b *ModelBuilder) SetCanBeTraded(canBeTraded bool) *ModelBuilder {
+	b.canBeTraded = canBeTraded
+	return b
+}
+
+func (b *ModelBuilder) SetLevelType(levelType byte) *ModelBuilder {
+	b.levelType = levelType
+	return b
+}
+
+func (b *ModelBuilder) SetLevel(level byte) *ModelBuilder {
+	b.level = level
+	return b
+}
+
+func (b *ModelBuilder) SetExperience(exp uint32) *ModelBuilder {
+	b.experience = exp
+	return b
+}
+
+func (b *ModelBuilder) SetHammersApplied(hammers uint32) *ModelBuilder {
+	b.hammersApplied = hammers
+	return b
+}
+
+func (b *ModelBuilder) SetExpiration(expiration time.Time) *ModelBuilder {
+	b.expiration = expiration
+	return b
+}
+
 func (b *ModelBuilder) Build() Model {
 	return Model{
-		id:            b.id,
-		itemId:        b.itemId,
-		slot:          b.slot,
-		strength:      b.strength,
-		dexterity:     b.dexterity,
-		intelligence:  b.intelligence,
-		luck:          b.luck,
-		hp:            b.hp,
-		mp:            b.mp,
-		weaponAttack:  b.weaponAttack,
-		magicAttack:   b.magicAttack,
-		weaponDefense: b.weaponDefense,
-		magicDefense:  b.magicDefense,
-		accuracy:      b.accuracy,
-		avoidability:  b.avoidability,
-		hands:         b.hands,
-		speed:         b.speed,
-		jump:          b.jump,
-		slots:         b.slots,
+		id:             b.id,
+		itemId:         b.itemId,
+		slot:           b.slot,
+		strength:       b.strength,
+		dexterity:      b.dexterity,
+		intelligence:   b.intelligence,
+		luck:           b.luck,
+		hp:             b.hp,
+		mp:             b.mp,
+		weaponAttack:   b.weaponAttack,
+		magicAttack:    b.magicAttack,
+		weaponDefense:  b.weaponDefense,
+		magicDefense:   b.magicDefense,
+		accuracy:       b.accuracy,
+		avoidability:   b.avoidability,
+		hands:          b.hands,
+		speed:          b.speed,
+		jump:           b.jump,
+		slots:          b.slots,
+		ownerName:      b.ownerName,
+		locked:         b.locked,
+		spikes:         b.spikes,
+		karmaUsed:      b.karmaUsed,
+		cold:           b.cold,
+		canBeTraded:    b.canBeTraded,
+		levelType:      b.levelType,
+		level:          b.level,
+		experience:     b.experience,
+		hammersApplied: b.hammersApplied,
+		expiration:     b.expiration,
 	}
 }

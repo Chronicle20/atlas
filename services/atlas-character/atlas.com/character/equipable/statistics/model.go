@@ -1,25 +1,37 @@
 package statistics
 
+import "time"
+
 type Model struct {
-	id            uint32
-	itemId        uint32
-	strength      uint16
-	dexterity     uint16
-	intelligence  uint16
-	luck          uint16
-	hp            uint16
-	mp            uint16
-	weaponAttack  uint16
-	magicAttack   uint16
-	weaponDefense uint16
-	magicDefense  uint16
-	accuracy      uint16
-	avoidability  uint16
-	hands         uint16
-	speed         uint16
-	jump          uint16
-	slots         uint16
-	cash          bool
+	id             uint32
+	itemId         uint32
+	strength       uint16
+	dexterity      uint16
+	intelligence   uint16
+	luck           uint16
+	hp             uint16
+	mp             uint16
+	weaponAttack   uint16
+	magicAttack    uint16
+	weaponDefense  uint16
+	magicDefense   uint16
+	accuracy       uint16
+	avoidability   uint16
+	hands          uint16
+	speed          uint16
+	jump           uint16
+	slots          uint16
+	ownerName      string
+	locked         bool
+	spikes         bool
+	karmaUsed      bool
+	cold           bool
+	canBeTraded    bool
+	levelType      byte
+	level          byte
+	experience     uint32
+	hammersApplied uint32
+	expiration     time.Time
 }
 
 func (m Model) Strength() uint16 {
@@ -92,4 +104,48 @@ func (m Model) Jump() uint16 {
 
 func (m Model) Slots() uint16 {
 	return m.slots
+}
+
+func (m Model) OwnerName() string {
+	return m.ownerName
+}
+
+func (m Model) Locked() bool {
+	return m.locked
+}
+
+func (m Model) Spikes() bool {
+	return m.spikes
+}
+
+func (m Model) KarmaUsed() bool {
+	return m.karmaUsed
+}
+
+func (m Model) Cold() bool {
+	return m.cold
+}
+
+func (m Model) CanBeTraded() bool {
+	return m.canBeTraded
+}
+
+func (m Model) LevelType() byte {
+	return m.levelType
+}
+
+func (m Model) Level() byte {
+	return m.level
+}
+
+func (m Model) Experience() uint32 {
+	return m.experience
+}
+
+func (m Model) HammersApplied() uint32 {
+	return m.hammersApplied
+}
+
+func (m Model) Expiration() time.Time {
+	return m.expiration
 }

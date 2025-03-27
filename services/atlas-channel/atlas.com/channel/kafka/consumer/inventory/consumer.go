@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/inventory/equipable"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
 	"atlas-channel/messenger"
@@ -40,7 +41,8 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				var t string
 				t, _ = topic.EnvProvider(l)(EnvEventInventoryChanged)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryAddEvent(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryUpdateEvent(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryQuantityUpdateEvent(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryAttributeUpdateEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryMoveEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryRemoveEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryItemReservationCancelledEvent(sc, wp))))
@@ -78,19 +80,19 @@ func addToInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writ
 						return errors.New("unable to identify inventory type")
 					}
 
-					if inventoryType == 1 {
+					if inventoryType == inventory.TypeValueEquip {
 						e, err := character.GetEquipableInSlot(l)(ctx)(s.CharacterId(), event.Slot)()
 						if err != nil {
 							return err
 						}
 						itemWriter = model.FlipOperator(writer.WriteEquipableInfo(t)(true))(e)
-					} else if inventoryType == 2 || inventoryType == 3 || inventoryType == 4 {
+					} else if inventoryType == inventory.TypeValueUse || inventoryType == inventory.TypeValueSetup || inventoryType == inventory.TypeValueETC {
 						i, err := character.GetItemInSlot(l)(ctx)(s.CharacterId(), byte(inventoryType), event.Slot)()
 						if err != nil {
 							return err
 						}
 						itemWriter = model.FlipOperator(writer.WriteItemInfo(true))(i)
-					} else if inventoryType == 5 {
+					} else if inventoryType == inventory.TypeValueCash {
 						i, err := character.GetItemInSlot(l)(ctx)(s.CharacterId(), byte(inventoryType), event.Slot)()
 						if err != nil {
 							return err
@@ -118,9 +120,9 @@ func addToInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writ
 	}
 }
 
-func handleInventoryUpdateEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemUpdateBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e inventoryChangedEvent[inventoryChangedItemUpdateBody]) {
-		if e.Type != ChangedTypeUpdate {
+func handleInventoryQuantityUpdateEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemQuantityUpdateBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e inventoryChangedEvent[inventoryChangedItemQuantityUpdateBody]) {
+		if e.Type != ChangedTypeUpdateQuantity {
 			return
 		}
 
@@ -135,7 +137,47 @@ func handleInventoryUpdateEvent(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryChangeBody(false, writer.InventoryUpdateBodyWriter(inventoryType, e.Slot, e.Body.Quantity)))
+		so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryChangeBody(false, writer.InventoryQuantityUpdateBodyWriter(inventoryType, e.Slot, e.Body.Quantity)))
+		err := session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, so)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", e.Body.ItemId, e.Slot, e.CharacterId)
+		}
+	}
+}
+
+func handleInventoryAttributeUpdateEvent(sc server.Model, wp writer.Producer) message.Handler[inventoryChangedEvent[inventoryChangedItemAttributeUpdateBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e inventoryChangedEvent[inventoryChangedItemAttributeUpdateBody]) {
+		if e.Type != ChangedTypeUpdateAttribute {
+			return
+		}
+
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		eqp := equipable.NewModelBuilder().
+			SetItemId(e.Body.ItemId).
+			SetSlot(e.Slot).
+			SetStrength(e.Body.Strength).
+			SetDexterity(e.Body.Dexterity).
+			SetIntelligence(e.Body.Intelligence).
+			SetLuck(e.Body.Luck).
+			SetHP(e.Body.HP).
+			SetMP(e.Body.MP).
+			SetWeaponAttack(e.Body.WeaponAttack).
+			SetMagicAttack(e.Body.MagicAttack).
+			SetWeaponDefense(e.Body.WeaponDefense).
+			SetMagicDefense(e.Body.MagicDefense).
+			SetAccuracy(e.Body.Accuracy).
+			SetAvoidability(e.Body.Avoidability).
+			SetHands(e.Body.Hands).
+			SetSpeed(e.Body.Speed).
+			SetJump(e.Body.Jump).
+			SetSlots(e.Body.Slots).
+			Build()
+
+		so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshEquipable(sc.Tenant())(eqp))
 		err := session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, so)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", e.Body.ItemId, e.Slot, e.CharacterId)

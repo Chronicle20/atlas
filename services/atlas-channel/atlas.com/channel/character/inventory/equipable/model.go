@@ -126,3 +126,172 @@ func (m Model) Experience() uint32 {
 func (m Model) ViciousHammer() int32 {
 	return 0
 }
+
+type ModelBuilder struct {
+	id            uint32
+	itemId        uint32
+	slot          int16
+	strength      uint16
+	dexterity     uint16
+	intelligence  uint16
+	luck          uint16
+	hp            uint16
+	mp            uint16
+	weaponAttack  uint16
+	magicAttack   uint16
+	weaponDefense uint16
+	magicDefense  uint16
+	accuracy      uint16
+	avoidability  uint16
+	hands         uint16
+	speed         uint16
+	jump          uint16
+	slots         uint16
+}
+
+func NewModelBuilder() *ModelBuilder {
+	return &ModelBuilder{}
+}
+
+func CloneFromModel(m Model) *ModelBuilder {
+	return &ModelBuilder{
+		id:            m.Id(),
+		itemId:        m.ItemId(),
+		slot:          m.Slot(),
+		strength:      m.Strength(),
+		dexterity:     m.Dexterity(),
+		intelligence:  m.Intelligence(),
+		luck:          m.Luck(),
+		hp:            m.HP(),
+		mp:            m.MP(),
+		weaponAttack:  m.WeaponAttack(),
+		magicAttack:   m.MagicAttack(),
+		weaponDefense: m.WeaponDefense(),
+		magicDefense:  m.MagicDefense(),
+		accuracy:      m.Accuracy(),
+		avoidability:  m.Avoidability(),
+		hands:         m.Hands(),
+		speed:         m.Speed(),
+		jump:          m.Jump(),
+		slots:         m.Slots(),
+	}
+}
+
+func (b *ModelBuilder) SetID(id uint32) *ModelBuilder {
+	b.id = id
+	return b
+}
+
+func (b *ModelBuilder) SetItemId(itemId uint32) *ModelBuilder {
+	b.itemId = itemId
+	return b
+}
+
+func (b *ModelBuilder) SetSlot(slot int16) *ModelBuilder {
+	b.slot = slot
+	return b
+}
+
+func (b *ModelBuilder) SetStrength(strength uint16) *ModelBuilder {
+	b.strength = strength
+	return b
+}
+
+func (b *ModelBuilder) SetDexterity(dexterity uint16) *ModelBuilder {
+	b.dexterity = dexterity
+	return b
+}
+
+func (b *ModelBuilder) SetIntelligence(intelligence uint16) *ModelBuilder {
+	b.intelligence = intelligence
+	return b
+}
+
+func (b *ModelBuilder) SetLuck(luck uint16) *ModelBuilder {
+	b.luck = luck
+	return b
+}
+
+func (b *ModelBuilder) SetHP(hp uint16) *ModelBuilder {
+	b.hp = hp
+	return b
+}
+
+func (b *ModelBuilder) SetMP(mp uint16) *ModelBuilder {
+	b.mp = mp
+	return b
+}
+
+func (b *ModelBuilder) SetWeaponAttack(weaponAttack uint16) *ModelBuilder {
+	b.weaponAttack = weaponAttack
+	return b
+}
+
+func (b *ModelBuilder) SetMagicAttack(magicAttack uint16) *ModelBuilder {
+	b.magicAttack = magicAttack
+	return b
+}
+
+func (b *ModelBuilder) SetWeaponDefense(weaponDefense uint16) *ModelBuilder {
+	b.weaponDefense = weaponDefense
+	return b
+}
+
+func (b *ModelBuilder) SetMagicDefense(magicDefense uint16) *ModelBuilder {
+	b.magicDefense = magicDefense
+	return b
+}
+
+func (b *ModelBuilder) SetAccuracy(accuracy uint16) *ModelBuilder {
+	b.accuracy = accuracy
+	return b
+}
+
+func (b *ModelBuilder) SetAvoidability(avoidability uint16) *ModelBuilder {
+	b.avoidability = avoidability
+	return b
+}
+
+func (b *ModelBuilder) SetHands(hands uint16) *ModelBuilder {
+	b.hands = hands
+	return b
+}
+
+func (b *ModelBuilder) SetSpeed(speed uint16) *ModelBuilder {
+	b.speed = speed
+	return b
+}
+
+func (b *ModelBuilder) SetJump(jump uint16) *ModelBuilder {
+	b.jump = jump
+	return b
+}
+
+func (b *ModelBuilder) SetSlots(slots uint16) *ModelBuilder {
+	b.slots = slots
+	return b
+}
+
+func (b *ModelBuilder) Build() Model {
+	return Model{
+		id:            b.id,
+		itemId:        b.itemId,
+		slot:          b.slot,
+		strength:      b.strength,
+		dexterity:     b.dexterity,
+		intelligence:  b.intelligence,
+		luck:          b.luck,
+		hp:            b.hp,
+		mp:            b.mp,
+		weaponAttack:  b.weaponAttack,
+		magicAttack:   b.magicAttack,
+		weaponDefense: b.weaponDefense,
+		magicDefense:  b.magicDefense,
+		accuracy:      b.accuracy,
+		avoidability:  b.avoidability,
+		hands:         b.hands,
+		speed:         b.speed,
+		jump:          b.jump,
+		slots:         b.slots,
+	}
+}

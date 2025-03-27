@@ -1,6 +1,7 @@
 package item
 
 import (
+	"errors"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -21,6 +22,9 @@ func createItem(db *gorm.DB, tenantId uuid.UUID, inventoryId uint32, itemId uint
 }
 
 func deleteById(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
+	if id == 0 {
+		return errors.New("invalid id")
+	}
 	return db.Where(&entity{TenantId: tenantId, ID: id}).Delete(&entity{}).Error
 }
 

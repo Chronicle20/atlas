@@ -1,6 +1,7 @@
 package equipable
 
 import (
+	"errors"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -34,5 +35,8 @@ func updateSlot(db *gorm.DB, tenantId uuid.UUID, id uint32, slot int16) error {
 }
 
 func delete(db *gorm.DB, tenantId uuid.UUID, referenceId uint32) error {
+	if referenceId == 0 {
+		return errors.New("invalid id")
+	}
 	return db.Where(&entity{TenantId: tenantId, ReferenceId: referenceId}).Delete(&entity{}).Error
 }

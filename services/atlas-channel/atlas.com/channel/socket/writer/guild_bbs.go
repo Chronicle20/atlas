@@ -79,7 +79,7 @@ func GuildBBSThreadBody(l logrus.FieldLogger) func(t thread.Model) BodyProducer 
 
 func msTime(t time.Time) int64 {
 	if t.IsZero() {
-		return 150841440000000000
+		return -1
 	}
 	return t.Unix()*int64(10000000) + int64(116444736000000000)
 }

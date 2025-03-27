@@ -175,6 +175,17 @@ func handleInventoryAttributeUpdateEvent(sc server.Model, wp writer.Producer) me
 			SetSpeed(e.Body.Speed).
 			SetJump(e.Body.Jump).
 			SetSlots(e.Body.Slots).
+			SetOwnerName(e.Body.OwnerName).
+			SetLocked(e.Body.Locked).
+			SetSpikes(e.Body.Spikes).
+			SetKarmaUsed(e.Body.KarmaUsed).
+			SetCold(e.Body.Cold).
+			SetCanBeTraded(e.Body.CanBeTraded).
+			SetLevelType(e.Body.LevelType).
+			SetLevel(e.Body.Level).
+			SetExperience(e.Body.Experience).
+			SetHammersApplied(e.Body.HammersApplied).
+			SetExpiration(e.Body.Expiration).
 			Build()
 
 		so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshEquipable(sc.Tenant())(eqp))

@@ -224,3 +224,60 @@ func DropByReferenceId(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.
 		}
 	}
 }
+
+func Update(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(characterId uint32, itemId uint32, slotId int16, strength int16, dexterity int16, intelligence int16, luck int16, hp int16, mp int16, wa int16, ma int16, wd int16, md int16, ac int16, av int16, hd int16, sp int16, ju int16, sls int16) error {
+	return func(db *gorm.DB) func(ctx context.Context) func(characterId uint32, itemId uint32, slotId int16, strength int16, dexterity int16, intelligence int16, luck int16, hp int16, mp int16, wa int16, ma int16, wd int16, md int16, ac int16, av int16, hd int16, sp int16, ju int16, sls int16) error {
+		return func(ctx context.Context) func(characterId uint32, itemId uint32, slotId int16, strength int16, dexterity int16, intelligence int16, luck int16, hp int16, mp int16, wa int16, ma int16, wd int16, md int16, ac int16, av int16, hd int16, sp int16, ju int16, sls int16) error {
+			return func(characterId uint32, itemId uint32, slotId int16, strength int16, dexterity int16, intelligence int16, luck int16, hp int16, mp int16, weaponAttack int16, magicAttack int16, weaponDefense int16, magicDefense int16, accuracy int16, avoidability int16, hands int16, speed int16, jump int16, slots int16) error {
+				p := BySlotProvider(db)(ctx)(characterId)(slotId)
+				e, err := model.Map(decorateWithStatistics(l, ctx))(p)()
+				if err != nil {
+					return err
+				}
+				e.strength = uint16(int32(e.strength) + int32(strength))
+				e.dexterity = uint16(int32(e.dexterity) + int32(dexterity))
+				e.intelligence = uint16(int32(e.intelligence) + int32(intelligence))
+				e.luck = uint16(int32(e.luck) + int32(luck))
+				e.hp = uint16(int32(e.hp) + int32(hp))
+				e.mp = uint16(int32(e.mp) + int32(mp))
+				e.weaponAttack = uint16(int32(e.weaponAttack) + int32(weaponAttack))
+				e.magicAttack = uint16(int32(e.magicAttack) + int32(magicAttack))
+				e.weaponDefense = uint16(int32(e.weaponDefense) + int32(weaponDefense))
+				e.magicDefense = uint16(int32(e.magicDefense) + int32(magicDefense))
+				e.accuracy = uint16(int32(e.accuracy) + int32(accuracy))
+				e.avoidability = uint16(int32(e.avoidability) + int32(avoidability))
+				e.hands = uint16(int32(e.hands) + int32(hands))
+				e.speed = uint16(int32(e.speed) + int32(speed))
+				e.jump = uint16(int32(e.jump) + int32(jump))
+				e.slots = uint16(int32(e.slots) + int32(slots))
+
+				is := statistics.RestModel{
+					Id:            e.ReferenceId(),
+					ItemId:        e.ItemId(),
+					Strength:      e.Strength(),
+					Dexterity:     e.Dexterity(),
+					Intelligence:  e.Intelligence(),
+					Luck:          e.Luck(),
+					HP:            e.HP(),
+					MP:            e.MP(),
+					WeaponAttack:  e.WeaponAttack(),
+					MagicAttack:   e.MagicAttack(),
+					WeaponDefense: e.MagicDefense(),
+					MagicDefense:  e.MagicDefense(),
+					Accuracy:      e.Accuracy(),
+					Avoidability:  e.Avoidability(),
+					Hands:         e.Hands(),
+					Speed:         e.Speed(),
+					Jump:          e.Jump(),
+					Slots:         e.Slots(),
+				}
+
+				_, err = statistics.UpdateById(l, ctx)(e.ReferenceId(), is)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+		}
+	}
+}

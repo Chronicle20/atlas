@@ -8,6 +8,7 @@ import (
 	"atlas-character/inventory/item"
 	character2 "atlas-character/kafka/consumer/character"
 	"atlas-character/kafka/consumer/drop"
+	equipable2 "atlas-character/kafka/consumer/equipable"
 	inventory2 "atlas-character/kafka/consumer/inventory"
 	session2 "atlas-character/kafka/consumer/session"
 	"atlas-character/logger"
@@ -64,10 +65,12 @@ func main() {
 		inventory2.InitConsumers(l)(cmf)(consumerGroupId)
 		session2.InitConsumers(l)(cmf)(consumerGroupId)
 		drop.InitConsumers(l)(cmf)(consumerGroupId)
+		equipable2.InitConsumers(l)(cmf)(consumerGroupId)
 		character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 		inventory2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 		session2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 		drop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+		equipable2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	}
 
 	server.New(l).

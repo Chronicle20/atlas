@@ -17,7 +17,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) Creator {
 				l.WithError(err).Errorf("Generating equipment item %d, they were not awarded this item. Check request in ESO service.", itemId)
 				return model.ErrorProvider[Model](err)
 			}
-			return model.Map(makeEquipment)(model.FixedProvider(ro))
+			return model.Map(Extract)(model.FixedProvider(ro))
 		}
 	}
 }
@@ -34,7 +34,7 @@ func Existing(l logrus.FieldLogger) func(ctx context.Context) func(equipmentId u
 
 func byEquipmentIdModelProvider(l logrus.FieldLogger, ctx context.Context) func(equipmentId uint32) model.Provider[Model] {
 	return func(equipmentId uint32) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l, ctx)(requestById(equipmentId), makeEquipment)
+		return requests.Provider[RestModel, Model](l, ctx)(requestById(equipmentId), Extract)
 	}
 }
 
@@ -44,31 +44,64 @@ func GetById(l logrus.FieldLogger, ctx context.Context) func(equipmentId uint32)
 	}
 }
 
+func UpdateById(l logrus.FieldLogger, ctx context.Context) func(equipmentId uint32, i RestModel) (Model, error) {
+	return func(equipmentId uint32, i RestModel) (Model, error) {
+		orm, err := updateById(equipmentId, i)(l, ctx)
+		if err != nil {
+			return Model{}, err
+		}
+		return Extract(orm)
+	}
+}
+
 func Delete(l logrus.FieldLogger, ctx context.Context) func(equipmentId uint32) error {
 	return func(equipmentId uint32) error {
 		return deleteById(equipmentId)(l, ctx)
 	}
 }
 
-func makeEquipment(resp RestModel) (Model, error) {
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:            m.id,
+		ItemId:        m.itemId,
+		Strength:      m.strength,
+		Dexterity:     m.dexterity,
+		Intelligence:  m.intelligence,
+		Luck:          m.luck,
+		HP:            m.hp,
+		MP:            m.mp,
+		WeaponAttack:  m.weaponAttack,
+		MagicAttack:   m.magicAttack,
+		WeaponDefense: m.weaponDefense,
+		MagicDefense:  m.magicDefense,
+		Accuracy:      m.accuracy,
+		Avoidability:  m.avoidability,
+		Hands:         m.hands,
+		Speed:         m.speed,
+		Jump:          m.jump,
+		Slots:         m.slots,
+	}, nil
+}
+
+func Extract(rm RestModel) (Model, error) {
 	return Model{
-		id:            resp.Id,
-		itemId:        resp.ItemId,
-		strength:      resp.Strength,
-		dexterity:     resp.Dexterity,
-		intelligence:  resp.Intelligence,
-		luck:          resp.Luck,
-		hp:            resp.HP,
-		mp:            resp.MP,
-		weaponAttack:  resp.WeaponAttack,
-		magicAttack:   resp.MagicAttack,
-		weaponDefense: resp.WeaponDefense,
-		magicDefense:  resp.MagicDefense,
-		accuracy:      resp.Accuracy,
-		avoidability:  resp.Avoidability,
-		hands:         resp.Hands,
-		speed:         resp.Speed,
-		jump:          resp.Jump,
-		slots:         resp.Slots,
+		id:            rm.Id,
+		itemId:        rm.ItemId,
+		strength:      rm.Strength,
+		dexterity:     rm.Dexterity,
+		intelligence:  rm.Intelligence,
+		luck:          rm.Luck,
+		hp:            rm.HP,
+		mp:            rm.MP,
+		weaponAttack:  rm.WeaponAttack,
+		magicAttack:   rm.MagicAttack,
+		weaponDefense: rm.WeaponDefense,
+		magicDefense:  rm.MagicDefense,
+		accuracy:      rm.Accuracy,
+		avoidability:  rm.Avoidability,
+		hands:         rm.Hands,
+		speed:         rm.Speed,
+		jump:          rm.Jump,
+		slots:         rm.Slots,
 	}, nil
 }

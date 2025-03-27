@@ -22,6 +22,7 @@ const (
 	ClassificationConsumableMasteryBook    = Classification(229)
 	ClassificationBullet                   = Classification(233)
 	ClassificationConsumableMonsterCard    = Classification(238)
+	ClassificationPet                      = Classification(500)
 	ClassificationTeleportRock             = Classification(504)
 	ClassificationPointReset               = Classification(505)
 	ClassificationItemImprints             = Classification(506)
@@ -128,6 +129,22 @@ func IsBullet(itemId Id) bool {
 	return GetClassification(itemId) == ClassificationBullet
 }
 
+func IsScrollCleanSlate(itemId Id) bool {
+	return Is(itemId, WhiteScrollOnePercent, WhiteScrollThreePercent, WhiteScrollFivePercent, WhiteScrollTwentyPercent)
+}
+
+func IsScrollColdProtection(itemId Id) bool {
+	return Is(itemId, ScrollForCapeColdProtectionTenPercent)
+}
+
+func IsScrollSpikes(itemId Id) bool {
+	return Is(itemId, ScrollForSpikesOnShoesTenPercent)
+}
+
+func IsChaosScroll(itemId Id) bool {
+	return Is(itemId, ChaosScrollSixtyPercent, LiarTreeSapOneHundredPercent, MapleSyrupOneHundredPercent, AgentEquipmentScrollOneHundredPercent)
+}
+
 func Is(itemId Id, references ...Id) bool {
 	for _, r := range references {
 		if itemId == r {
@@ -138,11 +155,17 @@ func Is(itemId Id, references ...Id) bool {
 }
 
 const (
-	UseRedBeanPorridge        = Id(2022001)
-	UseAirBubble              = Id(2022040)
-	UseSoftWhiteBun           = Id(2022186)
-	WhiteScrollOnePercent     = Id(2049000)
-	WhiteScrollThreePerecent  = Id(2049001)
-	WhiteScrollFivePerecent   = Id(2049002)
-	WhiteScrollTwentyPerecent = Id(2049003)
+	UseRedBeanPorridge                    = Id(2022001)
+	UseAirBubble                          = Id(2022040)
+	UseSoftWhiteBun                       = Id(2022186)
+	WhiteScrollOnePercent                 = Id(2049000)
+	WhiteScrollThreePercent               = Id(2049001)
+	WhiteScrollFivePercent                = Id(2049002)
+	WhiteScrollTwentyPercent              = Id(2049003)
+	ScrollForCapeColdProtectionTenPercent = Id(2041058)
+	ScrollForSpikesOnShoesTenPercent      = Id(2040727)
+	ChaosScrollSixtyPercent               = Id(2049100)
+	LiarTreeSapOneHundredPercent          = Id(2049101)
+	MapleSyrupOneHundredPercent           = Id(2049102)
+	AgentEquipmentScrollOneHundredPercent = Id(2049104)
 )

@@ -12,6 +12,7 @@ import (
 	"atlas-channel/kafka/consumer/chalkboard"
 	"atlas-channel/kafka/consumer/channel"
 	"atlas-channel/kafka/consumer/character"
+	"atlas-channel/kafka/consumer/consumable"
 	"atlas-channel/kafka/consumer/drop"
 	"atlas-channel/kafka/consumer/expression"
 	"atlas-channel/kafka/consumer/fame"
@@ -106,6 +107,7 @@ func main() {
 	chalkboard.InitConsumers(l)(cmf)(consumerGroupId)
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
+	consumable.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 
@@ -174,6 +176,7 @@ func main() {
 				chalkboard.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				messenger.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				pet.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				consumable.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, ten.IPAddress, c.Port)
@@ -265,6 +268,7 @@ func produceWriters() []string {
 		writer.PetMovement,
 		writer.PetCommandResponse,
 		writer.PetChat,
+		writer.CharacterItemUpgrade,
 	}
 }
 

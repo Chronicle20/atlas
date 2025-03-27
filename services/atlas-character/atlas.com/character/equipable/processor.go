@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"time"
 )
 
 func byInventoryProvider(db *gorm.DB) func(ctx context.Context) func(inventoryId uint32) model.Provider[[]Model] {
@@ -399,6 +400,72 @@ func AddSlots(amount int16) Updater {
 	}
 }
 
+func SetOwnerName(name string) Updater {
+	return func(m Model) Model {
+		return CloneFromModel(m).SetOwnerName(name).Build()
+	}
+}
+
+func SetLocked(locked bool) Updater {
+	return func(m Model) Model {
+		return CloneFromModel(m).SetLocked(locked).Build()
+	}
+}
+
+func SetSpikes(spikes bool) Updater {
+	return func(m Model) Model {
+		return CloneFromModel(m).SetSpikes(spikes).Build()
+	}
+}
+
+func SetKarmaUsed(karmaUsed bool) Updater {
+	return func(m Model) Model {
+		return CloneFromModel(m).SetKarmaUsed(karmaUsed).Build()
+	}
+}
+
+func SetCold(cold bool) Updater {
+	return func(m Model) Model {
+		return CloneFromModel(m).SetCold(cold).Build()
+	}
+}
+
+func SetCanBeTraded(canBeTraded bool) Updater {
+	return func(m Model) Model {
+		return CloneFromModel(m).SetCanBeTraded(canBeTraded).Build()
+	}
+}
+
+func SetLevelType(levelType byte) Updater {
+	return func(m Model) Model {
+		return CloneFromModel(m).SetLevelType(levelType).Build()
+	}
+}
+
+func SetLevel(level byte) Updater {
+	return func(m Model) Model {
+		return CloneFromModel(m).SetLevel(level).Build()
+	}
+}
+
+func SetExperience(experience uint32) Updater {
+	return func(m Model) Model {
+		return CloneFromModel(m).SetExperience(experience).Build()
+	}
+}
+
+func SetHammersApplied(hammersApplied uint32) Updater {
+	return func(m Model) Model {
+		return CloneFromModel(m).SetHammersApplied(hammersApplied).Build()
+	}
+}
+
+func SetExpiration(expiration time.Time) Updater {
+	return func(m Model) Model {
+		return CloneFromModel(m).SetExpiration(expiration).Build()
+	}
+}
+
 func Update(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(characterId uint32, slot int16, updates ...Updater) (Model, error) {
 	return func(db *gorm.DB) func(ctx context.Context) func(characterId uint32, slot int16, updates ...Updater) (Model, error) {
 		return func(ctx context.Context) func(characterId uint32, slot int16, updates ...Updater) (Model, error) {
@@ -413,24 +480,35 @@ func Update(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) fu
 				}
 
 				is := statistics.RestModel{
-					Id:            e.ReferenceId(),
-					ItemId:        e.ItemId(),
-					Strength:      e.Strength(),
-					Dexterity:     e.Dexterity(),
-					Intelligence:  e.Intelligence(),
-					Luck:          e.Luck(),
-					HP:            e.HP(),
-					MP:            e.MP(),
-					WeaponAttack:  e.WeaponAttack(),
-					MagicAttack:   e.MagicAttack(),
-					WeaponDefense: e.MagicDefense(),
-					MagicDefense:  e.MagicDefense(),
-					Accuracy:      e.Accuracy(),
-					Avoidability:  e.Avoidability(),
-					Hands:         e.Hands(),
-					Speed:         e.Speed(),
-					Jump:          e.Jump(),
-					Slots:         e.Slots(),
+					Id:             e.ReferenceId(),
+					ItemId:         e.ItemId(),
+					Strength:       e.Strength(),
+					Dexterity:      e.Dexterity(),
+					Intelligence:   e.Intelligence(),
+					Luck:           e.Luck(),
+					HP:             e.HP(),
+					MP:             e.MP(),
+					WeaponAttack:   e.WeaponAttack(),
+					MagicAttack:    e.MagicAttack(),
+					WeaponDefense:  e.MagicDefense(),
+					MagicDefense:   e.MagicDefense(),
+					Accuracy:       e.Accuracy(),
+					Avoidability:   e.Avoidability(),
+					Hands:          e.Hands(),
+					Speed:          e.Speed(),
+					Jump:           e.Jump(),
+					Slots:          e.Slots(),
+					OwnerName:      e.OwnerName(),
+					Locked:         e.Locked(),
+					Spikes:         e.Spikes(),
+					KarmaUsed:      e.KarmaUsed(),
+					Cold:           e.Cold(),
+					CanBeTraded:    e.CanBeTraded(),
+					LevelType:      e.LevelType(),
+					Level:          e.Level(),
+					Experience:     e.Experience(),
+					HammersApplied: e.HammersApplied(),
+					Expiration:     e.Expiration(),
 				}
 
 				_, err = statistics.UpdateById(l, ctx)(e.ReferenceId(), is)

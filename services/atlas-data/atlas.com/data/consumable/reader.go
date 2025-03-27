@@ -85,6 +85,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			m.IncreaseMMP = uint32(i.GetIntegerWithDefault("incMMP", 0))
 			m.IncreasePAD = uint32(i.GetIntegerWithDefault("incPAD", 0))
 			m.IncreaseMAD = uint32(i.GetIntegerWithDefault("incMAD", 0))
+			m.IncreaseJump = uint32(i.GetIntegerWithDefault("incJump", 0))
 			m.IncreaseEVA = uint32(i.GetIntegerWithDefault("incEVA", 0))
 			m.IncreaseLUK = uint32(i.GetIntegerWithDefault("incLUK", 0))
 			m.IncreaseDEX = uint32(i.GetIntegerWithDefault("incDEX", 0))

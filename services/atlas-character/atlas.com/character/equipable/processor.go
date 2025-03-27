@@ -184,6 +184,17 @@ func statisticsDecorator(sm statistics.Model) model.Decorator[Model] {
 		m.speed = sm.Speed()
 		m.jump = sm.Jump()
 		m.slots = sm.Slots()
+		m.ownerName = sm.OwnerName()
+		m.locked = sm.Locked()
+		m.spikes = sm.Spikes()
+		m.karmaUsed = sm.KarmaUsed()
+		m.cold = sm.Cold()
+		m.canBeTraded = sm.CanBeTraded()
+		m.levelType = sm.LevelType()
+		m.level = sm.Level()
+		m.expiration = sm.Expiration()
+		m.hammersApplied = sm.HammersApplied()
+		m.expiration = sm.Expiration()
 		return m
 	}
 }

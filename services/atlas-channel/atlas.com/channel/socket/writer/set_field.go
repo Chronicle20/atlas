@@ -395,7 +395,7 @@ func WriteCashEquipableInfo(tenant tenant.Model) func(w *response.Writer, zeroPo
 			if true {
 				w.WriteLong(uint64(e.Id())) // cash sn
 			}
-			w.WriteLong(uint64(getTime(e.Expiration())))
+			w.WriteInt64(msTime(e.Expiration()))
 			w.WriteByte(byte(e.Slots()))
 			w.WriteByte(e.Level())
 			if tenant.Region() == "JMS" {
@@ -534,7 +534,7 @@ func WriteEquipableInfo(tenant tenant.Model) func(zeroPosition bool) func(w *res
 				}
 				w.WriteInt(e.ItemId())
 				w.WriteBool(false)
-				w.WriteLong(uint64(getTime(e.Expiration())))
+				w.WriteInt64(msTime(e.Expiration()))
 				w.WriteByte(byte(e.Slots()))
 				w.WriteByte(e.Level())
 				if tenant.Region() == "JMS" {
@@ -562,10 +562,10 @@ func WriteEquipableInfo(tenant tenant.Model) func(zeroPosition bool) func(w *res
 				}
 
 				if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
-					w.WriteByte(e.LevelUpType())
+					w.WriteByte(e.LevelType())
 					w.WriteByte(e.Level())
 					w.WriteInt(e.Experience())
-					w.WriteInt32(e.ViciousHammer())
+					w.WriteInt(e.HammersApplied())
 
 					if tenant.Region() == "JMS" {
 						w.WriteByte(0)

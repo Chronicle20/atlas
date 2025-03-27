@@ -75,6 +75,17 @@ func makeEquipment(e entity) (Model, error) {
 		SetSpeed(e.Speed).
 		SetJump(e.Jump).
 		SetSlots(e.Slots).
+		SetOwnerName(e.OwnerName).
+		SetLocked(e.Locked).
+		SetSpikes(e.Spikes).
+		SetKarmaUsed(e.KarmaUsed).
+		SetCold(e.Cold).
+		SetCanBeTraded(e.CanBeTraded).
+		SetLevelType(e.LevelType).
+		SetLevel(e.Level).
+		SetExperience(e.Experience).
+		SetHammersApplied(e.HammersApplied).
+		SetExpiration(e.Expiration).
 		Build()
 	return r, nil
 }

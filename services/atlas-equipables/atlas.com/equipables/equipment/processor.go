@@ -145,6 +145,9 @@ func UpdateById(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context
 					if i.MagicDefense() != c.MagicDefense() {
 						updates["magic_defense"] = i.MagicDefense()
 					}
+					if i.Accuracy() != c.Accuracy() {
+						updates["accuracy"] = i.Accuracy()
+					}
 					if i.Avoidability() != c.Avoidability() {
 						updates["avoidability"] = i.Avoidability()
 					}

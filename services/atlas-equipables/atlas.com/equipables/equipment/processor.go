@@ -163,6 +163,39 @@ func UpdateById(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context
 					if i.Slots() != c.Slots() {
 						updates["slots"] = i.Slots()
 					}
+					if i.OwnerName() != c.OwnerName() {
+						updates["owner_name"] = i.OwnerName()
+					}
+					if i.Locked() != c.Locked() {
+						updates["locked"] = i.Locked()
+					}
+					if i.Spikes() != c.Spikes() {
+						updates["spikes"] = i.Spikes()
+					}
+					if i.KarmaUsed() != c.KarmaUsed() {
+						updates["karma_used"] = i.KarmaUsed()
+					}
+					if i.Cold() != c.Cold() {
+						updates["cold"] = i.Cold()
+					}
+					if i.CanBeTraded() != c.CanBeTraded() {
+						updates["can_be_traded"] = i.CanBeTraded()
+					}
+					if i.LevelType() != c.LevelType() {
+						updates["level_type"] = i.LevelType()
+					}
+					if i.Level() != c.Level() {
+						updates["level"] = i.Level()
+					}
+					if i.Experience() != c.Experience() {
+						updates["experience"] = i.Experience()
+					}
+					if i.HammersApplied() != c.HammersApplied() {
+						updates["hammers_applied"] = i.HammersApplied()
+					}
+					if i.Expiration() != c.Expiration() {
+						updates["expiration"] = i.Expiration()
+					}
 					um, err = update(tx, t.Id(), i.Id(), updates)
 					return err
 				})

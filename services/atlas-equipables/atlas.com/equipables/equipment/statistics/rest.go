@@ -2,6 +2,7 @@ package statistics
 
 import (
 	"github.com/jtumidanski/api2go/jsonapi"
+	"strconv"
 )
 
 type RestModel struct {
@@ -23,6 +24,23 @@ type RestModel struct {
 	Slots         uint16          `json:"slots"`
 	Cash          bool            `json:"cash"`
 	EquipSlots    []SlotRestModel `json:"-"`
+}
+
+func (r RestModel) GetName() string {
+	return "statistics"
+}
+
+func (r RestModel) GetID() string {
+	return strconv.Itoa(int(r.Id))
+}
+
+func (r *RestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
 }
 
 func (r RestModel) GetReferences() []jsonapi.Reference {

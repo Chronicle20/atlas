@@ -224,3 +224,210 @@ func DropByReferenceId(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.
 		}
 	}
 }
+
+type Updater func(m Model) Model
+type StatisticUpdate func(stat int16) Updater
+
+func AddStrength(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.Strength()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetStrength(uint16(val)).Build()
+	}
+}
+
+func AddDexterity(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.Dexterity()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetDexterity(uint16(val)).Build()
+	}
+}
+
+func AddIntelligence(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.Intelligence()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetIntelligence(uint16(val)).Build()
+	}
+}
+
+func AddLuck(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.Luck()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetLuck(uint16(val)).Build()
+	}
+}
+
+func AddHP(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.HP()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetHP(uint16(val)).Build()
+	}
+}
+
+func AddMP(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.MP()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetMP(uint16(val)).Build()
+	}
+}
+
+func AddWeaponAttack(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.WeaponAttack()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetWeaponAttack(uint16(val)).Build()
+	}
+}
+
+func AddMagicAttack(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.MagicAttack()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetMagicAttack(uint16(val)).Build()
+	}
+}
+
+func AddWeaponDefense(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.WeaponDefense()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetWeaponDefense(uint16(val)).Build()
+	}
+}
+
+func AddMagicDefense(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.MagicDefense()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetMagicDefense(uint16(val)).Build()
+	}
+}
+
+func AddAccuracy(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.Accuracy()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetAccuracy(uint16(val)).Build()
+	}
+}
+
+func AddAvoidability(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.Avoidability()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetAvoidability(uint16(val)).Build()
+	}
+}
+
+func AddHands(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.Hands()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetHands(uint16(val)).Build()
+	}
+}
+
+func AddSpeed(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.Speed()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetSpeed(uint16(val)).Build()
+	}
+}
+
+func AddJump(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.Jump()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetJump(uint16(val)).Build()
+	}
+}
+
+func AddSlots(amount int16) Updater {
+	return func(m Model) Model {
+		val := int32(m.Slots()) + int32(amount)
+		if val < 0 {
+			val = 0
+		}
+		return CloneFromModel(m).SetSlots(uint16(val)).Build()
+	}
+}
+
+func Update(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(characterId uint32, slot int16, updates ...Updater) (Model, error) {
+	return func(db *gorm.DB) func(ctx context.Context) func(characterId uint32, slot int16, updates ...Updater) (Model, error) {
+		return func(ctx context.Context) func(characterId uint32, slot int16, updates ...Updater) (Model, error) {
+			return func(characterId uint32, slot int16, updates ...Updater) (Model, error) {
+				p := BySlotProvider(db)(ctx)(characterId)(slot)
+				e, err := model.Map(decorateWithStatistics(l, ctx))(p)()
+				if err != nil {
+					return Model{}, err
+				}
+				for _, update := range updates {
+					e = update(e)
+				}
+
+				is := statistics.RestModel{
+					Id:            e.ReferenceId(),
+					ItemId:        e.ItemId(),
+					Strength:      e.Strength(),
+					Dexterity:     e.Dexterity(),
+					Intelligence:  e.Intelligence(),
+					Luck:          e.Luck(),
+					HP:            e.HP(),
+					MP:            e.MP(),
+					WeaponAttack:  e.WeaponAttack(),
+					MagicAttack:   e.MagicAttack(),
+					WeaponDefense: e.MagicDefense(),
+					MagicDefense:  e.MagicDefense(),
+					Accuracy:      e.Accuracy(),
+					Avoidability:  e.Avoidability(),
+					Hands:         e.Hands(),
+					Speed:         e.Speed(),
+					Jump:          e.Jump(),
+					Slots:         e.Slots(),
+				}
+
+				_, err = statistics.UpdateById(l, ctx)(e.ReferenceId(), is)
+				if err != nil {
+					return Model{}, err
+				}
+				return e, nil
+			}
+		}
+	}
+}

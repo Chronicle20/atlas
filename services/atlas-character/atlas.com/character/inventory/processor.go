@@ -155,7 +155,7 @@ func CreateItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context
 						}
 
 						iap := inventoryItemAddProvider(characterId)(inventoryType)(itemId)
-						iup := inventoryItemUpdateProvider(characterId)(inventoryType)(itemId)
+						iup := inventoryItemQuantityUpdateProvider(characterId)(inventoryType)(itemId)
 						var eap model.Provider[[]asset.Asset]
 						var smp SlotMaxProvider
 						var nac asset.Creator
@@ -697,7 +697,7 @@ func dropItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) 
 							l.WithError(err).Errorf("Unable to drop [%d] item in slot [%d].", quantity, source)
 							return err
 						}
-						events = model.MergeSliceProvider(events, inventoryItemUpdateProvider(characterId)(inventoryType)(i.ItemId())(newQuantity, i.Slot()))
+						events = model.MergeSliceProvider(events, inventoryItemQuantityUpdateProvider(characterId)(inventoryType)(i.ItemId())(newQuantity, i.Slot()))
 						return nil
 					})
 					if txErr != nil {
@@ -787,7 +787,7 @@ func AttemptItemPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.
 					}
 
 					iap := inventoryItemAddProvider(characterId)(inventoryType)(itemId)
-					iup := inventoryItemUpdateProvider(characterId)(inventoryType)(itemId)
+					iup := inventoryItemQuantityUpdateProvider(characterId)(inventoryType)(itemId)
 					eap := item.AssetByItemIdProvider(tx)(ctx)(invId)(itemId)
 					smp := func() (uint32, error) {
 						// TODO properly look this up.
@@ -844,7 +844,7 @@ func AttemptEquipmentPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx con
 					}
 
 					iap := inventoryItemAddProvider(characterId)(inventoryType)(itemId)
-					iup := inventoryItemUpdateProvider(characterId)(inventoryType)(itemId)
+					iup := inventoryItemQuantityUpdateProvider(characterId)(inventoryType)(itemId)
 					eap := asset.NoOpSliceProvider
 					smp := OfOneSlotMaxProvider
 					escf := statistics2.Existing(l)(ctx)(equipmentId)
@@ -980,7 +980,7 @@ func ConsumeItem(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 						l.WithError(err).Errorf("Unable to consume [%d] item in slot [%d].", res.Quantity(), slot)
 						return err
 					}
-					events = model.MergeSliceProvider(events, inventoryItemUpdateProvider(characterId)(inventoryType)(i.ItemId())(newQuantity, i.Slot()))
+					events = model.MergeSliceProvider(events, inventoryItemQuantityUpdateProvider(characterId)(inventoryType)(i.ItemId())(newQuantity, i.Slot()))
 					return nil
 				})
 				if txErr != nil {
@@ -1009,6 +1009,25 @@ func CancelReservation(l logrus.FieldLogger) func(ctx context.Context) func(db *
 				err = producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(inventoryItemCancelReservationProvider(characterId)(inventoryType)(res.ItemId())(res.Quantity(), slot))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
+				}
+				return nil
+			}
+		}
+	}
+}
+
+func UpdateEquip(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, slot int16, updates ...equipable.Updater) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, slot int16, updates ...equipable.Updater) error {
+		return func(db *gorm.DB) func(characterId uint32, slot int16, updates ...equipable.Updater) error {
+			return func(characterId uint32, slot int16, updates ...equipable.Updater) error {
+				e, err := equipable.Update(l)(db)(ctx)(characterId, slot, updates...)
+				if err != nil {
+					return err
+				}
+				err = producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(inventoryItemAttributeUpdateProvider(characterId)(e))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
+					return err
 				}
 				return nil
 			}

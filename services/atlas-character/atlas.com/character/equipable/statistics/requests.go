@@ -26,6 +26,10 @@ func requestById(equipmentId uint32) requests.Request[RestModel] {
 	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+equipResource, equipmentId))
 }
 
+func updateById(equipmentId uint32, i RestModel) requests.Request[RestModel] {
+	return rest.MakePatchRequest[RestModel](fmt.Sprintf(getBaseRequest()+equipResource, equipmentId), i)
+}
+
 func deleteById(equipmentId uint32) requests.EmptyBodyRequest {
 	return rest.MakeDeleteRequest(fmt.Sprintf(getBaseRequest()+equipResource, equipmentId))
 }

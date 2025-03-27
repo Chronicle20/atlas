@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"atlas-character/equipable"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -61,17 +62,17 @@ func inventoryItemAddProvider(characterId uint32) func(inventoryType inventory.T
 
 type ItemUpdateProvider func(quantity uint32, slot int16) model.Provider[[]kafka.Message]
 
-func inventoryItemUpdateProvider(characterId uint32) func(inventoryType inventory.Type) func(itemId uint32) ItemUpdateProvider {
+func inventoryItemQuantityUpdateProvider(characterId uint32) func(inventoryType inventory.Type) func(itemId uint32) ItemUpdateProvider {
 	return func(inventoryType inventory.Type) func(itemId uint32) ItemUpdateProvider {
 		return func(itemId uint32) ItemUpdateProvider {
 			return func(quantity uint32, slot int16) model.Provider[[]kafka.Message] {
 				key := producer.CreateKey(int(characterId))
-				value := &inventoryChangedEvent[inventoryChangedItemUpdateBody]{
+				value := &inventoryChangedEvent[inventoryChangedItemQuantityUpdateBody]{
 					CharacterId:   characterId,
 					InventoryType: int8(inventoryType),
 					Slot:          slot,
-					Type:          ChangedTypeUpdate,
-					Body: inventoryChangedItemUpdateBody{
+					Type:          ChangedTypeUpdateQuantity,
+					Body: inventoryChangedItemQuantityUpdateBody{
 						ItemId:   itemId,
 						Quantity: quantity,
 					},
@@ -79,6 +80,38 @@ func inventoryItemUpdateProvider(characterId uint32) func(inventoryType inventor
 				return producer.SingleMessageProvider(key, value)
 			}
 		}
+	}
+}
+
+func inventoryItemAttributeUpdateProvider(characterId uint32) func(e equipable.Model) model.Provider[[]kafka.Message] {
+	return func(e equipable.Model) model.Provider[[]kafka.Message] {
+		key := producer.CreateKey(int(characterId))
+		value := &inventoryChangedEvent[inventoryChangedItemAttributeUpdateBody]{
+			CharacterId:   characterId,
+			InventoryType: int8(inventory.TypeValueEquip),
+			Slot:          e.Slot(),
+			Type:          ChangedTypeUpdateAttribute,
+			Body: inventoryChangedItemAttributeUpdateBody{
+				ItemId:        e.ItemId(),
+				Strength:      e.Strength(),
+				Dexterity:     e.Dexterity(),
+				Intelligence:  e.Intelligence(),
+				Luck:          e.Luck(),
+				HP:            e.HP(),
+				MP:            e.MP(),
+				WeaponAttack:  e.WeaponAttack(),
+				MagicAttack:   e.MagicAttack(),
+				WeaponDefense: e.WeaponDefense(),
+				MagicDefense:  e.MagicDefense(),
+				Accuracy:      e.Accuracy(),
+				Avoidability:  e.Avoidability(),
+				Hands:         e.Hands(),
+				Speed:         e.Speed(),
+				Jump:          e.Jump(),
+				Slots:         e.Slots(),
+			},
+		}
+		return producer.SingleMessageProvider(key, value)
 	}
 }
 

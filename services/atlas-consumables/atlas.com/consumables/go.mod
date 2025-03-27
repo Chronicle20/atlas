@@ -3,10 +3,11 @@ module atlas-consumables
 go 1.24.1
 
 require (
-	github.com/Chronicle20/atlas-constants v1.0.14
+	github.com/Chronicle20/atlas-constants v1.0.15
 	github.com/Chronicle20/atlas-kafka v1.1.8
 	github.com/Chronicle20/atlas-model v1.2.2
 	github.com/Chronicle20/atlas-rest v1.2.13
+	github.com/Chronicle20/atlas-tenant v1.0.5
 	github.com/google/uuid v1.6.0
 	github.com/jtumidanski/api2go v1.0.4
 	github.com/opentracing/opentracing-go v1.2.0
@@ -17,7 +18,6 @@ require (
 )
 
 require (
-	github.com/Chronicle20/atlas-tenant v1.0.5 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect

@@ -6,6 +6,7 @@ const (
 	EnvCommandTopic          = "COMMAND_TOPIC_INVENTORY"
 	CommandRequestReserve    = "REQUEST_RESERVE"
 	CommandConsume           = "CONSUME"
+	CommandDestroy           = "DESTROY"
 	CommandCancelReservation = "CANCEL_RESERVATION"
 )
 
@@ -30,6 +31,10 @@ type ItemBody struct {
 type ConsumeCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	Slot          int16     `json:"slot"`
+}
+
+type DestroyCommandBody struct {
+	Slot int16 `json:"slot"`
 }
 
 type CancelReservationCommandBody struct {

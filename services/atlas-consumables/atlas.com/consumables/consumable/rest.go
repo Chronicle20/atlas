@@ -52,6 +52,7 @@ type RestModel struct {
 	IncreaseMMP     uint32             `json:"increaseMMP"`
 	IncreasePAD     uint32             `json:"increasePAD"`
 	IncreaseMAD     uint32             `json:"increaseMAD"`
+	IncreaseJump    uint32             `json:"increaseJump"`
 	IncreaseEVA     uint32             `json:"increaseEVA"`
 	IncreaseLUK     uint32             `json:"increaseLUK"`
 	IncreaseDEX     uint32             `json:"increaseDEX"`
@@ -140,6 +141,7 @@ func Extract(rm RestModel) (Model, error) {
 		incINT:          rm.IncreaseINT,
 		incSTR:          rm.IncreaseSTR,
 		incSpeed:        rm.IncreaseSpeed,
+		incJump:         rm.IncreaseJump,
 		spec:            rm.Spec,
 		monsterSummons:  rm.MonsterSummons,
 		morphs:          rm.Morphs,

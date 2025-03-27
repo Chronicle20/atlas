@@ -997,6 +997,67 @@ func ConsumeItem(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 	}
 }
 
+func DestroyItem(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, slot int16) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, slot int16) error {
+		return func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, slot int16) error {
+			return func(characterId uint32, inventoryType inventory.Type, slot int16) error {
+				l.Debugf("Received request to destroy item at [%d] for character [%d].", slot, characterId)
+				invLock := GetLockRegistry().GetById(characterId, inventoryType)
+				invLock.Lock()
+				defer invLock.Unlock()
+
+				var events = model.FixedProvider([]kafka.Message{})
+
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventoryType)()
+					if err != nil {
+						l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
+						return err
+					}
+
+					if inventoryType == inventory.TypeValueEquip {
+						e, err := equipable.GetBySlot(tx)(ctx)(invId, slot)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to retrieve item in slot [%d].", slot)
+							return err
+						}
+
+						err = equipable.DeleteByReferenceId(l)(tx)(ctx)(e.ReferenceId())
+						if err != nil {
+							l.WithError(err).Errorf("Unable to destroy item in slot [%d].", slot)
+							return err
+						}
+						events = model.MergeSliceProvider(events, inventoryItemRemoveProvider(characterId)(inventoryType)(e.ItemId(), e.Slot()))
+					} else {
+						i, err := item.GetBySlot(tx)(ctx)(invId, slot)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to retrieve item in slot [%d].", slot)
+							return err
+						}
+
+						err = item.DeleteById(tx)(ctx)(i.Id())
+						if err != nil {
+							l.WithError(err).Errorf("Unable to destroy item in slot [%d].", slot)
+							return err
+						}
+						events = model.MergeSliceProvider(events, inventoryItemRemoveProvider(characterId)(inventoryType)(i.ItemId(), i.Slot()))
+					}
+					return nil
+				})
+				if txErr != nil {
+					return txErr
+				}
+				err := producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(events)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
+					return err
+				}
+				return nil
+			}
+		}
+	}
+}
+
 func CancelReservation(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
 		t := tenant.MustFromContext(ctx)

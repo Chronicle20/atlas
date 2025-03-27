@@ -37,6 +37,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDropItemCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestReserveItemCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleConsumeItemCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyItemCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelItemReservationCommand(db))))
 		}
 	}
@@ -114,6 +115,15 @@ func handleConsumeItemCommand(db *gorm.DB) message.Handler[command[consumeComman
 			return
 		}
 		_ = inventory.ConsumeItem(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), c.Body.TransactionId, c.Body.Slot)
+	}
+}
+
+func handleDestroyItemCommand(db *gorm.DB) message.Handler[command[destroyCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[destroyCommandBody]) {
+		if c.Type != CommandDestroy {
+			return
+		}
+		_ = inventory.DestroyItem(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), c.Body.Slot)
 	}
 }
 

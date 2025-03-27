@@ -38,6 +38,14 @@ func ConsumeItem(l logrus.FieldLogger) func(ctx context.Context) func(characterI
 	}
 }
 
+func DestroyItem(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, inventoryType inventory.Type, slot int16) error {
+	return func(ctx context.Context) func(characterId uint32, inventoryType inventory.Type, slot int16) error {
+		return func(characterId uint32, inventoryType inventory.Type, slot int16) error {
+			return producer.ProviderImpl(l)(ctx)(inventory2.EnvCommandTopic)(destroyCommandProvider(characterId, inventoryType, slot))
+		}
+	}
+}
+
 func CancelItemReservation(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
 	return func(ctx context.Context) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
 		return func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {

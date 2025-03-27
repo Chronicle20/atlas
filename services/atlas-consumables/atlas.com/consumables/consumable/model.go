@@ -85,6 +85,7 @@ type Model struct {
 	incINT          uint32
 	incSTR          uint32
 	incSpeed        uint32
+	incJump         uint32
 	spec            map[SpecType]int32
 	monsterSummons  map[uint32]uint32
 	morphs          map[uint32]uint32

@@ -1,26 +1,38 @@
 package equipable
 
+import "time"
+
 type Model struct {
-	id            uint32
-	slot          int16
-	itemId        uint32
-	strength      uint16
-	dexterity     uint16
-	intelligence  uint16
-	luck          uint16
-	hp            uint16
-	mp            uint16
-	weaponAttack  uint16
-	magicAttack   uint16
-	weaponDefense uint16
-	magicDefense  uint16
-	accuracy      uint16
-	avoidability  uint16
-	hands         uint16
-	speed         uint16
-	jump          uint16
-	slots         uint16
-	hammersUsed   uint32
+	id             uint32
+	slot           int16
+	itemId         uint32
+	strength       uint16
+	dexterity      uint16
+	intelligence   uint16
+	luck           uint16
+	hp             uint16
+	mp             uint16
+	weaponAttack   uint16
+	magicAttack    uint16
+	weaponDefense  uint16
+	magicDefense   uint16
+	accuracy       uint16
+	avoidability   uint16
+	hands          uint16
+	speed          uint16
+	jump           uint16
+	slots          uint16
+	ownerName      string
+	locked         bool
+	spikes         bool
+	karmaUsed      bool
+	cold           bool
+	canBeTraded    bool
+	levelType      byte
+	level          byte
+	experience     uint32
+	hammersApplied uint32
+	expiration     time.Time
 }
 
 func (m Model) Id() uint32 {
@@ -33,14 +45,6 @@ func (m Model) Slot() int16 {
 
 func (m Model) ItemId() uint32 {
 	return m.itemId
-}
-
-func (m Model) Expiration() int64 {
-	return -1
-}
-
-func (m Model) Slots() uint16 {
-	return m.slots
 }
 
 func (m Model) Strength() uint16 {
@@ -103,26 +107,50 @@ func (m Model) Jump() uint16 {
 	return m.jump
 }
 
+func (m Model) Slots() uint16 {
+	return m.slots
+}
+
 func (m Model) OwnerName() string {
-	return ""
+	return m.ownerName
 }
 
-func (m Model) Flags() uint16 {
-	return 0
+func (m Model) Locked() bool {
+	return m.locked
 }
 
-func (m Model) LevelUpType() byte {
-	return 0
+func (m Model) Spikes() bool {
+	return m.spikes
+}
+
+func (m Model) KarmaUsed() bool {
+	return m.karmaUsed
+}
+
+func (m Model) Cold() bool {
+	return m.cold
+}
+
+func (m Model) CanBeTraded() bool {
+	return m.canBeTraded
+}
+
+func (m Model) LevelType() byte {
+	return m.levelType
 }
 
 func (m Model) Level() byte {
-	return 0
+	return m.level
 }
 
 func (m Model) Experience() uint32 {
-	return 0
+	return m.experience
 }
 
-func (m Model) ViciousHammer() int32 {
-	return 0
+func (m Model) HammersApplied() uint32 {
+	return m.hammersApplied
+}
+
+func (m Model) Expiration() time.Time {
+	return m.expiration
 }

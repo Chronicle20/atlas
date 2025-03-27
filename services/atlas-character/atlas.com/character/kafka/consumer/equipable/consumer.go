@@ -61,10 +61,10 @@ func handleChangeCommand(db *gorm.DB) message.Handler[command[changeBody]] {
 			equipable.SetKarmaUsed(c.Body.KarmaUsed),
 			equipable.SetCold(c.Body.Cold),
 			equipable.SetCanBeTraded(c.Body.CanBeTraded),
-			equipable.SetLevelType(c.Body.LevelType),
-			equipable.SetLevel(c.Body.Level),
-			equipable.SetExperience(c.Body.Experience),
-			equipable.SetHammersApplied(c.Body.HammersApplied),
+			equipable.AddLevelType(c.Body.LevelType),
+			equipable.AddLevel(c.Body.Level),
+			equipable.AddExperience(c.Body.Experience),
+			equipable.AddHammersApplied(c.Body.HammersApplied),
 			equipable.SetExpiration(c.Body.Expiration),
 		}
 		_ = inventory.UpdateEquip(l)(ctx)(db)(c.CharacterId, c.Slot, updates...)

@@ -38,9 +38,9 @@ type changeBody struct {
 	KarmaUsed      bool      `json:"karmaUsed"`
 	Cold           bool      `json:"cold"`
 	CanBeTraded    bool      `json:"canBeTraded"`
-	LevelType      byte      `json:"levelType"`
-	Level          byte      `json:"level"`
-	Experience     uint32    `json:"experience"`
-	HammersApplied uint32    `json:"hammersApplied"`
+	LevelType      int8      `json:"levelType"`
+	Level          int8      `json:"level"`
+	Experience     int32     `json:"experience"`
+	HammersApplied int32     `json:"hammersApplied"`
 	Expiration     time.Time `json:"expiration"`
 }

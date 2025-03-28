@@ -401,20 +401,25 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *item
 				passFail = "failed"
 			}
 			l.Debugf("Character [%d] has [%s] scroll [%d]. Rolled [%d]. Needed [%d].", characterId, passFail, scrollItem.ItemId(), successRoll, successProb)
+			changes := make([]equipable.Change, 0)
 			if isSuccess {
 				if item2.IsScrollSpikes(item2.Id(scrollItem.ItemId())) {
-					// TODO do spike property
+					changes = append(changes, equipable.SetSpike())
 				} else if item2.IsScrollColdProtection(item2.Id(scrollItem.ItemId())) {
-					// TODO do cold property
+					changes = append(changes, equipable.SetCold())
 				} else if item2.IsScrollCleanSlate(item2.Id(scrollItem.ItemId())) {
-					err = equipable.ChangeStat(l)(ctx)(characterId, sm.Equipable.ItemId(), sm.Equipable.Slot(), equipable.AddSlots(1))
+					changes = append(changes, equipable.AddSlots(1))
+				} else if item2.IsChaosScroll(item2.Id(scrollItem.ItemId())) {
+					ccs, err := applyChaos(sm.Equipable)
 					if err != nil {
 						return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 					}
-				} else if item2.IsChaosScroll(item2.Id(scrollItem.ItemId())) {
-					// TODO apply chaos
+					changes = append(changes, ccs...)
+					changes = append(changes,
+						equipable.AddSlots(-1),
+						equipable.AddLevel(1))
 				} else {
-					err = equipable.ChangeStat(l)(ctx)(characterId, sm.Equipable.ItemId(), sm.Equipable.Slot(),
+					changes = append(changes,
 						equipable.AddStrength(int16(ci.incSTR)),
 						equipable.AddDexterity(int16(ci.incDEX)),
 						equipable.AddIntelligence(int16(ci.incINT)),
@@ -431,22 +436,24 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *item
 						equipable.AddSpeed(int16(ci.incSpeed)),
 						equipable.AddJump(int16(ci.incJump)),
 						equipable.AddSlots(-1),
-						equipable.AddLevel(1),
-					)
-					if err != nil {
-						return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
-					}
+						equipable.AddLevel(1))
 				}
 			} else {
 				if !item2.IsScrollSpikes(item2.Id(scrollItem.ItemId())) && !item2.IsScrollColdProtection(item2.Id(scrollItem.ItemId())) && !item2.IsScrollCleanSlate(item2.Id(scrollItem.ItemId())) && !whiteScroll {
-					err = equipable.ChangeStat(l)(ctx)(characterId, sm.Equipable.ItemId(), sm.Equipable.Slot(), equipable.AddSlots(-1))
-					if err != nil {
-						return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
-					}
+					changes = append(changes, equipable.AddSlots(-1))
+
 				}
 				if rand.Int31n(100) <= int32(ci.cursed) {
 					l.Debugf("Character [%d] item has been cursed.", characterId)
 					isCursed = true
+				}
+			}
+
+			if len(changes) > 0 {
+				l.Debugf("Applying [%d] changes to character [%d] item [%d].", len(changes), characterId, sm.Equipable.ItemId())
+				err = equipable.ChangeStat(l)(ctx)(characterId, sm.Equipable.ItemId(), sm.Equipable.Slot(), changes...)
+				if err != nil {
+					return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 				}
 			}
 
@@ -475,6 +482,64 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *item
 			}
 			return nil
 		}
+	}
+}
+
+func applyChaos(m *equipable2.Model) ([]equipable.Change, error) {
+	currents := make([]uint16, 0)
+	changers := make([]func(int16) equipable.Change, 0)
+	currents = append(currents, m.Strength(), m.Dexterity(), m.Intelligence(), m.Luck(), m.WeaponAttack(), m.WeaponDefense(), m.MagicAttack(), m.MagicDefense(), m.Accuracy(), m.Avoidability(), m.Speed(), m.Jump(), m.HP(), m.MP())
+	changers = append(changers, equipable.AddStrength, equipable.AddDexterity, equipable.AddIntelligence, equipable.AddLuck, equipable.AddWeaponAttack, equipable.AddWeaponDefense, equipable.AddMagicAttack, equipable.AddMagicDefense, equipable.AddAccuracy, equipable.AddAvoidability, equipable.AddSpeed, equipable.AddJump, equipable.AddHP, equipable.AddMP)
+	return generateChaosChanges(currents, changers)
+}
+
+func generateChaosChanges(current []uint16, changers []func(int16) equipable.Change) ([]equipable.Change, error) {
+	if len(current) != len(changers) {
+		return nil, errors.New("input slices must be of the same length")
+	}
+	var changes []equipable.Change
+
+	for i, value := range current {
+		if value == 0 {
+			continue
+		}
+		adjustment := rollStatAdjustment()
+		// TODO maybe structure this better, but for now assume last two items are hp/mp
+		if i == len(current)-1 || i == len(current)-2 {
+			adjustment *= 10
+		}
+		change := changers[i](adjustment)
+		changes = append(changes, change)
+	}
+
+	return changes, nil
+}
+
+func rollStatAdjustment() int16 {
+	roll := rand.Intn(10000)
+	switch {
+	case roll < 494: // 4.94%
+		return -5
+	case roll < 791: // +2.97%
+		return -4
+	case roll < 1156: // +3.65%
+		return -3
+	case roll < 1956: // +8.00%
+		return -2
+	case roll < 3326: // +13.70%
+		return -1
+	case roll < 5164: // +18.38%
+		return 0
+	case roll < 7095: // +19.31%
+		return 1
+	case roll < 8682: // +15.87%
+		return 2
+	case roll < 9703: // +10.21%
+		return 3
+	case roll < 9901: // +1.98%
+		return 4
+	default: // remaining 0.99%
+		return 5
 	}
 }
 

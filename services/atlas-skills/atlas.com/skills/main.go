@@ -3,8 +3,10 @@ package main
 import (
 	"atlas-skills/database"
 	"atlas-skills/kafka/consumer/character"
+	macro2 "atlas-skills/kafka/consumer/macro"
 	skill2 "atlas-skills/kafka/consumer/skill"
 	"atlas-skills/logger"
+	"atlas-skills/macro"
 	"atlas-skills/service"
 	"atlas-skills/skill"
 	"atlas-skills/tasks"
@@ -48,13 +50,15 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(skill.Migration))
+	db := database.Connect(l, database.SetMigrations(skill.Migration, macro.Migration))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	skill2.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
+	macro2.InitConsumers(l)(cmf)(consumerGroupId)
 	skill2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	macro2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	go tasks.Register(tasks.NewExpirationTask(l, db, 1000))
 

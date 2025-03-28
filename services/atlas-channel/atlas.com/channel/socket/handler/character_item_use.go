@@ -36,7 +36,8 @@ func CharacterItemUseScrollHandleFunc(l logrus.FieldLogger, ctx context.Context,
 		updateTime := r.ReadUint32()
 		scrollSlot := r.ReadInt16()
 		equipSlot := r.ReadInt16()
-		whiteScroll := r.ReadInt16()&2 == 2
+		bWhiteScroll := r.ReadInt16()
+		whiteScroll := (bWhiteScroll & 2) == 2
 		legendarySpirit := r.ReadBool()
 		_ = consumable.RequestScrollUse(l)(ctx)(s.CharacterId(), scrollSlot, equipSlot, whiteScroll, legendarySpirit, updateTime)
 	}

@@ -86,6 +86,15 @@ func (m ItemModel) FindBySlot(slot int16) (item.Model, bool) {
 	return item.Model{}, false
 }
 
+func (m ItemModel) FindFirstByItemId(itemId uint32) (*item.Model, bool) {
+	for _, i := range m.items {
+		if i.ItemId() == itemId {
+			return &i, true
+		}
+	}
+	return nil, false
+}
+
 type EquippedItem struct {
 	itemId        uint32
 	slot          int16

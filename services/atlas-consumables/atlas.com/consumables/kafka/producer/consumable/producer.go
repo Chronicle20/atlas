@@ -7,12 +7,22 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+func ErrorEventProvider(characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &consumable.Event[consumable.ErrorBody]{
+		CharacterId: characterId,
+		Type:        consumable.EventTypeError,
+		Body:        consumable.ErrorBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func ScrollEventProvider(characterId uint32) func(success bool, cursed bool, legendarySpirit bool, whiteScroll bool) model.Provider[[]kafka.Message] {
 	return func(success bool, cursed bool, legendarySpirit bool, whiteScroll bool) model.Provider[[]kafka.Message] {
 		key := producer.CreateKey(int(characterId))
 		value := &consumable.Event[consumable.ScrollBody]{
 			CharacterId: characterId,
-			Type:        consumable.EventType,
+			Type:        consumable.EventTypeScroll,
 			Body: consumable.ScrollBody{
 				Success:         success,
 				Cursed:          cursed,

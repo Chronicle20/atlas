@@ -8,8 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ReservationValidator(transactionId uuid.UUID) message.Validator[kafka.InventoryChangedEvent[kafka.InventoryChangedItemReserveBody]] {
+func ReservationValidator(transactionId uuid.UUID, itemId uint32) message.Validator[kafka.InventoryChangedEvent[kafka.InventoryChangedItemReserveBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e kafka.InventoryChangedEvent[kafka.InventoryChangedItemReserveBody]) bool {
-		return e.Body.TransactionId == transactionId
+		return e.Body.TransactionId == transactionId && e.Body.ItemId == itemId
 	}
 }

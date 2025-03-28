@@ -27,14 +27,18 @@ type RequestScrollBody struct {
 }
 
 const (
-	EnvEventTopic = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	EventType     = "SCROLL"
+	EnvEventTopic   = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	EventTypeError  = "ERROR"
+	EventTypeScroll = "SCROLL"
 )
 
 type Event[E any] struct {
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
+}
+
+type ErrorBody struct {
 }
 
 type ScrollBody struct {

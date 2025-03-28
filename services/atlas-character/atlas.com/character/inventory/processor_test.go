@@ -318,13 +318,15 @@ func createMockEquipAsset(l logrus.FieldLogger) func(db *gorm.DB) func(ctx conte
 								}
 							}
 							eap := asset.NoOpSliceProvider
-							smp := inventory.OfOneSlotMaxProvider
+							smp := func() (uint32, error) {
+								return 1, nil
+							}
 							var esc statistics2.Creator = func(itemId uint32) model.Provider[statistics2.Model] {
 								return func() (statistics2.Model, error) {
 									return statistics2.Model{}, nil
 								}
 							}
-							nac := equipable.CreateItem(l)(db)(ctx)(esc)(characterId)(invId, inventoryType)(itemId)
+							nac := equipable.CreateItem(l)(db)(ctx)(esc)(characterId)(invId, inventoryType, 24)(itemId)
 							aqu := asset.NoOpQuantityUpdater
 
 							_, err = inventory.CreateAsset(l)(eap, smp, nac, aqu, iap, iup, 1)()
@@ -368,7 +370,7 @@ func createMockItemAsset(l logrus.FieldLogger) func(db *gorm.DB) func(ctx contex
 								// TODO properly look this up.
 								return 200, nil
 							}
-							nac := item.CreateItem(db)(ctx)(characterId)(invId, inventoryType)(itemId)
+							nac := item.CreateItem(db)(ctx)(characterId)(invId, inventoryType, 24)(itemId)
 							aqu := item.UpdateQuantity(db)(ctx)
 
 							_, err = inventory.CreateAsset(l)(eap, smp, nac, aqu, iap, iup, quantity)()

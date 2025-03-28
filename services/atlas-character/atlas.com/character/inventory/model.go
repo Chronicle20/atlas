@@ -180,14 +180,6 @@ func (m ItemModel) SetItems(items []item.Model) ItemHolder {
 	return m
 }
 
-func GetInventoryType(itemId uint32) (int8, bool) {
-	t := int8(itemId / 1000000)
-	if t >= 1 && t <= 5 {
-		return t, true
-	}
-	return 0, false
-}
-
 func (m Model) GetHolderByType(inventoryType inventory.Type) (ItemHolder, error) {
 	switch inventoryType {
 	case inventory.TypeValueEquip:

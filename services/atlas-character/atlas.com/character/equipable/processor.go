@@ -5,6 +5,7 @@ import (
 	"atlas-character/equipable/statistics"
 	"atlas-character/slottable"
 	"context"
+	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -98,12 +99,14 @@ func FilterOutEquipment(e Model) bool {
 	return e.Slot() > 0
 }
 
+var ErrNoFreeSlots = errors.New("no free slots")
+
 func CreateItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(statCreator statistics.Creator) asset.CharacterAssetCreator {
 	return func(db *gorm.DB) func(ctx context.Context) func(statCreator statistics.Creator) asset.CharacterAssetCreator {
 		return func(ctx context.Context) func(statCreator statistics.Creator) asset.CharacterAssetCreator {
 			return func(statCreator statistics.Creator) asset.CharacterAssetCreator {
 				return func(characterId uint32) asset.InventoryAssetCreator {
-					return func(inventoryId uint32, inventoryType int8) asset.ItemCreator {
+					return func(inventoryId uint32, inventoryType int8, capacity uint32) asset.ItemCreator {
 						return func(itemId uint32) asset.Creator {
 							return func(quantity uint32) model.Provider[asset.Asset] {
 								l.Debugf("Creating equipable [%d] for character [%d].", itemId, characterId)
@@ -111,6 +114,9 @@ func CreateItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context
 								if err != nil {
 									l.WithError(err).Errorf("Unable to locate a free slot to create the item.")
 									return model.ErrorProvider[asset.Asset](err)
+								}
+								if uint32(slot) > capacity {
+									return model.ErrorProvider[asset.Asset](ErrNoFreeSlots)
 								}
 								l.Debugf("Found open slot [%d] in inventory [%d] of type [%d].", slot, inventoryId, itemId)
 								l.Debugf("Generating new equipable statistics for item [%d].", itemId)

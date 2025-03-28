@@ -2,6 +2,7 @@ package skill
 
 import (
 	consumer2 "atlas-skills/kafka/consumer"
+	skill2 "atlas-skills/kafka/message/skill"
 	"atlas-skills/skill"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -16,7 +17,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("skill_command")(EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("skill_command")(skill2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -25,7 +26,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
-			t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
+			t, _ = topic.EnvProvider(l)(skill2.EnvCommandTopic)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestCreate(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestUpdate(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandSetCooldown(db))))
@@ -33,9 +34,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	}
 }
 
-func handleCommandRequestCreate(db *gorm.DB) message.Handler[command[requestCreateBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestCreateBody]) {
-		if c.Type != CommandTypeRequestCreate {
+func handleCommandRequestCreate(db *gorm.DB) message.Handler[skill2.Command[skill2.RequestCreateBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c skill2.Command[skill2.RequestCreateBody]) {
+		if c.Type != skill2.CommandTypeRequestCreate {
 			return
 		}
 
@@ -46,9 +47,9 @@ func handleCommandRequestCreate(db *gorm.DB) message.Handler[command[requestCrea
 	}
 }
 
-func handleCommandRequestUpdate(db *gorm.DB) message.Handler[command[requestUpdateBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestUpdateBody]) {
-		if c.Type != CommandTypeRequestUpdate {
+func handleCommandRequestUpdate(db *gorm.DB) message.Handler[skill2.Command[skill2.RequestUpdateBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c skill2.Command[skill2.RequestUpdateBody]) {
+		if c.Type != skill2.CommandTypeRequestUpdate {
 			return
 		}
 
@@ -59,9 +60,9 @@ func handleCommandRequestUpdate(db *gorm.DB) message.Handler[command[requestUpda
 	}
 }
 
-func handleCommandSetCooldown(db *gorm.DB) message.Handler[command[setCooldownBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[setCooldownBody]) {
-		if c.Type != CommandTypeSetCooldown {
+func handleCommandSetCooldown(db *gorm.DB) message.Handler[skill2.Command[skill2.SetCooldownBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c skill2.Command[skill2.SetCooldownBody]) {
+		if c.Type != skill2.CommandTypeSetCooldown {
 			return
 		}
 

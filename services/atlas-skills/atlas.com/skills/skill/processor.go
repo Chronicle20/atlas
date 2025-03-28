@@ -1,6 +1,7 @@
 package skill
 
 import (
+	skill2 "atlas-skills/kafka/message/skill"
 	"atlas-skills/kafka/producer"
 	"context"
 	"errors"
@@ -63,7 +64,7 @@ func GetById(ctx context.Context) func(db *gorm.DB) func(characterId uint32, id 
 func RequestCreate(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) error {
 	return func(ctx context.Context) func(characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) error {
 		return func(characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(createCommandProvider(characterId, id, level, masterLevel, expiration))
+			return producer.ProviderImpl(l)(ctx)(skill2.EnvCommandTopic)(createCommandProvider(characterId, id, level, masterLevel, expiration))
 		}
 	}
 }
@@ -91,7 +92,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					return Model{}, txErr
 				}
 				l.Debugf("Created skill [%d] for character [%d].", id, characterId)
-				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventCreatedProvider(characterId, s.Id(), s.Level(), s.MasterLevel(), s.Expiration()))
+				_ = producer.ProviderImpl(l)(ctx)(skill2.EnvStatusEventTopic)(statusEventCreatedProvider(characterId, s.Id(), s.Level(), s.MasterLevel(), s.Expiration()))
 				return s, nil
 			}
 		}
@@ -101,7 +102,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 func RequestUpdate(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) error {
 	return func(ctx context.Context) func(characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) error {
 		return func(characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(updateCommandProvider(characterId, id, level, masterLevel, expiration))
+			return producer.ProviderImpl(l)(ctx)(skill2.EnvCommandTopic)(updateCommandProvider(characterId, id, level, masterLevel, expiration))
 		}
 	}
 }
@@ -133,7 +134,7 @@ func Update(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					return Model{}, txErr
 				}
 				l.Debugf("Update skill [%d] for character [%d].", id, characterId)
-				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventUpdatedProvider(characterId, s.Id(), s.Level(), s.MasterLevel(), s.Expiration()))
+				_ = producer.ProviderImpl(l)(ctx)(skill2.EnvStatusEventTopic)(statusEventUpdatedProvider(characterId, s.Id(), s.Level(), s.MasterLevel(), s.Expiration()))
 				return s, nil
 			}
 		}
@@ -154,7 +155,7 @@ func SetCooldown(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 				if err != nil {
 					return Model{}, err
 				}
-				_ = producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(statusEventCooldownAppliedProvider(characterId, s.Id(), s.CooldownExpiresAt()))
+				_ = producer.ProviderImpl(l)(ctx)(skill2.EnvStatusEventTopic)(statusEventCooldownAppliedProvider(characterId, s.Id(), s.CooldownExpiresAt()))
 				return s, nil
 			}
 		}
@@ -167,7 +168,7 @@ func ExpireCooldowns(l logrus.FieldLogger) func(ctx context.Context) func(db *go
 			for _, s := range GetRegistry().GetAll() {
 				if s.CooldownExpiresAt().Before(time.Now()) {
 					_ = GetRegistry().Clear(s.Tenant(), s.CharacterId(), s.SkillId())
-					_ = producer.ProviderImpl(l)(tenant.WithContext(ctx, s.Tenant()))(EnvStatusEventTopic)(statusEventCooldownExpiredProvider(s.CharacterId(), s.SkillId()))
+					_ = producer.ProviderImpl(l)(tenant.WithContext(ctx, s.Tenant()))(skill2.EnvStatusEventTopic)(statusEventCooldownExpiredProvider(s.CharacterId(), s.SkillId()))
 				}
 			}
 		}

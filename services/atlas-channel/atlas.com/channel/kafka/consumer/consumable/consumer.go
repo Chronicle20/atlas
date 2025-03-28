@@ -5,6 +5,7 @@ import (
 	_map "atlas-channel/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -30,14 +31,32 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
 				t, _ = topic.EnvProvider(l)(EnvEventTopic)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleErrorConsumableEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleScrollConsumableEvent(sc, wp))))
 			}
 		}
 	}
 }
 
+func handleErrorConsumableEvent(sc server.Model, wp writer.Producer) message.Handler[Event[ErrorBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e Event[ErrorBody]) {
+		if e.Type != EventTypeError {
+			return
+		}
+
+		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to process error event for character [%d].", e.CharacterId)
+		}
+	}
+}
+
 func handleScrollConsumableEvent(sc server.Model, wp writer.Producer) message.Handler[Event[ScrollBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e Event[ScrollBody]) {
+		if e.Type != EventTypeScroll {
+			return
+		}
+
 		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
 			return _map.ForSessionsInMap(l)(ctx)(s.Map(), session.Announce(l)(ctx)(wp)(writer.CharacterItemUpgrade)(writer.CharacterItemUpgradeBody(e.CharacterId, e.Body.Success, e.Body.Cursed, e.Body.LegendarySpirit, e.Body.WhiteScroll)))
 		})

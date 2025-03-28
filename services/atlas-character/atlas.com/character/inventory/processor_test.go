@@ -318,7 +318,9 @@ func createMockEquipAsset(l logrus.FieldLogger) func(db *gorm.DB) func(ctx conte
 								}
 							}
 							eap := asset.NoOpSliceProvider
-							smp := inventory.OfOneSlotMaxProvider
+							smp := func() (uint32, error) {
+								return 1, nil
+							}
 							var esc statistics2.Creator = func(itemId uint32) model.Provider[statistics2.Model] {
 								return func() (statistics2.Model, error) {
 									return statistics2.Model{}, nil

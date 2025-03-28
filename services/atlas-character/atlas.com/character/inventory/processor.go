@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"atlas-character/asset"
+	"atlas-character/data/consumable"
 	"atlas-character/drop"
 	"atlas-character/equipable"
 	statistics2 "atlas-character/equipable/statistics"
@@ -11,6 +12,7 @@ import (
 	"atlas-character/kafka/producer"
 	"context"
 	"errors"
+	item2 "github.com/Chronicle20/atlas-constants/item"
 	"math"
 	"time"
 
@@ -163,15 +165,12 @@ func CreateItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context
 
 						if inventoryType == inventory.TypeValueEquip {
 							eap = asset.NoOpSliceProvider
-							smp = OfOneSlotMaxProvider
+							smp = ItemSlotMaxProvider(l)(ctx)(inventoryType, itemId)
 							nac = equipable.CreateItem(l)(tx)(ctx)(statistics2.Create(l)(ctx))(characterId)(invId, int8(inventoryType))(itemId)
 							aqu = asset.NoOpQuantityUpdater
 						} else {
 							eap = item.AssetByItemIdProvider(tx)(ctx)(invId)(itemId)
-							smp = func() (uint32, error) {
-								// TODO properly look this up.
-								return 200, nil
-							}
+							smp = ItemSlotMaxProvider(l)(ctx)(inventoryType, itemId)
 							nac = item.CreateItem(tx)(ctx)(characterId)(invId, int8(inventoryType))(itemId)
 							aqu = item.UpdateQuantity(tx)(ctx)
 						}
@@ -209,8 +208,27 @@ func GetInventoryIdByType(db *gorm.DB) func(ctx context.Context) func(characterI
 
 type SlotMaxProvider model.Provider[uint32]
 
-func OfOneSlotMaxProvider() (uint32, error) {
-	return 1, nil
+func ItemSlotMaxProvider(l logrus.FieldLogger) func(ctx context.Context) func(inventoryType inventory.Type, itemId uint32) SlotMaxProvider {
+	return func(ctx context.Context) func(inventoryType inventory.Type, itemId uint32) SlotMaxProvider {
+		return func(inventoryType inventory.Type, itemId uint32) SlotMaxProvider {
+			defaultMax := uint32(100)
+			if inventoryType == inventory.TypeValueEquip {
+				return SlotMaxProvider(model.FixedProvider[uint32](1))
+			}
+			if inventoryType == inventory.TypeValueUse {
+				cd, err := consumable.GetById(l)(ctx)(itemId)
+				if err != nil {
+					return SlotMaxProvider(model.FixedProvider[uint32](defaultMax))
+				}
+				if cd.SlotMax() != 0 {
+					return SlotMaxProvider(model.FixedProvider[uint32](cd.SlotMax()))
+				}
+				return SlotMaxProvider(model.FixedProvider[uint32](defaultMax))
+			}
+			// TODO query Set-Up, ETC, and Cash values.
+			return SlotMaxProvider(model.FixedProvider[uint32](defaultMax))
+		}
+	}
 }
 
 func CreateAsset(l logrus.FieldLogger) func(existingAssetProvider model.Provider[[]asset.Asset], slotMaxProvider SlotMaxProvider, newAssetCreator asset.Creator, assetQuantityUpdater asset.QuantityUpdater, addEventProvider ItemAddProvider, updateEventProvider ItemUpdateProvider, quantity uint32) model.Provider[[]kafka.Message] {
@@ -338,7 +356,7 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 										return err
 									}
 
-									if e.ItemId()/10000 == 105 {
+									if item2.GetClassification(item2.Id(e.ItemId())) == item2.ClassificationOverall {
 										l.Debugf("Item is an overall, we also need to unequip the bottom.")
 										resp, err = moveFromSlotToSlot(l)(inSlotProvider(int16(ps.Position)), nextFreeSlotProvider, slotUpdater, characterInventoryMoveProvider(int16(ps.Position)))()
 										if err != nil {
@@ -380,7 +398,7 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 var notOverall = errors.New("not an overall")
 
 func IsOverall(m asset.Asset) (asset.Asset, error) {
-	if m.ItemId()/10000 == 105 {
+	if item2.GetClassification(item2.Id(m.ItemId())) == item2.ClassificationOverall {
 		return m, nil
 	}
 	return nil, notOverall
@@ -506,7 +524,7 @@ func Move(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func
 		return func(ctx context.Context) func(eventProducer producer.Provider) func(inventoryType inventory.Type) AssetMover {
 			return func(eventProducer producer.Provider) func(inventoryType inventory.Type) AssetMover {
 				return func(inventoryType inventory.Type) AssetMover {
-					if inventoryType == 1 {
+					if inventoryType == inventory.TypeValueEquip {
 						return moveEquip(l)(db)(ctx)(eventProducer)
 					} else {
 						return moveItem(l)(db)(ctx)(eventProducer)(inventoryType)
@@ -526,8 +544,6 @@ func moveItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) 
 					return func(characterId uint32) func(source int16) func(destination int16) error {
 						return func(source int16) func(destination int16) error {
 							return func(destination int16) error {
-								characterInventoryMoveProvider := inventoryItemMoveProvider(characterId)(inventoryType)
-
 								l.Debugf("Received request to move item at [%d] to [%d] for character [%d].", source, destination, characterId)
 								invLock := GetLockRegistry().GetById(characterId, inventoryType)
 								invLock.Lock()
@@ -551,7 +567,7 @@ func moveItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) 
 									events = model.MergeSliceProvider(events, model.FixedProvider(resp))
 
 									l.Debugf("Attempting to move item that is being moved to its final destination.")
-									resp, _ = moveFromSlotToSlot(l)(inSlotProvider(source), model.FixedProvider(destination), slotUpdater, characterInventoryMoveProvider(source))()
+									resp, _ = moveFromSlotToSlot(l)(inSlotProvider(source), model.FixedProvider(destination), slotUpdater, inventoryItemMoveProvider(characterId)(inventoryType)(source))()
 									events = model.MergeSliceProvider(events, model.FixedProvider(resp))
 
 									l.Debugf("Attempting to move item that is in the temporary position to where the item that was just equipped was.")
@@ -640,7 +656,7 @@ func Drop(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func
 	return func(db *gorm.DB) func(ctx context.Context) func(inventoryType inventory.Type) AssetDropper {
 		return func(ctx context.Context) func(inventoryType inventory.Type) AssetDropper {
 			return func(inventoryType inventory.Type) AssetDropper {
-				if inventoryType == 1 {
+				if inventoryType == inventory.TypeValueEquip {
 					return dropEquip(l)(db)(ctx)
 				} else {
 					return dropItem(l)(db)(ctx)(inventoryType)
@@ -768,7 +784,10 @@ func AttemptItemPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.
 	return func(db *gorm.DB) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, quantity uint32) error {
 		return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, quantity uint32) error {
 			return func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, itemId uint32, quantity uint32) error {
-				inventoryType := inventory.Type(math.Floor(float64(itemId) / 1000000))
+				inventoryType, ok := inventory.TypeFromItemId(itemId)
+				if !ok {
+					return errors.New("invalid itemId")
+				}
 				if quantity == 0 {
 					quantity = 1
 				}
@@ -789,10 +808,7 @@ func AttemptItemPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.
 					iap := inventoryItemAddProvider(characterId)(inventoryType)(itemId)
 					iup := inventoryItemQuantityUpdateProvider(characterId)(inventoryType)(itemId)
 					eap := item.AssetByItemIdProvider(tx)(ctx)(invId)(itemId)
-					smp := func() (uint32, error) {
-						// TODO properly look this up.
-						return 200, nil
-					}
+					smp := ItemSlotMaxProvider(l)(ctx)(inventoryType, itemId)
 					nac := item.CreateItem(tx)(ctx)(characterId)(invId, int8(inventoryType))(itemId)
 					aqu := item.UpdateQuantity(tx)(ctx)
 
@@ -846,7 +862,7 @@ func AttemptEquipmentPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx con
 					iap := inventoryItemAddProvider(characterId)(inventoryType)(itemId)
 					iup := inventoryItemQuantityUpdateProvider(characterId)(inventoryType)(itemId)
 					eap := asset.NoOpSliceProvider
-					smp := OfOneSlotMaxProvider
+					smp := ItemSlotMaxProvider(l)(ctx)(inventoryType, itemId)
 					escf := statistics2.Existing(l)(ctx)(equipmentId)
 					nac := equipable.CreateItem(l)(tx)(ctx)(escf)(characterId)(invId, int8(inventoryType))(itemId)
 					aqu := asset.NoOpQuantityUpdater

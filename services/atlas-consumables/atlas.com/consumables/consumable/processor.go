@@ -51,7 +51,7 @@ func RequestItemConsume(l logrus.FieldLogger) func(ctx context.Context) func(cha
 			transactionId := uuid.New()
 			l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
 			t, _ := topic.EnvProvider(l)(inventory3.EnvEventInventoryChanged)()
-			validator := once.ReservationValidator(transactionId)
+			validator := once.ReservationValidator(transactionId, uint32(itemId))
 
 			var itemConsumer ItemConsumer
 
@@ -315,7 +315,7 @@ func RequestScroll(l logrus.FieldLogger) func(ctx context.Context) func(characte
 
 			l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
 			t, _ := topic.EnvProvider(l)(inventory3.EnvEventInventoryChanged)()
-			validator := once.ReservationValidator(transactionId)
+			validator := once.ReservationValidator(transactionId, scrollItem.ItemId())
 			handler := inventory.Consume(ConsumeScroll(transactionId, characterId, &scrollItem, equipSlot, whiteScrollItem, legendarySpirit))
 			_, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
 
@@ -390,11 +390,18 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *item
 			successProb := ci.success
 
 			// TODO spikes / cursed property
-			isSuccess := rand.Int31n(100) <= int32(successProb)
+			successRoll := rand.Int31n(100)
+			isSuccess := successRoll <= int32(successProb)
 
 			isCursed := false
+			passFail := ""
 			if isSuccess {
-				l.Debugf("Character [%d] has passed scroll [%d].", characterId, scrollItem.ItemId())
+				passFail = "passed"
+			} else {
+				passFail = "failed"
+			}
+			l.Debugf("Character [%d] has [%s] scroll [%d]. Rolled [%d]. Needed [%d].", characterId, passFail, scrollItem.ItemId(), successRoll, successProb)
+			if isSuccess {
 				if item2.IsScrollSpikes(item2.Id(scrollItem.ItemId())) {
 					// TODO do spike property
 				} else if item2.IsScrollColdProtection(item2.Id(scrollItem.ItemId())) {
@@ -431,7 +438,6 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *item
 					}
 				}
 			} else {
-				l.Debugf("Character [%d] has failed scroll [%d].", characterId, scrollItem.ItemId())
 				if !item2.IsScrollSpikes(item2.Id(scrollItem.ItemId())) && !item2.IsScrollColdProtection(item2.Id(scrollItem.ItemId())) && !item2.IsScrollCleanSlate(item2.Id(scrollItem.ItemId())) && !whiteScroll {
 					err = equipable.ChangeStat(l)(ctx)(characterId, sm.Equipable.ItemId(), sm.Equipable.Slot(), equipable.AddSlots(-1))
 					if err != nil {

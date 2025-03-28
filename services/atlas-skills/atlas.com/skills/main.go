@@ -11,6 +11,7 @@ import (
 	"atlas-skills/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"os"
 )
 
 const serviceName = "atlas-skills"
@@ -57,7 +58,13 @@ func main() {
 
 	go tasks.Register(tasks.NewExpirationTask(l, db, 1000))
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), skill.InitResource(GetServer())(db))
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(skill.InitResource(GetServer())(db)).
+		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

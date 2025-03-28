@@ -3,6 +3,8 @@ package _map
 import (
 	"atlas-maps/kafka/producer"
 	"atlas-maps/map/character"
+	monster2 "atlas-maps/map/monster"
+	"atlas-maps/reactor"
 	"context"
 	"github.com/sirupsen/logrus"
 )
@@ -11,7 +13,12 @@ func Enter(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, ch
 	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
 		return func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
 			character.Enter(ctx)(worldId, channelId, mapId, characterId)
-			_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMapStatus)(enterMapProvider(worldId, channelId, mapId, characterId))
+
+			go func() {
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicMapStatus)(enterMapProvider(worldId, channelId, mapId, characterId))
+			}()
+			go monster2.Spawn(l)(ctx)(worldId, channelId, mapId)
+			go reactor.Spawn(l)(ctx)(worldId, channelId, mapId)
 		}
 	}
 }

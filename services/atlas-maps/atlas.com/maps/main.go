@@ -10,6 +10,7 @@ import (
 	"atlas-maps/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"os"
 )
 
 const serviceName = "atlas-maps"
@@ -54,7 +55,13 @@ func main() {
 
 	go tasks.Register(tasks.NewRespawn(l, 10000))
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), _map.InitResource(GetServer()))
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(_map.InitResource(GetServer())).
+		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

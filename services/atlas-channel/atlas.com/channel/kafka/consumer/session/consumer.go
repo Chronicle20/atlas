@@ -8,6 +8,7 @@ import (
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
 	"atlas-channel/kafka/producer"
+	"atlas-channel/macro"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
@@ -22,6 +23,7 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
+	"sort"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -189,6 +191,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						bs, err := buff.GetByCharacterId(l)(ctx)(s.CharacterId())
 						if err != nil {
 							l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
+							return
 						}
 						err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(writer.CharacterBuffGiveBody(l)(ctx)(bs))(s)
 						if err != nil {
@@ -203,6 +206,22 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						err = session.Announce(l)(ctx)(wp)(writer.WorldMessage)(writer.WorldMessageTopScrollBody(l, t)(w.Message()))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
+						}
+					}()
+					go func() {
+						var sms []macro.Model
+						sms, err = macro.GetByCharacterId(l)(ctx)(s.CharacterId())
+						if err != nil {
+							l.WithError(err).Errorf("Unable to read skill macros for character [%d].", c.Id())
+							return
+						}
+						sort.Slice(sms, func(i, j int) bool {
+							return sms[i].Id() < sms[j].Id()
+						})
+
+						err = session.Announce(l)(ctx)(wp)(writer.CharacterSkillMacro)(writer.CharacterSkillMacroBody(sms))(s)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}
 					}()
 					return nil

@@ -269,6 +269,7 @@ func produceWriters() []string {
 		writer.PetCommandResponse,
 		writer.PetChat,
 		writer.CharacterItemUpgrade,
+		writer.CharacterSkillMacro,
 	}
 }
 
@@ -327,6 +328,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterItemCancelHandle] = handler.CharacterItemCancelHandleFunc
 	handlerMap[handler.CharacterItemUseTownScrollHandle] = handler.CharacterItemUseTownScrollHandleFunc
 	handlerMap[handler.CharacterItemUseScrollHandle] = handler.CharacterItemUseScrollHandleFunc
+	handlerMap[handler.CharacterSkillMacroHandle] = handler.CharacterSkillMacroHandleFunc
 	return handlerMap
 }
 

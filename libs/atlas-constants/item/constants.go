@@ -130,7 +130,7 @@ func IsBullet(itemId Id) bool {
 }
 
 func IsScrollCleanSlate(itemId Id) bool {
-	return Is(itemId, WhiteScrollOnePercent, WhiteScrollThreePercent, WhiteScrollFivePercent, WhiteScrollTwentyPercent)
+	return Is(itemId, CleanSlateOnePercent, CleanSlateThreePercent, CleanSlateFivePercent, CleanSlateTwentyPercent)
 }
 
 func IsScrollColdProtection(itemId Id) bool {
@@ -158,10 +158,11 @@ const (
 	UseRedBeanPorridge                    = Id(2022001)
 	UseAirBubble                          = Id(2022040)
 	UseSoftWhiteBun                       = Id(2022186)
-	WhiteScrollOnePercent                 = Id(2049000)
-	WhiteScrollThreePercent               = Id(2049001)
-	WhiteScrollFivePercent                = Id(2049002)
-	WhiteScrollTwentyPercent              = Id(2049003)
+	CleanSlateOnePercent                  = Id(2049000)
+	CleanSlateThreePercent                = Id(2049001)
+	CleanSlateFivePercent                 = Id(2049002)
+	CleanSlateTwentyPercent               = Id(2049003)
+	WhiteScroll                           = Id(2340000)
 	ScrollForCapeColdProtectionTenPercent = Id(2041058)
 	ScrollForSpikesOnShoesTenPercent      = Id(2040727)
 	ChaosScrollSixtyPercent               = Id(2049100)

@@ -1,8 +1,9 @@
 package consumable
 
 const (
-	EnvEventTopic = "EVENT_TOPIC_CONSUMABLE_STATUS"
-	EventType     = "SCROLL"
+	EnvEventTopic   = "EVENT_TOPIC_CONSUMABLE_STATUS"
+	EventTypeError  = "ERROR"
+	EventTypeScroll = "SCROLL"
 )
 
 type Event[E any] struct {
@@ -11,6 +12,8 @@ type Event[E any] struct {
 	Body        E      `json:"body"`
 }
 
+type ErrorBody struct {
+}
 type ScrollBody struct {
 	Success         bool `json:"success"`
 	Cursed          bool `json:"cursed"`

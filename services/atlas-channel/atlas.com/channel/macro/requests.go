@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	Resource = "characters/%d/skills"
+	Resource = "characters/%d/macros"
 	ById     = Resource + "/%d"
 )
 

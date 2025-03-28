@@ -150,7 +150,7 @@ func CreateItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context
 
 					var events = model.FixedProvider([]kafka.Message{})
 					err := db.Transaction(func(tx *gorm.DB) error {
-						invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventoryType)()
+						inv, err := GetInventoryByType(l)(tx)(ctx)(characterId, inventoryType)()
 						if err != nil {
 							l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 							return err
@@ -166,12 +166,12 @@ func CreateItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context
 						if inventoryType == inventory.TypeValueEquip {
 							eap = asset.NoOpSliceProvider
 							smp = ItemSlotMaxProvider(l)(ctx)(inventoryType, itemId)
-							nac = equipable.CreateItem(l)(tx)(ctx)(statistics2.Create(l)(ctx))(characterId)(invId, int8(inventoryType))(itemId)
+							nac = equipable.CreateItem(l)(tx)(ctx)(statistics2.Create(l)(ctx))(characterId)(inv.Id(), int8(inventoryType), inv.Capacity())(itemId)
 							aqu = asset.NoOpQuantityUpdater
 						} else {
-							eap = item.AssetByItemIdProvider(tx)(ctx)(invId)(itemId)
+							eap = item.AssetByItemIdProvider(tx)(ctx)(inv.Id())(itemId)
 							smp = ItemSlotMaxProvider(l)(ctx)(inventoryType, itemId)
-							nac = item.CreateItem(tx)(ctx)(characterId)(invId, int8(inventoryType))(itemId)
+							nac = item.CreateItem(tx)(ctx)(characterId)(inv.Id(), int8(inventoryType), inv.Capacity())(itemId)
 							aqu = item.UpdateQuantity(tx)(ctx)
 						}
 
@@ -195,13 +195,37 @@ func CreateItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context
 
 func GetInventoryIdByType(db *gorm.DB) func(ctx context.Context) func(characterId uint32, inventoryType inventory.Type) model.Provider[uint32] {
 	return func(ctx context.Context) func(characterId uint32, inventoryType inventory.Type) model.Provider[uint32] {
+		t := tenant.MustFromContext(ctx)
 		return func(characterId uint32, inventoryType inventory.Type) model.Provider[uint32] {
-			t := tenant.MustFromContext(ctx)
 			e, err := get(t.Id(), characterId, inventoryType)(db)()
 			if err != nil {
 				return model.ErrorProvider[uint32](err)
 			}
 			return model.FixedProvider(e.ID)
+		}
+	}
+}
+
+func GetInventoryByType(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(characterId uint32, inventoryType inventory.Type) model.Provider[ItemHolder] {
+	return func(db *gorm.DB) func(ctx context.Context) func(characterId uint32, inventoryType inventory.Type) model.Provider[ItemHolder] {
+		return func(ctx context.Context) func(characterId uint32, inventoryType inventory.Type) model.Provider[ItemHolder] {
+			t := tenant.MustFromContext(ctx)
+			return func(characterId uint32, inventoryType inventory.Type) model.Provider[ItemHolder] {
+				e, err := get(t.Id(), characterId, inventoryType)(db)()
+				if err != nil {
+					return model.ErrorProvider[ItemHolder](err)
+				}
+				var ei ItemHolder
+				if inventoryType == inventory.TypeValueEquip {
+					ei, err = model.Fold(equipable.InInventoryProvider(l)(db)(ctx)(e.ID), NewEquipableModel(e.ID, e.Capacity), EquipableFolder)()
+				} else {
+					ei, err = model.Fold(item.ByInventoryProvider(db)(ctx)(e.ID), NewItemModel(e.ID, inventory.TypeValueCash, e.Capacity), ItemFolder)()
+				}
+				if err != nil {
+					return model.ErrorProvider[ItemHolder](err)
+				}
+				return model.FixedProvider(ei)
+			}
 		}
 	}
 }
@@ -799,7 +823,7 @@ func AttemptItemPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.
 
 				var events = model.FixedProvider([]kafka.Message{})
 				txErr := db.Transaction(func(tx *gorm.DB) error {
-					invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventoryType)()
+					inv, err := GetInventoryByType(l)(tx)(ctx)(characterId, inventoryType)()
 					if err != nil {
 						l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 						return err
@@ -807,14 +831,14 @@ func AttemptItemPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.
 
 					iap := inventoryItemAddProvider(characterId)(inventoryType)(itemId)
 					iup := inventoryItemQuantityUpdateProvider(characterId)(inventoryType)(itemId)
-					eap := item.AssetByItemIdProvider(tx)(ctx)(invId)(itemId)
+					eap := item.AssetByItemIdProvider(tx)(ctx)(inv.Id())(itemId)
 					smp := ItemSlotMaxProvider(l)(ctx)(inventoryType, itemId)
-					nac := item.CreateItem(tx)(ctx)(characterId)(invId, int8(inventoryType))(itemId)
+					nac := item.CreateItem(tx)(ctx)(characterId)(inv.Id(), int8(inventoryType), inv.Capacity())(itemId)
 					aqu := item.UpdateQuantity(tx)(ctx)
 
 					res, err := CreateAsset(l)(eap, smp, nac, aqu, iap, iup, quantity)()
 					if err != nil {
-						l.WithError(err).Errorf("Unable to create [%d] equipable [%d] for character [%d].", quantity, itemId, characterId)
+						l.WithError(err).Errorf("Unable to create [%d] item [%d] for character [%d].", quantity, itemId, characterId)
 						return err
 					}
 					events = model.MergeSliceProvider(events, model.FixedProvider(res))
@@ -853,7 +877,7 @@ func AttemptEquipmentPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx con
 
 				var events = model.FixedProvider([]kafka.Message{})
 				txErr := db.Transaction(func(tx *gorm.DB) error {
-					invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventoryType)()
+					inv, err := GetInventoryByType(l)(tx)(ctx)(characterId, inventoryType)()
 					if err != nil {
 						l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
 						return err
@@ -864,7 +888,7 @@ func AttemptEquipmentPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx con
 					eap := asset.NoOpSliceProvider
 					smp := ItemSlotMaxProvider(l)(ctx)(inventoryType, itemId)
 					escf := statistics2.Existing(l)(ctx)(equipmentId)
-					nac := equipable.CreateItem(l)(tx)(ctx)(escf)(characterId)(invId, int8(inventoryType))(itemId)
+					nac := equipable.CreateItem(l)(tx)(ctx)(escf)(characterId)(inv.Id(), int8(inventoryType), inv.Capacity())(itemId)
 					aqu := asset.NoOpQuantityUpdater
 
 					res, err := CreateAsset(l)(eap, smp, nac, aqu, iap, iup, 1)()

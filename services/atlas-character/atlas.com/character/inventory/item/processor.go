@@ -4,6 +4,7 @@ import (
 	"atlas-character/asset"
 	"atlas-character/slottable"
 	"context"
+	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"gorm.io/gorm"
@@ -119,16 +120,37 @@ func UpdateQuantity(db *gorm.DB) func(ctx context.Context) func(id uint32, quant
 	}
 }
 
+func GetNextFreeSlot(db *gorm.DB) func(ctx context.Context) func(inventoryId uint32) model.Provider[int16] {
+	return func(ctx context.Context) func(inventoryId uint32) model.Provider[int16] {
+		return func(inventoryId uint32) model.Provider[int16] {
+			ms, err := GetByInventory(db)(ctx)(inventoryId)
+			if err != nil {
+				return model.ErrorProvider[int16](err)
+			}
+			slot, err := slottable.GetNextFreeSlot(model.SliceMap(ToSlottable)(model.FixedProvider(ms))(model.ParallelMap()))
+			if err != nil {
+				return model.ErrorProvider[int16](err)
+			}
+			return model.FixedProvider(slot)
+		}
+	}
+}
+
+var ErrNoFreeSlots = errors.New("no free slots")
+
 func CreateItem(db *gorm.DB) func(ctx context.Context) asset.CharacterAssetCreator {
 	return func(ctx context.Context) asset.CharacterAssetCreator {
 		return func(characterId uint32) asset.InventoryAssetCreator {
-			return func(inventoryId uint32, inventoryType int8) asset.ItemCreator {
+			return func(inventoryId uint32, inventoryType int8, capacity uint32) asset.ItemCreator {
 				return func(itemId uint32) asset.Creator {
 					return func(quantity uint32) model.Provider[asset.Asset] {
 						t := tenant.MustFromContext(ctx)
-						slot, err := slottable.GetNextFreeSlot(model.SliceMap(ToSlottable)(ByInventoryProvider(db)(ctx)(inventoryId))(model.ParallelMap()))
+						slot, err := GetNextFreeSlot(db)(ctx)(inventoryId)()
 						if err != nil {
 							return model.ErrorProvider[asset.Asset](err)
+						}
+						if uint32(slot) > capacity {
+							return model.ErrorProvider[asset.Asset](ErrNoFreeSlots)
 						}
 						i, err := createItem(db, t.Id(), inventoryId, itemId, quantity, slot)
 						if err != nil {

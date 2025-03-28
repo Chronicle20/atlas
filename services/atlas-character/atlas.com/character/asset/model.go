@@ -6,7 +6,7 @@ import (
 
 type CharacterAssetCreator func(characterId uint32) InventoryAssetCreator
 
-type InventoryAssetCreator func(inventoryId uint32, inventoryType int8) ItemCreator
+type InventoryAssetCreator func(inventoryId uint32, inventoryType int8, capacity uint32) ItemCreator
 
 type ItemCreator func(itemId uint32) Creator
 

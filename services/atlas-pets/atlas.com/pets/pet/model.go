@@ -1,6 +1,9 @@
 package pet
 
-import "time"
+import (
+	"atlas-pets/pet/exclude"
+	"time"
+)
 
 type Model struct {
 	id              uint64
@@ -13,6 +16,7 @@ type Model struct {
 	expiration      time.Time
 	ownerId         uint32
 	slot            int8
+	excludes        []exclude.Model
 }
 
 func (m Model) Id() uint64 {
@@ -63,6 +67,10 @@ func (m Model) SetSlot(slot int8) Model {
 	return Clone(m).SetSlot(slot).Build()
 }
 
+func (m Model) Excludes() []exclude.Model {
+	return m.excludes
+}
+
 type ModelBuilder struct {
 	id              uint64
 	inventoryItemId uint32
@@ -74,6 +82,7 @@ type ModelBuilder struct {
 	expiration      time.Time
 	ownerId         uint32
 	slot            int8
+	excludes        []exclude.Model
 }
 
 func NewModelBuilder(id uint64, inventoryItemId uint32, templateId uint32, name string, ownerId uint32) *ModelBuilder {
@@ -88,6 +97,7 @@ func NewModelBuilder(id uint64, inventoryItemId uint32, templateId uint32, name 
 		expiration:      time.Now().Add(2160 * time.Hour),
 		ownerId:         ownerId,
 		slot:            -1,
+		excludes:        make([]exclude.Model, 0),
 	}
 }
 
@@ -97,7 +107,8 @@ func Clone(m Model) *ModelBuilder {
 		SetCloseness(m.Closeness()).
 		SetFullness(m.Fullness()).
 		SetExpiration(m.Expiration()).
-		SetSlot(m.Slot())
+		SetSlot(m.Slot()).
+		SetExcludes(m.Excludes())
 }
 
 func (b *ModelBuilder) SetLevel(level byte) *ModelBuilder {
@@ -125,6 +136,11 @@ func (b *ModelBuilder) SetSlot(slot int8) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetExcludes(excludes []exclude.Model) *ModelBuilder {
+	b.excludes = excludes
+	return b
+}
+
 // Build returns the constructed Model instance
 func (b *ModelBuilder) Build() Model {
 	return Model{
@@ -138,5 +154,6 @@ func (b *ModelBuilder) Build() Model {
 		expiration:      b.expiration,
 		ownerId:         b.ownerId,
 		slot:            b.slot,
+		excludes:        b.excludes,
 	}
 }

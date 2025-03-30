@@ -7,6 +7,7 @@ import (
 	pet2 "atlas-pets/kafka/consumer/pet"
 	"atlas-pets/logger"
 	"atlas-pets/pet"
+	"atlas-pets/pet/exclude"
 	"atlas-pets/service"
 	"atlas-pets/tasks"
 	"atlas-pets/tracing"
@@ -50,7 +51,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(pet.Migration))
+	db := database.Connect(l, database.SetMigrations(pet.Migration, exclude.Migration))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)

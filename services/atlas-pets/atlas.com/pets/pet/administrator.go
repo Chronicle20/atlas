@@ -1,7 +1,9 @@
 package pet
 
 import (
+	"atlas-pets/pet/exclude"
 	"errors"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"gorm.io/gorm"
 )
@@ -112,12 +114,44 @@ func deleteForCharacter(t tenant.Model, ownerId uint32) func(db *gorm.DB) error 
 	}
 }
 
+func setExcludes(db *gorm.DB, petId uint64, itemIds []uint32) error {
+	// Start a transaction for atomicity
+	return db.Transaction(func(tx *gorm.DB) error {
+		// Step 1: Delete existing excludes for the pet
+		if err := tx.Where("pet_id = ?", petId).Delete(&exclude.Entity{}).Error; err != nil {
+			return err
+		}
+
+		// Step 2: Create new excludes for the given itemIds
+		excludes := make([]exclude.Entity, len(itemIds))
+		for i, itemId := range itemIds {
+			excludes[i] = exclude.Entity{
+				PetId:  petId,
+				ItemId: itemId,
+			}
+		}
+
+		if len(excludes) > 0 {
+			if err := tx.Create(&excludes).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
 func modelFromEntity(e Entity) (Model, error) {
+	es, err := model.SliceMap(exclude.Make)(model.FixedProvider(e.Excludes))(model.ParallelMap())()
+	if err != nil {
+		return Model{}, err
+	}
 	return NewModelBuilder(e.Id, e.InventoryItemId, e.TemplateId, e.Name, e.OwnerId).
 		SetLevel(e.Level).
 		SetCloseness(e.Closeness).
 		SetFullness(e.Fullness).
 		SetExpiration(e.Expiration).
 		SetSlot(e.Slot).
+		SetExcludes(es).
 		Build(), nil
 }

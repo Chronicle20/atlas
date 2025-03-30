@@ -36,6 +36,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardClosenessCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardFullnessCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardLevelCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSetExcludeCommand(db))))
 			t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand(db))))
 		}
@@ -102,6 +103,15 @@ func handleAwardLevelCommand(db *gorm.DB) message.Handler[command[awardLevelComm
 			return
 		}
 		_ = pet.AwardLevel(l)(ctx)(db)(c.PetId, c.Body.Amount, c.ActorId)
+	}
+}
+
+func handleSetExcludeCommand(db *gorm.DB) message.Handler[command[setExcludeCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[setExcludeCommandBody]) {
+		if c.Type != CommandSetExclude {
+			return
+		}
+		_ = pet.SetExclude(l)(ctx)(db)(c.PetId, c.Body.Items)
 	}
 }
 

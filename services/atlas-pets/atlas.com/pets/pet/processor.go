@@ -664,3 +664,33 @@ func AwardLevel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 		}
 	}
 }
+
+func SetExclude(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, items []uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, items []uint32) error {
+		return func(db *gorm.DB) func(petId uint64, items []uint32) error {
+			return func(petId uint64, items []uint32) error {
+				var p Model
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					err := setExcludes(tx, petId, items)
+					if err != nil {
+						return err
+					}
+
+					p, err = GetById(ctx)(tx)(petId)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
+				if txErr != nil {
+					return txErr
+				}
+				err := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(excludeChangedEventProvider(p))
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+		}
+	}
+}

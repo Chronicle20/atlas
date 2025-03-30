@@ -7,6 +7,7 @@ const (
 	CommandPetSpawn          = "SPAWN"
 	CommandPetDespawn        = "DESPAWN"
 	CommandPetAttemptCommand = "ATTEMPT_COMMAND"
+	CommandPetSetExclude     = "EXCLUDE"
 )
 
 type commandEvent[E any] struct {
@@ -26,6 +27,10 @@ type despawnCommandBody struct {
 type attemptCommandCommandBody struct {
 	CommandId byte `json:"commandId"`
 	ByName    bool `json:"byName"`
+}
+
+type setExcludeCommandBody struct {
+	Items []uint32 `json:"items"`
 }
 
 const (

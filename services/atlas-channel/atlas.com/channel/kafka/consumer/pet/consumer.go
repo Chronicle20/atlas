@@ -47,6 +47,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleFullnessChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLevelChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSlotChanged(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleExcludeChanged(sc, wp))))
 				t, _ = topic.EnvProvider(l)(EnvEventTopicMovement)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp))))
 			}
@@ -339,6 +340,22 @@ func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 		return func(wp writer.Producer) func(s session.Model) error {
 			return session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true))
 		}
+	}
+}
+
+func handleExcludeChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[excludeChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[excludeChangedStatusEventBody]) {
+		if e.Type != StatusEventTypeExcludeChanged {
+			return
+		}
+
+		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			p, err := pet.GetById(l)(ctx)(e.PetId)
+			if err != nil {
+				return err
+			}
+			return session.Announce(l)(ctx)(wp)(writer.PetExcludeResponse)(writer.PetExcludeResponseBody(p))(s)
+		})
 	}
 }
 

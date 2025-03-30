@@ -1,26 +1,29 @@
 package pet
 
 import (
+	"atlas-channel/pet/exclude"
+	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
 	"time"
 )
 
 type RestModel struct {
-	Id              uint64    `json:"-"`
-	InventoryItemId uint32    `json:"inventoryItemId"`
-	TemplateId      uint32    `json:"templateId"`
-	Name            string    `json:"name"`
-	Level           byte      `json:"level"`
-	Closeness       uint16    `json:"closeness"`
-	Fullness        byte      `json:"fullness"`
-	Expiration      time.Time `json:"expiration"`
-	OwnerId         uint32    `json:"ownerId"`
-	Lead            bool      `json:"lead"`
-	Slot            int8      `json:"slot"`
-	X               int16     `json:"x"`
-	Y               int16     `json:"y"`
-	Stance          byte      `json:"stance"`
-	FH              int16     `json:"fh"`
+	Id              uint64              `json:"-"`
+	InventoryItemId uint32              `json:"inventoryItemId"`
+	TemplateId      uint32              `json:"templateId"`
+	Name            string              `json:"name"`
+	Level           byte                `json:"level"`
+	Closeness       uint16              `json:"closeness"`
+	Fullness        byte                `json:"fullness"`
+	Expiration      time.Time           `json:"expiration"`
+	OwnerId         uint32              `json:"ownerId"`
+	Lead            bool                `json:"lead"`
+	Slot            int8                `json:"slot"`
+	X               int16               `json:"x"`
+	Y               int16               `json:"y"`
+	Stance          byte                `json:"stance"`
+	FH              int16               `json:"fh"`
+	Excludes        []exclude.RestModel `json:"excludes"`
 }
 
 func (r RestModel) GetName() string {
@@ -41,6 +44,11 @@ func (r *RestModel) SetID(strId string) error {
 }
 
 func Extract(rm RestModel) (Model, error) {
+	es, err := model.SliceMap(exclude.Extract)(model.FixedProvider(rm.Excludes))(model.ParallelMap())()
+	if err != nil {
+		return Model{}, err
+	}
+
 	return Model{
 		id:              rm.Id,
 		inventoryItemId: rm.InventoryItemId,
@@ -57,5 +65,6 @@ func Extract(rm RestModel) (Model, error) {
 		y:               rm.Y,
 		stance:          rm.Stance,
 		fh:              rm.FH,
+		excludes:        es,
 	}, nil
 }

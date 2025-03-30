@@ -270,6 +270,7 @@ func produceWriters() []string {
 		writer.PetChat,
 		writer.CharacterItemUpgrade,
 		writer.CharacterSkillMacro,
+		writer.PetExcludeResponse,
 	}
 }
 
@@ -329,6 +330,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterItemUseTownScrollHandle] = handler.CharacterItemUseTownScrollHandleFunc
 	handlerMap[handler.CharacterItemUseScrollHandle] = handler.CharacterItemUseScrollHandleFunc
 	handlerMap[handler.CharacterSkillMacroHandle] = handler.CharacterSkillMacroHandleFunc
+	handlerMap[handler.PetItemExcludeHandle] = handler.PetItemExcludeHandleFunc
 	return handlerMap
 }
 

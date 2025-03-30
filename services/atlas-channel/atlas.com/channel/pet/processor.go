@@ -2,6 +2,7 @@ package pet
 
 import (
 	"atlas-channel/kafka/producer"
+	"atlas-channel/pet/exclude"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -77,6 +78,19 @@ func AttemptCommand(l logrus.FieldLogger) func(ctx context.Context) func(petId u
 		return func(petId uint64, commandId byte, byName bool, characterId uint32) error {
 			l.Debugf("Character [%d] triggered pet [%d] command. byName [%t], command [%d]", characterId, petId, byName, commandId)
 			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(attemptCommandProvider(petId, commandId, byName, characterId))
+		}
+	}
+}
+
+func SetExcludeItems(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, petId uint64, items []exclude.Model) error {
+	return func(ctx context.Context) func(characterId uint32, petId uint64, items []exclude.Model) error {
+		return func(characterId uint32, petId uint64, items []exclude.Model) error {
+			l.Debugf("Character [%d] setting exclude items for pet [%d]. count [%d].", characterId, petId, len(items))
+			itemIds := make([]uint32, len(items))
+			for i, item := range items {
+				itemIds[i] = item.ItemId()
+			}
+			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(setExcludesCommandProvider(characterId, petId, itemIds))
 		}
 	}
 }

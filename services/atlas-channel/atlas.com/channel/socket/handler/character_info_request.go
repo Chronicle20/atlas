@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/guild"
+	"atlas-channel/pet"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -32,6 +33,18 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 		g, _ := guild.GetByMemberId(l)(ctx)(characterId)
+
+		if characterId != s.CharacterId() {
+			var ps []pet.Model
+			ps, err = pet.GetByOwner(l)(ctx)(characterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve pet [%d] being requested.", characterId)
+			}
+
+			for _, p := range ps {
+				_ = session.Announce(l)(ctx)(wp)(writer.PetExcludeResponse)(writer.PetExcludeResponseBody(p))(s)
+			}
+		}
 
 		err = session.Announce(l)(ctx)(wp)(writer.CharacterInfo)(writer.CharacterInfoBody(t)(c, g))(s)
 		if err != nil {

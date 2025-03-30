@@ -128,6 +128,10 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 							if err != nil {
 								l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", s.CharacterId(), k)
 							}
+							err = session.Announce(l)(ctx)(wp)(writer.PetExcludeResponse)(writer.PetExcludeResponseBody(p))(s)
+							if err != nil {
+								l.WithError(err).Errorf("Unable to announce pet [%d] exclusion list to character [%d].", p.Id(), s.CharacterId())
+							}
 						}
 					}
 				}

@@ -270,6 +270,7 @@ func produceWriters() []string {
 		writer.PetChat,
 		writer.CharacterItemUpgrade,
 		writer.CharacterSkillMacro,
+		writer.PetExcludeResponse,
 	}
 }
 

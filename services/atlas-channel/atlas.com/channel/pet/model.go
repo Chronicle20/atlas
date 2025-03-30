@@ -1,6 +1,9 @@
 package pet
 
-import "time"
+import (
+	"atlas-channel/pet/exclude"
+	"time"
+)
 
 type Model struct {
 	id              uint64
@@ -18,6 +21,7 @@ type Model struct {
 	y               int16
 	stance          byte
 	fh              int16
+	excludes        []exclude.Model
 }
 
 func (m Model) Id() uint64 {
@@ -80,6 +84,10 @@ func (m Model) Fh() int16 {
 	return m.fh
 }
 
+func (m Model) Excludes() []exclude.Model {
+	return m.excludes
+}
+
 type ModelBuilder struct {
 	id              uint64
 	inventoryItemId uint32
@@ -96,6 +104,7 @@ type ModelBuilder struct {
 	y               int16
 	stance          byte
 	fh              int16
+	excludes        []exclude.Model
 }
 
 func NewModelBuilder(id uint64, inventoryItemId, templateId uint32, name string) *ModelBuilder {
@@ -104,6 +113,7 @@ func NewModelBuilder(id uint64, inventoryItemId, templateId uint32, name string)
 		inventoryItemId: inventoryItemId,
 		templateId:      templateId,
 		name:            name,
+		excludes:        make([]exclude.Model, 0),
 	}
 }
 
@@ -157,6 +167,11 @@ func (b *ModelBuilder) SetStance(stance byte) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetExcludes(excludes []exclude.Model) *ModelBuilder {
+	b.excludes = excludes
+	return b
+}
+
 func (b *ModelBuilder) Build() Model {
 	return Model{
 		id:              b.id,
@@ -174,6 +189,7 @@ func (b *ModelBuilder) Build() Model {
 		y:               b.y,
 		stance:          b.stance,
 		fh:              b.fh,
+		excludes:        b.excludes,
 	}
 }
 

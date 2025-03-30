@@ -354,6 +354,9 @@ func handleExcludeChanged(sc server.Model, wp writer.Producer) message.Handler[s
 			if err != nil {
 				return err
 			}
+			if p.Slot() < 0 {
+				return nil
+			}
 			return session.Announce(l)(ctx)(wp)(writer.PetExcludeResponse)(writer.PetExcludeResponseBody(p))(s)
 		})
 	}

@@ -133,8 +133,8 @@ func CreateItem(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context
 		return func(ctx context.Context) func(eventProducer producer.Provider) func(characterId uint32, inventoryType inventory.Type, itemId uint32, quantity uint32) error {
 			return func(eventProducer producer.Provider) func(characterId uint32, inventoryType inventory.Type, itemId uint32, quantity uint32) error {
 				return func(characterId uint32, inventoryType inventory.Type, itemId uint32, quantity uint32) error {
-					expectedInventoryType := inventory.Type(math.Floor(float64(itemId) / 1000000))
-					if expectedInventoryType != inventoryType {
+					expectedInventoryType, ok := inventory.TypeFromItemId(itemId)
+					if !ok || expectedInventoryType != inventoryType {
 						l.Errorf("Provided inventoryType [%d] does not match expected one [%d] for itemId [%d].", inventoryType, expectedInventoryType, itemId)
 						return errors.New("invalid inventory type")
 					}

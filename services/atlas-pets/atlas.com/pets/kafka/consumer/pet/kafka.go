@@ -10,6 +10,7 @@ const (
 	CommandAwardCloseness    = "AWARD_CLOSENESS"
 	CommandAwardFullness     = "AWARD_FULLNESS"
 	CommandAwardLevel        = "AWARD_LEVEL"
+	CommandSetExclude        = "EXCLUDE"
 )
 
 type command[E any] struct {
@@ -41,6 +42,10 @@ type awardFullnessCommandBody struct {
 
 type awardLevelCommandBody struct {
 	Amount byte `json:"amount"`
+}
+
+type setExcludeCommandBody struct {
+	Items []uint32 `json:"items"`
 }
 
 const (

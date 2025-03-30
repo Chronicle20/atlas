@@ -125,6 +125,24 @@ func slotChangedEventProvider(m Model, oldSlot int8) model.Provider[[]kafka.Mess
 	return producer.SingleMessageProvider(key, value)
 }
 
+func excludeChangedEventProvider(m Model) model.Provider[[]kafka.Message] {
+	items := make([]uint32, len(m.excludes))
+	for i, e := range m.excludes {
+		items[i] = e.ItemId()
+	}
+
+	key := producer.CreateKey(int(m.OwnerId()))
+	value := &statusEvent[excludeChangedStatusEventBody]{
+		PetId:   m.Id(),
+		OwnerId: m.OwnerId(),
+		Type:    StatusEventTypeExcludeChanged,
+		Body: excludeChangedStatusEventBody{
+			Items: items,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func moveEventProvider(m _map.Model, p Model, mov Movement) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(p.OwnerId()))
 	value := &movementEvent{

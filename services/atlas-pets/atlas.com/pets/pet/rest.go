@@ -1,27 +1,30 @@
 package pet
 
 import (
+	"atlas-pets/pet/exclude"
 	"errors"
+	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
 	"time"
 )
 
 type RestModel struct {
-	Id              uint64    `json:"-"`
-	InventoryItemId uint32    `json:"inventoryItemId"`
-	TemplateId      uint32    `json:"templateId"`
-	Name            string    `json:"name"`
-	Level           byte      `json:"level"`
-	Closeness       uint16    `json:"closeness"`
-	Fullness        byte      `json:"fullness"`
-	Expiration      time.Time `json:"expiration"`
-	OwnerId         uint32    `json:"ownerId"`
-	Lead            bool      `json:"lead"`
-	Slot            int8      `json:"slot"`
-	X               int16     `json:"x"`
-	Y               int16     `json:"y"`
-	Stance          byte      `json:"stance"`
-	FH              int16     `json:"fh"`
+	Id              uint64              `json:"-"`
+	InventoryItemId uint32              `json:"inventoryItemId"`
+	TemplateId      uint32              `json:"templateId"`
+	Name            string              `json:"name"`
+	Level           byte                `json:"level"`
+	Closeness       uint16              `json:"closeness"`
+	Fullness        byte                `json:"fullness"`
+	Expiration      time.Time           `json:"expiration"`
+	OwnerId         uint32              `json:"ownerId"`
+	Lead            bool                `json:"lead"`
+	Slot            int8                `json:"slot"`
+	X               int16               `json:"x"`
+	Y               int16               `json:"y"`
+	Stance          byte                `json:"stance"`
+	FH              int16               `json:"fh"`
+	Excludes        []exclude.RestModel `json:"excludes"`
 }
 
 func (r RestModel) GetName() string {
@@ -46,6 +49,10 @@ func Transform(m Model) (RestModel, error) {
 	if tm == nil {
 		return RestModel{}, errors.New("temporal data not found")
 	}
+	es, err := model.SliceMap(exclude.Transform)(model.FixedProvider(m.Excludes()))(model.ParallelMap())()
+	if err != nil {
+		return RestModel{}, err
+	}
 
 	return RestModel{
 		Id:              m.id,
@@ -63,5 +70,6 @@ func Transform(m Model) (RestModel, error) {
 		Y:               tm.Y(),
 		Stance:          tm.Stance(),
 		FH:              tm.FH(),
+		Excludes:        es,
 	}, nil
 }

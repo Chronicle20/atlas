@@ -11,6 +11,7 @@ const (
 	StatusEventTypeFullnessChanged  = "FULLNESS_CHANGED"
 	StatusEventTypeLevelChanged     = "LEVEL_CHANGED"
 	StatusEventTypeSlotChanged      = "SLOT_CHANGED"
+	StatusEventTypeExcludeChanged   = "EXCLUDE_CHANGED"
 
 	DespawnReasonNormal  = "NORMAL"
 	DespawnReasonHunger  = "HUNGER"
@@ -83,6 +84,10 @@ type levelChangedStatusEventBody struct {
 type slotChangedStatusEventBody struct {
 	OldSlot int8 `json:"oldSlot"`
 	NewSlot int8 `json:"newSlot"`
+}
+
+type excludeChangedStatusEventBody struct {
+	Items []uint32 `json:"items"`
 }
 
 const (

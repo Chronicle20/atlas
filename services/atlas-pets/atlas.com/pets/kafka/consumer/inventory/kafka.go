@@ -1,13 +1,10 @@
 package inventory
 
-import "github.com/google/uuid"
-
 const (
 	EnvEventInventoryChanged = "EVENT_TOPIC_INVENTORY_CHANGED"
 
-	ChangedTypeAdd     = "ADDED"
-	ChangedTypeRemove  = "REMOVED"
-	ChangedTypeReserve = "RESERVED"
+	ChangedTypeAdd    = "ADDED"
+	ChangedTypeRemove = "REMOVED"
 )
 
 type inventoryChangedEvent[M any] struct {
@@ -26,10 +23,4 @@ type inventoryChangedItemAddBody struct {
 
 type inventoryChangedItemRemoveBody struct {
 	ItemId uint32 `json:"itemId"`
-}
-
-type inventoryChangedItemReserveBody struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	ItemId        uint32    `json:"itemId"`
-	Quantity      uint32    `json:"quantity"`
 }

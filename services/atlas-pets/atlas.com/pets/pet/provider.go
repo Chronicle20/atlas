@@ -9,12 +9,22 @@ import (
 
 func getById(tenantId uuid.UUID, id uint64) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
-		return database.Query[Entity](db, &Entity{TenantId: tenantId, Id: id})
+		var result Entity
+		err := db.Where(&Entity{TenantId: tenantId, Id: id}).Preload("Excludes").First(&result).Error
+		if err != nil {
+			return model.ErrorProvider[Entity](err)
+		}
+		return model.FixedProvider[Entity](result)
 	}
 }
 
 func getByOwnerId(tenantId uuid.UUID, ownerId uint32) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
-		return database.SliceQuery[Entity](db, &Entity{TenantId: tenantId, OwnerId: ownerId})
+		var results []Entity
+		err := db.Where(&Entity{TenantId: tenantId, OwnerId: ownerId}).Preload("Excludes").Find(&results).Error
+		if err != nil {
+			return model.ErrorProvider[[]Entity](err)
+		}
+		return model.FixedProvider(results)
 	}
 }

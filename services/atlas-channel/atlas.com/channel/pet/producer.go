@@ -47,6 +47,19 @@ func attemptCommandProvider(petId uint64, commandId byte, byName bool, character
 	return producer.SingleMessageProvider(key, value)
 }
 
+func setExcludesCommandProvider(characterId uint32, petId uint64, items []uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(petId))
+	value := &commandEvent[setExcludeCommandBody]{
+		ActorId: characterId,
+		PetId:   petId,
+		Type:    CommandPetSetExclude,
+		Body: setExcludeCommandBody{
+			Items: items,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func Move(petId uint64, ma _map.Model, characterId uint32, mm model2.Movement) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(petId))
 

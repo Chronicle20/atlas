@@ -90,7 +90,7 @@ func ConsumeError(l logrus.FieldLogger) func(ctx context.Context) func(character
 	return func(ctx context.Context) func(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error {
 		return func(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error {
 			l.Debugf("Character [%d] unable to consume item due to error: [%v]", characterId, err)
-			cErr := inventory.CancelItemReservation(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, slot)
+			cErr := inventory.CancelItemReservation(l)(ctx)(characterId, inventoryType, transactionId, slot)
 			if cErr != nil {
 				l.WithError(cErr).Errorf("Unable to cancel item reservation at inventory [%d] slot [%d] for character [%d] as part of transaction [%d].", inventoryType, slot, characterId, transactionId)
 			}

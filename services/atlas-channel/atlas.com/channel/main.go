@@ -271,6 +271,7 @@ func produceWriters() []string {
 		writer.CharacterItemUpgrade,
 		writer.CharacterSkillMacro,
 		writer.PetExcludeResponse,
+		writer.PetCashFoodResult,
 	}
 }
 

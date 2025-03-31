@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/chalkboard"
+	"atlas-channel/consumable"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -17,36 +18,52 @@ const CharacterCashItemUseHandle = "CharacterCashItemUseHandle"
 func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+		updateTimeFirst := t.Region() == "GMS" && t.MajorVersion() >= 95
+
 		updateTime := uint32(0)
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		if updateTimeFirst {
 			updateTime = r.ReadUint32()
 		}
 		slot := r.ReadInt16()
 		itemId := r.ReadUint32()
 
-		// TODO very item in slot is expected.
+		// TODO verify item in slot as expected.
 
-		it := GetCashSlotItemType(t)(itemId)
+		it := GetCashSlotItemType(t)(item.Id(itemId))
+
+		if it == CashSlotItemTypePetConsumable {
+			if !updateTimeFirst {
+				updateTime = r.ReadUint32()
+			}
+			_ = consumable.RequestItemConsume(l)(ctx)(s.CharacterId(), itemId, slot, updateTime)
+			return
+		}
 		if it == CashSlotItemTypeChalkboard {
 			message := r.ReadAsciiString()
+			if !updateTimeFirst {
+				updateTime = r.ReadUint32()
+			}
 			_ = chalkboard.AttemptUse(l)(ctx)(s.Map(), s.CharacterId(), message)
 			return
-		} else {
-			l.Debugf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, slot, it, updateTime)
 		}
+
+		// TODO for v83 there is a trailing updateTime.
+
+		l.Warnf("Character [%d] attempting to use cash item [%d] in slot [%d] of type [%d]. updateTime [%d].", s.CharacterId(), itemId, slot, it, updateTime)
 	}
 }
 
 type CashSlotItemType uint32
 
 const (
-	CashSlotItemTypeChalkboard = CashSlotItemType(32)
+	CashSlotItemTypePetConsumable = CashSlotItemType(30)
+	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
 )
 
-func GetCashSlotItemType(t tenant.Model) func(itemId uint32) CashSlotItemType {
-	return func(itemId uint32) CashSlotItemType {
-		category := item.Classification(math.Floor(float64(itemId) / 10000))
-		if category == 500 {
+func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
+	return func(itemId item.Id) CashSlotItemType {
+		category := item.GetClassification(itemId)
+		if category == item.ClassificationPet {
 			return CashSlotItemType(8)
 		}
 		if category == 501 {
@@ -58,10 +75,10 @@ func GetCashSlotItemType(t tenant.Model) func(itemId uint32) CashSlotItemType {
 		if category == 503 {
 			return CashSlotItemType(11)
 		}
-		if category == 504 {
+		if category == item.ClassificationTeleportRock {
 			return CashSlotItemType(12)
 		}
-		if category == 505 {
+		if category == item.ClassificationPointReset {
 			if itemId%10 == 1 {
 				if (itemId%10 - 1) > 8 {
 					return CashSlotItemType(0)
@@ -70,7 +87,7 @@ func GetCashSlotItemType(t tenant.Model) func(itemId uint32) CashSlotItemType {
 			}
 			return CashSlotItemType(23)
 		}
-		if category == 506 {
+		if category == item.ClassificationItemImprints {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 				if uint32(math.Floor(float64(itemId)/1000)) == 5061 {
 					return CashSlotItemType(65)
@@ -97,7 +114,7 @@ func GetCashSlotItemType(t tenant.Model) func(itemId uint32) CashSlotItemType {
 			}
 			return CashSlotItemType(0)
 		}
-		if category == 507 {
+		if category == item.ClassificationMegaphones {
 			otherCategory := uint32(math.Floor(float64(itemId%10000) / float64(1000)))
 			if otherCategory == 1 {
 				return CashSlotItemType(12)
@@ -169,25 +186,25 @@ func GetCashSlotItemType(t tenant.Model) func(itemId uint32) CashSlotItemType {
 			}
 			return CashSlotItemType(0)
 		}
-		if category == 508 {
+		if category == item.ClassificationMessageBanner {
 			return CashSlotItemType(18)
 		}
-		if category == 509 {
+		if category == item.ClassificationNote {
 			return CashSlotItemType(21)
 		}
-		if category == 510 {
+		if category == item.ClassificationSongPlayer {
 			return CashSlotItemType(20)
 		}
-		if category == 512 {
+		if category == item.ClassificationMapEffect {
 			return CashSlotItemType(16)
 		}
 		if category == 513 {
 			return CashSlotItemType(7)
 		}
-		if category == 514 {
+		if category == item.ClassificationStorePermit {
 			return CashSlotItemType(4)
 		}
-		if category == 515 {
+		if category == item.ClassificationCosmeticCoupon {
 			otherCategory := uint32(math.Floor(float64(itemId) / float64(1000)))
 			if otherCategory == 5150 || otherCategory == 5151 || otherCategory == 5154 {
 				return CashSlotItemType(1)
@@ -206,10 +223,10 @@ func GetCashSlotItemType(t tenant.Model) func(itemId uint32) CashSlotItemType {
 			}
 			return CashSlotItemType(0)
 		}
-		if category == 516 {
+		if category == item.ClassificationExpression {
 			return CashSlotItemType(6)
 		}
-		if category == 517 {
+		if category == item.ClassificationPetImprints {
 			if 10000*itemId/10000 != itemId {
 				return CashSlotItemType(0)
 			}
@@ -221,23 +238,23 @@ func GetCashSlotItemType(t tenant.Model) func(itemId uint32) CashSlotItemType {
 		if category == 519 {
 			return CashSlotItemType(28)
 		}
-		if category == 520 {
+		if category == item.ClassificationCurrencySack {
 			return CashSlotItemType(19)
 		}
-		if category == 522 {
+		if category == item.ClassificationGachaponCoupon {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 				return CashSlotItemType(40)
 			} else {
 				return CashSlotItemType(39)
 			}
 		}
-		if category == 523 {
+		if category == item.ClassificationStoreSearch {
 			return CashSlotItemType(29)
 		}
-		if category == 524 {
-			return CashSlotItemType(30)
+		if category == item.ClassificationPetConsumable {
+			return CashSlotItemTypePetConsumable
 		}
-		if category == 525 {
+		if category == item.ClassificationWeddingTicket {
 			if itemId%525100 != 100 {
 				return CashSlotItemType(36)
 			}
@@ -252,34 +269,34 @@ func GetCashSlotItemType(t tenant.Model) func(itemId uint32) CashSlotItemType {
 			}
 			return CashSlotItemType(0)
 		}
-		if category == 530 {
+		if category == item.ClassificationTransformationCoupon {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 				return CashSlotItemType(41)
 			} else {
 				return CashSlotItemType(40)
 			}
 		}
-		if category == 533 {
+		if category == item.ClassificationDueyCoupon {
 			return CashSlotItemType(31)
 		}
-		if category == 537 {
-			return CashSlotItemType(32)
+		if category == item.ClassificationChalkboard {
+			return CashSlotItemTypeChalkboard
 		}
-		if category == 538 {
+		if category == item.ClassificationPetEvolution {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 				return CashSlotItemType(42)
 			} else {
 				return CashSlotItemType(41)
 			}
 		}
-		if category == 539 {
+		if category == item.ClassificationAvatarMegaphone {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 				return CashSlotItemType(43)
 			} else {
 				return CashSlotItemType(42)
 			}
 		}
-		if category == 540 {
+		if category == item.ClassificationCharacterImprints {
 			if itemId/1000 == 5400 {
 				if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 					return CashSlotItemType(53)
@@ -303,7 +320,7 @@ func GetCashSlotItemType(t tenant.Model) func(itemId uint32) CashSlotItemType {
 			}
 			return CashSlotItemType(0)
 		}
-		if category == 542 {
+		if category == item.ClassificationCosmeticMembershipCoupon {
 			if itemId/1000 == 5420 {
 				if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 					return CashSlotItemType(55)
@@ -313,7 +330,7 @@ func GetCashSlotItemType(t tenant.Model) func(itemId uint32) CashSlotItemType {
 			}
 			return CashSlotItemType(0)
 		}
-		if category == 543 {
+		if category == item.ClassificationCharacterCreation {
 			if itemId/1000-5431 > 1 {
 				if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 					return CashSlotItemType(58)
@@ -327,7 +344,7 @@ func GetCashSlotItemType(t tenant.Model) func(itemId uint32) CashSlotItemType {
 				return CashSlotItemType(65)
 			}
 		}
-		if category == 545 {
+		if category == item.ClassificationRemoteMerchant {
 			if itemId/1000 != 5451 {
 				if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 					return CashSlotItemType(38)
@@ -341,14 +358,14 @@ func GetCashSlotItemType(t tenant.Model) func(itemId uint32) CashSlotItemType {
 				return CashSlotItemType(59)
 			}
 		}
-		if category == 546 {
+		if category == item.ClassificationPetMultiConsumable {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 				return CashSlotItemType(58)
 			} else {
 				return CashSlotItemType(57)
 			}
 		}
-		if category == 547 {
+		if category == item.ClassificationRemoteStore {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 				return CashSlotItemType(39)
 			} else {

@@ -44,6 +44,14 @@ func handleErrorConsumableEvent(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
+		if e.Body.Error == ErrorTypePetCannotConsume {
+			err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.PetCashFoodResult)(writer.PetCashFoodErrorResultBody()))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to process error event for character [%d].", e.CharacterId)
+			}
+			return
+		}
+
 		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process error event for character [%d].", e.CharacterId)

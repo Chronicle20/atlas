@@ -512,7 +512,7 @@ func Update(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) fu
 					MP:             e.MP(),
 					WeaponAttack:   e.WeaponAttack(),
 					MagicAttack:    e.MagicAttack(),
-					WeaponDefense:  e.MagicDefense(),
+					WeaponDefense:  e.WeaponDefense(),
 					MagicDefense:   e.MagicDefense(),
 					Accuracy:       e.Accuracy(),
 					Avoidability:   e.Avoidability(),

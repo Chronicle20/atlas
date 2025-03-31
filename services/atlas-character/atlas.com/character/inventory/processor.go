@@ -452,14 +452,14 @@ func moveFromSlotToSlot(l logrus.FieldLogger) func(modelProvider model.Provider[
 	}
 }
 
-func UnequipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
-	return func(db *gorm.DB) func(ctx context.Context) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
-		return func(ctx context.Context) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
-			return func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
-				return func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16) {
-					return func(characterId uint32) func(oldSlot int16) {
-						return func(oldSlot int16) {
-							l.Debugf("Received request to unequip item at [%d] for character [%d].", oldSlot, characterId)
+func UnequipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16, desiredSlot int16) {
+	return func(db *gorm.DB) func(ctx context.Context) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16, desiredSlot int16) {
+		return func(ctx context.Context) func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16, desiredSlot int16) {
+			return func(freeSlotProvider func(db *gorm.DB) func(uint32) model.Provider[int16]) func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16, desiredSlot int16) {
+				return func(eventProducer producer.Provider) func(characterId uint32) func(oldSlot int16, desiredSlot int16) {
+					return func(characterId uint32) func(oldSlot int16, desiredSlot int16) {
+						return func(oldSlot int16, desiredSlot int16) {
+							l.Debugf("Received request to unequip item at [%d] for character [%d]. And place it at slot [%d].", oldSlot, characterId, desiredSlot)
 							invLock := GetLockRegistry().GetById(characterId, inventory.TypeValueEquip)
 							invLock.Lock()
 							defer invLock.Unlock()
@@ -470,13 +470,24 @@ func UnequipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx co
 								slotUpdater := equipable.UpdateSlot(tx)(ctx)
 								characterInventoryMoveProvider := inventoryItemMoveProvider(characterId)(inventory.TypeValueEquip)
 
-								invId, err := GetInventoryIdByType(tx)(ctx)(characterId, inventory.TypeValueEquip)()
+								inv, err := GetInventoryByType(l)(tx)(ctx)(characterId, inventory.TypeValueEquip)()
 								if err != nil {
 									l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventory.TypeValueEquip, characterId)
 									return err
 								}
 
-								resp, err := moveFromSlotToSlot(l)(inSlotProvider(oldSlot), freeSlotProvider(tx)(invId), slotUpdater, characterInventoryMoveProvider(oldSlot))()
+								if desiredSlot > 0 && uint32(desiredSlot) < inv.Capacity() {
+									_, err = equipable.AssetBySlotProvider(tx)(ctx)(characterId)(desiredSlot)()
+									if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+										freeSlotProvider = func(db *gorm.DB) func(uint32) model.Provider[int16] {
+											return func(u uint32) model.Provider[int16] {
+												return model.FixedProvider(desiredSlot)
+											}
+										}
+									}
+								}
+
+								resp, err := moveFromSlotToSlot(l)(inSlotProvider(oldSlot), freeSlotProvider(tx)(inv.Id()), slotUpdater, characterInventoryMoveProvider(oldSlot))()
 								if err != nil {
 									l.WithError(err).Errorf("Unable to move overall out of its slot.")
 									return err

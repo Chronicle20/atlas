@@ -66,7 +66,7 @@ func handleUnequipItemCommand(db *gorm.DB) message.Handler[command[unequipComman
 		l.Debugf("Received unequip item command. characterId [%d] source [%d].", c.CharacterId, c.Body.Source)
 		fsp := model.Flip(equipable.GetNextFreeSlot(l))(ctx)
 		ep := producer.ProviderImpl(l)(ctx)
-		inventory.UnequipItemForCharacter(l)(db)(ctx)(fsp)(ep)(c.CharacterId)(c.Body.Source)
+		inventory.UnequipItemForCharacter(l)(db)(ctx)(fsp)(ep)(c.CharacterId)(c.Body.Source, c.Body.Destination)
 	}
 }
 

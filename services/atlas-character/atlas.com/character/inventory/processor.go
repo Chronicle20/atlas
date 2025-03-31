@@ -319,7 +319,6 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 						return func(source int16) func(destinationProvider equipment.DestinationProvider) {
 							return func(destinationProvider equipment.DestinationProvider) {
 								var e equipable.Model
-								var err error
 
 								l.Debugf("Received request to equip item at [%d] for character [%d].", source, characterId)
 								invLock := GetLockRegistry().GetById(characterId, inventory.TypeValueEquip)
@@ -328,10 +327,11 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 
 								var events = model.FixedProvider([]kafka.Message{})
 
-								err = db.Transaction(func(tx *gorm.DB) error {
+								txErr := db.Transaction(func(tx *gorm.DB) error {
 									inSlotProvider := equipable.AssetBySlotProvider(tx)(ctx)(characterId)
 									slotUpdater := equipable.UpdateSlot(tx)(ctx)
 
+									var err error
 									e, err = equipable.GetBySlot(tx)(ctx)(characterId, source)
 									if err != nil {
 										l.WithError(err).Errorf("Unable to retrieve equipment in slot [%d].", source)
@@ -371,7 +371,7 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 
 									ts, err := slot2.GetSlotByType("top")
 									if err != nil {
-										l.WithError(err).Errorf("Unable to find pants slot")
+										l.WithError(err).Errorf("Unable to find top slot")
 										return err
 									}
 									ps, err := slot2.GetSlotByType("pants")
@@ -383,7 +383,7 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 									if item2.GetClassification(item2.Id(e.ItemId())) == item2.ClassificationOverall {
 										l.Debugf("Item is an overall, we also need to unequip the bottom.")
 										resp, err = moveFromSlotToSlot(l)(inSlotProvider(int16(ps.Position)), nextFreeSlotProvider, slotUpdater, characterInventoryMoveProvider(int16(ps.Position)))()
-										if err != nil {
+										if err != nil && !errors.Is(err, ErrItemNotFound) {
 											l.WithError(err).Errorf("Unable to move bottom out of its slot.")
 											return err
 										}
@@ -393,7 +393,7 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 										l.Debugf("Item is a bottom, need to unequip an overall if its in the top slot.")
 										ip := model.Map(IsOverall)(inSlotProvider(int16(ts.Position)))
 										resp, err = moveFromSlotToSlot(l)(ip, nextFreeSlotProvider, slotUpdater, characterInventoryMoveProvider(int16(ts.Position)))()
-										if err != nil && !errors.Is(err, notOverall) {
+										if err != nil && !errors.Is(err, ErrNotOverall) {
 											l.WithError(err).Errorf("Unable to move overall out of its slot.")
 											return err
 										}
@@ -401,12 +401,12 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 									}
 									return nil
 								})
-								if err != nil {
-									l.WithError(err).Errorf("Unable to complete the equipment of item [%d] for character [%d].", e.Id(), characterId)
+								if txErr != nil {
+									l.WithError(txErr).Errorf("Unable to complete the equipment of item [%d] for character [%d].", e.Id(), characterId)
 									return
 								}
 
-								err = eventProducer(EnvEventInventoryChanged)(events)
+								err := eventProducer(EnvEventInventoryChanged)(events)
 								if err != nil {
 									l.WithError(err).Errorf("Unable to convey inventory modifications to character [%d].", characterId)
 								}
@@ -419,23 +419,25 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 	}
 }
 
-var notOverall = errors.New("not an overall")
+var ErrNotOverall = errors.New("not an overall")
 
 func IsOverall(m asset.Asset) (asset.Asset, error) {
 	if item2.GetClassification(item2.Id(m.ItemId())) == item2.ClassificationOverall {
 		return m, nil
 	}
-	return nil, notOverall
+	return nil, ErrNotOverall
 }
+
+var ErrItemNotFound = errors.New("item not found")
 
 func moveFromSlotToSlot(l logrus.FieldLogger) func(modelProvider model.Provider[asset.Asset], newSlotProvider model.Provider[int16], slotUpdater func(id uint32, slot int16) error, moveEventProvider func(itemId uint32) func(slot int16) model.Provider[[]kafka.Message]) model.Provider[[]kafka.Message] {
 	return func(modelProvider model.Provider[asset.Asset], newSlotProvider model.Provider[int16], slotUpdater func(id uint32, slot int16) error, moveEventProvider func(itemId uint32) func(slot int16) model.Provider[[]kafka.Message]) model.Provider[[]kafka.Message] {
 		m, err := modelProvider()
 		if err != nil {
-			return model.ErrorProvider[[]kafka.Message](err)
+			return model.ErrorProvider[[]kafka.Message](ErrItemNotFound)
 		}
 		if m.Id() == 0 {
-			return model.ErrorProvider[[]kafka.Message](errors.New("item not found"))
+			return model.ErrorProvider[[]kafka.Message](ErrItemNotFound)
 		}
 		newSlot, err := newSlotProvider()
 		if err != nil {

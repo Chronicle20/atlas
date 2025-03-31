@@ -393,7 +393,7 @@ func EquipItemForCharacter(l logrus.FieldLogger) func(db *gorm.DB) func(ctx cont
 										l.Debugf("Item is a bottom, need to unequip an overall if its in the top slot.")
 										ip := model.Map(IsOverall)(inSlotProvider(int16(ts.Position)))
 										resp, err = moveFromSlotToSlot(l)(ip, nextFreeSlotProvider, slotUpdater, characterInventoryMoveProvider(int16(ts.Position)))()
-										if err != nil && !errors.Is(err, ErrNotOverall) {
+										if err != nil && !errors.Is(err, ErrNotOverall) && !errors.Is(err, ErrItemNotFound) {
 											l.WithError(err).Errorf("Unable to move overall out of its slot.")
 											return err
 										}

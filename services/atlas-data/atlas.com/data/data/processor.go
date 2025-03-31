@@ -2,6 +2,7 @@ package data
 
 import (
 	"archive/zip"
+	"atlas-data/cash"
 	"atlas-data/consumable"
 	"atlas-data/equipment"
 	"atlas-data/kafka/producer"
@@ -32,9 +33,10 @@ const (
 	WorkerSkill     = "SKILL"
 	WorkerPet       = "PET"
 	WorkerConsume   = "CONSUME"
+	WorkerCash      = "CASH"
 )
 
-var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume}
+var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash}
 
 func ProcessZip(l logrus.FieldLogger) func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
 	return func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
@@ -164,6 +166,8 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Pet"), pet.RegisterPet(db))()
 				} else if name == WorkerConsume {
 					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Consume"), consumable.RegisterConsumable(db))()
+				} else if name == WorkerCash {
+					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Cash"), cash.RegisterCash(db))()
 				}
 
 				return nil

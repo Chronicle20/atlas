@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-data/cash"
 	"atlas-data/consumable"
 	"atlas-data/data"
 	"atlas-data/database"
@@ -73,6 +74,7 @@ func main() {
 		AddRouteInitializer(skill.InitResource(db)(GetServer())).
 		AddRouteInitializer(pet.InitResource(db)(GetServer())).
 		AddRouteInitializer(consumable.InitResource(db)(GetServer())).
+		AddRouteInitializer(cash.InitResource(db)(GetServer())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

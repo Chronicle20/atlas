@@ -228,7 +228,7 @@ func TestAdjustingEquipment(t *testing.T) {
 
 	var unequipMessages = make([]kafka.Message, 0)
 	unequipFunc := inventory.UnequipItemForCharacter(l)(db)(tctx)(model.Flip(equipable.GetNextFreeSlot(l))(tctx))(testProducer(&unequipMessages))(c.Id())
-	unequipFunc(int16(positionTop()))
+	unequipFunc(int16(positionTop()), 0)
 	equippedTop, err = equipable.GetBySlot(db)(tctx)(c.Id(), 2)
 	if err != nil {
 		t.Fatalf("Failed to retreive created item.")
@@ -236,7 +236,7 @@ func TestAdjustingEquipment(t *testing.T) {
 	if !validateEquipable(equippedTop, EquipableItemIdValidator(1040010)) {
 		t.Fatalf("Unequiping of Top failed validation.")
 	}
-	unequipFunc(int16(positionBottom()))
+	unequipFunc(int16(positionBottom()), 0)
 	equippedBottom, err = equipable.GetBySlot(db)(tctx)(c.Id(), 3)
 	if err != nil {
 		t.Fatalf("Failed to retreive created item.")

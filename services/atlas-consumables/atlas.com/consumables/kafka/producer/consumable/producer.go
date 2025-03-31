@@ -7,12 +7,14 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func ErrorEventProvider(characterId uint32) model.Provider[[]kafka.Message] {
+func ErrorEventProvider(characterId uint32, error string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &consumable.Event[consumable.ErrorBody]{
 		CharacterId: characterId,
 		Type:        consumable.EventTypeError,
-		Body:        consumable.ErrorBody{},
+		Body: consumable.ErrorBody{
+			Error: error,
+		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

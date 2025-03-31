@@ -1,6 +1,7 @@
 package consumable
 
 import (
+	"atlas-consumables/cash"
 	"atlas-consumables/character"
 	"atlas-consumables/character/buff"
 	"atlas-consumables/character/buff/stat"
@@ -28,12 +29,15 @@ import (
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"math"
 	"math/rand"
 )
+
+var ErrPetCannotConsume = errors.New("pet cannot consume")
 
 type ItemConsumer func(l logrus.FieldLogger) func(ctx context.Context) error
 
@@ -53,21 +57,27 @@ func RequestItemConsume(l logrus.FieldLogger) func(ctx context.Context) func(cha
 			t, _ := topic.EnvProvider(l)(inventory3.EnvEventInventoryChanged)()
 			validator := once.ReservationValidator(transactionId, uint32(itemId))
 
-			var itemConsumer ItemConsumer
+			it, ok := inventory2.TypeFromItemId(uint32(itemId))
+			if !ok {
+				return errors.New("invalid item id")
+			}
 
+			var itemConsumer ItemConsumer
 			if item2.GetClassification(itemId) == item2.Classification(200) || item2.GetClassification(itemId) == item2.Classification(201) || item2.GetClassification(itemId) == item2.Classification(202) {
 				itemConsumer = ConsumeStandard(transactionId, characterId, slot, itemId, quantity)
 			} else if item2.GetClassification(itemId) == item2.ClassificationConsumableTownWarp {
 				itemConsumer = ConsumeTownScroll(transactionId, characterId, slot, itemId, quantity)
 			} else if item2.GetClassification(itemId) == item2.ClassificationConsumablePetFood {
 				itemConsumer = ConsumePetFood(transactionId, characterId, slot, itemId, quantity)
+			} else if item2.GetClassification(itemId) == item2.ClassificationPetConsumable {
+				itemConsumer = ConsumeCashPetFood(transactionId, characterId, slot, itemId, quantity)
 			}
 
 			handler := inventory.Consume(itemConsumer)
 
 			_, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
 
-			err = inventory.RequestReserve(l)(ctx)(transactionId, characterId, inventory2.TypeValueUse, []inventory.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: quantity}})
+			err = inventory.RequestReserve(l)(ctx)(transactionId, characterId, it, []inventory.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: quantity}})
 			if err != nil {
 				return err
 			}
@@ -84,7 +94,13 @@ func ConsumeError(l logrus.FieldLogger) func(ctx context.Context) func(character
 			if cErr != nil {
 				l.WithError(cErr).Errorf("Unable to cancel item reservation at inventory [%d] slot [%d] for character [%d] as part of transaction [%d].", inventoryType, slot, characterId, transactionId)
 			}
-			cErr = producer.ProviderImpl(l)(ctx)(consumable.EnvEventTopic)(consumable2.ErrorEventProvider(characterId))
+
+			errorType := ""
+			if errors.Is(err, ErrPetCannotConsume) {
+				errorType = consumable.ErrorTypePetCannotConsume
+			}
+
+			cErr = producer.ProviderImpl(l)(ctx)(consumable.EnvEventTopic)(consumable2.ErrorEventProvider(characterId, errorType))
 			if cErr != nil {
 				l.WithError(cErr).Errorf("Unable to issue consumption error [%v] on event topic. Character [%d] likely going to be stuck.", err, characterId)
 			}
@@ -246,6 +262,40 @@ func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, ite
 			}
 			inc := byte(0)
 			if val, ok := ci.GetSpec(SpecTypeInc); ok {
+				inc = byte(val)
+			}
+
+			err = pet.AwardFullness(l)(ctx)(characterId, p.Id(), inc)
+			if err != nil {
+				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+
+			err = inventory.ConsumeItem(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, slot)
+			if err != nil {
+				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+			return nil
+		}
+	}
+}
+
+func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
+	return func(l logrus.FieldLogger) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			ci, err := cash.GetById(l)(ctx)(uint32(itemId))
+			if err != nil {
+				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueCash, slot, err)
+			}
+
+			hpp := pet.HungryByOwnerProvider(l)(ctx)(characterId)
+			fhpp := model.FilteredProvider(hpp, model.Filters[pet.Model](pet.IsTemplateFilter(ci.Indexes()...)))
+			p, err := pet.HungriestToOneProvider(fhpp)()
+			if err != nil {
+				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueCash, slot, ErrPetCannotConsume)
+			}
+
+			inc := byte(0)
+			if val, ok := ci.GetSpec(cash.SpecTypeInc); ok {
 				inc = byte(val)
 			}
 

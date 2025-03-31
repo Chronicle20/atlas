@@ -70,19 +70,33 @@ func Hungry(m Model) bool {
 func HungriestByOwnerProvider(l logrus.FieldLogger) func(ctx context.Context) func(ownerId uint32) model.Provider[Model] {
 	return func(ctx context.Context) func(ownerId uint32) model.Provider[Model] {
 		return func(ownerId uint32) model.Provider[Model] {
-			ps, err := HungryByOwnerProvider(l)(ctx)(ownerId)()
-			if err != nil {
-				return model.ErrorProvider[Model](err)
-			}
-			if len(ps) == 0 {
-				return model.ErrorProvider[Model](errors.New("empty slice"))
-			}
-
-			sort.Slice(ps, func(i, j int) bool {
-				return ps[i].Fullness() < ps[j].Fullness()
-			})
-			return model.FixedProvider(ps[0])
+			return HungriestToOneProvider(HungryByOwnerProvider(l)(ctx)(ownerId))
 		}
+	}
+}
+
+func HungriestToOneProvider(p model.Provider[[]Model]) model.Provider[Model] {
+	ps, err := p()
+	if err != nil {
+		return model.ErrorProvider[Model](err)
+	}
+	if len(ps) == 0 {
+		return model.ErrorProvider[Model](errors.New("empty slice"))
+	}
+	sort.Slice(ps, func(i, j int) bool {
+		return ps[i].Fullness() < ps[j].Fullness()
+	})
+	return model.FixedProvider(ps[0])
+}
+
+func IsTemplateFilter(templateIds ...uint32) model.Filter[Model] {
+	return func(m Model) bool {
+		for _, templateId := range templateIds {
+			if m.TemplateId() == templateId {
+				return true
+			}
+		}
+		return false
 	}
 }
 

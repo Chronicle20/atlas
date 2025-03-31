@@ -30,6 +30,8 @@ const (
 	EnvEventTopic   = "EVENT_TOPIC_CONSUMABLE_STATUS"
 	EventTypeError  = "ERROR"
 	EventTypeScroll = "SCROLL"
+
+	ErrorTypePetCannotConsume = "PET_CANNOT_CONSUME"
 )
 
 type Event[E any] struct {
@@ -39,6 +41,7 @@ type Event[E any] struct {
 }
 
 type ErrorBody struct {
+	Error string `json:"error"`
 }
 
 type ScrollBody struct {

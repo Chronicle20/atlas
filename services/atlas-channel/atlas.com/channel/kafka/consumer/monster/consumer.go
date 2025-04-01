@@ -4,11 +4,9 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
-	"atlas-channel/movement"
 	"atlas-channel/party"
 	"atlas-channel/server"
 	"atlas-channel/session"
-	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -28,7 +26,6 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
 			rf(consumer2.NewConfig(l)("monster_status_event")(EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
-			rf(consumer2.NewConfig(l)("monster_movement_event")(EnvEventTopicMovement)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -45,8 +42,6 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventKilled(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventStartControl(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventStopControl(sc, wp))))
-				t, _ = topic.EnvProvider(l)(EnvEventTopicMovement)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp))))
 			}
 		}
 	}
@@ -211,44 +206,6 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 		err := session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to stop control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
-		}
-	}
-}
-
-func handleMovementEvent(sc server.Model, wp writer.Producer) message.Handler[movementEvent] {
-	return func(l logrus.FieldLogger, ctx context.Context, e movementEvent) {
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
-			return
-		}
-
-		err := _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.ObserverId, showMovementForSession(l)(ctx)(wp)(e))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to move monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
-		}
-	}
-}
-
-func showMovementForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event movementEvent) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(event movementEvent) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(event movementEvent) model.Operator[session.Model] {
-			return func(event movementEvent) model.Operator[session.Model] {
-				return func(s session.Model) error {
-					l.Debugf("Writing monster [%d] movement for session [%s].", event.UniqueId, s.SessionId().String())
-					mt := model2.MultiTargetForBall{}
-					for _, t := range event.MultiTarget {
-						mt.Targets = append(mt.Targets, model2.NewPosition(t.X, t.Y))
-					}
-					ra := model2.RandTimeForAreaAttack{}
-					for _, t := range event.RandomTimes {
-						ra.Times = append(ra.Times, t)
-					}
-
-					mv := movement.ProduceMovementForSocket(event.Movement)
-					return session.Announce(l)(ctx)(wp)(writer.MoveMonster)(writer.MoveMonsterBody(l, tenant.MustFromContext(ctx))(event.UniqueId,
-						false, event.SkillPossible, false, event.Skill, event.SkillId,
-						event.SkillLevel, mt, ra, *mv))(s)
-				}
-			}
 		}
 	}
 }

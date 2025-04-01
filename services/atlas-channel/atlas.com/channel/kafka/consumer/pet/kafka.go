@@ -1,7 +1,5 @@
 package pet
 
-import "atlas-channel/movement"
-
 const (
 	EnvStatusEventTopic             = "EVENT_TOPIC_PET_STATUS"
 	StatusEventTypeCreated          = "CREATED"
@@ -86,18 +84,4 @@ type slotChangedStatusEventBody struct {
 
 type excludeChangedStatusEventBody struct {
 	Items []uint32 `json:"items"`
-}
-
-const (
-	EnvEventTopicMovement = "EVENT_TOPIC_PET_MOVEMENT"
-)
-
-type movementEvent struct {
-	WorldId   byte              `json:"worldId"`
-	ChannelId byte              `json:"channelId"`
-	MapId     uint32            `json:"mapId"`
-	PetId     uint64            `json:"petId"`
-	Slot      int8              `json:"slot"`
-	OwnerId   uint32            `json:"ownerId"`
-	Movement  movement.Movement `json:"movement"`
 }

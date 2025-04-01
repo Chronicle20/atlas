@@ -1,7 +1,5 @@
 package character
 
-import "atlas-channel/movement"
-
 const (
 	EnvEventTopicCharacterStatus     = "EVENT_TOPIC_CHARACTER_STATUS"
 	StatusEventTypeMapChanged        = "MAP_CHANGED"
@@ -28,8 +26,6 @@ const (
 	ExperienceDistributionTypeCakePie      = "CAKE_PIE"
 
 	StatusEventActorTypeCharacter = "CHARACTER"
-
-	EnvEventTopicMovement = "EVENT_TOPIC_CHARACTER_MOVEMENT"
 )
 
 type statusEvent[E any] struct {
@@ -78,12 +74,4 @@ type fameChangedStatusEventBody struct {
 
 type mesoChangedStatusEventBody struct {
 	Amount int32 `json:"amount"`
-}
-
-type movementEvent struct {
-	WorldId     byte              `json:"worldId"`
-	ChannelId   byte              `json:"channelId"`
-	MapId       uint32            `json:"mapId"`
-	CharacterId uint32            `json:"characterId"`
-	Movement    movement.Movement `json:"movement"`
 }

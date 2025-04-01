@@ -7,40 +7,39 @@ import (
 	"atlas-channel/character/skill"
 	"atlas-channel/kafka/producer"
 	"atlas-channel/pet"
-	"atlas-channel/socket/model"
 	"context"
 	"errors"
 	_map "github.com/Chronicle20/atlas-constants/map"
-	model2 "github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 	"sort"
 )
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(decorators ...model2.Decorator[Model]) func(characterId uint32) (Model, error) {
-	return func(ctx context.Context) func(decorators ...model2.Decorator[Model]) func(characterId uint32) (Model, error) {
-		return func(decorators ...model2.Decorator[Model]) func(characterId uint32) (Model, error) {
+func GetById(l logrus.FieldLogger) func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
+	return func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
+		return func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
 			return func(characterId uint32) (Model, error) {
 				p := requests.Provider[RestModel, Model](l, ctx)(requestById(characterId), Extract)
-				return model2.Map(model2.Decorate(decorators))(p)()
+				return model.Map(model.Decorate(decorators))(p)()
 			}
 		}
 	}
 }
 
-func GetByIdWithInventory(l logrus.FieldLogger) func(ctx context.Context) func(decorators ...model2.Decorator[Model]) func(characterId uint32) (Model, error) {
-	return func(ctx context.Context) func(decorators ...model2.Decorator[Model]) func(characterId uint32) (Model, error) {
-		return func(decorators ...model2.Decorator[Model]) func(characterId uint32) (Model, error) {
+func GetByIdWithInventory(l logrus.FieldLogger) func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
+	return func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
+		return func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
 			return func(characterId uint32) (Model, error) {
 				p := requests.Provider[RestModel, Model](l, ctx)(requestByIdWithInventory(characterId), Extract)
-				return model2.Map(model2.Decorate(decorators))(p)()
+				return model.Map(model.Decorate(decorators))(p)()
 			}
 		}
 	}
 }
 
-func SkillModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model2.Decorator[Model] {
-	return func(ctx context.Context) model2.Decorator[Model] {
+func SkillModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model.Decorator[Model] {
+	return func(ctx context.Context) model.Decorator[Model] {
 		return func(m Model) Model {
 			ms, err := skill.GetByCharacterId(l)(ctx)(m.Id())
 			if err != nil {
@@ -51,8 +50,8 @@ func SkillModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model2.
 	}
 }
 
-func PetModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model2.Decorator[Model] {
-	return func(ctx context.Context) model2.Decorator[Model] {
+func PetModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model.Decorator[Model] {
+	return func(ctx context.Context) model.Decorator[Model] {
 		return func(m Model) Model {
 			ms, err := pet.GetByOwner(l)(ctx)(m.Id())
 			if err != nil {
@@ -69,43 +68,31 @@ func PetModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model2.De
 	}
 }
 
-func Move(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, mm model.Movement) {
-	return func(ctx context.Context) func(m _map.Model, characterId uint32, mm model.Movement) {
-		moveCharacterCommandFunc := producer.ProviderImpl(l)(ctx)(EnvCommandTopicMovement)
-		return func(m _map.Model, characterId uint32, mm model.Movement) {
-			err := moveCharacterCommandFunc(move(m, characterId, mm))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to distribute character movement to other services.")
-			}
-		}
-	}
-}
-
-func GetEquipableInSlot(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, slot int16) model2.Provider[equipable.Model] {
-	return func(ctx context.Context) func(characterId uint32, slot int16) model2.Provider[equipable.Model] {
-		return func(characterId uint32, slot int16) model2.Provider[equipable.Model] {
+func GetEquipableInSlot(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, slot int16) model.Provider[equipable.Model] {
+	return func(ctx context.Context) func(characterId uint32, slot int16) model.Provider[equipable.Model] {
+		return func(characterId uint32, slot int16) model.Provider[equipable.Model] {
 			// TODO this needs to be more performant
 			c, err := GetByIdWithInventory(l)(ctx)()(characterId)
 			if err != nil {
-				return model2.ErrorProvider[equipable.Model](err)
+				return model.ErrorProvider[equipable.Model](err)
 			}
 			for _, e := range c.Inventory().Equipable().Items() {
 				if e.Slot() == slot {
-					return model2.FixedProvider(e)
+					return model.FixedProvider(e)
 				}
 			}
-			return model2.ErrorProvider[equipable.Model](errors.New("equipable not found"))
+			return model.ErrorProvider[equipable.Model](errors.New("equipable not found"))
 		}
 	}
 }
 
-func GetItemInSlot(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, inventoryType byte, slot int16) model2.Provider[item.Model] {
-	return func(ctx context.Context) func(characterId uint32, inventoryType byte, slot int16) model2.Provider[item.Model] {
-		return func(characterId uint32, inventoryType byte, slot int16) model2.Provider[item.Model] {
+func GetItemInSlot(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, inventoryType byte, slot int16) model.Provider[item.Model] {
+	return func(ctx context.Context) func(characterId uint32, inventoryType byte, slot int16) model.Provider[item.Model] {
+		return func(characterId uint32, inventoryType byte, slot int16) model.Provider[item.Model] {
 			// TODO this needs to be more performant
 			c, err := GetByIdWithInventory(l)(ctx)()(characterId)
 			if err != nil {
-				return model2.ErrorProvider[item.Model](err)
+				return model.ErrorProvider[item.Model](err)
 			}
 
 			var inv func() inventory.ItemModel
@@ -122,23 +109,23 @@ func GetItemInSlot(l logrus.FieldLogger) func(ctx context.Context) func(characte
 
 			for _, e := range inv().Items() {
 				if e.Slot() == slot {
-					return model2.FixedProvider(e)
+					return model.FixedProvider(e)
 				}
 			}
-			return model2.ErrorProvider[item.Model](errors.New("item not found"))
+			return model.ErrorProvider[item.Model](errors.New("item not found"))
 		}
 	}
 }
 
-func ByNameProvider(l logrus.FieldLogger, ctx context.Context) func(name string) model2.Provider[[]Model] {
-	return func(name string) model2.Provider[[]Model] {
-		return requests.SliceProvider[RestModel, Model](l, ctx)(requestByName(name), Extract, model2.Filters[Model]())
+func ByNameProvider(l logrus.FieldLogger, ctx context.Context) func(name string) model.Provider[[]Model] {
+	return func(name string) model.Provider[[]Model] {
+		return requests.SliceProvider[RestModel, Model](l, ctx)(requestByName(name), Extract, model.Filters[Model]())
 	}
 }
 
 func GetByName(l logrus.FieldLogger, ctx context.Context) func(name string) (Model, error) {
 	return func(name string) (Model, error) {
-		return model2.FirstProvider(ByNameProvider(l, ctx)(name), model2.Filters[Model]())()
+		return model.FirstProvider(ByNameProvider(l, ctx)(name), model.Filters[Model]())()
 	}
 }
 

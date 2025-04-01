@@ -1,8 +1,7 @@
 package handler
 
 import (
-	"atlas-channel/kafka/producer"
-	"atlas-channel/monster"
+	"atlas-channel/movement"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
@@ -18,18 +17,6 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		uniqueId := r.ReadUint32()
-
-		m, err := monster.GetById(l)(ctx)(uniqueId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate monster [%d] moving.", uniqueId)
-			return
-		}
-
-		if m.WorldId() != s.WorldId() || m.ChannelId() != s.ChannelId() || m.MapId() != s.MapId() {
-			l.Errorf("Monster [%d] movement issued by [%d] does not have consistent map data.", m.UniqueId(), s.CharacterId())
-			return
-		}
-
 		moveId := r.ReadInt16()
 		dwFlag := r.ReadByte()
 		nActionAndDir := r.ReadInt8()
@@ -62,18 +49,9 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			r.ReadByte()   // bChasingHack
 			r.ReadUint32() // tChaseDuration
 		}
-
-		l.Debugf("Monster [%d] moved. MoveId [%d], dwFlag [%d], nActionAndDir [%d], skillData [%d].", uniqueId, moveId, dwFlag, nActionAndDir, skillData)
-		err = session.Announce(l)(ctx)(wp)(writer.MoveMonsterAck)(writer.MoveMonsterAckBody(l, t)(uniqueId, moveId, uint16(m.MP()), false, 0, 0))(s)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to ack monster [%d] movement for character [%d].", m.UniqueId(), s.CharacterId())
-		}
-
 		monsterMoveStartResult := dwFlag > 0
 
-		err = producer.ProviderImpl(l)(ctx)(monster.EnvCommandMovement)(monster.Move(m.UniqueId(), s.CharacterId(), monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, mp))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to distribute monster movement to other services.")
-		}
+		l.Debugf("Monster [%d] moved. MoveId [%d], dwFlag [%d], nActionAndDir [%d], skillData [%d].", uniqueId, moveId, dwFlag, nActionAndDir, skillData)
+		_ = movement.ForMonster(l)(ctx)(wp)(s.Map(), s.CharacterId(), uniqueId, moveId, monsterMoveStartResult, nActionAndDir, skillId, skillLevel, multiTargetForBall, randTimeForAreaAttack, mp)
 	}
 }

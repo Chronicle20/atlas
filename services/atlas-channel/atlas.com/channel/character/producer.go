@@ -1,8 +1,6 @@
 package character
 
 import (
-	"atlas-channel/movement"
-	model2 "atlas-channel/socket/model"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -75,19 +73,6 @@ func changeMPCommandProvider(m _map.Model, characterId uint32, amount int16) mod
 			ChannelId: byte(m.ChannelId()),
 			Amount:    amount,
 		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
-func move(ma _map.Model, characterId uint32, mm model2.Movement) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-
-	value := &movementCommand{
-		WorldId:     byte(ma.WorldId()),
-		ChannelId:   byte(ma.ChannelId()),
-		MapId:       uint32(ma.MapId()),
-		CharacterId: characterId,
-		Movement:    movement.ProduceMovementForKafka(mm),
 	}
 	return producer.SingleMessageProvider(key, value)
 }

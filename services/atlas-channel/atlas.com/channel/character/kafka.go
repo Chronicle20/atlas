@@ -1,7 +1,5 @@
 package character
 
-import "atlas-channel/movement"
-
 const (
 	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
 	CommandRequestDistributeAp = "REQUEST_DISTRIBUTE_AP"
@@ -16,8 +14,6 @@ const (
 	CommandDistributeApAbilityLuck         = "LUCK"
 	CommandDistributeApAbilityHp           = "HP"
 	CommandDistributeApAbilityMp           = "MP"
-
-	EnvCommandTopicMovement = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
 )
 
 type command[E any] struct {
@@ -55,12 +51,4 @@ type changeHPCommandBody struct {
 type changeMPCommandBody struct {
 	ChannelId byte  `json:"channelId"`
 	Amount    int16 `json:"amount"`
-}
-
-type movementCommand struct {
-	WorldId     byte              `json:"worldId"`
-	ChannelId   byte              `json:"channelId"`
-	MapId       uint32            `json:"mapId"`
-	CharacterId uint32            `json:"characterId"`
-	Movement    movement.Movement `json:"movement"`
 }

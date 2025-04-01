@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"atlas-channel/character"
+	"atlas-channel/movement"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
@@ -13,7 +13,7 @@ import (
 
 const CharacterMoveHandle = "CharacterMoveHandle"
 
-func CharacterMoveHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func CharacterMoveHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		var dr0 uint32
@@ -48,6 +48,6 @@ func CharacterMoveHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer
 
 		mp := model.Movement{}
 		mp.Decode(l, t, readerOptions)(r)
-		character.Move(l)(ctx)(s.Map(), s.CharacterId(), mp)
+		_ = movement.ForCharacter(l)(ctx)(wp)(s.Map(), s.CharacterId(), mp)
 	}
 }

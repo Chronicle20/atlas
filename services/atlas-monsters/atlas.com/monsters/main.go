@@ -11,6 +11,7 @@ import (
 	"atlas-monsters/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"os"
 	"time"
 )
 
@@ -54,7 +55,14 @@ func main() {
 	monster2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	_map.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), monster.InitResource(GetServer()), world.InitResource(GetServer()))
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(monster.InitResource(GetServer())).
+		AddRouteInitializer(world.InitResource(GetServer())).
+		Run()
 
 	tasks.Register(l, tdm.Context())(monster.NewRegistryAudit(l, time.Second*30))
 

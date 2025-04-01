@@ -8,6 +8,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,6 +23,7 @@ const (
 )
 
 func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		op := r.ReadByte()
 		if isPartyOperation(l)(readerOptions, op, PartyOperationCreate) {
@@ -88,7 +90,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 				}
 			}
 
-			os, err := session.GetByCharacterId(s.Tenant(), s.WorldId(), s.ChannelId())(cs.Id())
+			os, err := session.GetByCharacterId(t, s.WorldId(), s.ChannelId())(cs.Id())
 			if err != nil || s.WorldId() != os.WorldId() || s.ChannelId() != os.ChannelId() {
 				l.WithError(err).Errorf("Character [%d] not in channel. Cannot invite to party.", cs.Id())
 				err = session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody(l)("UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL", name))(s)

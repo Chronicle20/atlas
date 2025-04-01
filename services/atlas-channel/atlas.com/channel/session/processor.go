@@ -118,7 +118,7 @@ func SetAccountId(accountId uint32) func(tenantId uuid.UUID, id uuid.UUID) Model
 		var ok bool
 		if s, ok = GetRegistry().Get(tenantId, id); ok {
 			s = s.setAccountId(accountId)
-			GetRegistry().Update(s)
+			GetRegistry().Update(tenantId, s)
 			return s
 		}
 		return s
@@ -131,7 +131,7 @@ func SetCharacterId(characterId uint32) func(tenantId uuid.UUID, id uuid.UUID) M
 		var ok bool
 		if s, ok = GetRegistry().Get(tenantId, id); ok {
 			s = s.setCharacterId(characterId)
-			GetRegistry().Update(s)
+			GetRegistry().Update(tenantId, s)
 			return s
 		}
 		return s
@@ -144,7 +144,7 @@ func SetMapId(mapId _map.Id) func(tenantId uuid.UUID, id uuid.UUID) Model {
 		var ok bool
 		if s, ok = GetRegistry().Get(tenantId, id); ok {
 			s = s.setMapId(mapId)
-			GetRegistry().Update(s)
+			GetRegistry().Update(tenantId, s)
 			return s
 		}
 		return s
@@ -157,7 +157,7 @@ func SetGm(gm bool) func(tenantId uuid.UUID, id uuid.UUID) Model {
 		var ok bool
 		if s, ok = GetRegistry().Get(tenantId, id); ok {
 			s = s.setGm(gm)
-			GetRegistry().Update(s)
+			GetRegistry().Update(tenantId, s)
 			return s
 		}
 		return s
@@ -170,7 +170,7 @@ func UpdateLastRequest() func(tenantId uuid.UUID, id uuid.UUID) Model {
 		var ok bool
 		if s, ok = GetRegistry().Get(tenantId, id); ok {
 			s = s.updateLastRequest()
-			GetRegistry().Update(s)
+			GetRegistry().Update(tenantId, s)
 			return s
 		}
 		return s

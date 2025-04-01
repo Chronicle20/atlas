@@ -27,7 +27,6 @@ type Model struct {
 	recv        crypto.AESOFB
 	encryptFunc crypto.EncryptFunc
 	lastPacket  time.Time
-	tenant      tenant.Model
 	locale      byte
 }
 
@@ -58,7 +57,6 @@ func NewSession(id uuid.UUID, t tenant.Model, locale byte, con net.Conn) Model {
 		recv:        *recv,
 		encryptFunc: send.Encrypt(hasMapleEncryption, true),
 		lastPacket:  time.Now(),
-		tenant:      t,
 		locale:      locale,
 	}
 }
@@ -77,7 +75,6 @@ func CloneSession(s Model) Model {
 		recv:        s.recv,
 		encryptFunc: s.encryptFunc,
 		lastPacket:  s.lastPacket,
-		tenant:      s.tenant,
 		locale:      s.locale,
 	}
 }
@@ -108,10 +105,6 @@ func (s *Model) AccountId() uint32 {
 	return s.accountId
 }
 
-func (s *Model) Tenant() tenant.Model {
-	return s.tenant
-}
-
 func (s *Model) announceEncrypted(b []byte) error {
 	s.sendLock.Lock()
 	defer s.sendLock.Unlock()
@@ -132,8 +125,8 @@ func (s *Model) announce(b []byte) error {
 	return err
 }
 
-func (s *Model) WriteHello() error {
-	return s.announce(WriteHello(nil)(s.tenant.MajorVersion(), s.tenant.MinorVersion(), s.send.IV(), s.recv.IV(), s.locale))
+func (s *Model) WriteHello(majorVersion uint16, minorVersion uint16) error {
+	return s.announce(WriteHello(nil)(majorVersion, minorVersion, s.send.IV(), s.recv.IV(), s.locale))
 }
 
 func (s *Model) ReceiveAESOFB() *crypto.AESOFB {

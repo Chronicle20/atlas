@@ -213,6 +213,7 @@ func handleInventoryMoveEvent(sc server.Model, wp writer.Producer) message.Handl
 
 func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 			return func(e inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
@@ -259,7 +260,7 @@ func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 						}
 
 						for _, mm := range m.Members() {
-							_ = session.IfPresentByCharacterId(s.Tenant(), s.WorldId(), s.ChannelId())(mm.Id(), func(os session.Model) error {
+							_ = session.IfPresentByCharacterId(t, s.WorldId(), s.ChannelId())(mm.Id(), func(os session.Model) error {
 								return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationUpdateBody(ctx)(um.Slot(), c, byte(s.ChannelId())))(os)
 							})
 						}

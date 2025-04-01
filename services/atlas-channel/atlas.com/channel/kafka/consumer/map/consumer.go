@@ -67,6 +67,7 @@ func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l
 }
 
 func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(m _map2.Model) model.Operator[session.Model] {
+	t := tenant.MustFromContext(ctx)
 	return func(m _map2.Model) model.Operator[session.Model] {
 		return func(s session.Model) error {
 			l.Debugf("Processing character [%d] entering map [%d].", s.CharacterId(), m.MapId())
@@ -182,7 +183,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			go func() {
 				imf := party.OtherMemberInMap(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId())
 				oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.ByMemberIdProvider(l)(ctx)(s.CharacterId())))
-				err = session.ForEachByCharacterId(s.Tenant(), s.WorldId(), s.ChannelId())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(s.CharacterId(), cms[s.CharacterId()].Hp(), cms[s.CharacterId()].MaxHp())))
+				err = session.ForEachByCharacterId(t, s.WorldId(), s.ChannelId())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(s.CharacterId(), cms[s.CharacterId()].Hp(), cms[s.CharacterId()].MaxHp())))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] health to party members.", s.CharacterId())
 				}

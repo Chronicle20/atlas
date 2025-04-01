@@ -585,59 +585,18 @@ func AwardLevel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 	}
 }
 
-type MovementSummary struct {
-	X      int16
-	Y      int16
-	Stance byte
-}
-
-func MovementSummaryProvider(x int16, y int16, stance byte) model.Provider[MovementSummary] {
-	return func() (MovementSummary, error) {
-		return MovementSummary{
-			X:      x,
-			Y:      y,
-			Stance: stance,
-		}, nil
-	}
-}
-
-func FoldMovementSummary(summary MovementSummary, e Element) (MovementSummary, error) {
-	ms := MovementSummary{X: summary.X, Y: summary.Y, Stance: summary.Stance}
-	if e.TypeStr == MovementTypeNormal {
-		ms.X = e.X
-		ms.Y = e.Y
-		ms.Stance = e.MoveAction
-	} else if e.TypeStr == MovementTypeJump || e.TypeStr == MovementTypeTeleport || e.TypeStr == MovementTypeStartFallDown {
-		ms.Stance = e.MoveAction
-	}
-	return ms, nil
-}
-
-func Move(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement Movement) error {
-	return func(ctx context.Context) func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement Movement) error {
-		return func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(movement Movement) error {
-			return func(worldId byte) func(channelId byte) func(mapId uint32) func(movement Movement) error {
-				return func(channelId byte) func(mapId uint32) func(movement Movement) error {
-					return func(mapId uint32) func(movement Movement) error {
-						return func(movement Movement) error {
-							msp := model.Fold(model.FixedProvider(movement.Elements), MovementSummaryProvider(movement.StartX, movement.StartY, GetTemporalRegistry().GetById(characterId).Stance()), FoldMovementSummary)
-							err := model.For(msp, updateTemporal(characterId))
-							if err != nil {
-								return err
-							}
-							return producer.ProviderImpl(l)(ctx)(EnvEventTopicMovement)(move(worldId, channelId, mapId, characterId, movement))
-						}
+func Move(ctx context.Context) func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(x int16, y int16, stance byte) error {
+	return func(characterId uint32) func(worldId byte) func(channelId byte) func(mapId uint32) func(x int16, y int16, stance byte) error {
+		return func(worldId byte) func(channelId byte) func(mapId uint32) func(x int16, y int16, stance byte) error {
+			return func(channelId byte) func(mapId uint32) func(x int16, y int16, stance byte) error {
+				return func(mapId uint32) func(x int16, y int16, stance byte) error {
+					return func(x int16, y int16, stance byte) error {
+						GetTemporalRegistry().Update(characterId, x, y, stance)
+						return nil
 					}
 				}
 			}
 		}
-	}
-}
-
-func updateTemporal(characterId uint32) model.Operator[MovementSummary] {
-	return func(ms MovementSummary) error {
-		GetTemporalRegistry().Update(characterId, ms.X, ms.Y, ms.Stance)
-		return nil
 	}
 }
 

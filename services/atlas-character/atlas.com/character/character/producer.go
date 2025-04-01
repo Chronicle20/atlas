@@ -217,15 +217,3 @@ func statChangedProvider(worldId byte, channelId byte, characterId uint32, updat
 	}
 	return producer.SingleMessageProvider(key, value)
 }
-
-func move(worldId byte, channelId byte, mapId uint32, characterId uint32, m Movement) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &movementEvent{
-		WorldId:     worldId,
-		ChannelId:   channelId,
-		MapId:       mapId,
-		CharacterId: characterId,
-		Movement:    m,
-	}
-	return producer.SingleMessageProvider(key, value)
-}

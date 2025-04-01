@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -27,20 +28,14 @@ func registerChannel(l logrus.FieldLogger) func(ctx context.Context) func(worldI
 	return func(ctx context.Context) func(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
 		return func(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
 			i := RestModel{
-				Id:        uint32(channelId),
+				Id:        uuid.Nil,
+				WorldId:   byte(worldId),
+				ChannelId: byte(channelId),
 				IpAddress: ipAddress,
 				Port:      port,
 			}
 			_, err := rest.MakePostRequest[RestModel](fmt.Sprintf(getBaseRequest()+ChannelsResource, worldId), i)(l, ctx)
 			return err
-		}
-	}
-}
-
-func unregisterChannel(l logrus.FieldLogger) func(ctx context.Context) func(worldId world.Id, channelId channel.Id) error {
-	return func(ctx context.Context) func(worldId world.Id, channelId channel.Id) error {
-		return func(worldId world.Id, channelId channel.Id) error {
-			return rest.MakeDeleteRequest(fmt.Sprintf(getBaseRequest()+ChannelResource, worldId, channelId))(l, ctx)
 		}
 	}
 }

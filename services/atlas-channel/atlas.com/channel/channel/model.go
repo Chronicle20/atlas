@@ -1,15 +1,31 @@
 package channel
 
+import "github.com/google/uuid"
+
 type Model struct {
-	id        byte
+	id        uuid.UUID
+	worldId   byte
+	channelId byte
 	ipAddress string
 	port      int
 }
 
-func (c Model) IpAddress() string {
-	return c.ipAddress
+func (m Model) Id() uuid.UUID {
+	return m.id
 }
 
-func (c Model) Port() int {
-	return c.port
+func (m Model) WorldId() byte {
+	return m.worldId
+}
+
+func (m Model) ChannelId() byte {
+	return m.channelId
+}
+
+func (m Model) IpAddress() string {
+	return m.ipAddress
+}
+
+func (m Model) Port() int {
+	return m.port
 }

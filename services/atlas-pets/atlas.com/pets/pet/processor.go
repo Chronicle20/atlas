@@ -171,76 +171,28 @@ func DeleteForCharacter(l logrus.FieldLogger) func(ctx context.Context) func(db 
 	}
 }
 
-type MovementSummary struct {
-	X      int16
-	Y      int16
-	Stance byte
-}
-
-func MovementSummaryProvider(x int16, y int16, stance byte) model.Provider[MovementSummary] {
-	return func() (MovementSummary, error) {
-		return MovementSummary{
-			X:      x,
-			Y:      y,
-			Stance: stance,
-		}, nil
-	}
-}
-
-func FoldMovementSummary(summary MovementSummary, e Element) (MovementSummary, error) {
-	ms := MovementSummary{X: summary.X, Y: summary.Y, Stance: summary.Stance}
-	if e.TypeStr == MovementTypeNormal {
-		ms.X = e.X
-		ms.Y = e.Y
-		ms.Stance = e.MoveAction
-	} else if e.TypeStr == MovementTypeJump || e.TypeStr == MovementTypeTeleport || e.TypeStr == MovementTypeStartFallDown {
-		ms.Stance = e.MoveAction
-	}
-	return ms, nil
-}
-
-func Move(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64) func(m _map.Model) func(ownerId uint32) func(movement Movement) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64) func(m _map.Model) func(ownerId uint32) func(movement Movement) error {
-		return func(db *gorm.DB) func(petId uint64) func(m _map.Model) func(ownerId uint32) func(movement Movement) error {
-			return func(petId uint64) func(m _map.Model) func(ownerId uint32) func(movement Movement) error {
-				return func(m _map.Model) func(ownerId uint32) func(movement Movement) error {
-					return func(ownerId uint32) func(movement Movement) error {
-						return func(movement Movement) error {
-							p, err := GetById(ctx)(db)(petId)
-							if err != nil {
-								l.WithError(err).Errorf("Movement issued for pet by character [%d], which pet [%d] does not exist.", ownerId, petId)
-								return err
-							}
-							if p.OwnerId() != ownerId {
-								l.WithError(err).Errorf("Character [%d] attempting to move other character [%d] pet [%d].", ownerId, p.OwnerId(), petId)
-								return errors.New("pet not owned by character")
-							}
-
-							msp := model.Fold(model.FixedProvider(movement.Elements), MovementSummaryProvider(movement.StartX, movement.StartY, GetTemporalRegistry().GetById(petId).Stance()), FoldMovementSummary)
-
-							err = model.For(msp, func(ms MovementSummary) error {
-								fh, err := position.GetBelow(l)(ctx)(uint32(m.MapId()), ms.X, ms.Y)()
-								if err != nil {
-									return err
-								}
-								return updateTemporal(petId, int16(fh.Id()))(ms)
-							})
-							if err != nil {
-								return err
-							}
-							return producer.ProviderImpl(l)(ctx)(EnvEventTopicMovement)(moveEventProvider(m, p, movement))
-						}
-					}
+func Move(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
+		return func(db *gorm.DB) func(petId uint64, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
+			return func(petId uint64, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
+				p, err := GetById(ctx)(db)(petId)
+				if err != nil {
+					l.WithError(err).Errorf("Movement issued for pet by character [%d], which pet [%d] does not exist.", ownerId, petId)
+					return err
 				}
+				if p.OwnerId() != ownerId {
+					l.WithError(err).Errorf("Character [%d] attempting to move other character [%d] pet [%d].", ownerId, p.OwnerId(), petId)
+					return errors.New("pet not owned by character")
+				}
+
+				fh, err := position.GetBelow(l)(ctx)(uint32(m.MapId()), x, y)()
+				if err != nil {
+					return err
+				}
+				GetTemporalRegistry().Update(petId, x, y, stance, int16(fh.Id()))
+				return nil
 			}
 		}
-	}
-}
-
-func updateTemporal(petId uint64, fh int16) model.Operator[MovementSummary] {
-	return func(ms MovementSummary) error {
-		GetTemporalRegistry().Update(petId, ms.X, ms.Y, ms.Stance, fh)
-		return nil
 	}
 }
 

@@ -49,5 +49,5 @@ func ChannelLoadDecorator(l logrus.FieldLogger, ctx context.Context) model.Decor
 }
 
 func foldChannelLoad(m Model, c channel.Model) (Model, error) {
-	return CloneWorld(m).AddChannelLoad(c.Id(), c.Capacity()).Build(), nil
+	return CloneWorld(m).AddChannelLoad(c.ChannelId(), c.Capacity()).Build(), nil
 }

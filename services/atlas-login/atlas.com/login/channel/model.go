@@ -1,72 +1,38 @@
 package channel
 
+import "github.com/google/uuid"
+
 type Model struct {
-	id        byte
-	capacity  int
-	ipAddress string
-	port      uint16
-}
-
-func (c Model) Id() byte {
-	return c.id
-}
-
-func (c Model) Capacity() int {
-	return c.capacity
-}
-
-func (c Model) IpAddress() string {
-	return c.ipAddress
-}
-
-func (c Model) Port() uint16 {
-	return c.port
-}
-
-type channelBuilder struct {
+	id        uuid.UUID
 	worldId   byte
 	channelId byte
-	capacity  int
 	ipAddress string
-	port      uint16
+	port      int
+	capacity  int
 }
 
-func NewChannelBuilder() *channelBuilder {
-	return &channelBuilder{}
+func (m Model) Id() uuid.UUID {
+	return m.id
 }
 
-func (c *channelBuilder) SetWorldId(worldId byte) *channelBuilder {
-	c.worldId = worldId
-	return c
+func (m Model) WorldId() byte {
+	return m.worldId
 }
 
-func (c *channelBuilder) SetChannelId(channelId byte) *channelBuilder {
-	c.channelId = channelId
-	return c
+func (m Model) ChannelId() byte {
+	return m.channelId
 }
 
-func (c *channelBuilder) SetCapacity(capacity int) *channelBuilder {
-	c.capacity = capacity
-	return c
+func (m Model) IpAddress() string {
+	return m.ipAddress
 }
 
-func (c *channelBuilder) SetIpAddress(ipAddress string) *channelBuilder {
-	c.ipAddress = ipAddress
-	return c
+func (m Model) Port() int {
+	return m.port
 }
 
-func (c *channelBuilder) SetPort(port uint16) *channelBuilder {
-	c.port = port
-	return c
-}
-
-func (c *channelBuilder) Build() Model {
-	return Model{
-		id:        c.channelId,
-		capacity:  c.capacity,
-		ipAddress: c.ipAddress,
-		port:      c.port,
-	}
+func (m Model) Capacity() int {
+	return m.capacity
 }
 
 type Load struct {

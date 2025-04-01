@@ -1,11 +1,15 @@
 package channel
 
-import "strconv"
+import (
+	"github.com/google/uuid"
+)
 
 type RestModel struct {
-	Id        uint32 `json:"-"`
-	IpAddress string `json:"ipAddress"`
-	Port      uint16 `json:"port"`
+	Id        uuid.UUID `json:"-"`
+	WorldId   byte      `json:"worldId"`
+	ChannelId byte      `json:"channelId"`
+	IpAddress string    `json:"ipAddress"`
+	Port      int       `json:"port"`
 }
 
 func (r RestModel) GetName() string {
@@ -13,23 +17,30 @@ func (r RestModel) GetName() string {
 }
 
 func (r RestModel) GetID() string {
-	return strconv.Itoa(int(r.Id))
+	return r.Id.String()
 }
 
-func (r *RestModel) SetID(strId string) error {
-	id, err := strconv.Atoi(strId)
-	if err != nil {
-		return err
-	}
-	r.Id = uint32(id)
+func (r *RestModel) SetID(id string) error {
+	r.Id = uuid.MustParse(id)
 	return nil
 }
 
-func Extract(m RestModel) (Model, error) {
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:        m.Id(),
+		WorldId:   m.WorldId(),
+		ChannelId: m.ChannelId(),
+		IpAddress: m.IpAddress(),
+		Port:      m.Port(),
+	}, nil
+}
+
+func Extract(rm RestModel) (Model, error) {
 	return Model{
-		id:        byte(m.Id),
-		capacity:  0,
-		ipAddress: m.IpAddress,
-		port:      m.Port,
+		id:        rm.Id,
+		worldId:   rm.WorldId,
+		channelId: rm.ChannelId,
+		ipAddress: rm.IpAddress,
+		port:      rm.Port,
 	}, nil
 }

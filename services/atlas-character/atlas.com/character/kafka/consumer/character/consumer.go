@@ -198,8 +198,8 @@ func handleJobChangedStatusEvent(db *gorm.DB) message.Handler[statusEvent[jobCha
 }
 
 func handleMovementEvent(l logrus.FieldLogger, ctx context.Context, c movementCommand) {
-	err := character.Move(l)(ctx)(c.CharacterId)(c.WorldId)(c.ChannelId)(c.MapId)(c.Movement)
+	err := character.Move(ctx)(uint32(c.ObjectId))(c.WorldId)(c.ChannelId)(c.MapId)(c.X, c.Y, c.Stance)
 	if err != nil {
-		l.WithError(err).Errorf("Error processing movement for character [%d].", c.CharacterId)
+		l.WithError(err).Errorf("Error processing movement for character [%d].", c.ObjectId)
 	}
 }

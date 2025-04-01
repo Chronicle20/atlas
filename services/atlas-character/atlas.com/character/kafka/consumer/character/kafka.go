@@ -1,7 +1,5 @@
 package character
 
-import "atlas-character/character"
-
 const (
 	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
 	CommandChangeMap           = "CHANGE_MAP"
@@ -133,19 +131,16 @@ type levelChangedStatusEventBody struct {
 }
 
 const (
-	EnvCommandTopicMovement   = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
-	MovementTypeNormal        = "NORMAL"
-	MovementTypeTeleport      = "TELEPORT"
-	MovementTypeStartFallDown = "START_FALL_DOWN"
-	MovementTypeFlyingBlock   = "FLYING_BLOCK"
-	MovementTypeJump          = "JUMP"
-	MovementTypeStatChange    = "STAT_CHANGE"
+	EnvCommandTopicMovement = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
 )
 
 type movementCommand struct {
-	WorldId     byte               `json:"worldId"`
-	ChannelId   byte               `json:"channelId"`
-	MapId       uint32             `json:"mapId"`
-	CharacterId uint32             `json:"characterId"`
-	Movement    character.Movement `json:"movement"`
+	WorldId    byte   `json:"worldId"`
+	ChannelId  byte   `json:"channelId"`
+	MapId      uint32 `json:"mapId"`
+	ObjectId   uint64 `json:"objectId"`
+	ObserverId uint32 `json:"observerId"`
+	X          int16  `json:"x"`
+	Y          int16  `json:"y"`
+	Stance     byte   `json:"stance"`
 }

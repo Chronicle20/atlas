@@ -137,11 +137,7 @@ func main() {
 
 		for _, w := range ten.Worlds {
 			for _, c := range w.Channels {
-				var sc server.Model
-				sc, err = server.New(t, world.Id(w.Id), channel2.Id(c.Id))
-				if err != nil {
-					continue
-				}
+				sc := server.Register(t, world.Id(w.Id), channel2.Id(c.Id), ten.IPAddress, c.Port)
 
 				fl := l.
 					WithField("tenant", t.Id().String()).
@@ -190,9 +186,9 @@ func main() {
 		l.WithError(err).Fatalf("Unable to find task [%s].", session.TimeoutTask)
 	}
 	go tasks.Register(l, tdm.Context())(session.NewTimeout(l, time.Millisecond*time.Duration(tt.Interval)))
+	go tasks.Register(l, tdm.Context())(channel3.NewHeartbeat(l, tdm.Context(), time.Second*10))
 
 	tdm.TeardownFunc(session.Teardown(l))
-	tdm.TeardownFunc(channel3.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
 	tdm.Wait()

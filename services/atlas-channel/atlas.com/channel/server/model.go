@@ -12,6 +12,8 @@ type Model struct {
 	tenant    tenant.Model
 	worldId   world.Id
 	channelId channel.Id
+	ipAddress string
+	port      int
 }
 
 func (m Model) Tenant() tenant.Model {
@@ -26,16 +28,16 @@ func (m Model) ChannelId() channel.Id {
 	return m.channelId
 }
 
-func (m Model) String() string {
-	return fmt.Sprintf("Tenant [%s] World [%d] Channel [%d]", m.tenant.String(), m.worldId, m.channelId)
+func (m Model) IpAddress() string {
+	return m.ipAddress
 }
 
-func New(tenant tenant.Model, worldId world.Id, channelId channel.Id) (Model, error) {
-	return Model{
-		tenant:    tenant,
-		worldId:   worldId,
-		channelId: channelId,
-	}, nil
+func (m Model) Port() int {
+	return m.port
+}
+
+func (m Model) String() string {
+	return fmt.Sprintf("Tenant [%s] World [%d] Channel [%d]", m.tenant.String(), m.worldId, m.channelId)
 }
 
 func (m Model) Is(t tenant.Model, worldId world.Id, channelId channel.Id) bool {

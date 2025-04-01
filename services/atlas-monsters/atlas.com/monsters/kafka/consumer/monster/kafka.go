@@ -1,7 +1,5 @@
 package monster
 
-import "atlas-monsters/monster"
-
 const (
 	EnvCommandTopic   = "COMMAND_TOPIC_MONSTER"
 	CommandTypeDamage = "DAMAGE"
@@ -23,13 +21,12 @@ type damageCommandBody struct {
 }
 
 type movementCommand struct {
-	UniqueId      uint32             `json:"uniqueId"`
-	ObserverId    uint32             `json:"observerId"`
-	SkillPossible bool               `json:"skillPossible"`
-	Skill         int8               `json:"skill"`
-	SkillId       int16              `json:"skillId"`
-	SkillLevel    int16              `json:"skillLevel"`
-	MultiTarget   []monster.Position `json:"multiTarget"`
-	RandomTimes   []int32            `json:"randomTimes"`
-	Movement      monster.Movement   `json:"movement"`
+	WorldId    byte   `json:"worldId"`
+	ChannelId  byte   `json:"channelId"`
+	MapId      uint32 `json:"mapId"`
+	ObjectId   uint64 `json:"objectId"`
+	ObserverId uint32 `json:"observerId"`
+	X          int16  `json:"x"`
+	Y          int16  `json:"y"`
+	Stance     byte   `json:"stance"`
 }

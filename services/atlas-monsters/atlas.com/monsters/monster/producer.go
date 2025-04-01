@@ -76,24 +76,3 @@ func killedStatusEventProvider(worldId byte, channelId byte, mapId uint32, uniqu
 		DamageEntries: damageEntries,
 	})
 }
-
-func movementEventProvider(worldId byte, channelId byte, mapId uint32, uniqueId uint32, observerId uint32, skillPossible bool, skill int8, skillId int16, skillLevel int16, multiTarget []Position, randTimes []int32, movement Movement) model.Provider[[]kafka.Message] {
-
-	key := producer.CreateKey(int(uniqueId))
-
-	value := &movementEvent{
-		WorldId:       worldId,
-		ChannelId:     channelId,
-		MapId:         mapId,
-		UniqueId:      uniqueId,
-		ObserverId:    observerId,
-		SkillPossible: skillPossible,
-		Skill:         skill,
-		SkillId:       skillId,
-		SkillLevel:    skillLevel,
-		MultiTarget:   multiTarget,
-		RandomTimes:   randTimes,
-		Movement:      movement,
-	}
-	return producer.SingleMessageProvider(key, value)
-}

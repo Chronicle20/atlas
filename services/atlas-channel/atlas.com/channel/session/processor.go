@@ -104,14 +104,7 @@ func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProduce
 						if err != nil {
 							return err
 						}
-
-						if lock, ok := GetRegistry().GetLock(tenant.MustFromContext(ctx), s.SessionId()); ok {
-							lock.Lock()
-							err = s.announceEncrypted(w(l)(bodyProducer))
-							lock.Unlock()
-							return err
-						}
-						return errors.New("invalid session")
+						return s.announceEncrypted(w(l)(bodyProducer))
 					}
 				}
 			}

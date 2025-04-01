@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"math/rand"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -22,6 +23,7 @@ type Model struct {
 	gm          bool
 	con         net.Conn
 	send        crypto.AESOFB
+	sendLock    *sync.Mutex
 	recv        crypto.AESOFB
 	encryptFunc crypto.EncryptFunc
 	lastPacket  time.Time
@@ -52,6 +54,7 @@ func NewSession(id uuid.UUID, t tenant.Model, locale byte, con net.Conn) Model {
 		id:          id,
 		con:         con,
 		send:        *send,
+		sendLock:    &sync.Mutex{},
 		recv:        *recv,
 		encryptFunc: send.Encrypt(hasMapleEncryption, true),
 		lastPacket:  time.Now(),
@@ -70,6 +73,7 @@ func CloneSession(s Model) Model {
 		characterId: s.characterId,
 		con:         s.con,
 		send:        s.send,
+		sendLock:    s.sendLock,
 		recv:        s.recv,
 		encryptFunc: s.encryptFunc,
 		lastPacket:  s.lastPacket,
@@ -109,6 +113,9 @@ func (s *Model) Tenant() tenant.Model {
 }
 
 func (s *Model) announceEncrypted(b []byte) error {
+	s.sendLock.Lock()
+	defer s.sendLock.Unlock()
+
 	tmp := make([]byte, len(b)+4)
 	copy(tmp, b)
 	tmp = append([]byte{0, 0, 0, 0}, b...)
@@ -118,6 +125,9 @@ func (s *Model) announceEncrypted(b []byte) error {
 }
 
 func (s *Model) announce(b []byte) error {
+	s.sendLock.Lock()
+	defer s.sendLock.Unlock()
+
 	_, err := s.con.Write(b)
 	return err
 }

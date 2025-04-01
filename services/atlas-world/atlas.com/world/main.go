@@ -9,6 +9,7 @@ import (
 	"atlas-world/world"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
@@ -53,13 +54,20 @@ func main() {
 	channel.InitConsumers(l)(cmf)(consumerGroupId)
 	channel.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), channel.InitResource(GetServer()), world.InitResource(GetServer()))
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(channel.InitResource(GetServer())).
+		AddRouteInitializer(world.InitResource(GetServer())).
+		Run()
 
 	l.Infof("Service started.")
 	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")))
 
 	ctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
-	channel.RequestStatus(l)(ctx)()
+	_ = model.ForEachMap(model.FixedProvider(configuration.GetTenantConfigs()), channel.RequestStatus(l)(ctx))
 	span.End()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

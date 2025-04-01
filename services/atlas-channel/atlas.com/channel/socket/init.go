@@ -8,7 +8,6 @@ import (
 	"errors"
 	"github.com/Chronicle20/atlas-socket"
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel"
 	"net"
 	"sync"
 )
@@ -50,25 +49,13 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 				}
 			}()
 
-			sctx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(ctx, "startup")
-
-			err := channel.Register(l)(sctx)(sc.WorldId(), sc.ChannelId(), ipAddress, port)
+			err := channel.Register(l)(ctx)(sc.WorldId(), sc.ChannelId(), ipAddress, port)
 			if err != nil {
 				l.WithError(err).Errorf("Socket service registration error.")
 			}
 
-			span.End()
-
 			<-ctx.Done()
 			l.Infof("Shutting down server on port %d", port)
-
-			sctx, span = otel.GetTracerProvider().Tracer("atlas-channel").Start(ctx, "teardown")
-			defer span.End()
-
-			err = channel.Unregister(l)(sctx)(sc.WorldId(), sc.ChannelId())
-			if err != nil {
-				l.WithError(err).Errorf("Socket service unregistration error.")
-			}
 		}()
 	}
 }

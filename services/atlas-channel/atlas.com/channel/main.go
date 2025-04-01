@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-channel/account"
+	channel3 "atlas-channel/channel"
 	"atlas-channel/configuration"
 	handler2 "atlas-channel/configuration/tenant/socket/handler"
 	writer2 "atlas-channel/configuration/tenant/socket/writer"
@@ -40,7 +41,6 @@ import (
 	"atlas-channel/socket/writer"
 	"atlas-channel/tasks"
 	"atlas-channel/tracing"
-	"context"
 	"fmt"
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -109,7 +109,7 @@ func main() {
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
 
-	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
+	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
 	for _, ten := range config.Tenants {
 		tenantId := uuid.MustParse(ten.Id)
@@ -192,6 +192,7 @@ func main() {
 	go tasks.Register(l, tdm.Context())(session.NewTimeout(l, time.Millisecond*time.Duration(tt.Interval)))
 
 	tdm.TeardownFunc(session.Teardown(l))
+	tdm.TeardownFunc(channel3.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
 	tdm.Wait()

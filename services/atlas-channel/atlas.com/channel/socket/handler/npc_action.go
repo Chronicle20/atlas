@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"atlas-channel/movement"
 	"atlas-channel/npc"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
@@ -20,20 +21,18 @@ func NPCActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 		unk := r.ReadByte()
 		unk2 := r.ReadByte()
 
-		n, err := npc.GetInMapByObjectId(l)(ctx)(s.MapId(), objectId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve npc moving.")
-			return
-		}
 		// TODO could validate NPC has ability to move
 		rest := r.GetRestAsBytes()
 		if len(rest) > 0 {
 			mp := model.Movement{}
 			mp.Decode(l, t, readerOptions)(r)
-			err = session.Announce(l)(ctx)(wp)(writer.NPCAction)(writer.NPCActionMoveBody(l, t)(objectId, unk, unk2, mp))(s)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to move npc [%d] for character [%d].", n.Template(), s.CharacterId())
-			}
+			_ = movement.ForNPC(l)(ctx)(wp)(s.Map(), s.CharacterId(), objectId, unk, unk2, mp)
+			return
+		}
+
+		n, err := npc.GetInMapByObjectId(l)(ctx)(s.MapId(), objectId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to retrieve npc moving.")
 			return
 		}
 		err = session.Announce(l)(ctx)(wp)(writer.NPCAction)(writer.NPCActionAnimationBody(l)(objectId, unk, unk2))(s)

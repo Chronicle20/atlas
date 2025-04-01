@@ -1,8 +1,7 @@
 package handler
 
 import (
-	"atlas-channel/kafka/producer"
-	"atlas-channel/pet"
+	"atlas-channel/movement"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
@@ -14,7 +13,7 @@ import (
 
 const PetMovementHandle = "PetMovementHandle"
 
-func PetMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func PetMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		petId := r.ReadUint64()
@@ -25,11 +24,6 @@ func PetMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.P
 			return
 		}
 
-		l.Debugf("Pet [%d] moved for [%d].", petId, s.CharacterId())
-
-		err := producer.ProviderImpl(l)(ctx)(pet.EnvCommandMovement)(pet.Move(petId, s.Map(), s.CharacterId(), mp))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to distribute pet movement to other services.")
-		}
+		_ = movement.ForPet(l)(ctx)(wp)(s.Map(), s.CharacterId(), petId, mp)
 	}
 }

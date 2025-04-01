@@ -4,7 +4,6 @@ import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
-	"atlas-channel/movement"
 	"atlas-channel/party"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -28,7 +27,6 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
 			rf(consumer2.NewConfig(l)("character_status_event")(EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
-			rf(consumer2.NewConfig(l)("character_movement_event")(EnvEventTopicMovement)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -45,8 +43,6 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventFameChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMesoChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLevelChanged(sc, wp))))
-				t, _ = topic.EnvProvider(l)(EnvEventTopicMovement)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(sc, wp))))
 			}
 		}
 	}
@@ -376,29 +372,5 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 			return nil
 		})
 
-	}
-}
-
-func handleMovementEvent(sc server.Model, wp writer.Producer) message.Handler[movementEvent] {
-	return func(l logrus.FieldLogger, ctx context.Context, e movementEvent) {
-		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
-			return
-		}
-
-		mv := movement.ProduceMovementForSocket(e.Movement)
-		err := _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.CharacterId, showMovementForSession(l)(ctx)(wp)(e.CharacterId, *mv))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to move character [%d] for characters in map [%d].", e.CharacterId, e.MapId)
-		}
-	}
-}
-
-func showMovementForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
-			return func(characterId uint32, m model2.Movement) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterMovement)(writer.CharacterMovementBody(l, tenant.MustFromContext(ctx))(characterId, m))
-			}
-		}
 	}
 }

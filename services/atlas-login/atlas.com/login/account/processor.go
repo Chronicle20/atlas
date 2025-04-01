@@ -50,9 +50,9 @@ func GetByName(l logrus.FieldLogger, ctx context.Context) func(name string) (Mod
 	}
 }
 
-func IsLoggedIn(_ logrus.FieldLogger, tenant tenant.Model) func(id uint32) bool {
+func IsLoggedIn(ctx context.Context) func(id uint32) bool {
 	return func(id uint32) bool {
-		return getRegistry().LoggedIn(Key{Tenant: tenant, Id: id})
+		return getRegistry().LoggedIn(Key{Tenant: tenant.MustFromContext(ctx), Id: id})
 	}
 }
 

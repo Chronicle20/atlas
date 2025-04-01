@@ -12,12 +12,14 @@ import (
 	"atlas-login/world/channel"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const CharacterViewAllSelectedPicRegisterHandle = "CharacterViewAllSelectedPicRegisterHandle"
 
-func CharacterViewAllSelectedPicRegisterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func CharacterViewAllSelectedPicRegisterHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader) {
+	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader) {
 		opt := r.ReadByte()
 		characterId := r.ReadUint32()
@@ -34,7 +36,6 @@ func CharacterViewAllSelectedPicRegisterHandleFunc(l logrus.FieldLogger, ctx con
 			return
 		}
 
-		t := s.Tenant()
 		if c.WorldId() != byte(worldId) {
 			l.Errorf("Character is not part of world provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
 			session.Destroy(l, ctx, session.GetRegistry())(s)
@@ -76,22 +77,5 @@ func CharacterViewAllSelectedPicRegisterHandleFunc(l logrus.FieldLogger, ctx con
 		if err != nil {
 			return
 		}
-
-		//resp, err := as.UpdateState(l, ctx)(s.SessionId(), s.AccountId(), 2)
-		//if err != nil || resp.Code != "OK" {
-		//	l.WithError(err).Errorf("Unable to update session for character [%d] attempting to login.", characterId)
-		//	err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeTooManyConnectionRequests))
-		//	if err != nil {
-		//		l.WithError(err).Errorf("Unable to write server ip response due to error.")
-		//		return
-		//	}
-		//	return
-		//}
-		//
-		//err = serverIpFunc(s, writer.ServerIPBody(l, t)(channel.IpAddress(), uint16(channel.Port()), characterId))
-		//if err != nil {
-		//	l.WithError(err).Errorf("Unable to write server ip response due to error.")
-		//	return
-		//}
 	}
 }

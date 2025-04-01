@@ -164,11 +164,12 @@ func announceTemporaryBan(l logrus.FieldLogger) func(ctx context.Context) func(w
 
 func announceError(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(reason string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(reason string) model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(reason string) model.Operator[session.Model] {
 			authLoginFailedFunc := session.Announce(l)(wp)(writer.AuthLoginFailed)
 			return func(reason string) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					err := authLoginFailedFunc(s, writer.AuthLoginFailedBody(l, s.Tenant())(reason))
+					err := authLoginFailedFunc(s, writer.AuthLoginFailedBody(l, t)(reason))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue [%s].", writer.AuthLoginFailed)
 						return err
@@ -242,13 +243,14 @@ func announceLastWorld(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 
 func announceServerList(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
 			serverListEntryFunc := session.Announce(l)(wp)(writer.ServerListEntry)
 			serverListEndFunc := session.Announce(l)(wp)(writer.ServerListEnd)
 			return func(ws []world.Model) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					for _, x := range ws {
-						err := serverListEntryFunc(s, writer.ServerListEntryBody(s.Tenant())(x.Id(), x.Name(), x.State(), x.EventMessage(), x.ChannelLoad()))
+						err := serverListEntryFunc(s, writer.ServerListEntryBody(t)(x.Id(), x.Name(), x.State(), x.EventMessage(), x.ChannelLoad()))
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write server list entry for [%d]", x.Id())
 						}

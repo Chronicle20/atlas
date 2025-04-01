@@ -60,7 +60,7 @@ func handleDespawnCommand(db *gorm.DB) message.Handler[command[despawnCommandBod
 		if c.Type != CommandPetDespawn {
 			return
 		}
-		err := pet.Despawn(l)(ctx)(db)(c.PetId, c.ActorId, MovementTypeNormal)
+		err := pet.Despawn(l)(ctx)(db)(c.PetId, c.ActorId, "NORMAL")
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn pet [%d] for character [%d].", c.PetId, c.ActorId)
 		}
@@ -118,9 +118,9 @@ func handleSetExcludeCommand(db *gorm.DB) message.Handler[command[setExcludeComm
 func handleMovementCommand(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c movementCommand) {
 	return func(l logrus.FieldLogger, ctx context.Context, c movementCommand) {
 		m := _map.NewModel(world.Id(c.WorldId))(channel.Id(c.ChannelId))(_map.Id(c.MapId))
-		err := pet.Move(l)(ctx)(db)(c.PetId)(m)(c.CharacterId)(c.Movement)
+		err := pet.Move(l)(ctx)(db)(c.ObjectId, m, c.ObserverId, c.X, c.Y, c.Stance)
 		if err != nil {
-			l.WithError(err).Errorf("Error processing movement for pet [%d].", c.PetId)
+			l.WithError(err).Errorf("Error processing movement for pet [%d].", c.ObjectId)
 		}
 	}
 }

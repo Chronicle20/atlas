@@ -3,8 +3,10 @@ package main
 import (
 	"atlas-world/channel"
 	"atlas-world/configuration"
+	channel2 "atlas-world/kafka/consumer/channel"
 	"atlas-world/logger"
 	"atlas-world/service"
+	"atlas-world/tasks"
 	"atlas-world/tracing"
 	"atlas-world/world"
 	"context"
@@ -14,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 	"os"
+	"time"
 )
 
 const serviceName = "atlas-world"
@@ -51,8 +54,8 @@ func main() {
 	}
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
-	channel.InitConsumers(l)(cmf)(consumerGroupId)
-	channel.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	channel2.InitConsumers(l)(cmf)(consumerGroupId)
+	channel2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	server.New(l).
 		WithContext(tdm.Context()).
@@ -69,6 +72,8 @@ func main() {
 	ctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(context.Background(), "startup")
 	_ = model.ForEachMap(model.FixedProvider(configuration.GetTenantConfigs()), channel.RequestStatus(l)(ctx))
 	span.End()
+
+	go tasks.Register(l, tdm.Context())(channel.NewExpiration(l, tdm.Context(), time.Second*10))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

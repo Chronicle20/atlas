@@ -13,8 +13,7 @@ import (
 var errWorldNotFound = errors.New("world not found")
 
 func AllWorldProvider(ctx context.Context) model.Provider[[]Model] {
-	t := tenant.MustFromContext(ctx)
-	worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(t.Id().String()))
+	worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(tenant.MustFromContext(ctx)))
 	return model.SliceMap[byte, Model](worldTransformer(ctx))(model.FixedProvider[[]byte](worldIds))(model.ParallelMap())
 }
 
@@ -31,9 +30,9 @@ func worldTransformer(ctx context.Context) func(b byte) (Model, error) {
 }
 
 func ByWorldIdProvider(ctx context.Context) func(worldId byte) model.Provider[Model] {
+	t := tenant.MustFromContext(ctx)
 	return func(worldId byte) model.Provider[Model] {
-		t := tenant.MustFromContext(ctx)
-		worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(t.Id().String()))
+		worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(t))
 		var exists = false
 		for _, wid := range worldIds {
 			if wid == worldId {

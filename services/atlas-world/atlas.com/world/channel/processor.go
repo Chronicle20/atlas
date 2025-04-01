@@ -2,19 +2,19 @@ package channel
 
 import (
 	tenant2 "atlas-world/configuration/tenant"
+	channel2 "atlas-world/kafka/message/channel"
 	"atlas-world/kafka/producer"
+	channel3 "atlas-world/kafka/producer/channel"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
 func AllProvider(ctx context.Context) model.Provider[[]Model] {
-	return func() ([]Model, error) {
-		t := tenant.MustFromContext(ctx)
-		return GetChannelRegistry().ChannelServers(t.Id().String()), nil
-	}
+	return model.FixedProvider(GetChannelRegistry().ChannelServers(tenant.MustFromContext(ctx)))
 }
 
 func ByWorldProvider(ctx context.Context) func(worldId byte) model.Provider[[]Model] {
@@ -25,50 +25,57 @@ func ByWorldProvider(ctx context.Context) func(worldId byte) model.Provider[[]Mo
 
 func ByWorldFilter(id byte) model.Filter[Model] {
 	return func(m Model) bool {
-		return m.worldId == id
+		return m.WorldId() == id
 	}
 }
 
-func GetByWorld(_ logrus.FieldLogger) func(ctx context.Context) func(worldId byte) ([]Model, error) {
-	return func(ctx context.Context) func(worldId byte) ([]Model, error) {
-		return func(worldId byte) ([]Model, error) {
-			return ByWorldProvider(ctx)(worldId)()
-		}
+func GetByWorld(ctx context.Context) func(worldId byte) ([]Model, error) {
+	return func(worldId byte) ([]Model, error) {
+		return ByWorldProvider(ctx)(worldId)()
 	}
 }
 
 func ByIdProvider(ctx context.Context) func(worldId byte, channelId byte) model.Provider[Model] {
+	t := tenant.MustFromContext(ctx)
 	return func(worldId byte, channelId byte) model.Provider[Model] {
-		return func() (Model, error) {
-			t := tenant.MustFromContext(ctx)
-			return GetChannelRegistry().ChannelServer(t.Id().String(), worldId, channelId)
+		cs, err := GetChannelRegistry().ChannelServer(t, worldId, channelId)
+		if err != nil {
+			return model.ErrorProvider[Model](err)
 		}
+		return model.FixedProvider(cs)
 	}
 }
 
-func GetById(_ logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte) (Model, error) {
-	return func(ctx context.Context) func(worldId byte, channelId byte) (Model, error) {
-		return func(worldId byte, channelId byte) (Model, error) {
-			return ByIdProvider(ctx)(worldId, channelId)()
-		}
+func GetById(ctx context.Context) func(worldId byte, channelId byte) (Model, error) {
+	return func(worldId byte, channelId byte) (Model, error) {
+		return ByIdProvider(ctx)(worldId, channelId)()
 	}
 }
 
-func Register(_ logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, ipAddress string, port int) (Model, error) {
+func Register(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, ipAddress string, port int) (Model, error) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, ipAddress string, port int) (Model, error) {
+		t := tenant.MustFromContext(ctx)
 		return func(worldId byte, channelId byte, ipAddress string, port int) (Model, error) {
-			t := tenant.MustFromContext(ctx)
-			return GetChannelRegistry().Register(t.Id().String(), worldId, channelId, ipAddress, port), nil
+			l.Debugf("Registering world [%d] channel [%d] for tenant [%s].", worldId, channelId, t.String())
+			m := Model{
+				id:        uuid.New(),
+				worldId:   worldId,
+				channelId: channelId,
+				ipAddress: ipAddress,
+				port:      port,
+				createdAt: time.Now(),
+			}
+			return GetChannelRegistry().Register(t, m), nil
 		}
 	}
 }
 
-func Unregister(_ logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte) error {
+func Unregister(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte) error {
 	return func(ctx context.Context) func(worldId byte, channelId byte) error {
+		t := tenant.MustFromContext(ctx)
 		return func(worldId byte, channelId byte) error {
-			t := tenant.MustFromContext(ctx)
-			GetChannelRegistry().RemoveByWorldAndChannel(t.Id().String(), worldId, channelId)
-			return nil
+			l.Debugf("Unregistering world [%d] channel [%d] for tenant [%s].", worldId, channelId, t.String())
+			return GetChannelRegistry().RemoveByWorldAndChannel(t, worldId, channelId)
 		}
 	}
 }
@@ -82,7 +89,7 @@ func RequestStatus(l logrus.FieldLogger) func(ctx context.Context) func(tenantId
 					return err
 				}
 				l.Debugf("Requesting status of channels for tenant [%s].", t.String())
-				err = producer.ProviderImpl(l)(tenant.WithContext(ctx, t))(EnvCommandTopicChannelStatus)(emitChannelServerStatusCommand(t))
+				err = producer.ProviderImpl(l)(tenant.WithContext(ctx, t))(channel2.EnvCommandTopic)(channel3.StatusCommandProvider(t))
 				if err != nil {
 					return err
 				}

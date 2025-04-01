@@ -1,11 +1,17 @@
 package channel
 
-import "strconv"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
 type RestModel struct {
-	Id        uint32 `json:"-"`
-	IpAddress string `json:"ipAddress"`
-	Port      int    `json:"port"`
+	Id        uuid.UUID `json:"-"`
+	WorldId   byte      `json:"worldId"`
+	ChannelId byte      `json:"channelId"`
+	IpAddress string    `json:"ipAddress"`
+	Port      int       `json:"port"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 func (r RestModel) GetName() string {
@@ -13,22 +19,21 @@ func (r RestModel) GetName() string {
 }
 
 func (r RestModel) GetID() string {
-	return strconv.Itoa(int(r.Id))
+	return r.Id.String()
 }
 
-func (r *RestModel) SetID(strId string) error {
-	id, err := strconv.Atoi(strId)
-	if err != nil {
-		return err
-	}
-	r.Id = uint32(id)
+func (r *RestModel) SetID(id string) error {
+	r.Id = uuid.MustParse(id)
 	return nil
 }
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:        uint32(m.channelId),
-		IpAddress: m.ipAddress,
-		Port:      m.port,
+		Id:        m.Id(),
+		WorldId:   m.WorldId(),
+		ChannelId: m.ChannelId(),
+		IpAddress: m.IpAddress(),
+		Port:      m.Port(),
+		CreatedAt: m.CreatedAt(),
 	}, nil
 }

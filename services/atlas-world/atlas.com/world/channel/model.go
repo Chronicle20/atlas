@@ -1,39 +1,39 @@
 package channel
 
+import (
+	"github.com/google/uuid"
+	"time"
+)
+
 type Model struct {
-	uniqueId  uint32
+	id        uuid.UUID
 	worldId   byte
 	channelId byte
 	ipAddress string
 	port      int
+	createdAt time.Time
 }
 
-func (c Model) UniqueId() uint32 {
-	return c.uniqueId
+func (m Model) Id() uuid.UUID {
+	return m.id
 }
 
-func (c Model) WorldId() byte {
-	return c.worldId
+func (m Model) WorldId() byte {
+	return m.worldId
 }
 
-func (c Model) ChannelId() byte {
-	return c.channelId
+func (m Model) ChannelId() byte {
+	return m.channelId
 }
 
-func (c Model) IpAddress() string {
-	return c.ipAddress
+func (m Model) IpAddress() string {
+	return m.ipAddress
 }
 
-func (c Model) Port() int {
-	return c.port
+func (m Model) Port() int {
+	return m.port
 }
 
-func NewModel(uniqueId uint32, worldId byte, channelId byte, ipAddress string, port int) Model {
-	return Model{
-		uniqueId:  uniqueId,
-		worldId:   worldId,
-		channelId: channelId,
-		ipAddress: ipAddress,
-		port:      port,
-	}
+func (m Model) CreatedAt() time.Time {
+	return m.createdAt
 }

@@ -2,127 +2,104 @@ package channel
 
 import (
 	"errors"
+	"github.com/Chronicle20/atlas-tenant"
 	"sync"
 )
 
 type Registry struct {
-	mutex   sync.Mutex
-	servers map[string][]Model
+	lock       sync.Mutex
+	registry   map[tenant.Model]map[byte]map[byte]Model
+	tenantLock map[tenant.Model]*sync.RWMutex
 }
 
 var channelRegistry *Registry
 var once sync.Once
 
-var uniqueId = uint32(1000000001)
-
-var errChannelNotFound = errors.New("channel not found")
+var ErrChannelNotFound = errors.New("channel not found")
 
 func GetChannelRegistry() *Registry {
 	once.Do(func() {
-		channelRegistry = &Registry{servers: make(map[string][]Model)}
+		channelRegistry = &Registry{
+			registry:   make(map[tenant.Model]map[byte]map[byte]Model),
+			tenantLock: make(map[tenant.Model]*sync.RWMutex),
+		}
 	})
 	return channelRegistry
 }
 
-func (c *Registry) Register(tenantId string, worldId byte, channelId byte, ipAddress string, port int) Model {
-	c.mutex.Lock()
+func (r *Registry) ensureTenantLock(t tenant.Model) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
-	if _, ok := c.servers[tenantId]; !ok {
-		c.servers[tenantId] = make([]Model, 0)
+	if _, ok := r.tenantLock[t]; !ok {
+		r.tenantLock[t] = &sync.RWMutex{}
+		r.registry[t] = make(map[byte]map[byte]Model)
 	}
+}
 
-	var found *Model = nil
-	for i := 0; i < len(c.servers[tenantId]); i++ {
+func (r *Registry) Register(t tenant.Model, m Model) Model {
+	r.ensureTenantLock(t)
+	r.tenantLock[t].Lock()
+	defer r.tenantLock[t].Unlock()
 
-		if c.servers[tenantId][i].WorldId() == worldId && c.servers[tenantId][i].ChannelId() == channelId {
-			found = &c.servers[tenantId][i]
-			break
+	if _, ok := r.registry[t][m.WorldId()]; !ok {
+		r.registry[t][m.WorldId()] = make(map[byte]Model)
+	}
+	r.registry[t][m.WorldId()][m.channelId] = m
+	return m
+}
+
+func (r *Registry) ChannelServers(t tenant.Model) []Model {
+	r.ensureTenantLock(t)
+	r.tenantLock[t].RLock()
+	defer r.tenantLock[t].RUnlock()
+
+	results := make([]Model, 0)
+	for _, w := range r.registry[t] {
+		for _, c := range w {
+			results = append(results, c)
 		}
 	}
-
-	if found != nil {
-		c.mutex.Unlock()
-		return *found
-	}
-
-	var existingIds = existingIds(c.servers[tenantId])
-
-	var currentUniqueId = uniqueId
-	for contains(existingIds, currentUniqueId) {
-		currentUniqueId = currentUniqueId + 1
-		if currentUniqueId > 2000000000 {
-			currentUniqueId = 1000000001
-		}
-		uniqueId = currentUniqueId
-	}
-
-	var newChannelServer = NewModel(uniqueId, worldId, channelId, ipAddress, port)
-	c.servers[tenantId] = append(c.servers[tenantId], newChannelServer)
-	c.mutex.Unlock()
-	return newChannelServer
+	return results
 }
 
-func existingIds(channelServers []Model) []uint32 {
-	var ids []uint32
-	for _, x := range channelServers {
-		ids = append(ids, x.UniqueId())
+func (r *Registry) ChannelServer(t tenant.Model, worldId byte, channelId byte) (Model, error) {
+	r.ensureTenantLock(t)
+	r.tenantLock[t].RLock()
+	defer r.tenantLock[t].RUnlock()
+
+	var ok bool
+	var result Model
+	if _, ok = r.registry[t][worldId]; !ok {
+		return result, ErrChannelNotFound
 	}
-	return ids
-}
-
-func contains(ids []uint32, id uint32) bool {
-	for _, element := range ids {
-		if element == id {
-			return true
-		}
+	if result, ok = r.registry[t][worldId][channelId]; !ok {
+		return result, ErrChannelNotFound
 	}
-	return false
+	return result, nil
 }
 
-func (c *Registry) ChannelServers(tenantId string) []Model {
-	return c.servers[tenantId]
-}
+func (r *Registry) RemoveByWorldAndChannel(t tenant.Model, worldId byte, channelId byte) error {
+	r.ensureTenantLock(t)
+	r.tenantLock[t].Lock()
+	defer r.tenantLock[t].Unlock()
 
-func (c *Registry) ChannelServer(tenantId string, worldId byte, channelId byte) (Model, error) {
-	for _, x := range c.ChannelServers(tenantId) {
-		if x.WorldId() == worldId && x.ChannelId() == channelId {
-			return x, nil
-		}
+	if _, ok := r.registry[t][worldId]; !ok {
+		return ErrChannelNotFound
 	}
-	return Model{}, errChannelNotFound
-}
-
-func (c *Registry) Remove(tenantId string, id uint32) {
-	c.mutex.Lock()
-	index := indexOf(id, c.servers[tenantId])
-	if index >= 0 && index < len(c.servers) {
-		c.servers[tenantId] = remove(c.servers[tenantId], index)
+	if _, ok := r.registry[t][worldId][channelId]; !ok {
+		return ErrChannelNotFound
 	}
-	c.mutex.Unlock()
+	delete(r.registry[t][worldId], channelId)
+	return nil
 }
 
-func (c *Registry) RemoveByWorldAndChannel(tenantId string, worldId byte, channelId byte) {
-	c.mutex.Lock()
-	element, err := c.ChannelServer(tenantId, worldId, channelId)
-	if err == nil {
-		index := indexOf(element.UniqueId(), c.servers[tenantId])
-		if index >= 0 && index < len(c.servers) {
-			c.servers[tenantId] = remove(c.servers[tenantId], index)
-		}
+func (r *Registry) Tenants() []tenant.Model {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	results := make([]tenant.Model, 0)
+	for t := range r.registry {
+		results = append(results, t)
 	}
-	c.mutex.Unlock()
-}
-
-func indexOf(uniqueId uint32, data []Model) int {
-	for k, v := range data {
-		if uniqueId == v.UniqueId() {
-			return k
-		}
-	}
-	return -1 //not found.
-}
-
-func remove(s []Model, i int) []Model {
-	s[i] = s[len(s)-1]
-	return s[:len(s)-1]
+	return results
 }

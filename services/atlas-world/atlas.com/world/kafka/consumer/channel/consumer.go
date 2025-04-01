@@ -1,7 +1,9 @@
 package channel
 
 import (
+	"atlas-world/channel"
 	consumer2 "atlas-world/kafka/consumer"
+	channel2 "atlas-world/kafka/message/channel"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -14,7 +16,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("channel_status_event")(EnvEventTopicChannelStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("channel_status_event")(channel2.EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -22,18 +24,18 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) {
 		var t string
-		t, _ = topic.EnvProvider(l)(EnvEventTopicChannelStatus)()
+		t, _ = topic.EnvProvider(l)(channel2.EnvEventTopicStatus)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleEventStatus)))
 	}
 }
 
-func handleEventStatus(l logrus.FieldLogger, ctx context.Context, e channelStatusEvent) {
-	if e.Type == EventChannelStatusType {
+func handleEventStatus(l logrus.FieldLogger, ctx context.Context, e channel2.StatusEvent) {
+	if e.Type == channel2.StatusTypeStarted {
 		l.Debugf("Registering channel [%d] for world [%d] at [%s:%d].", e.ChannelId, e.WorldId, e.IpAddress, e.Port)
-		_, _ = Register(l)(ctx)(e.WorldId, e.ChannelId, e.IpAddress, e.Port)
-	} else if e.Type == EventChannelStatusTypeShutdown {
+		_, _ = channel.Register(l)(ctx)(e.WorldId, e.ChannelId, e.IpAddress, e.Port)
+	} else if e.Type == channel2.StatusTypeShutdown {
 		l.Debugf("Unregistering channel [%d] for world [%d] at [%s:%d].", e.ChannelId, e.WorldId, e.IpAddress, e.Port)
-		_ = Unregister(l)(ctx)(e.WorldId, e.ChannelId)
+		_ = channel.Unregister(l)(ctx)(e.WorldId, e.ChannelId)
 	} else {
 		l.Errorf("Unhandled event status [%s].", e.Type)
 	}

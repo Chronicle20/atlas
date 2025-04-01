@@ -7,6 +7,7 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -56,6 +57,7 @@ func ReadLoginRequest(reader *request.Reader) *LoginRequest {
 }
 
 func LoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
+	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader) {
 		p := ReadLoginRequest(r)
 		l.Debugf("Reading [%s] message. body={name=%s, password=%s, gameRoomClient=%d, gameStartMode=%d}", LoginHandle, p.Name(), p.Password(), p.GameRoomClient(), p.GameStartMode())
@@ -63,7 +65,7 @@ func LoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		err := as.Create(l, producer.ProviderImpl(l)(ctx))(s.SessionId(), s.AccountId(), p.Name(), p.Password(), "")
 		if err != nil {
 			authLoginFailedFunc := session.Announce(l)(wp)(writer.AuthLoginFailed)
-			err := authLoginFailedFunc(s, writer.AuthLoginFailedBody(l, s.Tenant())(writer.SystemError1))
+			err = authLoginFailedFunc(s, writer.AuthLoginFailedBody(l, t)(writer.SystemError1))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to issue [%s].", writer.AuthLoginFailed)
 			}

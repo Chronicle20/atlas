@@ -8,17 +8,19 @@ import (
 	"atlas-login/world"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const CharacterListWorldHandle = "CharacterListWorldHandle"
 
 func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
+	t := tenant.MustFromContext(ctx)
 	serverStatusFunc := session.Announce(l)(wp)(writer.ServerStatus)
 	characterListFunc := session.Announce(l)(wp)(writer.CharacterList)
 	return func(s session.Model, r *request.Reader) {
 		var gameStartMode = byte(0)
-		t := s.Tenant()
+
 		if t.Region() == "GMS" && t.MajorVersion() > 28 {
 			// GMS v28 is not definite here, but this is not present in 28.
 			gameStartMode = r.ReadByte()

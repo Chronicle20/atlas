@@ -7,19 +7,20 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const DeleteCharacterHandle = "DeleteCharacterHandle"
 
 func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
+	t := tenant.MustFromContext(ctx)
 	deleteCharacterResponseFunc := session.Announce(l)(wp)(writer.DeleteCharacterResponse)
 	return func(s session.Model, r *request.Reader) {
 		var verifyPic = false
 		var pic string
 		var dob uint32
 
-		t := s.Tenant()
 		if t.Region() == "GMS" && t.MajorVersion() > 82 {
 			verifyPic = true
 			pic = r.ReadAsciiString()

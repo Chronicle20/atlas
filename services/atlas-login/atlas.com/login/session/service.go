@@ -1,7 +1,7 @@
 package session
 
 import (
-	as "atlas-login/account/session"
+	"atlas-login/account/session"
 	"atlas-login/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
@@ -18,9 +18,9 @@ func Create(l logrus.FieldLogger, r *Registry) func(t tenant.Model, locale byte)
 			fl := l.WithField("session", sessionId)
 			fl.Debugf("Creating session.")
 			s := NewSession(sessionId, t, locale, conn)
-			r.Add(s)
+			r.Add(t.Id(), s)
 
-			err := s.WriteHello()
+			err := s.WriteHello(t.MajorVersion(), t.MinorVersion())
 			if err != nil {
 				fl.WithError(err).Errorf("Unable to write hello packet.")
 			}
@@ -80,7 +80,7 @@ func Destroy(l logrus.FieldLogger, ctx context.Context, r *Registry) model.Opera
 		l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 		r.Remove(t.Id(), s.SessionId())
 		s.Disconnect()
-		as.Destroy(l, pi)(s.SessionId(), s.AccountId())
+		session.Destroy(l, pi)(s.SessionId(), s.AccountId())
 		return pi(EnvEventTopicSessionStatus)(destroyedStatusEventProvider(s.SessionId(), s.AccountId()))
 	}
 }

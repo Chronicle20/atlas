@@ -8,7 +8,6 @@ import (
 type Registry struct {
 	mutex           sync.RWMutex
 	sessionRegistry map[uuid.UUID]map[uuid.UUID]Model
-	lockRegistry    map[uuid.UUID]map[uuid.UUID]*sync.RWMutex
 }
 
 var sessionRegistryOnce sync.Once
@@ -18,84 +17,46 @@ func GetRegistry() *Registry {
 	sessionRegistryOnce.Do(func() {
 		sessionRegistry = &Registry{}
 		sessionRegistry.sessionRegistry = make(map[uuid.UUID]map[uuid.UUID]Model)
-		sessionRegistry.lockRegistry = make(map[uuid.UUID]map[uuid.UUID]*sync.RWMutex)
 	})
 	return sessionRegistry
 }
 
-func (r *Registry) Add(s Model) {
+func (r *Registry) Add(tenantId uuid.UUID, s Model) {
 	r.mutex.Lock()
-	t := s.Tenant()
-	if _, ok := r.sessionRegistry[t.Id()]; !ok {
-		r.sessionRegistry[t.Id()] = make(map[uuid.UUID]Model)
-	}
-	r.sessionRegistry[t.Id()][s.SessionId()] = s
+	defer r.mutex.Unlock()
 
-	if _, ok := r.lockRegistry[t.Id()]; !ok {
-		r.lockRegistry[t.Id()] = make(map[uuid.UUID]*sync.RWMutex)
+	if _, ok := r.sessionRegistry[tenantId]; !ok {
+		r.sessionRegistry[tenantId] = make(map[uuid.UUID]Model)
 	}
-	r.lockRegistry[t.Id()][s.SessionId()] = &sync.RWMutex{}
-	r.mutex.Unlock()
+	r.sessionRegistry[tenantId][s.SessionId()] = s
 }
 
 func (r *Registry) Remove(tenantId uuid.UUID, sessionId uuid.UUID) {
 	r.mutex.Lock()
+	defer r.mutex.Unlock()
 	delete(r.sessionRegistry[tenantId], sessionId)
-	delete(r.lockRegistry[tenantId], sessionId)
-	r.mutex.Unlock()
 }
 
 func (r *Registry) Get(tenantId uuid.UUID, sessionId uuid.UUID) (Model, bool) {
 	r.mutex.RLock()
+	defer r.mutex.RUnlock()
 	if _, ok := r.sessionRegistry[tenantId]; !ok {
-		r.mutex.RUnlock()
 		return Model{}, false
 	}
 
 	if s, ok := r.sessionRegistry[tenantId][sessionId]; ok {
-		r.mutex.RUnlock()
 		return s, true
 	}
-	r.mutex.RUnlock()
 	return Model{}, false
 }
 
-func (r *Registry) GetLock(tenantId uuid.UUID, sessionId uuid.UUID) (*sync.RWMutex, bool) {
-	r.mutex.RLock()
-	if _, ok := r.lockRegistry[tenantId]; !ok {
-		r.mutex.RUnlock()
-		return nil, false
-	}
-
-	if val, ok := r.lockRegistry[tenantId][sessionId]; ok {
-		r.mutex.RUnlock()
-		return val, true
-	}
-	r.mutex.RUnlock()
-	return nil, false
-}
-
-// Deprecated
-func (r *Registry) GetAll() []Model {
-	r.mutex.RLock()
-	s := make([]Model, 0)
-	for _, rs := range r.sessionRegistry {
-		for _, v := range rs {
-			s = append(s, v)
-		}
-	}
-	r.mutex.RUnlock()
-	return s
-}
-
-func (r *Registry) Update(m Model) {
+func (r *Registry) Update(tenantId uuid.UUID, m Model) {
 	r.mutex.Lock()
-	t := m.Tenant()
-	if _, ok := r.sessionRegistry[t.Id()]; !ok {
-		r.sessionRegistry[t.Id()] = make(map[uuid.UUID]Model)
+	defer r.mutex.Unlock()
+	if _, ok := r.sessionRegistry[tenantId]; !ok {
+		r.sessionRegistry[tenantId] = make(map[uuid.UUID]Model)
 	}
-	r.sessionRegistry[t.Id()][m.SessionId()] = m
-	r.mutex.Unlock()
+	r.sessionRegistry[tenantId][m.SessionId()] = m
 }
 
 func (r *Registry) GetInTenant(id uuid.UUID) []Model {

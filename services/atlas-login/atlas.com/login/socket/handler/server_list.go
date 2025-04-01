@@ -7,6 +7,7 @@ import (
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"sort"
 )
@@ -81,13 +82,14 @@ func announceLastWorld(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 
 func announceServerList(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
 			serverListEntryFunc := session.Announce(l)(wp)(writer.ServerListEntry)
 			serverListEndFunc := session.Announce(l)(wp)(writer.ServerListEnd)
 			return func(ws []world.Model) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					for _, x := range ws {
-						err := serverListEntryFunc(s, writer.ServerListEntryBody(s.Tenant())(x.Id(), x.Name(), x.State(), x.EventMessage(), x.ChannelLoad()))
+						err := serverListEntryFunc(s, writer.ServerListEntryBody(t)(x.Id(), x.Name(), x.State(), x.EventMessage(), x.ChannelLoad()))
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write server list entry for [%d]", x.Id())
 						}

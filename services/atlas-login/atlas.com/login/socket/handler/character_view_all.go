@@ -7,12 +7,14 @@ import (
 	"atlas-login/world"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const CharacterViewAllHandle = "CharacterViewAllHandle"
 
 func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
+	t := tenant.MustFromContext(ctx)
 	viewAllFunc := session.Announce(l)(wp)(writer.CharacterViewAll)
 	return func(s session.Model, r *request.Reader) {
 		var gameStartMode byte
@@ -21,7 +23,6 @@ func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 		var gameRoomClient uint32
 		var gameStartMode2 byte
 
-		t := s.Tenant()
 		if t.Region() == "GMS" && t.MajorVersion() > 83 {
 			gameStartMode = r.ReadByte()
 			nexonPassport = r.ReadAsciiString()

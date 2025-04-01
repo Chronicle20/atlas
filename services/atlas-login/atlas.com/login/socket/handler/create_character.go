@@ -6,17 +6,19 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const CreateCharacterHandle = "CreateCharacterHandle"
 
 func CreateCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
+	t := tenant.MustFromContext(ctx)
 	addCharacterEntryFunc := session.Announce(l)(wp)(writer.AddCharacterEntry)
 	return func(s session.Model, r *request.Reader) {
 		name := r.ReadAsciiString()
 		var jobIndex uint32
-		t := s.Tenant()
+
 		if t.Region() == "GMS" && t.MajorVersion() >= 73 {
 			jobIndex = r.ReadUint32()
 		} else if t.Region() == "JMS" {

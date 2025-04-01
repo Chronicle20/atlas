@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"math/rand"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -22,10 +23,10 @@ type Model struct {
 	gm          bool
 	con         net.Conn
 	send        crypto.AESOFB
+	sendLock    *sync.Mutex
 	recv        crypto.AESOFB
 	encryptFunc crypto.EncryptFunc
 	lastPacket  time.Time
-	tenant      tenant.Model
 	locale      byte
 }
 
@@ -52,10 +53,10 @@ func NewSession(id uuid.UUID, t tenant.Model, locale byte, con net.Conn) Model {
 		id:          id,
 		con:         con,
 		send:        *send,
+		sendLock:    &sync.Mutex{},
 		recv:        *recv,
 		encryptFunc: send.Encrypt(hasMapleEncryption, true),
 		lastPacket:  time.Now(),
-		tenant:      t,
 		locale:      locale,
 	}
 }
@@ -70,10 +71,10 @@ func CloneSession(s Model) Model {
 		characterId: s.characterId,
 		con:         s.con,
 		send:        s.send,
+		sendLock:    s.sendLock,
 		recv:        s.recv,
 		encryptFunc: s.encryptFunc,
 		lastPacket:  s.lastPacket,
-		tenant:      s.tenant,
 		locale:      s.locale,
 	}
 }
@@ -104,11 +105,10 @@ func (s *Model) AccountId() uint32 {
 	return s.accountId
 }
 
-func (s *Model) Tenant() tenant.Model {
-	return s.tenant
-}
-
 func (s *Model) announceEncrypted(b []byte) error {
+	s.sendLock.Lock()
+	defer s.sendLock.Unlock()
+
 	tmp := make([]byte, len(b)+4)
 	copy(tmp, b)
 	tmp = append([]byte{0, 0, 0, 0}, b...)
@@ -118,12 +118,15 @@ func (s *Model) announceEncrypted(b []byte) error {
 }
 
 func (s *Model) announce(b []byte) error {
+	s.sendLock.Lock()
+	defer s.sendLock.Unlock()
+
 	_, err := s.con.Write(b)
 	return err
 }
 
-func (s *Model) WriteHello() error {
-	return s.announce(WriteHello(nil)(s.tenant.MajorVersion(), s.tenant.MinorVersion(), s.send.IV(), s.recv.IV(), s.locale))
+func (s *Model) WriteHello(majorVersion uint16, minorVersion uint16) error {
+	return s.announce(WriteHello(nil)(majorVersion, minorVersion, s.send.IV(), s.recv.IV(), s.locale))
 }
 
 func (s *Model) ReceiveAESOFB() *crypto.AESOFB {

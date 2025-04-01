@@ -1,7 +1,7 @@
 package session
 
 import (
-	as "atlas-channel/account/session"
+	"atlas-channel/account/session"
 	"atlas-channel/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -14,17 +14,17 @@ import (
 	"net"
 )
 
-func Create(l logrus.FieldLogger, r *Registry, tenant tenant.Model) func(worldId world.Id, channelId channel.Id, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
+func Create(l logrus.FieldLogger, r *Registry, t tenant.Model) func(worldId world.Id, channelId channel.Id, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
 	return func(worldId world.Id, channelId channel.Id, locale byte) func(sessionId uuid.UUID, conn net.Conn) {
 		return func(sessionId uuid.UUID, conn net.Conn) {
 			fl := l.WithField("session", sessionId)
 			fl.Debugf("Creating session.")
-			s := NewSession(sessionId, tenant, locale, conn)
+			s := NewSession(sessionId, t, locale, conn)
 			s = s.setWorldId(worldId)
 			s = s.setChannelId(channelId)
-			r.Add(s)
+			r.Add(t.Id(), s)
 
-			err := s.WriteHello()
+			err := s.WriteHello(t.MajorVersion(), t.MinorVersion())
 			if err != nil {
 				fl.WithError(err).Errorf("Unable to write hello packet.")
 			}
@@ -84,7 +84,7 @@ func Destroy(l logrus.FieldLogger, ctx context.Context, r *Registry) model.Opera
 		l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 		r.Remove(t.Id(), s.SessionId())
 		s.Disconnect()
-		as.Destroy(l, pi)(s.SessionId(), s.AccountId())
+		session.Destroy(l, pi)(s.SessionId(), s.AccountId())
 		return pi(EnvEventTopicSessionStatus)(destroyedStatusEventProvider(s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
 	}
 }

@@ -53,6 +53,7 @@ func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 
 func produceFindResultBody(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(mode WhisperMode, targetName string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(mode WhisperMode, targetName string) model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(mode WhisperMode, targetName string) model.Operator[session.Model] {
 			return func(mode WhisperMode, targetName string) model.Operator[session.Model] {
 				return func(s session.Model) error {
@@ -75,7 +76,7 @@ func produceFindResultBody(l logrus.FieldLogger) func(ctx context.Context) func(
 						return af(writer.CharacterChatWhisperFindResultInCashShopBody(resultMode, targetName))(s)
 					}
 
-					_, err = session.GetByCharacterId(s.Tenant(), s.WorldId(), s.ChannelId())(tc.Id())
+					_, err = session.GetByCharacterId(t, s.WorldId(), s.ChannelId())(tc.Id())
 					if err == nil {
 						return af(writer.CharacterChatWhisperFindResultInMapBody(resultMode, tc, tc.MapId()))(s)
 					}

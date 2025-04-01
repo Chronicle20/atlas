@@ -1,7 +1,7 @@
 package channel
 
 import (
-	"atlas-world/configuration"
+	tenant2 "atlas-world/configuration/tenant"
 	"atlas-world/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
@@ -73,12 +73,20 @@ func Unregister(_ logrus.FieldLogger) func(ctx context.Context) func(worldId byt
 	}
 }
 
-func RequestStatus(l logrus.FieldLogger) func(ctx context.Context) func() {
-	return func(ctx context.Context) func() {
-		return func() {
-			for _, sc := range configuration.GetTenantConfigs() {
-				t, _ := tenant.Create(uuid.MustParse(sc.Id), sc.Region, sc.MajorVersion, sc.MinorVersion)
-				_ = producer.ProviderImpl(l)(tenant.WithContext(ctx, t))(EnvCommandTopicChannelStatus)(emitChannelServerStatusCommand(t))
+func RequestStatus(l logrus.FieldLogger) func(ctx context.Context) func(tenantId uuid.UUID) model.Operator[tenant2.RestModel] {
+	return func(ctx context.Context) func(tenantId uuid.UUID) model.Operator[tenant2.RestModel] {
+		return func(tenantId uuid.UUID) model.Operator[tenant2.RestModel] {
+			return func(config tenant2.RestModel) error {
+				t, err := tenant.Create(uuid.MustParse(config.Id), config.Region, config.MajorVersion, config.MinorVersion)
+				if err != nil {
+					return err
+				}
+				l.Debugf("Requesting status of channels for tenant [%s].", t.String())
+				err = producer.ProviderImpl(l)(tenant.WithContext(ctx, t))(EnvCommandTopicChannelStatus)(emitChannelServerStatusCommand(t))
+				if err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 	}

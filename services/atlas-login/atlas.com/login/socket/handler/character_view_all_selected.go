@@ -2,13 +2,13 @@ package handler
 
 import (
 	as "atlas-login/account/session"
+	"atlas-login/channel"
 	"atlas-login/character"
 	"atlas-login/kafka/producer"
 	"atlas-login/session"
 	"atlas-login/socket/model"
 	"atlas-login/socket/writer"
 	"atlas-login/world"
-	"atlas-login/world/channel"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
@@ -61,7 +61,7 @@ func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Contex
 		s = session.SetWorldId(byte(worldId))(t.Id(), s.SessionId())
 
 		channel, err := channel.GetRandomInWorld(l, ctx)(byte(worldId))
-		s = session.SetChannelId(channel.Id())(t.Id(), s.SessionId())
+		s = session.SetChannelId(channel.ChannelId())(t.Id(), s.SessionId())
 
 		err = as.UpdateState(l, producer.ProviderImpl(l)(ctx))(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: channel.IpAddress(), Port: uint16(channel.Port()), CharacterId: characterId})
 		if err != nil {

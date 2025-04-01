@@ -3,11 +3,11 @@ package handler
 import (
 	"atlas-login/account"
 	as "atlas-login/account/session"
+	"atlas-login/channel"
 	"atlas-login/kafka/producer"
 	"atlas-login/session"
 	"atlas-login/socket/model"
 	"atlas-login/socket/writer"
-	"atlas-login/world/channel"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"

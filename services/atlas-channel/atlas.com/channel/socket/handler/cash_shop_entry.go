@@ -4,6 +4,7 @@ import (
 	"atlas-channel/account"
 	"atlas-channel/buddylist"
 	"atlas-channel/cashshop"
+	"atlas-channel/cashshop/wallet"
 	"atlas-channel/character"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -65,9 +66,20 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 		//	return
 		//}
 
-		err = session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)(writer.CashShopCashQueryResultBody(l)(t))(s)
+		w, err := wallet.GetByCharacterId(l)(ctx)(s.CharacterId())
 		if err != nil {
-			return
+			l.WithError(err).Errorf("Unable to retrieve cash shop wallet for character [%d].", s.CharacterId())
+			err = session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)(writer.CashShopCashQueryResultBody(t)(0, 0, 0))(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce default cash shop wallet to character [%d].", s.CharacterId())
+				return
+			}
+		} else {
+			err = session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)(writer.CashShopCashQueryResultBody(t)(w.Credit(), w.Points(), w.Prepaid()))(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce cash shop wallet to character [%d].", s.CharacterId())
+				return
+			}
 		}
 
 		err = cashshop.Enter(l)(ctx)(s.CharacterId(), s.Map())

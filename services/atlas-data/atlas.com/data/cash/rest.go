@@ -20,6 +20,8 @@ const (
 	SpecTypeIndexNine  = SpecType("9")
 )
 
+var SpecTypeIndexes = []SpecType{SpecTypeIndexZero, SpecTypeIndexOne, SpecTypeIndexTwo, SpecTypeIndexThree, SpecTypeIndexFour, SpecTypeIndexFive, SpecTypeIndexSix, SpecTypeIndexSeven, SpecTypeIndexEight, SpecTypeIndexNine}
+
 type RestModel struct {
 	Id      uint32             `json:"-"`
 	SlotMax uint32             `json:"slotMax"`

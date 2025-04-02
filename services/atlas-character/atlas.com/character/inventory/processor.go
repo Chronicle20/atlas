@@ -1148,3 +1148,30 @@ func UpdateEquip(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 		}
 	}
 }
+
+func IncreaseCapacity(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, amount uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, amount uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, inventoryType inventory.Type, amount uint32) error {
+			return func(characterId uint32, inventoryType inventory.Type, amount uint32) error {
+				var capacity uint32
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					i, err := GetInventoryByType(l)(tx)(ctx)(characterId, inventoryType)()
+					if err != nil {
+						return err
+					}
+					capacity = uint32(math.Min(96, float64(i.Capacity()+amount)))
+					_, err = updateEntity(tx, t.Id(), characterId, int8(inventoryType), capacity)
+					if err != nil {
+						return err
+					}
+					return nil
+				})
+				if txErr != nil {
+					return txErr
+				}
+				return producer.ProviderImpl(l)(ctx)(EnvEventInventoryChanged)(inventoryCapacityUpdateProvider(characterId)(inventoryType, capacity))
+			}
+		}
+	}
+}

@@ -217,3 +217,19 @@ func inventoryItemCancelReservationProvider(characterId uint32) func(inventoryTy
 		}
 	}
 }
+
+func inventoryCapacityUpdateProvider(characterId uint32) func(inventoryType inventory.Type, capacity uint32) model.Provider[[]kafka.Message] {
+	return func(inventoryType inventory.Type, capacity uint32) model.Provider[[]kafka.Message] {
+		key := producer.CreateKey(int(characterId))
+		value := &inventoryChangedEvent[inventoryChangedCapacityUpdateBody]{
+			CharacterId:   characterId,
+			InventoryType: int8(inventoryType),
+			Slot:          0,
+			Type:          ChangedTypeUpdateCapacity,
+			Body: inventoryChangedCapacityUpdateBody{
+				Capacity: capacity,
+			},
+		}
+		return producer.SingleMessageProvider(key, value)
+	}
+}

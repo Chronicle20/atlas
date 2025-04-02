@@ -1,12 +1,17 @@
 package writer
 
 import (
+	"atlas-channel/cashshop/wishlist"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-const CashShopOperation = "CashShopOperation"
+const (
+	CashShopOperation               = "CashShopOperation"
+	CashShopOperationLoadWishlist   = "LOAD_WISHLIST"
+	CashShopOperationUpdateWishlist = "UPDATE_WISHLIST"
+)
 
 func CashShopCashInventoryBody(l logrus.FieldLogger) func(tenant tenant.Model) BodyProducer {
 	return func(tenant tenant.Model) BodyProducer {
@@ -33,15 +38,47 @@ func CashShopCashGiftsBody(l logrus.FieldLogger) func(tenant tenant.Model) BodyP
 	}
 }
 
-func CashShopWishListBody(l logrus.FieldLogger) func(tenant tenant.Model) BodyProducer {
-	return func(tenant tenant.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			// TODO map codes for JMS
-			w.WriteByte(0x4F)
-			for i := 0; i < 10; i++ {
-				w.WriteInt(0)
+func CashShopWishListBody(l logrus.FieldLogger) func(t tenant.Model) func(update bool, items []wishlist.Model) BodyProducer {
+	return func(t tenant.Model) func(update bool, items []wishlist.Model) BodyProducer {
+		return func(update bool, items []wishlist.Model) BodyProducer {
+			return func(w *response.Writer, options map[string]interface{}) []byte {
+				if update {
+					w.WriteByte(getCashShopOperation(l)(options, CashShopOperationUpdateWishlist))
+				} else {
+					w.WriteByte(getCashShopOperation(l)(options, CashShopOperationLoadWishlist))
+				}
+				for _, item := range items {
+					w.WriteInt(item.SerialNumber())
+				}
+				for i := 0; i < 10-len(items); i++ {
+					w.WriteInt(0)
+				}
+				return w.Bytes()
 			}
-			return w.Bytes()
 		}
+	}
+}
+
+func getCashShopOperation(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
+	return func(options map[string]interface{}, key string) byte {
+		var genericCodes interface{}
+		var ok bool
+		if genericCodes, ok = options["operations"]; !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return 99
+		}
+
+		var codes map[string]interface{}
+		if codes, ok = genericCodes.(map[string]interface{}); !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return 99
+		}
+
+		res, ok := codes[key].(float64)
+		if !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return 99
+		}
+		return byte(res)
 	}
 }

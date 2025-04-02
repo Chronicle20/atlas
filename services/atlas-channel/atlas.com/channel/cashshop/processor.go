@@ -22,3 +22,18 @@ func Exit(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint3
 		}
 	}
 }
+
+type PointType string
+
+const (
+	PointTypeCredit  = "CREDIT"
+	PointTypeMaple   = "POINTS"
+	PointTypePrepaid = "PREPAID"
+)
+
+func GetPointType(arg bool) PointType {
+	if arg {
+		return PointTypeMaple
+	}
+	return PointTypeCredit
+}

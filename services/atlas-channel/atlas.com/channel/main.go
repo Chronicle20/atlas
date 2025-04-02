@@ -330,6 +330,8 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterSkillMacroHandle] = handler.CharacterSkillMacroHandleFunc
 	handlerMap[handler.PetItemExcludeHandle] = handler.PetItemExcludeHandleFunc
 	handlerMap[handler.PetItemUseHandle] = handler.PetItemUseHandleFunc
+	handlerMap[handler.CashShopOperationHandle] = handler.CashShopOperationHandleFunc
+	handlerMap[handler.CashShopCheckWalletHandle] = handler.CashShopCheckWalletHandleFunc
 	return handlerMap
 }
 

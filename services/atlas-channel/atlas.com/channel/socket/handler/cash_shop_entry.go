@@ -5,6 +5,7 @@ import (
 	"atlas-channel/buddylist"
 	"atlas-channel/cashshop"
 	"atlas-channel/cashshop/wallet"
+	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -60,11 +61,16 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 		//if err != nil {
 		//	return
 		//}
-		//
-		//err = session.Announce(l)(wp)(writer.CashShopOperation)(s, writer.CashShopWishListBody(l)(s.Tenant()))
-		//if err != nil {
-		//	return
-		//}
+
+		wl, err := wishlist.GetByCharacterId(l)(ctx)(s.CharacterId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to update wish list for character [%d].", s.CharacterId())
+			return
+		}
+		err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopWishListBody(l)(t)(false, wl))(s)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to update wish list for character [%d].", s.CharacterId())
+		}
 
 		w, err := wallet.GetByCharacterId(l)(ctx)(s.CharacterId())
 		if err != nil {

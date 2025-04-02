@@ -12,6 +12,7 @@ const (
 	CommandConsume           = "CONSUME"
 	CommandDestroy           = "DESTROY"
 	CommandCancelReservation = "CANCEL_RESERVATION"
+	CommandIncreaseCapacity  = "INCREASE_CAPACITY"
 )
 
 type command[E any] struct {
@@ -67,4 +68,8 @@ type destroyCommandBody struct {
 type cancelReservationCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	Slot          int16     `json:"slot"`
+}
+
+type increaseCapacityCommandBody struct {
+	Amount uint32 `json:"amount"`
 }

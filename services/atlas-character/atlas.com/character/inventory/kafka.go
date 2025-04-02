@@ -40,6 +40,7 @@ const (
 	ChangedTypeMove                 = "MOVED"
 	ChangedTypeReserve              = "RESERVED"
 	ChangedTypeReservationCancelled = "RESERVATION_CANCELLED"
+	ChangedTypeUpdateCapacity       = "CAPACITY_UPDATED"
 )
 
 type inventoryChangedEvent[M any] struct {
@@ -110,4 +111,8 @@ type inventoryChangedItemReserveBody struct {
 type inventoryChangedItemReservationCancelledBody struct {
 	ItemId   uint32 `json:"itemId"`
 	Quantity uint32 `json:"quantity"`
+}
+
+type inventoryChangedCapacityUpdateBody struct {
+	Capacity uint32 `json:"capacity"`
 }

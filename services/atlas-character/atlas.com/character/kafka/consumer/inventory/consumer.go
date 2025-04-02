@@ -39,6 +39,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleConsumeItemCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyItemCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelItemReservationCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleIncreaseCapacityCommand(db))))
 		}
 	}
 }
@@ -133,5 +134,14 @@ func handleCancelItemReservationCommand(db *gorm.DB) message.Handler[command[can
 			return
 		}
 		_ = inventory.CancelReservation(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), c.Body.TransactionId, c.Body.Slot)
+	}
+}
+
+func handleIncreaseCapacityCommand(db *gorm.DB) message.Handler[command[increaseCapacityCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c command[increaseCapacityCommandBody]) {
+		if c.Type != CommandIncreaseCapacity {
+			return
+		}
+		_ = inventory.IncreaseCapacity(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), c.Body.Amount)
 	}
 }

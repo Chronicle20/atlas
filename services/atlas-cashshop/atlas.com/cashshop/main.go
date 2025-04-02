@@ -1,13 +1,13 @@
 package main
 
 import (
-	"atlas-cashshop/cash"
-	"atlas-cashshop/cash/wishlist"
 	"atlas-cashshop/database"
 	"atlas-cashshop/kafka/consumer/character"
 	"atlas-cashshop/logger"
 	"atlas-cashshop/service"
 	"atlas-cashshop/tracing"
+	"atlas-cashshop/wallet"
+	"atlas-cashshop/wishlist"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 	"os"
@@ -47,7 +47,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(cash.Migration, wishlist.Migration))
+	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
@@ -58,7 +58,8 @@ func main() {
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
-		AddRouteInitializer(cash.InitResource(GetServer())(db)).
+		AddRouteInitializer(wallet.InitResource(GetServer())(db)).
+		AddRouteInitializer(wishlist.InitResource(GetServer())(db)).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

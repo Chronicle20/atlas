@@ -1,4 +1,4 @@
-package cash
+package wallet
 
 import (
 	"atlas-cashshop/database"
@@ -10,7 +10,7 @@ import (
 func byCharacterIdEntityProvider(tenantId uuid.UUID, characterId uint32) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
 		var result Entity
-		err := db.Where(&Entity{TenantId: tenantId, CharacterId: characterId}).Preload("Wishlist").First(&result).Error
+		err := db.Where(&Entity{TenantId: tenantId, CharacterId: characterId}).First(&result).Error
 		if err != nil {
 			return model.ErrorProvider[Entity](err)
 		}

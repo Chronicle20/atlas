@@ -1,9 +1,10 @@
 package character
 
 import (
-	"atlas-cashshop/cash"
 	consumer2 "atlas-cashshop/kafka/consumer"
 	"atlas-cashshop/kafka/message/character"
+	"atlas-cashshop/wallet"
+	"atlas-cashshop/wishlist"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -38,7 +39,8 @@ func handleStatusEventCreated(db *gorm.DB) message.Handler[character.StatusEvent
 		if e.Type != character.StatusEventTypeCreated {
 			return
 		}
-		_, _ = cash.Create(l)(ctx)(db)(e.CharacterId)
+		l.Debugf("Character [%d] was created. Initializing cash shop information...", e.CharacterId)
+		_, _ = wallet.Create(l)(ctx)(db)(e.CharacterId, 0, 0, 0)
 	}
 }
 
@@ -47,6 +49,7 @@ func handleStatusEventDeleted(db *gorm.DB) message.Handler[character.StatusEvent
 		if e.Type != character.StatusEventTypeDeleted {
 			return
 		}
-		_ = cash.Delete(l)(ctx)(db)(e.CharacterId)
+		_ = wallet.Delete(l)(ctx)(db)(e.CharacterId)
+		_ = wishlist.DeleteAll(l)(ctx)(db)(e.CharacterId)
 	}
 }

@@ -1,4 +1,4 @@
-package cash
+package wallet
 
 import (
 	"context"
@@ -21,6 +21,28 @@ func createEntity(db *gorm.DB, t tenant.Model, characterId uint32, credit uint32
 		return Model{}, err
 	}
 	return Make(*e)
+}
+
+func updateEntity(db *gorm.DB, t tenant.Model, characterId uint32, credit uint32, points uint32, prepaid uint32) (Model, error) {
+	var e Entity
+
+	err := db.
+		Where("tenant_id = ? AND character_id = ?", t.Id(), characterId).
+		First(&e).Error
+	if err != nil {
+		return Model{}, err
+	}
+
+	e.Credit = credit
+	e.Points = points
+	e.Prepaid = prepaid
+
+	err = db.Save(&e).Error
+	if err != nil {
+		return Model{}, err
+	}
+
+	return Make(e)
 }
 
 func deleteEntity(ctx context.Context) func(db *gorm.DB, tenantId uuid.UUID, characterId uint32) error {

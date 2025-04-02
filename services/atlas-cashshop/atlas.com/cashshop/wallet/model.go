@@ -1,11 +1,11 @@
-package cash
+package wallet
 
-import "atlas-cashshop/cash/wishlist"
+import "github.com/google/uuid"
 
 type Model struct {
+	id          uuid.UUID
 	characterId uint32
 	credit      uint32
 	points      uint32
 	prepaid     uint32
-	wishlist    []wishlist.Model
 }

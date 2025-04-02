@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -94,5 +95,33 @@ func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.Handle
 			return
 		}
 		next(uint32(characterId))(w, r)
+	}
+}
+
+type WalletIdHandler func(walletId uuid.UUID) http.HandlerFunc
+
+func ParseWalletId(l logrus.FieldLogger, next WalletIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		walletId, err := uuid.Parse(mux.Vars(r)["walletId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse walletId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(walletId)(w, r)
+	}
+}
+
+type ItemIdHandler func(itemId uuid.UUID) http.HandlerFunc
+
+func ParseItemId(l logrus.FieldLogger, next ItemIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		itemId, err := uuid.Parse(mux.Vars(r)["itemId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse itemId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(itemId)(w, r)
 	}
 }

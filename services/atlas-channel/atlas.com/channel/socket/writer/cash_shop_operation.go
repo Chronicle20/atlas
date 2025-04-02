@@ -8,9 +8,11 @@ import (
 )
 
 const (
-	CashShopOperation               = "CashShopOperation"
-	CashShopOperationLoadWishlist   = "LOAD_WISHLIST"
-	CashShopOperationUpdateWishlist = "UPDATE_WISHLIST"
+	CashShopOperation                                 = "CashShopOperation"
+	CashShopOperationInventoryCapacityIncreaseSuccess = "INVENTORY_CAPACITY_INCREASE_SUCCESS"
+	CashShopOperationInventoryCapacityIncreaseFailed  = "INVENTORY_CAPACITY_INCREASE_FAILED"
+	CashShopOperationLoadWishlist                     = "LOAD_WISHLIST"
+	CashShopOperationUpdateWishlist                   = "UPDATE_WISHLIST"
 )
 
 func CashShopCashInventoryBody(l logrus.FieldLogger) func(tenant tenant.Model) BodyProducer {
@@ -33,6 +35,27 @@ func CashShopCashGiftsBody(l logrus.FieldLogger) func(tenant tenant.Model) BodyP
 			w.WriteByte(0x4D)
 			w.WriteShort(0)
 			// TODO load gifts
+			return w.Bytes()
+		}
+	}
+}
+
+func CashShopInventoryCapacityIncreaseSuccessBody(l logrus.FieldLogger) func(inventoryType byte, capacity uint32) BodyProducer {
+	return func(inventoryType byte, capacity uint32) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationInventoryCapacityIncreaseSuccess))
+			w.WriteByte(inventoryType)
+			w.WriteShort(uint16(capacity))
+			return w.Bytes()
+		}
+	}
+}
+
+func CashShopInventoryCapacityIncreaseFailedBody(l logrus.FieldLogger) func(message byte) BodyProducer {
+	return func(message byte) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationInventoryCapacityIncreaseFailed))
+			w.WriteByte(message)
 			return w.Bytes()
 		}
 	}

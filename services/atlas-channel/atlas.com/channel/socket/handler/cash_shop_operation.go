@@ -73,35 +73,50 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationIncreaseInventory) {
-			pt := cashshop.GetPointType(r.ReadBool())
-			option := r.ReadUint32()
+			isPoints := r.ReadBool()
+			currency := r.ReadUint32()
 			item := r.ReadBool()
 			if !item {
 				inventoryType := r.ReadByte()
-				l.Infof("Character [%d] purchasing inventory [%d] expansion using [%s]. Option [%d]", s.CharacterId(), inventoryType, pt, option)
+				err = cashshop.RequestInventoryIncreasePurchaseByType(l)(ctx)(s.CharacterId(), isPoints, currency, inventoryType)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to request inventory increase purchase for character [%d].", s.CharacterId())
+				}
 			} else {
 				serialNumber := r.ReadUint32()
-				l.Infof("Character [%d] purchasing inventory expansion via item [%d] using [%s]. Option [%d]", s.CharacterId(), serialNumber, pt, option)
+				err = cashshop.RequestInventoryIncreasePurchaseByItem(l)(ctx)(s.CharacterId(), isPoints, currency, serialNumber)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to request inventory increase purchase for character [%d].", s.CharacterId())
+				}
 			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationIncreaseStorage) {
-			pt := cashshop.GetPointType(r.ReadBool())
-			option := r.ReadUint32()
+			isPoints := r.ReadBool()
+			currency := r.ReadUint32()
 			item := r.ReadBool()
 			if !item {
-				l.Infof("Character [%d] purchasing storage expansion using [%s]. Option [%d]", s.CharacterId(), pt, option)
+				err = cashshop.RequestStorageIncreasePurchase(l)(ctx)(s.CharacterId(), isPoints, currency)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to request storage increase purchase for character [%d].", s.CharacterId())
+				}
 			} else {
 				serialNumber := r.ReadUint32()
-				l.Infof("Character [%d] purchasing storage expansion via item [%d] using [%s]. Option [%d]", s.CharacterId(), serialNumber, pt, option)
+				err = cashshop.RequestStorageIncreasePurchaseByItem(l)(ctx)(s.CharacterId(), isPoints, currency, serialNumber)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to request storage increase purchase for character [%d].", s.CharacterId())
+				}
 			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationIncreaseCharacterSlot) {
-			pt := cashshop.GetPointType(r.ReadBool())
-			option := r.ReadUint32()
+			isPoints := r.ReadBool()
+			currency := r.ReadUint32()
 			serialNumber := r.ReadUint32()
-			l.Infof("Character [%d] purchasing character slot via item [%d] using [%s]. Option [%d]", s.CharacterId(), serialNumber, pt, option)
+			err = cashshop.RequestCharacterSlotIncreasePurchaseByItem(l)(ctx)(s.CharacterId(), isPoints, currency, serialNumber)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to request character slot increase purchase for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationEnableEquipSlot) {

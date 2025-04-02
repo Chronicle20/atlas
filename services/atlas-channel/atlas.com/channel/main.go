@@ -9,6 +9,7 @@ import (
 	account2 "atlas-channel/kafka/consumer/account"
 	"atlas-channel/kafka/consumer/buddylist"
 	"atlas-channel/kafka/consumer/buff"
+	"atlas-channel/kafka/consumer/cashshop"
 	"atlas-channel/kafka/consumer/chair"
 	"atlas-channel/kafka/consumer/chalkboard"
 	"atlas-channel/kafka/consumer/channel"
@@ -108,6 +109,7 @@ func main() {
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
+	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
@@ -173,6 +175,7 @@ func main() {
 				messenger.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				pet.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				consumable.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				cashshop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, ten.IPAddress, c.Port)

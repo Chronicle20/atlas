@@ -24,7 +24,7 @@ func updateEntity(db *gorm.DB, tenantId uuid.UUID, characterId uint32, inventory
 	var e entity
 
 	err := db.
-		Where("tenant_id = ? AND character_id = ? AND inventoryType = ?", tenantId, characterId, inventoryType).
+		Where("tenant_id = ? AND character_id = ? AND inventory_type = ?", tenantId, characterId, inventoryType).
 		First(&e).Error
 	if err != nil {
 		return Model{}, err

@@ -3,6 +3,7 @@ package data
 import (
 	"archive/zip"
 	"atlas-data/cash"
+	"atlas-data/commodity"
 	"atlas-data/consumable"
 	"atlas-data/equipment"
 	"atlas-data/kafka/producer"
@@ -34,9 +35,10 @@ const (
 	WorkerPet       = "PET"
 	WorkerConsume   = "CONSUME"
 	WorkerCash      = "CASH"
+	WorkerCommodity = "COMMODITY"
 )
 
-var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash}
+var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity}
 
 func ProcessZip(l logrus.FieldLogger) func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
 	return func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
@@ -168,6 +170,8 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Consume"), consumable.RegisterConsumable(db))()
 				} else if name == WorkerCash {
 					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Cash"), cash.RegisterCash(db))()
+				} else if name == WorkerCommodity {
+					_ = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "Commodity.img.xml"), commodity.RegisterCommodity(db))()
 				}
 
 				return nil
@@ -179,7 +183,7 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 type Worker func() error
 type RegisterFunc func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string)
 
-func RegisterAllData(l logrus.FieldLogger) func(ctx context.Context) func(rootDir string, wzFileName string, rf RegisterFunc) Worker {
+func RegisterAllData(l logrus.FieldLogger) func(ctx context.Context) func(rootDir string, wzFilePath string, rf RegisterFunc) Worker {
 	return func(ctx context.Context) func(rootDir string, wzFileName string, rf RegisterFunc) Worker {
 		return func(rootDir string, wzFileName string, rf RegisterFunc) Worker {
 			return func() error {
@@ -229,6 +233,17 @@ func RegisterAllData(l logrus.FieldLogger) func(ctx context.Context) func(rootDi
 
 				return nil
 
+			}
+		}
+	}
+}
+
+func RegisterFileData(l logrus.FieldLogger) func(ctx context.Context) func(rootDir string, wzFileName string, rf RegisterFunc) Worker {
+	return func(ctx context.Context) func(rootDir string, wzFileName string, rf RegisterFunc) Worker {
+		return func(rootDir string, wzFileName string, rf RegisterFunc) Worker {
+			return func() error {
+				rf(l)(ctx)(filepath.Join(rootDir, wzFileName))
+				return nil
 			}
 		}
 	}

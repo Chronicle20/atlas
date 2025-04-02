@@ -4,9 +4,11 @@ import (
 	"atlas-cashshop/cash"
 	"atlas-cashshop/cash/wishlist"
 	"atlas-cashshop/database"
+	"atlas-cashshop/kafka/consumer/character"
 	"atlas-cashshop/logger"
 	"atlas-cashshop/service"
 	"atlas-cashshop/tracing"
+	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 	"os"
 )
@@ -46,6 +48,10 @@ func main() {
 	}
 
 	db := database.Connect(l, database.SetMigrations(cash.Migration, wishlist.Migration))
+
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	character.InitConsumers(l)(cmf)(consumerGroupId)
+	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.New(l).
 		WithContext(tdm.Context()).

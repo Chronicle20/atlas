@@ -1,13 +1,18 @@
 package main
 
 import (
+	"atlas-cashshop/cash"
+	"atlas-cashshop/cash/wishlist"
+	"atlas-cashshop/database"
 	"atlas-cashshop/logger"
 	"atlas-cashshop/service"
 	"atlas-cashshop/tracing"
 	"github.com/Chronicle20/atlas-rest/server"
+	"os"
 )
 
 const serviceName = "atlas-cashshop"
+const consumerGroupId = "Cash Shop Service"
 
 type Server struct {
 	baseUrl string
@@ -25,14 +30,14 @@ func (s Server) GetPrefix() string {
 func GetServer() Server {
 	return Server{
 		baseUrl: "",
-		prefix:  "/api/cashshop/",
+		prefix:  "/api/",
 	}
 }
 
 func main() {
-  l := logger.CreateLogger(serviceName)
+	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
-	
+
 	tdm := service.GetTeardownManager()
 
 	tc, err := tracing.InitTracer(l)(serviceName)
@@ -40,8 +45,16 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix())
-	
+	db := database.Connect(l, database.SetMigrations(cash.Migration, wishlist.Migration))
+
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(cash.InitResource(GetServer())(db)).
+		Run()
+
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
 	tdm.Wait()

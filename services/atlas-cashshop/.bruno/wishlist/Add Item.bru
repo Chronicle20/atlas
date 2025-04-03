@@ -1,0 +1,24 @@
+meta {
+  name: Add Item
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/1/cash-shop/wishlist
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "type": "items",
+      "attributes": {
+        "characterId": 1,
+        "serialNumber": 10000002
+      }
+    }
+  }
+}

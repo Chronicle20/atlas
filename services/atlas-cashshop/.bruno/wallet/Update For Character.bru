@@ -1,0 +1,26 @@
+meta {
+  name: Update For Character
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/1/cash-shop/wallet
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "data": {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "type": "wallets",
+      "attributes": {
+        "characterId": 1,
+        "credit": 10000,
+        "points": 10000,
+        "prepaid": 10000
+      }
+    }
+  }
+}

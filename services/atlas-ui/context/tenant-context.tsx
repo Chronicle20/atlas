@@ -14,39 +14,34 @@ const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 // Provider Component
 export function TenantProvider({children}: { children: ReactNode }) {
-    const [activeTenant, setActiveTenant] = useState<Tenant | null>(null);
+    const [activeTenant, setActiveTenantState] = useState<Tenant | null>(null);
     const [tenants, setTenants] = useState<Tenant[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        console.log("TenantProvider Mounted");
-
-        return () => {
-            console.log("TenantProvider Unmounted");
-        };
-    }, []);
-
+    const LOCAL_STORAGE_KEY = "activeTenantId";
 
     // Fetch tenants data (you can replace this with your actual data fetching logic)
     useEffect(() => {
         fetchTenants()
             .then((data) => {
                 setTenants(data);
-                if (!activeTenant) {
-                    setActiveTenant(data[0] || null); // Set first tenant as default
-                }
+
+                const storedId = localStorage.getItem(LOCAL_STORAGE_KEY);
+                const storedTenant = data.find((t) => t.id === storedId);
+
+                // Prefer localStorage value, fallback to first tenant
+                setActiveTenantState(storedTenant ?? data[0] ?? null);
             })
             .catch((err) => setError(err.message))
             .finally(() => setLoading(false));
     }, []);
 
-    // Set the default active tenants when tenants data is available
-    useEffect(() => {
-        if (tenants.length > 0) {
-            setActiveTenant(tenants[0]); // Set first tenants as default
-        }
-    }, [tenants]);
+    // Store tenant in localStorage on change
+    const setActiveTenant = (tenant: Tenant) => {
+        setActiveTenantState(tenant);
+        localStorage.setItem(LOCAL_STORAGE_KEY, tenant.id);
+    };
 
     return (
         <TenantContext.Provider value={{tenants, activeTenant, setActiveTenant}}>

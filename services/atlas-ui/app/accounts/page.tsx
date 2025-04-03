@@ -15,18 +15,22 @@ export default function Page() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!activeTenant) return;
+    const fetchDataAgain = () => {
+        if (!activeTenant) return
 
-        setLoading(true);
+        setLoading(true)
 
         fetchAccounts(activeTenant)
             .then((data) => {
-                setAccounts(data);
+                setAccounts(data)
             })
             .catch((err) => setError(err.message))
-            .finally(() => setLoading(false));
-    }, [activeTenant]);
+            .finally(() => setLoading(false))
+    }
+
+    useEffect(() => {
+        fetchDataAgain()
+    }, [activeTenant, fetchDataAgain])
 
     if (loading) return <div>Loading...</div>; // Show loading message while fetching data
     if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
@@ -41,7 +45,7 @@ export default function Page() {
                 </div>
             </div>
             <div className="mt-4">
-                <DataTable columns={columns} data={accounts} initialVisibilityState={hiddenColumns}/>
+                <DataTable columns={columns} data={accounts} onRefresh={fetchDataAgain} initialVisibilityState={hiddenColumns}/>
             </div>
             <Toaster richColors/>
         </div>

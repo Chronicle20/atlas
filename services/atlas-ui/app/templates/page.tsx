@@ -10,14 +10,17 @@ export default function Page() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
+    const fetchDataAgain = () => {
+        setLoading(true)
         fetchTemplates()
-            .then((data) => {
-                setTemplates(data);
-            })
+            .then((data) => setTemplates(data))
             .catch((err) => setError(err.message))
-            .finally(() => setLoading(false));
-    }, []);
+            .finally(() => setLoading(false))
+    }
+
+    useEffect(() => {
+        fetchDataAgain()
+    }, [])
 
     if (loading) return <div>Loading...</div>; // Show loading message while fetching data
     if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
@@ -30,7 +33,7 @@ export default function Page() {
                 </div>
             </div>
             <div className="mt-4">
-                <DataTable columns={columns} data={templates}/>
+                <DataTable columns={columns} data={templates} onRefresh={fetchDataAgain}/>
             </div>
         </div>
     );

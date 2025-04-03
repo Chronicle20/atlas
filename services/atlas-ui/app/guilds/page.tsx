@@ -2,16 +2,18 @@
 
 import {useTenant} from "@/context/tenant-context";
 import {DataTable} from "@/components/data-table";
-import {getColumns, hiddenColumns} from "@/app/characters/columns";
+import {hiddenColumns} from "@/app/guilds/columns";
 import {useEffect, useState} from "react";
+import {Guild, fetchGuilds} from "@/lib/guilds";
+import {getColumns} from "@/app/guilds/columns";
+import {Toaster} from "sonner";
 import {Character, fetchCharacters} from "@/lib/characters";
-import {Account, fetchAccounts} from "@/lib/accounts";
 
 
 export default function Page() {
     const {activeTenant} = useTenant();
+    const [guilds, setGuilds] = useState<Guild[]>([]);
     const [characters, setCharacters] = useState<Character[]>([]);
-    const [accounts, setAccounts] = useState<Account[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -21,12 +23,12 @@ export default function Page() {
         setLoading(true)
 
         Promise.all([
+            fetchGuilds(activeTenant),
             fetchCharacters(activeTenant),
-            fetchAccounts(activeTenant),
         ])
-            .then(([characterData, accountData]) => {
+            .then(([guildData, characterData]) => {
+                setGuilds(guildData);
                 setCharacters(characterData);
-                setAccounts(accountData);
             })
             .catch((err) => setError(err.message))
             .finally(() => setLoading(false));
@@ -34,26 +36,26 @@ export default function Page() {
 
     useEffect(() => {
         fetchDataAgain()
-    }, [activeTenant])
+    }, [activeTenant, fetchDataAgain])
 
     if (loading) return <div>Loading...</div>;
     if (error) return <div>Error: {error}</div>;
 
-    const accountMap = new Map(accounts.map(a => [a.id, a]));
+    const characterMap = new Map(characters.map(c => [c.id, c]));
 
-    const columns = getColumns({tenant: activeTenant, accountMap});
+    const columns = getColumns({ tenant: activeTenant, characterMap });
 
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
             <div className="items-center justify-between space-y-2">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Characters</h2>
+                    <h2 className="text-2xl font-bold tracking-tight">Guilds</h2>
                 </div>
             </div>
             <div className="mt-4">
-                <DataTable columns={columns} data={characters} onRefresh={fetchDataAgain}
-                           initialVisibilityState={hiddenColumns}/>
+                <DataTable columns={columns} data={guilds} onRefresh={fetchDataAgain} initialVisibilityState={hiddenColumns}/>
             </div>
+            <Toaster richColors/>
         </div>
     );
 }

@@ -33,7 +33,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 				l.Debugf("Initializing wallet information for character [%d]. Credit [%d], Points [%d], and Prepaid [%d].", characterId, credit, points, prepaid)
 				c, err := createEntity(db, t, characterId, credit, points, prepaid)
 				if err != nil {
-					l.WithError(err).Error("Could not create wallet information for character [%d].", characterId)
+					l.WithError(err).Errorf("Could not create wallet information for character [%d].", characterId)
 					return Model{}, err
 				}
 				return c, err
@@ -50,7 +50,7 @@ func Update(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 				l.Debugf("Updating wallet information for character [%d]. Credit [%d], Points [%d], and Prepaid [%d].", characterId, credit, points, prepaid)
 				c, err := updateEntity(db, t, characterId, credit, points, prepaid)
 				if err != nil {
-					l.WithError(err).Error("Could not update wallet information for character [%d].", characterId)
+					l.WithError(err).Errorf("Could not update wallet information for character [%d].", characterId)
 					return Model{}, err
 				}
 				return c, err

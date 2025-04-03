@@ -6,6 +6,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -40,11 +41,11 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		op := r.ReadByte()
 		var err error
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuy) {
-			pt := cashshop.GetPointType(r.ReadBool())
-			option := r.ReadUint32()
+			isPoints := r.ReadBool()
+			currency := r.ReadUint32()
 			serialNumber := r.ReadUint32()
 			zero := r.ReadUint32()
-			l.Infof("Character [%d] purchasing [%d] with [%s]. Option [%d], zero [%d]", s.CharacterId(), serialNumber, pt, option, zero)
+			_ = cashshop.RequestPurchase(l)(ctx)(s.CharacterId(), serialNumber, isPoints, currency, zero)
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationGift) {

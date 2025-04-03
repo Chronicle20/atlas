@@ -77,7 +77,7 @@ func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 		// TODO this is not a generic error generator
-		op := session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopInventoryCapacityIncreaseFailedBody(l)(e.Body.Code))
+		op := session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopInventoryCapacityIncreaseFailedBody(l)(e.Body.Error))
 		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, op)
 		return
 	}

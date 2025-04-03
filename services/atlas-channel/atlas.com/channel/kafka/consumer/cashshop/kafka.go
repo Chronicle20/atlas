@@ -20,5 +20,4 @@ type InventoryCapacityIncreasedBody struct {
 
 type ErrorEventBody struct {
 	Error string `json:"error"`
-	Code  byte   `json:"code"` // TODO remove
 }

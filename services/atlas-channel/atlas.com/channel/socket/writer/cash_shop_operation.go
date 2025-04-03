@@ -1,14 +1,19 @@
 package writer
 
 import (
+	"atlas-channel/account"
+	"atlas-channel/cashshop/inventory"
 	"atlas-channel/cashshop/wishlist"
+
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const (
 	CashShopOperation                                 = "CashShopOperation"
+	CashShopOperationLoadInventorySuccess             = "LOAD_INVENTORY_SUCCESS"
+	CashShopOperationLoadInventoryFailure             = "LOAD_INVENTORY_FAILURE"
 	CashShopOperationInventoryCapacityIncreaseSuccess = "INVENTORY_CAPACITY_INCREASE_SUCCESS"
 	CashShopOperationInventoryCapacityIncreaseFailed  = "INVENTORY_CAPACITY_INCREASE_FAILED"
 	CashShopOperationLoadWishlist                     = "LOAD_WISHLIST"
@@ -71,14 +76,25 @@ const (
 
 )
 
-func CashShopCashInventoryBody(l logrus.FieldLogger) func(tenant tenant.Model) BodyProducer {
-	return func(tenant tenant.Model) BodyProducer {
+func CashShopCashInventoryBody(l logrus.FieldLogger) func(a account.Model, characterId uint32, inventory inventory.Model) BodyProducer {
+	return func(a account.Model, characterId uint32, inventory inventory.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			// TODO map codes for JMS
-			w.WriteByte(0x4B)
-			w.WriteShort(0)
-			w.WriteShort(0) // character storage slots
-			w.WriteInt16(4) // character slots
+			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationLoadInventorySuccess))
+			w.WriteShort(uint16(len(inventory.Items())))
+			for _, i := range inventory.Items() {
+				w.WriteLong(i.Id())
+				w.WriteInt(a.Id())
+				w.WriteInt(characterId)
+				w.WriteInt(i.ItemId())
+				w.WriteInt(i.SerialNumber())
+				w.WriteInt16(i.Quantity())
+				WritePaddedString(w, i.PurchasedByName(), 13)
+				w.WriteInt64(msTime(i.Expiration()))
+				w.WriteInt(i.PaybackRate())
+				w.WriteInt(i.DiscountRate())
+			}
+			w.WriteShort(0) // TODO storage slots
+			w.WriteInt16(a.CharacterSlots())
 			return w.Bytes()
 		}
 	}
@@ -107,11 +123,11 @@ func CashShopInventoryCapacityIncreaseSuccessBody(l logrus.FieldLogger) func(inv
 	}
 }
 
-func CashShopInventoryCapacityIncreaseFailedBody(l logrus.FieldLogger) func(message byte) BodyProducer {
-	return func(message byte) BodyProducer {
+func CashShopInventoryCapacityIncreaseFailedBody(l logrus.FieldLogger) func(message string) BodyProducer {
+	return func(message string) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationInventoryCapacityIncreaseFailed))
-			w.WriteByte(message)
+			w.WriteByte(getCashShopOperationError(l)(options, message))
 			return w.Bytes()
 		}
 	}
@@ -157,6 +173,30 @@ func getCashShopOperation(l logrus.FieldLogger) func(options map[string]interfac
 		if !ok {
 			l.Errorf("Code [%s] not configured for use.", key)
 			return 99
+		}
+		return byte(res)
+	}
+}
+
+func getCashShopOperationError(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
+	return func(options map[string]interface{}, key string) byte {
+		var genericCodes interface{}
+		var ok bool
+		if genericCodes, ok = options["errors"]; !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return 0
+		}
+
+		var codes map[string]interface{}
+		if codes, ok = genericCodes.(map[string]interface{}); !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return 0
+		}
+
+		res, ok := codes[key].(float64)
+		if !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return 0
 		}
 		return byte(res)
 	}

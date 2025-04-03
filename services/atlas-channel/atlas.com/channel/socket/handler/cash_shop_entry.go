@@ -4,14 +4,17 @@ import (
 	"atlas-channel/account"
 	"atlas-channel/buddylist"
 	"atlas-channel/cashshop"
+	"atlas-channel/cashshop/inventory"
+	"atlas-channel/cashshop/inventory/item"
 	"atlas-channel/cashshop/wallet"
 	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -52,11 +55,17 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			return
 		}
 
-		//err = session.Announce(l)(wp)(writer.CashShopOperation)(s, writer.CashShopCashInventoryBody(l)(s.Tenant()))
-		//if err != nil {
-		//	return
-		//}
-		//
+		items := make([]item.Model, 0)
+		items = append(items, item.NewModel(1, 1041009, 10000255, 1))
+		items = append(items, item.NewModel(2, 1041071, 10000256, 1))
+
+		inv := inventory.NewModel(items)
+
+		err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopCashInventoryBody(l)(a, s.CharacterId(), inv))(s)
+		if err != nil {
+			return
+		}
+
 		//err = session.Announce(l)(wp)(writer.CashShopOperation)(s, writer.CashShopCashGiftsBody(l)(s.Tenant()))
 		//if err != nil {
 		//	return

@@ -20,6 +20,7 @@ type characterMovementBody struct {
 
 const (
 	EnvCommandTopic                               = "COMMAND_TOPIC_CASH_SHOP"
+	CommandTypeRequestPurchase                    = "REQUEST_PURCHASE"
 	CommandTypeRequestInventoryIncreaseByType     = "REQUEST_INVENTORY_INCREASE_BY_TYPE"
 	CommandTypeRequestInventoryIncreaseByItem     = "REQUEST_INVENTORY_INCREASE_BY_ITEM"
 	CommandTypeRequestStorageIncrease             = "REQUEST_STORAGE_INCREASE"
@@ -31,6 +32,11 @@ type Command[E any] struct {
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
+}
+
+type RequestPurchaseCommandBody struct {
+	Currency     uint32 `json:"currency"`
+	SerialNumber uint32 `json:"serialNumber"`
 }
 
 type RequestInventoryIncreaseByTypeCommandBody struct {

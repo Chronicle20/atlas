@@ -35,6 +35,19 @@ func characterExitCashShopStatusEventProvider(actorId uint32, m _map.Model) mode
 	return producer.SingleMessageProvider(key, value)
 }
 
+func RequestPurchaseCommandProvider(characterId uint32, serialNumber uint32, currency uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &Command[RequestPurchaseCommandBody]{
+		CharacterId: characterId,
+		Type:        CommandTypeRequestPurchase,
+		Body: RequestPurchaseCommandBody{
+			Currency:     currency,
+			SerialNumber: serialNumber,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func RequestInventoryIncreaseByTypeCommandProvider(characterId uint32, currency uint32, inventoryType byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &Command[RequestInventoryIncreaseByTypeCommandBody]{

@@ -1,7 +1,7 @@
 "use client"
 
 import {ColumnDef} from "@tanstack/react-table"
-import {DropdownMenu, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
 import {MoreHorizontal} from "lucide-react";
 import {Tenant} from "@/lib/tenants";
@@ -9,6 +9,7 @@ import {Guild} from "@/lib/guilds";
 import {Character} from "@/lib/characters";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
 import {Badge} from "@/components/ui/badge";
+import Link from "next/link";
 
 interface ColumnProps {
     tenant: Tenant | null;
@@ -89,9 +90,16 @@ export function getColumns({tenant, characterMap}: ColumnProps): ColumnDef<Guild
                                 <MoreHorizontal className="h-4 w-4"/>
                             </Button>
                         </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                                <Link href={"/guilds/" + row.getValue("id")}>
+                                    <span>View Guild</span>
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
                     </DropdownMenu>
                 )
             },
         }
     ]
-};
+}

@@ -5,21 +5,17 @@ import {Tenant} from "@/lib/tenants";
 import {getJobNameById} from "@/lib/jobs";
 import {Badge} from "@/components/ui/badge";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
-
-export type Character = {
-    id: string
-    attributes: {
-        name: string
-    }
-}
+import {Character} from "@/lib/characters";
+import {Account} from "@/lib/accounts";
 
 interface ColumnProps {
     tenant: Tenant | null;
+    accountMap: Map<string, Account>;
 }
 
 export const hiddenColumns = ["id", "attributes.gm"];
 
-export const getColumns = ({tenant}: ColumnProps): ColumnDef<Character>[] => {
+export const getColumns = ({tenant, accountMap}: ColumnProps): ColumnDef<Character>[] => {
     return [
         {
             accessorKey: "id",
@@ -33,6 +29,11 @@ export const getColumns = ({tenant}: ColumnProps): ColumnDef<Character>[] => {
         {
             accessorKey: "attributes.accountId",
             header: "Account",
+            cell: ({row}) => {
+                const accountId = String(row.getValue("attributes_accountId"))
+                const account = accountMap.get(accountId)
+                return account?.attributes.name ?? "Unknown"
+            }
         },
         {
             accessorKey: "attributes.worldId",

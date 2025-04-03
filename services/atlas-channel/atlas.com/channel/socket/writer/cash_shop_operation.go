@@ -13,6 +13,62 @@ const (
 	CashShopOperationInventoryCapacityIncreaseFailed  = "INVENTORY_CAPACITY_INCREASE_FAILED"
 	CashShopOperationLoadWishlist                     = "LOAD_WISHLIST"
 	CashShopOperationUpdateWishlist                   = "UPDATE_WISHLIST"
+
+	CashShopOperationErrorUnknown                           = "UNKNOWN_ERROR"                         // 0x00
+	CashShopOperationErrorRequestTimedOut                   = "REQUEST_TIMED_OUT"                     // 0xA3
+	CashShopOperationErrorNotEnoughCash                     = "NOT_ENOUGH_CASH"                       // 0xA5
+	CashShopOperationErrorCannotGiftWhenUnderage            = "CANNOT_GIFT_WHEN_UNDERAGE"             // 0xA6
+	CashShopOperationErrorExceededGiftLimit                 = "EXCEEDED_GIFT_LIMIT"                   // 0xA7
+	CashShopOperationErrorCannotGiftToOwnAccount            = "CANNOT_GIFT_TO_OWN_ACCOUNT"            // 0xA8
+	CashShopOperationErrorIncorrectName                     = "INCORRECT_NAME"                        // 0xA9
+	CashShopOperationErrorCannotGiftGenderRestriction       = "CANNOT_GIFT_GENDER_RESTRICTION"        // 0xAA
+	CashShopOperationErrorCannotGiftRecipientInventoryFull  = "CANNOT_GIFT_RECIPIENT_INVENTORY_FULL"  // 0xAB
+	CashShopOperationErrorExceededCashItemLimit             = "EXCEEDED_CASH_ITEM_LIMIT"              // 0xAC
+	CashShopOperationErrorIncorrectNameOrGenderRestriction  = "INCORRECT_NAME_OR_GENDER_RESTRICTION"  // 0xAD
+	CashShopOperationErrorInvalidCouponCode                 = "INVALID_COUPON_COUPON"                 // 0xB0
+	CashShopOperationErrorCouponExpired                     = "COUPON_EXPIRED"                        // 0xB2
+	CashShopOperationErrorCouponAlreadyUsed                 = "COUPON_ALREADY_USED"                   // 0xB3
+	CashShopOperationErrorCouponInternetCafeRestriction     = "COUPON_INTERNET_CAFE_RESTRICTION"      // 0xB4
+	CashShopOperationErrorInternetCafeCouponAlreadyUsed     = "INTERNET_CAFE_COUPON_ALREADY_USED"     // 0xB5
+	CashShopOperationErrorInternetCafeCouponExpired         = "INTERNET_CAFE_COUPON_EXPIRED"          // 0xB6
+	CashShopOperationErrorCouponNotRegistered               = "COUPON_NOT_REGISTERED"                 // 0xB7
+	CashShopOperationErrorCouponGenderRestriction           = "COUPON_GENDER_RESTRICTION"             // 0xB8
+	CashShopOperationErrorCouponCannotBeGifted              = "COUPON_CANNOT_BE_GIFTED"               // 0xB9
+	CashShopOperationErrorCouponOnlyForMapleStory           = "COUPON_ONLY_FOR_MAPLE_STORY"           // 0xBA
+	CashShopOperationErrorInventoryFull                     = "INVENTORY_FULL"                        // 0xBB
+	CashShopOperationErrorNotAvailableForPurchase           = "NOT_AVAILABLE_FOR_PURCHASE"            // 0xBC
+	CashShopOperationErrorCannotGiftInvalidNameOrGender     = "CANNOT_GIFT_INVALID_NAME_OR_GENDER"    // 0xBD
+	CashShopOperationErrorCheckNameOfReceiver               = "CHECK_NAME_OF_RECEIVER"                // 0xBE
+	CashShopOperationErrorNotAvailableForPurchaseAtThisHour = "NOT_AVAILABLE_FOR_PURCHASE_AT_HOUR"    // 0xBF
+	CashShopOperationErrorOutOfStock                        = "OUT_OF_STOCK"                          // 0xC0
+	CashShopOperationErrorExceededSpendingLimit             = "EXCEEDED_SPENDING_LIMIT"               // 0xC1
+	CashShopOperationErrorNotEnoughMesos                    = "NOT_ENOUGH_MESOS"                      // 0xC2
+	CashShopOperationErrorCashShopNotAvailableDuringBeta    = "CASH_SHOP_NOT_AVAILABLE_DURING_BETA"   // 0xC3
+	CashShopOperationErrorInvalidBirthday                   = "INVALID_BIRTHDAY"                      // 0xC4
+	CashShopOperationErrorOnlyAvailableToUsersBuying        = "ONLY_AVAILABLE_TO_USERS_BUYING"        // 0xC7
+	CashShopOperationErrorAlreadyApplied                    = "ALREADY_APPLIED"                       // 0xC8
+	CashShopOperationErrorDailyPurchaseLimit                = "DAILY_PURCHASE_LIMIT"                  // 0xCD
+	CashShopOperationErrorCouponUsageLimit                  = "COUPON_USAGE_LIMIT"                    // 0xD0
+	CashShopOperationErrorCouponSystemAvailableSoon         = "COUPON_SYSTEM_AVAILABLE_SOON"          // 0xD2
+	CashShopOperationErrorFifteenDayLimit                   = "FIFTEEN_DAY_LIMIT"                     // 0xD3
+	CashShopOperationErrorNotEnoughGiftTokens               = "NOT_ENOUGH_GIFT_TOKENS"                // 0xD4
+	CashShopOperationErrorCannotSendTechnicalDifficulties   = "CANNOT_SEND_TECHNICAL_DIFFICULTIES"    // 0xD5
+	CashShopOperationErrorCannotGiftAccountAge              = "CANNOT_GIFT_ACCOUNT_AGE"               // 0xD6
+	CashShopOperationErrorCannotGiftPreviousInfractions     = "CANNOT_GIFT_PREVIOUS_INFRACTIONS"      // 0xD7
+	CashShopOperationErrorCannotGiftAtThisTime              = "CANNOT_GIFT_AT_THIS_TIME"              // 0xD8
+	CashShopOperationErrorCannotGiftLimit                   = "CANNOT_GIFT_LIMIT"                     // 0xD9
+	CashShopOperationErrorCannotGiftTechnicalDifficulties   = "CANNOT_GIFT_TECHNICAL_DIFFICULTIES"    // 0xDA
+	CashShopOperationErrorCannotTransferUnderLevelTwenty    = "CANNOT_TRANSFER_UNDER_LEVEL_TWENTY"    // 0xDB
+	CashShopOperationErrorCannotTransferToSameWorld         = "CANNOT_TRANSFER_TO_SAME_WORLD"         // 0xDC
+	CashShopOperationErrorCannotTransferToNewWorld          = "CANNOT_TRANSFER_TO_NEW_WORLD"          // 0xDD
+	CashShopOperationErrorCannotTransferOut                 = "CANNOT_TRANSFER_OUT"                   // 0xDE
+	CashShopOperationErrorCannotTransferNoEmptySlots        = "CANNOT_TRANSFER_NO_EMPTY_SLOTS"        // 0xDF
+	CashShopOperationErrorEventEndedOrCannotBeFreelyTested  = "EVENT_ENDED_OR_CANT_BE_FREELY_TESTED"  // 0xE0
+	CashShopOperationErrorCannotBePurchasedWithMaplePoints  = "CANNOT_BE_PURCHASED_WITH_MAPLE_POINTS" // 0xE6
+	CashShopOperationErrorPleaseTryAgain                    = "PLEASE_TRY_AGAIN"                      // 0xE7
+	CashShopOperationErrorCannotBePurchasedWhenUnderSeven   = "CANNOT_BE_PURCHASED_WHEN_UNDER_SEVEN"  // 0xE8
+	CashShopOperationErrorCannotBeReceivedWhenUnderSeven    = "CANNOT_BE_RECEIVED_WHEN_UNDER_SEVEN"   // 0xE9
+
 )
 
 func CashShopCashInventoryBody(l logrus.FieldLogger) func(tenant tenant.Model) BodyProducer {

@@ -109,7 +109,7 @@ function getMemberColumns(titles: GuildTitle[]): ColumnDef<GuildMember>[] {
         {
             accessorKey: "jobId",
             header: "Job",
-            cell: ({row, getValue}) => {
+            cell: ({getValue}) => {
                 const value = getValue();
                 const id = Number(value);
                 let name = String(value);

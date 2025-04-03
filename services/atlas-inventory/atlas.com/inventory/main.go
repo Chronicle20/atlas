@@ -4,6 +4,7 @@ import (
 	"atlas-inventory/logger"
 	"atlas-inventory/service"
 	"atlas-inventory/tracing"
+
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -25,14 +26,14 @@ func (s Server) GetPrefix() string {
 func GetServer() Server {
 	return Server{
 		baseUrl: "",
-		prefix:  "/api/inventory/",
+		prefix:  "/api/",
 	}
 }
 
 func main() {
-  l := logger.CreateLogger(serviceName)
+	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
-	
+
 	tdm := service.GetTeardownManager()
 
 	tc, err := tracing.InitTracer(l)(serviceName)
@@ -41,7 +42,7 @@ func main() {
 	}
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix())
-	
+
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
 	tdm.Wait()

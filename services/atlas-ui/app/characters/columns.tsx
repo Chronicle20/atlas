@@ -7,6 +7,8 @@ import {Badge} from "@/components/ui/badge";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
 import {Character} from "@/lib/characters";
 import {Account} from "@/lib/accounts";
+import {useEffect, useState} from "react";
+import {fetchMap} from "@/lib/maps";
 
 interface ColumnProps {
     tenant: Tenant | null;
@@ -14,6 +16,8 @@ interface ColumnProps {
 }
 
 export const hiddenColumns = ["id", "attributes.gm"];
+
+const mapNameCache = new Map<string, string>()
 
 export const getColumns = ({tenant, accountMap}: ColumnProps): ColumnDef<Character>[] => {
     return [
@@ -120,6 +124,37 @@ export const getColumns = ({tenant, accountMap}: ColumnProps): ColumnDef<Charact
         {
             accessorKey: "attributes.mapId",
             header: "Map",
+            cell: ({ row }) => {
+                const mapId = String(row.getValue("attributes_mapId"))
+                const [name, setName] = useState<string>("Loading...")
+
+                useEffect(() => {
+                    if (!tenant || !mapId || mapNameCache.has(mapId)) return
+
+                    fetchMap(tenant, mapId)
+                        .then((map) => {
+                            const mapName = map.attributes.name
+                            mapNameCache.set(mapId, mapName)
+                            setName(mapName)
+                        })
+                        .catch(() => setName("Unknown"))
+                }, [tenant, mapId])
+
+                return (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Badge variant="secondary">
+                                    {name}
+                                </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{mapId}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )
+            }
         },
         {
             accessorKey: "attributes.gm",

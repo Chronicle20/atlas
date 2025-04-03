@@ -54,7 +54,7 @@ export async function fetchGuild(tenant: Tenant, guildId: string): Promise<Guild
         headers: tenantHeaders(tenant),
     });
     if (!response.ok) {
-        throw new Error("Failed to fetch guilds.");
+        throw new Error("Failed to fetch guild.");
     }
     const responseData = await response.json();
     return responseData.data;

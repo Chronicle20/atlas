@@ -5,7 +5,6 @@ import {DataTable} from "@/components/data-table";
 import {getColumns, hiddenColumns} from "@/app/characters/columns";
 import {useEffect, useState} from "react";
 import {Character, fetchCharacters} from "@/lib/characters";
-import {fetchGuilds} from "@/lib/guilds";
 import {Account, fetchAccounts} from "@/lib/accounts";
 
 

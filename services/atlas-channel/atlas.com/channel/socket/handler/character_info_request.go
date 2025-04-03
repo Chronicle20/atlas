@@ -1,15 +1,17 @@
 package handler
 
 import (
+	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
 	"atlas-channel/guild"
 	"atlas-channel/pet"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,6 +36,13 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		}
 		g, _ := guild.GetByMemberId(l)(ctx)(characterId)
 
+		var wl []wishlist.Model
+		wl, err = wishlist.GetByCharacterId(l)(ctx)(characterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to retrieve wishlist for character [%d].", characterId)
+			wl = make([]wishlist.Model, 0)
+		}
+
 		if characterId != s.CharacterId() {
 			var ps []pet.Model
 			ps, err = pet.GetByOwner(l)(ctx)(characterId)
@@ -46,7 +55,7 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			}
 		}
 
-		err = session.Announce(l)(ctx)(wp)(writer.CharacterInfo)(writer.CharacterInfoBody(t)(c, g))(s)
+		err = session.Announce(l)(ctx)(wp)(writer.CharacterInfo)(writer.CharacterInfoBody(t)(c, g, wl))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write character information.")
 		}

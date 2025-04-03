@@ -46,6 +46,10 @@ const items = [
                 url: "/characters"
             },
             {
+                title: "Guilds",
+                url: "/guilds"
+            },
+            {
                 title: "Drops",
                 url: "/drops"
             }

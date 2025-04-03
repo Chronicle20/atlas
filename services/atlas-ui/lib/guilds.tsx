@@ -1,0 +1,47 @@
+import {Tenant} from "@/app/tenants/columns";
+import {tenantHeaders} from "@/lib/headers";
+
+export interface Guild {
+    id: string;
+    attributes: {
+        worldId: number;
+        name: string;
+        notice: string;
+        points: number;
+        capacity: number;
+        logo: number;
+        logoColor: number;
+        logoBackground: number;
+        logoBackgroundColor: number;
+        leaderId: number;
+        members: GuildMember[];
+    };
+}
+
+export interface GuildMember {
+    characterId: number;
+    name: string;
+    jobId: number;
+    level: number;
+    title: number;
+    online: boolean;
+    allianceTitle: number;
+}
+
+export interface GuildTitle {
+    name: string;
+    index: number;
+}
+
+export async function fetchGuilds(tenant: Tenant): Promise<Guild[]> {
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    const response = await fetch(rootUrl + "/api/guilds/", {
+        method: "GET",
+        headers: tenantHeaders(tenant),
+    });
+    if (!response.ok) {
+        throw new Error("Failed to fetch guilds.");
+    }
+    const responseData = await response.json();
+    return responseData.data;
+}

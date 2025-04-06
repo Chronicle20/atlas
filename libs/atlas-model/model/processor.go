@@ -6,6 +6,9 @@ import (
 	"sync"
 )
 
+var ErrEmptySlice = errors.New("empty slice")
+var ErrNoResultFound = errors.New("no result found")
+
 type Operator[M any] func(M) error
 
 //goland:noinspection GoUnusedExportedFunction
@@ -214,7 +217,7 @@ func ErrorProvider[M any](err error) Provider[M] {
 func RandomPreciselyOneFilter[M any](ms []M) (M, error) {
 	var def M
 	if len(ms) == 0 {
-		return def, errors.New("empty slice")
+		return def, ErrEmptySlice
 	}
 	return ms[rand.Intn(len(ms))], nil
 }
@@ -380,7 +383,7 @@ func FirstProvider[M any](provider Provider[[]M], filters []Filter[M]) Provider[
 	}
 
 	if len(ms) == 0 {
-		return ErrorProvider[M](errors.New("empty slice"))
+		return ErrorProvider[M](ErrEmptySlice)
 	}
 
 	if len(filters) == 0 {
@@ -398,7 +401,7 @@ func FirstProvider[M any](provider Provider[[]M], filters []Filter[M]) Provider[
 			return FixedProvider[M](m)
 		}
 	}
-	return ErrorProvider[M](errors.New("no result found"))
+	return ErrorProvider[M](ErrNoResultFound)
 }
 
 //goland:noinspection GoUnusedExportedFunction
@@ -411,6 +414,10 @@ type KeyProvider[M any, K comparable] func(m M) K
 
 //goland:noinspection GoUnusedExportedFunction
 type ValueProvider[M any, V any] func(m M) V
+
+func Identity[M any](m M) M {
+	return m
+}
 
 //goland:noinspection GoUnusedExportedFunction
 func CollectToMap[M any, K comparable, V any](mp Provider[[]M], kp KeyProvider[M, K], vp ValueProvider[M, V]) Provider[map[K]V] {

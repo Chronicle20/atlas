@@ -24,6 +24,8 @@ github.com/Chronicle20/atlas-rest v1.2.12 h1:K/fEfExSGU3odM6PzySE/TA8xquov/Gkq+c
 github.com/Chronicle20/atlas-rest v1.2.12/go.mod h1:oUf5041BZuP/NXsbl/D+clqdSbeL5tcOwzWZ4dpMKEg=
 github.com/Chronicle20/atlas-rest v1.2.13 h1:ARH9GnmUxHav33SoEE3uV/9ua9iE2jQAzXHN5DO3kY4=
 github.com/Chronicle20/atlas-rest v1.2.13/go.mod h1:HGSrWFDC9DR1p/eCXXdHwh7wwKbmIOm9EeTH25DHUKI=
+github.com/Chronicle20/atlas-rest v1.2.14 h1:+EOG/qVAO6Stgvee723B9XF6AD31vYuKuD3RvXpxnks=
+github.com/Chronicle20/atlas-rest v1.2.14/go.mod h1:Luhdrs0PxV6oHRg73hcY/TIaD84a1MRezSbYdHnNU+8=
 github.com/Chronicle20/atlas-tenant v1.0.4 h1:zS+hK56eNTVDlvTvSFN4wo9hZQ9aM/6SxXzRL+9P2Zk=
 github.com/Chronicle20/atlas-tenant v1.0.4/go.mod h1:6DHjFyHY9wRfOuphFwmwklf50hYm74L7MlWH7wqgnRQ=
 github.com/Chronicle20/atlas-tenant v1.0.5 h1:fBloCBSkHZHAR7Q7beeNMgPjdc8dDWJH+e9Upb86zfk=

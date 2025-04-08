@@ -6,6 +6,7 @@ import (
 	compartment2 "atlas-inventory/kafka/message/compartment"
 	"atlas-inventory/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -64,8 +65,7 @@ func handleMoveItemCommand(db *gorm.DB) message.Handler[compartment2.Command[com
 		if c.Type != compartment2.CommandMove {
 			return
 		}
-
-		_ = inventory.Move(l)(db)(ctx)(producer.ProviderImpl(l)(ctx))(inventory2.Type(c.InventoryType))(c.CharacterId)(c.Body.Source)(c.Body.Destination)
+		_ = compartment.NewProcessor(l, ctx, db).MoveAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Source, c.Body.Destination)
 	}
 }
 
@@ -130,6 +130,6 @@ func handleIncreaseCapacityCommand(db *gorm.DB) message.Handler[compartment2.Com
 		if c.Type != compartment2.CommandIncreaseCapacity {
 			return
 		}
-		_ = inventory.IncreaseCapacity(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), c.Body.Amount)
+		_ = compartment.NewProcessor(l, ctx, db).IncreaseCapacityAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Amount)
 	}
 }

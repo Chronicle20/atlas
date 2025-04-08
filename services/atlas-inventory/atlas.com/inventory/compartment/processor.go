@@ -311,3 +311,100 @@ func (p *Processor) RemoveEquip(mb *message.Buffer) func(characterId uint32) fun
 		}
 	}
 }
+
+func (p *Processor) MoveAndEmit(characterId uint32, inventoryType inventory.Type, source int16, destination int16) error {
+	return message.Emit(p.producer)(model.Flip(model.Flip(model.Flip(model.Flip(p.Move)(characterId))(inventoryType))(source))(destination))
+}
+
+func (p *Processor) Move(mb *message.Buffer) func(characterId uint32) func(inventoryType inventory.Type) func(source int16) func(destination int16) error {
+	t := tenant.MustFromContext(p.ctx)
+	return func(characterId uint32) func(inventoryType inventory.Type) func(source int16) func(destination int16) error {
+		return func(inventoryType inventory.Type) func(source int16) func(destination int16) error {
+			return func(source int16) func(destination int16) error {
+				return func(destination int16) error {
+					p.l.Debugf("Attempting to move asset in slot [%d] to [%d] for character [%d].", source, destination, characterId)
+					invLock := LockRegistry().Get(characterId, inventoryType)
+					invLock.Lock()
+					defer invLock.Unlock()
+
+					var a1 asset.Model[any]
+					txErr := p.db.Transaction(func(tx *gorm.DB) error {
+						var c Model
+						var err error
+						c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
+							return err
+						}
+
+						assetProvider := p.assetProcessor.WithTransaction(tx).BySlotProvider(c.Id())(c.Type())
+						a1, err = assetProvider(source)()
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to get asset in compartment [%d] by slot [%d].", c.Id(), source)
+							return err
+						}
+						p.l.Debugf("Character [%d] is attempting to move asset [%d].", characterId, a1.TemplateId())
+
+						err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), a1.Id(), assetProvider(destination), model.FixedProvider(temporarySlot()))
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to update asset slot from [%d] to [%d]. Character [%d]. Compartment [%d].", destination, temporarySlot(), characterId, c.Id())
+							return err
+						}
+						err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), a1.Id(), model.FixedProvider(a1), model.FixedProvider(destination))
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to update asset slot from [%d] to [%d]. Character [%d]. Compartment [%d].", a1.Slot(), destination, characterId, c.Id())
+							return err
+						}
+						err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), a1.Id(), assetProvider(temporarySlot()), model.FixedProvider(source))
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to update asset slot from [%d] to [%d]. Character [%d]. Compartment [%d].", temporarySlot(), source, characterId, c.Id())
+							return err
+						}
+
+						GetReservationRegistry().SwapReservation(t, characterId, inventoryType, source, destination)
+						return nil
+					})
+					if txErr != nil {
+						p.l.Debugf("Unable to move asset in slot [%d] to [%d] for character [%d].", source, destination, characterId)
+					}
+					p.l.Debugf("Character [%d] moved asset [%d] to slot [%d].", characterId, a1.TemplateId(), destination)
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func (p *Processor) IncreaseCapacityAndEmit(characterId uint32, inventoryType inventory.Type, amount uint32) error {
+	return message.Emit(p.producer)(model.Flip(model.Flip(model.Flip(p.IncreaseCapacity)(characterId))(inventoryType))(amount))
+}
+
+func (p *Processor) IncreaseCapacity(mb *message.Buffer) func(characterId uint32) func(inventoryType inventory.Type) func(amount uint32) error {
+	t := tenant.MustFromContext(p.ctx)
+	return func(characterId uint32) func(inventoryType inventory.Type) func(amount uint32) error {
+		return func(inventoryType inventory.Type) func(amount uint32) error {
+			return func(amount uint32) error {
+				p.l.Debugf("Character [%d] attempting to change compartment capacity by [%d]. Type [%d].", characterId, amount, inventoryType)
+				var capacity uint32
+				txErr := p.db.Transaction(func(tx *gorm.DB) error {
+					c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+					if err != nil {
+						return err
+					}
+					capacity = uint32(math.Min(96, float64(c.Capacity()+amount)))
+					_, err = updateCapacity(tx, t.Id(), characterId, int8(inventoryType), capacity)
+					if err != nil {
+						return err
+					}
+					return mb.Put(compartment.EnvEventTopicStatus, compartment2.CapacityChangedEventStatusProvider(c.Id(), characterId, inventoryType, capacity))
+				})
+				if txErr != nil {
+					p.l.WithError(txErr).Errorf("Character [%d] unable to change compartment capacity. Type [%d].", characterId, inventoryType)
+					return txErr
+				}
+				p.l.Debugf("Character [%d] changed compartment capacity by [%d]. Type [%d].", characterId, amount, inventoryType)
+				return nil
+			}
+		}
+	}
+}

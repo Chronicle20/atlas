@@ -33,3 +33,17 @@ func DeletedEventStatusProvider(id uuid.UUID, characterId uint32) model.Provider
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func CapacityChangedEventStatusProvider(id uuid.UUID, characterId uint32, inventoryType inventory.Type, capacity uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.StatusEvent[compartment.CapacityChangedEventBody]{
+		CharacterId:   characterId,
+		CompartmentId: id,
+		Type:          compartment.StatusEventTypeCapacityChanged,
+		Body: compartment.CapacityChangedEventBody{
+			Type:     byte(inventoryType),
+			Capacity: capacity,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

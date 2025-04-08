@@ -3,9 +3,10 @@ package compartment
 import "github.com/google/uuid"
 
 const (
-	EnvEventTopicStatus    = "EVENT_TOPIC_COMPARTMENT_STATUS"
-	StatusEventTypeCreated = "CREATED"
-	StatusEventTypeDeleted = "DELETED"
+	EnvEventTopicStatus            = "EVENT_TOPIC_COMPARTMENT_STATUS"
+	StatusEventTypeCreated         = "CREATED"
+	StatusEventTypeDeleted         = "DELETED"
+	StatusEventTypeCapacityChanged = "CAPACITY_CHANGED"
 )
 
 type StatusEvent[E any] struct {
@@ -21,6 +22,11 @@ type CreatedStatusEventBody struct {
 }
 
 type DeletedStatusEventBody struct {
+}
+
+type CapacityChangedEventBody struct {
+	Type     byte   `json:"type"`
+	Capacity uint32 `json:"capacity"`
 }
 
 const (

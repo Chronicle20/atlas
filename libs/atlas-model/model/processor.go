@@ -37,6 +37,12 @@ type KeyValueOperator[K any, V any] func(K) Operator[V]
 
 type Provider[M any] func() (M, error)
 
+func CollapseProvider[A, T any](f func(A) Provider[T]) func(A) (T, error) {
+	return func(a A) (T, error) {
+		return f(a)()
+	}
+}
+
 func Decorators[M any](decorators ...Decorator[M]) []Decorator[M] {
 	return decorators
 }

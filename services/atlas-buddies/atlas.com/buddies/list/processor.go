@@ -4,7 +4,9 @@ import (
 	"atlas-buddies/buddy"
 	"atlas-buddies/character"
 	"atlas-buddies/invite"
+	list2 "atlas-buddies/kafka/message/list"
 	"atlas-buddies/kafka/producer"
+	list3 "atlas-buddies/kafka/producer/list"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -51,7 +53,48 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 	}
 }
 
-func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, group string) error {
+func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, worldId byte) error {
+			return func(characterId uint32, worldId byte) error {
+				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					bl, err := GetByCharacterId(l)(ctx)(db)(characterId)
+					if err != nil {
+						return err
+					}
+
+					// Remove deleted character for all of their buddies.
+					for _, b := range bl.Buddies() {
+						err = removeBuddy(tx, t.Id(), b.CharacterId(), characterId)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", b.CharacterId())
+							return err
+						}
+
+						events = model.MergeSliceProvider(events, list3.BuddyRemovedStatusEventProvider(b.CharacterId(), worldId, characterId))
+						if err != nil {
+							l.WithError(err).Errorf("Unable to inform [%d] that their buddy [%d] was removed.", b.CharacterId(), characterId)
+						}
+					}
+					return deleteEntityWithBuddies(tx, t.Id(), characterId)
+				})
+				if txErr != nil {
+					return txErr
+				}
+				msgErr := producer.ProviderImpl(l)(ctx)(list2.EnvStatusEventTopic)(events)
+				if msgErr != nil {
+					return msgErr
+				}
+				return nil
+			}
+		}
+	}
+}
+
+func RequestAddBuddy(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, group string) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, group string) error {
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, group string) error {
@@ -61,26 +104,26 @@ func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 					tc, err := character.GetById(l)(ctx)(targetId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d] information.", targetId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorCharacterNotFound))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorCharacterNotFound))
 						return err
 					}
 
 					if tc.GM() > 0 {
 						l.Infof("Character [%d] attempting to buddy a GM.", characterId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorCannotBuddyGm))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorCannotBuddyGm))
 						return nil
 					}
 
 					cbl, err := GetByCharacterId(l)(ctx)(tx)(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorUnknownError))
 						return err
 					}
 
 					if byte(len(cbl.Buddies()))+1 > cbl.Capacity() {
 						l.Infof("Buddy list for character [%d] is at capacity.", characterId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorListFull))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorListFull))
 						return err
 					}
 
@@ -93,20 +136,20 @@ func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 					}
 					if found {
 						l.Infof("Target [%d] is already on character [%d] buddy list.", targetId, characterId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorAlreadyBuddy))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorAlreadyBuddy))
 						return err
 					}
 
 					obl, err := GetByCharacterId(l)(ctx)(tx)(targetId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] being added as buddy.", targetId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorUnknownError))
 						return err
 					}
 
 					if byte(len(obl.Buddies()))+1 > obl.Capacity() {
 						l.Infof("Buddy list for character [%d] is at capacity.", targetId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorOtherListFull))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorOtherListFull))
 						return err
 					}
 
@@ -122,12 +165,12 @@ func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 						err = addBuddy(tx, t.Id(), characterId, targetId, tc.Name(), group, false)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to add buddy to buddy list for character [%d].", characterId)
-							events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
+							events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorUnknownError))
 							return err
 						}
 
-						events = model.MergeSliceProvider(events, buddyAddedStatusEventProvider(characterId, worldId, targetId, tc.Name(), -1, group))
-						events = model.MergeSliceProvider(events, buddyAddedStatusEventProvider(targetId, worldId, characterId, mbe.Name(), mbe.ChannelId(), mbe.Group()))
+						events = model.MergeSliceProvider(events, list3.BuddyAddedStatusEventProvider(characterId, worldId, targetId, tc.Name(), -1, group))
+						events = model.MergeSliceProvider(events, list3.BuddyAddedStatusEventProvider(targetId, worldId, characterId, mbe.Name(), mbe.ChannelId(), mbe.Group()))
 						// TODO need to trigger a channel request for target.
 						return nil
 					}
@@ -136,18 +179,18 @@ func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 					err = addPendingBuddy(tx, t.Id(), characterId, targetId, tc.Name(), group)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to add buddy to buddy list for character [%d].", characterId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorUnknownError))
 						return err
 					}
 					err = invite.Create(l)(ctx)(characterId, worldId, targetId)
 					if err != nil {
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorUnknownError))
 						return err
 					}
-					events = model.MergeSliceProvider(events, buddyAddedStatusEventProvider(characterId, worldId, targetId, tc.Name(), -1, group))
+					events = model.MergeSliceProvider(events, list3.BuddyAddedStatusEventProvider(characterId, worldId, targetId, tc.Name(), -1, group))
 					return nil
 				})
-				msgErr := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(events)
+				msgErr := producer.ProviderImpl(l)(ctx)(list2.EnvStatusEventTopic)(events)
 				if msgErr != nil {
 					return msgErr
 				}
@@ -157,7 +200,7 @@ func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 	}
 }
 
-func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
+func RequestDeleteBuddy(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
@@ -167,7 +210,7 @@ func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 					cbl, err := GetByCharacterId(l)(ctx)(tx)(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorUnknownError))
 						return err
 					}
 
@@ -182,7 +225,7 @@ func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 						l.Debugf("Target [%d] is not on character [%d] buddy list. This could be an invite rejection.", targetId, characterId)
 						err = invite.Reject(l)(ctx)(characterId, worldId, targetId)
 						if err != nil {
-							events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
+							events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorUnknownError))
 							return err
 						}
 						return nil
@@ -191,7 +234,7 @@ func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 					err = removeBuddy(tx, t.Id(), characterId, targetId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", characterId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorUnknownError))
 						return err
 					}
 
@@ -199,21 +242,21 @@ func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 					update, err = updateBuddyChannel(tx, t.Id(), characterId, targetId, -1)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to update character [%d] channel to [%d] in [%d] buddy list.", characterId, -1, targetId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorUnknownError))
 						return err
 					}
 
-					events = model.MergeSliceProvider(events, buddyRemovedStatusEventProvider(characterId, worldId, targetId))
+					events = model.MergeSliceProvider(events, list3.BuddyRemovedStatusEventProvider(characterId, worldId, targetId))
 
 					if update {
-						events = model.MergeSliceProvider(events, buddyChannelChangeStatusEventProvider(targetId, worldId, characterId, -1))
+						events = model.MergeSliceProvider(events, list3.BuddyChannelChangeStatusEventProvider(targetId, worldId, characterId, -1))
 						if err != nil {
 							l.WithError(err).Errorf("Unable to update [%d] buddy list to set [%d] as offline.", targetId, characterId)
 						}
 					}
 					return nil
 				})
-				msgErr := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(events)
+				msgErr := producer.ProviderImpl(l)(ctx)(list2.EnvStatusEventTopic)(events)
 				if msgErr != nil {
 					return msgErr
 				}
@@ -223,7 +266,7 @@ func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 	}
 }
 
-func Accept(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
+func AcceptInvite(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
@@ -233,13 +276,13 @@ func Accept(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					cbl, err := GetByCharacterId(l)(ctx)(tx)(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorUnknownError))
 						return err
 					}
 
 					if byte(len(cbl.Buddies()))+1 > cbl.Capacity() {
 						l.Infof("Buddy list for character [%d] is at capacity.", characterId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorListFull))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorListFull))
 						return nil
 					}
 
@@ -252,14 +295,14 @@ func Accept(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					}
 					if found {
 						l.Infof("Target [%d] is already on character [%d] buddy list.", targetId, characterId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorAlreadyBuddy))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorAlreadyBuddy))
 						return nil
 					}
 
 					obl, err := GetByCharacterId(l)(ctx)(tx)(targetId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorUnknownError))
 						return err
 					}
 					var ob buddy.Model
@@ -272,14 +315,14 @@ func Accept(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					c, err := character.GetById(l)(ctx)(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d] information.", characterId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorUnknownError))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorUnknownError))
 						return err
 					}
 
 					oc, err := character.GetById(l)(ctx)(targetId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d] information.", targetId)
-						events = model.MergeSliceProvider(events, errorStatusEventProvider(characterId, worldId, StatusEventErrorCharacterNotFound))
+						events = model.MergeSliceProvider(events, list3.ErrorStatusEventProvider(characterId, worldId, list2.StatusEventErrorCharacterNotFound))
 						return err
 					}
 
@@ -298,14 +341,14 @@ func Accept(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 						return err
 					}
 
-					events = model.MergeSliceProvider(events, buddyAddedStatusEventProvider(characterId, worldId, targetId, oc.Name(), -1, "Default Group"))
+					events = model.MergeSliceProvider(events, list3.BuddyAddedStatusEventProvider(characterId, worldId, targetId, oc.Name(), -1, "Default Group"))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to update character [%d] accepting buddy invite from [%d].", characterId, targetId)
 					}
 					// TODO need to trigger a channel request for target.
 					return nil
 				})
-				msgErr := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(events)
+				msgErr := producer.ProviderImpl(l)(ctx)(list2.EnvStatusEventTopic)(events)
 				if msgErr != nil {
 					return msgErr
 				}
@@ -315,7 +358,7 @@ func Accept(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 	}
 }
 
-func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
+func DeleteBuddy(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
@@ -334,30 +377,33 @@ func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 						return err
 					}
 
-					events = model.MergeSliceProvider(events, buddyRemovedStatusEventProvider(characterId, worldId, targetId))
+					events = model.MergeSliceProvider(events, list3.BuddyRemovedStatusEventProvider(characterId, worldId, targetId))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to inform [%d] that their buddy [%d] was removed.", characterId, targetId)
 					}
 
 					if update {
-						events = model.MergeSliceProvider(events, buddyChannelChangeStatusEventProvider(targetId, worldId, characterId, -1))
+						events = model.MergeSliceProvider(events, list3.BuddyChannelChangeStatusEventProvider(targetId, worldId, characterId, -1))
 						if err != nil {
 							l.WithError(err).Errorf("Unable to update [%d] buddy list to set [%d] as offline.", targetId, characterId)
 						}
 					}
 					return nil
 				})
-				msgErr := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(events)
+				if txErr != nil {
+					return txErr
+				}
+				msgErr := producer.ProviderImpl(l)(ctx)(list2.EnvStatusEventTopic)(events)
 				if msgErr != nil {
 					return msgErr
 				}
-				return txErr
+				return nil
 			}
 		}
 	}
 }
 
-func UpdateChannel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId int8) error {
+func UpdateBuddyChannel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId int8) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId int8) error {
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, channelId int8) error {
@@ -378,7 +424,7 @@ func UpdateChannel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 						}
 
 						if update {
-							events = model.MergeSliceProvider(events, buddyChannelChangeStatusEventProvider(b.CharacterId, worldId, characterId, channelId))
+							events = model.MergeSliceProvider(events, list3.BuddyChannelChangeStatusEventProvider(b.CharacterId, worldId, characterId, channelId))
 							if err != nil {
 								l.WithError(err).Errorf("Unable to inform character [%d] that [%d] channel has changed.", b.CharacterId, characterId)
 							}
@@ -386,7 +432,7 @@ func UpdateChannel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 					}
 					return nil
 				})
-				msgErr := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(events)
+				msgErr := producer.ProviderImpl(l)(ctx)(list2.EnvStatusEventTopic)(events)
 				if msgErr != nil {
 					return msgErr
 				}
@@ -396,7 +442,7 @@ func UpdateChannel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 	}
 }
 
-func UpdateShopStatus(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, inShop bool) error {
+func UpdateBuddyShopStatus(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, inShop bool) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, inShop bool) error {
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, inShop bool) error {
@@ -431,7 +477,7 @@ func UpdateShopStatus(l logrus.FieldLogger) func(ctx context.Context) func(db *g
 								continue
 							}
 
-							events = model.MergeSliceProvider(events, buddyUpdatedStatusEventProvider(b.CharacterId, worldId, tbe.CharacterId, tbe.Group, tbe.CharacterName, b.ChannelId, inShop))
+							events = model.MergeSliceProvider(events, list3.BuddyUpdatedStatusEventProvider(b.CharacterId, worldId, tbe.CharacterId, tbe.Group, tbe.CharacterName, b.ChannelId, inShop))
 							if err != nil {
 								l.WithError(err).Errorf("Unable to inform character [%d] that [%d] has updated.", b.CharacterId, characterId)
 							}
@@ -439,7 +485,7 @@ func UpdateShopStatus(l logrus.FieldLogger) func(ctx context.Context) func(db *g
 					}
 					return nil
 				})
-				msgErr := producer.ProviderImpl(l)(ctx)(EnvStatusEventTopic)(events)
+				msgErr := producer.ProviderImpl(l)(ctx)(list2.EnvStatusEventTopic)(events)
 				if msgErr != nil {
 					return msgErr
 				}

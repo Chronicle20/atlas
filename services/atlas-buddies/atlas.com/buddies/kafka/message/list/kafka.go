@@ -1,9 +1,34 @@
 package list
 
 const (
-	EnvCommandTopic   = "COMMAND_TOPIC_BUDDY_LIST"
-	CommandTypeCreate = "CREATE"
+	EnvCommandTopic          = "COMMAND_TOPIC_BUDDY_LIST"
+	CommandTypeCreate        = "CREATE"
+	CommandTypeRequestAdd    = "REQUEST_ADD"
+	CommandTypeRequestDelete = "REQUEST_DELETE"
+)
 
+type Command[E any] struct {
+	WorldId     byte   `json:"worldId"`
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
+}
+
+type CreateCommandBody struct {
+	Capacity byte `json:"capacity"`
+}
+
+type RequestAddBuddyCommandBody struct {
+	CharacterId   uint32 `json:"characterId"`
+	CharacterName string `json:"characterName"`
+	Group         string `json:"group"`
+}
+
+type RequestDeleteBuddyCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
+const (
 	EnvStatusEventTopic                = "EVENT_TOPIC_BUDDY_LIST_STATUS"
 	StatusEventTypeBuddyAdded          = "BUDDY_ADDED"
 	StatusEventTypeBuddyRemoved        = "BUDDY_REMOVED"
@@ -20,36 +45,25 @@ const (
 	StatusEventErrorUnknownError      = "UNKNOWN_ERROR"
 )
 
-type command[E any] struct {
+type StatusEvent[E any] struct {
 	WorldId     byte   `json:"worldId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
 }
 
-type createCommandBody struct {
-	Capacity byte `json:"capacity"`
-}
-
-type statusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
-}
-
-type buddyAddedStatusEventBody struct {
+type BuddyAddedStatusEventBody struct {
 	CharacterId   uint32 `json:"characterId"`
 	Group         string `json:"group"`
 	CharacterName string `json:"characterName"`
 	ChannelId     int8   `json:"channelId"`
 }
 
-type buddyRemovedStatusEventBody struct {
+type BuddyRemovedStatusEventBody struct {
 	CharacterId uint32 `json:"characterId"`
 }
 
-type buddyUpdatedStatusEventBody struct {
+type BuddyUpdatedStatusEventBody struct {
 	CharacterId   uint32 `json:"characterId"`
 	Group         string `json:"group"`
 	CharacterName string `json:"characterName"`
@@ -57,15 +71,15 @@ type buddyUpdatedStatusEventBody struct {
 	InShop        bool   `json:"inShop"`
 }
 
-type buddyChannelChangeStatusEventBody struct {
+type BuddyChannelChangeStatusEventBody struct {
 	CharacterId uint32 `json:"characterId"`
 	ChannelId   int8   `json:"channelId"`
 }
 
-type buddyCapacityChangeStatusEventBody struct {
+type BuddyCapacityChangeStatusEventBody struct {
 	Capacity byte `json:"capacity"`
 }
 
-type errorStatusEventBody struct {
+type ErrorStatusEventBody struct {
 	Error string `json:"error"`
 }

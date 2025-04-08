@@ -2,6 +2,8 @@ package list
 
 import (
 	"atlas-buddies/buddy"
+	"errors"
+	"fmt"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -109,4 +111,32 @@ func updateBuddyShopStatus(db *gorm.DB, tenantId uuid.UUID, characterId uint32, 
 		return false, err
 	}
 	return true, nil
+}
+
+func deleteEntityWithBuddies(db *gorm.DB, tenantId uuid.UUID, characterId uint32) error {
+	var entity Entity
+
+	// Step 1: Find the Entity
+	if err := db.
+		Where("tenant_id = ? AND character_id = ?", tenantId, characterId).
+		First(&entity).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil // No-op if not found
+		}
+		return fmt.Errorf("failed to find entity: %w", err)
+	}
+
+	// Step 2: Delete associated Buddies
+	if err := db.
+		Where("list_id = ?", entity.Id).
+		Delete(&buddy.Entity{}).Error; err != nil {
+		return fmt.Errorf("failed to delete buddies: %w", err)
+	}
+
+	// Step 3: Delete the Entity
+	if err := db.Delete(&entity).Error; err != nil {
+		return fmt.Errorf("failed to delete entity: %w", err)
+	}
+
+	return nil
 }

@@ -8,7 +8,7 @@ const (
 	InviteTypeBuddy = "BUDDY"
 )
 
-type statusEvent[E any] struct {
+type StatusEvent[E any] struct {
 	WorldId     byte   `json:"worldId"`
 	InviteType  string `json:"inviteType"`
 	ReferenceId uint32 `json:"referenceId"`
@@ -16,12 +16,12 @@ type statusEvent[E any] struct {
 	Body        E      `json:"body"`
 }
 
-type acceptedEventBody struct {
+type AcceptedEventBody struct {
 	OriginatorId uint32 `json:"originatorId"`
 	TargetId     uint32 `json:"targetId"`
 }
 
-type rejectedEventBody struct {
+type RejectedEventBody struct {
 	OriginatorId uint32 `json:"originatorId"`
 	TargetId     uint32 `json:"targetId"`
 }

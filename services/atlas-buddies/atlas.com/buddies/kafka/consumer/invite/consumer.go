@@ -2,6 +2,7 @@ package invite
 
 import (
 	consumer2 "atlas-buddies/kafka/consumer"
+	invite2 "atlas-buddies/kafka/message/invite"
 	"atlas-buddies/list"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -16,7 +17,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("invite_status_event")(EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("invite_status_event")(invite2.EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -25,20 +26,20 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
-			t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+			t, _ = topic.EnvProvider(l)(invite2.EnvEventStatusTopic)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAcceptedStatusEvent(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRejectedStatusEvent(db))))
 		}
 	}
 }
 
-func handleAcceptedStatusEvent(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, e statusEvent[acceptedEventBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[acceptedEventBody]) {
-		if e.Type != EventInviteStatusTypeAccepted {
+func handleAcceptedStatusEvent(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.AcceptedEventBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.AcceptedEventBody]) {
+		if e.Type != invite2.EventInviteStatusTypeAccepted {
 			return
 		}
 
-		if e.InviteType != InviteTypeBuddy {
+		if e.InviteType != invite2.InviteTypeBuddy {
 			return
 		}
 
@@ -46,13 +47,13 @@ func handleAcceptedStatusEvent(db *gorm.DB) func(l logrus.FieldLogger, ctx conte
 	}
 }
 
-func handleRejectedStatusEvent(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, e statusEvent[rejectedEventBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[rejectedEventBody]) {
-		if e.Type != EventInviteStatusTypeRejected {
+func handleRejectedStatusEvent(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.RejectedEventBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.RejectedEventBody]) {
+		if e.Type != invite2.EventInviteStatusTypeRejected {
 			return
 		}
 
-		if e.InviteType != InviteTypeBuddy {
+		if e.InviteType != invite2.InviteTypeBuddy {
 			return
 		}
 

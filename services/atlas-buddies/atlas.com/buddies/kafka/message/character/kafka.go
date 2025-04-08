@@ -1,35 +1,35 @@
 package character
 
 const (
-	EnvEventTopicCharacterStatus           = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeCreated        = "CREATED"
-	EventCharacterStatusTypeLogin          = "LOGIN"
-	EventCharacterStatusTypeLogout         = "LOGOUT"
-	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
+	EnvEventTopicStatus           = "EVENT_TOPIC_CHARACTER_STATUS"
+	EventStatusTypeCreated        = "CREATED"
+	EventStatusTypeLogin          = "LOGIN"
+	EventStatusTypeLogout         = "LOGOUT"
+	EventStatusTypeChannelChanged = "CHANNEL_CHANGED"
 )
 
-type statusEvent[E any] struct {
+type StatusEvent[E any] struct {
 	WorldId     byte   `json:"worldId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
 }
 
-type statusEventCreatedBody struct {
+type CreatedStatusEventBody struct {
 	Name string `json:"name"`
 }
 
-type statusEventLoginBody struct {
+type LoginStatusEventBody struct {
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
 }
 
-type statusEventLogoutBody struct {
+type LogoutStatusEventBody struct {
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
 }
 
-type statusEventChannelChangedBody struct {
+type ChannelChangedStatusEventBody struct {
 	ChannelId    byte   `json:"channelId"`
 	OldChannelId byte   `json:"oldChannelId"`
 	MapId        uint32 `json:"mapId"`

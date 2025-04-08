@@ -51,7 +51,7 @@ func handleRequestBuddyAddCommand(db *gorm.DB) message.Handler[list2.Command[lis
 		if c.Type != list2.CommandTypeRequestAdd {
 			return
 		}
-		err := list.RequestAdd(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.CharacterId, c.Body.Group)
+		err := list.RequestAddBuddy(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.CharacterId, c.Body.Group)
 		if err != nil {
 			l.WithError(err).Errorf("Error attempting to add [%d] to character [%d] buddy list.", c.Body.CharacterId, c.CharacterId)
 		}
@@ -63,7 +63,7 @@ func handleRequestBuddyDeleteCommand(db *gorm.DB) message.Handler[list2.Command[
 		if c.Type != list2.CommandTypeRequestDelete {
 			return
 		}
-		err := list.RequestDelete(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.CharacterId)
+		err := list.RequestDeleteBuddy(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Error attempting to delete [%d] to character [%d] buddy list.", c.Body.CharacterId, c.CharacterId)
 		}

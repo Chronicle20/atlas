@@ -53,7 +53,48 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 	}
 }
 
-func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, group string) error {
+func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32, worldId byte) error {
+			return func(characterId uint32, worldId byte) error {
+				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
+
+				txErr := db.Transaction(func(tx *gorm.DB) error {
+					bl, err := GetByCharacterId(l)(ctx)(db)(characterId)
+					if err != nil {
+						return err
+					}
+
+					// Remove deleted character for all of their buddies.
+					for _, b := range bl.Buddies() {
+						err = removeBuddy(tx, t.Id(), b.CharacterId(), characterId)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", b.CharacterId())
+							return err
+						}
+
+						events = model.MergeSliceProvider(events, list3.BuddyRemovedStatusEventProvider(b.CharacterId(), worldId, characterId))
+						if err != nil {
+							l.WithError(err).Errorf("Unable to inform [%d] that their buddy [%d] was removed.", b.CharacterId(), characterId)
+						}
+					}
+					return deleteEntityWithBuddies(tx, t.Id(), characterId)
+				})
+				if txErr != nil {
+					return txErr
+				}
+				msgErr := producer.ProviderImpl(l)(ctx)(list2.EnvStatusEventTopic)(events)
+				if msgErr != nil {
+					return msgErr
+				}
+				return nil
+			}
+		}
+	}
+}
+
+func RequestAddBuddy(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, group string) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, group string) error {
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, group string) error {
@@ -159,7 +200,7 @@ func RequestAdd(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 	}
 }
 
-func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
+func RequestDeleteBuddy(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
@@ -225,7 +266,7 @@ func RequestDelete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 	}
 }
 
-func Accept(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
+func AcceptInvite(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
@@ -317,7 +358,7 @@ func Accept(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 	}
 }
 
-func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
+func DeleteBuddy(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
@@ -349,17 +390,20 @@ func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					}
 					return nil
 				})
+				if txErr != nil {
+					return txErr
+				}
 				msgErr := producer.ProviderImpl(l)(ctx)(list2.EnvStatusEventTopic)(events)
 				if msgErr != nil {
 					return msgErr
 				}
-				return txErr
+				return nil
 			}
 		}
 	}
 }
 
-func UpdateChannel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId int8) error {
+func UpdateBuddyChannel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId int8) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, channelId int8) error {
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, channelId int8) error {
@@ -398,7 +442,7 @@ func UpdateChannel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 	}
 }
 
-func UpdateShopStatus(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, inShop bool) error {
+func UpdateBuddyShopStatus(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, inShop bool) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, worldId byte, inShop bool) error {
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, inShop bool) error {

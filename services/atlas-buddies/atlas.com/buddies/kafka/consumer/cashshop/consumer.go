@@ -38,7 +38,7 @@ func handleStatusEventCharacterEnter(db *gorm.DB) message.Handler[cashshop2.Stat
 		if e.Type != cashshop2.EventStatusTypeCharacterEnter {
 			return
 		}
-		_ = list.UpdateShopStatus(l)(ctx)(db)(e.Body.CharacterId, e.WorldId, true)
+		_ = list.UpdateBuddyShopStatus(l)(ctx)(db)(e.Body.CharacterId, e.WorldId, true)
 	}
 }
 
@@ -47,6 +47,6 @@ func handleStatusEventCharacterExit(db *gorm.DB) message.Handler[cashshop2.Statu
 		if e.Type != cashshop2.EventStatusTypeCharacterExit {
 			return
 		}
-		_ = list.UpdateShopStatus(l)(ctx)(db)(e.Body.CharacterId, e.WorldId, false)
+		_ = list.UpdateBuddyShopStatus(l)(ctx)(db)(e.Body.CharacterId, e.WorldId, false)
 	}
 }

@@ -11,7 +11,7 @@ type Model struct {
 	id            uuid.UUID
 	inventoryType inventory.Type
 	capacity      uint32
-	assets        []asset.Model
+	assets        []asset.Model[any]
 }
 
 func (m Model) Id() uuid.UUID {
@@ -26,7 +26,7 @@ func (m Model) Capacity() uint32 {
 	return m.capacity
 }
 
-func (m Model) Assets() []asset.Model {
+func (m Model) Assets() []asset.Model[any] {
 	return m.assets
 }
 
@@ -43,7 +43,7 @@ type ModelBuilder struct {
 	id            uuid.UUID
 	inventoryType inventory.Type
 	capacity      uint32
-	assets        []asset.Model
+	assets        []asset.Model[any]
 }
 
 func NewBuilder(id uuid.UUID, it inventory.Type, capacity uint32) *ModelBuilder {
@@ -51,7 +51,7 @@ func NewBuilder(id uuid.UUID, it inventory.Type, capacity uint32) *ModelBuilder 
 		id:            id,
 		inventoryType: it,
 		capacity:      capacity,
-		assets:        make([]asset.Model, 0),
+		assets:        make([]asset.Model[any], 0),
 	}
 }
 
@@ -60,12 +60,12 @@ func (b *ModelBuilder) SetCapacity(capacity uint32) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) AddAsset(a asset.Model) *ModelBuilder {
+func (b *ModelBuilder) AddAsset(a asset.Model[any]) *ModelBuilder {
 	b.assets = append(b.assets, a)
 	return b
 }
 
-func (b *ModelBuilder) SetAssets(as []asset.Model) *ModelBuilder {
+func (b *ModelBuilder) SetAssets(as []asset.Model[any]) *ModelBuilder {
 	b.assets = as
 	return b
 }

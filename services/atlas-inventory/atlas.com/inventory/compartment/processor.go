@@ -20,7 +20,7 @@ func ByCharacterIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(
 				if err != nil {
 					return model.ErrorProvider[[]Model](err)
 				}
-				return model.SliceMap(DecorateAsset(ctx)(db))(model.FixedProvider(cs))(model.ParallelMap())
+				return model.SliceMap(DecorateAsset(l)(ctx)(db))(model.FixedProvider(cs))(model.ParallelMap())
 			}
 		}
 	}
@@ -36,14 +36,16 @@ func GetByCharacterId(l logrus.FieldLogger) func(ctx context.Context) func(db *g
 	}
 }
 
-func DecorateAsset(ctx context.Context) func(db *gorm.DB) func(m Model) (Model, error) {
-	return func(db *gorm.DB) func(m Model) (Model, error) {
-		return func(m Model) (Model, error) {
-			as, err := asset.ByCompartmentIdProvider(ctx)(db)(m.Id())()
-			if err != nil {
-				return Model{}, err
+func DecorateAsset(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(m Model) (Model, error) {
+	return func(ctx context.Context) func(db *gorm.DB) func(m Model) (Model, error) {
+		return func(db *gorm.DB) func(m Model) (Model, error) {
+			return func(m Model) (Model, error) {
+				as, err := asset.ByCompartmentIdProvider(l)(ctx)(db)(m.Id(), m.Type())()
+				if err != nil {
+					return Model{}, err
+				}
+				return Clone(m).SetAssets(as).Build(), nil
 			}
-			return Clone(m).SetAssets(as).Build(), nil
 		}
 	}
 }

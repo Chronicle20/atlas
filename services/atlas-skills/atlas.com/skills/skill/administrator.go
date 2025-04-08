@@ -2,6 +2,7 @@ package skill
 
 import (
 	"github.com/Chronicle20/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"time"
@@ -78,4 +79,8 @@ func SetLevel(level byte) EntityUpdateFunction {
 			e.Level = level
 		}
 	}
+}
+
+func deleteByCharacter(db *gorm.DB, t tenant.Model, characterId uint32) error {
+	return db.Where(&Entity{TenantId: t.Id(), CharacterId: characterId}).Delete(&Entity{}).Error
 }

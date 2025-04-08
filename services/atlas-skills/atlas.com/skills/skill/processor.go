@@ -181,3 +181,14 @@ func ClearAll(ctx context.Context) func(characterId uint32) error {
 		return GetRegistry().ClearAll(t, characterId)
 	}
 }
+
+func Delete(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
+	t := tenant.MustFromContext(ctx)
+	return func(db *gorm.DB) func(characterId uint32) error {
+		return func(characterId uint32) error {
+			return db.Transaction(func(tx *gorm.DB) error {
+				return deleteByCharacter(tx, t, characterId)
+			})
+		}
+	}
+}

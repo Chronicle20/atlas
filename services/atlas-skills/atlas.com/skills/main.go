@@ -57,7 +57,7 @@ func main() {
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	macro2.InitConsumers(l)(cmf)(consumerGroupId)
 	skill2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	macro2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	go tasks.Register(tasks.NewExpirationTask(l, db, 1000))

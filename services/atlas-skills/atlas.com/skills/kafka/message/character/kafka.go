@@ -1,8 +1,9 @@
 package character
 
 const (
-	EnvEventTopicCharacterStatus   = "EVENT_TOPIC_CHARACTER_STATUS"
-	EventCharacterStatusTypeLogout = "LOGOUT"
+	EnvEventTopicStatus    = "EVENT_TOPIC_CHARACTER_STATUS"
+	EventStatusTypeLogout  = "LOGOUT"
+	StatusEventTypeDeleted = "DELETED"
 )
 
 type StatusEvent[E any] struct {
@@ -12,7 +13,10 @@ type StatusEvent[E any] struct {
 	Body        E      `json:"body"`
 }
 
-type StatusEventLogoutBody struct {
+type LogoutStatusEventBody struct {
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
+}
+
+type DeletedStatusEventBody struct {
 }

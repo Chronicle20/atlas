@@ -32,7 +32,7 @@ func Update(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 			return func(characterId uint32, macros []Model) error {
 				l.Debugf("Updating skill macros for character [%d].", characterId)
 				txErr := db.Transaction(func(tx *gorm.DB) error {
-					err := deleteByTenantAndCharacterId(tx, t.Id(), characterId)
+					err := deleteByCharacter(tx, t, characterId)
 					if err != nil {
 						return err
 					}
@@ -49,6 +49,17 @@ func Update(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 				}
 				return nil
 			}
+		}
+	}
+}
+
+func Delete(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
+	t := tenant.MustFromContext(ctx)
+	return func(db *gorm.DB) func(characterId uint32) error {
+		return func(characterId uint32) error {
+			return db.Transaction(func(tx *gorm.DB) error {
+				return deleteByCharacter(tx, t, characterId)
+			})
 		}
 	}
 }

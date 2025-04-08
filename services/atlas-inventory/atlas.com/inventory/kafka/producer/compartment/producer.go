@@ -12,12 +12,12 @@ import (
 func CreatedEventStatusProvider(id uuid.UUID, characterId uint32, inventoryType inventory.Type, capacity uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.CreatedStatusEventBody]{
+		CharacterId:   characterId,
 		CompartmentId: id,
 		Type:          compartment.StatusEventTypeCreated,
 		Body: compartment.CreatedStatusEventBody{
-			CharacterId: characterId,
-			Type:        byte(inventoryType),
-			Capacity:    capacity,
+			Type:     byte(inventoryType),
+			Capacity: capacity,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -26,11 +26,10 @@ func CreatedEventStatusProvider(id uuid.UUID, characterId uint32, inventoryType 
 func DeletedEventStatusProvider(id uuid.UUID, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.DeletedStatusEventBody]{
+		CharacterId:   characterId,
 		CompartmentId: id,
 		Type:          compartment.StatusEventTypeDeleted,
-		Body: compartment.DeletedStatusEventBody{
-			CharacterId: characterId,
-		},
+		Body:          compartment.DeletedStatusEventBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

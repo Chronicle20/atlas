@@ -13,7 +13,7 @@ type StatusEvent[E any] struct {
 	Body        E      `json:"body"`
 }
 
-type CreatedStatusBody struct {
+type CreatedStatusEventBody struct {
 	Name string `json:"name"`
 }
 

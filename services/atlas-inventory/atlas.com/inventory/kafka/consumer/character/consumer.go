@@ -33,8 +33,8 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	}
 }
 
-func handleStatusEventCreated(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, e character.StatusEvent[character.CreatedStatusBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, e character.StatusEvent[character.CreatedStatusBody]) {
+func handleStatusEventCreated(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, e character.StatusEvent[character.CreatedStatusEventBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e character.StatusEvent[character.CreatedStatusEventBody]) {
 		if e.Type != character.StatusEventTypeCreated {
 			return
 		}

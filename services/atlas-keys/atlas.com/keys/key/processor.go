@@ -46,9 +46,9 @@ func GetByCharacterId(l logrus.FieldLogger) func(ctx context.Context) func(db *g
 
 func Reset(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
+		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32) error {
 			return func(characterId uint32) error {
-				t := tenant.MustFromContext(ctx)
 				return db.Transaction(func(tx *gorm.DB) error {
 					err := deleteByCharacter(tx, t, characterId)
 					if err != nil {
@@ -71,9 +71,9 @@ func Reset(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fun
 
 func CreateDefault(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
+		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32) error {
 			return func(characterId uint32) error {
-				t := tenant.MustFromContext(ctx)
 				return db.Transaction(func(tx *gorm.DB) error {
 					for i := 0; i < len(defaultKey); i++ {
 						_, err := create(tx, t, characterId, defaultKey[i], defaultType[i], defaultAction[i])
@@ -81,6 +81,24 @@ func CreateDefault(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 							l.WithError(err).Errorf("Unable to create key binding for character %d. key = %d type = %d action = %d.", characterId, defaultKey[i], defaultType[i], defaultAction[i])
 							return err
 						}
+					}
+					return nil
+				})
+			}
+		}
+	}
+}
+
+func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return func(db *gorm.DB) func(characterId uint32) error {
+			return func(characterId uint32) error {
+				return db.Transaction(func(tx *gorm.DB) error {
+					err := deleteByCharacter(tx, t, characterId)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to delete for character %d.", characterId)
+						return err
 					}
 					return nil
 				})

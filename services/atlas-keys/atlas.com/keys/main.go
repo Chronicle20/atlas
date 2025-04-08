@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-keys/character"
 	"atlas-keys/database"
+	character2 "atlas-keys/kafka/consumer/character"
 	keymap "atlas-keys/key"
 	"atlas-keys/logger"
 	"atlas-keys/service"
@@ -48,8 +49,8 @@ func main() {
 	db := database.Connect(l, database.SetMigrations(keymap.Migration))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
-	character.InitConsumers(l)(cmf)(consumerGroupId)
-	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	character2.InitConsumers(l)(cmf)(consumerGroupId)
+	character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), character.InitResource(GetServer())(db))
 

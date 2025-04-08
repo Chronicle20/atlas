@@ -46,7 +46,6 @@ func Extract(rm RestModel) (Model, error) {
 		closeness:       rm.Closeness,
 		fullness:        rm.Fullness,
 		expiration:      rm.Expiration,
-		ownerId:         rm.OwnerId,
 		slot:            rm.Slot,
 	}, nil
 }

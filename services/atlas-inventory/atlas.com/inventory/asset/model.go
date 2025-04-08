@@ -2,13 +2,24 @@ package asset
 
 import "time"
 
+type ReferenceType string
+
+const (
+	ReferenceTypeEquipable  = ReferenceType("equipable")
+	ReferenceTypeConsumable = ReferenceType("consumable")
+	ReferenceTypeSetup      = ReferenceType("setup")
+	ReferenceTypeEtc        = ReferenceType("etc")
+	ReferenceTypeCash       = ReferenceType("cash")
+	ReferenceTypePet        = ReferenceType("pet")
+)
+
 type Model[E any] struct {
 	id            uint32
 	slot          int16
 	templateId    uint32
 	expiration    time.Time
 	referenceId   uint32
-	referenceType string
+	referenceType ReferenceType
 	referenceData E
 }
 
@@ -32,7 +43,7 @@ func (m Model[E]) ReferenceId() uint32 {
 	return m.referenceId
 }
 
-func (m Model[E]) ReferenceType() string {
+func (m Model[E]) ReferenceType() ReferenceType {
 	return m.referenceType
 }
 
@@ -54,11 +65,11 @@ type ModelBuilder[E any] struct {
 	templateId    uint32
 	expiration    time.Time
 	referenceId   uint32
-	referenceType string
+	referenceType ReferenceType
 	referenceData E
 }
 
-func NewBuilder[E any](id uint32, templateId uint32, referenceId uint32, referenceType string) *ModelBuilder[E] {
+func NewBuilder[E any](id uint32, templateId uint32, referenceId uint32, referenceType ReferenceType) *ModelBuilder[E] {
 	return &ModelBuilder[E]{
 		id:            id,
 		slot:          0,

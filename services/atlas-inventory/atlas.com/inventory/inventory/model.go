@@ -36,6 +36,18 @@ func (m Model) CompartmentByType(it inventory.Type) compartment.Model {
 	return m.compartments[it]
 }
 
+func (m Model) CharacterId() uint32 {
+	return m.characterId
+}
+
+func (m Model) Compartments() []compartment.Model {
+	res := make([]compartment.Model, len(m.compartments))
+	for k, v := range m.compartments {
+		res[k] = v
+	}
+	return res
+}
+
 func Clone(m Model) *ModelBuilder {
 	return &ModelBuilder{
 		characterId:  m.characterId,

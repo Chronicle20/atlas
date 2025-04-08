@@ -25,6 +25,7 @@ func (e Entity) TableName() string {
 func Make(e Entity) (Model, error) {
 	return Model{
 		id:            e.Id,
+		characterId:   e.CharacterId,
 		inventoryType: e.InventoryType,
 		capacity:      e.Capacity,
 	}, nil

@@ -33,6 +33,6 @@ func Make(e Entity) (Model[any], error) {
 		templateId:    e.TemplateId,
 		expiration:    e.Expiration,
 		referenceId:   e.ReferenceId,
-		referenceType: e.ReferenceType,
+		referenceType: ReferenceType(e.ReferenceType),
 	}, nil
 }

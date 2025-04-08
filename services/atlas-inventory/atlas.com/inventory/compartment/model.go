@@ -9,6 +9,7 @@ import (
 
 type Model struct {
 	id            uuid.UUID
+	characterId   uint32
 	inventoryType inventory.Type
 	capacity      uint32
 	assets        []asset.Model[any]
@@ -30,9 +31,14 @@ func (m Model) Assets() []asset.Model[any] {
 	return m.assets
 }
 
+func (m Model) CharacterId() uint32 {
+	return m.characterId
+}
+
 func Clone(m Model) *ModelBuilder {
 	return &ModelBuilder{
 		id:            m.id,
+		characterId:   m.characterId,
 		inventoryType: m.inventoryType,
 		capacity:      m.capacity,
 		assets:        m.assets,
@@ -41,14 +47,16 @@ func Clone(m Model) *ModelBuilder {
 
 type ModelBuilder struct {
 	id            uuid.UUID
+	characterId   uint32
 	inventoryType inventory.Type
 	capacity      uint32
 	assets        []asset.Model[any]
 }
 
-func NewBuilder(id uuid.UUID, it inventory.Type, capacity uint32) *ModelBuilder {
+func NewBuilder(id uuid.UUID, characterId uint32, it inventory.Type, capacity uint32) *ModelBuilder {
 	return &ModelBuilder{
 		id:            id,
+		characterId:   characterId,
 		inventoryType: it,
 		capacity:      capacity,
 		assets:        make([]asset.Model[any], 0),
@@ -73,6 +81,7 @@ func (b *ModelBuilder) SetAssets(as []asset.Model[any]) *ModelBuilder {
 func (b *ModelBuilder) Build() Model {
 	return Model{
 		id:            b.id,
+		characterId:   b.characterId,
 		inventoryType: b.inventoryType,
 		capacity:      b.capacity,
 		assets:        b.assets,

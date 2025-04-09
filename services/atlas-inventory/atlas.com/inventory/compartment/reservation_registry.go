@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+type ReservationRequest struct {
+	Slot     int16
+	ItemId   uint32
+	Quantity int16
+}
+
 type ReservationKey struct {
 	tenant        tenant.Model
 	characterId   uint32

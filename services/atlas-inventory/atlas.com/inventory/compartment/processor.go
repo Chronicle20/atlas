@@ -2,6 +2,7 @@ package compartment
 
 import (
 	"atlas-inventory/asset"
+	"atlas-inventory/drop"
 	"atlas-inventory/equipment"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/compartment"
@@ -13,8 +14,10 @@ import (
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/item"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/google/uuid"
 	"math"
+	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -27,6 +30,7 @@ type Processor struct {
 	ctx                   context.Context
 	db                    *gorm.DB
 	assetProcessor        *asset.Processor
+	dropProcessor         *drop.Processor
 	equipmentProcessor    *equipment.Processor
 	producer              producer.Provider
 	GetById               func(id uuid.UUID) (Model, error)
@@ -40,6 +44,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		ctx:                ctx,
 		db:                 db,
 		assetProcessor:     asset.NewProcessor(l, ctx, db),
+		dropProcessor:      drop.NewProcessor(l, ctx),
 		equipmentProcessor: equipment.NewProcessor(l, ctx),
 	}
 	p.producer = producer.ProviderImpl(l)(ctx)
@@ -385,6 +390,10 @@ func (p *Processor) IncreaseCapacity(mb *message.Buffer) func(characterId uint32
 		return func(inventoryType inventory.Type) func(amount uint32) error {
 			return func(amount uint32) error {
 				p.l.Debugf("Character [%d] attempting to change compartment capacity by [%d]. Type [%d].", characterId, amount, inventoryType)
+				invLock := LockRegistry().Get(characterId, inventoryType)
+				invLock.Lock()
+				defer invLock.Unlock()
+
 				var capacity uint32
 				txErr := p.db.Transaction(func(tx *gorm.DB) error {
 					c, err := p.GetByCharacterAndType(characterId)(inventoryType)
@@ -406,5 +415,237 @@ func (p *Processor) IncreaseCapacity(mb *message.Buffer) func(characterId uint32
 				return nil
 			}
 		}
+	}
+}
+
+func (p *Processor) DropAndEmit(characterId uint32, inventoryType inventory.Type, m _map.Model, x int16, y int16, source int16, quantity int16) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.Drop(buf)(characterId, inventoryType, m, x, y, source, quantity)
+	})
+}
+
+func (p *Processor) Drop(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type, m _map.Model, x int16, y int16, source int16, quantity int16) error {
+	return func(characterId uint32, inventoryType inventory.Type, m _map.Model, x int16, y int16, source int16, quantity int16) error {
+		p.l.Debugf("Character [%d] attempting to drop [%d] asset from slot [%d].", characterId, quantity, source)
+		if quantity < 0 {
+			return errors.New("cannot drop negative quantity")
+		}
+		if quantity == 0 {
+			return errors.New("cannot drop nothing")
+		}
+
+		t := tenant.MustFromContext(p.ctx)
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		var a asset.Model[any]
+		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+			c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				return err
+			}
+			a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), c.Type(), source)
+			if err != nil {
+				return err
+			}
+			reservedQty := GetReservationRegistry().GetReservedQuantity(t, characterId, inventoryType, source)
+			initialQty := a.Quantity() - reservedQty
+
+			if initialQty < uint32(quantity) {
+				return errors.New("cannot drop more than what is owned")
+			}
+			if initialQty == uint32(quantity) {
+				err = p.assetProcessor.WithTransaction(tx).Delete(mb)(characterId, c.Id())(a)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+			newQuantity := a.Quantity() - uint32(quantity)
+			err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(characterId, c.Id(), a, newQuantity)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Character [%d] unable to drop [%d] asset from slot [%d].", characterId, quantity, source)
+			return txErr
+		}
+		p.l.Debugf("Character [%d] dropped [%d] asset [%d] from slot [%d].", characterId, quantity, a.Id(), source)
+		if inventoryType == inventory.TypeValueEquip {
+			return p.dropProcessor.CreateForEquipment(mb)(m, a.TemplateId(), a.ReferenceId(), 2, x, y, characterId)
+		} else {
+			return p.dropProcessor.CreateForItem(mb)(m, a.TemplateId(), uint32(math.Abs(float64(quantity))), 2, x, y, characterId)
+		}
+	}
+}
+
+func (p *Processor) RequestReserveAndEmit(characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest, transactionId uuid.UUID) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.RequestReserve(buf)(characterId, inventoryType, reservationRequests, transactionId)
+	})
+}
+
+func (p *Processor) RequestReserve(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest, transactionId uuid.UUID) error {
+	return func(characterId uint32, inventoryType inventory.Type, reservationRequests []ReservationRequest, transactionId uuid.UUID) error {
+		t := tenant.MustFromContext(p.ctx)
+		p.l.Debugf("Character [%d] attempting to reserve [%d] inventory [%d] reservation [%s].", characterId, len(reservationRequests), inventoryType, transactionId.String())
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				return err
+			}
+			for _, request := range reservationRequests {
+				var a asset.Model[any]
+				a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), c.Type(), request.Slot)
+				if err != nil {
+					return err
+				}
+				if a.TemplateId() != request.ItemId {
+					return errors.New("cannot reserve non-existent item")
+				}
+				currentReservedQty := GetReservationRegistry().GetReservedQuantity(t, characterId, inventoryType, request.Slot)
+				if a.Quantity()-currentReservedQty < uint32(request.Quantity) {
+					return errors.New("cannot reserve more than what is owned")
+				}
+				_, err = GetReservationRegistry().AddReservation(t, transactionId, characterId, inventoryType, request.Slot, request.ItemId, uint32(request.Quantity), time.Second*time.Duration(30))
+				if err != nil {
+					return err
+				}
+				return mb.Put(compartment.EnvEventTopicStatus, compartment2.ReservedEventStatusProvider(c.Id(), characterId, request.ItemId, request.Slot, uint32(request.Quantity), transactionId))
+			}
+			return nil
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Character [%d] unable to reserve [%d] inventory [%d] via reservation request [%s].", characterId, len(reservationRequests), inventoryType, transactionId.String())
+			return txErr
+		}
+		return nil
+	}
+}
+
+func (p *Processor) CancelReservationAndEmit(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.CancelReservation(buf)(characterId, inventoryType, transactionId, slot)
+	})
+}
+
+func (p *Processor) CancelReservation(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
+	return func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
+		t := tenant.MustFromContext(p.ctx)
+		p.l.Debugf("Character [%d] attempting to cancel inventory [%d] reservation [%s].", characterId, inventoryType, transactionId.String())
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+		if err != nil {
+			return err
+		}
+
+		res, err := GetReservationRegistry().RemoveReservation(t, transactionId, characterId, inventoryType, slot)
+		if err != nil {
+			return nil
+		}
+		return mb.Put(compartment.EnvEventTopicStatus, compartment2.ReservationCancelledEventStatusProvider(c.Id(), characterId, res.ItemId(), slot, res.Quantity()))
+	}
+}
+
+func (p *Processor) ConsumeAssetAndEmit(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.ConsumeAsset(buf)(characterId, inventoryType, transactionId, slot)
+	})
+}
+
+func (p *Processor) ConsumeAsset(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
+	return func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
+		t := tenant.MustFromContext(p.ctx)
+		p.l.Debugf("Character [%d] attempting to consume asset in inventory [%d] slot [%d]. Transaction [%d].", characterId, inventoryType, transactionId, slot)
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		res, err := GetReservationRegistry().RemoveReservation(t, transactionId, characterId, inventoryType, slot)
+		if err != nil {
+			return nil
+		}
+
+		var a asset.Model[any]
+		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+			var c Model
+			c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				return err
+			}
+			a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), c.Type(), slot)
+			if err != nil {
+				return err
+			}
+			reservedQty := GetReservationRegistry().GetReservedQuantity(t, characterId, inventoryType, slot)
+			initialQty := a.Quantity() - reservedQty
+			if initialQty <= 1 {
+				err = p.assetProcessor.WithTransaction(tx).Delete(mb)(characterId, c.Id())(a)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+			newQuantity := a.Quantity() - res.Quantity()
+			err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(characterId, c.Id(), a, newQuantity)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if txErr != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to consume asset in inventory [%d] slot [%d]. Transaction [%d].", characterId, inventoryType, transactionId, slot)
+			return txErr
+		}
+		p.l.Debugf("Character [%d] consumed [%d] of item [%d].", characterId, res.Quantity(), a.TemplateId())
+		return nil
+	}
+}
+
+func (p *Processor) DestroyItemAndEmit(characterId uint32, inventoryType inventory.Type, slot int16) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.DestroyItem(buf)(characterId, inventoryType, slot)
+	})
+}
+
+func (p *Processor) DestroyItem(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type, slot int16) error {
+	return func(characterId uint32, inventoryType inventory.Type, slot int16) error {
+		p.l.Debugf("Character [%d] attempting to destroy asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		var a asset.Model[any]
+		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				return err
+			}
+			a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), c.Type(), slot)
+			if err != nil {
+				return err
+			}
+			err = p.assetProcessor.Delete(mb)(characterId, c.Id())(a)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Character [%d] unable to destroy asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return txErr
+		}
+		p.l.Debugf("Character [%d] destroyed asset [%d].", characterId, a.Id())
+		return nil
 	}
 }

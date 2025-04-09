@@ -3,10 +3,12 @@ package compartment
 import "github.com/google/uuid"
 
 const (
-	EnvEventTopicStatus            = "EVENT_TOPIC_COMPARTMENT_STATUS"
-	StatusEventTypeCreated         = "CREATED"
-	StatusEventTypeDeleted         = "DELETED"
-	StatusEventTypeCapacityChanged = "CAPACITY_CHANGED"
+	EnvEventTopicStatus                 = "EVENT_TOPIC_COMPARTMENT_STATUS"
+	StatusEventTypeCreated              = "CREATED"
+	StatusEventTypeDeleted              = "DELETED"
+	StatusEventTypeCapacityChanged      = "CAPACITY_CHANGED"
+	StatusEventTypeReserved             = "RESERVED"
+	StatusEventTypeReservationCancelled = "RESERVATION_CANCELLED"
 )
 
 type StatusEvent[E any] struct {
@@ -27,6 +29,18 @@ type DeletedStatusEventBody struct {
 type CapacityChangedEventBody struct {
 	Type     byte   `json:"type"`
 	Capacity uint32 `json:"capacity"`
+}
+
+type ReservedEventBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	ItemId        uint32    `json:"itemId"`
+	Slot          int16     `json:"slot"`
+	Quantity      uint32    `json:"quantity"`
+}
+type ReservationCancelledEventBody struct {
+	ItemId   uint32 `json:"itemId"`
+	Slot     int16  `json:"slot"`
+	Quantity uint32 `json:"quantity"`
 }
 
 const (
@@ -70,6 +84,8 @@ type DropCommandBody struct {
 	MapId     uint32 `json:"mapId"`
 	Source    int16  `json:"source"`
 	Quantity  int16  `json:"quantity"`
+	X         int16  `json:"x"`
+	Y         int16  `json:"y"`
 }
 
 type RequestReserveCommandBody struct {

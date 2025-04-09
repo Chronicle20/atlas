@@ -25,14 +25,18 @@ type Processor struct {
 	l                  logrus.FieldLogger
 	ctx                context.Context
 	db                 *gorm.DB
+	cashProcessor      *cash.Processor
+	stackableProcessor *stackable.Processor
 	GetByCompartmentId func(uuid.UUID) func(inventory.Type) ([]Model[any], error)
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
 	p := &Processor{
-		l:   l,
-		ctx: ctx,
-		db:  db,
+		l:                  l,
+		ctx:                ctx,
+		db:                 db,
+		cashProcessor:      cash.NewProcessor(l, ctx),
+		stackableProcessor: stackable.NewProcessor(l, ctx, db),
 	}
 	p.GetByCompartmentId = model.Compose(model2.CollapseProvider, p.ByCompartmentIdProvider)
 	return p
@@ -63,7 +67,7 @@ func (p *Processor) GetAssetDecorator(compartmentId uuid.UUID, inventoryType inv
 	if inventoryType == inventory.TypeValueEquip {
 		return p.DecorateEquipable
 	} else if inventoryType == inventory.TypeValueUse || inventoryType == inventory.TypeValueSetup || inventoryType == inventory.TypeValueETC {
-		sm, err := model.CollectToMap(stackable.ByCompartmentIdProvider(p.l)(p.ctx)(p.db)(compartmentId), stackable.Identity, stackable.This)()
+		sm, err := model.CollectToMap(p.stackableProcessor.ByCompartmentIdProvider(compartmentId), stackable.Identity, stackable.This)()
 		if err != nil {
 			return nil
 		}
@@ -169,7 +173,7 @@ func (p *Processor) DecorateStackable(sm map[uint32]stackable.Model) model.Trans
 
 func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
 	if m.ReferenceType() == ReferenceTypeCash {
-		ci, err := cash.GetById(p.l)(p.ctx)(m.ReferenceId())
+		ci, err := p.cashProcessor.GetById(m.ReferenceId())
 		if err != nil {
 			return m, errors.New("cannot locate reference")
 		}
@@ -182,7 +186,7 @@ func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
 			}).
 			Build(), nil
 	} else if m.ReferenceType() == ReferenceTypePet {
-		ci, err := cash.GetById(p.l)(p.ctx)(m.ReferenceId())
+		ci, err := p.cashProcessor.GetById(m.ReferenceId())
 		if err != nil {
 			return m, errors.New("cannot locate reference")
 		}
@@ -217,7 +221,7 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32, compartm
 				if a.ReferenceType() == ReferenceTypeEquipable {
 					deleteRefFunc = equipable.Delete(p.l)(p.ctx)
 				} else if a.ReferenceType() == ReferenceTypeConsumable || a.ReferenceType() == ReferenceTypeSetup || a.ReferenceType() == ReferenceTypeEtc {
-					deleteRefFunc = stackable.Delete(p.l)(p.ctx)(tx)
+					deleteRefFunc = p.stackableProcessor.Delete
 				} else if a.ReferenceType() == ReferenceTypeCash {
 					// TODO
 				} else if a.ReferenceType() == ReferenceTypePet {
@@ -237,7 +241,7 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32, compartm
 				if err != nil {
 					return err
 				}
-				return mb.Put(asset.EnvEventTopicStatus, asset2.DeletedEventStatusProvider(characterId, compartmentId, a.Id()))
+				return mb.Put(asset.EnvEventTopicStatus, asset2.DeletedEventStatusProvider(characterId, compartmentId, a.Id(), a.Slot()))
 			})
 			if txErr != nil {
 				p.l.WithError(txErr).Errorf("Unable to delete asset [%d].", a.Id())
@@ -271,5 +275,27 @@ func (p *Processor) UpdateSlot(mb *message.Buffer) func(characterId uint32, comp
 			return mb.Put(asset.EnvEventTopicStatus, asset2.MovedEventStatusProvider(characterId, compartmentId, assetId, a.Slot(), s))
 		}
 		return nil
+	}
+}
+
+func (p *Processor) UpdateQuantity(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, a Model[any], quantity uint32) error {
+	return func(characterId uint32, compartmentId uuid.UUID, a Model[any], quantity uint32) error {
+		if !a.HasQuantity() {
+			return errors.New("cannot update quantity of non-stackable")
+		}
+		if a.IsConsumable() || a.IsSetup() || a.IsEtc() {
+			err := p.stackableProcessor.UpdateQuantity(a.ReferenceId(), quantity)
+			if err != nil {
+				return err
+			}
+			return mb.Put(asset.EnvEventTopicStatus, asset2.QuantityChangedEventStatusProvider(characterId, compartmentId, a.Id(), a.Slot(), quantity))
+		} else if a.IsCash() {
+			err := p.cashProcessor.UpdateQuantity(a.ReferenceId(), quantity)
+			if err != nil {
+				return err
+			}
+			return mb.Put(asset.EnvEventTopicStatus, asset2.QuantityChangedEventStatusProvider(characterId, compartmentId, a.Id(), a.Slot(), quantity))
+		}
+		return errors.New("unknown ReferenceData which implements HasQuantity")
 	}
 }

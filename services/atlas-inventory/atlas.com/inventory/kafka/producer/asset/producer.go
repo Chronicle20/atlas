@@ -8,24 +8,26 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func CreatedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, assetId uint32) model.Provider[[]kafka.Message] {
+func CreatedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, assetId uint32, slot int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(assetId))
 	value := &asset.StatusEvent[asset.CreatedStatusEventBody]{
 		CharacterId:   characterId,
 		CompartmentId: compartmentId,
 		AssetId:       assetId,
+		Slot:          slot,
 		Type:          asset.StatusEventTypeCreated,
 		Body:          asset.CreatedStatusEventBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func DeletedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, assetId uint32) model.Provider[[]kafka.Message] {
+func DeletedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, assetId uint32, slot int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(assetId))
 	value := &asset.StatusEvent[asset.DeletedStatusEventBody]{
 		CharacterId:   characterId,
 		CompartmentId: compartmentId,
 		AssetId:       assetId,
+		Slot:          slot,
 		Type:          asset.StatusEventTypeDeleted,
 		Body:          asset.DeletedStatusEventBody{},
 	}
@@ -38,10 +40,25 @@ func MovedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, asset
 		CharacterId:   characterId,
 		CompartmentId: compartmentId,
 		AssetId:       assetId,
+		Slot:          newSlot,
 		Type:          asset.StatusEventTypeMoved,
 		Body: asset.MovedStatusEventBody{
-			NewSlot: newSlot,
 			OldSlot: oldSlot,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func QuantityChangedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, assetId uint32, slot int16, quantity uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(assetId))
+	value := &asset.StatusEvent[asset.QuantityChangedEventBody]{
+		CharacterId:   characterId,
+		CompartmentId: compartmentId,
+		AssetId:       assetId,
+		Slot:          slot,
+		Type:          asset.StatusEventTypeQuantityChanged,
+		Body: asset.QuantityChangedEventBody{
+			Quantity: quantity,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

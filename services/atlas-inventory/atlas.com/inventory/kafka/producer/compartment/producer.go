@@ -47,3 +47,34 @@ func CapacityChangedEventStatusProvider(id uuid.UUID, characterId uint32, invent
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func ReservedEventStatusProvider(id uuid.UUID, characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.StatusEvent[compartment.ReservedEventBody]{
+		CharacterId:   characterId,
+		CompartmentId: id,
+		Type:          compartment.StatusEventTypeReserved,
+		Body: compartment.ReservedEventBody{
+			TransactionId: transactionId,
+			ItemId:        itemId,
+			Slot:          slot,
+			Quantity:      quantity,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ReservationCancelledEventStatusProvider(id uuid.UUID, characterId uint32, itemId uint32, slot int16, quantity uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.StatusEvent[compartment.ReservationCancelledEventBody]{
+		CharacterId:   characterId,
+		CompartmentId: id,
+		Type:          compartment.StatusEventTypeReservationCancelled,
+		Body: compartment.ReservationCancelledEventBody{
+			ItemId:   itemId,
+			Slot:     slot,
+			Quantity: quantity,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

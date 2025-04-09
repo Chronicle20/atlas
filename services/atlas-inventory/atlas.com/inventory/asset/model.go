@@ -47,6 +47,46 @@ func (m Model[E]) ReferenceType() ReferenceType {
 	return m.referenceType
 }
 
+type HasQuantity interface {
+	Quantity() uint32
+}
+
+func (m Model[E]) Quantity() uint32 {
+	if q, ok := any(m.referenceData).(HasQuantity); ok {
+		return q.Quantity()
+	}
+	return 1
+}
+
+func (m Model[E]) HasQuantity() bool {
+	_, ok := any(m.referenceData).(HasQuantity)
+	return ok
+}
+
+func (m Model[E]) IsEquipable() bool {
+	return m.referenceType == ReferenceTypeEquipable
+}
+
+func (m Model[E]) IsConsumable() bool {
+	return m.referenceType == ReferenceTypeConsumable
+}
+
+func (m Model[E]) IsSetup() bool {
+	return m.referenceType == ReferenceTypeSetup
+}
+
+func (m Model[E]) IsEtc() bool {
+	return m.referenceType == ReferenceTypeEtc
+}
+
+func (m Model[E]) IsCash() bool {
+	return m.referenceType == ReferenceTypeCash
+}
+
+func (m Model[E]) IsPet() bool {
+	return m.referenceType == ReferenceTypePet
+}
+
 func Clone[E any](m Model[E]) *ModelBuilder[E] {
 	return &ModelBuilder[E]{
 		id:            m.id,
@@ -144,10 +184,18 @@ type ConsumableReferenceData struct {
 	rechargeable uint64
 }
 
+func (c ConsumableReferenceData) Quantity() uint32 {
+	return c.quantity
+}
+
 type SetupReferenceData struct {
 	quantity uint32
 	owner    string
 	flag     uint16
+}
+
+func (c SetupReferenceData) Quantity() uint32 {
+	return c.quantity
 }
 
 type EtcReferenceData struct {
@@ -156,12 +204,20 @@ type EtcReferenceData struct {
 	flag     uint16
 }
 
+func (c EtcReferenceData) Quantity() uint32 {
+	return c.quantity
+}
+
 type CashReferenceData struct {
 	cashId     uint64
 	quantity   uint32
 	owner      uint32
 	flag       uint16
 	purchaseBy uint32
+}
+
+func (c CashReferenceData) Quantity() uint32 {
+	return c.quantity
 }
 
 type PetReferenceData struct {

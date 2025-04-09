@@ -4,9 +4,11 @@ import (
 	"atlas-inventory/compartment"
 	consumer2 "atlas-inventory/kafka/consumer"
 	compartment2 "atlas-inventory/kafka/message/compartment"
-	"atlas-inventory/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/inventory"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -69,14 +71,23 @@ func handleMoveItemCommand(db *gorm.DB) message.Handler[compartment2.Command[com
 	}
 }
 
+func handleIncreaseCapacityCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.IncreaseCapacityCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.IncreaseCapacityCommandBody]) {
+		if c.Type != compartment2.CommandIncreaseCapacity {
+			return
+		}
+		_ = compartment.NewProcessor(l, ctx, db).IncreaseCapacityAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Amount)
+	}
+}
+
 func handleDropItemCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.DropCommandBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.DropCommandBody]) {
 		if c.Type != compartment2.CommandDrop {
 			return
 		}
 
-		td := character.GetTemporalRegistry().GetById(c.CharacterId)
-		_ = inventory.Drop(l)(db)(ctx)(inventory2.Type(c.InventoryType))(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.CharacterId, td.X(), td.Y(), c.Body.Source, c.Body.Quantity)
+		m := _map.NewModel(world.Id(c.Body.WorldId))(channel.Id(c.Body.ChannelId))(_map.Id(c.Body.MapId))
+		_ = compartment.NewProcessor(l, ctx, db).DropAndEmit(c.CharacterId, inventory.Type(c.InventoryType), m, c.Body.X, c.Body.Y, c.Body.Source, c.Body.Quantity)
 	}
 }
 
@@ -85,34 +96,16 @@ func handleRequestReserveItemCommand(db *gorm.DB) message.Handler[compartment2.C
 		if c.Type != compartment2.CommandRequestReserve {
 			return
 		}
-		reserves := make([]inventory.Reserve, 0)
+		reserves := make([]compartment.ReservationRequest, 0)
 		for _, i := range c.Body.Items {
-			reserves = append(reserves, inventory.Reserve{
+			reserves = append(reserves, compartment.ReservationRequest{
 				Slot:     i.Source,
 				ItemId:   i.ItemId,
 				Quantity: i.Quantity,
 			})
 		}
 
-		_ = inventory.RequestReserve(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), reserves, c.Body.TransactionId)
-	}
-}
-
-func handleConsumeItemCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.ConsumeCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.ConsumeCommandBody]) {
-		if c.Type != compartment2.CommandConsume {
-			return
-		}
-		_ = inventory.ConsumeItem(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), c.Body.TransactionId, c.Body.Slot)
-	}
-}
-
-func handleDestroyItemCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.DestroyCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.DestroyCommandBody]) {
-		if c.Type != compartment2.CommandDestroy {
-			return
-		}
-		_ = inventory.DestroyItem(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), c.Body.Slot)
+		_ = compartment.NewProcessor(l, ctx, db).RequestReserveAndEmit(c.CharacterId, inventory.Type(c.InventoryType), reserves, c.Body.TransactionId)
 	}
 }
 
@@ -121,15 +114,24 @@ func handleCancelItemReservationCommand(db *gorm.DB) message.Handler[compartment
 		if c.Type != compartment2.CommandCancelReservation {
 			return
 		}
-		_ = inventory.CancelReservation(l)(ctx)(db)(c.CharacterId, inventory2.Type(c.InventoryType), c.Body.TransactionId, c.Body.Slot)
+		_ = compartment.NewProcessor(l, ctx, db).CancelReservationAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.TransactionId, c.Body.Slot)
 	}
 }
 
-func handleIncreaseCapacityCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.IncreaseCapacityCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.IncreaseCapacityCommandBody]) {
-		if c.Type != compartment2.CommandIncreaseCapacity {
+func handleConsumeItemCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.ConsumeCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.ConsumeCommandBody]) {
+		if c.Type != compartment2.CommandConsume {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).IncreaseCapacityAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Amount)
+		_ = compartment.NewProcessor(l, ctx, db).ConsumeAssetAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.TransactionId, c.Body.Slot)
+	}
+}
+
+func handleDestroyItemCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.DestroyCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.DestroyCommandBody]) {
+		if c.Type != compartment2.CommandDestroy {
+			return
+		}
+		_ = compartment.NewProcessor(l, ctx, db).DestroyItemAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot)
 	}
 }

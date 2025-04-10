@@ -1,8 +1,6 @@
 package character
 
 import (
-	"atlas-character/equipment"
-	"atlas-character/inventory"
 	"atlas-character/skill"
 	"github.com/Chronicle20/atlas-constants/job"
 	"strconv"
@@ -38,8 +36,6 @@ type Model struct {
 	mapId              uint32
 	spawnPoint         uint32
 	gm                 int
-	equipment          equipment.Model
-	inventory          inventory.Model
 	skills             []skill.Model
 }
 
@@ -188,10 +184,6 @@ func (m Model) HPMPUsed() int {
 	return m.hpMpUsed
 }
 
-func (m Model) GetEquipment() equipment.Model {
-	return m.equipment
-}
-
 func (m Model) GetSkill(skillId uint32) skill.Model {
 	for _, s := range m.skills {
 		if s.Id() == skillId {
@@ -208,10 +200,6 @@ func (m Model) GetSkillLevel(skillId uint32) byte {
 		}
 	}
 	return 0
-}
-
-func (m Model) GetInventory() inventory.Model {
-	return m.inventory
 }
 
 type modelBuilder struct {
@@ -243,13 +231,11 @@ type modelBuilder struct {
 	spawnPoint         uint32
 	gm                 int
 	meso               uint32
-	equipment          equipment.Model
-	inventory          inventory.Model
 	skills             []skill.Model
 }
 
 func NewModelBuilder() *modelBuilder {
-	return &modelBuilder{equipment: equipment.NewModel()}
+	return &modelBuilder{}
 }
 
 func CloneModel(m Model) *modelBuilder {
@@ -282,8 +268,6 @@ func CloneModel(m Model) *modelBuilder {
 		spawnPoint:         m.spawnPoint,
 		gm:                 m.gm,
 		meso:               m.meso,
-		equipment:          m.equipment,
-		inventory:          m.inventory,
 		skills:             m.skills,
 	}
 }
@@ -452,24 +436,12 @@ func (c *modelBuilder) Build() Model {
 		spawnPoint:         c.spawnPoint,
 		gm:                 c.gm,
 		meso:               c.meso,
-		equipment:          c.equipment,
-		inventory:          c.inventory,
 		skills:             c.skills,
 	}
 }
 
 func (c *modelBuilder) SetHpMpUsed(used int) *modelBuilder {
 	c.hpMpUsed = used
-	return c
-}
-
-func (c *modelBuilder) SetInventory(i inventory.Model) *modelBuilder {
-	c.inventory = i
-	return c
-}
-
-func (c *modelBuilder) SetEquipment(e equipment.Model) *modelBuilder {
-	c.equipment = e
 	return c
 }
 

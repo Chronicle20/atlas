@@ -2,9 +2,6 @@ package character_test
 
 import (
 	"atlas-character/character"
-	"atlas-character/equipable"
-	"atlas-character/inventory"
-	"atlas-character/inventory/item"
 	"atlas-character/kafka/producer"
 	"context"
 	"testing"
@@ -27,7 +24,7 @@ func testDatabase(t *testing.T) *gorm.DB {
 	}
 
 	var migrators []func(db *gorm.DB) error
-	migrators = append(migrators, character.Migration, inventory.Migration, item.Migration, equipable.Migration)
+	migrators = append(migrators, character.Migration)
 
 	for _, migrator := range migrators {
 		if err := migrator(db); err != nil {

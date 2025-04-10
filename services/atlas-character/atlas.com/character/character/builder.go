@@ -1,10 +1,5 @@
 package character
 
-import (
-	"atlas-character/equipment"
-	"atlas-character/inventory"
-)
-
 type BuilderConfiguration struct {
 	useStarting4AP           bool
 	useAutoAssignStartersAP  bool
@@ -45,8 +40,6 @@ type Builder struct {
 	face         uint32
 	ap           uint16
 	mapId        uint32
-	equipment    equipment.Model
-	inventory    inventory.Model
 }
 
 func (b *Builder) SetJobId(jobId uint16) *Builder {
@@ -88,8 +81,6 @@ func (b *Builder) Build() Model {
 		mapId:              b.mapId,
 		spawnPoint:         0,
 		gm:                 0,
-		equipment:          b.equipment,
-		inventory:          b.inventory,
 	}
 }
 
@@ -104,8 +95,6 @@ func NewBuilder(c BuilderConfiguration, accountId uint32, worldId byte, name str
 		gender:    gender,
 		hair:      hair,
 		face:      face,
-		equipment: equipment.NewModel(),
-		inventory: inventory.NewModel(c.defaultInventoryCapacity),
 	}
 
 	if !c.UseStarting4AP() {

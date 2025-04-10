@@ -30,7 +30,7 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
-func Transform(m Model) (RestModel, error) {
+func Transform(m Model[any]) (RestModel, error) {
 	return RestModel{
 		Id:          m.id,
 		Slot:        m.slot,
@@ -40,8 +40,8 @@ func Transform(m Model) (RestModel, error) {
 	}, nil
 }
 
-func Extract(rm RestModel) (Model, error) {
-	return Model{
+func Extract(rm RestModel) (Model[any], error) {
+	return Model[any]{
 		id:          rm.Id,
 		slot:        rm.Slot,
 		templateId:  rm.TemplateId,

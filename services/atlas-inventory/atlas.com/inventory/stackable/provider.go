@@ -1,4 +1,4 @@
-package asset
+package stackable
 
 import (
 	"atlas-inventory/database"
@@ -11,11 +11,5 @@ import (
 func getByCompartmentId(tenantId uuid.UUID, compartmentId uuid.UUID) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		return database.SliceQuery[Entity](db, &Entity{TenantId: tenantId, CompartmentId: compartmentId})
-	}
-}
-
-func getBySlot(tenantId uuid.UUID, compartmentId uuid.UUID, slot int16) database.EntityProvider[Entity] {
-	return func(db *gorm.DB) model.Provider[Entity] {
-		return database.Query[Entity](db, &Entity{TenantId: tenantId, CompartmentId: compartmentId, Slot: slot})
 	}
 }

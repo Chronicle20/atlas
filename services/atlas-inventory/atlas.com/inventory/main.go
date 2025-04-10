@@ -5,15 +5,19 @@ import (
 	"atlas-inventory/compartment"
 	"atlas-inventory/database"
 	"atlas-inventory/inventory"
+	"atlas-inventory/kafka/consumer/character"
+	compartment2 "atlas-inventory/kafka/consumer/compartment"
 	"atlas-inventory/logger"
 	"atlas-inventory/service"
 	"atlas-inventory/tracing"
+	"github.com/Chronicle20/atlas-kafka/consumer"
 	"os"
 
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
 const serviceName = "atlas-inventory"
+const consumerGroupId = "Inventory Service"
 
 type Server struct {
 	baseUrl string
@@ -48,7 +52,11 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(compartment.Migration, asset.Migration))
 
-	// cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	character.InitConsumers(l)(cmf)(consumerGroupId)
+	compartment2.InitConsumers(l)(cmf)(consumerGroupId)
+	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	compartment2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.New(l).
 		WithContext(tdm.Context()).

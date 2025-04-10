@@ -26,13 +26,13 @@ func (e Entity) TableName() string {
 	return "assets"
 }
 
-func Make(e Entity) (Model, error) {
-	return Model{
+func Make(e Entity) (Model[any], error) {
+	return Model[any]{
 		id:            e.Id,
 		slot:          e.Slot,
 		templateId:    e.TemplateId,
 		expiration:    e.Expiration,
 		referenceId:   e.ReferenceId,
-		referenceType: e.ReferenceType,
+		referenceType: ReferenceType(e.ReferenceType),
 	}, nil
 }

@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"strconv"
@@ -95,5 +96,19 @@ func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.Handle
 			return
 		}
 		next(uint32(characterId))(w, r)
+	}
+}
+
+type CompartmentIdHandler func(compartmentId uuid.UUID) http.HandlerFunc
+
+func ParseCompartmentId(l logrus.FieldLogger, next CompartmentIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		compartmentId, err := uuid.Parse(mux.Vars(r)["compartmentId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse compartmentId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(compartmentId)(w, r)
 	}
 }

@@ -83,6 +83,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32) (Model, 
 				}
 				b.SetCompartment(c)
 			}
+			i = b.Build()
 			return mb.Put(inventory2.EnvEventTopicStatus, inventory3.CreatedEventStatusProvider(characterId))
 		})
 		if txErr != nil {

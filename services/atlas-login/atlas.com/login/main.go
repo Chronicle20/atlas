@@ -7,6 +7,7 @@ import (
 	writer2 "atlas-login/configuration/tenant/socket/writer"
 	account2 "atlas-login/kafka/consumer/account"
 	session2 "atlas-login/kafka/consumer/account/session"
+	"atlas-login/kafka/consumer/seed"
 	"atlas-login/logger"
 	"atlas-login/service"
 	"atlas-login/session"
@@ -56,6 +57,7 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	account2.InitConsumers(l)(cmf)(consumerGroupId)
 	session2.InitConsumers(l)(cmf)(consumerGroupId)
+	seed.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
@@ -93,6 +95,7 @@ func main() {
 
 		account2.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler)
 		session2.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler)
+		seed.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler)
 
 		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, t, ten.Port)
 	}

@@ -23,26 +23,20 @@ func InitConsumers(l logrus.FieldLogger) func(rf func(config consumer.Config, de
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(tenant tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(tenant tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(ten tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(ten tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				t, _ := topic.EnvProvider(l)(account2.EnvEventTopicAccountStatus)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAccountStatusEvent(tenant))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAccountStatusEvent(ten))))
 			}
 		}
 	}
 }
 
-func handleAccountStatusEvent(ot tenant.Model) func(l logrus.FieldLogger, ctx context.Context, event account2.StatusEvent) {
+func handleAccountStatusEvent(t tenant.Model) func(l logrus.FieldLogger, ctx context.Context, event account2.StatusEvent) {
 	return func(l logrus.FieldLogger, ctx context.Context, event account2.StatusEvent) {
-		t, err := tenant.FromContext(ctx)()
-		if err != nil {
-			l.WithError(err).Error("error getting tenant")
-			return
-		}
-
-		if !t.Is(ot) {
+		if !t.Is(tenant.MustFromContext(ctx)) {
 			return
 		}
 

@@ -70,7 +70,7 @@ func CreateCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			luck = r.ReadByte()
 		}
 
-		m, err := factory.SeedCharacter(l, ctx)(s.AccountId(), s.WorldId(), name, jobIndex, subJobIndex, face, hair, hairColor, skinColor, gender, top, bottom, shoes, weapon, strength, dexterity, intelligence, luck)
+		err := factory.SeedCharacter(l, ctx)(s.AccountId(), s.WorldId(), name, jobIndex, subJobIndex, face, hair, hairColor, skinColor, gender, top, bottom, shoes, weapon, strength, dexterity, intelligence, luck)
 		if err != nil {
 			l.WithError(err).Errorf("Error creating character from seed.")
 			err = session.Announce(l)(wp)(writer.AddCharacterEntry)(s, writer.AddCharacterErrorBody(l, t)(writer.AddCharacterCodeUnknownError))
@@ -78,11 +78,6 @@ func CreateCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 				l.WithError(err).Errorf("Unable to show newly created character.")
 			}
 			return
-		}
-
-		err = session.Announce(l)(wp)(writer.AddCharacterEntry)(s, writer.AddCharacterEntryBody(l, t)(m))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to show newly created character.")
 		}
 	}
 }

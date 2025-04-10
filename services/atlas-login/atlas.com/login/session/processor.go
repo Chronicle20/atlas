@@ -42,6 +42,29 @@ func IfPresentById(tenant tenant.Model) func(sessionId uuid.UUID, f model.Operat
 	}
 }
 
+func ByAccountIdModelProvider(tenant tenant.Model) func(accountId uint32) model.Provider[Model] {
+	return func(accountId uint32) model.Provider[Model] {
+		return model.FirstProvider[Model](AllInTenantProvider(tenant), model.Filters(AccountIdFilter(accountId)))
+	}
+}
+
+// IfPresentByAccountId executes an Operator if a session exists for the accountId
+func IfPresentByAccountId(tenant tenant.Model) func(accountId uint32, f model.Operator[Model]) error {
+	return func(accountId uint32, f model.Operator[Model]) error {
+		s, err := ByAccountIdModelProvider(tenant)(accountId)()
+		if err != nil {
+			return nil
+		}
+		return f(s)
+	}
+}
+
+func AccountIdFilter(referenceId uint32) model.Filter[Model] {
+	return func(model Model) bool {
+		return model.AccountId() == referenceId
+	}
+}
+
 func Announce(l logrus.FieldLogger) func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
 	return func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
 		return func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {

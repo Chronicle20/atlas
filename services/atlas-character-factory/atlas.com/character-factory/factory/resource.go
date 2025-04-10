@@ -38,7 +38,8 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			return
 		}
 
-		server.Marshal[character.RestModel](d.Logger())(w)(c.ServerInformation())(res)
-		w.WriteHeader(http.StatusCreated)
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[character.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 	}
 }

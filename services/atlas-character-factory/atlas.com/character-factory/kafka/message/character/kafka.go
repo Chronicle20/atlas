@@ -7,18 +7,18 @@ const (
 	EnvEventInventoryChanged = "EVENT_TOPIC_INVENTORY_CHANGED"
 )
 
-type statusEvent[E any] struct {
+type StatusEvent[E any] struct {
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	WorldId     byte   `json:"worldId"`
 	Body        E      `json:"body"`
 }
 
-type statusEventCreatedBody struct {
+type StatusEventCreatedBody struct {
 	Name string `json:"name"`
 }
 
-type inventoryChangedEvent[M any] struct {
+type InventoryChangedEvent[M any] struct {
 	CharacterId uint32 `json:"characterId"`
 	Slot        int16  `json:"slot"`
 	Type        string `json:"type"`
@@ -26,17 +26,17 @@ type inventoryChangedEvent[M any] struct {
 	Silent      bool   `json:"silent"`
 }
 
-type inventoryChangedItemAddBody struct {
+type InventoryChangedItemAddBody struct {
 	ItemId   uint32 `json:"itemId"`
 	Quantity uint32 `json:"quantity"`
 }
 
-type inventoryChangedItemUpdateBody struct {
+type InventoryChangedItemUpdateBody struct {
 	ItemId   uint32 `json:"itemId"`
 	Quantity uint32 `json:"quantity"`
 }
 
-type inventoryChangedItemMoveBody struct {
+type InventoryChangedItemMoveBody struct {
 	ItemId  uint32 `json:"itemId"`
 	OldSlot int16  `json:"oldSlot"`
 }

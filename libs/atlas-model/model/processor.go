@@ -37,6 +37,23 @@ type KeyValueOperator[K any, V any] func(K) Operator[V]
 
 type Provider[M any] func() (M, error)
 
+//goland:noinspection GoUnusedExportedFunction
+func CollapseProvider[A, T any](f func(A) Provider[T]) func(A) (T, error) {
+	return func(a A) (T, error) {
+		return f(a)()
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func LiftToProvider[A, T any](f func(A) (T, error)) func(A) Provider[T] {
+	return func(a A) Provider[T] {
+		return func() (T, error) {
+			return f(a)
+		}
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
 func Decorators[M any](decorators ...Decorator[M]) []Decorator[M] {
 	return decorators
 }

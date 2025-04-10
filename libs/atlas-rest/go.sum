@@ -4,6 +4,8 @@ github.com/Chronicle20/atlas-model v1.2.2 h1:y49e+UaZ2diXVcDX84FdWat/5THIPmOr9IK
 github.com/Chronicle20/atlas-model v1.2.2/go.mod h1:5FNYT/ypml+goxft0XCACTEp6666yys+l6LTxSPeh1k=
 github.com/Chronicle20/atlas-model v1.2.3 h1:E864b+xRKskPBWyEN+waQ1N1BhcPWYyRj4iK+wY4FiU=
 github.com/Chronicle20/atlas-model v1.2.3/go.mod h1:5FNYT/ypml+goxft0XCACTEp6666yys+l6LTxSPeh1k=
+github.com/Chronicle20/atlas-model v1.2.4 h1:Rdn7u26CxYO3ASryD+YFIHtDaVEgI+VMw8NW09r22i0=
+github.com/Chronicle20/atlas-model v1.2.4/go.mod h1:5FNYT/ypml+goxft0XCACTEp6666yys+l6LTxSPeh1k=
 github.com/Chronicle20/atlas-tenant v1.0.4 h1:zS+hK56eNTVDlvTvSFN4wo9hZQ9aM/6SxXzRL+9P2Zk=
 github.com/Chronicle20/atlas-tenant v1.0.4/go.mod h1:6DHjFyHY9wRfOuphFwmwklf50hYm74L7MlWH7wqgnRQ=
 github.com/Chronicle20/atlas-tenant v1.0.5 h1:fBloCBSkHZHAR7Q7beeNMgPjdc8dDWJH+e9Upb86zfk=

@@ -99,7 +99,7 @@ func (p *Processor) ByCharacterAndTypeProvider(characterId uint32) func(inventor
 }
 
 func (p *Processor) DecorateAsset(m Model) (Model, error) {
-	as, err := p.assetProcessor.GetByCompartmentId(m.Id())(m.Type())
+	as, err := p.assetProcessor.GetByCompartmentId(m.Id())
 	if err != nil {
 		return Model{}, err
 	}
@@ -178,7 +178,7 @@ func (p *Processor) EquipItem(mb *message.Buffer) func(characterId uint32) func(
 						return err
 					}
 
-					assetProvider := p.assetProcessor.WithTransaction(tx).BySlotProvider(c.Id())(c.Type())
+					assetProvider := p.assetProcessor.WithTransaction(tx).BySlotProvider(c.Id())
 					a1, err = assetProvider(source)()
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to get asset in compartment [%d] by slot [%d].", c.Id(), source)
@@ -289,7 +289,7 @@ func (p *Processor) RemoveEquip(mb *message.Buffer) func(characterId uint32) fun
 					}
 
 					var fsp model.Provider[int16]
-					assetProvider := p.assetProcessor.WithTransaction(tx).BySlotProvider(c.Id())(c.Type())
+					assetProvider := p.assetProcessor.WithTransaction(tx).BySlotProvider(c.Id())
 					if destination > 0 && uint32(destination) < c.Capacity() {
 						_, err = assetProvider(destination)()
 						if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
@@ -349,7 +349,7 @@ func (p *Processor) Move(mb *message.Buffer) func(characterId uint32) func(inven
 							return err
 						}
 
-						assetProvider := p.assetProcessor.WithTransaction(tx).BySlotProvider(c.Id())(c.Type())
+						assetProvider := p.assetProcessor.WithTransaction(tx).BySlotProvider(c.Id())
 						a1, err = assetProvider(source)()
 						if err != nil {
 							p.l.WithError(err).Errorf("Unable to get asset in compartment [%d] by slot [%d].", c.Id(), source)
@@ -452,7 +452,7 @@ func (p *Processor) Drop(mb *message.Buffer) func(characterId uint32, inventoryT
 			if err != nil {
 				return err
 			}
-			a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), c.Type(), source)
+			a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), source)
 			if err != nil {
 				return err
 			}
@@ -510,7 +510,7 @@ func (p *Processor) RequestReserve(mb *message.Buffer) func(characterId uint32, 
 			}
 			for _, request := range reservationRequests {
 				var a asset.Model[any]
-				a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), c.Type(), request.Slot)
+				a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), request.Slot)
 				if err != nil {
 					return err
 				}
@@ -590,7 +590,7 @@ func (p *Processor) ConsumeAsset(mb *message.Buffer) func(characterId uint32, in
 			if err != nil {
 				return err
 			}
-			a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), c.Type(), slot)
+			a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), slot)
 			if err != nil {
 				return err
 			}
@@ -638,7 +638,7 @@ func (p *Processor) DestroyItem(mb *message.Buffer) func(characterId uint32, inv
 			if err != nil {
 				return err
 			}
-			a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), c.Type(), slot)
+			a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), slot)
 			if err != nil {
 				return err
 			}

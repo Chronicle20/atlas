@@ -11,13 +11,14 @@ import (
 	"atlas-inventory/stackable"
 	"context"
 	"errors"
-	"math"
-
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"math"
+	"time"
 )
 
 type Processor struct {
@@ -93,36 +94,40 @@ func (p *Processor) DecorateEquipable(m Model[any]) (Model[any], error) {
 		return Model[any]{}, nil
 	}
 	return Clone(m).
-		SetReferenceData(EquipableReferenceData{
-			strength:       e.Strength(),
-			dexterity:      e.Dexterity(),
-			intelligence:   e.Intelligence(),
-			luck:           e.Luck(),
-			hp:             e.HP(),
-			mp:             e.MP(),
-			weaponAttack:   e.WeaponAttack(),
-			magicAttack:    e.MagicAttack(),
-			weaponDefense:  e.WeaponDefense(),
-			magicDefense:   e.MagicDefense(),
-			accuracy:       e.Accuracy(),
-			avoidability:   e.Avoidability(),
-			hands:          e.Hands(),
-			speed:          e.Speed(),
-			jump:           e.Jump(),
-			slots:          e.Slots(),
-			ownerName:      e.OwnerName(),
-			locked:         e.Locked(),
-			spikes:         e.Spikes(),
-			karmaUsed:      e.KarmaUsed(),
-			cold:           e.Cold(),
-			canBeTraded:    e.CanBeTraded(),
-			levelType:      e.LevelType(),
-			level:          e.Level(),
-			experience:     e.Experience(),
-			hammersApplied: e.HammersApplied(),
-			expiration:     e.Expiration(),
-		}).
+		SetReferenceData(MakeEquipableReferenceData(e)).
 		Build(), nil
+}
+
+func MakeEquipableReferenceData(e equipable.Model) EquipableReferenceData {
+	return EquipableReferenceData{
+		strength:       e.Strength(),
+		dexterity:      e.Dexterity(),
+		intelligence:   e.Intelligence(),
+		luck:           e.Luck(),
+		hp:             e.HP(),
+		mp:             e.MP(),
+		weaponAttack:   e.WeaponAttack(),
+		magicAttack:    e.MagicAttack(),
+		weaponDefense:  e.WeaponDefense(),
+		magicDefense:   e.MagicDefense(),
+		accuracy:       e.Accuracy(),
+		avoidability:   e.Avoidability(),
+		hands:          e.Hands(),
+		speed:          e.Speed(),
+		jump:           e.Jump(),
+		slots:          e.Slots(),
+		ownerId:        e.OwnerId(),
+		locked:         e.Locked(),
+		spikes:         e.Spikes(),
+		karmaUsed:      e.KarmaUsed(),
+		cold:           e.Cold(),
+		canBeTraded:    e.CanBeTraded(),
+		levelType:      e.LevelType(),
+		level:          e.Level(),
+		experience:     e.Experience(),
+		hammersApplied: e.HammersApplied(),
+		expiration:     e.Expiration(),
+	}
 }
 
 func (p *Processor) DecorateStackable(compartmentId uuid.UUID) func(m Model[any]) (Model[any], error) {
@@ -136,20 +141,20 @@ func (p *Processor) DecorateStackable(compartmentId uuid.UUID) func(m Model[any]
 		if m.ReferenceType() == ReferenceTypeConsumable {
 			rd = ConsumableReferenceData{
 				quantity:     s.Quantity(),
-				owner:        s.Owner(),
+				ownerId:      s.OwnerId(),
 				flag:         s.Flag(),
 				rechargeable: s.Rechargeable(),
 			}
 		} else if m.ReferenceType() == ReferenceTypeSetup {
 			rd = SetupReferenceData{
 				quantity: s.Quantity(),
-				owner:    s.Owner(),
+				ownerId:  s.OwnerId(),
 				flag:     s.Flag(),
 			}
 		} else if m.ReferenceType() == ReferenceTypeEtc {
 			rd = EtcReferenceData{
 				quantity: s.Quantity(),
-				owner:    s.Owner(),
+				ownerId:  s.OwnerId(),
 				flag:     s.Flag(),
 			}
 		}
@@ -169,7 +174,7 @@ func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
 		return Clone(m).
 			SetReferenceData(CashReferenceData{
 				quantity:   ci.Quantity(),
-				owner:      ci.Owner(),
+				ownerId:    ci.OwnerId(),
 				flag:       ci.Flag(),
 				purchaseBy: ci.PurchasedBy(),
 			}).
@@ -186,7 +191,7 @@ func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
 		return Clone(m).
 			SetReferenceData(PetReferenceData{
 				cashId:     ci.CashId(),
-				owner:      ci.Owner(),
+				ownerId:    ci.OwnerId(),
 				flag:       ci.Flag(),
 				purchaseBy: ci.PurchasedBy(),
 				name:       pi.Name(),
@@ -286,5 +291,65 @@ func (p *Processor) UpdateQuantity(mb *message.Buffer) func(characterId uint32, 
 			return mb.Put(asset.EnvEventTopicStatus, asset2.QuantityChangedEventStatusProvider(characterId, compartmentId, a.Id(), a.Slot(), quantity))
 		}
 		return errors.New("unknown ReferenceData which implements HasQuantity")
+	}
+}
+
+func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error {
+	t := tenant.MustFromContext(p.ctx)
+	return func(characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error {
+		p.l.Debugf("Character [%d] attempting to create [%d] item(s) [%d] in slot [%d] of compartment [%s].", characterId, quantity, templateId, slot, compartmentId.String())
+		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+			var referenceId uint32
+			var referenceType ReferenceType
+			inventoryType, ok := inventory.TypeFromItemId(templateId)
+			if !ok {
+				return errors.New("unknown item type")
+			}
+			if inventoryType == inventory.TypeValueEquip {
+				e, err := equipable.Create(p.l)(p.ctx)(templateId)()
+				if err != nil {
+					return err
+				}
+				referenceId = e.Id()
+				referenceType = ReferenceTypeEquipable
+			} else if inventoryType == inventory.TypeValueUse {
+				s, err := p.stackableProcessor.WithTransaction(tx).Create(compartmentId, quantity, ownerId, flag, rechargeable)
+				if err != nil {
+					return err
+				}
+				referenceId = s.Id()
+				referenceType = ReferenceTypeConsumable
+			} else if inventoryType == inventory.TypeValueSetup {
+				s, err := p.stackableProcessor.WithTransaction(tx).Create(compartmentId, quantity, ownerId, flag, rechargeable)
+				if err != nil {
+					return err
+				}
+				referenceId = s.Id()
+				referenceType = ReferenceTypeSetup
+			} else if inventoryType == inventory.TypeValueETC {
+				s, err := p.stackableProcessor.WithTransaction(tx).Create(compartmentId, quantity, ownerId, flag, rechargeable)
+				if err != nil {
+					return err
+				}
+				referenceId = s.Id()
+				referenceType = ReferenceTypeEtc
+			} else if inventoryType == inventory.TypeValueCash {
+				// TODO
+			}
+
+			if referenceId == 0 {
+				return errors.New("unknown item type")
+			}
+
+			a, err := create(p.db, t.Id(), compartmentId, templateId, slot, expiration, referenceId, referenceType)
+			if err != nil {
+				return err
+			}
+			return mb.Put(asset.EnvEventTopicStatus, asset2.CreatedEventStatusProvider(characterId, compartmentId, a.Id(), a.Slot()))
+		})
+		if txErr != nil {
+			return txErr
+		}
+		return nil
 	}
 }

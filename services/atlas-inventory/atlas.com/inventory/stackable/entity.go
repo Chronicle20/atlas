@@ -14,7 +14,7 @@ type Entity struct {
 	Id            uint32    `gorm:"primaryKey;autoIncrement;not null"`
 	CompartmentId uuid.UUID `gorm:"not null"`
 	Quantity      uint32    `gorm:"not null"`
-	Owner         string    `gorm:"not null"`
+	OwnerId       uint32    `gorm:"not null"`
 	Flag          uint16    `gorm:"not null"`
 	Rechargeable  uint64    `gorm:"not null;default=0"`
 }
@@ -27,7 +27,7 @@ func Make(e Entity) (Model, error) {
 	return Model{
 		id:           e.Id,
 		quantity:     e.Quantity,
-		owner:        e.Owner,
+		ownerId:      e.OwnerId,
 		flag:         e.Flag,
 		rechargeable: e.Rechargeable,
 	}, nil

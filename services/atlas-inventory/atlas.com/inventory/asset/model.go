@@ -164,7 +164,7 @@ type EquipableReferenceData struct {
 	speed          uint16
 	jump           uint16
 	slots          uint16
-	ownerName      string
+	ownerId        uint32
 	locked         bool
 	spikes         bool
 	karmaUsed      bool
@@ -179,7 +179,7 @@ type EquipableReferenceData struct {
 
 type ConsumableReferenceData struct {
 	quantity     uint32
-	owner        string
+	ownerId      uint32
 	flag         uint16
 	rechargeable uint64
 }
@@ -190,7 +190,7 @@ func (c ConsumableReferenceData) Quantity() uint32 {
 
 type SetupReferenceData struct {
 	quantity uint32
-	owner    string
+	ownerId  uint32
 	flag     uint16
 }
 
@@ -200,7 +200,7 @@ func (c SetupReferenceData) Quantity() uint32 {
 
 type EtcReferenceData struct {
 	quantity uint32
-	owner    string
+	ownerId  uint32
 	flag     uint16
 }
 
@@ -211,7 +211,7 @@ func (c EtcReferenceData) Quantity() uint32 {
 type CashReferenceData struct {
 	cashId     uint64
 	quantity   uint32
-	owner      uint32
+	ownerId    uint32
 	flag       uint16
 	purchaseBy uint32
 }
@@ -222,7 +222,7 @@ func (c CashReferenceData) Quantity() uint32 {
 
 type PetReferenceData struct {
 	cashId        uint64
-	owner         uint32
+	ownerId       uint32
 	flag          uint16
 	purchaseBy    uint32
 	name          string

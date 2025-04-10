@@ -30,3 +30,16 @@ func Delete(l logrus.FieldLogger) func(ctx context.Context) func(equipmentId uin
 		}
 	}
 }
+
+func Create(l logrus.FieldLogger) func(ctx context.Context) func(itemId uint32) model.Provider[Model] {
+	return func(ctx context.Context) func(itemId uint32) model.Provider[Model] {
+		return func(itemId uint32) model.Provider[Model] {
+			ro, err := requestCreate(itemId)(l, ctx)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to generate equipable information.")
+				return model.ErrorProvider[Model](err)
+			}
+			return model.Map(Extract)(model.FixedProvider(ro))
+		}
+	}
+}

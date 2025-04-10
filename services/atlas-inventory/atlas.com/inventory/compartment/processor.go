@@ -619,13 +619,13 @@ func (p *Processor) ConsumeAsset(mb *message.Buffer) func(characterId uint32, in
 	}
 }
 
-func (p *Processor) DestroyItemAndEmit(characterId uint32, inventoryType inventory.Type, slot int16) error {
+func (p *Processor) DestroyAssetAndEmit(characterId uint32, inventoryType inventory.Type, slot int16) error {
 	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.DestroyItem(buf)(characterId, inventoryType, slot)
+		return p.DestroyAsset(buf)(characterId, inventoryType, slot)
 	})
 }
 
-func (p *Processor) DestroyItem(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type, slot int16) error {
+func (p *Processor) DestroyAsset(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type, slot int16) error {
 	return func(characterId uint32, inventoryType inventory.Type, slot int16) error {
 		p.l.Debugf("Character [%d] attempting to destroy asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
 		invLock := LockRegistry().Get(characterId, inventoryType)
@@ -653,6 +653,44 @@ func (p *Processor) DestroyItem(mb *message.Buffer) func(characterId uint32, inv
 			return txErr
 		}
 		p.l.Debugf("Character [%d] destroyed asset [%d].", characterId, a.Id())
+		return nil
+	}
+}
+
+func (p *Processor) CreateAssetAndEmit(characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.CreateAsset(buf)(characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable)
+	})
+}
+
+func (p *Processor) CreateAsset(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error {
+	return func(characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error {
+		p.l.Debugf("Character [%d] attempting to create asset in inventory [%d].", characterId, inventoryType)
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		var a asset.Model[any]
+		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				return err
+			}
+			nfs, err := c.NextFreeSlot()
+			if err != nil {
+				return err
+			}
+			err = p.assetProcessor.WithTransaction(tx).Create(mb)(characterId, c.Id(), templateId, nfs, quantity, expiration, ownerId, flag, rechargeable)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Character [%d] unable to create asset in inventory [%d].", characterId, inventoryType)
+			return txErr
+		}
+		p.l.Debugf("Character [%d] created asset [%d].", characterId, a.Id())
 		return nil
 	}
 }

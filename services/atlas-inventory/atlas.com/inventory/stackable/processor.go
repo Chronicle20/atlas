@@ -56,3 +56,8 @@ func (p *Processor) ByIdProvider(id uint32) model.Provider[Model] {
 	t := tenant.MustFromContext(p.ctx)
 	return model.Map(Make)(getById(t.Id(), id)(p.db))
 }
+
+func (p *Processor) Create(compartmentId uuid.UUID, quantity uint32, ownerId uint32, flag uint16, rechargeable uint64) (Model, error) {
+	t := tenant.MustFromContext(p.ctx)
+	return create(p.db, t.Id(), compartmentId, quantity, ownerId, flag, rechargeable)
+}

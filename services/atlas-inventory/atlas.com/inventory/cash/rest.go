@@ -35,7 +35,7 @@ func Transform(m Model) (RestModel, error) {
 		CashId:      m.cashId,
 		TemplateId:  m.templateId,
 		Quantity:    m.quantity,
-		Owner:       m.owner,
+		Owner:       m.ownerId,
 		Flag:        m.flag,
 		PurchasedBy: m.purchasedBy,
 	}, nil
@@ -47,7 +47,7 @@ func Extract(rm RestModel) (Model, error) {
 		cashId:      rm.CashId,
 		templateId:  rm.TemplateId,
 		quantity:    rm.Quantity,
-		owner:       rm.Owner,
+		ownerId:     rm.Owner,
 		flag:        rm.Flag,
 		purchasedBy: rm.PurchasedBy,
 	}, nil

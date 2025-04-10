@@ -5,7 +5,7 @@ type Model struct {
 	cashId      uint64
 	templateId  uint32
 	quantity    uint32
-	owner       uint32
+	ownerId     uint32
 	flag        uint16
 	purchasedBy uint32
 }
@@ -26,8 +26,8 @@ func (m Model) Quantity() uint32 {
 	return m.quantity
 }
 
-func (m Model) Owner() uint32 {
-	return m.owner
+func (m Model) OwnerId() uint32 {
+	return m.ownerId
 }
 
 func (m Model) Flag() uint16 {

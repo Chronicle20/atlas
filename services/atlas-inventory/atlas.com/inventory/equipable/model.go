@@ -106,8 +106,9 @@ func (m Model) Slots() uint16 {
 	return m.slots
 }
 
-func (m Model) OwnerName() string {
-	return m.ownerName
+func (m Model) OwnerId() uint32 {
+	// TODO
+	return 0
 }
 
 func (m Model) Locked() bool {

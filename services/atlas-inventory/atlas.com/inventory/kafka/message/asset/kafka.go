@@ -1,6 +1,8 @@
 package asset
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+)
 
 const (
 	EnvEventTopicStatus            = "EVENT_TOPIC_ASSET_STATUS"

@@ -41,9 +41,9 @@ func (m Model) CharacterId() uint32 {
 }
 
 func (m Model) Compartments() []compartment.Model {
-	res := make([]compartment.Model, len(m.compartments))
-	for k, v := range m.compartments {
-		res[k] = v
+	res := make([]compartment.Model, 0)
+	for _, v := range m.compartments {
+		res = append(res, v)
 	}
 	return res
 }

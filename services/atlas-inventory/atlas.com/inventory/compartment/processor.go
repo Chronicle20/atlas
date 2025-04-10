@@ -56,9 +56,16 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 
 func (p *Processor) WithTransaction(db *gorm.DB) *Processor {
 	return &Processor{
-		l:   p.l,
-		ctx: p.ctx,
-		db:  db,
+		l:                     p.l,
+		ctx:                   p.ctx,
+		db:                    db,
+		assetProcessor:        p.assetProcessor,
+		dropProcessor:         p.dropProcessor,
+		equipmentProcessor:    p.equipmentProcessor,
+		producer:              p.producer,
+		GetById:               p.GetById,
+		GetByCharacterId:      p.GetByCharacterId,
+		GetByCharacterAndType: p.GetByCharacterAndType,
 	}
 }
 

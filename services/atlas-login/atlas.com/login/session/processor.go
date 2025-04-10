@@ -1,7 +1,9 @@
 package session
 
 import (
+	session2 "atlas-login/kafka/message/session"
 	"atlas-login/kafka/producer"
+	session3 "atlas-login/kafka/producer/session"
 	"atlas-login/socket/writer"
 	"context"
 	"errors"
@@ -108,7 +110,7 @@ func SetChannelId(channelId byte) func(tenantId uuid.UUID, id uuid.UUID) Model {
 
 func SessionCreated(kp producer.Provider, tenant tenant.Model) func(s Model) {
 	return func(s Model) {
-		_ = kp(EnvEventTopicSessionStatus)(createdStatusEventProvider(s.SessionId(), s.AccountId()))
+		_ = kp(session2.EnvEventTopicSessionStatus)(session3.CreatedStatusEventProvider(s.SessionId(), s.AccountId()))
 	}
 }
 

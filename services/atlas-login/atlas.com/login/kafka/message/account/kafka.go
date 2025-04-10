@@ -6,7 +6,7 @@ const (
 	EventAccountStatusLoggedOut = "LOGGED_OUT"
 )
 
-type statusEvent struct {
+type StatusEvent struct {
 	AccountId uint32 `json:"account_id"`
 	Name      string `json:"name"`
 	Status    string `json:"status"`

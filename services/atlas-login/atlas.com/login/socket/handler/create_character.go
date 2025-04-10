@@ -14,7 +14,6 @@ const CreateCharacterHandle = "CreateCharacterHandle"
 
 func CreateCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	t := tenant.MustFromContext(ctx)
-	addCharacterEntryFunc := session.Announce(l)(wp)(writer.AddCharacterEntry)
 	return func(s session.Model, r *request.Reader) {
 		name := r.ReadAsciiString()
 		var jobIndex uint32
@@ -74,14 +73,14 @@ func CreateCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		m, err := factory.SeedCharacter(l, ctx)(s.AccountId(), s.WorldId(), name, jobIndex, subJobIndex, face, hair, hairColor, skinColor, gender, top, bottom, shoes, weapon, strength, dexterity, intelligence, luck)
 		if err != nil {
 			l.WithError(err).Errorf("Error creating character from seed.")
-			err = addCharacterEntryFunc(s, writer.AddCharacterErrorBody(l, t)(writer.AddCharacterCodeUnknownError))
+			err = session.Announce(l)(wp)(writer.AddCharacterEntry)(s, writer.AddCharacterErrorBody(l, t)(writer.AddCharacterCodeUnknownError))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show newly created character.")
 			}
 			return
 		}
 
-		err = addCharacterEntryFunc(s, writer.AddCharacterEntryBody(l, t)(m))
+		err = session.Announce(l)(wp)(writer.AddCharacterEntry)(s, writer.AddCharacterEntryBody(l, t)(m))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show newly created character.")
 		}

@@ -12,7 +12,7 @@ const (
 	EventSessionStatusTypeDestroyed = "DESTROYED"
 )
 
-type statusEvent struct {
+type StatusEvent struct {
 	SessionId   uuid.UUID `json:"sessionId"`
 	AccountId   uint32    `json:"accountId"`
 	CharacterId uint32    `json:"characterId"`

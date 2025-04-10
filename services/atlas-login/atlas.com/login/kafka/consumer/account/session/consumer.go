@@ -4,6 +4,7 @@ import (
 	"atlas-login/account"
 	"atlas-login/configuration"
 	consumer2 "atlas-login/kafka/consumer"
+	session2 "atlas-login/kafka/message/account/session"
 	"atlas-login/kafka/producer"
 	"atlas-login/session"
 	model2 "atlas-login/socket/model"
@@ -23,7 +24,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("account_session_status_event")(EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("account_session_status_event")(session2.EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -33,7 +34,7 @@ func InitHandlers(l logrus.FieldLogger) func(tenant tenant.Model) func(wp writer
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+				t, _ = topic.EnvProvider(l)(session2.EnvEventStatusTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedAccountSessionStatusEvent(tenant, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLicenseAgreementAccountSessionStatusEvent(tenant, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleErrorAccountSessionStatusEvent(tenant, wp))))
@@ -42,9 +43,9 @@ func InitHandlers(l logrus.FieldLogger) func(tenant tenant.Model) func(wp writer
 		}
 	}
 }
-func handleCreatedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e statusEvent[createdStatusEventBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[createdStatusEventBody]) {
-		if e.Type != EventStatusTypeCreated {
+func handleCreatedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e session2.StatusEvent[session2.CreatedStatusEventBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e session2.StatusEvent[session2.CreatedStatusEventBody]) {
+		if e.Type != session2.EventStatusTypeCreated {
 			return
 		}
 
@@ -83,9 +84,9 @@ func handleCreatedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) 
 	}
 }
 
-func handleLicenseAgreementAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) message.Handler[statusEvent[any]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[any]) {
-		if e.Type != EventStatusTypeRequestLicenseAgreement {
+func handleLicenseAgreementAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) message.Handler[session2.StatusEvent[any]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e session2.StatusEvent[any]) {
+		if e.Type != session2.EventStatusTypeRequestLicenseAgreement {
 			return
 		}
 
@@ -108,9 +109,9 @@ func handleLicenseAgreementAccountSessionStatusEvent(t tenant.Model, wp writer.P
 	}
 }
 
-func handleErrorAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e statusEvent[errorStatusEventBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[errorStatusEventBody]) {
-		if e.Type != EventStatusTypeError {
+func handleErrorAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e session2.StatusEvent[session2.ErrorStatusEventBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e session2.StatusEvent[session2.ErrorStatusEventBody]) {
+		if e.Type != session2.EventStatusTypeError {
 			return
 		}
 
@@ -118,7 +119,7 @@ func handleErrorAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) fu
 			return
 		}
 
-		if e.Body.Code != EventStatusErrorCodeDeletedOrBlocked {
+		if e.Body.Code != session2.EventStatusErrorCodeDeletedOrBlocked {
 			session.IfPresentById(t)(e.SessionId, announceError(l)(ctx)(wp)(e.Body.Code))
 		} else if e.Body.Until != 0 {
 			session.IfPresentById(t)(e.SessionId, announceTemporaryBan(l)(ctx)(wp)(e.Body.Until, e.Body.Reason))
@@ -267,9 +268,9 @@ func announceServerList(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 	}
 }
 
-func handleStateChangedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) message.Handler[statusEvent[stateChangedEventBody[model2.ChannelSelect]]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[stateChangedEventBody[model2.ChannelSelect]]) {
-		if e.Type != EventStatusTypeStateChanged {
+func handleStateChangedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) message.Handler[session2.StatusEvent[session2.StateChangedEventBody[model2.ChannelSelect]]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e session2.StatusEvent[session2.StateChangedEventBody[model2.ChannelSelect]]) {
+		if e.Type != session2.EventStatusTypeStateChanged {
 			return
 		}
 

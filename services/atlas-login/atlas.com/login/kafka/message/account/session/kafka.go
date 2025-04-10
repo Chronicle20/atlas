@@ -5,6 +5,38 @@ import (
 )
 
 const (
+	EnvCommandTopic = "COMMAND_TOPIC_ACCOUNT_SESSION"
+
+	CommandIssuerLogin = "LOGIN"
+
+	CommandTypeCreate        = "CREATE"
+	CommandTypeProgressState = "PROGRESS_STATE"
+	CommandTypeLogout        = "LOGOUT"
+)
+
+type Command[E any] struct {
+	SessionId uuid.UUID `json:"sessionId"`
+	AccountId uint32    `json:"accountId"`
+	Issuer    string    `json:"author"`
+	Type      string    `json:"type"`
+	Body      E         `json:"body"`
+}
+
+type CreateCommandBody struct {
+	AccountName string `json:"accountName"`
+	Password    string `json:"password"`
+	IPAddress   string `json:"ipAddress"`
+}
+
+type ProgressStateCommandBody struct {
+	State  uint8       `json:"state"`
+	Params interface{} `json:"params"`
+}
+
+type LogoutCommandBody struct {
+}
+
+const (
 	EnvEventStatusTopic = "EVENT_TOPIC_ACCOUNT_SESSION_STATUS"
 
 	EventStatusTypeCreated                 = "CREATED"
@@ -20,22 +52,22 @@ const (
 	EventStatusErrorCodeTooManyAttempts   = "TOO_MANY_ATTEMPTS"
 )
 
-type statusEvent[E any] struct {
+type StatusEvent[E any] struct {
 	SessionId uuid.UUID `json:"sessionId"`
 	AccountId uint32    `json:"accountId"`
 	Type      string    `json:"type"`
 	Body      E         `json:"body"`
 }
 
-type createdStatusEventBody struct {
+type CreatedStatusEventBody struct {
 }
 
-type stateChangedEventBody[E any] struct {
+type StateChangedEventBody[E any] struct {
 	State  uint8 `json:"state"`
 	Params E     `json:"params"`
 }
 
-type errorStatusEventBody struct {
+type ErrorStatusEventBody struct {
 	Code   string `json:"code"`
 	Reason byte   `json:"reason"`
 	Until  uint64 `json:"until"`

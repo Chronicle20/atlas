@@ -2,7 +2,9 @@ package session
 
 import (
 	"atlas-login/account/session"
+	session2 "atlas-login/kafka/message/session"
 	"atlas-login/kafka/producer"
+	session3 "atlas-login/kafka/producer/session"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -81,6 +83,6 @@ func Destroy(l logrus.FieldLogger, ctx context.Context, r *Registry) model.Opera
 		r.Remove(t.Id(), s.SessionId())
 		s.Disconnect()
 		session.Destroy(l, pi)(s.SessionId(), s.AccountId())
-		return pi(EnvEventTopicSessionStatus)(destroyedStatusEventProvider(s.SessionId(), s.AccountId()))
+		return pi(session2.EnvEventTopicSessionStatus)(session3.DestroyedStatusEventProvider(s.SessionId(), s.AccountId()))
 	}
 }

@@ -1,10 +1,5 @@
 package character
 
-import (
-	"atlas-character-factory/equipment"
-	"atlas-character-factory/inventory"
-)
-
 type Model struct {
 	id                 uint32
 	accountId          uint32
@@ -34,16 +29,10 @@ type Model struct {
 	mapId              uint32
 	spawnPoint         uint32
 	gm                 int
-	equipment          equipment.Model
-	inventory          inventory.Model
 }
 
 func (m Model) Id() uint32 {
 	return m.id
-}
-
-func (m Model) GetEquipment() equipment.Model {
-	return m.equipment
 }
 
 type ItemGained struct {

@@ -2,15 +2,9 @@
 
 import {useEffect, useState} from "react"
 import {useParams} from "next/navigation"
-import {Badge} from "@/components/ui/badge"
-import {DataTable} from "@/components/data-table"
 import {Toaster} from "@/components/ui/sonner"
-import {fetchGuild, Guild, GuildMember, GuildTitle} from "@/lib/guilds";
-import {ColumnDef} from "@tanstack/react-table";
 import {useTenant} from "@/context/tenant-context";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {getJobNameById} from "@/lib/jobs";
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
 import {Character, fetchCharacter} from "@/lib/characters";
 
 export default function GuildDetailPage() {

@@ -8,6 +8,10 @@ import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/compon
 import {Character} from "@/lib/characters";
 import {Account} from "@/lib/accounts";
 import {MapCell} from "@/components/map-cell";
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
+import {Button} from "@/components/ui/button";
+import {MoreHorizontal} from "lucide-react";
+import Link from "next/link";
 
 interface ColumnProps {
     tenant: Tenant | null;
@@ -131,5 +135,27 @@ export const getColumns = ({tenant, accountMap}: ColumnProps): ColumnDef<Charact
             header: "GM",
             enableHiding: false,
         },
+        {
+            id: "actions",
+            cell: ({row}) => {
+                return (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4"/>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                                <Link href={"/characters/" + row.getValue("id")}>
+                                    <span>View Character</span>
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )
+            },
+        }
     ];
 };

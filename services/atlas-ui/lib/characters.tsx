@@ -42,7 +42,20 @@ export async function fetchCharacters(tenant: Tenant): Promise<Character[]> {
         headers: tenantHeaders(tenant),
     });
     if (!response.ok) {
-        throw new Error("Failed to fetch templates.");
+        throw new Error("Failed to fetch characters.");
+    }
+    const responseData = await response.json();
+    return responseData.data;
+}
+
+export async function fetchCharacter(tenant: Tenant, characterId: string): Promise<Character> {
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    const response = await fetch(rootUrl + "/api/characters/" + characterId, {
+        method: "GET",
+        headers: tenantHeaders(tenant),
+    });
+    if (!response.ok) {
+        throw new Error("Failed to fetch character.");
     }
     const responseData = await response.json();
     return responseData.data;

@@ -91,7 +91,7 @@ func (p *Processor) BySlotProvider(compartmentId uuid.UUID) func(slot int16) mod
 func (p *Processor) DecorateEquipable(m Model[any]) (Model[any], error) {
 	e, err := equipable.GetById(p.l)(p.ctx)(m.ReferenceId())
 	if err != nil {
-		return Model[any]{}, nil
+		return Model[any]{}, err
 	}
 	return Clone(m).
 		SetReferenceData(MakeEquipableReferenceData(e)).
@@ -236,7 +236,7 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32, compartm
 				if err != nil {
 					return err
 				}
-				return mb.Put(asset.EnvEventTopicStatus, asset2.DeletedEventStatusProvider(characterId, compartmentId, a.Id(), a.Slot()))
+				return mb.Put(asset.EnvEventTopicStatus, asset2.DeletedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot()))
 			})
 			if txErr != nil {
 				p.l.WithError(txErr).Errorf("Unable to delete asset [%d].", a.Id())
@@ -248,11 +248,11 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32, compartm
 	}
 }
 
-func (p *Processor) UpdateSlot(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, assetId uint32, ap model.Provider[Model[any]], sp model.Provider[int16]) error {
+func (p *Processor) UpdateSlot(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, ap model.Provider[Model[any]], sp model.Provider[int16]) error {
 	t := tenant.MustFromContext(p.ctx)
-	return func(characterId uint32, compartmentId uuid.UUID, assetId uint32, ap model.Provider[Model[any]], sp model.Provider[int16]) error {
+	return func(characterId uint32, compartmentId uuid.UUID, ap model.Provider[Model[any]], sp model.Provider[int16]) error {
 		a, err := ap()
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
 		if err != nil {
@@ -262,12 +262,13 @@ func (p *Processor) UpdateSlot(mb *message.Buffer) func(characterId uint32, comp
 		if err != nil {
 			return err
 		}
+		p.l.Debugf("Character [%d] attempting to update slot of asset [%d] to [%d] from [%d].", characterId, a.Id(), s, a.Slot())
 		err = updateSlot(p.db, t.Id(), a.Id(), s)
 		if err != nil {
 			return err
 		}
 		if a.Slot() != int16(math.MinInt16) && s != int16(math.MinInt16) {
-			return mb.Put(asset.EnvEventTopicStatus, asset2.MovedEventStatusProvider(characterId, compartmentId, assetId, a.Slot(), s))
+			return mb.Put(asset.EnvEventTopicStatus, asset2.MovedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot(), s))
 		}
 		return nil
 	}
@@ -283,22 +284,23 @@ func (p *Processor) UpdateQuantity(mb *message.Buffer) func(characterId uint32, 
 			if err != nil {
 				return err
 			}
-			return mb.Put(asset.EnvEventTopicStatus, asset2.QuantityChangedEventStatusProvider(characterId, compartmentId, a.Id(), a.Slot(), quantity))
+			return mb.Put(asset.EnvEventTopicStatus, asset2.QuantityChangedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot(), quantity))
 		} else if a.IsCash() {
 			err := p.cashProcessor.UpdateQuantity(a.ReferenceId(), quantity)
 			if err != nil {
 				return err
 			}
-			return mb.Put(asset.EnvEventTopicStatus, asset2.QuantityChangedEventStatusProvider(characterId, compartmentId, a.Id(), a.Slot(), quantity))
+			return mb.Put(asset.EnvEventTopicStatus, asset2.QuantityChangedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot(), quantity))
 		}
 		return errors.New("unknown ReferenceData which implements HasQuantity")
 	}
 }
 
-func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error {
+func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) (Model[any], error) {
 	t := tenant.MustFromContext(p.ctx)
-	return func(characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error {
+	return func(characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) (Model[any], error) {
 		p.l.Debugf("Character [%d] attempting to create [%d] item(s) [%d] in slot [%d] of compartment [%s].", characterId, quantity, templateId, slot, compartmentId.String())
+		var a Model[any]
 		txErr := p.db.Transaction(func(tx *gorm.DB) error {
 			var referenceId uint32
 			var referenceType ReferenceType
@@ -342,15 +344,16 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 				return errors.New("unknown item type")
 			}
 
-			a, err := create(p.db, t.Id(), compartmentId, templateId, slot, expiration, referenceId, referenceType)
+			var err error
+			a, err = create(p.db, t.Id(), compartmentId, templateId, slot, expiration, referenceId, referenceType)
 			if err != nil {
 				return err
 			}
-			return mb.Put(asset.EnvEventTopicStatus, asset2.CreatedEventStatusProvider(characterId, compartmentId, a.Id(), a.Slot()))
+			return mb.Put(asset.EnvEventTopicStatus, asset2.CreatedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot()))
 		})
 		if txErr != nil {
-			return txErr
+			return Model[any]{}, txErr
 		}
-		return nil
+		return a, nil
 	}
 }

@@ -8,12 +8,13 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func CreatedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, assetId uint32, slot int16) model.Provider[[]kafka.Message] {
+func CreatedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, assetId uint32, templateId uint32, slot int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(assetId))
 	value := &asset.StatusEvent[asset.CreatedStatusEventBody]{
 		CharacterId:   characterId,
 		CompartmentId: compartmentId,
 		AssetId:       assetId,
+		TemplateId:    templateId,
 		Slot:          slot,
 		Type:          asset.StatusEventTypeCreated,
 		Body:          asset.CreatedStatusEventBody{},
@@ -21,12 +22,13 @@ func CreatedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, ass
 	return producer.SingleMessageProvider(key, value)
 }
 
-func DeletedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, assetId uint32, slot int16) model.Provider[[]kafka.Message] {
+func DeletedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, assetId uint32, templateId uint32, slot int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(assetId))
 	value := &asset.StatusEvent[asset.DeletedStatusEventBody]{
 		CharacterId:   characterId,
 		CompartmentId: compartmentId,
 		AssetId:       assetId,
+		TemplateId:    templateId,
 		Slot:          slot,
 		Type:          asset.StatusEventTypeDeleted,
 		Body:          asset.DeletedStatusEventBody{},
@@ -34,12 +36,13 @@ func DeletedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, ass
 	return producer.SingleMessageProvider(key, value)
 }
 
-func MovedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, assetId uint32, newSlot int16, oldSlot int16) model.Provider[[]kafka.Message] {
+func MovedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, assetId uint32, templateId uint32, newSlot int16, oldSlot int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(assetId))
 	value := &asset.StatusEvent[asset.MovedStatusEventBody]{
 		CharacterId:   characterId,
 		CompartmentId: compartmentId,
 		AssetId:       assetId,
+		TemplateId:    templateId,
 		Slot:          newSlot,
 		Type:          asset.StatusEventTypeMoved,
 		Body: asset.MovedStatusEventBody{
@@ -49,12 +52,13 @@ func MovedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, asset
 	return producer.SingleMessageProvider(key, value)
 }
 
-func QuantityChangedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, assetId uint32, slot int16, quantity uint32) model.Provider[[]kafka.Message] {
+func QuantityChangedEventStatusProvider(characterId uint32, compartmentId uuid.UUID, assetId uint32, templateId uint32, slot int16, quantity uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(assetId))
 	value := &asset.StatusEvent[asset.QuantityChangedEventBody]{
 		CharacterId:   characterId,
 		CompartmentId: compartmentId,
 		AssetId:       assetId,
+		TemplateId:    templateId,
 		Slot:          slot,
 		Type:          asset.StatusEventTypeQuantityChanged,
 		Body: asset.QuantityChangedEventBody{

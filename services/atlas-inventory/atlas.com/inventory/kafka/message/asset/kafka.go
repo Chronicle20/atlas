@@ -16,6 +16,7 @@ type StatusEvent[E any] struct {
 	CharacterId   uint32    `json:"characterId"`
 	CompartmentId uuid.UUID `json:"compartmentId"`
 	AssetId       uint32    `json:"assetId"`
+	TemplateId    uint32    `json:"templateId"`
 	Slot          int16     `json:"slot"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`

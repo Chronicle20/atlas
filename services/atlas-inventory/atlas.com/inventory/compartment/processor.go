@@ -169,6 +169,7 @@ func (p *Processor) EquipItem(mb *message.Buffer) func(characterId uint32) func(
 				defer invLock.Unlock()
 
 				var a1 asset.Model[any]
+				var actualDestination int16
 				txErr := p.db.Transaction(func(tx *gorm.DB) error {
 					var c Model
 					var err error
@@ -185,22 +186,25 @@ func (p *Processor) EquipItem(mb *message.Buffer) func(characterId uint32) func(
 						return err
 					}
 					p.l.Debugf("Character [%d] is attempting to equip item [%d].", characterId, a1.TemplateId())
-					actualDestination, err := p.equipmentProcessor.DestinationSlotProvider(destination)(a1.TemplateId())()
+					actualDestination, err = p.equipmentProcessor.DestinationSlotProvider(destination)(a1.TemplateId())()
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to determine actual destination for item being equipped.")
 						return err
 					}
-					err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), a1.Id(), assetProvider(actualDestination), model.FixedProvider(temporarySlot()))
+					p.l.Debugf("Character [%d] moving asset from [%d] to [%d] if present.", characterId, actualDestination, temporarySlot())
+					err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), assetProvider(actualDestination), model.FixedProvider(temporarySlot()))
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to update asset slot from [%d] to [%d]. Character [%d]. Compartment [%d].", actualDestination, temporarySlot(), characterId, c.Id())
 						return err
 					}
-					err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), a1.Id(), model.FixedProvider(a1), model.FixedProvider(actualDestination))
+					p.l.Debugf("Character [%d] moving asset from source [%d] to destination [%d].", characterId, a1.Slot(), actualDestination)
+					err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), model.FixedProvider(a1), model.FixedProvider(actualDestination))
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to update asset slot from [%d] to [%d]. Character [%d]. Compartment [%d].", a1.Slot(), actualDestination, characterId, c.Id())
 						return err
 					}
-					err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), a1.Id(), assetProvider(temporarySlot()), model.FixedProvider(source))
+					p.l.Debugf("Character [%d] moving asset from [%d] to [%d] if present.", characterId, temporarySlot(), source)
+					err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), assetProvider(temporarySlot()), model.FixedProvider(source))
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to update asset slot from [%d] to [%d]. Character [%d]. Compartment [%d].", temporarySlot(), source, characterId, c.Id())
 						return err
@@ -221,7 +225,7 @@ func (p *Processor) EquipItem(mb *message.Buffer) func(characterId uint32) func(
 							p.l.WithError(err).Errorf("No free slots for pants.")
 							return err
 						}
-						err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), a1.Id(), assetProvider(int16(ps.Position)), model.FixedProvider(nfs))
+						err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), assetProvider(int16(ps.Position)), model.FixedProvider(nfs))
 						if err != nil {
 							p.l.WithError(err).Errorf("Unable to update asset slot from [%d] to [%d]. Character [%d]. Compartment [%d].", ps.Position, nfs, characterId, c.Id())
 							return err
@@ -238,14 +242,14 @@ func (p *Processor) EquipItem(mb *message.Buffer) func(characterId uint32) func(
 						var ta asset.Model[any]
 						ta, err = assetProvider(int16(ts.Position))()
 						if err == nil {
-							if item.GetClassification(item.Id(ta.TemplateId())) == item.Classification(104) {
+							if item.GetClassification(item.Id(ta.TemplateId())) == item.ClassificationOverall {
 								var nfs int16
 								nfs, err = c.NextFreeSlot()
 								if err != nil {
 									p.l.WithError(err).Errorf("No free slots for top.")
 									return err
 								}
-								err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), a1.Id(), model.FixedProvider(ta), model.FixedProvider(nfs))
+								err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), model.FixedProvider(ta), model.FixedProvider(nfs))
 								if err != nil {
 									p.l.WithError(err).Errorf("Unable to update asset slot from [%d] to [%d]. Character [%d]. Compartment [%d].", ts.Position, nfs, characterId, c.Id())
 									return err
@@ -256,9 +260,9 @@ func (p *Processor) EquipItem(mb *message.Buffer) func(characterId uint32) func(
 					return nil
 				})
 				if txErr != nil {
-					p.l.Debugf("Unable to equip item in slot [%d] to [%d] for character [%d].", source, destination, characterId)
+					p.l.Debugf("Unable to equip item in slot [%d] to [%d] for character [%d].", source, actualDestination, characterId)
 				}
-				p.l.Debugf("Character [%d] equipped item [%d] in slot [%d].", characterId, a1.TemplateId(), destination)
+				p.l.Debugf("Character [%d] equipped item [%d] in slot [%d].", characterId, a1.TemplateId(), actualDestination)
 				return nil
 			}
 		}
@@ -278,7 +282,6 @@ func (p *Processor) RemoveEquip(mb *message.Buffer) func(characterId uint32) fun
 				invLock.Lock()
 				defer invLock.Unlock()
 
-				var a1 asset.Model[any]
 				txErr := p.db.Transaction(func(tx *gorm.DB) error {
 					var c Model
 					var err error
@@ -306,7 +309,7 @@ func (p *Processor) RemoveEquip(mb *message.Buffer) func(characterId uint32) fun
 						}
 						fsp = model.FixedProvider(nfs)
 					}
-					err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), a1.Id(), assetProvider(source), fsp)
+					err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), assetProvider(source), fsp)
 					if err != nil {
 						ds, _ := fsp()
 						p.l.WithError(err).Errorf("Unable to update asset slot from [%d] to [%d]. Character [%d]. Compartment [%d].", source, ds, characterId, c.Id())
@@ -357,17 +360,17 @@ func (p *Processor) Move(mb *message.Buffer) func(characterId uint32) func(inven
 						}
 						p.l.Debugf("Character [%d] is attempting to move asset [%d].", characterId, a1.TemplateId())
 
-						err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), a1.Id(), assetProvider(destination), model.FixedProvider(temporarySlot()))
+						err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), assetProvider(destination), model.FixedProvider(temporarySlot()))
 						if err != nil {
 							p.l.WithError(err).Errorf("Unable to update asset slot from [%d] to [%d]. Character [%d]. Compartment [%d].", destination, temporarySlot(), characterId, c.Id())
 							return err
 						}
-						err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), a1.Id(), model.FixedProvider(a1), model.FixedProvider(destination))
+						err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), model.FixedProvider(a1), model.FixedProvider(destination))
 						if err != nil {
 							p.l.WithError(err).Errorf("Unable to update asset slot from [%d] to [%d]. Character [%d]. Compartment [%d].", a1.Slot(), destination, characterId, c.Id())
 							return err
 						}
-						err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), a1.Id(), assetProvider(temporarySlot()), model.FixedProvider(source))
+						err = p.assetProcessor.WithTransaction(tx).UpdateSlot(mb)(characterId, c.Id(), assetProvider(temporarySlot()), model.FixedProvider(source))
 						if err != nil {
 							p.l.WithError(err).Errorf("Unable to update asset slot from [%d] to [%d]. Character [%d]. Compartment [%d].", temporarySlot(), source, characterId, c.Id())
 							return err
@@ -680,7 +683,7 @@ func (p *Processor) CreateAsset(mb *message.Buffer) func(characterId uint32, inv
 			if err != nil {
 				return err
 			}
-			err = p.assetProcessor.WithTransaction(tx).Create(mb)(characterId, c.Id(), templateId, nfs, quantity, expiration, ownerId, flag, rechargeable)
+			a, err = p.assetProcessor.WithTransaction(tx).Create(mb)(characterId, c.Id(), templateId, nfs, quantity, expiration, ownerId, flag, rechargeable)
 			if err != nil {
 				return err
 			}

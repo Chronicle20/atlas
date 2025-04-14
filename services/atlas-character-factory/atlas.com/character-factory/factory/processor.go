@@ -1,9 +1,12 @@
 package factory
 
 import (
+	asset2 "atlas-character-factory/asset"
 	"atlas-character-factory/character"
+	compartment2 "atlas-character-factory/compartment"
 	"atlas-character-factory/configuration"
 	"atlas-character-factory/configuration/tenant/characters/template"
+	"atlas-character-factory/kafka/consumer/asset"
 	character2 "atlas-character-factory/kafka/consumer/character"
 	"atlas-character-factory/kafka/consumer/compartment"
 	"atlas-character-factory/kafka/message/seed"
@@ -104,6 +107,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 			}
 
 			l.Debugf("Beginning character creation for account [%d] in world [%d].", input.AccountId, input.WorldId)
+
 			cid, err := async.Await[uint32](model.FixedProvider[async.Provider[uint32]](asyncCreate), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
 			if err != nil {
 				l.WithError(err).Errorf("Unable to create character [%s].", input.Name)
@@ -111,52 +115,71 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 			}
 			l.Debugf("Character [%d] created.", cid)
 
+			// prepare assets for creation.
+			assetMap := make(map[inventory.Type][]uint32)
+			for _, aid := range template.Items {
+				it, ok := inventory.TypeFromItemId(aid)
+				if !ok {
+					continue
+				}
+				var as []uint32
+				if as, ok = assetMap[it]; !ok {
+					as = make([]uint32, 0)
+				}
+				assetMap[it] = append(as, aid)
+			}
+
 			wg := sync.WaitGroup{}
-			wg.Add(1)
-			go func() {
-				equipment := []uint32{input.Top, input.Bottom, input.Shoes, input.Weapon}
-				assetMap := make(map[inventory.Type][]uint32)
-				for _, aid := range template.Items {
-					it, ok := inventory.TypeFromItemId(aid)
-					if !ok {
-						continue
-					}
-					var as []uint32
-					if as, ok = assetMap[it]; !ok {
-						as = make([]uint32, 0)
-					}
-					assetMap[it] = append(as, aid)
-				}
+			var invErr error
+			for _, it := range inventory.Types {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
 
-				defer wg.Done()
-				var cc []async.Provider[uuid.UUID]
-				for _, it := range inventory.Types {
+					ap := compartment.AwaitCreated(l)(cid, it, assetMap[it])
+					compartmentId, eqpErr := async.Await[uuid.UUID](model.FixedProvider(ap), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
+					if eqpErr != nil {
+						invErr = eqpErr
+					}
+
+					l.Debugf("Compartment [%s] of type [%d] created for character [%d].", compartmentId.String(), it, cid)
 					if it == inventory.TypeValueEquip {
-						cc = append(cc, compartment.AwaitEquipableCreated(l)(cid, equipment, assetMap[it]))
-					} else {
-						cc = append(cc, compartment.AwaitCreated(l)(cid, it, assetMap[it]))
+						l.Debugf("Creating equipment for character [%d]. Starting item processing.", cid)
+						equipment := []uint32{input.Top, input.Bottom, input.Shoes, input.Weapon}
+						for _, aid := range equipment {
+							var a asset2.Model
+							a, err = async.Await[asset2.Model](model.FixedProvider(asset.AwaitCreated(l)(cid, compartmentId, aid, it)), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
+							if err != nil {
+								invErr = eqpErr
+							}
+							asyncEquip := func(actx context.Context, rchan chan uint32, echan chan error) {
+								asset.AwaitSlotUpdate(l)(cid, compartmentId, a.Id())(actx, rchan, echan)
+								err = compartment2.NewProcessor(l, actx).EquipAsset(cid, it, a.Slot(), 0)
+								if err != nil {
+									l.WithError(err).Errorf("Unable to equip asset [%d] character for character [%d].", a.Id(), cid)
+									echan <- err
+								}
+							}
+							_, err = async.Await[uint32](model.FixedProvider[async.Provider[uint32]](asyncEquip), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
+							if err != nil {
+								invErr = eqpErr
+							}
+						}
 					}
-				}
-				_, err = async.AwaitSlice[uuid.UUID](model.FixedProvider[[]async.Provider[uuid.UUID]](cc), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
-				if err != nil {
-					l.WithError(err).Errorf("Inventory generation for character [%d] failed.", cid)
-				}
-			}()
+					l.Debugf("Processing assets destined for compartment [%s] for character [%d].", compartmentId.String(), cid)
+					for _, aid := range assetMap[it] {
+						_, err = async.Await[asset2.Model](model.FixedProvider(asset.AwaitCreated(l)(cid, compartmentId, aid, it)), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
+						if err != nil {
+							invErr = eqpErr
+						}
+					}
+				}()
+			}
 
-			//wg.Add(1)
-			//go func() {
-			//	defer wg.Done()
-			//	createEquippedItems(l)(ctx)(cid, input)
-			//}()
-			//wg.Add(1)
-			//go func() {
-			//	defer wg.Done()
-			//	createInventoryItems(l)(ctx)(cid, template.Items)
-			//}()
-			//
 			wg.Wait()
-			//
-			//return character.GetById(l)(ctx)(cid)
+			if invErr != nil {
+				return invErr
+			}
 
 			_ = producer.ProviderImpl(l)(ctx)(seed.EnvEventTopicStatus)(seed2.CreatedEventStatusProvider(input.AccountId, cid))
 			return nil
@@ -164,69 +187,6 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 
 	}
 }
-
-func createInventoryItems(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, items []uint32) {
-	return func(ctx context.Context) func(characterId uint32, items []uint32) {
-		return func(characterId uint32, items []uint32) {
-			// TODO
-			//l.Debugf("Beginning inventory item creation for character [%d].", characterId)
-			//ip := model.FixedProvider(items)
-			//_, err := async.AwaitSlice[character.ItemGained](model.SliceMap(asyncItemCreate(l)(characterId))(ip)(), async.SetTimeout(1*time.Second), async.SetContext(ctx))()
-			//if err != nil {
-			//	l.WithError(err).Errorf("Error creating an item for character [%d].", characterId)
-			//}
-		}
-	}
-}
-
-func createEquippedItems(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, input RestModel) {
-	return func(ctx context.Context) func(characterId uint32, input RestModel) {
-		return func(characterId uint32, input RestModel) {
-			// TODO
-			//l.Debugf("Beginning equipped item creation for character [%d].", characterId)
-			//ip := model.FixedProvider([]uint32{input.Top, input.Bottom, input.Shoes, input.Weapon})
-			//items, err := async.AwaitSlice[character.ItemGained](model.SliceMap(asyncItemCreate(l)(characterId))(ip)(), async.SetTimeout(1*time.Second), async.SetContext(ctx))()
-			//if err != nil {
-			//	l.WithError(err).Errorf("Error creating an item for character [%d].", characterId)
-			//}
-			//
-			//_, err = async.AwaitSlice[uint32](model.SliceMap(asyncEquipItem(l)(characterId))(model.FixedProvider(items))(), async.SetTimeout(1*time.Second), async.SetContext(ctx))()
-			//if err != nil {
-			//	l.WithError(err).Errorf("Error equipping an item for character [%d].", characterId)
-			//}
-		}
-	}
-}
-
-//func asyncItemCreate(l logrus.FieldLogger) func(characterId uint32) func(itemId uint32) (async.Provider[character.ItemGained], error) {
-//	return func(characterId uint32) func(itemId uint32) (async.Provider[character.ItemGained], error) {
-//		return func(itemId uint32) (async.Provider[character.ItemGained], error) {
-//			return func(ctx context.Context, rchan chan character.ItemGained, echan chan error) {
-//				character2.AwaitItemGained(l)(characterId)(itemId)(ctx, rchan, echan)
-//				_, err := character.CreateItem(l)(ctx)(characterId, itemId)
-//				if err != nil {
-//					l.WithError(err).Errorf("Unable to create item [%d] from seed for character [%d].", itemId, characterId)
-//					echan <- err
-//				}
-//			}, nil
-//		}
-//	}
-//}
-//
-//func asyncEquipItem(l logrus.FieldLogger) func(characterId uint32) func(character.ItemGained) (async.Provider[uint32], error) {
-//	return func(characterId uint32) func(character.ItemGained) (async.Provider[uint32], error) {
-//		return func(ig character.ItemGained) (async.Provider[uint32], error) {
-//			return func(ctx context.Context, rchan chan uint32, echan chan error) {
-//				character2.AwaitEquipChanged(l)(characterId)(ig.ItemId)(ctx, rchan, echan)
-//				err := character.EquipItem(l)(ctx)(characterId, ig.ItemId, ig.Slot)
-//				if err != nil {
-//					l.WithError(err).Errorf("Unable to equip item [%d] for character [%d].", ig.ItemId, characterId)
-//					echan <- err
-//				}
-//			}, nil
-//		}
-//	}
-//}
 
 func validWeapon(weapons []uint32, weapon uint32) bool {
 	return validOption(weapons, weapon)

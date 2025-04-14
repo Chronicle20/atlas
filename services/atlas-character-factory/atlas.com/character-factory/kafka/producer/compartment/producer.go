@@ -26,3 +26,17 @@ func CreateAssetCommandProvider(characterId uint32, inventoryType inventory.Type
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func EquipAssetCommandProvider(characterId uint32, inventoryType inventory.Type, source int16, destination int16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.EquipCommandBody]{
+		CharacterId:   characterId,
+		InventoryType: byte(inventoryType),
+		Type:          compartment.CommandEquip,
+		Body: compartment.EquipCommandBody{
+			Source:      source,
+			Destination: destination,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

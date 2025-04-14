@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-character-factory/configuration"
 	"atlas-character-factory/factory"
+	"atlas-character-factory/kafka/consumer/asset"
 	"atlas-character-factory/kafka/consumer/character"
 	"atlas-character-factory/kafka/consumer/compartment"
 	"atlas-character-factory/logger"
@@ -53,6 +54,7 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
+	asset.InitConsumers(l)(cmf)(consumerGroupId)
 
 	server.New(l).
 		WithContext(tdm.Context()).

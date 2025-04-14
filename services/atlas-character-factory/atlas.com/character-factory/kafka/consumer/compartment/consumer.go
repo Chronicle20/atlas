@@ -1,7 +1,6 @@
 package compartment
 
 import (
-	"atlas-character-factory/compartment"
 	consumer2 "atlas-character-factory/kafka/consumer"
 	compartment2 "atlas-character-factory/kafka/message/compartment"
 	"context"
@@ -14,7 +13,6 @@ import (
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -25,30 +23,12 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func AwaitEquipableCreated(l logrus.FieldLogger) func(characterId uint32, equipment []uint32, equipables []uint32) async.Provider[uuid.UUID] {
-	t, _ := topic.EnvProvider(l)(compartment2.EnvEventTopicStatus)()
-	return func(characterId uint32, equipment []uint32, equipables []uint32) async.Provider[uuid.UUID] {
-		return func(ctx context.Context, rchan chan uuid.UUID, echan chan error) {
-			l.Debugf("Creating OneTime topic consumer to await compartment [%d] creation for character [%d].", inventory.TypeValueEquip, characterId)
-			hid, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(createdValidator(tenant.MustFromContext(ctx))(characterId, inventory.TypeValueEquip), equipableCreatedHandler(rchan, echan, equipment, equipables))))
-			if err != nil {
-				echan <- err
-			}
-			go func() {
-				<-ctx.Done()
-				l.Debugf("Removing handler [%s].", hid)
-				_ = consumer.GetManager().RemoveHandler(t, hid)
-			}()
-		}
-	}
-}
-
 func AwaitCreated(l logrus.FieldLogger) func(characterId uint32, inventoryType inventory.Type, items []uint32) async.Provider[uuid.UUID] {
 	t, _ := topic.EnvProvider(l)(compartment2.EnvEventTopicStatus)()
 	return func(characterId uint32, inventoryType inventory.Type, items []uint32) async.Provider[uuid.UUID] {
 		return func(ctx context.Context, rchan chan uuid.UUID, echan chan error) {
 			l.Debugf("Creating OneTime topic consumer to await compartment [%d] creation for character [%d].", inventoryType, characterId)
-			hid, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(createdValidator(tenant.MustFromContext(ctx))(characterId, inventoryType), otherCreatedHandler(rchan, echan, inventoryType, items))))
+			hid, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(createdValidator(tenant.MustFromContext(ctx))(characterId, inventoryType), createdHandler(rchan, echan))))
 			if err != nil {
 				echan <- err
 			}
@@ -64,6 +44,9 @@ func AwaitCreated(l logrus.FieldLogger) func(characterId uint32, inventoryType i
 func createdValidator(t tenant.Model) func(characterId uint32, inventoryType inventory.Type) message.Validator[compartment2.StatusEvent[compartment2.CreatedStatusEventBody]] {
 	return func(characterId uint32, inventoryType inventory.Type) message.Validator[compartment2.StatusEvent[compartment2.CreatedStatusEventBody]] {
 		return func(l logrus.FieldLogger, ctx context.Context, e compartment2.StatusEvent[compartment2.CreatedStatusEventBody]) bool {
+			if e.Type != compartment2.StatusEventTypeCreated {
+				return false
+			}
 			if !t.Is(tenant.MustFromContext(ctx)) {
 				return false
 			}
@@ -78,37 +61,8 @@ func createdValidator(t tenant.Model) func(characterId uint32, inventoryType inv
 	}
 }
 
-func equipableCreatedHandler(rchan chan uuid.UUID, echan chan error, equipment []uint32, equipables []uint32) message.Handler[compartment2.StatusEvent[compartment2.CreatedStatusEventBody]] {
+func createdHandler(rchan chan uuid.UUID, echan chan error) message.Handler[compartment2.StatusEvent[compartment2.CreatedStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e compartment2.StatusEvent[compartment2.CreatedStatusEventBody]) {
-		l.Debugf("Compartment [%s] created for character [%d].", e.CompartmentId.String(), e.CharacterId)
-		for _, aid := range equipment {
-			l.Debugf("Generating equipable asset [%d] and equiping for character.", aid)
-			err := compartment.NewProcessor(l, ctx).CreateAsset(e.CharacterId, inventory.TypeValueEquip, aid, 1, time.Time{}, e.CharacterId)
-			if err != nil {
-				echan <- err
-			}
-		}
-		for _, aid := range equipables {
-			l.Debugf("Generating equipable asset [%d] for character.", aid)
-			err := compartment.NewProcessor(l, ctx).CreateAsset(e.CharacterId, inventory.TypeValueEquip, aid, 1, time.Time{}, e.CharacterId)
-			if err != nil {
-				echan <- err
-			}
-		}
-		rchan <- e.CompartmentId
-	}
-}
-
-func otherCreatedHandler(rchan chan uuid.UUID, echan chan error, inventoryType inventory.Type, items []uint32) message.Handler[compartment2.StatusEvent[compartment2.CreatedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e compartment2.StatusEvent[compartment2.CreatedStatusEventBody]) {
-		l.Debugf("Compartment [%s] created for character [%d].", e.CompartmentId.String(), e.CharacterId)
-		for _, aid := range items {
-			l.Debugf("Generating asset [%d] for character.", aid)
-			err := compartment.NewProcessor(l, ctx).CreateAsset(e.CharacterId, inventoryType, aid, 1, time.Time{}, e.CharacterId)
-			if err != nil {
-				echan <- err
-			}
-		}
 		rchan <- e.CompartmentId
 	}
 }

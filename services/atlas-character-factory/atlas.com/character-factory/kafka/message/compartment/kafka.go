@@ -7,6 +7,7 @@ import (
 
 const (
 	EnvCommandTopic    = "COMMAND_TOPIC_COMPARTMENT"
+	CommandEquip       = "EQUIP"
 	CommandCreateAsset = "CREATE_ASSET"
 )
 
@@ -15,6 +16,11 @@ type Command[E any] struct {
 	InventoryType byte   `json:"inventoryType"`
 	Type          string `json:"type"`
 	Body          E      `json:"body"`
+}
+
+type EquipCommandBody struct {
+	Source      int16 `json:"source"`
+	Destination int16 `json:"destination"`
 }
 type CreateAssetCommandBody struct {
 	TemplateId   uint32    `json:"templateId"`

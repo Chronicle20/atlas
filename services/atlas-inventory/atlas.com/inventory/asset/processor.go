@@ -199,6 +199,7 @@ func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
 				closeness:  pi.Closeness(),
 				fullness:   pi.Fullness(),
 				expiration: pi.Expiration(),
+				slot:       pi.Slot(),
 			}).
 			Build(), nil
 	}

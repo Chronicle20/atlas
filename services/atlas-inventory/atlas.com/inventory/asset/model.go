@@ -87,6 +87,10 @@ func (m Model[E]) IsPet() bool {
 	return m.referenceType == ReferenceTypePet
 }
 
+func (m Model[E]) ReferenceData() E {
+	return m.referenceData
+}
+
 func Clone[E any](m Model[E]) *ModelBuilder[E] {
 	return &ModelBuilder[E]{
 		id:            m.id,
@@ -145,93 +149,4 @@ func (b *ModelBuilder[E]) Build() Model[E] {
 		referenceType: b.referenceType,
 		referenceData: b.referenceData,
 	}
-}
-
-type EquipableReferenceData struct {
-	strength       uint16
-	dexterity      uint16
-	intelligence   uint16
-	luck           uint16
-	hp             uint16
-	mp             uint16
-	weaponAttack   uint16
-	magicAttack    uint16
-	weaponDefense  uint16
-	magicDefense   uint16
-	accuracy       uint16
-	avoidability   uint16
-	hands          uint16
-	speed          uint16
-	jump           uint16
-	slots          uint16
-	ownerId        uint32
-	locked         bool
-	spikes         bool
-	karmaUsed      bool
-	cold           bool
-	canBeTraded    bool
-	levelType      byte
-	level          byte
-	experience     uint32
-	hammersApplied uint32
-	expiration     time.Time
-}
-
-type ConsumableReferenceData struct {
-	quantity     uint32
-	ownerId      uint32
-	flag         uint16
-	rechargeable uint64
-}
-
-func (c ConsumableReferenceData) Quantity() uint32 {
-	return c.quantity
-}
-
-type SetupReferenceData struct {
-	quantity uint32
-	ownerId  uint32
-	flag     uint16
-}
-
-func (c SetupReferenceData) Quantity() uint32 {
-	return c.quantity
-}
-
-type EtcReferenceData struct {
-	quantity uint32
-	ownerId  uint32
-	flag     uint16
-}
-
-func (c EtcReferenceData) Quantity() uint32 {
-	return c.quantity
-}
-
-type CashReferenceData struct {
-	cashId     uint64
-	quantity   uint32
-	ownerId    uint32
-	flag       uint16
-	purchaseBy uint32
-}
-
-func (c CashReferenceData) Quantity() uint32 {
-	return c.quantity
-}
-
-type PetReferenceData struct {
-	cashId        uint64
-	ownerId       uint32
-	flag          uint16
-	purchaseBy    uint32
-	name          string
-	level         byte
-	closeness     uint16
-	fullness      byte
-	expiration    time.Time
-	attribute     uint16
-	skill         uint16
-	remainingLife uint32
-	attribute2    uint16
 }

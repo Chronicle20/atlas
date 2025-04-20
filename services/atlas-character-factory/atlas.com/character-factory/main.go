@@ -1,9 +1,11 @@
 package main
 
 import (
-	"atlas-character-factory/character"
 	"atlas-character-factory/configuration"
 	"atlas-character-factory/factory"
+	"atlas-character-factory/kafka/consumer/asset"
+	"atlas-character-factory/kafka/consumer/character"
+	"atlas-character-factory/kafka/consumer/compartment"
 	"atlas-character-factory/logger"
 	"atlas-character-factory/service"
 	"atlas-character-factory/tracing"
@@ -51,8 +53,16 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
+	compartment.InitConsumers(l)(cmf)(consumerGroupId)
+	asset.InitConsumers(l)(cmf)(consumerGroupId)
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), factory.InitResource(GetServer()))
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(factory.InitResource(GetServer())).
+		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

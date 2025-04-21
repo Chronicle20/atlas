@@ -28,7 +28,8 @@ func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Con
 		macAddressWithHDDSerial := r.ReadAsciiString()
 		l.Debugf("Character [%d] attempting to login via view all. worldId [%d], macAddress [%s], macAddressWithHDDSerial [%s], pic [%s].", characterId, worldId, macAddress, macAddressWithHDDSerial, pic)
 
-		c, err := character.GetById(l, ctx)(characterId)
+		cp := character.NewProcessor(l, ctx)
+		c, err := cp.GetById(cp.InventoryDecorator())(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get character [%d].", characterId)
 			// TODO issue error
@@ -37,13 +38,13 @@ func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Con
 
 		if c.WorldId() != byte(worldId) {
 			l.Errorf("Character is not part of world provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
 			return
 		}
 
 		if c.AccountId() != s.AccountId() {
 			l.Errorf("Character is not part of account provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
 			return
 		}
 

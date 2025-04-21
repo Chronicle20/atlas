@@ -19,6 +19,7 @@ const CharacterViewAllSelectedHandle = "CharacterViewAllSelectedHandle"
 
 func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader) {
 	t := tenant.MustFromContext(ctx)
+	cp := character.NewProcessor(l, ctx)
 	return func(s session.Model, r *request.Reader) {
 		characterId := r.ReadUint32()
 		worldId := r.ReadUint32()
@@ -26,7 +27,7 @@ func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Contex
 		macAddressWithHDDSerial := r.ReadAsciiString()
 		l.Debugf("Character [%d] attempting to login via view all. worldId [%d], macAddress [%s], macAddressWithHDDSerial [%s].", characterId, worldId, macAddress, macAddressWithHDDSerial)
 
-		c, err := character.GetById(l, ctx)(characterId)
+		c, err := cp.GetById(cp.InventoryDecorator())(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get character [%d].", characterId)
 			// TODO issue error
@@ -35,13 +36,13 @@ func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Contex
 
 		if c.WorldId() != byte(worldId) {
 			l.Errorf("Character is not part of world provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
 			return
 		}
 
 		if c.AccountId() != s.AccountId() {
 			l.Errorf("Character is not part of account provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
 			return
 		}
 

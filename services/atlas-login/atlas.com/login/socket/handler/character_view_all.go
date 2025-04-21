@@ -46,7 +46,8 @@ func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 		var count int
 		for _, w := range ws {
 			var cs []character.Model
-			cs, err = character.GetForWorld(l, ctx)(s.AccountId(), w.Id())
+			cp := character.NewProcessor(l, ctx)
+			cs, err = cp.GetForWorld(cp.InventoryDecorator())(s.AccountId(), w.Id())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve characters for account [%d] in world [%d].", s.AccountId(), w.Id())
 			}

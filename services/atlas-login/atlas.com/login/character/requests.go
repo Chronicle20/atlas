@@ -8,9 +8,9 @@ import (
 
 const (
 	Resource          = "characters"
-	ByAccountAndWorld = Resource + "?accountId=%d&worldId=%d&include=inventory"
-	ByName            = Resource + "?name=%s&include=inventory"
-	ById              = Resource + "/%d?include=inventory"
+	ByAccountAndWorld = Resource + "?accountId=%d&worldId=%d"
+	ByName            = Resource + "?name=%s"
+	ById              = Resource + "/%d"
 )
 
 func getBaseRequest() string {

@@ -15,7 +15,7 @@ func CharacterCheckNameHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 	characterNameResponseFunc := session.Announce(l)(wp)(writer.CharacterNameResponse)
 	return func(s session.Model, r *request.Reader) {
 		name := r.ReadAsciiString()
-		ok, err := character.IsValidName(l, ctx)(name)
+		ok, err := character.NewProcessor(l, ctx).IsValidName(name)
 		if err != nil {
 			l.Debugf("Error determining if name [%s] is valid.", name)
 			err = characterNameResponseFunc(s, writer.CharacterNameResponseBody(l)(name, writer.CharacterNameResponseCodeSystemError))

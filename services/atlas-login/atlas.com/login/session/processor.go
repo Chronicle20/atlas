@@ -1,7 +1,9 @@
 package session
 
 import (
+	session2 "atlas-login/kafka/message/session"
 	"atlas-login/kafka/producer"
+	session3 "atlas-login/kafka/producer/session"
 	"atlas-login/socket/writer"
 	"context"
 	"errors"
@@ -37,6 +39,29 @@ func IfPresentById(tenant tenant.Model) func(sessionId uuid.UUID, f model.Operat
 			return
 		}
 		_ = f(s)
+	}
+}
+
+func ByAccountIdModelProvider(tenant tenant.Model) func(accountId uint32) model.Provider[Model] {
+	return func(accountId uint32) model.Provider[Model] {
+		return model.FirstProvider[Model](AllInTenantProvider(tenant), model.Filters(AccountIdFilter(accountId)))
+	}
+}
+
+// IfPresentByAccountId executes an Operator if a session exists for the accountId
+func IfPresentByAccountId(tenant tenant.Model) func(accountId uint32, f model.Operator[Model]) error {
+	return func(accountId uint32, f model.Operator[Model]) error {
+		s, err := ByAccountIdModelProvider(tenant)(accountId)()
+		if err != nil {
+			return nil
+		}
+		return f(s)
+	}
+}
+
+func AccountIdFilter(referenceId uint32) model.Filter[Model] {
+	return func(model Model) bool {
+		return model.AccountId() == referenceId
 	}
 }
 
@@ -108,7 +133,7 @@ func SetChannelId(channelId byte) func(tenantId uuid.UUID, id uuid.UUID) Model {
 
 func SessionCreated(kp producer.Provider, tenant tenant.Model) func(s Model) {
 	return func(s Model) {
-		_ = kp(EnvEventTopicSessionStatus)(createdStatusEventProvider(s.SessionId(), s.AccountId()))
+		_ = kp(session2.EnvEventTopicSessionStatus)(session3.CreatedStatusEventProvider(s.SessionId(), s.AccountId()))
 	}
 }
 

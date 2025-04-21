@@ -2,9 +2,10 @@ package writer
 
 import (
 	"atlas-login/character"
-	"atlas-login/character/equipment"
-	"atlas-login/character/equipment/slot"
+	"atlas-login/equipment"
+	slot2 "atlas-login/equipment/slot"
 	"atlas-login/pet"
+	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 )
@@ -139,38 +140,38 @@ func writeEquips(tenant tenant.Model) func(w *response.Writer, equips map[slot.P
 
 func getEquippedItemSlotMap(e equipment.Model) map[slot.Position]uint32 {
 	var equips = make(map[slot.Position]uint32)
-	for _, t := range slot.Types {
-		if s, ok := e.Get(t); ok {
-			addEquipmentIfPresent(equips, s)
+	for _, s := range slot.Slots {
+		if v, ok := e.Get(s.Type); ok {
+			addEquipmentIfPresent(equips, v)
 		}
 	}
 	return equips
 }
 
-func addEquipmentIfPresent(slotMap map[slot.Position]uint32, pi slot.Model) {
+func addEquipmentIfPresent(slotMap map[slot.Position]uint32, pi slot2.Model) {
 	if pi.CashEquipable != nil {
-		slotMap[pi.Position*-1] = pi.CashEquipable.ItemId()
+		slotMap[pi.Position*-1] = pi.CashEquipable.TemplateId()
 		return
 	}
 	if pi.Equipable != nil {
-		slotMap[pi.Position*-1] = pi.Equipable.ItemId()
+		slotMap[pi.Position*-1] = pi.Equipable.TemplateId()
 	}
 }
 
 func getMaskedEquippedItemSlotMap(e equipment.Model) map[slot.Position]uint32 {
 	var equips = make(map[slot.Position]uint32)
-	for _, t := range slot.Types {
-		if s, ok := e.Get(t); ok {
-			addMaskedEquippedItemIfPresent(equips, s)
+	for _, s := range slot.Slots {
+		if v, ok := e.Get(s.Type); ok {
+			addMaskedEquippedItemIfPresent(equips, v)
 		}
 	}
 	return equips
 }
 
-func addMaskedEquippedItemIfPresent(slotMap map[slot.Position]uint32, pi slot.Model) {
+func addMaskedEquippedItemIfPresent(slotMap map[slot.Position]uint32, pi slot2.Model) {
 	if pi.CashEquipable != nil {
 		if pi.Equipable != nil {
-			slotMap[pi.Position*-1] = pi.Equipable.ItemId()
+			slotMap[pi.Position*-1] = pi.Equipable.TemplateId()
 		}
 	}
 }

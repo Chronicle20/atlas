@@ -123,35 +123,35 @@ func (r *BaseRestModel) UnmarshalJSON(data []byte) error {
 		r.ReferenceData = rd
 	}
 	if ReferenceType(temp.ReferenceType) == ReferenceTypeConsumable {
-		var rd ConsumableReferenceData
+		var rd ConsumableRestData
 		if err := json.Unmarshal(temp.ReferenceData, &rd); err != nil {
 			return fmt.Errorf("error unmarshaling %s referenceData: %w", ReferenceTypeConsumable, err)
 		}
 		r.ReferenceData = rd
 	}
 	if ReferenceType(temp.ReferenceType) == ReferenceTypeSetup {
-		var rd SetupReferenceData
+		var rd SetupRestData
 		if err := json.Unmarshal(temp.ReferenceData, &rd); err != nil {
 			return fmt.Errorf("error unmarshaling %s referenceData: %w", ReferenceTypeSetup, err)
 		}
 		r.ReferenceData = rd
 	}
 	if ReferenceType(temp.ReferenceType) == ReferenceTypeEtc {
-		var rd EtcReferenceData
+		var rd EtcRestData
 		if err := json.Unmarshal(temp.ReferenceData, &rd); err != nil {
 			return fmt.Errorf("error unmarshaling %s referenceData: %w", ReferenceTypeEtc, err)
 		}
 		r.ReferenceData = rd
 	}
 	if ReferenceType(temp.ReferenceType) == ReferenceTypeCash {
-		var rd CashReferenceData
+		var rd CashRestData
 		if err := json.Unmarshal(temp.ReferenceData, &rd); err != nil {
 			return fmt.Errorf("error unmarshaling %s referenceData: %w", ReferenceTypeCash, err)
 		}
 		r.ReferenceData = rd
 	}
 	if ReferenceType(temp.ReferenceType) == ReferenceTypePet {
-		var rd PetReferenceData
+		var rd PetRestData
 		if err := json.Unmarshal(temp.ReferenceData, &rd); err != nil {
 			return fmt.Errorf("error unmarshaling %s referenceData: %w", ReferenceTypePet, err)
 		}

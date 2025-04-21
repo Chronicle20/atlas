@@ -45,7 +45,7 @@ func handleCreatedStatusEvent(t tenant.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		_ = session.IfPresentByAccountId(t)(e.AccountId, func(s session.Model) error {
+		_ = session.NewProcessor(l, ctx).IfPresentByAccountId(e.AccountId, func(s session.Model) error {
 			cp := character.NewProcessor(l, ctx)
 			c, err := cp.GetById(cp.InventoryDecorator())(e.Body.CharacterId)
 			if err != nil {

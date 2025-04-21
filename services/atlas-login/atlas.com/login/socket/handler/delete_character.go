@@ -32,7 +32,7 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		l.Debugf("Handling delete character [%d] for account [%d]. verifyPic [%t] pic [%s]. verifyDob [%t] dob [%d]", characterId, s.AccountId(), verifyPic, pic, dob != 0, dob)
 
 		if verifyPic {
-			a, err := account.GetById(l, ctx)(s.AccountId())
+			a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve account performing deletion.")
 				err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, t)(characterId, writer.DeleteCharacterCodeUnknownError))

@@ -37,7 +37,7 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 
 		l.Debugf("Handling [CharacterListWorld]. gameStartMode=[%d], worldId=[%d], channelId=[%d], socketAddr=[%d]", gameStartMode, worldId, channelId, socketAddr)
 
-		w, err := world.GetById(l, ctx)(worldId)
+		w, err := world.NewProcessor(l, ctx).GetById(worldId)
 		if err != nil {
 			l.WithError(err).Errorf("Received a character list request for a world we do not have")
 			return
@@ -51,10 +51,11 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			return
 		}
 
-		s = session.SetWorldId(worldId)(t.Id(), s.SessionId())
-		s = session.SetChannelId(channelId)(t.Id(), s.SessionId())
+		sp := session.NewProcessor(l, ctx)
+		s = sp.SetWorldId(s.SessionId(), worldId)
+		s = sp.SetChannelId(s.SessionId(), channelId)
 
-		a, err := account.GetById(l, ctx)(s.AccountId())
+		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Cannot retrieve account")
 			return

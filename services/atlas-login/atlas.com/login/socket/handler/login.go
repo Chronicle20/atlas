@@ -2,7 +2,6 @@ package handler
 
 import (
 	as "atlas-login/account/session"
-	"atlas-login/kafka/producer"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"context"
@@ -62,7 +61,7 @@ func LoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 		p := ReadLoginRequest(r)
 		l.Debugf("Reading [%s] message. body={name=%s, password=%s, gameRoomClient=%d, gameStartMode=%d}", LoginHandle, p.Name(), p.Password(), p.GameRoomClient(), p.GameStartMode())
 
-		err := as.Create(l, producer.ProviderImpl(l)(ctx))(s.SessionId(), s.AccountId(), p.Name(), p.Password(), "")
+		err := as.NewProcessor(l, ctx).Create(s.SessionId(), s.AccountId(), p.Name(), p.Password(), "")
 		if err != nil {
 			authLoginFailedFunc := session.Announce(l)(wp)(writer.AuthLoginFailed)
 			err = authLoginFailedFunc(s, writer.AuthLoginFailedBody(l, t)(writer.SystemError1))

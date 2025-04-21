@@ -3,7 +3,6 @@ package handler
 import (
 	"atlas-login/account"
 	as "atlas-login/account/session"
-	"atlas-login/kafka/producer"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"context"
@@ -22,7 +21,7 @@ func SetGenderHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 
 		var success = confirmed
 		if confirmed {
-			err := account.UpdateGender(l, ctx)(s.AccountId(), gender)
+			err := account.NewProcessor(l, ctx).UpdateGender(s.AccountId(), gender)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to update the gender of account [%d].", s.AccountId())
 				success = false
@@ -31,7 +30,7 @@ func SetGenderHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 
 		if !success {
 			l.Debugf("Logging account out, as they are still at login screen and need to issue a new request.")
-			as.Destroy(l, producer.ProviderImpl(l)(ctx))(s.SessionId(), s.AccountId())
+			as.NewProcessor(l, ctx).Destroy(s.SessionId(), s.AccountId())
 		}
 
 		err := setAccountResultFunc(s, writer.SetAccountResultBody(gender, success))

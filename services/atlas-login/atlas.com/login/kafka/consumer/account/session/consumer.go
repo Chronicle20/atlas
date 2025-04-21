@@ -54,7 +54,7 @@ func handleCreatedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) 
 		}
 
 		session.IfPresentById(t)(e.SessionId, func(s session.Model) error {
-			a, err := account.GetById(l, ctx)(e.AccountId)
+			a, err := account.NewProcessor(l, ctx).GetById(e.AccountId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve account [%d] that had a session [%s] created for it.", e.AccountId, s.SessionId().String())
 				return err
@@ -95,7 +95,7 @@ func handleLicenseAgreementAccountSessionStatusEvent(t tenant.Model, wp writer.P
 		}
 
 		session.IfPresentById(t)(e.SessionId, func(s session.Model) error {
-			a, err := account.GetById(l, ctx)(e.AccountId)
+			a, err := account.NewProcessor(l, ctx).GetById(e.AccountId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve account [%d] that had a session [%s] created for it.", e.AccountId, s.SessionId().String())
 				return err
@@ -184,7 +184,8 @@ func announceError(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 
 func announceServerInformation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
-		ws, err := world.GetAll(l, ctx, world.ChannelLoadDecorator(l, ctx))
+		p := world.NewProcessor(l, ctx)
+		ws, err := p.GetAll(p.ChannelLoadDecorator)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve worlds to display to session.")
 		}

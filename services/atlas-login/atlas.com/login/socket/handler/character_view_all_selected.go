@@ -4,7 +4,6 @@ import (
 	as "atlas-login/account/session"
 	"atlas-login/channel"
 	"atlas-login/character"
-	"atlas-login/kafka/producer"
 	"atlas-login/session"
 	"atlas-login/socket/model"
 	"atlas-login/socket/writer"
@@ -46,7 +45,7 @@ func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Contex
 			return
 		}
 
-		w, err := world.GetById(l, ctx)(byte(worldId))
+		w, err := world.NewProcessor(l, ctx).GetById(byte(worldId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get world [%d].", worldId)
 			// TODO issue error
@@ -61,10 +60,10 @@ func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Contex
 
 		s = session.SetWorldId(byte(worldId))(t.Id(), s.SessionId())
 
-		channel, err := channel.GetRandomInWorld(l, ctx)(byte(worldId))
+		channel, err := channel.NewProcessor(l, ctx).GetRandomInWorld(byte(worldId))
 		s = session.SetChannelId(channel.ChannelId())(t.Id(), s.SessionId())
 
-		err = as.UpdateState(l, producer.ProviderImpl(l)(ctx))(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: channel.IpAddress(), Port: uint16(channel.Port()), CharacterId: characterId})
+		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: channel.IpAddress(), Port: uint16(channel.Port()), CharacterId: characterId})
 		if err != nil {
 			return
 		}

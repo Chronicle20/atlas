@@ -28,7 +28,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 			return
 		}
 
-		a, err := account.GetById(l, ctx)(s.AccountId())
+		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get account [%d] being acted upon.", s.AccountId())
 			return

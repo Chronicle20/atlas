@@ -15,6 +15,7 @@ import (
 const AcceptTosHandle = "AcceptTosHandle"
 
 func AcceptTosHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
+	ap := account.NewProcessor(l, ctx)
 	return func(s session.Model, r *request.Reader) {
 		accepted := r.ReadBool()
 		l.Debugf("Account [%d] responded to the TOS dialog with [%t].", s.AccountId(), accepted)
@@ -24,11 +25,11 @@ func AcceptTosHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			return
 		}
 
-		err := account.UpdateTos(l, ctx)(s.AccountId(), accepted)
+		err := ap.UpdateTos(s.AccountId(), accepted)
 		if err != nil {
 			// TODO
 		}
-		account.ForAccountById(l, ctx)(s.AccountId(), issueSuccess(l)(ctx)(wp)(s))
+		ap.ForAccountById(s.AccountId(), issueSuccess(l)(ctx)(wp)(s))
 	}
 }
 

@@ -3,7 +3,6 @@ package handler
 import (
 	"atlas-login/account"
 	as "atlas-login/account/session"
-	"atlas-login/kafka/producer"
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"context"
@@ -42,7 +41,7 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 			}
 
 			l.Debugf("Registering PIN [%s] for account [%d].", pin, s.AccountId())
-			err := account.UpdatePin(l, ctx)(s.AccountId(), pin)
+			err := account.NewProcessor(l, ctx).UpdatePin(s.AccountId(), pin)
 			if err != nil {
 				l.WithError(err).Errorf("Error updating PIN for account [%d].", s.AccountId())
 				err = pinOperationFunc(s, writer.PinConnectionFailedBody(l))
@@ -60,7 +59,7 @@ func RegisterPinHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 			}
 
 			l.Debugf("Logging account out, as they are still at login screen and need to issue a new request.")
-			as.Destroy(l, producer.ProviderImpl(l)(ctx))(s.SessionId(), s.AccountId())
+			as.NewProcessor(l, ctx).Destroy(s.SessionId(), s.AccountId())
 			return
 		}
 		l.Warnf("Unhandled opt [%d] for PIN registration. Terminating session.", opt)

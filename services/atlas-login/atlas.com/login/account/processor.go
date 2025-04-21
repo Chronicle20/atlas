@@ -10,54 +10,53 @@ import (
 
 type LoginErr string
 
-func ForAccountByName(l logrus.FieldLogger, ctx context.Context) func(name string, operator model.Operator[Model]) {
-	return func(name string, operator model.Operator[Model]) {
-		_ = model.For[Model](ByNameModelProvider(l, ctx)(name), operator)
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
 }
 
-func ForAccountById(l logrus.FieldLogger, ctx context.Context) func(id uint32, operator model.Operator[Model]) {
-	return func(id uint32, operator model.Operator[Model]) {
-		_ = model.For[Model](ByIdModelProvider(l, ctx)(id), operator)
-	}
+func (p *Processor) ForAccountByName(name string, operator model.Operator[Model]) {
+	_ = model.For[Model](p.ByNameModelProvider(name), operator)
 }
 
-func ByNameModelProvider(l logrus.FieldLogger, ctx context.Context) func(name string) model.Provider[Model] {
-	return func(name string) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l, ctx)(requestAccountByName(name), Extract)
-	}
+func (p *Processor) ForAccountById(id uint32, operator model.Operator[Model]) {
+	_ = model.For[Model](p.ByIdModelProvider(id), operator)
 }
 
-func ByIdModelProvider(l logrus.FieldLogger, ctx context.Context) func(id uint32) model.Provider[Model] {
-	return func(id uint32) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l, ctx)(requestAccountById(id), Extract)
-	}
+func (p *Processor) ByNameModelProvider(name string) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestAccountByName(name), Extract)
 }
 
-func allProvider(l logrus.FieldLogger, ctx context.Context) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](l, ctx)(requestAccounts(), Extract, model.Filters[Model]())
+func (p *Processor) ByIdModelProvider(id uint32) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestAccountById(id), Extract)
 }
 
-func GetById(l logrus.FieldLogger, ctx context.Context) func(id uint32) (Model, error) {
-	return func(id uint32) (Model, error) {
-		return ByIdModelProvider(l, ctx)(id)()
-	}
+func (p *Processor) AllProvider() model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestAccounts(), Extract, model.Filters[Model]())
 }
 
-func GetByName(l logrus.FieldLogger, ctx context.Context) func(name string) (Model, error) {
-	return func(name string) (Model, error) {
-		return ByNameModelProvider(l, ctx)(name)()
-	}
+func (p *Processor) GetById(id uint32) (Model, error) {
+	return p.ByIdModelProvider(id)()
 }
 
-func IsLoggedIn(ctx context.Context) func(id uint32) bool {
-	return func(id uint32) bool {
-		return GetRegistry().LoggedIn(Key{Tenant: tenant.MustFromContext(ctx), Id: id})
-	}
+func (p *Processor) GetByName(name string) (Model, error) {
+	return p.ByNameModelProvider(name)()
 }
 
-func InitializeRegistry(l logrus.FieldLogger, ctx context.Context, tenant tenant.Model) error {
-	as, err := model.CollectToMap[Model, Key, bool](allProvider(l, ctx), KeyForTenantFunc(tenant), IsLogged)()
+func (p *Processor) IsLoggedIn(id uint32) bool {
+	return GetRegistry().LoggedIn(Key{Tenant: tenant.MustFromContext(p.ctx), Id: id})
+}
+
+func (p *Processor) InitializeRegistry() error {
+	as, err := model.CollectToMap[Model, Key, bool](p.AllProvider(), KeyForTenantFunc(tenant.MustFromContext(p.ctx)), IsLogged)()
 	if err != nil {
 		return err
 	}
@@ -69,62 +68,54 @@ func IsLogged(m Model) bool {
 	return m.LoggedIn() > 0
 }
 
-func UpdatePin(l logrus.FieldLogger, ctx context.Context) func(id uint32, pin string) error {
-	return func(id uint32, pin string) error {
-		a, err := GetById(l, ctx)(id)
-		if err != nil {
-			return err
-		}
-		a.pin = pin
-		_, err = requestUpdate(a)(l, ctx)
-		if err != nil {
-			return err
-		}
-		return nil
+func (p *Processor) UpdatePin(id uint32, pin string) error {
+	a, err := p.GetById(id)
+	if err != nil {
+		return err
 	}
+	a.pin = pin
+	_, err = requestUpdate(a)(p.l, p.ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func UpdatePic(l logrus.FieldLogger, ctx context.Context) func(id uint32, pic string) error {
-	return func(id uint32, pic string) error {
-		a, err := GetById(l, ctx)(id)
-		if err != nil {
-			return err
-		}
-		a.pic = pic
-		_, err = requestUpdate(a)(l, ctx)
-		if err != nil {
-			return err
-		}
-		return nil
+func (p *Processor) UpdatePic(id uint32, pic string) error {
+	a, err := p.GetById(id)
+	if err != nil {
+		return err
 	}
+	a.pic = pic
+	_, err = requestUpdate(a)(p.l, p.ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func UpdateTos(l logrus.FieldLogger, ctx context.Context) func(id uint32, tos bool) error {
-	return func(id uint32, tos bool) error {
-		a, err := GetById(l, ctx)(id)
-		if err != nil {
-			return err
-		}
-		a.tos = tos
-		_, err = requestUpdate(a)(l, ctx)
-		if err != nil {
-			return err
-		}
-		return nil
+func (p *Processor) UpdateTos(id uint32, tos bool) error {
+	a, err := p.GetById(id)
+	if err != nil {
+		return err
 	}
+	a.tos = tos
+	_, err = requestUpdate(a)(p.l, p.ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func UpdateGender(l logrus.FieldLogger, ctx context.Context) func(id uint32, gender byte) error {
-	return func(id uint32, gender byte) error {
-		a, err := GetById(l, ctx)(id)
-		if err != nil {
-			return err
-		}
-		a.gender = gender
-		_, err = requestUpdate(a)(l, ctx)
-		if err != nil {
-			return err
-		}
-		return nil
+func (p *Processor) UpdateGender(id uint32, gender byte) error {
+	a, err := p.GetById(id)
+	if err != nil {
+		return err
 	}
+	a.gender = gender
+	_, err = requestUpdate(a)(p.l, p.ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }

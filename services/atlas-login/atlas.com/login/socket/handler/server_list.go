@@ -22,7 +22,8 @@ func ServerListRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 
 func announceServerInformation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
-		ws, err := world.GetAll(l, ctx, world.ChannelLoadDecorator(l, ctx))
+		wp := world.NewProcessor(l, ctx)
+		ws, err := wp.GetAll(wp.ChannelLoadDecorator)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve worlds to display to session.")
 		}

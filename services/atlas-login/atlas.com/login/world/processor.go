@@ -8,44 +8,51 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func AllProvider(l logrus.FieldLogger, ctx context.Context) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](l, ctx)(requestWorlds(), Extract, model.Filters[Model]())
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	cp  *channel.Processor
 }
 
-func GetAll(l logrus.FieldLogger, ctx context.Context, decorators ...model.Decorator[Model]) ([]Model, error) {
-	return model.SliceMap(model.Decorate(decorators))(AllProvider(l, ctx))(model.ParallelMap())()
-}
-
-func ByIdModelProvider(l logrus.FieldLogger, ctx context.Context) func(worldId byte) model.Provider[Model] {
-	return func(worldId byte) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l, ctx)(requestWorld(worldId), Extract)
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
+		cp:  channel.NewProcessor(l, ctx),
 	}
+	return p
 }
 
-func GetById(l logrus.FieldLogger, ctx context.Context) func(worldId byte) (Model, error) {
-	return func(worldId byte) (Model, error) {
-		return ByIdModelProvider(l, ctx)(worldId)()
-	}
+func (p *Processor) AllProvider() model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestWorlds(), Extract, model.Filters[Model]())
 }
 
-func GetCapacityStatus(l logrus.FieldLogger, ctx context.Context) func(worldId byte) Status {
-	return func(worldId byte) Status {
-		w, err := GetById(l, ctx)(worldId)
-		if err != nil {
-			return StatusFull
-		}
-		return w.CapacityStatus()
-	}
+func (p *Processor) GetAll(decorators ...model.Decorator[Model]) ([]Model, error) {
+	return model.SliceMap(model.Decorate(decorators))(p.AllProvider())(model.ParallelMap())()
 }
 
-func ChannelLoadDecorator(l logrus.FieldLogger, ctx context.Context) model.Decorator[Model] {
-	return func(m Model) Model {
-		nm, err := model.Fold[channel.Model, Model](channel.ByWorldModelProvider(l, ctx)(m.Id()), Clone(m), foldChannelLoad)()
-		if err != nil {
-			return m
-		}
-		return nm
+func (p *Processor) ByIdModelProvider(worldId byte) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestWorld(worldId), Extract)
+}
+
+func (p *Processor) GetById(worldId byte) (Model, error) {
+	return p.ByIdModelProvider(worldId)()
+}
+
+func (p *Processor) GetCapacityStatus(worldId byte) Status {
+	w, err := p.GetById(worldId)
+	if err != nil {
+		return StatusFull
 	}
+	return w.CapacityStatus()
+}
+
+func (p *Processor) ChannelLoadDecorator(m Model) Model {
+	nm, err := model.Fold[channel.Model, Model](p.cp.ByWorldModelProvider(m.Id()), Clone(m), foldChannelLoad)()
+	if err != nil {
+		return m
+	}
+	return nm
 }
 
 func foldChannelLoad(m Model, c channel.Model) (Model, error) {

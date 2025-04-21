@@ -75,7 +75,7 @@ func main() {
 		}
 		tctx := tenant.WithContext(sctx, t)
 
-		err = account.InitializeRegistry(l, tctx, t)
+		err = account.NewProcessor(l, tctx).InitializeRegistry()
 		if err != nil {
 			l.WithError(err).Errorf("Unable to initialize account registry for tenant [%s].", t.String())
 		}

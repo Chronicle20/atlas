@@ -77,12 +77,11 @@ func DestroyById(l logrus.FieldLogger, ctx context.Context, r *Registry) func(se
 
 func Destroy(l logrus.FieldLogger, ctx context.Context, r *Registry) model.Operator[Model] {
 	t := tenant.MustFromContext(ctx)
-	pi := producer.ProviderImpl(l)(ctx)
 	return func(s Model) error {
 		l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 		r.Remove(t.Id(), s.SessionId())
 		s.Disconnect()
-		session.Destroy(l, pi)(s.SessionId(), s.AccountId())
-		return pi(session2.EnvEventTopicSessionStatus)(session3.DestroyedStatusEventProvider(s.SessionId(), s.AccountId()))
+		session.NewProcessor(l, ctx).Destroy(s.SessionId(), s.AccountId())
+		return producer.ProviderImpl(l)(ctx)(session2.EnvEventTopicSessionStatus)(session3.DestroyedStatusEventProvider(s.SessionId(), s.AccountId()))
 	}
 }

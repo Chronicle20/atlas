@@ -32,7 +32,7 @@ func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 		}
 		l.Debugf("Processing request to view all characters. GameStartMode [%d], NexonPassport [%s], MachineId [%s], GameRoomClient [%d], GameStartMode2 [%d]", gameStartMode, nexonPassport, machineId, gameRoomClient, gameStartMode2)
 
-		ws, err := world.GetAll(l, ctx)
+		ws, err := world.NewProcessor(l, ctx).GetAll()
 		if err != nil {
 			l.Debugf("Unable to retrieve available worlds.")
 			err = viewAllFunc(s, writer.CharacterViewAllErrorBody(l)())

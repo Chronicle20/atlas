@@ -9,41 +9,44 @@ import (
 	"math/rand"
 )
 
-func ByIdModelProvider(l logrus.FieldLogger, ctx context.Context) func(worldId byte, channelId byte) model.Provider[Model] {
-	return func(worldId byte, channelId byte) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l, ctx)(requestChannel(worldId, channelId), Extract)
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func GetById(l logrus.FieldLogger, ctx context.Context) func(worldId byte, channelId byte) (Model, error) {
-	return func(worldId byte, channelId byte) (Model, error) {
-		return ByIdModelProvider(l, ctx)(worldId, channelId)()
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
 }
 
-func ByWorldModelProvider(l logrus.FieldLogger, ctx context.Context) func(worldId byte) model.Provider[[]Model] {
-	return func(worldId byte) model.Provider[[]Model] {
-		return requests.SliceProvider[RestModel, Model](l, ctx)(requestChannelsForWorld(worldId), Extract, model.Filters[Model]())
-	}
+func (p *Processor) ByIdModelProvider(worldId byte, channelId byte) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestChannel(worldId, channelId), Extract)
 }
 
-func GetForWorld(l logrus.FieldLogger, ctx context.Context) func(worldId byte) ([]Model, error) {
-	return func(worldId byte) ([]Model, error) {
-		return ByWorldModelProvider(l, ctx)(worldId)()
-	}
+func (p *Processor) GetById(worldId byte, channelId byte) (Model, error) {
+	return p.ByIdModelProvider(worldId, channelId)()
 }
 
-func GetRandomInWorld(l logrus.FieldLogger, ctx context.Context) func(worldId byte) (Model, error) {
-	return func(worldId byte) (Model, error) {
-		cs, err := GetForWorld(l, ctx)(worldId)
-		if err != nil {
-			return Model{}, err
-		}
-		if len(cs) == 0 {
-			return Model{}, errors.New("no channel found")
-		}
+func (p *Processor) ByWorldModelProvider(worldId byte) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestChannelsForWorld(worldId), Extract, model.Filters[Model]())
+}
 
-		ri := rand.Intn(len(cs))
-		return cs[ri], nil
+func (p *Processor) GetForWorld(worldId byte) ([]Model, error) {
+	return p.ByWorldModelProvider(worldId)()
+}
+
+func (p *Processor) GetRandomInWorld(worldId byte) (Model, error) {
+	cs, err := p.GetForWorld(worldId)
+	if err != nil {
+		return Model{}, err
 	}
+	if len(cs) == 0 {
+		return Model{}, errors.New("no channel found")
+	}
+
+	ri := rand.Intn(len(cs))
+	return cs[ri], nil
 }

@@ -2,8 +2,8 @@ package compartment
 
 import (
 	"atlas-inventory/asset"
+	"atlas-inventory/data/equipment"
 	"atlas-inventory/drop"
-	"atlas-inventory/equipment"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/compartment"
 	"atlas-inventory/kafka/producer"

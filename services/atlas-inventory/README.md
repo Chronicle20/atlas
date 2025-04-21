@@ -10,6 +10,15 @@ A RESTful resource which provides inventory services.
 - JAEGER_HOST - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
 
+### Kafka Topics
+
+- EVENT_TOPIC_ASSET_STATUS - Topic for asset status events (created, deleted, moved, quantity changed)
+- EVENT_TOPIC_COMPARTMENT_STATUS - Topic for compartment status events (created, deleted, capacity changed, reserved, reservation cancelled)
+- COMMAND_TOPIC_COMPARTMENT - Topic for compartment commands (equip, unequip, move, drop, request reserve, consume, destroy, etc.)
+- EVENT_TOPIC_CHARACTER_STATUS - Topic for character status events (created, deleted)
+- COMMAND_TOPIC_DROP - Topic for drop commands (spawn from character)
+- EVENT_TOPIC_INVENTORY_STATUS - Topic for inventory status events (created, deleted)
+
 ## API
 
 ### Header

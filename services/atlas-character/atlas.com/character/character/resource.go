@@ -12,7 +12,6 @@ import (
 	"gorm.io/gorm"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -94,10 +93,6 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 
 func decoratorsFromInclude(r *http.Request, d *rest.HandlerDependency, _ *rest.HandlerContext) []model.Decorator[Model] {
 	var decorators = make([]model.Decorator[Model], 0)
-	include := mux.Vars(r)["include"]
-	if strings.Contains(include, "inventory") {
-		decorators = append(decorators, InventoryModelDecorator(d.Logger())(d.DB())(d.Context()))
-	}
 	return decorators
 }
 

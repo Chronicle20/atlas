@@ -2,10 +2,6 @@ package character
 
 import (
 	"atlas-character/drop"
-	"atlas-character/equipable"
-	"atlas-character/equipment"
-	"atlas-character/equipment/slot"
-	"atlas-character/inventory"
 	"atlas-character/kafka/producer"
 	"atlas-character/portal"
 	skill2 "atlas-character/skill"
@@ -148,25 +144,6 @@ func GetAll(db *gorm.DB) func(ctx context.Context) func(decorators ...model.Deco
 	}
 }
 
-func InventoryModelDecorator(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) model.Decorator[Model] {
-	return func(db *gorm.DB) func(ctx context.Context) model.Decorator[Model] {
-		return func(ctx context.Context) model.Decorator[Model] {
-			return func(m Model) Model {
-				i, err := inventory.GetInventories(l)(db)(ctx)(m.Id())
-				if err != nil {
-					return m
-				}
-
-				es, err := model.Fold(equipable.EquipmentProvider(l)(db)(ctx)(i.Equipable().Id()), model.FixedProvider(m.GetEquipment()), FoldEquipable)()
-				if err != nil {
-					return CloneModel(m).SetInventory(i).Build()
-				}
-				return CloneModel(m).SetEquipment(es).SetInventory(i).Build()
-			}
-		}
-	}
-}
-
 func SkillModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model.Decorator[Model] {
 	return func(ctx context.Context) model.Decorator[Model] {
 		return func(m Model) Model {
@@ -177,21 +154,6 @@ func SkillModelDecorator(l logrus.FieldLogger) func(ctx context.Context) model.D
 			return CloneModel(m).SetSkills(ms).Build()
 		}
 	}
-}
-
-func FoldEquipable(m equipment.Model, e equipable.Model) (equipment.Model, error) {
-	s := e.Slot()
-	cash := false
-	if s <= -100 {
-		s += 100
-		cash = true
-	}
-	t, err := slot.GetSlotByPosition(slot.Position(s))
-	if err != nil {
-		return m, err
-	}
-	m.SetEquipable(t.Type, cash, e)
-	return m, nil
 }
 
 func IsValidName(_ logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) func(name string) (bool, error) {
@@ -253,14 +215,6 @@ func Create(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) fu
 							tx.Rollback()
 							return err
 						}
-
-						inv, err := inventory.Create(l)(tx)(ctx)(res.id, 24)
-						if err != nil {
-							l.WithError(err).Errorf("Unable to create inventory for character during character creation.")
-							tx.Rollback()
-							return err
-						}
-						res = CloneModel(res).SetInventory(inv).Build()
 						return nil
 					})
 
@@ -280,46 +234,10 @@ func Delete(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) fu
 			return func(eventProducer producer.Provider) func(characterId uint32) error {
 				return func(characterId uint32) error {
 					err := db.Transaction(func(tx *gorm.DB) error {
-						c, err := GetById(ctx)(tx)(InventoryModelDecorator(l)(tx)(ctx))(characterId)
+						c, err := GetById(ctx)(tx)()(characterId)
 						if err != nil {
 							return err
 						}
-
-						// delete equipment.
-						err = equipment.Delete(l)(tx)(ctx)(c.equipment)
-						if err != nil {
-							l.WithError(err).Errorf("Unable to delete equipment for character with id [%d].", characterId)
-							return err
-						}
-
-						// delete inventories.
-						err = inventory.DeleteEquipableInventory(l)(tx)(ctx)(characterId, c.inventory.Equipable())
-						if err != nil {
-							l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
-							return err
-						}
-						err = inventory.DeleteItemInventory(l)(tx)(ctx)(characterId, c.inventory.Useable())
-						if err != nil {
-							l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
-							return err
-						}
-						err = inventory.DeleteItemInventory(l)(tx)(ctx)(characterId, c.inventory.Setup())
-						if err != nil {
-							l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
-							return err
-						}
-						err = inventory.DeleteItemInventory(l)(tx)(ctx)(characterId, c.inventory.Etc())
-						if err != nil {
-							l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
-							return err
-						}
-						err = inventory.DeleteItemInventory(l)(tx)(ctx)(characterId, c.inventory.Cash())
-						if err != nil {
-							l.WithError(err).Errorf("Unable to delete inventory for character with id [%d].", characterId)
-							return err
-						}
-
-						_ = inventory.GetLockRegistry().DeleteForCharacter(characterId)
 
 						tenant := tenant.MustFromContext(ctx)
 						err = delete(tx, tenant.Id(), characterId)

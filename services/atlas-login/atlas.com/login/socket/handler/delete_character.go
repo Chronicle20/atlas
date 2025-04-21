@@ -16,6 +16,7 @@ const DeleteCharacterHandle = "DeleteCharacterHandle"
 func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	t := tenant.MustFromContext(ctx)
 	deleteCharacterResponseFunc := session.Announce(l)(wp)(writer.DeleteCharacterResponse)
+	cp := character.NewProcessor(l, ctx)
 	return func(s session.Model, r *request.Reader) {
 		var verifyPic = false
 		var pic string
@@ -51,7 +52,7 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			}
 		}
 
-		_, err := character.GetById(l, ctx)(characterId)
+		_, err := cp.GetById()(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] being deleted.", characterId)
 			err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, t)(characterId, writer.DeleteCharacterCodeUnknownError))
@@ -65,7 +66,7 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		// TODO - verify the character is not engaged.
 		// TODO - verify the character is not part of a family.
 
-		err = character.DeleteById(l, ctx)(characterId)
+		err = cp.DeleteById(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to delete character [%d].", characterId)
 			err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, t)(characterId, writer.DeleteCharacterCodeUnknownError))

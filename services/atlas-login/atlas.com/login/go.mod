@@ -3,6 +3,7 @@ module atlas-login
 go 1.24.1
 
 require (
+	github.com/Chronicle20/atlas-constants v1.0.15
 	github.com/Chronicle20/atlas-kafka v1.1.9
 	github.com/Chronicle20/atlas-model v1.2.4
 	github.com/Chronicle20/atlas-rest v1.2.14

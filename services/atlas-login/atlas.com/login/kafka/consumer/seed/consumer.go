@@ -46,7 +46,8 @@ func handleCreatedStatusEvent(t tenant.Model, wp writer.Producer) message.Handle
 		}
 
 		_ = session.IfPresentByAccountId(t)(e.AccountId, func(s session.Model) error {
-			c, err := character.GetById(l, ctx)(e.Body.CharacterId)
+			cp := character.NewProcessor(l, ctx)
+			c, err := cp.GetById(cp.InventoryDecorator())(e.Body.CharacterId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve newly created character [%d] for account [%d].", e.Body.CharacterId, e.AccountId)
 				err = session.Announce(l)(wp)(writer.AddCharacterEntry)(s, writer.AddCharacterErrorBody(l, t)(writer.AddCharacterCodeUnknownError))

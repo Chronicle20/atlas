@@ -59,8 +59,8 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			l.WithError(err).Errorf("Cannot retrieve account")
 			return
 		}
-
-		cs, err := character.GetForWorld(l, ctx)(s.AccountId(), worldId)
+		cp := character.NewProcessor(l, ctx)
+		cs, err := cp.GetForWorld(cp.InventoryDecorator())(s.AccountId(), w.Id())
 		if err != nil {
 			l.WithError(err).Errorf("Cannot retrieve account characters")
 			return

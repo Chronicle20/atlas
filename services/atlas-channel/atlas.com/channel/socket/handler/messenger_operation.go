@@ -58,7 +58,7 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 		if mode == MessengerOperationInvite {
 			targetCharacter := r.ReadAsciiString()
 			l.Debugf("Character [%d] attempting to invite [%s] to messenger.", s.CharacterId(), targetCharacter)
-			tc, err := character.GetByName(l, ctx)(targetCharacter)
+			tc, err := character.NewProcessor(l, ctx).GetByName(targetCharacter)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to messenger.", targetCharacter)
 				err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteSentBody(targetCharacter, false))(s)
@@ -84,7 +84,7 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			myName := r.ReadAsciiString()
 			alwaysZero := r.ReadByte()
 			l.Debugf("Character [%d] rejected [%s] invite to messenger. Other [%s], Zero [%d]", s.CharacterId(), fromName, myName, alwaysZero)
-			tc, err := character.GetByName(l, ctx)(fromName)
+			tc, err := character.NewProcessor(l, ctx).GetByName(fromName)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to reject invitation of.", fromName)
 				return

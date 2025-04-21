@@ -57,7 +57,7 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		tc, err := character.GetById(l)(ctx)()(e.ActorId)
+		tc, err := character.NewProcessor(l, ctx).GetById()(e.ActorId)
 		if err != nil {
 			l.WithError(err).Errorf("Received left event for character [%d] which does not exist.", e.ActorId)
 			return
@@ -113,7 +113,8 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		tc, err := character.GetByIdWithInventory(l)(ctx)(character.PetModelDecorator(l)(ctx))(e.ActorId)
+		cp := character.NewProcessor(l, ctx)
+		tc, err := cp.GetById(cp.PetModelDecorator, cp.InventoryDecorator)(e.ActorId)
 		if err != nil {
 			l.WithError(err).Errorf("Received joined event for character [%d] which does not exist.", e.ActorId)
 			return
@@ -139,11 +140,12 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 					l.WithError(err).Errorf("Unable to announce character [%d] has joined messenger [%d].", tc.Id(), p.Id())
 				}
 
+				cp := character.NewProcessor(l, ctx)
 				for _, m := range p.Members() {
 					if m.Id() == e.ActorId {
 						continue
 					}
-					mc, err := character.GetByIdWithInventory(l)(ctx)(character.PetModelDecorator(l)(ctx))(m.Id())
+					mc, err := cp.GetById(cp.InventoryDecorator, cp.PetModelDecorator)(m.Id())
 					if err != nil {
 						continue
 					}

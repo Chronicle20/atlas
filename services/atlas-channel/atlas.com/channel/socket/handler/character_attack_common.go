@@ -21,7 +21,8 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 		return func(wp writer.Producer) func(ai model2.AttackInfo) model.Operator[session.Model] {
 			return func(ai model2.AttackInfo) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					c, err := character.GetByIdWithInventory(l)(ctx)(character.SkillModelDecorator(l)(ctx))(s.CharacterId())
+					cp := character.NewProcessor(l, ctx)
+					c, err := cp.GetById(cp.InventoryDecorator, cp.SkillModelDecorator)(s.CharacterId())
 					if err != nil {
 						return err
 					}
@@ -45,10 +46,10 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							return err
 						}
 						if se.HPConsume() > 0 {
-							_ = character.ChangeHP(l)(ctx)(s.Map(), s.CharacterId(), -int16(se.HPConsume()))
+							_ = cp.ChangeHP(s.Map(), s.CharacterId(), -int16(se.HPConsume()))
 						}
 						if se.MPConsume() > 0 {
-							_ = character.ChangeMP(l)(ctx)(s.Map(), s.CharacterId(), -int16(se.MPConsume()))
+							_ = cp.ChangeMP(s.Map(), s.CharacterId(), -int16(se.MPConsume()))
 						}
 					}
 

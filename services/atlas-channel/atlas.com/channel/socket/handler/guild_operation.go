@@ -90,7 +90,7 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				return
 			}
 
-			c, err := character.GetById(l)(ctx)()(cid)
+			c, err := character.NewProcessor(l, ctx).GetById()(cid)
 			if err != nil || c.Name() != name {
 				l.Errorf("Character [%d] attempting to have [%s] leave guild.", s.CharacterId(), name)
 				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
@@ -130,7 +130,7 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			}
 			target := r.ReadAsciiString()
 
-			c, err := character.GetByName(l, ctx)(target)
+			c, err := character.NewProcessor(l, ctx).GetByName(target)
 			if err != nil {
 				l.Errorf("Unable to locate character [%s] to invite.", target)
 				// TODO announce error

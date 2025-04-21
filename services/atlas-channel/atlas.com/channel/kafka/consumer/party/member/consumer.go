@@ -57,7 +57,7 @@ func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[statu
 			return
 		}
 
-		tc, err := character.GetById(l)(ctx)()(e.CharacterId)
+		tc, err := character.NewProcessor(l, ctx).GetById()(e.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Received event for character [%d] which does not exist.", e.CharacterId)
 			return
@@ -90,7 +90,7 @@ func handleLogoutEvent(sc server.Model, wp writer.Producer) message.Handler[stat
 			return
 		}
 
-		tc, err := character.GetById(l)(ctx)()(e.CharacterId)
+		tc, err := character.NewProcessor(l, ctx).GetById()(e.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Received event for character [%d] which does not exist.", e.CharacterId)
 			return

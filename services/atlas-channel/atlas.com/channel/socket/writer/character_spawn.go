@@ -3,11 +3,12 @@ package writer
 import (
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
-	"atlas-channel/character/equipment"
-	"atlas-channel/character/equipment/slot"
+	"atlas-channel/equipment"
+	slot2 "atlas-channel/equipment/slot"
 	"atlas-channel/guild"
 	"atlas-channel/pet"
 	"atlas-channel/socket/model"
+	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -210,21 +211,21 @@ func getMaskedEquippedItemSlotMap(e equipment.Model) map[slot.Position]uint32 {
 	return equips
 }
 
-func addMaskedEquippedItemIfPresent(slotMap map[slot.Position]uint32, pi slot.Model) {
+func addMaskedEquippedItemIfPresent(slotMap map[slot.Position]uint32, pi slot2.Model) {
 	if pi.CashEquipable != nil {
 		if pi.Equipable != nil {
-			slotMap[pi.Position*-1] = pi.Equipable.ItemId()
+			slotMap[pi.Position*-1] = pi.Equipable.TemplateId()
 		}
 	}
 }
 
-func addEquipmentIfPresent(slotMap map[slot.Position]uint32, pi slot.Model) {
+func addEquipmentIfPresent(slotMap map[slot.Position]uint32, pi slot2.Model) {
 	if pi.CashEquipable != nil {
-		slotMap[pi.Position*-1] = pi.CashEquipable.ItemId()
+		slotMap[pi.Position*-1] = pi.CashEquipable.TemplateId()
 		return
 	}
 	if pi.Equipable != nil {
-		slotMap[pi.Position*-1] = pi.Equipable.ItemId()
+		slotMap[pi.Position*-1] = pi.Equipable.TemplateId()
 	}
 }
 

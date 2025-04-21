@@ -3,9 +3,9 @@ package writer
 import (
 	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
-	"atlas-channel/character/equipment/slot"
 	"atlas-channel/guild"
 	"atlas-channel/pet"
+	"github.com/Chronicle20/atlas-constants/inventory/slot"
 
 	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -63,7 +63,7 @@ func CharacterInfoBody(tenant tenant.Model) func(c character.Model, g guild.Mode
 			if err == nil {
 				if em, ok := c.Equipment().Get(ms.Type); ok {
 					if me := em.Equipable; me != nil {
-						medalId = me.ItemId()
+						medalId = me.TemplateId()
 					}
 				}
 			}

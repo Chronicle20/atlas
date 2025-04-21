@@ -2,11 +2,11 @@ package handler
 
 import (
 	"atlas-channel/character"
-	"atlas-channel/character/inventory"
 	"atlas-channel/pet"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -20,12 +20,13 @@ func PetSpawnHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Prod
 		lead := r.ReadBool()
 		l.Debugf("Character [%d] triggered PetSpawnHandle. updateTime [%d], slot [%d], lead [%t].", s.CharacterId(), updateTime, slot, lead)
 
-		i, err := character.GetItemInSlot(l)(ctx)(s.CharacterId(), byte(inventory.TypeValueCash), slot)()
+		cp := character.NewProcessor(l, ctx)
+		i, err := cp.GetItemInSlot(s.CharacterId(), inventory.TypeValueCash, slot)()
 		if err != nil {
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)(character.PetModelDecorator(l)(ctx))(s.CharacterId())
+		c, err := cp.GetById(cp.PetModelDecorator)(s.CharacterId())
 		if err != nil {
 			return
 		}

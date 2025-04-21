@@ -25,11 +25,12 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		petInfo := r.ReadBool()
 		l.Debugf("Received info request for character [%d]. UpdateTime [%d]. PetInfo [%t].", characterId, updateTime, petInfo)
 
+		cp := character.NewProcessor(l, ctx)
 		decorators := make([]model.Decorator[character.Model], 0)
 		if petInfo {
-			decorators = append(decorators, character.PetModelDecorator(l)(ctx))
+			decorators = append(decorators, cp.PetModelDecorator)
 		}
-		c, err := character.GetById(l)(ctx)(decorators...)(characterId)
+		c, err := cp.GetById(decorators...)(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] being requested.", characterId)
 			return

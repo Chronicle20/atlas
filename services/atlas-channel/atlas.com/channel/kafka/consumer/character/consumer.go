@@ -58,7 +58,7 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)()(e.CharacterId)
+		c, err := character.NewProcessor(l, ctx).GetById()(e.CharacterId)
 		if err != nil {
 			return
 		}
@@ -185,7 +185,7 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 		return func(wp writer.Producer) func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
 			return func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					c, err := character.GetById(l)(ctx)()(s.CharacterId())
+					c, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d].", s.CharacterId())
 						return err
@@ -286,13 +286,14 @@ func handleStatusEventFameChanged(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)()(e.CharacterId)
+		cp := character.NewProcessor(l, ctx)
+		c, err := cp.GetById()(e.CharacterId)
 		if err != nil {
 			return
 		}
 
 		if e.Body.ActorType == StatusEventActorTypeCharacter {
-			ac, err := character.GetById(l)(ctx)()(e.Body.ActorId)
+			ac, err := cp.GetById()(e.Body.ActorId)
 			if err != nil {
 				return
 			}

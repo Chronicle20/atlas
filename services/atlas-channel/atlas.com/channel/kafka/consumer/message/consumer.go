@@ -57,7 +57,7 @@ func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[chat
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)()(e.ActorId)
+		c, err := character.NewProcessor(l, ctx).GetById()(e.ActorId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] chatting.", e.ActorId)
 			return
@@ -90,7 +90,7 @@ func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[chatEv
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)()(e.ActorId)
+		c, err := character.NewProcessor(l, ctx).GetById()(e.ActorId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] chatting.", e.ActorId)
 			return
@@ -125,12 +125,12 @@ func handleWhisperChat(sc server.Model, wp writer.Producer) message.Handler[chat
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)()(e.ActorId)
+		c, err := character.NewProcessor(l, ctx).GetById()(e.ActorId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] sending whisper.", e.ActorId)
 			return
 		}
-		tc, err := character.GetById(l)(ctx)()(e.Body.Recipient)
+		tc, err := character.NewProcessor(l, ctx).GetById()(e.Body.Recipient)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] receiving whisper.", e.Body.Recipient)
 			return

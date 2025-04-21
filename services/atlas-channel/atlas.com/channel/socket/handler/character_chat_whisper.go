@@ -66,7 +66,7 @@ func produceFindResultBody(l logrus.FieldLogger) func(ctx context.Context) func(
 
 					af := session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)
 
-					tc, err := character.GetByName(l, ctx)(targetName)
+					tc, err := character.NewProcessor(l, ctx).GetByName(targetName)
 					if err != nil {
 						return af(writer.CharacterChatWhisperFindResultErrorBody(resultMode, targetName))(s)
 					}

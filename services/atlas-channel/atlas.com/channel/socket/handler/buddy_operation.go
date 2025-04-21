@@ -40,7 +40,7 @@ func BuddyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				return
 			}
 
-			tc, err := character.GetByName(l, ctx)(name)
+			tc, err := character.NewProcessor(l, ctx).GetByName(name)
 			if err != nil || s.WorldId() != tc.WorldId() {
 				l.WithError(err).Errorf("Unable to locate buddy character [%d] is attempting to add.", s.CharacterId())
 				// TODO send error to requester

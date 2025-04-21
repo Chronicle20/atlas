@@ -2,7 +2,7 @@ package pet
 
 import (
 	"atlas-channel/character"
-	"atlas-channel/character/inventory/item"
+	"atlas-channel/inventory/compartment/asset"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
 	"atlas-channel/pet"
@@ -168,22 +168,29 @@ func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[
 
 func announcePetStatUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
+		cp := character.NewProcessor(l, ctx)
 		return func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
 			return func(p pet.Model) model.Operator[session.Model] {
-				c, err := character.GetByIdWithInventory(l)(ctx)()(p.OwnerId())
+				c, err := cp.GetById(cp.InventoryDecorator)(p.OwnerId())
 				if err != nil {
 					return func(s session.Model) error {
 						return err
 					}
 				}
 
-				var i item.Model
-				for _, ii := range c.Inventory().Cash().Items() {
-					if ii.Id() == p.InventoryItemId() {
-						i = ii
+				var a asset.Model[asset.PetReferenceData]
+				for _, ii := range c.Inventory().Cash().Assets() {
+					if ii.ReferenceId() == p.InventoryItemId() {
+						if prd, ok := ii.ReferenceData().(asset.PetReferenceData); ok {
+							a = asset.NewBuilder[asset.PetReferenceData](ii.Id(), ii.TemplateId(), ii.ReferenceId(), ii.ReferenceType()).
+								SetSlot(ii.Slot()).
+								SetExpiration(ii.Expiration()).
+								SetReferenceData(prd).
+								Build()
+						}
 					}
 				}
-				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshPet(p, i))
+				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshPet(a))
 			}
 		}
 	}

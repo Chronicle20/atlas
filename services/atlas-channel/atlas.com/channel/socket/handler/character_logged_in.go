@@ -20,7 +20,7 @@ func CharacterLoggedInHandleFunc(l logrus.FieldLogger, ctx context.Context, _ wr
 		buffer := r.GetRestAsBytes()
 		l.Debugf("Handling login for character [%d]. buffer: %s", characterId, buffer)
 
-		c, err := character.GetById(l)(ctx)()(characterId)
+		c, err := character.NewProcessor(l, ctx).GetById()(characterId)
 		if err != nil {
 			return
 		}

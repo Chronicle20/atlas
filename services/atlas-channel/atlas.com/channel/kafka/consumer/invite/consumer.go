@@ -49,7 +49,7 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		rc, err := character.GetById(l)(ctx)()(e.Body.OriginatorId)
+		rc, err := character.NewProcessor(l, ctx).GetById()(e.Body.OriginatorId)
 		if err != nil {
 			l.WithError(err).Errorf("Unablet to get character [%d] details, who generated the invite.", e.Body.OriginatorId)
 			return
@@ -123,7 +123,7 @@ func handleRejectedStatusEvent(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 
-		rc, err := character.GetById(l)(ctx)()(e.Body.TargetId)
+		rc, err := character.NewProcessor(l, ctx).GetById()(e.Body.TargetId)
 		if err != nil {
 			l.WithError(err).Errorf("Unablet to get character [%d] details, who generated the invite.", e.Body.OriginatorId)
 			return

@@ -81,7 +81,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationInvite) {
 			name := r.ReadAsciiString()
-			cs, err := character.GetByName(l, ctx)(name)
+			cs, err := character.NewProcessor(l, ctx).GetByName(name)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to party.", name)
 				err := session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody(l)("UNABLE_TO_FIND_THE_CHARACTER", name))(s)

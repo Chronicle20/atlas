@@ -29,7 +29,8 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		sui := &model.SkillUsageInfo{}
 		sui.Decode(l, t, readerOptions)(r)
 
-		c, err := character.GetById(l)(ctx)(character.SkillModelDecorator(l)(ctx))(s.CharacterId())
+		cp := character.NewProcessor(l, ctx)
+		c, err := cp.GetById(cp.SkillModelDecorator)(s.CharacterId())
 		if err != nil {
 			err = enableActions(l)(ctx)(wp)(s)
 			if err != nil {

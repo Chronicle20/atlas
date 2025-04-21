@@ -1,9 +1,7 @@
 package writer
 
 import (
-	"atlas-channel/character/inventory/equipable"
-	"atlas-channel/character/inventory/item"
-	"atlas-channel/pet"
+	"atlas-channel/inventory/compartment/asset"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -89,17 +87,17 @@ func InventoryRemoveBodyWriter(inventoryType inventory.Type, slot int16) Invento
 	}
 }
 
-func CharacterInventoryRefreshPet(p pet.Model, i item.Model) BodyProducer {
-	pw := model.FlipOperator(WritePetCashItemInfo(true)(p))(i)
+func CharacterInventoryRefreshPet(a asset.Model[asset.PetReferenceData]) BodyProducer {
+	pw := model.FlipOperator(WritePetCashItemInfo(true))(a)
 	writers := []InventoryChangeWriter{
-		InventoryRemoveBodyWriter(inventory.TypeValueCash, i.Slot()),
-		InventoryAddBodyWriter(inventory.TypeValueCash, i.Slot(), pw),
+		InventoryRemoveBodyWriter(inventory.TypeValueCash, a.Slot()),
+		InventoryAddBodyWriter(inventory.TypeValueCash, a.Slot(), pw),
 	}
 	return CharacterInventoryChangeBody(true, writers...)
 }
 
-func CharacterInventoryRefreshEquipable(t tenant.Model) func(e equipable.Model) BodyProducer {
-	return func(e equipable.Model) BodyProducer {
+func CharacterInventoryRefreshEquipable(t tenant.Model) func(a asset.Model[asset.EquipableReferenceData]) BodyProducer {
+	return func(e asset.Model[asset.EquipableReferenceData]) BodyProducer {
 		pw := model.FlipOperator(WriteEquipableInfo(t)(true))(e)
 		writers := []InventoryChangeWriter{
 			InventoryRemoveBodyWriter(inventory.TypeValueEquip, e.Slot()),

@@ -77,8 +77,9 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				return err
 			}
 
-			cp := model.SliceMap(character.GetByIdWithInventory(l)(ctx)(character.PetModelDecorator(l)(ctx)))(model.FixedProvider(ids))(model.ParallelMap())
-			cms, err := model.CollectToMap(cp, GetId, GetModel)()
+			cp := character.NewProcessor(l, ctx)
+			cmp := model.SliceMap(cp.GetById(cp.InventoryDecorator, cp.PetModelDecorator))(model.FixedProvider(ids))(model.ParallelMap())
+			cms, err := model.CollectToMap(cmp, GetId, GetModel)()
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve character details for characters in map.")
 				return err

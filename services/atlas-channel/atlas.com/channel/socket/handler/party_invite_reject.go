@@ -20,7 +20,7 @@ func PartyInviteRejectHandleFunc(l logrus.FieldLogger, ctx context.Context, _ wr
 		from := r.ReadAsciiString()
 		l.Debugf("Rejecting party invite from [%s]. unk [%d].", from, unk)
 
-		cs, err := character.GetByName(l, ctx)(from)
+		cs, err := character.NewProcessor(l, ctx).GetByName(from)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate character by name [%s]. Invite will be stuck", from)
 			return

@@ -2,11 +2,10 @@ package inventory
 
 import (
 	"atlas-channel/character"
-	"atlas-channel/character/inventory/equipable"
+	"atlas-channel/inventory/compartment/asset"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map "atlas-channel/map"
 	"atlas-channel/messenger"
-	"atlas-channel/pet"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
@@ -14,7 +13,6 @@ import (
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -62,14 +60,14 @@ func handleInventoryAddEvent(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, addToInventory(l)(ctx)(wp)(e))
-
+		_ = session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, addToInventory(l)(ctx)(wp)(e))
 	}
 }
 
 func addToInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
 		t := tenant.MustFromContext(ctx)
+		cp := character.NewProcessor(l, ctx)
 		return func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
 			return func(event inventoryChangedEvent[inventoryChangedItemAddBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
@@ -80,36 +78,14 @@ func addToInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writ
 						return errors.New("unable to identify inventory type")
 					}
 
-					if inventoryType == inventory.TypeValueEquip {
-						e, err := character.GetEquipableInSlot(l)(ctx)(s.CharacterId(), event.Slot)()
-						if err != nil {
-							return err
-						}
-						itemWriter = model.FlipOperator(writer.WriteEquipableInfo(t)(true))(e)
-					} else if inventoryType == inventory.TypeValueUse || inventoryType == inventory.TypeValueSetup || inventoryType == inventory.TypeValueETC {
-						i, err := character.GetItemInSlot(l)(ctx)(s.CharacterId(), byte(inventoryType), event.Slot)()
-						if err != nil {
-							return err
-						}
-						itemWriter = model.FlipOperator(writer.WriteItemInfo(true))(i)
-					} else if inventoryType == inventory.TypeValueCash {
-						i, err := character.GetItemInSlot(l)(ctx)(s.CharacterId(), byte(inventoryType), event.Slot)()
-						if err != nil {
-							return err
-						}
-
-						if item.GetClassification(item.Id(i.ItemId())) == item.Classification(500) {
-							p, err := pet.GetByOwnerItem(l)(ctx)(event.CharacterId, i.Id())
-							if err != nil {
-								return err
-							}
-							itemWriter = model.FlipOperator(writer.WritePetCashItemInfo(true)(p))(i)
-						} else {
-							itemWriter = model.FlipOperator(writer.WriteCashItemInfo(true))(i)
-						}
+					i, err := cp.GetItemInSlot(s.CharacterId(), inventoryType, event.Slot)()
+					if err != nil {
+						return err
 					}
+					itemWriter = model.FlipOperator(writer.WriteAssetInfo(t)(true))(i)
+
 					bp := writer.CharacterInventoryChangeBody(false, writer.InventoryAddBodyWriter(inventoryType, event.Slot, itemWriter))
-					err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)
+					err = session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to add [%d] to slot [%d] for character [%d].", event.Body.ItemId, event.Slot, s.CharacterId())
 					}
@@ -156,36 +132,37 @@ func handleInventoryAttributeUpdateEvent(sc server.Model, wp writer.Producer) me
 			return
 		}
 
-		eqp := equipable.NewModelBuilder().
-			SetItemId(e.Body.ItemId).
+		eqp := asset.NewBuilder[asset.EquipableReferenceData](0, e.Body.ItemId, 0, asset.ReferenceTypeEquipable).
 			SetSlot(e.Slot).
-			SetStrength(e.Body.Strength).
-			SetDexterity(e.Body.Dexterity).
-			SetIntelligence(e.Body.Intelligence).
-			SetLuck(e.Body.Luck).
-			SetHP(e.Body.HP).
-			SetMP(e.Body.MP).
-			SetWeaponAttack(e.Body.WeaponAttack).
-			SetMagicAttack(e.Body.MagicAttack).
-			SetWeaponDefense(e.Body.WeaponDefense).
-			SetMagicDefense(e.Body.MagicDefense).
-			SetAccuracy(e.Body.Accuracy).
-			SetAvoidability(e.Body.Avoidability).
-			SetHands(e.Body.Hands).
-			SetSpeed(e.Body.Speed).
-			SetJump(e.Body.Jump).
-			SetSlots(e.Body.Slots).
-			SetOwnerName(e.Body.OwnerName).
-			SetLocked(e.Body.Locked).
-			SetSpikes(e.Body.Spikes).
-			SetKarmaUsed(e.Body.KarmaUsed).
-			SetCold(e.Body.Cold).
-			SetCanBeTraded(e.Body.CanBeTraded).
-			SetLevelType(e.Body.LevelType).
-			SetLevel(e.Body.Level).
-			SetExperience(e.Body.Experience).
-			SetHammersApplied(e.Body.HammersApplied).
 			SetExpiration(e.Body.Expiration).
+			SetReferenceData(asset.NewEquipableReferenceDataBuilder().
+				SetStrength(e.Body.Strength).
+				SetDexterity(e.Body.Dexterity).
+				SetIntelligence(e.Body.Intelligence).
+				SetLuck(e.Body.Luck).
+				SetHp(e.Body.HP).
+				SetMp(e.Body.MP).
+				SetWeaponAttack(e.Body.WeaponAttack).
+				SetMagicAttack(e.Body.MagicAttack).
+				SetWeaponDefense(e.Body.WeaponDefense).
+				SetMagicDefense(e.Body.MagicDefense).
+				SetAccuracy(e.Body.Accuracy).
+				SetAvoidability(e.Body.Avoidability).
+				SetHands(e.Body.Hands).
+				SetSpeed(e.Body.Speed).
+				SetJump(e.Body.Jump).
+				SetSlots(e.Body.Slots).
+				SetOwnerId(0).
+				SetLocked(e.Body.Locked).
+				SetSpikes(e.Body.Spikes).
+				SetKarmaUsed(e.Body.KarmaUsed).
+				SetCold(e.Body.Cold).
+				SetCanBeTraded(e.Body.CanBeTraded).
+				SetLevelType(e.Body.LevelType).
+				SetLevel(e.Body.Level).
+				SetExperience(e.Body.Experience).
+				SetHammersApplied(e.Body.HammersApplied).
+				Build()).
 			Build()
 
 		so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshEquipable(sc.Tenant())(eqp))
@@ -207,17 +184,18 @@ func handleInventoryMoveEvent(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(event.CharacterId, moveInInventory(l)(ctx)(wp)(event))
+		_ = session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(event.CharacterId, moveInInventory(l)(ctx)(wp)(event))
 	}
 }
 
 func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 		t := tenant.MustFromContext(ctx)
+		cp := character.NewProcessor(l, ctx)
 		return func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 			return func(e inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					c, err := character.GetByIdWithInventory(l)(ctx)(character.PetModelDecorator(l)(ctx))(s.CharacterId())
+					c, err := cp.GetById(cp.InventoryDecorator, cp.PetModelDecorator)(s.CharacterId())
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue appearance update for character [%d] to others in map.", s.CharacterId())
 						return err

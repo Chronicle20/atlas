@@ -31,7 +31,7 @@ func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		// TODO process MesoGuard
 		// TODO decrease battleship hp
 
-		c, err := character.GetById(l)(ctx)()(s.CharacterId())
+		c, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
 		if err != nil {
 			return
 		}
@@ -41,6 +41,6 @@ func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			l.WithError(err).Errorf("Unable to announce character [%d] has been damaged to foreign characters in map [%d].", s.CharacterId(), s.MapId())
 		}
 
-		_ = character.ChangeHP(l)(ctx)(s.Map(), s.CharacterId(), -int16(di.Damage()))
+		_ = character.NewProcessor(l, ctx).ChangeHP(s.Map(), s.CharacterId(), -int16(di.Damage()))
 	}
 }

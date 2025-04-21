@@ -40,9 +40,13 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 
 func (p *Processor) WithTransaction(db *gorm.DB) *Processor {
 	return &Processor{
-		l:   p.l,
-		ctx: p.ctx,
-		db:  db,
+		l:                    p.l,
+		ctx:                  p.ctx,
+		db:                   db,
+		compartmentProcessor: p.compartmentProcessor,
+		GetByCharacterId:     p.GetByCharacterId,
+		CreateAndEmit:        p.CreateAndEmit,
+		DeleteAndEmit:        p.DeleteAndEmit,
 	}
 }
 
@@ -62,10 +66,10 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32) (Model, 
 			// Check if inventory already exists for character.
 			var err error
 			i, err = p.WithTransaction(tx).GetByCharacterId(characterId)
-			if !errors.Is(err, gorm.ErrRecordNotFound) {
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 				return err
 			}
-			if i.CharacterId() != 0 {
+			if i.Equipable().Capacity() != 0 {
 				return errors.New("already exists")
 			}
 
@@ -79,6 +83,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32) (Model, 
 				}
 				b.SetCompartment(c)
 			}
+			i = b.Build()
 			return mb.Put(inventory2.EnvEventTopicStatus, inventory3.CreatedEventStatusProvider(characterId))
 		})
 		if txErr != nil {

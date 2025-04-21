@@ -1,8 +1,8 @@
 package equipment
 
 import (
-	"atlas-inventory/equipment/slot"
-	"atlas-inventory/equipment/statistics"
+	"atlas-inventory/data/equipment/slot"
+	"atlas-inventory/data/equipment/statistics"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"

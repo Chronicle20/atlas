@@ -1,6 +1,9 @@
 package compartment
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
 const (
 	EnvEventTopicStatus                 = "EVENT_TOPIC_COMPARTMENT_STATUS"
@@ -54,6 +57,7 @@ const (
 	CommandDestroy           = "DESTROY"
 	CommandCancelReservation = "CANCEL_RESERVATION"
 	CommandIncreaseCapacity  = "INCREASE_CAPACITY"
+	CommandCreateAsset       = "CREATE_ASSET"
 )
 
 type Command[E any] struct {
@@ -115,4 +119,13 @@ type CancelReservationCommandBody struct {
 
 type IncreaseCapacityCommandBody struct {
 	Amount uint32 `json:"amount"`
+}
+
+type CreateAssetCommandBody struct {
+	TemplateId   uint32    `json:"templateId"`
+	Quantity     uint32    `json:"quantity"`
+	Expiration   time.Time `json:"expiration"`
+	OwnerId      uint32    `json:"ownerId"`
+	Flag         uint16    `json:"flag"`
+	Rechargeable uint64    `json:"rechargeable"`
 }

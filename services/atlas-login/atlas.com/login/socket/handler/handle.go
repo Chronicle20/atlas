@@ -49,24 +49,22 @@ func AdaptHandler(l logrus.FieldLogger) func(t tenant.Model, wp writer.Producer)
 	return func(t tenant.Model, wp writer.Producer) Adapter {
 		return func(name string, v MessageValidator, h MessageHandler, readerOptions map[string]interface{}) request.Handler {
 			return func(sessionId uuid.UUID, r request.Reader) {
-				fl := l.WithField("session", sessionId.String())
 
+				fl := l.WithField("session", sessionId.String())
 				sctx, span := otel.GetTracerProvider().Tracer("atlas-login").Start(context.Background(), "socket_handler")
 				sl := fl.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
 				defer span.End()
 
 				tctx := tenant.WithContext(sctx, t)
 
-				s, ok := session.GetRegistry().Get(t.Id(), sessionId)
-				if !ok {
-					sl.Errorf("Unable to locate session %d", sessionId)
-					return
-				}
-
-				if v(sl, tctx)(s) {
-					h(sl, tctx, wp)(s, &r)
-					s = session.UpdateLastRequest()(t.Id(), s.SessionId())
-				}
+				sp := session.NewProcessor(l, tctx)
+				sp.IfPresentById(sessionId, func(s session.Model) error {
+					if v(sl, tctx)(s) {
+						h(sl, tctx, wp)(s, &r)
+						_ = sp.UpdateLastRequest(s.SessionId())
+					}
+					return nil
+				})
 			}
 		}
 	}

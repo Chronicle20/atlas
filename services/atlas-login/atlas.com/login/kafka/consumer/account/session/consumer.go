@@ -5,7 +5,6 @@ import (
 	"atlas-login/configuration"
 	consumer2 "atlas-login/kafka/consumer"
 	session2 "atlas-login/kafka/message/account/session"
-	"atlas-login/kafka/producer"
 	"atlas-login/session"
 	model2 "atlas-login/socket/model"
 	"atlas-login/socket/writer"
@@ -53,15 +52,16 @@ func handleCreatedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) 
 			return
 		}
 
-		session.IfPresentById(t)(e.SessionId, func(s session.Model) error {
+		sp := session.NewProcessor(l, ctx)
+		sp.IfPresentById(e.SessionId, func(s session.Model) error {
 			a, err := account.NewProcessor(l, ctx).GetById(e.AccountId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve account [%d] that had a session [%s] created for it.", e.AccountId, s.SessionId().String())
 				return err
 			}
 
-			s = session.SetAccountId(a.Id())(t.Id(), s.SessionId())
-			session.SessionCreated(producer.ProviderImpl(l)(ctx), t)(s)
+			s = sp.SetAccountId(s.SessionId(), a.Id())
+			_ = sp.SessionCreated(s)
 
 			sc, err := configuration.GetTenantConfig(t.Id())
 			if err != nil {
@@ -94,15 +94,16 @@ func handleLicenseAgreementAccountSessionStatusEvent(t tenant.Model, wp writer.P
 			return
 		}
 
-		session.IfPresentById(t)(e.SessionId, func(s session.Model) error {
+		sp := session.NewProcessor(l, ctx)
+		sp.IfPresentById(e.SessionId, func(s session.Model) error {
 			a, err := account.NewProcessor(l, ctx).GetById(e.AccountId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve account [%d] that had a session [%s] created for it.", e.AccountId, s.SessionId().String())
 				return err
 			}
 
-			s = session.SetAccountId(a.Id())(t.Id(), s.SessionId())
-			session.SessionCreated(producer.ProviderImpl(l)(ctx), t)(s)
+			s = sp.SetAccountId(s.SessionId(), a.Id())
+			_ = sp.SessionCreated(s)
 
 			return announceError(l)(ctx)(wp)("LICENSE_AGREEMENT")(s)
 		})
@@ -120,11 +121,11 @@ func handleErrorAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) fu
 		}
 
 		if e.Body.Code != session2.EventStatusErrorCodeDeletedOrBlocked {
-			session.IfPresentById(t)(e.SessionId, announceError(l)(ctx)(wp)(e.Body.Code))
+			session.NewProcessor(l, ctx).IfPresentById(e.SessionId, announceError(l)(ctx)(wp)(e.Body.Code))
 		} else if e.Body.Until != 0 {
-			session.IfPresentById(t)(e.SessionId, announceTemporaryBan(l)(ctx)(wp)(e.Body.Until, e.Body.Reason))
+			session.NewProcessor(l, ctx).IfPresentById(e.SessionId, announceTemporaryBan(l)(ctx)(wp)(e.Body.Until, e.Body.Reason))
 		} else {
-			session.IfPresentById(t)(e.SessionId, announcePermanentBan(l)(ctx)(wp))
+			session.NewProcessor(l, ctx).IfPresentById(e.SessionId, announcePermanentBan(l)(ctx)(wp))
 		}
 	}
 }
@@ -279,7 +280,7 @@ func handleStateChangedAccountSessionStatusEvent(t tenant.Model, wp writer.Produ
 			return
 		}
 
-		session.IfPresentById(t)(e.SessionId, processStateReturn(l)(ctx)(wp)(e.AccountId, e.Body.State, e.Body.Params))
+		session.NewProcessor(l, ctx).IfPresentById(e.SessionId, processStateReturn(l)(ctx)(wp)(e.AccountId, e.Body.State, e.Body.Params))
 	}
 }
 

@@ -51,8 +51,9 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			return
 		}
 
-		s = session.SetWorldId(worldId)(t.Id(), s.SessionId())
-		s = session.SetChannelId(channelId)(t.Id(), s.SessionId())
+		sp := session.NewProcessor(l, ctx)
+		s = sp.SetWorldId(s.SessionId(), worldId)
+		s = sp.SetChannelId(s.SessionId(), channelId)
 
 		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
 		if err != nil {

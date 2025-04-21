@@ -97,7 +97,7 @@ func main() {
 		session2.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler)
 		seed.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler)
 
-		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, t, ten.Port)
+		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, ten.Port)
 	}
 	span.End()
 

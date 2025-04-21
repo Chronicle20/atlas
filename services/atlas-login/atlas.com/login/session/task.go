@@ -47,10 +47,11 @@ func (t *Timeout) Run() {
 	t.l.Debugf("Executing timeout task.")
 	_ = tenant.ForAll(func(ten tenant.Model) error {
 		tctx := tenant.WithContext(sctx, ten)
-		return model.ForEachSlice(AllInTenantProvider(ten), func(s Model) error {
+		p := NewProcessor(t.l, tctx)
+		return model.ForEachSlice(p.AllInTenantProvider, func(s Model) error {
 			if cur.Sub(s.LastRequest()) > t.timeout {
 				t.l.Infof("Account [%d] was auto-disconnected due to inactivity.", s.AccountId())
-				DestroyById(t.l, tctx, GetRegistry())(s.SessionId())
+				p.DestroyById(s.SessionId())
 			}
 			return nil
 		})

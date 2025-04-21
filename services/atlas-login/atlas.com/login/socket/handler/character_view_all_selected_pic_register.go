@@ -11,15 +11,14 @@ import (
 	"atlas-login/world"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const CharacterViewAllSelectedPicRegisterHandle = "CharacterViewAllSelectedPicRegisterHandle"
 
 func CharacterViewAllSelectedPicRegisterHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader) {
-	t := tenant.MustFromContext(ctx)
 	cp := character.NewProcessor(l, ctx)
+	sp := session.NewProcessor(l, ctx)
 	return func(s session.Model, r *request.Reader) {
 		opt := r.ReadByte()
 		characterId := r.ReadUint32()
@@ -38,13 +37,13 @@ func CharacterViewAllSelectedPicRegisterHandleFunc(l logrus.FieldLogger, ctx con
 
 		if c.WorldId() != byte(worldId) {
 			l.Errorf("Character is not part of world provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = sp.Destroy(s)
 			return
 		}
 
 		if c.AccountId() != s.AccountId() {
 			l.Errorf("Character is not part of account provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = sp.Destroy(s)
 			return
 		}
 
@@ -68,12 +67,12 @@ func CharacterViewAllSelectedPicRegisterHandleFunc(l logrus.FieldLogger, ctx con
 			return
 		}
 
-		s = session.SetWorldId(byte(worldId))(t.Id(), s.SessionId())
+		s = sp.SetWorldId(s.SessionId(), byte(worldId))
 
-		channel, err := channel.NewProcessor(l, ctx).GetRandomInWorld(byte(worldId))
-		s = session.SetChannelId(channel.ChannelId())(t.Id(), s.SessionId())
+		ch, err := channel.NewProcessor(l, ctx).GetRandomInWorld(byte(worldId))
+		s = sp.SetChannelId(s.SessionId(), ch.ChannelId())
 
-		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: channel.IpAddress(), Port: uint16(channel.Port()), CharacterId: characterId})
+		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: ch.IpAddress(), Port: uint16(ch.Port()), CharacterId: characterId})
 		if err != nil {
 			return
 		}

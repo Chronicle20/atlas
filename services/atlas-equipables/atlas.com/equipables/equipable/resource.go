@@ -1,4 +1,4 @@
-package equipment
+package equipable
 
 import (
 	"atlas-equipables/rest"
@@ -28,21 +28,23 @@ func InitResource(si jsonapi.ServerInformation, db *gorm.DB) server.RouteInitial
 
 func handleCreateRandomEquipment(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		e, err := CreateRandom(d.Logger())(d.DB())(d.Context())(input.ItemId)
+		e, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateRandomAndEmit(input.ItemId)
 		if err != nil {
-			d.Logger().WithError(err).Errorf("Cannot create equipment.")
+			d.Logger().WithError(err).Errorf("Cannot create equipable.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		res, err := model.Map(Transform)(model.FixedProvider(e))()
+		rm, err := model.Map(Transform)(model.FixedProvider(e))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 	}
 }
 
@@ -53,41 +55,45 @@ func handleCreateEquipment(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		e, err := Create(d.Logger())(d.DB())(d.Context())(i)
+		e, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(i)
 		if err != nil {
-			d.Logger().WithError(err).Errorf("Cannot create equipment.")
+			d.Logger().WithError(err).Errorf("Cannot create equipable.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		res, err := model.Map(Transform)(model.FixedProvider(e))()
+		rm, err := model.Map(Transform)(model.FixedProvider(e))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 	}
 }
 
 func handleGetEquipment(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseEquipmentId(d.Logger(), func(equipmentId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			e, err := GetById(d.Logger())(d.DB())(d.Context())(equipmentId)
+			e, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(equipmentId)
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Unable to retrieve equipment %d.", equipmentId)
+				d.Logger().WithError(err).Errorf("Unable to retrieve equipable %d.", equipmentId)
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			res, err := model.Map(Transform)(model.FixedProvider(e))()
+			rm, err := model.Map(Transform)(model.FixedProvider(e))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 		}
 	})
 }
@@ -99,29 +105,31 @@ func handleUpdateEquipment(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		e, err := UpdateById(d.Logger())(d.DB())(d.Context())(i)
+		e, err := NewProcessor(d.Logger(), d.Context(), d.DB()).UpdateAndEmit(i)
 		if err != nil {
-			d.Logger().WithError(err).Errorf("Unable to update equipment %d.", i.Id())
+			d.Logger().WithError(err).Errorf("Unable to update equipable %d.", i.Id())
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		res, err := model.Map(Transform)(model.FixedProvider(e))()
+		rm, err := model.Map(Transform)(model.FixedProvider(e))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 	}
 }
 
 func handleDeleteEquipment(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseEquipmentId(d.Logger(), func(equipmentId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			err := DeleteById(d.Logger())(d.DB())(d.Context())(equipmentId)
+			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteByIdAndEmit(equipmentId)
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Unable to delete equipment %d.", equipmentId)
+				d.Logger().WithError(err).Errorf("Unable to delete equipable %d.", equipmentId)
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}

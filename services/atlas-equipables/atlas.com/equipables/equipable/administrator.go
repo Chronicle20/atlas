@@ -1,12 +1,12 @@
-package equipment
+package equipable
 
 import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func delete(db *gorm.DB, tenantId uuid.UUID, equipmentId uint32) error {
-	return db.Delete(&entity{TenantId: tenantId, ID: equipmentId}).Error
+func deleteById(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
+	return db.Delete(&entity{TenantId: tenantId, ID: id}).Error
 }
 
 func create(db *gorm.DB, tenantId uuid.UUID, itemId uint32, strength uint16, dexterity uint16, intelligence uint16, luck uint16,
@@ -38,7 +38,7 @@ func create(db *gorm.DB, tenantId uuid.UUID, itemId uint32, strength uint16, dex
 		return Model{}, err
 	}
 
-	return makeEquipment(*e)
+	return Make(*e)
 }
 
 func update(db *gorm.DB, tenantId uuid.UUID, id uint32, updates map[string]interface{}) (Model, error) {
@@ -53,10 +53,10 @@ func update(db *gorm.DB, tenantId uuid.UUID, id uint32, updates map[string]inter
 		return Model{}, err
 	}
 
-	return makeEquipment(e)
+	return Make(e)
 }
 
-func makeEquipment(e entity) (Model, error) {
+func Make(e entity) (Model, error) {
 	r := NewBuilder(e.ID).
 		SetItemId(e.ItemId).
 		SetStrength(e.Strength).

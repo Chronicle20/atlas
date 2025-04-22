@@ -1,4 +1,4 @@
-package equipment
+package equipable
 
 import (
 	"atlas-equipables/database"

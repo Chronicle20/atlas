@@ -3,7 +3,6 @@ package fame
 import (
 	fame2 "atlas-channel/kafka/message/fame"
 	"atlas-channel/kafka/producer"
-	fame3 "atlas-channel/kafka/producer/fame"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/sirupsen/logrus"
@@ -23,5 +22,5 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 }
 
 func (p *Processor) RequestChange(m _map.Model, characterId uint32, targetId uint32, amount int8) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(fame2.EnvCommandTopic)(fame3.RequestChangeFameCommandProvider(m, characterId, targetId, amount))
+	return producer.ProviderImpl(p.l)(p.ctx)(fame2.EnvCommandTopic)(RequestChangeFameCommandProvider(m, characterId, targetId, amount))
 }

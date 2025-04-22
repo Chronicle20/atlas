@@ -6,7 +6,6 @@ import (
 	"atlas-channel/inventory/compartment/asset"
 	character2 "atlas-channel/kafka/message/character"
 	"atlas-channel/kafka/producer"
-	character3 "atlas-channel/kafka/producer/character"
 	"atlas-channel/pet"
 	"context"
 	"errors"
@@ -127,7 +126,7 @@ func (p *Processor) RequestDistributeAp(m _map.Model, characterId uint32, update
 			Amount:  int8(d.Value),
 		})
 	}
-	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(character3.RequestDistributeApCommandProvider(m, characterId, distributions))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestDistributeApCommandProvider(m, characterId, distributions))
 }
 
 func abilityFromFlag(flag uint32) (string, error) {
@@ -149,17 +148,17 @@ func abilityFromFlag(flag uint32) (string, error) {
 }
 
 func (p *Processor) RequestDropMeso(m _map.Model, characterId uint32, amount uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(character3.RequestDropMesoCommandProvider(m, characterId, amount))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestDropMesoCommandProvider(m, characterId, amount))
 }
 
 func (p *Processor) ChangeHP(m _map.Model, characterId uint32, amount int16) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(character3.ChangeHPCommandProvider(m, characterId, amount))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(ChangeHPCommandProvider(m, characterId, amount))
 }
 
 func (p *Processor) ChangeMP(m _map.Model, characterId uint32, amount int16) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(character3.ChangeMPCommandProvider(m, characterId, amount))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(ChangeMPCommandProvider(m, characterId, amount))
 }
 
 func (p *Processor) RequestDistributeSp(m _map.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(character3.RequestDistributeSpCommandProvider(m, characterId, skillId, amount))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestDistributeSpCommandProvider(m, characterId, skillId, amount))
 }

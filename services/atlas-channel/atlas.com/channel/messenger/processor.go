@@ -3,7 +3,6 @@ package messenger
 import (
 	messenger2 "atlas-channel/kafka/message/messenger"
 	"atlas-channel/kafka/producer"
-	messenger3 "atlas-channel/kafka/producer/messenger"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -25,17 +24,17 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 
 func (p *Processor) Create(characterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to create a messenger.", characterId)
-	return producer.ProviderImpl(p.l)(p.ctx)(messenger2.EnvCommandTopic)(messenger3.CreateCommandProvider(characterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(messenger2.EnvCommandTopic)(CreateCommandProvider(characterId))
 }
 
 func (p *Processor) Leave(messengerId uint32, characterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to leave messenger [%d].", characterId, messengerId)
-	return producer.ProviderImpl(p.l)(p.ctx)(messenger2.EnvCommandTopic)(messenger3.LeaveCommandProvider(characterId, messengerId))
+	return producer.ProviderImpl(p.l)(p.ctx)(messenger2.EnvCommandTopic)(LeaveCommandProvider(characterId, messengerId))
 }
 
 func (p *Processor) RequestInvite(characterId uint32, targetCharacterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to invite [%d] to a messenger.", characterId, targetCharacterId)
-	return producer.ProviderImpl(p.l)(p.ctx)(messenger2.EnvCommandTopic)(messenger3.RequestInviteCommandProvider(characterId, targetCharacterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(messenger2.EnvCommandTopic)(RequestInviteCommandProvider(characterId, targetCharacterId))
 }
 
 func (p *Processor) GetById(messengerId uint32) (Model, error) {

@@ -3,7 +3,6 @@ package portal
 import (
 	portal2 "atlas-channel/kafka/message/portal"
 	"atlas-channel/kafka/producer"
-	portal3 "atlas-channel/kafka/producer/portal"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
@@ -38,6 +37,6 @@ func (p *Processor) Enter(m _map.Model, portalName string, characterId uint32) e
 		p.l.WithError(err).Errorf("Unable to locate portal [%s] in map [%d].", portalName, m.MapId())
 		return err
 	}
-	err = producer.ProviderImpl(p.l)(p.ctx)(portal2.EnvPortalCommandTopic)(portal3.EnterCommandProvider(m, pm.id, characterId))
+	err = producer.ProviderImpl(p.l)(p.ctx)(portal2.EnvPortalCommandTopic)(EnterCommandProvider(m, pm.id, characterId))
 	return err
 }

@@ -3,7 +3,6 @@ package buff
 import (
 	buff2 "atlas-channel/kafka/message/buff"
 	"atlas-channel/kafka/producer"
-	buff3 "atlas-channel/kafka/producer/buff"
 	"atlas-channel/skill/effect/statup"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -36,11 +35,11 @@ func (p *Processor) GetByCharacterId(characterId uint32) ([]Model, error) {
 func (p *Processor) Apply(m _map.Model, fromId uint32, sourceId int32, duration int32, statups []statup.Model) model.Operator[uint32] {
 	return func(characterId uint32) error {
 		p.l.Debugf("Character [%d] applying effect from source [%d].", characterId, sourceId)
-		return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(buff3.ApplyCommandProvider(m, characterId, fromId, sourceId, duration, statups))
+		return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(ApplyCommandProvider(m, characterId, fromId, sourceId, duration, statups))
 	}
 }
 
 func (p *Processor) Cancel(m _map.Model, characterId uint32, sourceId int32) error {
 	p.l.Debugf("Character [%d] cancelling effect from source [%d].", characterId, sourceId)
-	return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(buff3.CancelCommandProvider(m, characterId, sourceId))
+	return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(CancelCommandProvider(m, characterId, sourceId))
 }

@@ -3,7 +3,6 @@ package movement
 import (
 	movement2 "atlas-channel/kafka/message/movement"
 	"atlas-channel/kafka/producer"
-	movement3 "atlas-channel/kafka/producer/movement"
 	_map2 "atlas-channel/map"
 	"atlas-channel/monster"
 	"atlas-channel/npc"
@@ -50,7 +49,7 @@ func (p *Processor) ForCharacter(m _map.Model, characterId uint32, movement mode
 		if err != nil {
 			return
 		}
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(movement3.CommandProducer(m, uint64(characterId), characterId, ms.X, ms.Y, ms.Stance))
+		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(m, uint64(characterId), characterId, ms.X, ms.Y, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
@@ -94,7 +93,7 @@ func (p *Processor) ForPet(m _map.Model, characterId uint32, petId uint64, movem
 		if err != nil {
 			return
 		}
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandPetMovement)(movement3.CommandProducer(m, petId, characterId, ms.X, ms.Y, ms.Stance))
+		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandPetMovement)(CommandProducer(m, petId, characterId, ms.X, ms.Y, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
@@ -133,7 +132,7 @@ func (p *Processor) ForMonster(m _map.Model, characterId uint32, objectId uint32
 		if err != nil {
 			return
 		}
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandMonsterMovement)(movement3.CommandProducer(m, uint64(objectId), characterId, ms.X, ms.Y, ms.Stance))
+		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandMonsterMovement)(CommandProducer(m, uint64(objectId), characterId, ms.X, ms.Y, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}

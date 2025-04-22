@@ -3,7 +3,6 @@ package macro
 import (
 	macro2 "atlas-channel/kafka/message/macro"
 	"atlas-channel/kafka/producer"
-	macro3 "atlas-channel/kafka/producer/macro"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -32,5 +31,5 @@ func (p *Processor) GetByCharacterId(characterId uint32) ([]Model, error) {
 }
 
 func (p *Processor) Update(characterId uint32, macros []Model) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(macro2.EnvCommandTopic)(macro3.UpdateCommandProvider(characterId, macros))
+	return producer.ProviderImpl(p.l)(p.ctx)(macro2.EnvCommandTopic)(UpdateCommandProvider(characterId, macros))
 }

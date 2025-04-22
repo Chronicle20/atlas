@@ -3,7 +3,6 @@ package drop
 import (
 	drop2 "atlas-channel/kafka/message/drop"
 	"atlas-channel/kafka/producer"
-	drop3 "atlas-channel/kafka/producer/drop"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
@@ -33,5 +32,5 @@ func (p *Processor) ForEachInMap(m _map.Model, f model.Operator[Model]) error {
 }
 
 func (p *Processor) RequestReservation(m _map.Model, dropId uint32, characterId uint32, characterX int16, characterY int16, petSlot int8) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(drop2.EnvCommandTopic)(drop3.RequestReservationCommandProvider(m, dropId, characterId, characterX, characterY, petSlot))
+	return producer.ProviderImpl(p.l)(p.ctx)(drop2.EnvCommandTopic)(RequestReservationCommandProvider(m, dropId, characterId, characterX, characterY, petSlot))
 }

@@ -1,9 +1,9 @@
 package inventory
 
 import (
+	inventory3 "atlas-channel/inventory"
 	inventory2 "atlas-channel/kafka/message/inventory"
 	"atlas-channel/kafka/producer"
-	inventory3 "atlas-channel/kafka/producer/inventory"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/sirupsen/logrus"

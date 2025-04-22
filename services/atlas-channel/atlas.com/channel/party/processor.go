@@ -3,7 +3,6 @@ package party
 import (
 	party2 "atlas-channel/kafka/message/party"
 	"atlas-channel/kafka/producer"
-	party3 "atlas-channel/kafka/producer/party"
 	"context"
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -28,27 +27,27 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 
 func (p *Processor) Create(characterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to create a party.", characterId)
-	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(party3.CreateCommandProvider(characterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(CreateCommandProvider(characterId))
 }
 
 func (p *Processor) Leave(partyId uint32, characterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to leave party [%d].", characterId, partyId)
-	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(party3.LeaveCommandProvider(characterId, partyId, false))
+	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(LeaveCommandProvider(characterId, partyId, false))
 }
 
 func (p *Processor) Expel(partyId uint32, characterId uint32, targetCharacterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to expel [%d] from party [%d].", characterId, targetCharacterId, partyId)
-	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(party3.LeaveCommandProvider(characterId, partyId, true))
+	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(LeaveCommandProvider(characterId, partyId, true))
 }
 
 func (p *Processor) ChangeLeader(partyId uint32, characterId uint32, targetCharacterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to pass leadership to [%d] in party [%d].", characterId, targetCharacterId, partyId)
-	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(party3.ChangeLeaderCommandProvider(characterId, partyId, targetCharacterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(ChangeLeaderCommandProvider(characterId, partyId, targetCharacterId))
 }
 
 func (p *Processor) RequestInvite(characterId uint32, targetCharacterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to invite [%d] to a party.", characterId, targetCharacterId)
-	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(party3.RequestInviteCommandProvider(characterId, targetCharacterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(RequestInviteCommandProvider(characterId, targetCharacterId))
 }
 
 func (p *Processor) GetById(partyId uint32) (Model, error) {

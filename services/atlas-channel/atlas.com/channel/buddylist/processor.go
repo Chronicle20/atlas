@@ -3,7 +3,6 @@ package buddylist
 import (
 	buddylist2 "atlas-channel/kafka/message/buddylist"
 	"atlas-channel/kafka/producer"
-	buddylist3 "atlas-channel/kafka/producer/buddylist"
 	"context"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -29,10 +28,10 @@ func (p *Processor) GetById(characterId uint32) (Model, error) {
 
 func (p *Processor) RequestAdd(characterId uint32, worldId world.Id, targetId uint32, group string) error {
 	p.l.Debugf("Character [%d] would like to add [%d] to group [%s] to their buddy list.", characterId, targetId, group)
-	return producer.ProviderImpl(p.l)(p.ctx)(buddylist2.EnvCommandTopic)(buddylist3.RequestAddBuddyCommandProvider(characterId, worldId, targetId, group))
+	return producer.ProviderImpl(p.l)(p.ctx)(buddylist2.EnvCommandTopic)(RequestAddBuddyCommandProvider(characterId, worldId, targetId, group))
 }
 
 func (p *Processor) RequestDelete(characterId uint32, worldId world.Id, targetId uint32) error {
 	p.l.Debugf("Character [%d] attempting to delete buddy [%d].", characterId, targetId)
-	return producer.ProviderImpl(p.l)(p.ctx)(buddylist2.EnvCommandTopic)(buddylist3.RequestDeleteBuddyCommandProvider(characterId, worldId, targetId))
+	return producer.ProviderImpl(p.l)(p.ctx)(buddylist2.EnvCommandTopic)(RequestDeleteBuddyCommandProvider(characterId, worldId, targetId))
 }

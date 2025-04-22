@@ -21,6 +21,7 @@ func CreatedEventStatusProvider(characterId uint32, a Model[any]) model.Provider
 			ReferenceId:   a.ReferenceId(),
 			ReferenceType: string(a.ReferenceType()),
 			ReferenceData: getReferenceData(a.ReferenceData()),
+			Expiration:    a.Expiration(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -85,6 +86,7 @@ func UpdatedEventStatusProvider(characterId uint32, a Model[any]) model.Provider
 			ReferenceId:   a.ReferenceId(),
 			ReferenceType: string(a.ReferenceType()),
 			ReferenceData: getReferenceData(a.ReferenceData()),
+			Expiration:    a.Expiration(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

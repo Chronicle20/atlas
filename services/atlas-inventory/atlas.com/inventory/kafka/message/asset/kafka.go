@@ -25,15 +25,17 @@ type StatusEvent[E any] struct {
 }
 
 type CreatedStatusEventBody[E any] struct {
-	ReferenceId   uint32 `json:"referenceId"`
-	ReferenceType string `json:"referenceType"`
-	ReferenceData E      `json:"referenceData"`
+	ReferenceId   uint32    `json:"referenceId"`
+	ReferenceType string    `json:"referenceType"`
+	ReferenceData E         `json:"referenceData"`
+	Expiration    time.Time `json:"expiration"`
 }
 
 type UpdatedStatusEventBody[E any] struct {
-	ReferenceId   uint32 `json:"referenceId"`
-	ReferenceType string `json:"referenceType"`
-	ReferenceData E      `json:"referenceData"`
+	ReferenceId   uint32    `json:"referenceId"`
+	ReferenceType string    `json:"referenceType"`
+	ReferenceData E         `json:"referenceData"`
+	Expiration    time.Time `json:"expiration"`
 }
 
 type EquipableReferenceData struct {

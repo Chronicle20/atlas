@@ -37,7 +37,14 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
 				t, _ = topic.EnvProvider(l)(asset2.EnvEventTopicStatus)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent[asset2.EquipableReferenceData](sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent[asset2.CashEquipableReferenceData](sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent[asset2.ConsumableReferenceData](sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent[asset2.SetupReferenceData](sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent[asset2.EtcReferenceData](sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent[asset2.CashReferenceData](sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent[asset2.PetReferenceData](sc, wp))))
+
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetUpdatedEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetQuantityUpdatedEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMoveEvent(sc, wp))))
@@ -47,8 +54,8 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.CreatedStatusEventBody[any]]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.CreatedStatusEventBody[any]]) {
+func handleAssetCreatedEvent[E any](sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.CreatedStatusEventBody[E]]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.CreatedStatusEventBody[E]]) {
 		t := sc.Tenant()
 		if !t.Is(tenant.MustFromContext(ctx)) {
 			return

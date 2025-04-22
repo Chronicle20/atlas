@@ -469,7 +469,7 @@ func WriteAssetInfo(t tenant.Model) func(zeroPosition bool) func(w *response.Wri
 						SetExpiration(a.Expiration()).
 						SetReferenceData(ad).
 						Build()
-					return WriteEquipableInfo(t)(false)(w)(ea)
+					return WriteEquipableInfo(t)(zeroPosition)(w)(ea)
 				}
 				if ad, ok := a.ReferenceData().(asset.CashEquipableReferenceData); ok {
 					ea := asset.NewBuilder[asset.CashEquipableReferenceData](a.Id(), a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
@@ -477,7 +477,7 @@ func WriteAssetInfo(t tenant.Model) func(zeroPosition bool) func(w *response.Wri
 						SetExpiration(a.Expiration()).
 						SetReferenceData(ad).
 						Build()
-					return WriteCashEquipableInfo(t)(w, false)(ea)
+					return WriteCashEquipableInfo(t)(w, zeroPosition)(ea)
 				}
 				if ad, ok := a.ReferenceData().(asset.ConsumableReferenceData); ok {
 					ea := asset.NewBuilder[asset.ConsumableReferenceData](a.Id(), a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
@@ -542,7 +542,7 @@ func WriteAssetInfo(t tenant.Model) func(zeroPosition bool) func(w *response.Wri
 						SetExpiration(a.Expiration()).
 						SetReferenceData(ad).
 						Build()
-					return WriteCashItemInfo(false)(w)(ea)
+					return WriteCashItemInfo(zeroPosition)(w)(ea)
 				}
 				if ad, ok := a.ReferenceData().(asset.PetReferenceData); ok {
 					ea := asset.NewBuilder[asset.PetReferenceData](a.Id(), a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
@@ -550,7 +550,7 @@ func WriteAssetInfo(t tenant.Model) func(zeroPosition bool) func(w *response.Wri
 						SetExpiration(a.Expiration()).
 						SetReferenceData(ad).
 						Build()
-					return WritePetCashItemInfo(false)(w)(ea)
+					return WritePetCashItemInfo(zeroPosition)(w)(ea)
 				}
 				return errors.New("unknown item type")
 			}

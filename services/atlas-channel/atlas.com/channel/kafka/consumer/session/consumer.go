@@ -58,7 +58,7 @@ func handleError(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger,
 			return
 		}
 
-		session.NewProcessor(l, ctx).IfPresentById(e.SessionId, announceError(l)(ctx)(wp)(e.Body.Code))
+		session.NewProcessor(l, ctx).IfPresentByIdInWorld(e.SessionId, sc.WorldId(), sc.ChannelId(), announceError(l)(ctx)(wp)(e.Body.Code))
 	}
 }
 
@@ -90,7 +90,7 @@ func handleChannelChange(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		session.NewProcessor(l, ctx).IfPresentById(e.SessionId, processChannelChangeReturn(l)(ctx)(wp)(e.AccountId, e.Body.State, e.Body.Params))
+		session.NewProcessor(l, ctx).IfPresentByIdInWorld(e.SessionId, sc.WorldId(), sc.ChannelId(), processChannelChangeReturn(l)(ctx)(wp)(e.AccountId, e.Body.State, e.Body.Params))
 	}
 }
 
@@ -115,7 +115,7 @@ func handlePlayerLoggedIn(sc server.Model, wp writer.Producer) message.Handler[s
 			return
 		}
 
-		session.NewProcessor(l, ctx).IfPresentById(e.SessionId, processStateReturn(l)(ctx)(wp)(e.AccountId, e.Body.State, e.Body.Params))
+		session.NewProcessor(l, ctx).IfPresentByIdInWorld(e.SessionId, sc.WorldId(), sc.ChannelId(), processStateReturn(l)(ctx)(wp)(e.AccountId, e.Body.State, e.Body.Params))
 	}
 }
 

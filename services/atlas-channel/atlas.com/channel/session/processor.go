@@ -63,6 +63,20 @@ func (p *Processor) IfPresentById(sessionId uuid.UUID, f model.Operator[Model]) 
 	_ = f(s)
 }
 
+func (p *Processor) IfPresentByIdInWorld(sessionId uuid.UUID, worldId world.Id, channelId channel.Id, f model.Operator[Model]) {
+	s, err := p.ByIdModelProvider(sessionId)()
+	if err != nil {
+		return
+	}
+	if s.WorldId() != worldId {
+		return
+	}
+	if s.ChannelId() != channelId {
+		return
+	}
+	_ = f(s)
+}
+
 func (p *Processor) ByCharacterIdModelProvider(worldId world.Id, channelId channel.Id) func(characterId uint32) model.Provider[Model] {
 	return func(characterId uint32) model.Provider[Model] {
 		return model.FirstProvider[Model](p.AllInTenantProvider, model.Filters(CharacterIdFilter(characterId), WorldIdFilter(worldId), ChannelIdFilter(channelId)))

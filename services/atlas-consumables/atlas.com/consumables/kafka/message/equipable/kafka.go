@@ -8,10 +8,9 @@ const (
 )
 
 type Command[E any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Id          uint32 `json:"id"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	Id   uint32 `json:"id"`
+	Type string `json:"type"`
+	Body E      `json:"body"`
 }
 
 type ChangeBody struct {

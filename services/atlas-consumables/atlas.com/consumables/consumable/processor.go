@@ -501,7 +501,7 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *item
 			if len(changes) > 0 {
 				l.Debugf("Applying [%d] changes to character [%d] item [%d].", len(changes), characterId, sm.Equipable.ItemId())
 
-				err = equipable.ChangeStat(l)(ctx)(characterId, *sm.Equipable, changes...)
+				err = equipable.ChangeStat(l)(ctx)(*sm.Equipable, changes...)
 				if err != nil {
 					return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 				}

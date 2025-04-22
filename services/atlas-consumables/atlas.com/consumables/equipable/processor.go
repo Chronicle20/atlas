@@ -7,14 +7,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ChangeStat(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, e Model, changes ...Change) error {
-	return func(ctx context.Context) func(characterId uint32, e Model, changes ...Change) error {
-		return func(characterId uint32, e Model, changes ...Change) error {
+func ChangeStat(l logrus.FieldLogger) func(ctx context.Context) func(e Model, changes ...Change) error {
+	return func(ctx context.Context) func(e Model, changes ...Change) error {
+		return func(e Model, changes ...Change) error {
 			b := Clone(e)
 			for _, c := range changes {
 				c(b)
 			}
-			return producer.ProviderImpl(l)(ctx)(equipable.EnvCommandTopic)(changeEquipableProvider(characterId, b.Build()))
+			return producer.ProviderImpl(l)(ctx)(equipable.EnvCommandTopic)(changeEquipableProvider(b.Build()))
 		}
 	}
 }

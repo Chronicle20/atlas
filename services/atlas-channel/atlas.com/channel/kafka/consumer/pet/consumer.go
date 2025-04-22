@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/inventory/compartment/asset"
 	consumer2 "atlas-channel/kafka/consumer"
+	pet2 "atlas-channel/kafka/message/pet"
 	_map "atlas-channel/map"
 	"atlas-channel/pet"
 	"atlas-channel/server"
@@ -24,7 +25,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("pet_status_event")(EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("pet_status_event")(pet2.EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -34,7 +35,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
+				t, _ = topic.EnvProvider(l)(pet2.EnvStatusEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawned(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDespawned(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandResponse(sc, wp))))
@@ -48,9 +49,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[statusEvent[spawnedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[spawnedStatusEventBody]) {
-		if e.Type != StatusEventTypeSpawned {
+func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.SpawnedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.SpawnedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeSpawned {
 			return
 		}
 
@@ -99,9 +100,9 @@ func announceSpawn(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	}
 }
 
-func handleDespawned(sc server.Model, wp writer.Producer) message.Handler[statusEvent[despawnedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[despawnedStatusEventBody]) {
-		if e.Type != StatusEventTypeDespawned {
+func handleDespawned(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.DespawnedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.DespawnedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeDespawned {
 			return
 		}
 
@@ -137,9 +138,9 @@ func announceDespawn(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 	}
 }
 
-func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[statusEvent[commandResponseStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[commandResponseStatusEventBody]) {
-		if e.Type != StatusEventTypeCommandResponse {
+func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.CommandResponseStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.CommandResponseStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeCommandResponse {
 			return
 		}
 
@@ -196,9 +197,9 @@ func announcePetStatUpdate(l logrus.FieldLogger) func(ctx context.Context) func(
 	}
 }
 
-func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[closenessChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[closenessChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeClosenessChanged {
+func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.ClosenessChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.ClosenessChangedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeClosenessChanged {
 			return
 		}
 
@@ -217,9 +218,9 @@ func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler
 	}
 }
 
-func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[fullnessChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[fullnessChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeFullnessChanged {
+func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.FullnessChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.FullnessChangedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeFullnessChanged {
 			return
 		}
 
@@ -249,9 +250,9 @@ func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[
 	}
 }
 
-func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[levelChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[levelChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeLevelChanged {
+func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.LevelChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.LevelChangedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeLevelChanged {
 			return
 		}
 
@@ -285,9 +286,9 @@ func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[sta
 	}
 }
 
-func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[slotChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[slotChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeSlotChanged {
+func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.SlotChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.SlotChangedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeSlotChanged {
 			return
 		}
 
@@ -343,9 +344,9 @@ func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	}
 }
 
-func handleExcludeChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[excludeChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[excludeChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeExcludeChanged {
+func handleExcludeChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.ExcludeChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.ExcludeChangedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeExcludeChanged {
 			return
 		}
 

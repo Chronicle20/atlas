@@ -2,7 +2,9 @@ package session
 
 import (
 	"atlas-channel/account/session"
+	session2 "atlas-channel/kafka/message/session"
 	"atlas-channel/kafka/producer"
+	session3 "atlas-channel/kafka/producer/session"
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
@@ -199,7 +201,7 @@ func (p *Processor) UpdateLastRequest(id uuid.UUID) Model {
 }
 
 func (p *Processor) SessionCreated(s Model) error {
-	return p.kp(EnvEventTopicSessionStatus)(createdStatusEventProvider(s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
+	return p.kp(session2.EnvEventTopicSessionStatus)(session3.CreatedStatusEventProvider(s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
 }
 
 func Teardown(l logrus.FieldLogger) func() {
@@ -262,5 +264,5 @@ func (p *Processor) Destroy(s Model) error {
 	getRegistry().Remove(p.t.Id(), s.SessionId())
 	s.Disconnect()
 	p.sp.Destroy(s.SessionId(), s.AccountId())
-	return p.kp(EnvEventTopicSessionStatus)(destroyedStatusEventProvider(s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
+	return p.kp(session2.EnvEventTopicSessionStatus)(session3.DestroyedStatusEventProvider(s.SessionId(), s.AccountId(), s.CharacterId(), s.WorldId(), s.ChannelId()))
 }

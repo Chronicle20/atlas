@@ -8,6 +8,7 @@ import (
 	"atlas-channel/drop"
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
+	_map3 "atlas-channel/kafka/message/map"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
 	"atlas-channel/npc"
@@ -33,7 +34,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("map_status_event")(EnvEventTopicMapStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("map_status_event")(_map3.EnvEventTopicMapStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -43,7 +44,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventTopicMapStatus)()
+				t, _ = topic.EnvProvider(l)(_map3.EnvEventTopicMapStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterEnter(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterExit(sc, wp))))
 			}
@@ -51,9 +52,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[characterEnter]) {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[characterEnter]) {
-		if e.Type != EventTopicMapStatusTypeCharacterEnter {
+func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.CharacterEnter]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e _map3.StatusEvent[_map3.CharacterEnter]) {
+		if e.Type != _map3.EventTopicMapStatusTypeCharacterEnter {
 			return
 		}
 
@@ -222,9 +223,9 @@ func GetId(m character.Model) uint32 {
 	return m.Id()
 }
 
-func handleStatusEventCharacterExit(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[characterExit]) {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[characterExit]) {
-		if e.Type != EventTopicMapStatusTypeCharacterExit {
+func handleStatusEventCharacterExit(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.CharacterExit]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e _map3.StatusEvent[_map3.CharacterExit]) {
+		if e.Type != _map3.EventTopicMapStatusTypeCharacterExit {
 			return
 		}
 

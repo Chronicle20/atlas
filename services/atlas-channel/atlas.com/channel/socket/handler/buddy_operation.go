@@ -4,6 +4,7 @@ import (
 	"atlas-channel/buddylist"
 	"atlas-channel/character"
 	"atlas-channel/invite"
+	invite2 "atlas-channel/kafka/message/invite"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -56,7 +57,7 @@ func BuddyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 		if isBuddyOperation(l)(readerOptions, op, BuddyOperationAccept) {
 			fromCharacterId := r.ReadUint32()
 			l.Debugf("Character [%d] attempting to accept buddy request from [%d].", s.CharacterId(), fromCharacterId)
-			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), invite.InviteTypeBuddy, fromCharacterId)
+			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), invite2.InviteTypeBuddy, fromCharacterId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
 			}

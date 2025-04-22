@@ -2,6 +2,7 @@ package conversation
 
 import (
 	consumer2 "atlas-channel/kafka/consumer"
+	conversation2 "atlas-channel/kafka/message/npc/conversation"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -22,7 +23,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("npc_conversation_command")(EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("npc_conversation_command")(conversation2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -32,16 +33,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
+				t, _ = topic.EnvProvider(l)(conversation2.EnvCommandTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSimpleConversationCommand(sc, wp))))
 			}
 		}
 	}
 }
 
-func handleSimpleConversationCommand(sc server.Model, wp writer.Producer) message.Handler[commandEvent[commandSimpleBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c commandEvent[commandSimpleBody]) {
-		if c.Type != CommandTypeSimple {
+func handleSimpleConversationCommand(sc server.Model, wp writer.Producer) message.Handler[conversation2.CommandEvent[conversation2.CommandSimpleBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c conversation2.CommandEvent[conversation2.CommandSimpleBody]) {
+		if c.Type != conversation2.CommandTypeSimple {
 			return
 		}
 

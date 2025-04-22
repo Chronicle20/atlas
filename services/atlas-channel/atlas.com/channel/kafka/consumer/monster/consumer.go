@@ -2,6 +2,7 @@ package monster
 
 import (
 	consumer2 "atlas-channel/kafka/consumer"
+	monster2 "atlas-channel/kafka/message/monster"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
 	"atlas-channel/party"
@@ -25,7 +26,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("monster_status_event")(EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("monster_status_event")(monster2.EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -35,7 +36,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventTopicStatus)()
+				t, _ = topic.EnvProvider(l)(monster2.EnvEventTopicStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCreated(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDestroyed(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDamaged(sc, wp))))
@@ -47,9 +48,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventCreatedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCreatedBody]) {
-		if e.Type != EventStatusCreated {
+func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventCreatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventCreatedBody]) {
+		if e.Type != monster2.EventStatusCreated {
 			return
 		}
 
@@ -80,9 +81,9 @@ func spawnForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 	}
 }
 
-func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventDestroyedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventDestroyedBody]) {
-		if e.Type != EventStatusDestroyed {
+func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventDestroyedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventDestroyedBody]) {
+		if e.Type != monster2.EventStatusDestroyed {
 			return
 		}
 
@@ -107,9 +108,9 @@ func destroyForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 	}
 }
 
-func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventDamagedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventDamagedBody]) {
-		if e.Type != EventStatusDamaged {
+func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventDamagedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventDamagedBody]) {
+		if e.Type != monster2.EventStatusDamaged {
 			return
 		}
 
@@ -138,9 +139,9 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 	}
 }
 
-func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventKilledBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventKilledBody]) {
-		if e.Type != EventStatusKilled {
+func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventKilledBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventKilledBody]) {
+		if e.Type != monster2.EventStatusKilled {
 			return
 		}
 
@@ -165,9 +166,9 @@ func killForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writ
 	}
 }
 
-func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventStartControlBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventStartControlBody]) {
-		if e.Type != EventStatusStartControl {
+func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventStartControlBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventStartControlBody]) {
+		if e.Type != monster2.EventStatusStartControl {
 			return
 		}
 
@@ -190,9 +191,9 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 	}
 }
 
-func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventStopControlBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventStopControlBody]) {
-		if e.Type != EventStatusStopControl {
+func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventStopControlBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventStopControlBody]) {
+		if e.Type != monster2.EventStatusStopControl {
 			return
 		}
 

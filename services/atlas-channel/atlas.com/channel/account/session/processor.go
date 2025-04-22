@@ -1,7 +1,9 @@
 package session
 
 import (
+	session2 "atlas-channel/kafka/message/account/session"
 	"atlas-channel/kafka/producer"
+	"atlas-channel/kafka/producer/account/session"
 	"context"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -24,9 +26,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 
 func (p *Processor) Destroy(sessionId uuid.UUID, accountId uint32) {
 	p.l.Debugf("Destroying session for account [%d].", accountId)
-	_ = p.kp(EnvCommandTopic)(logoutCommandProvider(sessionId, accountId))
+	_ = p.kp(session2.EnvCommandTopic)(session.LogoutCommandProvider(sessionId, accountId))
 }
 
 func (p *Processor) UpdateState(sessionId uuid.UUID, accountId uint32, state uint8, params interface{}) error {
-	return p.kp(EnvCommandTopic)(progressStateCommandProvider(sessionId, accountId, state, params))
+	return p.kp(session2.EnvCommandTopic)(session.ProgressStateCommandProvider(sessionId, accountId, state, params))
 }

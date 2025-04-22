@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/chair"
+	chair2 "atlas-channel/kafka/message/chair"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -20,6 +21,6 @@ func CharacterChairFixedHandleFunc(l logrus.FieldLogger, ctx context.Context, _ 
 			return
 		}
 
-		_ = cp.Use(s.Map(), chair.ChairTypeFixed, uint32(chairId), s.CharacterId())
+		_ = cp.Use(s.Map(), chair2.TypeFixed, uint32(chairId), s.CharacterId())
 	}
 }

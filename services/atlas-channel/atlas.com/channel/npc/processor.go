@@ -1,7 +1,9 @@
 package npc
 
 import (
+	npc2 "atlas-channel/kafka/message/npc"
 	"atlas-channel/kafka/producer"
+	npc3 "atlas-channel/kafka/producer/npc"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
@@ -41,15 +43,15 @@ func (p *Processor) GetInMapByObjectId(mapId _map.Id, objectId uint32) (Model, e
 
 func (p *Processor) StartConversation(m _map.Model, npcId uint32, characterId uint32) error {
 	p.l.Debugf("Starting NPC [%d] conversation for character [%d].", characterId, npcId)
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(startConversationCommandProvider(m, npcId, characterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvCommandTopic)(npc3.StartConversationCommandProvider(m, npcId, characterId))
 }
 
 func (p *Processor) ContinueConversation(characterId uint32, action byte, lastMessageType byte, selection int32) error {
 	p.l.Debugf("Continuing NPC conversation for character [%d]. action [%d], lastMessageType [%d], selection [%d].", characterId, action, lastMessageType, selection)
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(continueConversationCommandProvider(characterId, action, lastMessageType, selection))
+	return producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvCommandTopic)(npc3.ContinueConversationCommandProvider(characterId, action, lastMessageType, selection))
 }
 
 func (p *Processor) DisposeConversation(characterId uint32) error {
 	p.l.Debugf("Ending NPC conversation for character [%d].", characterId)
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(disposeConversationCommandProvider(characterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(npc2.EnvCommandTopic)(npc3.DisposeConversationCommandProvider(characterId))
 }

@@ -2,6 +2,7 @@ package skill
 
 import (
 	consumer2 "atlas-channel/kafka/consumer"
+	skill2 "atlas-channel/kafka/message/skill"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -20,7 +21,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("skill_status_event")(EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("skill_status_event")(skill2.EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -30,7 +31,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
+				t, _ = topic.EnvProvider(l)(skill2.EnvStatusEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreated(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdated(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCooldownApplied(sc, wp))))
@@ -40,9 +41,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventCreatedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCreatedBody]) {
-		if e.Type != StatusEventTypeCreated {
+func handleCreated(sc server.Model, wp writer.Producer) message.Handler[skill2.StatusEvent[skill2.StatusEventCreatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e skill2.StatusEvent[skill2.StatusEventCreatedBody]) {
+		if e.Type != skill2.StatusEventTypeCreated {
 			return
 		}
 
@@ -58,9 +59,9 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 	}
 }
 
-func handleUpdated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventUpdatedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventUpdatedBody]) {
-		if e.Type != StatusEventTypeUpdated {
+func handleUpdated(sc server.Model, wp writer.Producer) message.Handler[skill2.StatusEvent[skill2.StatusEventUpdatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e skill2.StatusEvent[skill2.StatusEventUpdatedBody]) {
+		if e.Type != skill2.StatusEventTypeUpdated {
 			return
 		}
 
@@ -86,9 +87,9 @@ func announceSkillUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp
 	}
 }
 
-func handleCooldownApplied(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventCooldownAppliedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCooldownAppliedBody]) {
-		if e.Type != StatusEventTypeCooldownApplied {
+func handleCooldownApplied(sc server.Model, wp writer.Producer) message.Handler[skill2.StatusEvent[skill2.StatusEventCooldownAppliedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e skill2.StatusEvent[skill2.StatusEventCooldownAppliedBody]) {
+		if e.Type != skill2.StatusEventTypeCooldownApplied {
 			return
 		}
 
@@ -114,9 +115,9 @@ func announceSkillCooldown(l logrus.FieldLogger) func(ctx context.Context) func(
 	}
 }
 
-func handleCooldownExpired(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventCooldownExpiredBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCooldownExpiredBody]) {
-		if e.Type != StatusEventTypeCooldownExpired {
+func handleCooldownExpired(sc server.Model, wp writer.Producer) message.Handler[skill2.StatusEvent[skill2.StatusEventCooldownExpiredBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e skill2.StatusEvent[skill2.StatusEventCooldownExpiredBody]) {
+		if e.Type != skill2.StatusEventTypeCooldownExpired {
 			return
 		}
 

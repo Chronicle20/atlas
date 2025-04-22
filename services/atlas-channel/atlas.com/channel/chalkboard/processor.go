@@ -1,7 +1,9 @@
 package chalkboard
 
 import (
+	chalkboard2 "atlas-channel/kafka/message/chalkboard"
 	"atlas-channel/kafka/producer"
+	chalkboard3 "atlas-channel/kafka/producer/chalkboard"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
@@ -32,10 +34,10 @@ func (p *Processor) ForEachInMap(m _map.Model, f model.Operator[Model]) error {
 
 func (p *Processor) AttemptUse(m _map.Model, characterId uint32, message string) error {
 	p.l.Debugf("Character [%d] attempting to set a chalkboard message [%s].", characterId, message)
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(setCommandProvider(m, characterId, message))
+	return producer.ProviderImpl(p.l)(p.ctx)(chalkboard2.EnvCommandTopic)(chalkboard3.SetCommandProvider(m, characterId, message))
 }
 
 func (p *Processor) Close(m _map.Model, characterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to close chalkboard.", characterId)
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(clearCommandProvider(m, characterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(chalkboard2.EnvCommandTopic)(chalkboard3.ClearCommandProvider(m, characterId))
 }

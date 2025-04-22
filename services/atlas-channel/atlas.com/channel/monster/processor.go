@@ -1,7 +1,9 @@
 package monster
 
 import (
+	monster2 "atlas-channel/kafka/message/monster"
 	"atlas-channel/kafka/producer"
+	monster3 "atlas-channel/kafka/producer/monster"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
@@ -40,5 +42,5 @@ func (p *Processor) GetInMap(m _map.Model) ([]Model, error) {
 
 func (p *Processor) Damage(m _map.Model, monsterId uint32, characterId uint32, damage uint32) error {
 	p.l.Debugf("Applying damage to monster [%d]. Character [%d]. Damage [%d].", monsterId, characterId, damage)
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(damageCommandProvider(m, monsterId, characterId, damage))
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(monster3.DamageCommandProvider(m, monsterId, characterId, damage))
 }

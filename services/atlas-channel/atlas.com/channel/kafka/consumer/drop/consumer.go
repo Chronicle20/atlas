@@ -3,6 +3,7 @@ package drop
 import (
 	"atlas-channel/drop"
 	consumer2 "atlas-channel/kafka/consumer"
+	drop2 "atlas-channel/kafka/message/drop"
 	_map "atlas-channel/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -24,7 +25,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("drop_status_event")(EnvEventTopicDropStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("drop_status_event")(drop2.EnvEventTopicDropStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -34,7 +35,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventTopicDropStatus)()
+				t, _ = topic.EnvProvider(l)(drop2.EnvEventTopicDropStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCreated(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventExpired(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventPickedUp(sc, wp))))
@@ -43,9 +44,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[createdStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[createdStatusEventBody]) {
-		if e.Type != StatusEventTypeCreated {
+func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handler[drop2.StatusEvent[drop2.CreatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e drop2.StatusEvent[drop2.CreatedStatusEventBody]) {
+		if e.Type != drop2.StatusEventTypeCreated {
 			return
 		}
 
@@ -71,9 +72,9 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 	}
 }
 
-func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handler[statusEvent[expiredStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[expiredStatusEventBody]) {
-		if e.Type != StatusEventTypeExpired {
+func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handler[drop2.StatusEvent[drop2.ExpiredStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e drop2.StatusEvent[drop2.ExpiredStatusEventBody]) {
+		if e.Type != drop2.StatusEventTypeExpired {
 			return
 		}
 
@@ -90,9 +91,9 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 	}
 }
 
-func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Handler[statusEvent[pickedUpStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[pickedUpStatusEventBody]) {
-		if e.Type != StatusEventTypePickedUp {
+func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Handler[drop2.StatusEvent[drop2.PickedUpStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e drop2.StatusEvent[drop2.PickedUpStatusEventBody]) {
+		if e.Type != drop2.StatusEventTypePickedUp {
 			return
 		}
 

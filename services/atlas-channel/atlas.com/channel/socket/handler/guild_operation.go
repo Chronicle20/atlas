@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/guild"
 	"atlas-channel/invite"
+	invite2 "atlas-channel/kafka/message/invite"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -148,7 +149,7 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				return
 			}
 
-			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), invite.InviteTypeGuild, guildId)
+			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), invite2.InviteTypeGuild, guildId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
 			}

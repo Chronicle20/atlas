@@ -1,7 +1,9 @@
 package invite
 
 import (
+	invite2 "atlas-channel/kafka/message/invite"
 	"atlas-channel/kafka/producer"
+	invite3 "atlas-channel/kafka/producer/invite"
 	"context"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/sirupsen/logrus"
@@ -21,9 +23,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 }
 
 func (p *Processor) Accept(actorId uint32, worldId world.Id, inviteType string, referenceId uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(acceptInviteCommandProvider(actorId, worldId, inviteType, referenceId))
+	return producer.ProviderImpl(p.l)(p.ctx)(invite2.EnvCommandTopic)(invite3.AcceptInviteCommandProvider(actorId, worldId, inviteType, referenceId))
 }
 
 func (p *Processor) Reject(actorId uint32, worldId world.Id, inviteType string, originatorId uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(rejectInviteCommandProvider(actorId, worldId, inviteType, originatorId))
+	return producer.ProviderImpl(p.l)(p.ctx)(invite2.EnvCommandTopic)(invite3.RejectInviteCommandProvider(actorId, worldId, inviteType, originatorId))
 }

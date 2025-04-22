@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/invite"
+	invite2 "atlas-channel/kafka/message/invite"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -26,7 +27,7 @@ func GuildInviteRejectHandleFunc(l logrus.FieldLogger, ctx context.Context, _ wr
 			return
 		}
 
-		err = invite.NewProcessor(l, ctx).Reject(s.CharacterId(), s.WorldId(), invite.InviteTypeGuild, cs.Id())
+		err = invite.NewProcessor(l, ctx).Reject(s.CharacterId(), s.WorldId(), invite2.InviteTypeGuild, cs.Id())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue invite rejection command for character [%d].", s.CharacterId())
 		}

@@ -2,6 +2,7 @@ package consumable
 
 import (
 	consumer2 "atlas-channel/kafka/consumer"
+	consumable2 "atlas-channel/kafka/message/consumable"
 	_map "atlas-channel/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -20,7 +21,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("consumable_command")(EnvEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("consumable_command")(consumable2.EnvEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -30,7 +31,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventTopic)()
+				t, _ = topic.EnvProvider(l)(consumable2.EnvEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleErrorConsumableEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleScrollConsumableEvent(sc, wp))))
 			}
@@ -38,13 +39,13 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleErrorConsumableEvent(sc server.Model, wp writer.Producer) message.Handler[Event[ErrorBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e Event[ErrorBody]) {
-		if e.Type != EventTypeError {
+func handleErrorConsumableEvent(sc server.Model, wp writer.Producer) message.Handler[consumable2.Event[consumable2.ErrorBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e consumable2.Event[consumable2.ErrorBody]) {
+		if e.Type != consumable2.EventTypeError {
 			return
 		}
 
-		if e.Body.Error == ErrorTypePetCannotConsume {
+		if e.Body.Error == consumable2.ErrorTypePetCannotConsume {
 			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.PetCashFoodResult)(writer.PetCashFoodErrorResultBody()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to process error event for character [%d].", e.CharacterId)
@@ -59,9 +60,9 @@ func handleErrorConsumableEvent(sc server.Model, wp writer.Producer) message.Han
 	}
 }
 
-func handleScrollConsumableEvent(sc server.Model, wp writer.Producer) message.Handler[Event[ScrollBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e Event[ScrollBody]) {
-		if e.Type != EventTypeScroll {
+func handleScrollConsumableEvent(sc server.Model, wp writer.Producer) message.Handler[consumable2.Event[consumable2.ScrollBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e consumable2.Event[consumable2.ScrollBody]) {
+		if e.Type != consumable2.EventTypeScroll {
 			return
 		}
 

@@ -7,6 +7,7 @@ import (
 	"atlas-channel/character/key"
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
+	session2 "atlas-channel/kafka/message/account/session"
 	"atlas-channel/macro"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -28,7 +29,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("account_session_status_event")(EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("account_session_status_event")(session2.EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -38,7 +39,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+				t, _ = topic.EnvProvider(l)(session2.EnvEventStatusTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleError(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChannelChange(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handlePlayerLoggedIn(sc, wp))))
@@ -47,9 +48,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleError(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e statusEvent[errorStatusEventBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[errorStatusEventBody]) {
-		if e.Type != EventStatusTypeError {
+func handleError(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, e session2.StatusEvent[session2.ErrorStatusEventBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e session2.StatusEvent[session2.ErrorStatusEventBody]) {
+		if e.Type != session2.EventStatusTypeError {
 			return
 		}
 
@@ -75,9 +76,9 @@ func announceError(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	}
 }
 
-func handleChannelChange(sc server.Model, wp writer.Producer) message.Handler[statusEvent[stateChangedEventBody[model2.ChannelChange]]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[stateChangedEventBody[model2.ChannelChange]]) {
-		if e.Type != EventStatusTypeStateChanged {
+func handleChannelChange(sc server.Model, wp writer.Producer) message.Handler[session2.StatusEvent[session2.StateChangedEventBody[model2.ChannelChange]]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e session2.StatusEvent[session2.StateChangedEventBody[model2.ChannelChange]]) {
+		if e.Type != session2.EventStatusTypeStateChanged {
 			return
 		}
 
@@ -104,9 +105,9 @@ func processChannelChangeReturn(l logrus.FieldLogger) func(ctx context.Context) 
 	}
 }
 
-func handlePlayerLoggedIn(sc server.Model, wp writer.Producer) message.Handler[statusEvent[stateChangedEventBody[model2.SetField]]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[stateChangedEventBody[model2.SetField]]) {
-		if e.Type != EventStatusTypeStateChanged {
+func handlePlayerLoggedIn(sc server.Model, wp writer.Producer) message.Handler[session2.StatusEvent[session2.StateChangedEventBody[model2.SetField]]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e session2.StatusEvent[session2.StateChangedEventBody[model2.SetField]]) {
+		if e.Type != session2.EventStatusTypeStateChanged {
 			return
 		}
 
@@ -216,8 +217,11 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						sort.Slice(sms, func(i, j int) bool {
 							return sms[i].Id() < sms[j].Id()
 						})
-
-						err = session.Announce(l)(ctx)(wp)(writer.CharacterSkillMacro)(writer.CharacterSkillMacroBody(sms))(s)
+						mms := make([]model2.Macro, 0)
+						for _, sm := range sms {
+							mms = append(mms, model2.NewMacro(sm.Name(), sm.Shout(), sm.SkillId1(), sm.SkillId2(), sm.SkillId3()))
+						}
+						err = session.Announce(l)(ctx)(wp)(writer.CharacterSkillMacro)(writer.CharacterSkillMacroBody(l, tenant.MustFromContext(ctx))(model2.NewMacros(mms...)))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}

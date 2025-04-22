@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/invite"
+	invite2 "atlas-channel/kafka/message/invite"
 	"atlas-channel/message"
 	"atlas-channel/messenger"
 	"atlas-channel/session"
@@ -36,7 +37,7 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 					l.WithError(err).Errorf("Unable to issue create messenger for character [%d].", s.CharacterId())
 				}
 			} else {
-				err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), invite.InviteTypeMessenger, messengerId)
+				err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), invite2.InviteTypeMessenger, messengerId)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
 				}
@@ -89,7 +90,7 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to reject invitation of.", fromName)
 				return
 			}
-			err = invite.NewProcessor(l, ctx).Reject(s.CharacterId(), s.WorldId(), invite.InviteTypeMessenger, tc.Id())
+			err = invite.NewProcessor(l, ctx).Reject(s.CharacterId(), s.WorldId(), invite2.InviteTypeMessenger, tc.Id())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to issue invite rejection command for character [%d].", s.CharacterId())
 			}

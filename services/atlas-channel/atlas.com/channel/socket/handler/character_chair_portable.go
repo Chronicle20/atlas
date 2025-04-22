@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/chair"
+	chair2 "atlas-channel/kafka/message/chair"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -14,6 +15,6 @@ const CharacterChairPortableHandle = "CharacterChairPortableHandle"
 func CharacterChairPortableHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		itemId := r.ReadUint32()
-		_ = chair.NewProcessor(l, ctx).Use(s.Map(), chair.ChairTypePortable, itemId, s.CharacterId())
+		_ = chair.NewProcessor(l, ctx).Use(s.Map(), chair2.TypePortable, itemId, s.CharacterId())
 	}
 }

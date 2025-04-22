@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
+	guild2 "atlas-channel/kafka/message/guild"
 	_map "atlas-channel/map"
 	"atlas-channel/party"
 	"atlas-channel/server"
@@ -25,8 +26,8 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("guild_command")(EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
-			rf(consumer2.NewConfig(l)("guild_status_event")(EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("guild_command")(guild2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("guild_status_event")(guild2.EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -36,10 +37,10 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
+				t, _ = topic.EnvProvider(l)(guild2.EnvCommandTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestName(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestEmblem(sc, wp))))
-				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
+				t, _ = topic.EnvProvider(l)(guild2.EnvStatusEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreated(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDisbanded(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestAgreement(sc, wp))))
@@ -57,9 +58,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleError(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventErrorBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventErrorBody]) {
-		if e.Type != StatusEventTypeError {
+func handleError(sc server.Model, wp writer.Producer) message.Handler[guild2.StatusEvent[guild2.StatusEventErrorBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventErrorBody]) {
+		if e.Type != guild2.StatusEventTypeError {
 			return
 		}
 
@@ -84,9 +85,9 @@ func announceGuildError(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 	}
 }
 
-func handleTitlesUpdated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventTitlesUpdatedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventTitlesUpdatedBody]) {
-		if e.Type != StatusEventTypeTitlesUpdated {
+func handleTitlesUpdated(sc server.Model, wp writer.Producer) message.Handler[guild2.StatusEvent[guild2.StatusEventTitlesUpdatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventTitlesUpdatedBody]) {
+		if e.Type != guild2.StatusEventTypeTitlesUpdated {
 			return
 		}
 
@@ -111,9 +112,9 @@ func announceTitlesUpdated(l logrus.FieldLogger) func(ctx context.Context) func(
 	}
 }
 
-func handleMemberJoined(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventMemberJoinedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventMemberJoinedBody]) {
-		if e.Type != StatusEventTypeMemberJoined {
+func handleMemberJoined(sc server.Model, wp writer.Producer) message.Handler[guild2.StatusEvent[guild2.StatusEventMemberJoinedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventMemberJoinedBody]) {
+		if e.Type != guild2.StatusEventTypeMemberJoined {
 			return
 		}
 
@@ -189,9 +190,9 @@ func announceMemberJoined(l logrus.FieldLogger) func(ctx context.Context) func(w
 	}
 }
 
-func handleMemberLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventMemberLeftBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventMemberLeftBody]) {
-		if e.Type != StatusEventTypeMemberLeft {
+func handleMemberLeft(sc server.Model, wp writer.Producer) message.Handler[guild2.StatusEvent[guild2.StatusEventMemberLeftBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventMemberLeftBody]) {
+		if e.Type != guild2.StatusEventTypeMemberLeft {
 			return
 		}
 
@@ -254,9 +255,9 @@ func announceMemberLeft(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 	}
 }
 
-func handleCapacityUpdated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventCapacityUpdatedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCapacityUpdatedBody]) {
-		if e.Type != StatusEventTypeCapacityUpdated {
+func handleCapacityUpdated(sc server.Model, wp writer.Producer) message.Handler[guild2.StatusEvent[guild2.StatusEventCapacityUpdatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventCapacityUpdatedBody]) {
+		if e.Type != guild2.StatusEventTypeCapacityUpdated {
 			return
 		}
 
@@ -281,9 +282,9 @@ func announceCapacityChanged(l logrus.FieldLogger) func(ctx context.Context) fun
 	}
 }
 
-func handleNoticeUpdated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventNoticeUpdatedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventNoticeUpdatedBody]) {
-		if e.Type != StatusEventTypeNoticeUpdated {
+func handleNoticeUpdated(sc server.Model, wp writer.Producer) message.Handler[guild2.StatusEvent[guild2.StatusEventNoticeUpdatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventNoticeUpdatedBody]) {
+		if e.Type != guild2.StatusEventTypeNoticeUpdated {
 			return
 		}
 
@@ -308,9 +309,9 @@ func announceNoticeChanged(l logrus.FieldLogger) func(ctx context.Context) func(
 	}
 }
 
-func handleMemberTitleUpdated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventMemberTitleUpdatedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventMemberTitleUpdatedBody]) {
-		if e.Type != StatusEventTypeMemberTitleUpdated {
+func handleMemberTitleUpdated(sc server.Model, wp writer.Producer) message.Handler[guild2.StatusEvent[guild2.StatusEventMemberTitleUpdatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventMemberTitleUpdatedBody]) {
+		if e.Type != guild2.StatusEventTypeMemberTitleUpdated {
 			return
 		}
 
@@ -348,9 +349,9 @@ func announceMemberTitleChanged(l logrus.FieldLogger) func(ctx context.Context) 
 	}
 }
 
-func handleMemberStatusUpdated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventMemberStatusUpdatedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventMemberStatusUpdatedBody]) {
-		if e.Type != StatusEventTypeMemberStatusUpdated {
+func handleMemberStatusUpdated(sc server.Model, wp writer.Producer) message.Handler[guild2.StatusEvent[guild2.StatusEventMemberStatusUpdatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventMemberStatusUpdatedBody]) {
+		if e.Type != guild2.StatusEventTypeMemberStatusUpdated {
 			return
 		}
 
@@ -388,9 +389,9 @@ func announceMemberStatusUpdated(l logrus.FieldLogger) func(ctx context.Context)
 	}
 }
 
-func handleEmblemUpdated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventEmblemUpdatedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventEmblemUpdatedBody]) {
-		if e.Type != StatusEventTypeEmblemUpdated {
+func handleEmblemUpdated(sc server.Model, wp writer.Producer) message.Handler[guild2.StatusEvent[guild2.StatusEventEmblemUpdatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventEmblemUpdatedBody]) {
+		if e.Type != guild2.StatusEventTypeEmblemUpdated {
 			return
 		}
 
@@ -440,9 +441,9 @@ func announceEmblemChanged(l logrus.FieldLogger) func(ctx context.Context) func(
 	}
 }
 
-func handleRequestAgreement(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventRequestAgreementBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventRequestAgreementBody]) {
-		if e.Type != StatusEventTypeRequestAgreement {
+func handleRequestAgreement(sc server.Model, wp writer.Producer) message.Handler[guild2.StatusEvent[guild2.StatusEventRequestAgreementBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventRequestAgreementBody]) {
+		if e.Type != guild2.StatusEventTypeRequestAgreement {
 			return
 		}
 
@@ -477,9 +478,9 @@ func requestGuildNameAgreement(l logrus.FieldLogger) func(ctx context.Context) f
 	}
 }
 
-func handleDisbanded(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventDisbandedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventDisbandedBody]) {
-		if e.Type != StatusEventTypeDisbanded {
+func handleDisbanded(sc server.Model, wp writer.Producer) message.Handler[guild2.StatusEvent[guild2.StatusEventDisbandedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventDisbandedBody]) {
+		if e.Type != guild2.StatusEventTypeDisbanded {
 			return
 		}
 
@@ -516,9 +517,9 @@ func announceGuildDisband(l logrus.FieldLogger) func(ctx context.Context) func(w
 	}
 }
 
-func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventCreatedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCreatedBody]) {
-		if e.Type != StatusEventTypeCreated {
+func handleCreated(sc server.Model, wp writer.Producer) message.Handler[guild2.StatusEvent[guild2.StatusEventCreatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventCreatedBody]) {
+		if e.Type != guild2.StatusEventTypeCreated {
 			return
 		}
 
@@ -545,9 +546,9 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 	}
 }
 
-func handleRequestEmblem(sc server.Model, wp writer.Producer) message.Handler[command[requestEmblemBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestEmblemBody]) {
-		if c.Type != CommandTypeRequestEmblem {
+func handleRequestEmblem(sc server.Model, wp writer.Producer) message.Handler[guild2.Command[guild2.RequestEmblemBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c guild2.Command[guild2.RequestEmblemBody]) {
+		if c.Type != guild2.CommandTypeRequestEmblem {
 			return
 		}
 
@@ -570,9 +571,9 @@ func announceGuildEmblemRequest(l logrus.FieldLogger) func(ctx context.Context) 
 	}
 }
 
-func handleRequestName(sc server.Model, wp writer.Producer) message.Handler[command[requestNameBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestNameBody]) {
-		if c.Type != CommandTypeRequestName {
+func handleRequestName(sc server.Model, wp writer.Producer) message.Handler[guild2.Command[guild2.RequestNameBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c guild2.Command[guild2.RequestNameBody]) {
+		if c.Type != guild2.CommandTypeRequestName {
 			return
 		}
 

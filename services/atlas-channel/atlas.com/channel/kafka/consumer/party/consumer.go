@@ -3,6 +3,7 @@ package party
 import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
+	party2 "atlas-channel/kafka/message/party"
 	"atlas-channel/party"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -23,7 +24,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("party_status_event")(EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("party_status_event")(party2.EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -33,7 +34,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+				t, _ = topic.EnvProvider(l)(party2.EnvEventStatusTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreated(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLeft(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleExpel(sc, wp))))
@@ -46,9 +47,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[createdEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[createdEventBody]) {
-		if e.Type != EventPartyStatusTypeCreated {
+func handleCreated(sc server.Model, wp writer.Producer) message.Handler[party2.StatusEvent[party2.CreatedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e party2.StatusEvent[party2.CreatedEventBody]) {
+		if e.Type != party2.EventPartyStatusTypeCreated {
 			return
 		}
 
@@ -79,9 +80,9 @@ func partyCreated(l logrus.FieldLogger) func(ctx context.Context) func(wp writer
 	}
 }
 
-func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent[leftEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[leftEventBody]) {
-		if e.Type != EventPartyStatusTypeLeft {
+func handleLeft(sc server.Model, wp writer.Producer) message.Handler[party2.StatusEvent[party2.LeftEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e party2.StatusEvent[party2.LeftEventBody]) {
+		if e.Type != party2.EventPartyStatusTypeLeft {
 			return
 		}
 
@@ -130,9 +131,9 @@ func partyLeft(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pr
 	}
 }
 
-func handleExpel(sc server.Model, wp writer.Producer) message.Handler[statusEvent[expelEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[expelEventBody]) {
-		if e.Type != EventPartyStatusTypeExpel {
+func handleExpel(sc server.Model, wp writer.Producer) message.Handler[party2.StatusEvent[party2.ExpelEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e party2.StatusEvent[party2.ExpelEventBody]) {
+		if e.Type != party2.EventPartyStatusTypeExpel {
 			return
 		}
 
@@ -181,9 +182,9 @@ func partyExpel(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.P
 	}
 }
 
-func handleDisband(sc server.Model, wp writer.Producer) message.Handler[statusEvent[disbandEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[disbandEventBody]) {
-		if e.Type != EventPartyStatusTypeDisband {
+func handleDisband(sc server.Model, wp writer.Producer) message.Handler[party2.StatusEvent[party2.DisbandEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e party2.StatusEvent[party2.DisbandEventBody]) {
+		if e.Type != party2.EventPartyStatusTypeDisband {
 			return
 		}
 
@@ -226,9 +227,9 @@ func partyDisband(l logrus.FieldLogger) func(ctx context.Context) func(wp writer
 	}
 }
 
-func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent[joinedEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[joinedEventBody]) {
-		if e.Type != EventPartyStatusTypeJoined {
+func handleJoin(sc server.Model, wp writer.Producer) message.Handler[party2.StatusEvent[party2.JoinedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e party2.StatusEvent[party2.JoinedEventBody]) {
+		if e.Type != party2.EventPartyStatusTypeJoined {
 			return
 		}
 
@@ -270,9 +271,9 @@ func partyJoined(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	}
 }
 
-func handleChangeLeader(sc server.Model, wp writer.Producer) message.Handler[statusEvent[changeLeaderEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[changeLeaderEventBody]) {
-		if e.Type != EventPartyStatusTypeChangeLeader {
+func handleChangeLeader(sc server.Model, wp writer.Producer) message.Handler[party2.StatusEvent[party2.ChangeLeaderEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e party2.StatusEvent[party2.ChangeLeaderEventBody]) {
+		if e.Type != party2.EventPartyStatusTypeChangeLeader {
 			return
 		}
 
@@ -315,9 +316,9 @@ func partyChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 	}
 }
 
-func handleError(sc server.Model, wp writer.Producer) message.Handler[statusEvent[errorEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[errorEventBody]) {
-		if e.Type != EventPartyStatusTypeError {
+func handleError(sc server.Model, wp writer.Producer) message.Handler[party2.StatusEvent[party2.ErrorEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e party2.StatusEvent[party2.ErrorEventBody]) {
+		if e.Type != party2.EventPartyStatusTypeError {
 			return
 		}
 

@@ -4,7 +4,9 @@ import (
 	"atlas-channel/character/skill"
 	"atlas-channel/inventory"
 	"atlas-channel/inventory/compartment/asset"
+	character2 "atlas-channel/kafka/message/character"
 	"atlas-channel/kafka/producer"
+	character3 "atlas-channel/kafka/producer/character"
 	"atlas-channel/pet"
 	"context"
 	"errors"
@@ -112,7 +114,7 @@ type DistributePacket struct {
 }
 
 func (p *Processor) RequestDistributeAp(m _map.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
-	var distributions = make([]DistributePair, 0)
+	var distributions = make([]character2.DistributePair, 0)
 	for _, d := range distributes {
 		a, err := abilityFromFlag(d.Flag)
 		if err != nil {
@@ -120,44 +122,44 @@ func (p *Processor) RequestDistributeAp(m _map.Model, characterId uint32, update
 			return err
 		}
 
-		distributions = append(distributions, DistributePair{
+		distributions = append(distributions, character2.DistributePair{
 			Ability: a,
 			Amount:  int8(d.Value),
 		})
 	}
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(requestDistributeApCommandProvider(m, characterId, distributions))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(character3.RequestDistributeApCommandProvider(m, characterId, distributions))
 }
 
 func abilityFromFlag(flag uint32) (string, error) {
 	switch flag {
 	case 64:
-		return CommandDistributeApAbilityStrength, nil
+		return character2.CommandDistributeApAbilityStrength, nil
 	case 128:
-		return CommandDistributeApAbilityDexterity, nil
+		return character2.CommandDistributeApAbilityDexterity, nil
 	case 256:
-		return CommandDistributeApAbilityIntelligence, nil
+		return character2.CommandDistributeApAbilityIntelligence, nil
 	case 512:
-		return CommandDistributeApAbilityLuck, nil
+		return character2.CommandDistributeApAbilityLuck, nil
 	case 2048:
-		return CommandDistributeApAbilityHp, nil
+		return character2.CommandDistributeApAbilityHp, nil
 	case 8192:
-		return CommandDistributeApAbilityMp, nil
+		return character2.CommandDistributeApAbilityMp, nil
 	}
 	return "", errors.New("invalid flag")
 }
 
 func (p *Processor) RequestDropMeso(m _map.Model, characterId uint32, amount uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(requestDropMesoCommandProvider(m, characterId, amount))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(character3.RequestDropMesoCommandProvider(m, characterId, amount))
 }
 
 func (p *Processor) ChangeHP(m _map.Model, characterId uint32, amount int16) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(changeHPCommandProvider(m, characterId, amount))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(character3.ChangeHPCommandProvider(m, characterId, amount))
 }
 
 func (p *Processor) ChangeMP(m _map.Model, characterId uint32, amount int16) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(changeMPCommandProvider(m, characterId, amount))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(character3.ChangeMPCommandProvider(m, characterId, amount))
 }
 
 func (p *Processor) RequestDistributeSp(m _map.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(requestDistributeSpCommandProvider(m, characterId, skillId, amount))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(character3.RequestDistributeSpCommandProvider(m, characterId, skillId, amount))
 }

@@ -3,6 +3,7 @@ package message
 import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
+	message3 "atlas-channel/kafka/message/message"
 	_map "atlas-channel/map"
 	message2 "atlas-channel/message"
 	"atlas-channel/pet"
@@ -26,7 +27,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("chat_event")(EnvEventTopicChat)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("chat_event")(message3.EnvEventTopicChat)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -36,7 +37,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventTopicChat)()
+				t, _ = topic.EnvProvider(l)(message3.EnvEventTopicChat)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleGeneralChat(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMultiChat(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleWhisperChat(sc, wp))))
@@ -47,9 +48,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[chatEvent[generalChatBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e chatEvent[generalChatBody]) {
-		if e.Type != ChatTypeGeneral {
+func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[message3.ChatEvent[message3.GeneralChatBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e message3.ChatEvent[message3.GeneralChatBody]) {
+		if e.Type != message3.ChatTypeGeneral {
 			return
 		}
 
@@ -70,19 +71,19 @@ func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[chat
 	}
 }
 
-func showGeneralChatForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
-			return func(event chatEvent[generalChatBody], gm bool) model.Operator[session.Model] {
+func showGeneralChatForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event message3.ChatEvent[message3.GeneralChatBody], gm bool) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(event message3.ChatEvent[message3.GeneralChatBody], gm bool) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(event message3.ChatEvent[message3.GeneralChatBody], gm bool) model.Operator[session.Model] {
+			return func(event message3.ChatEvent[message3.GeneralChatBody], gm bool) model.Operator[session.Model] {
 				return session.Announce(l)(ctx)(wp)(writer.CharacterChatGeneral)(writer.CharacterChatGeneralBody(event.ActorId, gm, event.Message, event.Body.BalloonOnly))
 			}
 		}
 	}
 }
 
-func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[chatEvent[multiChatBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e chatEvent[multiChatBody]) {
-		if e.Type == ChatTypeGeneral || e.Type == ChatTypeWhisper {
+func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[message3.ChatEvent[message3.MultiChatBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e message3.ChatEvent[message3.MultiChatBody]) {
+		if e.Type == message3.ChatTypeGeneral || e.Type == message3.ChatTypeWhisper {
 			return
 		}
 
@@ -115,9 +116,9 @@ func sendMultiChat(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	}
 }
 
-func handleWhisperChat(sc server.Model, wp writer.Producer) message.Handler[chatEvent[whisperChatBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e chatEvent[whisperChatBody]) {
-		if e.Type != ChatTypeWhisper {
+func handleWhisperChat(sc server.Model, wp writer.Producer) message.Handler[message3.ChatEvent[message3.WhisperChatBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e message3.ChatEvent[message3.WhisperChatBody]) {
+		if e.Type != message3.ChatTypeWhisper {
 			return
 		}
 
@@ -150,9 +151,9 @@ func handleWhisperChat(sc server.Model, wp writer.Producer) message.Handler[chat
 	}
 }
 
-func handleMessengerChat(sc server.Model, wp writer.Producer) message.Handler[chatEvent[messengerChatBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e chatEvent[messengerChatBody]) {
-		if e.Type != ChatTypeMessenger {
+func handleMessengerChat(sc server.Model, wp writer.Producer) message.Handler[message3.ChatEvent[message3.MessengerChatBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e message3.ChatEvent[message3.MessengerChatBody]) {
+		if e.Type != message3.ChatTypeMessenger {
 			return
 		}
 
@@ -170,9 +171,9 @@ func handleMessengerChat(sc server.Model, wp writer.Producer) message.Handler[ch
 	}
 }
 
-func handlePetChat(sc server.Model, wp writer.Producer) message.Handler[chatEvent[petChatBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e chatEvent[petChatBody]) {
-		if e.Type != ChatTypePet {
+func handlePetChat(sc server.Model, wp writer.Producer) message.Handler[message3.ChatEvent[message3.PetChatBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e message3.ChatEvent[message3.PetChatBody]) {
+		if e.Type != message3.ChatTypePet {
 			return
 		}
 

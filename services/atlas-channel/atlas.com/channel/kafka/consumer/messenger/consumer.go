@@ -3,6 +3,7 @@ package messenger
 import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
+	messenger2 "atlas-channel/kafka/message/messenger"
 	"atlas-channel/messenger"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -22,7 +23,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("messenger_status_event")(EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("messenger_status_event")(messenger2.EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -32,18 +33,17 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+				t, _ = topic.EnvProvider(l)(messenger2.EnvEventStatusTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLeft(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleJoin(sc, wp))))
-				//_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleError(sc, wp))))
 			}
 		}
 	}
 }
 
-func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent[leftEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[leftEventBody]) {
-		if e.Type != EventMessengerStatusTypeLeft {
+func handleLeft(sc server.Model, wp writer.Producer) message.Handler[messenger2.StatusEvent[messenger2.LeftEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e messenger2.StatusEvent[messenger2.LeftEventBody]) {
+		if e.Type != messenger2.EventMessengerStatusTypeLeft {
 			return
 		}
 
@@ -92,9 +92,9 @@ func messengerLeft(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	}
 }
 
-func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent[joinedEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[joinedEventBody]) {
-		if e.Type != EventMessengerStatusTypeJoined {
+func handleJoin(sc server.Model, wp writer.Producer) message.Handler[messenger2.StatusEvent[messenger2.JoinedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e messenger2.StatusEvent[messenger2.JoinedEventBody]) {
+		if e.Type != messenger2.EventMessengerStatusTypeJoined {
 			return
 		}
 
@@ -163,27 +163,3 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 		}()
 	}
 }
-
-//func handleError(sc server.Model, wp writer.Producer) message.Handler[statusEvent[errorEventBody]] {
-//	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[errorEventBody]) {
-//		if e.Type != EventMessengerStatusTypeError {
-//			return
-//		}
-//
-//		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
-//			return
-//		}
-//
-//		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, messengerError(l)(ctx)(wp)(e.Body.Type, e.Body.CharacterName))
-//	}
-//}
-//
-//func messengerError(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
-//	return func(ctx context.Context) func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
-//		return func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
-//			return func(errorType string, name string) model.Operator[session.Model] {
-//				return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerErrorBody(l)(errorType, name))
-//			}
-//		}
-//	}
-//}

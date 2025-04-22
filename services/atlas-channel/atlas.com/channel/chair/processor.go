@@ -1,7 +1,9 @@
 package chair
 
 import (
+	chair2 "atlas-channel/kafka/message/chair"
 	"atlas-channel/kafka/producer"
+	chair3 "atlas-channel/kafka/producer/chair"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
@@ -32,9 +34,9 @@ func (p *Processor) ForEachInMap(m _map.Model, f model.Operator[Model]) error {
 
 func (p *Processor) Use(m _map.Model, chairType string, chairId uint32, characterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to use map [%d] [%s] chair [%d].", characterId, m.MapId(), chairType, chairId)
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(commandUseProvider(m, chairType, chairId, characterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(chair2.EnvCommandTopic)(chair3.UseCommandProvider(m, chairType, chairId, characterId))
 }
 
 func (p *Processor) Cancel(m _map.Model, characterId uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(commandCancelProvider(m, characterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(chair2.EnvCommandTopic)(chair3.CancelCommandProvider(m, characterId))
 }

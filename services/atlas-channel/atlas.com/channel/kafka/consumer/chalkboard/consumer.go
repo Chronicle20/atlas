@@ -2,6 +2,7 @@ package chalkboard
 
 import (
 	consumer2 "atlas-channel/kafka/consumer"
+	chalkboard2 "atlas-channel/kafka/message/chalkboard"
 	_map "atlas-channel/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -24,7 +25,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("chalkboard_status_event")(EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("chalkboard_status_event")(chalkboard2.EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -34,7 +35,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventTopicStatus)()
+				t, _ = topic.EnvProvider(l)(chalkboard2.EnvEventTopicStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSetCommand(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleClearCommand(sc, wp))))
 			}
@@ -42,9 +43,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleSetCommand(sc server.Model, wp writer.Producer) message.Handler[statusEvent[setStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[setStatusEventBody]) {
-		if e.Type != EventTopicStatusTypeSet {
+func handleSetCommand(sc server.Model, wp writer.Producer) message.Handler[chalkboard2.StatusEvent[chalkboard2.SetStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e chalkboard2.StatusEvent[chalkboard2.SetStatusEventBody]) {
+		if e.Type != chalkboard2.EventTopicStatusTypeSet {
 			return
 		}
 
@@ -61,9 +62,9 @@ func handleSetCommand(sc server.Model, wp writer.Producer) message.Handler[statu
 	}
 }
 
-func handleClearCommand(sc server.Model, wp writer.Producer) message.Handler[statusEvent[clearStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[clearStatusEventBody]) {
-		if e.Type != EventTopicStatusTypeClear {
+func handleClearCommand(sc server.Model, wp writer.Producer) message.Handler[chalkboard2.StatusEvent[chalkboard2.ClearStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e chalkboard2.StatusEvent[chalkboard2.ClearStatusEventBody]) {
+		if e.Type != chalkboard2.EventTopicStatusTypeClear {
 			return
 		}
 

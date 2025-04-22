@@ -3,6 +3,7 @@ package buddylist
 import (
 	"atlas-channel/buddylist"
 	consumer2 "atlas-channel/kafka/consumer"
+	buddylist2 "atlas-channel/kafka/message/buddylist"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -21,7 +22,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("buddy_list_status_event")(EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("buddy_list_status_event")(buddylist2.EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -31,7 +32,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
+				t, _ = topic.EnvProvider(l)(buddylist2.EnvStatusEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyAdded(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyRemoved(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventBuddyUpdated(sc, wp))))
@@ -43,9 +44,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleStatusEventBuddyAdded(sc server.Model, wp writer.Producer) message.Handler[statusEvent[buddyAddedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c statusEvent[buddyAddedStatusEventBody]) {
-		if c.Type != StatusEventTypeBuddyAdded {
+func handleStatusEventBuddyAdded(sc server.Model, wp writer.Producer) message.Handler[buddylist2.StatusEvent[buddylist2.BuddyAddedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c buddylist2.StatusEvent[buddylist2.BuddyAddedStatusEventBody]) {
+		if c.Type != buddylist2.StatusEventTypeBuddyAdded {
 			return
 		}
 
@@ -60,9 +61,9 @@ func handleStatusEventBuddyAdded(sc server.Model, wp writer.Producer) message.Ha
 	}
 }
 
-func handleStatusEventBuddyRemoved(sc server.Model, wp writer.Producer) message.Handler[statusEvent[buddyRemovedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c statusEvent[buddyRemovedStatusEventBody]) {
-		if c.Type != StatusEventTypeBuddyRemoved {
+func handleStatusEventBuddyRemoved(sc server.Model, wp writer.Producer) message.Handler[buddylist2.StatusEvent[buddylist2.BuddyRemovedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c buddylist2.StatusEvent[buddylist2.BuddyRemovedStatusEventBody]) {
+		if c.Type != buddylist2.StatusEventTypeBuddyRemoved {
 			return
 		}
 
@@ -99,9 +100,9 @@ func redrawBuddyList(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 	}
 }
 
-func handleStatusEventBuddyUpdated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[buddyUpdatedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c statusEvent[buddyUpdatedStatusEventBody]) {
-		if c.Type != StatusEventTypeBuddyUpdated {
+func handleStatusEventBuddyUpdated(sc server.Model, wp writer.Producer) message.Handler[buddylist2.StatusEvent[buddylist2.BuddyUpdatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c buddylist2.StatusEvent[buddylist2.BuddyUpdatedStatusEventBody]) {
+		if c.Type != buddylist2.StatusEventTypeBuddyUpdated {
 			return
 		}
 
@@ -127,9 +128,9 @@ func updateBuddy(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	}
 }
 
-func handleStatusEventBuddyChannelChange(sc server.Model, wp writer.Producer) message.Handler[statusEvent[buddyChannelChangeStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c statusEvent[buddyChannelChangeStatusEventBody]) {
-		if c.Type != StatusEventTypeBuddyChannelChange {
+func handleStatusEventBuddyChannelChange(sc server.Model, wp writer.Producer) message.Handler[buddylist2.StatusEvent[buddylist2.BuddyChannelChangeStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c buddylist2.StatusEvent[buddylist2.BuddyChannelChangeStatusEventBody]) {
+		if c.Type != buddylist2.StatusEventTypeBuddyChannelChange {
 			return
 		}
 
@@ -154,9 +155,9 @@ func buddyChannelChange(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 	}
 }
 
-func handleStatusEventBuddyCapacityChange(sc server.Model, wp writer.Producer) message.Handler[statusEvent[buddyCapacityChangeStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c statusEvent[buddyCapacityChangeStatusEventBody]) {
-		if c.Type != StatusEventTypeBuddyCapacityUpdate {
+func handleStatusEventBuddyCapacityChange(sc server.Model, wp writer.Producer) message.Handler[buddylist2.StatusEvent[buddylist2.BuddyCapacityChangeStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c buddylist2.StatusEvent[buddylist2.BuddyCapacityChangeStatusEventBody]) {
+		if c.Type != buddylist2.StatusEventTypeBuddyCapacityUpdate {
 			return
 		}
 
@@ -181,9 +182,9 @@ func buddyCapacityChange(l logrus.FieldLogger) func(ctx context.Context) func(wp
 	}
 }
 
-func handleStatusEventBuddyError(sc server.Model, wp writer.Producer) message.Handler[statusEvent[errorStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c statusEvent[errorStatusEventBody]) {
-		if c.Type != StatusEventTypeError {
+func handleStatusEventBuddyError(sc server.Model, wp writer.Producer) message.Handler[buddylist2.StatusEvent[buddylist2.ErrorStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c buddylist2.StatusEvent[buddylist2.ErrorStatusEventBody]) {
+		if c.Type != buddylist2.StatusEventTypeError {
 			return
 		}
 

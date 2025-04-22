@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/invite"
+	invite2 "atlas-channel/kafka/message/invite"
 	"atlas-channel/party"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -33,7 +34,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationJoin) {
 			partyId := r.ReadUint32()
-			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), invite.InviteTypeParty, partyId)
+			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), invite2.InviteTypeParty, partyId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
 			}

@@ -2,6 +2,7 @@ package expression
 
 import (
 	consumer2 "atlas-channel/kafka/consumer"
+	expression2 "atlas-channel/kafka/message/expression"
 	_map "atlas-channel/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -23,7 +24,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("expression_event")(EnvExpressionEvent)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("expression_event")(expression2.EnvExpressionEvent)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -33,15 +34,15 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvExpressionEvent)()
+				t, _ = topic.EnvProvider(l)(expression2.EnvExpressionEvent)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleEvent(sc, wp))))
 			}
 		}
 	}
 }
 
-func handleEvent(sc server.Model, wp writer.Producer) message.Handler[expressionEvent] {
-	return func(l logrus.FieldLogger, ctx context.Context, e expressionEvent) {
+func handleEvent(sc server.Model, wp writer.Producer) message.Handler[expression2.Event] {
+	return func(l logrus.FieldLogger, ctx context.Context, e expression2.Event) {
 		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
 			return
 		}

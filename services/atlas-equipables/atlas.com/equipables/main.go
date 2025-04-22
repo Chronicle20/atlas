@@ -2,15 +2,18 @@ package main
 
 import (
 	"atlas-equipables/database"
-	"atlas-equipables/equipment"
+	"atlas-equipables/equipable"
+	equipable2 "atlas-equipables/kafka/consumer/equipable"
 	"atlas-equipables/logger"
 	"atlas-equipables/service"
 	"atlas-equipables/tracing"
+	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 	"os"
 )
 
 const serviceName = "atlas-equipables"
+const consumerGroupId = "Equipable Service"
 
 type Server struct {
 	baseUrl string
@@ -43,14 +46,18 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(equipment.Migration))
+	db := database.Connect(l, database.SetMigrations(equipable.Migration))
+
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	equipable2.InitConsumers(l)(cmf)(consumerGroupId)
+	equipable2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.New(l).
 		WithContext(tdm.Context()).
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
-		AddRouteInitializer(equipment.InitResource(GetServer(), db)).
+		AddRouteInitializer(equipable.InitResource(GetServer(), db)).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

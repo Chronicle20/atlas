@@ -1,4 +1,4 @@
-package equipment
+package equipable
 
 import "time"
 
@@ -148,6 +148,40 @@ func (m Model) HammersApplied() uint32 {
 
 func (m Model) Expiration() time.Time {
 	return m.expiration
+}
+
+func Clone(m Model) *ModelBuilder {
+	return &ModelBuilder{
+		id:             m.id,
+		itemId:         m.itemId,
+		strength:       m.strength,
+		dexterity:      m.dexterity,
+		intelligence:   m.intelligence,
+		luck:           m.luck,
+		hp:             m.hp,
+		mp:             m.mp,
+		weaponAttack:   m.weaponAttack,
+		magicAttack:    m.magicAttack,
+		weaponDefense:  m.weaponDefense,
+		magicDefense:   m.magicDefense,
+		accuracy:       m.accuracy,
+		avoidability:   m.avoidability,
+		hands:          m.hands,
+		speed:          m.speed,
+		jump:           m.jump,
+		slots:          m.slots,
+		ownerName:      m.ownerName,
+		locked:         m.locked,
+		spikes:         m.spikes,
+		karmaUsed:      m.karmaUsed,
+		cold:           m.cold,
+		canBeTraded:    m.canBeTraded,
+		levelType:      m.levelType,
+		level:          m.level,
+		experience:     m.experience,
+		hammersApplied: m.hammersApplied,
+		expiration:     m.expiration,
+	}
 }
 
 type ModelBuilder struct {
@@ -326,6 +360,101 @@ func (b *ModelBuilder) SetExpiration(expiration time.Time) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) AddStrength(delta int16) *ModelBuilder {
+	b.strength = addUint16(b.strength, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddDexterity(delta int16) *ModelBuilder {
+	b.dexterity = addUint16(b.dexterity, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddIntelligence(delta int16) *ModelBuilder {
+	b.intelligence = addUint16(b.intelligence, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddLuck(delta int16) *ModelBuilder {
+	b.luck = addUint16(b.luck, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddHp(delta int16) *ModelBuilder {
+	b.hp = addUint16(b.hp, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddMp(delta int16) *ModelBuilder {
+	b.mp = addUint16(b.mp, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddWeaponAttack(delta int16) *ModelBuilder {
+	b.weaponAttack = addUint16(b.weaponAttack, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddMagicAttack(delta int16) *ModelBuilder {
+	b.magicAttack = addUint16(b.magicAttack, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddWeaponDefense(delta int16) *ModelBuilder {
+	b.weaponDefense = addUint16(b.weaponDefense, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddMagicDefense(delta int16) *ModelBuilder {
+	b.magicDefense = addUint16(b.magicDefense, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddAccuracy(delta int16) *ModelBuilder {
+	b.accuracy = addUint16(b.accuracy, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddAvoidability(delta int16) *ModelBuilder {
+	b.avoidability = addUint16(b.avoidability, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddHands(delta int16) *ModelBuilder {
+	b.hands = addUint16(b.hands, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddSpeed(delta int16) *ModelBuilder {
+	b.speed = addUint16(b.speed, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddJump(delta int16) *ModelBuilder {
+	b.jump = addUint16(b.jump, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddSlots(delta int16) *ModelBuilder {
+	b.slots = addUint16(b.slots, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddLevel(delta int8) *ModelBuilder {
+	b.level = addByte(b.level, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddExperience(delta int32) *ModelBuilder {
+	b.experience = addUint32(b.experience, int(delta))
+	return b
+}
+
+func (b *ModelBuilder) AddHammersApplied(delta int32) *ModelBuilder {
+	b.hammersApplied = addUint32(b.hammersApplied, int(delta))
+	return b
+}
+
 func (b *ModelBuilder) Build() Model {
 	return Model{
 		id:             b.id,
@@ -358,4 +487,37 @@ func (b *ModelBuilder) Build() Model {
 		hammersApplied: b.hammersApplied,
 		expiration:     b.expiration,
 	}
+}
+
+func addUint16(orig uint16, delta int) uint16 {
+	v := int(orig) + delta
+	if v < 0 {
+		return 0
+	}
+	if v > int(^uint16(0)) {
+		return ^uint16(0)
+	}
+	return uint16(v)
+}
+
+func addUint32(orig uint32, delta int) uint32 {
+	v := int64(orig) + int64(delta)
+	if v < 0 {
+		return 0
+	}
+	if v > int64(^uint32(0)) {
+		return ^uint32(0)
+	}
+	return uint32(v)
+}
+
+func addByte(orig byte, delta int) byte {
+	v := int(orig) + delta
+	if v < 0 {
+		return 0
+	}
+	if v > 255 {
+		return 255
+	}
+	return byte(v)
 }

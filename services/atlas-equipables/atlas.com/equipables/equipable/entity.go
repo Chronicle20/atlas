@@ -1,4 +1,4 @@
-package equipment
+package equipable
 
 import (
 	"github.com/google/uuid"

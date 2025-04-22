@@ -9,7 +9,7 @@ import (
 
 type Change func(m *equipable.ChangeBody)
 
-func changeEquipableProvider(characterId uint32, itemId uint32, slot int16, changes ...Change) model.Provider[[]kafka.Message] {
+func changeEquipableProvider(characterId uint32, id uint32, changes ...Change) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 
 	cb := &equipable.ChangeBody{}
@@ -19,8 +19,7 @@ func changeEquipableProvider(characterId uint32, itemId uint32, slot int16, chan
 
 	value := &equipable.Command[equipable.ChangeBody]{
 		CharacterId: characterId,
-		ItemId:      itemId,
-		Slot:        slot,
+		Id:          id,
 		Type:        equipable.CommandChange,
 		Body:        *cb,
 	}

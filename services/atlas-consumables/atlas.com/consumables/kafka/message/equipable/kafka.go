@@ -9,8 +9,7 @@ const (
 
 type Command[E any] struct {
 	CharacterId uint32 `json:"characterId"`
-	ItemId      uint32 `json:"itemId"`
-	Slot        int16  `json:"slot"`
+	Id          uint32 `json:"id"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
 }

@@ -6,7 +6,6 @@ import (
 	"atlas-consumables/character/buff"
 	"atlas-consumables/character/buff/stat"
 	"atlas-consumables/character/equipment/slot"
-	equipable2 "atlas-consumables/character/inventory/equipable"
 	"atlas-consumables/character/inventory/item"
 	"atlas-consumables/equipable"
 	"atlas-consumables/equipable/statistic"
@@ -378,9 +377,9 @@ func RequestScroll(l logrus.FieldLogger) func(ctx context.Context) func(characte
 	}
 }
 
-func ValidateScrollUse(l logrus.FieldLogger) func(ctx context.Context) func(c character.Model, scrollItem item.Model, equipItem equipable2.Model) bool {
-	return func(ctx context.Context) func(c character.Model, scrollItem item.Model, equipItem equipable2.Model) bool {
-		return func(c character.Model, scrollItem item.Model, equipItem equipable2.Model) bool {
+func ValidateScrollUse(l logrus.FieldLogger) func(ctx context.Context) func(c character.Model, scrollItem item.Model, equipItem equipable.Model) bool {
+	return func(ctx context.Context) func(c character.Model, scrollItem item.Model, equipItem equipable.Model) bool {
+		return func(c character.Model, scrollItem item.Model, equipItem equipable.Model) bool {
 			if item2.IsScrollCleanSlate(item2.Id(scrollItem.ItemId())) {
 				// If the scroll is a clean slate scroll, make sure we're not attempting to add mores lots than originally available.
 				es, err := statistic.GetById(l)(ctx)(equipItem.ItemId())
@@ -501,7 +500,8 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *item
 
 			if len(changes) > 0 {
 				l.Debugf("Applying [%d] changes to character [%d] item [%d].", len(changes), characterId, sm.Equipable.ItemId())
-				err = equipable.ChangeStat(l)(ctx)(characterId, sm.Equipable.ItemId(), sm.Equipable.Slot(), changes...)
+
+				err = equipable.ChangeStat(l)(ctx)(characterId, *sm.Equipable, changes...)
 				if err != nil {
 					return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 				}
@@ -535,7 +535,7 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *item
 	}
 }
 
-func applyChaos(m *equipable2.Model) ([]equipable.Change, error) {
+func applyChaos(m *equipable.Model) ([]equipable.Change, error) {
 	currents := make([]uint16, 0)
 	changers := make([]func(int16) equipable.Change, 0)
 	currents = append(currents, m.Strength(), m.Dexterity(), m.Intelligence(), m.Luck(), m.WeaponAttack(), m.WeaponDefense(), m.MagicAttack(), m.MagicDefense(), m.Accuracy(), m.Avoidability(), m.Speed(), m.Jump(), m.HP(), m.MP())

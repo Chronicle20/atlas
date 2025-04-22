@@ -1,7 +1,7 @@
 package slot
 
 import (
-	"atlas-consumables/character/inventory/equipable"
+	"atlas-consumables/equipable"
 	"encoding/json"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"

@@ -1,7 +1,7 @@
 package slot
 
 import (
-	"atlas-consumables/character/inventory/equipable"
+	"atlas-consumables/equipable"
 	"errors"
 	"sync"
 )

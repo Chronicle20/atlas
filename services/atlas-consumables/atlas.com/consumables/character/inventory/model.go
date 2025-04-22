@@ -1,8 +1,8 @@
 package inventory
 
 import (
-	"atlas-consumables/character/inventory/equipable"
 	"atlas-consumables/character/inventory/item"
+	"atlas-consumables/equipable"
 )
 
 type Type int8

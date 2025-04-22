@@ -67,7 +67,7 @@ func handleError(sc server.Model, wp writer.Producer) message.Handler[statusEven
 			return
 		}
 
-		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, announceGuildError(l)(ctx)(wp)(e.Body.Error))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.ActorId, announceGuildError(l)(ctx)(wp)(e.Body.Error))
 		if err != nil {
 			l.Debugf("Unable to issue character [%d] guild error [%s].", e.Body.ActorId, err)
 		}
@@ -94,7 +94,7 @@ func handleTitlesUpdated(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		err := session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceTitlesUpdated(l)(ctx)(wp)(e.GuildId, e.Body.Titles))
+		err := session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(guild.NewProcessor(l, ctx).GetMemberIds(e.GuildId, model.Filters(guild.MemberOnline)), announceTitlesUpdated(l)(ctx)(wp)(e.GuildId, e.Body.Titles))
 		if err != nil {
 			l.Debugf("Unable to announce title update to [%d] guild.", e.GuildId)
 		}
@@ -121,26 +121,26 @@ func handleMemberJoined(sc server.Model, wp writer.Producer) message.Handler[sta
 			return
 		}
 
-		g, err := guild.GetById(l)(ctx)(e.GuildId)
+		g, err := guild.NewProcessor(l, ctx).GetById(e.GuildId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce guild [%d] member [%d] has joined.", e.GuildId, e.Body.CharacterId)
 			return
 		}
 
 		// Inform members that guild member joined.
-		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline, guild.NotMember(e.Body.CharacterId))), announceMemberJoined(l)(ctx)(wp)(e.GuildId, e.Body.CharacterId, e.Body.Name, e.Body.JobId, e.Body.Level, e.Body.Title, e.Body.Online, e.Body.AllianceTitle))
+		err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(guild.NewProcessor(l, ctx).GetMemberIds(e.GuildId, model.Filters(guild.MemberOnline, guild.NotMember(e.Body.CharacterId))), announceMemberJoined(l)(ctx)(wp)(e.GuildId, e.Body.CharacterId, e.Body.Name, e.Body.JobId, e.Body.Level, e.Body.Title, e.Body.Online, e.Body.AllianceTitle))
 		if err != nil {
 			l.Debugf("Unable to announce character [%d] joined guild [%d] to current guild members.", e.Body.CharacterId, e.GuildId)
 		}
 
 		// Update character to show they are not in guild.
-		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, announceGuildInfo(l)(ctx)(wp)(g))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, announceGuildInfo(l)(ctx)(wp)(g))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce guild [%d] information to character [%d].", e.GuildId, e.Body.CharacterId)
 		}
 
 		// Update characters in map that x is in guild.
-		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, _map.ForSessionsInSessionsMap(l)(ctx)(func(oid uint32) model.Operator[session.Model] {
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, _map.NewProcessor(l, ctx).ForSessionsInSessionsMap(func(oid uint32) model.Operator[session.Model] {
 			return announceForeignGuildInfo(l)(ctx)(wp)(e.Body.CharacterId, g)
 		}))
 		if err != nil {
@@ -213,19 +213,19 @@ func handleMemberLeft(sc server.Model, wp writer.Producer) message.Handler[statu
 		}
 
 		// Inform members that guild member left.
-		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline, guild.NotMember(e.Body.CharacterId))), af)
+		err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(guild.NewProcessor(l, ctx).GetMemberIds(e.GuildId, model.Filters(guild.MemberOnline, guild.NotMember(e.Body.CharacterId))), af)
 		if err != nil {
 			l.Debugf("Unable to announce to guild [%d] that character [%d] has left.", e.GuildId, e.Body.CharacterId)
 		}
 
 		// Update character to show they are not in guild.
-		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, announceGuildInfo(l)(ctx)(wp)(guild.Model{}))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, announceGuildInfo(l)(ctx)(wp)(guild.Model{}))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce empty guild information to character [%d].", e.Body.CharacterId)
 		}
 
 		// Update characters in map that x is no longer in guild.
-		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, _map.ForSessionsInSessionsMap(l)(ctx)(func(oid uint32) model.Operator[session.Model] {
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, _map.NewProcessor(l, ctx).ForSessionsInSessionsMap(func(oid uint32) model.Operator[session.Model] {
 			return announceForeignGuildInfo(l)(ctx)(wp)(e.Body.CharacterId, guild.Model{})
 		}))
 		if err != nil {
@@ -264,7 +264,7 @@ func handleCapacityUpdated(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		err := session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceCapacityChanged(l)(ctx)(wp)(e.GuildId, e.Body.Capacity))
+		err := session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(guild.NewProcessor(l, ctx).GetMemberIds(e.GuildId, model.Filters(guild.MemberOnline)), announceCapacityChanged(l)(ctx)(wp)(e.GuildId, e.Body.Capacity))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce to guild [%d] members that the capacity has changed to [%d].", e.GuildId, e.Body.Capacity)
 		}
@@ -291,7 +291,7 @@ func handleNoticeUpdated(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		err := session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceNoticeChanged(l)(ctx)(wp)(e.GuildId, e.Body.Notice))
+		err := session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(guild.NewProcessor(l, ctx).GetMemberIds(e.GuildId, model.Filters(guild.MemberOnline)), announceNoticeChanged(l)(ctx)(wp)(e.GuildId, e.Body.Notice))
 		if err != nil {
 			l.Debugf("Unable to guild [%d] members that the notice has changed to [%s].", e.GuildId, e.Body.Notice)
 		}
@@ -318,13 +318,13 @@ func handleMemberTitleUpdated(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		g, err := guild.GetById(l)(ctx)(e.GuildId)
+		g, err := guild.NewProcessor(l, ctx).GetById(e.GuildId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue guild [%d] member [%d] title [%d].", e.GuildId, e.Body.CharacterId, e.Body.Title)
 			return
 		}
 
-		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceMemberTitleChanged(l)(ctx)(wp)(g, e.Body.CharacterId, e.Body.Title))
+		err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(guild.NewProcessor(l, ctx).GetMemberIds(e.GuildId, model.Filters(guild.MemberOnline)), announceMemberTitleChanged(l)(ctx)(wp)(g, e.Body.CharacterId, e.Body.Title))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue guild [%d] member [%d] title [%d].", e.GuildId, e.Body.CharacterId, e.Body.Title)
 		}
@@ -358,13 +358,13 @@ func handleMemberStatusUpdated(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 
-		g, err := guild.GetById(l)(ctx)(e.GuildId)
+		g, err := guild.NewProcessor(l, ctx).GetById(e.GuildId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce guild [%d] member [%d] status update to [%t].", e.GuildId, e.Body.CharacterId, e.Body.Online)
 			return
 		}
 
-		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceMemberStatusUpdated(l)(ctx)(wp)(g, e.Body.CharacterId, e.Body.Online))
+		err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(guild.NewProcessor(l, ctx).GetMemberIds(e.GuildId, model.Filters(guild.MemberOnline)), announceMemberStatusUpdated(l)(ctx)(wp)(g, e.Body.CharacterId, e.Body.Online))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce guild [%d] member [%d] status update to [%t].", e.GuildId, e.Body.CharacterId, e.Body.Online)
 		}
@@ -398,20 +398,20 @@ func handleEmblemUpdated(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		g, err := guild.GetById(l)(ctx)(e.GuildId)
+		g, err := guild.NewProcessor(l, ctx).GetById(e.GuildId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce guild [%d] emblem has changed.", e.GuildId)
 			return
 		}
 
 		// Inform members that the emblem changed.
-		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceEmblemChanged(l)(ctx)(wp)(g.Id(), e.Body.Logo, e.Body.LogoColor, e.Body.LogoBackground, e.Body.LogoBackgroundColor))
+		err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(guild.NewProcessor(l, ctx).GetMemberIds(e.GuildId, model.Filters(guild.MemberOnline)), announceEmblemChanged(l)(ctx)(wp)(g.Id(), e.Body.Logo, e.Body.LogoColor, e.Body.LogoBackground, e.Body.LogoBackgroundColor))
 		if err != nil {
 			l.Debugf("Unable to announce to guild [%d] members the emblem has changed.", e.GuildId)
 		}
 
 		// Inform foreign characters that the members emblem has changed.
-		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), _map.ForSessionsInSessionsMap(l)(ctx)(func(memberId uint32) model.Operator[session.Model] {
+		err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(guild.NewProcessor(l, ctx).GetMemberIds(e.GuildId, model.Filters(guild.MemberOnline)), _map.NewProcessor(l, ctx).ForSessionsInSessionsMap(func(memberId uint32) model.Operator[session.Model] {
 			return announceForeignEmblemChanged(l)(ctx)(wp)(memberId, e.Body.Logo, e.Body.LogoColor, e.Body.LogoBackground, e.Body.LogoBackgroundColor)
 		}))
 		if err != nil {
@@ -450,9 +450,9 @@ func handleRequestAgreement(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		p, err := party.GetByMemberId(l)(ctx)(e.Body.ActorId)
+		p, err := party.NewProcessor(l, ctx).GetByMemberId(e.Body.ActorId)
 		if err != nil {
-			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, announceGuildError(l)(ctx)(wp)(writer.GuildOperationCreateError))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.ActorId, announceGuildError(l)(ctx)(wp)(writer.GuildOperationCreateError))
 			if err != nil {
 				l.Debugf("Unable to issue character [%d] guild error [%s].", e.Body.ActorId, err)
 			}
@@ -460,7 +460,7 @@ func handleRequestAgreement(sc server.Model, wp writer.Producer) message.Handler
 		}
 		imf := party.OtherMemberInMap(sc.WorldId(), sc.ChannelId(), p.Leader().MapId(), p.LeaderId())
 		mip := party.FilteredMemberProvider(imf)(model.FixedProvider(p))
-		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(party.MemberToMemberIdMapper(mip), requestGuildNameAgreement(l)(ctx)(wp)(p.Id(), p.LeaderName(), e.Body.ProposedName))
+		err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(party.MemberToMemberIdMapper(mip), requestGuildNameAgreement(l)(ctx)(wp)(p.Id(), p.LeaderName(), e.Body.ProposedName))
 		if err != nil {
 			l.Debugf("Unable to announce to party members that the guild [%s] is being created.", e.Body.ProposedName)
 		}
@@ -488,18 +488,18 @@ func handleDisbanded(sc server.Model, wp writer.Producer) message.Handler[status
 		}
 
 		// Inform foreign characters that guild was left.
-		_ = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), _map.ForSessionsInSessionsMap(l)(ctx)(func(memberId uint32) model.Operator[session.Model] {
+		_ = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(guild.NewProcessor(l, ctx).GetMemberIds(e.GuildId, model.Filters(guild.MemberOnline)), _map.NewProcessor(l, ctx).ForSessionsInSessionsMap(func(memberId uint32) model.Operator[session.Model] {
 			return announceForeignGuildInfo(l)(ctx)(wp)(memberId, guild.Model{})
 		}))
 
 		// Inform members that guild was disbanded.
-		err := session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceGuildDisband(l)(ctx)(wp)(e.GuildId))
+		err := session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(guild.NewProcessor(l, ctx).GetMemberIds(e.GuildId, model.Filters(guild.MemberOnline)), announceGuildDisband(l)(ctx)(wp)(e.GuildId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce to guild [%d] members that it has disbanded.", e.GuildId)
 		}
 
 		// Write empty guild information to character.
-		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceGuildInfo(l)(ctx)(wp)(guild.Model{}))
+		err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(guild.NewProcessor(l, ctx).GetMemberIds(e.GuildId, model.Filters(guild.MemberOnline)), announceGuildInfo(l)(ctx)(wp)(guild.Model{}))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce empty guild information to former guild members.")
 		}
@@ -526,19 +526,19 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		g, err := guild.GetById(l)(ctx)(e.GuildId)
+		g, err := guild.NewProcessor(l, ctx).GetById(e.GuildId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce guild [%d] emblem has changed.", e.GuildId)
 			return
 		}
 
 		// Inform foreign characters that guild was joined.
-		_ = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), _map.ForSessionsInSessionsMap(l)(ctx)(func(memberId uint32) model.Operator[session.Model] {
+		_ = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(guild.NewProcessor(l, ctx).GetMemberIds(e.GuildId, model.Filters(guild.MemberOnline)), _map.NewProcessor(l, ctx).ForSessionsInSessionsMap(func(memberId uint32) model.Operator[session.Model] {
 			return announceForeignGuildInfo(l)(ctx)(wp)(memberId, g)
 		}))
 
 		// Write guild information to character.
-		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(guild.GetMemberIds(l)(ctx)(e.GuildId, model.Filters(guild.MemberOnline)), announceGuildInfo(l)(ctx)(wp)(g))
+		err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(guild.NewProcessor(l, ctx).GetMemberIds(e.GuildId, model.Filters(guild.MemberOnline)), announceGuildInfo(l)(ctx)(wp)(g))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce guild [%d] information to current guild members.", g.Id())
 		}
@@ -555,7 +555,7 @@ func handleRequestEmblem(sc server.Model, wp writer.Producer) message.Handler[co
 			return
 		}
 
-		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, announceGuildEmblemRequest(l)(ctx)(wp))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceGuildEmblemRequest(l)(ctx)(wp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce to character [%d] guild emblem request.", c.CharacterId)
 		}
@@ -580,7 +580,7 @@ func handleRequestName(sc server.Model, wp writer.Producer) message.Handler[comm
 			return
 		}
 
-		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, announceGuildNameRequest(l)(ctx)(wp))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceGuildNameRequest(l)(ctx)(wp))
 		if err != nil {
 			l.Debugf("Unable to request character [%d] input guild name.", c.CharacterId)
 		}

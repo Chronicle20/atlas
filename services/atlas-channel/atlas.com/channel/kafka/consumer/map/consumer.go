@@ -62,16 +62,15 @@ func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l
 		}
 
 		l.Debugf("Character [%d] has entered map [%d] in worldId [%d] channelId [%d].", e.Body.CharacterId, e.MapId, e.WorldId, e.ChannelId)
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, enterMap(l, ctx, wp)(sc.Map(_map2.Id(e.MapId))))
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, enterMap(l, ctx, wp)(sc.Map(_map2.Id(e.MapId))))
 	}
 }
 
 func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(m _map2.Model) model.Operator[session.Model] {
-	t := tenant.MustFromContext(ctx)
 	return func(m _map2.Model) model.Operator[session.Model] {
 		return func(s session.Model) error {
 			l.Debugf("Processing character [%d] entering map [%d].", s.CharacterId(), m.MapId())
-			ids, err := _map.GetCharacterIdsInMap(l)(ctx)(m)
+			ids, err := _map.NewProcessor(l, ctx).GetCharacterIdsInMap(m)
 			if err != nil {
 				l.WithError(err).Errorf("No characters found in map [%d] for world [%d] and channel [%d].", m.MapId(), s.WorldId(), s.ChannelId())
 				return err
@@ -84,12 +83,12 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				l.WithError(err).Errorf("Unable to retrieve character details for characters in map.")
 				return err
 			}
-			g, err := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+			g, err := guild.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 
 			// spawn new character for others
 			for k := range cms {
 				if k != s.CharacterId() {
-					err = session.IfPresentByCharacterId(tenant.MustFromContext(ctx), s.WorldId(), s.ChannelId())(k, spawnCharacterForSession(l)(ctx)(wp)(cms[s.CharacterId()], g, true))
+					err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.WorldId(), s.ChannelId())(k, spawnCharacterForSession(l)(ctx)(wp)(cms[s.CharacterId()], g, true))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to spawn character [%d] for [%d]", s.CharacterId(), k)
 					}
@@ -99,7 +98,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			// spawn other characters for incoming
 			for k, v := range cms {
 				if k != s.CharacterId() {
-					kg, _ := guild.GetByMemberId(l)(ctx)(k)
+					kg, _ := guild.NewProcessor(l, ctx).GetByMemberId(k)
 					err = spawnCharacterForSession(l)(ctx)(wp)(v, kg, false)(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to spawn character [%d] for [%d]", v.Id(), s.CharacterId())
@@ -126,7 +125,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				for k := range cms {
 					for _, p := range cms[s.CharacterId()].Pets() {
 						if p.Slot() >= 0 {
-							err = session.IfPresentByCharacterId(tenant.MustFromContext(ctx), s.WorldId(), s.ChannelId())(k, session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(tenant.MustFromContext(ctx))(p)))
+							err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.WorldId(), s.ChannelId())(k, session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(tenant.MustFromContext(ctx))(p)))
 							if err != nil {
 								l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", s.CharacterId(), k)
 							}
@@ -140,42 +139,42 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			}()
 
 			go func() {
-				err = npc.ForEachInMap(l)(ctx)(m.MapId(), spawnNPCForSession(l)(ctx)(wp)(s))
+				err = npc.NewProcessor(l, ctx).ForEachInMap(m.MapId(), spawnNPCForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn npcs for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
-				err = monster.ForEachInMap(l)(ctx)(m, spawnMonsterForSession(l)(ctx)(wp)(s))
+				err = monster.NewProcessor(l, ctx).ForEachInMap(m, spawnMonsterForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn monsters for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
-				err = drop.ForEachInMap(l)(ctx)(m, spawnDropsForSession(l)(ctx)(wp)(s))
+				err = drop.NewProcessor(l, ctx).ForEachInMap(m, spawnDropsForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn drops for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
-				err = reactor.ForEachInMap(l)(ctx)(m, spawnReactorsForSession(l)(ctx)(wp)(s))
+				err = reactor.NewProcessor(l, ctx).ForEachInMap(m, spawnReactorsForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn reactors for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
-				err = chalkboard.ForEachInMap(l)(ctx)(m, spawnChalkboardsForSession(l)(ctx)(wp)(s))
+				err = chalkboard.NewProcessor(l, ctx).ForEachInMap(m, spawnChalkboardsForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn drops for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
-				err = chair.ForEachInMap(l)(ctx)(m, spawnChairsForSession(l)(ctx)(wp)(s))
+				err = chair.NewProcessor(l, ctx).ForEachInMap(m, spawnChairsForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn drops for character [%d].", s.CharacterId())
 				}
@@ -183,8 +182,8 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 
 			go func() {
 				imf := party.OtherMemberInMap(s.WorldId(), s.ChannelId(), s.MapId(), s.CharacterId())
-				oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.ByMemberIdProvider(l)(ctx)(s.CharacterId())))
-				err = session.ForEachByCharacterId(t, s.WorldId(), s.ChannelId())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(s.CharacterId(), cms[s.CharacterId()].Hp(), cms[s.CharacterId()].MaxHp())))
+				oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.NewProcessor(l, ctx).ByMemberIdProvider(s.CharacterId())))
+				err = session.NewProcessor(l, ctx).ForEachByCharacterId(s.WorldId(), s.ChannelId())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(s.CharacterId(), cms[s.CharacterId()].Hp(), cms[s.CharacterId()].MaxHp())))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] health to party members.", s.CharacterId())
 				}
@@ -203,7 +202,7 @@ func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 		return func(wp writer.Producer) func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
 			return func(c character.Model, g guild.Model, enteringField bool) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					bs, err := buff.GetByCharacterId(l)(ctx)(c.Id())
+					bs, err := buff.NewProcessor(l, ctx).GetByCharacterId(c.Id())
 					if err != nil {
 						bs = make([]buff.Model, 0)
 					}
@@ -234,7 +233,7 @@ func handleStatusEventCharacterExit(sc server.Model, wp writer.Producer) func(l 
 		}
 
 		l.Debugf("Character [%d] has left map [%d] in worldId [%d] channelId [%d].", e.Body.CharacterId, e.MapId, e.WorldId, e.ChannelId)
-		err := _map.ForOtherSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), e.Body.CharacterId, despawnForSession(l)(ctx)(wp)(e.Body.CharacterId))
+		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Map(_map2.Id(e.MapId)), e.Body.CharacterId, despawnForSession(l)(ctx)(wp)(e.Body.CharacterId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to despawn character [%d] for characters in map [%d].", e.Body.CharacterId, e.MapId)
 		}

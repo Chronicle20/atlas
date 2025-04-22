@@ -20,7 +20,7 @@ func UseHolySymbol(l logrus.FieldLogger) func(ctx context.Context) func(m _map.M
 				_ = character.NewProcessor(l, ctx).ChangeMP(m, characterId, -int16(effect.MPConsume()))
 			}
 
-			applyBuffFunc := buff.Apply(l)(ctx)(m, characterId, int32(info.SkillId()), effect.Duration(), effect.StatUps())
+			applyBuffFunc := buff.NewProcessor(l, ctx).Apply(m, characterId, int32(info.SkillId()), effect.Duration(), effect.StatUps())
 
 			_ = applyBuffFunc(characterId)
 			_ = applyToParty(l)(ctx)(m, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)

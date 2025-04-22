@@ -63,7 +63,7 @@ func handleGeneralChat(sc server.Model, wp writer.Producer) message.Handler[chat
 			return
 		}
 
-		err = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), showGeneralChatForSession(l)(ctx)(wp)(e, c.Gm()))
+		err = _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), showGeneralChatForSession(l)(ctx)(wp)(e, c.Gm()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send message from character [%d] to map [%d].", e.ActorId, e.MapId)
 		}
@@ -97,7 +97,7 @@ func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[chatEv
 		}
 
 		for _, cid := range e.Body.Recipients {
-			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(cid, sendMultiChat(l)(ctx)(wp)(c.Name(), e.Message, message2.MultiChatTypeStrToInd(e.Type)))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cid, sendMultiChat(l)(ctx)(wp)(c.Name(), e.Message, message2.MultiChatTypeStrToInd(e.Type)))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)
 			}
@@ -137,13 +137,13 @@ func handleWhisperChat(sc server.Model, wp writer.Producer) message.Handler[chat
 		}
 
 		bp := writer.CharacterChatWhisperSendResultBody(tc, true)
-		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(bp))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(bp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.ActorId, e.Body.Recipient)
 		}
 
 		bp = writer.CharacterChatWhisperReceiptBody(c, e.ChannelId, e.Message)
-		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.Recipient, session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(bp))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.Recipient, session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(bp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.ActorId, e.Body.Recipient)
 		}
@@ -162,7 +162,7 @@ func handleMessengerChat(sc server.Model, wp writer.Producer) message.Handler[ch
 
 		for _, cid := range e.Body.Recipients {
 			bp := session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationChatBody(e.Message))
-			err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(cid, bp)
+			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cid, bp)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)
 			}
@@ -180,12 +180,12 @@ func handlePetChat(sc server.Model, wp writer.Producer) message.Handler[chatEven
 			return
 		}
 
-		s, err := session.GetByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.OwnerId)
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.OwnerId)
 		if err != nil {
 			return
 		}
 
 		p := pet.NewModelBuilder(uint64(e.ActorId), 0, 0, "").SetOwnerID(e.Body.OwnerId).SetSlot(e.Body.PetSlot).Build()
-		_ = _map.ForSessionsInMap(l)(ctx)(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetChat)(writer.PetChatBody(p, e.Body.Type, e.Body.Action, e.Message, e.Body.Balloon)))
+		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetChat)(writer.PetChatBody(p, e.Body.Type, e.Body.Action, e.Message, e.Body.Balloon)))
 	}
 }

@@ -57,13 +57,13 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		m, err := monster.GetById(l)(ctx)(e.UniqueId)
+		m, err := monster.NewProcessor(l, ctx).GetById(e.UniqueId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being spawned.", e.UniqueId)
 			return
 		}
 
-		err = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), spawnForSession(l)(ctx)(wp)(m))
+		err = _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), spawnForSession(l)(ctx)(wp)(m))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn monster [%d] for characters in map [%d].", m.UniqueId(), e.MapId)
 		}
@@ -90,7 +90,7 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), destroyForSession(l)(ctx)(wp)(e.UniqueId))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), destroyForSession(l)(ctx)(wp)(e.UniqueId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
@@ -117,21 +117,21 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		m, err := monster.GetById(l)(ctx)(e.UniqueId)
+		m, err := monster.NewProcessor(l, ctx).GetById(e.UniqueId)
 		if err != nil {
 			return
 		}
 
 		var idProvider = model.FixedProvider([]uint32{e.Body.ActorId})
 
-		p, err := party.GetByMemberId(l)(ctx)(e.Body.ActorId)
+		p, err := party.NewProcessor(l, ctx).GetByMemberId(e.Body.ActorId)
 		if err == nil {
 			mimf := party.MemberInMap(sc.WorldId(), sc.ChannelId(), _map2.Id(e.MapId))
 			mp := party.FilteredMemberProvider(mimf)(model.FixedProvider(p))
 			idProvider = party.MemberToMemberIdMapper(mp)
 		}
 
-		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(idProvider, session.Announce(l)(ctx)(wp)(writer.MonsterHealth)(writer.MonsterHealthBody(m)))
+		err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(idProvider, session.Announce(l)(ctx)(wp)(writer.MonsterHealth)(writer.MonsterHealthBody(m)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce monster [%d] health.", e.UniqueId)
 		}
@@ -148,7 +148,7 @@ func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), killForSession(l)(ctx)(wp)(e.UniqueId))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), killForSession(l)(ctx)(wp)(e.UniqueId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to kill monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
@@ -183,7 +183,7 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 			SetTeam(e.Body.Team).
 			Build()
 		sf := session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StartControlMonsterBody(l, tenant.MustFromContext(ctx))(m, false))
-		err := session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to start control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
 		}
@@ -203,7 +203,7 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 		m := monster.NewModelBuilder(e.UniqueId, world.Id(e.WorldId), channel.Id(e.ChannelId), _map2.Id(e.MapId), e.MonsterId).
 			Build()
 		sf := session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StopControlMonsterBody(l, tenant.MustFromContext(ctx))(m))
-		err := session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to stop control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
 		}

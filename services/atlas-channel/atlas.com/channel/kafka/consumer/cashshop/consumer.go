@@ -45,12 +45,12 @@ func handleStatusEventInventoryCapacityIncreased(sc server.Model, wp writer.Prod
 			return
 		}
 
-		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
 			err := session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopInventoryCapacityIncreaseSuccessBody(l)(e.Body.InventoryType, e.Body.Capacity))(s)
 			if err != nil {
 				return err
 			}
-			w, err := wallet.GetByCharacterId(l)(ctx)(e.CharacterId)
+			w, err := wallet.NewProcessor(l, ctx).GetByCharacterId(e.CharacterId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve cash shop wallet for character [%d].", s.CharacterId())
 				err = session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)(writer.CashShopCashQueryResultBody(t)(0, 0, 0))(s)
@@ -78,7 +78,7 @@ func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler
 		}
 		// TODO this is not a generic error generator
 		op := session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopInventoryCapacityIncreaseFailedBody(l)(e.Body.Error))
-		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, op)
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, op)
 		return
 	}
 }

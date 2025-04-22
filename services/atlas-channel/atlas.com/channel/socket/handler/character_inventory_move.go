@@ -20,28 +20,28 @@ func CharacterInventoryMoveHandleFunc(l logrus.FieldLogger, ctx context.Context,
 		count := r.ReadInt16()
 		l.Debugf("Character [%d] attempting to move [%d] item in inventory [%d]. source [%d] destination [%d] updateTime [%d]", s.CharacterId(), count, inventoryType, source, destination, updateTime)
 		if source < 0 && destination > 0 {
-			err := inventory.Unequip(l)(ctx)(s.CharacterId(), source, destination)
+			err := inventory.NewProcessor(l, ctx).Unequip(s.CharacterId(), source, destination)
 			if err != nil {
 				l.WithError(err).Errorf("Error removing equipment equipped in slot [%d] for character [%d].", source, s.CharacterId())
 			}
 			return
 		}
 		if destination < 0 {
-			err := inventory.Equip(l)(ctx)(s.CharacterId(), source, destination)
+			err := inventory.NewProcessor(l, ctx).Equip(s.CharacterId(), source, destination)
 			if err != nil {
 				l.WithError(err).Errorf("Error equipping equipment from slot [%d] for character [%d].", source, s.CharacterId())
 			}
 			return
 		}
 		if destination == 0 {
-			err := inventory.Drop(l)(ctx)(s.Map(), s.CharacterId(), inventoryType, source, count)
+			err := inventory.NewProcessor(l, ctx).Drop(s.Map(), s.CharacterId(), inventoryType, source, count)
 			if err != nil {
 				l.WithError(err).Errorf("Error dropping [%d] item from slot [%d] for character [%d].", count, source, s.CharacterId())
 			}
 			return
 		}
 
-		err := inventory.Move(l)(ctx)(s.CharacterId(), inventoryType, source, destination)
+		err := inventory.NewProcessor(l, ctx).Move(s.CharacterId(), inventoryType, source, destination)
 		if err != nil {
 			l.WithError(err).Errorf("Error moving item from slot [%d] to slot [%d] for character [%d].", source, destination, s.CharacterId())
 		}

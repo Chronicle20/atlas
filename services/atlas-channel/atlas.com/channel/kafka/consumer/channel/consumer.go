@@ -40,7 +40,7 @@ func handleCommandStatus(sc server.Model, ipAddress string, port int) message.Ha
 		st := sc.Tenant()
 		mt := tenant.MustFromContext(ctx)
 		if mt.Id() == st.Id() {
-			err := channel.Register(l)(ctx)(sc.WorldId(), sc.ChannelId(), ipAddress, port)
+			err := channel.NewProcessor(l, ctx).Register(sc.WorldId(), sc.ChannelId(), ipAddress, port)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to respond to world service status command. World service will not know about this channel.")
 			}

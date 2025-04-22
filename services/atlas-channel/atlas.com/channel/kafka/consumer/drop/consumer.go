@@ -64,7 +64,7 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			SetPlayerDrop(e.Body.PlayerDrop).
 			Build()
 
-		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.DropSpawn)(writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeFresh, 0)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.DropSpawn)(writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeFresh, 0)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn drop [%d] for characters in map [%d].", d.Id(), e.MapId)
 		}
@@ -81,7 +81,7 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), func(s session.Model) error {
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), func(s session.Model) error {
 			return session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypeExpire, s.CharacterId(), -1))(s)
 		})
 		if err != nil {
@@ -103,7 +103,7 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 		l.Debugf("[%d] is picking up drop [%d].", e.Body.CharacterId, e.DropId)
 
 		go func() {
-			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
+			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, func(s session.Model) error {
 				var bp writer.BodyProducer
 				if e.Body.Meso > 0 {
 					bp = writer.CharacterStatusMessageOperationDropPickUpMesoBody(l)(false, e.Body.Meso, 0)
@@ -127,7 +127,7 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 				dt = writer.DropDestroyTypePetPickUp
 			}
 
-			err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, dt, e.Body.CharacterId, e.Body.PetSlot)))
+			err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, dt, e.Body.CharacterId, e.Body.PetSlot)))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to pick up drop [%d] for characters in map [%d].", e.DropId, e.MapId)
 			}

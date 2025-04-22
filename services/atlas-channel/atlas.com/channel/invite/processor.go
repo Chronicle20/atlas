@@ -7,18 +7,23 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Accept(l logrus.FieldLogger) func(ctx context.Context) func(actorId uint32, worldId world.Id, inviteType string, referenceId uint32) error {
-	return func(ctx context.Context) func(actorId uint32, worldId world.Id, inviteType string, referenceId uint32) error {
-		return func(actorId uint32, worldId world.Id, inviteType string, referenceId uint32) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(acceptInviteCommandProvider(actorId, worldId, inviteType, referenceId))
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func Reject(l logrus.FieldLogger) func(ctx context.Context) func(actorId uint32, worldId world.Id, inviteType string, originatorId uint32) error {
-	return func(ctx context.Context) func(actorId uint32, worldId world.Id, inviteType string, originatorId uint32) error {
-		return func(actorId uint32, worldId world.Id, inviteType string, originatorId uint32) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(rejectInviteCommandProvider(actorId, worldId, inviteType, originatorId))
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
+}
+
+func (p *Processor) Accept(actorId uint32, worldId world.Id, inviteType string, referenceId uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(acceptInviteCommandProvider(actorId, worldId, inviteType, referenceId))
+}
+
+func (p *Processor) Reject(actorId uint32, worldId world.Id, inviteType string, originatorId uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(rejectInviteCommandProvider(actorId, worldId, inviteType, originatorId))
 }

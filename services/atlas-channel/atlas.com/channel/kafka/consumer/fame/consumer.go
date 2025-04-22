@@ -48,7 +48,7 @@ func handleFameEventStatusError(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, fameResponseError(l)(ctx)(wp)(e.Body.Error))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, fameResponseError(l)(ctx)(wp)(e.Body.Error))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to fame error [%s] response to character [%d].", e.Body.Error, e.CharacterId)
 		}

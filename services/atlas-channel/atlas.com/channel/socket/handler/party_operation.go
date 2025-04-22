@@ -8,7 +8,6 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,11 +22,10 @@ const (
 )
 
 func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		op := r.ReadByte()
 		if isPartyOperation(l)(readerOptions, op, PartyOperationCreate) {
-			err := party.Create(l)(ctx)(s.CharacterId())
+			err := party.NewProcessor(l, ctx).Create(s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] unable to attempt party creation.", s.CharacterId())
 			}
@@ -35,19 +33,19 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationJoin) {
 			partyId := r.ReadUint32()
-			err := invite.Accept(l)(ctx)(s.CharacterId(), s.WorldId(), invite.InviteTypeParty, partyId)
+			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), invite.InviteTypeParty, partyId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
 			}
 			return
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationLeave) {
-			p, err := party.GetByMemberId(l)(ctx)(s.CharacterId())
+			p, err := party.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate party for character [%d] to leave.", s.CharacterId())
 				return
 			}
-			err = party.Leave(l)(ctx)(p.Id(), s.CharacterId())
+			err = party.NewProcessor(l, ctx).Leave(p.Id(), s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] unable to attempt leaving party.", s.CharacterId())
 			}
@@ -55,12 +53,12 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationExpel) {
 			targetCharacterId := r.ReadUint32()
-			p, err := party.GetByMemberId(l)(ctx)(s.CharacterId())
+			p, err := party.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate party for character [%d] to leave.", s.CharacterId())
 				return
 			}
-			err = party.Expel(l)(ctx)(p.Id(), s.CharacterId(), targetCharacterId)
+			err = party.NewProcessor(l, ctx).Expel(p.Id(), s.CharacterId(), targetCharacterId)
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] unable to attempt expelling [%d] from party.", s.CharacterId(), targetCharacterId)
 			}
@@ -68,12 +66,12 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationChangeLeader) {
 			targetCharacterId := r.ReadUint32()
-			p, err := party.GetByMemberId(l)(ctx)(s.CharacterId())
+			p, err := party.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate party for character [%d] to leave.", s.CharacterId())
 				return
 			}
-			err = party.ChangeLeader(l)(ctx)(p.Id(), s.CharacterId(), targetCharacterId)
+			err = party.NewProcessor(l, ctx).ChangeLeader(p.Id(), s.CharacterId(), targetCharacterId)
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] unable to pass leadership to [%d] in party.", s.CharacterId(), targetCharacterId)
 			}
@@ -90,7 +88,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 				}
 			}
 
-			os, err := session.GetByCharacterId(t, s.WorldId(), s.ChannelId())(cs.Id())
+			os, err := session.NewProcessor(l, ctx).GetByCharacterId(s.WorldId(), s.ChannelId())(cs.Id())
 			if err != nil || s.WorldId() != os.WorldId() || s.ChannelId() != os.ChannelId() {
 				l.WithError(err).Errorf("Character [%d] not in channel. Cannot invite to party.", cs.Id())
 				err = session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody(l)("UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL", name))(s)
@@ -99,7 +97,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 				return
 			}
 
-			err = party.RequestInvite(l)(ctx)(s.CharacterId(), cs.Id())
+			err = party.NewProcessor(l, ctx).RequestInvite(s.CharacterId(), cs.Id())
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to join party.", s.CharacterId(), cs.Id())
 			}

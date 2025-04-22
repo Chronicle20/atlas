@@ -266,7 +266,7 @@ func getMasteryFromSkill(l logrus.FieldLogger) func(ctx context.Context) func(st
 			if s.Level() == 0 {
 				return startingMastery
 			}
-			si, err := skill3.GetById(l)(ctx)(uint32(skillId))
+			si, err := skill3.NewProcessor(l, ctx).GetById(uint32(skillId))
 			if err != nil {
 				return startingMastery
 			}

@@ -3,7 +3,6 @@ package handler
 import (
 	as "atlas-channel/account/session"
 	"atlas-channel/character"
-	"atlas-channel/kafka/producer"
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
@@ -25,9 +24,9 @@ func CharacterLoggedInHandleFunc(l logrus.FieldLogger, ctx context.Context, _ wr
 			return
 		}
 
-		err = as.UpdateState(l, producer.ProviderImpl(l)(ctx))(s.SessionId(), c.AccountId(), 1, model2.SetField{CharacterId: characterId})
+		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), c.AccountId(), 1, model2.SetField{CharacterId: characterId})
 		if err != nil {
-			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = session.NewProcessor(l, ctx).Destroy(s)
 		}
 		return
 

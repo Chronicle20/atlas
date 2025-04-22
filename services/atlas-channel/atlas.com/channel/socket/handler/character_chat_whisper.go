@@ -40,7 +40,7 @@ func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		}
 		if mode == WhisperModeChat {
 			msg = r.ReadAsciiString()
-			err := message.WhisperChat(l)(ctx)(s.Map(), s.CharacterId(), msg, targetName)
+			err := message.NewProcessor(l, ctx).WhisperChat(s.Map(), s.CharacterId(), msg, targetName)
 			if err != nil {
 				_ = session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(writer.CharacterChatWhisperSendFailureResultBody(targetName, false))(s)
 				return
@@ -53,7 +53,6 @@ func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 
 func produceFindResultBody(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(mode WhisperMode, targetName string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(mode WhisperMode, targetName string) model.Operator[session.Model] {
-		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(mode WhisperMode, targetName string) model.Operator[session.Model] {
 			return func(mode WhisperMode, targetName string) model.Operator[session.Model] {
 				return func(s session.Model) error {
@@ -76,7 +75,7 @@ func produceFindResultBody(l logrus.FieldLogger) func(ctx context.Context) func(
 						return af(writer.CharacterChatWhisperFindResultInCashShopBody(resultMode, targetName))(s)
 					}
 
-					_, err = session.GetByCharacterId(t, s.WorldId(), s.ChannelId())(tc.Id())
+					_, err = session.NewProcessor(l, ctx).GetByCharacterId(s.WorldId(), s.ChannelId())(tc.Id())
 					if err == nil {
 						return af(writer.CharacterChatWhisperFindResultInMapBody(resultMode, tc, tc.MapId()))(s)
 					}

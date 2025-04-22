@@ -13,7 +13,7 @@ func applyToParty(l logrus.FieldLogger) func(ctx context.Context) func(ma _map.M
 		return func(ma _map.Model, characterId uint32, memberBitmap byte) func(idOperator model.Operator[uint32]) error {
 			return func(idOperator model.Operator[uint32]) error {
 				if memberBitmap > 0 && memberBitmap < 128 {
-					p, err := party.GetByMemberId(l)(ctx)(characterId)
+					p, err := party.NewProcessor(l, ctx).GetByMemberId(characterId)
 					if err == nil {
 						for _, m := range p.Members() {
 							// TODO restrict to those in range, based on bitmap

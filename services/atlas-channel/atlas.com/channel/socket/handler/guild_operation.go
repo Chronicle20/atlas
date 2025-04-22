@@ -37,21 +37,21 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 		op := r.ReadByte()
 		if isGuildOperation(l)(readerOptions, op, GuildOperationRequestCreate) {
 			name := r.ReadAsciiString()
-			_ = guild.RequestCreate(l)(ctx)(s.Map(), s.CharacterId(), name)
+			_ = guild.NewProcessor(l, ctx).RequestCreate(s.Map(), s.CharacterId(), name)
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationAgreementResponse) {
 			unk := r.ReadUint32()
 			agreed := r.ReadBool()
 			l.Debugf("Character [%d] responded to the request to create a guild with [%t]. unk [%d].", s.CharacterId(), agreed, unk)
-			_ = guild.CreationAgreement(l)(ctx)(s.CharacterId(), agreed)
+			_ = guild.NewProcessor(l, ctx).CreationAgreement(s.CharacterId(), agreed)
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationSetEmblem) {
-			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+			g, _ := guild.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if !g.IsLeader(s.CharacterId()) {
 				l.Errorf("Character [%d] attempting to change guild emblem when they are not the guild leader.", s.CharacterId())
-				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 
@@ -60,25 +60,25 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			logo := r.ReadUint16()
 			logoColor := r.ReadByte()
 
-			_ = guild.RequestEmblemUpdate(l)(ctx)(g.Id(), s.CharacterId(), logoBackground, logoBackgroundColor, logo, logoColor)
+			_ = guild.NewProcessor(l, ctx).RequestEmblemUpdate(g.Id(), s.CharacterId(), logoBackground, logoBackgroundColor, logo, logoColor)
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationSetNotice) {
 			notice := r.ReadAsciiString()
 			if len(notice) > 100 {
 				l.Errorf("Character [%d] setting a guild notice longer than possible.", s.CharacterId())
-				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 
-			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+			g, _ := guild.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if !g.IsLeadership(s.CharacterId()) {
 				l.Errorf("Character [%d] setting a guild notice when they are not allowed.", s.CharacterId())
-				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 
-			_ = guild.RequestNoticeUpdate(l)(ctx)(g.Id(), s.CharacterId(), notice)
+			_ = guild.NewProcessor(l, ctx).RequestNoticeUpdate(g.Id(), s.CharacterId(), notice)
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationWithdraw) {
@@ -86,46 +86,46 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			name := r.ReadAsciiString()
 			if cid != s.CharacterId() {
 				l.Errorf("Character [%d] attempting to have [%d] leave guild.", s.CharacterId(), cid)
-				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 
 			c, err := character.NewProcessor(l, ctx).GetById()(cid)
 			if err != nil || c.Name() != name {
 				l.Errorf("Character [%d] attempting to have [%s] leave guild.", s.CharacterId(), name)
-				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 
-			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+			g, _ := guild.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if g.Id() == 0 {
 				l.Errorf("Character [%d] attempting to leave guild, while not in one.", s.CharacterId())
-				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 
-			_ = guild.Leave(l)(ctx)(g.Id(), s.CharacterId())
+			_ = guild.NewProcessor(l, ctx).Leave(g.Id(), s.CharacterId())
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationKick) {
 			cid := r.ReadUint32()
 			name := r.ReadAsciiString()
 
-			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+			g, _ := guild.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if !g.IsLeadership(s.CharacterId()) {
 				l.Errorf("Character [%d] attempting to leave guild, while not in one.", s.CharacterId())
-				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 
-			_ = guild.Expel(l)(ctx)(g.Id(), s.CharacterId(), cid, name)
+			_ = guild.NewProcessor(l, ctx).Expel(g.Id(), s.CharacterId(), cid, name)
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationInvite) {
-			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+			g, _ := guild.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if !g.IsLeadership(s.CharacterId()) {
 				l.Errorf("Character [%d] attempting to invite someone to the guild when they're not in leadership.", s.CharacterId())
-				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 			target := r.ReadAsciiString()
@@ -136,7 +136,7 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				// TODO announce error
 				return
 			}
-			_ = guild.RequestInvite(l)(ctx)(g.Id(), s.CharacterId(), c.Id())
+			_ = guild.NewProcessor(l, ctx).RequestInvite(g.Id(), s.CharacterId(), c.Id())
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationJoin) {
@@ -144,28 +144,28 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			characterId := r.ReadUint32()
 			if s.CharacterId() != characterId {
 				l.Errorf("Character [%d] attempting to have [%d] join guild.", s.CharacterId(), characterId)
-				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 
-			err := invite.Accept(l)(ctx)(s.CharacterId(), s.WorldId(), invite.InviteTypeGuild, guildId)
+			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), invite.InviteTypeGuild, guildId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
 			}
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationSetTitleNames) {
-			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+			g, _ := guild.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if !g.IsLeader(s.CharacterId()) {
 				l.Errorf("Character [%d] attempting to change title names when they are not the guild leader.", s.CharacterId())
-				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 			titles := make([]string, 5)
 			for i := range 5 {
 				titles[i] = r.ReadAsciiString()
 			}
-			_ = guild.RequestTitleChanges(l)(ctx)(g.Id(), s.CharacterId(), titles)
+			_ = guild.NewProcessor(l, ctx).RequestTitleChanges(g.Id(), s.CharacterId(), titles)
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationSetMemberTitle) {
@@ -174,17 +174,17 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 
 			if newTitle <= 1 || newTitle > 5 {
 				l.Errorf("Character [%d] attempting to change [%d] to a title [%d] outside of bounds.", s.CharacterId(), targetId, newTitle)
-				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
-			g, _ := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+			g, _ := guild.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if !g.TitlePossible(s.CharacterId(), newTitle) {
 				l.Errorf("Character [%d] attempting to change [%d] to a title [%d] outside of bounds.", s.CharacterId(), targetId, newTitle)
-				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 
-			_ = guild.RequestMemberTitleUpdate(l)(ctx)(g.Id(), s.CharacterId(), targetId, newTitle)
+			_ = guild.NewProcessor(l, ctx).RequestMemberTitleUpdate(g.Id(), s.CharacterId(), targetId, newTitle)
 			return
 		}
 		l.Warnf("Character [%d] issued unhandled guild operation with operation [%d].", s.CharacterId(), op)

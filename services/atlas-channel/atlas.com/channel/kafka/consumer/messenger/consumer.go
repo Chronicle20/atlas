@@ -51,7 +51,7 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		p, err := messenger.GetById(l)(ctx)(e.MessengerId)
+		p, err := messenger.NewProcessor(l, ctx).GetById(e.MessengerId)
 		if err != nil {
 			l.WithError(err).Errorf("Received left event for messenger [%d] which does not exist.", e.MessengerId)
 			return
@@ -66,14 +66,14 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 		// For remaining messenger members.
 		go func() {
 			for _, m := range p.Members() {
-				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), messengerLeft(l)(ctx)(wp)(e.Body.Slot))
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), messengerLeft(l)(ctx)(wp)(e.Body.Slot))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] has left messenger [%d].", tc.Id(), p.Id())
 				}
 			}
 		}()
 		go func() {
-			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, messengerLeft(l)(ctx)(wp)(e.Body.Slot))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, messengerLeft(l)(ctx)(wp)(e.Body.Slot))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] has left messenger [%d].", tc.Id(), p.Id())
 			}
@@ -102,7 +102,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		p, err := messenger.GetById(l)(ctx)(e.MessengerId)
+		p, err := messenger.NewProcessor(l, ctx).GetById(e.MessengerId)
 		if err != nil {
 			l.WithError(err).Errorf("Received joined event for messenger [%d] which does not exist.", e.MessengerId)
 			return
@@ -127,14 +127,14 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 					continue
 				}
 				bp := session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationAddBody(ctx)(e.Body.Slot, tc, byte(mm.ChannelId())))
-				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), bp)
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), bp)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] has joined messenger [%d].", tc.Id(), p.Id())
 				}
 			}
 		}()
 		go func() {
-			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, func(s session.Model) error {
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, func(s session.Model) error {
 				err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationJoinBody(e.Body.Slot))(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] has joined messenger [%d].", tc.Id(), p.Id())

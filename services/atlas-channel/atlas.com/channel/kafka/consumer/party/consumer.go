@@ -56,13 +56,13 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		p, err := party.GetById(l)(ctx)(e.PartyId)
+		p, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
 		if err != nil {
 			l.WithError(err).Warnf("Received created event for party [%d] which does not exist.", e.PartyId)
 			return
 		}
 
-		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(p.LeaderId(), partyCreated(l)(ctx)(wp)(e.PartyId))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(p.LeaderId(), partyCreated(l)(ctx)(wp)(e.PartyId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce party [%d] created to character [%d].", e.PartyId, p.LeaderId())
 		}
@@ -89,7 +89,7 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		p, err := party.GetById(l)(ctx)(e.PartyId)
+		p, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
 		if err != nil {
 			l.WithError(err).Errorf("Received left event for party [%d] which does not exist.", e.PartyId)
 			return
@@ -104,14 +104,14 @@ func handleLeft(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 		// For remaining party members.
 		go func() {
 			for _, m := range p.Members() {
-				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] has left party [%d].", tc.Id(), p.Id())
 				}
 			}
 		}()
 		go func() {
-			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, partyLeft(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] has left party [%d].", tc.Id(), p.Id())
 			}
@@ -140,7 +140,7 @@ func handleExpel(sc server.Model, wp writer.Producer) message.Handler[statusEven
 			return
 		}
 
-		p, err := party.GetById(l)(ctx)(e.PartyId)
+		p, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
 		if err != nil {
 			l.WithError(err).Errorf("Received expel event for party [%d] which does not exist.", e.PartyId)
 			return
@@ -155,14 +155,14 @@ func handleExpel(sc server.Model, wp writer.Producer) message.Handler[statusEven
 		// For remaining party members.
 		go func() {
 			for _, m := range p.Members() {
-				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] was expelled from party [%d].", tc.Id(), p.Id())
 				}
 			}
 		}()
 		go func() {
-			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyExpel(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] was expelled from party [%d].", tc.Id(), p.Id())
 			}
@@ -200,14 +200,14 @@ func handleDisband(sc server.Model, wp writer.Producer) message.Handler[statusEv
 		// For remaining party members.
 		go func() {
 			for _, m := range e.Body.Members {
-				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] the party [%d] was disbanded.", m, e.PartyId)
 				}
 			}
 		}()
 		go func() {
-			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, partyDisband(l)(ctx)(wp)(e.PartyId, tc, sc.ChannelId()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] the party [%d] was disbanded.", e.ActorId, e.PartyId)
 			}
@@ -236,7 +236,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 			return
 		}
 
-		p, err := party.GetById(l)(ctx)(e.PartyId)
+		p, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
 		if err != nil {
 			l.WithError(err).Errorf("Received left event for party [%d] which does not exist.", e.PartyId)
 			return
@@ -251,7 +251,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[statusEvent
 		// For remaining party members.
 		for _, m := range p.Members() {
 			go func() {
-				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyJoined(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), partyJoined(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce party [%d] joined party [%d].", e.PartyId, p.Id())
 				}
@@ -280,7 +280,7 @@ func handleChangeLeader(sc server.Model, wp writer.Producer) message.Handler[sta
 			return
 		}
 
-		p, err := party.GetById(l)(ctx)(e.PartyId)
+		p, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
 		if err != nil {
 			l.WithError(err).Errorf("Received expel event for party [%d] which does not exist.", e.PartyId)
 			return
@@ -289,14 +289,14 @@ func handleChangeLeader(sc server.Model, wp writer.Producer) message.Handler[sta
 		// For remaining party members.
 		go func() {
 			for _, m := range p.Members() {
-				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce change party [%d] leadership to [%d].", e.PartyId, e.Body.CharacterId)
 				}
 			}
 		}()
 		go func() {
-			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.CharacterId, partyChangeLeader(l)(ctx)(wp)(e.PartyId, e.Body.CharacterId, e.Body.Disconnected))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce change party [%d] leadership to [%d].", e.PartyId, e.Body.CharacterId)
 			}
@@ -325,7 +325,7 @@ func handleError(sc server.Model, wp writer.Producer) message.Handler[statusEven
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, partyError(l)(ctx)(wp)(e.Body.Type, e.Body.CharacterName))
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, partyError(l)(ctx)(wp)(e.Body.Type, e.Body.CharacterName))
 	}
 }
 

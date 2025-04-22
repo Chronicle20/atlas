@@ -36,7 +36,7 @@ func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			return
 		}
 
-		err = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterDamage)(writer.CharacterDamageBody(l)(ctx)(c, *di)))
+		err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterDamage)(writer.CharacterDamageBody(l)(ctx)(c, *di)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce character [%d] has been damaged to foreign characters in map [%d].", s.CharacterId(), s.MapId())
 		}

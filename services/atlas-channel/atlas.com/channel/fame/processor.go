@@ -7,10 +7,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func RequestChange(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, targetId uint32, amount int8) error {
-	return func(ctx context.Context) func(m _map.Model, characterId uint32, targetId uint32, amount int8) error {
-		return func(m _map.Model, characterId uint32, targetId uint32, amount int8) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestChangeFameCommandProvider(m, characterId, targetId, amount))
-		}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
+}
+
+func (p *Processor) RequestChange(m _map.Model, characterId uint32, targetId uint32, amount int8) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(requestChangeFameCommandProvider(m, characterId, targetId, amount))
 }

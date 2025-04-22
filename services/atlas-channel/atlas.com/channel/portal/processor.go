@@ -9,30 +9,33 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func inMapByNameModelProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId _map.Id, name string) model.Provider[[]Model] {
-	return func(ctx context.Context) func(mapId _map.Id, name string) model.Provider[[]Model] {
-		return func(mapId _map.Id, name string) model.Provider[[]Model] {
-			return requests.SliceProvider[RestModel, Model](l, ctx)(requestInMapByName(mapId, name), Extract, model.Filters[Model]())
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func GetInMapByName(l logrus.FieldLogger) func(ctx context.Context) func(mapId _map.Id, name string) (Model, error) {
-	return func(ctx context.Context) func(mapId _map.Id, name string) (Model, error) {
-		return func(mapId _map.Id, name string) (Model, error) {
-			return model.First(inMapByNameModelProvider(l)(ctx)(mapId, name), model.Filters[Model]())
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
 }
 
-func Enter(l logrus.FieldLogger, ctx context.Context, kp producer.Provider) func(m _map.Model, portalName string, characterId uint32) error {
-	return func(m _map.Model, portalName string, characterId uint32) error {
-		p, err := GetInMapByName(l)(ctx)(m.MapId(), portalName)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to locate portal [%s] in map [%d].", portalName, m.MapId())
-			return err
-		}
-		err = kp(EnvPortalCommandTopic)(enterCommandProvider(m, p.id, characterId))
+func (p *Processor) InMapByNameModelProvider(mapId _map.Id, name string) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMapByName(mapId, name), Extract, model.Filters[Model]())
+}
+
+func (p *Processor) GetInMapByName(mapId _map.Id, name string) (Model, error) {
+	return model.First(p.InMapByNameModelProvider(mapId, name), model.Filters[Model]())
+}
+
+func (p *Processor) Enter(m _map.Model, portalName string, characterId uint32) error {
+	pm, err := p.GetInMapByName(m.MapId(), portalName)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to locate portal [%s] in map [%d].", portalName, m.MapId())
 		return err
 	}
+	err = producer.ProviderImpl(p.l)(p.ctx)(EnvPortalCommandTopic)(enterCommandProvider(m, pm.id, characterId))
+	return err
 }

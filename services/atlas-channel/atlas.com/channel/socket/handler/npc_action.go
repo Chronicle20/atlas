@@ -26,11 +26,11 @@ func NPCActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 		if len(rest) > 0 {
 			mp := model.Movement{}
 			mp.Decode(l, t, readerOptions)(r)
-			_ = movement.ForNPC(l)(ctx)(wp)(s.Map(), s.CharacterId(), objectId, unk, unk2, mp)
+			_ = movement.NewProcessor(l, ctx, wp).ForNPC(s.Map(), s.CharacterId(), objectId, unk, unk2, mp)
 			return
 		}
 
-		n, err := npc.GetInMapByObjectId(l)(ctx)(s.MapId(), objectId)
+		n, err := npc.NewProcessor(l, ctx).GetInMapByObjectId(s.MapId(), objectId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve npc moving.")
 			return

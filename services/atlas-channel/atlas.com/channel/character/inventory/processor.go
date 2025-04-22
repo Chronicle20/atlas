@@ -7,34 +7,31 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Unequip(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, source int16, destination int16) error {
-	return func(ctx context.Context) func(characterId uint32, source int16, destination int16) error {
-		return func(characterId uint32, source int16, destination int16) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(unequipItemCommandProvider(characterId, source, destination))
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func Equip(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, source int16, destination int16) error {
-	return func(ctx context.Context) func(characterId uint32, source int16, destination int16) error {
-		return func(characterId uint32, source int16, destination int16) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(equipItemCommandProvider(characterId, source, destination))
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
 }
 
-func Move(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, inventoryType byte, source int16, destination int16) error {
-	return func(ctx context.Context) func(characterId uint32, inventoryType byte, source int16, destination int16) error {
-		return func(characterId uint32, inventoryType byte, source int16, destination int16) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(moveItemCommandProvider(characterId, inventoryType, source, destination))
-		}
-	}
+func (p *Processor) Unequip(characterId uint32, source int16, destination int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(unequipItemCommandProvider(characterId, source, destination))
 }
 
-func Drop(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, inventoryType byte, source int16, quantity int16) error {
-	return func(ctx context.Context) func(m _map.Model, characterId uint32, inventoryType byte, source int16, quantity int16) error {
-		return func(m _map.Model, characterId uint32, inventoryType byte, source int16, quantity int16) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(dropItemCommandProvider(m, characterId, inventoryType, source, quantity))
-		}
-	}
+func (p *Processor) Equip(characterId uint32, source int16, destination int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(equipItemCommandProvider(characterId, source, destination))
+}
+
+func (p *Processor) Move(characterId uint32, inventoryType byte, source int16, destination int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(moveItemCommandProvider(characterId, inventoryType, source, destination))
+}
+
+func (p *Processor) Drop(m _map.Model, characterId uint32, inventoryType byte, source int16, quantity int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(dropItemCommandProvider(m, characterId, inventoryType, source, quantity))
 }

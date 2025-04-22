@@ -51,7 +51,7 @@ func handleThreadCreated(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", e.ThreadId, e.ActorId)
 		}
@@ -68,7 +68,7 @@ func handleThreadUpdated(sc server.Model, wp writer.Producer) message.Handler[st
 			return
 		}
 
-		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", e.ThreadId, e.ActorId)
 		}
@@ -85,7 +85,7 @@ func handleThreadReplyAdded(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", e.ThreadId, e.ActorId)
 		}
@@ -102,7 +102,7 @@ func handleThreadReplyDeleted(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.ActorId, refreshThread(l)(ctx)(wp)(e.GuildId, e.ThreadId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", e.ThreadId, e.ActorId)
 		}
@@ -114,7 +114,7 @@ func refreshThread(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 		return func(wp writer.Producer) func(guildId uint32, threadId uint32) model.Operator[session.Model] {
 			return func(guildId uint32, threadId uint32) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					t, err := thread.GetById(l)(ctx)(guildId, threadId)
+					t, err := thread.NewProcessor(l, ctx).GetById(guildId, threadId)
 					if err != nil {
 						return err
 					}

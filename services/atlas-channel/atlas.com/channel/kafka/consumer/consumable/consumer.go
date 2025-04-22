@@ -45,14 +45,14 @@ func handleErrorConsumableEvent(sc server.Model, wp writer.Producer) message.Han
 		}
 
 		if e.Body.Error == ErrorTypePetCannotConsume {
-			err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.PetCashFoodResult)(writer.PetCashFoodErrorResultBody()))
+			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.PetCashFoodResult)(writer.PetCashFoodErrorResultBody()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to process error event for character [%d].", e.CharacterId)
 			}
 			return
 		}
 
-		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true)))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process error event for character [%d].", e.CharacterId)
 		}
@@ -65,8 +65,8 @@ func handleScrollConsumableEvent(sc server.Model, wp writer.Producer) message.Ha
 			return
 		}
 
-		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
-			return _map.ForSessionsInMap(l)(ctx)(s.Map(), session.Announce(l)(ctx)(wp)(writer.CharacterItemUpgrade)(writer.CharacterItemUpgradeBody(e.CharacterId, e.Body.Success, e.Body.Cursed, e.Body.LegendarySpirit, e.Body.WhiteScroll)))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), session.Announce(l)(ctx)(wp)(writer.CharacterItemUpgrade)(writer.CharacterItemUpgradeBody(e.CharacterId, e.Body.Success, e.Body.Cursed, e.Body.LegendarySpirit, e.Body.WhiteScroll)))
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process scroll event for character [%d].", e.CharacterId)

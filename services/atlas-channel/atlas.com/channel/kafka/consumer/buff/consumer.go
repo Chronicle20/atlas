@@ -51,7 +51,7 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
 			bs := make([]buff.Model, 0)
 			changes := make([]stat.Model, 0)
 			for _, cm := range e.Body.Changes {
@@ -64,7 +64,7 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 				l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
 			}
 
-			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), func(os session.Model) error {
+			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), func(os session.Model) error {
 				err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGiveForeign)(writer.CharacterBuffGiveForeignBody(l)(ctx)(e.CharacterId, bs))(os)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
@@ -87,7 +87,7 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
 			ebs := make([]buff.Model, 0)
 			changes := make([]stat.Model, 0)
 			for _, cm := range e.Body.Changes {
@@ -100,7 +100,7 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 				l.WithError(err).Errorf("Unable to write character [%d] cancelled buffs.", e.CharacterId)
 			}
 
-			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), func(os session.Model) error {
+			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), func(os session.Model) error {
 				err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffCancelForeign)(writer.CharacterBuffCancelForeignBody(l)(ctx)(e.CharacterId, ebs))(os)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)

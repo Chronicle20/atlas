@@ -26,7 +26,7 @@ func PartyInviteRejectHandleFunc(l logrus.FieldLogger, ctx context.Context, _ wr
 			return
 		}
 
-		err = invite.Reject(l)(ctx)(s.CharacterId(), s.WorldId(), invite.InviteTypeParty, cs.Id())
+		err = invite.NewProcessor(l, ctx).Reject(s.CharacterId(), s.WorldId(), invite.InviteTypeParty, cs.Id())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue invite rejection command for character [%d].", s.CharacterId())
 		}

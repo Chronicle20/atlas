@@ -52,7 +52,7 @@ func handleSetCommand(sc server.Model, wp writer.Producer) message.Handler[statu
 			return
 		}
 
-		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), func(s session.Model) error {
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), func(s session.Model) error {
 			return session.Announce(l)(ctx)(wp)(writer.ChalkboardUse)(writer.ChalkboardUseBody(e.CharacterId, e.Body.Message))(s)
 		})
 		if err != nil {
@@ -71,13 +71,13 @@ func handleClearCommand(sc server.Model, wp writer.Producer) message.Handler[sta
 			return
 		}
 
-		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), func(s session.Model) error {
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), func(s session.Model) error {
 			return session.Announce(l)(ctx)(wp)(writer.ChalkboardUse)(writer.ChalkboardClearBody(e.CharacterId))(s)
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show chalkboard clear by character [%d].", e.CharacterId)
 		}
-		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, enableActions(l)(ctx)(wp))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, enableActions(l)(ctx)(wp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to enable actions for character [%d].", e.CharacterId)
 		}

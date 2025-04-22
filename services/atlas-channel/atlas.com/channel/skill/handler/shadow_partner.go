@@ -22,12 +22,12 @@ func UseShadowPartner(l logrus.FieldLogger) func(ctx context.Context) func(m _ma
 			}
 
 			if effect.Cooldown() > 0 {
-				_ = skill.ApplyCooldown(l)(ctx)(m, info.SkillId(), effect.Cooldown())(characterId)
+				_ = skill.NewProcessor(l, ctx).ApplyCooldown(m, info.SkillId(), effect.Cooldown())(characterId)
 			}
 
 			// TODO consume summoning rock
 
-			_ = buff.Apply(l)(ctx)(m, characterId, int32(info.SkillId()), effect.Duration(), effect.StatUps())(characterId)
+			_ = buff.NewProcessor(l, ctx).Apply(m, characterId, int32(info.SkillId()), effect.Duration(), effect.StatUps())(characterId)
 			return nil
 		}
 	}

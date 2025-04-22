@@ -7,20 +7,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Enter(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, m _map.Model) error {
-	return func(ctx context.Context) func(characterId uint32, m _map.Model) error {
-		return func(characterId uint32, m _map.Model) error {
-			return producer.ProviderImpl(l)(ctx)(EnvEventTopicCashShopStatus)(characterEnterCashShopStatusEventProvider(characterId, m))
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func Exit(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, m _map.Model) error {
-	return func(ctx context.Context) func(characterId uint32, m _map.Model) error {
-		return func(characterId uint32, m _map.Model) error {
-			return producer.ProviderImpl(l)(ctx)(EnvEventTopicCashShopStatus)(characterExitCashShopStatusEventProvider(characterId, m))
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
+}
+
+func (p *Processor) Enter(characterId uint32, m _map.Model) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicCashShopStatus)(characterEnterCashShopStatusEventProvider(characterId, m))
+}
+
+func (p *Processor) Exit(characterId uint32, m _map.Model) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicCashShopStatus)(characterExitCashShopStatusEventProvider(characterId, m))
 }
 
 type PointType string
@@ -38,56 +43,32 @@ func GetPointType(arg bool) PointType {
 	return PointTypeCredit
 }
 
-func RequestInventoryIncreasePurchaseByType(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, isPoints bool, currency uint32, inventoryType byte) error {
-	return func(ctx context.Context) func(characterId uint32, isPoints bool, currency uint32, inventoryType byte) error {
-		return func(characterId uint32, isPoints bool, currency uint32, inventoryType byte) error {
-			l.Debugf("Character [%d] purchasing inventory [%d] expansion using currency [%d].", characterId, inventoryType, currency)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(RequestInventoryIncreaseByTypeCommandProvider(characterId, currency, inventoryType))
-		}
-	}
+func (p *Processor) RequestInventoryIncreasePurchaseByType(characterId uint32, isPoints bool, currency uint32, inventoryType byte) error {
+	p.l.Debugf("Character [%d] purchasing inventory [%d] expansion using currency [%d].", characterId, inventoryType, currency)
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(RequestInventoryIncreaseByTypeCommandProvider(characterId, currency, inventoryType))
 }
 
-func RequestInventoryIncreasePurchaseByItem(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
-	return func(ctx context.Context) func(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
-		return func(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
-			l.Debugf("Character [%d] purchasing inventory expansion via item [%d] using currency [%d]", characterId, serialNumber, currency)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(RequestInventoryIncreaseByItemCommandProvider(characterId, currency, serialNumber))
-		}
-	}
+func (p *Processor) RequestInventoryIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
+	p.l.Debugf("Character [%d] purchasing inventory expansion via item [%d] using currency [%d]", characterId, serialNumber, currency)
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(RequestInventoryIncreaseByItemCommandProvider(characterId, currency, serialNumber))
 }
 
-func RequestStorageIncreasePurchase(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, isPoints bool, currency uint32) error {
-	return func(ctx context.Context) func(characterId uint32, isPoints bool, currency uint32) error {
-		return func(characterId uint32, isPoints bool, currency uint32) error {
-			l.Debugf("Character [%d] purchasing storage expansion using currency [%d].", characterId, currency)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(RequestStorageIncreaseCommandProvider(characterId, currency))
-		}
-	}
+func (p *Processor) RequestStorageIncreasePurchase(characterId uint32, isPoints bool, currency uint32) error {
+	p.l.Debugf("Character [%d] purchasing storage expansion using currency [%d].", characterId, currency)
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(RequestStorageIncreaseCommandProvider(characterId, currency))
 }
 
-func RequestStorageIncreasePurchaseByItem(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
-	return func(ctx context.Context) func(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
-		return func(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
-			l.Debugf("Character [%d] purchasing storage expansion via item [%d] using currency [%d]", characterId, serialNumber, currency)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(RequestStorageIncreaseByItemCommandProvider(characterId, currency, serialNumber))
-		}
-	}
+func (p *Processor) RequestStorageIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
+	p.l.Debugf("Character [%d] purchasing storage expansion via item [%d] using currency [%d]", characterId, serialNumber, currency)
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(RequestStorageIncreaseByItemCommandProvider(characterId, currency, serialNumber))
 }
 
-func RequestCharacterSlotIncreasePurchaseByItem(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
-	return func(ctx context.Context) func(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
-		return func(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
-			l.Debugf("Character [%d] purchasing character slot expansion via item [%d] using currency [%d]", characterId, serialNumber, currency)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(RequestCharacterSlotIncreaseByItemCommandProvider(characterId, currency, serialNumber))
-		}
-	}
+func (p *Processor) RequestCharacterSlotIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
+	p.l.Debugf("Character [%d] purchasing character slot expansion via item [%d] using currency [%d]", characterId, serialNumber, currency)
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(RequestCharacterSlotIncreaseByItemCommandProvider(characterId, currency, serialNumber))
 }
 
-func RequestPurchase(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error {
-	return func(ctx context.Context) func(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error {
-		return func(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error {
-			l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d]", characterId, serialNumber, currency, zero)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency))
-		}
-	}
+func (p *Processor) RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error {
+	p.l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d]", characterId, serialNumber, currency, zero)
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency))
 }

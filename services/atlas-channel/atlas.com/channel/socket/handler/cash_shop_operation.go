@@ -45,7 +45,7 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			currency := r.ReadUint32()
 			serialNumber := r.ReadUint32()
 			zero := r.ReadUint32()
-			_ = cashshop.RequestPurchase(l)(ctx)(s.CharacterId(), serialNumber, isPoints, currency, zero)
+			_ = cashshop.NewProcessor(l, ctx).RequestPurchase(s.CharacterId(), serialNumber, isPoints, currency, zero)
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationGift) {
@@ -62,7 +62,7 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 				serialNumbers = append(serialNumbers, r.ReadUint32())
 			}
 			var wl []wishlist.Model
-			wl, err = wishlist.SetForCharacter(l)(ctx)(s.CharacterId(), serialNumbers)
+			wl, err = wishlist.NewProcessor(l, ctx).SetForCharacter(s.CharacterId(), serialNumbers)
 			if err != nil {
 				l.WithError(err).Errorf("Cash Shop Operation [%s] failed for character [%d].", CashShopOperationSetWishlist, s.CharacterId())
 				return
@@ -79,13 +79,13 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			item := r.ReadBool()
 			if !item {
 				inventoryType := r.ReadByte()
-				err = cashshop.RequestInventoryIncreasePurchaseByType(l)(ctx)(s.CharacterId(), isPoints, currency, inventoryType)
+				err = cashshop.NewProcessor(l, ctx).RequestInventoryIncreasePurchaseByType(s.CharacterId(), isPoints, currency, inventoryType)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to request inventory increase purchase for character [%d].", s.CharacterId())
 				}
 			} else {
 				serialNumber := r.ReadUint32()
-				err = cashshop.RequestInventoryIncreasePurchaseByItem(l)(ctx)(s.CharacterId(), isPoints, currency, serialNumber)
+				err = cashshop.NewProcessor(l, ctx).RequestInventoryIncreasePurchaseByItem(s.CharacterId(), isPoints, currency, serialNumber)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to request inventory increase purchase for character [%d].", s.CharacterId())
 				}
@@ -97,13 +97,13 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			currency := r.ReadUint32()
 			item := r.ReadBool()
 			if !item {
-				err = cashshop.RequestStorageIncreasePurchase(l)(ctx)(s.CharacterId(), isPoints, currency)
+				err = cashshop.NewProcessor(l, ctx).RequestStorageIncreasePurchase(s.CharacterId(), isPoints, currency)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to request storage increase purchase for character [%d].", s.CharacterId())
 				}
 			} else {
 				serialNumber := r.ReadUint32()
-				err = cashshop.RequestStorageIncreasePurchaseByItem(l)(ctx)(s.CharacterId(), isPoints, currency, serialNumber)
+				err = cashshop.NewProcessor(l, ctx).RequestStorageIncreasePurchaseByItem(s.CharacterId(), isPoints, currency, serialNumber)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to request storage increase purchase for character [%d].", s.CharacterId())
 				}
@@ -114,7 +114,7 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			isPoints := r.ReadBool()
 			currency := r.ReadUint32()
 			serialNumber := r.ReadUint32()
-			err = cashshop.RequestCharacterSlotIncreasePurchaseByItem(l)(ctx)(s.CharacterId(), isPoints, currency, serialNumber)
+			err = cashshop.NewProcessor(l, ctx).RequestCharacterSlotIncreasePurchaseByItem(s.CharacterId(), isPoints, currency, serialNumber)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to request character slot increase purchase for character [%d].", s.CharacterId())
 			}

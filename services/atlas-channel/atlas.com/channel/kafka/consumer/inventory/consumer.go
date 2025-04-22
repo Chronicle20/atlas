@@ -60,7 +60,7 @@ func handleInventoryAddEvent(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		_ = session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, addToInventory(l)(ctx)(wp)(e))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, addToInventory(l)(ctx)(wp)(e))
 	}
 }
 
@@ -114,7 +114,7 @@ func handleInventoryQuantityUpdateEvent(sc server.Model, wp writer.Producer) mes
 		}
 
 		so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryChangeBody(false, writer.InventoryQuantityUpdateBodyWriter(inventoryType, e.Slot, e.Body.Quantity)))
-		err := session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, so)
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, so)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", e.Body.ItemId, e.Slot, e.CharacterId)
 		}
@@ -166,7 +166,7 @@ func handleInventoryAttributeUpdateEvent(sc server.Model, wp writer.Producer) me
 			Build()
 
 		so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshEquipable(sc.Tenant())(eqp))
-		err := session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, so)
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, so)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", e.Body.ItemId, e.Slot, e.CharacterId)
 		}
@@ -184,13 +184,12 @@ func handleInventoryMoveEvent(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		_ = session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(event.CharacterId, moveInInventory(l)(ctx)(wp)(event))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(event.CharacterId, moveInInventory(l)(ctx)(wp)(event))
 	}
 }
 
 func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
-		t := tenant.MustFromContext(ctx)
 		cp := character.NewProcessor(l, ctx)
 		return func(wp writer.Producer) func(event inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
 			return func(e inventoryChangedEvent[inventoryChangedItemMoveBody]) model.Operator[session.Model] {
@@ -216,7 +215,7 @@ func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 						errChannels <- err
 					}()
 					go func() {
-						errChannels <- _map.ForSessionsInMap(l)(ctx)(s.Map(), updateAppearance(l)(ctx)(wp)(c))
+						errChannels <- _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), updateAppearance(l)(ctx)(wp)(c))
 					}()
 					go func() {
 						it, ok := inventory.TypeFromItemId(e.Body.ItemId)
@@ -228,7 +227,7 @@ func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 							return
 						}
 
-						m, err := messenger.GetByMemberId(l)(ctx)(e.CharacterId)
+						m, err := messenger.NewProcessor(l, ctx).GetByMemberId(e.CharacterId)
 						if err != nil {
 							return
 						}
@@ -238,7 +237,7 @@ func moveInInventory(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 						}
 
 						for _, mm := range m.Members() {
-							_ = session.IfPresentByCharacterId(t, s.WorldId(), s.ChannelId())(mm.Id(), func(os session.Model) error {
+							_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.WorldId(), s.ChannelId())(mm.Id(), func(os session.Model) error {
 								return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationUpdateBody(ctx)(um.Slot(), c, byte(s.ChannelId())))(os)
 							})
 						}
@@ -285,7 +284,7 @@ func handleInventoryRemoveEvent(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		err := session.IfPresentByCharacterId(t, sc.WorldId(), sc.ChannelId())(e.CharacterId, removeFromInventory(l)(ctx)(wp)(inventoryType, e.Slot))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, removeFromInventory(l)(ctx)(wp)(inventoryType, e.Slot))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to remove [%d] in slot [%d] for character [%d].", e.Body.ItemId, e.Slot, e.CharacterId)
 		}
@@ -313,6 +312,6 @@ func handleInventoryItemReservationCancelledEvent(sc server.Model, wp writer.Pro
 			return
 		}
 
-		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true)))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true)))
 	}
 }

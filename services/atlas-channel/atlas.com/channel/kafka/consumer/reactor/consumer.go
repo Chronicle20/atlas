@@ -61,7 +61,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			SetDirection(e.Body.Direction).
 			Build()
 
-		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody(l, tenant.MustFromContext(ctx))(r)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody(l, tenant.MustFromContext(ctx))(r)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn reactor [%d] for characters in map [%d].", r.Id(), e.MapId)
 		}
@@ -78,7 +78,7 @@ func handleDestroyed(sc server.Model, wp writer.Producer) message.Handler[status
 			return
 		}
 
-		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.ReactorDestroy)(writer.ReactorDestroyBody(l, tenant.MustFromContext(ctx))(e.ReactorId, e.Body.State, e.Body.X, e.Body.Y)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.ReactorDestroy)(writer.ReactorDestroyBody(l, tenant.MustFromContext(ctx))(e.ReactorId, e.Body.State, e.Body.X, e.Body.Y)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy reactor [%d] for characters in map [%d].", e.ReactorId, e.MapId)
 		}

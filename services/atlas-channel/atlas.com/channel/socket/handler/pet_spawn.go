@@ -45,9 +45,9 @@ func PetSpawnHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Prod
 			return
 		}
 		if spawned {
-			_ = pet.Despawn(l)(ctx)(s.CharacterId(), p.Id())
+			_ = pet.NewProcessor(l, ctx).Despawn(s.CharacterId(), p.Id())
 		} else {
-			_ = pet.Spawn(l)(ctx)(s.CharacterId(), p.Id(), lead)
+			_ = pet.NewProcessor(l, ctx).Spawn(s.CharacterId(), p.Id(), lead)
 		}
 	}
 }

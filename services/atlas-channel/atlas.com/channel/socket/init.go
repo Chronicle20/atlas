@@ -32,12 +32,13 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 			l.Debugf("Service locale [%d].", locale)
 
 			go func() {
+				sp := session.NewProcessor(l, ctx)
 				err := socket.Run(l, ctx, wg,
 					socket.SetHandlers(hp),
 					socket.SetPort(port),
-					socket.SetCreator(session.Create(l, session.GetRegistry(), t)(sc.WorldId(), sc.ChannelId(), locale)),
-					socket.SetMessageDecryptor(session.Decrypt(l, session.GetRegistry(), t)(true, hasMapleEncryption)),
-					socket.SetDestroyer(session.DestroyByIdWithSpan(l)(ctx)(session.GetRegistry())),
+					socket.SetCreator(sp.Create(sc.WorldId(), sc.ChannelId(), locale)),
+					socket.SetMessageDecryptor(sp.Decrypt(true, hasMapleEncryption)),
+					socket.SetDestroyer(sp.DestroyByIdWithSpan),
 					socket.SetReadWriter(rw),
 				)
 
@@ -49,7 +50,7 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 				}
 			}()
 
-			err := channel.Register(l)(ctx)(sc.WorldId(), sc.ChannelId(), ipAddress, port)
+			err := channel.NewProcessor(l, ctx).Register(sc.WorldId(), sc.ChannelId(), ipAddress, port)
 			if err != nil {
 				l.WithError(err).Errorf("Socket service registration error.")
 			}

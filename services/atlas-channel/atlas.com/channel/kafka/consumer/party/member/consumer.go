@@ -51,7 +51,7 @@ func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[statu
 			return
 		}
 
-		p, err := party.GetById(l)(ctx)(e.PartyId)
+		p, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
 		if err != nil {
 			l.WithError(err).Errorf("Received event for party [%d] which does not exist.", e.PartyId)
 			return
@@ -65,7 +65,7 @@ func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[statu
 
 		go func() {
 			for _, m := range p.Members() {
-				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] triggered party [%d] update.", m.Id(), p.Id())
 				}
@@ -84,7 +84,7 @@ func handleLogoutEvent(sc server.Model, wp writer.Producer) message.Handler[stat
 			return
 		}
 
-		p, err := party.GetById(l)(ctx)(e.PartyId)
+		p, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
 		if err != nil {
 			l.WithError(err).Errorf("Received event for party [%d] which does not exist.", e.PartyId)
 			return
@@ -98,7 +98,7 @@ func handleLogoutEvent(sc server.Model, wp writer.Producer) message.Handler[stat
 
 		go func() {
 			for _, m := range p.Members() {
-				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] triggered party [%d] update.", m.Id(), p.Id())
 				}

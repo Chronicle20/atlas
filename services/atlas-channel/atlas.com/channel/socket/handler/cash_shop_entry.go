@@ -31,23 +31,23 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 		// TODO block when in mini dungeon
 		// TODO block when already in cash shop
 
-		a, err := account.GetById(l)(ctx)(s.AccountId())
+		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate account [%d] attempting to enter cash shop.", s.AccountId())
-			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = session.NewProcessor(l, ctx).Destroy(s)
 			return
 		}
 		cp := character.NewProcessor(l, ctx)
 		c, err := cp.GetById(cp.InventoryDecorator, cp.SkillModelDecorator, cp.PetModelDecorator)(s.CharacterId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate character [%d] attempting to enter cash shop.", s.CharacterId())
-			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = session.NewProcessor(l, ctx).Destroy(s)
 			return
 		}
-		bl, err := buddylist.GetById(l)(ctx)(s.CharacterId())
+		bl, err := buddylist.NewProcessor(l, ctx).GetById(s.CharacterId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to locate buddylist [%d] attempting to enter cash shop.", s.CharacterId())
-			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = session.NewProcessor(l, ctx).Destroy(s)
 			return
 		}
 
@@ -72,7 +72,7 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 		//	return
 		//}
 
-		wl, err := wishlist.GetByCharacterId(l)(ctx)(s.CharacterId())
+		wl, err := wishlist.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update wish list for character [%d].", s.CharacterId())
 			return
@@ -82,7 +82,7 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			l.WithError(err).Errorf("Unable to update wish list for character [%d].", s.CharacterId())
 		}
 
-		w, err := wallet.GetByCharacterId(l)(ctx)(s.CharacterId())
+		w, err := wallet.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve cash shop wallet for character [%d].", s.CharacterId())
 			err = session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)(writer.CashShopCashQueryResultBody(t)(0, 0, 0))(s)
@@ -98,7 +98,7 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			}
 		}
 
-		err = cashshop.Enter(l)(ctx)(s.CharacterId(), s.Map())
+		err = cashshop.NewProcessor(l, ctx).Enter(s.CharacterId(), s.Map())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce [%d] has entered the cash shop.", s.CharacterId())
 		}

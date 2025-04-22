@@ -49,7 +49,7 @@ func handleSimpleConversationCommand(sc server.Model, wp writer.Producer) messag
 			return
 		}
 
-		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(c.CharacterId, announceSimpleConversation(l)(ctx)(wp)(c.NpcId, getNPCTalkType(c.Body.Type), c.Message, getNPCTalkEnd(c.Body.Type), getNPCTalkSpeaker(c.Speaker)))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(c.CharacterId, announceSimpleConversation(l)(ctx)(wp)(c.NpcId, getNPCTalkType(c.Body.Type), c.Message, getNPCTalkEnd(c.Body.Type), getNPCTalkSpeaker(c.Speaker)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, c.CharacterId)
 		}

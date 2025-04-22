@@ -48,6 +48,6 @@ func CharacterMoveHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 
 		mp := model.Movement{}
 		mp.Decode(l, t, readerOptions)(r)
-		_ = movement.ForCharacter(l)(ctx)(wp)(s.Map(), s.CharacterId(), mp)
+		_ = movement.NewProcessor(l, ctx, wp).ForCharacter(s.Map(), s.CharacterId(), mp)
 	}
 }

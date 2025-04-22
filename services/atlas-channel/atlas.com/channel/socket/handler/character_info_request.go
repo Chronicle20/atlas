@@ -35,10 +35,10 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			l.WithError(err).Errorf("Unable to retrieve character [%d] being requested.", characterId)
 			return
 		}
-		g, _ := guild.GetByMemberId(l)(ctx)(characterId)
+		g, _ := guild.NewProcessor(l, ctx).GetByMemberId(characterId)
 
 		var wl []wishlist.Model
-		wl, err = wishlist.GetByCharacterId(l)(ctx)(characterId)
+		wl, err = wishlist.NewProcessor(l, ctx).GetByCharacterId(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve wishlist for character [%d].", characterId)
 			wl = make([]wishlist.Model, 0)
@@ -46,7 +46,7 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 
 		if characterId != s.CharacterId() {
 			var ps []pet.Model
-			ps, err = pet.GetByOwner(l)(ctx)(characterId)
+			ps, err = pet.NewProcessor(l, ctx).GetByOwner(characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve pet [%d] being requested.", characterId)
 			}

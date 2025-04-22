@@ -26,7 +26,7 @@ func CharacterSkillMacroHandleFunc(l logrus.FieldLogger, ctx context.Context, _ 
 			macros = append(macros, m)
 		}
 		l.Debugf("Setting [%d] skill macros for character [%d].", count, s.CharacterId())
-		err := macro.Update(l)(ctx)(s.CharacterId(), macros)
+		err := macro.NewProcessor(l, ctx).Update(s.CharacterId(), macros)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update skill macros for character [%d].", s.CharacterId())
 		}

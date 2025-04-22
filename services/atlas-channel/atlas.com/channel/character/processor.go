@@ -39,7 +39,7 @@ func (p *Processor) GetById(decorators ...model.Decorator[Model]) func(character
 }
 
 func (p *Processor) PetModelDecorator(m Model) Model {
-	ms, err := pet.GetByOwner(p.l)(p.ctx)(m.Id())
+	ms, err := pet.NewProcessor(p.l, p.ctx).GetByOwner(m.Id())
 	if err != nil {
 		return m
 	}
@@ -61,7 +61,7 @@ func (p *Processor) InventoryDecorator(m Model) Model {
 }
 
 func (p *Processor) SkillModelDecorator(m Model) Model {
-	ms, err := skill.GetByCharacterId(p.l)(p.ctx)(m.Id())
+	ms, err := skill.NewProcessor(p.l, p.ctx).GetByCharacterId(m.Id())
 	if err != nil {
 		return m
 	}

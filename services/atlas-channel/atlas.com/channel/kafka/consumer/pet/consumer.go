@@ -54,7 +54,7 @@ func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			return
 		}
 
-		s, err := session.GetByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId)
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId)
 		if err != nil {
 			return
 		}
@@ -88,7 +88,7 @@ func announceSpawn(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet spawned to character.")
 					}
-					err = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p)))
+					err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p)))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet spawned to other characters.")
 					}
@@ -105,7 +105,7 @@ func handleDespawned(sc server.Model, wp writer.Producer) message.Handler[status
 			return
 		}
 
-		s, err := session.GetByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId)
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId)
 		if err != nil {
 			return
 		}
@@ -126,7 +126,7 @@ func announceDespawn(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet despawned to character.")
 					}
-					err = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(l)(s.CharacterId(), slot, reason)))
+					err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(l)(s.CharacterId(), slot, reason)))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet despawned to other characters.")
 					}
@@ -143,7 +143,7 @@ func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		s, err := session.GetByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId)
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId)
 		if err != nil {
 			return
 		}
@@ -161,7 +161,7 @@ func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[
 				SetCloseness(e.Body.Closeness).
 				SetFullness(e.Body.Fullness).
 				Build()
-			_ = _map.ForSessionsInMap(l)(ctx)(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetCommandResponseBody(p, e.Body.CommandId, e.Body.Success, false)))
+			_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetCommandResponseBody(p, e.Body.CommandId, e.Body.Success, false)))
 		}()
 	}
 }
@@ -202,8 +202,8 @@ func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
-			p, err := pet.GetById(l)(ctx)(e.PetId)
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
 			if err != nil {
 				return err
 			}
@@ -223,8 +223,8 @@ func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
-		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
-			p, err := pet.GetById(l)(ctx)(e.PetId)
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
 			if err != nil {
 				return err
 			}
@@ -234,7 +234,7 @@ func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[
 				return err
 			}
 
-			return _map.ForSessionsInMap(l)(ctx)(s.Map(), func(os session.Model) error {
+			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), func(os session.Model) error {
 				if e.Body.Amount > 0 {
 					err := session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetFoodResponseBody(p, 0, true, false))(os)
 					if err != nil {
@@ -255,8 +255,8 @@ func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[sta
 			return
 		}
 
-		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
-			p, err := pet.GetById(l)(ctx)(e.PetId)
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
 			if err != nil {
 				return err
 			}
@@ -266,7 +266,7 @@ func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[sta
 				return err
 			}
 
-			return _map.ForSessionsInMap(l)(ctx)(s.Map(), func(os session.Model) error {
+			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), func(os session.Model) error {
 				if s.CharacterId() == os.CharacterId() {
 					err = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterPetEffectBody(l)(byte(e.Body.Slot), 0))(os)
 					if err != nil {
@@ -291,7 +291,7 @@ func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[stat
 			return
 		}
 
-		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
 			stat := ""
 			sn := int64(0)
 			if e.Body.NewSlot < 0 {
@@ -320,7 +320,7 @@ func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[stat
 			}
 
 			if e.Body.OldSlot >= 0 && e.Body.NewSlot >= 0 {
-				p, err := pet.GetById(l)(ctx)(e.PetId)
+				p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
 				if err != nil {
 					return err
 				}
@@ -349,8 +349,8 @@ func handleExcludeChanged(sc server.Model, wp writer.Producer) message.Handler[s
 			return
 		}
 
-		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
-			p, err := pet.GetById(l)(ctx)(e.PetId)
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
 			if err != nil {
 				return err
 			}

@@ -5,11 +5,7 @@ import "time"
 const (
 	EnvEventInventoryChanged = "EVENT_TOPIC_INVENTORY_CHANGED"
 
-	ChangedTypeAdd                  = "ADDED"
-	ChangedTypeUpdateQuantity       = "QUANTITY_UPDATED"
 	ChangedTypeUpdateAttribute      = "ATTRIBUTE_UPDATED"
-	ChangedTypeRemove               = "REMOVED"
-	ChangedTypeMove                 = "MOVED"
 	ChangedTypeReservationCancelled = "RESERVATION_CANCELLED"
 )
 
@@ -19,16 +15,6 @@ type InventoryChangedEvent[M any] struct {
 	Type        string `json:"type"`
 	Body        M      `json:"body"`
 	Silent      bool   `json:"silent"`
-}
-
-type InventoryChangedItemAddBody struct {
-	ItemId   uint32 `json:"itemId"`
-	Quantity uint32 `json:"quantity"`
-}
-
-type InventoryChangedItemQuantityUpdateBody struct {
-	ItemId   uint32 `json:"itemId"`
-	Quantity uint32 `json:"quantity"`
 }
 
 type InventoryChangedItemAttributeUpdateBody struct {
@@ -60,15 +46,6 @@ type InventoryChangedItemAttributeUpdateBody struct {
 	Experience     uint32    `json:"experience"`
 	HammersApplied uint32    `json:"hammersApplied"`
 	Expiration     time.Time `json:"expiration"`
-}
-
-type InventoryChangedItemMoveBody struct {
-	ItemId  uint32 `json:"itemId"`
-	OldSlot int16  `json:"oldSlot"`
-}
-
-type InventoryChangedItemRemoveBody struct {
-	ItemId uint32 `json:"itemId"`
 }
 
 type InventoryChangedItemReservationCancelledBody struct {

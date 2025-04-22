@@ -483,12 +483,15 @@ func (b *CashEquipableReferenceDataBuilder) Build() CashEquipableReferenceData {
 	}
 }
 
+func (b *CashEquipableReferenceDataBuilder) SetCashId(value uint64) *CashEquipableReferenceDataBuilder {
+	b.cashId = value
+	return b
+}
+
 func (b *CashEquipableReferenceDataBuilder) SetStrength(value uint16) *CashEquipableReferenceDataBuilder {
 	b.strength = value
 	return b
 }
-
-// Setters for CashEquipableReferenceDataBuilder
 
 func (b *CashEquipableReferenceDataBuilder) SetDexterity(value uint16) *CashEquipableReferenceDataBuilder {
 	b.dexterity = value

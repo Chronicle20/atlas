@@ -1,7 +1,6 @@
 package inventory
 
 import (
-	"atlas-channel/asset"
 	consumer2 "atlas-channel/kafka/consumer"
 	inventory2 "atlas-channel/kafka/message/inventory"
 	"atlas-channel/server"
@@ -33,67 +32,14 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
 				t, _ = topic.EnvProvider(l)(inventory2.EnvEventInventoryChanged)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryAttributeUpdateEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryItemReservationCancelledEvent(sc, wp))))
 			}
 		}
 	}
 }
 
-func handleInventoryAttributeUpdateEvent(sc server.Model, wp writer.Producer) message.Handler[inventory2.InventoryChangedEvent[inventory2.InventoryChangedItemAttributeUpdateBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e inventory2.InventoryChangedEvent[inventory2.InventoryChangedItemAttributeUpdateBody]) {
-		if e.Type != inventory2.ChangedTypeUpdateAttribute {
-			return
-		}
-
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
-			return
-		}
-
-		eqp := asset.NewBuilder[asset.EquipableReferenceData](0, e.Body.ItemId, 0, asset.ReferenceTypeEquipable).
-			SetSlot(e.Slot).
-			SetExpiration(e.Body.Expiration).
-			SetReferenceData(asset.NewEquipableReferenceDataBuilder().
-				SetStrength(e.Body.Strength).
-				SetDexterity(e.Body.Dexterity).
-				SetIntelligence(e.Body.Intelligence).
-				SetLuck(e.Body.Luck).
-				SetHp(e.Body.HP).
-				SetMp(e.Body.MP).
-				SetWeaponAttack(e.Body.WeaponAttack).
-				SetMagicAttack(e.Body.MagicAttack).
-				SetWeaponDefense(e.Body.WeaponDefense).
-				SetMagicDefense(e.Body.MagicDefense).
-				SetAccuracy(e.Body.Accuracy).
-				SetAvoidability(e.Body.Avoidability).
-				SetHands(e.Body.Hands).
-				SetSpeed(e.Body.Speed).
-				SetJump(e.Body.Jump).
-				SetSlots(e.Body.Slots).
-				SetOwnerId(0).
-				SetLocked(e.Body.Locked).
-				SetSpikes(e.Body.Spikes).
-				SetKarmaUsed(e.Body.KarmaUsed).
-				SetCold(e.Body.Cold).
-				SetCanBeTraded(e.Body.CanBeTraded).
-				SetLevelType(e.Body.LevelType).
-				SetLevel(e.Body.Level).
-				SetExperience(e.Body.Experience).
-				SetHammersApplied(e.Body.HammersApplied).
-				Build()).
-			Build()
-
-		so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshEquipable(sc.Tenant())(eqp))
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, so)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", e.Body.ItemId, e.Slot, e.CharacterId)
-		}
-	}
-}
-
-func handleInventoryItemReservationCancelledEvent(sc server.Model, wp writer.Producer) message.Handler[inventory2.InventoryChangedEvent[inventory2.InventoryChangedItemRemoveBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e inventory2.InventoryChangedEvent[inventory2.InventoryChangedItemRemoveBody]) {
+func handleInventoryItemReservationCancelledEvent(sc server.Model, wp writer.Producer) message.Handler[inventory2.InventoryChangedEvent[inventory2.InventoryChangedItemReservationCancelledBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e inventory2.InventoryChangedEvent[inventory2.InventoryChangedItemReservationCancelledBody]) {
 		if e.Type != inventory2.ChangedTypeReservationCancelled {
 			return
 		}

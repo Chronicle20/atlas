@@ -1,6 +1,7 @@
 package asset
 
 import (
+	"atlas-channel/asset"
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
 	asset2 "atlas-channel/kafka/message/asset"
@@ -17,7 +18,6 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -38,6 +38,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				var t string
 				t, _ = topic.EnvProvider(l)(asset2.EnvEventTopicStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetUpdatedEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetQuantityUpdatedEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMoveEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetDeletedEvent(sc, wp))))
@@ -46,8 +47,8 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.CreatedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.CreatedStatusEventBody]) {
+func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.CreatedStatusEventBody[any]]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.CreatedStatusEventBody[any]]) {
 		t := sc.Tenant()
 		if !t.Is(tenant.MustFromContext(ctx)) {
 			return
@@ -57,29 +58,169 @@ func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		cp := character.NewProcessor(l, ctx)
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
-			var itemWriter model.Operator[*response.Writer]
 			inventoryType, ok := inventory.TypeFromItemId(e.TemplateId)
 			if !ok {
 				l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
 				return errors.New("unable to identify inventory type")
 			}
 
-			i, err := cp.GetItemInSlot(s.CharacterId(), inventoryType, e.Slot)()
-			if err != nil {
-				return err
-			}
-			itemWriter = model.FlipOperator(writer.WriteAssetInfo(t)(true))(i)
-
+			a := asset.NewBuilder[any](e.AssetId, e.TemplateId, e.Body.ReferenceId, asset.ReferenceType(e.Body.ReferenceType)).
+				SetSlot(e.Slot).
+				SetExpiration(e.Body.Expiration).
+				SetReferenceData(getReferenceData(e.Body.ReferenceData)).
+				Build()
+			itemWriter := model.FlipOperator(writer.WriteAssetInfo(t)(true))(a)
 			bp := writer.CharacterInventoryChangeBody(false, writer.InventoryAddBodyWriter(inventoryType, e.Slot, itemWriter))
-			err = session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)
+			err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to add [%d] to slot [%d] for character [%d].", e.TemplateId, e.Slot, s.CharacterId())
 			}
 			return err
 		})
 	}
+}
+
+func handleAssetUpdatedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.UpdatedStatusEventBody[any]]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.UpdatedStatusEventBody[any]]) {
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		if e.Type != asset2.StatusEventTypeUpdated {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+			inventoryType, ok := inventory.TypeFromItemId(e.TemplateId)
+			if !ok {
+				l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
+				return errors.New("unable to identify inventory type")
+			}
+
+			a := asset.NewBuilder[any](e.AssetId, e.TemplateId, e.Body.ReferenceId, asset.ReferenceType(e.Body.ReferenceType)).
+				SetSlot(e.Slot).
+				SetExpiration(e.Body.Expiration).
+				SetReferenceData(getReferenceData(e.Body.ReferenceData)).
+				Build()
+			so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshAsset(sc.Tenant())(inventoryType, a))
+			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, so)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", e.TemplateId, e.Slot, e.CharacterId)
+			}
+			return err
+		})
+	}
+}
+
+func getReferenceData(data any) any {
+	if rd, ok := data.(asset2.EquipableReferenceData); ok {
+		return asset.NewEquipableReferenceDataBuilder().
+			SetStrength(rd.Strength).
+			SetDexterity(rd.Dexterity).
+			SetIntelligence(rd.Intelligence).
+			SetLuck(rd.Luck).
+			SetHp(rd.Hp).
+			SetMp(rd.Mp).
+			SetWeaponAttack(rd.WeaponAttack).
+			SetMagicAttack(rd.MagicAttack).
+			SetWeaponDefense(rd.WeaponDefense).
+			SetMagicDefense(rd.MagicDefense).
+			SetAccuracy(rd.Accuracy).
+			SetAvoidability(rd.Avoidability).
+			SetHands(rd.Hands).
+			SetSpeed(rd.Speed).
+			SetJump(rd.Jump).
+			SetSlots(rd.Slots).
+			SetOwnerId(rd.OwnerId).
+			SetLocked(rd.Locked).
+			SetSpikes(rd.Spikes).
+			SetKarmaUsed(rd.KarmaUsed).
+			SetCold(rd.Cold).
+			SetCanBeTraded(rd.CanBeTraded).
+			SetLevelType(rd.LevelType).
+			SetLevel(rd.Level).
+			SetExperience(rd.Experience).
+			SetHammersApplied(rd.HammersApplied).
+			Build()
+	}
+	if rd, ok := data.(asset2.CashEquipableReferenceData); ok {
+		return asset.NewCashEquipableReferenceDataBuilder().
+			SetCashId(rd.CashId).
+			SetStrength(rd.Strength).
+			SetDexterity(rd.Dexterity).
+			SetIntelligence(rd.Intelligence).
+			SetLuck(rd.Luck).
+			SetHp(rd.Hp).
+			SetMp(rd.Mp).
+			SetWeaponAttack(rd.WeaponAttack).
+			SetMagicAttack(rd.MagicAttack).
+			SetWeaponDefense(rd.WeaponDefense).
+			SetMagicDefense(rd.MagicDefense).
+			SetAccuracy(rd.Accuracy).
+			SetAvoidability(rd.Avoidability).
+			SetHands(rd.Hands).
+			SetSpeed(rd.Speed).
+			SetJump(rd.Jump).
+			SetSlots(rd.Slots).
+			SetOwnerId(rd.OwnerId).
+			SetLocked(rd.Locked).
+			SetSpikes(rd.Spikes).
+			SetKarmaUsed(rd.KarmaUsed).
+			SetCold(rd.Cold).
+			SetCanBeTraded(rd.CanBeTraded).
+			SetLevelType(rd.LevelType).
+			SetLevel(rd.Level).
+			SetExperience(rd.Experience).
+			SetHammersApplied(rd.HammersApplied).
+			Build()
+	}
+	if rd, ok := data.(asset2.ConsumableReferenceData); ok {
+		return asset.NewConsumableReferenceDataBuilder().
+			SetQuantity(rd.Quantity).
+			SetOwnerId(rd.OwnerId).
+			SetFlag(rd.Flag).
+			SetRechargeable(rd.Rechargeable).
+			Build()
+	}
+	if rd, ok := data.(asset2.SetupReferenceData); ok {
+		return asset.NewSetupReferenceDataBuilder().
+			SetQuantity(rd.Quantity).
+			SetOwnerId(rd.OwnerId).
+			SetFlag(rd.Flag).
+			Build()
+	}
+	if rd, ok := data.(asset2.EtcReferenceData); ok {
+		return asset.NewEtcReferenceDataBuilder().
+			SetQuantity(rd.Quantity).
+			SetOwnerId(rd.OwnerId).
+			SetFlag(rd.Flag).
+			Build()
+	}
+	if rd, ok := data.(asset2.CashReferenceData); ok {
+		return asset.NewCashReferenceDataBuilder().
+			SetCashId(rd.CashId).
+			SetQuantity(rd.Quantity).
+			SetOwnerId(rd.OwnerId).
+			SetFlag(rd.Flag).
+			SetPurchaseBy(rd.PurchasedBy).
+			Build()
+	}
+	if rd, ok := data.(asset2.PetReferenceData); ok {
+		return asset.NewPetReferenceDataBuilder().
+			SetCashId(rd.CashId).
+			SetOwnerId(rd.OwnerId).
+			SetFlag(rd.Flag).
+			SetPurchaseBy(rd.PurchasedBy).
+			SetName(rd.Name).
+			SetLevel(rd.Level).
+			SetCloseness(rd.Closeness).
+			SetFullness(rd.Fullness).
+			SetSlot(rd.Slot).
+			Build()
+	}
+	return nil
 }
 
 func handleAssetQuantityUpdatedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.QuantityChangedEventBody]] {

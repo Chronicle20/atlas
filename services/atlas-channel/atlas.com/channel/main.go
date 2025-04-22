@@ -15,13 +15,13 @@ import (
 	"atlas-channel/kafka/consumer/chalkboard"
 	"atlas-channel/kafka/consumer/channel"
 	"atlas-channel/kafka/consumer/character"
+	"atlas-channel/kafka/consumer/compartment"
 	"atlas-channel/kafka/consumer/consumable"
 	"atlas-channel/kafka/consumer/drop"
 	"atlas-channel/kafka/consumer/expression"
 	"atlas-channel/kafka/consumer/fame"
 	"atlas-channel/kafka/consumer/guild"
 	"atlas-channel/kafka/consumer/guild/thread"
-	"atlas-channel/kafka/consumer/inventory"
 	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/map"
 	"atlas-channel/kafka/consumer/message"
@@ -92,7 +92,7 @@ func main() {
 	conversation.InitConsumers(l)(cmf)(consumerGroupId)
 	expression.InitConsumers(l)(cmf)(consumerGroupId)
 	guild.InitConsumers(l)(cmf)(consumerGroupId)
-	inventory.InitConsumers(l)(cmf)(consumerGroupId)
+	compartment.InitConsumers(l)(cmf)(consumerGroupId)
 	invite.InitConsumers(l)(cmf)(consumerGroupId)
 	_map.InitConsumers(l)(cmf)(consumerGroupId)
 	member.InitConsumers(l)(cmf)(consumerGroupId)
@@ -158,7 +158,7 @@ func main() {
 				character.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				expression.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				guild.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				inventory.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				compartment.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				invite.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				_map.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				message.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)

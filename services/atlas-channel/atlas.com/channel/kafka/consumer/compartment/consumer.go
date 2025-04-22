@@ -1,8 +1,8 @@
-package inventory
+package compartment
 
 import (
 	consumer2 "atlas-channel/kafka/consumer"
-	inventory2 "atlas-channel/kafka/message/inventory"
+	"atlas-channel/kafka/message/compartment"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
@@ -21,7 +21,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("character_inventory_changed_event")(inventory2.EnvEventInventoryChanged)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("compartment_status_event")(compartment.EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -31,16 +31,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(inventory2.EnvEventInventoryChanged)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryItemReservationCancelledEvent(sc, wp))))
+				t, _ = topic.EnvProvider(l)(compartment.EnvEventTopicStatus)()
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentItemReservationCancelledEvent(sc, wp))))
 			}
 		}
 	}
 }
 
-func handleInventoryItemReservationCancelledEvent(sc server.Model, wp writer.Producer) message.Handler[inventory2.InventoryChangedEvent[inventory2.InventoryChangedItemReservationCancelledBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e inventory2.InventoryChangedEvent[inventory2.InventoryChangedItemReservationCancelledBody]) {
-		if e.Type != inventory2.ChangedTypeReservationCancelled {
+func handleCompartmentItemReservationCancelledEvent(sc server.Model, wp writer.Producer) message.Handler[compartment.StatusEvent[compartment.ReservationCancelledEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.ReservationCancelledEventBody]) {
+		if e.Type != compartment.StatusEventTypeReservationCancelled {
 			return
 		}
 

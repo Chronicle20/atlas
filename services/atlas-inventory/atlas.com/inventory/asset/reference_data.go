@@ -32,33 +32,33 @@ type EquipableReferenceData struct {
 	expiration     time.Time
 }
 
-func (e EquipableReferenceData) GetStrength() uint16       { return e.strength }
-func (e EquipableReferenceData) GetDexterity() uint16      { return e.dexterity }
-func (e EquipableReferenceData) GetIntelligence() uint16   { return e.intelligence }
-func (e EquipableReferenceData) GetLuck() uint16           { return e.luck }
-func (e EquipableReferenceData) GetHP() uint16             { return e.hp }
-func (e EquipableReferenceData) GetMP() uint16             { return e.mp }
-func (e EquipableReferenceData) GetWeaponAttack() uint16   { return e.weaponAttack }
-func (e EquipableReferenceData) GetMagicAttack() uint16    { return e.magicAttack }
-func (e EquipableReferenceData) GetWeaponDefense() uint16  { return e.weaponDefense }
-func (e EquipableReferenceData) GetMagicDefense() uint16   { return e.magicDefense }
-func (e EquipableReferenceData) GetAccuracy() uint16       { return e.accuracy }
-func (e EquipableReferenceData) GetAvoidability() uint16   { return e.avoidability }
-func (e EquipableReferenceData) GetHands() uint16          { return e.hands }
-func (e EquipableReferenceData) GetSpeed() uint16          { return e.speed }
-func (e EquipableReferenceData) GetJump() uint16           { return e.jump }
-func (e EquipableReferenceData) GetSlots() uint16          { return e.slots }
-func (e EquipableReferenceData) GetOwnerId() uint32        { return e.ownerId }
-func (e EquipableReferenceData) IsLocked() bool            { return e.locked }
-func (e EquipableReferenceData) HasSpikes() bool           { return e.spikes }
-func (e EquipableReferenceData) IsKarmaUsed() bool         { return e.karmaUsed }
-func (e EquipableReferenceData) IsCold() bool              { return e.cold }
-func (e EquipableReferenceData) CanBeTraded() bool         { return e.canBeTraded }
-func (e EquipableReferenceData) GetLevelType() byte        { return e.levelType }
-func (e EquipableReferenceData) GetLevel() byte            { return e.level }
-func (e EquipableReferenceData) GetExperience() uint32     { return e.experience }
-func (e EquipableReferenceData) GetHammersApplied() uint32 { return e.hammersApplied }
-func (e EquipableReferenceData) GetExpiration() time.Time  { return e.expiration }
+func (e EquipableReferenceData) Strength() uint16       { return e.strength }
+func (e EquipableReferenceData) Dexterity() uint16      { return e.dexterity }
+func (e EquipableReferenceData) Intelligence() uint16   { return e.intelligence }
+func (e EquipableReferenceData) Luck() uint16           { return e.luck }
+func (e EquipableReferenceData) HP() uint16             { return e.hp }
+func (e EquipableReferenceData) MP() uint16             { return e.mp }
+func (e EquipableReferenceData) WeaponAttack() uint16   { return e.weaponAttack }
+func (e EquipableReferenceData) MagicAttack() uint16    { return e.magicAttack }
+func (e EquipableReferenceData) WeaponDefense() uint16  { return e.weaponDefense }
+func (e EquipableReferenceData) MagicDefense() uint16   { return e.magicDefense }
+func (e EquipableReferenceData) Accuracy() uint16       { return e.accuracy }
+func (e EquipableReferenceData) Avoidability() uint16   { return e.avoidability }
+func (e EquipableReferenceData) Hands() uint16          { return e.hands }
+func (e EquipableReferenceData) Speed() uint16          { return e.speed }
+func (e EquipableReferenceData) Jump() uint16           { return e.jump }
+func (e EquipableReferenceData) Slots() uint16          { return e.slots }
+func (e EquipableReferenceData) OwnerId() uint32        { return e.ownerId }
+func (e EquipableReferenceData) IsLocked() bool         { return e.locked }
+func (e EquipableReferenceData) HasSpikes() bool        { return e.spikes }
+func (e EquipableReferenceData) IsKarmaUsed() bool      { return e.karmaUsed }
+func (e EquipableReferenceData) IsCold() bool           { return e.cold }
+func (e EquipableReferenceData) CanBeTraded() bool      { return e.canBeTraded }
+func (e EquipableReferenceData) LevelType() byte        { return e.levelType }
+func (e EquipableReferenceData) Level() byte            { return e.level }
+func (e EquipableReferenceData) Experience() uint32     { return e.experience }
+func (e EquipableReferenceData) HammersApplied() uint32 { return e.hammersApplied }
+func (e EquipableReferenceData) Expiration() time.Time  { return e.expiration }
 
 type EquipableReferenceDataBuilder struct {
 	strength       uint16
@@ -310,6 +310,18 @@ func (c ConsumableReferenceData) Quantity() uint32 {
 	return c.quantity
 }
 
+func (c ConsumableReferenceData) OwnerId() uint32 {
+	return c.ownerId
+}
+
+func (c ConsumableReferenceData) Flag() uint16 {
+	return c.flag
+}
+
+func (c ConsumableReferenceData) Rechargeable() uint64 {
+	return c.rechargeable
+}
+
 type ConsumableReferenceDataBuilder struct {
 	quantity     uint32
 	ownerId      uint32
@@ -360,6 +372,14 @@ func (c SetupReferenceData) Quantity() uint32 {
 	return c.quantity
 }
 
+func (c SetupReferenceData) OwnerId() uint32 {
+	return c.ownerId
+}
+
+func (c SetupReferenceData) Flag() uint16 {
+	return c.flag
+}
+
 type SetupReferenceDataBuilder struct {
 	quantity uint32
 	ownerId  uint32
@@ -401,6 +421,14 @@ type EtcReferenceData struct {
 
 func (c EtcReferenceData) Quantity() uint32 {
 	return c.quantity
+}
+
+func (c EtcReferenceData) OwnerId() uint32 {
+	return c.ownerId
+}
+
+func (c EtcReferenceData) Flag() uint16 {
+	return c.flag
 }
 
 type EtcReferenceDataBuilder struct {
@@ -446,6 +474,22 @@ type CashReferenceData struct {
 
 func (c CashReferenceData) Quantity() uint32 {
 	return c.quantity
+}
+
+func (c CashReferenceData) CashId() uint64 {
+	return c.cashId
+}
+
+func (c CashReferenceData) OwnerId() uint32 {
+	return c.ownerId
+}
+
+func (c CashReferenceData) Flag() uint16 {
+	return c.flag
+}
+
+func (c CashReferenceData) PurchaseBy() uint32 {
+	return c.purchaseBy
 }
 
 type CashReferenceDataBuilder struct {
@@ -510,6 +554,42 @@ type PetReferenceData struct {
 	skill         uint16
 	remainingLife uint32
 	attribute2    uint16
+}
+
+func (d PetReferenceData) CashId() uint64 {
+	return d.cashId
+}
+
+func (d PetReferenceData) OwnerId() uint32 {
+	return d.ownerId
+}
+
+func (d PetReferenceData) Flag() uint16 {
+	return d.flag
+}
+
+func (d PetReferenceData) PurchaseBy() uint32 {
+	return d.purchaseBy
+}
+
+func (d PetReferenceData) Name() string {
+	return d.name
+}
+
+func (d PetReferenceData) Level() byte {
+	return d.level
+}
+
+func (d PetReferenceData) Closeness() uint16 {
+	return d.closeness
+}
+
+func (d PetReferenceData) Fullness() byte {
+	return d.fullness
+}
+
+func (d PetReferenceData) Slot() int8 {
+	return d.slot
 }
 
 type PetReferenceDataBuilder struct {

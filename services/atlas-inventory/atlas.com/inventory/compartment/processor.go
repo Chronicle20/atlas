@@ -7,7 +7,6 @@ import (
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/compartment"
 	"atlas-inventory/kafka/producer"
-	compartment2 "atlas-inventory/kafka/producer/compartment"
 	model2 "atlas-inventory/model"
 	"context"
 	"errors"
@@ -117,7 +116,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, inventor
 			if err != nil {
 				return err
 			}
-			return mb.Put(compartment.EnvEventTopicStatus, compartment2.CreatedEventStatusProvider(c.Id(), characterId, c.Type(), c.Capacity()))
+			return mb.Put(compartment.EnvEventTopicStatus, CreatedEventStatusProvider(c.Id(), characterId, c.Type(), c.Capacity()))
 		})
 		if txErr != nil {
 			return Model{}, txErr
@@ -140,7 +139,7 @@ func (p *Processor) DeleteByModel(mb *message.Buffer) func(c Model) error {
 			if err != nil {
 				return err
 			}
-			return mb.Put(compartment.EnvEventTopicStatus, compartment2.DeletedEventStatusProvider(c.Id(), c.CharacterId()))
+			return mb.Put(compartment.EnvEventTopicStatus, DeletedEventStatusProvider(c.Id(), c.CharacterId()))
 		})
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Unable to delete compartment [%s].", c.Id().String())
@@ -415,7 +414,7 @@ func (p *Processor) IncreaseCapacity(mb *message.Buffer) func(characterId uint32
 					if err != nil {
 						return err
 					}
-					return mb.Put(compartment.EnvEventTopicStatus, compartment2.CapacityChangedEventStatusProvider(c.Id(), characterId, inventoryType, capacity))
+					return mb.Put(compartment.EnvEventTopicStatus, CapacityChangedEventStatusProvider(c.Id(), characterId, inventoryType, capacity))
 				})
 				if txErr != nil {
 					p.l.WithError(txErr).Errorf("Character [%d] unable to change compartment capacity. Type [%d].", characterId, inventoryType)
@@ -528,7 +527,7 @@ func (p *Processor) RequestReserve(mb *message.Buffer) func(characterId uint32, 
 				if err != nil {
 					return err
 				}
-				return mb.Put(compartment.EnvEventTopicStatus, compartment2.ReservedEventStatusProvider(c.Id(), characterId, request.ItemId, request.Slot, uint32(request.Quantity), transactionId))
+				return mb.Put(compartment.EnvEventTopicStatus, ReservedEventStatusProvider(c.Id(), characterId, request.ItemId, request.Slot, uint32(request.Quantity), transactionId))
 			}
 			return nil
 		})
@@ -563,7 +562,7 @@ func (p *Processor) CancelReservation(mb *message.Buffer) func(characterId uint3
 		if err != nil {
 			return nil
 		}
-		return mb.Put(compartment.EnvEventTopicStatus, compartment2.ReservationCancelledEventStatusProvider(c.Id(), characterId, res.ItemId(), slot, res.Quantity()))
+		return mb.Put(compartment.EnvEventTopicStatus, ReservationCancelledEventStatusProvider(c.Id(), characterId, res.ItemId(), slot, res.Quantity()))
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"atlas-inventory/inventory"
 	"atlas-inventory/kafka/consumer/character"
 	compartment2 "atlas-inventory/kafka/consumer/compartment"
+	"atlas-inventory/kafka/consumer/equipable"
 	"atlas-inventory/logger"
 	"atlas-inventory/service"
 	"atlas-inventory/stackable"
@@ -56,8 +57,11 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	compartment2.InitConsumers(l)(cmf)(consumerGroupId)
+	equipable.InitConsumers(l)(cmf)(consumerGroupId)
+
 	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	compartment2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	equipable.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.New(l).
 		WithContext(tdm.Context()).

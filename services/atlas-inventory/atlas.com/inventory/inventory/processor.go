@@ -5,7 +5,6 @@ import (
 	"atlas-inventory/kafka/message"
 	inventory2 "atlas-inventory/kafka/message/inventory"
 	"atlas-inventory/kafka/producer"
-	inventory3 "atlas-inventory/kafka/producer/inventory"
 	model2 "atlas-inventory/model"
 	"context"
 	"errors"
@@ -84,7 +83,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32) (Model, 
 				b.SetCompartment(c)
 			}
 			i = b.Build()
-			return mb.Put(inventory2.EnvEventTopicStatus, inventory3.CreatedEventStatusProvider(characterId))
+			return mb.Put(inventory2.EnvEventTopicStatus, CreatedEventStatusProvider(characterId))
 		})
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Unable to create inventory for character [%d].", characterId)
@@ -109,7 +108,7 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32) error {
 			if err != nil {
 				return err
 			}
-			return mb.Put(inventory2.EnvEventTopicStatus, inventory3.DeletedEventStatusProvider(characterId))
+			return mb.Put(inventory2.EnvEventTopicStatus, DeletedEventStatusProvider(characterId))
 		})
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Unable to delete inventory for character [%d].", characterId)

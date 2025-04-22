@@ -465,7 +465,7 @@ func (p *Processor) Drop(mb *message.Buffer) func(characterId uint32, inventoryT
 				return errors.New("cannot drop more than what is owned")
 			}
 			if initialQty == uint32(quantity) {
-				err = p.assetProcessor.WithTransaction(tx).Delete(mb)(characterId, c.Id())(a)
+				err = p.assetProcessor.WithTransaction(tx).Drop(mb)(characterId, c.Id())(a)
 				if err != nil {
 					return err
 				}
@@ -694,5 +694,77 @@ func (p *Processor) CreateAsset(mb *message.Buffer) func(characterId uint32, inv
 		}
 		p.l.Debugf("Character [%d] created asset [%d].", characterId, a.Id())
 		return nil
+	}
+}
+
+func (p *Processor) AttemptEquipmentPickUpAndEmit(m _map.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.AttemptEquipmentPickUp(buf)(m, characterId, dropId, templateId, referenceId)
+	})
+}
+
+func (p *Processor) AttemptEquipmentPickUp(mb *message.Buffer) func(m _map.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error {
+	return func(m _map.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error {
+
+		inventoryType, ok := inventory.TypeFromItemId(templateId)
+		if !ok {
+			return errors.New("invalid inventory item")
+		}
+
+		if inventoryType != inventory.TypeValueEquip {
+			p.l.Errorf("Provided inventoryType [%d] does not match expected one [%d] for itemId [%d].", inventoryType, 1, templateId)
+			return errors.New("invalid inventory type")
+		}
+
+		p.l.Debugf("Gaining [%d] item [%d] for character [%d] in inventory [%d].", 1, templateId, characterId, inventoryType)
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+			c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)
+				return err
+			}
+
+			s, err := c.NextFreeSlot()
+			if err != nil {
+				return err
+			}
+
+			_, err = p.assetProcessor.WithTransaction(tx).Acquire(mb)(characterId, c.Id(), templateId, s, 1, referenceId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to create [%d] equipable [%d] for character [%d].", 1, templateId, characterId)
+				return err
+			}
+			return nil
+		})
+		if txErr != nil {
+			mb = message.NewBuffer()
+			return p.dropProcessor.CancelReservation(mb)(m, dropId, characterId)
+		}
+		return p.dropProcessor.RequestPickUp(mb)(m, dropId, characterId)
+	}
+}
+
+func (p *Processor) AttemptItemPickUpAndEmit(m _map.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.AttemptItemPickUp(buf)(m, characterId, dropId, templateId, quantity)
+	})
+}
+
+func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(m _map.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
+	return func(m _map.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
+		inventoryType, ok := inventory.TypeFromItemId(templateId)
+		if !ok {
+			return errors.New("invalid inventory item")
+		}
+		err := p.CreateAsset(mb)(characterId, inventoryType, templateId, quantity, time.Time{}, 0, 0, 0)
+		if err != nil {
+			mb = message.NewBuffer()
+			return p.dropProcessor.CancelReservation(mb)(m, dropId, characterId)
+		}
+		return p.dropProcessor.RequestPickUp(mb)(m, dropId, characterId)
 	}
 }

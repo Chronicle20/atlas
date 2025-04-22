@@ -32,3 +32,15 @@ func (p *Processor) CreateForItem(mb *message.Buffer) func(m _map.Model, itemId 
 		return mb.Put(drop.EnvCommandTopic, ItemProvider(m, itemId, quantity, dropType, x, y, ownerId))
 	}
 }
+
+func (p *Processor) CancelReservation(mb *message.Buffer) func(m _map.Model, dropId uint32, characterId uint32) error {
+	return func(m _map.Model, dropId uint32, characterId uint32) error {
+		return mb.Put(drop.EnvCommandTopic, CancelReservationCommandProvider(m, dropId, characterId))
+	}
+}
+
+func (p *Processor) RequestPickUp(mb *message.Buffer) func(m _map.Model, dropId uint32, characterId uint32) error {
+	return func(m _map.Model, dropId uint32, characterId uint32) error {
+		return mb.Put(drop.EnvCommandTopic, RequestPickUpCommandProvider(m, dropId, characterId))
+	}
+}

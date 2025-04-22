@@ -54,3 +54,33 @@ func ItemProvider(m _map.Model, itemId uint32, quantity uint32, dropType byte, x
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func CancelReservationCommandProvider(m _map.Model, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.MapId()))
+	value := &drop.Command[drop.CancelReservationCommandBody]{
+		WorldId:   byte(m.WorldId()),
+		ChannelId: byte(m.ChannelId()),
+		MapId:     uint32(m.MapId()),
+		Type:      drop.CommandTypeCancelReservation,
+		Body: drop.CancelReservationCommandBody{
+			DropId:      dropId,
+			CharacterId: characterId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func RequestPickUpCommandProvider(m _map.Model, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.MapId()))
+	value := &drop.Command[drop.RequestPickUpCommandBody]{
+		WorldId:   byte(m.WorldId()),
+		ChannelId: byte(m.ChannelId()),
+		MapId:     uint32(m.MapId()),
+		Type:      drop.CommandTypeRequestPickUp,
+		Body: drop.RequestPickUpCommandBody{
+			DropId:      dropId,
+			CharacterId: characterId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

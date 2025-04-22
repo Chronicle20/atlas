@@ -253,6 +253,26 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32, compartm
 		}
 	}
 }
+func (p *Processor) Drop(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
+	return func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
+		return func(a Model[any]) error {
+			p.l.Debugf("Attempting to delete asset [%d].", a.Id())
+			txErr := p.db.Transaction(func(tx *gorm.DB) error {
+				err := deleteById(tx, p.t.Id(), a.Id())
+				if err != nil {
+					return err
+				}
+				return mb.Put(asset.EnvEventTopicStatus, DeletedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot()))
+			})
+			if txErr != nil {
+				p.l.WithError(txErr).Errorf("Unable to delete asset [%d].", a.Id())
+				return txErr
+			}
+			p.l.Debugf("Deleted asset [%d].", a.Id())
+			return nil
+		}
+	}
+}
 
 func (p *Processor) UpdateSlot(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, ap model.Provider[Model[any]], sp model.Provider[int16]) error {
 	return func(characterId uint32, compartmentId uuid.UUID, ap model.Provider[Model[any]], sp model.Provider[int16]) error {
@@ -389,6 +409,48 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 			if err != nil {
 				return err
 			}
+			return mb.Put(asset.EnvEventTopicStatus, CreatedEventStatusProvider(characterId, a))
+		})
+		if txErr != nil {
+			return Model[any]{}, txErr
+		}
+		return a, nil
+	}
+}
+
+func (p *Processor) Acquire(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, referenceId uint32) (Model[any], error) {
+	return func(characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, referenceId uint32) (Model[any], error) {
+		p.l.Debugf("Character [%d] attempting to acquire [%d] item(s) [%d] in slot [%d] of compartment [%s].", characterId, quantity, templateId, slot, compartmentId.String())
+		var a Model[any]
+		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+			var referenceType ReferenceType
+			inventoryType, ok := inventory.TypeFromItemId(templateId)
+			if !ok {
+				return errors.New("unknown item type")
+			}
+
+			var rd interface{}
+			expiration := time.Time{}
+			if inventoryType == inventory.TypeValueEquip {
+				e, err := p.equipableProcessor.GetById(referenceId)
+				if err != nil {
+					return err
+				}
+				referenceType = ReferenceTypeEquipable
+				expiration = e.Expiration()
+				rd = MakeEquipableReferenceData(e)
+			}
+
+			if referenceType == "" {
+				return errors.New("unknown item type")
+			}
+
+			var err error
+			a, err = create(p.db, p.t.Id(), compartmentId, templateId, slot, expiration, referenceId, referenceType)
+			if err != nil {
+				return err
+			}
+			a = Clone(a).SetReferenceData(rd).Build()
 			return mb.Put(asset.EnvEventTopicStatus, CreatedEventStatusProvider(characterId, a))
 		})
 		if txErr != nil {

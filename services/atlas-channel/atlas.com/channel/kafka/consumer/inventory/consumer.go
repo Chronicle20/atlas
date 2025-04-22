@@ -1,8 +1,8 @@
 package inventory
 
 import (
+	"atlas-channel/asset"
 	"atlas-channel/character"
-	"atlas-channel/inventory/compartment/asset"
 	consumer2 "atlas-channel/kafka/consumer"
 	inventory2 "atlas-channel/kafka/message/inventory"
 	_map "atlas-channel/map"

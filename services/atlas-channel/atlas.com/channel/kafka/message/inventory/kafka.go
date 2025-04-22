@@ -3,44 +3,6 @@ package inventory
 import "time"
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_INVENTORY"
-	CommandEquip    = "EQUIP"
-	CommandUnequip  = "UNEQUIP"
-	CommandMove     = "MOVE"
-	CommandDrop     = "DROP"
-)
-
-type Command[E any] struct {
-	CharacterId   uint32 `json:"characterId"`
-	InventoryType byte   `json:"inventoryType"`
-	Type          string `json:"type"`
-	Body          E      `json:"body"`
-}
-
-type EquipCommandBody struct {
-	Source      int16 `json:"source"`
-	Destination int16 `json:"destination"`
-}
-
-type UnequipCommandBody struct {
-	Source      int16 `json:"source"`
-	Destination int16 `json:"destination"`
-}
-
-type MoveCommandBody struct {
-	Source      int16 `json:"source"`
-	Destination int16 `json:"destination"`
-}
-
-type DropCommandBody struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	Source    int16  `json:"source"`
-	Quantity  int16  `json:"quantity"`
-}
-
-const (
 	EnvEventInventoryChanged = "EVENT_TOPIC_INVENTORY_CHANGED"
 
 	ChangedTypeAdd                  = "ADDED"

@@ -1,16 +1,16 @@
 package inventory
 
 import (
-	"atlas-channel/inventory/compartment"
+	compartment2 "atlas-channel/compartment"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type RestModel struct {
-	Id           uuid.UUID               `json:"-"`
-	CharacterId  uint32                  `json:"characterId"`
-	Compartments []compartment.RestModel `json:"-"`
+	Id           uuid.UUID                `json:"-"`
+	CharacterId  uint32                   `json:"characterId"`
+	Compartments []compartment2.RestModel `json:"-"`
 }
 
 func (r RestModel) GetName() string {
@@ -71,7 +71,7 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 			if err != nil {
 				return err
 			}
-			r.Compartments = append(r.Compartments, compartment.RestModel{Id: id})
+			r.Compartments = append(r.Compartments, compartment2.RestModel{Id: id})
 		}
 	}
 	return nil
@@ -79,7 +79,7 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 
 func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
 	if refMap, ok := references["compartments"]; ok {
-		compartments := make([]compartment.RestModel, 0)
+		compartments := make([]compartment2.RestModel, 0)
 		for _, ri := range r.Compartments {
 			if ref, ok := refMap[ri.GetID()]; ok {
 				wip := ri
@@ -96,9 +96,9 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 }
 
 func Transform(m Model) (RestModel, error) {
-	cs := make([]compartment.RestModel, 0)
+	cs := make([]compartment2.RestModel, 0)
 	for _, v := range m.compartments {
-		c, err := compartment.Transform(v)
+		c, err := compartment2.Transform(v)
 		if err != nil {
 			return RestModel{}, nil
 		}
@@ -113,9 +113,9 @@ func Transform(m Model) (RestModel, error) {
 }
 
 func Extract(rm RestModel) (Model, error) {
-	cs := make(map[inventory.Type]compartment.Model)
+	cs := make(map[inventory.Type]compartment2.Model)
 	for _, v := range rm.Compartments {
-		c, err := compartment.Extract(v)
+		c, err := compartment2.Extract(v)
 		if err != nil {
 			return Model{}, nil
 		}

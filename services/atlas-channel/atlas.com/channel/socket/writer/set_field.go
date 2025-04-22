@@ -1,10 +1,10 @@
 package writer
 
 import (
+	"atlas-channel/asset"
 	"atlas-channel/buddylist"
 	"atlas-channel/character"
 	slot2 "atlas-channel/equipment/slot"
-	"atlas-channel/inventory/compartment/asset"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"

@@ -1,8 +1,8 @@
 package pet
 
 import (
+	"atlas-channel/asset"
 	"atlas-channel/character"
-	"atlas-channel/inventory/compartment/asset"
 	consumer2 "atlas-channel/kafka/consumer"
 	pet2 "atlas-channel/kafka/message/pet"
 	_map "atlas-channel/map"

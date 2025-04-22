@@ -1,11 +1,11 @@
 package character
 
 import (
+	"atlas-channel/asset"
 	"atlas-channel/character/skill"
+	"atlas-channel/compartment"
 	"atlas-channel/equipment"
 	"atlas-channel/inventory"
-	"atlas-channel/inventory/compartment"
-	"atlas-channel/inventory/compartment/asset"
 	"atlas-channel/pet"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/job"

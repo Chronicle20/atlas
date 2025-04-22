@@ -1,7 +1,7 @@
 package compartment
 
 import (
-	"atlas-channel/inventory/compartment/asset"
+	"atlas-channel/asset"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/google/uuid"
 )

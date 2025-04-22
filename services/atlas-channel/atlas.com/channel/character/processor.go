@@ -1,9 +1,9 @@
 package character
 
 import (
+	"atlas-channel/asset"
 	"atlas-channel/character/skill"
 	"atlas-channel/inventory"
-	"atlas-channel/inventory/compartment/asset"
 	character2 "atlas-channel/kafka/message/character"
 	"atlas-channel/kafka/producer"
 	"atlas-channel/pet"

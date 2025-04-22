@@ -7,6 +7,7 @@ import (
 	handler2 "atlas-channel/configuration/tenant/socket/handler"
 	writer2 "atlas-channel/configuration/tenant/socket/writer"
 	account2 "atlas-channel/kafka/consumer/account"
+	"atlas-channel/kafka/consumer/asset"
 	"atlas-channel/kafka/consumer/buddylist"
 	"atlas-channel/kafka/consumer/buff"
 	"atlas-channel/kafka/consumer/cashshop"
@@ -84,6 +85,7 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	account2.InitConsumers(l)(cmf)(consumerGroupId)
+	asset.InitConsumers(l)(cmf)(consumerGroupId)
 	buddylist.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	channel.InitConsumers(l)(cmf)(consumerGroupId)
@@ -150,6 +152,7 @@ func main() {
 
 				wp := produceWriterProducer(fl)(tenantConfig.Socket.Writers, writerList, rw)
 				account2.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				asset.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				buddylist.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				channel.InitHandlers(fl)(sc)(ten.IPAddress, c.Port)(consumer.GetManager().RegisterHandler)
 				character.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)

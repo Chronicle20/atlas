@@ -9,12 +9,11 @@ import (
 
 type Change func(b *ModelBuilder)
 
-func changeEquipableProvider(characterId uint32, e Model) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
+func changeEquipableProvider(e Model) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(e.Id()))
 	value := &equipable.Command[equipable.ChangeBody]{
-		CharacterId: characterId,
-		Id:          e.Id(),
-		Type:        equipable.CommandChange,
+		Id:   e.Id(),
+		Type: equipable.CommandChange,
 		Body: equipable.ChangeBody{
 			Strength:       e.Strength(),
 			Dexterity:      e.Dexterity(),

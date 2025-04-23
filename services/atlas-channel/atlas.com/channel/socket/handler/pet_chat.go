@@ -25,7 +25,7 @@ func PetChatHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Produ
 		nAction := r.ReadByte()
 		msg := r.ReadAsciiString()
 		l.Debugf("Character [%d] received message [%s] from pet [%d]. updateTime [%d], nType [%d], nAction [%d].", s.CharacterId(), msg, petId, updateTime, nType, nAction)
-		p, err := pet.NewProcessor(l, ctx).GetById(petId)
+		p, err := pet.NewProcessor(l, ctx).GetById(uint32(petId))
 		if err != nil {
 			return
 		}

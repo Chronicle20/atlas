@@ -21,6 +21,6 @@ func PetItemExcludeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			itemId := r.ReadInt32()
 			items = append(items, exclude.NewModel(uint32(i), uint32(itemId)))
 		}
-		_ = pet.NewProcessor(l, ctx).SetExcludeItems(s.CharacterId(), petId, items)
+		_ = pet.NewProcessor(l, ctx).SetExcludeItems(s.CharacterId(), uint32(petId), items)
 	}
 }

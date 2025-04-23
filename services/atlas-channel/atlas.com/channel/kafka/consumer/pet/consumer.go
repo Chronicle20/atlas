@@ -1,7 +1,6 @@
 package pet
 
 import (
-	"atlas-channel/asset"
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
 	pet2 "atlas-channel/kafka/message/pet"
@@ -12,6 +11,8 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+	"errors"
+	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -167,31 +168,24 @@ func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[
 	}
 }
 
-func announcePetStatUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
+func announcePetStatUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(petId uint32, ownerId uint32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(petId uint32, ownerId uint32) model.Operator[session.Model] {
 		cp := character.NewProcessor(l, ctx)
-		return func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
-			return func(p pet.Model) model.Operator[session.Model] {
-				c, err := cp.GetById(cp.InventoryDecorator)(p.OwnerId())
+		return func(wp writer.Producer) func(petId uint32, ownerId uint32) model.Operator[session.Model] {
+			return func(petId uint32, ownerId uint32) model.Operator[session.Model] {
+				c, err := cp.GetById(cp.InventoryDecorator)(ownerId)
 				if err != nil {
 					return func(s session.Model) error {
 						return err
 					}
 				}
-
-				var a asset.Model[asset.PetReferenceData]
-				for _, ii := range c.Inventory().Cash().Assets() {
-					if ii.ReferenceId() == p.InventoryItemId() {
-						if prd, ok := ii.ReferenceData().(asset.PetReferenceData); ok {
-							a = asset.NewBuilder[asset.PetReferenceData](ii.Id(), ii.TemplateId(), ii.ReferenceId(), ii.ReferenceType()).
-								SetSlot(ii.Slot()).
-								SetExpiration(ii.Expiration()).
-								SetReferenceData(prd).
-								Build()
-						}
+				a, ok := c.Inventory().Cash().FindByReferenceId(petId)
+				if !ok {
+					return func(s session.Model) error {
+						return errors.New("pet not found")
 					}
 				}
-				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshPet(a))
+				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshAsset(tenant.MustFromContext(ctx))(inventory2.TypeValueCash, *a))
 			}
 		}
 	}
@@ -203,18 +197,7 @@ func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
-			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
-			if err != nil {
-				return err
-			}
-
-			err = announcePetStatUpdate(l)(ctx)(wp)(p)(s)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId))
 	}
 }
 
@@ -225,12 +208,13 @@ func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[
 		}
 
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			// TODO this is an extra query
 			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
 			if err != nil {
 				return err
 			}
 
-			err = announcePetStatUpdate(l)(ctx)(wp)(p)(s)
+			err = announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId)(s)
 			if err != nil {
 				return err
 			}
@@ -257,12 +241,13 @@ func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[pet
 		}
 
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			// TODO this is an extra query
 			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
 			if err != nil {
 				return err
 			}
 
-			err = announcePetStatUpdate(l)(ctx)(wp)(p)(s)
+			err = announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId)(s)
 			if err != nil {
 				return err
 			}

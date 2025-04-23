@@ -884,6 +884,10 @@ func (d PetReferenceData) Fullness() byte {
 	return d.fullness
 }
 
+func (d PetReferenceData) Slot() int8 {
+	return d.slot
+}
+
 type PetReferenceDataBuilder struct {
 	cashId        uint64
 	ownerId       uint32

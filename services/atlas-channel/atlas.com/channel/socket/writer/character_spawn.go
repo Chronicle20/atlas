@@ -162,7 +162,7 @@ func WriteCharacterEquipment(tenant tenant.Model) func(w *response.Writer, chara
 			writeForEachPet(w, character.Pets(), writePetItemId, writeEmptyPetItemId)
 		} else {
 			if len(character.Pets()) > 0 {
-				w.WriteLong(character.Pets()[0].Id()) // pet cash id
+				w.WriteLong(uint64(character.Pets()[0].Id())) // pet cash id
 			} else {
 				w.WriteLong(0)
 			}
@@ -259,7 +259,7 @@ func writeForEachPet(w *response.Writer, ps []pet.Model, pe func(w *response.Wri
 }
 
 func writePetId(w *response.Writer, pet pet.Model) {
-	w.WriteLong(pet.Id())
+	w.WriteLong(uint64(pet.Id()))
 }
 
 func writeEmptyPetId(w *response.Writer) {

@@ -208,6 +208,7 @@ func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
 			return m, errors.New("cannot locate reference")
 		}
 		return Clone(m).
+			SetExpiration(pi.Expiration()).
 			SetReferenceData(MakePetReferenceData(pi)).
 			Build(), nil
 	}

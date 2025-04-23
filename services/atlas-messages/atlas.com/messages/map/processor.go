@@ -3,9 +3,9 @@ package _map
 import (
 	"atlas-messages/character"
 	"atlas-messages/data/map"
+	"atlas-messages/data/portal"
 	character2 "atlas-messages/kafka/message/character"
 	"atlas-messages/kafka/producer"
-	"atlas-messages/portal"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"

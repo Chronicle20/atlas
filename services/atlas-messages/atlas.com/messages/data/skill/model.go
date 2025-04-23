@@ -1,6 +1,8 @@
 package skill
 
-import "atlas-messages/skill/effect"
+import (
+	"atlas-messages/data/skill/effect"
+)
 
 type Model struct {
 	id            uint32

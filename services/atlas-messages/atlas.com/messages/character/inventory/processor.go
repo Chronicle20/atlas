@@ -2,7 +2,7 @@ package inventory
 
 import (
 	"atlas-messages/character/inventory/item"
-	"atlas-messages/equipment/statistics"
+	"atlas-messages/data/equipable"
 	"context"
 	"github.com/sirupsen/logrus"
 	"math"
@@ -11,14 +11,14 @@ import (
 type Processor struct {
 	l   logrus.FieldLogger
 	ctx context.Context
-	sp  *statistics.Processor
+	sp  *equipable.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	p := &Processor{
 		l:   l,
 		ctx: ctx,
-		sp:  statistics.NewProcessor(l, ctx),
+		sp:  equipable.NewProcessor(l, ctx),
 	}
 	return p
 }

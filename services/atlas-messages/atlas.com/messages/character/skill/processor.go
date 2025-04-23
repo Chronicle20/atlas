@@ -1,6 +1,7 @@
 package skill
 
 import (
+	skill2 "atlas-messages/kafka/message/character/skill"
 	"atlas-messages/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
@@ -31,9 +32,9 @@ func (p *Processor) GetByCharacterId(characterId uint32) ([]Model, error) {
 }
 
 func (p *Processor) RequestCreate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(createCommandProvider(characterId, skillId, level, masterLevel, expiration))
+	return producer.ProviderImpl(p.l)(p.ctx)(skill2.EnvCommandTopic)(createCommandProvider(characterId, skillId, level, masterLevel, expiration))
 }
 
 func (p *Processor) RequestUpdate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(updateCommandProvider(characterId, skillId, level, masterLevel, expiration))
+	return producer.ProviderImpl(p.l)(p.ctx)(skill2.EnvCommandTopic)(updateCommandProvider(characterId, skillId, level, masterLevel, expiration))
 }

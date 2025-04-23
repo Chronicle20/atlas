@@ -1,7 +1,7 @@
 package skill
 
 import (
-	"atlas-messages/skill/effect"
+	"atlas-messages/data/skill/effect"
 	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
 )

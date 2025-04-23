@@ -1,4 +1,4 @@
-package data
+package _map
 
 import (
 	"atlas-messages/rest"
@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	getMap = "data/maps/%d"
+	getMap = "map/maps/%d"
 )
 
 func getBaseRequest() string {

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	skillsResource = "data/skills/%d"
+	skillsResource = "map/skills/%d"
 )
 
 func getBaseRequest() string {

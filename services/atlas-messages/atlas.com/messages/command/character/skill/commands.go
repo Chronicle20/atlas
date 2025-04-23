@@ -4,7 +4,7 @@ import (
 	"atlas-messages/character"
 	skill2 "atlas-messages/character/skill"
 	"atlas-messages/command"
-	"atlas-messages/skill"
+	"atlas-messages/data/skill"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"

@@ -23,36 +23,36 @@ const (
 	ExperienceDistributionTypeCakePie      = "CAKE_PIE"
 )
 
-type command[E any] struct {
+type Command[E any] struct {
 	WorldId     byte   `json:"worldId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
 }
 
-type changeMapBody struct {
+type ChangeMapBody struct {
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
 	PortalId  uint32 `json:"portalId"`
 }
 
-type changeJobCommandBody struct {
+type ChangeJobCommandBody struct {
 	ChannelId byte   `json:"channelId"`
 	JobId     uint16 `json:"jobId"`
 }
 
-type awardExperienceCommandBody struct {
+type AwardExperienceCommandBody struct {
 	ChannelId     byte                      `json:"channelId"`
-	Distributions []experienceDistributions `json:"distributions"`
+	Distributions []ExperienceDistributions `json:"distributions"`
 }
 
-type experienceDistributions struct {
+type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
 	Attr1          uint32 `json:"attr1"`
 }
 
-type awardLevelCommandBody struct {
+type AwardLevelCommandBody struct {
 	ChannelId byte `json:"channelId"`
 	Amount    byte `json:"amount"`
 }

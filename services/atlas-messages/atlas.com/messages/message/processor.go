@@ -3,6 +3,7 @@ package message
 import (
 	"atlas-messages/character"
 	"atlas-messages/command"
+	message2 "atlas-messages/kafka/message/message"
 	"atlas-messages/kafka/producer"
 	"context"
 	"errors"
@@ -40,7 +41,7 @@ func (p *Processor) HandleGeneral(worldId byte, channelId byte, mapId uint32, ac
 		return err
 	}
 
-	err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicChat)(generalChatEventProvider(worldId, channelId, mapId, actorId, message, balloonOnly))
+	err = producer.ProviderImpl(p.l)(p.ctx)(message2.EnvEventTopicChat)(generalChatEventProvider(worldId, channelId, mapId, actorId, message, balloonOnly))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to relay message from character [%d].", c.Id())
 	}
@@ -63,7 +64,7 @@ func (p *Processor) HandleMulti(worldId byte, channelId byte, mapId uint32, acto
 		return err
 	}
 
-	err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicChat)(multiChatEventProvider(worldId, channelId, mapId, actorId, message, chatType, recipients))
+	err = producer.ProviderImpl(p.l)(p.ctx)(message2.EnvEventTopicChat)(multiChatEventProvider(worldId, channelId, mapId, actorId, message, chatType, recipients))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to relay message from character [%d].", c.Id())
 	}
@@ -96,7 +97,7 @@ func (p *Processor) HandleWhisper(worldId byte, channelId byte, mapId uint32, ac
 		return errors.New("not in world")
 	}
 
-	err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicChat)(whisperChatEventProvider(worldId, channelId, mapId, actorId, message, tc.Id()))
+	err = producer.ProviderImpl(p.l)(p.ctx)(message2.EnvEventTopicChat)(whisperChatEventProvider(worldId, channelId, mapId, actorId, message, tc.Id()))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to relay message from character [%d].", c.Id())
 	}
@@ -110,7 +111,7 @@ func (p *Processor) HandleMessenger(worldId byte, channelId byte, mapId uint32, 
 		return err
 	}
 
-	err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicChat)(messengerChatEventProvider(worldId, channelId, mapId, actorId, message, recipients))
+	err = producer.ProviderImpl(p.l)(p.ctx)(message2.EnvEventTopicChat)(messengerChatEventProvider(worldId, channelId, mapId, actorId, message, recipients))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to relay message from character [%d].", c.Id())
 	}
@@ -119,7 +120,7 @@ func (p *Processor) HandleMessenger(worldId byte, channelId byte, mapId uint32, 
 
 func (p *Processor) HandlePet(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error {
 	p.l.Debugf("Character [%d] pet [%d] sent message [%s].", ownerId, actorId, message)
-	err := producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicChat)(petChatEventProvider(worldId, channelId, mapId, actorId, message, ownerId, petSlot, nType, nAction, balloon))
+	err := producer.ProviderImpl(p.l)(p.ctx)(message2.EnvEventTopicChat)(petChatEventProvider(worldId, channelId, mapId, actorId, message, ownerId, petSlot, nType, nAction, balloon))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to relay message from character [%d] pet [%d].", ownerId, actorId)
 	}

@@ -2,8 +2,9 @@ package _map
 
 import (
 	"atlas-messages/character"
+	"atlas-messages/data/map"
+	character2 "atlas-messages/kafka/message/character"
 	"atlas-messages/kafka/producer"
-	"atlas-messages/map/data"
 	"atlas-messages/portal"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
@@ -16,7 +17,7 @@ type Processor struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	pp  *portal.Processor
-	dp  *data.Processor
+	dp  *_map.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
@@ -24,7 +25,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 		l:   l,
 		ctx: ctx,
 		pp:  portal.NewProcessor(l, ctx),
-		dp:  data.NewProcessor(l, ctx),
+		dp:  _map.NewProcessor(l, ctx),
 	}
 	return p
 }
@@ -66,5 +67,5 @@ func (p *Processor) WarpToPortal(worldId byte, channelId byte, characterId uint3
 		return err
 	}
 
-	return producer.ProviderImpl(p.l)(p.ctx)(character.EnvCommandTopic)(character.ChangeMapProvider(worldId, channelId, characterId, mapId, id))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(character.ChangeMapProvider(worldId, channelId, characterId, mapId, id))
 }

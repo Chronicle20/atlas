@@ -13,7 +13,7 @@ const (
 	ChatTypePet       = "PET"
 )
 
-type chatEvent[E any] struct {
+type ChatEvent[E any] struct {
 	WorldId   byte   `json:"worldId"`
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
@@ -23,23 +23,23 @@ type chatEvent[E any] struct {
 	Body      E      `json:"body"`
 }
 
-type generalChatBody struct {
+type GeneralChatBody struct {
 	BalloonOnly bool `json:"balloonOnly"`
 }
 
-type multiChatBody struct {
+type MultiChatBody struct {
 	Recipients []uint32 `json:"recipients"`
 }
 
-type whisperChatBody struct {
+type WhisperChatBody struct {
 	Recipient uint32 `json:"recipient"`
 }
 
-type messengerChatBody struct {
+type MessengerChatBody struct {
 	Recipients []uint32 `json:"recipients"`
 }
 
-type petChatBody struct {
+type PetChatBody struct {
 	OwnerId uint32 `json:"ownerId"`
 	PetSlot int8   `json:"petSlot"`
 	Type    byte   `json:"type"`

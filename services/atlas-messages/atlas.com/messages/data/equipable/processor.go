@@ -1,4 +1,4 @@
-package statistics
+package equipable
 
 import (
 	"context"

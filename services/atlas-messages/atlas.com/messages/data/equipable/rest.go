@@ -1,4 +1,4 @@
-package statistics
+package equipable
 
 import (
 	"github.com/jtumidanski/api2go/jsonapi"

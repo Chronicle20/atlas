@@ -2,6 +2,8 @@ package character
 
 import (
 	"atlas-messages/character/skill"
+	"atlas-messages/inventory"
+	character2 "atlas-messages/kafka/message/character"
 	"atlas-messages/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
@@ -12,6 +14,7 @@ import (
 type Processor struct {
 	l   logrus.FieldLogger
 	ctx context.Context
+	ip  *inventory.Processor
 	sp  *skill.Processor
 }
 
@@ -19,6 +22,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	p := &Processor{
 		l:   l,
 		ctx: ctx,
+		ip:  inventory.NewProcessor(l, ctx),
 		sp:  skill.NewProcessor(l, ctx),
 	}
 	return p
@@ -52,6 +56,14 @@ func (p *Processor) IdByNameProvider(name string) model.Provider[uint32] {
 	return model.FixedProvider(c.Id())
 }
 
+func (p *Processor) InventoryDecorator(m Model) Model {
+	i, err := p.ip.GetByCharacterId(m.Id())
+	if err != nil {
+		return m
+	}
+	return m.SetInventory(i)
+}
+
 func (p *Processor) SkillModelDecorator(m Model) Model {
 	ms, err := p.sp.GetByCharacterId(m.Id())
 	if err != nil {
@@ -61,13 +73,13 @@ func (p *Processor) SkillModelDecorator(m Model) Model {
 }
 
 func (p *Processor) AwardExperience(worldId byte, channelId byte, characterId uint32, amount uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(awardExperienceCommandProvider(characterId, worldId, channelId, amount))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(awardExperienceCommandProvider(characterId, worldId, channelId, amount))
 }
 
 func (p *Processor) AwardLevel(worldId byte, channelId byte, characterId uint32, amount byte) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(awardLevelCommandProvider(characterId, worldId, channelId, amount))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(awardLevelCommandProvider(characterId, worldId, channelId, amount))
 }
 
 func (p *Processor) ChangeJob(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(changeJobCommandProvider(characterId, worldId, channelId, jobId))
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeJobCommandProvider(characterId, worldId, channelId, jobId))
 }

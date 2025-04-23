@@ -1,4 +1,4 @@
-package statistics
+package equipable
 
 import (
 	"atlas-messages/rest"
@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	itemInformationResource = "data/equipment/"
+	itemInformationResource = "map/equipment/"
 	itemInformationById     = itemInformationResource + "%d"
 )
 

@@ -121,6 +121,77 @@ type UpdatedStatusEventBody[E any] struct {
 	Expiration    time.Time `json:"expiration"`
 }
 
+func (b *UpdatedStatusEventBody[E]) UnmarshalJSON(data []byte) error {
+	type rawBody struct {
+		ReferenceId   uint32          `json:"referenceId"`
+		ReferenceType string          `json:"referenceType"`
+		ReferenceData json.RawMessage `json:"referenceData"`
+		Expiration    time.Time       `json:"expiration"`
+	}
+
+	var raw rawBody
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	var typed any
+	var err error
+	if raw.ReferenceType == "equipable" {
+		typed, err = convertMapToStruct[EquipableReferenceData](raw.ReferenceData)
+		if err != nil {
+			return err
+		}
+	}
+	if raw.ReferenceType == "cashEquipable" {
+		typed, err = convertMapToStruct[CashEquipableReferenceData](raw.ReferenceData)
+		if err != nil {
+			return err
+		}
+	}
+	if raw.ReferenceType == "consumable" {
+		typed, err = convertMapToStruct[ConsumableReferenceData](raw.ReferenceData)
+		if err != nil {
+			return err
+		}
+	}
+	if raw.ReferenceType == "setup" {
+		typed, err = convertMapToStruct[SetupReferenceData](raw.ReferenceData)
+		if err != nil {
+			return err
+		}
+	}
+	if raw.ReferenceType == "etc" {
+		typed, err = convertMapToStruct[EtcReferenceData](raw.ReferenceData)
+		if err != nil {
+			return err
+		}
+	}
+	if raw.ReferenceType == "cash" {
+		typed, err = convertMapToStruct[CashReferenceData](raw.ReferenceData)
+		if err != nil {
+			return err
+		}
+	}
+	if raw.ReferenceType == "pet" {
+		typed, err = convertMapToStruct[PetReferenceData](raw.ReferenceData)
+		if err != nil {
+			return err
+		}
+	}
+	var ref E
+	ref, ok := typed.(E)
+	if !ok {
+		return fmt.Errorf("type assertion to E failed")
+	}
+
+	b.ReferenceId = raw.ReferenceId
+	b.ReferenceType = raw.ReferenceType
+	b.ReferenceData = ref
+	b.Expiration = raw.Expiration
+
+	return nil
+}
+
 type EquipableReferenceData struct {
 	Strength       uint16    `json:"strength"`
 	Dexterity      uint16    `json:"dexterity"`

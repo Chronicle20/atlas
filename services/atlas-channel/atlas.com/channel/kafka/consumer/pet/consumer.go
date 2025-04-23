@@ -56,6 +56,11 @@ func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[pet2.Sta
 			return
 		}
 
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
 		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId)
 		if err != nil {
 			return
@@ -107,6 +112,11 @@ func handleDespawned(sc server.Model, wp writer.Producer) message.Handler[pet2.S
 			return
 		}
 
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
 		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId)
 		if err != nil {
 			return
@@ -142,6 +152,11 @@ func announceDespawn(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.CommandResponseStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.CommandResponseStatusEventBody]) {
 		if e.Type != pet2.StatusEventTypeCommandResponse {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
 			return
 		}
 
@@ -197,6 +212,11 @@ func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId))
 	}
 }
@@ -240,6 +260,11 @@ func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[pet
 			return
 		}
 
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
 			// TODO this is an extra query
 			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
@@ -274,6 +299,11 @@ func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[pet
 func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.SlotChangedStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.SlotChangedStatusEventBody]) {
 		if e.Type != pet2.StatusEventTypeSlotChanged {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
 			return
 		}
 
@@ -332,6 +362,11 @@ func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 func handleExcludeChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.ExcludeChangedStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.ExcludeChangedStatusEventBody]) {
 		if e.Type != pet2.StatusEventTypeExcludeChanged {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
 			return
 		}
 

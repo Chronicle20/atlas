@@ -664,7 +664,7 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 			writeForEachPet(w, character.Pets(), writePetId, writeEmptyPetId)
 		} else {
 			if len(character.Pets()) > 0 {
-				w.WriteLong(character.Pets()[0].Id()) // pet cash id
+				w.WriteLong(uint64(character.Pets()[0].Id())) // pet cash id
 			} else {
 				w.WriteLong(0)
 			}

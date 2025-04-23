@@ -34,6 +34,33 @@ func (m Model) CharacterId() uint32 {
 	return m.characterId
 }
 
+func (m Model) FindBySlot(slot int16) (*asset.Model[any], bool) {
+	for _, a := range m.Assets() {
+		if a.Slot() == slot {
+			return &a, true
+		}
+	}
+	return nil, false
+}
+
+func (m Model) FindFirstByItemId(templateId uint32) (*asset.Model[any], bool) {
+	for _, a := range m.Assets() {
+		if a.TemplateId() == templateId {
+			return &a, true
+		}
+	}
+	return nil, false
+}
+
+func (m Model) FindByReferenceId(referenceId uint32) (*asset.Model[any], bool) {
+	for _, a := range m.Assets() {
+		if a.ReferenceId() == referenceId {
+			return &a, true
+		}
+	}
+	return nil, false
+}
+
 func Clone(m Model) *ModelBuilder {
 	return &ModelBuilder{
 		id:            m.id,

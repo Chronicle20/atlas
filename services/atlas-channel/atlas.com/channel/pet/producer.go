@@ -7,7 +7,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func SpawnProvider(characterId uint32, petId uint64, lead bool) model.Provider[[]kafka.Message] {
+func SpawnProvider(characterId uint32, petId uint32, lead bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(petId))
 	value := &pet2.Command[pet2.SpawnCommandBody]{
 		ActorId: characterId,
@@ -20,7 +20,7 @@ func SpawnProvider(characterId uint32, petId uint64, lead bool) model.Provider[[
 	return producer.SingleMessageProvider(key, value)
 }
 
-func DespawnProvider(characterId uint32, petId uint64) model.Provider[[]kafka.Message] {
+func DespawnProvider(characterId uint32, petId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(petId))
 	value := &pet2.Command[pet2.DespawnCommandBody]{
 		ActorId: characterId,
@@ -31,7 +31,7 @@ func DespawnProvider(characterId uint32, petId uint64) model.Provider[[]kafka.Me
 	return producer.SingleMessageProvider(key, value)
 }
 
-func AttemptCommandProvider(petId uint64, commandId byte, byName bool, characterId uint32) model.Provider[[]kafka.Message] {
+func AttemptCommandProvider(petId uint32, commandId byte, byName bool, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(petId))
 	value := &pet2.Command[pet2.AttemptCommandCommandBody]{
 		ActorId: characterId,
@@ -45,7 +45,7 @@ func AttemptCommandProvider(petId uint64, commandId byte, byName bool, character
 	return producer.SingleMessageProvider(key, value)
 }
 
-func SetExcludesCommandProvider(characterId uint32, petId uint64, items []uint32) model.Provider[[]kafka.Message] {
+func SetExcludesCommandProvider(characterId uint32, petId uint32, items []uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(petId))
 	value := &pet2.Command[pet2.SetExcludeCommandBody]{
 		ActorId: characterId,

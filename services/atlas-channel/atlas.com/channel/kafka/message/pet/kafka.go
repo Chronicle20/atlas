@@ -10,7 +10,7 @@ const (
 
 type Command[E any] struct {
 	ActorId uint32 `json:"actorId"`
-	PetId   uint64 `json:"petId"`
+	PetId   uint32 `json:"petId"`
 	Type    string `json:"type"`
 	Body    E      `json:"body"`
 }
@@ -46,7 +46,7 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	PetId   uint64 `json:"petId"`
+	PetId   uint32 `json:"petId"`
 	OwnerId uint32 `json:"ownerId"`
 	Type    string `json:"type"`
 	Body    E      `json:"body"`

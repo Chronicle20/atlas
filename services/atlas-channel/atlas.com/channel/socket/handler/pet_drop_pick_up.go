@@ -39,7 +39,7 @@ func PetDropPickUpHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer
 			}
 		}
 
-		p, err := pet.NewProcessor(l, ctx).GetById(petId)
+		p, err := pet.NewProcessor(l, ctx).GetById(uint32(petId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to find pet [%d]", petId)
 		}

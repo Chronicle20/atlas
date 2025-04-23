@@ -16,6 +16,6 @@ func PetCommandHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pr
 		petId := r.ReadUint64()
 		byName := r.ReadBool()
 		command := r.ReadByte()
-		_ = pet.NewProcessor(l, ctx).AttemptCommand(petId, command, byName, s.CharacterId())
+		_ = pet.NewProcessor(l, ctx).AttemptCommand(uint32(petId), command, byName, s.CharacterId())
 	}
 }

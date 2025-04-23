@@ -39,6 +39,7 @@ func (p *Processor) GetById(decorators ...model.Decorator[Model]) func(character
 	}
 }
 
+// deprecated
 func (p *Processor) PetModelDecorator(m Model) Model {
 	ms, err := pet.NewProcessor(p.l, p.ctx).GetByOwner(m.Id())
 	if err != nil {

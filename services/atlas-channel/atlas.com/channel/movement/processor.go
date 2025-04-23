@@ -74,7 +74,7 @@ func (p *Processor) ForNPC(m _map.Model, characterId uint32, objectId uint32, un
 	return nil
 }
 
-func (p *Processor) ForPet(m _map.Model, characterId uint32, petId uint64, movement model.Movement) error {
+func (p *Processor) ForPet(m _map.Model, characterId uint32, petId uint32, movement model.Movement) error {
 	go func() {
 		// TODO look up pet.
 		pe := pet.NewModelBuilder(petId, 0, 0, "").
@@ -93,7 +93,7 @@ func (p *Processor) ForPet(m _map.Model, characterId uint32, petId uint64, movem
 		if err != nil {
 			return
 		}
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandPetMovement)(CommandProducer(m, petId, characterId, ms.X, ms.Y, ms.Stance))
+		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandPetMovement)(CommandProducer(m, uint64(petId), characterId, ms.X, ms.Y, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}

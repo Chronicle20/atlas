@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-consumables/inventory"
 	character2 "atlas-consumables/kafka/message/character"
 	"atlas-consumables/kafka/producer"
 	"context"
@@ -10,48 +11,44 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
-	return func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
-		return func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
-			return func(characterId uint32) (Model, error) {
-				p := requests.Provider[RestModel, Model](l, ctx)(requestById(characterId), Extract)
-				return model.Map(model.Decorate(decorators))(p)()
-			}
-		}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	ip  *inventory.Processor
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
+		ip:  inventory.NewProcessor(l, ctx),
+	}
+	return p
+}
+
+func (p *Processor) GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
+	return func(characterId uint32) (Model, error) {
+		cp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)
+		return model.Map(model.Decorate(decorators))(cp)()
 	}
 }
 
-func GetByIdWithInventory(l logrus.FieldLogger) func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
-	return func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
-		return func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
-			return func(characterId uint32) (Model, error) {
-				p := requests.Provider[RestModel, Model](l, ctx)(requestByIdWithInventory(characterId), Extract)
-				return model.Map(model.Decorate(decorators))(p)()
-			}
-		}
+func (p *Processor) InventoryDecorator(m Model) Model {
+	i, err := p.ip.GetByCharacterId(m.Id())
+	if err != nil {
+		return m
 	}
+	return m.SetInventory(i)
 }
 
-func ChangeMap(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, portalId uint32) error {
-	return func(ctx context.Context) func(m _map.Model, characterId uint32, portalId uint32) error {
-		return func(m _map.Model, characterId uint32, portalId uint32) error {
-			return producer.ProviderImpl(l)(ctx)(character2.EnvCommandTopic)(changeMapProvider(m, characterId, portalId))
-		}
-	}
+func (p *Processor) ChangeMap(m _map.Model, characterId uint32, portalId uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeMapProvider(m, characterId, portalId))
 }
 
-func ChangeHP(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, amount int16) error {
-	return func(ctx context.Context) func(m _map.Model, characterId uint32, amount int16) error {
-		return func(m _map.Model, characterId uint32, amount int16) error {
-			return producer.ProviderImpl(l)(ctx)(character2.EnvCommandTopic)(changeHPCommandProvider(m, characterId, amount))
-		}
-	}
+func (p *Processor) ChangeHP(m _map.Model, characterId uint32, amount int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeHPCommandProvider(m, characterId, amount))
 }
 
-func ChangeMP(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, characterId uint32, amount int16) error {
-	return func(ctx context.Context) func(m _map.Model, characterId uint32, amount int16) error {
-		return func(m _map.Model, characterId uint32, amount int16) error {
-			return producer.ProviderImpl(l)(ctx)(character2.EnvCommandTopic)(changeMPCommandProvider(m, characterId, amount))
-		}
-	}
+func (p *Processor) ChangeMP(m _map.Model, characterId uint32, amount int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeMPCommandProvider(m, characterId, amount))
 }

@@ -10,12 +10,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Apply(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, fromId uint32, sourceId int32, duration int32, statups []stat.Model) model.Operator[uint32] {
-	return func(ctx context.Context) func(m _map.Model, fromId uint32, sourceId int32, duration int32, statups []stat.Model) model.Operator[uint32] {
-		return func(m _map.Model, fromId uint32, sourceId int32, duration int32, statups []stat.Model) model.Operator[uint32] {
-			return func(characterId uint32) error {
-				return producer.ProviderImpl(l)(ctx)(buff2.EnvCommandTopic)(applyCommandProvider(m, characterId, fromId, sourceId, duration, statups))
-			}
-		}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
+	}
+	return p
+}
+
+func (p *Processor) Apply(m _map.Model, fromId uint32, sourceId int32, duration int32, statups []stat.Model) model.Operator[uint32] {
+	return func(characterId uint32) error {
+		return producer.ProviderImpl(p.l)(p.ctx)(buff2.EnvCommandTopic)(applyCommandProvider(m, characterId, fromId, sourceId, duration, statups))
 	}
 }

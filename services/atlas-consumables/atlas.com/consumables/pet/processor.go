@@ -11,68 +11,53 @@ import (
 	"sort"
 )
 
-func ByIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(petId uint64) model.Provider[Model] {
-	return func(ctx context.Context) func(petId uint64) model.Provider[Model] {
-		return func(petId uint64) model.Provider[Model] {
-			return requests.Provider[RestModel, Model](l, ctx)(requestById(petId), Extract)
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(petId uint64) (Model, error) {
-	return func(ctx context.Context) func(petId uint64) (Model, error) {
-		return func(petId uint64) (Model, error) {
-			return ByIdProvider(l)(ctx)(petId)()
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
 }
 
-func ByOwnerProvider(l logrus.FieldLogger) func(ctx context.Context) func(ownerId uint32) model.Provider[[]Model] {
-	return func(ctx context.Context) func(ownerId uint32) model.Provider[[]Model] {
-		return func(ownerId uint32) model.Provider[[]Model] {
-			return requests.SliceProvider[RestModel, Model](l, ctx)(requestByOwnerId(ownerId), Extract, model.Filters[Model]())
-		}
-	}
+func (p *Processor) ByIdProvider(petId uint64) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(petId), Extract)
 }
 
-func GetByOwner(l logrus.FieldLogger) func(ctx context.Context) func(ownerId uint32) ([]Model, error) {
-	return func(ctx context.Context) func(ownerId uint32) ([]Model, error) {
-		return func(ownerId uint32) ([]Model, error) {
-			return ByOwnerProvider(l)(ctx)(ownerId)()
-		}
-	}
+func (p *Processor) GetById(petId uint64) (Model, error) {
+	return p.ByIdProvider(petId)()
 }
 
-func SpawnedByOwnerProvider(l logrus.FieldLogger) func(ctx context.Context) func(ownerId uint32) model.Provider[[]Model] {
-	return func(ctx context.Context) func(ownerId uint32) model.Provider[[]Model] {
-		return func(ownerId uint32) model.Provider[[]Model] {
-			return model.FilteredProvider(ByOwnerProvider(l)(ctx)(ownerId), model.Filters[Model](Spawned))
-		}
-	}
+func (p *Processor) ByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByOwnerId(ownerId), Extract, model.Filters[Model]())
+}
+
+func (p *Processor) GetByOwner(ownerId uint32) ([]Model, error) {
+	return p.ByOwnerProvider(ownerId)()
+}
+
+func (p *Processor) SpawnedByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
+	return model.FilteredProvider(p.ByOwnerProvider(ownerId), model.Filters[Model](Spawned))
 }
 
 func Spawned(m Model) bool {
 	return m.Slot() >= 0
 }
 
-func HungryByOwnerProvider(l logrus.FieldLogger) func(ctx context.Context) func(ownerId uint32) model.Provider[[]Model] {
-	return func(ctx context.Context) func(ownerId uint32) model.Provider[[]Model] {
-		return func(ownerId uint32) model.Provider[[]Model] {
-			return model.FilteredProvider(SpawnedByOwnerProvider(l)(ctx)(ownerId), model.Filters[Model](Hungry))
-		}
-	}
+func (p *Processor) HungryByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
+	return model.FilteredProvider(p.SpawnedByOwnerProvider(ownerId), model.Filters[Model](Hungry))
 }
 
 func Hungry(m Model) bool {
 	return m.Fullness() < 100
 }
 
-func HungriestByOwnerProvider(l logrus.FieldLogger) func(ctx context.Context) func(ownerId uint32) model.Provider[Model] {
-	return func(ctx context.Context) func(ownerId uint32) model.Provider[Model] {
-		return func(ownerId uint32) model.Provider[Model] {
-			return HungriestToOneProvider(HungryByOwnerProvider(l)(ctx)(ownerId))
-		}
-	}
+func (p *Processor) HungriestByOwnerProvider(ownerId uint32) model.Provider[Model] {
+	return HungriestToOneProvider(p.HungryByOwnerProvider(ownerId))
 }
 
 func HungriestToOneProvider(p model.Provider[[]Model]) model.Provider[Model] {
@@ -100,10 +85,6 @@ func IsTemplateFilter(templateIds ...uint32) model.Filter[Model] {
 	}
 }
 
-func AwardFullness(l logrus.FieldLogger) func(ctx context.Context) func(actorId uint32, petId uint64, amount byte) error {
-	return func(ctx context.Context) func(actorId uint32, petId uint64, amount byte) error {
-		return func(actorId uint32, petId uint64, amount byte) error {
-			return producer.ProviderImpl(l)(ctx)(pet2.EnvCommandTopic)(awardFullnessCommandProvider(actorId, petId, amount))
-		}
-	}
+func (p *Processor) AwardFullness(actorId uint32, petId uint64, amount byte) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(pet2.EnvCommandTopic)(awardFullnessCommandProvider(actorId, petId, amount))
 }

@@ -9,24 +9,33 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func WarpRandom(l logrus.FieldLogger) func(ctx context.Context) func(m _map2.Model) func(characterId uint32) error {
-	return func(ctx context.Context) func(m _map2.Model) func(characterId uint32) error {
-		return func(m _map2.Model) func(characterId uint32) error {
-			return func(characterId uint32) error {
-				return WarpToPortal(l)(ctx)(m, characterId, portal.RandomSpawnPointIdProvider(l)(ctx)(m.MapId()))
-			}
-		}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	cp  *character.Processor
+	pp  *portal.Processor
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
+		cp:  character.NewProcessor(l, ctx),
+		pp:  portal.NewProcessor(l, ctx),
+	}
+	return p
+}
+
+func (p *Processor) WarpRandom(m _map2.Model) func(characterId uint32) error {
+	return func(characterId uint32) error {
+		return p.WarpToPortal(m, characterId, p.pp.RandomSpawnPointIdProvider(m.MapId()))
 	}
 }
 
-func WarpToPortal(l logrus.FieldLogger) func(ctx context.Context) func(m _map2.Model, characterId uint32, p model.Provider[uint32]) error {
-	return func(ctx context.Context) func(m _map2.Model, characterId uint32, p model.Provider[uint32]) error {
-		return func(m _map2.Model, characterId uint32, p model.Provider[uint32]) error {
-			id, err := p()
-			if err != nil {
-				return err
-			}
-			return character.ChangeMap(l)(ctx)(m, characterId, id)
-		}
+func (p *Processor) WarpToPortal(m _map2.Model, characterId uint32, pp model.Provider[uint32]) error {
+	id, err := pp()
+	if err != nil {
+		return err
 	}
+	return p.cp.ChangeMap(m, characterId, id)
 }

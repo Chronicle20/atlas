@@ -1,4 +1,4 @@
-package statistic
+package equipable
 
 import (
 	"atlas-consumables/rest"

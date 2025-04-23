@@ -1,35 +1,36 @@
 package consumable
 
 import (
+	"atlas-consumables/asset"
 	"atlas-consumables/cash"
 	"atlas-consumables/character"
 	"atlas-consumables/character/buff"
 	"atlas-consumables/character/buff/stat"
-	"atlas-consumables/character/equipment/slot"
-	"atlas-consumables/character/inventory/item"
+	"atlas-consumables/compartment"
+	consumable3 "atlas-consumables/data/consumable"
+	equipable2 "atlas-consumables/data/equipable"
+	_map3 "atlas-consumables/data/map"
 	"atlas-consumables/equipable"
-	"atlas-consumables/equipable/statistic"
 	"atlas-consumables/inventory"
+	compartment2 "atlas-consumables/kafka/message/compartment"
 	"atlas-consumables/kafka/message/consumable"
-	inventory3 "atlas-consumables/kafka/message/inventory"
 	once "atlas-consumables/kafka/once/inventory"
 	"atlas-consumables/kafka/producer"
 	consumable2 "atlas-consumables/kafka/producer/consumable"
 	"atlas-consumables/map"
-	cim "atlas-consumables/map/character"
-	"atlas-consumables/map/data"
+	character2 "atlas-consumables/map/character"
 	"atlas-consumables/pet"
 	"context"
 	"errors"
 	ts "github.com/Chronicle20/atlas-constants/character"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	item2 "github.com/Chronicle20/atlas-constants/item"
 	_map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"math"
@@ -40,169 +41,178 @@ var ErrPetCannotConsume = errors.New("pet cannot consume")
 
 type ItemConsumer func(l logrus.FieldLogger) func(ctx context.Context) error
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(itemId uint32) (Model, error) {
-	return func(ctx context.Context) func(itemId uint32) (Model, error) {
-		return func(itemId uint32) (Model, error) {
-			return requests.Provider[RestModel, Model](l, ctx)(requestById(itemId), Extract)()
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	cp  *character.Processor
+	ip  *inventory.Processor
+	cpp *compartment.Processor
+	cdp *consumable3.Processor
 }
 
-func RequestItemConsume(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
-	return func(ctx context.Context) func(characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
-		return func(characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
-			transactionId := uuid.New()
-			l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
-			t, _ := topic.EnvProvider(l)(inventory3.EnvEventInventoryChanged)()
-			validator := once.ReservationValidator(transactionId, uint32(itemId))
-
-			it, ok := inventory2.TypeFromItemId(uint32(itemId))
-			if !ok {
-				return errors.New("invalid item id")
-			}
-
-			var itemConsumer ItemConsumer
-			if item2.GetClassification(itemId) == item2.Classification(200) || item2.GetClassification(itemId) == item2.Classification(201) || item2.GetClassification(itemId) == item2.Classification(202) {
-				itemConsumer = ConsumeStandard(transactionId, characterId, slot, itemId, quantity)
-			} else if item2.GetClassification(itemId) == item2.ClassificationConsumableTownWarp {
-				itemConsumer = ConsumeTownScroll(transactionId, characterId, slot, itemId, quantity)
-			} else if item2.GetClassification(itemId) == item2.ClassificationConsumablePetFood {
-				itemConsumer = ConsumePetFood(transactionId, characterId, slot, itemId, quantity)
-			} else if item2.GetClassification(itemId) == item2.ClassificationPetConsumable {
-				itemConsumer = ConsumeCashPetFood(transactionId, characterId, slot, itemId, quantity)
-			}
-
-			handler := inventory.Consume(itemConsumer)
-
-			_, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
-
-			err = inventory.RequestReserve(l)(ctx)(transactionId, characterId, it, []inventory.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: quantity}})
-			if err != nil {
-				return err
-			}
-			return nil
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
+		cp:  character.NewProcessor(l, ctx),
+		ip:  inventory.NewProcessor(l, ctx),
+		cpp: compartment.NewProcessor(l, ctx),
+		cdp: consumable3.NewProcessor(l, ctx),
 	}
+	return p
 }
 
-func ConsumeError(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error {
-	return func(ctx context.Context) func(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error {
-		return func(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error {
-			l.Debugf("Character [%d] unable to consume item due to error: [%v]", characterId, err)
-			cErr := inventory.CancelItemReservation(l)(ctx)(characterId, inventoryType, transactionId, slot)
-			if cErr != nil {
-				l.WithError(cErr).Errorf("Unable to cancel item reservation at inventory [%d] slot [%d] for character [%d] as part of transaction [%d].", inventoryType, slot, characterId, transactionId)
-			}
+func (p *Processor) RequestItemConsume(characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
+	transactionId := uuid.New()
+	p.l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
+	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	validator := once.ReservationValidator(transactionId, uint32(itemId))
 
-			errorType := ""
-			if errors.Is(err, ErrPetCannotConsume) {
-				errorType = consumable.ErrorTypePetCannotConsume
-			}
-
-			cErr = producer.ProviderImpl(l)(ctx)(consumable.EnvEventTopic)(consumable2.ErrorEventProvider(characterId, errorType))
-			if cErr != nil {
-				l.WithError(cErr).Errorf("Unable to issue consumption error [%v] on event topic. Character [%d] likely going to be stuck.", err, characterId)
-			}
-			return err
-		}
+	it, ok := inventory2.TypeFromItemId(uint32(itemId))
+	if !ok {
+		return errors.New("invalid item id")
 	}
+
+	var itemConsumer ItemConsumer
+	if item2.GetClassification(itemId) == item2.Classification(200) || item2.GetClassification(itemId) == item2.Classification(201) || item2.GetClassification(itemId) == item2.Classification(202) {
+		itemConsumer = ConsumeStandard(transactionId, characterId, slot, itemId, quantity)
+	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableTownWarp {
+		itemConsumer = ConsumeTownScroll(transactionId, characterId, slot, itemId, quantity)
+	} else if item2.GetClassification(itemId) == item2.ClassificationConsumablePetFood {
+		itemConsumer = ConsumePetFood(transactionId, characterId, slot, itemId, quantity)
+	} else if item2.GetClassification(itemId) == item2.ClassificationPetConsumable {
+		itemConsumer = ConsumeCashPetFood(transactionId, characterId, slot, itemId, quantity)
+	}
+
+	handler := compartment.Consume(itemConsumer)
+
+	_, err := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
+
+	err = p.cpp.RequestReserve(transactionId, characterId, it, []compartment.Reserves{{Slot: slot, ItemId: uint32(itemId), Quantity: quantity}})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *Processor) ConsumeError(characterId uint32, transactionId uuid.UUID, inventoryType inventory2.Type, slot int16, err error) error {
+	p.l.Debugf("Character [%d] unable to consume item due to error: [%v]", characterId, err)
+	cErr := p.cpp.CancelItemReservation(characterId, inventoryType, transactionId, slot)
+	if cErr != nil {
+		p.l.WithError(cErr).Errorf("Unable to cancel item reservation at inventory [%d] slot [%d] for character [%d] as part of transaction [%d].", inventoryType, slot, characterId, transactionId)
+	}
+
+	errorType := ""
+	if errors.Is(err, ErrPetCannotConsume) {
+		errorType = consumable.ErrorTypePetCannotConsume
+	}
+
+	cErr = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(consumable2.ErrorEventProvider(characterId, errorType))
+	if cErr != nil {
+		p.l.WithError(cErr).Errorf("Unable to issue consumption error [%v] on event topic. Character [%d] likely going to be stuck.", err, characterId)
+	}
+	return err
 }
 
 func ConsumeStandard(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
-			c, err := character.GetById(l)(ctx)()(characterId)
+			p := NewProcessor(l, ctx)
+			bp := buff.NewProcessor(l, ctx)
+			cp := character.NewProcessor(l, ctx)
+
+			c, err := cp.GetById()(characterId)
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			m, err := cim.GetMap(characterId)
+			m, err := character2.NewProcessor(l, ctx).GetMap(characterId)
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			ci, err := GetById(l)(ctx)(uint32(itemId))
+			ci, err := p.cdp.GetById(uint32(itemId))
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			err = inventory.ConsumeItem(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, slot)
+			err = compartment.NewProcessor(l, ctx).ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
 			statups := make([]stat.Model, 0)
 			duration := int32(0)
-			if val, ok := ci.GetSpec(SpecTypeAccuracy); ok && val > 0 {
+			if val, ok := ci.GetSpec(consumable3.SpecTypeAccuracy); ok && val > 0 {
 				statups = append(statups, stat.Model{
 					Type:   ts.TemporaryStatTypeAccuracy,
 					Amount: val,
 				})
 			}
-			if val, ok := ci.GetSpec(SpecTypeEvasion); ok && val > 0 {
+			if val, ok := ci.GetSpec(consumable3.SpecTypeEvasion); ok && val > 0 {
 				statups = append(statups, stat.Model{
 					Type:   ts.TemporaryStatTypeAvoidability,
 					Amount: val,
 				})
 			}
-			if val, ok := ci.GetSpec(SpecTypeHP); ok && val > 0 {
-				_ = character.ChangeHP(l)(ctx)(m, characterId, int16(val))
+			if val, ok := ci.GetSpec(consumable3.SpecTypeHP); ok && val > 0 {
+				_ = cp.ChangeHP(m, characterId, int16(val))
 			}
-			if val, ok := ci.GetSpec(SpecTypeHPRecovery); ok && val > 0 {
+			if val, ok := ci.GetSpec(consumable3.SpecTypeHPRecovery); ok && val > 0 {
 				pct := float64(val) / float64(100)
 				res := int16(math.Floor(float64(c.MaxHp()) * pct))
-				_ = character.ChangeHP(l)(ctx)(m, characterId, res)
+				_ = cp.ChangeHP(m, characterId, res)
 			}
-			if val, ok := ci.GetSpec(SpecTypeJump); ok && val > 0 {
+			if val, ok := ci.GetSpec(consumable3.SpecTypeJump); ok && val > 0 {
 				statups = append(statups, stat.Model{
 					Type:   ts.TemporaryStatTypeJump,
 					Amount: val,
 				})
 			}
-			if val, ok := ci.GetSpec(SpecTypeMagicAttack); ok && val > 0 {
+			if val, ok := ci.GetSpec(consumable3.SpecTypeMagicAttack); ok && val > 0 {
 				statups = append(statups, stat.Model{
 					Type:   ts.TemporaryStatTypeMagicAttack,
 					Amount: val,
 				})
 			}
-			if val, ok := ci.GetSpec(SpecTypeMagicDefense); ok && val > 0 {
+			if val, ok := ci.GetSpec(consumable3.SpecTypeMagicDefense); ok && val > 0 {
 				statups = append(statups, stat.Model{
 					Type:   ts.TemporaryStatTypeMagicDefense,
 					Amount: val,
 				})
 			}
-			if val, ok := ci.GetSpec(SpecTypeMP); ok && val > 0 {
-				_ = character.ChangeMP(l)(ctx)(m, characterId, int16(val))
+			if val, ok := ci.GetSpec(consumable3.SpecTypeMP); ok && val > 0 {
+				_ = cp.ChangeMP(m, characterId, int16(val))
 			}
-			if val, ok := ci.GetSpec(SpecTypeMPRecovery); ok && val > 0 {
+			if val, ok := ci.GetSpec(consumable3.SpecTypeMPRecovery); ok && val > 0 {
 				pct := float64(val) / float64(100)
 				res := int16(math.Floor(float64(c.MaxMp()) * pct))
-				_ = character.ChangeMP(l)(ctx)(m, characterId, res)
+				_ = cp.ChangeMP(m, characterId, res)
 			}
-			if val, ok := ci.GetSpec(SpecTypeWeaponAttack); ok && val > 0 {
+			if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponAttack); ok && val > 0 {
 				statups = append(statups, stat.Model{
 					Type:   ts.TemporaryStatTypeWeaponAttack,
 					Amount: val,
 				})
 			}
-			if val, ok := ci.GetSpec(SpecTypeWeaponDefense); ok && val > 0 {
+			if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponDefense); ok && val > 0 {
 				statups = append(statups, stat.Model{
 					Type:   ts.TemporaryStatTypeWeaponDefense,
 					Amount: val,
 				})
 			}
-			if val, ok := ci.GetSpec(SpecTypeSpeed); ok && val > 0 {
+			if val, ok := ci.GetSpec(consumable3.SpecTypeSpeed); ok && val > 0 {
 				statups = append(statups, stat.Model{
 					Type:   ts.TemporaryStatTypeSpeed,
 					Amount: val,
 				})
 			}
-			if val, ok := ci.GetSpec(SpecTypeTime); ok && val > 0 {
+			if val, ok := ci.GetSpec(consumable3.SpecTypeTime); ok && val > 0 {
 				duration = val / 1000
 			}
 
 			if len(statups) > 0 {
-				_ = buff.Apply(l)(ctx)(m, characterId, -int32(itemId), duration, statups)(characterId)
+				_ = bp.Apply(m, characterId, -int32(itemId), duration, statups)(characterId)
 			}
 			return nil
 		}
@@ -212,33 +222,36 @@ func ConsumeStandard(transactionId uuid.UUID, characterId uint32, slot int16, it
 func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
-			m, err := cim.GetMap(characterId)
+			p := NewProcessor(l, ctx)
+			cpp := compartment.NewProcessor(l, ctx)
+
+			m, err := character2.NewProcessor(l, ctx).GetMap(characterId)
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			ci, err := GetById(l)(ctx)(uint32(itemId))
+			ci, err := p.cdp.GetById(uint32(itemId))
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 			toMapId := _map2.EmptyMapId
-			if val, ok := ci.GetSpec(SpecTypeMoveTo); ok && val > 0 {
+			if val, ok := ci.GetSpec(consumable3.SpecTypeMoveTo); ok && val > 0 {
 				toMapId = _map2.Id(val)
 			}
 			if toMapId == _map2.EmptyMapId {
-				mm, err := data.GetById(l)(ctx)(m.MapId())
+				mm, err := _map3.NewProcessor(l, ctx).GetById(m.MapId())
 				if err != nil {
-					return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+					return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 				}
 				toMapId = _map2.Id(mm.ReturnMapId())
 			}
 
-			err = inventory.ConsumeItem(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, slot)
+			err = cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			err = _map.WarpRandom(l)(ctx)(_map2.NewModel(m.WorldId())(m.ChannelId())(toMapId))(characterId)
+			err = _map.NewProcessor(l, ctx).WarpRandom(_map2.NewModel(m.WorldId())(m.ChannelId())(toMapId))(characterId)
 			if err != nil {
 				return err
 			}
@@ -250,28 +263,32 @@ func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, 
 func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
-			p, err := pet.HungriestByOwnerProvider(l)(ctx)(characterId)()
+			p := NewProcessor(l, ctx)
+			pp := pet.NewProcessor(l, ctx)
+			cpp := compartment.NewProcessor(l, ctx)
+
+			pe, err := pp.HungriestByOwnerProvider(characterId)()
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			ci, err := GetById(l)(ctx)(uint32(itemId))
+			ci, err := p.cdp.GetById(uint32(itemId))
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 			inc := byte(0)
-			if val, ok := ci.GetSpec(SpecTypeInc); ok {
+			if val, ok := ci.GetSpec(consumable3.SpecTypeInc); ok {
 				inc = byte(val)
 			}
 
-			err = pet.AwardFullness(l)(ctx)(characterId, p.Id(), inc)
+			err = pp.AwardFullness(characterId, pe.Id(), inc)
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			err = inventory.ConsumeItem(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, slot)
+			err = cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 			return nil
 		}
@@ -281,16 +298,19 @@ func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, ite
 func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
-			ci, err := cash.GetById(l)(ctx)(uint32(itemId))
+			pp := pet.NewProcessor(l, ctx)
+			cpp := compartment.NewProcessor(l, ctx)
+
+			ci, err := cash.NewProcessor(l, ctx).GetById(uint32(itemId))
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueCash, slot, err)
+				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueCash, slot, err)
 			}
 
-			hpp := pet.HungryByOwnerProvider(l)(ctx)(characterId)
+			hpp := pp.HungryByOwnerProvider(characterId)
 			fhpp := model.FilteredProvider(hpp, model.Filters[pet.Model](pet.IsTemplateFilter(ci.Indexes()...)))
-			p, err := pet.HungriestToOneProvider(fhpp)()
+			pe, err := pet.HungriestToOneProvider(fhpp)()
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueCash, slot, ErrPetCannotConsume)
+				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueCash, slot, ErrPetCannotConsume)
 			}
 
 			inc := byte(0)
@@ -298,106 +318,102 @@ func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16,
 				inc = byte(val)
 			}
 
-			err = pet.AwardFullness(l)(ctx)(characterId, p.Id(), inc)
+			err = pp.AwardFullness(characterId, pe.Id(), inc)
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			err = inventory.ConsumeItem(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, slot)
+			err = cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 			return nil
 		}
 	}
 }
 
-func RequestScroll(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error {
-	return func(ctx context.Context) func(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error {
-		return func(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error {
-			transactionId := uuid.New()
-			reserves := make([]inventory.Reserves, 0)
+func (p *Processor) RequestScroll(characterId uint32, scrollSlot int16, equipSlot int16, whiteScroll bool, legendarySpirit bool) error {
+	cp := character.NewProcessor(p.l, p.ctx)
+	cpp := compartment.NewProcessor(p.l, p.ctx)
 
-			c, err := character.GetByIdWithInventory(l)(ctx)()(characterId)
-			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, err)
-			}
+	transactionId := uuid.New()
+	reserves := make([]compartment.Reserves, 0)
 
-			scrollItem, ok := c.Inventory().Use().FindBySlot(scrollSlot)
-			if !ok {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, errors.New("scroll item not found"))
-			}
-
-			// Ensure if we are using a "white scroll" that we have a white scroll item.
-			var whiteScrollItem *item.Model
-			if whiteScroll {
-				whiteScrollItem, ok = c.Inventory().Use().FindFirstByItemId(2340000)
-				if !ok {
-					return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, errors.New("does not have white scroll"))
-				}
-				reserves = append(reserves, inventory.Reserves{
-					Slot:     whiteScrollItem.Slot(),
-					ItemId:   whiteScrollItem.ItemId(),
-					Quantity: 1,
-				})
-			}
-
-			// Perform validation that scroll can be used on item.
-			s, err := slot.GetSlotByPosition(slot.Position(equipSlot))
-			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, errors.New("failed to locate equipment being scrolled"))
-			}
-			sm, ok := c.Equipment().Get(s.Type)
-			if !ok || sm.Equipable == nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, errors.New("failed to locate equipment being scrolled"))
-			}
-			ok = ValidateScrollUse(l)(ctx)(c, scrollItem, *sm.Equipable)
-			if !ok {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, errors.New("failed slot validation"))
-			}
-
-			reserves = append(reserves, inventory.Reserves{
-				Slot:     scrollSlot,
-				ItemId:   scrollItem.ItemId(),
-				Quantity: 1,
-			})
-
-			l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
-			t, _ := topic.EnvProvider(l)(inventory3.EnvEventInventoryChanged)()
-			validator := once.ReservationValidator(transactionId, scrollItem.ItemId())
-			handler := inventory.Consume(ConsumeScroll(transactionId, characterId, &scrollItem, equipSlot, whiteScrollItem, legendarySpirit))
-			_, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
-
-			err = inventory.RequestReserve(l)(ctx)(transactionId, characterId, inventory2.TypeValueUse, reserves)
-			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, err)
-			}
-			return nil
-		}
+	c, err := cp.GetById(cp.InventoryDecorator)(characterId)
+	if err != nil {
+		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, err)
 	}
+
+	scrollItem, ok := c.Inventory().Consumable().FindBySlot(scrollSlot)
+	if !ok {
+		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, errors.New("scroll item not found"))
+	}
+
+	// Ensure if we are using a "white scroll" that we have a white scroll item.
+	var whiteScrollItem *asset.Model[any]
+	if whiteScroll {
+		whiteScrollItem, ok = c.Inventory().Consumable().FindFirstByItemId(2340000)
+		if !ok {
+			return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, errors.New("does not have white scroll"))
+		}
+		reserves = append(reserves, compartment.Reserves{
+			Slot:     whiteScrollItem.Slot(),
+			ItemId:   whiteScrollItem.TemplateId(),
+			Quantity: 1,
+		})
+	}
+
+	// Perform validation that scroll can be used on item.
+	s, err := slot.GetSlotByPosition(slot.Position(equipSlot))
+	if err != nil {
+		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, errors.New("failed to locate equipment being scrolled"))
+	}
+	sm, ok := c.Equipment().Get(s.Type)
+	if !ok || sm.Equipable == nil {
+		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, errors.New("failed to locate equipment being scrolled"))
+	}
+	ok = p.ValidateScrollUse(c, *scrollItem, *sm.Equipable)
+	if !ok {
+		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, errors.New("failed slot validation"))
+	}
+
+	reserves = append(reserves, compartment.Reserves{
+		Slot:     scrollSlot,
+		ItemId:   scrollItem.TemplateId(),
+		Quantity: 1,
+	})
+
+	p.l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
+	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
+	validator := once.ReservationValidator(transactionId, scrollItem.TemplateId())
+	handler := compartment.Consume(ConsumeScroll(transactionId, characterId, scrollItem, equipSlot, whiteScrollItem, legendarySpirit))
+	_, err = consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler)))
+
+	err = cpp.RequestReserve(transactionId, characterId, inventory2.TypeValueUse, reserves)
+	if err != nil {
+		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, err)
+	}
+	return nil
 }
 
-func ValidateScrollUse(l logrus.FieldLogger) func(ctx context.Context) func(c character.Model, scrollItem item.Model, equipItem equipable.Model) bool {
-	return func(ctx context.Context) func(c character.Model, scrollItem item.Model, equipItem equipable.Model) bool {
-		return func(c character.Model, scrollItem item.Model, equipItem equipable.Model) bool {
-			if item2.IsScrollCleanSlate(item2.Id(scrollItem.ItemId())) {
-				// If the scroll is a clean slate scroll, make sure we're not attempting to add mores lots than originally available.
-				es, err := statistic.GetById(l)(ctx)(equipItem.ItemId())
-				if err != nil {
-					return false
-				}
-				if equipItem.Level() >= byte(es.Slots()) {
-					return false
-				}
-				return true
-			} else if IsNotSlotConsumingScroll(item2.Id(scrollItem.ItemId())) {
-				// Skip slot validation.
-				return true
-			} else {
-				// If a regular scroll ensure we have an open slot.
-				return equipItem.Slots() > 0
-			}
+func (p *Processor) ValidateScrollUse(c character.Model, scrollItem asset.Model[any], equipItem asset.Model[asset.EquipableReferenceData]) bool {
+	ep := equipable2.NewProcessor(p.l, p.ctx)
+	if item2.IsScrollCleanSlate(item2.Id(scrollItem.TemplateId())) {
+		// If the scroll is a clean slate scroll, make sure we're not attempting to add mores lots than originally available.
+		es, err := ep.GetById(equipItem.TemplateId())
+		if err != nil {
+			return false
 		}
+		if equipItem.ReferenceData().GetLevel() >= byte(es.Slots()) {
+			return false
+		}
+		return true
+	} else if IsNotSlotConsumingScroll(item2.Id(scrollItem.TemplateId())) {
+		// Skip slot validation.
+		return true
+	} else {
+		// If a regular scroll ensure we have an open slot.
+		return equipItem.ReferenceData().GetSlots() > 0
 	}
 }
 
@@ -405,38 +421,43 @@ func IsNotSlotConsumingScroll(id item2.Id) bool {
 	return item2.IsScrollSpikes(id) || item2.IsScrollColdProtection(id)
 }
 
-func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *item.Model, equipSlot int16, whiteScrollItem *item.Model, legendarySpirit bool) ItemConsumer {
+func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asset.Model[any], equipSlot int16, whiteScrollItem *asset.Model[any], legendarySpirit bool) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
+			p := NewProcessor(l, ctx)
+			cp := character.NewProcessor(l, ctx)
+			ep := equipable.NewProcessor(l, ctx)
+			cpp := compartment.NewProcessor(l, ctx)
+
 			whiteScroll := whiteScrollItem != nil
 
 			l.Debugf("Character [%d] has reserved items. Consume scroll in slot [%d]. Using white scroll [%t].", characterId, scrollItem.Slot(), whiteScroll)
-			c, err := character.GetByIdWithInventory(l)(ctx)()(characterId)
+			c, err := cp.GetById(cp.InventoryDecorator)(characterId)
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 			}
 
 			s, err := slot.GetSlotByPosition(slot.Position(equipSlot))
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 			}
 			sm, ok := c.Equipment().Get(s.Type)
 			if !ok || sm.Equipable == nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), errors.New("equipment not found"))
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), errors.New("equipment not found"))
 			}
 
-			ok = ValidateScrollUse(l)(ctx)(c, *scrollItem, *sm.Equipable)
+			ok = p.ValidateScrollUse(c, *scrollItem, *sm.Equipable)
 			if !ok {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), errors.New("failed slot validation"))
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), errors.New("failed slot validation"))
 			}
 
-			ci, err := GetById(l)(ctx)(scrollItem.ItemId())
+			ci, err := p.cdp.GetById(scrollItem.TemplateId())
 			if err != nil {
-				return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 			}
 
 			// TODO consume vega scroll
-			successProb := ci.success
+			successProb := ci.SuccessRate()
 
 			// TODO spikes / cursed property
 			successRoll := rand.Int31n(100)
@@ -449,19 +470,19 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *item
 			} else {
 				passFail = "failed"
 			}
-			l.Debugf("Character [%d] has [%s] scroll [%d]. Rolled [%d]. Needed [%d].", characterId, passFail, scrollItem.ItemId(), successRoll, successProb)
+			l.Debugf("Character [%d] has [%s] scroll [%d]. Rolled [%d]. Needed [%d].", characterId, passFail, scrollItem.TemplateId(), successRoll, successProb)
 			changes := make([]equipable.Change, 0)
 			if isSuccess {
-				if item2.IsScrollSpikes(item2.Id(scrollItem.ItemId())) {
+				if item2.IsScrollSpikes(item2.Id(scrollItem.TemplateId())) {
 					changes = append(changes, equipable.SetSpike())
-				} else if item2.IsScrollColdProtection(item2.Id(scrollItem.ItemId())) {
+				} else if item2.IsScrollColdProtection(item2.Id(scrollItem.TemplateId())) {
 					changes = append(changes, equipable.SetCold())
-				} else if item2.IsScrollCleanSlate(item2.Id(scrollItem.ItemId())) {
+				} else if item2.IsScrollCleanSlate(item2.Id(scrollItem.TemplateId())) {
 					changes = append(changes, equipable.AddSlots(1))
-				} else if item2.IsChaosScroll(item2.Id(scrollItem.ItemId())) {
-					ccs, err := applyChaos(sm.Equipable)
+				} else if item2.IsChaosScroll(item2.Id(scrollItem.TemplateId())) {
+					ccs, err := applyChaos(sm.Equipable.ReferenceData())
 					if err != nil {
-						return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
+						return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 					}
 					changes = append(changes, ccs...)
 					changes = append(changes,
@@ -469,76 +490,76 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *item
 						equipable.AddLevel(1))
 				} else {
 					changes = append(changes,
-						equipable.AddStrength(int16(ci.incSTR)),
-						equipable.AddDexterity(int16(ci.incDEX)),
-						equipable.AddIntelligence(int16(ci.incINT)),
-						equipable.AddLuck(int16(ci.incLUK)),
-						equipable.AddHP(int16(ci.incMHP)),
-						equipable.AddMP(int16(ci.incMMP)),
-						equipable.AddWeaponAttack(int16(ci.incPAD)),
-						equipable.AddMagicAttack(int16(ci.incMAD)),
-						equipable.AddWeaponDefense(int16(ci.incPDD)),
-						equipable.AddMagicDefense(int16(ci.incMDD)),
-						equipable.AddAccuracy(int16(ci.incACC)),
-						equipable.AddAvoidability(int16(ci.incEVA)),
-						equipable.AddHands(0),
-						equipable.AddSpeed(int16(ci.incSpeed)),
-						equipable.AddJump(int16(ci.incJump)),
+						equipable.AddStrength(int16(ci.StrengthIncrease())),
+						equipable.AddDexterity(int16(ci.DexterityIncrease())),
+						equipable.AddIntelligence(int16(ci.IntelligenceIncrease())),
+						equipable.AddLuck(int16(ci.LuckIncrease())),
+						equipable.AddHP(int16(ci.MaxHPIncrease())),
+						equipable.AddMP(int16(ci.MaxMPIncrease())),
+						equipable.AddWeaponAttack(int16(ci.WeaponAttackIncrease())),
+						equipable.AddMagicAttack(int16(ci.MagicAttackIncrease())),
+						equipable.AddWeaponDefense(int16(ci.WeaponDefenseIncrease())),
+						equipable.AddMagicDefense(int16(ci.MagicDefenseIncrease())),
+						equipable.AddAccuracy(int16(ci.AccuracyIncrease())),
+						equipable.AddAvoidability(int16(ci.AvoidabilityIncrease())),
+						equipable.AddHands(int16(ci.HandsIncrease())),
+						equipable.AddSpeed(int16(ci.SpeedIncrease())),
+						equipable.AddJump(int16(ci.JumpIncrease())),
 						equipable.AddSlots(-1),
 						equipable.AddLevel(1))
 				}
 			} else {
-				if !item2.IsScrollSpikes(item2.Id(scrollItem.ItemId())) && !item2.IsScrollColdProtection(item2.Id(scrollItem.ItemId())) && !item2.IsScrollCleanSlate(item2.Id(scrollItem.ItemId())) && !whiteScroll {
+				if !item2.IsScrollSpikes(item2.Id(scrollItem.TemplateId())) && !item2.IsScrollColdProtection(item2.Id(scrollItem.TemplateId())) && !item2.IsScrollCleanSlate(item2.Id(scrollItem.TemplateId())) && !whiteScroll {
 					changes = append(changes, equipable.AddSlots(-1))
 
 				}
-				if rand.Int31n(100) <= int32(ci.cursed) {
+				if rand.Int31n(100) <= int32(ci.CursedRate()) {
 					l.Debugf("Character [%d] item has been cursed.", characterId)
 					isCursed = true
 				}
 			}
 
 			if len(changes) > 0 {
-				l.Debugf("Applying [%d] changes to character [%d] item [%d].", len(changes), characterId, sm.Equipable.ItemId())
+				l.Debugf("Applying [%d] changes to character [%d] item [%d].", len(changes), characterId, sm.Equipable.TemplateId())
 
-				err = equipable.ChangeStat(l)(ctx)(*sm.Equipable, changes...)
+				err = ep.ChangeStat(*sm.Equipable, changes...)
 				if err != nil {
-					return ConsumeError(l)(ctx)(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
+					return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollItem.Slot(), err)
 				}
 			}
 
-			err = inventory.ConsumeItem(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, scrollItem.Slot())
+			err = cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, scrollItem.Slot())
 			if err != nil {
-				l.WithError(err).Errorf("Unable to consume item [%d] for character [%d] used during scrolling.", scrollItem.ItemId(), characterId)
+				l.WithError(err).Errorf("Unable to consume item [%d] for character [%d] used during scrolling.", scrollItem.TemplateId(), characterId)
 			}
 			if whiteScroll {
-				err = inventory.ConsumeItem(l)(ctx)(characterId, inventory2.TypeValueUse, transactionId, whiteScrollItem.Slot())
+				err = cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, whiteScrollItem.Slot())
 				if err != nil {
-					l.WithError(err).Errorf("Unable to consume item [%d] for character [%d] used during scrolling.", whiteScrollItem.ItemId(), characterId)
+					l.WithError(err).Errorf("Unable to consume item [%d] for character [%d] used during scrolling.", whiteScrollItem.TemplateId(), characterId)
 				}
 			}
 
 			if isCursed {
-				err = inventory.DestroyItem(l)(ctx)(characterId, inventory2.TypeValueEquip, equipSlot)
+				err = cpp.DestroyItem(characterId, inventory2.TypeValueEquip, equipSlot)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to destroy item in slot [%d] for character [%d] during scrolling.", equipSlot, characterId)
 				}
 			}
 
 			if isSuccess {
-				_ = PassScroll(l)(ctx)(characterId, legendarySpirit, whiteScroll)
+				_ = p.PassScroll(characterId, legendarySpirit, whiteScroll)
 			} else {
-				_ = FailScroll(l)(ctx)(characterId, isCursed, legendarySpirit, whiteScroll)
+				_ = p.FailScroll(characterId, isCursed, legendarySpirit, whiteScroll)
 			}
 			return nil
 		}
 	}
 }
 
-func applyChaos(m *equipable.Model) ([]equipable.Change, error) {
+func applyChaos(m asset.EquipableReferenceData) ([]equipable.Change, error) {
 	currents := make([]uint16, 0)
 	changers := make([]func(int16) equipable.Change, 0)
-	currents = append(currents, m.Strength(), m.Dexterity(), m.Intelligence(), m.Luck(), m.WeaponAttack(), m.WeaponDefense(), m.MagicAttack(), m.MagicDefense(), m.Accuracy(), m.Avoidability(), m.Speed(), m.Jump(), m.HP(), m.MP())
+	currents = append(currents, m.GetStrength(), m.GetDexterity(), m.GetIntelligence(), m.GetLuck(), m.GetWeaponAttack(), m.GetWeaponDefense(), m.GetMagicAttack(), m.GetMagicDefense(), m.GetAccuracy(), m.GetAvoidability(), m.GetSpeed(), m.GetJump(), m.GetHP(), m.GetMP())
 	changers = append(changers, equipable.AddStrength, equipable.AddDexterity, equipable.AddIntelligence, equipable.AddLuck, equipable.AddWeaponAttack, equipable.AddWeaponDefense, equipable.AddMagicAttack, equipable.AddMagicDefense, equipable.AddAccuracy, equipable.AddAvoidability, equipable.AddSpeed, equipable.AddJump, equipable.AddHP, equipable.AddMP)
 	return generateChaosChanges(currents, changers)
 }
@@ -593,18 +614,10 @@ func rollStatAdjustment() int16 {
 	}
 }
 
-func PassScroll(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, legendarySpirit bool, whiteScroll bool) error {
-	return func(ctx context.Context) func(characterId uint32, legendarySpirit bool, whiteScroll bool) error {
-		return func(characterId uint32, legendarySpirit bool, whiteScroll bool) error {
-			return producer.ProviderImpl(l)(ctx)(consumable.EnvEventTopic)(consumable2.ScrollEventProvider(characterId)(true, false, legendarySpirit, whiteScroll))
-		}
-	}
+func (p *Processor) PassScroll(characterId uint32, legendarySpirit bool, whiteScroll bool) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(consumable2.ScrollEventProvider(characterId)(true, false, legendarySpirit, whiteScroll))
 }
 
-func FailScroll(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error {
-	return func(ctx context.Context) func(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error {
-		return func(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error {
-			return producer.ProviderImpl(l)(ctx)(consumable.EnvEventTopic)(consumable2.ScrollEventProvider(characterId)(false, cursed, legendarySpirit, whiteScroll))
-		}
-	}
+func (p *Processor) FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(consumable2.ScrollEventProvider(characterId)(false, cursed, legendarySpirit, whiteScroll))
 }

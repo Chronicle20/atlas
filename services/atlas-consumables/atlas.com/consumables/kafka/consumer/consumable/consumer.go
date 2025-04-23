@@ -35,7 +35,7 @@ func handleRequestItemConsume(l logrus.FieldLogger, ctx context.Context, c consu
 	if c.Type != consumable2.CommandRequestItemConsume {
 		return
 	}
-	err := consumable.RequestItemConsume(l)(ctx)(c.CharacterId, c.Body.Source, item.Id(c.Body.ItemId), c.Body.Quantity)
+	err := consumable.NewProcessor(l, ctx).RequestItemConsume(c.CharacterId, c.Body.Source, item.Id(c.Body.ItemId), c.Body.Quantity)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to consume item in slot [%d] as expected.", c.CharacterId, c.Body.Source)
 	}
@@ -45,7 +45,7 @@ func handleRequestScroll(l logrus.FieldLogger, ctx context.Context, c consumable
 	if c.Type != consumable2.CommandRequestScroll {
 		return
 	}
-	err := consumable.RequestScroll(l)(ctx)(c.CharacterId, c.Body.ScrollSlot, c.Body.EquipSlot, c.Body.WhiteScroll, c.Body.LegendarySpirit)
+	err := consumable.NewProcessor(l, ctx).RequestScroll(c.CharacterId, c.Body.ScrollSlot, c.Body.EquipSlot, c.Body.WhiteScroll, c.Body.LegendarySpirit)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to use scroll in slot [%d] as expected.", c.CharacterId, c.Body.ScrollSlot)
 	}

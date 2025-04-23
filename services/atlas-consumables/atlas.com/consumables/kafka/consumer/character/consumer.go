@@ -35,7 +35,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, event character2.StatusEvent[character2.StatusEventLoginBody]) {
 	if event.Type == character2.EventCharacterStatusTypeLogin {
 		l.Debugf("Character [%d] has logged in. worldId [%d] channelId [%d] mapId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.MapId)
-		character.Enter(ctx)(event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
+		character.NewProcessor(l, ctx).Enter(event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
 		return
 	}
 }
@@ -43,7 +43,7 @@ func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, event cha
 func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event character2.StatusEvent[character2.StatusEventLogoutBody]) {
 	if event.Type == character2.EventCharacterStatusTypeLogout {
 		l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.MapId)
-		character.Exit(ctx)(event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
+		character.NewProcessor(l, ctx).Exit(event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
 		return
 	}
 }
@@ -51,13 +51,13 @@ func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event ch
 func handleStatusEventMapChanged(l logrus.FieldLogger, ctx context.Context, event character2.StatusEvent[character2.StatusEventMapChangedBody]) {
 	if event.Type == character2.EventCharacterStatusTypeMapChanged {
 		l.Debugf("Character [%d] has changed maps. worldId [%d] channelId [%d] oldMapId [%d] newMapId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.OldMapId, event.Body.TargetMapId)
-		character.TransitionMap(ctx)(event.WorldId, event.Body.ChannelId, event.Body.TargetMapId, event.CharacterId, event.Body.OldMapId)
+		character.NewProcessor(l, ctx).TransitionMap(event.WorldId, event.Body.ChannelId, event.Body.TargetMapId, event.CharacterId, event.Body.OldMapId)
 	}
 }
 
 func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, event character2.StatusEvent[character2.ChangeChannelEventLoginBody]) {
 	if event.Type == character2.EventCharacterStatusTypeChannelChanged {
 		l.Debugf("Character [%d] has changed channels. worldId [%d] channelId [%d] oldChannelId [%d].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.OldChannelId)
-		character.TransitionChannel(ctx)(event.WorldId, event.Body.ChannelId, event.Body.OldChannelId, event.CharacterId, event.Body.MapId)
+		character.NewProcessor(l, ctx).TransitionChannel(event.WorldId, event.Body.ChannelId, event.Body.OldChannelId, event.CharacterId, event.Body.MapId)
 	}
 }

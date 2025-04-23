@@ -1,4 +1,4 @@
-package inventory
+package equipable
 
 import (
 	"context"
@@ -20,10 +20,10 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) ByCharacterIdProvider(characterId uint32) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)
+func (p *Processor) ByIdModelProvider(id uint32) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(id), Extract)
 }
 
-func (p *Processor) GetByCharacterId(characterId uint32) (Model, error) {
-	return p.ByCharacterIdProvider(characterId)()
+func (p *Processor) GetById(id uint32) (Model, error) {
+	return p.ByIdModelProvider(id)()
 }

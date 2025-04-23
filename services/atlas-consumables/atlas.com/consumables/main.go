@@ -2,8 +2,8 @@ package main
 
 import (
 	"atlas-consumables/kafka/consumer/character"
+	"atlas-consumables/kafka/consumer/compartment"
 	"atlas-consumables/kafka/consumer/consumable"
-	"atlas-consumables/kafka/consumer/inventory"
 	"atlas-consumables/logger"
 	"atlas-consumables/service"
 	"atlas-consumables/tracing"
@@ -25,7 +25,7 @@ func main() {
 	}
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
-	inventory.InitConsumers(l)(cmf)(consumerGroupId)
+	compartment.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)

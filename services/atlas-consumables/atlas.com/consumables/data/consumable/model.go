@@ -102,6 +102,74 @@ func (m Model) GetSpec(specType SpecType) (int32, bool) {
 	return val, ok
 }
 
+func (m Model) SuccessRate() uint32 {
+	return m.success
+}
+
+func (m Model) StrengthIncrease() uint32 {
+	return m.incSTR
+}
+
+func (m Model) DexterityIncrease() uint32 {
+	return m.incDEX
+}
+
+func (m Model) IntelligenceIncrease() uint32 {
+	return m.incINT
+}
+
+func (m Model) LuckIncrease() uint32 {
+	return m.incLUK
+}
+
+func (m Model) MaxHPIncrease() uint32 {
+	return m.incMHP
+}
+
+func (m Model) MaxMPIncrease() uint32 {
+	return m.incMMP
+}
+
+func (m Model) WeaponAttackIncrease() uint32 {
+	return m.incPAD
+}
+
+func (m Model) MagicAttackIncrease() uint32 {
+	return m.incMAD
+}
+
+func (m Model) WeaponDefenseIncrease() uint32 {
+	return m.incPDD
+}
+
+func (m Model) MagicDefenseIncrease() uint32 {
+	return m.incMDD
+}
+
+func (m Model) AccuracyIncrease() uint32 {
+	return m.incACC
+}
+
+func (m Model) AvoidabilityIncrease() uint32 {
+	return m.incEVA
+}
+
+func (m Model) HandsIncrease() uint32 {
+	return 0
+}
+
+func (m Model) SpeedIncrease() uint32 {
+	return m.incSpeed
+}
+
+func (m Model) JumpIncrease() uint32 {
+	return m.incJump
+}
+
+func (m Model) CursedRate() uint32 {
+	return m.cursed
+}
+
 type RewardModel struct {
 	itemId uint32
 	count  uint32

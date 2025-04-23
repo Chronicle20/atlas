@@ -1,4 +1,4 @@
-package statistic
+package equipable
 
 type Model struct {
 	strength      uint16

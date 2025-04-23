@@ -1,7 +1,7 @@
-package inventory
+package compartment
 
 import (
-	inventory2 "atlas-consumables/kafka/message/inventory"
+	"atlas-consumables/kafka/message/compartment"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -10,9 +10,9 @@ import (
 )
 
 func requestReserveCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, reserves []Reserves) model.Provider[[]kafka.Message] {
-	items := make([]inventory2.ItemBody, 0)
+	items := make([]compartment.ItemBody, 0)
 	for _, res := range reserves {
-		items = append(items, inventory2.ItemBody{
+		items = append(items, compartment.ItemBody{
 			Source:   res.Slot,
 			ItemId:   res.ItemId,
 			Quantity: res.Quantity,
@@ -20,11 +20,11 @@ func requestReserveCommandProvider(transactionId uuid.UUID, characterId uint32, 
 	}
 
 	key := producer.CreateKey(int(characterId))
-	value := &inventory2.Command[inventory2.RequestReserveCommandBody]{
+	value := &compartment.Command[compartment.RequestReserveCommandBody]{
 		CharacterId:   characterId,
 		InventoryType: byte(inventoryType),
-		Type:          inventory2.CommandRequestReserve,
-		Body: inventory2.RequestReserveCommandBody{
+		Type:          compartment.CommandRequestReserve,
+		Body: compartment.RequestReserveCommandBody{
 			TransactionId: transactionId,
 			Items:         items,
 		},
@@ -34,11 +34,11 @@ func requestReserveCommandProvider(transactionId uuid.UUID, characterId uint32, 
 
 func consumeCommandProvider(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &inventory2.Command[inventory2.ConsumeCommandBody]{
+	value := &compartment.Command[compartment.ConsumeCommandBody]{
 		CharacterId:   characterId,
 		InventoryType: byte(inventoryType),
-		Type:          inventory2.CommandConsume,
-		Body: inventory2.ConsumeCommandBody{
+		Type:          compartment.CommandConsume,
+		Body: compartment.ConsumeCommandBody{
 			TransactionId: transactionId,
 			Slot:          slot,
 		},
@@ -48,11 +48,11 @@ func consumeCommandProvider(characterId uint32, inventoryType inventory.Type, tr
 
 func destroyCommandProvider(characterId uint32, inventoryType inventory.Type, slot int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &inventory2.Command[inventory2.DestroyCommandBody]{
+	value := &compartment.Command[compartment.DestroyCommandBody]{
 		CharacterId:   characterId,
 		InventoryType: byte(inventoryType),
-		Type:          inventory2.CommandDestroy,
-		Body: inventory2.DestroyCommandBody{
+		Type:          compartment.CommandDestroy,
+		Body: compartment.DestroyCommandBody{
 			Slot: slot,
 		},
 	}
@@ -61,11 +61,11 @@ func destroyCommandProvider(characterId uint32, inventoryType inventory.Type, sl
 
 func cancelReservationCommandProvider(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &inventory2.Command[inventory2.CancelReservationCommandBody]{
+	value := &compartment.Command[compartment.CancelReservationCommandBody]{
 		CharacterId:   characterId,
 		InventoryType: byte(inventoryType),
-		Type:          inventory2.CommandCancelReservation,
-		Body: inventory2.CancelReservationCommandBody{
+		Type:          compartment.CommandCancelReservation,
+		Body: compartment.CancelReservationCommandBody{
 			TransactionId: transactionId,
 			Slot:          slot,
 		},

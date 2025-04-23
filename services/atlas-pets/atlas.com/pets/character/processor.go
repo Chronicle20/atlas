@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-pets/inventory"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -12,6 +13,7 @@ type Processor struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	t   tenant.Model
+	ip  *inventory.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
@@ -19,6 +21,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 		l:   l,
 		ctx: ctx,
 		t:   tenant.MustFromContext(ctx),
+		ip:  inventory.NewProcessor(l, ctx),
 	}
 	return p
 }
@@ -28,6 +31,14 @@ func (p *Processor) GetById(decorators ...model.Decorator[Model]) func(character
 		cp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)
 		return model.Map(model.Decorate(decorators))(cp)()
 	}
+}
+
+func (p *Processor) InventoryDecorator(m Model) Model {
+	i, err := p.ip.GetByCharacterId(m.Id())
+	if err != nil {
+		return m
+	}
+	return m.SetInventory(i)
 }
 
 func GetLoggedIn() model.Provider[map[uint32]MapKey] {

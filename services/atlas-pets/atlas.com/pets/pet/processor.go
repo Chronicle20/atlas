@@ -2,7 +2,6 @@ package pet
 
 import (
 	"atlas-pets/character"
-	"atlas-pets/character/item"
 	data2 "atlas-pets/data/pet"
 	pet2 "atlas-pets/kafka/message/pet"
 	"atlas-pets/kafka/producer"
@@ -13,7 +12,6 @@ import (
 	"math/rand"
 	"sort"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -101,19 +99,22 @@ func (p *Processor) HungriestByOwnerProvider(ownerId uint32) model.Provider[Mode
 }
 
 func (p *Processor) CreateOnAward(characterId uint32, itemId uint32, slot int16) error {
-	it, ok := inventory.TypeFromItemId(itemId)
-	if !ok {
-		return errors.New("invalid item id")
-	}
-	i, err := item.GetItemBySlot(p.l)(p.ctx)(characterId, it, slot)
+	c, err := p.cp.GetById(p.cp.InventoryDecorator)(characterId)
 	if err != nil {
 		return err
+	}
+	a, ok := c.Inventory().Cash().FindBySlot(slot)
+	if !ok {
+		return errors.New("pet not found")
+	}
+	if a.TemplateId() != itemId {
+		return errors.New("item mismatch")
 	}
 
 	var om Model
 	txErr := p.db.Transaction(func(tx *gorm.DB) error {
 		// TODO lookup name
-		im := NewModelBuilder(0, i.Id(), itemId, "Great Pet", characterId)
+		im := NewModelBuilder(0, a.Id(), itemId, "Great Pet", characterId)
 		om, err = create(tx)(p.t, characterId, im.Build())
 		if err != nil {
 			return err
@@ -128,17 +129,20 @@ func (p *Processor) CreateOnAward(characterId uint32, itemId uint32, slot int16)
 }
 
 func (p *Processor) DeleteOnRemove(characterId uint32, itemId uint32, slot int16) error {
-	it, ok := inventory.TypeFromItemId(itemId)
-	if !ok {
-		return errors.New("invalid item id")
-	}
-	i, err := item.GetItemBySlot(p.l)(p.ctx)(characterId, it, slot)
+	c, err := p.cp.GetById(p.cp.InventoryDecorator)(characterId)
 	if err != nil {
 		return err
 	}
+	a, ok := c.Inventory().Cash().FindBySlot(slot)
+	if !ok {
+		return errors.New("pet not found")
+	}
+	if a.TemplateId() != itemId {
+		return errors.New("item mismatch")
+	}
 
 	var om Model
-	txErr := p.db.Transaction(deleteByInventoryItemId(p.t, i.Id()))
+	txErr := p.db.Transaction(deleteByInventoryItemId(p.t, a.Id()))
 	if txErr != nil {
 		return txErr
 	}

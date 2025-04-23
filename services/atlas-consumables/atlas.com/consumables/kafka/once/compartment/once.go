@@ -1,4 +1,4 @@
-package inventory
+package compartment
 
 import (
 	"atlas-consumables/kafka/message/compartment"

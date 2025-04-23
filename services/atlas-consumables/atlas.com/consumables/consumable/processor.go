@@ -14,9 +14,8 @@ import (
 	"atlas-consumables/inventory"
 	compartment2 "atlas-consumables/kafka/message/compartment"
 	"atlas-consumables/kafka/message/consumable"
-	once "atlas-consumables/kafka/once/inventory"
+	once "atlas-consumables/kafka/once/compartment"
 	"atlas-consumables/kafka/producer"
-	consumable2 "atlas-consumables/kafka/producer/consumable"
 	"atlas-consumables/map"
 	character2 "atlas-consumables/map/character"
 	"atlas-consumables/pet"
@@ -107,7 +106,7 @@ func (p *Processor) ConsumeError(characterId uint32, transactionId uuid.UUID, in
 		errorType = consumable.ErrorTypePetCannotConsume
 	}
 
-	cErr = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(consumable2.ErrorEventProvider(characterId, errorType))
+	cErr = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ErrorEventProvider(characterId, errorType))
 	if cErr != nil {
 		p.l.WithError(cErr).Errorf("Unable to issue consumption error [%v] on event topic. Character [%d] likely going to be stuck.", err, characterId)
 	}
@@ -615,9 +614,9 @@ func rollStatAdjustment() int16 {
 }
 
 func (p *Processor) PassScroll(characterId uint32, legendarySpirit bool, whiteScroll bool) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(consumable2.ScrollEventProvider(characterId)(true, false, legendarySpirit, whiteScroll))
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(characterId)(true, false, legendarySpirit, whiteScroll))
 }
 
 func (p *Processor) FailScroll(characterId uint32, cursed bool, legendarySpirit bool, whiteScroll bool) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(consumable2.ScrollEventProvider(characterId)(false, cursed, legendarySpirit, whiteScroll))
+	return producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ScrollEventProvider(characterId)(false, cursed, legendarySpirit, whiteScroll))
 }

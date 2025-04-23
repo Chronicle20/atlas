@@ -14,6 +14,9 @@ import (
 
 func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		cp := character.NewProcessor(l, ctx)
+		ip := inventory.NewProcessor(l, ctx)
+		mp := _map.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var itemIdStr string
@@ -48,9 +51,9 @@ func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				idProvider = _map.CharacterIdsInMapProvider(l)(ctx)(worldId, channelId, c.MapId())
+				idProvider = mp.CharacterIdsInMapProvider(worldId, channelId, c.MapId())
 			} else {
-				idProvider = model.ToSliceProvider(character.IdByNameProvider(l)(ctx)(match[1]))
+				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
 			}
 
 			tItemId, err := strconv.ParseUint(itemIdStr, 10, 32)
@@ -58,7 +61,7 @@ func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 				return nil, false
 			}
 			itemId := uint32(tItemId)
-			exists := inventory.Exists(l)(ctx)(itemId)
+			exists := ip.Exists(itemId)
 			if !exists {
 				l.Debugf("Ignoring character [%d] command [%s], because they did not input a valid item.", c.Id(), m)
 				return nil, false
@@ -77,7 +80,7 @@ func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 						return err
 					}
 					for _, id := range cids {
-						_, err = inventory.CreateItem(l)(ctx)(id, itemId, quantity)
+						_, err = ip.CreateItem(id, itemId, quantity)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with (%d) item [%d].", id, quantity, itemId)
 						}

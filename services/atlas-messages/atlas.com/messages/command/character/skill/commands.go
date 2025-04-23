@@ -15,6 +15,9 @@ import (
 
 func MaxSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		cp := character.NewProcessor(l, ctx)
+		sdp := skill.NewProcessor(l, ctx)
+		sp := skill2.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			re := regexp.MustCompile(`@skill\s+max\s+(\d+)`)
 			match := re.FindStringSubmatch(m)
@@ -27,13 +30,13 @@ func MaxSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fun
 				return nil, false
 			}
 
-			si, err := skill.GetById(l)(ctx)(uint32(skillId))
+			si, err := sdp.GetById(uint32(skillId))
 			if err != nil {
 				return nil, false
 			}
 			masterLevel := byte(len(si.Effects()))
 
-			decs := model.Decorators[character.Model](character.SkillModelDecorator(l)(ctx))
+			decs := model.Decorators[character.Model](cp.SkillModelDecorator)
 			sc, err := model.Map(model.Decorate(decs))(model.FixedProvider(c))()
 			if err != nil {
 				return nil, false
@@ -48,9 +51,9 @@ func MaxSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fun
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
 					if s == nil {
-						return skill2.RequestCreate(l)(ctx)(c.Id(), uint32(skillId), masterLevel, masterLevel, time.Time{})
+						return sp.RequestCreate(c.Id(), uint32(skillId), masterLevel, masterLevel, time.Time{})
 					} else {
-						return skill2.RequestUpdate(l)(ctx)(c.Id(), uint32(skillId), masterLevel, masterLevel, time.Time{})
+						return sp.RequestUpdate(c.Id(), uint32(skillId), masterLevel, masterLevel, time.Time{})
 					}
 				}
 			}, true
@@ -60,6 +63,9 @@ func MaxSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fun
 
 func ResetSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		cp := character.NewProcessor(l, ctx)
+		sdp := skill.NewProcessor(l, ctx)
+		sp := skill2.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			re := regexp.MustCompile(`@skill\s+reset\s+(\d+)`)
 			match := re.FindStringSubmatch(m)
@@ -72,13 +78,13 @@ func ResetSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 				return nil, false
 			}
 
-			si, err := skill.GetById(l)(ctx)(uint32(skillId))
+			si, err := sdp.GetById(uint32(skillId))
 			if err != nil {
 				return nil, false
 			}
 			masterLevel := byte(len(si.Effects()))
 
-			decs := model.Decorators[character.Model](character.SkillModelDecorator(l)(ctx))
+			decs := model.Decorators[character.Model](cp.SkillModelDecorator)
 			sc, err := model.Map(model.Decorate(decs))(model.FixedProvider(c))()
 			if err != nil {
 				return nil, false
@@ -93,9 +99,9 @@ func ResetSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
 					if s == nil {
-						return skill2.RequestCreate(l)(ctx)(c.Id(), uint32(skillId), 0, masterLevel, time.Time{})
+						return sp.RequestCreate(c.Id(), uint32(skillId), 0, masterLevel, time.Time{})
 					} else {
-						return skill2.RequestUpdate(l)(ctx)(c.Id(), uint32(skillId), 0, masterLevel, time.Time{})
+						return sp.RequestUpdate(c.Id(), uint32(skillId), 0, masterLevel, time.Time{})
 					}
 				}
 			}, true

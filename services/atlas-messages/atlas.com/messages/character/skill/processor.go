@@ -9,34 +9,31 @@ import (
 	"time"
 )
 
-func byCharacterIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) model.Provider[[]Model] {
-	return func(ctx context.Context) func(characterId uint32) model.Provider[[]Model] {
-		return func(characterId uint32) model.Provider[[]Model] {
-			return requests.SliceProvider[RestModel, Model](l, ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func GetByCharacterId(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) ([]Model, error) {
-	return func(ctx context.Context) func(characterId uint32) ([]Model, error) {
-		return func(characterId uint32) ([]Model, error) {
-			return byCharacterIdProvider(l)(ctx)(characterId)()
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
 }
 
-func RequestCreate(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
-	return func(ctx context.Context) func(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
-		return func(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(createCommandProvider(characterId, skillId, level, masterLevel, expiration))
-		}
-	}
+func (p *Processor) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())
 }
 
-func RequestUpdate(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
-	return func(ctx context.Context) func(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
-		return func(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(updateCommandProvider(characterId, skillId, level, masterLevel, expiration))
-		}
-	}
+func (p *Processor) GetByCharacterId(characterId uint32) ([]Model, error) {
+	return p.ByCharacterIdProvider(characterId)()
+}
+
+func (p *Processor) RequestCreate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(createCommandProvider(characterId, skillId, level, masterLevel, expiration))
+}
+
+func (p *Processor) RequestUpdate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(updateCommandProvider(characterId, skillId, level, masterLevel, expiration))
 }

@@ -14,6 +14,8 @@ import (
 
 func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		cp := character.NewProcessor(l, ctx)
+		mp := _map.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			re := regexp.MustCompile(`@warp\s+(\w+)\s+(\d+)`)
 			match := re.FindStringSubmatch(m)
@@ -30,9 +32,9 @@ func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(wo
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				idProvider = _map.CharacterIdsInMapStringProvider(l)(ctx)(worldId, channelId, match[2])
+				idProvider = mp.CharacterIdsInMapStringProvider(worldId, channelId, match[2])
 			} else {
-				idProvider = model.ToSliceProvider(character.IdByNameProvider(l)(ctx)(match[1]))
+				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
 			}
 
 			return warpCommandProducer(worldId, channelId, c.Id(), idProvider, match[2])
@@ -44,12 +46,13 @@ func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(wo
 func warpCommandProducer(worldId byte, channelId byte, actorId uint32, idProvider model.Provider[[]uint32], mapStr string) (command.Executor, bool) {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
+			mp := _map.NewProcessor(l, ctx)
 			requestedMapId, err := strconv.ParseUint(mapStr, 10, 32)
 			if err != nil {
 				return errors.New("map does not exist")
 			}
 
-			exists := _map.Exists(l)(ctx)(uint32(requestedMapId))
+			exists := mp.Exists(uint32(requestedMapId))
 			if !exists {
 				l.Debugf("Ignoring character [%d] command [%d], because they did not input a valid map.", actorId, requestedMapId)
 				return errors.New("map does not exist")
@@ -60,7 +63,7 @@ func warpCommandProducer(worldId byte, channelId byte, actorId uint32, idProvide
 				return err
 			}
 			for _, id := range ids {
-				err = _map.WarpRandom(l)(ctx)(worldId)(channelId)(id)(uint32(requestedMapId))
+				err = mp.WarpRandom(worldId)(channelId)(id)(uint32(requestedMapId))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to warp character [%d] via warp map command.", id)
 				}

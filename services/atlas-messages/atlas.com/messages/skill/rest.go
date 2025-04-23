@@ -1,17 +1,16 @@
 package skill
 
 import (
-	"atlas-messages/skill/effect"
-	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
+	"time"
 )
 
 type RestModel struct {
-	Id            uint32             `json:"-"`
-	Action        bool               `json:"action"`
-	Element       string             `json:"element"`
-	AnimationTime uint32             `json:"animationTime"`
-	Effects       []effect.RestModel `json:"effects"`
+	Id                uint32    `json:"-"`
+	Level             byte      `json:"level"`
+	MasterLevel       byte      `json:"masterLevel"`
+	Expiration        time.Time `json:"expiration"`
+	CooldownExpiresAt time.Time `json:"cooldownExpiresAt"`
 }
 
 func (r RestModel) GetName() string {
@@ -22,8 +21,8 @@ func (r RestModel) GetID() string {
 	return strconv.Itoa(int(r.Id))
 }
 
-func (r *RestModel) SetID(idStr string) error {
-	id, err := strconv.Atoi(idStr)
+func (r *RestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
 	if err != nil {
 		return err
 	}
@@ -32,16 +31,11 @@ func (r *RestModel) SetID(idStr string) error {
 }
 
 func Extract(rm RestModel) (Model, error) {
-	es, err := model.SliceMap(effect.Extract)(model.FixedProvider(rm.Effects))()()
-	if err != nil {
-		return Model{}, err
-	}
-
 	return Model{
-		id:            rm.Id,
-		action:        rm.Action,
-		element:       rm.Element,
-		animationTime: rm.AnimationTime,
-		effects:       es,
+		id:                rm.Id,
+		level:             rm.Level,
+		masterLevel:       rm.MasterLevel,
+		expiration:        rm.Expiration,
+		cooldownExpiresAt: rm.CooldownExpiresAt,
 	}, nil
 }

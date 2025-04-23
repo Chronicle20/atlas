@@ -7,34 +7,35 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func InMapProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId uint32) model.Provider[[]Model] {
-	return func(ctx context.Context) func(mapId uint32) model.Provider[[]Model] {
-		return func(mapId uint32) model.Provider[[]Model] {
-			return requests.SliceProvider[RestModel, Model](l, ctx)(requestAll(mapId), Extract, model.Filters[Model]())
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
+	}
+	return p
+}
+
+func (p *Processor) InMapProvider(mapId uint32) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestAll(mapId), Extract, model.Filters[Model]())
+}
+
+func (p *Processor) RandomSpawnPointProvider(mapId uint32) model.Provider[Model] {
+	return func() (Model, error) {
+		sps, err := model.FilteredProvider(p.InMapProvider(mapId), model.Filters(SpawnPoint, NoTarget))()
+		if err != nil {
+			return Model{}, err
 		}
+		return model.RandomPreciselyOneFilter(sps)
 	}
 }
 
-func RandomSpawnPointProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId uint32) model.Provider[Model] {
-	return func(ctx context.Context) func(mapId uint32) model.Provider[Model] {
-		return func(mapId uint32) model.Provider[Model] {
-			return func() (Model, error) {
-				sps, err := model.FilteredProvider(InMapProvider(l)(ctx)(mapId), model.Filters(SpawnPoint, NoTarget))()
-				if err != nil {
-					return Model{}, err
-				}
-				return model.RandomPreciselyOneFilter(sps)
-			}
-		}
-	}
-}
-
-func RandomSpawnPointIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId uint32) model.Provider[uint32] {
-	return func(ctx context.Context) func(mapId uint32) model.Provider[uint32] {
-		return func(mapId uint32) model.Provider[uint32] {
-			return model.Map(getId)(RandomSpawnPointProvider(l)(ctx)(mapId))
-		}
-	}
+func (p *Processor) RandomSpawnPointIdProvider(mapId uint32) model.Provider[uint32] {
+	return model.Map(getId)(p.RandomSpawnPointProvider(mapId))
 }
 
 func getId(m Model) (uint32, error) {

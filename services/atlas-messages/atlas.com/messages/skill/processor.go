@@ -1,35 +1,40 @@
 package skill
 
 import (
-	"atlas-messages/skill/effect"
+	skill2 "atlas-messages/kafka/message/character/skill"
+	"atlas-messages/kafka/producer"
 	"context"
-	"errors"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(uniqueId uint32) (Model, error) {
-	return func(ctx context.Context) func(uniqueId uint32) (Model, error) {
-		return func(uniqueId uint32) (Model, error) {
-			return requests.Provider[RestModel, Model](l, ctx)(requestById(uniqueId), Extract)()
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func GetEffect(l logrus.FieldLogger) func(ctx context.Context) func(uniqueId uint32, level byte) (effect.Model, error) {
-	return func(ctx context.Context) func(uniqueId uint32, level byte) (effect.Model, error) {
-		return func(uniqueId uint32, level byte) (effect.Model, error) {
-			s, err := GetById(l)(ctx)(uniqueId)
-			if err != nil {
-				return effect.Model{}, err
-			}
-			if level == 0 {
-				return effect.Model{}, nil
-			}
-			if len(s.Effects()) < int(level-1) {
-				return effect.Model{}, errors.New("level out of bounds")
-			}
-			return s.Effects()[level-1], nil
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
+}
+
+func (p *Processor) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())
+}
+
+func (p *Processor) GetByCharacterId(characterId uint32) ([]Model, error) {
+	return p.ByCharacterIdProvider(characterId)()
+}
+
+func (p *Processor) RequestCreate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(skill2.EnvCommandTopic)(createCommandProvider(characterId, skillId, level, masterLevel, expiration))
+}
+
+func (p *Processor) RequestUpdate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(skill2.EnvCommandTopic)(updateCommandProvider(characterId, skillId, level, masterLevel, expiration))
 }

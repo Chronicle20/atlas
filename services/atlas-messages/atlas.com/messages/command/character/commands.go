@@ -13,6 +13,8 @@ import (
 
 func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		cp := character.NewProcessor(l, ctx)
+		mp := _map.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var amountStr string
@@ -37,9 +39,9 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				idProvider = _map.CharacterIdsInMapProvider(l)(ctx)(worldId, channelId, c.MapId())
+				idProvider = mp.CharacterIdsInMapProvider(worldId, channelId, c.MapId())
 			} else {
-				idProvider = model.ToSliceProvider(character.IdByNameProvider(l)(ctx)(match[1]))
+				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
 			}
 
 			tAmount, err := strconv.ParseUint(amountStr, 10, 32)
@@ -55,7 +57,7 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 						return err
 					}
 					for _, id := range cids {
-						err = character.AwardExperience(l)(ctx)(worldId, channelId, id, amount)
+						err = cp.AwardExperience(worldId, channelId, id, amount)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with [%d] experience.", id, amount)
 						}
@@ -69,6 +71,8 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 
 func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		cp := character.NewProcessor(l, ctx)
+		mp := _map.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var amountStr string
@@ -93,9 +97,9 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				idProvider = _map.CharacterIdsInMapProvider(l)(ctx)(worldId, channelId, c.MapId())
+				idProvider = mp.CharacterIdsInMapProvider(worldId, channelId, c.MapId())
 			} else {
-				idProvider = model.ToSliceProvider(character.IdByNameProvider(l)(ctx)(match[1]))
+				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
 			}
 
 			tAmount, err := strconv.ParseUint(amountStr, 10, 8)
@@ -111,7 +115,7 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 						return err
 					}
 					for _, id := range cids {
-						err = character.AwardLevel(l)(ctx)(worldId, channelId, id, amount)
+						err = cp.AwardLevel(worldId, channelId, id, amount)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with [%d] level(s).", id, amount)
 						}
@@ -125,6 +129,7 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 
 func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		cp := character.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var jobStr string
@@ -149,7 +154,7 @@ func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 			if match[1] == "my" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else {
-				idProvider = model.ToSliceProvider(character.IdByNameProvider(l)(ctx)(match[1]))
+				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
 			}
 
 			tJobId, err := strconv.ParseUint(jobStr, 10, 16)
@@ -165,7 +170,7 @@ func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 						return err
 					}
 					for _, id := range cids {
-						err = character.ChangeJob(l)(ctx)(worldId, channelId, id, jobId)
+						err = cp.ChangeJob(worldId, channelId, id, jobId)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with [%d] level(s).", id, jobId)
 						}

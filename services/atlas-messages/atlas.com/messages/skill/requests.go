@@ -7,13 +7,18 @@ import (
 )
 
 const (
-	skillsResource = "data/skills/%d"
+	Resource = "characters/%d/skills"
+	ById     = Resource + "/%d"
 )
 
 func getBaseRequest() string {
-	return requests.RootUrl("DATA")
+	return requests.RootUrl("SKILLS")
 }
 
-func requestById(skillId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+skillsResource, skillId))
+func requestByCharacterId(characterId uint32) requests.Request[[]RestModel] {
+	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
+}
+
+func requestById(characterId uint32, id uint32) requests.Request[RestModel] {
+	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, characterId, id))
 }

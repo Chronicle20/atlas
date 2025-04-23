@@ -1,7 +1,10 @@
 package character
 
 import (
-	"atlas-messages/character/skill"
+	"atlas-messages/compartment"
+	"atlas-messages/inventory"
+	"atlas-messages/skill"
+	"github.com/Chronicle20/atlas-constants/world"
 	"strconv"
 	"strings"
 )
@@ -9,7 +12,7 @@ import (
 type Model struct {
 	id                 uint32
 	accountId          uint32
-	worldId            byte
+	worldId            world.Id
 	name               string
 	gender             byte
 	skinColor          byte
@@ -35,6 +38,7 @@ type Model struct {
 	spawnPoint         uint32
 	gm                 int
 	meso               uint32
+	inventory          inventory.Model
 	skills             []skill.Model
 }
 
@@ -218,12 +222,38 @@ func (m Model) Stance() byte {
 	return 0
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
+func (m Model) Skills() []skill.Model {
+	return m.skills
+}
+
+func (m Model) SetInventory(i inventory.Model) Model {
+	ec := compartment.NewBuilder(i.Equipable().Id(), m.Id(), i.Equipable().Type(), i.Equipable().Capacity())
+	for _, a := range i.Equipable().Assets() {
+		if a.Slot() > 0 {
+			ec = ec.AddAsset(a)
+		}
+	}
+
+	ib := inventory.NewBuilder(m.Id()).
+		SetEquipable(ec.Build()).
+		SetConsumable(i.Consumable()).
+		SetSetup(i.Setup()).
+		SetEtc(i.ETC()).
+		SetCash(i.Cash())
+
+	return Clone(m).SetInventory(ib.Build()).Build()
+}
+
 func (m Model) SetSkills(ms []skill.Model) Model {
-	return Model{
+	return Clone(m).SetSkills(ms).Build()
+}
+
+func Clone(m Model) *ModelBuilder {
+	return &ModelBuilder{
 		id:                 m.id,
 		accountId:          m.accountId,
 		worldId:            m.worldId,
@@ -252,10 +282,116 @@ func (m Model) SetSkills(ms []skill.Model) Model {
 		spawnPoint:         m.spawnPoint,
 		gm:                 m.gm,
 		meso:               m.meso,
-		skills:             ms,
+		inventory:          m.inventory,
+		skills:             m.skills,
 	}
 }
 
-func (m Model) Skills() []skill.Model {
-	return m.skills
+type ModelBuilder struct {
+	id                 uint32
+	accountId          uint32
+	worldId            world.Id
+	name               string
+	gender             byte
+	skinColor          byte
+	face               uint32
+	hair               uint32
+	level              byte
+	jobId              uint16
+	strength           uint16
+	dexterity          uint16
+	intelligence       uint16
+	luck               uint16
+	hp                 uint16
+	maxHp              uint16
+	mp                 uint16
+	maxMp              uint16
+	hpMpUsed           int
+	ap                 uint16
+	sp                 string
+	experience         uint32
+	fame               int16
+	gachaponExperience uint32
+	mapId              uint32
+	spawnPoint         uint32
+	gm                 int
+	x                  int16
+	y                  int16
+	stance             byte
+	meso               uint32
+	inventory          inventory.Model
+	skills             []skill.Model
+}
+
+func NewModelBuilder() *ModelBuilder {
+	return &ModelBuilder{}
+}
+
+func (b *ModelBuilder) SetId(v uint32) *ModelBuilder           { b.id = v; return b }
+func (b *ModelBuilder) SetAccountId(v uint32) *ModelBuilder    { b.accountId = v; return b }
+func (b *ModelBuilder) SetWorldId(v world.Id) *ModelBuilder    { b.worldId = v; return b }
+func (b *ModelBuilder) SetName(v string) *ModelBuilder         { b.name = v; return b }
+func (b *ModelBuilder) SetGender(v byte) *ModelBuilder         { b.gender = v; return b }
+func (b *ModelBuilder) SetSkinColor(v byte) *ModelBuilder      { b.skinColor = v; return b }
+func (b *ModelBuilder) SetFace(v uint32) *ModelBuilder         { b.face = v; return b }
+func (b *ModelBuilder) SetHair(v uint32) *ModelBuilder         { b.hair = v; return b }
+func (b *ModelBuilder) SetLevel(v byte) *ModelBuilder          { b.level = v; return b }
+func (b *ModelBuilder) SetJobId(v uint16) *ModelBuilder        { b.jobId = v; return b }
+func (b *ModelBuilder) SetStrength(v uint16) *ModelBuilder     { b.strength = v; return b }
+func (b *ModelBuilder) SetDexterity(v uint16) *ModelBuilder    { b.dexterity = v; return b }
+func (b *ModelBuilder) SetIntelligence(v uint16) *ModelBuilder { b.intelligence = v; return b }
+func (b *ModelBuilder) SetLuck(v uint16) *ModelBuilder         { b.luck = v; return b }
+func (b *ModelBuilder) SetHp(v uint16) *ModelBuilder           { b.hp = v; return b }
+func (b *ModelBuilder) SetMaxHp(v uint16) *ModelBuilder        { b.maxHp = v; return b }
+func (b *ModelBuilder) SetMp(v uint16) *ModelBuilder           { b.mp = v; return b }
+func (b *ModelBuilder) SetMaxMp(v uint16) *ModelBuilder        { b.maxMp = v; return b }
+func (b *ModelBuilder) SetHpMpUsed(v int) *ModelBuilder        { b.hpMpUsed = v; return b }
+func (b *ModelBuilder) SetAp(v uint16) *ModelBuilder           { b.ap = v; return b }
+func (b *ModelBuilder) SetSp(v string) *ModelBuilder           { b.sp = v; return b }
+func (b *ModelBuilder) SetExperience(v uint32) *ModelBuilder   { b.experience = v; return b }
+func (b *ModelBuilder) SetFame(v int16) *ModelBuilder          { b.fame = v; return b }
+func (b *ModelBuilder) SetGachaponExperience(v uint32) *ModelBuilder {
+	b.gachaponExperience = v
+	return b
+}
+func (b *ModelBuilder) SetMapId(v uint32) *ModelBuilder              { b.mapId = v; return b }
+func (b *ModelBuilder) SetSpawnPoint(v uint32) *ModelBuilder         { b.spawnPoint = v; return b }
+func (b *ModelBuilder) SetGm(v int) *ModelBuilder                    { b.gm = v; return b }
+func (b *ModelBuilder) SetMeso(v uint32) *ModelBuilder               { b.meso = v; return b }
+func (b *ModelBuilder) SetInventory(v inventory.Model) *ModelBuilder { b.inventory = v; return b }
+func (b *ModelBuilder) SetSkills(v []skill.Model) *ModelBuilder      { b.skills = v; return b }
+
+func (b *ModelBuilder) Build() Model {
+	return Model{
+		id:                 b.id,
+		accountId:          b.accountId,
+		worldId:            b.worldId,
+		name:               b.name,
+		gender:             b.gender,
+		skinColor:          b.skinColor,
+		face:               b.face,
+		hair:               b.hair,
+		level:              b.level,
+		jobId:              b.jobId,
+		strength:           b.strength,
+		dexterity:          b.dexterity,
+		intelligence:       b.intelligence,
+		luck:               b.luck,
+		hp:                 b.hp,
+		maxHp:              b.maxHp,
+		mp:                 b.mp,
+		maxMp:              b.maxMp,
+		hpMpUsed:           b.hpMpUsed,
+		ap:                 b.ap,
+		sp:                 b.sp,
+		experience:         b.experience,
+		fame:               b.fame,
+		gachaponExperience: b.gachaponExperience,
+		mapId:              b.mapId,
+		spawnPoint:         b.spawnPoint,
+		gm:                 b.gm,
+		meso:               b.meso,
+		inventory:          b.inventory,
+		skills:             b.skills,
+	}
 }

@@ -2,8 +2,9 @@ package _map
 
 import (
 	"atlas-messages/character"
+	"atlas-messages/data/map"
+	character2 "atlas-messages/kafka/message/character"
 	"atlas-messages/kafka/producer"
-	"atlas-messages/map/data"
 	"atlas-messages/portal"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
@@ -12,62 +13,59 @@ import (
 	"strconv"
 )
 
-func Exists(l logrus.FieldLogger) func(ctx context.Context) func(mapId uint32) bool {
-	return func(ctx context.Context) func(mapId uint32) bool {
-		return func(mapId uint32) bool {
-			_, err := data.GetById(l)(ctx)(mapId)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to find requested map [%d].", mapId)
-				return false
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	pp  *portal.Processor
+	dp  *_map.Processor
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
+		pp:  portal.NewProcessor(l, ctx),
+		dp:  _map.NewProcessor(l, ctx),
+	}
+	return p
+}
+
+func (p *Processor) Exists(mapId uint32) bool {
+	_, err := p.dp.GetById(mapId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to find requested map [%d].", mapId)
+		return false
+	}
+	return true
+}
+
+func (p *Processor) CharacterIdsInMapStringProvider(worldId byte, channelId byte, mapStr string) model.Provider[[]uint32] {
+	mapId, err := strconv.ParseUint(mapStr, 10, 32)
+	if err != nil {
+		return model.ErrorProvider[[]uint32](err)
+	}
+	return p.CharacterIdsInMapProvider(worldId, channelId, uint32(mapId))
+}
+
+func (p *Processor) CharacterIdsInMapProvider(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
+	return requests.SliceProvider[RestModel, uint32](p.l, p.ctx)(requestCharactersInMap(worldId, channelId, mapId), Extract, model.Filters[uint32]())
+}
+
+func (p *Processor) WarpRandom(worldId byte) func(channelId byte) func(characterId uint32) func(mapId uint32) error {
+	return func(channelId byte) func(characterId uint32) func(mapId uint32) error {
+		return func(characterId uint32) func(mapId uint32) error {
+			return func(mapId uint32) error {
+				return p.WarpToPortal(worldId, channelId, characterId, mapId, p.pp.RandomSpawnPointIdProvider(mapId))
 			}
-			return true
 		}
 	}
 }
 
-func CharacterIdsInMapStringProvider(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapStr string) model.Provider[[]uint32] {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapStr string) model.Provider[[]uint32] {
-		return func(worldId byte, channelId byte, mapStr string) model.Provider[[]uint32] {
-			mapId, err := strconv.ParseUint(mapStr, 10, 32)
-			if err != nil {
-				return model.ErrorProvider[[]uint32](err)
-			}
-			return CharacterIdsInMapProvider(l)(ctx)(worldId, channelId, uint32(mapId))
-		}
+func (p *Processor) WarpToPortal(worldId byte, channelId byte, characterId uint32, mapId uint32, pp model.Provider[uint32]) error {
+	id, err := pp()
+	if err != nil {
+		return err
 	}
-}
 
-func CharacterIdsInMapProvider(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
-		return func(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
-			return requests.SliceProvider[RestModel, uint32](l, ctx)(requestCharactersInMap(worldId, channelId, mapId), Extract, model.Filters[uint32]())
-		}
-	}
-}
-
-func WarpRandom(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte) func(channelId byte) func(characterId uint32) func(mapId uint32) error {
-	return func(ctx context.Context) func(worldId byte) func(channelId byte) func(characterId uint32) func(mapId uint32) error {
-		return func(worldId byte) func(channelId byte) func(characterId uint32) func(mapId uint32) error {
-			return func(channelId byte) func(characterId uint32) func(mapId uint32) error {
-				return func(characterId uint32) func(mapId uint32) error {
-					return func(mapId uint32) error {
-						return WarpToPortal(l)(ctx)(worldId, channelId, characterId, mapId, portal.RandomSpawnPointIdProvider(l)(ctx)(mapId))
-					}
-				}
-			}
-		}
-	}
-}
-
-func WarpToPortal(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32, p model.Provider[uint32]) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32, mapId uint32, p model.Provider[uint32]) error {
-		return func(worldId byte, channelId byte, characterId uint32, mapId uint32, p model.Provider[uint32]) error {
-			id, err := p()
-			if err != nil {
-				return err
-			}
-
-			return producer.ProviderImpl(l)(ctx)(character.EnvCommandTopic)(character.ChangeMapProvider(worldId, channelId, characterId, mapId, id))
-		}
-	}
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(character.ChangeMapProvider(worldId, channelId, characterId, mapId, id))
 }

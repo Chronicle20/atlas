@@ -1,6 +1,7 @@
 package character
 
 import (
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
 )
@@ -96,7 +97,7 @@ func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:                 rm.Id,
 		accountId:          rm.AccountId,
-		worldId:            rm.WorldId,
+		worldId:            world.Id(rm.WorldId),
 		name:               rm.Name,
 		gender:             rm.Gender,
 		skinColor:          rm.SkinColor,

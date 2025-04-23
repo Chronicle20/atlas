@@ -147,29 +147,41 @@ func (p *Processor) DecorateStackable(m Model[any]) (Model[any], error) {
 
 	var rd any
 	if m.ReferenceType() == ReferenceTypeConsumable {
-		rd = ConsumableReferenceData{
-			quantity:     s.Quantity(),
-			ownerId:      s.OwnerId(),
-			flag:         s.Flag(),
-			rechargeable: s.Rechargeable(),
-		}
+		rd = MakeConsumableReferenceData(s)
 	} else if m.ReferenceType() == ReferenceTypeSetup {
-		rd = SetupReferenceData{
-			quantity: s.Quantity(),
-			ownerId:  s.OwnerId(),
-			flag:     s.Flag(),
-		}
+		rd = MakeSetupReferenceData(s)
 	} else if m.ReferenceType() == ReferenceTypeEtc {
-		rd = EtcReferenceData{
-			quantity: s.Quantity(),
-			ownerId:  s.OwnerId(),
-			flag:     s.Flag(),
-		}
+		rd = MakeEtcReferenceData(s)
 	}
 
 	return Clone(m).
 		SetReferenceData(rd).
 		Build(), nil
+}
+
+func MakeEtcReferenceData(s stackable.Model) EtcReferenceData {
+	return EtcReferenceData{
+		quantity: s.Quantity(),
+		ownerId:  s.OwnerId(),
+		flag:     s.Flag(),
+	}
+}
+
+func MakeSetupReferenceData(s stackable.Model) SetupReferenceData {
+	return SetupReferenceData{
+		quantity: s.Quantity(),
+		ownerId:  s.OwnerId(),
+		flag:     s.Flag(),
+	}
+}
+
+func MakeConsumableReferenceData(s stackable.Model) ConsumableReferenceData {
+	return ConsumableReferenceData{
+		quantity:     s.Quantity(),
+		ownerId:      s.OwnerId(),
+		flag:         s.Flag(),
+		rechargeable: s.Rechargeable(),
+	}
 }
 
 func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
@@ -368,6 +380,8 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 			if !ok {
 				return errors.New("unknown item type")
 			}
+
+			var rd interface{}
 			if inventoryType == inventory.TypeValueEquip {
 				e, err := p.equipableProcessor.Create(templateId)()
 				if err != nil {
@@ -375,6 +389,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 				}
 				referenceId = e.Id()
 				referenceType = ReferenceTypeEquipable
+				rd = MakeEquipableReferenceData(e)
 			} else if inventoryType == inventory.TypeValueUse {
 				s, err := p.stackableProcessor.WithTransaction(tx).Create(compartmentId, quantity, ownerId, flag, rechargeable)
 				if err != nil {
@@ -382,6 +397,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 				}
 				referenceId = s.Id()
 				referenceType = ReferenceTypeConsumable
+				rd = MakeConsumableReferenceData(s)
 			} else if inventoryType == inventory.TypeValueSetup {
 				s, err := p.stackableProcessor.WithTransaction(tx).Create(compartmentId, quantity, ownerId, flag, rechargeable)
 				if err != nil {
@@ -389,6 +405,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 				}
 				referenceId = s.Id()
 				referenceType = ReferenceTypeSetup
+				rd = MakeSetupReferenceData(s)
 			} else if inventoryType == inventory.TypeValueETC {
 				s, err := p.stackableProcessor.WithTransaction(tx).Create(compartmentId, quantity, ownerId, flag, rechargeable)
 				if err != nil {
@@ -396,6 +413,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 				}
 				referenceId = s.Id()
 				referenceType = ReferenceTypeEtc
+				rd = MakeEtcReferenceData(s)
 			} else if inventoryType == inventory.TypeValueCash {
 				// TODO
 			}
@@ -409,6 +427,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 			if err != nil {
 				return err
 			}
+			a = Clone(a).SetReferenceData(rd).Build()
 			return mb.Put(asset.EnvEventTopicStatus, CreatedEventStatusProvider(characterId, a))
 		})
 		if txErr != nil {

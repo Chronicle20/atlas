@@ -3,13 +3,14 @@ package pet
 import (
 	"atlas-pets/pet/exclude"
 	"errors"
-	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
 	"time"
+
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 type RestModel struct {
-	Id              uint64              `json:"-"`
+	Id              uint32              `json:"-"`
 	InventoryItemId uint32              `json:"inventoryItemId"`
 	TemplateId      uint32              `json:"templateId"`
 	Name            string              `json:"name"`
@@ -40,7 +41,7 @@ func (r *RestModel) SetID(strId string) error {
 	if err != nil {
 		return err
 	}
-	r.Id = uint64(id)
+	r.Id = uint32(id)
 	return nil
 }
 
@@ -71,5 +72,26 @@ func Transform(m Model) (RestModel, error) {
 		Stance:          tm.Stance(),
 		FH:              tm.FH(),
 		Excludes:        es,
+	}, nil
+}
+
+func Extract(rm RestModel) (Model, error) {
+	es, err := model.SliceMap(exclude.Extract)(model.FixedProvider(rm.Excludes))(model.ParallelMap())()
+	if err != nil {
+		return Model{}, nil
+	}
+
+	return Model{
+		id:              rm.Id,
+		inventoryItemId: rm.InventoryItemId,
+		templateId:      rm.TemplateId,
+		name:            rm.Name,
+		level:           rm.Level,
+		closeness:       rm.Closeness,
+		fullness:        rm.Fullness,
+		expiration:      rm.Expiration,
+		ownerId:         rm.OwnerId,
+		slot:            rm.Slot,
+		excludes:        es,
 	}, nil
 }

@@ -2,13 +2,14 @@ package pet
 
 import (
 	"atlas-pets/rest"
+	"net/http"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"net/http"
 )
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
@@ -24,7 +25,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 }
 
 func handleGetPet(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParsePetId(d.Logger(), func(petId uint64) http.HandlerFunc {
+	return rest.ParsePetId(d.Logger(), func(petId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			res, err := model.Map(Transform)(ByIdProvider(d.Context())(d.DB())(petId))()
 			if err != nil {

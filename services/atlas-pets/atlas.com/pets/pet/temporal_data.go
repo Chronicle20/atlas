@@ -57,12 +57,12 @@ func NewTemporalData() *temporalData {
 }
 
 type temporalRegistry struct {
-	data     map[uint64]*temporalData
+	data     map[uint32]*temporalData
 	mutex    *sync.RWMutex
-	petLocks map[uint64]*sync.RWMutex
+	petLocks map[uint32]*sync.RWMutex
 }
 
-func (r *temporalRegistry) UpdatePosition(petId uint64, x int16, y int16, fh int16) {
+func (r *temporalRegistry) UpdatePosition(petId uint32, x int16, y int16, fh int16) {
 	r.lockPet(petId)
 	if val, ok := r.data[petId]; ok {
 		r.data[petId] = val.UpdatePosition(x, y, fh)
@@ -72,7 +72,7 @@ func (r *temporalRegistry) UpdatePosition(petId uint64, x int16, y int16, fh int
 	r.unlockPet(petId)
 }
 
-func (r *temporalRegistry) lockPet(petId uint64) {
+func (r *temporalRegistry) lockPet(petId uint32) {
 	r.mutex.Lock()
 	lock, exists := r.petLocks[petId]
 	if !exists {
@@ -83,7 +83,7 @@ func (r *temporalRegistry) lockPet(petId uint64) {
 	lock.Lock()
 }
 
-func (r *temporalRegistry) readLockPet(petId uint64) {
+func (r *temporalRegistry) readLockPet(petId uint32) {
 	r.mutex.Lock()
 	lock, exists := r.petLocks[petId]
 	if !exists {
@@ -94,19 +94,19 @@ func (r *temporalRegistry) readLockPet(petId uint64) {
 	lock.RLock()
 }
 
-func (r *temporalRegistry) unlockPet(petId uint64) {
+func (r *temporalRegistry) unlockPet(petId uint32) {
 	if val, ok := r.petLocks[petId]; ok {
 		val.Unlock()
 	}
 }
 
-func (r *temporalRegistry) readUnlockPet(petId uint64) {
+func (r *temporalRegistry) readUnlockPet(petId uint32) {
 	if val, ok := r.petLocks[petId]; ok {
 		val.RUnlock()
 	}
 }
 
-func (r *temporalRegistry) Update(petId uint64, x int16, y int16, stance byte, fh int16) {
+func (r *temporalRegistry) Update(petId uint32, x int16, y int16, stance byte, fh int16) {
 	r.lockPet(petId)
 	if val, ok := r.data[petId]; ok {
 		r.data[petId] = val.Update(x, y, stance, fh)
@@ -116,7 +116,7 @@ func (r *temporalRegistry) Update(petId uint64, x int16, y int16, stance byte, f
 	r.unlockPet(petId)
 }
 
-func (r *temporalRegistry) UpdateStance(petId uint64, stance byte) {
+func (r *temporalRegistry) UpdateStance(petId uint32, stance byte) {
 	r.lockPet(petId)
 	if val, ok := r.data[petId]; ok {
 		r.data[petId] = val.UpdateStance(stance)
@@ -126,7 +126,7 @@ func (r *temporalRegistry) UpdateStance(petId uint64, stance byte) {
 	r.unlockPet(petId)
 }
 
-func (r *temporalRegistry) GetById(petId uint64) *temporalData {
+func (r *temporalRegistry) GetById(petId uint32) *temporalData {
 	r.readLockPet(petId)
 	defer r.readUnlockPet(petId)
 
@@ -137,7 +137,7 @@ func (r *temporalRegistry) GetById(petId uint64) *temporalData {
 	return NewTemporalData()
 }
 
-func (r *temporalRegistry) Remove(petId uint64) {
+func (r *temporalRegistry) Remove(petId uint32) {
 	r.lockPet(petId)
 	defer r.unlockPet(petId)
 	delete(r.data, petId)
@@ -149,9 +149,9 @@ var instance *temporalRegistry
 func GetTemporalRegistry() *temporalRegistry {
 	once.Do(func() {
 		instance = &temporalRegistry{
-			data:     make(map[uint64]*temporalData),
+			data:     make(map[uint32]*temporalData),
 			mutex:    &sync.RWMutex{},
-			petLocks: make(map[uint64]*sync.RWMutex),
+			petLocks: make(map[uint32]*sync.RWMutex),
 		}
 	})
 	return instance

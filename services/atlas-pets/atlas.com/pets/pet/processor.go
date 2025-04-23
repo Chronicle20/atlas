@@ -9,31 +9,32 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
+	"sort"
+
 	"github.com/Chronicle20/atlas-constants/inventory"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"math/rand"
-	"sort"
 )
 
 var petExpTable = []uint16{1, 1, 3, 6, 14, 31, 60, 108, 181, 287, 434, 632, 891, 1224, 1642, 2161, 2793, 3557, 4467, 5542, 6801, 8263, 9950, 11882, 14084, 16578, 19391, 22547, 26074, 30000}
 
-func ByIdProvider(ctx context.Context) func(db *gorm.DB) func(petId uint64) model.Provider[Model] {
+func ByIdProvider(ctx context.Context) func(db *gorm.DB) func(petId uint32) model.Provider[Model] {
 	t := tenant.MustFromContext(ctx)
-	return func(db *gorm.DB) func(petId uint64) model.Provider[Model] {
-		return func(petId uint64) model.Provider[Model] {
+	return func(db *gorm.DB) func(petId uint32) model.Provider[Model] {
+		return func(petId uint32) model.Provider[Model] {
 			return model.Map(modelFromEntity)(getById(t.Id(), petId)(db))
 		}
 	}
 }
 
-func GetById(ctx context.Context) func(db *gorm.DB) func(petId uint64) (Model, error) {
-	return func(db *gorm.DB) func(petId uint64) (Model, error) {
-		return func(petId uint64) (Model, error) {
+func GetById(ctx context.Context) func(db *gorm.DB) func(petId uint32) (Model, error) {
+	return func(db *gorm.DB) func(petId uint32) (Model, error) {
+		return func(petId uint32) (Model, error) {
 			return ByIdProvider(ctx)(db)(petId)()
 		}
 	}
@@ -171,10 +172,10 @@ func DeleteForCharacter(l logrus.FieldLogger) func(ctx context.Context) func(db 
 	}
 }
 
-func Move(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
-		return func(db *gorm.DB) func(petId uint64, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
-			return func(petId uint64, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
+func Move(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint32, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint32, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
+		return func(db *gorm.DB) func(petId uint32, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
+			return func(petId uint32, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
 				p, err := GetById(ctx)(db)(petId)
 				if err != nil {
 					l.WithError(err).Errorf("Movement issued for pet by character [%d], which pet [%d] does not exist.", ownerId, petId)
@@ -196,11 +197,11 @@ func Move(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func
 	}
 }
 
-func Spawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32, lead bool) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32, lead bool) error {
+func Spawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint32, actorId uint32, lead bool) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint32, actorId uint32, lead bool) error {
 		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(petId uint64, actorId uint32, lead bool) error {
-			return func(petId uint64, actorId uint32, lead bool) error {
+		return func(db *gorm.DB) func(petId uint32, actorId uint32, lead bool) error {
+			return func(petId uint32, actorId uint32, lead bool) error {
 				var p Model
 				slotEvents := model.FixedProvider[[]kafka.Message]([]kafka.Message{})
 				txErr := db.Transaction(func(tx *gorm.DB) error {
@@ -292,11 +293,11 @@ func Spawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fun
 	}
 }
 
-func Despawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32, reason string) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32, reason string) error {
+func Despawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint32, actorId uint32, reason string) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint32, actorId uint32, reason string) error {
 		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(petId uint64, actorId uint32, reason string) error {
-			return func(petId uint64, actorId uint32, reason string) error {
+		return func(db *gorm.DB) func(petId uint32, actorId uint32, reason string) error {
+			return func(petId uint32, actorId uint32, reason string) error {
 				var p Model
 				var oldSlot int8
 				slotEvents := model.FixedProvider[[]kafka.Message]([]kafka.Message{})
@@ -365,10 +366,10 @@ func Despawn(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) f
 	}
 }
 
-func AttemptCommand(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32, commandId byte, byName bool) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, actorId uint32, commandId byte, byName bool) error {
-		return func(db *gorm.DB) func(petId uint64, actorId uint32, commandId byte, byName bool) error {
-			return func(petId uint64, actorId uint32, commandId byte, byName bool) error {
+func AttemptCommand(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint32, actorId uint32, commandId byte, byName bool) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint32, actorId uint32, commandId byte, byName bool) error {
+		return func(db *gorm.DB) func(petId uint32, actorId uint32, commandId byte, byName bool) error {
+			return func(petId uint32, actorId uint32, commandId byte, byName bool) error {
 				var success bool
 				p, err := GetById(ctx)(db)(petId)
 				if err != nil {
@@ -416,7 +417,7 @@ func EvaluateHunger(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(ownerId uint32) error {
 			return func(ownerId uint32) error {
-				original := make(map[uint64]Model)
+				original := make(map[uint32]Model)
 				fullnessChanged := make([]Model, 0)
 				despawned := make([]Model, 0)
 				txErr := db.Transaction(func(tx *gorm.DB) error {
@@ -489,11 +490,11 @@ func ClearPositions(ctx context.Context) func(db *gorm.DB) func(ownerId uint32) 
 	}
 }
 
-func AwardCloseness(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, amount uint16, actorId uint32) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, amount uint16, actorId uint32) error {
+func AwardCloseness(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint32, amount uint16, actorId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint32, amount uint16, actorId uint32) error {
 		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(petId uint64, amount uint16, actorId uint32) error {
-			return func(petId uint64, amount uint16, actorId uint32) error {
+		return func(db *gorm.DB) func(petId uint32, amount uint16, actorId uint32) error {
+			return func(petId uint32, amount uint16, actorId uint32) error {
 				var p Model
 				awardLevel := false
 				txErr := db.Transaction(func(tx *gorm.DB) error {
@@ -545,11 +546,11 @@ func AwardCloseness(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 	}
 }
 
-func AwardFullness(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, amount byte, actorId uint32) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, amount byte, actorId uint32) error {
+func AwardFullness(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint32, amount byte, actorId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint32, amount byte, actorId uint32) error {
 		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(petId uint64, amount byte, actorId uint32) error {
-			return func(petId uint64, amount byte, actorId uint32) error {
+		return func(db *gorm.DB) func(petId uint32, amount byte, actorId uint32) error {
+			return func(petId uint32, amount byte, actorId uint32) error {
 				var p Model
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					var err error
@@ -581,11 +582,11 @@ func AwardFullness(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 	}
 }
 
-func AwardLevel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, amount byte, actorId uint32) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, amount byte, actorId uint32) error {
+func AwardLevel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint32, amount byte, actorId uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint32, amount byte, actorId uint32) error {
 		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(petId uint64, amount byte, actorId uint32) error {
-			return func(petId uint64, amount byte, actorId uint32) error {
+		return func(db *gorm.DB) func(petId uint32, amount byte, actorId uint32) error {
+			return func(petId uint32, amount byte, actorId uint32) error {
 				var p Model
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					var err error
@@ -617,10 +618,10 @@ func AwardLevel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 	}
 }
 
-func SetExclude(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint64, items []uint32) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(petId uint64, items []uint32) error {
-		return func(db *gorm.DB) func(petId uint64, items []uint32) error {
-			return func(petId uint64, items []uint32) error {
+func SetExclude(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(petId uint32, items []uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(petId uint32, items []uint32) error {
+		return func(db *gorm.DB) func(petId uint32, items []uint32) error {
+			return func(petId uint32, items []uint32) error {
 				var p Model
 				txErr := db.Transaction(func(tx *gorm.DB) error {
 					err := setExcludes(tx, petId, items)

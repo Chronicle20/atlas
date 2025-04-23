@@ -13,7 +13,7 @@ const (
 
 type command[E any] struct {
 	ActorId uint32 `json:"actorId"`
-	PetId   uint64 `json:"petId"`
+	PetId   uint32 `json:"petId"`
 	Type    string `json:"type"`
 	Body    E      `json:"body"`
 }

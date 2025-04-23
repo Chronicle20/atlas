@@ -3,8 +3,9 @@ package pet
 import (
 	"atlas-pets/pet/exclude"
 	"errors"
+
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"gorm.io/gorm"
 )
 
@@ -30,8 +31,8 @@ func create(db *gorm.DB) func(t tenant.Model, ownerId uint32, m Model) (Model, e
 	}
 }
 
-func updateSlot(db *gorm.DB) func(t tenant.Model, petId uint64, slot int8) error {
-	return func(t tenant.Model, petId uint64, slot int8) error {
+func updateSlot(db *gorm.DB) func(t tenant.Model, petId uint32, slot int8) error {
+	return func(t tenant.Model, petId uint32, slot int8) error {
 		result := db.Model(&Entity{}).
 			Where("tenant_id = ? AND id = ?", t.Id(), petId).
 			Update("slot", slot)
@@ -48,8 +49,8 @@ func updateSlot(db *gorm.DB) func(t tenant.Model, petId uint64, slot int8) error
 	}
 }
 
-func updateCloseness(db *gorm.DB) func(t tenant.Model, petId uint64, closeness uint16) error {
-	return func(t tenant.Model, petId uint64, closeness uint16) error {
+func updateCloseness(db *gorm.DB) func(t tenant.Model, petId uint32, closeness uint16) error {
+	return func(t tenant.Model, petId uint32, closeness uint16) error {
 		result := db.Model(&Entity{}).
 			Where("tenant_id = ? AND id = ?", t.Id(), petId).
 			Update("closeness", closeness)
@@ -66,8 +67,8 @@ func updateCloseness(db *gorm.DB) func(t tenant.Model, petId uint64, closeness u
 	}
 }
 
-func updateLevel(db *gorm.DB) func(t tenant.Model, petId uint64, level byte) error {
-	return func(t tenant.Model, petId uint64, level byte) error {
+func updateLevel(db *gorm.DB) func(t tenant.Model, petId uint32, level byte) error {
+	return func(t tenant.Model, petId uint32, level byte) error {
 		result := db.Model(&Entity{}).
 			Where("tenant_id = ? AND id = ?", t.Id(), petId).
 			Update("level", level)
@@ -84,8 +85,8 @@ func updateLevel(db *gorm.DB) func(t tenant.Model, petId uint64, level byte) err
 	}
 }
 
-func updateFullness(db *gorm.DB) func(t tenant.Model, petId uint64, fullness byte) error {
-	return func(t tenant.Model, petId uint64, fullness byte) error {
+func updateFullness(db *gorm.DB) func(t tenant.Model, petId uint32, fullness byte) error {
+	return func(t tenant.Model, petId uint32, fullness byte) error {
 		result := db.Model(&Entity{}).
 			Where("tenant_id = ? AND id = ?", t.Id(), petId).
 			Update("fullness", fullness)
@@ -114,7 +115,7 @@ func deleteForCharacter(t tenant.Model, ownerId uint32) func(db *gorm.DB) error 
 	}
 }
 
-func setExcludes(db *gorm.DB, petId uint64, itemIds []uint32) error {
+func setExcludes(db *gorm.DB, petId uint32, itemIds []uint32) error {
 	// Start a transaction for atomicity
 	return db.Transaction(func(tx *gorm.DB) error {
 		// Step 1: Delete existing excludes for the pet

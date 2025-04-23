@@ -30,3 +30,10 @@ func Transform(m Model) (RestModel, error) {
 		ItemId: m.itemId,
 	}, nil
 }
+
+func Extract(rm RestModel) (Model, error) {
+	return Model{
+		id:     rm.Id,
+		itemId: rm.ItemId,
+	}, nil
+}

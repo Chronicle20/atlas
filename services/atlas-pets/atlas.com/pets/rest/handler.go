@@ -2,14 +2,15 @@ package rest
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"io"
-	"net/http"
-	"strconv"
 )
 
 type HandlerDependency struct {
@@ -107,17 +108,17 @@ func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.Handle
 	}
 }
 
-type PetIdHandler func(petId uint64) http.HandlerFunc
+type PetIdHandler func(petId uint32) http.HandlerFunc
 
 func ParsePetId(l logrus.FieldLogger, next PetIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		petId, err := strconv.Atoi(vars["petId"])
 		if err != nil {
-			l.WithError(err).Errorf("Error parsing petId as uint64")
+			l.WithError(err).Errorf("Error parsing petId as uint32")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		next(uint64(petId))(w, r)
+		next(uint32(petId))(w, r)
 	}
 }

@@ -2,12 +2,13 @@ package pet
 
 import (
 	"atlas-pets/database"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func getById(tenantId uuid.UUID, id uint64) database.EntityProvider[Entity] {
+func getById(tenantId uuid.UUID, id uint32) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
 		var result Entity
 		err := db.Where(&Entity{TenantId: tenantId, Id: id}).Preload("Excludes").First(&result).Error

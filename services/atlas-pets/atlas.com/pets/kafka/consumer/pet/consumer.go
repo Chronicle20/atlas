@@ -4,6 +4,7 @@ import (
 	consumer2 "atlas-pets/kafka/consumer"
 	"atlas-pets/pet"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -118,7 +119,7 @@ func handleSetExcludeCommand(db *gorm.DB) message.Handler[command[setExcludeComm
 func handleMovementCommand(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c movementCommand) {
 	return func(l logrus.FieldLogger, ctx context.Context, c movementCommand) {
 		m := _map.NewModel(world.Id(c.WorldId))(channel.Id(c.ChannelId))(_map.Id(c.MapId))
-		err := pet.Move(l)(ctx)(db)(c.ObjectId, m, c.ObserverId, c.X, c.Y, c.Stance)
+		err := pet.Move(l)(ctx)(db)(uint32(c.ObjectId), m, c.ObserverId, c.X, c.Y, c.Stance)
 		if err != nil {
 			l.WithError(err).Errorf("Error processing movement for pet [%d].", c.ObjectId)
 		}

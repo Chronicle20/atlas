@@ -6,7 +6,7 @@ import (
 )
 
 type Model struct {
-	id              uint64
+	id              uint32
 	inventoryItemId uint32
 	templateId      uint32
 	name            string
@@ -19,7 +19,7 @@ type Model struct {
 	excludes        []exclude.Model
 }
 
-func (m Model) Id() uint64 {
+func (m Model) Id() uint32 {
 	return m.id
 }
 
@@ -72,7 +72,7 @@ func (m Model) Excludes() []exclude.Model {
 }
 
 type ModelBuilder struct {
-	id              uint64
+	id              uint32
 	inventoryItemId uint32
 	templateId      uint32
 	name            string
@@ -85,7 +85,7 @@ type ModelBuilder struct {
 	excludes        []exclude.Model
 }
 
-func NewModelBuilder(id uint64, inventoryItemId uint32, templateId uint32, name string, ownerId uint32) *ModelBuilder {
+func NewModelBuilder(id uint32, inventoryItemId uint32, templateId uint32, name string, ownerId uint32) *ModelBuilder {
 	return &ModelBuilder{
 		id:              id,
 		inventoryItemId: inventoryItemId,

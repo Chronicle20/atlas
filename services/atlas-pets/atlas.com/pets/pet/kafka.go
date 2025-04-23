@@ -19,7 +19,7 @@ const (
 )
 
 type statusEvent[E any] struct {
-	PetId   uint64 `json:"petId"`
+	PetId   uint32 `json:"petId"`
 	OwnerId uint32 `json:"ownerId"`
 	Type    string `json:"type"`
 	Body    E      `json:"body"`

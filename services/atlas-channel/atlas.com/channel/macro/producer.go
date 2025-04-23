@@ -1,15 +1,16 @@
 package macro
 
 import (
+	macro2 "atlas-channel/kafka/message/macro"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func updateCommandProvider(characterId uint32, macros []Model) model.Provider[[]kafka.Message] {
-	ms := make([]MacroBody, 0)
+func UpdateCommandProvider(characterId uint32, macros []Model) model.Provider[[]kafka.Message] {
+	ms := make([]macro2.MacroBody, 0)
 	for _, macro := range macros {
-		ms = append(ms, MacroBody{
+		ms = append(ms, macro2.MacroBody{
 			Id:       macro.Id(),
 			Name:     macro.Name(),
 			Shout:    macro.Shout(),
@@ -20,10 +21,10 @@ func updateCommandProvider(characterId uint32, macros []Model) model.Provider[[]
 	}
 
 	key := producer.CreateKey(int(characterId))
-	value := &Command[UpdateCommandBody]{
+	value := &macro2.Command[macro2.UpdateCommandBody]{
 		CharacterId: characterId,
-		Type:        CommandTypeUpdate,
-		Body: UpdateCommandBody{
+		Type:        macro2.CommandTypeUpdate,
+		Body: macro2.UpdateCommandBody{
 			Macros: ms,
 		},
 	}

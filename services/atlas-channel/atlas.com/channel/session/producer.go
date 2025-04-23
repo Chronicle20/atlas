@@ -1,6 +1,7 @@
 package session
 
 import (
+	session2 "atlas-channel/kafka/message/session"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
@@ -9,24 +10,24 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func statusEventProvider(sessionId uuid.UUID, accountId uint32, characterId uint32, worldId world.Id, channelId channel.Id, eventType string) model.Provider[[]kafka.Message] {
+func StatusEventProvider(sessionId uuid.UUID, accountId uint32, characterId uint32, worldId world.Id, channelId channel.Id, eventType string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &statusEvent{
+	value := &session2.StatusEvent{
 		SessionId:   sessionId,
 		AccountId:   accountId,
 		CharacterId: characterId,
 		WorldId:     byte(worldId),
 		ChannelId:   byte(channelId),
-		Issuer:      EventSessionStatusIssuerChannel,
+		Issuer:      session2.EventSessionStatusIssuerChannel,
 		Type:        eventType,
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func createdStatusEventProvider(sessionId uuid.UUID, accountId uint32, characterId uint32, worldId world.Id, channelId channel.Id) model.Provider[[]kafka.Message] {
-	return statusEventProvider(sessionId, accountId, characterId, worldId, channelId, EventSessionStatusTypeCreated)
+func CreatedStatusEventProvider(sessionId uuid.UUID, accountId uint32, characterId uint32, worldId world.Id, channelId channel.Id) model.Provider[[]kafka.Message] {
+	return StatusEventProvider(sessionId, accountId, characterId, worldId, channelId, session2.EventSessionStatusTypeCreated)
 }
 
-func destroyedStatusEventProvider(sessionId uuid.UUID, accountId uint32, characterId uint32, worldId world.Id, channelId channel.Id) model.Provider[[]kafka.Message] {
-	return statusEventProvider(sessionId, accountId, characterId, worldId, channelId, EventSessionStatusTypeDestroyed)
+func DestroyedStatusEventProvider(sessionId uuid.UUID, accountId uint32, characterId uint32, worldId world.Id, channelId channel.Id) model.Provider[[]kafka.Message] {
+	return StatusEventProvider(sessionId, accountId, characterId, worldId, channelId, session2.EventSessionStatusTypeDestroyed)
 }

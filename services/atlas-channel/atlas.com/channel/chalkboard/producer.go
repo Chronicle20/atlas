@@ -1,36 +1,37 @@
 package chalkboard
 
 import (
+	chalkboard2 "atlas-channel/kafka/message/chalkboard"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func setCommandProvider(m _map.Model, characterId uint32, message string) model.Provider[[]kafka.Message] {
+func SetCommandProvider(m _map.Model, characterId uint32, message string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &commandEvent[setCommandBody]{
+	value := &chalkboard2.Command[chalkboard2.SetCommandBody]{
 		WorldId:     byte(m.WorldId()),
 		ChannelId:   byte(m.ChannelId()),
 		MapId:       uint32(m.MapId()),
 		CharacterId: characterId,
-		Type:        CommandChalkboardSet,
-		Body: setCommandBody{
+		Type:        chalkboard2.CommandChalkboardSet,
+		Body: chalkboard2.SetCommandBody{
 			Message: message,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func clearCommandProvider(m _map.Model, characterId uint32) model.Provider[[]kafka.Message] {
+func ClearCommandProvider(m _map.Model, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &commandEvent[clearCommandBody]{
+	value := &chalkboard2.Command[chalkboard2.ClearCommandBody]{
 		WorldId:     byte(m.WorldId()),
 		ChannelId:   byte(m.ChannelId()),
 		MapId:       uint32(m.MapId()),
 		CharacterId: characterId,
-		Type:        CommandChalkboardClear,
-		Body:        clearCommandBody{},
+		Type:        chalkboard2.CommandChalkboardClear,
+		Body:        chalkboard2.ClearCommandBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

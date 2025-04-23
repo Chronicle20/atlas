@@ -2,11 +2,11 @@ package writer
 
 import (
 	"atlas-channel/character"
-	"atlas-channel/character/equipment/slot"
 	"atlas-channel/character/skill"
 	skill3 "atlas-channel/skill"
 	"atlas-channel/socket/model"
 	"context"
+	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-constants/job"
 	skill2 "github.com/Chronicle20/atlas-constants/skill"
@@ -65,7 +65,7 @@ func WriteCommonAttackBody(l logrus.FieldLogger) func(ctx context.Context) func(
 					if err == nil {
 						if ew, ok := c.Equipment().Get(ws.Type); ok {
 							if we := ew.Equipable; we != nil {
-								weaponId = we.ItemId()
+								weaponId = we.TemplateId()
 							}
 						}
 					}
@@ -78,16 +78,16 @@ func WriteCommonAttackBody(l logrus.FieldLogger) func(ctx context.Context) func(
 
 					var bulletItemId = ai.BulletItemId()
 					if ai.CashBulletPosition() > 0 {
-						for _, i := range c.Inventory().Cash().Items() {
+						for _, i := range c.Inventory().Cash().Assets() {
 							if uint16(i.Slot()) == ai.CashBulletPosition() {
-								bulletItemId = i.ItemId()
+								bulletItemId = i.TemplateId()
 								break
 							}
 						}
 					} else if ai.ProperBulletPosition() > 0 {
-						for _, i := range c.Inventory().Use().Items() {
-							if uint16(i.Slot()) == ai.ProperBulletPosition() && (i.Bullet() || i.ThrowingStar()) {
-								bulletItemId = i.ItemId()
+						for _, i := range c.Inventory().Consumable().Assets() {
+							if uint16(i.Slot()) == ai.ProperBulletPosition() && (item.IsBullet(item.Id(i.TemplateId())) || item.IsThrowingStar(item.Id(i.TemplateId()))) {
+								bulletItemId = i.TemplateId()
 							}
 						}
 					}
@@ -266,7 +266,7 @@ func getMasteryFromSkill(l logrus.FieldLogger) func(ctx context.Context) func(st
 			if s.Level() == 0 {
 				return startingMastery
 			}
-			si, err := skill3.GetById(l)(ctx)(uint32(skillId))
+			si, err := skill3.NewProcessor(l, ctx).GetById(uint32(skillId))
 			if err != nil {
 				return startingMastery
 			}

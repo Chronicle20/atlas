@@ -1,21 +1,22 @@
 package portal
 
 import (
+	portal2 "atlas-channel/kafka/message/portal"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func enterCommandProvider(m _map.Model, portalId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+func EnterCommandProvider(m _map.Model, portalId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(portalId))
-	value := commandEvent[enterBody]{
+	value := portal2.Command[portal2.EnterBody]{
 		WorldId:   byte(m.WorldId()),
 		ChannelId: byte(m.ChannelId()),
 		MapId:     uint32(m.MapId()),
 		PortalId:  portalId,
-		Type:      CommandTypeEnter,
-		Body: enterBody{
+		Type:      portal2.CommandTypeEnter,
+		Body: portal2.EnterBody{
 			CharacterId: characterId,
 		},
 	}

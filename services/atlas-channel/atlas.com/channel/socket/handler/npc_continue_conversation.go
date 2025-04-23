@@ -24,11 +24,11 @@ func NPCContinueConversationHandleFunc(l logrus.FieldLogger, ctx context.Context
 				// TODO handle quest in progress, continue quest
 
 				//TODO set return text
-				_ = npc.ContinueConversation(l)(ctx)(s.CharacterId(), action, lastMessageType, selection)
+				_ = npc.NewProcessor(l, ctx).ContinueConversation(s.CharacterId(), action, lastMessageType, selection)
 				return
 			}
 			// TODO handle quest in progress, dispose
-			_ = npc.DisposeConversation(l)(ctx)(s.CharacterId())
+			_ = npc.NewProcessor(l, ctx).DisposeConversation(s.CharacterId())
 			return
 		} else {
 			if len(r.GetRestAsBytes()) >= 4 {
@@ -37,7 +37,7 @@ func NPCContinueConversationHandleFunc(l logrus.FieldLogger, ctx context.Context
 				selection = int32(r.ReadByte())
 			}
 			// TODO handle quest in progress, continue quest
-			_ = npc.ContinueConversation(l)(ctx)(s.CharacterId(), action, lastMessageType, selection)
+			_ = npc.NewProcessor(l, ctx).ContinueConversation(s.CharacterId(), action, lastMessageType, selection)
 		}
 	}
 }

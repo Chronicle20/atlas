@@ -1,19 +1,20 @@
 package invite
 
 import (
+	invite2 "atlas-channel/kafka/message/invite"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func acceptInviteCommandProvider(actorId uint32, worldId world.Id, inviteType string, referenceId uint32) model.Provider[[]kafka.Message] {
+func AcceptInviteCommandProvider(actorId uint32, worldId world.Id, inviteType string, referenceId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
-	value := &commandEvent[acceptCommandBody]{
+	value := &invite2.Command[invite2.AcceptCommandBody]{
 		WorldId:    byte(worldId),
 		InviteType: inviteType,
-		Type:       CommandInviteTypeAccept,
-		Body: acceptCommandBody{
+		Type:       invite2.CommandInviteTypeAccept,
+		Body: invite2.AcceptCommandBody{
 			ReferenceId: referenceId,
 			TargetId:    actorId,
 		},
@@ -21,13 +22,13 @@ func acceptInviteCommandProvider(actorId uint32, worldId world.Id, inviteType st
 	return producer.SingleMessageProvider(key, value)
 }
 
-func rejectInviteCommandProvider(actorId uint32, worldId world.Id, inviteType string, originatorId uint32) model.Provider[[]kafka.Message] {
+func RejectInviteCommandProvider(actorId uint32, worldId world.Id, inviteType string, originatorId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
-	value := &commandEvent[rejectCommandBody]{
+	value := &invite2.Command[invite2.RejectCommandBody]{
 		WorldId:    byte(worldId),
 		InviteType: inviteType,
-		Type:       CommandInviteTypeReject,
-		Body: rejectCommandBody{
+		Type:       invite2.CommandInviteTypeReject,
+		Body: invite2.RejectCommandBody{
 			OriginatorId: originatorId,
 			TargetId:     actorId,
 		},

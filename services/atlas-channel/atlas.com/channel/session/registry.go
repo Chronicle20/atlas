@@ -13,7 +13,7 @@ type Registry struct {
 var sessionRegistryOnce sync.Once
 var sessionRegistry *Registry
 
-func GetRegistry() *Registry {
+func getRegistry() *Registry {
 	sessionRegistryOnce.Do(func() {
 		sessionRegistry = &Registry{}
 		sessionRegistry.sessionRegistry = make(map[uuid.UUID]map[uuid.UUID]Model)

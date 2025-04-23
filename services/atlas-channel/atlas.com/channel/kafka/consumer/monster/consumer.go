@@ -2,6 +2,7 @@ package monster
 
 import (
 	consumer2 "atlas-channel/kafka/consumer"
+	monster2 "atlas-channel/kafka/message/monster"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
 	"atlas-channel/party"
@@ -25,7 +26,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("monster_status_event")(EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("monster_status_event")(monster2.EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -35,7 +36,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventTopicStatus)()
+				t, _ = topic.EnvProvider(l)(monster2.EnvEventTopicStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCreated(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDestroyed(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDamaged(sc, wp))))
@@ -47,9 +48,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventCreatedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventCreatedBody]) {
-		if e.Type != EventStatusCreated {
+func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventCreatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventCreatedBody]) {
+		if e.Type != monster2.EventStatusCreated {
 			return
 		}
 
@@ -57,13 +58,13 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		m, err := monster.GetById(l)(ctx)(e.UniqueId)
+		m, err := monster.NewProcessor(l, ctx).GetById(e.UniqueId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve the monster [%d] being spawned.", e.UniqueId)
 			return
 		}
 
-		err = _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), spawnForSession(l)(ctx)(wp)(m))
+		err = _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), spawnForSession(l)(ctx)(wp)(m))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn monster [%d] for characters in map [%d].", m.UniqueId(), e.MapId)
 		}
@@ -80,9 +81,9 @@ func spawnForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 	}
 }
 
-func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventDestroyedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventDestroyedBody]) {
-		if e.Type != EventStatusDestroyed {
+func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventDestroyedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventDestroyedBody]) {
+		if e.Type != monster2.EventStatusDestroyed {
 			return
 		}
 
@@ -90,7 +91,7 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), destroyForSession(l)(ctx)(wp)(e.UniqueId))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), destroyForSession(l)(ctx)(wp)(e.UniqueId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
@@ -107,9 +108,9 @@ func destroyForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 	}
 }
 
-func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventDamagedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventDamagedBody]) {
-		if e.Type != EventStatusDamaged {
+func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventDamagedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventDamagedBody]) {
+		if e.Type != monster2.EventStatusDamaged {
 			return
 		}
 
@@ -117,30 +118,30 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		m, err := monster.GetById(l)(ctx)(e.UniqueId)
+		m, err := monster.NewProcessor(l, ctx).GetById(e.UniqueId)
 		if err != nil {
 			return
 		}
 
 		var idProvider = model.FixedProvider([]uint32{e.Body.ActorId})
 
-		p, err := party.GetByMemberId(l)(ctx)(e.Body.ActorId)
+		p, err := party.NewProcessor(l, ctx).GetByMemberId(e.Body.ActorId)
 		if err == nil {
 			mimf := party.MemberInMap(sc.WorldId(), sc.ChannelId(), _map2.Id(e.MapId))
 			mp := party.FilteredMemberProvider(mimf)(model.FixedProvider(p))
 			idProvider = party.MemberToMemberIdMapper(mp)
 		}
 
-		err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(idProvider, session.Announce(l)(ctx)(wp)(writer.MonsterHealth)(writer.MonsterHealthBody(m)))
+		err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(idProvider, session.Announce(l)(ctx)(wp)(writer.MonsterHealth)(writer.MonsterHealthBody(m)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce monster [%d] health.", e.UniqueId)
 		}
 	}
 }
 
-func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventKilledBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventKilledBody]) {
-		if e.Type != EventStatusKilled {
+func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventKilledBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventKilledBody]) {
+		if e.Type != monster2.EventStatusKilled {
 			return
 		}
 
@@ -148,7 +149,7 @@ func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), killForSession(l)(ctx)(wp)(e.UniqueId))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), killForSession(l)(ctx)(wp)(e.UniqueId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to kill monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
@@ -165,9 +166,9 @@ func killForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writ
 	}
 }
 
-func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventStartControlBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventStartControlBody]) {
-		if e.Type != EventStatusStartControl {
+func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventStartControlBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventStartControlBody]) {
+		if e.Type != monster2.EventStatusStartControl {
 			return
 		}
 
@@ -183,16 +184,16 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 			SetTeam(e.Body.Team).
 			Build()
 		sf := session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StartControlMonsterBody(l, tenant.MustFromContext(ctx))(m, false))
-		err := session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to start control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
 		}
 	}
 }
 
-func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.Handler[statusEvent[statusEventStopControlBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventStopControlBody]) {
-		if e.Type != EventStatusStopControl {
+func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventStopControlBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventStopControlBody]) {
+		if e.Type != monster2.EventStatusStopControl {
 			return
 		}
 
@@ -203,7 +204,7 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 		m := monster.NewModelBuilder(e.UniqueId, world.Id(e.WorldId), channel.Id(e.ChannelId), _map2.Id(e.MapId), e.MonsterId).
 			Build()
 		sf := session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StopControlMonsterBody(l, tenant.MustFromContext(ctx))(m))
-		err := session.IfPresentByCharacterId(tenant.MustFromContext(ctx), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.ActorId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to stop control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
 		}

@@ -3,6 +3,7 @@ package invite
 import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
+	invite2 "atlas-channel/kafka/message/invite"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -21,7 +22,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("invite_status_event")(EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("invite_status_event")(invite2.EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -31,7 +32,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+				t, _ = topic.EnvProvider(l)(invite2.EnvEventStatusTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedStatusEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRejectedStatusEvent(sc, wp))))
 			}
@@ -39,9 +40,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[createdEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[createdEventBody]) {
-		if e.Type != EventInviteStatusTypeCreated {
+func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handler[invite2.StatusEvent[invite2.CreatedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.CreatedEventBody]) {
+		if e.Type != invite2.EventInviteStatusTypeCreated {
 			return
 		}
 
@@ -49,25 +50,25 @@ func handleCreatedStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		rc, err := character.GetById(l)(ctx)()(e.Body.OriginatorId)
+		rc, err := character.NewProcessor(l, ctx).GetById()(e.Body.OriginatorId)
 		if err != nil {
 			l.WithError(err).Errorf("Unablet to get character [%d] details, who generated the invite.", e.Body.OriginatorId)
 			return
 		}
 
 		var eventHandler model.Operator[session.Model]
-		if e.InviteType == InviteTypeParty {
+		if e.InviteType == invite2.InviteTypeParty {
 			eventHandler = handlePartyCreatedStatusEvent(l)(ctx)(wp)(e.ReferenceId, rc.Name())
-		} else if e.InviteType == InviteTypeBuddy {
+		} else if e.InviteType == invite2.InviteTypeBuddy {
 			eventHandler = handleBuddyCreatedStatusEvent(l)(ctx)(wp)(e.Body.TargetId, e.ReferenceId, rc.Name())
-		} else if e.InviteType == InviteTypeGuild {
+		} else if e.InviteType == invite2.InviteTypeGuild {
 			eventHandler = handleGuildCreatedStatusEvent(l)(ctx)(wp)(e.ReferenceId, rc.Name())
-		} else if e.InviteType == InviteTypeMessenger {
+		} else if e.InviteType == invite2.InviteTypeMessenger {
 			eventHandler = handleMessengerCreatedStatusEvent(l)(ctx)(wp)(e.ReferenceId, rc.Name())
 		}
 
 		if eventHandler != nil {
-			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.TargetId, eventHandler)
+			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.TargetId, eventHandler)
 		}
 	}
 }
@@ -113,9 +114,9 @@ func handleMessengerCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Co
 	}
 }
 
-func handleRejectedStatusEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[rejectedEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[rejectedEventBody]) {
-		if e.Type != EventInviteStatusTypeRejected {
+func handleRejectedStatusEvent(sc server.Model, wp writer.Producer) message.Handler[invite2.StatusEvent[invite2.RejectedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.RejectedEventBody]) {
+		if e.Type != invite2.EventInviteStatusTypeRejected {
 			return
 		}
 
@@ -123,25 +124,25 @@ func handleRejectedStatusEvent(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 
-		rc, err := character.GetById(l)(ctx)()(e.Body.TargetId)
+		rc, err := character.NewProcessor(l, ctx).GetById()(e.Body.TargetId)
 		if err != nil {
 			l.WithError(err).Errorf("Unablet to get character [%d] details, who generated the invite.", e.Body.OriginatorId)
 			return
 		}
 
 		var eventHandler model.Operator[session.Model]
-		if e.InviteType == InviteTypeParty {
+		if e.InviteType == invite2.InviteTypeParty {
 			eventHandler = handlePartyRejectedStatusEvent(l)(ctx)(wp)(rc.Name())
-		} else if e.InviteType == InviteTypeBuddy {
+		} else if e.InviteType == invite2.InviteTypeBuddy {
 			// TODO send rejection to requesting character.
-		} else if e.InviteType == InviteTypeGuild {
+		} else if e.InviteType == invite2.InviteTypeGuild {
 			eventHandler = handleGuildRejectedStatusEvent(l)(ctx)(wp)(rc.Name())
-		} else if e.InviteType == InviteTypeMessenger {
+		} else if e.InviteType == invite2.InviteTypeMessenger {
 			eventHandler = handleMessengerRejectedStatusEvent(l)(ctx)(wp)(rc.Name())
 		}
 
 		if eventHandler != nil {
-			session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.OriginatorId, eventHandler)
+			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.OriginatorId, eventHandler)
 		}
 	}
 }

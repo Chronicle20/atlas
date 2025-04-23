@@ -13,7 +13,7 @@ func UseEnergyCharge(l logrus.FieldLogger) func(ctx context.Context) func(m _map
 	return func(ctx context.Context) func(m _map.Model, characterId uint32, info model.SkillUsageInfo, effect effect.Model) error {
 		return func(m _map.Model, characterId uint32, info model.SkillUsageInfo, effect effect.Model) error {
 
-			_ = buff.Apply(l)(ctx)(m, characterId, int32(info.SkillId()), effect.Duration(), effect.StatUps())(characterId)
+			_ = buff.NewProcessor(l, ctx).Apply(m, characterId, int32(info.SkillId()), effect.Duration(), effect.StatUps())(characterId)
 
 			return nil
 		}

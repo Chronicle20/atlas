@@ -26,10 +26,10 @@ const LoggedInValidator = "LoggedInValidator"
 
 func LoggedInValidatorFunc(l logrus.FieldLogger, ctx context.Context) func(s session.Model) bool {
 	return func(s session.Model) bool {
-		v := account.IsLoggedIn(ctx)(s.AccountId())
+		v := account.NewProcessor(l, ctx).IsLoggedIn(s.AccountId())
 		if !v {
 			l.Errorf("Attempting to process a request when the account [%d] is not logged in. Terminating session.", s.AccountId())
-			session.Destroy(l, ctx, session.GetRegistry())(s)
+			session.NewProcessor(l, ctx).Destroy(s)
 		}
 		return v
 	}
@@ -58,16 +58,14 @@ func AdaptHandler(l logrus.FieldLogger) func(t tenant.Model, wp writer.Producer)
 
 				tctx := tenant.WithContext(sctx, t)
 
-				s, ok := session.GetRegistry().Get(t.Id(), sessionId)
-				if !ok {
-					sl.Errorf("Unable to locate session %s", sessionId.String())
-					return
-				}
-
-				if v(sl, tctx)(s) {
-					h(sl, tctx, wp)(s, &r, readerOptions)
-					s = session.UpdateLastRequest()(t.Id(), s.SessionId())
-				}
+				sp := session.NewProcessor(l, tctx)
+				sp.IfPresentById(sessionId, func(s session.Model) error {
+					if v(sl, tctx)(s) {
+						h(sl, tctx, wp)(s, &r, readerOptions)
+						_ = sp.UpdateLastRequest(s.SessionId())
+					}
+					return nil
+				})
 			}
 		}
 	}

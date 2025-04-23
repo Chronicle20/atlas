@@ -6,30 +6,31 @@ import (
 )
 
 type Model struct {
-	id              uint64
-	inventoryItemId uint32
-	templateId      uint32
-	name            string
-	level           byte
-	closeness       uint16
-	fullness        byte
-	expiration      time.Time
-	ownerId         uint32
-	lead            bool
-	slot            int8
-	x               int16
-	y               int16
-	stance          byte
-	fh              int16
-	excludes        []exclude.Model
+	id         uint32
+	cashId     uint64
+	templateId uint32
+	name       string
+	level      byte
+	closeness  uint16
+	fullness   byte
+	expiration time.Time
+	ownerId    uint32
+	slot       int8
+	x          int16
+	y          int16
+	stance     byte
+	fh         int16
+	excludes   []exclude.Model
+	flag       uint16
+	purchaseBy uint32
 }
 
-func (m Model) Id() uint64 {
+func (m Model) Id() uint32 {
 	return m.id
 }
 
-func (m Model) InventoryItemId() uint32 {
-	return m.inventoryItemId
+func (m Model) CashId() uint64 {
+	return m.cashId
 }
 
 func (m Model) TemplateId() uint32 {
@@ -61,7 +62,7 @@ func (m Model) OwnerId() uint32 {
 }
 
 func (m Model) Lead() bool {
-	return m.lead
+	return m.slot == 0
 }
 
 func (m Model) Slot() int8 {
@@ -88,32 +89,41 @@ func (m Model) Excludes() []exclude.Model {
 	return m.excludes
 }
 
-type ModelBuilder struct {
-	id              uint64
-	inventoryItemId uint32
-	templateId      uint32
-	name            string
-	level           byte
-	closeness       uint16
-	fullness        byte
-	expiration      time.Time
-	ownerId         uint32
-	lead            bool
-	slot            int8
-	x               int16
-	y               int16
-	stance          byte
-	fh              int16
-	excludes        []exclude.Model
+func (m Model) Flag() uint16 {
+	return m.flag
 }
 
-func NewModelBuilder(id uint64, inventoryItemId, templateId uint32, name string) *ModelBuilder {
+func (m Model) PurchaseBy() uint32 {
+	return m.purchaseBy
+}
+
+type ModelBuilder struct {
+	id         uint32
+	cashId     uint64
+	templateId uint32
+	name       string
+	level      byte
+	closeness  uint16
+	fullness   byte
+	expiration time.Time
+	ownerId    uint32
+	slot       int8
+	x          int16
+	y          int16
+	stance     byte
+	fh         int16
+	excludes   []exclude.Model
+	flag       uint16
+	purchaseBy uint32
+}
+
+func NewModelBuilder(id uint32, cashId uint64, templateId uint32, name string) *ModelBuilder {
 	return &ModelBuilder{
-		id:              id,
-		inventoryItemId: inventoryItemId,
-		templateId:      templateId,
-		name:            name,
-		excludes:        make([]exclude.Model, 0),
+		id:         id,
+		cashId:     cashId,
+		templateId: templateId,
+		name:       name,
+		excludes:   make([]exclude.Model, 0),
 	}
 }
 
@@ -142,11 +152,6 @@ func (b *ModelBuilder) SetOwnerID(ownerId uint32) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetLead(lead bool) *ModelBuilder {
-	b.lead = lead
-	return b
-}
-
 func (b *ModelBuilder) SetSlot(slot int8) *ModelBuilder {
 	b.slot = slot
 	return b
@@ -172,28 +177,29 @@ func (b *ModelBuilder) SetExcludes(excludes []exclude.Model) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) Build() Model {
-	return Model{
-		id:              b.id,
-		inventoryItemId: b.inventoryItemId,
-		templateId:      b.templateId,
-		name:            b.name,
-		level:           b.level,
-		closeness:       b.closeness,
-		fullness:        b.fullness,
-		expiration:      b.expiration,
-		ownerId:         b.ownerId,
-		lead:            b.lead,
-		slot:            b.slot,
-		x:               b.x,
-		y:               b.y,
-		stance:          b.stance,
-		fh:              b.fh,
-		excludes:        b.excludes,
-	}
-}
-
 func (b *ModelBuilder) SetFoothold(fh int16) *ModelBuilder {
 	b.fh = fh
 	return b
+}
+
+func (b *ModelBuilder) Build() Model {
+	return Model{
+		id:         b.id,
+		cashId:     b.cashId,
+		templateId: b.templateId,
+		name:       b.name,
+		level:      b.level,
+		closeness:  b.closeness,
+		fullness:   b.fullness,
+		expiration: b.expiration,
+		ownerId:    b.ownerId,
+		slot:       b.slot,
+		x:          b.x,
+		y:          b.y,
+		stance:     b.stance,
+		fh:         b.fh,
+		excludes:   b.excludes,
+		flag:       b.flag,
+		purchaseBy: b.purchaseBy,
+	}
 }

@@ -29,7 +29,8 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		sui := &model.SkillUsageInfo{}
 		sui.Decode(l, t, readerOptions)(r)
 
-		c, err := character.GetById(l)(ctx)(character.SkillModelDecorator(l)(ctx))(s.CharacterId())
+		cp := character.NewProcessor(l, ctx)
+		c, err := cp.GetById(cp.SkillModelDecorator)(s.CharacterId())
 		if err != nil {
 			err = enableActions(l)(ctx)(wp)(s)
 			if err != nil {
@@ -54,7 +55,7 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		}
 		if sm.Id() == 0 || sm.Level() == 0 || sm.Level() != sui.SkillLevel() {
 			l.Debugf("Character [%d] attempting to use skill [%d] at level [%d], but they do not have it.", s.CharacterId(), sui.SkillId(), sui.SkillLevel())
-			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = session.NewProcessor(l, ctx).Destroy(s)
 			return
 		}
 
@@ -69,7 +70,7 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			return
 		}
 
-		se, err := skill3.GetEffect(l)(ctx)(sui.SkillId(), sui.SkillLevel())
+		se, err := skill3.NewProcessor(l, ctx).GetEffect(sui.SkillId(), sui.SkillLevel())
 		if err != nil {
 			err = enableActions(l)(ctx)(wp)(s)
 			if err != nil {
@@ -85,9 +86,9 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			return
 		}
 
-		session.IfPresentByCharacterId(t, s.WorldId(), s.ChannelId())(s.CharacterId(), announceSkillUse(l)(ctx)(wp)(sui.SkillId(), c.Level(), sui.SkillLevel()))
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(s.WorldId(), s.ChannelId())(s.CharacterId(), announceSkillUse(l)(ctx)(wp)(sui.SkillId(), c.Level(), sui.SkillLevel()))
 
-		_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), announceForeignSkillUse(l)(ctx)(wp)(s.CharacterId(), sui.SkillId(), c.Level(), sui.SkillLevel()))
+		_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), announceForeignSkillUse(l)(ctx)(wp)(s.CharacterId(), sui.SkillId(), c.Level(), sui.SkillLevel()))
 
 		err = enableActions(l)(ctx)(wp)(s)
 		if err != nil {

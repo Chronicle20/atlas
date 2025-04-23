@@ -3,7 +3,6 @@ package handler
 import (
 	as "atlas-channel/account/session"
 	"atlas-channel/channel"
-	"atlas-channel/kafka/producer"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
@@ -24,16 +23,16 @@ func ChannelChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer
 		// TODO verify alive
 		// TODO verify not in mini dungeon
 
-		c, err := channel.GetById(l)(ctx)(s.WorldId(), channel2.Id(channelId))
+		c, err := channel.NewProcessor(l, ctx).GetById(s.WorldId(), channel2.Id(channelId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")
 			// TODO send server notice.
 			return
 		}
 
-		err = as.UpdateState(l, producer.ProviderImpl(l)(ctx))(s.SessionId(), s.AccountId(), 2, model.ChannelChange{IPAddress: c.IpAddress(), Port: uint16(c.Port())})
+		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelChange{IPAddress: c.IpAddress(), Port: uint16(c.Port())})
 		if err != nil {
-			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = session.NewProcessor(l, ctx).Destroy(s)
 		}
 	}
 }

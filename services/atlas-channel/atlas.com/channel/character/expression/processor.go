@@ -1,17 +1,27 @@
 package expression
 
 import (
+	expression2 "atlas-channel/kafka/message/expression"
 	"atlas-channel/kafka/producer"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/sirupsen/logrus"
 )
 
-func Change(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, m _map.Model, expression uint32) error {
-	return func(ctx context.Context) func(characterId uint32, m _map.Model, expression uint32) error {
-		return func(characterId uint32, m _map.Model, expression uint32) error {
-			l.Debugf("Changing character [%d] expression to [%d].", characterId, m.MapId())
-			return producer.ProviderImpl(l)(ctx)(EnvExpressionCommand)(expressionCommandProvider(characterId, m, expression))
-		}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
+}
+
+func (p *Processor) Change(characterId uint32, m _map.Model, expression uint32) error {
+	p.l.Debugf("Changing character [%d] expression to [%d].", characterId, m.MapId())
+	return producer.ProviderImpl(p.l)(p.ctx)(expression2.EnvExpressionCommand)(SetCommandProvider(characterId, m, expression))
 }

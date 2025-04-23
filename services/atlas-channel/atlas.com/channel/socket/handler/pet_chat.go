@@ -13,7 +13,7 @@ import (
 
 const PetChatHandle = "PetChatHandle"
 
-func PetChatHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func PetChatHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		petId := r.ReadUint64()
@@ -25,13 +25,13 @@ func PetChatHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Prod
 		nAction := r.ReadByte()
 		msg := r.ReadAsciiString()
 		l.Debugf("Character [%d] received message [%s] from pet [%d]. updateTime [%d], nType [%d], nAction [%d].", s.CharacterId(), msg, petId, updateTime, nType, nAction)
-		p, err := pet.GetById(l)(ctx)(petId)
+		p, err := pet.NewProcessor(l, ctx).GetById(uint32(petId))
 		if err != nil {
 			return
 		}
 		if p.OwnerId() != s.CharacterId() {
 			return
 		}
-		_ = message.PetChat(l)(ctx)(s.Map(), petId, msg, s.CharacterId(), p.Slot(), nType, nAction, false)
+		_ = message.NewProcessor(l, ctx).PetChat(s.Map(), petId, msg, s.CharacterId(), p.Slot(), nType, nAction, false)
 	}
 }

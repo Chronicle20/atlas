@@ -1,19 +1,20 @@
 package fame
 
 import (
+	fame2 "atlas-channel/kafka/message/fame"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func requestChangeFameCommandProvider(m _map.Model, characterId uint32, targetId uint32, amount int8) model.Provider[[]kafka.Message] {
+func RequestChangeFameCommandProvider(m _map.Model, characterId uint32, targetId uint32, amount int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[requestChangeCommandBody]{
+	value := &fame2.Command[fame2.RequestChangeCommandBody]{
 		WorldId:     byte(m.WorldId()),
 		CharacterId: characterId,
-		Type:        CommandTypeRequestChange,
-		Body: requestChangeCommandBody{
+		Type:        fame2.CommandTypeRequestChange,
+		Body: fame2.RequestChangeCommandBody{
 			ChannelId: byte(m.ChannelId()),
 			MapId:     uint32(m.MapId()),
 			TargetId:  targetId,

@@ -9,26 +9,27 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Register(l logrus.FieldLogger) func(ctx context.Context) func(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
-	return func(ctx context.Context) func(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
-		return func(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
-			return registerChannel(l)(ctx)(worldId, channelId, ipAddress, port)
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func ByIdModelProvider(l logrus.FieldLogger) func(ctx context.Context) func(worldId world.Id, channelId channel.Id) model.Provider[Model] {
-	return func(ctx context.Context) func(worldId world.Id, channelId channel.Id) model.Provider[Model] {
-		return func(worldId world.Id, channelId channel.Id) model.Provider[Model] {
-			return requests.Provider[RestModel, Model](l, ctx)(requestChannel(worldId, channelId), Extract)
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
 }
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(worldId world.Id, channelId channel.Id) (Model, error) {
-	return func(ctx context.Context) func(worldId world.Id, channelId channel.Id) (Model, error) {
-		return func(worldId world.Id, channelId channel.Id) (Model, error) {
-			return ByIdModelProvider(l)(ctx)(worldId, channelId)()
-		}
-	}
+func (p *Processor) Register(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
+	return registerChannel(p.l)(p.ctx)(worldId, channelId, ipAddress, port)
+}
+
+func (p *Processor) ByIdModelProvider(worldId world.Id, channelId channel.Id) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestChannel(worldId, channelId), Extract)
+}
+
+func (p *Processor) GetById(worldId world.Id, channelId channel.Id) (Model, error) {
+	return p.ByIdModelProvider(worldId, channelId)()
 }

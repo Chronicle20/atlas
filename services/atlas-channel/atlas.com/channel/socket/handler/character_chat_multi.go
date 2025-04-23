@@ -25,20 +25,21 @@ func CharacterChatMultiHandleFunc(l logrus.FieldLogger, ctx context.Context, _ w
 		chatText := r.ReadAsciiString()
 
 		l.Debugf("Character [%d] issued message [%s]. type [%d], recipientCount [%d]. recipients [%s].", s.CharacterId(), chatText, chatType, recipientCount, recipientStr)
+		mp := message.NewProcessor(l, ctx)
 		if chatType == 0 {
-			_ = message.BuddyChat(l)(ctx)(s.Map(), s.CharacterId(), chatText, recipients)
+			_ = mp.BuddyChat(s.Map(), s.CharacterId(), chatText, recipients)
 			return
 		}
 		if chatType == 1 {
-			_ = message.PartyChat(l)(ctx)(s.Map(), s.CharacterId(), chatText, recipients)
+			_ = mp.PartyChat(s.Map(), s.CharacterId(), chatText, recipients)
 			return
 		}
 		if chatType == 2 {
-			_ = message.GuildChat(l)(ctx)(s.Map(), s.CharacterId(), chatText, recipients)
+			_ = mp.GuildChat(s.Map(), s.CharacterId(), chatText, recipients)
 			return
 		}
 		if chatType == 3 {
-			_ = message.AllianceChat(l)(ctx)(s.Map(), s.CharacterId(), chatText, recipients)
+			_ = mp.AllianceChat(s.Map(), s.CharacterId(), chatText, recipients)
 			return
 		}
 	}

@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
+	character2 "atlas-channel/kafka/message/character"
 	_map "atlas-channel/map"
 	"atlas-channel/party"
 	"atlas-channel/server"
@@ -26,7 +27,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("character_status_event")(EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("character_status_event")(character2.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -36,7 +37,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+				t, _ = topic.EnvProvider(l)(character2.EnvEventTopicCharacterStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventStatChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventExperienceChanged(sc, wp))))
@@ -48,9 +49,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventStatChangedBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventStatChangedBody]) {
-		if e.Type != StatusEventTypeStatChanged {
+func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event character2.StatusEvent[character2.StatusEventStatChangedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventStatChangedBody]) {
+		if e.Type != character2.StatusEventTypeStatChanged {
 			return
 		}
 
@@ -58,12 +59,12 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)()(e.CharacterId)
+		c, err := character.NewProcessor(l, ctx).GetById()(e.CharacterId)
 		if err != nil {
 			return
 		}
 
-		err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, statChanged(l)(ctx)(wp)(c, e.Body.ExclRequestSent, e.Body.Updates))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, statChanged(l)(ctx)(wp)(c, e.Body.ExclRequestSent, e.Body.Updates))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue stat changed to character [%d].", e.CharacterId)
 		}
@@ -76,8 +77,8 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 		}
 		if hpChange {
 			imf := party.OtherMemberInMap(sc.WorldId(), sc.ChannelId(), _map2.Id(c.MapId()), c.Id())
-			oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.ByMemberIdProvider(l)(ctx)(e.CharacterId)))
-			err = session.ForEachByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(c.Id(), c.Hp(), c.MaxHp())))
+			oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.NewProcessor(l, ctx).ByMemberIdProvider(e.CharacterId)))
+			err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.WorldId(), sc.ChannelId())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(c.Id(), c.Hp(), c.MaxHp())))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] health to party members.", c.Id())
 			}
@@ -165,9 +166,9 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	}
 }
 
-func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventMapChangedBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventMapChangedBody]) {
-		if event.Type != StatusEventTypeMapChanged {
+func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event character2.StatusEvent[character2.StatusEventMapChangedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event character2.StatusEvent[character2.StatusEventMapChangedBody]) {
+		if event.Type != character2.StatusEventTypeMapChanged {
 			return
 		}
 
@@ -175,23 +176,23 @@ func handleStatusEventMapChanged(sc server.Model, wp writer.Producer) func(l log
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(event.CharacterId, warpCharacter(l)(ctx)(wp)(event))
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(event.CharacterId, warpCharacter(l)(ctx)(wp)(event))
 	}
 }
 
-func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
+func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(event character2.StatusEvent[character2.StatusEventMapChangedBody]) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(event character2.StatusEvent[character2.StatusEventMapChangedBody]) model.Operator[session.Model] {
 		t := tenant.MustFromContext(ctx)
-		return func(wp writer.Producer) func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
-			return func(event statusEvent[statusEventMapChangedBody]) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(event character2.StatusEvent[character2.StatusEventMapChangedBody]) model.Operator[session.Model] {
+			return func(event character2.StatusEvent[character2.StatusEventMapChangedBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					c, err := character.GetById(l)(ctx)()(s.CharacterId())
+					c, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d].", s.CharacterId())
 						return err
 					}
 
-					s = session.SetMapId(_map2.Id(event.Body.TargetMapId))(t.Id(), s.SessionId())
+					s = session.NewProcessor(l, ctx).SetMapId(s.SessionId(), _map2.Id(event.Body.TargetMapId))
 
 					err = session.Announce(l)(ctx)(wp)(writer.SetField)(writer.WarpToMapBody(l, t)(s.ChannelId(), _map2.Id(event.Body.TargetMapId), event.Body.TargetPortalId, c.Hp()))(s)
 					if err != nil {
@@ -205,9 +206,9 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	}
 }
 
-func handleStatusEventExperienceChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[experienceChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[experienceChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeExperienceChanged {
+func handleStatusEventExperienceChanged(sc server.Model, wp writer.Producer) message.Handler[character2.StatusEvent[character2.ExperienceChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.ExperienceChangedStatusEventBody]) {
+		if e.Type != character2.StatusEventTypeExperienceChanged {
 			return
 		}
 
@@ -215,51 +216,51 @@ func handleStatusEventExperienceChanged(sc server.Model, wp writer.Producer) mes
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, announceExperienceGain(l)(ctx)(wp)(e.Body.Distributions))
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, announceExperienceGain(l)(ctx)(wp)(e.Body.Distributions))
 	}
 }
 
-func announceExperienceGain(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(distributions []experienceDistributions) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(distributions []experienceDistributions) model.Operator[session.Model] {
+func announceExperienceGain(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(distributions []character2.ExperienceDistributions) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(distributions []character2.ExperienceDistributions) model.Operator[session.Model] {
 		t := tenant.MustFromContext(ctx)
-		return func(wp writer.Producer) func(distributions []experienceDistributions) model.Operator[session.Model] {
-			return func(distributions []experienceDistributions) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(distributions []character2.ExperienceDistributions) model.Operator[session.Model] {
+			return func(distributions []character2.ExperienceDistributions) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					c := model2.IncreaseExperienceConfig{}
 
 					for _, d := range distributions {
-						if d.ExperienceType == ExperienceDistributionTypeWhite {
+						if d.ExperienceType == character2.ExperienceDistributionTypeWhite {
 							c.White = true
 							c.Amount = int32(d.Amount)
-						} else if d.ExperienceType == ExperienceDistributionTypeYellow {
+						} else if d.ExperienceType == character2.ExperienceDistributionTypeYellow {
 							c.White = false
 							c.Amount = int32(d.Amount)
-						} else if d.ExperienceType == ExperienceDistributionTypeChat {
+						} else if d.ExperienceType == character2.ExperienceDistributionTypeChat {
 							c.InChat = true
 							c.Amount = int32(d.Amount)
-						} else if d.ExperienceType == ExperienceDistributionTypeMonsterBook {
+						} else if d.ExperienceType == character2.ExperienceDistributionTypeMonsterBook {
 							c.MonsterBookBonus = int32(d.Amount)
-						} else if d.ExperienceType == ExperienceDistributionTypeMonsterEvent {
+						} else if d.ExperienceType == character2.ExperienceDistributionTypeMonsterEvent {
 							c.MobEventBonusPercentage = byte(d.Amount)
-						} else if d.ExperienceType == ExperienceDistributionTypePlayTime {
+						} else if d.ExperienceType == character2.ExperienceDistributionTypePlayTime {
 							c.MobEventBonusPercentage = byte(d.Amount)
 							c.PlayTimeHour = byte(d.Attr1)
-						} else if d.ExperienceType == ExperienceDistributionTypeWedding {
+						} else if d.ExperienceType == character2.ExperienceDistributionTypeWedding {
 							c.WeddingBonusEXP = int32(d.Amount)
-						} else if d.ExperienceType == ExperienceDistributionTypeSpiritWeek {
+						} else if d.ExperienceType == character2.ExperienceDistributionTypeSpiritWeek {
 							c.QuestBonusRate = byte(d.Amount)
-						} else if d.ExperienceType == ExperienceDistributionTypeParty {
+						} else if d.ExperienceType == character2.ExperienceDistributionTypeParty {
 							c.PartyBonusExp = int32(d.Amount)
 							c.PartyBonusEventRate = byte(d.Attr1)
-						} else if d.ExperienceType == ExperienceDistributionTypeItem {
+						} else if d.ExperienceType == character2.ExperienceDistributionTypeItem {
 							c.ItemBonusEXP = int32(d.Amount)
-						} else if d.ExperienceType == ExperienceDistributionTypeInternetCafe {
+						} else if d.ExperienceType == character2.ExperienceDistributionTypeInternetCafe {
 							c.PremiumIPExp = int32(d.Amount)
-						} else if d.ExperienceType == ExperienceDistributionTypeRainbowWeek {
+						} else if d.ExperienceType == character2.ExperienceDistributionTypeRainbowWeek {
 							c.RainbowWeekEventEXP = int32(d.Amount)
-						} else if d.ExperienceType == ExperienceDistributionTypePartyRing {
+						} else if d.ExperienceType == character2.ExperienceDistributionTypePartyRing {
 							c.PartyEXPRingEXP = int32(d.Amount)
-						} else if d.ExperienceType == ExperienceDistributionTypeCakePie {
+						} else if d.ExperienceType == character2.ExperienceDistributionTypeCakePie {
 							c.CakePieEventBonus = int32(d.Amount)
 						}
 					}
@@ -276,9 +277,9 @@ func announceExperienceGain(l logrus.FieldLogger) func(ctx context.Context) func
 	}
 }
 
-func handleStatusEventFameChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[fameChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[fameChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeFameChanged {
+func handleStatusEventFameChanged(sc server.Model, wp writer.Producer) message.Handler[character2.StatusEvent[character2.FameChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.FameChangedStatusEventBody]) {
+		if e.Type != character2.StatusEventTypeFameChanged {
 			return
 		}
 
@@ -286,22 +287,23 @@ func handleStatusEventFameChanged(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		c, err := character.GetById(l)(ctx)()(e.CharacterId)
+		cp := character.NewProcessor(l, ctx)
+		c, err := cp.GetById()(e.CharacterId)
 		if err != nil {
 			return
 		}
 
-		if e.Body.ActorType == StatusEventActorTypeCharacter {
-			ac, err := character.GetById(l)(ctx)()(e.Body.ActorId)
+		if e.Body.ActorType == character2.StatusEventActorTypeCharacter {
+			ac, err := cp.GetById()(e.Body.ActorId)
 			if err != nil {
 				return
 			}
 
-			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, receiveFame(l)(ctx)(wp)(ac.Name(), e.Body.Amount))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, receiveFame(l)(ctx)(wp)(ac.Name(), e.Body.Amount))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", e.CharacterId, e.Body.Amount, ac.Name())
 			}
-			err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.Body.ActorId, giveFame(l)(ctx)(wp)(c.Name(), e.Body.Amount, c.Fame()))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.ActorId, giveFame(l)(ctx)(wp)(c.Name(), e.Body.Amount, c.Fame()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to notify character [%d] they received fame [%d] from [%s].", e.Body.ActorId, e.Body.Amount, c.Name())
 			}
@@ -329,9 +331,9 @@ func giveFame(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 	}
 }
 
-func handleStatusEventMesoChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[mesoChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[mesoChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeMesoChanged {
+func handleStatusEventMesoChanged(sc server.Model, wp writer.Producer) message.Handler[character2.StatusEvent[character2.MesoChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.MesoChangedStatusEventBody]) {
+		if e.Type != character2.StatusEventTypeMesoChanged {
 			return
 		}
 
@@ -339,7 +341,7 @@ func handleStatusEventMesoChanged(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		err := session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, mesoChanged(l)(ctx)(wp)(e.Body.Amount))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, mesoChanged(l)(ctx)(wp)(e.Body.Amount))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to notify character [%d] they received meso [%d].", e.CharacterId, e.Body.Amount)
 		}
@@ -356,9 +358,9 @@ func mesoChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	}
 }
 
-func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[levelChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[levelChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeLevelChanged {
+func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.Handler[character2.StatusEvent[character2.LevelChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.LevelChangedStatusEventBody]) {
+		if e.Type != character2.StatusEventTypeLevelChanged {
 			return
 		}
 
@@ -366,9 +368,9 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
-		session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
 			_ = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterLevelUpEffectBody(l)())(s)
-			_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterLevelUpEffectForeignBody(l)(s.CharacterId())))
+			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterLevelUpEffectForeignBody(l)(s.CharacterId())))
 			return nil
 		})
 

@@ -13,10 +13,10 @@ func UseTaunt(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model,
 	return func(ctx context.Context) func(m _map.Model, characterId uint32, info model.SkillUsageInfo, effect effect.Model) error {
 		return func(m _map.Model, characterId uint32, info model.SkillUsageInfo, effect effect.Model) error {
 			if effect.HPConsume() > 0 {
-				_ = character.ChangeHP(l)(ctx)(m, characterId, -int16(effect.HPConsume()))
+				_ = character.NewProcessor(l, ctx).ChangeHP(m, characterId, -int16(effect.HPConsume()))
 			}
 			if effect.MPConsume() > 0 {
-				_ = character.ChangeMP(l)(ctx)(m, characterId, -int16(effect.MPConsume()))
+				_ = character.NewProcessor(l, ctx).ChangeMP(m, characterId, -int16(effect.MPConsume()))
 			}
 
 			return nil

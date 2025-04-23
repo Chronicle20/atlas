@@ -7,19 +7,21 @@ import (
 	handler2 "atlas-channel/configuration/tenant/socket/handler"
 	writer2 "atlas-channel/configuration/tenant/socket/writer"
 	account2 "atlas-channel/kafka/consumer/account"
+	"atlas-channel/kafka/consumer/asset"
 	"atlas-channel/kafka/consumer/buddylist"
 	"atlas-channel/kafka/consumer/buff"
+	"atlas-channel/kafka/consumer/cashshop"
 	"atlas-channel/kafka/consumer/chair"
 	"atlas-channel/kafka/consumer/chalkboard"
 	"atlas-channel/kafka/consumer/channel"
 	"atlas-channel/kafka/consumer/character"
+	"atlas-channel/kafka/consumer/compartment"
 	"atlas-channel/kafka/consumer/consumable"
 	"atlas-channel/kafka/consumer/drop"
 	"atlas-channel/kafka/consumer/expression"
 	"atlas-channel/kafka/consumer/fame"
 	"atlas-channel/kafka/consumer/guild"
 	"atlas-channel/kafka/consumer/guild/thread"
-	"atlas-channel/kafka/consumer/inventory"
 	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/map"
 	"atlas-channel/kafka/consumer/message"
@@ -83,13 +85,14 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	account2.InitConsumers(l)(cmf)(consumerGroupId)
+	asset.InitConsumers(l)(cmf)(consumerGroupId)
 	buddylist.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	channel.InitConsumers(l)(cmf)(consumerGroupId)
 	conversation.InitConsumers(l)(cmf)(consumerGroupId)
 	expression.InitConsumers(l)(cmf)(consumerGroupId)
 	guild.InitConsumers(l)(cmf)(consumerGroupId)
-	inventory.InitConsumers(l)(cmf)(consumerGroupId)
+	compartment.InitConsumers(l)(cmf)(consumerGroupId)
 	invite.InitConsumers(l)(cmf)(consumerGroupId)
 	_map.InitConsumers(l)(cmf)(consumerGroupId)
 	member.InitConsumers(l)(cmf)(consumerGroupId)
@@ -108,6 +111,7 @@ func main() {
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
+	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
@@ -125,7 +129,7 @@ func main() {
 		}
 		tctx := tenant.WithContext(sctx, t)
 
-		err = account.InitializeRegistry(l)(tctx)
+		err = account.NewProcessor(l, tctx).InitializeRegistry()
 		if err != nil {
 			l.WithError(err).Errorf("Unable to initialize account registry for tenant [%s].", t.String())
 		}
@@ -148,12 +152,13 @@ func main() {
 
 				wp := produceWriterProducer(fl)(tenantConfig.Socket.Writers, writerList, rw)
 				account2.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				asset.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				buddylist.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				channel.InitHandlers(fl)(sc)(ten.IPAddress, c.Port)(consumer.GetManager().RegisterHandler)
 				character.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				expression.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				guild.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				inventory.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				compartment.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				invite.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				_map.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				message.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
@@ -173,6 +178,7 @@ func main() {
 				messenger.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				pet.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				consumable.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				cashshop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, ten.IPAddress, c.Port)
@@ -330,6 +336,8 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterSkillMacroHandle] = handler.CharacterSkillMacroHandleFunc
 	handlerMap[handler.PetItemExcludeHandle] = handler.PetItemExcludeHandleFunc
 	handlerMap[handler.PetItemUseHandle] = handler.PetItemUseHandleFunc
+	handlerMap[handler.CashShopOperationHandle] = handler.CashShopOperationHandleFunc
+	handlerMap[handler.CashShopCheckWalletHandle] = handler.CashShopCheckWalletHandleFunc
 	return handlerMap
 }
 

@@ -21,7 +21,7 @@ func CharacterKeyMapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, 
 				theType := r.ReadInt8()
 				action := r.ReadInt32()
 				l.Debugf("Character [%d] attempting to change key [%d] to type [%d] action [%d].", s.CharacterId(), keyId, theType, action)
-				err := key.Update(l)(ctx)(s.CharacterId(), keyId, theType, action)
+				err := key.NewProcessor(l, ctx).Update(s.CharacterId(), keyId, theType, action)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to update key map for character [%d].", s.CharacterId())
 				}
@@ -31,7 +31,7 @@ func CharacterKeyMapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, 
 		if mode == 1 {
 			itemId := r.ReadUint32()
 			l.Debugf("Character [%d] attempting to Auto HP potion to [%d].", s.CharacterId(), itemId)
-			err := key.Update(l)(ctx)(s.CharacterId(), 91, 7, int32(itemId))
+			err := key.NewProcessor(l, ctx).Update(s.CharacterId(), 91, 7, int32(itemId))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to update key map for character [%d].", s.CharacterId())
 			}
@@ -40,7 +40,7 @@ func CharacterKeyMapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, 
 		if mode == 2 {
 			itemId := r.ReadUint32()
 			l.Debugf("Character [%d] attempting to Auto MP potion to [%d].", s.CharacterId(), itemId)
-			err := key.Update(l)(ctx)(s.CharacterId(), 92, 7, int32(itemId))
+			err := key.NewProcessor(l, ctx).Update(s.CharacterId(), 92, 7, int32(itemId))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to update key map for character [%d].", s.CharacterId())
 			}

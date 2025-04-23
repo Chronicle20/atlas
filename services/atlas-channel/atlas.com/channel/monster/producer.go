@@ -1,20 +1,21 @@
 package monster
 
 import (
+	monster2 "atlas-channel/kafka/message/monster"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func damageCommandProvider(m _map.Model, monsterId uint32, characterId uint32, damage uint32) model.Provider[[]kafka.Message] {
+func DamageCommandProvider(m _map.Model, monsterId uint32, characterId uint32, damage uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(monsterId))
-	value := &command[damageCommandBody]{
+	value := &monster2.Command[monster2.DamageCommandBody]{
 		WorldId:   byte(m.WorldId()),
 		ChannelId: byte(m.ChannelId()),
 		MonsterId: monsterId,
-		Type:      CommandTypeDamage,
-		Body: damageCommandBody{
+		Type:      monster2.CommandTypeDamage,
+		Body: monster2.DamageCommandBody{
 			CharacterId: characterId,
 			Damage:      damage,
 		},

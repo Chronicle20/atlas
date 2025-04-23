@@ -1,20 +1,21 @@
 package chair
 
 import (
+	"atlas-channel/kafka/message/chair"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func commandUseProvider(m _map.Model, chairType string, chairId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+func UseCommandProvider(m _map.Model, chairType string, chairId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[useChairCommandBody]{
+	value := &chair.Command[chair.UseChairCommandBody]{
 		WorldId:   byte(m.WorldId()),
 		ChannelId: byte(m.ChannelId()),
 		MapId:     uint32(m.MapId()),
-		Type:      CommandUseChair,
-		Body: useChairCommandBody{
+		Type:      chair.CommandUseChair,
+		Body: chair.UseChairCommandBody{
 			CharacterId: characterId,
 			ChairType:   chairType,
 			ChairId:     chairId,
@@ -23,14 +24,14 @@ func commandUseProvider(m _map.Model, chairType string, chairId uint32, characte
 	return producer.SingleMessageProvider(key, value)
 }
 
-func commandCancelProvider(m _map.Model, characterId uint32) model.Provider[[]kafka.Message] {
+func CancelCommandProvider(m _map.Model, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[cancelChairCommandBody]{
+	value := &chair.Command[chair.CancelChairCommandBody]{
 		WorldId:   byte(m.WorldId()),
 		ChannelId: byte(m.ChannelId()),
 		MapId:     uint32(m.MapId()),
-		Type:      CommandCancelChair,
-		Body: cancelChairCommandBody{
+		Type:      chair.CommandCancelChair,
+		Body: chair.CancelChairCommandBody{
 			CharacterId: characterId,
 		},
 	}

@@ -22,10 +22,10 @@ const (
 
 func GuildBBSHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		g, err := guild.GetByMemberId(l)(ctx)(s.CharacterId())
+		g, err := guild.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 		if err != nil {
 			l.Errorf("Character [%d] attempting to manipulate guild thread without a guild.", s.CharacterId())
-			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = session.NewProcessor(l, ctx).Destroy(s)
 			return
 		}
 
@@ -38,25 +38,25 @@ func GuildBBSHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 				title := r.ReadAsciiString()
 				message := r.ReadAsciiString()
 				emoticonId := r.ReadUint32()
-				_ = thread.ModifyThread(l)(ctx)(g.Id(), s.CharacterId(), threadId, notice, title, message, emoticonId)
+				_ = thread.NewProcessor(l, ctx).ModifyThread(g.Id(), s.CharacterId(), threadId, notice, title, message, emoticonId)
 				return
 			} else {
 				notice := r.ReadBool()
 				title := r.ReadAsciiString()
 				message := r.ReadAsciiString()
 				emoticonId := r.ReadUint32()
-				_ = thread.CreateThread(l)(ctx)(g.Id(), s.CharacterId(), notice, title, message, emoticonId)
+				_ = thread.NewProcessor(l, ctx).CreateThread(g.Id(), s.CharacterId(), notice, title, message, emoticonId)
 				return
 			}
 		}
 		if isGuildBBSOperation(l)(readerOptions, op, GuildBBSOperationDeleteThread) {
 			threadId := r.ReadUint32()
-			_ = thread.DeleteThread(l)(ctx)(g.Id(), s.CharacterId(), threadId)
+			_ = thread.NewProcessor(l, ctx).DeleteThread(g.Id(), s.CharacterId(), threadId)
 			return
 		}
 		if isGuildBBSOperation(l)(readerOptions, op, GuildBBSOperationListThreads) {
 			startIndex := r.ReadUint32()
-			ts, err := thread.GetAll(l)(ctx)(g.Id())
+			ts, err := thread.NewProcessor(l, ctx).GetAll(g.Id())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to display the guild threads to character [%d].", s.CharacterId())
 				return
@@ -71,7 +71,7 @@ func GuildBBSHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		}
 		if isGuildBBSOperation(l)(readerOptions, op, GuildBBSOperationDisplayThread) {
 			threadId := r.ReadUint32()
-			t, err := thread.GetById(l)(ctx)(g.Id(), threadId)
+			t, err := thread.NewProcessor(l, ctx).GetById(g.Id(), threadId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", t.Id(), s.CharacterId())
 				return
@@ -86,13 +86,13 @@ func GuildBBSHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		if isGuildBBSOperation(l)(readerOptions, op, GuildBBSOperationReplyThread) {
 			threadId := r.ReadUint32()
 			message := r.ReadAsciiString()
-			_ = thread.ReplyToThread(l)(ctx)(g.Id(), s.CharacterId(), threadId, message)
+			_ = thread.NewProcessor(l, ctx).ReplyToThread(g.Id(), s.CharacterId(), threadId, message)
 			return
 		}
 		if isGuildBBSOperation(l)(readerOptions, op, GuildBBSOperationDeleteReply) {
 			threadId := r.ReadUint32()
 			replyId := r.ReadUint32()
-			_ = thread.DeleteReply(l)(ctx)(g.Id(), s.CharacterId(), threadId, replyId)
+			_ = thread.NewProcessor(l, ctx).DeleteReply(g.Id(), s.CharacterId(), threadId, replyId)
 			return
 		}
 		l.Warnf("Character [%d] issued unhandled guild bbs operation with operation [%d].", s.CharacterId(), op)

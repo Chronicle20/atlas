@@ -34,7 +34,7 @@ func (t *Timeout) Run() {
 	t.l.Debugf("Executing %s task.", HeartbeatTask)
 	_ = model.ForEachSlice(model.FixedProvider(server.GetAll()), func(m server.Model) error {
 		tctx := tenant.WithContext(sctx, m.Tenant())
-		return Register(t.l)(tctx)(m.WorldId(), m.ChannelId(), m.IpAddress(), m.Port())
+		return NewProcessor(t.l, tctx).Register(m.WorldId(), m.ChannelId(), m.IpAddress(), m.Port())
 	})
 }
 

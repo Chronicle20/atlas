@@ -2,6 +2,7 @@ package reactor
 
 import (
 	consumer2 "atlas-channel/kafka/consumer"
+	reactor2 "atlas-channel/kafka/message/reactor"
 	_map "atlas-channel/map"
 	"atlas-channel/reactor"
 	"atlas-channel/server"
@@ -24,7 +25,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("reactor_status_event")(EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("reactor_status_event")(reactor2.EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -34,7 +35,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+				t, _ = topic.EnvProvider(l)(reactor2.EnvEventStatusTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreated(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyed(sc, wp))))
 			}
@@ -42,9 +43,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEvent[createdStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[createdStatusEventBody]) {
-		if e.Type != EventStatusTypeCreated {
+func handleCreated(sc server.Model, wp writer.Producer) message.Handler[reactor2.StatusEvent[reactor2.CreatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e reactor2.StatusEvent[reactor2.CreatedStatusEventBody]) {
+		if e.Type != reactor2.EventStatusTypeCreated {
 			return
 		}
 
@@ -61,16 +62,16 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[statusEv
 			SetDirection(e.Body.Direction).
 			Build()
 
-		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody(l, tenant.MustFromContext(ctx))(r)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody(l, tenant.MustFromContext(ctx))(r)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn reactor [%d] for characters in map [%d].", r.Id(), e.MapId)
 		}
 	}
 }
 
-func handleDestroyed(sc server.Model, wp writer.Producer) message.Handler[statusEvent[destroyedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[destroyedStatusEventBody]) {
-		if e.Type != EventStatusTypeDestroyed {
+func handleDestroyed(sc server.Model, wp writer.Producer) message.Handler[reactor2.StatusEvent[reactor2.DestroyedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e reactor2.StatusEvent[reactor2.DestroyedStatusEventBody]) {
+		if e.Type != reactor2.EventStatusTypeDestroyed {
 			return
 		}
 
@@ -78,7 +79,7 @@ func handleDestroyed(sc server.Model, wp writer.Producer) message.Handler[status
 			return
 		}
 
-		err := _map.ForSessionsInMap(l)(ctx)(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.ReactorDestroy)(writer.ReactorDestroyBody(l, tenant.MustFromContext(ctx))(e.ReactorId, e.Body.State, e.Body.X, e.Body.Y)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(e.MapId)), session.Announce(l)(ctx)(wp)(writer.ReactorDestroy)(writer.ReactorDestroyBody(l, tenant.MustFromContext(ctx))(e.ReactorId, e.Body.State, e.Body.X, e.Body.Y)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy reactor [%d] for characters in map [%d].", e.ReactorId, e.MapId)
 		}

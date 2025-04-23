@@ -1,6 +1,7 @@
 package monster
 
 import (
+	monster2 "atlas-channel/kafka/message/monster"
 	"atlas-channel/kafka/producer"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -9,43 +10,36 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(uniqueId uint32) (Model, error) {
-	return func(ctx context.Context) func(uniqueId uint32) (Model, error) {
-		return func(uniqueId uint32) (Model, error) {
-			return requests.Provider[RestModel, Model](l, ctx)(requestById(uniqueId), Extract)()
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func InMapModelProvider(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model) model.Provider[[]Model] {
-	return func(ctx context.Context) func(m _map.Model) model.Provider[[]Model] {
-		return func(m _map.Model) model.Provider[[]Model] {
-			return requests.SliceProvider[RestModel, Model](l, ctx)(requestInMap(m), Extract, model.Filters[Model]())
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
 }
 
-func ForEachInMap(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, f model.Operator[Model]) error {
-	return func(ctx context.Context) func(m _map.Model, f model.Operator[Model]) error {
-		return func(m _map.Model, f model.Operator[Model]) error {
-			return model.ForEachSlice(InMapModelProvider(l)(ctx)(m), f, model.ParallelExecute())
-		}
-	}
+func (p *Processor) GetById(uniqueId uint32) (Model, error) {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(uniqueId), Extract)()
 }
 
-func GetInMap(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model) ([]Model, error) {
-	return func(ctx context.Context) func(m _map.Model) ([]Model, error) {
-		return func(m _map.Model) ([]Model, error) {
-			return InMapModelProvider(l)(ctx)(m)()
-		}
-	}
+func (p *Processor) InMapModelProvider(m _map.Model) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMap(m), Extract, model.Filters[Model]())
 }
 
-func Damage(l logrus.FieldLogger) func(ctx context.Context) func(m _map.Model, monsterId uint32, characterId uint32, damage uint32) error {
-	return func(ctx context.Context) func(m _map.Model, monsterId uint32, characterId uint32, damage uint32) error {
-		return func(m _map.Model, monsterId uint32, characterId uint32, damage uint32) error {
-			l.Debugf("Applying damage to monster [%d]. Character [%d]. Damage [%d].", monsterId, characterId, damage)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(damageCommandProvider(m, monsterId, characterId, damage))
-		}
-	}
+func (p *Processor) ForEachInMap(m _map.Model, f model.Operator[Model]) error {
+	return model.ForEachSlice(p.InMapModelProvider(m), f, model.ParallelExecute())
+}
+
+func (p *Processor) GetInMap(m _map.Model) ([]Model, error) {
+	return p.InMapModelProvider(m)()
+}
+
+func (p *Processor) Damage(m _map.Model, monsterId uint32, characterId uint32, damage uint32) error {
+	p.l.Debugf("Applying damage to monster [%d]. Character [%d]. Damage [%d].", monsterId, characterId, damage)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(DamageCommandProvider(m, monsterId, characterId, damage))
 }

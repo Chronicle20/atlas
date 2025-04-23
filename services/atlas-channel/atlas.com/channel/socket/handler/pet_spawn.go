@@ -1,8 +1,8 @@
 package handler
 
 import (
+	"atlas-channel/asset"
 	"atlas-channel/character"
-	"atlas-channel/character/inventory"
 	"atlas-channel/pet"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -20,33 +20,24 @@ func PetSpawnHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Prod
 		lead := r.ReadBool()
 		l.Debugf("Character [%d] triggered PetSpawnHandle. updateTime [%d], slot [%d], lead [%t].", s.CharacterId(), updateTime, slot, lead)
 
-		i, err := character.GetItemInSlot(l)(ctx)(s.CharacterId(), byte(inventory.TypeValueCash), slot)()
+		cp := character.NewProcessor(l, ctx)
+		c, err := cp.GetById(cp.InventoryDecorator)(s.CharacterId())
 		if err != nil {
 			return
 		}
-
-		c, err := character.GetById(l)(ctx)(character.PetModelDecorator(l)(ctx))(s.CharacterId())
-		if err != nil {
+		a, ok := c.Inventory().Cash().FindBySlot(slot)
+		if !ok {
 			return
 		}
-
-		var p *pet.Model
-		spawned := false
-		for _, rp := range c.Pets() {
-			if rp.InventoryItemId() == i.Id() {
-				p = &rp
-				if p.Slot() != -1 {
-					spawned = true
-				}
-			}
-		}
-		if p == nil {
+		var pd asset.PetReferenceData
+		if pd, ok = a.ReferenceData().(asset.PetReferenceData); !ok {
 			return
 		}
+		spawned := pd.Slot() != -1
 		if spawned {
-			_ = pet.Despawn(l)(ctx)(s.CharacterId(), p.Id())
+			_ = pet.NewProcessor(l, ctx).Despawn(s.CharacterId(), a.ReferenceId())
 		} else {
-			_ = pet.Spawn(l)(ctx)(s.CharacterId(), p.Id(), lead)
+			_ = pet.NewProcessor(l, ctx).Spawn(s.CharacterId(), a.ReferenceId(), lead)
 		}
 	}
 }

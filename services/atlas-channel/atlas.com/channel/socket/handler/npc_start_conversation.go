@@ -14,13 +14,12 @@ const NPCStartConversationHandle = "NPCStartConversationHandle"
 func NPCStartConversationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		oid := r.ReadUint32()
-		n, err := npc.GetInMapByObjectId(l)(ctx)(s.MapId(), oid)
+		n, err := npc.NewProcessor(l, ctx).GetInMapByObjectId(s.MapId(), oid)
 		if err != nil {
 			l.WithError(err).Errorf("Character [%d] is interacting with a map object [%d] that is not found in map [%d].", s.CharacterId(), oid, s.MapId())
-			_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+			_ = session.NewProcessor(l, ctx).Destroy(s)
 			return
 		}
-		_ = npc.StartConversation(l)(ctx)(s.Map(), n.Template(), s.CharacterId())
-
+		_ = npc.NewProcessor(l, ctx).StartConversation(s.Map(), n.Template(), s.CharacterId())
 	}
 }

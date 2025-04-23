@@ -7,14 +7,23 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ByIdModelProvider(l logrus.FieldLogger, ctx context.Context) func(worldId byte) model.Provider[Model] {
-	return func(worldId byte) model.Provider[Model] {
-		return requests.Provider[RestModel, Model](l, ctx)(requestWorld(worldId), Extract)
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func GetById(l logrus.FieldLogger, ctx context.Context) func(worldId byte) (Model, error) {
-	return func(worldId byte) (Model, error) {
-		return ByIdModelProvider(l, ctx)(worldId)()
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
+}
+
+func (p *Processor) ByIdModelProvider(worldId byte) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestWorld(worldId), Extract)
+}
+
+func (p *Processor) GetById(worldId byte) (Model, error) {
+	return p.ByIdModelProvider(worldId)()
 }

@@ -4,7 +4,6 @@ import (
 	as "atlas-channel/account/session"
 	"atlas-channel/cashshop"
 	"atlas-channel/channel"
-	"atlas-channel/kafka/producer"
 	"atlas-channel/portal"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
@@ -34,21 +33,21 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 
 		if cs {
 			l.Debugf("Character [%d] returning from cash shop.", s.CharacterId())
-			c, err := channel.GetById(l)(ctx)(s.WorldId(), s.ChannelId())
+			c, err := channel.NewProcessor(l, ctx).GetById(s.WorldId(), s.ChannelId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve channel information being returned in to.")
 				// TODO send server notice.
 				return
 			}
 
-			err = cashshop.Exit(l)(ctx)(s.CharacterId(), s.Map())
+			err = cashshop.NewProcessor(l, ctx).Exit(s.CharacterId(), s.Map())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce [%d] has returned from cash shop.", s.CharacterId())
 			}
 
-			err = as.UpdateState(l, producer.ProviderImpl(l)(ctx))(s.SessionId(), s.AccountId(), 2, model.ChannelChange{IPAddress: c.IpAddress(), Port: uint16(c.Port())})
+			err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelChange{IPAddress: c.IpAddress(), Port: uint16(c.Port())})
 			if err != nil {
-				_ = session.Destroy(l, ctx, session.GetRegistry())(s)
+				_ = session.NewProcessor(l, ctx).Destroy(s)
 			}
 			return
 		}
@@ -70,6 +69,6 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 
 		l.Debugf("Character [%d] attempting to enter portal [%s] at [%d,%d] heading to [%d]. FieldKey [%d].", s.CharacterId(), portalName, x, y, targetId, fieldKey)
 		l.Debugf("Unused [%d], Premium [%d], Chase [%t], TargetX [%d], TargetY [%d]", unused, premium, chase, targetX, targetY)
-		_ = portal.Enter(l, ctx, producer.ProviderImpl(l)(ctx))(s.Map(), portalName, s.CharacterId())
+		_ = portal.NewProcessor(l, ctx).Enter(s.Map(), portalName, s.CharacterId())
 	}
 }

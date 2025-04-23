@@ -1,4 +1,4 @@
-package position
+package inventory
 
 import (
 	"context"
@@ -20,6 +20,10 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) GetBelow(mapId uint32, x int16, y int16) model.Provider[Model] {
-	return requests.Provider[FootholdRestModel, Model](p.l, p.ctx)(getInMap(mapId, x, y), Extract)
+func (p *Processor) ByCharacterIdProvider(characterId uint32) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)
+}
+
+func (p *Processor) GetByCharacterId(characterId uint32) (Model, error) {
+	return p.ByCharacterIdProvider(characterId)()
 }

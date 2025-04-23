@@ -3,28 +3,30 @@ package pet
 import (
 	"atlas-pets/pet/exclude"
 	"errors"
-	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
 	"time"
+
+	"github.com/Chronicle20/atlas-model/model"
 )
 
 type RestModel struct {
-	Id              uint64              `json:"-"`
-	InventoryItemId uint32              `json:"inventoryItemId"`
-	TemplateId      uint32              `json:"templateId"`
-	Name            string              `json:"name"`
-	Level           byte                `json:"level"`
-	Closeness       uint16              `json:"closeness"`
-	Fullness        byte                `json:"fullness"`
-	Expiration      time.Time           `json:"expiration"`
-	OwnerId         uint32              `json:"ownerId"`
-	Lead            bool                `json:"lead"`
-	Slot            int8                `json:"slot"`
-	X               int16               `json:"x"`
-	Y               int16               `json:"y"`
-	Stance          byte                `json:"stance"`
-	FH              int16               `json:"fh"`
-	Excludes        []exclude.RestModel `json:"excludes"`
+	Id         uint32              `json:"-"`
+	CashId     uint64              `json:"cashId"`
+	TemplateId uint32              `json:"templateId"`
+	Name       string              `json:"name"`
+	Level      byte                `json:"level"`
+	Closeness  uint16              `json:"closeness"`
+	Fullness   byte                `json:"fullness"`
+	Expiration time.Time           `json:"expiration"`
+	OwnerId    uint32              `json:"ownerId"`
+	Slot       int8                `json:"slot"`
+	X          int16               `json:"x"`
+	Y          int16               `json:"y"`
+	Stance     byte                `json:"stance"`
+	FH         int16               `json:"fh"`
+	Excludes   []exclude.RestModel `json:"excludes"`
+	Flag       uint16              `json:"flag"`
+	PurchaseBy uint32              `json:"purchaseBy"`
 }
 
 func (r RestModel) GetName() string {
@@ -40,7 +42,7 @@ func (r *RestModel) SetID(strId string) error {
 	if err != nil {
 		return err
 	}
-	r.Id = uint64(id)
+	r.Id = uint32(id)
 	return nil
 }
 
@@ -55,21 +57,45 @@ func Transform(m Model) (RestModel, error) {
 	}
 
 	return RestModel{
-		Id:              m.id,
-		InventoryItemId: m.inventoryItemId,
-		TemplateId:      m.templateId,
-		Name:            m.name,
-		Level:           m.level,
-		Closeness:       m.closeness,
-		Fullness:        m.fullness,
-		Expiration:      m.expiration,
-		OwnerId:         m.ownerId,
-		Lead:            m.Lead(),
-		Slot:            m.slot,
-		X:               tm.X(),
-		Y:               tm.Y(),
-		Stance:          tm.Stance(),
-		FH:              tm.FH(),
-		Excludes:        es,
+		Id:         m.id,
+		CashId:     m.CashId(),
+		TemplateId: m.TemplateId(),
+		Name:       m.Name(),
+		Level:      m.Level(),
+		Closeness:  m.Closeness(),
+		Fullness:   m.Fullness(),
+		Expiration: m.Expiration(),
+		OwnerId:    m.OwnerId(),
+		Slot:       m.Slot(),
+		X:          tm.X(),
+		Y:          tm.Y(),
+		Stance:     tm.Stance(),
+		FH:         tm.FH(),
+		Excludes:   es,
+		Flag:       m.Flag(),
+		PurchaseBy: m.PurchaseBy(),
+	}, nil
+}
+
+func Extract(rm RestModel) (Model, error) {
+	es, err := model.SliceMap(exclude.Extract)(model.FixedProvider(rm.Excludes))(model.ParallelMap())()
+	if err != nil {
+		return Model{}, nil
+	}
+
+	return Model{
+		id:         rm.Id,
+		cashId:     rm.CashId,
+		templateId: rm.TemplateId,
+		name:       rm.Name,
+		level:      rm.Level,
+		closeness:  rm.Closeness,
+		fullness:   rm.Fullness,
+		expiration: rm.Expiration,
+		ownerId:    rm.OwnerId,
+		slot:       rm.Slot,
+		excludes:   es,
+		flag:       rm.Flag,
+		purchaseBy: rm.PurchaseBy,
 	}, nil
 }

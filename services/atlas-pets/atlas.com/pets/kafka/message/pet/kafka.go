@@ -1,6 +1,67 @@
 package pet
 
 const (
+	EnvCommandTopic          = "COMMAND_TOPIC_PET"
+	CommandPetSpawn          = "SPAWN"
+	CommandPetDespawn        = "DESPAWN"
+	CommandPetAttemptCommand = "ATTEMPT_COMMAND"
+	CommandAwardCloseness    = "AWARD_CLOSENESS"
+	CommandAwardFullness     = "AWARD_FULLNESS"
+	CommandAwardLevel        = "AWARD_LEVEL"
+	CommandSetExclude        = "EXCLUDE"
+)
+
+type Command[E any] struct {
+	ActorId uint32 `json:"actorId"`
+	PetId   uint32 `json:"petId"`
+	Type    string `json:"type"`
+	Body    E      `json:"body"`
+}
+
+type SpawnCommandBody struct {
+	Lead bool `json:"lead"`
+}
+
+type DespawnCommandBody struct {
+}
+
+type AttemptCommandCommandBody struct {
+	CommandId byte `json:"commandId"`
+	ByName    bool `json:"byName"`
+}
+
+type AwardClosenessCommandBody struct {
+	Amount uint16 `json:"amount"`
+}
+
+type AwardFullnessCommandBody struct {
+	Amount byte `json:"amount"`
+}
+
+type AwardLevelCommandBody struct {
+	Amount byte `json:"amount"`
+}
+
+type SetExcludeCommandBody struct {
+	Items []uint32 `json:"items"`
+}
+
+const (
+	EnvCommandTopicMovement = "COMMAND_TOPIC_PET_MOVEMENT"
+)
+
+type MovementCommand struct {
+	WorldId    byte   `json:"worldId"`
+	ChannelId  byte   `json:"channelId"`
+	MapId      uint32 `json:"mapId"`
+	ObjectId   uint64 `json:"objectId"`
+	ObserverId uint32 `json:"observerId"`
+	X          int16  `json:"x"`
+	Y          int16  `json:"y"`
+	Stance     byte   `json:"stance"`
+}
+
+const (
 	EnvStatusEventTopic             = "EVENT_TOPIC_PET_STATUS"
 	StatusEventTypeCreated          = "CREATED"
 	StatusEventTypeDeleted          = "DELETED"
@@ -18,20 +79,20 @@ const (
 	DespawnReasonExpired = "EXPIRED"
 )
 
-type statusEvent[E any] struct {
-	PetId   uint64 `json:"petId"`
+type StatusEvent[E any] struct {
+	PetId   uint32 `json:"petId"`
 	OwnerId uint32 `json:"ownerId"`
 	Type    string `json:"type"`
 	Body    E      `json:"body"`
 }
 
-type createdStatusEventBody struct {
+type CreatedStatusEventBody struct {
 }
 
-type deletedStatusEventBody struct {
+type DeletedStatusEventBody struct {
 }
 
-type spawnedStatusEventBody struct {
+type SpawnedStatusEventBody struct {
 	TemplateId uint32 `json:"templateId"`
 	Name       string `json:"name"`
 	Slot       int8   `json:"slot"`
@@ -44,7 +105,7 @@ type spawnedStatusEventBody struct {
 	FH         int16  `json:"fh"`
 }
 
-type despawnedStatusEventBody struct {
+type DespawnedStatusEventBody struct {
 	TemplateId uint32 `json:"templateId"`
 	Name       string `json:"name"`
 	Slot       int8   `json:"slot"`
@@ -55,7 +116,7 @@ type despawnedStatusEventBody struct {
 	Reason     string `json:"reason"`
 }
 
-type commandResponseStatusEventBody struct {
+type CommandResponseStatusEventBody struct {
 	Slot      int8   `json:"slot"`
 	Closeness uint16 `json:"closeness"`
 	Fullness  byte   `json:"fullness"`
@@ -63,29 +124,29 @@ type commandResponseStatusEventBody struct {
 	Success   bool   `json:"success"`
 }
 
-type closenessChangedStatusEventBody struct {
+type ClosenessChangedStatusEventBody struct {
 	Slot      int8   `json:"slot"`
 	Closeness uint16 `json:"closeness"`
 	Amount    int16  `json:"amount"`
 }
 
-type fullnessChangedStatusEventBody struct {
+type FullnessChangedStatusEventBody struct {
 	Slot     int8 `json:"slot"`
 	Fullness byte `json:"fullness"`
 	Amount   int8 `json:"amount"`
 }
 
-type levelChangedStatusEventBody struct {
+type LevelChangedStatusEventBody struct {
 	Slot   int8 `json:"slot"`
 	Level  byte `json:"level"`
 	Amount int8 `json:"amount"`
 }
 
-type slotChangedStatusEventBody struct {
+type SlotChangedStatusEventBody struct {
 	OldSlot int8 `json:"oldSlot"`
 	NewSlot int8 `json:"newSlot"`
 }
 
-type excludeChangedStatusEventBody struct {
+type ExcludeChangedStatusEventBody struct {
 	Items []uint32 `json:"items"`
 }

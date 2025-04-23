@@ -1,4 +1,4 @@
-package data
+package pet
 
 import (
 	"github.com/Chronicle20/atlas-model/model"

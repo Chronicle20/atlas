@@ -3,35 +3,34 @@ package pet
 import (
 	"atlas-pets/pet/exclude"
 	"errors"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"gorm.io/gorm"
 )
 
 func create(db *gorm.DB) func(t tenant.Model, ownerId uint32, m Model) (Model, error) {
 	return func(t tenant.Model, ownerId uint32, m Model) (Model, error) {
 		e := &Entity{
-			TenantId:        t.Id(),
-			OwnerId:         ownerId,
-			InventoryItemId: m.InventoryItemId(),
-			TemplateId:      m.TemplateId(),
-			Name:            m.Name(),
-			Level:           m.Level(),
-			Closeness:       m.Closeness(),
-			Fullness:        m.Fullness(),
-			Expiration:      m.Expiration(),
+			TenantId:   t.Id(),
+			OwnerId:    ownerId,
+			CashId:     m.CashId(),
+			TemplateId: m.TemplateId(),
+			Name:       m.Name(),
+			Level:      m.Level(),
+			Closeness:  m.Closeness(),
+			Fullness:   m.Fullness(),
+			Expiration: m.Expiration(),
 		}
 
 		err := db.Create(e).Error
 		if err != nil {
 			return Model{}, err
 		}
-		return modelFromEntity(*e)
+		return Make(*e)
 	}
 }
 
-func updateSlot(db *gorm.DB) func(t tenant.Model, petId uint64, slot int8) error {
-	return func(t tenant.Model, petId uint64, slot int8) error {
+func updateSlot(db *gorm.DB) func(t tenant.Model, petId uint32, slot int8) error {
+	return func(t tenant.Model, petId uint32, slot int8) error {
 		result := db.Model(&Entity{}).
 			Where("tenant_id = ? AND id = ?", t.Id(), petId).
 			Update("slot", slot)
@@ -48,8 +47,8 @@ func updateSlot(db *gorm.DB) func(t tenant.Model, petId uint64, slot int8) error
 	}
 }
 
-func updateCloseness(db *gorm.DB) func(t tenant.Model, petId uint64, closeness uint16) error {
-	return func(t tenant.Model, petId uint64, closeness uint16) error {
+func updateCloseness(db *gorm.DB) func(t tenant.Model, petId uint32, closeness uint16) error {
+	return func(t tenant.Model, petId uint32, closeness uint16) error {
 		result := db.Model(&Entity{}).
 			Where("tenant_id = ? AND id = ?", t.Id(), petId).
 			Update("closeness", closeness)
@@ -66,8 +65,8 @@ func updateCloseness(db *gorm.DB) func(t tenant.Model, petId uint64, closeness u
 	}
 }
 
-func updateLevel(db *gorm.DB) func(t tenant.Model, petId uint64, level byte) error {
-	return func(t tenant.Model, petId uint64, level byte) error {
+func updateLevel(db *gorm.DB) func(t tenant.Model, petId uint32, level byte) error {
+	return func(t tenant.Model, petId uint32, level byte) error {
 		result := db.Model(&Entity{}).
 			Where("tenant_id = ? AND id = ?", t.Id(), petId).
 			Update("level", level)
@@ -84,8 +83,8 @@ func updateLevel(db *gorm.DB) func(t tenant.Model, petId uint64, level byte) err
 	}
 }
 
-func updateFullness(db *gorm.DB) func(t tenant.Model, petId uint64, fullness byte) error {
-	return func(t tenant.Model, petId uint64, fullness byte) error {
+func updateFullness(db *gorm.DB) func(t tenant.Model, petId uint32, fullness byte) error {
+	return func(t tenant.Model, petId uint32, fullness byte) error {
 		result := db.Model(&Entity{}).
 			Where("tenant_id = ? AND id = ?", t.Id(), petId).
 			Update("fullness", fullness)
@@ -102,9 +101,9 @@ func updateFullness(db *gorm.DB) func(t tenant.Model, petId uint64, fullness byt
 	}
 }
 
-func deleteByInventoryItemId(t tenant.Model, inventoryItemId uint32) func(db *gorm.DB) error {
+func deleteById(t tenant.Model, id uint32) func(db *gorm.DB) error {
 	return func(db *gorm.DB) error {
-		return db.Where(&Entity{TenantId: t.Id(), InventoryItemId: inventoryItemId}).Delete(&Entity{}).Error
+		return db.Where(&Entity{TenantId: t.Id(), Id: id}).Delete(&Entity{}).Error
 	}
 }
 
@@ -114,7 +113,7 @@ func deleteForCharacter(t tenant.Model, ownerId uint32) func(db *gorm.DB) error 
 	}
 }
 
-func setExcludes(db *gorm.DB, petId uint64, itemIds []uint32) error {
+func setExcludes(db *gorm.DB, petId uint32, itemIds []uint32) error {
 	// Start a transaction for atomicity
 	return db.Transaction(func(tx *gorm.DB) error {
 		// Step 1: Delete existing excludes for the pet
@@ -139,19 +138,4 @@ func setExcludes(db *gorm.DB, petId uint64, itemIds []uint32) error {
 
 		return nil
 	})
-}
-
-func modelFromEntity(e Entity) (Model, error) {
-	es, err := model.SliceMap(exclude.Make)(model.FixedProvider(e.Excludes))(model.ParallelMap())()
-	if err != nil {
-		return Model{}, err
-	}
-	return NewModelBuilder(e.Id, e.InventoryItemId, e.TemplateId, e.Name, e.OwnerId).
-		SetLevel(e.Level).
-		SetCloseness(e.Closeness).
-		SetFullness(e.Fullness).
-		SetExpiration(e.Expiration).
-		SetSlot(e.Slot).
-		SetExcludes(es).
-		Build(), nil
 }

@@ -1,4 +1,4 @@
-package data
+package pet
 
 import (
 	"atlas-pets/rest"

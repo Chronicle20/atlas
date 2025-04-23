@@ -29,32 +29,8 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
 			t, _ = topic.EnvProvider(l)(asset.EnvEventTopicStatus)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreated(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetDeleted(db))))
 		}
-	}
-}
-
-func handleAssetCreated(db *gorm.DB) message.Handler[asset.StatusEvent[asset.CreatedStatusEventBody[any]]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e asset.StatusEvent[asset.CreatedStatusEventBody[any]]) {
-		if e.Type != asset.StatusEventTypeCreated {
-			return
-		}
-
-		it, ok := inventory.TypeFromItemId(e.TemplateId)
-		if !ok {
-			return
-		}
-
-		if it != inventory.TypeValueCash {
-			return
-		}
-
-		if item.GetClassification(item.Id(e.TemplateId)) != item.ClassificationPet {
-			return
-		}
-
-		_ = pet.NewProcessor(l, ctx, db).CreateOnAward(e.CharacterId, e.TemplateId, e.Slot)
 	}
 }
 

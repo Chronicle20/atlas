@@ -52,7 +52,7 @@ func (p *Processor) WithTransaction(db *gorm.DB) *Processor {
 }
 
 func (p *Processor) ByIdProvider(petId uint32) model.Provider[Model] {
-	return model.Map(modelFromEntity)(getById(p.t.Id(), petId)(p.db))
+	return model.Map(Make)(getById(p.t.Id(), petId)(p.db))
 }
 
 func (p *Processor) GetById(petId uint32) (Model, error) {
@@ -60,7 +60,7 @@ func (p *Processor) GetById(petId uint32) (Model, error) {
 }
 
 func (p *Processor) ByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
-	return model.SliceMap(modelFromEntity)(getByOwnerId(p.t.Id(), ownerId)(p.db))(model.ParallelMap())
+	return model.SliceMap(Make)(getByOwnerId(p.t.Id(), ownerId)(p.db))(model.ParallelMap())
 }
 
 func (p *Processor) GetByOwner(ownerId uint32) ([]Model, error) {
@@ -98,34 +98,38 @@ func (p *Processor) HungriestByOwnerProvider(ownerId uint32) model.Provider[Mode
 	return model.FixedProvider(ps[0])
 }
 
-func (p *Processor) CreateOnAward(characterId uint32, itemId uint32, slot int16) error {
-	c, err := p.cp.GetById(p.cp.InventoryDecorator)(characterId)
-	if err != nil {
-		return err
-	}
-	a, ok := c.Inventory().Cash().FindBySlot(slot)
-	if !ok {
-		return errors.New("pet not found")
-	}
-	if a.TemplateId() != itemId {
-		return errors.New("item mismatch")
-	}
-
+func (p *Processor) Create(i Model) (Model, error) {
+	p.l.Debugf("Attempting to create pet from template [%d] for character [%d].", i.TemplateId(), i.OwnerId())
+	// TODO this needs to generate a cashId if cashId == 0
 	var om Model
 	txErr := p.db.Transaction(func(tx *gorm.DB) error {
-		// TODO lookup name
-		im := NewModelBuilder(0, a.Id(), itemId, "Great Pet", characterId)
-		om, err = create(tx)(p.t, characterId, im.Build())
+		b := Clone(i)
+		if i.Level() < 1 || i.Level() > 30 {
+			b.SetLevel(1)
+		}
+		if i.Closeness() < 0 {
+			b.SetCloseness(0)
+		}
+		if i.Fullness() < 0 || i.Fullness() > 100 {
+			b.SetFullness(100)
+		}
+		if i.Slot() < -1 || i.Slot() > 2 {
+			b.SetSlot(-1)
+		}
+		i = b.Build()
+		var err error
+		om, err = create(tx)(p.t, i.OwnerId(), i)
 		if err != nil {
 			return err
 		}
 		return nil
 	})
 	if txErr != nil {
-		return txErr
+		p.l.WithError(txErr).Errorf("Unable to create pet from template [%d] for character [%d].", i.TemplateId(), i.OwnerId())
+		return om, txErr
 	}
-	p.l.Debugf("Created pet [%d] for character [%d].", om.Id(), characterId)
-	return nil
+	p.l.Debugf("Created pet [%d] for character [%d].", om.Id(), om.OwnerId())
+	return om, nil
 }
 
 func (p *Processor) DeleteOnRemove(characterId uint32, itemId uint32, slot int16) error {
@@ -142,7 +146,7 @@ func (p *Processor) DeleteOnRemove(characterId uint32, itemId uint32, slot int16
 	}
 
 	var om Model
-	txErr := p.db.Transaction(deleteByInventoryItemId(p.t, a.Id()))
+	txErr := p.db.Transaction(deleteById(p.t, a.ReferenceId()))
 	if txErr != nil {
 		return txErr
 	}

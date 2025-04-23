@@ -3,8 +3,6 @@ package pet
 import (
 	"atlas-pets/pet/exclude"
 	"errors"
-
-	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"gorm.io/gorm"
 )
@@ -12,22 +10,22 @@ import (
 func create(db *gorm.DB) func(t tenant.Model, ownerId uint32, m Model) (Model, error) {
 	return func(t tenant.Model, ownerId uint32, m Model) (Model, error) {
 		e := &Entity{
-			TenantId:        t.Id(),
-			OwnerId:         ownerId,
-			InventoryItemId: m.InventoryItemId(),
-			TemplateId:      m.TemplateId(),
-			Name:            m.Name(),
-			Level:           m.Level(),
-			Closeness:       m.Closeness(),
-			Fullness:        m.Fullness(),
-			Expiration:      m.Expiration(),
+			TenantId:   t.Id(),
+			OwnerId:    ownerId,
+			CashId:     m.CashId(),
+			TemplateId: m.TemplateId(),
+			Name:       m.Name(),
+			Level:      m.Level(),
+			Closeness:  m.Closeness(),
+			Fullness:   m.Fullness(),
+			Expiration: m.Expiration(),
 		}
 
 		err := db.Create(e).Error
 		if err != nil {
 			return Model{}, err
 		}
-		return modelFromEntity(*e)
+		return Make(*e)
 	}
 }
 
@@ -103,9 +101,9 @@ func updateFullness(db *gorm.DB) func(t tenant.Model, petId uint32, fullness byt
 	}
 }
 
-func deleteByInventoryItemId(t tenant.Model, inventoryItemId uint32) func(db *gorm.DB) error {
+func deleteById(t tenant.Model, id uint32) func(db *gorm.DB) error {
 	return func(db *gorm.DB) error {
-		return db.Where(&Entity{TenantId: t.Id(), InventoryItemId: inventoryItemId}).Delete(&Entity{}).Error
+		return db.Where(&Entity{TenantId: t.Id(), Id: id}).Delete(&Entity{}).Error
 	}
 }
 
@@ -140,19 +138,4 @@ func setExcludes(db *gorm.DB, petId uint32, itemIds []uint32) error {
 
 		return nil
 	})
-}
-
-func modelFromEntity(e Entity) (Model, error) {
-	es, err := model.SliceMap(exclude.Make)(model.FixedProvider(e.Excludes))(model.ParallelMap())()
-	if err != nil {
-		return Model{}, err
-	}
-	return NewModelBuilder(e.Id, e.InventoryItemId, e.TemplateId, e.Name, e.OwnerId).
-		SetLevel(e.Level).
-		SetCloseness(e.Closeness).
-		SetFullness(e.Fullness).
-		SetExpiration(e.Expiration).
-		SetSlot(e.Slot).
-		SetExcludes(es).
-		Build(), nil
 }

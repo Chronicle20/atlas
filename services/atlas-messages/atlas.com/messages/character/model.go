@@ -1,9 +1,9 @@
 package character
 
 import (
-	"atlas-messages/character/skill"
 	"atlas-messages/compartment"
 	"atlas-messages/inventory"
+	"atlas-messages/skill"
 	"github.com/Chronicle20/atlas-constants/world"
 	"strconv"
 	"strings"

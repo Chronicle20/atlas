@@ -2,9 +2,9 @@ package skill
 
 import (
 	"atlas-messages/character"
-	skill2 "atlas-messages/character/skill"
 	"atlas-messages/command"
 	"atlas-messages/data/skill"
+	skill3 "atlas-messages/skill"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
@@ -17,7 +17,7 @@ func MaxSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fun
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		sdp := skill.NewProcessor(l, ctx)
-		sp := skill2.NewProcessor(l, ctx)
+		sp := skill3.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			re := regexp.MustCompile(`@skill\s+max\s+(\d+)`)
 			match := re.FindStringSubmatch(m)
@@ -41,7 +41,7 @@ func MaxSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fun
 			if err != nil {
 				return nil, false
 			}
-			var s *skill2.Model
+			var s *skill3.Model
 			for _, rs := range sc.Skills() {
 				if rs.Id() == uint32(skillId) {
 					s = &rs
@@ -65,7 +65,7 @@ func ResetSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		sdp := skill.NewProcessor(l, ctx)
-		sp := skill2.NewProcessor(l, ctx)
+		sp := skill3.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			re := regexp.MustCompile(`@skill\s+reset\s+(\d+)`)
 			match := re.FindStringSubmatch(m)
@@ -89,7 +89,7 @@ func ResetSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 			if err != nil {
 				return nil, false
 			}
-			var s *skill2.Model
+			var s *skill3.Model
 			for _, rs := range sc.Skills() {
 				if rs.Id() == uint32(skillId) {
 					s = &rs

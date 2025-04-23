@@ -1,7 +1,6 @@
-package inventory
+package asset
 
 import (
-	"atlas-messages/character/inventory/item"
 	"atlas-messages/data/equipable"
 	"context"
 	"github.com/sirupsen/logrus"
@@ -34,12 +33,4 @@ func (p *Processor) Exists(itemId uint32) bool {
 	}
 
 	return true
-}
-
-func (p *Processor) CreateItem(characterId uint32, itemId uint32, quantity uint16) (item.Model, error) {
-	rm, err := requestCreateItem(characterId, itemId, quantity)(p.l, p.ctx)
-	if err != nil {
-		return item.Model{}, err
-	}
-	return item.Extract(rm)
 }

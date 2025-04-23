@@ -1,10 +1,10 @@
 package character
 
 import (
-	"atlas-messages/character/skill"
 	"atlas-messages/inventory"
 	character2 "atlas-messages/kafka/message/character"
 	"atlas-messages/kafka/producer"
+	"atlas-messages/skill"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"

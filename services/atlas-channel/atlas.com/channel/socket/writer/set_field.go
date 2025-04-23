@@ -443,7 +443,7 @@ func WritePetCashItemInfo(zeroPosition bool) func(w *response.Writer) model.Oper
 			w.WriteByte(3)
 			w.WriteInt(i.TemplateId())
 			w.WriteBool(true)
-			w.WriteLong(i.ReferenceData().CashId())
+			w.WriteLong(uint64(i.ReferenceId()))
 			w.WriteInt64(msTime(time.Time{}))
 			WritePaddedString(w, i.ReferenceData().Name(), 13)
 			w.WriteByte(i.ReferenceData().Level())

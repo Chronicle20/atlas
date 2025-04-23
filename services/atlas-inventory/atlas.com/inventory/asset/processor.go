@@ -12,6 +12,7 @@ import (
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -29,6 +30,7 @@ type Processor struct {
 	equipableProcessor *equipable.Processor
 	stackableProcessor *stackable.Processor
 	cashProcessor      *cash.Processor
+	petProcessor       *pet.Processor
 	GetByCompartmentId func(uuid.UUID) ([]Model[any], error)
 }
 
@@ -41,6 +43,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		equipableProcessor: equipable.NewProcessor(l, ctx),
 		stackableProcessor: stackable.NewProcessor(l, ctx, db),
 		cashProcessor:      cash.NewProcessor(l, ctx),
+		petProcessor:       pet.NewProcessor(l, ctx),
 	}
 	p.GetByCompartmentId = model2.CollapseProvider(p.ByCompartmentIdProvider)
 	return p
@@ -55,6 +58,7 @@ func (p *Processor) WithTransaction(db *gorm.DB) *Processor {
 		equipableProcessor: p.equipableProcessor,
 		stackableProcessor: p.stackableProcessor,
 		cashProcessor:      p.cashProcessor,
+		petProcessor:       p.petProcessor,
 		GetByCompartmentId: p.GetByCompartmentId,
 	}
 }
@@ -199,30 +203,30 @@ func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
 			}).
 			Build(), nil
 	} else if m.ReferenceType() == ReferenceTypePet {
-		ci, err := p.cashProcessor.GetById(m.ReferenceId())
-		if err != nil {
-			return m, errors.New("cannot locate reference")
-		}
-		pi, err := pet.GetById(p.l)(p.ctx)(m.ReferenceId())
+		pi, err := p.petProcessor.GetById(m.ReferenceId())
 		if err != nil {
 			return m, errors.New("cannot locate reference")
 		}
 		return Clone(m).
-			SetReferenceData(PetReferenceData{
-				cashId:     ci.CashId(),
-				ownerId:    ci.OwnerId(),
-				flag:       ci.Flag(),
-				purchaseBy: ci.PurchasedBy(),
-				name:       pi.Name(),
-				level:      pi.Level(),
-				closeness:  pi.Closeness(),
-				fullness:   pi.Fullness(),
-				expiration: pi.Expiration(),
-				slot:       pi.Slot(),
-			}).
+			SetReferenceData(MakePetReferenceData(pi)).
 			Build(), nil
 	}
 	return m, nil
+}
+
+func MakePetReferenceData(pi pet.Model) PetReferenceData {
+	return PetReferenceData{
+		cashId:     pi.CashId(),
+		ownerId:    pi.OwnerId(),
+		flag:       pi.Flag(),
+		purchaseBy: pi.PurchaseBy(),
+		name:       pi.Name(),
+		level:      pi.Level(),
+		closeness:  pi.Closeness(),
+		fullness:   pi.Fullness(),
+		expiration: pi.Expiration(),
+		slot:       pi.Slot(),
+	}
 }
 
 func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
@@ -415,7 +419,17 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 				referenceType = ReferenceTypeEtc
 				rd = MakeEtcReferenceData(s)
 			} else if inventoryType == inventory.TypeValueCash {
-				// TODO
+				if item.GetClassification(item.Id(templateId)) == item.ClassificationPet {
+					pe, err := p.petProcessor.Create(characterId, templateId)
+					if err != nil {
+						return err
+					}
+					referenceId = pe.Id()
+					referenceType = ReferenceTypePet
+					rd = MakePetReferenceData(pe)
+				} else {
+					// TODO
+				}
 			}
 
 			if referenceId == 0 {

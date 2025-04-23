@@ -8,18 +8,31 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ByIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(petId uint32) model.Provider[Model] {
-	return func(ctx context.Context) func(petId uint32) model.Provider[Model] {
-		return func(petId uint32) model.Provider[Model] {
-			return requests.Provider[RestModel, Model](l, ctx)(requestById(petId), Extract)
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(petId uint32) (Model, error) {
-	return func(ctx context.Context) func(petId uint32) (Model, error) {
-		return func(petId uint32) (Model, error) {
-			return ByIdProvider(l)(ctx)(petId)()
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
+}
+
+func (p *Processor) ByIdProvider(petId uint32) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(petId), Extract)
+}
+
+func (p *Processor) GetById(petId uint32) (Model, error) {
+	return p.ByIdProvider(petId)()
+}
+
+func (p *Processor) Create(characterId uint32, templateId uint32) (Model, error) {
+	i := Model{
+		ownerId:    characterId,
+		templateId: templateId,
+	}
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestCreate(i), Extract)()
 }

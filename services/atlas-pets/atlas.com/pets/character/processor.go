@@ -8,14 +8,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
-	return func(ctx context.Context) func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
-		return func(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
-			return func(characterId uint32) (Model, error) {
-				p := requests.Provider[RestModel, Model](l, ctx)(requestById(characterId), Extract)
-				return model.Map(model.Decorate(decorators))(p)()
-			}
-		}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	t   tenant.Model
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
+		t:   tenant.MustFromContext(ctx),
+	}
+	return p
+}
+
+func (p *Processor) GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
+	return func(characterId uint32) (Model, error) {
+		cp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)
+		return model.Map(model.Decorate(decorators))(cp)()
 	}
 }
 
@@ -23,29 +34,20 @@ func GetLoggedIn() model.Provider[map[uint32]MapKey] {
 	return model.FixedProvider(getRegistry().GetLoggedIn())
 }
 
-func Enter(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
-	return func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
-		t := tenant.MustFromContext(ctx)
-		getRegistry().AddCharacter(characterId, MapKey{Tenant: t, WorldId: worldId, ChannelId: channelId, MapId: mapId})
-	}
+func (p *Processor) Enter(worldId byte, channelId byte, mapId uint32, characterId uint32) {
+	getRegistry().AddCharacter(characterId, MapKey{Tenant: p.t, WorldId: worldId, ChannelId: channelId, MapId: mapId})
 }
 
-func Exit(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
-	return func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
-		getRegistry().RemoveCharacter(characterId)
-	}
+func (p *Processor) Exit(worldId byte, channelId byte, mapId uint32, characterId uint32) {
+	getRegistry().RemoveCharacter(characterId)
 }
 
-func TransitionMap(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, oldMapId uint32) {
-	return func(worldId byte, channelId byte, mapId uint32, characterId uint32, oldMapId uint32) {
-		Exit(ctx)(worldId, channelId, oldMapId, characterId)
-		Enter(ctx)(worldId, channelId, mapId, characterId)
-	}
+func (p *Processor) TransitionMap(worldId byte, channelId byte, mapId uint32, characterId uint32, oldMapId uint32) {
+	p.Exit(worldId, channelId, oldMapId, characterId)
+	p.Enter(worldId, channelId, mapId, characterId)
 }
 
-func TransitionChannel(ctx context.Context) func(worldId byte, channelId byte, oldChannelId byte, characterId uint32, mapId uint32) {
-	return func(worldId byte, channelId byte, oldChannelId byte, characterId uint32, mapId uint32) {
-		Exit(ctx)(worldId, oldChannelId, mapId, characterId)
-		Enter(ctx)(worldId, channelId, mapId, characterId)
-	}
+func (p *Processor) TransitionChannel(worldId byte, channelId byte, oldChannelId byte, characterId uint32, mapId uint32) {
+	p.Exit(worldId, oldChannelId, mapId, characterId)
+	p.Enter(worldId, channelId, mapId, characterId)
 }

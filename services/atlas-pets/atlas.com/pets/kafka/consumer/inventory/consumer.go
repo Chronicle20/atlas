@@ -48,7 +48,7 @@ func handleInventoryAdd(db *gorm.DB) message.Handler[inventoryChangedEvent[inven
 			return
 		}
 
-		_ = pet.CreateOnAward(l)(ctx)(db)(e.CharacterId, e.Body.ItemId, e.Slot)
+		_ = pet.NewProcessor(l, ctx, db).CreateOnAward(e.CharacterId, e.Body.ItemId, e.Slot)
 	}
 }
 
@@ -66,6 +66,6 @@ func handleInventoryDelete(db *gorm.DB) message.Handler[inventoryChangedEvent[in
 			return
 		}
 
-		_ = pet.DeleteOnRemove(l)(ctx)(db)(e.CharacterId, e.Body.ItemId, e.Slot)
+		_ = pet.NewProcessor(l, ctx, db).DeleteOnRemove(e.CharacterId, e.Body.ItemId, e.Slot)
 	}
 }

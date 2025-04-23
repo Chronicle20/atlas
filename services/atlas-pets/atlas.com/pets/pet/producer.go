@@ -1,6 +1,7 @@
 package pet
 
 import (
+	pet2 "atlas-pets/kafka/message/pet"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
@@ -8,11 +9,11 @@ import (
 
 func spawnEventProvider(m Model, tm *temporalData) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &statusEvent[spawnedStatusEventBody]{
+	value := &pet2.StatusEvent[pet2.SpawnedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    StatusEventTypeSpawned,
-		Body: spawnedStatusEventBody{
+		Type:    pet2.StatusEventTypeSpawned,
+		Body: pet2.SpawnedStatusEventBody{
 			TemplateId: m.TemplateId(),
 			Name:       m.Name(),
 			Slot:       m.Slot(),
@@ -30,11 +31,11 @@ func spawnEventProvider(m Model, tm *temporalData) model.Provider[[]kafka.Messag
 
 func despawnEventProvider(m Model, oldSlot int8, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &statusEvent[despawnedStatusEventBody]{
+	value := &pet2.StatusEvent[pet2.DespawnedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    StatusEventTypeDespawned,
-		Body: despawnedStatusEventBody{
+		Type:    pet2.StatusEventTypeDespawned,
+		Body: pet2.DespawnedStatusEventBody{
 			TemplateId: m.TemplateId(),
 			Name:       m.Name(),
 			Slot:       m.Slot(),
@@ -50,11 +51,11 @@ func despawnEventProvider(m Model, oldSlot int8, reason string) model.Provider[[
 
 func commandResponseEventProvider(m Model, commandId byte, success bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &statusEvent[commandResponseStatusEventBody]{
+	value := &pet2.StatusEvent[pet2.CommandResponseStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    StatusEventTypeCommandResponse,
-		Body: commandResponseStatusEventBody{
+		Type:    pet2.StatusEventTypeCommandResponse,
+		Body: pet2.CommandResponseStatusEventBody{
 			Slot:      m.Slot(),
 			Closeness: m.Closeness(),
 			Fullness:  m.Fullness(),
@@ -67,11 +68,11 @@ func commandResponseEventProvider(m Model, commandId byte, success bool) model.P
 
 func closenessChangedEventProvider(m Model, amount int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &statusEvent[closenessChangedStatusEventBody]{
+	value := &pet2.StatusEvent[pet2.ClosenessChangedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    StatusEventTypeClosenessChanged,
-		Body: closenessChangedStatusEventBody{
+		Type:    pet2.StatusEventTypeClosenessChanged,
+		Body: pet2.ClosenessChangedStatusEventBody{
 			Slot:      m.Slot(),
 			Closeness: m.Closeness(),
 			Amount:    amount,
@@ -82,11 +83,11 @@ func closenessChangedEventProvider(m Model, amount int16) model.Provider[[]kafka
 
 func fullnessChangedEventProvider(m Model, amount int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &statusEvent[fullnessChangedStatusEventBody]{
+	value := &pet2.StatusEvent[pet2.FullnessChangedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    StatusEventTypeFullnessChanged,
-		Body: fullnessChangedStatusEventBody{
+		Type:    pet2.StatusEventTypeFullnessChanged,
+		Body: pet2.FullnessChangedStatusEventBody{
 			Slot:     m.Slot(),
 			Fullness: m.Fullness(),
 			Amount:   amount,
@@ -97,11 +98,11 @@ func fullnessChangedEventProvider(m Model, amount int8) model.Provider[[]kafka.M
 
 func levelChangedEventProvider(m Model, amount int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &statusEvent[levelChangedStatusEventBody]{
+	value := &pet2.StatusEvent[pet2.LevelChangedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    StatusEventTypeLevelChanged,
-		Body: levelChangedStatusEventBody{
+		Type:    pet2.StatusEventTypeLevelChanged,
+		Body: pet2.LevelChangedStatusEventBody{
 			Slot:   m.Slot(),
 			Level:  m.Level(),
 			Amount: amount,
@@ -112,11 +113,11 @@ func levelChangedEventProvider(m Model, amount int8) model.Provider[[]kafka.Mess
 
 func slotChangedEventProvider(m Model, oldSlot int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &statusEvent[slotChangedStatusEventBody]{
+	value := &pet2.StatusEvent[pet2.SlotChangedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    StatusEventTypeSlotChanged,
-		Body: slotChangedStatusEventBody{
+		Type:    pet2.StatusEventTypeSlotChanged,
+		Body: pet2.SlotChangedStatusEventBody{
 			OldSlot: oldSlot,
 			NewSlot: m.Slot(),
 		},
@@ -131,11 +132,11 @@ func excludeChangedEventProvider(m Model) model.Provider[[]kafka.Message] {
 	}
 
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &statusEvent[excludeChangedStatusEventBody]{
+	value := &pet2.StatusEvent[pet2.ExcludeChangedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    StatusEventTypeExcludeChanged,
-		Body: excludeChangedStatusEventBody{
+		Type:    pet2.StatusEventTypeExcludeChanged,
+		Body: pet2.ExcludeChangedStatusEventBody{
 			Items: items,
 		},
 	}

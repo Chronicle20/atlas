@@ -27,7 +27,8 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleGetPet(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParsePetId(d.Logger(), func(petId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			res, err := model.Map(Transform)(ByIdProvider(d.Context())(d.DB())(petId))()
+			p := NewProcessor(d.Logger(), d.Context(), d.DB())
+			res, err := model.Map(Transform)(p.ByIdProvider(petId))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -44,7 +45,8 @@ func handleGetPet(d *rest.HandlerDependency, c *rest.HandlerContext) http.Handle
 func handleGetPetsForCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			res, err := model.SliceMap(Transform)(ByOwnerProvider(d.Context())(d.DB())(characterId))(model.ParallelMap())()
+			p := NewProcessor(d.Logger(), d.Context(), d.DB())
+			res, err := model.SliceMap(Transform)(p.ByOwnerProvider(characterId))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)

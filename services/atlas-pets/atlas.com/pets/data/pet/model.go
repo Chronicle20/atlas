@@ -1,4 +1,4 @@
-package data
+package pet
 
 type Model struct {
 	id     uint32

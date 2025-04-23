@@ -7,6 +7,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
+	}
+	return p
+}
+
 func GetItemBySlot(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, inventoryId inventory.Type, slot int16) (Model, error) {
 	return func(ctx context.Context) func(characterId uint32, inventoryId inventory.Type, slot int16) (Model, error) {
 		return func(characterId uint32, inventoryId inventory.Type, slot int16) (Model, error) {

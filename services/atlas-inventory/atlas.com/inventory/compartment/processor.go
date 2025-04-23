@@ -575,7 +575,7 @@ func (p *Processor) ConsumeAssetAndEmit(characterId uint32, inventoryType invent
 func (p *Processor) ConsumeAsset(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
 	return func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, slot int16) error {
 		t := tenant.MustFromContext(p.ctx)
-		p.l.Debugf("Character [%d] attempting to consume asset in inventory [%d] slot [%d]. Transaction [%d].", characterId, inventoryType, transactionId, slot)
+		p.l.Debugf("Character [%d] attempting to consume asset in inventory [%d] slot [%d]. Transaction [%s].", characterId, inventoryType, slot, transactionId.String())
 		invLock := LockRegistry().Get(characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()

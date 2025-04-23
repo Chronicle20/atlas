@@ -29,5 +29,5 @@ func requestCreate(i Model) requests.Request[RestModel] {
 			return RestModel{}, err
 		}
 	}
-	return rest.MakePostRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource), rm)
+	return rest.MakePostRequest[RestModel](getBaseRequest()+Resource, rm)
 }

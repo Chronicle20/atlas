@@ -48,6 +48,9 @@ func (p *Processor) WithTransaction(db *gorm.DB) *Processor {
 		l:   p.l,
 		ctx: p.ctx,
 		db:  db,
+		t:   p.t,
+		cp:  p.cp,
+		pp:  p.pp,
 	}
 }
 

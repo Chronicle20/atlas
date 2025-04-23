@@ -49,12 +49,12 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 
 func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.CreatedStatusEventBody[any]]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.CreatedStatusEventBody[any]]) {
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if e.Type != asset2.StatusEventTypeCreated {
 			return
 		}
 
-		if e.Type != asset2.StatusEventTypeCreated {
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
 			return
 		}
 
@@ -83,12 +83,12 @@ func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handle
 
 func handleAssetUpdatedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.UpdatedStatusEventBody[any]]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.UpdatedStatusEventBody[any]]) {
-		t := sc.Tenant()
-		if !t.Is(tenant.MustFromContext(ctx)) {
+		if e.Type != asset2.StatusEventTypeUpdated {
 			return
 		}
 
-		if e.Type != asset2.StatusEventTypeUpdated {
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
 			return
 		}
 

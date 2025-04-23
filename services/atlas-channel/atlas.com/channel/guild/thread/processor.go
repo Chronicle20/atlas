@@ -1,6 +1,7 @@
 package thread
 
 import (
+	thread2 "atlas-channel/kafka/message/guild/thread"
 	"atlas-channel/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
@@ -8,72 +9,53 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, threadId uint32) (Model, error) {
-	return func(ctx context.Context) func(guildId uint32, threadId uint32) (Model, error) {
-		return func(guildId uint32, threadId uint32) (Model, error) {
-			return requests.Provider[RestModel, Model](l, ctx)(requestById(guildId, threadId), Extract)()
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func GetAll(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32) ([]Model, error) {
-	return func(ctx context.Context) func(guildId uint32) ([]Model, error) {
-		return func(guildId uint32) ([]Model, error) {
-			return requests.SliceProvider[RestModel, Model](l, ctx)(requestAll(guildId), Extract, model.Filters[Model]())()
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
 }
 
-func ModifyThread(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, characterId uint32, threadId uint32, notice bool, title string, message string, emoticonId uint32) error {
-	return func(ctx context.Context) func(guildId uint32, characterId uint32, threadId uint32, notice bool, title string, message string, emoticonId uint32) error {
-		return func(guildId uint32, characterId uint32, threadId uint32, notice bool, title string, message string, emoticonId uint32) error {
-			l.Debugf("Character [%d] is attempting to modify a guild thread [%d] to have, notice [%t], title [%s], message [%s], emoticonId [%d].", characterId, threadId, notice, title, message, emoticonId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(updateCommandProvider(guildId, characterId, threadId, notice, title, message, emoticonId))
-		}
-	}
+func (p *Processor) GetById(guildId uint32, threadId uint32) (Model, error) {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(guildId, threadId), Extract)()
 }
 
-func CreateThread(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, characterId uint32, notice bool, title string, message string, emoticonId uint32) error {
-	return func(ctx context.Context) func(guildId uint32, characterId uint32, notice bool, title string, message string, emoticonId uint32) error {
-		return func(guildId uint32, characterId uint32, notice bool, title string, message string, emoticonId uint32) error {
-			l.Debugf("Character [%d] is attempting to create a guild thread to have, notice [%t], title [%s], message [%s], emoticonId [%d].", characterId, notice, title, message, emoticonId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(createCommandProvider(guildId, characterId, notice, title, message, emoticonId))
-		}
-	}
+func (p *Processor) GetAll(guildId uint32) ([]Model, error) {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestAll(guildId), Extract, model.Filters[Model]())()
 }
 
-func DeleteThread(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, characterId uint32, threadId uint32) error {
-	return func(ctx context.Context) func(guildId uint32, characterId uint32, threadId uint32) error {
-		return func(guildId uint32, characterId uint32, threadId uint32) error {
-			l.Debugf("Character [%d] attempting to delete guild thread [%d].", characterId, threadId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(deleteCommandProvider(guildId, characterId, threadId))
-		}
-	}
+func (p *Processor) ModifyThread(guildId uint32, characterId uint32, threadId uint32, notice bool, title string, message string, emoticonId uint32) error {
+	p.l.Debugf("Character [%d] is attempting to modify a guild thread [%d] to have, notice [%t], title [%s], message [%s], emoticonId [%d].", characterId, threadId, notice, title, message, emoticonId)
+	return producer.ProviderImpl(p.l)(p.ctx)(thread2.EnvCommandTopic)(UpdateCommandProvider(guildId, characterId, threadId, notice, title, message, emoticonId))
 }
 
-func ListThreads(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, characterId uint32, startIndex uint32) error {
-	return func(ctx context.Context) func(guildId uint32, characterId uint32, startIndex uint32) error {
-		return func(guildId uint32, characterId uint32, startIndex uint32) error {
-			l.Debugf("Character [%d] attempting list threads starting at [%d].", characterId, startIndex)
-			return nil
-		}
-	}
+func (p *Processor) CreateThread(guildId uint32, characterId uint32, notice bool, title string, message string, emoticonId uint32) error {
+	p.l.Debugf("Character [%d] is attempting to create a guild thread to have, notice [%t], title [%s], message [%s], emoticonId [%d].", characterId, notice, title, message, emoticonId)
+	return producer.ProviderImpl(p.l)(p.ctx)(thread2.EnvCommandTopic)(CreateCommandProvider(guildId, characterId, notice, title, message, emoticonId))
 }
 
-func ReplyToThread(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, characterId uint32, threadId uint32, message string) error {
-	return func(ctx context.Context) func(guildId uint32, characterId uint32, threadId uint32, message string) error {
-		return func(guildId uint32, characterId uint32, threadId uint32, message string) error {
-			l.Debugf("Character [%d] attempting to reply to guild thread [%d] with message [%s].", characterId, threadId, message)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(addReplyCommandProvider(guildId, characterId, threadId, message))
-		}
-	}
+func (p *Processor) DeleteThread(guildId uint32, characterId uint32, threadId uint32) error {
+	p.l.Debugf("Character [%d] attempting to delete guild thread [%d].", characterId, threadId)
+	return producer.ProviderImpl(p.l)(p.ctx)(thread2.EnvCommandTopic)(DeleteCommandProvider(guildId, characterId, threadId))
 }
 
-func DeleteReply(l logrus.FieldLogger) func(ctx context.Context) func(guildId uint32, characterId uint32, threadId uint32, replyId uint32) error {
-	return func(ctx context.Context) func(guildId uint32, characterId uint32, threadId uint32, replyId uint32) error {
-		return func(guildId uint32, characterId uint32, threadId uint32, replyId uint32) error {
-			l.Debugf("Character [%d] attempting to delete reply [%d] in guild thread [%d].", characterId, replyId, threadId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(deleteReplyCommandProvider(guildId, characterId, threadId, replyId))
-		}
-	}
+func (p *Processor) ListThreads(guildId uint32, characterId uint32, startIndex uint32) error {
+	p.l.Debugf("Character [%d] attempting list threads starting at [%d].", characterId, startIndex)
+	return nil
+}
+
+func (p *Processor) ReplyToThread(guildId uint32, characterId uint32, threadId uint32, message string) error {
+	p.l.Debugf("Character [%d] attempting to reply to guild thread [%d] with message [%s].", characterId, threadId, message)
+	return producer.ProviderImpl(p.l)(p.ctx)(thread2.EnvCommandTopic)(AddReplyCommandProvider(guildId, characterId, threadId, message))
+}
+
+func (p *Processor) DeleteReply(guildId uint32, characterId uint32, threadId uint32, replyId uint32) error {
+	p.l.Debugf("Character [%d] attempting to delete reply [%d] in guild thread [%d].", characterId, replyId, threadId)
+	return producer.ProviderImpl(p.l)(p.ctx)(thread2.EnvCommandTopic)(DeleteReplyCommandProvider(guildId, characterId, threadId, replyId))
 }

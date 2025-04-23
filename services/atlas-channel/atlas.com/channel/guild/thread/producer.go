@@ -1,18 +1,19 @@
 package thread
 
 import (
+	thread2 "atlas-channel/kafka/message/guild/thread"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func createCommandProvider(guildId uint32, characterId uint32, notice bool, title string, message string, emoticonId uint32) model.Provider[[]kafka.Message] {
+func CreateCommandProvider(guildId uint32, characterId uint32, notice bool, title string, message string, emoticonId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
-	value := &command[createCommandBody]{
+	value := &thread2.Command[thread2.CreateCommandBody]{
 		GuildId:     guildId,
 		CharacterId: characterId,
-		Type:        CommandTypeCreate,
-		Body: createCommandBody{
+		Type:        thread2.CommandTypeCreate,
+		Body: thread2.CreateCommandBody{
 			Notice:     notice,
 			Title:      title,
 			Message:    message,
@@ -22,13 +23,13 @@ func createCommandProvider(guildId uint32, characterId uint32, notice bool, titl
 	return producer.SingleMessageProvider(key, value)
 }
 
-func updateCommandProvider(guildId uint32, characterId uint32, threadId uint32, notice bool, title string, message string, emoticonId uint32) model.Provider[[]kafka.Message] {
+func UpdateCommandProvider(guildId uint32, characterId uint32, threadId uint32, notice bool, title string, message string, emoticonId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
-	value := &command[updateCommandBody]{
+	value := &thread2.Command[thread2.UpdateCommandBody]{
 		GuildId:     guildId,
 		CharacterId: characterId,
-		Type:        CommandTypeUpdate,
-		Body: updateCommandBody{
+		Type:        thread2.CommandTypeUpdate,
+		Body: thread2.UpdateCommandBody{
 			ThreadId:   threadId,
 			Notice:     notice,
 			Title:      title,
@@ -39,26 +40,26 @@ func updateCommandProvider(guildId uint32, characterId uint32, threadId uint32, 
 	return producer.SingleMessageProvider(key, value)
 }
 
-func deleteCommandProvider(guildId uint32, characterId uint32, threadId uint32) model.Provider[[]kafka.Message] {
+func DeleteCommandProvider(guildId uint32, characterId uint32, threadId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
-	value := &command[deleteCommandBody]{
+	value := &thread2.Command[thread2.DeleteCommandBody]{
 		GuildId:     guildId,
 		CharacterId: characterId,
-		Type:        CommandTypeDelete,
-		Body: deleteCommandBody{
+		Type:        thread2.CommandTypeDelete,
+		Body: thread2.DeleteCommandBody{
 			ThreadId: threadId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func addReplyCommandProvider(guildId uint32, characterId uint32, threadId uint32, message string) model.Provider[[]kafka.Message] {
+func AddReplyCommandProvider(guildId uint32, characterId uint32, threadId uint32, message string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
-	value := &command[addReplyCommandBody]{
+	value := &thread2.Command[thread2.AddReplyCommandBody]{
 		GuildId:     guildId,
 		CharacterId: characterId,
-		Type:        CommandTypeAddReply,
-		Body: addReplyCommandBody{
+		Type:        thread2.CommandTypeAddReply,
+		Body: thread2.AddReplyCommandBody{
 			ThreadId: threadId,
 			Message:  message,
 		},
@@ -66,13 +67,13 @@ func addReplyCommandProvider(guildId uint32, characterId uint32, threadId uint32
 	return producer.SingleMessageProvider(key, value)
 }
 
-func deleteReplyCommandProvider(guildId uint32, characterId uint32, threadId uint32, replyId uint32) model.Provider[[]kafka.Message] {
+func DeleteReplyCommandProvider(guildId uint32, characterId uint32, threadId uint32, replyId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
-	value := &command[deleteReplyCommandBody]{
+	value := &thread2.Command[thread2.DeleteReplyCommandBody]{
 		GuildId:     guildId,
 		CharacterId: characterId,
-		Type:        CommandTypeDeleteReply,
-		Body: deleteReplyCommandBody{
+		Type:        thread2.CommandTypeDeleteReply,
+		Body: thread2.DeleteReplyCommandBody{
 			ThreadId: threadId,
 			ReplyId:  replyId,
 		},

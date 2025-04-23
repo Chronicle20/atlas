@@ -1,6 +1,7 @@
 package party
 
 import (
+	party2 "atlas-channel/kafka/message/party"
 	"atlas-channel/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -11,82 +12,59 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Create(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) error {
-	return func(ctx context.Context) func(characterId uint32) error {
-		return func(characterId uint32) error {
-			l.Debugf("Character [%d] attempting to create a party.", characterId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(createCommandProvider(characterId))
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func Leave(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, characterId uint32) error {
-	return func(ctx context.Context) func(partyId uint32, characterId uint32) error {
-		return func(partyId uint32, characterId uint32) error {
-			l.Debugf("Character [%d] attempting to leave party [%d].", characterId, partyId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(leaveCommandProvider(characterId, partyId, false))
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
 }
 
-func Expel(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, characterId uint32, targetCharacterId uint32) error {
-	return func(ctx context.Context) func(partyId uint32, characterId uint32, targetCharacterId uint32) error {
-		return func(partyId uint32, characterId uint32, targetCharacterId uint32) error {
-			l.Debugf("Character [%d] attempting to expel [%d] from party [%d].", characterId, targetCharacterId, partyId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(leaveCommandProvider(characterId, partyId, true))
-		}
-	}
+func (p *Processor) Create(characterId uint32) error {
+	p.l.Debugf("Character [%d] attempting to create a party.", characterId)
+	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(CreateCommandProvider(characterId))
 }
 
-func ChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32, characterId uint32, targetCharacterId uint32) error {
-	return func(ctx context.Context) func(partyId uint32, characterId uint32, targetCharacterId uint32) error {
-		return func(partyId uint32, characterId uint32, targetCharacterId uint32) error {
-			l.Debugf("Character [%d] attempting to pass leadership to [%d] in party [%d].", characterId, targetCharacterId, partyId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeLeaderCommandProvider(characterId, partyId, targetCharacterId))
-		}
-	}
+func (p *Processor) Leave(partyId uint32, characterId uint32) error {
+	p.l.Debugf("Character [%d] attempting to leave party [%d].", characterId, partyId)
+	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(LeaveCommandProvider(characterId, partyId, false))
 }
 
-func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, targetCharacterId uint32) error {
-	return func(ctx context.Context) func(characterId uint32, targetCharacterId uint32) error {
-		return func(characterId uint32, targetCharacterId uint32) error {
-			l.Debugf("Character [%d] attempting to invite [%d] to a party.", characterId, targetCharacterId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestInviteCommandProvider(characterId, targetCharacterId))
-		}
-	}
+func (p *Processor) Expel(partyId uint32, characterId uint32, targetCharacterId uint32) error {
+	p.l.Debugf("Character [%d] attempting to expel [%d] from party [%d].", characterId, targetCharacterId, partyId)
+	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(LeaveCommandProvider(characterId, partyId, true))
 }
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32) (Model, error) {
-	return func(ctx context.Context) func(partyId uint32) (Model, error) {
-		return func(partyId uint32) (Model, error) {
-			return byIdProvider(l)(ctx)(partyId)()
-		}
-	}
+func (p *Processor) ChangeLeader(partyId uint32, characterId uint32, targetCharacterId uint32) error {
+	p.l.Debugf("Character [%d] attempting to pass leadership to [%d] in party [%d].", characterId, targetCharacterId, partyId)
+	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(ChangeLeaderCommandProvider(characterId, partyId, targetCharacterId))
 }
 
-func byIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(partyId uint32) model.Provider[Model] {
-	return func(ctx context.Context) func(partyId uint32) model.Provider[Model] {
-		return func(partyId uint32) model.Provider[Model] {
-			return requests.Provider[RestModel, Model](l, ctx)(requestById(partyId), Extract)
-		}
-	}
+func (p *Processor) RequestInvite(characterId uint32, targetCharacterId uint32) error {
+	p.l.Debugf("Character [%d] attempting to invite [%d] to a party.", characterId, targetCharacterId)
+	return producer.ProviderImpl(p.l)(p.ctx)(party2.EnvCommandTopic)(RequestInviteCommandProvider(characterId, targetCharacterId))
 }
 
-func GetByMemberId(l logrus.FieldLogger) func(ctx context.Context) func(memberId uint32) (Model, error) {
-	return func(ctx context.Context) func(memberId uint32) (Model, error) {
-		return func(memberId uint32) (Model, error) {
-			return ByMemberIdProvider(l)(ctx)(memberId)()
-		}
-	}
+func (p *Processor) GetById(partyId uint32) (Model, error) {
+	return p.ByIdProvider(partyId)()
 }
 
-func ByMemberIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(memberId uint32) model.Provider[Model] {
-	return func(ctx context.Context) func(memberId uint32) model.Provider[Model] {
-		return func(memberId uint32) model.Provider[Model] {
-			rp := requests.SliceProvider[RestModel, Model](l, ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
-			return model.FirstProvider(rp, model.Filters[Model]())
-		}
-	}
+func (p *Processor) ByIdProvider(partyId uint32) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(partyId), Extract)
+}
+
+func (p *Processor) GetByMemberId(memberId uint32) (Model, error) {
+	return p.ByMemberIdProvider(memberId)()
+}
+
+func (p *Processor) ByMemberIdProvider(memberId uint32) model.Provider[Model] {
+	rp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
+	return model.FirstProvider(rp, model.Filters[Model]())
 }
 
 func FilteredMemberProvider(filters ...model.Filter[MemberModel]) func(p model.Provider[Model]) model.Provider[[]MemberModel] {

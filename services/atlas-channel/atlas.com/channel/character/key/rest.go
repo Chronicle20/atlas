@@ -32,3 +32,11 @@ func Transform(m Model) (RestModel, error) {
 		Action: m.action,
 	}, nil
 }
+
+func Extract(rm RestModel) (Model, error) {
+	return Model{
+		key:     rm.Key,
+		theType: rm.Type,
+		action:  rm.Action,
+	}, nil
+}

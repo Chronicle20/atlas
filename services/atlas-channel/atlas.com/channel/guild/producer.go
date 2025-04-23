@@ -1,18 +1,19 @@
 package guild
 
 import (
+	guild2 "atlas-channel/kafka/message/guild"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func requestCreateProvider(m _map.Model, characterId uint32, name string) model.Provider[[]kafka.Message] {
+func RequestCreateProvider(m _map.Model, characterId uint32, name string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[requestCreateBody]{
+	value := &guild2.Command[guild2.RequestCreateBody]{
 		CharacterId: characterId,
-		Type:        CommandTypeRequestCreate,
-		Body: requestCreateBody{
+		Type:        guild2.CommandTypeRequestCreate,
+		Body: guild2.RequestCreateBody{
 			WorldId:   byte(m.WorldId()),
 			ChannelId: byte(m.ChannelId()),
 			MapId:     uint32(m.MapId()),
@@ -22,12 +23,12 @@ func requestCreateProvider(m _map.Model, characterId uint32, name string) model.
 	return producer.SingleMessageProvider(key, value)
 }
 
-func requestInviteProvider(guildId uint32, characterId uint32, targetId uint32) model.Provider[[]kafka.Message] {
+func RequestInviteProvider(guildId uint32, characterId uint32, targetId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[requestInviteBody]{
+	value := &guild2.Command[guild2.RequestInviteBody]{
 		CharacterId: characterId,
-		Type:        CommandTypeRequestInvite,
-		Body: requestInviteBody{
+		Type:        guild2.CommandTypeRequestInvite,
+		Body: guild2.RequestInviteBody{
 			GuildId:  guildId,
 			TargetId: targetId,
 		},
@@ -35,24 +36,24 @@ func requestInviteProvider(guildId uint32, characterId uint32, targetId uint32) 
 	return producer.SingleMessageProvider(key, value)
 }
 
-func creationAgreementProvider(characterId uint32, agreed bool) model.Provider[[]kafka.Message] {
+func CreationAgreementProvider(characterId uint32, agreed bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[creationAgreementBody]{
+	value := &guild2.Command[guild2.CreationAgreementBody]{
 		CharacterId: characterId,
-		Type:        CommandTypeCreationAgreement,
-		Body: creationAgreementBody{
+		Type:        guild2.CommandTypeCreationAgreement,
+		Body: guild2.CreationAgreementBody{
 			Agreed: agreed,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func changeEmblemProvider(guildId uint32, characterId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) model.Provider[[]kafka.Message] {
+func ChangeEmblemProvider(guildId uint32, characterId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[changeEmblemBody]{
+	value := &guild2.Command[guild2.ChangeEmblemBody]{
 		CharacterId: characterId,
-		Type:        CommandTypeChangeEmblem,
-		Body: changeEmblemBody{
+		Type:        guild2.CommandTypeChangeEmblem,
+		Body: guild2.ChangeEmblemBody{
 			GuildId:             guildId,
 			Logo:                logo,
 			LogoColor:           logoColor,
@@ -63,12 +64,12 @@ func changeEmblemProvider(guildId uint32, characterId uint32, logo uint16, logoC
 	return producer.SingleMessageProvider(key, value)
 }
 
-func changeNoticeProvider(guildId uint32, characterId uint32, notice string) model.Provider[[]kafka.Message] {
+func ChangeNoticeProvider(guildId uint32, characterId uint32, notice string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[changeNoticeBody]{
+	value := &guild2.Command[guild2.ChangeNoticeBody]{
 		CharacterId: characterId,
-		Type:        CommandTypeChangeNotice,
-		Body: changeNoticeBody{
+		Type:        guild2.CommandTypeChangeNotice,
+		Body: guild2.ChangeNoticeBody{
 			GuildId: guildId,
 			Notice:  notice,
 		},
@@ -76,12 +77,12 @@ func changeNoticeProvider(guildId uint32, characterId uint32, notice string) mod
 	return producer.SingleMessageProvider(key, value)
 }
 
-func changeTitlesProvider(guildId uint32, characterId uint32, titles []string) model.Provider[[]kafka.Message] {
+func ChangeTitlesProvider(guildId uint32, characterId uint32, titles []string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[changeTitlesBody]{
+	value := &guild2.Command[guild2.ChangeTitlesBody]{
 		CharacterId: characterId,
-		Type:        CommandTypeChangeTitles,
-		Body: changeTitlesBody{
+		Type:        guild2.CommandTypeChangeTitles,
+		Body: guild2.ChangeTitlesBody{
 			GuildId: guildId,
 			Titles:  titles,
 		},
@@ -89,12 +90,12 @@ func changeTitlesProvider(guildId uint32, characterId uint32, titles []string) m
 	return producer.SingleMessageProvider(key, value)
 }
 
-func changeMemberTitleProvider(guildId uint32, characterId uint32, targetId uint32, newTitle byte) model.Provider[[]kafka.Message] {
+func ChangeMemberTitleProvider(guildId uint32, characterId uint32, targetId uint32, newTitle byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[changeMemberTitleBody]{
+	value := &guild2.Command[guild2.ChangeMemberTitleBody]{
 		CharacterId: characterId,
-		Type:        CommandTypeChangeMemberTitle,
-		Body: changeMemberTitleBody{
+		Type:        guild2.CommandTypeChangeMemberTitle,
+		Body: guild2.ChangeMemberTitleBody{
 			GuildId:  guildId,
 			TargetId: targetId,
 			Title:    newTitle,
@@ -103,12 +104,12 @@ func changeMemberTitleProvider(guildId uint32, characterId uint32, targetId uint
 	return producer.SingleMessageProvider(key, value)
 }
 
-func expelGuildProvider(guildId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+func ExpelGuildProvider(guildId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[leaveBody]{
+	value := &guild2.Command[guild2.LeaveBody]{
 		CharacterId: characterId,
-		Type:        CommandTypeLeave,
-		Body: leaveBody{
+		Type:        guild2.CommandTypeLeave,
+		Body: guild2.LeaveBody{
 			GuildId: guildId,
 			Force:   true,
 		},
@@ -116,12 +117,12 @@ func expelGuildProvider(guildId uint32, characterId uint32) model.Provider[[]kaf
 	return producer.SingleMessageProvider(key, value)
 }
 
-func leaveGuildProvider(guildId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+func LeaveGuildProvider(guildId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[leaveBody]{
+	value := &guild2.Command[guild2.LeaveBody]{
 		CharacterId: characterId,
-		Type:        CommandTypeLeave,
-		Body: leaveBody{
+		Type:        guild2.CommandTypeLeave,
+		Body: guild2.LeaveBody{
 			GuildId: guildId,
 			Force:   false,
 		},

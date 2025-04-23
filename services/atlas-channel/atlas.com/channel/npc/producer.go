@@ -1,19 +1,20 @@
 package npc
 
 import (
+	npc2 "atlas-channel/kafka/message/npc"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func startConversationCommandProvider(m _map.Model, npcId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+func StartConversationCommandProvider(m _map.Model, npcId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[startConversationCommandBody]{
+	value := &npc2.Command[npc2.StartConversationCommandBody]{
 		NpcId:       npcId,
 		CharacterId: characterId,
-		Type:        CommandTypeStartConversation,
-		Body: startConversationCommandBody{
+		Type:        npc2.CommandTypeStartConversation,
+		Body: npc2.StartConversationCommandBody{
 			WorldId:   byte(m.WorldId()),
 			ChannelId: byte(m.ChannelId()),
 			MapId:     uint32(m.MapId()),
@@ -22,13 +23,13 @@ func startConversationCommandProvider(m _map.Model, npcId uint32, characterId ui
 	return producer.SingleMessageProvider(key, value)
 }
 
-func continueConversationCommandProvider(characterId uint32, action byte, lastMessageType byte, selection int32) model.Provider[[]kafka.Message] {
+func ContinueConversationCommandProvider(characterId uint32, action byte, lastMessageType byte, selection int32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[continueConversationCommandBody]{
+	value := &npc2.Command[npc2.ContinueConversationCommandBody]{
 		NpcId:       0, // TODO
 		CharacterId: characterId,
-		Type:        CommandTypeContinueConversation,
-		Body: continueConversationCommandBody{
+		Type:        npc2.CommandTypeContinueConversation,
+		Body: npc2.ContinueConversationCommandBody{
 			Action:          action,
 			LastMessageType: lastMessageType,
 			Selection:       selection,
@@ -37,13 +38,13 @@ func continueConversationCommandProvider(characterId uint32, action byte, lastMe
 	return producer.SingleMessageProvider(key, value)
 }
 
-func disposeConversationCommandProvider(characterId uint32) model.Provider[[]kafka.Message] {
+func DisposeConversationCommandProvider(characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[endConversationCommandBody]{
+	value := &npc2.Command[npc2.EndConversationCommandBody]{
 		NpcId:       0, // TODO
 		CharacterId: characterId,
-		Type:        CommandTypeEndConversation,
-		Body:        endConversationCommandBody{},
+		Type:        npc2.CommandTypeEndConversation,
+		Body:        npc2.EndConversationCommandBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

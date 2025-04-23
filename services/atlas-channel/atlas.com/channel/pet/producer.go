@@ -1,42 +1,43 @@
 package pet
 
 import (
+	pet2 "atlas-channel/kafka/message/pet"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func spawnProvider(characterId uint32, petId uint64, lead bool) model.Provider[[]kafka.Message] {
+func SpawnProvider(characterId uint32, petId uint32, lead bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(petId))
-	value := &commandEvent[spawnCommandBody]{
+	value := &pet2.Command[pet2.SpawnCommandBody]{
 		ActorId: characterId,
 		PetId:   petId,
-		Type:    CommandPetSpawn,
-		Body: spawnCommandBody{
+		Type:    pet2.CommandPetSpawn,
+		Body: pet2.SpawnCommandBody{
 			Lead: lead,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func despawnProvider(characterId uint32, petId uint64) model.Provider[[]kafka.Message] {
+func DespawnProvider(characterId uint32, petId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(petId))
-	value := &commandEvent[despawnCommandBody]{
+	value := &pet2.Command[pet2.DespawnCommandBody]{
 		ActorId: characterId,
 		PetId:   petId,
-		Type:    CommandPetDespawn,
-		Body:    despawnCommandBody{},
+		Type:    pet2.CommandPetDespawn,
+		Body:    pet2.DespawnCommandBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func attemptCommandProvider(petId uint64, commandId byte, byName bool, characterId uint32) model.Provider[[]kafka.Message] {
+func AttemptCommandProvider(petId uint32, commandId byte, byName bool, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(petId))
-	value := &commandEvent[attemptCommandCommandBody]{
+	value := &pet2.Command[pet2.AttemptCommandCommandBody]{
 		ActorId: characterId,
 		PetId:   petId,
-		Type:    CommandPetAttemptCommand,
-		Body: attemptCommandCommandBody{
+		Type:    pet2.CommandPetAttemptCommand,
+		Body: pet2.AttemptCommandCommandBody{
 			CommandId: commandId,
 			ByName:    byName,
 		},
@@ -44,13 +45,13 @@ func attemptCommandProvider(petId uint64, commandId byte, byName bool, character
 	return producer.SingleMessageProvider(key, value)
 }
 
-func setExcludesCommandProvider(characterId uint32, petId uint64, items []uint32) model.Provider[[]kafka.Message] {
+func SetExcludesCommandProvider(characterId uint32, petId uint32, items []uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(petId))
-	value := &commandEvent[setExcludeCommandBody]{
+	value := &pet2.Command[pet2.SetExcludeCommandBody]{
 		ActorId: characterId,
 		PetId:   petId,
-		Type:    CommandPetSetExclude,
-		Body: setExcludeCommandBody{
+		Type:    pet2.CommandPetSetExclude,
+		Body: pet2.SetExcludeCommandBody{
 			Items: items,
 		},
 	}

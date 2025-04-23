@@ -16,7 +16,7 @@ func getBaseRequest() string {
 	return requests.RootUrl("PETS")
 }
 
-func requestById(petId uint64) requests.Request[RestModel] {
+func requestById(petId uint32) requests.Request[RestModel] {
 	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, petId))
 }
 

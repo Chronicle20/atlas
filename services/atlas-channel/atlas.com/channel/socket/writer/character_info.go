@@ -1,18 +1,20 @@
 package writer
 
 import (
+	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
-	"atlas-channel/character/equipment/slot"
 	"atlas-channel/guild"
 	"atlas-channel/pet"
+	"github.com/Chronicle20/atlas-constants/inventory/slot"
+
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 )
 
 const CharacterInfo = "CharacterInfo"
 
-func CharacterInfoBody(tenant tenant.Model) func(c character.Model, g guild.Model) BodyProducer {
-	return func(c character.Model, g guild.Model) BodyProducer {
+func CharacterInfoBody(tenant tenant.Model) func(c character.Model, g guild.Model, wl []wishlist.Model) BodyProducer {
+	return func(c character.Model, g guild.Model, wl []wishlist.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(c.Id())
 			w.WriteByte(c.Level())
@@ -42,7 +44,12 @@ func CharacterInfoBody(tenant tenant.Model) func(c character.Model, g guild.Mode
 			w.WriteBool(false) // more pets?
 
 			w.WriteByte(0) // mount, followed by mount info
-			w.WriteByte(0) // wish list size
+
+			w.WriteByte(byte(len(wl)))
+			for _, i := range wl {
+				w.WriteInt(i.SerialNumber())
+			}
+
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() < 87) || tenant.Region() == "JMS" {
 				w.WriteInt(0) // monster book level
 				w.WriteInt(0) // normal card
@@ -56,7 +63,7 @@ func CharacterInfoBody(tenant tenant.Model) func(c character.Model, g guild.Mode
 			if err == nil {
 				if em, ok := c.Equipment().Get(ms.Type); ok {
 					if me := em.Equipable; me != nil {
-						medalId = me.ItemId()
+						medalId = me.TemplateId()
 					}
 				}
 			}

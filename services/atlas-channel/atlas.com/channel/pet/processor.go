@@ -1,6 +1,7 @@
 package pet
 
 import (
+	pet2 "atlas-channel/kafka/message/pet"
 	"atlas-channel/kafka/producer"
 	"atlas-channel/pet/exclude"
 	"context"
@@ -9,88 +10,55 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func ByIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(petId uint64) model.Provider[Model] {
-	return func(ctx context.Context) func(petId uint64) model.Provider[Model] {
-		return func(petId uint64) model.Provider[Model] {
-			return requests.Provider[RestModel, Model](l, ctx)(requestById(petId), Extract)
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(petId uint64) (Model, error) {
-	return func(ctx context.Context) func(petId uint64) (Model, error) {
-		return func(petId uint64) (Model, error) {
-			return ByIdProvider(l)(ctx)(petId)()
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
 }
 
-func ByOwnerProvider(l logrus.FieldLogger) func(ctx context.Context) func(ownerId uint32) model.Provider[[]Model] {
-	return func(ctx context.Context) func(ownerId uint32) model.Provider[[]Model] {
-		return func(ownerId uint32) model.Provider[[]Model] {
-			return requests.SliceProvider[RestModel, Model](l, ctx)(requestByOwnerId(ownerId), Extract, model.Filters[Model]())
-		}
-	}
+func (p *Processor) ByIdProvider(petId uint32) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(petId), Extract)
 }
 
-func GetByOwner(l logrus.FieldLogger) func(ctx context.Context) func(ownerId uint32) ([]Model, error) {
-	return func(ctx context.Context) func(ownerId uint32) ([]Model, error) {
-		return func(ownerId uint32) ([]Model, error) {
-			return ByOwnerProvider(l)(ctx)(ownerId)()
-		}
-	}
+func (p *Processor) GetById(petId uint32) (Model, error) {
+	return p.ByIdProvider(petId)()
 }
 
-func GetByOwnerItem(l logrus.FieldLogger) func(ctx context.Context) func(ownerId uint32, inventoryItemId uint32) (Model, error) {
-	return func(ctx context.Context) func(ownerId uint32, inventoryItemId uint32) (Model, error) {
-		return func(ownerId uint32, inventoryItemId uint32) (Model, error) {
-			return model.FirstProvider(ByOwnerProvider(l)(ctx)(ownerId), model.Filters(InventoryItemIdFilter(inventoryItemId)))()
-		}
-	}
+func (p *Processor) ByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByOwnerId(ownerId), Extract, model.Filters[Model]())
 }
 
-func InventoryItemIdFilter(inventoryItemId uint32) model.Filter[Model] {
-	return func(m Model) bool {
-		return m.InventoryItemId() == inventoryItemId
-	}
+func (p *Processor) GetByOwner(ownerId uint32) ([]Model, error) {
+	return p.ByOwnerProvider(ownerId)()
 }
 
-func Spawn(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, petId uint64, lead bool) error {
-	return func(ctx context.Context) func(characterId uint32, petId uint64, lead bool) error {
-		return func(characterId uint32, petId uint64, lead bool) error {
-			l.Debugf("Character [%d] attempting to spawn pet [%d]", characterId, petId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(spawnProvider(characterId, petId, lead))
-		}
-	}
+func (p *Processor) Spawn(characterId uint32, petId uint32, lead bool) error {
+	p.l.Debugf("Character [%d] attempting to spawn pet [%d]", characterId, petId)
+	return producer.ProviderImpl(p.l)(p.ctx)(pet2.EnvCommandTopic)(SpawnProvider(characterId, petId, lead))
 }
 
-func Despawn(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, petId uint64) error {
-	return func(ctx context.Context) func(characterId uint32, petId uint64) error {
-		return func(characterId uint32, petId uint64) error {
-			l.Debugf("Character [%d] attempting to despawn pet [%d].", characterId, petId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(despawnProvider(characterId, petId))
-		}
-	}
+func (p *Processor) Despawn(characterId uint32, petId uint32) error {
+	p.l.Debugf("Character [%d] attempting to despawn pet [%d].", characterId, petId)
+	return producer.ProviderImpl(p.l)(p.ctx)(pet2.EnvCommandTopic)(DespawnProvider(characterId, petId))
 }
 
-func AttemptCommand(l logrus.FieldLogger) func(ctx context.Context) func(petId uint64, commandId byte, byName bool, characterId uint32) error {
-	return func(ctx context.Context) func(petId uint64, commandId byte, byName bool, characterId uint32) error {
-		return func(petId uint64, commandId byte, byName bool, characterId uint32) error {
-			l.Debugf("Character [%d] triggered pet [%d] command. byName [%t], command [%d]", characterId, petId, byName, commandId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(attemptCommandProvider(petId, commandId, byName, characterId))
-		}
-	}
+func (p *Processor) AttemptCommand(petId uint32, commandId byte, byName bool, characterId uint32) error {
+	p.l.Debugf("Character [%d] triggered pet [%d] command. byName [%t], command [%d]", characterId, petId, byName, commandId)
+	return producer.ProviderImpl(p.l)(p.ctx)(pet2.EnvCommandTopic)(AttemptCommandProvider(petId, commandId, byName, characterId))
 }
 
-func SetExcludeItems(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, petId uint64, items []exclude.Model) error {
-	return func(ctx context.Context) func(characterId uint32, petId uint64, items []exclude.Model) error {
-		return func(characterId uint32, petId uint64, items []exclude.Model) error {
-			l.Debugf("Character [%d] setting exclude items for pet [%d]. count [%d].", characterId, petId, len(items))
-			itemIds := make([]uint32, len(items))
-			for i, item := range items {
-				itemIds[i] = item.ItemId()
-			}
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(setExcludesCommandProvider(characterId, petId, itemIds))
-		}
+func (p *Processor) SetExcludeItems(characterId uint32, petId uint32, items []exclude.Model) error {
+	p.l.Debugf("Character [%d] setting exclude items for pet [%d]. count [%d].", characterId, petId, len(items))
+	itemIds := make([]uint32, len(items))
+	for i, item := range items {
+		itemIds[i] = item.ItemId()
 	}
+	return producer.ProviderImpl(p.l)(p.ctx)(pet2.EnvCommandTopic)(SetExcludesCommandProvider(characterId, petId, itemIds))
 }

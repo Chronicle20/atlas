@@ -21,7 +21,8 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 		return func(wp writer.Producer) func(ai model2.AttackInfo) model.Operator[session.Model] {
 			return func(ai model2.AttackInfo) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					c, err := character.GetByIdWithInventory(l)(ctx)(character.SkillModelDecorator(l)(ctx))(s.CharacterId())
+					cp := character.NewProcessor(l, ctx)
+					c, err := cp.GetById(cp.InventoryDecorator, cp.SkillModelDecorator)(s.CharacterId())
 					if err != nil {
 						return err
 					}
@@ -36,32 +37,32 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						}
 						if sk.Id() == 0 {
 							l.Errorf("Character [%d] attempting to attack with skill [%d] which they do not own.", s.CharacterId(), ai.SkillId())
-							return session.Destroy(l, ctx, session.GetRegistry())(s)
+							return session.NewProcessor(l, ctx).Destroy(s)
 						}
 
 						var se effect.Model
-						se, err = skill2.GetEffect(l)(ctx)(ai.SkillId(), sk.Level())
+						se, err = skill2.NewProcessor(l, ctx).GetEffect(ai.SkillId(), sk.Level())
 						if err != nil {
 							return err
 						}
 						if se.HPConsume() > 0 {
-							_ = character.ChangeHP(l)(ctx)(s.Map(), s.CharacterId(), -int16(se.HPConsume()))
+							_ = cp.ChangeHP(s.Map(), s.CharacterId(), -int16(se.HPConsume()))
 						}
 						if se.MPConsume() > 0 {
-							_ = character.ChangeMP(l)(ctx)(s.Map(), s.CharacterId(), -int16(se.MPConsume()))
+							_ = cp.ChangeMP(s.Map(), s.CharacterId(), -int16(se.MPConsume()))
 						}
 					}
 
 					for _, di := range ai.DamageInfo() {
 						for _, d := range di.Damages() {
-							err := monster.Damage(l)(ctx)(s.Map(), di.MonsterId(), s.CharacterId(), d)
+							err := monster.NewProcessor(l, ctx).Damage(s.Map(), di.MonsterId(), s.CharacterId(), d)
 							if err != nil {
 								l.WithError(err).Errorf("Unable to apply damage [%d] to monster [%d] from character [%d].", d, di.MonsterId(), s.CharacterId())
 							}
 						}
 					}
 
-					_ = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), func(os session.Model) error {
+					_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), func(os session.Model) error {
 						var writerName string
 						var bodyProducer writer.BodyProducer
 						if ai.AttackType() == model2.AttackTypeMelee {

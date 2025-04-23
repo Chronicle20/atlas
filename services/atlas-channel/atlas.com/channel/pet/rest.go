@@ -8,22 +8,24 @@ import (
 )
 
 type RestModel struct {
-	Id              uint64              `json:"-"`
-	InventoryItemId uint32              `json:"inventoryItemId"`
-	TemplateId      uint32              `json:"templateId"`
-	Name            string              `json:"name"`
-	Level           byte                `json:"level"`
-	Closeness       uint16              `json:"closeness"`
-	Fullness        byte                `json:"fullness"`
-	Expiration      time.Time           `json:"expiration"`
-	OwnerId         uint32              `json:"ownerId"`
-	Lead            bool                `json:"lead"`
-	Slot            int8                `json:"slot"`
-	X               int16               `json:"x"`
-	Y               int16               `json:"y"`
-	Stance          byte                `json:"stance"`
-	FH              int16               `json:"fh"`
-	Excludes        []exclude.RestModel `json:"excludes"`
+	Id         uint32              `json:"-"`
+	CashId     uint64              `json:"cashId"`
+	TemplateId uint32              `json:"templateId"`
+	Name       string              `json:"name"`
+	Level      byte                `json:"level"`
+	Closeness  uint16              `json:"closeness"`
+	Fullness   byte                `json:"fullness"`
+	Expiration time.Time           `json:"expiration"`
+	OwnerId    uint32              `json:"ownerId"`
+	Lead       bool                `json:"lead"`
+	Slot       int8                `json:"slot"`
+	X          int16               `json:"x"`
+	Y          int16               `json:"y"`
+	Stance     byte                `json:"stance"`
+	FH         int16               `json:"fh"`
+	Excludes   []exclude.RestModel `json:"excludes"`
+	Flag       uint16              `json:"flag"`
+	PurchaseBy uint32              `json:"purchaseBy"`
 }
 
 func (r RestModel) GetName() string {
@@ -39,7 +41,7 @@ func (r *RestModel) SetID(strId string) error {
 	if err != nil {
 		return err
 	}
-	r.Id = uint64(id)
+	r.Id = uint32(id)
 	return nil
 }
 
@@ -50,21 +52,22 @@ func Extract(rm RestModel) (Model, error) {
 	}
 
 	return Model{
-		id:              rm.Id,
-		inventoryItemId: rm.InventoryItemId,
-		templateId:      rm.TemplateId,
-		name:            rm.Name,
-		level:           rm.Level,
-		closeness:       rm.Closeness,
-		fullness:        rm.Fullness,
-		expiration:      rm.Expiration,
-		ownerId:         rm.OwnerId,
-		lead:            rm.Lead,
-		slot:            rm.Slot,
-		x:               rm.X,
-		y:               rm.Y,
-		stance:          rm.Stance,
-		fh:              rm.FH,
-		excludes:        es,
+		id:         rm.Id,
+		cashId:     rm.CashId,
+		templateId: rm.TemplateId,
+		name:       rm.Name,
+		level:      rm.Level,
+		closeness:  rm.Closeness,
+		fullness:   rm.Fullness,
+		expiration: rm.Expiration,
+		ownerId:    rm.OwnerId,
+		slot:       rm.Slot,
+		x:          rm.X,
+		y:          rm.Y,
+		stance:     rm.Stance,
+		fh:         rm.FH,
+		excludes:   es,
+		flag:       rm.Flag,
+		purchaseBy: rm.PurchaseBy,
 	}, nil
 }

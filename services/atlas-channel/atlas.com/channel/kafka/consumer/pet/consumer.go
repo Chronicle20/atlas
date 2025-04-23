@@ -2,8 +2,8 @@ package pet
 
 import (
 	"atlas-channel/character"
-	"atlas-channel/character/inventory/item"
 	consumer2 "atlas-channel/kafka/consumer"
+	pet2 "atlas-channel/kafka/message/pet"
 	_map "atlas-channel/map"
 	"atlas-channel/pet"
 	"atlas-channel/server"
@@ -11,6 +11,8 @@ import (
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+	"errors"
+	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -24,7 +26,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("pet_status_event")(EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("pet_status_event")(pet2.EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -34,7 +36,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvStatusEventTopic)()
+				t, _ = topic.EnvProvider(l)(pet2.EnvStatusEventTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawned(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDespawned(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandResponse(sc, wp))))
@@ -48,13 +50,18 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[statusEvent[spawnedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[spawnedStatusEventBody]) {
-		if e.Type != StatusEventTypeSpawned {
+func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.SpawnedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.SpawnedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeSpawned {
 			return
 		}
 
-		s, err := session.GetByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId)
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId)
 		if err != nil {
 			return
 		}
@@ -88,7 +95,7 @@ func announceSpawn(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet spawned to character.")
 					}
-					err = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p)))
+					err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p)))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet spawned to other characters.")
 					}
@@ -99,13 +106,18 @@ func announceSpawn(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	}
 }
 
-func handleDespawned(sc server.Model, wp writer.Producer) message.Handler[statusEvent[despawnedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[despawnedStatusEventBody]) {
-		if e.Type != StatusEventTypeDespawned {
+func handleDespawned(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.DespawnedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.DespawnedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeDespawned {
 			return
 		}
 
-		s, err := session.GetByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId)
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId)
 		if err != nil {
 			return
 		}
@@ -126,7 +138,7 @@ func announceDespawn(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet despawned to character.")
 					}
-					err = _map.ForOtherSessionsInMap(l)(ctx)(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(l)(s.CharacterId(), slot, reason)))
+					err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Map(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(l)(s.CharacterId(), slot, reason)))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet despawned to other characters.")
 					}
@@ -137,13 +149,18 @@ func announceDespawn(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 	}
 }
 
-func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[statusEvent[commandResponseStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[commandResponseStatusEventBody]) {
-		if e.Type != StatusEventTypeCommandResponse {
+func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.CommandResponseStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.CommandResponseStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeCommandResponse {
 			return
 		}
 
-		s, err := session.GetByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId)
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId)
 		if err != nil {
 			return
 		}
@@ -161,73 +178,68 @@ func handleCommandResponse(sc server.Model, wp writer.Producer) message.Handler[
 				SetCloseness(e.Body.Closeness).
 				SetFullness(e.Body.Fullness).
 				Build()
-			_ = _map.ForSessionsInMap(l)(ctx)(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetCommandResponseBody(p, e.Body.CommandId, e.Body.Success, false)))
+			_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetCommandResponseBody(p, e.Body.CommandId, e.Body.Success, false)))
 		}()
 	}
 }
 
-func announcePetStatUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
-			return func(p pet.Model) model.Operator[session.Model] {
-				c, err := character.GetByIdWithInventory(l)(ctx)()(p.OwnerId())
+func announcePetStatUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(petId uint32, ownerId uint32) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(petId uint32, ownerId uint32) model.Operator[session.Model] {
+		cp := character.NewProcessor(l, ctx)
+		return func(wp writer.Producer) func(petId uint32, ownerId uint32) model.Operator[session.Model] {
+			return func(petId uint32, ownerId uint32) model.Operator[session.Model] {
+				c, err := cp.GetById(cp.InventoryDecorator)(ownerId)
 				if err != nil {
 					return func(s session.Model) error {
 						return err
 					}
 				}
-
-				var i item.Model
-				for _, ii := range c.Inventory().Cash().Items() {
-					if ii.Id() == p.InventoryItemId() {
-						i = ii
+				a, ok := c.Inventory().Cash().FindByReferenceId(petId)
+				if !ok {
+					return func(s session.Model) error {
+						return errors.New("pet not found")
 					}
 				}
-				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshPet(p, i))
+				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshAsset(tenant.MustFromContext(ctx))(inventory2.TypeValueCash, *a))
 			}
 		}
 	}
 }
 
-func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[closenessChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[closenessChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeClosenessChanged {
+func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.ClosenessChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.ClosenessChangedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeClosenessChanged {
 			return
 		}
 
-		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
-			p, err := pet.GetById(l)(ctx)(e.PetId)
-			if err != nil {
-				return err
-			}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
 
-			err = announcePetStatUpdate(l)(ctx)(wp)(p)(s)
-			if err != nil {
-				return err
-			}
-			return nil
-		})
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId))
 	}
 }
 
-func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[fullnessChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[fullnessChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeFullnessChanged {
+func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.FullnessChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.FullnessChangedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeFullnessChanged {
 			return
 		}
 
-		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
-			p, err := pet.GetById(l)(ctx)(e.PetId)
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			// TODO this is an extra query
+			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
 			if err != nil {
 				return err
 			}
 
-			err = announcePetStatUpdate(l)(ctx)(wp)(p)(s)
+			err = announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId)(s)
 			if err != nil {
 				return err
 			}
 
-			return _map.ForSessionsInMap(l)(ctx)(s.Map(), func(os session.Model) error {
+			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), func(os session.Model) error {
 				if e.Body.Amount > 0 {
 					err := session.Announce(l)(ctx)(wp)(writer.PetCommandResponse)(writer.PetFoodResponseBody(p, 0, true, false))(os)
 					if err != nil {
@@ -242,24 +254,30 @@ func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[
 	}
 }
 
-func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[levelChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[levelChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeLevelChanged {
+func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.LevelChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.LevelChangedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeLevelChanged {
 			return
 		}
 
-		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
-			p, err := pet.GetById(l)(ctx)(e.PetId)
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			// TODO this is an extra query
+			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
 			if err != nil {
 				return err
 			}
 
-			err = announcePetStatUpdate(l)(ctx)(wp)(p)(s)
+			err = announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId)(s)
 			if err != nil {
 				return err
 			}
 
-			return _map.ForSessionsInMap(l)(ctx)(s.Map(), func(os session.Model) error {
+			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), func(os session.Model) error {
 				if s.CharacterId() == os.CharacterId() {
 					err = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterPetEffectBody(l)(byte(e.Body.Slot), 0))(os)
 					if err != nil {
@@ -278,13 +296,18 @@ func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[sta
 	}
 }
 
-func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[slotChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[slotChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeSlotChanged {
+func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.SlotChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.SlotChangedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeSlotChanged {
 			return
 		}
 
-		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
 			stat := ""
 			sn := int64(0)
 			if e.Body.NewSlot < 0 {
@@ -313,7 +336,7 @@ func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[stat
 			}
 
 			if e.Body.OldSlot >= 0 && e.Body.NewSlot >= 0 {
-				p, err := pet.GetById(l)(ctx)(e.PetId)
+				p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
 				if err != nil {
 					return err
 				}
@@ -336,14 +359,19 @@ func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	}
 }
 
-func handleExcludeChanged(sc server.Model, wp writer.Producer) message.Handler[statusEvent[excludeChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[excludeChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeExcludeChanged {
+func handleExcludeChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.ExcludeChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.ExcludeChangedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeExcludeChanged {
 			return
 		}
 
-		_ = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
-			p, err := pet.GetById(l)(ctx)(e.PetId)
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
+			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)
 			if err != nil {
 				return err
 			}

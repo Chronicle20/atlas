@@ -9,7 +9,7 @@ import (
 type Pet struct {
 	TemplateId  uint32
 	Name        string
-	Id          uint64
+	Id          uint32
 	X           int16
 	Y           int16
 	Stance      byte
@@ -22,7 +22,7 @@ func (b *Pet) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interfac
 	return func(w *response.Writer) {
 		w.WriteInt(b.TemplateId)
 		w.WriteAsciiString(b.Name)
-		w.WriteLong(b.Id)
+		w.WriteLong(uint64(b.Id))
 		w.WriteInt16(b.X)
 		w.WriteInt16(b.Y)
 		w.WriteByte(b.Stance)

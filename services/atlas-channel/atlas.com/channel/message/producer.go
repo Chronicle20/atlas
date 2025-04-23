@@ -1,78 +1,79 @@
 package message
 
 import (
+	message2 "atlas-channel/kafka/message/message"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func generalChatCommandProvider(m _map.Model, actorId uint32, message string, balloonOnly bool) model.Provider[[]kafka.Message] {
+func GeneralChatCommandProvider(m _map.Model, actorId uint32, message string, balloonOnly bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
-	value := chatCommand[generalChatBody]{
+	value := message2.Command[message2.GeneralChatBody]{
 		WorldId:   byte(m.WorldId()),
 		ChannelId: byte(m.ChannelId()),
 		MapId:     uint32(m.MapId()),
 		ActorId:   actorId,
 		Message:   message,
-		Type:      ChatTypeGeneral,
-		Body:      generalChatBody{BalloonOnly: balloonOnly},
+		Type:      message2.ChatTypeGeneral,
+		Body:      message2.GeneralChatBody{BalloonOnly: balloonOnly},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func multiChatCommandProvider(m _map.Model, actorId uint32, message string, chatType string, recipients []uint32) model.Provider[[]kafka.Message] {
+func MultiChatCommandProvider(m _map.Model, actorId uint32, message string, chatType string, recipients []uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
-	value := chatCommand[multiChatBody]{
+	value := message2.Command[message2.MultiChatBody]{
 		WorldId:   byte(m.WorldId()),
 		ChannelId: byte(m.ChannelId()),
 		MapId:     uint32(m.MapId()),
 		ActorId:   actorId,
 		Message:   message,
 		Type:      chatType,
-		Body:      multiChatBody{Recipients: recipients},
+		Body:      message2.MultiChatBody{Recipients: recipients},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func whisperChatCommandProvider(m _map.Model, actorId uint32, message string, recipientName string) model.Provider[[]kafka.Message] {
+func WhisperChatCommandProvider(m _map.Model, actorId uint32, message string, recipientName string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
-	value := chatCommand[whisperChatBody]{
+	value := message2.Command[message2.WhisperChatEventBody]{
 		WorldId:   byte(m.WorldId()),
 		ChannelId: byte(m.ChannelId()),
 		MapId:     uint32(m.MapId()),
 		ActorId:   actorId,
 		Message:   message,
-		Type:      ChatTypeWhisper,
-		Body:      whisperChatBody{RecipientName: recipientName},
+		Type:      message2.ChatTypeWhisper,
+		Body:      message2.WhisperChatEventBody{RecipientName: recipientName},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func messengerChatCommandProvider(m _map.Model, actorId uint32, message string, recipients []uint32) model.Provider[[]kafka.Message] {
+func MessengerChatCommandProvider(m _map.Model, actorId uint32, message string, recipients []uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
-	value := chatCommand[messengerChatBody]{
+	value := message2.Command[message2.MessengerChatBody]{
 		WorldId:   byte(m.WorldId()),
 		ChannelId: byte(m.ChannelId()),
 		MapId:     uint32(m.MapId()),
 		ActorId:   actorId,
 		Message:   message,
-		Type:      ChatTypeMessenger,
-		Body:      messengerChatBody{Recipients: recipients},
+		Type:      message2.ChatTypeMessenger,
+		Body:      message2.MessengerChatBody{Recipients: recipients},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func petChatCommandProvider(m _map.Model, petId uint64, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) model.Provider[[]kafka.Message] {
+func PetChatCommandProvider(m _map.Model, petId uint64, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(petId))
-	value := chatCommand[petChatBody]{
+	value := message2.Command[message2.PetChatBody]{
 		WorldId:   byte(m.WorldId()),
 		ChannelId: byte(m.ChannelId()),
 		MapId:     uint32(m.MapId()),
 		ActorId:   uint32(petId),
 		Message:   message,
-		Type:      ChatTypePet,
-		Body: petChatBody{
+		Type:      message2.ChatTypePet,
+		Body: message2.PetChatBody{
 			OwnerId: ownerId,
 			PetSlot: petSlot,
 			Type:    nType,

@@ -3,6 +3,7 @@ package member
 import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
+	member2 "atlas-channel/kafka/message/party/member"
 	"atlas-channel/party"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -23,7 +24,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("party_member_status_event")(EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("party_member_status_event")(member2.EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -33,7 +34,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
-				t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+				t, _ = topic.EnvProvider(l)(member2.EnvEventStatusTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLoginEvent(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLogoutEvent(sc, wp))))
 			}
@@ -41,9 +42,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 	}
 }
 
-func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[loginEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[loginEventBody]) {
-		if e.Type != EventPartyStatusTypeLogin {
+func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[member2.StatusEvent[member2.LoginEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e member2.StatusEvent[member2.LoginEventBody]) {
+		if e.Type != member2.EventPartyStatusTypeLogin {
 			return
 		}
 
@@ -51,13 +52,13 @@ func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[statu
 			return
 		}
 
-		p, err := party.GetById(l)(ctx)(e.PartyId)
+		p, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
 		if err != nil {
 			l.WithError(err).Errorf("Received event for party [%d] which does not exist.", e.PartyId)
 			return
 		}
 
-		tc, err := character.GetById(l)(ctx)()(e.CharacterId)
+		tc, err := character.NewProcessor(l, ctx).GetById()(e.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Received event for character [%d] which does not exist.", e.CharacterId)
 			return
@@ -65,7 +66,7 @@ func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[statu
 
 		go func() {
 			for _, m := range p.Members() {
-				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] triggered party [%d] update.", m.Id(), p.Id())
 				}
@@ -74,9 +75,9 @@ func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[statu
 	}
 }
 
-func handleLogoutEvent(sc server.Model, wp writer.Producer) message.Handler[statusEvent[logoutEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[logoutEventBody]) {
-		if e.Type != EventPartyStatusTypeLogout {
+func handleLogoutEvent(sc server.Model, wp writer.Producer) message.Handler[member2.StatusEvent[member2.LogoutEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e member2.StatusEvent[member2.LogoutEventBody]) {
+		if e.Type != member2.EventPartyStatusTypeLogout {
 			return
 		}
 
@@ -84,13 +85,13 @@ func handleLogoutEvent(sc server.Model, wp writer.Producer) message.Handler[stat
 			return
 		}
 
-		p, err := party.GetById(l)(ctx)(e.PartyId)
+		p, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
 		if err != nil {
 			l.WithError(err).Errorf("Received event for party [%d] which does not exist.", e.PartyId)
 			return
 		}
 
-		tc, err := character.GetById(l)(ctx)()(e.CharacterId)
+		tc, err := character.NewProcessor(l, ctx).GetById()(e.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Received event for character [%d] which does not exist.", e.CharacterId)
 			return
@@ -98,7 +99,7 @@ func handleLogoutEvent(sc server.Model, wp writer.Producer) message.Handler[stat
 
 		go func() {
 			for _, m := range p.Members() {
-				err = session.IfPresentByCharacterId(sc.Tenant(), sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] triggered party [%d] update.", m.Id(), p.Id())
 				}

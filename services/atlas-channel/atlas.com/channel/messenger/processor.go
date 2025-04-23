@@ -1,6 +1,7 @@
 package messenger
 
 import (
+	messenger2 "atlas-channel/kafka/message/messenger"
 	"atlas-channel/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
@@ -8,62 +9,47 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Create(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) error {
-	return func(ctx context.Context) func(characterId uint32) error {
-		return func(characterId uint32) error {
-			l.Debugf("Character [%d] attempting to create a messenger.", characterId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(createCommandProvider(characterId))
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func Leave(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint32, characterId uint32) error {
-	return func(ctx context.Context) func(messengerId uint32, characterId uint32) error {
-		return func(messengerId uint32, characterId uint32) error {
-			l.Debugf("Character [%d] attempting to leave messenger [%d].", characterId, messengerId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(leaveCommandProvider(characterId, messengerId))
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
 }
 
-func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, targetCharacterId uint32) error {
-	return func(ctx context.Context) func(characterId uint32, targetCharacterId uint32) error {
-		return func(characterId uint32, targetCharacterId uint32) error {
-			l.Debugf("Character [%d] attempting to invite [%d] to a messenger.", characterId, targetCharacterId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestInviteCommandProvider(characterId, targetCharacterId))
-		}
-	}
+func (p *Processor) Create(characterId uint32) error {
+	p.l.Debugf("Character [%d] attempting to create a messenger.", characterId)
+	return producer.ProviderImpl(p.l)(p.ctx)(messenger2.EnvCommandTopic)(CreateCommandProvider(characterId))
 }
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint32) (Model, error) {
-	return func(ctx context.Context) func(messengerId uint32) (Model, error) {
-		return func(messengerId uint32) (Model, error) {
-			return byIdProvider(l)(ctx)(messengerId)()
-		}
-	}
+func (p *Processor) Leave(messengerId uint32, characterId uint32) error {
+	p.l.Debugf("Character [%d] attempting to leave messenger [%d].", characterId, messengerId)
+	return producer.ProviderImpl(p.l)(p.ctx)(messenger2.EnvCommandTopic)(LeaveCommandProvider(characterId, messengerId))
 }
 
-func byIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint32) model.Provider[Model] {
-	return func(ctx context.Context) func(messengerId uint32) model.Provider[Model] {
-		return func(messengerId uint32) model.Provider[Model] {
-			return requests.Provider[RestModel, Model](l, ctx)(requestById(messengerId), Extract)
-		}
-	}
+func (p *Processor) RequestInvite(characterId uint32, targetCharacterId uint32) error {
+	p.l.Debugf("Character [%d] attempting to invite [%d] to a messenger.", characterId, targetCharacterId)
+	return producer.ProviderImpl(p.l)(p.ctx)(messenger2.EnvCommandTopic)(RequestInviteCommandProvider(characterId, targetCharacterId))
 }
 
-func GetByMemberId(l logrus.FieldLogger) func(ctx context.Context) func(memberId uint32) (Model, error) {
-	return func(ctx context.Context) func(memberId uint32) (Model, error) {
-		return func(memberId uint32) (Model, error) {
-			return ByMemberIdProvider(l)(ctx)(memberId)()
-		}
-	}
+func (p *Processor) GetById(messengerId uint32) (Model, error) {
+	return p.ByIdProvider(messengerId)()
 }
 
-func ByMemberIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(memberId uint32) model.Provider[Model] {
-	return func(ctx context.Context) func(memberId uint32) model.Provider[Model] {
-		return func(memberId uint32) model.Provider[Model] {
-			rp := requests.SliceProvider[RestModel, Model](l, ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
-			return model.FirstProvider(rp, model.Filters[Model]())
-		}
-	}
+func (p *Processor) ByIdProvider(messengerId uint32) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(messengerId), Extract)
+}
+
+func (p *Processor) GetByMemberId(memberId uint32) (Model, error) {
+	return p.ByMemberIdProvider(memberId)()
+}
+
+func (p *Processor) ByMemberIdProvider(memberId uint32) model.Provider[Model] {
+	rp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
+	return model.FirstProvider(rp, model.Filters[Model]())
 }

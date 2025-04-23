@@ -1,32 +1,33 @@
 package character
 
 import (
+	"atlas-channel/kafka/message/character"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func requestDistributeApCommandProvider(m _map.Model, characterId uint32, distributions []DistributePair) model.Provider[[]kafka.Message] {
+func RequestDistributeApCommandProvider(m _map.Model, characterId uint32, distributions []character.DistributePair) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[requestDistributeApCommandBody]{
+	value := &character.Command[character.RequestDistributeApCommandBody]{
 		CharacterId: characterId,
 		WorldId:     byte(m.WorldId()),
-		Type:        CommandRequestDistributeAp,
-		Body: requestDistributeApCommandBody{
+		Type:        character.CommandRequestDistributeAp,
+		Body: character.RequestDistributeApCommandBody{
 			Distributions: distributions,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func requestDistributeSpCommandProvider(m _map.Model, characterId uint32, skillId uint32, amount int8) model.Provider[[]kafka.Message] {
+func RequestDistributeSpCommandProvider(m _map.Model, characterId uint32, skillId uint32, amount int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[requestDistributeSpCommandBody]{
+	value := &character.Command[character.RequestDistributeSpCommandBody]{
 		CharacterId: characterId,
 		WorldId:     byte(m.WorldId()),
-		Type:        CommandRequestDistributeSp,
-		Body: requestDistributeSpCommandBody{
+		Type:        character.CommandRequestDistributeSp,
+		Body: character.RequestDistributeSpCommandBody{
 			SkillId: skillId,
 			Amount:  amount,
 		},
@@ -34,13 +35,13 @@ func requestDistributeSpCommandProvider(m _map.Model, characterId uint32, skillI
 	return producer.SingleMessageProvider(key, value)
 }
 
-func requestDropMesoCommandProvider(m _map.Model, characterId uint32, amount uint32) model.Provider[[]kafka.Message] {
+func RequestDropMesoCommandProvider(m _map.Model, characterId uint32, amount uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[requestDropMesoCommandBody]{
+	value := &character.Command[character.RequestDropMesoCommandBody]{
 		CharacterId: characterId,
 		WorldId:     byte(m.WorldId()),
-		Type:        CommandRequestDropMeso,
-		Body: requestDropMesoCommandBody{
+		Type:        character.CommandRequestDropMeso,
+		Body: character.RequestDropMesoCommandBody{
 			ChannelId: byte(m.ChannelId()),
 			MapId:     uint32(m.MapId()),
 			Amount:    amount,
@@ -49,13 +50,13 @@ func requestDropMesoCommandProvider(m _map.Model, characterId uint32, amount uin
 	return producer.SingleMessageProvider(key, value)
 }
 
-func changeHPCommandProvider(m _map.Model, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
+func ChangeHPCommandProvider(m _map.Model, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[changeHPCommandBody]{
+	value := &character.Command[character.ChangeHPCommandBody]{
 		CharacterId: characterId,
 		WorldId:     byte(m.WorldId()),
-		Type:        CommandChangeHP,
-		Body: changeHPCommandBody{
+		Type:        character.CommandChangeHP,
+		Body: character.ChangeHPCommandBody{
 			ChannelId: byte(m.ChannelId()),
 			Amount:    amount,
 		},
@@ -63,13 +64,13 @@ func changeHPCommandProvider(m _map.Model, characterId uint32, amount int16) mod
 	return producer.SingleMessageProvider(key, value)
 }
 
-func changeMPCommandProvider(m _map.Model, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
+func ChangeMPCommandProvider(m _map.Model, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[changeMPCommandBody]{
+	value := &character.Command[character.ChangeMPCommandBody]{
 		CharacterId: characterId,
 		WorldId:     byte(m.WorldId()),
-		Type:        CommandChangeMP,
-		Body: changeMPCommandBody{
+		Type:        character.CommandChangeMP,
+		Body: character.ChangeMPCommandBody{
 			ChannelId: byte(m.ChannelId()),
 			Amount:    amount,
 		},

@@ -7,39 +7,36 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func byEquipmentIdModelProvider(l logrus.FieldLogger) func(ctx context.Context) func(equipmentId uint32) model.Provider[Model] {
-	return func(ctx context.Context) func(equipmentId uint32) model.Provider[Model] {
-		return func(equipmentId uint32) model.Provider[Model] {
-			return requests.Provider[RestModel, Model](l, ctx)(requestById(equipmentId), Extract)
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(equipmentId uint32) (Model, error) {
-	return func(ctx context.Context) func(equipmentId uint32) (Model, error) {
-		return func(equipmentId uint32) (Model, error) {
-			return byEquipmentIdModelProvider(l)(ctx)(equipmentId)()
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
 	}
+	return p
 }
 
-func Delete(l logrus.FieldLogger) func(ctx context.Context) func(equipmentId uint32) error {
-	return func(ctx context.Context) func(equipmentId uint32) error {
-		return func(equipmentId uint32) error {
-			return deleteById(equipmentId)(l, ctx)
-		}
-	}
+func (p *Processor) ByEquipmentIdModelProvider(equipmentId uint32) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(equipmentId), Extract)
 }
 
-func Create(l logrus.FieldLogger) func(ctx context.Context) func(itemId uint32) model.Provider[Model] {
-	return func(ctx context.Context) func(itemId uint32) model.Provider[Model] {
-		return func(itemId uint32) model.Provider[Model] {
-			ro, err := requestCreate(itemId)(l, ctx)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to generate equipable information.")
-				return model.ErrorProvider[Model](err)
-			}
-			return model.Map(Extract)(model.FixedProvider(ro))
-		}
+func (p *Processor) GetById(equipmentId uint32) (Model, error) {
+	return p.ByEquipmentIdModelProvider(equipmentId)()
+}
+
+func (p *Processor) Delete(equipmentId uint32) error {
+	return deleteById(equipmentId)(p.l, p.ctx)
+}
+
+func (p *Processor) Create(itemId uint32) model.Provider[Model] {
+	ro, err := requestCreate(itemId)(p.l, p.ctx)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to generate equipable information.")
+		return model.ErrorProvider[Model](err)
 	}
+	return model.Map(Extract)(model.FixedProvider(ro))
 }

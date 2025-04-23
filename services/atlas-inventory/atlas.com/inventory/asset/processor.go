@@ -5,13 +5,14 @@ import (
 	"atlas-inventory/equipable"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/asset"
-	asset2 "atlas-inventory/kafka/producer/asset"
+	"atlas-inventory/kafka/producer"
 	model2 "atlas-inventory/model"
 	"atlas-inventory/pet"
 	"atlas-inventory/stackable"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -25,8 +26,11 @@ type Processor struct {
 	l                  logrus.FieldLogger
 	ctx                context.Context
 	db                 *gorm.DB
-	cashProcessor      *cash.Processor
+	t                  tenant.Model
+	equipableProcessor *equipable.Processor
 	stackableProcessor *stackable.Processor
+	cashProcessor      *cash.Processor
+	petProcessor       *pet.Processor
 	GetByCompartmentId func(uuid.UUID) ([]Model[any], error)
 }
 
@@ -35,8 +39,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		l:                  l,
 		ctx:                ctx,
 		db:                 db,
-		cashProcessor:      cash.NewProcessor(l, ctx),
+		t:                  tenant.MustFromContext(ctx),
+		equipableProcessor: equipable.NewProcessor(l, ctx),
 		stackableProcessor: stackable.NewProcessor(l, ctx, db),
+		cashProcessor:      cash.NewProcessor(l, ctx),
+		petProcessor:       pet.NewProcessor(l, ctx),
 	}
 	p.GetByCompartmentId = model2.CollapseProvider(p.ByCompartmentIdProvider)
 	return p
@@ -47,33 +54,33 @@ func (p *Processor) WithTransaction(db *gorm.DB) *Processor {
 		l:                  p.l,
 		ctx:                p.ctx,
 		db:                 db,
-		cashProcessor:      p.cashProcessor,
+		t:                  p.t,
+		equipableProcessor: p.equipableProcessor,
 		stackableProcessor: p.stackableProcessor,
+		cashProcessor:      p.cashProcessor,
+		petProcessor:       p.petProcessor,
 		GetByCompartmentId: p.GetByCompartmentId,
 	}
 }
 
 func (p *Processor) ByCompartmentIdProvider(compartmentId uuid.UUID) model.Provider[[]Model[any]] {
-	t := tenant.MustFromContext(p.ctx)
-	ap := model.SliceMap(Make)(getByCompartmentId(t.Id(), compartmentId)(p.db))(model.ParallelMap())
-	return model.SliceMap(p.DecorateAsset(compartmentId))(ap)(model.ParallelMap())
+	ap := model.SliceMap(Make)(getByCompartmentId(p.t.Id(), compartmentId)(p.db))(model.ParallelMap())
+	return model.SliceMap(p.DecorateAsset)(ap)(model.ParallelMap())
 }
 
-func (p *Processor) DecorateAsset(compartmentId uuid.UUID) func(m Model[any]) (Model[any], error) {
-	return func(m Model[any]) (Model[any], error) {
-		var decorator model.Transformer[Model[any], Model[any]]
-		if m.IsEquipable() {
-			decorator = p.DecorateEquipable
-		} else if m.IsConsumable() || m.IsSetup() || m.IsEtc() {
-			decorator = p.DecorateStackable(compartmentId)
-		} else if m.IsCash() || m.IsPet() {
-			decorator = p.DecorateCash
-		}
-		if decorator == nil {
-			return Model[any]{}, errors.New("no decorators for reference type")
-		}
-		return decorator(m)
+func (p *Processor) DecorateAsset(m Model[any]) (Model[any], error) {
+	var decorator model.Transformer[Model[any], Model[any]]
+	if m.IsEquipable() {
+		decorator = p.DecorateEquipable
+	} else if m.IsConsumable() || m.IsSetup() || m.IsEtc() {
+		decorator = p.DecorateStackable
+	} else if m.IsCash() || m.IsPet() {
+		decorator = p.DecorateCash
 	}
+	if decorator == nil {
+		return Model[any]{}, errors.New("no decorators for reference type")
+	}
+	return decorator(m)
 }
 
 func (p *Processor) GetBySlot(compartmentId uuid.UUID, slot int16) (Model[any], error) {
@@ -82,14 +89,20 @@ func (p *Processor) GetBySlot(compartmentId uuid.UUID, slot int16) (Model[any], 
 
 func (p *Processor) BySlotProvider(compartmentId uuid.UUID) func(slot int16) model.Provider[Model[any]] {
 	return func(slot int16) model.Provider[Model[any]] {
-		t := tenant.MustFromContext(p.ctx)
-		ap := model.Map(Make)(getBySlot(t.Id(), compartmentId, slot)(p.db))
-		return model.Map(p.DecorateAsset(compartmentId))(ap)
+		return model.Map(p.DecorateAsset)(model.Map(Make)(getBySlot(p.t.Id(), compartmentId, slot)(p.db)))
 	}
 }
 
+func (p *Processor) GetByReferenceId(referenceId uint32, referenceType ReferenceType) (Model[any], error) {
+	return p.ByReferenceIdProvider(referenceId, referenceType)()
+}
+
+func (p *Processor) ByReferenceIdProvider(referenceId uint32, referenceType ReferenceType) model.Provider[Model[any]] {
+	return model.Map(p.DecorateAsset)(model.Map(Make)(getByReferenceId(p.t.Id(), referenceId, referenceType)(p.db)))
+}
+
 func (p *Processor) DecorateEquipable(m Model[any]) (Model[any], error) {
-	e, err := equipable.GetById(p.l)(p.ctx)(m.ReferenceId())
+	e, err := p.equipableProcessor.GetById(m.ReferenceId())
 	if err != nil {
 		return Model[any]{}, err
 	}
@@ -130,38 +143,48 @@ func MakeEquipableReferenceData(e equipable.Model) EquipableReferenceData {
 	}
 }
 
-func (p *Processor) DecorateStackable(compartmentId uuid.UUID) func(m Model[any]) (Model[any], error) {
-	return func(m Model[any]) (Model[any], error) {
-		s, err := p.stackableProcessor.GetById(m.ReferenceId())
-		if err != nil {
-			return m, errors.New("cannot locate reference")
-		}
+func (p *Processor) DecorateStackable(m Model[any]) (Model[any], error) {
+	s, err := p.stackableProcessor.GetById(m.ReferenceId())
+	if err != nil {
+		return m, errors.New("cannot locate reference")
+	}
 
-		var rd any
-		if m.ReferenceType() == ReferenceTypeConsumable {
-			rd = ConsumableReferenceData{
-				quantity:     s.Quantity(),
-				ownerId:      s.OwnerId(),
-				flag:         s.Flag(),
-				rechargeable: s.Rechargeable(),
-			}
-		} else if m.ReferenceType() == ReferenceTypeSetup {
-			rd = SetupReferenceData{
-				quantity: s.Quantity(),
-				ownerId:  s.OwnerId(),
-				flag:     s.Flag(),
-			}
-		} else if m.ReferenceType() == ReferenceTypeEtc {
-			rd = EtcReferenceData{
-				quantity: s.Quantity(),
-				ownerId:  s.OwnerId(),
-				flag:     s.Flag(),
-			}
-		}
+	var rd any
+	if m.ReferenceType() == ReferenceTypeConsumable {
+		rd = MakeConsumableReferenceData(s)
+	} else if m.ReferenceType() == ReferenceTypeSetup {
+		rd = MakeSetupReferenceData(s)
+	} else if m.ReferenceType() == ReferenceTypeEtc {
+		rd = MakeEtcReferenceData(s)
+	}
 
-		return Clone(m).
-			SetReferenceData(rd).
-			Build(), nil
+	return Clone(m).
+		SetReferenceData(rd).
+		Build(), nil
+}
+
+func MakeEtcReferenceData(s stackable.Model) EtcReferenceData {
+	return EtcReferenceData{
+		quantity: s.Quantity(),
+		ownerId:  s.OwnerId(),
+		flag:     s.Flag(),
+	}
+}
+
+func MakeSetupReferenceData(s stackable.Model) SetupReferenceData {
+	return SetupReferenceData{
+		quantity: s.Quantity(),
+		ownerId:  s.OwnerId(),
+		flag:     s.Flag(),
+	}
+}
+
+func MakeConsumableReferenceData(s stackable.Model) ConsumableReferenceData {
+	return ConsumableReferenceData{
+		quantity:     s.Quantity(),
+		ownerId:      s.OwnerId(),
+		flag:         s.Flag(),
+		rechargeable: s.Rechargeable(),
 	}
 }
 
@@ -180,41 +203,41 @@ func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
 			}).
 			Build(), nil
 	} else if m.ReferenceType() == ReferenceTypePet {
-		ci, err := p.cashProcessor.GetById(m.ReferenceId())
-		if err != nil {
-			return m, errors.New("cannot locate reference")
-		}
-		pi, err := pet.GetById(p.l)(p.ctx)(m.ReferenceId())
+		pi, err := p.petProcessor.GetById(m.ReferenceId())
 		if err != nil {
 			return m, errors.New("cannot locate reference")
 		}
 		return Clone(m).
-			SetReferenceData(PetReferenceData{
-				cashId:     ci.CashId(),
-				ownerId:    ci.OwnerId(),
-				flag:       ci.Flag(),
-				purchaseBy: ci.PurchasedBy(),
-				name:       pi.Name(),
-				level:      pi.Level(),
-				closeness:  pi.Closeness(),
-				fullness:   pi.Fullness(),
-				expiration: pi.Expiration(),
-				slot:       pi.Slot(),
-			}).
+			SetExpiration(pi.Expiration()).
+			SetReferenceData(MakePetReferenceData(pi)).
 			Build(), nil
 	}
 	return m, nil
 }
 
+func MakePetReferenceData(pi pet.Model) PetReferenceData {
+	return PetReferenceData{
+		cashId:     pi.CashId(),
+		ownerId:    pi.OwnerId(),
+		flag:       pi.Flag(),
+		purchaseBy: pi.PurchaseBy(),
+		name:       pi.Name(),
+		level:      pi.Level(),
+		closeness:  pi.Closeness(),
+		fullness:   pi.Fullness(),
+		expiration: pi.Expiration(),
+		slot:       pi.Slot(),
+	}
+}
+
 func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
 	return func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
 		return func(a Model[any]) error {
-			t := tenant.MustFromContext(p.ctx)
 			p.l.Debugf("Attempting to delete asset [%d].", a.Id())
 			txErr := p.db.Transaction(func(tx *gorm.DB) error {
 				var deleteRefFunc func(id uint32) error
 				if a.ReferenceType() == ReferenceTypeEquipable {
-					deleteRefFunc = equipable.Delete(p.l)(p.ctx)
+					deleteRefFunc = p.equipableProcessor.Delete
 				} else if a.ReferenceType() == ReferenceTypeConsumable || a.ReferenceType() == ReferenceTypeSetup || a.ReferenceType() == ReferenceTypeEtc {
 					deleteRefFunc = p.stackableProcessor.Delete
 				} else if a.ReferenceType() == ReferenceTypeCash {
@@ -232,11 +255,31 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32, compartm
 					p.l.WithError(err).Errorf("Unable to delete asset [%d], due to error deleting reference [%d].", a.Id(), a.ReferenceId())
 					return err
 				}
-				err = deleteById(tx, t.Id(), a.Id())
+				err = deleteById(tx, p.t.Id(), a.Id())
 				if err != nil {
 					return err
 				}
-				return mb.Put(asset.EnvEventTopicStatus, asset2.DeletedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot()))
+				return mb.Put(asset.EnvEventTopicStatus, DeletedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot()))
+			})
+			if txErr != nil {
+				p.l.WithError(txErr).Errorf("Unable to delete asset [%d].", a.Id())
+				return txErr
+			}
+			p.l.Debugf("Deleted asset [%d].", a.Id())
+			return nil
+		}
+	}
+}
+func (p *Processor) Drop(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
+	return func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
+		return func(a Model[any]) error {
+			p.l.Debugf("Attempting to delete asset [%d].", a.Id())
+			txErr := p.db.Transaction(func(tx *gorm.DB) error {
+				err := deleteById(tx, p.t.Id(), a.Id())
+				if err != nil {
+					return err
+				}
+				return mb.Put(asset.EnvEventTopicStatus, DeletedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot()))
 			})
 			if txErr != nil {
 				p.l.WithError(txErr).Errorf("Unable to delete asset [%d].", a.Id())
@@ -249,7 +292,6 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32, compartm
 }
 
 func (p *Processor) UpdateSlot(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, ap model.Provider[Model[any]], sp model.Provider[int16]) error {
-	t := tenant.MustFromContext(p.ctx)
 	return func(characterId uint32, compartmentId uuid.UUID, ap model.Provider[Model[any]], sp model.Provider[int16]) error {
 		a, err := ap()
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -263,12 +305,12 @@ func (p *Processor) UpdateSlot(mb *message.Buffer) func(characterId uint32, comp
 			return err
 		}
 		p.l.Debugf("Character [%d] attempting to update slot of asset [%d] to [%d] from [%d].", characterId, a.Id(), s, a.Slot())
-		err = updateSlot(p.db, t.Id(), a.Id(), s)
+		err = updateSlot(p.db, p.t.Id(), a.Id(), s)
 		if err != nil {
 			return err
 		}
 		if a.Slot() != int16(math.MinInt16) && s != int16(math.MinInt16) {
-			return mb.Put(asset.EnvEventTopicStatus, asset2.MovedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot(), s))
+			return mb.Put(asset.EnvEventTopicStatus, MovedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot(), s))
 		}
 		return nil
 	}
@@ -284,20 +326,55 @@ func (p *Processor) UpdateQuantity(mb *message.Buffer) func(characterId uint32, 
 			if err != nil {
 				return err
 			}
-			return mb.Put(asset.EnvEventTopicStatus, asset2.QuantityChangedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot(), quantity))
+			return mb.Put(asset.EnvEventTopicStatus, QuantityChangedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot(), quantity))
 		} else if a.IsCash() {
 			err := p.cashProcessor.UpdateQuantity(a.ReferenceId(), quantity)
 			if err != nil {
 				return err
 			}
-			return mb.Put(asset.EnvEventTopicStatus, asset2.QuantityChangedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot(), quantity))
+			return mb.Put(asset.EnvEventTopicStatus, QuantityChangedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot(), quantity))
 		}
 		return errors.New("unknown ReferenceData which implements HasQuantity")
 	}
 }
 
+func (p *Processor) RelayUpdateAndEmit(characterId uint32, referenceId uint32, referenceType ReferenceType, referenceData interface{}) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(model.Flip(model.Flip(model.Flip(model.Flip(p.RelayUpdate)(characterId))(referenceId))(referenceType))(referenceData))
+}
+
+func (p *Processor) RelayUpdate(mb *message.Buffer) func(characterId uint32) func(referenceId uint32) func(referenceType ReferenceType) func(referenceData interface{}) error {
+	return func(characterId uint32) func(referenceId uint32) func(referenceType ReferenceType) func(referenceData interface{}) error {
+		return func(referenceId uint32) func(referenceType ReferenceType) func(referenceData interface{}) error {
+			return func(referenceType ReferenceType) func(referenceData interface{}) error {
+				return func(referenceData interface{}) error {
+					p.l.Debugf("Attempting to relay asset update. ReferenceId [%d], ReferenceType [%s].", referenceId, referenceType)
+					var a Model[any]
+					txErr := p.db.Transaction(func(tx *gorm.DB) error {
+						var ap model.Provider[Model[any]]
+						if referenceData == nil {
+							ap = p.WithTransaction(tx).ByReferenceIdProvider(referenceId, referenceType)
+						} else {
+							ap = model.Map(func(t Model[any]) (Model[any], error) { return Clone(t).SetReferenceData(referenceData).Build(), nil })(model.Map(Make)(getByReferenceId(p.t.Id(), referenceId, referenceType)(p.db)))
+						}
+						var err error
+						a, err = ap()
+						if err != nil {
+							return err
+						}
+						return mb.Put(asset.EnvEventTopicStatus, UpdatedEventStatusProvider(characterId, a))
+					})
+					if txErr != nil {
+						return txErr
+					}
+					p.l.Debugf("Relaying that asset [%d] was updated.", a.Id())
+					return nil
+				}
+			}
+		}
+	}
+}
+
 func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) (Model[any], error) {
-	t := tenant.MustFromContext(p.ctx)
 	return func(characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) (Model[any], error) {
 		p.l.Debugf("Character [%d] attempting to create [%d] item(s) [%d] in slot [%d] of compartment [%s].", characterId, quantity, templateId, slot, compartmentId.String())
 		var a Model[any]
@@ -308,13 +385,16 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 			if !ok {
 				return errors.New("unknown item type")
 			}
+
+			var rd interface{}
 			if inventoryType == inventory.TypeValueEquip {
-				e, err := equipable.Create(p.l)(p.ctx)(templateId)()
+				e, err := p.equipableProcessor.Create(templateId)()
 				if err != nil {
 					return err
 				}
 				referenceId = e.Id()
 				referenceType = ReferenceTypeEquipable
+				rd = MakeEquipableReferenceData(e)
 			} else if inventoryType == inventory.TypeValueUse {
 				s, err := p.stackableProcessor.WithTransaction(tx).Create(compartmentId, quantity, ownerId, flag, rechargeable)
 				if err != nil {
@@ -322,6 +402,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 				}
 				referenceId = s.Id()
 				referenceType = ReferenceTypeConsumable
+				rd = MakeConsumableReferenceData(s)
 			} else if inventoryType == inventory.TypeValueSetup {
 				s, err := p.stackableProcessor.WithTransaction(tx).Create(compartmentId, quantity, ownerId, flag, rechargeable)
 				if err != nil {
@@ -329,6 +410,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 				}
 				referenceId = s.Id()
 				referenceType = ReferenceTypeSetup
+				rd = MakeSetupReferenceData(s)
 			} else if inventoryType == inventory.TypeValueETC {
 				s, err := p.stackableProcessor.WithTransaction(tx).Create(compartmentId, quantity, ownerId, flag, rechargeable)
 				if err != nil {
@@ -336,8 +418,19 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 				}
 				referenceId = s.Id()
 				referenceType = ReferenceTypeEtc
+				rd = MakeEtcReferenceData(s)
 			} else if inventoryType == inventory.TypeValueCash {
-				// TODO
+				if item.GetClassification(item.Id(templateId)) == item.ClassificationPet {
+					pe, err := p.petProcessor.Create(characterId, templateId)
+					if err != nil {
+						return err
+					}
+					referenceId = pe.Id()
+					referenceType = ReferenceTypePet
+					rd = MakePetReferenceData(pe)
+				} else {
+					// TODO
+				}
 			}
 
 			if referenceId == 0 {
@@ -345,11 +438,54 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 			}
 
 			var err error
-			a, err = create(p.db, t.Id(), compartmentId, templateId, slot, expiration, referenceId, referenceType)
+			a, err = create(p.db, p.t.Id(), compartmentId, templateId, slot, expiration, referenceId, referenceType)
 			if err != nil {
 				return err
 			}
-			return mb.Put(asset.EnvEventTopicStatus, asset2.CreatedEventStatusProvider(characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot()))
+			a = Clone(a).SetReferenceData(rd).Build()
+			return mb.Put(asset.EnvEventTopicStatus, CreatedEventStatusProvider(characterId, a))
+		})
+		if txErr != nil {
+			return Model[any]{}, txErr
+		}
+		return a, nil
+	}
+}
+
+func (p *Processor) Acquire(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, referenceId uint32) (Model[any], error) {
+	return func(characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, referenceId uint32) (Model[any], error) {
+		p.l.Debugf("Character [%d] attempting to acquire [%d] item(s) [%d] in slot [%d] of compartment [%s].", characterId, quantity, templateId, slot, compartmentId.String())
+		var a Model[any]
+		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+			var referenceType ReferenceType
+			inventoryType, ok := inventory.TypeFromItemId(templateId)
+			if !ok {
+				return errors.New("unknown item type")
+			}
+
+			var rd interface{}
+			expiration := time.Time{}
+			if inventoryType == inventory.TypeValueEquip {
+				e, err := p.equipableProcessor.GetById(referenceId)
+				if err != nil {
+					return err
+				}
+				referenceType = ReferenceTypeEquipable
+				expiration = e.Expiration()
+				rd = MakeEquipableReferenceData(e)
+			}
+
+			if referenceType == "" {
+				return errors.New("unknown item type")
+			}
+
+			var err error
+			a, err = create(p.db, p.t.Id(), compartmentId, templateId, slot, expiration, referenceId, referenceType)
+			if err != nil {
+				return err
+			}
+			a = Clone(a).SetReferenceData(rd).Build()
+			return mb.Put(asset.EnvEventTopicStatus, CreatedEventStatusProvider(characterId, a))
 		})
 		if txErr != nil {
 			return Model[any]{}, txErr

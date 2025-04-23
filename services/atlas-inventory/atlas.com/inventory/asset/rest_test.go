@@ -4,6 +4,7 @@ import (
 	"atlas-inventory/asset"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -38,7 +39,7 @@ func testLogger() logrus.FieldLogger {
 }
 
 func TestMarshalUnmarshalSunny(t *testing.T) {
-	ieam := asset.NewBuilder[any](1, 1040010, 380, asset.ReferenceTypeEquipable).
+	ieam := asset.NewBuilder[any](1, uuid.New(), 1040010, 380, asset.ReferenceTypeEquipable).
 		SetReferenceData(asset.NewEquipableReferenceDataBuilder().
 			SetWeaponDefense(3).
 			SetSlots(7).
@@ -90,56 +91,56 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 	if ord, ok = oeam.ReferenceData().(asset.EquipableReferenceData); !ok {
 		t.Fatalf("Cannot cast ReferenceData")
 	}
-	if ird.GetStrength() != ord.GetStrength() {
-		t.Errorf("Strength mismatch: %d != %d", ird.GetStrength(), ord.GetStrength())
+	if ird.Strength() != ord.Strength() {
+		t.Errorf("Strength mismatch: %d != %d", ird.Strength(), ord.Strength())
 	}
-	if ird.GetDexterity() != ord.GetDexterity() {
-		t.Errorf("Dexterity mismatch: %d != %d", ird.GetDexterity(), ord.GetDexterity())
+	if ird.Dexterity() != ord.Dexterity() {
+		t.Errorf("Dexterity mismatch: %d != %d", ird.Dexterity(), ord.Dexterity())
 	}
-	if ird.GetIntelligence() != ord.GetIntelligence() {
-		t.Errorf("Intelligence mismatch: %d != %d", ird.GetIntelligence(), ord.GetIntelligence())
+	if ird.Intelligence() != ord.Intelligence() {
+		t.Errorf("Intelligence mismatch: %d != %d", ird.Intelligence(), ord.Intelligence())
 	}
-	if ird.GetLuck() != ord.GetLuck() {
-		t.Errorf("Luck mismatch: %d != %d", ird.GetLuck(), ord.GetLuck())
+	if ird.Luck() != ord.Luck() {
+		t.Errorf("Luck mismatch: %d != %d", ird.Luck(), ord.Luck())
 	}
-	if ird.GetHP() != ord.GetHP() {
-		t.Errorf("HP mismatch: %d != %d", ird.GetHP(), ord.GetHP())
+	if ird.HP() != ord.HP() {
+		t.Errorf("HP mismatch: %d != %d", ird.HP(), ord.HP())
 	}
-	if ird.GetMP() != ord.GetMP() {
-		t.Errorf("MP mismatch: %d != %d", ird.GetMP(), ord.GetMP())
+	if ird.MP() != ord.MP() {
+		t.Errorf("MP mismatch: %d != %d", ird.MP(), ord.MP())
 	}
-	if ird.GetWeaponAttack() != ord.GetWeaponAttack() {
-		t.Errorf("WeaponAttack mismatch: %d != %d", ird.GetWeaponAttack(), ord.GetWeaponAttack())
+	if ird.WeaponAttack() != ord.WeaponAttack() {
+		t.Errorf("WeaponAttack mismatch: %d != %d", ird.WeaponAttack(), ord.WeaponAttack())
 	}
-	if ird.GetMagicAttack() != ord.GetMagicAttack() {
-		t.Errorf("MagicAttack mismatch: %d != %d", ird.GetMagicAttack(), ord.GetMagicAttack())
+	if ird.MagicAttack() != ord.MagicAttack() {
+		t.Errorf("MagicAttack mismatch: %d != %d", ird.MagicAttack(), ord.MagicAttack())
 	}
-	if ird.GetWeaponDefense() != ord.GetWeaponDefense() {
-		t.Errorf("WeaponDefense mismatch: %d != %d", ird.GetWeaponDefense(), ord.GetWeaponDefense())
+	if ird.WeaponDefense() != ord.WeaponDefense() {
+		t.Errorf("WeaponDefense mismatch: %d != %d", ird.WeaponDefense(), ord.WeaponDefense())
 	}
-	if ird.GetMagicDefense() != ord.GetMagicDefense() {
-		t.Errorf("MagicDefense mismatch: %d != %d", ird.GetMagicDefense(), ord.GetMagicDefense())
+	if ird.MagicDefense() != ord.MagicDefense() {
+		t.Errorf("MagicDefense mismatch: %d != %d", ird.MagicDefense(), ord.MagicDefense())
 	}
-	if ird.GetAccuracy() != ord.GetAccuracy() {
-		t.Errorf("Accuracy mismatch: %d != %d", ird.GetAccuracy(), ord.GetAccuracy())
+	if ird.Accuracy() != ord.Accuracy() {
+		t.Errorf("Accuracy mismatch: %d != %d", ird.Accuracy(), ord.Accuracy())
 	}
-	if ird.GetAvoidability() != ord.GetAvoidability() {
-		t.Errorf("Avoidability mismatch: %d != %d", ird.GetAvoidability(), ord.GetAvoidability())
+	if ird.Avoidability() != ord.Avoidability() {
+		t.Errorf("Avoidability mismatch: %d != %d", ird.Avoidability(), ord.Avoidability())
 	}
-	if ird.GetHands() != ord.GetHands() {
-		t.Errorf("Hands mismatch: %d != %d", ird.GetHands(), ord.GetHands())
+	if ird.Hands() != ord.Hands() {
+		t.Errorf("Hands mismatch: %d != %d", ird.Hands(), ord.Hands())
 	}
-	if ird.GetSpeed() != ord.GetSpeed() {
-		t.Errorf("Speed mismatch: %d != %d", ird.GetSpeed(), ord.GetSpeed())
+	if ird.Speed() != ord.Speed() {
+		t.Errorf("Speed mismatch: %d != %d", ird.Speed(), ord.Speed())
 	}
-	if ird.GetJump() != ord.GetJump() {
-		t.Errorf("Jump mismatch: %d != %d", ird.GetJump(), ord.GetJump())
+	if ird.Jump() != ord.Jump() {
+		t.Errorf("Jump mismatch: %d != %d", ird.Jump(), ord.Jump())
 	}
-	if ird.GetSlots() != ord.GetSlots() {
-		t.Errorf("Slots mismatch: %d != %d", ird.GetSlots(), ord.GetSlots())
+	if ird.Slots() != ord.Slots() {
+		t.Errorf("Slots mismatch: %d != %d", ird.Slots(), ord.Slots())
 	}
-	if ird.GetOwnerId() != ord.GetOwnerId() {
-		t.Errorf("OwnerId mismatch: %d != %d", ird.GetOwnerId(), ord.GetOwnerId())
+	if ird.OwnerId() != ord.OwnerId() {
+		t.Errorf("OwnerId mismatch: %d != %d", ird.OwnerId(), ord.OwnerId())
 	}
 	if ird.IsLocked() != ord.IsLocked() {
 		t.Errorf("Locked mismatch: %v != %v", ird.IsLocked(), ord.IsLocked())
@@ -156,19 +157,19 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 	if ird.CanBeTraded() != ord.CanBeTraded() {
 		t.Errorf("CanBeTraded mismatch: %v != %v", ird.CanBeTraded(), ord.CanBeTraded())
 	}
-	if ird.GetLevelType() != ord.GetLevelType() {
-		t.Errorf("LevelType mismatch: %d != %d", ird.GetLevelType(), ord.GetLevelType())
+	if ird.LevelType() != ord.LevelType() {
+		t.Errorf("LevelType mismatch: %d != %d", ird.LevelType(), ord.LevelType())
 	}
-	if ird.GetLevel() != ord.GetLevel() {
-		t.Errorf("Level mismatch: %d != %d", ird.GetLevel(), ord.GetLevel())
+	if ird.Level() != ord.Level() {
+		t.Errorf("Level mismatch: %d != %d", ird.Level(), ord.Level())
 	}
-	if ird.GetExperience() != ord.GetExperience() {
-		t.Errorf("Experience mismatch: %d != %d", ird.GetExperience(), ord.GetExperience())
+	if ird.Experience() != ord.Experience() {
+		t.Errorf("Experience mismatch: %d != %d", ird.Experience(), ord.Experience())
 	}
-	if ird.GetHammersApplied() != ord.GetHammersApplied() {
-		t.Errorf("HammersApplied mismatch: %d != %d", ird.GetHammersApplied(), ord.GetHammersApplied())
+	if ird.HammersApplied() != ord.HammersApplied() {
+		t.Errorf("HammersApplied mismatch: %d != %d", ird.HammersApplied(), ord.HammersApplied())
 	}
-	if !ird.GetExpiration().Equal(ord.GetExpiration()) {
-		t.Errorf("Expiration mismatch: %v != %v", ird.GetExpiration(), ord.GetExpiration())
+	if !ird.Expiration().Equal(ord.Expiration()) {
+		t.Errorf("Expiration mismatch: %v != %v", ird.Expiration(), ord.Expiration())
 	}
 }

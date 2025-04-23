@@ -4,7 +4,6 @@ import (
 	"atlas-cashshop/cashshop/commodity"
 	"atlas-cashshop/character"
 	inventory2 "atlas-cashshop/character/inventory"
-	"atlas-cashshop/inventory"
 	"atlas-cashshop/kafka/message/cashshop"
 	"atlas-cashshop/kafka/producer"
 	cashshop2 "atlas-cashshop/kafka/producer/cashshop"
@@ -14,6 +13,22 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
+
+func Purchase(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, currency uint32, serialNumber uint32) error {
+	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, currency uint32, serialNumber uint32) error {
+		return func(db *gorm.DB) func(characterId uint32, currency uint32, serialNumber uint32) error {
+			return func(characterId uint32, currency uint32, serialNumber uint32) error {
+				ci, err := commodity.GetById(l)(ctx)(serialNumber)
+				if err != nil {
+					return err
+				}
+				l.Debugf("Character [%d] attempting to purchase [%d] using currency [%d]. Cost is [%d].", characterId, serialNumber, currency, ci.Price())
+				_ = producer.ProviderImpl(l)(ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "INVENTORY_FULL"))
+				return nil
+			}
+		}
+	}
+}
 
 func PurchaseInventoryIncreaseByItem(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, currency uint32, serialNumber uint32) error {
 	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, currency uint32, serialNumber uint32) error {
@@ -101,12 +116,12 @@ func purchaseInventoryIncrease(l logrus.FieldLogger) func(ctx context.Context) f
 					return nil
 				})
 				if txErr != nil {
-					_ = producer.ProviderImpl(l)(ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "", 0x00))
+					_ = producer.ProviderImpl(l)(ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
 					return txErr
 				}
 
 				l.Debugf("Character [%d] purchased inventory [%d] increase. New capacity will be [%d].", characterId, inventoryType, newCapacity)
-				_ = inventory.IncreaseCapacity(l)(ctx)(characterId, inventoryType, amount)
+				_ = inventory2.IncreaseCapacity(l)(ctx)(characterId, inventoryType, amount)
 				_ = producer.ProviderImpl(l)(ctx)(cashshop.EnvEventTopicStatus)(cashshop2.InventoryCapacityIncreasedStatusEventProvider(characterId, byte(inventoryType), newCapacity, amount))
 				return nil
 			}

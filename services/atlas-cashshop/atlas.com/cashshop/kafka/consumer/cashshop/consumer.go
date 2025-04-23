@@ -30,12 +30,22 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
 			t, _ = topic.EnvProvider(l)(cashshop.EnvCommandTopic)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestPurchase(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestInventoryIncreaseByType(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestInventoryIncreaseByItem(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestStorageIncrease(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestStorageIncreaseByItem(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestCharacterSlotIncreaseByItem(db))))
 		}
+	}
+}
+
+func handleCommandRequestPurchase(db *gorm.DB) message.Handler[cashshop.Command[cashshop.RequestPurchaseCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c cashshop.Command[cashshop.RequestPurchaseCommandBody]) {
+		if c.Type != cashshop.CommandTypeRequestPurchase {
+			return
+		}
+		_ = cashshop3.Purchase(l)(ctx)(db)(c.CharacterId, c.Body.Currency, c.Body.SerialNumber)
 	}
 }
 
@@ -62,7 +72,7 @@ func handleCommandRequestStorageIncrease(db *gorm.DB) message.Handler[cashshop.C
 		if c.Type != cashshop.CommandTypeRequestStorageIncrease {
 			return
 		}
-		_ = producer.ProviderImpl(l)(ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(c.CharacterId, "", 0x00))
+		_ = producer.ProviderImpl(l)(ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(c.CharacterId, "UNKNOWN_ERROR"))
 	}
 }
 
@@ -71,7 +81,7 @@ func handleCommandRequestStorageIncreaseByItem(db *gorm.DB) message.Handler[cash
 		if c.Type != cashshop.CommandTypeRequestStorageIncreaseByItem {
 			return
 		}
-		_ = producer.ProviderImpl(l)(ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(c.CharacterId, "", 0x00))
+		_ = producer.ProviderImpl(l)(ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(c.CharacterId, "UNKNOWN_ERROR"))
 	}
 }
 
@@ -80,6 +90,6 @@ func handleCommandRequestCharacterSlotIncreaseByItem(db *gorm.DB) message.Handle
 		if c.Type != cashshop.CommandTypeRequestCharacterSlotIncreaseByItem {
 			return
 		}
-		_ = producer.ProviderImpl(l)(ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(c.CharacterId, "", 0x00))
+		_ = producer.ProviderImpl(l)(ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(c.CharacterId, "UNKNOWN_ERROR"))
 	}
 }

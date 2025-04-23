@@ -1,3 +1,4 @@
-atlas.com/cashshop/.idea
 .idea
 .env
+.vscode
+__debug_bin*

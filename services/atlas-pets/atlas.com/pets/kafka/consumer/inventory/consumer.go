@@ -2,6 +2,7 @@ package inventory
 
 import (
 	consumer2 "atlas-pets/kafka/consumer"
+	inventory2 "atlas-pets/kafka/message/inventory"
 	"atlas-pets/pet"
 	"context"
 	"github.com/Chronicle20/atlas-constants/inventory"
@@ -18,7 +19,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("inventory_changed_event")(EnvEventInventoryChanged)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("inventory_changed_event")(inventory2.EnvEventInventoryChanged)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -27,16 +28,16 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
-			t, _ = topic.EnvProvider(l)(EnvEventInventoryChanged)()
+			t, _ = topic.EnvProvider(l)(inventory2.EnvEventInventoryChanged)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryAdd(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleInventoryDelete(db))))
 		}
 	}
 }
 
-func handleInventoryAdd(db *gorm.DB) message.Handler[inventoryChangedEvent[inventoryChangedItemAddBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e inventoryChangedEvent[inventoryChangedItemAddBody]) {
-		if e.Type != ChangedTypeAdd {
+func handleInventoryAdd(db *gorm.DB) message.Handler[inventory2.InventoryChangedEvent[inventory2.InventoryChangedItemAddBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e inventory2.InventoryChangedEvent[inventory2.InventoryChangedItemAddBody]) {
+		if e.Type != inventory2.ChangedTypeAdd {
 			return
 		}
 
@@ -52,9 +53,9 @@ func handleInventoryAdd(db *gorm.DB) message.Handler[inventoryChangedEvent[inven
 	}
 }
 
-func handleInventoryDelete(db *gorm.DB) message.Handler[inventoryChangedEvent[inventoryChangedItemRemoveBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e inventoryChangedEvent[inventoryChangedItemRemoveBody]) {
-		if e.Type != ChangedTypeRemove {
+func handleInventoryDelete(db *gorm.DB) message.Handler[inventory2.InventoryChangedEvent[inventory2.InventoryChangedItemRemoveBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e inventory2.InventoryChangedEvent[inventory2.InventoryChangedItemRemoveBody]) {
+		if e.Type != inventory2.ChangedTypeRemove {
 			return
 		}
 

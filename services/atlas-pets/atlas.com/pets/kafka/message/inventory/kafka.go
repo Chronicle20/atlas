@@ -7,7 +7,7 @@ const (
 	ChangedTypeRemove = "REMOVED"
 )
 
-type inventoryChangedEvent[M any] struct {
+type InventoryChangedEvent[M any] struct {
 	CharacterId   uint32 `json:"characterId"`
 	InventoryType int8   `json:"inventoryType"`
 	Slot          int16  `json:"slot"`
@@ -16,11 +16,11 @@ type inventoryChangedEvent[M any] struct {
 	Silent        bool   `json:"silent"`
 }
 
-type inventoryChangedItemAddBody struct {
+type InventoryChangedItemAddBody struct {
 	ItemId   uint32 `json:"itemId"`
 	Quantity uint32 `json:"quantity"`
 }
 
-type inventoryChangedItemRemoveBody struct {
+type InventoryChangedItemRemoveBody struct {
 	ItemId uint32 `json:"itemId"`
 }

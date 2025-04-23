@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-pets/character"
 	consumer2 "atlas-pets/kafka/consumer"
+	character2 "atlas-pets/kafka/message/character"
 	"atlas-pets/pet"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -17,7 +18,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("character_status_event")(EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("character_status_event")(character2.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -26,7 +27,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
-			t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+			t, _ = topic.EnvProvider(l)(character2.EnvEventTopicCharacterStatus)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterDeleted(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogin(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout(db))))
@@ -36,9 +37,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	}
 }
 
-func handleCharacterDeleted(db *gorm.DB) message.Handler[statusEvent[statusEventDeletedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventDeletedBody]) {
-		if e.Type != StatusEventTypeDeleted {
+func handleCharacterDeleted(db *gorm.DB) message.Handler[character2.StatusEvent[character2.StatusEventDeletedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventDeletedBody]) {
+		if e.Type != character2.StatusEventTypeDeleted {
 			return
 		}
 
@@ -46,9 +47,9 @@ func handleCharacterDeleted(db *gorm.DB) message.Handler[statusEvent[statusEvent
 	}
 }
 
-func handleStatusEventLogin(db *gorm.DB) message.Handler[statusEvent[statusEventLoginBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventLoginBody]) {
-		if e.Type == StatusEventTypeLogin {
+func handleStatusEventLogin(db *gorm.DB) message.Handler[character2.StatusEvent[character2.StatusEventLoginBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventLoginBody]) {
+		if e.Type == character2.StatusEventTypeLogin {
 			l.Debugf("Character [%d] has logged in. worldId [%d] channelId [%d] mapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
 			character.NewProcessor(l, ctx).Enter(e.WorldId, e.Body.ChannelId, e.Body.MapId, e.CharacterId)
 			_ = pet.NewProcessor(l, ctx, db).ClearPositions(e.CharacterId)
@@ -56,9 +57,9 @@ func handleStatusEventLogin(db *gorm.DB) message.Handler[statusEvent[statusEvent
 	}
 }
 
-func handleStatusEventLogout(db *gorm.DB) message.Handler[statusEvent[statusEventLogoutBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventLogoutBody]) {
-		if e.Type == StatusEventTypeLogout {
+func handleStatusEventLogout(db *gorm.DB) message.Handler[character2.StatusEvent[character2.StatusEventLogoutBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventLogoutBody]) {
+		if e.Type == character2.StatusEventTypeLogout {
 			l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
 			character.NewProcessor(l, ctx).Exit(e.WorldId, e.Body.ChannelId, e.Body.MapId, e.CharacterId)
 			_ = pet.NewProcessor(l, ctx, db).ClearPositions(e.CharacterId)
@@ -66,9 +67,9 @@ func handleStatusEventLogout(db *gorm.DB) message.Handler[statusEvent[statusEven
 	}
 }
 
-func handleStatusEventMapChanged(db *gorm.DB) message.Handler[statusEvent[statusEventMapChangedBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventMapChangedBody]) {
-		if e.Type == StatusEventTypeMapChanged {
+func handleStatusEventMapChanged(db *gorm.DB) message.Handler[character2.StatusEvent[character2.StatusEventMapChangedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventMapChangedBody]) {
+		if e.Type == character2.StatusEventTypeMapChanged {
 			l.Debugf("Character [%d] has changed maps. worldId [%d] channelId [%d] oldMapId [%d] newMapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldMapId, e.Body.TargetMapId)
 			character.NewProcessor(l, ctx).TransitionMap(e.WorldId, e.Body.ChannelId, e.Body.TargetMapId, e.CharacterId, e.Body.OldMapId)
 			_ = pet.NewProcessor(l, ctx, db).ClearPositions(e.CharacterId)
@@ -76,9 +77,9 @@ func handleStatusEventMapChanged(db *gorm.DB) message.Handler[statusEvent[status
 	}
 }
 
-func handleStatusEventChannelChanged(db *gorm.DB) message.Handler[statusEvent[changeChannelEventLoginBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[changeChannelEventLoginBody]) {
-		if e.Type == StatusEventTypeChannelChanged {
+func handleStatusEventChannelChanged(db *gorm.DB) message.Handler[character2.StatusEvent[character2.ChangeChannelEventLoginBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.ChangeChannelEventLoginBody]) {
+		if e.Type == character2.StatusEventTypeChannelChanged {
 			l.Debugf("Character [%d] has changed channels. worldId [%d] channelId [%d] oldChannelId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldChannelId)
 			character.NewProcessor(l, ctx).TransitionChannel(e.WorldId, e.Body.ChannelId, e.Body.OldChannelId, e.CharacterId, e.Body.MapId)
 			_ = pet.NewProcessor(l, ctx, db).ClearPositions(e.CharacterId)

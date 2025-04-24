@@ -136,7 +136,7 @@ func (p *Processor) Create(mb *message.Buffer) func(i Model) (Model, error) {
 			p.l.WithError(txErr).Errorf("Unable to create pet from template [%d] for character [%d].", i.TemplateId(), i.OwnerId())
 			return om, txErr
 		}
-		p.l.Debugf("Created pet [%d] for character [%d].", om.Id(), om.OwnerId())
+		p.l.Infof("Created pet [%d] for character [%d].", om.Id(), om.OwnerId())
 		return om, nil
 	}
 }
@@ -190,7 +190,7 @@ func (p *Processor) DeleteForCharacter(mb *message.Buffer) func(characterId uint
 			p.l.WithError(txErr).Errorf("Unable to delete all pets for character [%d].", characterId)
 			return txErr
 		}
-		p.l.Debugf("Deleted all pets for character [%d].", characterId)
+		p.l.Infof("Deleted all pets for character [%d].", characterId)
 		return nil
 	}
 }
@@ -210,7 +210,7 @@ func (p *Processor) Delete(mb *message.Buffer) func(petId uint32) func(ownerId u
 				p.l.WithError(txErr).Errorf("Unable to delete pet [%d].", petId)
 				return txErr
 			}
-			p.l.Debugf("Deleted pet [%d].", petId)
+			p.l.Infof("Deleted pet [%d].", petId)
 			return nil
 		}
 	}
@@ -231,7 +231,7 @@ func (p *Processor) Move(petId uint32, m _map.Model, ownerId uint32, x int16, y 
 	if err != nil {
 		return err
 	}
-	p.l.Debugf("Recording pet [%d] movement. x [%d], y [%d], fh [%d].", petId, x, y, fh)
+	p.l.Infof("Recording pet [%d] movement. x [%d], y [%d], fh [%d].", petId, x, y, fh)
 	GetTemporalRegistry().Update(petId, x, y, stance, int16(fh.Id()))
 	return nil
 }
@@ -325,7 +325,7 @@ func (p *Processor) Spawn(mb *message.Buffer) func(petId uint32) func(actorId ui
 					p.l.WithError(txErr).Errorf("Unable to spawn pet from character [%d].", petId)
 					return txErr
 				}
-				p.l.Debugf("Spawned pet [%d] for character [%d].", petId, actorId)
+				p.l.Infof("Spawned pet [%d] for character [%d].", petId, actorId)
 				return nil
 			}
 		}
@@ -395,7 +395,7 @@ func (p *Processor) Despawn(mb *message.Buffer) func(petId uint32) func(actorId 
 					p.l.WithError(txErr).Errorf("Unable to despawn pet for character [%d].", petId)
 					return txErr
 				}
-				p.l.Debugf("Despawned pet [%d] for character [%d].", petId, actorId)
+				p.l.Infof("Despawned pet [%d] for character [%d].", petId, actorId)
 				return nil
 			}
 		}
@@ -452,7 +452,7 @@ func (p *Processor) AttemptCommand(mb *message.Buffer) func(petId uint32) func(a
 					p.l.WithError(txErr).Errorf("Unable to attempt command [%d] for pet [%d].", commandId, petId)
 					return txErr
 				}
-				p.l.Debugf("Performed command [%d] for pet [%d].", commandId, petId)
+				p.l.Infof("Performed command [%d] for pet [%d].", commandId, petId)
 				return nil
 			}
 		}
@@ -504,7 +504,7 @@ func (p *Processor) EvaluateHunger(mb *message.Buffer) func(ownerId uint32) erro
 			p.l.WithError(txErr).Errorf("Unable to evaluate hunger of pets for owner [%d].", ownerId)
 			return txErr
 		}
-		p.l.Debugf("Evaluated hunger of pets for owner [%d]", ownerId)
+		p.l.Infof("Evaluated hunger of pets for owner [%d]", ownerId)
 		return nil
 	}
 }
@@ -525,7 +525,7 @@ func (p *Processor) ClearPositions(ownerId uint32) error {
 		p.l.WithError(txErr).Errorf("Unable to clear positions of pets for owner [%d].", ownerId)
 		return txErr
 	}
-	p.l.Debugf("Cleared positions of pets for owner [%d].", ownerId)
+	p.l.Infof("Cleared positions of pets for owner [%d].", ownerId)
 	return nil
 }
 
@@ -575,7 +575,7 @@ func (p *Processor) AwardCloseness(mb *message.Buffer) func(petId uint32) func(a
 				p.l.WithError(txErr).Errorf("Unable to award closeness [%d].", petId)
 				return txErr
 			}
-			p.l.Debugf("Awarded [%d] closeness for pet [%d].", amount, petId)
+			p.l.Infof("Awarded [%d] closeness for pet [%d].", amount, petId)
 			return nil
 		}
 	}
@@ -609,7 +609,7 @@ func (p *Processor) AwardFullness(mb *message.Buffer) func(petId uint32) func(am
 				p.l.WithError(txErr).Errorf("Unable to award fullness to pet [%d].", petId)
 				return txErr
 			}
-			p.l.Debugf("Awarded [%d] fullness for pet [%d].", amount, petId)
+			p.l.Infof("Awarded [%d] fullness for pet [%d].", amount, petId)
 			return nil
 		}
 	}
@@ -643,7 +643,7 @@ func (p *Processor) AwardLevel(mb *message.Buffer) func(petId uint32) func(amoun
 				p.l.WithError(txErr).Errorf("Unable to award level to pet [%d].", petId)
 				return txErr
 			}
-			p.l.Debugf("Awarded [%d] level for pet [%d].", amount, petId)
+			p.l.Infof("Awarded [%d] level for pet [%d].", amount, petId)
 			return nil
 		}
 	}
@@ -673,7 +673,7 @@ func (p *Processor) SetExclude(mb *message.Buffer) func(petId uint32) func(items
 				p.l.WithError(txErr).Errorf("Unable to set exclude items for pet [%d].", petId)
 				return txErr
 			}
-			p.l.Debugf("Set exclude items for pet [%d].", petId)
+			p.l.Infof("Set exclude items for pet [%d].", petId)
 			return nil
 		}
 	}

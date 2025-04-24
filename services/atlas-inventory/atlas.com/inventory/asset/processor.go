@@ -6,7 +6,6 @@ import (
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/asset"
 	"atlas-inventory/kafka/producer"
-	model2 "atlas-inventory/model"
 	"atlas-inventory/pet"
 	"atlas-inventory/stackable"
 	"context"
@@ -45,7 +44,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		cashProcessor:      cash.NewProcessor(l, ctx),
 		petProcessor:       pet.NewProcessor(l, ctx),
 	}
-	p.GetByCompartmentId = model2.CollapseProvider(p.ByCompartmentIdProvider)
+	p.GetByCompartmentId = model.CollapseProvider(p.ByCompartmentIdProvider)
 	return p
 }
 

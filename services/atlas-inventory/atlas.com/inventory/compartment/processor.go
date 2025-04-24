@@ -7,7 +7,6 @@ import (
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/compartment"
 	"atlas-inventory/kafka/producer"
-	model2 "atlas-inventory/model"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/inventory"
@@ -47,9 +46,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		equipmentProcessor: equipment.NewProcessor(l, ctx),
 	}
 	p.producer = producer.ProviderImpl(l)(ctx)
-	p.GetById = model2.CollapseProvider(p.ByIdProvider)
-	p.GetByCharacterId = model2.CollapseProvider(p.ByCharacterIdProvider)
-	p.GetByCharacterAndType = model.Compose(model2.CollapseProvider, p.ByCharacterAndTypeProvider)
+	p.GetById = model.CollapseProvider(p.ByIdProvider)
+	p.GetByCharacterId = model.CollapseProvider(p.ByCharacterIdProvider)
+	p.GetByCharacterAndType = model.Compose(model.CollapseProvider, p.ByCharacterAndTypeProvider)
 	return p
 }
 

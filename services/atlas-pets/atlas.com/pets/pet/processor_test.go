@@ -58,7 +58,7 @@ func testDatabase(t *testing.T) *gorm.DB {
 	return db
 }
 
-func TestProcessor_CreateSunny(t *testing.T) {
+func TestProcessor_Create(t *testing.T) {
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
 
 	// test execution
@@ -304,6 +304,7 @@ func TestProcessor_Move(t *testing.T) {
 	y := int16(95)
 	stance := byte(1)
 
+	// test execution
 	err = p.Move(i.Id(), _map.NewModel(world.Id(0))(channel.Id(1))(_map.Id(50000)), i.OwnerId(), x, y, stance)
 	if err != nil {
 		t.Fatalf("Failed to move pet: %v", err)
@@ -326,4 +327,150 @@ func TestProcessor_Move(t *testing.T) {
 		t.Fatalf("Failed to move pet. FH mismatch")
 	}
 
+}
+
+func TestProcessor_SpawnSingleLead(t *testing.T) {
+	cp := &cm.Processor{}
+	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
+		return func(uint32) (character.Model, error) {
+			return character.NewModelBuilder().SetX(50).SetY(95).Build(), nil
+		}
+	}
+	mfh := position.NewModel(99, 0, 95, 100, 95)
+	pp := &pmock.Processor{}
+	pp.GetBelowFn = func(mapId uint32, x int16, y int16) model.Provider[position.Model] {
+		return model.FixedProvider(mfh)
+	}
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp))
+
+	// test setup
+	i, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(-1).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	err = p.Spawn(mb)(i.Id())(i.OwnerId())(true)
+	if err != nil {
+		t.Fatalf("Failed to spawn pet: %v", err)
+	}
+	ke := mb.GetAll()
+	var se []kafka.Message
+	var ok bool
+	if se, ok = ke[pet2.EnvStatusEventTopic]; !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	if len(se) != 2 {
+		t.Fatalf("Failed to expected events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+
+	o, err := p.GetById(i.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o.Slot() != 0 {
+		t.Fatalf("Failed to spawn pet. Slot mismatch")
+	}
+}
+
+func TestProcessor_SpawnMigrateLead(t *testing.T) {
+	cp := &cm.Processor{}
+	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
+		return func(uint32) (character.Model, error) {
+			return character.NewModelBuilder().SetX(50).SetY(95).Build(), nil
+		}
+	}
+	mfh := position.NewModel(99, 0, 95, 100, 95)
+	pp := &pmock.Processor{}
+	pp.GetBelowFn = func(mapId uint32, x int16, y int16) model.Provider[position.Model] {
+		return model.FixedProvider(mfh)
+	}
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp))
+
+	// test setup
+	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+	if p1.Slot() != 0 {
+		t.Fatalf("Failed to spawn pet. Slot mismatch")
+	}
+	i, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(-1).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	err = p.Spawn(mb)(i.Id())(i.OwnerId())(true)
+	if err != nil {
+		t.Fatalf("Failed to spawn pet: %v", err)
+	}
+	ke := mb.GetAll()
+	var se []kafka.Message
+	var ok bool
+	if se, ok = ke[pet2.EnvStatusEventTopic]; !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	if len(se) != 3 {
+		t.Fatalf("Failed to expected events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+
+	o, err := p.GetById(i.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o.Slot() != 0 {
+		t.Fatalf("Failed to spawn pet. Slot mismatch")
+	}
+}
+
+func TestProcessor_SpawnNonLead(t *testing.T) {
+	cp := &cm.Processor{}
+	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
+		return func(uint32) (character.Model, error) {
+			return character.NewModelBuilder().SetX(50).SetY(95).Build(), nil
+		}
+	}
+	mfh := position.NewModel(99, 0, 95, 100, 95)
+	pp := &pmock.Processor{}
+	pp.GetBelowFn = func(mapId uint32, x int16, y int16) model.Provider[position.Model] {
+		return model.FixedProvider(mfh)
+	}
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp))
+
+	// test setup
+	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+	if p1.Slot() != 0 {
+		t.Fatalf("Failed to spawn pet. Slot mismatch")
+	}
+	i, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(-1).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	err = p.Spawn(mb)(i.Id())(i.OwnerId())(false)
+	if err != nil {
+		t.Fatalf("Failed to spawn pet: %v", err)
+	}
+	ke := mb.GetAll()
+	var se []kafka.Message
+	var ok bool
+	if se, ok = ke[pet2.EnvStatusEventTopic]; !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	if len(se) != 2 {
+		t.Fatalf("Failed to expected events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+
+	o, err := p.GetById(i.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o.Slot() != 1 {
+		t.Fatalf("Failed to spawn pet. Slot mismatch")
+	}
 }

@@ -356,6 +356,8 @@ func (b *ModelBuilder) SetGachaponExperience(v uint32) *ModelBuilder {
 func (b *ModelBuilder) SetMapId(v uint32) *ModelBuilder              { b.mapId = v; return b }
 func (b *ModelBuilder) SetSpawnPoint(v uint32) *ModelBuilder         { b.spawnPoint = v; return b }
 func (b *ModelBuilder) SetGm(v int) *ModelBuilder                    { b.gm = v; return b }
+func (b *ModelBuilder) SetX(x int16) *ModelBuilder                   { b.x = x; return b }
+func (b *ModelBuilder) SetY(y int16) *ModelBuilder                   { b.y = y; return b }
 func (b *ModelBuilder) SetMeso(v uint32) *ModelBuilder               { b.meso = v; return b }
 func (b *ModelBuilder) SetInventory(v inventory.Model) *ModelBuilder { b.inventory = v; return b }
 

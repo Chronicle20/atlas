@@ -9,6 +9,7 @@ import (
 
 func create(db *gorm.DB) func(t tenant.Model, ownerId uint32, m Model) (Model, error) {
 	return func(t tenant.Model, ownerId uint32, m Model) (Model, error) {
+		s := m.Slot()
 		e := &Entity{
 			TenantId:   t.Id(),
 			OwnerId:    ownerId,
@@ -19,6 +20,8 @@ func create(db *gorm.DB) func(t tenant.Model, ownerId uint32, m Model) (Model, e
 			Closeness:  m.Closeness(),
 			Fullness:   m.Fullness(),
 			Expiration: m.Expiration(),
+			Slot:       &s,
+			Flag:       m.Flag(),
 		}
 
 		err := db.Create(e).Error

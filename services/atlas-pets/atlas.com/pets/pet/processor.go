@@ -3,7 +3,7 @@ package pet
 import (
 	"atlas-pets/character"
 	data2 "atlas-pets/data/pet"
-	position2 "atlas-pets/data/position"
+	"atlas-pets/data/position"
 	"atlas-pets/kafka/message"
 	"atlas-pets/kafka/message/pet"
 	"atlas-pets/kafka/producer"
@@ -27,8 +27,9 @@ type Processor struct {
 	ctx           context.Context
 	db            *gorm.DB
 	t             tenant.Model
-	cp            *character.Processor
-	pp            *position2.Processor
+	tr            TemporalRegistry
+	cp            character.Processor
+	pp            position.Processor
 	KafkaProducer producer.Provider
 	GetById       func(petId uint32) (Model, error)
 	GetByOwner    func(ownerId uint32) ([]Model, error)
@@ -41,8 +42,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		ctx: ctx,
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
+		tr:  GetTemporalRegistry(),
 		cp:  character.NewProcessor(l, ctx),
-		pp:  position2.NewProcessor(l, ctx),
+		pp:  position.NewProcessor(l, ctx),
 	}
 	p.KafkaProducer = producer.ProviderImpl(l)(ctx)
 	p.GetById = model.CollapseProvider(p.ByIdProvider)
@@ -51,19 +53,39 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 	return p
 }
 
-func (p *Processor) WithTransaction(db *gorm.DB) *Processor {
-	return &Processor{
-		l:             p.l,
-		ctx:           p.ctx,
-		db:            db,
-		t:             p.t,
-		cp:            p.cp,
-		pp:            p.pp,
-		KafkaProducer: p.KafkaProducer,
-		GetById:       p.GetById,
-		GetByOwner:    p.GetByOwner,
-		CreateAndEmit: p.CreateAndEmit,
+type ProcessorOption func(*Processor)
+
+func WithTransaction(db *gorm.DB) ProcessorOption {
+	return func(p *Processor) {
+		p.db = db
 	}
+}
+
+func WithTemporalRegistry(tr TemporalRegistry) ProcessorOption {
+	return func(p *Processor) {
+		p.tr = tr
+	}
+}
+
+func WithCharacterProcessor(cp character.Processor) ProcessorOption {
+	return func(p *Processor) {
+		p.cp = cp
+	}
+}
+
+func WithPositionProcessor(pp position.Processor) ProcessorOption {
+	return func(p *Processor) {
+		p.pp = pp
+	}
+}
+
+func (p *Processor) With(opts ...ProcessorOption) *Processor {
+	clone := *p
+	cp := &clone
+	for _, opt := range opts {
+		opt(cp)
+	}
+	return cp
 }
 
 func (p *Processor) ByIdProvider(petId uint32) model.Provider[Model] {
@@ -179,7 +201,7 @@ func (p *Processor) DeleteForCharacter(mb *message.Buffer) func(characterId uint
 				return err
 			}
 			for _, pm := range ps {
-				err = p.Delete(mb)(pm.Id())(pm.OwnerId())
+				err = p.With(WithTransaction(tx)).Delete(mb)(pm.Id())(pm.OwnerId())
 				if err != nil {
 					return err
 				}
@@ -232,7 +254,7 @@ func (p *Processor) Move(petId uint32, m _map.Model, ownerId uint32, x int16, y 
 		return err
 	}
 	p.l.Infof("Recording pet [%d] movement. x [%d], y [%d], fh [%d].", petId, x, y, fh)
-	GetTemporalRegistry().Update(petId, x, y, stance, int16(fh.Id()))
+	p.tr.Update(petId, x, y, stance, int16(fh.Id()))
 	return nil
 }
 
@@ -246,7 +268,7 @@ func (p *Processor) Spawn(mb *message.Buffer) func(petId uint32) func(actorId ui
 			return func(lead bool) error {
 				p.l.Debugf("Spawning pet [%d] for character [%d]", petId, actorId)
 				txErr := p.db.Transaction(func(tx *gorm.DB) error {
-					pe, err := p.WithTransaction(tx).GetById(petId)
+					pe, err := p.With(WithTransaction(tx)).GetById(petId)
 					if err != nil {
 						return err
 					}
@@ -256,7 +278,7 @@ func (p *Processor) Spawn(mb *message.Buffer) func(petId uint32) func(actorId ui
 
 					p.l.Debugf("Attempting to spawn [%d] for character [%d].", petId, actorId)
 
-					sps, err := p.WithTransaction(tx).SpawnedByOwnerProvider(actorId)()
+					sps, err := p.With(WithTransaction(tx)).SpawnedByOwnerProvider(actorId)()
 					if err != nil {
 						return err
 					}
@@ -312,13 +334,13 @@ func (p *Processor) Spawn(mb *message.Buffer) func(petId uint32) func(actorId ui
 
 					c, err := p.cp.GetById()(actorId)
 					if err == nil {
-						var fh position2.Model
+						var fh position.Model
 						fh, err = p.pp.GetBelow(c.MapId(), c.X(), c.Y())()
 						if err == nil {
-							GetTemporalRegistry().Update(petId, c.X(), c.Y(), 0, int16(fh.Id()))
+							p.tr.Update(petId, c.X(), c.Y(), 0, int16(fh.Id()))
 						}
 					}
-					td := GetTemporalRegistry().GetById(pe.Id())
+					td := p.tr.GetById(pe.Id())
 					return mb.Put(pet.EnvStatusEventTopic, spawnEventProvider(pe, td))
 				})
 				if txErr != nil {
@@ -342,7 +364,7 @@ func (p *Processor) Despawn(mb *message.Buffer) func(petId uint32) func(actorId 
 			return func(reason string) error {
 				p.l.Debugf("Attempting to despawn pet [%d] for character [%d].", petId, actorId)
 				txErr := p.db.Transaction(func(tx *gorm.DB) error {
-					pe, err := p.WithTransaction(tx).GetById(petId)
+					pe, err := p.With(WithTransaction(tx)).GetById(petId)
 					if err != nil {
 						return err
 					}
@@ -412,7 +434,7 @@ func (p *Processor) AttemptCommand(mb *message.Buffer) func(petId uint32) func(a
 			return func(commandId byte) error {
 				p.l.Debugf("Attempting command [%d] for pet [%d].", commandId, petId)
 				txErr := p.db.Transaction(func(tx *gorm.DB) error {
-					pe, err := p.WithTransaction(tx).GetById(petId)
+					pe, err := p.With(WithTransaction(tx)).GetById(petId)
 					if err != nil {
 						return err
 					}
@@ -442,7 +464,7 @@ func (p *Processor) AttemptCommand(mb *message.Buffer) func(petId uint32) func(a
 					if rand.Intn(100) < int(psm.Probability()) {
 						success = true
 					}
-					err = p.WithTransaction(tx).AwardClosenessAndEmit(petId, psm.Increase())
+					err = p.With(WithTransaction(tx)).AwardClosenessAndEmit(petId, psm.Increase())
 					if err != nil {
 						return err
 					}
@@ -467,7 +489,7 @@ func (p *Processor) EvaluateHunger(mb *message.Buffer) func(ownerId uint32) erro
 	return func(ownerId uint32) error {
 		p.l.Debugf("Evaluating hunger of pets for owner [%d].", ownerId)
 		txErr := p.db.Transaction(func(tx *gorm.DB) error {
-			ps, err := p.WithTransaction(tx).SpawnedByOwnerProvider(ownerId)()
+			ps, err := p.With(WithTransaction(tx)).SpawnedByOwnerProvider(ownerId)()
 			if err != nil {
 				return err
 			}
@@ -492,7 +514,7 @@ func (p *Processor) EvaluateHunger(mb *message.Buffer) func(ownerId uint32) erro
 					}
 				}
 				if newFullness <= 5 {
-					err = p.WithTransaction(tx).Despawn(mb)(pe.Id())(pe.OwnerId())(pet.DespawnReasonHunger)
+					err = p.With(WithTransaction(tx)).Despawn(mb)(pe.Id())(pe.OwnerId())(pet.DespawnReasonHunger)
 					if err != nil {
 						return err
 					}
@@ -512,12 +534,12 @@ func (p *Processor) EvaluateHunger(mb *message.Buffer) func(ownerId uint32) erro
 func (p *Processor) ClearPositions(ownerId uint32) error {
 	p.l.Debugf("Clearing positions of pets for owner [%d].", ownerId)
 	txErr := p.db.Transaction(func(tx *gorm.DB) error {
-		ps, err := p.WithTransaction(tx).GetByOwner(ownerId)
+		ps, err := p.With(WithTransaction(tx)).GetByOwner(ownerId)
 		if err != nil {
 			return err
 		}
 		for _, pe := range ps {
-			GetTemporalRegistry().Remove(pe.Id())
+			p.tr.Remove(pe.Id())
 		}
 		return nil
 	})
@@ -538,7 +560,7 @@ func (p *Processor) AwardCloseness(mb *message.Buffer) func(petId uint32) func(a
 		return func(amount uint16) error {
 			p.l.Debugf("Awarding [%d] closeness for pet [%d].", amount, petId)
 			txErr := p.db.Transaction(func(tx *gorm.DB) error {
-				pe, err := p.WithTransaction(tx).GetById(petId)
+				pe, err := p.With(WithTransaction(tx)).GetById(petId)
 				if err != nil {
 					return err
 				}
@@ -558,7 +580,7 @@ func (p *Processor) AwardCloseness(mb *message.Buffer) func(petId uint32) func(a
 					return err
 				}
 				if awardLevel {
-					err = p.WithTransaction(tx).AwardLevel(mb)(pe.Id())(1)
+					err = p.With(WithTransaction(tx)).AwardLevel(mb)(pe.Id())(1)
 					if err != nil {
 						return err
 					}
@@ -590,7 +612,7 @@ func (p *Processor) AwardFullness(mb *message.Buffer) func(petId uint32) func(am
 		return func(amount byte) error {
 			p.l.Debugf("Awarding [%d] fullness for pet [%d].", amount, petId)
 			txErr := p.db.Transaction(func(tx *gorm.DB) error {
-				pe, err := p.WithTransaction(tx).GetById(petId)
+				pe, err := p.With(WithTransaction(tx)).GetById(petId)
 				if err != nil {
 					return err
 				}
@@ -624,7 +646,7 @@ func (p *Processor) AwardLevel(mb *message.Buffer) func(petId uint32) func(amoun
 		return func(amount byte) error {
 			p.l.Debugf("Awarding [%d] level for pet [%d].", amount, petId)
 			txErr := p.db.Transaction(func(tx *gorm.DB) error {
-				pe, err := p.WithTransaction(tx).GetById(petId)
+				pe, err := p.With(WithTransaction(tx)).GetById(petId)
 				if err != nil {
 					return err
 				}
@@ -663,7 +685,7 @@ func (p *Processor) SetExclude(mb *message.Buffer) func(petId uint32) func(items
 					return err
 				}
 
-				pe, err := p.WithTransaction(tx).GetById(petId)
+				pe, err := p.With(WithTransaction(tx)).GetById(petId)
 				if err != nil {
 					return err
 				}

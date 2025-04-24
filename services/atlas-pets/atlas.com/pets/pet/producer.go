@@ -29,7 +29,7 @@ func deletedEventProvider(petId uint32, ownerId uint32) model.Provider[[]kafka.M
 	return producer.SingleMessageProvider(key, value)
 }
 
-func spawnEventProvider(m Model, tm *temporalData) model.Provider[[]kafka.Message] {
+func spawnEventProvider(m Model, tm *TemporalData) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
 	value := &pet.StatusEvent[pet.SpawnedStatusEventBody]{
 		PetId:   m.Id(),

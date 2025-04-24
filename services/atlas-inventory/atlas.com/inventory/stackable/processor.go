@@ -1,7 +1,6 @@
 package stackable
 
 import (
-	model2 "atlas-inventory/model"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -23,7 +22,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		ctx: ctx,
 		db:  db,
 	}
-	p.GetById = model2.CollapseProvider(p.ByIdProvider)
+	p.GetById = model.CollapseProvider(p.ByIdProvider)
 	return p
 }
 

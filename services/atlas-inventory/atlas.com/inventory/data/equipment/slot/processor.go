@@ -1,7 +1,6 @@
 package slot
 
 import (
-	model2 "atlas-inventory/model"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -19,7 +18,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 		l:   l,
 		ctx: ctx,
 	}
-	p.GetById = model2.CollapseProvider(p.ByIdModelProvider)
+	p.GetById = model.CollapseProvider(p.ByIdModelProvider)
 	return p
 }
 

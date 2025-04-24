@@ -30,6 +30,7 @@ type Processor struct {
 	tr            TemporalRegistry
 	cp            character.Processor
 	pp            position.Processor
+	dp            data2.Processor
 	KafkaProducer producer.Provider
 	GetById       func(petId uint32) (Model, error)
 	GetByOwner    func(ownerId uint32) ([]Model, error)
@@ -45,6 +46,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		tr:  GetTemporalRegistry(),
 		cp:  character.NewProcessor(l, ctx),
 		pp:  position.NewProcessor(l, ctx),
+		dp:  data2.NewProcessor(l, ctx),
 	}
 	p.KafkaProducer = producer.ProviderImpl(l)(ctx)
 	p.GetById = model.CollapseProvider(p.ByIdProvider)
@@ -61,12 +63,6 @@ func WithTransaction(db *gorm.DB) ProcessorOption {
 	}
 }
 
-func WithTemporalRegistry(tr TemporalRegistry) ProcessorOption {
-	return func(p *Processor) {
-		p.tr = tr
-	}
-}
-
 func WithCharacterProcessor(cp character.Processor) ProcessorOption {
 	return func(p *Processor) {
 		p.cp = cp
@@ -76,6 +72,12 @@ func WithCharacterProcessor(cp character.Processor) ProcessorOption {
 func WithPositionProcessor(pp position.Processor) ProcessorOption {
 	return func(p *Processor) {
 		p.pp = pp
+	}
+}
+
+func WithDataProcessor(dp data2.Processor) ProcessorOption {
+	return func(p *Processor) {
+		p.dp = dp
 	}
 }
 
@@ -445,7 +447,7 @@ func (p *Processor) AttemptCommand(mb *message.Buffer) func(petId uint32) func(a
 						return errors.New("pet not active")
 					}
 
-					pdm, err := data2.GetById(p.l)(p.ctx)(pe.TemplateId())
+					pdm, err := p.dp.GetById(pe.TemplateId())
 					if err != nil {
 						return err
 					}
@@ -464,7 +466,7 @@ func (p *Processor) AttemptCommand(mb *message.Buffer) func(petId uint32) func(a
 					if rand.Intn(100) < int(psm.Probability()) {
 						success = true
 					}
-					err = p.With(WithTransaction(tx)).AwardClosenessAndEmit(petId, psm.Increase())
+					err = p.With(WithTransaction(tx)).AwardCloseness(mb)(petId)(psm.Increase())
 					if err != nil {
 						return err
 					}
@@ -495,7 +497,7 @@ func (p *Processor) EvaluateHunger(mb *message.Buffer) func(ownerId uint32) erro
 			}
 			for _, pe := range ps {
 				var pdm data2.Model
-				pdm, err = data2.GetById(p.l)(p.ctx)(pe.TemplateId())
+				pdm, err = p.dp.GetById(pe.TemplateId())
 				if err != nil {
 					return err
 				}

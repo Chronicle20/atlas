@@ -1,4 +1,4 @@
-package pmock
+package mock
 
 import (
 	"atlas-pets/data/position"

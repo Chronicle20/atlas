@@ -1,4 +1,4 @@
-package cm
+package mock
 
 import (
 	"atlas-pets/character"

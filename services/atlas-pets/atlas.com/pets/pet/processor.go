@@ -3,10 +3,10 @@ package pet
 import (
 	"atlas-pets/character"
 	data2 "atlas-pets/data/pet"
+	position2 "atlas-pets/data/position"
 	"atlas-pets/kafka/message"
 	"atlas-pets/kafka/message/pet"
 	"atlas-pets/kafka/producer"
-	"atlas-pets/pet/position"
 	"context"
 	"errors"
 	"fmt"
@@ -28,7 +28,7 @@ type Processor struct {
 	db            *gorm.DB
 	t             tenant.Model
 	cp            *character.Processor
-	pp            *position.Processor
+	pp            *position2.Processor
 	KafkaProducer producer.Provider
 	GetById       func(petId uint32) (Model, error)
 	GetByOwner    func(ownerId uint32) ([]Model, error)
@@ -42,7 +42,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
 		cp:  character.NewProcessor(l, ctx),
-		pp:  position.NewProcessor(l, ctx),
+		pp:  position2.NewProcessor(l, ctx),
 	}
 	p.KafkaProducer = producer.ProviderImpl(l)(ctx)
 	p.GetById = model.CollapseProvider(p.ByIdProvider)
@@ -312,7 +312,7 @@ func (p *Processor) Spawn(mb *message.Buffer) func(petId uint32) func(actorId ui
 
 					c, err := p.cp.GetById()(actorId)
 					if err == nil {
-						var fh position.Model
+						var fh position2.Model
 						fh, err = p.pp.GetBelow(c.MapId(), c.X(), c.Y())()
 						if err == nil {
 							GetTemporalRegistry().Update(petId, c.X(), c.Y(), 0, int16(fh.Id()))

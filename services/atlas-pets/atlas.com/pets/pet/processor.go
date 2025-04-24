@@ -617,29 +617,44 @@ func (p *ProcessorImpl) AwardCloseness(mb *message.Buffer) func(petId uint32) fu
 				if err != nil {
 					return err
 				}
-				newCloseness := pe.Closeness() + amount
-				level := pe.Level()
+				if amount == 0 {
+					return nil
+				}
 
-				awardLevel := false
-				if newCloseness >= petExpTable[pe.Level()] {
+				newCloseness := pe.Closeness() + amount
+				levels := byte(0)
+
+				for {
 					if pe.Level() >= 30 {
-						newCloseness = petExpTable[len(petExpTable)-1]
+						if newCloseness > 30000 {
+							newCloseness = 30000
+						}
+						break
+					}
+
+					levelExp := petExpTable[pe.Level()+levels]
+					if newCloseness >= levelExp {
+						if pe.Level()+levels >= 30 {
+							newCloseness = petExpTable[len(petExpTable)]
+						} else {
+							levels += 1
+						}
 					} else {
-						awardLevel = true
+						break
 					}
 				}
+
 				err = updateCloseness(tx)(p.t, petId, newCloseness)
 				if err != nil {
 					return err
 				}
-				if awardLevel {
-					err = p.With(WithTransaction(tx)).AwardLevel(mb)(pe.Id())(1)
+				if levels > 0 {
+					err = p.With(WithTransaction(tx)).AwardLevel(mb)(pe.Id())(levels)
 					if err != nil {
 						return err
 					}
-					level += 1
 				}
-				pe = Clone(pe).SetCloseness(newCloseness).SetLevel(level).Build()
+				pe = Clone(pe).SetCloseness(newCloseness).SetLevel(pe.Level() + levels).Build()
 				err = mb.Put(pet.EnvStatusEventTopic, closenessChangedEventProvider(pe, int16(amount)))
 				if err != nil {
 					return err

@@ -624,7 +624,7 @@ func TestProcessor_AttemptCommand(t *testing.T) {
 	if se, ok = ke[pet2.EnvStatusEventTopic]; !ok {
 		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
 	}
-	if len(se) != 2 {
+	if len(se) != 1 {
 		t.Fatalf("Failed to expected events from topic: %s", pet2.EnvStatusEventTopic)
 	}
 }
@@ -829,5 +829,146 @@ func TestProcessor_EvaluateHungerDespawn(t *testing.T) {
 	}
 	if !despawned {
 		t.Fatalf("Should have despawned")
+	}
+}
+
+func TestProcessor_AwardClosenessNonLevel(t *testing.T) {
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+
+	// test setup
+	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(10).SetSlot(0).SetFullness(100).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	err = p.AwardCloseness(mb)(p1.Id())(1)
+	if err != nil {
+		t.Fatalf("Failed to award closeness: %v", err)
+	}
+	ke := mb.GetAll()
+	var se []kafka.Message
+	var ok bool
+	if se, ok = ke[pet2.EnvStatusEventTopic]; !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	if len(se) != 1 {
+		t.Fatalf("Failed to expected events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+
+	o1, err := p.GetById(p1.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o1.Closeness() != 1 {
+		t.Fatalf("Failed to process closeness. Closeness mismatch")
+	}
+}
+
+func TestProcessor_AwardClosenessLevelSingle(t *testing.T) {
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+
+	// test setup
+	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(1).SetSlot(0).SetFullness(100).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	err = p.AwardCloseness(mb)(p1.Id())(1)
+	if err != nil {
+		t.Fatalf("Failed to award closeness: %v", err)
+	}
+	ke := mb.GetAll()
+	var se []kafka.Message
+	var ok bool
+	if se, ok = ke[pet2.EnvStatusEventTopic]; !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	if len(se) != 2 {
+		t.Fatalf("Failed to expected events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+
+	o1, err := p.GetById(p1.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o1.Closeness() != 1 {
+		t.Fatalf("Failed to process closeness. Closeness mismatch")
+	}
+	if o1.Level() != 2 {
+		t.Fatalf("Failed to process closeness. Closeness mismatch")
+	}
+}
+
+func TestProcessor_AwardClosenessLevelMultiple(t *testing.T) {
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+
+	// test setup
+	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(1).SetSlot(0).SetFullness(100).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	err = p.AwardCloseness(mb)(p1.Id())(6)
+	if err != nil {
+		t.Fatalf("Failed to award closeness: %v", err)
+	}
+	ke := mb.GetAll()
+	var se []kafka.Message
+	var ok bool
+	if se, ok = ke[pet2.EnvStatusEventTopic]; !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	if len(se) != 2 {
+		t.Fatalf("Failed to expected events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+
+	o1, err := p.GetById(p1.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o1.Closeness() != 6 {
+		t.Fatalf("Failed to process closeness. Closeness mismatch")
+	}
+	if o1.Level() != 4 {
+		t.Fatalf("Failed to process closeness. Closeness mismatch")
+	}
+}
+
+func TestProcessor_AwardClosenessCapacity(t *testing.T) {
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+
+	// test setup
+	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetLevel(30).SetCloseness(30000).SetSlot(0).SetFullness(100).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	err = p.AwardCloseness(mb)(p1.Id())(6)
+	if err != nil {
+		t.Fatalf("Failed to award closeness: %v", err)
+	}
+	ke := mb.GetAll()
+	var se []kafka.Message
+	var ok bool
+	if se, ok = ke[pet2.EnvStatusEventTopic]; !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	if len(se) != 1 {
+		t.Fatalf("Failed to expected events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+
+	o1, err := p.GetById(p1.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o1.Closeness() != 30000 {
+		t.Fatalf("Failed to process closeness. Closeness mismatch")
+	}
+	if o1.Level() != 30 {
+		t.Fatalf("Failed to process closeness. Closeness mismatch")
 	}
 }

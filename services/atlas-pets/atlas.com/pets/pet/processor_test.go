@@ -14,11 +14,14 @@ import (
 	pet2 "atlas-pets/kafka/message/pet"
 	"atlas-pets/pet"
 	"atlas-pets/pet/exclude"
+	sm "atlas-pets/skill/mock"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/Chronicle20/atlas-constants/channel"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -380,7 +383,10 @@ func TestProcessor_SpawnMigrateLead(t *testing.T) {
 	cp := &cm.Processor{}
 	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
 		return func(uint32) (character.Model, error) {
-			return character.NewModelBuilder().SetX(50).SetY(95).Build(), nil
+			return character.NewModelBuilder().
+				SetX(50).
+				SetY(95).
+				Build(), nil
 		}
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)
@@ -388,7 +394,12 @@ func TestProcessor_SpawnMigrateLead(t *testing.T) {
 	pp.GetBelowFn = func(mapId uint32, x int16, y int16) model.Provider[position.Model] {
 		return model.FixedProvider(mfh)
 	}
-	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp))
+
+	sp := &sm.Processor{}
+	sp.HasSkillFn = func(characterId uint32, ids ...skill.Id) bool {
+		return true
+	}
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp), pet.WithSkillProcessor(sp))
 
 	// test setup
 	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).Build())
@@ -424,6 +435,44 @@ func TestProcessor_SpawnMigrateLead(t *testing.T) {
 	}
 	if o.Slot() != 0 {
 		t.Fatalf("Failed to spawn pet. Slot mismatch")
+	}
+}
+
+func TestProcessor_SpawnMissingMulti(t *testing.T) {
+	cp := &cm.Processor{}
+	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
+		return func(uint32) (character.Model, error) {
+			return character.NewModelBuilder().SetX(50).SetY(95).Build(), nil
+		}
+	}
+	mfh := position.NewModel(99, 0, 95, 100, 95)
+	pp := &pm.Processor{}
+	pp.GetBelowFn = func(mapId uint32, x int16, y int16) model.Provider[position.Model] {
+		return model.FixedProvider(mfh)
+	}
+	sp := &sm.Processor{}
+	sp.HasSkillFn = func(characterId uint32, ids ...skill.Id) bool {
+		return false
+	}
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp), pet.WithPositionProcessor(pp), pet.WithSkillProcessor(sp))
+
+	// test setup
+	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+	if p1.Slot() != 0 {
+		t.Fatalf("Failed to spawn pet. Slot mismatch")
+	}
+	i, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(-1).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	err = p.Spawn(mb)(i.Id())(i.OwnerId())(true)
+	if !errors.Is(err, pet.ErrNeedMultiPetSkill) {
+		t.Fatalf("Expected ErrNeedMultiPetSkill")
 	}
 }
 

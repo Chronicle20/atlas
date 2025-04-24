@@ -43,7 +43,11 @@ func handleCharacterDeleted(db *gorm.DB) message.Handler[character2.StatusEvent[
 			return
 		}
 
-		_ = pet.NewProcessor(l, ctx, db).DeleteForCharacter(e.CharacterId)
+		l.Debugf("Character [%d] was deleted. Delete all pets.", e.CharacterId)
+		err := pet.NewProcessor(l, ctx, db).DeleteForCharacterAndEmit(e.CharacterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to delete pets for character [%d]. This will lead to orphaned pets.", e.CharacterId)
+		}
 	}
 }
 

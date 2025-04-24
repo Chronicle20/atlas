@@ -2,15 +2,15 @@ package pet
 
 import "sync"
 
-type temporalData struct {
+type TemporalData struct {
 	x      int16
 	y      int16
 	stance byte
 	fh     int16
 }
 
-func (d *temporalData) UpdatePosition(x int16, y int16, fh int16) *temporalData {
-	return &temporalData{
+func (d *TemporalData) UpdatePosition(x int16, y int16, fh int16) *TemporalData {
+	return &TemporalData{
 		x:      x,
 		y:      y,
 		stance: d.stance,
@@ -18,8 +18,8 @@ func (d *temporalData) UpdatePosition(x int16, y int16, fh int16) *temporalData 
 	}
 }
 
-func (d *temporalData) Update(x int16, y int16, stance byte, fh int16) *temporalData {
-	return &temporalData{
+func (d *TemporalData) Update(x int16, y int16, stance byte, fh int16) *TemporalData {
+	return &TemporalData{
 		x:      x,
 		y:      y,
 		stance: stance,
@@ -27,8 +27,8 @@ func (d *temporalData) Update(x int16, y int16, stance byte, fh int16) *temporal
 	}
 }
 
-func (d *temporalData) UpdateStance(stance byte) *temporalData {
-	return &temporalData{
+func (d *TemporalData) UpdateStance(stance byte) *TemporalData {
+	return &TemporalData{
 		x:      d.x,
 		y:      d.y,
 		stance: stance,
@@ -36,33 +36,41 @@ func (d *temporalData) UpdateStance(stance byte) *temporalData {
 	}
 }
 
-func (d *temporalData) X() int16 {
+func (d *TemporalData) X() int16 {
 	return d.x
 }
 
-func (d *temporalData) Y() int16 {
+func (d *TemporalData) Y() int16 {
 	return d.y
 }
 
-func (d *temporalData) Stance() byte {
+func (d *TemporalData) Stance() byte {
 	return d.stance
 }
 
-func (d *temporalData) FH() int16 {
+func (d *TemporalData) FH() int16 {
 	return d.fh
 }
 
-func NewTemporalData() *temporalData {
-	return &temporalData{fh: 1}
+func NewTemporalData() *TemporalData {
+	return &TemporalData{fh: 1}
 }
 
-type temporalRegistry struct {
-	data     map[uint32]*temporalData
+type TemporalRegistry interface {
+	UpdatePosition(petId uint32, x int16, y int16, fh int16)
+	Update(petId uint32, x int16, y int16, stance byte, fh int16)
+	UpdateStance(petId uint32, stance byte)
+	GetById(petId uint32) *TemporalData
+	Remove(petId uint32)
+}
+
+type temporalRegistryImpl struct {
+	data     map[uint32]*TemporalData
 	mutex    *sync.RWMutex
 	petLocks map[uint32]*sync.RWMutex
 }
 
-func (r *temporalRegistry) UpdatePosition(petId uint32, x int16, y int16, fh int16) {
+func (r *temporalRegistryImpl) UpdatePosition(petId uint32, x int16, y int16, fh int16) {
 	r.lockPet(petId)
 	if val, ok := r.data[petId]; ok {
 		r.data[petId] = val.UpdatePosition(x, y, fh)
@@ -72,7 +80,7 @@ func (r *temporalRegistry) UpdatePosition(petId uint32, x int16, y int16, fh int
 	r.unlockPet(petId)
 }
 
-func (r *temporalRegistry) lockPet(petId uint32) {
+func (r *temporalRegistryImpl) lockPet(petId uint32) {
 	r.mutex.Lock()
 	lock, exists := r.petLocks[petId]
 	if !exists {
@@ -83,7 +91,7 @@ func (r *temporalRegistry) lockPet(petId uint32) {
 	lock.Lock()
 }
 
-func (r *temporalRegistry) readLockPet(petId uint32) {
+func (r *temporalRegistryImpl) readLockPet(petId uint32) {
 	r.mutex.Lock()
 	lock, exists := r.petLocks[petId]
 	if !exists {
@@ -94,29 +102,28 @@ func (r *temporalRegistry) readLockPet(petId uint32) {
 	lock.RLock()
 }
 
-func (r *temporalRegistry) unlockPet(petId uint32) {
+func (r *temporalRegistryImpl) unlockPet(petId uint32) {
 	if val, ok := r.petLocks[petId]; ok {
 		val.Unlock()
 	}
 }
 
-func (r *temporalRegistry) readUnlockPet(petId uint32) {
+func (r *temporalRegistryImpl) readUnlockPet(petId uint32) {
 	if val, ok := r.petLocks[petId]; ok {
 		val.RUnlock()
 	}
 }
 
-func (r *temporalRegistry) Update(petId uint32, x int16, y int16, stance byte, fh int16) {
+func (r *temporalRegistryImpl) Update(petId uint32, x int16, y int16, stance byte, fh int16) {
 	r.lockPet(petId)
-	if val, ok := r.data[petId]; ok {
-		r.data[petId] = val.Update(x, y, stance, fh)
-	} else {
+	if _, ok := r.data[petId]; !ok {
 		r.data[petId] = NewTemporalData()
 	}
+	r.data[petId] = r.data[petId].Update(x, y, stance, fh)
 	r.unlockPet(petId)
 }
 
-func (r *temporalRegistry) UpdateStance(petId uint32, stance byte) {
+func (r *temporalRegistryImpl) UpdateStance(petId uint32, stance byte) {
 	r.lockPet(petId)
 	if val, ok := r.data[petId]; ok {
 		r.data[petId] = val.UpdateStance(stance)
@@ -126,7 +133,7 @@ func (r *temporalRegistry) UpdateStance(petId uint32, stance byte) {
 	r.unlockPet(petId)
 }
 
-func (r *temporalRegistry) GetById(petId uint32) *temporalData {
+func (r *temporalRegistryImpl) GetById(petId uint32) *TemporalData {
 	r.readLockPet(petId)
 	defer r.readUnlockPet(petId)
 
@@ -137,19 +144,19 @@ func (r *temporalRegistry) GetById(petId uint32) *temporalData {
 	return NewTemporalData()
 }
 
-func (r *temporalRegistry) Remove(petId uint32) {
+func (r *temporalRegistryImpl) Remove(petId uint32) {
 	r.lockPet(petId)
 	defer r.unlockPet(petId)
 	delete(r.data, petId)
 }
 
 var once sync.Once
-var instance *temporalRegistry
+var instance *temporalRegistryImpl
 
-func GetTemporalRegistry() *temporalRegistry {
+func GetTemporalRegistry() TemporalRegistry {
 	once.Do(func() {
-		instance = &temporalRegistry{
-			data:     make(map[uint32]*temporalData),
+		instance = &temporalRegistryImpl{
+			data:     make(map[uint32]*TemporalData),
 			mutex:    &sync.RWMutex{},
 			petLocks: make(map[uint32]*sync.RWMutex),
 		}

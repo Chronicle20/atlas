@@ -1,19 +1,41 @@
 package pet
 
 import (
-	pet2 "atlas-pets/kafka/message/pet"
+	"atlas-pets/kafka/message/pet"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func spawnEventProvider(m Model, tm *temporalData) model.Provider[[]kafka.Message] {
+func createdEventProvider(m Model) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &pet2.StatusEvent[pet2.SpawnedStatusEventBody]{
+	value := &pet.StatusEvent[pet.CreatedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    pet2.StatusEventTypeSpawned,
-		Body: pet2.SpawnedStatusEventBody{
+		Type:    pet.StatusEventTypeCreated,
+		Body:    pet.CreatedStatusEventBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func deletedEventProvider(petId uint32, ownerId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(ownerId))
+	value := &pet.StatusEvent[pet.DeletedStatusEventBody]{
+		PetId:   petId,
+		OwnerId: ownerId,
+		Type:    pet.StatusEventTypeDeleted,
+		Body:    pet.DeletedStatusEventBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func spawnEventProvider(m Model, tm *TemporalData) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.OwnerId()))
+	value := &pet.StatusEvent[pet.SpawnedStatusEventBody]{
+		PetId:   m.Id(),
+		OwnerId: m.OwnerId(),
+		Type:    pet.StatusEventTypeSpawned,
+		Body: pet.SpawnedStatusEventBody{
 			TemplateId: m.TemplateId(),
 			Name:       m.Name(),
 			Slot:       m.Slot(),
@@ -31,11 +53,11 @@ func spawnEventProvider(m Model, tm *temporalData) model.Provider[[]kafka.Messag
 
 func despawnEventProvider(m Model, oldSlot int8, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &pet2.StatusEvent[pet2.DespawnedStatusEventBody]{
+	value := &pet.StatusEvent[pet.DespawnedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    pet2.StatusEventTypeDespawned,
-		Body: pet2.DespawnedStatusEventBody{
+		Type:    pet.StatusEventTypeDespawned,
+		Body: pet.DespawnedStatusEventBody{
 			TemplateId: m.TemplateId(),
 			Name:       m.Name(),
 			Slot:       m.Slot(),
@@ -51,11 +73,11 @@ func despawnEventProvider(m Model, oldSlot int8, reason string) model.Provider[[
 
 func commandResponseEventProvider(m Model, commandId byte, success bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &pet2.StatusEvent[pet2.CommandResponseStatusEventBody]{
+	value := &pet.StatusEvent[pet.CommandResponseStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    pet2.StatusEventTypeCommandResponse,
-		Body: pet2.CommandResponseStatusEventBody{
+		Type:    pet.StatusEventTypeCommandResponse,
+		Body: pet.CommandResponseStatusEventBody{
 			Slot:      m.Slot(),
 			Closeness: m.Closeness(),
 			Fullness:  m.Fullness(),
@@ -68,11 +90,11 @@ func commandResponseEventProvider(m Model, commandId byte, success bool) model.P
 
 func closenessChangedEventProvider(m Model, amount int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &pet2.StatusEvent[pet2.ClosenessChangedStatusEventBody]{
+	value := &pet.StatusEvent[pet.ClosenessChangedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    pet2.StatusEventTypeClosenessChanged,
-		Body: pet2.ClosenessChangedStatusEventBody{
+		Type:    pet.StatusEventTypeClosenessChanged,
+		Body: pet.ClosenessChangedStatusEventBody{
 			Slot:      m.Slot(),
 			Closeness: m.Closeness(),
 			Amount:    amount,
@@ -83,11 +105,11 @@ func closenessChangedEventProvider(m Model, amount int16) model.Provider[[]kafka
 
 func fullnessChangedEventProvider(m Model, amount int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &pet2.StatusEvent[pet2.FullnessChangedStatusEventBody]{
+	value := &pet.StatusEvent[pet.FullnessChangedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    pet2.StatusEventTypeFullnessChanged,
-		Body: pet2.FullnessChangedStatusEventBody{
+		Type:    pet.StatusEventTypeFullnessChanged,
+		Body: pet.FullnessChangedStatusEventBody{
 			Slot:     m.Slot(),
 			Fullness: m.Fullness(),
 			Amount:   amount,
@@ -98,11 +120,11 @@ func fullnessChangedEventProvider(m Model, amount int8) model.Provider[[]kafka.M
 
 func levelChangedEventProvider(m Model, amount int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &pet2.StatusEvent[pet2.LevelChangedStatusEventBody]{
+	value := &pet.StatusEvent[pet.LevelChangedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    pet2.StatusEventTypeLevelChanged,
-		Body: pet2.LevelChangedStatusEventBody{
+		Type:    pet.StatusEventTypeLevelChanged,
+		Body: pet.LevelChangedStatusEventBody{
 			Slot:   m.Slot(),
 			Level:  m.Level(),
 			Amount: amount,
@@ -113,11 +135,11 @@ func levelChangedEventProvider(m Model, amount int8) model.Provider[[]kafka.Mess
 
 func slotChangedEventProvider(m Model, oldSlot int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &pet2.StatusEvent[pet2.SlotChangedStatusEventBody]{
+	value := &pet.StatusEvent[pet.SlotChangedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    pet2.StatusEventTypeSlotChanged,
-		Body: pet2.SlotChangedStatusEventBody{
+		Type:    pet.StatusEventTypeSlotChanged,
+		Body: pet.SlotChangedStatusEventBody{
 			OldSlot: oldSlot,
 			NewSlot: m.Slot(),
 		},
@@ -132,11 +154,11 @@ func excludeChangedEventProvider(m Model) model.Provider[[]kafka.Message] {
 	}
 
 	key := producer.CreateKey(int(m.OwnerId()))
-	value := &pet2.StatusEvent[pet2.ExcludeChangedStatusEventBody]{
+	value := &pet.StatusEvent[pet.ExcludeChangedStatusEventBody]{
 		PetId:   m.Id(),
 		OwnerId: m.OwnerId(),
-		Type:    pet2.StatusEventTypeExcludeChanged,
-		Body: pet2.ExcludeChangedStatusEventBody{
+		Type:    pet.StatusEventTypeExcludeChanged,
+		Body: pet.ExcludeChangedStatusEventBody{
 			Items: items,
 		},
 	}

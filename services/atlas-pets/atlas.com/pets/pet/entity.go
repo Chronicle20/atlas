@@ -24,7 +24,7 @@ type Entity struct {
 	Closeness  uint16           `gorm:"not null;default:0"`
 	Fullness   byte             `gorm:"not null;default:100"`
 	Expiration time.Time        `gorm:"not null;"`
-	Slot       int8             `gorm:"not null;default:-1"`
+	Slot       *int8            `gorm:"not null;default:-1"`
 	Excludes   []exclude.Entity `gorm:"foreignkey:PetId"`
 	Flag       uint16           `gorm:"not null;default:0"`
 }
@@ -43,7 +43,7 @@ func Make(e Entity) (Model, error) {
 		SetCloseness(e.Closeness).
 		SetFullness(e.Fullness).
 		SetExpiration(e.Expiration).
-		SetSlot(e.Slot).
+		SetSlot(*e.Slot).
 		SetExcludes(es).
 		SetFlag(e.Flag).
 		Build(), nil

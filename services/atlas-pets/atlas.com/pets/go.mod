@@ -18,6 +18,7 @@ require (
 	go.elastic.co/ecslogrus v1.0.0
 	go.opentelemetry.io/otel v1.35.0
 	gorm.io/driver/postgres v1.5.11
+	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.12
 )
 
@@ -34,6 +35,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/magefile/mage v1.9.0 // indirect
+	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect

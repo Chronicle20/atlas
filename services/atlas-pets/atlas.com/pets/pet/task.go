@@ -35,7 +35,7 @@ func (t *Timeout) Run() {
 	for cid, mk := range cids {
 		go func() {
 			p := NewProcessor(t.l, tenant.WithContext(sctx, mk.Tenant), t.db)
-			_ = p.EvaluateHunger(cid)
+			_ = p.EvaluateHungerAndEmit(cid)
 		}()
 	}
 }

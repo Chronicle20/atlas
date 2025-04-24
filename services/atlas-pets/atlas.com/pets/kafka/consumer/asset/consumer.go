@@ -53,6 +53,6 @@ func handleAssetDeleted(db *gorm.DB) message.Handler[asset.StatusEvent[asset.Cre
 			return
 		}
 
-		_ = pet.NewProcessor(l, ctx, db).DeleteOnRemove(e.CharacterId, e.TemplateId, e.Slot)
+		_ = pet.NewProcessor(l, ctx, db).DeleteOnRemoveAndEmit(e.CharacterId, e.TemplateId, e.Slot)
 	}
 }

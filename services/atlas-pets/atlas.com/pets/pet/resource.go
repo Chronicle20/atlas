@@ -72,7 +72,7 @@ func handleCreate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel
 			return
 		}
 
-		pm, err := p.Create(ip)
+		pm, err := p.CreateAndEmit(ip)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to create model.")
 			w.WriteHeader(http.StatusInternalServerError)

@@ -50,7 +50,7 @@ func handleSpawnCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.SpawnComm
 		if c.Type != pet2.CommandPetSpawn {
 			return
 		}
-		err := pet.NewProcessor(l, ctx, db).Spawn(c.PetId, c.ActorId, c.Body.Lead)
+		err := pet.NewProcessor(l, ctx, db).SpawnAndEmit(c.PetId, c.ActorId, c.Body.Lead)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn pet [%d] for character [%d].", c.PetId, c.ActorId)
 		}
@@ -62,7 +62,7 @@ func handleDespawnCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.Despawn
 		if c.Type != pet2.CommandPetDespawn {
 			return
 		}
-		err := pet.NewProcessor(l, ctx, db).Despawn(c.PetId, c.ActorId, "NORMAL")
+		err := pet.NewProcessor(l, ctx, db).DespawnAndEmit(c.PetId, c.ActorId, "NORMAL")
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn pet [%d] for character [%d].", c.PetId, c.ActorId)
 		}
@@ -74,7 +74,7 @@ func handleAttemptCommandCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.
 		if c.Type != pet2.CommandPetAttemptCommand {
 			return
 		}
-		err := pet.NewProcessor(l, ctx, db).AttemptCommand(c.PetId, c.ActorId, c.Body.CommandId, c.Body.ByName)
+		err := pet.NewProcessor(l, ctx, db).AttemptCommandAndEmit(c.PetId, c.ActorId, c.Body.CommandId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to attempt command for pet [%d] by character [%d].", c.PetId, c.ActorId)
 		}
@@ -86,7 +86,7 @@ func handleAwardClosenessCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.
 		if c.Type != pet2.CommandAwardCloseness {
 			return
 		}
-		_ = pet.NewProcessor(l, ctx, db).AwardCloseness(c.PetId, c.Body.Amount, c.ActorId)
+		_ = pet.NewProcessor(l, ctx, db).AwardClosenessAndEmit(c.PetId, c.Body.Amount)
 	}
 }
 
@@ -95,7 +95,7 @@ func handleAwardFullnessCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.A
 		if c.Type != pet2.CommandAwardFullness {
 			return
 		}
-		_ = pet.NewProcessor(l, ctx, db).AwardFullness(c.PetId, c.Body.Amount, c.ActorId)
+		_ = pet.NewProcessor(l, ctx, db).AwardFullnessAndEmit(c.PetId, c.Body.Amount)
 	}
 }
 
@@ -104,7 +104,7 @@ func handleAwardLevelCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.Awar
 		if c.Type != pet2.CommandAwardLevel {
 			return
 		}
-		_ = pet.NewProcessor(l, ctx, db).AwardLevel(c.PetId, c.Body.Amount, c.ActorId)
+		_ = pet.NewProcessor(l, ctx, db).AwardLevelAndEmit(c.PetId, c.Body.Amount)
 	}
 }
 
@@ -113,7 +113,7 @@ func handleSetExcludeCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.SetE
 		if c.Type != pet2.CommandSetExclude {
 			return
 		}
-		_ = pet.NewProcessor(l, ctx, db).SetExclude(c.PetId, c.Body.Items)
+		_ = pet.NewProcessor(l, ctx, db).SetExcludeAndEmit(c.PetId, c.Body.Items)
 	}
 }
 

@@ -1,4 +1,4 @@
-package tmock
+package mock
 
 import "atlas-pets/pet"
 

@@ -22,23 +22,57 @@ import (
 
 var petExpTable = []uint16{1, 1, 3, 6, 14, 31, 60, 108, 181, 287, 434, 632, 891, 1224, 1642, 2161, 2793, 3557, 4467, 5542, 6801, 8263, 9950, 11882, 14084, 16578, 19391, 22547, 26074, 30000}
 
-type Processor struct {
-	l             logrus.FieldLogger
-	ctx           context.Context
-	db            *gorm.DB
-	t             tenant.Model
-	tr            TemporalRegistry
-	cp            character.Processor
-	pp            position.Processor
-	dp            data2.Processor
-	KafkaProducer producer.Provider
-	GetById       func(petId uint32) (Model, error)
-	GetByOwner    func(ownerId uint32) ([]Model, error)
-	CreateAndEmit func(i Model) (Model, error)
+type Processor interface {
+	With(opts ...ProcessorOption) *ProcessorImpl
+	ByIdProvider(petId uint32) model.Provider[Model]
+	GetById(petId uint32) (Model, error)
+	ByOwnerProvider(ownerId uint32) model.Provider[[]Model]
+	GetByOwner(ownerId uint32) ([]Model, error)
+	SpawnedByOwnerProvider(ownerId uint32) model.Provider[[]Model]
+	HungryByOwnerProvider(ownerId uint32) model.Provider[[]Model]
+	HungriestByOwnerProvider(ownerId uint32) model.Provider[Model]
+	CreateAndEmit(i Model) (Model, error)
+	Create(mb *message.Buffer) func(i Model) (Model, error)
+	DeleteOnRemoveAndEmit(characterId uint32, itemId uint32, slot int16) error
+	DeleteOnRemove(mb *message.Buffer) func(characterId uint32) func(itemId uint32) func(slot int16) error
+	DeleteForCharacterAndEmit(characterId uint32) error
+	DeleteForCharacter(mb *message.Buffer) func(characterId uint32) error
+	Delete(mb *message.Buffer) func(petId uint32) func(ownerId uint32) error
+	Move(petId uint32, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error
+	SpawnAndEmit(petId uint32, actorId uint32, lead bool) error
+	Spawn(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(lead bool) error
+	DespawnAndEmit(petId uint32, actorId uint32, reason string) error
+	Despawn(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(reason string) error
+	AttemptCommandAndEmit(petId uint32, actorId uint32, commandId byte) error
+	AttemptCommand(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(commandId byte) error
+	EvaluateHungerAndEmit(ownerId uint32) error
+	EvaluateHunger(mb *message.Buffer) func(ownerId uint32) error
+	ClearPositions(ownerId uint32) error
+	AwardClosenessAndEmit(petId uint32, amount uint16) error
+	AwardCloseness(mb *message.Buffer) func(petId uint32) func(amount uint16) error
+	AwardFullnessAndEmit(petId uint32, amount byte) error
+	AwardFullness(mb *message.Buffer) func(petId uint32) func(amount byte) error
+	AwardLevelAndEmit(petId uint32, amount byte) error
+	AwardLevel(mb *message.Buffer) func(petId uint32) func(amount byte) error
+	SetExcludeAndEmit(petId uint32, items []uint32) error
+	SetExclude(mb *message.Buffer) func(petId uint32) func(items []uint32) error
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
-	p := &Processor{
+type ProcessorImpl struct {
+	l         logrus.FieldLogger
+	ctx       context.Context
+	db        *gorm.DB
+	t         tenant.Model
+	tr        TemporalRegistry
+	cp        character.Processor
+	pp        position.Processor
+	dp        data2.Processor
+	kp        producer.Provider
+	Despawner func(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(reason string) error
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		db:  db,
@@ -47,41 +81,39 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		cp:  character.NewProcessor(l, ctx),
 		pp:  position.NewProcessor(l, ctx),
 		dp:  data2.NewProcessor(l, ctx),
+		kp:  producer.ProviderImpl(l)(ctx),
 	}
-	p.KafkaProducer = producer.ProviderImpl(l)(ctx)
-	p.GetById = model.CollapseProvider(p.ByIdProvider)
-	p.GetByOwner = model.CollapseProvider(p.ByOwnerProvider)
-	p.CreateAndEmit = message.EmitWithResult[Model, Model](p.KafkaProducer)(p.Create)
+	p.Despawner = p.defaultDespawn
 	return p
 }
 
-type ProcessorOption func(*Processor)
+type ProcessorOption func(*ProcessorImpl)
 
 func WithTransaction(db *gorm.DB) ProcessorOption {
-	return func(p *Processor) {
+	return func(p *ProcessorImpl) {
 		p.db = db
 	}
 }
 
 func WithCharacterProcessor(cp character.Processor) ProcessorOption {
-	return func(p *Processor) {
+	return func(p *ProcessorImpl) {
 		p.cp = cp
 	}
 }
 
 func WithPositionProcessor(pp position.Processor) ProcessorOption {
-	return func(p *Processor) {
+	return func(p *ProcessorImpl) {
 		p.pp = pp
 	}
 }
 
 func WithDataProcessor(dp data2.Processor) ProcessorOption {
-	return func(p *Processor) {
+	return func(p *ProcessorImpl) {
 		p.dp = dp
 	}
 }
 
-func (p *Processor) With(opts ...ProcessorOption) *Processor {
+func (p *ProcessorImpl) With(opts ...ProcessorOption) *ProcessorImpl {
 	clone := *p
 	cp := &clone
 	for _, opt := range opts {
@@ -90,15 +122,23 @@ func (p *Processor) With(opts ...ProcessorOption) *Processor {
 	return cp
 }
 
-func (p *Processor) ByIdProvider(petId uint32) model.Provider[Model] {
+func (p *ProcessorImpl) ByIdProvider(petId uint32) model.Provider[Model] {
 	return model.Map(Make)(getById(p.t.Id(), petId)(p.db))
 }
 
-func (p *Processor) ByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
+func (p *ProcessorImpl) GetById(petId uint32) (Model, error) {
+	return model.CollapseProvider(p.ByIdProvider)(petId)
+}
+
+func (p *ProcessorImpl) ByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
 	return model.SliceMap(Make)(getByOwnerId(p.t.Id(), ownerId)(p.db))(model.ParallelMap())
 }
 
-func (p *Processor) SpawnedByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
+func (p *ProcessorImpl) GetByOwner(ownerId uint32) ([]Model, error) {
+	return model.CollapseProvider(p.ByOwnerProvider)(ownerId)
+}
+
+func (p *ProcessorImpl) SpawnedByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
 	return model.FilteredProvider(p.ByOwnerProvider(ownerId), model.Filters[Model](Spawned))
 }
 
@@ -106,7 +146,7 @@ func Spawned(m Model) bool {
 	return m.Slot() >= 0
 }
 
-func (p *Processor) HungryByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
+func (p *ProcessorImpl) HungryByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
 	return model.FilteredProvider(p.SpawnedByOwnerProvider(ownerId), model.Filters[Model](Hungry))
 }
 
@@ -114,7 +154,7 @@ func Hungry(m Model) bool {
 	return m.Fullness() < 100
 }
 
-func (p *Processor) HungriestByOwnerProvider(ownerId uint32) model.Provider[Model] {
+func (p *ProcessorImpl) HungriestByOwnerProvider(ownerId uint32) model.Provider[Model] {
 	ps, err := p.HungryByOwnerProvider(ownerId)()
 	if err != nil {
 		return model.ErrorProvider[Model](err)
@@ -129,7 +169,11 @@ func (p *Processor) HungriestByOwnerProvider(ownerId uint32) model.Provider[Mode
 	return model.FixedProvider(ps[0])
 }
 
-func (p *Processor) Create(mb *message.Buffer) func(i Model) (Model, error) {
+func (p *ProcessorImpl) CreateAndEmit(i Model) (Model, error) {
+	return message.EmitWithResult[Model, Model](p.kp)(p.Create)(i)
+}
+
+func (p *ProcessorImpl) Create(mb *message.Buffer) func(i Model) (Model, error) {
 	return func(i Model) (Model, error) {
 		p.l.Debugf("Attempting to create pet from template [%d] for character [%d].", i.TemplateId(), i.OwnerId())
 		// TODO this needs to generate a cashId if cashId == 0
@@ -165,11 +209,11 @@ func (p *Processor) Create(mb *message.Buffer) func(i Model) (Model, error) {
 	}
 }
 
-func (p *Processor) DeleteOnRemoveAndEmit(characterId uint32, itemId uint32, slot int16) error {
-	return message.Emit(p.KafkaProducer)(model.Flip(model.Flip(model.Flip(p.DeleteOnRemove)(characterId))(itemId))(slot))
+func (p *ProcessorImpl) DeleteOnRemoveAndEmit(characterId uint32, itemId uint32, slot int16) error {
+	return message.Emit(p.kp)(model.Flip(model.Flip(model.Flip(p.DeleteOnRemove)(characterId))(itemId))(slot))
 }
 
-func (p *Processor) DeleteOnRemove(mb *message.Buffer) func(characterId uint32) func(itemId uint32) func(slot int16) error {
+func (p *ProcessorImpl) DeleteOnRemove(mb *message.Buffer) func(characterId uint32) func(itemId uint32) func(slot int16) error {
 	return func(characterId uint32) func(itemId uint32) func(slot int16) error {
 		return func(itemId uint32) func(slot int16) error {
 			return func(slot int16) error {
@@ -190,11 +234,11 @@ func (p *Processor) DeleteOnRemove(mb *message.Buffer) func(characterId uint32) 
 	}
 }
 
-func (p *Processor) DeleteForCharacterAndEmit(characterId uint32) error {
-	return message.Emit(p.KafkaProducer)(model.Flip(p.DeleteForCharacter)(characterId))
+func (p *ProcessorImpl) DeleteForCharacterAndEmit(characterId uint32) error {
+	return message.Emit(p.kp)(model.Flip(p.DeleteForCharacter)(characterId))
 }
 
-func (p *Processor) DeleteForCharacter(mb *message.Buffer) func(characterId uint32) error {
+func (p *ProcessorImpl) DeleteForCharacter(mb *message.Buffer) func(characterId uint32) error {
 	return func(characterId uint32) error {
 		p.l.Debugf("Attempting to delete all pets for character [%d].", characterId)
 		txErr := p.db.Transaction(func(tx *gorm.DB) error {
@@ -219,7 +263,7 @@ func (p *Processor) DeleteForCharacter(mb *message.Buffer) func(characterId uint
 	}
 }
 
-func (p *Processor) Delete(mb *message.Buffer) func(petId uint32) func(ownerId uint32) error {
+func (p *ProcessorImpl) Delete(mb *message.Buffer) func(petId uint32) func(ownerId uint32) error {
 	return func(petId uint32) func(ownerId uint32) error {
 		return func(ownerId uint32) error {
 			p.l.Debugf("Attempting to delete pet [%d].", petId)
@@ -240,7 +284,7 @@ func (p *Processor) Delete(mb *message.Buffer) func(petId uint32) func(ownerId u
 	}
 }
 
-func (p *Processor) Move(petId uint32, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
+func (p *ProcessorImpl) Move(petId uint32, m _map.Model, ownerId uint32, x int16, y int16, stance byte) error {
 	pe, err := p.GetById(petId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Movement issued for pet by character [%d], which pet [%d] does not exist.", ownerId, petId)
@@ -260,11 +304,11 @@ func (p *Processor) Move(petId uint32, m _map.Model, ownerId uint32, x int16, y 
 	return nil
 }
 
-func (p *Processor) SpawnAndEmit(petId uint32, actorId uint32, lead bool) error {
-	return message.Emit(p.KafkaProducer)(model.Flip(model.Flip(model.Flip(p.Spawn)(petId))(actorId))(lead))
+func (p *ProcessorImpl) SpawnAndEmit(petId uint32, actorId uint32, lead bool) error {
+	return message.Emit(p.kp)(model.Flip(model.Flip(model.Flip(p.Spawn)(petId))(actorId))(lead))
 }
 
-func (p *Processor) Spawn(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(lead bool) error {
+func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(lead bool) error {
 	return func(petId uint32) func(actorId uint32) func(lead bool) error {
 		return func(actorId uint32) func(lead bool) error {
 			return func(lead bool) error {
@@ -356,11 +400,18 @@ func (p *Processor) Spawn(mb *message.Buffer) func(petId uint32) func(actorId ui
 	}
 }
 
-func (p *Processor) DespawnAndEmit(petId uint32, actorId uint32, reason string) error {
-	return message.Emit(p.KafkaProducer)(model.Flip(model.Flip(model.Flip(p.Despawn)(petId))(actorId))(reason))
+func (p *ProcessorImpl) DespawnAndEmit(petId uint32, actorId uint32, reason string) error {
+	return message.Emit(p.kp)(model.Flip(model.Flip(model.Flip(p.Despawn)(petId))(actorId))(reason))
 }
 
-func (p *Processor) Despawn(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(reason string) error {
+func (p *ProcessorImpl) Despawn(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(reason string) error {
+	if p.Despawner != nil {
+		return p.Despawner(mb)
+	}
+	return p.defaultDespawn(mb)
+}
+
+func (p *ProcessorImpl) defaultDespawn(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(reason string) error {
 	return func(petId uint32) func(actorId uint32) func(reason string) error {
 		return func(actorId uint32) func(reason string) error {
 			return func(reason string) error {
@@ -426,11 +477,11 @@ func (p *Processor) Despawn(mb *message.Buffer) func(petId uint32) func(actorId 
 	}
 }
 
-func (p *Processor) AttemptCommandAndEmit(petId uint32, actorId uint32, commandId byte) error {
-	return message.Emit(p.KafkaProducer)(model.Flip(model.Flip(model.Flip(p.AttemptCommand)(petId))(actorId))(commandId))
+func (p *ProcessorImpl) AttemptCommandAndEmit(petId uint32, actorId uint32, commandId byte) error {
+	return message.Emit(p.kp)(model.Flip(model.Flip(model.Flip(p.AttemptCommand)(petId))(actorId))(commandId))
 }
 
-func (p *Processor) AttemptCommand(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(commandId byte) error {
+func (p *ProcessorImpl) AttemptCommand(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(commandId byte) error {
 	return func(petId uint32) func(actorId uint32) func(commandId byte) error {
 		return func(actorId uint32) func(commandId byte) error {
 			return func(commandId byte) error {
@@ -483,11 +534,11 @@ func (p *Processor) AttemptCommand(mb *message.Buffer) func(petId uint32) func(a
 	}
 }
 
-func (p *Processor) EvaluateHungerAndEmit(ownerId uint32) error {
-	return message.Emit(p.KafkaProducer)(model.Flip(p.EvaluateHunger)(ownerId))
+func (p *ProcessorImpl) EvaluateHungerAndEmit(ownerId uint32) error {
+	return message.Emit(p.kp)(model.Flip(p.EvaluateHunger)(ownerId))
 }
 
-func (p *Processor) EvaluateHunger(mb *message.Buffer) func(ownerId uint32) error {
+func (p *ProcessorImpl) EvaluateHunger(mb *message.Buffer) func(ownerId uint32) error {
 	return func(ownerId uint32) error {
 		p.l.Debugf("Evaluating hunger of pets for owner [%d].", ownerId)
 		txErr := p.db.Transaction(func(tx *gorm.DB) error {
@@ -533,7 +584,7 @@ func (p *Processor) EvaluateHunger(mb *message.Buffer) func(ownerId uint32) erro
 	}
 }
 
-func (p *Processor) ClearPositions(ownerId uint32) error {
+func (p *ProcessorImpl) ClearPositions(ownerId uint32) error {
 	p.l.Debugf("Clearing positions of pets for owner [%d].", ownerId)
 	txErr := p.db.Transaction(func(tx *gorm.DB) error {
 		ps, err := p.With(WithTransaction(tx)).GetByOwner(ownerId)
@@ -553,11 +604,11 @@ func (p *Processor) ClearPositions(ownerId uint32) error {
 	return nil
 }
 
-func (p *Processor) AwardClosenessAndEmit(petId uint32, amount uint16) error {
-	return message.Emit(p.KafkaProducer)(model.Flip(model.Flip(p.AwardCloseness)(petId))(amount))
+func (p *ProcessorImpl) AwardClosenessAndEmit(petId uint32, amount uint16) error {
+	return message.Emit(p.kp)(model.Flip(model.Flip(p.AwardCloseness)(petId))(amount))
 }
 
-func (p *Processor) AwardCloseness(mb *message.Buffer) func(petId uint32) func(amount uint16) error {
+func (p *ProcessorImpl) AwardCloseness(mb *message.Buffer) func(petId uint32) func(amount uint16) error {
 	return func(petId uint32) func(amount uint16) error {
 		return func(amount uint16) error {
 			p.l.Debugf("Awarding [%d] closeness for pet [%d].", amount, petId)
@@ -605,11 +656,11 @@ func (p *Processor) AwardCloseness(mb *message.Buffer) func(petId uint32) func(a
 	}
 }
 
-func (p *Processor) AwardFullnessAndEmit(petId uint32, amount byte) error {
-	return message.Emit(p.KafkaProducer)(model.Flip(model.Flip(p.AwardFullness)(petId))(amount))
+func (p *ProcessorImpl) AwardFullnessAndEmit(petId uint32, amount byte) error {
+	return message.Emit(p.kp)(model.Flip(model.Flip(p.AwardFullness)(petId))(amount))
 }
 
-func (p *Processor) AwardFullness(mb *message.Buffer) func(petId uint32) func(amount byte) error {
+func (p *ProcessorImpl) AwardFullness(mb *message.Buffer) func(petId uint32) func(amount byte) error {
 	return func(petId uint32) func(amount byte) error {
 		return func(amount byte) error {
 			p.l.Debugf("Awarding [%d] fullness for pet [%d].", amount, petId)
@@ -639,11 +690,11 @@ func (p *Processor) AwardFullness(mb *message.Buffer) func(petId uint32) func(am
 	}
 }
 
-func (p *Processor) AwardLevelAndEmit(petId uint32, amount byte) error {
-	return message.Emit(p.KafkaProducer)(model.Flip(model.Flip(p.AwardLevel)(petId))(amount))
+func (p *ProcessorImpl) AwardLevelAndEmit(petId uint32, amount byte) error {
+	return message.Emit(p.kp)(model.Flip(model.Flip(p.AwardLevel)(petId))(amount))
 }
 
-func (p *Processor) AwardLevel(mb *message.Buffer) func(petId uint32) func(amount byte) error {
+func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(petId uint32) func(amount byte) error {
 	return func(petId uint32) func(amount byte) error {
 		return func(amount byte) error {
 			p.l.Debugf("Awarding [%d] level for pet [%d].", amount, petId)
@@ -673,11 +724,11 @@ func (p *Processor) AwardLevel(mb *message.Buffer) func(petId uint32) func(amoun
 	}
 }
 
-func (p *Processor) SetExcludeAndEmit(petId uint32, items []uint32) error {
-	return message.Emit(p.KafkaProducer)(model.Flip(model.Flip(p.SetExclude)(petId))(items))
+func (p *ProcessorImpl) SetExcludeAndEmit(petId uint32, items []uint32) error {
+	return message.Emit(p.kp)(model.Flip(model.Flip(p.SetExclude)(petId))(items))
 }
 
-func (p *Processor) SetExclude(mb *message.Buffer) func(petId uint32) func(items []uint32) error {
+func (p *ProcessorImpl) SetExclude(mb *message.Buffer) func(petId uint32) func(items []uint32) error {
 	return func(petId uint32) func(items []uint32) error {
 		return func(items []uint32) error {
 			p.l.Debugf("Attempting to set [%d] exclude items for pet [%d].", len(items), petId)

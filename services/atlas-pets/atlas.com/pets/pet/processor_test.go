@@ -628,3 +628,206 @@ func TestProcessor_AttemptCommand(t *testing.T) {
 		t.Fatalf("Failed to expected events from topic: %s", pet2.EnvStatusEventTopic)
 	}
 }
+
+func TestProcessor_EvaluateHungerSpawned(t *testing.T) {
+	dp := &pdm.Processor{}
+	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {
+		return data2.NewModelBuilder().SetHunger(5).Build(), nil
+	}
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithDataProcessor(dp))
+
+	// test setup
+	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).SetFullness(100).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+	p2, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(1).SetFullness(50).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+	p3, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 1).SetSlot(-1).SetFullness(32).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	// test execution
+	mb := message.NewBuffer()
+	err = p.EvaluateHunger(mb)(p1.OwnerId())
+	if err != nil {
+		t.Fatalf("Failed to process hunger: %v", err)
+	}
+	ke := mb.GetAll()
+	var se []kafka.Message
+	var ok bool
+	if se, ok = ke[pet2.EnvStatusEventTopic]; !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	if len(se) != 2 {
+		t.Fatalf("Failed to expected events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+
+	o1, err := p.GetById(p1.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o1.Fullness() != 95 {
+		t.Fatalf("Failed to process hunger. Fullness mismatch")
+	}
+
+	o2, err := p.GetById(p2.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o2.Fullness() != 45 {
+		t.Fatalf("Failed to process hunger. Fullness mismatch")
+	}
+
+	o3, err := p.GetById(p3.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o3.Fullness() != 32 {
+		t.Fatalf("Failed to process hunger. Fullness mismatch")
+	}
+}
+
+func TestProcessor_EvaluateHungerSunny(t *testing.T) {
+	dp := &pdm.Processor{}
+	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {
+		return data2.NewModelBuilder().SetHunger(5).Build(), nil
+	}
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithDataProcessor(dp))
+
+	// test setup
+	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).SetFullness(100).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+	p2, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(1).SetFullness(50).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+	p3, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 1).SetSlot(2).SetFullness(32).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	// test execution
+	mb := message.NewBuffer()
+	err = p.EvaluateHunger(mb)(p1.OwnerId())
+	if err != nil {
+		t.Fatalf("Failed to process hunger: %v", err)
+	}
+	ke := mb.GetAll()
+	var se []kafka.Message
+	var ok bool
+	if se, ok = ke[pet2.EnvStatusEventTopic]; !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	if len(se) != 3 {
+		t.Fatalf("Failed to expected events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+
+	o1, err := p.GetById(p1.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o1.Fullness() != 95 {
+		t.Fatalf("Failed to process hunger. Fullness mismatch")
+	}
+
+	o2, err := p.GetById(p2.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o2.Fullness() != 45 {
+		t.Fatalf("Failed to process hunger. Fullness mismatch")
+	}
+
+	o3, err := p.GetById(p3.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o3.Fullness() != 27 {
+		t.Fatalf("Failed to process hunger. Fullness mismatch")
+	}
+}
+
+func TestProcessor_EvaluateHungerDespawn(t *testing.T) {
+	dp := &pdm.Processor{}
+	dp.GetByIdFn = func(petId uint32) (data2.Model, error) {
+		return data2.NewModelBuilder().SetHunger(5).Build(), nil
+	}
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithDataProcessor(dp))
+
+	// test setup
+	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetSlot(0).SetFullness(100).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+	p2, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000001, 5000017, "Mr. Roboto 2", 1).SetSlot(1).SetFullness(50).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+	p3, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000002, 5000017, "Mr. Roboto 3", 1).SetSlot(2).SetFullness(7).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	despawned := false
+	p.Despawner = func(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(reason string) error {
+		return func(petId uint32) func(actorId uint32) func(reason string) error {
+			return func(actorId uint32) func(reason string) error {
+				return func(reason string) error {
+					if petId == p3.Id() {
+						despawned = true
+					}
+					return nil
+				}
+			}
+		}
+	}
+
+	// test execution
+	mb := message.NewBuffer()
+	err = p.EvaluateHunger(mb)(p1.OwnerId())
+	if err != nil {
+		t.Fatalf("Failed to process hunger: %v", err)
+	}
+	ke := mb.GetAll()
+	var se []kafka.Message
+	var ok bool
+	if se, ok = ke[pet2.EnvStatusEventTopic]; !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	if len(se) != 3 {
+		t.Fatalf("Failed to expected events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+
+	o1, err := p.GetById(p1.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o1.Fullness() != 95 {
+		t.Fatalf("Failed to process hunger. Fullness mismatch")
+	}
+
+	o2, err := p.GetById(p2.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o2.Fullness() != 45 {
+		t.Fatalf("Failed to process hunger. Fullness mismatch")
+	}
+
+	o3, err := p.GetById(p3.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o3.Fullness() != 2 {
+		t.Fatalf("Failed to process hunger. Fullness mismatch")
+	}
+	if !despawned {
+		t.Fatalf("Should have despawned")
+	}
+}

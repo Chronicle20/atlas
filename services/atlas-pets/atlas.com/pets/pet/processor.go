@@ -7,9 +7,11 @@ import (
 	"atlas-pets/kafka/message"
 	"atlas-pets/kafka/message/pet"
 	"atlas-pets/kafka/producer"
+	"atlas-pets/skill"
 	"context"
 	"errors"
 	"fmt"
+	skill2 "github.com/Chronicle20/atlas-constants/skill"
 	"math/rand"
 	"sort"
 
@@ -67,6 +69,7 @@ type ProcessorImpl struct {
 	cp        character.Processor
 	pp        position.Processor
 	dp        data2.Processor
+	sp        skill.Processor
 	kp        producer.Provider
 	Despawner func(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(reason string) error
 }
@@ -81,6 +84,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		cp:  character.NewProcessor(l, ctx),
 		pp:  position.NewProcessor(l, ctx),
 		dp:  data2.NewProcessor(l, ctx),
+		sp:  skill.NewProcessor(l, ctx),
 		kp:  producer.ProviderImpl(l)(ctx),
 	}
 	p.Despawner = p.defaultDespawn
@@ -110,6 +114,12 @@ func WithPositionProcessor(pp position.Processor) ProcessorOption {
 func WithDataProcessor(dp data2.Processor) ProcessorOption {
 	return func(p *ProcessorImpl) {
 		p.dp = dp
+	}
+}
+
+func WithSkillProcessor(sp skill.Processor) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.sp = sp
 	}
 }
 
@@ -308,6 +318,9 @@ func (p *ProcessorImpl) SpawnAndEmit(petId uint32, actorId uint32, lead bool) er
 	return message.Emit(p.kp)(model.Flip(model.Flip(model.Flip(p.Spawn)(petId))(actorId))(lead))
 }
 
+var ErrTooManySpawnedPets = errors.New("too many pets spawned")
+var ErrNeedMultiPetSkill = errors.New("need multi pet skill")
+
 func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(lead bool) error {
 	return func(petId uint32) func(actorId uint32) func(lead bool) error {
 		return func(actorId uint32) func(lead bool) error {
@@ -333,7 +346,12 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorI
 					if lead {
 						p.l.Debugf("Pet [%d] will be the new leader.", petId)
 						if len(sps) >= 3 {
-							return errors.New("too many spawned pets")
+							return ErrTooManySpawnedPets
+						}
+						if len(sps) >= 1 {
+							if !p.sp.HasSkill(actorId, skill2.BeginnerMultiPetId, skill2.NoblesseMultiPetId) {
+								return ErrNeedMultiPetSkill
+							}
 						}
 						for _, sp := range sps {
 							oldSlot := sp.Slot()

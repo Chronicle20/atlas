@@ -972,3 +972,69 @@ func TestProcessor_AwardClosenessCapacity(t *testing.T) {
 		t.Fatalf("Failed to process closeness. Closeness mismatch")
 	}
 }
+
+func TestProcessor_AwardFullness(t *testing.T) {
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+
+	// test setup
+	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetFullness(50).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	err = p.AwardFullness(mb)(p1.Id())(6)
+	if err != nil {
+		t.Fatalf("Failed to award fullness: %v", err)
+	}
+	ke := mb.GetAll()
+	var se []kafka.Message
+	var ok bool
+	if se, ok = ke[pet2.EnvStatusEventTopic]; !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	if len(se) != 1 {
+		t.Fatalf("Failed to expected events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+
+	o1, err := p.GetById(p1.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o1.Fullness() != 56 {
+		t.Fatalf("Failed to process fullness. Fullness mismatch")
+	}
+}
+
+func TestProcessor_AwardFullnessMax(t *testing.T) {
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+
+	// test setup
+	p1, err := p.Create(message.NewBuffer())(pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1).SetFullness(50).Build())
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	mb := message.NewBuffer()
+	err = p.AwardFullness(mb)(p1.Id())(100)
+	if err != nil {
+		t.Fatalf("Failed to award fullness: %v", err)
+	}
+	ke := mb.GetAll()
+	var se []kafka.Message
+	var ok bool
+	if se, ok = ke[pet2.EnvStatusEventTopic]; !ok {
+		t.Fatalf("Failed to get events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+	if len(se) != 1 {
+		t.Fatalf("Failed to expected events from topic: %s", pet2.EnvStatusEventTopic)
+	}
+
+	o1, err := p.GetById(p1.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve pet when it should exist")
+	}
+	if o1.Fullness() != 100 {
+		t.Fatalf("Failed to process fullness. Fullness mismatch")
+	}
+}

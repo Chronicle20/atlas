@@ -24,6 +24,12 @@ import (
 
 var petExpTable = []uint16{1, 1, 3, 6, 14, 31, 60, 108, 181, 287, 434, 632, 891, 1224, 1642, 2161, 2793, 3557, 4467, 5542, 6801, 8263, 9950, 11882, 14084, 16578, 19391, 22547, 26074, 30000}
 
+const (
+	MaxFullness  = 100
+	MaxLevel     = 30
+	MaxCloseness = 30000
+)
+
 type Processor interface {
 	With(opts ...ProcessorOption) *ProcessorImpl
 	ByIdProvider(petId uint32) model.Provider[Model]
@@ -161,7 +167,7 @@ func (p *ProcessorImpl) HungryByOwnerProvider(ownerId uint32) model.Provider[[]M
 }
 
 func Hungry(m Model) bool {
-	return m.Fullness() < 100
+	return m.Fullness() < MaxFullness
 }
 
 func (p *ProcessorImpl) HungriestByOwnerProvider(ownerId uint32) model.Provider[Model] {
@@ -190,14 +196,14 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(i Model) (Model, error) 
 		var om Model
 		txErr := p.db.Transaction(func(tx *gorm.DB) error {
 			b := Clone(i)
-			if i.Level() < 1 || i.Level() > 30 {
+			if i.Level() < 1 || i.Level() > MaxLevel {
 				b.SetLevel(1)
 			}
 			if i.Closeness() < 0 {
 				b.SetCloseness(0)
 			}
-			if i.Fullness() < 0 || i.Fullness() > 100 {
-				b.SetFullness(100)
+			if i.Fullness() < 0 || i.Fullness() > MaxFullness {
+				b.SetFullness(MaxFullness)
 			}
 			if i.Slot() < -1 || i.Slot() > 2 {
 				b.SetSlot(-1)
@@ -643,16 +649,16 @@ func (p *ProcessorImpl) AwardCloseness(mb *message.Buffer) func(petId uint32) fu
 				levels := byte(0)
 
 				for {
-					if pe.Level() >= 30 {
-						if newCloseness > 30000 {
-							newCloseness = 30000
+					if pe.Level() >= MaxLevel {
+						if newCloseness > MaxCloseness {
+							newCloseness = MaxCloseness
 						}
 						break
 					}
 
 					levelExp := petExpTable[pe.Level()+levels]
 					if newCloseness >= levelExp {
-						if pe.Level()+levels >= 30 {
+						if pe.Level()+levels >= MaxLevel {
 							newCloseness = petExpTable[len(petExpTable)]
 						} else {
 							levels += 1
@@ -703,8 +709,8 @@ func (p *ProcessorImpl) AwardFullness(mb *message.Buffer) func(petId uint32) fun
 					return err
 				}
 				newFullness := pe.Fullness() + amount
-				if newFullness > 100 {
-					newFullness = 100
+				if newFullness > MaxFullness {
+					newFullness = MaxFullness
 				}
 				err = updateFullness(tx)(p.t, petId, newFullness)
 				if err != nil {
@@ -737,8 +743,8 @@ func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(petId uint32) func(a
 					return err
 				}
 				newLevel := pe.Level() + amount
-				if newLevel > 30 {
-					newLevel = 30
+				if newLevel > MaxLevel {
+					newLevel = MaxLevel
 				}
 				err = updateLevel(tx)(p.t, petId, newLevel)
 				if err != nil {

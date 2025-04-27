@@ -20,6 +20,8 @@ github.com/Chronicle20/atlas-socket v1.2.3 h1:Ov3fT1VKrtaWeX7MeUeX73Ddq/D0ZqT/VY
 github.com/Chronicle20/atlas-socket v1.2.3/go.mod h1:Qh1IJQKanFb0APNyRKxSgVWS06jAGPCQSj7n+mSYVJA=
 github.com/Chronicle20/atlas-socket v1.2.4 h1:82iMgASo1N7FNrZ10JEVBbi4fPSTIZU7Vk3lJNExWWs=
 github.com/Chronicle20/atlas-socket v1.2.4/go.mod h1:O0wHsS7xiyryT673zskPxk4eEPhcgG0tEaFtAza26BI=
+github.com/Chronicle20/atlas-socket v1.2.5 h1:SuKwLJQ4MJ/AgWWbfXeQRa0GxBTqBgTGIUZO3qIAnbs=
+github.com/Chronicle20/atlas-socket v1.2.5/go.mod h1:O0wHsS7xiyryT673zskPxk4eEPhcgG0tEaFtAza26BI=
 github.com/Chronicle20/atlas-tenant v1.0.5 h1:fBloCBSkHZHAR7Q7beeNMgPjdc8dDWJH+e9Upb86zfk=
 github.com/Chronicle20/atlas-tenant v1.0.5/go.mod h1:Wdxg0VW0n8r6PDUe4Ju78bZHB5JZ2ervyovOW+PS5Gc=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=

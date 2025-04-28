@@ -190,7 +190,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if hkm, ok := km[91]; ok {
 							haction = hkm.Action()
 						}
-						err = session.Announce(l)(ctx)(wp)(writer.CharacterKeyMap)(writer.CharacterKeyMapAutoHpBody(haction))(s)
+						err = session.Announce(l)(ctx)(wp)(writer.CharacterKeyMapAutoHp)(writer.CharacterKeyMapAutoHpBody(haction))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show auto hp key map for character [%d].", s.CharacterId())
 						}
@@ -199,7 +199,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if mkm, ok := km[92]; ok {
 							maction = mkm.Action()
 						}
-						err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(writer.CharacterKeyMapAutoMpBody(maction))(s)
+						err = session.Announce(l)(ctx)(wp)(writer.CharacterKeyMapAutoMp)(writer.CharacterKeyMapAutoMpBody(maction))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show auto mp key map for character [%d].", s.CharacterId())
 						}

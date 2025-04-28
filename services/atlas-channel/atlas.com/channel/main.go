@@ -275,6 +275,8 @@ func produceWriters() []string {
 		writer.CharacterSkillMacro,
 		writer.PetExcludeResponse,
 		writer.PetCashFoodResult,
+		writer.CharacterKeyMapAutoHp,
+		writer.CharacterKeyMapAutoMp,
 	}
 }
 

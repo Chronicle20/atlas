@@ -3,7 +3,7 @@ module atlas-expressions
 go 1.24.1
 
 require (
-	github.com/Chronicle20/atlas-kafka v1.1.9
+	github.com/Chronicle20/atlas-kafka v1.1.10
 	github.com/Chronicle20/atlas-model v1.2.4
 	github.com/Chronicle20/atlas-tenant v1.0.6
 	github.com/opentracing/opentracing-go v1.2.0

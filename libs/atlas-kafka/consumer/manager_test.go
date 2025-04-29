@@ -132,7 +132,7 @@ func TestSpanPropagation(t *testing.T) {
 
 	err = <-errChan
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 }
@@ -145,7 +145,7 @@ func TestTenantPropagation(t *testing.T) {
 
 	it, err := tenant.Create(uuid.New(), "GMS", 83, 1)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	ictx := tenant.WithContext(context.Background(), it)
 
@@ -179,6 +179,6 @@ func TestTenantPropagation(t *testing.T) {
 
 	err = <-errChan
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 }

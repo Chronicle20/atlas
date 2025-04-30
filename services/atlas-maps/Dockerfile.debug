@@ -13,9 +13,11 @@ RUN apk add --no-cache git
 
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
 
-ADD ./atlas.com/maps /atlas.com/maps
+ADD ./atlas.com/maps/go.mod ./atlas.com/maps/go.sum /atlas.com/maps/
 WORKDIR /atlas.com/maps
+RUN go mod download
 
+ADD ./atlas.com/maps /atlas.com/maps
 RUN go build -gcflags="all=-N -l" -o /server
 
 FROM alpine:3.21

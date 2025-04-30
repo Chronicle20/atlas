@@ -13,7 +13,7 @@ ADD ./atlas.com/chairs/go.mod ./atlas.com/chairs/go.sum /atlas.com/chairs/
 WORKDIR /atlas.com/chairs
 RUN go mod download
 
-ADD ./atlas.com/chairs/atlas.com/chairs
+ADD ./atlas.com/chairs /atlas.com/chairs
 RUN go build -o /server
 
 FROM alpine:3.21

@@ -17,7 +17,7 @@ ADD ./atlas.com/cashshop/go.mod ./atlas.com/cashshop/go.sum /atlas.com/cashshop/
 WORKDIR /atlas.com/cashshop
 RUN go mod download
 
-ADD ./atlas.com/cashshop/atlas.com/cashshop
+ADD ./atlas.com/cashshop /atlas.com/cashshop
 RUN go build -gcflags="all=-N -l" -o /server
 
 FROM alpine:3.21

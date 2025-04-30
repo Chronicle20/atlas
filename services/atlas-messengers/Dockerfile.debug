@@ -13,9 +13,11 @@ RUN apk add --no-cache git
 
 RUN go install github.com/go-delve/delve/cmd/dlv@latest
 
-ADD ./atlas.com/messengers /atlas.com/messengers
+ADD ./atlas.com/messengers/go.mod ./atlas.com/messengers/go.sum /atlas.com/messengers/
 WORKDIR /atlas.com/messengers
+RUN go mod download
 
+ADD ./atlas.com/messengers /atlas.com/messengers
 RUN go build -gcflags="all=-N -l" -o /server
 
 FROM alpine:3.21

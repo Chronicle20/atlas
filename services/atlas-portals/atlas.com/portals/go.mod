@@ -3,7 +3,7 @@ module atlas-portals
 go 1.24.2
 
 require (
-	github.com/Chronicle20/atlas-kafka v1.1.9
+	github.com/Chronicle20/atlas-kafka v1.1.10
 	github.com/Chronicle20/atlas-model v1.2.4
 	github.com/Chronicle20/atlas-rest v1.2.14
 	github.com/segmentio/kafka-go v0.4.47
@@ -16,7 +16,7 @@ require (
 )
 
 require (
-	github.com/Chronicle20/atlas-tenant v1.0.5 // indirect
+	github.com/Chronicle20/atlas-tenant v1.0.6 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect

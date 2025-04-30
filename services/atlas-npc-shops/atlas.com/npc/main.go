@@ -1,10 +1,14 @@
 package main
 
 import (
+	"atlas-npc/commodities"
+	"atlas-npc/database"
 	"atlas-npc/logger"
 	"atlas-npc/service"
+	"atlas-npc/shops"
 	"atlas-npc/tracing"
 	"github.com/Chronicle20/atlas-rest/server"
+	"os"
 )
 
 const serviceName = "atlas-npc-shops"
@@ -40,7 +44,15 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix())
+	db := database.Connect(l, database.SetMigrations(commodities.Migration))
+	
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(shops.InitResource(GetServer())(db)).
+		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

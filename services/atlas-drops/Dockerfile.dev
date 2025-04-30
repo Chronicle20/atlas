@@ -9,9 +9,11 @@ FROM golang:1.24.2-alpine3.21 AS build-env
 # either manually or with a tool like "godep".)
 RUN apk add --no-cache git
 
-ADD ./atlas.com/drops /atlas.com/drops
+ADD ./atlas.com/drops/go.mod ./atlas.com/drops/go.sum /atlas.com/drops/
 WORKDIR /atlas.com/drops
+RUN go mod download
 
+ADD ./atlas.com/drops /atlas.com/drops
 RUN go build -o /server
 
 FROM alpine:3.21

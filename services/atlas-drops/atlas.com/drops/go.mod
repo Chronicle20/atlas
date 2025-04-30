@@ -1,6 +1,6 @@
 module atlas-drops
 
-go 1.24.1
+go 1.24.2
 
 require (
 	github.com/Chronicle20/atlas-kafka v1.1.10

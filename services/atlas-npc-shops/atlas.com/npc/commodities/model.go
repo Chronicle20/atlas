@@ -11,24 +11,24 @@ type Model struct {
 	perfectPitchPrice uint32
 }
 
-// Id returns a pointer to the model's id
-func (m *Model) Id() *uuid.UUID {
-	return &m.id
+// Id returns the model's id
+func (m *Model) Id() uuid.UUID {
+	return m.id
 }
 
-// TemplateId returns a pointer to the model's templateId
-func (m *Model) TemplateId() *uint32 {
-	return &m.templateId
+// TemplateId returns the model's templateId
+func (m *Model) TemplateId() uint32 {
+	return m.templateId
 }
 
-// MesoPrice returns a pointer to the model's mesoPrice
-func (m *Model) MesoPrice() *uint32 {
-	return &m.mesoPrice
+// MesoPrice returns the model's mesoPrice
+func (m *Model) MesoPrice() uint32 {
+	return m.mesoPrice
 }
 
-// PerfectPitchPrice returns a pointer to the model's perfectPitchPrice
-func (m *Model) PerfectPitchPrice() *uint32 {
-	return &m.perfectPitchPrice
+// PerfectPitchPrice returns the model's perfectPitchPrice
+func (m *Model) PerfectPitchPrice() uint32 {
+	return m.perfectPitchPrice
 }
 
 // ModelBuilder is used to build Model instances

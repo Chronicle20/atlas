@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"strconv"
@@ -106,5 +107,20 @@ func ParseNpcId(l logrus.FieldLogger, next NpcIdHandler) http.HandlerFunc {
 			return
 		}
 		next(uint32(npcId))(w, r)
+	}
+}
+
+type CommodityIdHandler func(commodityId uuid.UUID) http.HandlerFunc
+
+func ParseCommodityId(l logrus.FieldLogger, next CommodityIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		commodityId, err := uuid.Parse(vars["commodityId"])
+		if err != nil {
+			l.WithError(err).Errorf("Error parsing commodityId as uuid")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(commodityId)(w, r)
 	}
 }

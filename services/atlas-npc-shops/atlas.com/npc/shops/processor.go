@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -12,6 +13,9 @@ import (
 type Processor interface {
 	GetByNpcId(npcId uint32) (Model, error)
 	ByNpcIdProvider(npcId uint32) model.Provider[Model]
+	AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, perfectPitchPrice uint32) (commodities.Model, error)
+	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, perfectPitchPrice uint32) (commodities.Model, error)
+	RemoveCommodity(id uuid.UUID) error
 }
 
 type ProcessorImpl struct {
@@ -45,4 +49,16 @@ func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32) model.Provider[Model] {
 		return model.ErrorProvider[Model](err)
 	}
 	return model.FixedProvider(NewBuilder(npcId).SetCommodities(cms).Build())
+}
+
+func (p *ProcessorImpl) AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, perfectPitchPrice uint32) (commodities.Model, error) {
+	return p.cp.CreateCommodity(npcId, templateId, mesoPrice, perfectPitchPrice)
+}
+
+func (p *ProcessorImpl) UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, perfectPitchPrice uint32) (commodities.Model, error) {
+	return p.cp.UpdateCommodity(id, templateId, mesoPrice, perfectPitchPrice)
+}
+
+func (p *ProcessorImpl) RemoveCommodity(id uuid.UUID) error {
+	return p.cp.DeleteCommodity(id)
 }

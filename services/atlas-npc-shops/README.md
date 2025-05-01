@@ -85,6 +85,92 @@ Example Response:
 }
 ```
 
+#### Add Commodity to Shop
+
+Adds a new commodity to an NPC's shop.
+
+- **URL**: `/api/npcs/{npcId}/shop/commodities`
+- **Method**: POST
+- **URL Parameters**: 
+  - `npcId` - The ID of the NPC
+- **Request Body**: JSON object containing commodity details
+  ```json
+  {
+    "data": {
+      "type": "commodities",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "attributes": {
+        "templateId": 2002,
+        "mesoPrice": 2000,
+        "perfectPitchPrice": 0
+      }
+    }
+  }
+  ```
+- **Response**: JSON object containing the created commodity
+  ```json
+  {
+    "data": {
+      "type": "commodities",
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "attributes": {
+        "templateId": 2002,
+        "mesoPrice": 2000,
+        "perfectPitchPrice": 0
+      }
+    }
+  }
+  ```
+
+#### Update Commodity
+
+Updates an existing commodity in a shop.
+
+- **URL**: `/api/npcs/{npcId}/shop/commodities/{commodityId}`
+- **Method**: PUT
+- **URL Parameters**: 
+  - `npcId` - The ID of the NPC
+  - `commodityId` - The UUID of the commodity
+- **Request Body**: JSON object containing updated commodity details
+  ```json
+  {
+    "data": {
+      "type": "commodities",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "attributes": {
+        "templateId": 2002,
+        "mesoPrice": 2500,
+        "perfectPitchPrice": 0
+      }
+    }
+  }
+  ```
+- **Response**: JSON object containing the updated commodity
+  ```json
+  {
+    "data": {
+      "type": "commodities",
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "attributes": {
+        "templateId": 2002,
+        "mesoPrice": 2500,
+        "perfectPitchPrice": 0
+      }
+    }
+  }
+  ```
+
+#### Remove Commodity
+
+Removes a commodity from a shop.
+
+- **URL**: `/api/npcs/{npcId}/shop/commodities/{commodityId}`
+- **Method**: DELETE
+- **URL Parameters**: 
+  - `npcId` - The ID of the NPC
+  - `commodityId` - The UUID of the commodity
+- **Response**: No content (204)
+
 ## Docker
 
 The service can be run using Docker with the provided Dockerfile:

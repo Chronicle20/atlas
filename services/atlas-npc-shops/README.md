@@ -171,6 +171,17 @@ Removes a commodity from a shop.
   - `commodityId` - The UUID of the commodity
 - **Response**: No content (204)
 
+## API Testing with Bruno
+
+This repository includes a [Bruno](https://www.usebruno.com/) collection for testing the API endpoints. Bruno is an open-source API client that makes it easy to test and debug API requests.
+
+To use the Bruno collection:
+
+1. Install Bruno from https://www.usebruno.com/
+2. Open Bruno and click "Open Collection"
+3. Navigate to the `.bruno` directory in this repository
+4. The collection will be loaded with all the requests
+
 ## Docker
 
 The service can be run using Docker with the provided Dockerfile:

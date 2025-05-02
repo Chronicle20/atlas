@@ -12,7 +12,6 @@ type RestModel struct {
 	PerfectPitchPrice uint32 `json:"perfectPitchPrice"`
 }
 
-
 // GetID to satisfy jsonapi.MarshalIdentifier interface
 func (r RestModel) GetID() string {
 	return r.Id

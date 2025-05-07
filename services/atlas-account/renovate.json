@@ -5,6 +5,7 @@
   "automergeType": "pr",
   "platformAutomerge": true,
   "requiredStatusChecks": null,
+  "allowedPostUpgradeCommands": ["go mod tidy"],
   "packageRules": [
     {
       "managers": ["gomod"],

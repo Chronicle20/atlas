@@ -18,7 +18,7 @@ require (
 	go.elastic.co/ecslogrus v1.0.0
 	golang.org/x/net v0.40.0
 	gorm.io/driver/postgres v1.5.11
-	gorm.io/gorm v1.26.0
+	gorm.io/gorm v1.26.1
 )
 
 require (

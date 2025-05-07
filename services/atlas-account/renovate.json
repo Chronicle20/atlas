@@ -7,12 +7,18 @@
   "requiredStatusChecks": null,
   "packageRules": [
     {
+      "managers": ["gomod"],
       "matchUpdateTypes": ["patch", "minor"],
       "automerge": true
     },
     {
+      "managers": ["gomod"],
       "matchUpdateTypes": ["major"],
       "automerge": false
     }
-  ]
+  ],
+  "postUpgradeTasks": {
+    "commands": ["go mod tidy"],
+    "fileFilters": ["go.mod", "go.sum"]
+  }
 }

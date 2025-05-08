@@ -16,6 +16,13 @@
       "managers": ["gomod"],
       "matchUpdateTypes": ["major"],
       "automerge": false
+    },
+    {
+      "managers": ["gomod"],
+      "matchPackageNames": ["go"],
+      "groupName": "Go version updates",
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
     }
   ],
   "postUpgradeTasks": {

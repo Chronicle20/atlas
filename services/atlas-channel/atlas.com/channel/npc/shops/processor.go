@@ -1,6 +1,8 @@
 package shops
 
 import (
+	shops2 "atlas-channel/kafka/message/npc/shop"
+	"atlas-channel/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -10,6 +12,7 @@ import (
 type Processor interface {
 	ByTemplateIdProvider(templateId uint32) model.Provider[Model]
 	GetShop(template uint32) (Model, error)
+	EnterShop(characterId uint32, npcTemplateId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -31,4 +34,9 @@ func (p *ProcessorImpl) ByTemplateIdProvider(templateId uint32) model.Provider[M
 
 func (p *ProcessorImpl) GetShop(template uint32) (Model, error) {
 	return p.ByTemplateIdProvider(template)()
+}
+
+func (p *ProcessorImpl) EnterShop(characterId uint32, npcTemplateId uint32) error {
+	p.l.Debugf("Character [%d] is entering NPC shop [%d].", characterId, npcTemplateId)
+	return producer.ProviderImpl(p.l)(p.ctx)(shops2.EnvCommandTopic)(ShopEnterCommandProvider(characterId, npcTemplateId))
 }

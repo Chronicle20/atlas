@@ -3,7 +3,6 @@ package npc
 import (
 	"atlas-channel/kafka/message/npc"
 	"atlas-channel/kafka/producer"
-	"atlas-channel/npc/shops"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
@@ -14,14 +13,12 @@ import (
 type Processor struct {
 	l   logrus.FieldLogger
 	ctx context.Context
-	sp  shops.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	p := &Processor{
 		l:   l,
 		ctx: ctx,
-		sp:  shops.NewProcessor(l, ctx),
 	}
 	return p
 }
@@ -56,8 +53,4 @@ func (p *Processor) ContinueConversation(characterId uint32, action byte, lastMe
 func (p *Processor) DisposeConversation(characterId uint32) error {
 	p.l.Debugf("Ending NPC conversation for character [%d].", characterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(npc.EnvCommandTopic)(DisposeConversationCommandProvider(characterId))
-}
-
-func (p *Processor) GetShop(template uint32) (shops.Model, error) {
-	return p.sp.GetShop(template)
 }

@@ -6,12 +6,14 @@ import (
 	"atlas-data/commodity"
 	"atlas-data/consumable"
 	"atlas-data/equipment"
+	"atlas-data/etc"
 	"atlas-data/kafka/producer"
 	_map "atlas-data/map"
 	"atlas-data/monster"
 	"atlas-data/npc"
 	"atlas-data/pet"
 	"atlas-data/reactor"
+	"atlas-data/setup"
 	"atlas-data/skill"
 	"context"
 	"fmt"
@@ -36,9 +38,11 @@ const (
 	WorkerConsume   = "CONSUME"
 	WorkerCash      = "CASH"
 	WorkerCommodity = "COMMODITY"
+	WorkerEtc       = "ETC"
+	WorkerSetup     = "SETUP"
 )
 
-var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity}
+var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity, WorkerEtc, WorkerSetup}
 
 func ProcessZip(l logrus.FieldLogger) func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
 	return func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
@@ -172,6 +176,10 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Cash"), cash.RegisterCash(db))()
 				} else if name == WorkerCommodity {
 					_ = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "Commodity.img.xml"), commodity.RegisterCommodity(db))()
+				} else if name == WorkerEtc {
+					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Etc"), etc.RegisterEtc(db))()
+				} else if name == WorkerSetup {
+					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Install"), setup.RegisterSetup(db))()
 				}
 
 				return nil

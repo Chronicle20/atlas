@@ -23,6 +23,7 @@ type Processor interface {
 	Enter(mb *message.Buffer) func(characterId uint32) func(npcId uint32) error
 	ExitAndEmit(characterId uint32) error
 	Exit(mb *message.Buffer) func(characterId uint32) error
+	GetCharactersInShop(shopId uint32) []uint32
 }
 
 type ProcessorImpl struct {
@@ -85,7 +86,7 @@ func (p *ProcessorImpl) Enter(mb *message.Buffer) func(characterId uint32) func(
 				p.l.WithError(err).Errorf("Cannot locate shop [%d] character [%d] is attempting to enter.", npcId, characterId)
 				return err
 			}
-			getRegistry().AddCharacter(characterId, npcId)
+			getRegistry().AddCharacter(p.t.Id(), characterId, npcId)
 			return mb.Put(shops.EnvStatusEventTopic, enteredEventProvider(characterId, npcId))
 		}
 	}
@@ -98,7 +99,11 @@ func (p *ProcessorImpl) ExitAndEmit(characterId uint32) error {
 func (p *ProcessorImpl) Exit(mb *message.Buffer) func(characterId uint32) error {
 	return func(characterId uint32) error {
 		p.l.Debugf("Character [%d] attempting to exit shop.", characterId)
-		getRegistry().RemoveCharacter(characterId)
+		getRegistry().RemoveCharacter(p.t.Id(), characterId)
 		return mb.Put(shops.EnvStatusEventTopic, exitedEventProvider(characterId))
 	}
+}
+
+func (p *ProcessorImpl) GetCharactersInShop(shopId uint32) []uint32 {
+	return getRegistry().GetCharactersInShop(p.t.Id(), shopId)
 }

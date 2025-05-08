@@ -38,7 +38,7 @@ func handleStatusEventLogout(db *gorm.DB) func(l logrus.FieldLogger, ctx context
 	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventLogoutBody]) {
 		if e.Type == character2.StatusEventTypeLogout {
 			l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
-			_ = shops.NewProcessor(l, ctx, db).Exit(e.CharacterId)
+			_ = shops.NewProcessor(l, ctx, db).ExitAndEmit(e.CharacterId)
 		}
 	}
 }
@@ -47,7 +47,7 @@ func handleStatusEventMapChanged(db *gorm.DB) func(l logrus.FieldLogger, ctx con
 	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventMapChangedBody]) {
 		if e.Type == character2.StatusEventTypeMapChanged {
 			l.Debugf("Character [%d] has changed maps. worldId [%d] channelId [%d] oldMapId [%d] newMapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldMapId, e.Body.TargetMapId)
-			_ = shops.NewProcessor(l, ctx, db).Exit(e.CharacterId)
+			_ = shops.NewProcessor(l, ctx, db).ExitAndEmit(e.CharacterId)
 		}
 	}
 }
@@ -56,7 +56,7 @@ func handleStatusEventChannelChanged(db *gorm.DB) func(l logrus.FieldLogger, ctx
 	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.ChangeChannelEventLoginBody]) {
 		if e.Type == character2.StatusEventTypeChannelChanged {
 			l.Debugf("Character [%d] has changed channels. worldId [%d] channelId [%d] oldChannelId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldChannelId)
-			_ = shops.NewProcessor(l, ctx, db).Exit(e.CharacterId)
+			_ = shops.NewProcessor(l, ctx, db).ExitAndEmit(e.CharacterId)
 		}
 	}
 }

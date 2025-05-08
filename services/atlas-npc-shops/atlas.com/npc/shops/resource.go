@@ -18,6 +18,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			r := router.PathPrefix("/npcs/{npcId}/shop").Subrouter()
 			r.HandleFunc("", rest.RegisterHandler(l)(db)(si)("get_shop", handleGetShop)).Methods(http.MethodGet)
+			r.HandleFunc("/characters", rest.RegisterHandler(l)(db)(si)("get_shop_characters", handleGetShopCharacters)).Methods(http.MethodGet)
 			r.HandleFunc("/commodities", rest.RegisterInputHandler[commodities.RestModel](l)(db)(si)("add_commodity", handleAddCommodity)).Methods(http.MethodPost)
 			r.HandleFunc("/commodities/{commodityId}", rest.RegisterInputHandler[commodities.RestModel](l)(db)(si)("update_commodity", handleUpdateCommodity)).Methods(http.MethodPut)
 			r.HandleFunc("/commodities/{commodityId}", rest.RegisterHandler(l)(db)(si)("remove_commodity", handleRemoveCommodity)).Methods(http.MethodDelete)
@@ -124,5 +125,25 @@ func handleRemoveCommodity(d *rest.HandlerDependency, c *rest.HandlerContext) ht
 				w.WriteHeader(http.StatusNoContent)
 			}
 		})
+	})
+}
+
+func handleGetShopCharacters(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			p := NewProcessor(d.Logger(), d.Context(), d.DB())
+			characterIds := p.GetCharactersInShop(npcId)
+
+			res, err := model.SliceMap(TransformCharacterList)(model.FixedProvider(characterIds))(model.ParallelMap())()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]CharacterListRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
 	})
 }

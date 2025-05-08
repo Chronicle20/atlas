@@ -41,7 +41,7 @@ func handleEnterCommand(db *gorm.DB) message.Handler[shop2.Command[shop2.Command
 		if e.Type != shop2.CommandShopEnter {
 			return
 		}
-		_ = shops.NewProcessor(l, ctx, db).Enter(e.CharacterId, e.Body.NpcTemplateId)
+		_ = shops.NewProcessor(l, ctx, db).EnterAndEmit(e.CharacterId, e.Body.NpcTemplateId)
 	}
 }
 
@@ -50,7 +50,7 @@ func handleExitCommand(db *gorm.DB) message.Handler[shop2.Command[shop2.CommandS
 		if e.Type != shop2.CommandShopExit {
 			return
 		}
-		_ = shops.NewProcessor(l, ctx, db).Exit(e.CharacterId)
+		_ = shops.NewProcessor(l, ctx, db).ExitAndEmit(e.CharacterId)
 	}
 }
 

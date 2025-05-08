@@ -28,3 +28,44 @@ func ShopExitCommandProvider(characterId uint32) model.Provider[[]kafka.Message]
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func ShopBuyCommandProvider(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &shops2.Command[shops2.CommandShopBuyBody]{
+		CharacterId: characterId,
+		Type:        shops2.CommandShopBuy,
+		Body: shops2.CommandShopBuyBody{
+			Slot:           slot,
+			ItemTemplateId: itemTemplateId,
+			Quantity:       quantity,
+			DiscountPrice:  discountPrice,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ShopSellCommandProvider(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &shops2.Command[shops2.CommandShopSellBody]{
+		CharacterId: characterId,
+		Type:        shops2.CommandShopSell,
+		Body: shops2.CommandShopSellBody{
+			Slot:           slot,
+			ItemTemplateId: itemTemplateId,
+			Quantity:       quantity,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ShopRechargeCommandProvider(characterId uint32, slot uint16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &shops2.Command[shops2.CommandShopRechargeBody]{
+		CharacterId: characterId,
+		Type:        shops2.CommandShopRecharge,
+		Body: shops2.CommandShopRechargeBody{
+			Slot: slot,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

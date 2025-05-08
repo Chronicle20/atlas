@@ -18,6 +18,7 @@ const (
 )
 
 func NPCShopHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	sp := shops.NewProcessor(l, ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		op := r.ReadByte()
 		if isNPCShopOperation(l)(readerOptions, op, NPCShopOperationBuy) {
@@ -25,23 +26,31 @@ func NPCShopHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Prod
 			itemId := r.ReadUint32()
 			quantity := r.ReadUint16()
 			discountPrice := r.ReadUint32()
-			l.Debugf("Character [%d] has requested to buy [%d] item [%d] from slot [%d] in NPC shop at price [%d].", s.CharacterId(), quantity, itemId, slot, discountPrice)
+			err := sp.BuyItem(s.CharacterId(), slot, itemId, uint32(quantity), discountPrice)
+			if err != nil {
+				l.WithError(err).Errorf("Failed to send shop buy command for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		if isNPCShopOperation(l)(readerOptions, op, NPCShopOperationSell) {
 			slot := r.ReadUint16()
 			itemId := r.ReadUint32()
 			quantity := r.ReadUint16()
-			l.Debugf("Character [%d] has requested to sell [%d] item [%d] from slot [%d] in NPC shop.", s.CharacterId(), quantity, itemId, slot)
+			err := sp.SellItem(s.CharacterId(), slot, itemId, uint32(quantity))
+			if err != nil {
+				l.WithError(err).Errorf("Failed to send shop sell command for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		if isNPCShopOperation(l)(readerOptions, op, NPCShopOperationRecharge) {
 			slot := r.ReadUint16()
-			l.Debugf("Character [%d] has requested to recharge slot [%d] in NPC shop.", s.CharacterId(), slot)
+			err := sp.RechargeItem(s.CharacterId(), slot)
+			if err != nil {
+				l.WithError(err).Errorf("Failed to send shop recharge command for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		if isNPCShopOperation(l)(readerOptions, op, NPCShopOperationLeave) {
-			sp := shops.NewProcessor(l, ctx)
 			err := sp.ExitShop(s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Failed to send shop exit command for character [%d].", s.CharacterId())

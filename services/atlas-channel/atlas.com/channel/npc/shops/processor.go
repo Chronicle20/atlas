@@ -15,7 +15,7 @@ type Processor interface {
 	EnterShop(characterId uint32, npcTemplateId uint32) error
 	ExitShop(characterId uint32) error
 	BuyItem(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error
-	SellItem(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32) error
+	SellItem(characterId uint32, slot int16, itemTemplateId uint32, quantity uint32) error
 	RechargeItem(characterId uint32, slot uint16) error
 }
 
@@ -55,7 +55,7 @@ func (p *ProcessorImpl) BuyItem(characterId uint32, slot uint16, itemTemplateId 
 	return producer.ProviderImpl(p.l)(p.ctx)(shops2.EnvCommandTopic)(ShopBuyCommandProvider(characterId, slot, itemTemplateId, quantity, discountPrice))
 }
 
-func (p *ProcessorImpl) SellItem(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32) error {
+func (p *ProcessorImpl) SellItem(characterId uint32, slot int16, itemTemplateId uint32, quantity uint32) error {
 	p.l.Debugf("Character [%d] is selling [%d] item [%d] from slot [%d] in NPC shop.", characterId, quantity, itemTemplateId, slot)
 	return producer.ProviderImpl(p.l)(p.ctx)(shops2.EnvCommandTopic)(ShopSellCommandProvider(characterId, slot, itemTemplateId, quantity))
 }

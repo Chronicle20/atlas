@@ -44,7 +44,7 @@ func ShopBuyCommandProvider(characterId uint32, slot uint16, itemTemplateId uint
 	return producer.SingleMessageProvider(key, value)
 }
 
-func ShopSellCommandProvider(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32) model.Provider[[]kafka.Message] {
+func ShopSellCommandProvider(characterId uint32, slot int16, itemTemplateId uint32, quantity uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &shops2.Command[shops2.CommandShopSellBody]{
 		CharacterId: characterId,

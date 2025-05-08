@@ -109,7 +109,8 @@ type ConsumeCommandBody struct {
 }
 
 type DestroyCommandBody struct {
-	Slot int16 `json:"slot"`
+	Slot     int16  `json:"slot"`
+	Quantity uint32 `json:"quantity"`
 }
 
 type CancelReservationCommandBody struct {

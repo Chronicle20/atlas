@@ -16,6 +16,7 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"math"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -133,7 +134,11 @@ func handleDestroyItemCommand(db *gorm.DB) message.Handler[compartment2.Command[
 		if c.Type != compartment2.CommandDestroy {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).DestroyAssetAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot)
+		quantity := c.Body.Quantity
+		if quantity == 0 {
+			quantity = math.MaxInt32
+		}
+		_ = compartment.NewProcessor(l, ctx, db).DestroyAssetAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot, quantity)
 	}
 }
 

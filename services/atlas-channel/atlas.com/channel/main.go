@@ -277,6 +277,7 @@ func produceWriters() []string {
 		writer.PetCashFoodResult,
 		writer.CharacterKeyMapAutoHp,
 		writer.CharacterKeyMapAutoMp,
+		writer.NPCShop,
 	}
 }
 

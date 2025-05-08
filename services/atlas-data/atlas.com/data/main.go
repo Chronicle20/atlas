@@ -16,6 +16,7 @@ import (
 	"atlas-data/pet"
 	"atlas-data/reactor"
 	"atlas-data/service"
+	"atlas-data/setup"
 	"atlas-data/skill"
 	"atlas-data/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -79,6 +80,7 @@ func main() {
 		AddRouteInitializer(cash.InitResource(db)(GetServer())).
 		AddRouteInitializer(commodity.InitResource(db)(GetServer())).
 		AddRouteInitializer(etc.InitResource(db)(GetServer())).
+		AddRouteInitializer(setup.InitResource(db)(GetServer())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

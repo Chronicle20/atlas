@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"atlas-channel/npc/shops"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -40,7 +41,11 @@ func NPCShopHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Prod
 			return
 		}
 		if isNPCShopOperation(l)(readerOptions, op, NPCShopOperationLeave) {
-			l.Debugf("Character [%d] has left NPC shop.", s.CharacterId())
+			sp := shops.NewProcessor(l, ctx)
+			err := sp.ExitShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Failed to send shop exit command for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		l.Warnf("Character [%d] issued unhandled npc shop operation with operation [%d].", s.CharacterId(), op)

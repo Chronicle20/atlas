@@ -13,6 +13,7 @@ type Processor interface {
 	ByTemplateIdProvider(templateId uint32) model.Provider[Model]
 	GetShop(template uint32) (Model, error)
 	EnterShop(characterId uint32, npcTemplateId uint32) error
+	ExitShop(characterId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -39,4 +40,9 @@ func (p *ProcessorImpl) GetShop(template uint32) (Model, error) {
 func (p *ProcessorImpl) EnterShop(characterId uint32, npcTemplateId uint32) error {
 	p.l.Debugf("Character [%d] is entering NPC shop [%d].", characterId, npcTemplateId)
 	return producer.ProviderImpl(p.l)(p.ctx)(shops2.EnvCommandTopic)(ShopEnterCommandProvider(characterId, npcTemplateId))
+}
+
+func (p *ProcessorImpl) ExitShop(characterId uint32) error {
+	p.l.Debugf("Character [%d] is exiting NPC shop.", characterId)
+	return producer.ProviderImpl(p.l)(p.ctx)(shops2.EnvCommandTopic)(ShopExitCommandProvider(characterId))
 }

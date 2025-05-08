@@ -13,8 +13,8 @@ import (
 type Processor interface {
 	GetByNpcId(npcId uint32) (Model, error)
 	ByNpcIdProvider(npcId uint32) model.Provider[Model]
-	AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, perfectPitchPrice uint32) (commodities.Model, error)
-	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, perfectPitchPrice uint32) (commodities.Model, error)
+	AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
+	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
 	RemoveCommodity(id uuid.UUID) error
 }
 
@@ -51,12 +51,12 @@ func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32) model.Provider[Model] {
 	return model.FixedProvider(NewBuilder(npcId).SetCommodities(cms).Build())
 }
 
-func (p *ProcessorImpl) AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, perfectPitchPrice uint32) (commodities.Model, error) {
-	return p.cp.CreateCommodity(npcId, templateId, mesoPrice, perfectPitchPrice)
+func (p *ProcessorImpl) AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error) {
+	return p.cp.CreateCommodity(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
 }
 
-func (p *ProcessorImpl) UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, perfectPitchPrice uint32) (commodities.Model, error) {
-	return p.cp.UpdateCommodity(id, templateId, mesoPrice, perfectPitchPrice)
+func (p *ProcessorImpl) UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error) {
+	return p.cp.UpdateCommodity(id, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
 }
 
 func (p *ProcessorImpl) RemoveCommodity(id uuid.UUID) error {

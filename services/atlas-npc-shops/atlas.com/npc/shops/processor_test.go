@@ -39,7 +39,13 @@ func testGetByNpcId(t *testing.T, processor shops.Processor, db *gorm.DB) {
 	perfectPitchPrice := uint32(2500)
 
 	// Create test commodity for the shop
-	_, err := processor.AddCommodity(npcId, templateId, mesoPrice, perfectPitchPrice)
+	// Default values for new fields
+	discountRate := byte(0)
+	tokenItemId := uint32(0)
+	tokenPrice := perfectPitchPrice
+	period := uint32(0)
+	levelLimited := uint32(0)
+	_, err := processor.AddCommodity(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
 	if err != nil {
 		t.Fatalf("Failed to create test commodity: %v", err)
 	}
@@ -87,7 +93,13 @@ func testAddCommodity(t *testing.T, processor shops.Processor, db *gorm.DB) {
 	perfectPitchPrice := uint32(3000)
 
 	// Add commodity to shop
-	commodity, err := processor.AddCommodity(npcId, templateId, mesoPrice, perfectPitchPrice)
+	// Default values for new fields
+	discountRate := byte(0)
+	tokenItemId := uint32(0)
+	tokenPrice := perfectPitchPrice
+	period := uint32(0)
+	levelLimited := uint32(0)
+	commodity, err := processor.AddCommodity(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
 	if err != nil {
 		t.Fatalf("Failed to add commodity to shop: %v", err)
 	}
@@ -127,13 +139,25 @@ func testUpdateCommodity(t *testing.T, processor shops.Processor, db *gorm.DB) {
 	updatedPerfectPitchPrice := uint32(3750)
 
 	// Add commodity to shop
-	commodity, err := processor.AddCommodity(npcId, templateId, mesoPrice, perfectPitchPrice)
+	// Default values for new fields
+	discountRate := byte(0)
+	tokenItemId := uint32(0)
+	tokenPrice := perfectPitchPrice
+	period := uint32(0)
+	levelLimited := uint32(0)
+	commodity, err := processor.AddCommodity(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
 	if err != nil {
 		t.Fatalf("Failed to add test commodity: %v", err)
 	}
 
 	// Update commodity
-	updatedCommodity, err := processor.UpdateCommodity(commodity.Id(), updatedTemplateId, updatedMesoPrice, updatedPerfectPitchPrice)
+	// Default values for new fields in update
+	updatedDiscountRate := byte(0)
+	updatedTokenItemId := uint32(0)
+	updatedTokenPrice := updatedPerfectPitchPrice
+	updatedPeriod := uint32(0)
+	updatedLevelLimited := uint32(0)
+	updatedCommodity, err := processor.UpdateCommodity(commodity.Id(), updatedTemplateId, updatedMesoPrice, updatedDiscountRate, updatedTokenItemId, updatedTokenPrice, updatedPeriod, updatedLevelLimited)
 	if err != nil {
 		t.Fatalf("Failed to update commodity: %v", err)
 	}
@@ -161,8 +185,8 @@ func testUpdateCommodity(t *testing.T, processor shops.Processor, db *gorm.DB) {
 	if entity.MesoPrice != updatedMesoPrice {
 		t.Errorf("Expected meso price %d, got %d", updatedMesoPrice, entity.MesoPrice)
 	}
-	if entity.PerfectPitchPrice != updatedPerfectPitchPrice {
-		t.Errorf("Expected perfect pitch price %d, got %d", updatedPerfectPitchPrice, entity.PerfectPitchPrice)
+	if entity.TokenPrice != updatedPerfectPitchPrice {
+		t.Errorf("Expected token price %d, got %d", updatedPerfectPitchPrice, entity.TokenPrice)
 	}
 }
 
@@ -174,7 +198,13 @@ func testRemoveCommodity(t *testing.T, processor shops.Processor, db *gorm.DB) {
 	perfectPitchPrice := uint32(4000)
 
 	// Add commodity to shop
-	commodity, err := processor.AddCommodity(npcId, templateId, mesoPrice, perfectPitchPrice)
+	// Default values for new fields
+	discountRate := byte(0)
+	tokenItemId := uint32(0)
+	tokenPrice := perfectPitchPrice
+	period := uint32(0)
+	levelLimited := uint32(0)
+	commodity, err := processor.AddCommodity(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
 	if err != nil {
 		t.Fatalf("Failed to add test commodity: %v", err)
 	}

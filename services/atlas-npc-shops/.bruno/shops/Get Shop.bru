@@ -10,15 +10,19 @@ get {
   auth: none
 }
 
+vars:pre-request {
+  npcId: 11000
+}
+
 docs {
   # Get Shop
-
+  
   This endpoint retrieves a shop by NPC ID.
-
+  
   ## Response
-
+  
   The response includes the shop details with its commodities.
-
+  
   ```json
   {
     "data": {

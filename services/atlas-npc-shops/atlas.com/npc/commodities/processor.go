@@ -12,8 +12,8 @@ import (
 type Processor interface {
 	GetByNpcId(npcId uint32) ([]Model, error)
 	ByNpcIdProvider(npcId uint32) model.Provider[[]Model]
-	CreateCommodity(npcId uint32, templateId uint32, mesoPrice uint32, perfectPitchPrice uint32) (Model, error)
-	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, perfectPitchPrice uint32) (Model, error)
+	CreateCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
+	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
 	DeleteCommodity(id uuid.UUID) error
 }
 
@@ -23,8 +23,8 @@ type ProcessorImpl struct {
 	db           *gorm.DB
 	t            tenant.Model
 	GetByNpcIdFn func(npcId uint32) ([]Model, error)
-	createFn     func(npcId uint32, templateId uint32, mesoPrice uint32, perfectPitchPrice uint32) (Model, error)
-	updateFn     func(id uuid.UUID, templateId uint32, mesoPrice uint32, perfectPitchPrice uint32) (Model, error)
+	createFn     func(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
+	updateFn     func(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
 	deleteFn     func(id uuid.UUID) error
 }
 
@@ -50,12 +50,12 @@ func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32) model.Provider[[]Model] {
 	return model.SliceMap(Make)(getByNpcId(p.t.Id(), npcId)(p.db))(model.ParallelMap())
 }
 
-func (p *ProcessorImpl) CreateCommodity(npcId uint32, templateId uint32, mesoPrice uint32, perfectPitchPrice uint32) (Model, error) {
-	return p.createFn(npcId, templateId, mesoPrice, perfectPitchPrice)
+func (p *ProcessorImpl) CreateCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
+	return p.createFn(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
 }
 
-func (p *ProcessorImpl) UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, perfectPitchPrice uint32) (Model, error) {
-	return p.updateFn(id, templateId, mesoPrice, perfectPitchPrice)
+func (p *ProcessorImpl) UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
+	return p.updateFn(id, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
 }
 
 func (p *ProcessorImpl) DeleteCommodity(id uuid.UUID) error {

@@ -181,3 +181,61 @@ func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 		}
 	}
 }
+
+func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+		cp := character.NewProcessor(l, ctx)
+		mp := _map.NewProcessor(l, ctx)
+		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
+			var cn string
+			var amountStr string
+
+			re := regexp.MustCompile(`@award\s+(\w+)\s+meso\s+(-?\d+)`)
+			match := re.FindStringSubmatch(m)
+			if len(match) == 3 {
+				cn = match[1]
+				amountStr = match[2]
+			}
+
+			if len(cn) == 0 {
+				return nil, false
+			}
+
+			if !c.Gm() {
+				l.Debugf("Ignoring character [%d] command [%s], because they are not a gm.", c.Id(), m)
+				return nil, false
+			}
+
+			var idProvider model.Provider[[]uint32]
+			if match[1] == "me" {
+				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
+			} else if match[1] == "map" {
+				idProvider = mp.CharacterIdsInMapProvider(worldId, channelId, c.MapId())
+			} else {
+				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
+			}
+
+			tAmount, err := strconv.ParseInt(amountStr, 10, 32)
+			if err != nil {
+				return nil, false
+			}
+			amount := int32(tAmount)
+
+			return func(l logrus.FieldLogger) func(ctx context.Context) error {
+				return func(ctx context.Context) error {
+					cids, err := idProvider()
+					if err != nil {
+						return err
+					}
+					for _, id := range cids {
+						err = cp.RequestChangeMeso(worldId, channelId, id, c.Id(), "CHARACTER", amount)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to award [%d] with [%d] meso.", id, amount)
+						}
+					}
+					return err
+				}
+			}, true
+		}
+	}
+}

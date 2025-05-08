@@ -66,3 +66,18 @@ func changeJobCommandProvider(characterId uint32, worldId byte, channelId byte, 
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func requestChangeMesoCommandProvider(characterId uint32, worldId byte, actorId uint32, actorType string, amount int32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.RequestChangeMesoBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        character2.CommandRequestChangeMeso,
+		Body: character2.RequestChangeMesoBody{
+			ActorId:   actorId,
+			ActorType: actorType,
+			Amount:    amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

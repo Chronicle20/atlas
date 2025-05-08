@@ -31,6 +31,7 @@ func main() {
 	command.Registry().Add(inventory.AwardItemCommandProducer)
 	command.Registry().Add(character.AwardExperienceCommandProducer)
 	command.Registry().Add(character.AwardLevelCommandProducer)
+	command.Registry().Add(character.AwardMesoCommandProducer)
 	command.Registry().Add(skill.MaxSkillCommandProducer)
 	command.Registry().Add(skill.ResetSkillCommandProducer)
 	command.Registry().Add(character.ChangeJobCommandProducer)

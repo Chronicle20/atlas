@@ -83,3 +83,7 @@ func (p *Processor) AwardLevel(worldId byte, channelId byte, characterId uint32,
 func (p *Processor) ChangeJob(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(changeJobCommandProvider(characterId, worldId, channelId, jobId))
 }
+
+func (p *Processor) RequestChangeMeso(worldId byte, channelId byte, characterId uint32, actorId uint32, actorType string, amount int32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(requestChangeMesoCommandProvider(characterId, worldId, actorId, actorType, amount))
+}

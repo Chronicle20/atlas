@@ -6,10 +6,14 @@ import (
 
 // RestModel is a JSON API representation of the Model
 type RestModel struct {
-	Id                string `json:"id"`
-	TemplateId        uint32 `json:"templateId"`
-	MesoPrice         uint32 `json:"mesoPrice"`
-	PerfectPitchPrice uint32 `json:"perfectPitchPrice"`
+	Id           string `json:"id"`
+	TemplateId   uint32 `json:"templateId"`
+	MesoPrice    uint32 `json:"mesoPrice"`
+	DiscountRate byte   `json:"discountRate"`
+	TokenItemId  uint32 `json:"tokenItemId"`
+	TokenPrice   uint32 `json:"tokenPrice"`
+	Period       uint32 `json:"period"`
+	LevelLimit   uint32 `json:"levelLimit"`
 }
 
 // GetID to satisfy jsonapi.MarshalIdentifier interface
@@ -23,13 +27,22 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
+// GetName to satisfy jsonapi.EntityNamer interface
+func (r RestModel) GetName() string {
+	return "commodities"
+}
+
 // Transform converts a Model to a RestModel
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:                m.id.String(),
-		TemplateId:        m.templateId,
-		MesoPrice:         m.mesoPrice,
-		PerfectPitchPrice: m.perfectPitchPrice,
+		Id:           m.id.String(),
+		TemplateId:   m.templateId,
+		MesoPrice:    m.mesoPrice,
+		DiscountRate: m.discountRate,
+		TokenItemId:  m.tokenItemId,
+		TokenPrice:   m.tokenPrice,
+		Period:       m.period,
+		LevelLimit:   m.levelLimit,
 	}, nil
 }
 
@@ -45,6 +58,10 @@ func Extract(rm RestModel) (Model, error) {
 		SetId(id).
 		SetTemplateId(rm.TemplateId).
 		SetMesoPrice(rm.MesoPrice).
-		SetPerfectPitchPrice(rm.PerfectPitchPrice).
+		SetDiscountRate(rm.DiscountRate).
+		SetTokenItemId(rm.TokenItemId).
+		SetTokenPrice(rm.TokenPrice).
+		SetPeriod(rm.Period).
+		SetLevelLimit(rm.LevelLimit).
 		Build(), nil
 }

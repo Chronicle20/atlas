@@ -8,12 +8,16 @@ import (
 // Entity is the GORM entity for the commodities Model
 type Entity struct {
 	gorm.Model
-	Id                uuid.UUID `gorm:"type:uuid;primaryKey"`
-	TenantId          uuid.UUID `gorm:"type:uuid;not null"`
-	NpcId             uint32    `gorm:"not null"`
-	TemplateId        uint32    `gorm:"not null"`
-	MesoPrice         uint32    `gorm:"not null"`
-	PerfectPitchPrice uint32    `gorm:"not null"`
+	Id           uuid.UUID `gorm:"type:uuid;primaryKey"`
+	TenantId     uuid.UUID `gorm:"type:uuid;not null"`
+	NpcId        uint32    `gorm:"not null"`
+	TemplateId   uint32    `gorm:"not null"`
+	MesoPrice    uint32    `gorm:"not null"`
+	DiscountRate byte      `gorm:"not null;default:0"`
+	TokenItemId  uint32    `gorm:"not null;default:0"`
+	TokenPrice   uint32    `gorm:"not null;default:0"`
+	Period       uint32    `gorm:"not null;default:0"`
+	LevelLimit   uint32    `gorm:"not null;default:0"`
 }
 
 func (e *Entity) TableName() string {
@@ -23,10 +27,14 @@ func (e *Entity) TableName() string {
 // Make converts an Entity to a Model
 func Make(entity Entity) (Model, error) {
 	return Model{
-		id:                entity.Id,
-		templateId:        entity.TemplateId,
-		mesoPrice:         entity.MesoPrice,
-		perfectPitchPrice: entity.PerfectPitchPrice,
+		id:           entity.Id,
+		templateId:   entity.TemplateId,
+		mesoPrice:    entity.MesoPrice,
+		discountRate: entity.DiscountRate,
+		tokenItemId:  entity.TokenItemId,
+		tokenPrice:   entity.TokenPrice,
+		period:       entity.Period,
+		levelLimit:   entity.LevelLimit,
 	}, nil
 }
 

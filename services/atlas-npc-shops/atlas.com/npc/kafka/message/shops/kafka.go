@@ -30,7 +30,7 @@ type CommandShopBuyBody struct {
 }
 
 type CommandShopSellBody struct {
-	Slot           uint16 `json:"slot"`
+	Slot           int16  `json:"slot"`
 	ItemTemplateId uint32 `json:"itemTemplateId"`
 	Quantity       uint32 `json:"quantity"`
 }

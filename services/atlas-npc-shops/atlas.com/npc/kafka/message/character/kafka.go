@@ -1,9 +1,25 @@
 package character
 
 const (
+	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER"
+	CommandRequestChangeMeso = "REQUEST_CHANGE_MESO"
+)
+
+type Command[E any] struct {
+	WorldId     byte   `json:"worldId"`
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
+}
+
+type RequestChangeMesoBody struct {
+	ActorId   uint32 `json:"actorId"`
+	ActorType string `json:"actorType"`
+	Amount    int32  `json:"amount"`
+}
+
+const (
 	EnvEventTopicCharacterStatus  = "EVENT_TOPIC_CHARACTER_STATUS"
-	StatusEventTypeDeleted        = "DELETED"
-	StatusEventTypeLogin          = "LOGIN"
 	StatusEventTypeLogout         = "LOGOUT"
 	StatusEventTypeChannelChanged = "CHANNEL_CHANGED"
 	StatusEventTypeMapChanged     = "MAP_CHANGED"
@@ -14,14 +30,6 @@ type StatusEvent[E any] struct {
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
-}
-
-type StatusEventDeletedBody struct {
-}
-
-type StatusEventLoginBody struct {
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
 }
 
 type StatusEventLogoutBody struct {

@@ -1,11 +1,14 @@
 package shops
 
 import (
+	"atlas-npc/character"
 	"atlas-npc/commodities"
+	"atlas-npc/compartment"
 	"atlas-npc/kafka/message"
 	"atlas-npc/kafka/message/shops"
 	"atlas-npc/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -25,8 +28,8 @@ type Processor interface {
 	Exit(mb *message.Buffer) func(characterId uint32) error
 	BuyAndEmit(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error
 	Buy(mb *message.Buffer) func(characterId uint32) func(slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error
-	SellAndEmit(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32) error
-	Sell(mb *message.Buffer) func(characterId uint32) func(slot uint16, itemTemplateId uint32, quantity uint32) error
+	SellAndEmit(characterId uint32, slot int16, itemTemplateId uint32, quantity uint32) error
+	Sell(mb *message.Buffer) func(characterId uint32) func(slot int16, itemTemplateId uint32, quantity uint32) error
 	RechargeAndEmit(characterId uint32, slot uint16) error
 	Recharge(mb *message.Buffer) func(characterId uint32) func(slot uint16) error
 	GetCharactersInShop(shopId uint32) []uint32
@@ -39,17 +42,21 @@ type ProcessorImpl struct {
 	t            tenant.Model
 	GetByNpcIdFn func(npcId uint32) (Model, error)
 	cp           commodities.Processor
+	charP        *character.Processor
+	compP        *compartment.Processor
 	kp           producer.Provider
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	p := &ProcessorImpl{
-		l:   l,
-		ctx: ctx,
-		db:  db,
-		t:   tenant.MustFromContext(ctx),
-		cp:  commodities.NewProcessor(l, ctx, db),
-		kp:  producer.ProviderImpl(l)(ctx),
+		l:     l,
+		ctx:   ctx,
+		db:    db,
+		t:     tenant.MustFromContext(ctx),
+		cp:    commodities.NewProcessor(l, ctx, db),
+		charP: character.NewProcessor(l, ctx),
+		compP: compartment.NewProcessor(l, ctx),
+		kp:    producer.ProviderImpl(l)(ctx),
 	}
 	p.GetByNpcIdFn = model.CollapseProvider(p.ByNpcIdProvider)
 	return p
@@ -138,7 +145,8 @@ func (p *ProcessorImpl) Buy(mb *message.Buffer) func(characterId uint32) func(sl
 			}
 
 			found := false
-			for _, cm := range cms {
+			var cm commodities.Model
+			for _, cm = range cms {
 				if cm.TemplateId() == itemTemplateId {
 					found = true
 					break
@@ -149,23 +157,52 @@ func (p *ProcessorImpl) Buy(mb *message.Buffer) func(characterId uint32) func(sl
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
 			}
 
-			// TODO: Implement buy logic
-			p.l.Debugf("Character [%d] is in shop [%d].", characterId, shopId)
+			// TODO: this needs better transaction handling.
 
-			return nil
+			c, err := p.charP.GetById(p.charP.InventoryDecorator)(characterId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Cannot locate character [%d].", characterId)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+
+			if cm.MesoPrice() > 0 {
+				totalCost := cm.MesoPrice() * quantity
+
+				if c.Meso() < totalCost {
+					p.l.Errorf("Character [%d] is attempting to buy item [%d] from slot [%d] but they do not have enough meso.", characterId, itemTemplateId, slot)
+					return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorNotEnoughMoney))
+				}
+				it, ok := inventory.TypeFromItemId(itemTemplateId)
+				if !ok {
+					p.l.Errorf("Character [%d] is attempting to buy item [%d] from slot [%d] but it is not a valid item.", characterId, itemTemplateId, slot)
+					return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+				}
+				_, err = c.Inventory().CompartmentByType(it).NextFreeSlot()
+				if err != nil {
+					p.l.WithError(err).Errorf("Cannot locate free slot for character [%d].", characterId)
+					return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorInventoryFull))
+				}
+				_ = p.charP.RequestChangeMeso(c.WorldId(), c.Id(), c.Id(), "SHOP", -int32(totalCost))
+				_ = p.compP.RequestCreateItem(c.Id(), itemTemplateId, quantity)
+				p.l.Debugf("Character [%d] bought item [%d].", characterId, itemTemplateId)
+				return nil
+			}
+
+			// TODO: implement TokenItem purchasing.
+			return mb.Put(shops.EnvStatusEventTopic, reasonErrorEventProvider(characterId, shops.ErrorGenericErrorWithReason, "not implemented"))
 		}
 	}
 }
 
-func (p *ProcessorImpl) SellAndEmit(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32) error {
+func (p *ProcessorImpl) SellAndEmit(characterId uint32, slot int16, itemTemplateId uint32, quantity uint32) error {
 	return message.Emit(p.kp)(func(mb *message.Buffer) error {
 		return p.Sell(mb)(characterId)(slot, itemTemplateId, quantity)
 	})
 }
 
-func (p *ProcessorImpl) Sell(mb *message.Buffer) func(characterId uint32) func(slot uint16, itemTemplateId uint32, quantity uint32) error {
-	return func(characterId uint32) func(slot uint16, itemTemplateId uint32, quantity uint32) error {
-		return func(slot uint16, itemTemplateId uint32, quantity uint32) error {
+func (p *ProcessorImpl) Sell(mb *message.Buffer) func(characterId uint32) func(slot int16, itemTemplateId uint32, quantity uint32) error {
+	return func(characterId uint32) func(slot int16, itemTemplateId uint32, quantity uint32) error {
+		return func(slot int16, itemTemplateId uint32, quantity uint32) error {
 			p.l.Debugf("Character [%d] attempting to sell item [%d] from slot [%d].", characterId, itemTemplateId, slot)
 
 			_, inShop := getRegistry().GetShop(p.t.Id(), characterId)
@@ -174,8 +211,32 @@ func (p *ProcessorImpl) Sell(mb *message.Buffer) func(characterId uint32) func(s
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
 			}
 
+			c, err := p.charP.GetById(p.charP.InventoryDecorator)(characterId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Cannot locate character [%d].", characterId)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+			it, ok := inventory.TypeFromItemId(itemTemplateId)
+			if !ok {
+				p.l.Errorf("Character [%d] is attempting to sell item [%d] from slot [%d] but it is not a valid item.", characterId, itemTemplateId, slot)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+			a, ok := c.Inventory().CompartmentByType(it).FindBySlot(slot)
+			if !ok {
+				p.l.Errorf("Character [%d] is attempting to sell item [%d] from slot [%d] but it is not in their inventory.", characterId, itemTemplateId, slot)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+			if a.TemplateId() != itemTemplateId {
+				p.l.Errorf("Character [%d] is attempting to sell item [%d] from slot [%d] but it is not in their inventory.", characterId, itemTemplateId, slot)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+			if a.Quantity() < quantity {
+				p.l.Errorf("Character [%d] is attempting to sell item [%d] from slot [%d] but it is not in their inventory.", characterId, itemTemplateId, slot)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorNeedMoreItems))
+			}
+
 			// TODO: Implement sell logic
-			return nil
+			return mb.Put(shops.EnvStatusEventTopic, reasonErrorEventProvider(characterId, shops.ErrorGenericErrorWithReason, "not implemented"))
 		}
 	}
 }
@@ -198,7 +259,7 @@ func (p *ProcessorImpl) Recharge(mb *message.Buffer) func(characterId uint32) fu
 			}
 
 			// TODO: Implement recharge logic
-			return nil
+			return mb.Put(shops.EnvStatusEventTopic, reasonErrorEventProvider(characterId, shops.ErrorGenericErrorWithReason, "not implemented"))
 		}
 	}
 }

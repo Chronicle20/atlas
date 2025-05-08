@@ -28,6 +28,7 @@ import (
 	"atlas-channel/kafka/consumer/messenger"
 	"atlas-channel/kafka/consumer/monster"
 	"atlas-channel/kafka/consumer/npc/conversation"
+	"atlas-channel/kafka/consumer/npc/shop"
 	"atlas-channel/kafka/consumer/party"
 	"atlas-channel/kafka/consumer/party/member"
 	"atlas-channel/kafka/consumer/pet"
@@ -90,6 +91,7 @@ func main() {
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	channel.InitConsumers(l)(cmf)(consumerGroupId)
 	conversation.InitConsumers(l)(cmf)(consumerGroupId)
+	shop.InitConsumers(l)(cmf)(consumerGroupId)
 	expression.InitConsumers(l)(cmf)(consumerGroupId)
 	guild.InitConsumers(l)(cmf)(consumerGroupId)
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
@@ -164,6 +166,7 @@ func main() {
 				message.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				monster.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				conversation.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				shop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				member.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				party.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				session2.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)

@@ -4,6 +4,7 @@ import "time"
 
 const (
 	EnvCommandTopic    = "COMMAND_TOPIC_COMPARTMENT"
+	CommandDestroy     = "DESTROY"
 	CommandCreateAsset = "CREATE_ASSET"
 )
 
@@ -12,6 +13,11 @@ type Command[E any] struct {
 	InventoryType byte   `json:"inventoryType"`
 	Type          string `json:"type"`
 	Body          E      `json:"body"`
+}
+
+type DestroyCommandBody struct {
+	Slot     int16  `json:"slot"`
+	Quantity uint32 `json:"quantity"`
 }
 
 type CreateAssetCommandBody struct {

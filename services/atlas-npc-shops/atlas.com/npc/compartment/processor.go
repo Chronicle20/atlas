@@ -29,3 +29,7 @@ func (p *Processor) RequestCreateItem(characterId uint32, templateId uint32, qua
 	}
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestCreateAssetCommandProvider(characterId, inventoryType, templateId, quantity))
 }
+
+func (p *Processor) RequestDestroyItem(characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestDestroyAssetCommandProvider(characterId, inventoryType, slot, quantity))
+}

@@ -203,13 +203,15 @@ func (p *ProcessorImpl) SellAndEmit(characterId uint32, slot int16, itemTemplate
 func (p *ProcessorImpl) Sell(mb *message.Buffer) func(characterId uint32) func(slot int16, itemTemplateId uint32, quantity uint32) error {
 	return func(characterId uint32) func(slot int16, itemTemplateId uint32, quantity uint32) error {
 		return func(slot int16, itemTemplateId uint32, quantity uint32) error {
-			p.l.Debugf("Character [%d] attempting to sell item [%d] from slot [%d].", characterId, itemTemplateId, slot)
+			p.l.Debugf("Character [%d] attempting to sell [%d] item [%d] from slot [%d].", characterId, quantity, itemTemplateId, slot)
 
 			_, inShop := getRegistry().GetShop(p.t.Id(), characterId)
 			if !inShop {
 				p.l.Errorf("Character [%d] is not in a shop.", characterId)
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
 			}
+
+			// TODO: this needs better transaction handling.
 
 			c, err := p.charP.GetById(p.charP.InventoryDecorator)(characterId)
 			if err != nil {
@@ -235,8 +237,12 @@ func (p *ProcessorImpl) Sell(mb *message.Buffer) func(characterId uint32) func(s
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorNeedMoreItems))
 			}
 
-			// TODO: Implement sell logic
-			return mb.Put(shops.EnvStatusEventTopic, reasonErrorEventProvider(characterId, shops.ErrorGenericErrorWithReason, "not implemented"))
+			// TODO give proper value for item being sold.
+			_ = p.charP.RequestChangeMeso(c.WorldId(), c.Id(), c.Id(), "SHOP", 1000)
+			_ = p.compP.RequestDestroyItem(characterId, it, slot, quantity)
+
+			p.l.Debugf("Character [%d] sold [%d] item [%d] from slot [%d].", characterId, quantity, itemTemplateId, slot)
+			return nil
 		}
 	}
 }

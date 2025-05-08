@@ -341,6 +341,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.PetItemUseHandle] = handler.PetItemUseHandleFunc
 	handlerMap[handler.CashShopOperationHandle] = handler.CashShopOperationHandleFunc
 	handlerMap[handler.CashShopCheckWalletHandle] = handler.CashShopCheckWalletHandleFunc
+	handlerMap[handler.NPCShopHandle] = handler.NPCShopHandleFunc
 	return handlerMap
 }
 

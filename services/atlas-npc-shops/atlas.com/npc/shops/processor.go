@@ -23,6 +23,12 @@ type Processor interface {
 	Enter(mb *message.Buffer) func(characterId uint32) func(npcId uint32) error
 	ExitAndEmit(characterId uint32) error
 	Exit(mb *message.Buffer) func(characterId uint32) error
+	BuyAndEmit(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error
+	Buy(mb *message.Buffer) func(characterId uint32) func(slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error
+	SellAndEmit(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32) error
+	Sell(mb *message.Buffer) func(characterId uint32) func(slot uint16, itemTemplateId uint32, quantity uint32) error
+	RechargeAndEmit(characterId uint32, slot uint16) error
+	Recharge(mb *message.Buffer) func(characterId uint32) func(slot uint16) error
 	GetCharactersInShop(shopId uint32) []uint32
 }
 
@@ -106,4 +112,93 @@ func (p *ProcessorImpl) Exit(mb *message.Buffer) func(characterId uint32) error 
 
 func (p *ProcessorImpl) GetCharactersInShop(shopId uint32) []uint32 {
 	return getRegistry().GetCharactersInShop(p.t.Id(), shopId)
+}
+
+func (p *ProcessorImpl) BuyAndEmit(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error {
+	return message.Emit(p.kp)(func(mb *message.Buffer) error {
+		return p.Buy(mb)(characterId)(slot, itemTemplateId, quantity, discountPrice)
+	})
+}
+
+func (p *ProcessorImpl) Buy(mb *message.Buffer) func(characterId uint32) func(slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error {
+	return func(characterId uint32) func(slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error {
+		return func(slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error {
+			p.l.Debugf("Character [%d] attempting to buy item [%d] from slot [%d].", characterId, itemTemplateId, slot)
+
+			shopId, inShop := getRegistry().GetShop(p.t.Id(), characterId)
+			if !inShop {
+				p.l.Errorf("Character [%d] is not in a shop.", characterId)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+
+			cms, err := p.cp.GetByNpcId(shopId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Cannot locate shop [%d] character [%d] is attempting to buy from.", shopId, characterId)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+
+			found := false
+			for _, cm := range cms {
+				if cm.TemplateId() == itemTemplateId {
+					found = true
+					break
+				}
+			}
+			if !found {
+				p.l.Errorf("Character [%d] is attempting to buy item [%d] from slot [%d] but it is not available.", characterId, itemTemplateId, slot)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+
+			// TODO: Implement buy logic
+			p.l.Debugf("Character [%d] is in shop [%d].", characterId, shopId)
+
+			return nil
+		}
+	}
+}
+
+func (p *ProcessorImpl) SellAndEmit(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32) error {
+	return message.Emit(p.kp)(func(mb *message.Buffer) error {
+		return p.Sell(mb)(characterId)(slot, itemTemplateId, quantity)
+	})
+}
+
+func (p *ProcessorImpl) Sell(mb *message.Buffer) func(characterId uint32) func(slot uint16, itemTemplateId uint32, quantity uint32) error {
+	return func(characterId uint32) func(slot uint16, itemTemplateId uint32, quantity uint32) error {
+		return func(slot uint16, itemTemplateId uint32, quantity uint32) error {
+			p.l.Debugf("Character [%d] attempting to sell item [%d] from slot [%d].", characterId, itemTemplateId, slot)
+
+			_, inShop := getRegistry().GetShop(p.t.Id(), characterId)
+			if !inShop {
+				p.l.Errorf("Character [%d] is not in a shop.", characterId)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+
+			// TODO: Implement sell logic
+			return nil
+		}
+	}
+}
+
+func (p *ProcessorImpl) RechargeAndEmit(characterId uint32, slot uint16) error {
+	return message.Emit(p.kp)(func(mb *message.Buffer) error {
+		return p.Recharge(mb)(characterId)(slot)
+	})
+}
+
+func (p *ProcessorImpl) Recharge(mb *message.Buffer) func(characterId uint32) func(slot uint16) error {
+	return func(characterId uint32) func(slot uint16) error {
+		return func(slot uint16) error {
+			p.l.Debugf("Character [%d] attempting to recharge item from slot [%d].", characterId, slot)
+
+			_, inShop := getRegistry().GetShop(p.t.Id(), characterId)
+			if !inShop {
+				p.l.Errorf("Character [%d] is not in a shop.", characterId)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+
+			// TODO: Implement recharge logic
+			return nil
+		}
+	}
 }

@@ -59,6 +59,7 @@ func handleBuyCommand(db *gorm.DB) message.Handler[shop2.Command[shop2.CommandSh
 		if e.Type != shop2.CommandShopBuy {
 			return
 		}
+		_ = shops.NewProcessor(l, ctx, db).BuyAndEmit(e.CharacterId, e.Body.Slot, e.Body.ItemTemplateId, e.Body.Quantity, e.Body.DiscountPrice)
 	}
 }
 
@@ -67,6 +68,7 @@ func handleSellCommand(db *gorm.DB) message.Handler[shop2.Command[shop2.CommandS
 		if e.Type != shop2.CommandShopSell {
 			return
 		}
+		_ = shops.NewProcessor(l, ctx, db).SellAndEmit(e.CharacterId, e.Body.Slot, e.Body.ItemTemplateId, e.Body.Quantity)
 	}
 }
 
@@ -75,5 +77,6 @@ func handleRechargeCommand(db *gorm.DB) message.Handler[shop2.Command[shop2.Comm
 		if e.Type != shop2.CommandShopRecharge {
 			return
 		}
+		_ = shops.NewProcessor(l, ctx, db).RechargeAndEmit(e.CharacterId, e.Body.Slot)
 	}
 }

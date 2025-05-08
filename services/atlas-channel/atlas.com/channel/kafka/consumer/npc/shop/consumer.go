@@ -32,13 +32,14 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 			return func(rf func(topic string, handler handler.Handler) (string, error)) {
 				var t string
 				t, _ = topic.EnvProvider(l)(shops2.EnvStatusEventTopic)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShopStatusEvent(l, sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleEnteredStatusEvent(l, sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleErrorStatusEvent(l, sc, wp))))
 			}
 		}
 	}
 }
 
-func handleShopStatusEvent(l logrus.FieldLogger, sc server.Model, wp writer.Producer) message.Handler[shops2.StatusEvent[shops2.StatusEventEnteredBody]] {
+func handleEnteredStatusEvent(l logrus.FieldLogger, sc server.Model, wp writer.Producer) message.Handler[shops2.StatusEvent[shops2.StatusEventEnteredBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e shops2.StatusEvent[shops2.StatusEventEnteredBody]) {
 		if e.Type != shops2.StatusEventTypeEntered {
 			return
@@ -61,5 +62,37 @@ func handleShopStatusEvent(l logrus.FieldLogger, sc server.Model, wp writer.Prod
 		}
 		bp := writer.NPCShopBody(l, tenant.MustFromContext(ctx))(e.Body.NpcTemplateId, nsm.Commodities())
 		_ = session.Announce(l)(ctx)(wp)(writer.NPCShop)(bp)(s)
+	}
+}
+
+func handleErrorStatusEvent(l logrus.FieldLogger, sc server.Model, wp writer.Producer) message.Handler[shops2.StatusEvent[shops2.StatusEventErrorBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e shops2.StatusEvent[shops2.StatusEventErrorBody]) {
+		if e.Type != shops2.StatusEventTypeError {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId)
+		if err != nil {
+			return
+		}
+
+		var bp writer.BodyProducer
+		if e.Body.Error == writer.NPCShopOperationOverLevelRequirement {
+			bp = writer.NPCShopOperationOverLevelRequirementBody(l, t)(e.Body.LevelLimit)
+		} else if e.Body.Error == writer.NPCShopOperationUnderLevelRequirement {
+			bp = writer.NPCShopOperationUnderLevelRequirementBody(l, t)(e.Body.LevelLimit)
+		} else if e.Body.Error == writer.NPCShopOperationGenericError {
+			bp = writer.NPCShopOperationGenericErrorBody(l, t)
+		} else if e.Body.Error == writer.NPCShopOperationGenericErrorWithReason {
+			bp = writer.NPCShopOperationGenericErrorWithReasonBody(l, t)(e.Body.Reason)
+		} else {
+			bp = writer.NPCShopOperationBody(l, tenant.MustFromContext(ctx))(e.Body.Error)
+		}
+		_ = session.Announce(l)(ctx)(wp)(writer.NPCShopOperation)(bp)(s)
 	}
 }

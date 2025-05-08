@@ -60,5 +60,7 @@ type StatusEventExitedBody struct {
 }
 
 type StatusEventErrorBody struct {
-	Error string `json:"error"`
+	Error      string `json:"error"`
+	LevelLimit uint32 `json:"levelLimit"`
+	Reason     string `json:"reason"`
 }

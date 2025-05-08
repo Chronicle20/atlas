@@ -18,3 +18,13 @@ func ShopEnterCommandProvider(characterId uint32, npcTemplateId uint32) model.Pr
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func ShopExitCommandProvider(characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &shops2.Command[shops2.CommandShopExitBody]{
+		CharacterId: characterId,
+		Type:        shops2.CommandShopExit,
+		Body:        shops2.CommandShopExitBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -8,6 +8,7 @@ import (
 	"atlas-data/database"
 	"atlas-data/document"
 	"atlas-data/equipment"
+	"atlas-data/etc"
 	data2 "atlas-data/kafka/consumer/data"
 	"atlas-data/logger"
 	_map "atlas-data/map"
@@ -77,6 +78,7 @@ func main() {
 		AddRouteInitializer(consumable.InitResource(db)(GetServer())).
 		AddRouteInitializer(cash.InitResource(db)(GetServer())).
 		AddRouteInitializer(commodity.InitResource(db)(GetServer())).
+		AddRouteInitializer(etc.InitResource(db)(GetServer())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

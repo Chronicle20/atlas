@@ -620,15 +620,15 @@ func (p *Processor) ConsumeAsset(mb *message.Buffer) func(characterId uint32, in
 	}
 }
 
-func (p *Processor) DestroyAssetAndEmit(characterId uint32, inventoryType inventory.Type, slot int16) error {
+func (p *Processor) DestroyAssetAndEmit(characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
 	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.DestroyAsset(buf)(characterId, inventoryType, slot)
+		return p.DestroyAsset(buf)(characterId, inventoryType, slot, quantity)
 	})
 }
 
-func (p *Processor) DestroyAsset(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type, slot int16) error {
-	return func(characterId uint32, inventoryType inventory.Type, slot int16) error {
-		p.l.Debugf("Character [%d] attempting to destroy asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+func (p *Processor) DestroyAsset(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
+	return func(characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
+		p.l.Debugf("Character [%d] attempting to destroy [%d] asset in inventory [%d] slot [%d].", characterId, quantity, inventoryType, slot)
 		invLock := LockRegistry().Get(characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
@@ -643,9 +643,20 @@ func (p *Processor) DestroyAsset(mb *message.Buffer) func(characterId uint32, in
 			if err != nil {
 				return err
 			}
-			err = p.assetProcessor.Delete(mb)(characterId, c.Id())(a)
-			if err != nil {
-				return err
+
+			// If the asset doesn't have quantity, or if the asset's quantity is less than or equal to the quantity provided, delete it
+			if !a.HasQuantity() || a.Quantity() <= quantity {
+				err = p.assetProcessor.WithTransaction(tx).Delete(mb)(characterId, c.Id())(a)
+				if err != nil {
+					return err
+				}
+			} else {
+				// If the asset has quantity, and it's greater than the quantity provided, update the quantity
+				newQuantity := a.Quantity() - quantity
+				err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(characterId, c.Id(), a, newQuantity)
+				if err != nil {
+					return err
+				}
 			}
 			return nil
 		})

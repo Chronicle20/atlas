@@ -6,6 +6,7 @@ const (
 	CommandChangeJob          = "CHANGE_JOB"
 	CommandAwardExperience    = "AWARD_EXPERIENCE"
 	CommandAwardLevel         = "AWARD_LEVEL"
+	CommandRequestChangeMeso  = "REQUEST_CHANGE_MESO"
 
 	ExperienceDistributionTypeWhite        = "WHITE"
 	ExperienceDistributionTypeYellow       = "YELLOW"
@@ -55,4 +56,10 @@ type ExperienceDistributions struct {
 type AwardLevelCommandBody struct {
 	ChannelId byte `json:"channelId"`
 	Amount    byte `json:"amount"`
+}
+
+type RequestChangeMesoBody struct {
+	ActorId   uint32 `json:"actorId"`
+	ActorType string `json:"actorType"`
+	Amount    int32  `json:"amount"`
 }

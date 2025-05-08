@@ -8,6 +8,7 @@ github.com/Chronicle20/atlas-kafka v1.1.8 h1:yjDXOKDwdekY8nS2gD4lrBv7SwWIKQBG3FZ
 github.com/Chronicle20/atlas-kafka v1.1.8/go.mod h1:nJK2hmXKOHz1+aLLTDObFczaoNJb+mLx2p3+C2hrndM=
 github.com/Chronicle20/atlas-kafka v1.1.9 h1:0ZGWl43UQwD4Tz6SPoiTjx5Mdw7uUT7RcMCMxmtaefA=
 github.com/Chronicle20/atlas-kafka v1.1.9/go.mod h1:7C1GKbrZkp2yVfluVUqsBwMN1pJcpnCzI4B758hnnm4=
+github.com/Chronicle20/atlas-kafka v1.1.10/go.mod h1:ZduYibZ/IdgnptyYBDjbOBB6Y2Hmefk/LTAlY7G39Yc=
 github.com/Chronicle20/atlas-model v1.2.2 h1:y49e+UaZ2diXVcDX84FdWat/5THIPmOr9IKqCr/TVwQ=
 github.com/Chronicle20/atlas-model v1.2.2/go.mod h1:5FNYT/ypml+goxft0XCACTEp6666yys+l6LTxSPeh1k=
 github.com/Chronicle20/atlas-model v1.2.3 h1:E864b+xRKskPBWyEN+waQ1N1BhcPWYyRj4iK+wY4FiU=

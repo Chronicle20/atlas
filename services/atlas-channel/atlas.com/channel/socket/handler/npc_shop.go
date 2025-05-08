@@ -33,7 +33,7 @@ func NPCShopHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Prod
 			return
 		}
 		if isNPCShopOperation(l)(readerOptions, op, NPCShopOperationSell) {
-			slot := r.ReadUint16()
+			slot := r.ReadInt16()
 			itemId := r.ReadUint32()
 			quantity := r.ReadUint16()
 			err := sp.SellItem(s.CharacterId(), slot, itemId, uint32(quantity))

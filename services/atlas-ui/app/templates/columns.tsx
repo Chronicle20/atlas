@@ -49,9 +49,9 @@ export const columns: ColumnDef<Template>[] = [
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem asChild>
                             <Link href={"/templates/" + row.getValue("id") + "/properties"}>
-                                <span>View Template</span>
+                                View Template
                             </Link>
                         </DropdownMenuItem>
                     </DropdownMenuContent>

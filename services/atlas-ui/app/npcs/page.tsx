@@ -73,9 +73,9 @@ export default function Page() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     {npc.hasShop && (
-                                        <DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
                                             <Link href={`/npcs/${npc.id}/shop`}>
-                                                <span>View Shop</span>
+                                                View Shop
                                             </Link>
                                         </DropdownMenuItem>
                                     )}

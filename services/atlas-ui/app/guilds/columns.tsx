@@ -91,9 +91,9 @@ export function getColumns({tenant, characterMap}: ColumnProps): ColumnDef<Guild
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem asChild>
                                 <Link href={"/guilds/" + row.getValue("id")}>
-                                    <span>View Guild</span>
+                                    View Guild
                                 </Link>
                             </DropdownMenuItem>
                         </DropdownMenuContent>

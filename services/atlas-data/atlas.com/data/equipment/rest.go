@@ -23,6 +23,7 @@ type RestModel struct {
 	Jump          uint16          `json:"jump"`
 	Slots         uint16          `json:"slots"`
 	Cash          bool            `json:"cash"`
+	Price         uint32          `json:"price"`
 	EquipSlots    []SlotRestModel `json:"-"`
 }
 

@@ -7,7 +7,7 @@ import {useTenant} from "@/context/tenant-context";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Character, fetchCharacter} from "@/lib/characters";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
-import {InventoryResponse, fetchInventory, getCompartmentTypeName, getAssetsForCompartment, deleteAsset, Compartment, Asset} from "@/lib/inventory";
+import {InventoryResponse, fetchInventory, getCompartmentTypeName, getAssetsForCompartment, deleteAsset, Compartment} from "@/lib/inventory";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import {

@@ -51,7 +51,7 @@ export interface Asset {
     expiration: string;
     referenceId: number;
     referenceType: string;
-    referenceData: any;
+    referenceData: unknown;
   };
 }
 
@@ -96,9 +96,15 @@ export async function fetchInventory(tenant: Tenant, characterId: string): Promi
 // Helper function to get assets for a compartment
 export function getAssetsForCompartment(compartment: Compartment, included: Array<Compartment | Asset>): Asset[] {
   return compartment.relationships.assets.data
-    .map(assetRef => included.find(item => item.type === assetRef.type && item.id === assetRef.id))
-    .filter((asset): asset is Asset => asset !== undefined && asset.type === 'assets' && asset.attributes.slot >= 0)
-    .sort((a, b) => a.attributes.slot - b.attributes.slot);
+      .map(assetRef => included.find(item => item.type === assetRef.type && item.id === assetRef.id))
+      .filter((asset): asset is Asset => {
+        return (
+            asset !== undefined &&
+            asset.type === 'assets' &&
+            (asset as Asset).attributes.slot >= 0
+        );
+      })
+      .sort((a, b) => a.attributes.slot - b.attributes.slot);
 }
 
 // Function to delete an asset

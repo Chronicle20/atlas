@@ -5,13 +5,21 @@ import {ColumnDef, flexRender, getCoreRowModel, useReactTable, VisibilityState,}
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@/components/ui/table"
 import React from "react";
 import {Button} from "./ui/button";
-import {RefreshCw} from "lucide-react";
+import {RefreshCw, MoreVertical} from "lucide-react";
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
+
+interface DataTableHeaderAction {
+    icon?: React.ReactNode
+    label: string
+    onClick: () => void
+}
 
 interface DataTableProps<TData, TValue> {
     initialVisibilityState?: string[]
     columns: ColumnDef<TData, TValue>[]
     data: TData[]
     onRefresh?: () => void
+    headerActions?: DataTableHeaderAction[]
 }
 
 export function DataTable<TData, TValue>({
@@ -19,6 +27,7 @@ export function DataTable<TData, TValue>({
                                              columns,
                                              data,
                                              onRefresh,
+                                             headerActions,
                                          }: DataTableProps<TData, TValue>) {
     const state = Object.fromEntries((initialVisibilityState || []).map((col) => [col.replaceAll(".", "_"), false]));
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>(state)
@@ -49,7 +58,28 @@ export function DataTable<TData, TValue>({
                         </Button>
                     )}
                 </div>
-                <div className="text-sm text-muted-foreground"></div>
+                <div className="flex items-center gap-2">
+                    {headerActions && headerActions.length > 0 && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                    <MoreVertical className="h-4 w-4 mr-2" />
+                                    Actions
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {headerActions.map((action, index) => (
+                                    <DropdownMenuItem key={index} onClick={action.onClick}>
+                                        {action.icon && (
+                                            <span className="mr-2">{action.icon}</span>
+                                        )}
+                                        {action.label}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
+                </div>
             </div>
 
             <div className="w-full">

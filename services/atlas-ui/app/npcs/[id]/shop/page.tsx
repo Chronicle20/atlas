@@ -17,12 +17,12 @@ export default function Page() {
     const { activeTenant } = useTenant();
     const params = useParams();
     const npcId = Number(params.id);
-    
+
     const [, setShop] = useState<Shop | null>(null);
     const [commodities, setCommodities] = useState<Commodity[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    
+
     // Dialog states
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -141,12 +141,6 @@ export default function Page() {
                     <h2 className="text-2xl font-bold tracking-tight">NPC #{npcId} Shop</h2>
                 </div>
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Add Commodity
-                        </Button>
-                    </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Add New Commodity</DialogTitle>
@@ -236,7 +230,7 @@ export default function Page() {
                     </DialogContent>
                 </Dialog>
             </div>
-            
+
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
@@ -326,12 +320,19 @@ export default function Page() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-            
+
             <div className="mt-4">
                 <DataTable
                     columns={columns}
                     data={commodities}
                     onRefresh={fetchDataAgain}
+                    headerActions={[
+                        {
+                            icon: <PlusCircle className="h-4 w-4" />,
+                            label: "Add Commodity",
+                            onClick: () => setIsCreateDialogOpen(true)
+                        }
+                    ]}
                 />
             </div>
         </div>

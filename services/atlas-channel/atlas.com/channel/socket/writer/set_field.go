@@ -8,6 +8,7 @@ import (
 	"errors"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -495,7 +496,7 @@ func WriteAssetInfo(t tenant.Model) func(zeroPosition bool) func(w *response.Wri
 					w.WriteShort(uint16(ea.Quantity()))
 					w.WriteAsciiString("") // TODO
 					w.WriteShort(ea.ReferenceData().Flag())
-					if ea.ReferenceData().Rechargeable() > 0 {
+					if item.IsBullet(item.Id(ea.TemplateId())) || item.IsThrowingStar(item.Id(ea.TemplateId())) {
 						w.WriteLong(ea.ReferenceData().Rechargeable())
 					}
 					return nil

@@ -14,24 +14,13 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-import {ChartNoAxesCombined, Cog, MonitorCog} from "lucide-react";
+import {Cog, MonitorCog} from "lucide-react";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import Link from "next/link";
 import {TenantSwitcher} from "@/components/app-tenant-switcher";
 
 // Menu items.
 const items = [
-    {
-        title: "Dashboards",
-        url: "#",
-        icon: ChartNoAxesCombined,
-        children: [
-            {
-                title: "Overview",
-                url: "/dashboard/overview"
-            }
-        ],
-    },
     {
         title: "Operations",
         url: "#",
@@ -50,8 +39,8 @@ const items = [
                 url: "/guilds"
             },
             {
-                title: "Drops",
-                url: "/drops"
+                title: "NPCs",
+                url: "/npcs"
             }
         ],
     },

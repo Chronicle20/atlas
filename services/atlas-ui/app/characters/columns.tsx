@@ -147,9 +147,9 @@ export const getColumns = ({tenant, accountMap}: ColumnProps): ColumnDef<Charact
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem asChild>
                                 <Link href={"/characters/" + row.getValue("id")}>
-                                    <span>View Character</span>
+                                    View Character
                                 </Link>
                             </DropdownMenuItem>
                         </DropdownMenuContent>

@@ -52,6 +52,10 @@ const items = [
             {
                 title: "Drops",
                 url: "/drops"
+            },
+            {
+                title: "NPCs",
+                url: "/npcs"
             }
         ],
     },

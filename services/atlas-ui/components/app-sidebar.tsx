@@ -22,17 +22,6 @@ import {TenantSwitcher} from "@/components/app-tenant-switcher";
 // Menu items.
 const items = [
     {
-        title: "Dashboards",
-        url: "#",
-        icon: ChartNoAxesCombined,
-        children: [
-            {
-                title: "Overview",
-                url: "/dashboard/overview"
-            }
-        ],
-    },
-    {
         title: "Operations",
         url: "#",
         icon: Cog,
@@ -48,10 +37,6 @@ const items = [
             {
                 title: "Guilds",
                 url: "/guilds"
-            },
-            {
-                title: "Drops",
-                url: "/drops"
             },
             {
                 title: "NPCs",

@@ -28,6 +28,7 @@ func (e *Entity) TableName() string {
 func Make(entity Entity) (Model, error) {
 	return Model{
 		id:           entity.Id,
+		npcId:        entity.NpcId,
 		templateId:   entity.TemplateId,
 		mesoPrice:    entity.MesoPrice,
 		discountRate: entity.DiscountRate,

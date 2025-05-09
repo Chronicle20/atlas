@@ -19,6 +19,8 @@ import (
 type Processor interface {
 	GetByNpcId(npcId uint32) (Model, error)
 	ByNpcIdProvider(npcId uint32) model.Provider[Model]
+	GetAllShops() ([]Model, error)
+	AllShopsProvider() model.Provider[[]Model]
 	AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
 	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
 	RemoveCommodity(id uuid.UUID) error
@@ -36,15 +38,16 @@ type Processor interface {
 }
 
 type ProcessorImpl struct {
-	l            logrus.FieldLogger
-	ctx          context.Context
-	db           *gorm.DB
-	t            tenant.Model
-	GetByNpcIdFn func(npcId uint32) (Model, error)
-	cp           commodities.Processor
-	charP        *character.Processor
-	compP        *compartment.Processor
-	kp           producer.Provider
+	l             logrus.FieldLogger
+	ctx           context.Context
+	db            *gorm.DB
+	t             tenant.Model
+	GetByNpcIdFn  func(npcId uint32) (Model, error)
+	GetAllShopsFn func() ([]Model, error)
+	cp            commodities.Processor
+	charP         *character.Processor
+	compP         *compartment.Processor
+	kp            producer.Provider
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -59,6 +62,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		kp:    producer.ProviderImpl(l)(ctx),
 	}
 	p.GetByNpcIdFn = model.CollapseProvider(p.ByNpcIdProvider)
+	p.GetAllShopsFn = func() ([]Model, error) {
+		return p.AllShopsProvider()()
+	}
 	return p
 }
 
@@ -119,6 +125,42 @@ func (p *ProcessorImpl) Exit(mb *message.Buffer) func(characterId uint32) error 
 
 func (p *ProcessorImpl) GetCharactersInShop(shopId uint32) []uint32 {
 	return getRegistry().GetCharactersInShop(p.t.Id(), shopId)
+}
+
+func (p *ProcessorImpl) GetAllShops() ([]Model, error) {
+	return p.GetAllShopsFn()
+}
+
+func (p *ProcessorImpl) AllShopsProvider() model.Provider[[]Model] {
+	// Get all commodities for the tenant using the commodities processor
+	allCommodities, err := p.cp.GetAllByTenant()
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+
+	// Initialize a map to store shop builders by NPC ID
+	shopBuilders := make(map[uint32]*ModelBuilder)
+
+	// Iterate over all commodities and accumulate them in shop builders
+	for _, commodity := range allCommodities {
+		npcId := commodity.NpcId()
+
+		// If we don't have a builder for this NPC ID yet, create one
+		if _, exists := shopBuilders[npcId]; !exists {
+			shopBuilders[npcId] = NewBuilder(npcId)
+		}
+
+		// Add the commodity to the appropriate shop builder
+		shopBuilders[npcId].AddCommodity(commodity)
+	}
+
+	// Build all shops from the accumulated builders
+	shops := make([]Model, 0, len(shopBuilders))
+	for _, builder := range shopBuilders {
+		shops = append(shops, builder.Build())
+	}
+
+	return model.FixedProvider(shops)
 }
 
 func (p *ProcessorImpl) BuyAndEmit(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error {

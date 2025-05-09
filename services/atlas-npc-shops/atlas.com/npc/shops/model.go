@@ -42,6 +42,12 @@ func (b *ModelBuilder) SetCommodities(commodities []commodities.Model) *ModelBui
 	return b
 }
 
+// AddCommodity adds a single commodity to the ModelBuilder
+func (b *ModelBuilder) AddCommodity(commodity commodities.Model) *ModelBuilder {
+	b.commodities = append(b.commodities, commodity)
+	return b
+}
+
 // Build creates a new Model instance with the builder's values
 func (b *ModelBuilder) Build() Model {
 	return Model{

@@ -16,6 +16,9 @@ import (
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
+			// Add a new endpoint to get all shops for a tenant
+			router.HandleFunc("/shops", rest.RegisterHandler(l)(db)(si)("get_all_shops", handleGetAllShops)).Methods(http.MethodGet)
+
 			r := router.PathPrefix("/npcs/{npcId}/shop").Subrouter()
 			r.HandleFunc("", rest.RegisterHandler(l)(db)(si)("get_shop", handleGetShop)).Methods(http.MethodGet)
 			r.HandleFunc("/characters", rest.RegisterHandler(l)(db)(si)("get_shop_characters", handleGetShopCharacters)).Methods(http.MethodGet)
@@ -146,4 +149,31 @@ func handleGetShopCharacters(d *rest.HandlerDependency, c *rest.HandlerContext) 
 			server.MarshalResponse[[]CharacterListRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
+}
+
+func handleGetAllShops(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		p := NewProcessor(d.Logger(), d.Context(), d.DB())
+
+		// Get all shops using the processor
+		shops, err := p.GetAllShops()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Getting all shops.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Transform shop models to REST models
+		restShops, err := model.SliceMap(Transform)(model.FixedProvider(shops))(model.ParallelMap())()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Creating REST models.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Return the response
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restShops)
+	}
 }

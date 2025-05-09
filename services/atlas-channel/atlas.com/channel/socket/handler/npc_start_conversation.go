@@ -2,11 +2,11 @@ package handler
 
 import (
 	"atlas-channel/npc"
+	"atlas-channel/npc/shops"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 	"github.com/Chronicle20/atlas-socket/request"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,10 +22,14 @@ func NPCStartConversationHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			_ = session.NewProcessor(l, ctx).Destroy(s)
 			return
 		}
-		nsm, err := p.GetShop(n.Template())
+		sp := shops.NewProcessor(l, ctx)
+		_, err = sp.GetShop(n.Template())
 		if err == nil {
-			bp := writer.NPCShopBody(l, tenant.MustFromContext(ctx))(n.Template(), nsm.Commodities())
-			_ = session.Announce(l)(ctx)(wp)(writer.NPCShop)(bp)(s)
+			err = sp.EnterShop(s.CharacterId(), n.Template())
+			if err != nil {
+				l.WithError(err).Errorf("Failed to send shop enter command for character [%d] and NPC [%d].", s.CharacterId(), n.Template())
+			}
+			return
 		}
 		_ = p.StartConversation(s.Map(), n.Template(), s.CharacterId())
 	}

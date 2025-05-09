@@ -23,6 +23,11 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
+// GetName to satisfy jsonapi.EntityNamer interface
+func (r RestModel) GetName() string {
+	return "shops"
+}
+
 // Transform converts a Model to a RestModel
 func Transform(m Model) (RestModel, error) {
 	commodityRest := make([]commodities.RestModel, 0)

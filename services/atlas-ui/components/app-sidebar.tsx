@@ -14,7 +14,7 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-import {ChartNoAxesCombined, Cog, MonitorCog} from "lucide-react";
+import {Cog, MonitorCog} from "lucide-react";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import Link from "next/link";
 import {TenantSwitcher} from "@/components/app-tenant-switcher";

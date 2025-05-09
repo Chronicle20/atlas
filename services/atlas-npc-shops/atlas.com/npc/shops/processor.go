@@ -4,6 +4,10 @@ import (
 	"atlas-npc/character"
 	"atlas-npc/commodities"
 	"atlas-npc/compartment"
+	"atlas-npc/data/consumable"
+	"atlas-npc/data/equipable"
+	"atlas-npc/data/etc"
+	"atlas-npc/data/setup"
 	"atlas-npc/kafka/message"
 	"atlas-npc/kafka/message/shops"
 	"atlas-npc/kafka/producer"
@@ -279,8 +283,43 @@ func (p *ProcessorImpl) Sell(mb *message.Buffer) func(characterId uint32) func(s
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorNeedMoreItems))
 			}
 
-			// TODO give proper value for item being sold.
-			_ = p.charP.RequestChangeMeso(c.WorldId(), c.Id(), c.Id(), "SHOP", 1000)
+			price := uint32(0)
+			if it == inventory.TypeValueEquip {
+				var em equipable.Model
+				em, err = equipable.NewProcessor(p.l, p.ctx).GetById(itemTemplateId)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to get item template [%d].", itemTemplateId)
+					return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+				}
+				price = em.Price()
+			} else if it == inventory.TypeValueUse {
+				var cm consumable.Model
+				cm, err = consumable.NewProcessor(p.l, p.ctx).GetById(itemTemplateId)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to get item template [%d].", itemTemplateId)
+					return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+				}
+				price = cm.Price()
+			} else if it == inventory.TypeValueSetup {
+				var sm setup.Model
+				sm, err = setup.NewProcessor(p.l, p.ctx).GetById(itemTemplateId)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to get item template [%d].", itemTemplateId)
+					return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+				}
+				price = sm.Price()
+			} else if it == inventory.TypeValueETC {
+				var em etc.Model
+				em, err = etc.NewProcessor(p.l, p.ctx).GetById(itemTemplateId)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to get item template [%d].", itemTemplateId)
+					return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+				}
+				price = em.Price()
+			}
+			price = price * quantity
+
+			_ = p.charP.RequestChangeMeso(c.WorldId(), c.Id(), c.Id(), "SHOP", int32(price))
 			_ = p.compP.RequestDestroyItem(characterId, it, slot, quantity)
 
 			p.l.Debugf("Character [%d] sold [%d] item [%d] from slot [%d].", characterId, quantity, itemTemplateId, slot)

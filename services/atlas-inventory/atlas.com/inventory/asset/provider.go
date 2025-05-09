@@ -25,3 +25,9 @@ func getByReferenceId(tenantId uuid.UUID, referenceId uint32, referenceType Refe
 		return database.Query[Entity](db, &Entity{TenantId: tenantId, ReferenceId: referenceId, ReferenceType: string(referenceType)})
 	}
 }
+
+func getById(tenantId uuid.UUID, id uint32) database.EntityProvider[Entity] {
+	return func(db *gorm.DB) model.Provider[Entity] {
+		return database.Query[Entity](db, &Entity{TenantId: tenantId, Id: id})
+	}
+}

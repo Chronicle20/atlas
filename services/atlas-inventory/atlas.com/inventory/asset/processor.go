@@ -100,6 +100,14 @@ func (p *Processor) ByReferenceIdProvider(referenceId uint32, referenceType Refe
 	return model.Map(p.DecorateAsset)(model.Map(Make)(getByReferenceId(p.t.Id(), referenceId, referenceType)(p.db)))
 }
 
+func (p *Processor) ByIdProvider(id uint32) model.Provider[Model[any]] {
+	return model.Map(p.DecorateAsset)(model.Map(Make)(getById(p.t.Id(), id)(p.db)))
+}
+
+func (p *Processor) GetById(id uint32) (Model[any], error) {
+	return model.CollapseProvider(p.ByIdProvider)(id)
+}
+
 func (p *Processor) DecorateEquipable(m Model[any]) (Model[any], error) {
 	e, err := p.equipableProcessor.GetById(m.ReferenceId())
 	if err != nil {
@@ -339,6 +347,23 @@ func (p *Processor) UpdateQuantity(mb *message.Buffer) func(characterId uint32, 
 
 func (p *Processor) RelayUpdateAndEmit(characterId uint32, referenceId uint32, referenceType ReferenceType, referenceData interface{}) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(model.Flip(model.Flip(model.Flip(model.Flip(p.RelayUpdate)(characterId))(referenceId))(referenceType))(referenceData))
+}
+
+func (p *Processor) DeleteAndEmit(characterId uint32, compartmentId uuid.UUID, assetId uint32) error {
+	p.l.Debugf("Attempting to delete and emit asset [%d] for character [%d] in compartment [%s].", assetId, characterId, compartmentId.String())
+
+	// Get the asset first
+	asset, err := p.GetById(assetId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to find asset [%d] for deletion.", assetId)
+		return err
+	}
+
+	// Use message.Emit with an anonymous function that takes a Buffer
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		// Call the Delete function with the buffer, characterId, compartmentId, and asset
+		return p.Delete(buf)(characterId, compartmentId)(asset)
+	})
 }
 
 func (p *Processor) RelayUpdate(mb *message.Buffer) func(characterId uint32) func(referenceId uint32) func(referenceType ReferenceType) func(referenceData interface{}) error {

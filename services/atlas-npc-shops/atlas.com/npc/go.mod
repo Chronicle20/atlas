@@ -3,6 +3,8 @@ module atlas-npc
 go 1.24.2
 
 require (
+	github.com/Chronicle20/atlas-constants v1.0.16
+	github.com/Chronicle20/atlas-kafka v1.1.10
 	github.com/Chronicle20/atlas-model v1.2.4
 	github.com/Chronicle20/atlas-rest v1.2.14
 	github.com/Chronicle20/atlas-tenant v1.0.6
@@ -10,6 +12,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/jtumidanski/api2go v1.0.4
 	github.com/opentracing/opentracing-go v1.2.0
+	github.com/segmentio/kafka-go v0.4.47
 	github.com/sirupsen/logrus v1.9.3
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	go.elastic.co/ecslogrus v1.0.0
@@ -29,8 +32,10 @@ require (
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/magefile/mage v1.9.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
+	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect

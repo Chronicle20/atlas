@@ -6,6 +6,7 @@ import (
 
 type Model struct {
 	id           uuid.UUID
+	npcId        uint32
 	templateId   uint32
 	mesoPrice    uint32
 	discountRate byte
@@ -55,6 +56,11 @@ func (m *Model) LevelLimit() uint32 {
 	return m.levelLimit
 }
 
+// NpcId returns the model's npcId
+func (m *Model) NpcId() uint32 {
+	return m.npcId
+}
+
 // PerfectPitchPrice returns the model's tokenPrice for backward compatibility
 func (m *Model) PerfectPitchPrice() uint32 {
 	return m.tokenPrice
@@ -63,6 +69,7 @@ func (m *Model) PerfectPitchPrice() uint32 {
 // ModelBuilder is used to build Model instances
 type ModelBuilder struct {
 	id           uuid.UUID
+	npcId        uint32
 	templateId   uint32
 	mesoPrice    uint32
 	discountRate byte
@@ -75,6 +82,12 @@ type ModelBuilder struct {
 // SetId sets the id for the ModelBuilder
 func (b *ModelBuilder) SetId(id uuid.UUID) *ModelBuilder {
 	b.id = id
+	return b
+}
+
+// SetNpcId sets the npcId for the ModelBuilder
+func (b *ModelBuilder) SetNpcId(npcId uint32) *ModelBuilder {
+	b.npcId = npcId
 	return b
 }
 
@@ -124,6 +137,7 @@ func (b *ModelBuilder) SetLevelLimit(levelLimit uint32) *ModelBuilder {
 func (b *ModelBuilder) Build() Model {
 	return Model{
 		id:           b.id,
+		npcId:        b.npcId,
 		templateId:   b.templateId,
 		mesoPrice:    b.mesoPrice,
 		discountRate: b.discountRate,
@@ -138,6 +152,7 @@ func (b *ModelBuilder) Build() Model {
 func Clone(m Model) *ModelBuilder {
 	return &ModelBuilder{
 		id:           m.id,
+		npcId:        m.npcId,
 		templateId:   m.templateId,
 		mesoPrice:    m.mesoPrice,
 		discountRate: m.discountRate,

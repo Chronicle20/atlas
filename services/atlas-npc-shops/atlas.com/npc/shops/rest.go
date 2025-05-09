@@ -3,6 +3,7 @@ package shops
 import (
 	"atlas-npc/commodities"
 	"fmt"
+	"strconv"
 )
 
 // RestModel is a JSON API representation of the Model
@@ -21,6 +22,11 @@ func (r RestModel) GetID() string {
 func (r *RestModel) SetID(id string) error {
 	r.Id = id
 	return nil
+}
+
+// GetName to satisfy jsonapi.EntityNamer interface
+func (r RestModel) GetName() string {
+	return "shops"
 }
 
 // Transform converts a Model to a RestModel
@@ -55,4 +61,31 @@ func Extract(rm RestModel) (Model, error) {
 	return NewBuilder(rm.NpcId).
 		SetCommodities(commodityModels).
 		Build(), nil
+}
+
+// CharacterListRestModel is a JSON API representation of characters in a shop
+type CharacterListRestModel struct {
+	Id string `json:"-"`
+}
+
+// GetID to satisfy jsonapi.MarshalIdentifier interface
+func (r CharacterListRestModel) GetID() string {
+	return r.Id
+}
+
+// GetName to satisfy jsonapi.EntityNamer interface
+func (r CharacterListRestModel) GetName() string {
+	return "characters"
+}
+
+// SetID to satisfy jsonapi.UnmarshalIdentifier interface
+func (r *CharacterListRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
+// TransformCharacterList converts a list of character IDs to a CharacterListRestModel
+func TransformCharacterList(characterId uint32) (CharacterListRestModel, error) {
+	idStr := strconv.Itoa(int(characterId))
+	return CharacterListRestModel{Id: idStr}, nil
 }

@@ -79,6 +79,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			MP:            info.GetShort("incMMP", 0),
 			Slots:         info.GetShort("tuc", 0),
 			Cash:          info.GetBool("cash", false),
+			Price:         uint32(info.GetIntegerWithDefault("price", 0)),
 			EquipSlots:    srm,
 		}
 		return model.FixedProvider(m)

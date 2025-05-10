@@ -227,6 +227,11 @@ func handleFullnessChanged(sc server.Model, wp writer.Producer) message.Handler[
 			return
 		}
 
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.OwnerId, func(s session.Model) error {
 			// TODO this is an extra query
 			p, err := pet.NewProcessor(l, ctx).GetById(e.PetId)

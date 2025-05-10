@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"gorm.io/gorm"
 )
 
@@ -10,12 +9,10 @@ import (
 func ExecuteTransaction(db *gorm.DB, fn func(tx *gorm.DB) error) error {
 	if isTransaction(db) {
 		// Already in a transaction, execute directly
-		fmt.Println("Already in transaction, executing directly.")
 		return fn(db)
 	}
 
 	// Not in a transaction, start a new one
-	fmt.Println("Starting new transaction.")
 	return db.Transaction(fn)
 }
 

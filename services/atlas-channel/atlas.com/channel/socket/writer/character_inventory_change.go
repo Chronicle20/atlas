@@ -87,16 +87,6 @@ func InventoryRemoveBodyWriter(inventoryType inventory.Type, slot int16) Invento
 	}
 }
 
-// TODO this can be removed in favor of the generic below
-func CharacterInventoryRefreshPet(a asset.Model[asset.PetReferenceData]) BodyProducer {
-	pw := model.FlipOperator(WritePetCashItemInfo(true))(a)
-	writers := []InventoryChangeWriter{
-		InventoryRemoveBodyWriter(inventory.TypeValueCash, a.Slot()),
-		InventoryAddBodyWriter(inventory.TypeValueCash, a.Slot(), pw),
-	}
-	return CharacterInventoryChangeBody(true, writers...)
-}
-
 func CharacterInventoryRefreshAsset(t tenant.Model) func(inventoryType inventory.Type, a asset.Model[any]) BodyProducer {
 	return func(inventoryType inventory.Type, a asset.Model[any]) BodyProducer {
 		pw := model.FlipOperator(WriteAssetInfo(t)(true))(a)

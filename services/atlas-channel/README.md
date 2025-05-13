@@ -4,7 +4,7 @@ Mushroom game Channel Service
 
 ## Overview
 
-A RESTful resource which provides channel services.
+A service which provides channel game services.
 
 ## Environment
 

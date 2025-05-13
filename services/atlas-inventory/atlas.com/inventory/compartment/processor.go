@@ -3,6 +3,7 @@ package compartment
 import (
 	"atlas-inventory/asset"
 	"atlas-inventory/data/equipment"
+	"atlas-inventory/database"
 	"atlas-inventory/drop"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/compartment"
@@ -109,7 +110,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, inventor
 		t := tenant.MustFromContext(p.ctx)
 		p.l.Debugf("Attempting to create compartment of type [%d] for character [%d] with capacity [%d].", inventoryType, characterId, capacity)
 		var c Model
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			var err error
 			c, err = create(tx, t.Id(), characterId, inventoryType, capacity)
 			if err != nil {
@@ -129,7 +130,7 @@ func (p *Processor) DeleteByModel(mb *message.Buffer) func(c Model) error {
 	return func(c Model) error {
 		p.l.Debugf("Attempting to delete compartment [%s].", c.Id().String())
 		t := tenant.MustFromContext(p.ctx)
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			err := model.ForEachSlice(model.FixedProvider(c.Assets()), p.assetProcessor.WithTransaction(tx).Delete(mb)(c.CharacterId(), c.Id()))
 			if err != nil {
 				return err
@@ -168,7 +169,7 @@ func (p *Processor) EquipItem(mb *message.Buffer) func(characterId uint32) func(
 
 				var a1 asset.Model[any]
 				var actualDestination int16
-				txErr := p.db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 					var c Model
 					var err error
 					c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventory.TypeValueEquip)
@@ -280,7 +281,7 @@ func (p *Processor) RemoveEquip(mb *message.Buffer) func(characterId uint32) fun
 				invLock.Lock()
 				defer invLock.Unlock()
 
-				txErr := p.db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 					var c Model
 					var err error
 					c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventory.TypeValueEquip)
@@ -341,7 +342,7 @@ func (p *Processor) Move(mb *message.Buffer) func(characterId uint32) func(inven
 					defer invLock.Unlock()
 
 					var a1 asset.Model[any]
-					txErr := p.db.Transaction(func(tx *gorm.DB) error {
+					txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 						var c Model
 						var err error
 						c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
@@ -403,7 +404,7 @@ func (p *Processor) IncreaseCapacity(mb *message.Buffer) func(characterId uint32
 				defer invLock.Unlock()
 
 				var capacity uint32
-				txErr := p.db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 					c, err := p.GetByCharacterAndType(characterId)(inventoryType)
 					if err != nil {
 						return err
@@ -448,7 +449,7 @@ func (p *Processor) Drop(mb *message.Buffer) func(characterId uint32, inventoryT
 		defer invLock.Unlock()
 
 		var a asset.Model[any]
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			c, err := p.GetByCharacterAndType(characterId)(inventoryType)
 			if err != nil {
 				return err
@@ -504,7 +505,7 @@ func (p *Processor) RequestReserve(mb *message.Buffer) func(characterId uint32, 
 		invLock.Lock()
 		defer invLock.Unlock()
 
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 			if err != nil {
 				return err
@@ -585,7 +586,7 @@ func (p *Processor) ConsumeAsset(mb *message.Buffer) func(characterId uint32, in
 		}
 
 		var a asset.Model[any]
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			var c Model
 			c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 			if err != nil {
@@ -634,7 +635,7 @@ func (p *Processor) DestroyAsset(mb *message.Buffer) func(characterId uint32, in
 		defer invLock.Unlock()
 
 		var a asset.Model[any]
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 			if err != nil {
 				return err
@@ -683,7 +684,7 @@ func (p *Processor) CreateAsset(mb *message.Buffer) func(characterId uint32, inv
 		defer invLock.Unlock()
 
 		var a asset.Model[any]
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 			if err != nil {
 				return err
@@ -731,7 +732,7 @@ func (p *Processor) AttemptEquipmentPickUp(mb *message.Buffer) func(m _map.Model
 		invLock.Lock()
 		defer invLock.Unlock()
 
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			c, err := p.GetByCharacterAndType(characterId)(inventoryType)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to locate inventory [%d] for character [%d].", inventoryType, characterId)

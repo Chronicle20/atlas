@@ -2,6 +2,7 @@ package inventory
 
 import (
 	"atlas-inventory/compartment"
+	"atlas-inventory/database"
 	"atlas-inventory/kafka/message"
 	inventory2 "atlas-inventory/kafka/message/inventory"
 	"atlas-inventory/kafka/producer"
@@ -60,7 +61,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32) (Model, 
 	return func(characterId uint32) (Model, error) {
 		p.l.Debugf("Attempting to create inventory for character [%d].", characterId)
 		var i Model
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			// Check if inventory already exists for character.
 			var err error
 			i, err = p.WithTransaction(tx).GetByCharacterId(characterId)
@@ -97,7 +98,7 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32) error {
 	return func(characterId uint32) error {
 		p.l.Debugf("Attempting to delete inventory for character [%d].", characterId)
 		var i Model
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			var err error
 			i, err = p.WithTransaction(tx).GetByCharacterId(characterId)
 			if err != nil {

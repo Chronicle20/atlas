@@ -1,6 +1,6 @@
 module atlas-drops-information
 
-go 1.23.1
+go 1.24.2
 
 require (
 	github.com/Chronicle20/atlas-model v1.2.4
@@ -14,7 +14,7 @@ require (
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	go.elastic.co/ecslogrus v1.0.0
 	gorm.io/driver/postgres v1.5.11
-	gorm.io/gorm v1.26.0
+	gorm.io/gorm v1.26.1
 )
 
 require (

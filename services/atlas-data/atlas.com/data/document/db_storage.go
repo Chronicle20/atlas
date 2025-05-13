@@ -1,6 +1,7 @@
 package document
 
 import (
+	"atlas-data/database"
 	"context"
 	"encoding/json"
 	"github.com/Chronicle20/atlas-model/model"
@@ -101,7 +102,7 @@ func (s *DbStorage[I, M]) Add(ctx context.Context) func(m M) model.Provider[M] {
 			return model.ErrorProvider[M](err)
 		}
 
-		txErr := s.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(s.db, func(tx *gorm.DB) error {
 			docId, err := strconv.Atoi(string(m.GetID()))
 			if err != nil {
 				return err

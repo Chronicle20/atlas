@@ -21,7 +21,6 @@
     {
       "managers": ["gomod"],
       "matchPackageNames": ["go"],
-      "versioning": "golang",
       "groupName": "Go version updates",
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true
@@ -29,7 +28,6 @@
     {
       "managers": ["gomod"],
       "matchPackageNames": ["go"],
-      "versioning": "golang",
       "groupName": "Go version updates",
       "matchUpdateTypes": ["major"],
       "automerge": false

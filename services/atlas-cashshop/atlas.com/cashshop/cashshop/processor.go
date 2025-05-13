@@ -3,6 +3,7 @@ package cashshop
 import (
 	"atlas-cashshop/cashshop/commodity"
 	"atlas-cashshop/character"
+	"atlas-cashshop/database"
 	inventory2 "atlas-cashshop/character/inventory"
 	"atlas-cashshop/kafka/message/cashshop"
 	"atlas-cashshop/kafka/producer"
@@ -64,7 +65,7 @@ func purchaseInventoryIncrease(l logrus.FieldLogger) func(ctx context.Context) f
 				newCapacity := uint32(0)
 
 				l.Debugf("Character [%d] attempting to purchase inventory [%d] increase using currency [%d]. Cost is [%d].", characterId, inventoryType, currency, cost)
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					w, err := wallet.GetByCharacterId(ctx)(tx)(characterId)
 					if err != nil {
 						return err

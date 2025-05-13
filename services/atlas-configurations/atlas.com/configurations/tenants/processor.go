@@ -3,6 +3,7 @@ package tenants
 import (
 	"context"
 	"encoding/json"
+	"atlas-configurations/database"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -67,7 +68,7 @@ func UpdateById(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 					return err
 				}
 
-				return db.Transaction(update(ctx, tenantId, input.Region, input.MajorVersion, input.MinorVersion, *rm))
+				return database.ExecuteTransaction(db, update(ctx, tenantId, input.Region, input.MajorVersion, input.MinorVersion, *rm))
 			}
 		}
 	}

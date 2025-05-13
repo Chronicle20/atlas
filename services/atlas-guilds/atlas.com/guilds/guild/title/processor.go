@@ -1,6 +1,7 @@
 package title
 
 import (
+	"atlas-guilds/database"
 	"context"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -14,9 +15,9 @@ func CreateDefaults(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 			return func(guildId uint32) ([]Model, error) {
 				var results []Model
 				var txErr error
-				txErr = db.Transaction(func(tx *gorm.DB) error {
+				txErr = database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					var err error
-					results, err = createDefault(db, t, guildId)
+					results, err = createDefault(tx, t, guildId)
 					if err != nil {
 						return err
 					}
@@ -33,7 +34,7 @@ func Replace(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) f
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(guildId uint32, titles []string) error {
 			return func(guildId uint32, titles []string) error {
-				return db.Transaction(func(tx *gorm.DB) error {
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					err := tx.Where("tenant_id = ? AND guild_id = ?", t.Id(), guildId).Delete(&Entity{}).Error
 					if err != nil {
 						return err

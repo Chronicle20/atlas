@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-guilds/database"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -34,7 +35,7 @@ func SetGuild(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) 
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, guildId uint32) error {
 			return func(characterId uint32, guildId uint32) error {
-				return db.Transaction(func(tx *gorm.DB) error {
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					c, _ := getById(t.Id(), characterId)(tx)()
 					if c.GuildId != 0 {
 						c.GuildId = guildId

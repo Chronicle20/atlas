@@ -1,6 +1,7 @@
 package thread
 
 import (
+	"atlas-guilds/database"
 	"atlas-guilds/kafka/producer"
 	"atlas-guilds/thread/reply"
 	"context"
@@ -70,7 +71,7 @@ func Update(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 		return func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32, posterId uint32, title string, message string, emoticonId uint32, notice bool) (Model, error) {
 			return func(worldId byte, guildId uint32, threadId uint32, posterId uint32, title string, message string, emoticonId uint32, notice bool) (Model, error) {
 				var thr Model
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					var err error
 					thr, err = GetById(ctx)(tx)(guildId, threadId)
 					if err != nil {
@@ -102,7 +103,7 @@ func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32, actorId uint32) error {
 			return func(worldId byte, guildId uint32, threadId uint32, actorId uint32) error {
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					thr, err := getById(t.Id(), guildId, threadId)(tx)()
 					if err != nil {
 						l.Debugf("Unable to delete guild [%d] thread [%d].", guildId, threadId)
@@ -144,7 +145,7 @@ func Reply(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fun
 			return func(worldId byte, guildId uint32, threadId uint32, posterId uint32, message string) (Model, error) {
 				var thr Model
 				var rp reply.Model
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					_, err := GetById(ctx)(tx)(guildId, threadId)
 					if err != nil {
 						l.Debugf("Unable to locate thread [%d] for guild [%d] being replied to.", guildId, threadId)
@@ -180,7 +181,7 @@ func DeleteReply(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 		return func(db *gorm.DB) func(worldId byte, guildId uint32, threadId uint32, actorId uint32, replyId uint32) (Model, error) {
 			return func(worldId byte, guildId uint32, threadId uint32, actorId uint32, replyId uint32) (Model, error) {
 				var thr Model
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					_, err := GetById(ctx)(tx)(guildId, threadId)
 					if err != nil {
 						l.Debugf("Unable to locate thread [%d] for guild [%d] being replied to.", guildId, threadId)

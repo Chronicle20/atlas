@@ -3,6 +3,7 @@ package templates
 import (
 	"context"
 	"encoding/json"
+	"atlas-configurations/database"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -67,7 +68,7 @@ func Create(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 					return err
 				}
 
-				return db.Transaction(create(input.Region, input.MajorVersion, input.MinorVersion, *rm))
+				return database.ExecuteTransaction(db, create(input.Region, input.MajorVersion, input.MinorVersion, *rm))
 			}
 		}
 	}
@@ -87,7 +88,7 @@ func UpdateById(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 					return err
 				}
 
-				return db.Transaction(update(ctx, templateId, input.Region, input.MajorVersion, input.MinorVersion, *rm))
+				return database.ExecuteTransaction(db, update(ctx, templateId, input.Region, input.MajorVersion, input.MinorVersion, *rm))
 			}
 		}
 	}

@@ -3,6 +3,7 @@ package list
 import (
 	"atlas-buddies/buddy"
 	"atlas-buddies/character"
+	"atlas-buddies/database"
 	"atlas-buddies/invite"
 	list2 "atlas-buddies/kafka/message/list"
 	"atlas-buddies/kafka/producer"
@@ -60,8 +61,8 @@ func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 			return func(characterId uint32, worldId byte) error {
 				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
 
-				txErr := db.Transaction(func(tx *gorm.DB) error {
-					bl, err := GetByCharacterId(l)(ctx)(db)(characterId)
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+					bl, err := GetByCharacterId(l)(ctx)(tx)(characterId)
 					if err != nil {
 						return err
 					}
@@ -100,7 +101,7 @@ func RequestAddBuddy(l logrus.FieldLogger) func(ctx context.Context) func(db *go
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32, group string) error {
 			return func(characterId uint32, worldId byte, targetId uint32, group string) error {
 				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					tc, err := character.GetById(l)(ctx)(targetId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d] information.", targetId)
@@ -206,7 +207,7 @@ func RequestDeleteBuddy(l logrus.FieldLogger) func(ctx context.Context) func(db 
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 			return func(characterId uint32, worldId byte, targetId uint32) error {
 				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					cbl, err := GetByCharacterId(l)(ctx)(tx)(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
@@ -272,7 +273,7 @@ func AcceptInvite(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 			return func(characterId uint32, worldId byte, targetId uint32) error {
 				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					cbl, err := GetByCharacterId(l)(ctx)(tx)(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
@@ -326,17 +327,17 @@ func AcceptInvite(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.
 						return err
 					}
 
-					err = removeBuddy(db, t.Id(), targetId, characterId)
+					err = removeBuddy(tx, t.Id(), targetId, characterId)
 					if err != nil {
 						return err
 					}
 
-					err = addBuddy(db, t.Id(), characterId, targetId, oc.Name(), "Default Group", false)
+					err = addBuddy(tx, t.Id(), characterId, targetId, oc.Name(), "Default Group", false)
 					if err != nil {
 						return err
 					}
 
-					err = addBuddy(db, t.Id(), targetId, characterId, c.Name(), ob.Group(), false)
+					err = addBuddy(tx, t.Id(), targetId, characterId, c.Name(), ob.Group(), false)
 					if err != nil {
 						return err
 					}
@@ -364,7 +365,7 @@ func DeleteBuddy(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, targetId uint32) error {
 			return func(characterId uint32, worldId byte, targetId uint32) error {
 				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					err := removeBuddy(tx, t.Id(), characterId, targetId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", characterId)
@@ -409,7 +410,7 @@ func UpdateBuddyChannel(l logrus.FieldLogger) func(ctx context.Context) func(db 
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, channelId int8) error {
 			return func(characterId uint32, worldId byte, channelId int8) error {
 				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					bl, err := byCharacterIdEntityProvider(t.Id(), characterId)(tx)()
 					if err != nil {
 						l.WithError(err).Errorf("Unable to locate buddy list for character [%d].", characterId)
@@ -448,7 +449,7 @@ func UpdateBuddyShopStatus(l logrus.FieldLogger) func(ctx context.Context) func(
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, inShop bool) error {
 			return func(characterId uint32, worldId byte, inShop bool) error {
 				var events = model.FixedProvider[[]kafka.Message]([]kafka.Message{})
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					bl, err := byCharacterIdEntityProvider(t.Id(), characterId)(tx)()
 					if err != nil {
 						l.WithError(err).Errorf("Unable to locate buddy list for character [%d].", characterId)

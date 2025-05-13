@@ -2,6 +2,7 @@ package equipable
 
 import (
 	"atlas-equipables/data/equipable"
+	"atlas-equipables/database"
 	"atlas-equipables/kafka/message"
 	equipable2 "atlas-equipables/kafka/message/equipable"
 	"atlas-equipables/kafka/producer"
@@ -63,7 +64,7 @@ func (p *Processor) Create(mb *message.Buffer) func(i Model) (Model, error) {
 	return func(i Model) (Model, error) {
 		p.l.Debugf("Creating equipable for item [%d].", i.ItemId())
 		var o Model
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			var err error
 			if i.Strength() == 0 && i.Dexterity() == 0 && i.Intelligence() == 0 && i.Luck() == 0 && i.HP() == 0 && i.MP() == 0 && i.WeaponAttack() == 0 && i.WeaponDefense() == 0 && i.MagicAttack() == 0 && i.MagicDefense() == 0 && i.Accuracy() == 0 && i.Avoidability() == 0 && i.Hands() == 0 && i.Speed() == 0 && i.Jump() == 0 && i.Slots() == 0 {
 				var ea equipable.Model
@@ -141,7 +142,7 @@ func (p *Processor) Update(mb *message.Buffer) func(i Model) (Model, error) {
 	return func(i Model) (Model, error) {
 		var um Model
 		p.l.Debugf("Updating equipable [%d].", i.Id())
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById(i.Id())
 			if err != nil {
 				return err
@@ -248,7 +249,7 @@ func (p *Processor) DeleteByIdAndEmit(id uint32) error {
 func (p *Processor) DeleteById(mb *message.Buffer) func(id uint32) error {
 	return func(id uint32) error {
 		p.l.Debugf("Attempting to delete equipable [%d].", id)
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			err := deleteById(p.db, p.t.Id(), id)
 			if err != nil {
 				return err

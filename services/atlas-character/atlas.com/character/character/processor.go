@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-character/database"
 	"atlas-character/drop"
 	"atlas-character/kafka/producer"
 	"atlas-character/portal"
@@ -208,7 +209,7 @@ func Create(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) fu
 
 					t := tenant.MustFromContext(ctx)
 					var res Model
-					err = db.Transaction(func(tx *gorm.DB) error {
+					err = database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 						res, err = create(tx, t.Id(), input.accountId, input.worldId, input.name, input.level, input.strength, input.dexterity, input.intelligence, input.luck, input.maxHp, input.maxMp, input.jobId, input.gender, input.hair, input.face, input.skinColor, input.mapId)
 						if err != nil {
 							l.WithError(err).Errorf("Error persisting character in database.")
@@ -233,7 +234,7 @@ func Delete(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.Context) fu
 		return func(ctx context.Context) func(eventProducer producer.Provider) func(characterId uint32) error {
 			return func(eventProducer producer.Provider) func(characterId uint32) error {
 				return func(characterId uint32) error {
-					err := db.Transaction(func(tx *gorm.DB) error {
+					err := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 						c, err := GetById(ctx)(tx)()(characterId)
 						if err != nil {
 							return err
@@ -383,7 +384,7 @@ func ChangeJob(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB)
 		return func(db *gorm.DB) func(characterId uint32, worldId byte, channelId byte, jobId uint16) error {
 			return func(characterId uint32, worldId byte, channelId byte, jobId uint16) error {
 				l.Debugf("Attempting to set character [%d] job to [%d].", characterId, jobId)
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
 						return err
@@ -429,7 +430,7 @@ func AwardExperience(l logrus.FieldLogger) func(ctx context.Context) func(db *go
 				l.Debugf("Attempting to award character [%d] [%d] experience.", characterId, amount)
 				awardedLevels := byte(0)
 				current := uint32(0)
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
 						return err
@@ -473,7 +474,7 @@ func AwardLevel(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB
 				l.Debugf("Attempting to award character [%d] [%d] level(s).", characterId, amount)
 				actual := amount
 				current := byte(0)
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
 						return err
@@ -523,7 +524,7 @@ func RequestChangeMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, amount int32, actorId uint32, actorType string) error {
 			return func(characterId uint32, amount int32, actorId uint32, actorType string) error {
-				return db.Transaction(func(tx *gorm.DB) error {
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their meso adjusted.", characterId)
@@ -552,7 +553,7 @@ func AttemptMesoPickUp(l logrus.FieldLogger) func(db *gorm.DB) func(ctx context.
 		return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
 			t := tenant.MustFromContext(ctx)
 			return func(worldId byte, channelId byte, mapId uint32, characterId uint32, dropId uint32, meso uint32) error {
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their meso adjusted.", characterId)
@@ -580,7 +581,7 @@ func RequestDropMeso(l logrus.FieldLogger) func(ctx context.Context) func(db *go
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(worldId byte, channelId byte, mapId uint32, characterId uint32, amount uint32) error {
 			return func(worldId byte, channelId byte, mapId uint32, characterId uint32, amount uint32) error {
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their meso adjusted.", characterId)
@@ -613,7 +614,7 @@ func RequestChangeFame(l logrus.FieldLogger) func(ctx context.Context) func(db *
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, amount int8, actorId uint32, actorType string) error {
 			return func(characterId uint32, amount int8, actorId uint32, actorType string) error {
-				return db.Transaction(func(tx *gorm.DB) error {
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their fame adjusted.", characterId)
@@ -640,7 +641,7 @@ func RequestDistributeAp(l logrus.FieldLogger) func(ctx context.Context) func(db
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, distributions []Distribution) error {
 			return func(characterId uint32, distributions []Distribution) error {
-				return db.Transaction(func(tx *gorm.DB) error {
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
 						_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(statChangedProvider(c.WorldId(), 0, characterId, []string{}))
@@ -723,7 +724,7 @@ func RequestDistributeSp(l logrus.FieldLogger) func(ctx context.Context) func(db
 		return func(db *gorm.DB) func(characterId uint32, skillId uint32, amount int8) error {
 			var c Model
 			return func(characterId uint32, skillId uint32, amount int8) error {
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					var err error
 					c, err = GetById(ctx)(db)(SkillModelDecorator(l)(ctx))(characterId)
 					if err != nil {
@@ -898,7 +899,7 @@ func ChangeHP(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) 
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
 			return func(worldId byte, channelId byte, characterId uint32, amount int16) error {
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(db)()(characterId)
 					if err != nil {
 						return err
@@ -924,7 +925,7 @@ func ChangeMP(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) 
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, amount int16) error {
 			return func(worldId byte, channelId byte, characterId uint32, amount int16) error {
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)()(characterId)
 					if err != nil {
 						return err
@@ -957,7 +958,7 @@ func ProcessLevelChange(l logrus.FieldLogger) func(ctx context.Context) func(db 
 				var addedDex uint16
 				var sus = []string{"AVAILABLE_AP", "AVAILABLE_SP", "HP", "MAX_HP", "MP", "MAX_MP"}
 
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)(SkillModelDecorator(l)(ctx))(characterId)
 					if err != nil {
 						return err
@@ -1156,7 +1157,7 @@ func ProcessJobChange(l logrus.FieldLogger) func(ctx context.Context) func(db *g
 					return uint16(rand.Float32()*float32(upper-lower+1)) + lower
 				}
 
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					c, err := GetById(ctx)(tx)(SkillModelDecorator(l)(ctx))(characterId)
 					if err != nil {
 						return err

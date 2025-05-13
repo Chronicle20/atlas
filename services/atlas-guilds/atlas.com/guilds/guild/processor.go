@@ -3,6 +3,7 @@ package guild
 import (
 	"atlas-guilds/character"
 	"atlas-guilds/coordinator"
+	"atlas-guilds/database"
 	character2 "atlas-guilds/guild/character"
 	"atlas-guilds/guild/member"
 	"atlas-guilds/guild/title"
@@ -223,7 +224,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 				}
 
 				var g Model
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					g, err = GetByName(l)(ctx)(tx)(worldId, name)
 					if g.Id() != 0 {
 						l.WithError(err).Errorf("Attempting to create a guild [%s] by name which already exists.", name)
@@ -335,7 +336,7 @@ func UpdateMemberOnline(l logrus.FieldLogger) func(ctx context.Context) func(db 
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(characterId uint32, online bool) error {
 			return func(characterId uint32, online bool) error {
-				return db.Transaction(func(tx *gorm.DB) error {
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					g, err := GetByMemberId(l)(ctx)(tx)(characterId)
 					if err != nil {
 						return nil
@@ -467,7 +468,7 @@ func ChangeMemberTitle(l logrus.FieldLogger) func(ctx context.Context) func(db *
 		return func(db *gorm.DB) func(guildId uint32, characterId uint32, targetId uint32, title byte) error {
 			return func(guildId uint32, characterId uint32, targetId uint32, title byte) error {
 				l.Debugf("Character [%d] attempting to change [%d] title to [%d].", characterId, targetId, title)
-				return db.Transaction(func(tx *gorm.DB) error {
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					g, err := GetByMemberId(l)(ctx)(tx)(characterId)
 					if err != nil {
 						return nil
@@ -491,7 +492,7 @@ func RequestDisband(l logrus.FieldLogger) func(ctx context.Context) func(db *gor
 		return func(db *gorm.DB) func(characterId uint32) error {
 			return func(characterId uint32) error {
 				l.Debugf("Character [%d] attempting to disband guild.", characterId)
-				return db.Transaction(func(tx *gorm.DB) error {
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					g, err := GetByMemberId(l)(ctx)(tx)(characterId)
 					if err != nil {
 						return err

@@ -2,6 +2,7 @@ package asset
 
 import (
 	"atlas-inventory/cash"
+	"atlas-inventory/database"
 	"atlas-inventory/equipable"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/asset"
@@ -241,7 +242,7 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32, compartm
 	return func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
 		return func(a Model[any]) error {
 			p.l.Debugf("Attempting to delete asset [%d].", a.Id())
-			txErr := p.db.Transaction(func(tx *gorm.DB) error {
+			txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 				var deleteRefFunc func(id uint32) error
 				if a.ReferenceType() == ReferenceTypeEquipable {
 					deleteRefFunc = p.equipableProcessor.Delete
@@ -281,7 +282,7 @@ func (p *Processor) Drop(mb *message.Buffer) func(characterId uint32, compartmen
 	return func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
 		return func(a Model[any]) error {
 			p.l.Debugf("Attempting to delete asset [%d].", a.Id())
-			txErr := p.db.Transaction(func(tx *gorm.DB) error {
+			txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 				err := deleteById(tx, p.t.Id(), a.Id())
 				if err != nil {
 					return err
@@ -373,7 +374,7 @@ func (p *Processor) RelayUpdate(mb *message.Buffer) func(characterId uint32) fun
 				return func(referenceData interface{}) error {
 					p.l.Debugf("Attempting to relay asset update. ReferenceId [%d], ReferenceType [%s].", referenceId, referenceType)
 					var a Model[any]
-					txErr := p.db.Transaction(func(tx *gorm.DB) error {
+					txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 						var ap model.Provider[Model[any]]
 						if referenceData == nil {
 							ap = p.WithTransaction(tx).ByReferenceIdProvider(referenceId, referenceType)
@@ -402,7 +403,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 	return func(characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) (Model[any], error) {
 		p.l.Debugf("Character [%d] attempting to create [%d] item(s) [%d] in slot [%d] of compartment [%s].", characterId, quantity, templateId, slot, compartmentId.String())
 		var a Model[any]
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			var referenceId uint32
 			var referenceType ReferenceType
 			inventoryType, ok := inventory.TypeFromItemId(templateId)
@@ -480,7 +481,7 @@ func (p *Processor) Acquire(mb *message.Buffer) func(characterId uint32, compart
 	return func(characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, referenceId uint32) (Model[any], error) {
 		p.l.Debugf("Character [%d] attempting to acquire [%d] item(s) [%d] in slot [%d] of compartment [%s].", characterId, quantity, templateId, slot, compartmentId.String())
 		var a Model[any]
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			var referenceType ReferenceType
 			inventoryType, ok := inventory.TypeFromItemId(templateId)
 			if !ok {

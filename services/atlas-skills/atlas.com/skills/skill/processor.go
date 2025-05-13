@@ -3,6 +3,7 @@ package skill
 import (
 	skill2 "atlas-skills/kafka/message/skill"
 	"atlas-skills/kafka/producer"
+	"atlas-skills/database"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
@@ -76,7 +77,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 			return func(characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) (Model, error) {
 				l.Debugf("Attempting to create skill [%d] for character [%d].", id, characterId)
 				var s Model
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					var err error
 					s, err = GetById(ctx)(tx)(characterId, id)
 					if s.Id() != 0 {
@@ -114,7 +115,7 @@ func Update(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 			return func(characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) (Model, error) {
 				l.Debugf("Attempting to update skill [%d] for character [%d].", id, characterId)
 				var s Model
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					var err error
 					s, err = GetById(ctx)(tx)(characterId, id)
 					if err != nil {
@@ -186,7 +187,7 @@ func Delete(ctx context.Context) func(db *gorm.DB) func(characterId uint32) erro
 	t := tenant.MustFromContext(ctx)
 	return func(db *gorm.DB) func(characterId uint32) error {
 		return func(characterId uint32) error {
-			return db.Transaction(func(tx *gorm.DB) error {
+			return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 				return deleteByCharacter(tx, t, characterId)
 			})
 		}

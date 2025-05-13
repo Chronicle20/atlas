@@ -1,6 +1,7 @@
 package macro
 
 import (
+	"atlas-skills/database"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -31,7 +32,7 @@ func Update(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) fu
 		return func(db *gorm.DB) func(characterId uint32, macros []Model) error {
 			return func(characterId uint32, macros []Model) error {
 				l.Debugf("Updating skill macros for character [%d].", characterId)
-				txErr := db.Transaction(func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					err := deleteByCharacter(tx, t, characterId)
 					if err != nil {
 						return err
@@ -57,7 +58,7 @@ func Delete(ctx context.Context) func(db *gorm.DB) func(characterId uint32) erro
 	t := tenant.MustFromContext(ctx)
 	return func(db *gorm.DB) func(characterId uint32) error {
 		return func(characterId uint32) error {
-			return db.Transaction(func(tx *gorm.DB) error {
+			return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 				return deleteByCharacter(tx, t, characterId)
 			})
 		}

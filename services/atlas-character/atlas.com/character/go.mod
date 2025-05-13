@@ -1,10 +1,10 @@
 module atlas-character
 
-go 1.24.1
+go 1.24.2
 
 require (
 	github.com/Chronicle20/atlas-constants v1.0.16
-	github.com/Chronicle20/atlas-kafka v1.1.9
+	github.com/Chronicle20/atlas-kafka v1.1.10
 	github.com/Chronicle20/atlas-model v1.2.4
 	github.com/Chronicle20/atlas-rest v1.2.14
 	github.com/Chronicle20/atlas-tenant v1.0.6
@@ -21,7 +21,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/driver/sqlite v1.5.7
-	gorm.io/gorm v1.26.0
+	gorm.io/gorm v1.26.1
 )
 
 require (

@@ -1,6 +1,6 @@
 # Start from a Debian image with the latest version of Go installed
 # and a workspace (GOPATH) configured at /go.
-FROM golang:1.24.2-alpine3.21 AS build-env
+FROM golang:1.24.3-alpine3.21 AS build-env
 
 # Copy the local package files to the container's workspace.
 
@@ -9,9 +9,11 @@ FROM golang:1.24.2-alpine3.21 AS build-env
 # either manually or with a tool like "godep".)
 RUN apk add --no-cache git
 
-ADD ./atlas.com/character /atlas.com/character
+ADD ./atlas.com/character/go.mod ./atlas.com/character/go.sum /atlas.com/character/
 WORKDIR /atlas.com/character
+RUN go mod download
 
+ADD ./atlas.com/character /atlas.com/character
 RUN go build -o /server
 
 FROM alpine:3.21

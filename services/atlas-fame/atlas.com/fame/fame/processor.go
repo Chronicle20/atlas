@@ -2,6 +2,7 @@ package fame
 
 import (
 	"atlas-fame/character"
+	"atlas-fame/database"
 	"atlas-fame/kafka/producer"
 	"context"
 	"errors"
@@ -38,7 +39,7 @@ func RequestChange(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm
 		t := tenant.MustFromContext(ctx)
 		return func(db *gorm.DB) func(worldId byte, channelId byte, characterId uint32, mapId uint32, targetId uint32, amount int8) error {
 			return func(worldId byte, channelId byte, characterId uint32, mapId uint32, targetId uint32, amount int8) error {
-				return db.Transaction(func(tx *gorm.DB) error {
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					c, err := character.GetById(l)(ctx)(characterId)
 					if err != nil {
 						_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicFameStatus)(errorEventStatusProvider(worldId, channelId, characterId, StatusEventErrorTypeUnexpected))

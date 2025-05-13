@@ -6,6 +6,7 @@
   "platformAutomerge": true,
   "requiredStatusChecks": null,
   "allowedPostUpgradeCommands": ["go mod tidy"],
+  "enabledManagers": ["gomod"],
   "packageRules": [
     {
       "managers": ["gomod"],
@@ -20,8 +21,23 @@
     {
       "managers": ["gomod"],
       "matchPackageNames": ["go"],
+      "versioning": "golang",
       "groupName": "Go version updates",
       "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "managers": ["gomod"],
+      "matchPackageNames": ["go"],
+      "versioning": "golang",
+      "groupName": "Go version updates",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "managers": ["dockerfile"],
+      "matchDepPatterns": ["golang"],
+      "groupName": "Go version updates in Dockerfiles",
       "automerge": true
     }
   ],

@@ -3,7 +3,7 @@ module atlas-drops
 go 1.24.2
 
 require (
-	github.com/Chronicle20/atlas-kafka v1.1.10
+	github.com/Chronicle20/atlas-kafka v1.1.11
 	github.com/Chronicle20/atlas-model v1.2.4
 	github.com/Chronicle20/atlas-rest v1.2.14
 	github.com/Chronicle20/atlas-tenant v1.0.6

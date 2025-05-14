@@ -4,14 +4,14 @@ go 1.24.2
 
 require (
 	github.com/Chronicle20/atlas-constants v1.0.16
-	github.com/Chronicle20/atlas-kafka v1.1.10
+	github.com/Chronicle20/atlas-kafka v1.1.11
 	github.com/Chronicle20/atlas-model v1.2.4
 	github.com/Chronicle20/atlas-rest v1.2.14
 	github.com/Chronicle20/atlas-tenant v1.0.6
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jtumidanski/api2go v1.0.4
-	github.com/segmentio/kafka-go v0.4.47
+	github.com/segmentio/kafka-go v0.4.48
 	github.com/sirupsen/logrus v1.9.3
 	go.elastic.co/ecslogrus v1.0.0
 	go.opentelemetry.io/otel v1.35.0

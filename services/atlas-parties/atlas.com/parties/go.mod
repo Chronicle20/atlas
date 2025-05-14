@@ -3,7 +3,7 @@ module atlas-parties
 go 1.24.2
 
 require (
-	github.com/Chronicle20/atlas-kafka v1.1.10
+	github.com/Chronicle20/atlas-kafka v1.1.11
 	github.com/Chronicle20/atlas-model v1.2.4
 	github.com/Chronicle20/atlas-rest v1.2.14
 	github.com/Chronicle20/atlas-tenant v1.0.6
@@ -11,7 +11,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/jtumidanski/api2go v1.0.4
 	github.com/opentracing/opentracing-go v1.2.0
-	github.com/segmentio/kafka-go v0.4.47
+	github.com/segmentio/kafka-go v0.4.48
 	github.com/sirupsen/logrus v1.9.3
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	go.elastic.co/ecslogrus v1.0.0

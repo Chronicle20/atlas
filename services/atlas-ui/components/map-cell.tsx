@@ -29,7 +29,7 @@ export function MapCell({ mapId, tenant }: { mapId: string; tenant: Tenant | nul
                         {name}
                     </Badge>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent copyable>
                     <p>{mapId}</p>
                 </TooltipContent>
             </Tooltip>

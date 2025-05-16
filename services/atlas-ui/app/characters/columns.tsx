@@ -97,7 +97,7 @@ export const getColumns = ({tenant, accountMap}: ColumnProps): ColumnDef<Charact
                                         {name}
                                     </Badge>
                                 </TooltipTrigger>
-                                <TooltipContent>
+                                <TooltipContent copyable>
                                     <p>{String(value)}</p>
                                 </TooltipContent>
                             </Tooltip>

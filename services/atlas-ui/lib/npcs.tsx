@@ -36,7 +36,7 @@ export async function fetchNPCs(tenant: Tenant): Promise<NPC[]> {
         throw new Error("Failed to fetch NPCs.");
     }
     const responseData = await response.json();
-    
+
     // Extract NPCs from shops data
     return responseData.data.map((shop: Shop) => ({
         id: shop.attributes.npcId,
@@ -61,11 +61,13 @@ export async function createCommodity(tenant: Tenant, npcId: number, commodity: 
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
     const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop/commodities", {
         method: "POST",
-        headers: {
-            ...tenantHeaders(tenant),
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(commodity),
+        headers: tenantHeaders(tenant),
+        body: JSON.stringify({
+            data: {
+                type: "commodities",
+                attributes: commodity
+            }
+        }),
     });
     if (!response.ok) {
         throw new Error("Failed to create commodity.");
@@ -78,11 +80,13 @@ export async function updateCommodity(tenant: Tenant, npcId: number, commodityId
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
     const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop/commodities/" + commodityId, {
         method: "PUT",
-        headers: {
-            ...tenantHeaders(tenant),
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(commodity),
+        headers: tenantHeaders(tenant),
+        body: JSON.stringify({
+            data: {
+                type: "commodities",
+                attributes: commodity
+            }
+        }),
     });
     if (!response.ok) {
         throw new Error("Failed to update commodity.");

@@ -3,6 +3,7 @@ package data
 import (
 	"archive/zip"
 	"atlas-data/cash"
+	"atlas-data/characters/templates"
 	"atlas-data/commodity"
 	"atlas-data/consumable"
 	"atlas-data/equipment"
@@ -27,18 +28,19 @@ import (
 )
 
 const (
-	WorkerMap       = "MAP"
-	WorkerMonster   = "MONSTER"
-	WorkerCharacter = "CHARACTER"
-	WorkerReactor   = "REACTOR"
-	WorkerSkill     = "SKILL"
-	WorkerPet       = "PET"
-	WorkerConsume   = "CONSUME"
-	WorkerCash      = "CASH"
-	WorkerCommodity = "COMMODITY"
+	WorkerMap               = "MAP"
+	WorkerMonster           = "MONSTER"
+	WorkerCharacter         = "CHARACTER"
+	WorkerReactor           = "REACTOR"
+	WorkerSkill             = "SKILL"
+	WorkerPet               = "PET"
+	WorkerConsume           = "CONSUME"
+	WorkerCash              = "CASH"
+	WorkerCommodity         = "COMMODITY"
+	WorkerCharacterCreation = "CHARACTER_CREATION"
 )
 
-var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity}
+var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity, WorkerCharacterCreation}
 
 func ProcessZip(l logrus.FieldLogger) func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
 	return func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
@@ -172,6 +174,8 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Cash"), cash.RegisterCash(db))()
 				} else if name == WorkerCommodity {
 					_ = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "Commodity.img.xml"), commodity.RegisterCommodity(db))()
+				} else if name == WorkerCharacterCreation {
+					_ = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "MakeCharInfo.img.xml"), templates.RegisterCharacterCreation(db))()
 				}
 
 				return nil

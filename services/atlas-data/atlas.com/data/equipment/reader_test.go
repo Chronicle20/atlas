@@ -543,6 +543,9 @@ func TestReader(t *testing.T) {
 	if rm.Slots != 10 {
 		t.Fatal("slots != 10")
 	}
+	if rm.Price != 500000 {
+		t.Fatal("price != 500000")
+	}
 	if len(rm.EquipSlots) != 1 {
 		t.Fatal("len(equip_slots) != 1")
 	}

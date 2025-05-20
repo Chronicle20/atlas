@@ -8,6 +8,8 @@ github.com/Chronicle20/atlas-model v1.2.4 h1:Rdn7u26CxYO3ASryD+YFIHtDaVEgI+VMw8N
 github.com/Chronicle20/atlas-model v1.2.4/go.mod h1:5FNYT/ypml+goxft0XCACTEp6666yys+l6LTxSPeh1k=
 github.com/Chronicle20/atlas-rest v1.2.14 h1:+EOG/qVAO6Stgvee723B9XF6AD31vYuKuD3RvXpxnks=
 github.com/Chronicle20/atlas-rest v1.2.14/go.mod h1:Luhdrs0PxV6oHRg73hcY/TIaD84a1MRezSbYdHnNU+8=
+github.com/Chronicle20/atlas-rest v1.2.15 h1:lvaXqnrQaHqbPFY3xrGmKZtD5WUSwix0C0t26zeesA4=
+github.com/Chronicle20/atlas-rest v1.2.15/go.mod h1:7ttOuagtAFa8cev6t/32hWFroV1k63+3KLyuxXnTNQA=
 github.com/Chronicle20/atlas-socket v1.2.5 h1:SuKwLJQ4MJ/AgWWbfXeQRa0GxBTqBgTGIUZO3qIAnbs=
 github.com/Chronicle20/atlas-socket v1.2.5/go.mod h1:O0wHsS7xiyryT673zskPxk4eEPhcgG0tEaFtAza26BI=
 github.com/Chronicle20/atlas-socket v1.2.6 h1:EfMBuqjwqK5rfhTNho6pSqkYh27Br3/Ouu7IlJrLFyo=

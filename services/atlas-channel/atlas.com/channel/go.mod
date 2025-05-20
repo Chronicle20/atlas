@@ -7,7 +7,7 @@ require (
 	github.com/Chronicle20/atlas-kafka v1.1.11
 	github.com/Chronicle20/atlas-model v1.2.4
 	github.com/Chronicle20/atlas-rest v1.2.15
-	github.com/Chronicle20/atlas-socket v1.2.5
+	github.com/Chronicle20/atlas-socket v1.2.6
 	github.com/Chronicle20/atlas-tenant v1.0.6
 	github.com/google/uuid v1.6.0
 	github.com/jtumidanski/api2go v1.0.4
@@ -35,7 +35,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.5.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
+	golang.org/x/text v0.25.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250218202821-56aae31c358a // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
 	google.golang.org/grpc v1.71.0 // indirect

@@ -6,7 +6,7 @@ require (
 	github.com/Chronicle20/atlas-constants v1.0.16
 	github.com/Chronicle20/atlas-kafka v1.1.11
 	github.com/Chronicle20/atlas-model v1.2.4
-	github.com/Chronicle20/atlas-rest v1.2.14
+	github.com/Chronicle20/atlas-rest v1.2.15
 	github.com/google/uuid v1.6.0
 	github.com/jtumidanski/api2go v1.0.4
 	github.com/segmentio/kafka-go v0.4.48

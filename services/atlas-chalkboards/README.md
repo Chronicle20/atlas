@@ -12,45 +12,10 @@ A RESTful microservice that provides chalkboard functionality for the Mushroom g
 - Kafka integration for event-driven communication with other services
 - Jaeger tracing for distributed system monitoring
 
-## Setup
-
-### Prerequisites
-
-- Go 1.24.x
-- Docker (for containerized deployment)
-
-### Environment Variables
+## Environment Variables
 
 - `JAEGER_HOST` - Jaeger [host]:[port] for distributed tracing
 - `LOG_LEVEL` - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
-
-## Building and Running
-
-### Local Development
-
-```bash
-cd atlas.com/chalkboards
-go mod download
-go run main.go
-```
-
-### Docker Build
-
-Windows:
-```
-docker-build.bat
-```
-
-Linux/Mac:
-```bash
-./docker-build.sh
-```
-
-Or manually:
-```bash
-docker build -t atlas-chalkboards .
-docker run -p 8080:8080 atlas-chalkboards
-```
 
 ## API
 
@@ -117,7 +82,3 @@ Retrieves all chalkboard messages in a specific map.
   ]
 }
 ```
-
-## Architecture
-
-This service is part of a microservices architecture and communicates with other services through Kafka. It consumes events related to characters and chalkboards, and provides REST API endpoints for retrieving chalkboard data.

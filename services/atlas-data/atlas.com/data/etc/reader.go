@@ -39,7 +39,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 				Id: etcId,
 			}
 			m.Price = uint32(i.GetIntegerWithDefault("price", 0))
-			m.UnitPrice = uint32(i.GetIntegerWithDefault("unitPrice", 0))
+			m.UnitPrice = i.GetDouble("unitPrice", 0)
 			m.SlotMax = uint32(i.GetIntegerWithDefault("slotMax", 0))
 
 			res = append(res, m)

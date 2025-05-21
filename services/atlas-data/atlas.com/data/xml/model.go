@@ -14,10 +14,11 @@ type Node struct {
 	IntegerNodes []IntegerNode `xml:"int"`
 	StringNodes  []StringNode  `xml:"string"`
 	PointNodes   []PointNode   `xml:"vector"`
+	DoubleNodes  []DoubleNode  `xml:"double"`
 }
 
-func (i *Node) ChildByName(name string) (*Node, error) {
-	for _, c := range i.ChildNodes {
+func (n *Node) ChildByName(name string) (*Node, error) {
+	for _, c := range n.ChildNodes {
 		if c.Name == name {
 			return &c, nil
 		}
@@ -25,8 +26,8 @@ func (i *Node) ChildByName(name string) (*Node, error) {
 	return nil, errors.New("child not found")
 }
 
-func (i *Node) GetShort(name string, def uint16) uint16 {
-	for _, c := range i.IntegerNodes {
+func (n *Node) GetShort(name string, def uint16) uint16 {
+	for _, c := range n.IntegerNodes {
 		if c.Name == name {
 			res, err := strconv.ParseUint(c.Value, 10, 16)
 			if err != nil {
@@ -38,8 +39,8 @@ func (i *Node) GetShort(name string, def uint16) uint16 {
 	return def
 }
 
-func (i *Node) GetBool(name string, def bool) bool {
-	for _, c := range i.IntegerNodes {
+func (n *Node) GetBool(name string, def bool) bool {
+	for _, c := range n.IntegerNodes {
 		if c.Name == name {
 			res, err := strconv.ParseUint(c.Value, 10, 16)
 			if err != nil {
@@ -51,8 +52,8 @@ func (i *Node) GetBool(name string, def bool) bool {
 	return def
 }
 
-func (i *Node) GetString(name string, def string) string {
-	for _, c := range i.StringNodes {
+func (n *Node) GetString(name string, def string) string {
+	for _, c := range n.StringNodes {
 		if c.Name == name {
 			return c.Value
 		}
@@ -60,8 +61,8 @@ func (i *Node) GetString(name string, def string) string {
 	return def
 }
 
-func (i *Node) GetIntegerWithDefault(name string, def int32) int32 {
-	for _, c := range i.IntegerNodes {
+func (n *Node) GetIntegerWithDefault(name string, def int32) int32 {
+	for _, c := range n.IntegerNodes {
 		if c.Name == name {
 			res, err := strconv.ParseInt(c.Value, 10, 32)
 			if err != nil {
@@ -73,8 +74,8 @@ func (i *Node) GetIntegerWithDefault(name string, def int32) int32 {
 	return def
 }
 
-func (i *Node) GetFloatWithDefault(name string, def float64) float64 {
-	for _, c := range i.IntegerNodes {
+func (n *Node) GetFloatWithDefault(name string, def float64) float64 {
+	for _, c := range n.IntegerNodes {
 		if c.Name == name {
 			res, err := strconv.ParseFloat(c.Value, 64)
 			if err != nil {
@@ -86,8 +87,29 @@ func (i *Node) GetFloatWithDefault(name string, def float64) float64 {
 	return def
 }
 
-func (i *Node) GetPoint(name string, defX int32, defY int32) (int32, int32) {
-	for _, c := range i.PointNodes {
+func (n *Node) GetDouble(name string, def float64) float64 {
+	for _, c := range n.DoubleNodes {
+		if c.Name == name {
+			// Replace comma with period for proper float parsing
+			value := c.Value
+			for i := 0; i < len(value); i++ {
+				if value[i] == ',' {
+					value = value[:i] + "." + value[i+1:]
+					break
+				}
+			}
+			res, err := strconv.ParseFloat(value, 64)
+			if err != nil {
+				return def
+			}
+			return res
+		}
+	}
+	return def
+}
+
+func (n *Node) GetPoint(name string, defX int32, defY int32) (int32, int32) {
+	for _, c := range n.PointNodes {
 		if c.Name == name {
 			x, err := strconv.ParseInt(c.X, 10, 32)
 			if err != nil {
@@ -117,6 +139,11 @@ type PointNode struct {
 	Name string `xml:"name,attr"`
 	X    string `xml:"x,attr"`
 	Y    string `xml:"y,attr"`
+}
+
+type DoubleNode struct {
+	Name  string `xml:"name,attr"`
+	Value string `xml:"value,attr"`
 }
 
 type CanvasNode struct {

@@ -14,6 +14,8 @@ type RestModel struct {
 	TokenPrice   uint32 `json:"tokenPrice"`
 	Period       uint32 `json:"period"`
 	LevelLimit   uint32 `json:"levelLimit"`
+	UnitPrice    uint32 `json:"unitPrice"`
+	SlotMax      uint32 `json:"slotMax"`
 }
 
 // GetID to satisfy jsonapi.MarshalIdentifier interface
@@ -43,6 +45,8 @@ func Transform(m Model) (RestModel, error) {
 		TokenPrice:   m.tokenPrice,
 		Period:       m.period,
 		LevelLimit:   m.levelLimit,
+		UnitPrice:    m.unitPrice,
+		SlotMax:      m.slotMax,
 	}, nil
 }
 
@@ -63,5 +67,7 @@ func Extract(rm RestModel) (Model, error) {
 		SetTokenPrice(rm.TokenPrice).
 		SetPeriod(rm.Period).
 		SetLevelLimit(rm.LevelLimit).
+		SetUnitPrice(rm.UnitPrice).
+		SetSlotMax(rm.SlotMax).
 		Build(), nil
 }

@@ -71,13 +71,17 @@ Example Response:
           "id": "550e8400-e29b-41d4-a716-446655440000",
           "templateId": 2000,
           "mesoPrice": 1000,
-          "perfectPitchPrice": 0
+          "tokenPrice": 0,
+          "unitPrice": 1,
+          "slotMax": 100
         },
         {
           "id": "550e8400-e29b-41d4-a716-446655440001",
           "templateId": 2001,
           "mesoPrice": 1500,
-          "perfectPitchPrice": 0
+          "tokenPrice": 0,
+          "unitPrice": 1,
+          "slotMax": 100
         }
       ]
     }
@@ -102,7 +106,9 @@ Adds a new commodity to an NPC's shop.
       "attributes": {
         "templateId": 2002,
         "mesoPrice": 2000,
-        "perfectPitchPrice": 0
+        "tokenPrice": 0,
+        "unitPrice": 1,
+        "slotMax": 100
       }
     }
   }
@@ -116,7 +122,9 @@ Adds a new commodity to an NPC's shop.
       "attributes": {
         "templateId": 2002,
         "mesoPrice": 2000,
-        "perfectPitchPrice": 0
+        "tokenPrice": 0,
+        "unitPrice": 1,
+        "slotMax": 100
       }
     }
   }
@@ -140,7 +148,9 @@ Updates an existing commodity in a shop.
       "attributes": {
         "templateId": 2002,
         "mesoPrice": 2500,
-        "perfectPitchPrice": 0
+        "tokenPrice": 0,
+        "unitPrice": 1,
+        "slotMax": 100
       }
     }
   }
@@ -154,7 +164,9 @@ Updates an existing commodity in a shop.
       "attributes": {
         "templateId": 2002,
         "mesoPrice": 2500,
-        "perfectPitchPrice": 0
+        "tokenPrice": 0,
+        "unitPrice": 1,
+        "slotMax": 100
       }
     }
   }

@@ -174,6 +174,14 @@ func (m Model) CursedRate() uint32 {
 	return m.cursed
 }
 
+func (m Model) UnitPrice() uint32 {
+	return m.unitPrice
+}
+
+func (m Model) SlotMax() uint32 {
+	return m.slotMax
+}
+
 type RewardModel struct {
 	itemId uint32
 	count  uint32

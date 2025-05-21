@@ -1,7 +1,11 @@
 package commodities
 
 import (
+	"atlas-npc/data/consumable"
+	"atlas-npc/data/etc"
+	"atlas-npc/data/setup"
 	"context"
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -35,18 +39,13 @@ type ProcessorImpl struct {
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	p := &ProcessorImpl{
-		l:        l,
-		ctx:      ctx,
-		db:       db,
-		t:        tenant.MustFromContext(ctx),
-		CreateFn: createCommodity(ctx, db),
-		UpdateFn: updateCommodity(ctx, db),
-		DeleteFn: deleteCommodity(ctx, db),
+		l:   l,
+		ctx: ctx,
+		db:  db,
+		t:   tenant.MustFromContext(ctx),
 	}
 	p.GetByNpcIdFn = model.CollapseProvider(p.ByNpcIdProvider)
-	p.GetAllByTenantFn = func() ([]Model, error) {
-		return p.ByTenantProvider()()
-	}
+	p.GetAllByTenantFn = p.ByTenantProvider()
 	return p
 }
 
@@ -55,27 +54,85 @@ func (p *ProcessorImpl) GetByNpcId(npcId uint32) ([]Model, error) {
 }
 
 func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32) model.Provider[[]Model] {
-	return model.SliceMap(Make)(getByNpcId(p.t.Id(), npcId)(p.db))(model.ParallelMap())
+	mp := model.SliceMap(Make)(getByNpcId(p.t.Id(), npcId)(p.db))(model.ParallelMap())
+	return model.SliceMap(model.Decorate(model.Decorators(p.DataDecorator)))(mp)(model.ParallelMap())
+}
+
+func (p *ProcessorImpl) DataDecorator(m Model) Model {
+	b := Clone(m)
+
+	// Determine the inventory type from the templateId
+	it, ok := inventory.TypeFromItemId(m.TemplateId())
+	if !ok {
+		return b.Build()
+	}
+
+	if it == inventory.TypeValueEquip {
+		b.SetUnitPrice(1)
+		b.SetSlotMax(1)
+	} else if it == inventory.TypeValueUse {
+		// For consumable, get unitPrice and slotMax from the model
+		cm, err := consumable.NewProcessor(p.l, p.ctx).GetById(m.TemplateId())
+		if err == nil {
+			b.SetUnitPrice(cm.UnitPrice())
+			b.SetSlotMax(cm.SlotMax())
+		}
+	} else if it == inventory.TypeValueSetup {
+		sm, err := setup.NewProcessor(p.l, p.ctx).GetById(m.TemplateId())
+		if err == nil {
+			b.SetUnitPrice(1)
+			b.SetSlotMax(sm.SlotMax())
+		}
+	} else if it == inventory.TypeValueETC {
+		em, err := etc.NewProcessor(p.l, p.ctx).GetById(m.TemplateId())
+		if err == nil {
+			b.SetUnitPrice(em.UnitPrice())
+			b.SetSlotMax(em.SlotMax())
+		}
+	}
+	return b.Build()
 }
 
 func (p *ProcessorImpl) CreateCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
-	return p.CreateFn(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+	if p.CreateFn != nil {
+		return p.CreateFn(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+	}
+	c, err := createCommodity(p.ctx, p.db)(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+	if err != nil {
+		return Model{}, err
+	}
+	return model.Map(model.Decorate(model.Decorators(p.DataDecorator)))(model.FixedProvider(c))()
 }
 
 func (p *ProcessorImpl) UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
-	return p.UpdateFn(id, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+	if p.UpdateFn != nil {
+		return p.UpdateFn(id, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+
+	}
+	c, err := updateCommodity(p.ctx, p.db)(id, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+	if err != nil {
+		return Model{}, err
+	}
+	return model.Map(model.Decorate(model.Decorators(p.DataDecorator)))(model.FixedProvider(c))()
 }
 
 func (p *ProcessorImpl) DeleteCommodity(id uuid.UUID) error {
-	return p.DeleteFn(id)
+	if p.DeleteFn != nil {
+		return p.DeleteFn(id)
+	}
+	return deleteCommodity(p.ctx, p.db)(id)
 }
 
 func (p *ProcessorImpl) GetAllByTenant() ([]Model, error) {
-	return p.GetAllByTenantFn()
+	if p.GetAllByTenantFn != nil {
+		return p.GetAllByTenantFn()
+	}
+	return p.ByTenantProvider()()
 }
 
 func (p *ProcessorImpl) ByTenantProvider() model.Provider[[]Model] {
-	return model.SliceMap(Make)(getAllByTenant(p.t.Id())(p.db))(model.ParallelMap())
+	mp := model.SliceMap(Make)(getAllByTenant(p.t.Id())(p.db))(model.ParallelMap())
+	return model.SliceMap(model.Decorate(model.Decorators(p.DataDecorator)))(mp)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) GetCommodityIdToNpcIdMap() (map[uuid.UUID]uint32, error) {

@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
+	"math"
 )
 
 const NPCShop = "NPCShop"
@@ -31,9 +32,9 @@ func NPCShopBody(_ logrus.FieldLogger, t tenant.Model) func(templateId uint32, c
 				if !item.IsBullet(item.Id(c.TemplateId())) && !item.IsThrowingStar(item.Id(c.TemplateId())) {
 					w.WriteShort(c.Quantity())
 				} else {
-					w.WriteLong(c.UnitPrice())
+					w.WriteLong(math.Float64bits(c.UnitPrice()))
 				}
-				w.WriteShort(c.MaxPerSlot())
+				w.WriteShort(uint16(c.SlotMax()))
 			}
 			return w.Bytes()
 		}

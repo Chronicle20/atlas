@@ -6,16 +6,16 @@ import (
 
 // RestModel is a JSON API representation of the Model
 type RestModel struct {
-	Id           string `json:"id"`
-	TemplateId   uint32 `json:"templateId"`
-	MesoPrice    uint32 `json:"mesoPrice"`
-	DiscountRate byte   `json:"discountRate"`
-	TokenItemId  uint32 `json:"tokenItemId"`
-	TokenPrice   uint32 `json:"tokenPrice"`
-	Period       uint32 `json:"period"`
-	LevelLimit   uint32 `json:"levelLimit"`
-	UnitPrice    uint32 `json:"unitPrice"`
-	SlotMax      uint32 `json:"slotMax"`
+	Id           string  `json:"id"`
+	TemplateId   uint32  `json:"templateId"`
+	MesoPrice    uint32  `json:"mesoPrice"`
+	DiscountRate byte    `json:"discountRate"`
+	TokenItemId  uint32  `json:"tokenItemId"`
+	TokenPrice   uint32  `json:"tokenPrice"`
+	Period       uint32  `json:"period"`
+	LevelLimit   uint32  `json:"levelLimit"`
+	UnitPrice    float64 `json:"unitPrice"`
+	SlotMax      uint32  `json:"slotMax"`
 }
 
 // GetID to satisfy jsonapi.MarshalIdentifier interface

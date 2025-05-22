@@ -14,7 +14,7 @@ type Model struct {
 	tokenPrice   uint32
 	period       uint32
 	levelLimit   uint32
-	unitPrice    uint32
+	unitPrice    float64
 	slotMax      uint32
 }
 
@@ -63,9 +63,8 @@ func (m *Model) NpcId() uint32 {
 	return m.npcId
 }
 
-
 // UnitPrice returns the model's unitPrice
-func (m *Model) UnitPrice() uint32 {
+func (m *Model) UnitPrice() float64 {
 	return m.unitPrice
 }
 
@@ -85,7 +84,7 @@ type ModelBuilder struct {
 	tokenPrice   uint32
 	period       uint32
 	levelLimit   uint32
-	unitPrice    uint32
+	unitPrice    float64
 	slotMax      uint32
 }
 
@@ -144,7 +143,7 @@ func (b *ModelBuilder) SetLevelLimit(levelLimit uint32) *ModelBuilder {
 }
 
 // SetUnitPrice sets the unitPrice for the ModelBuilder
-func (b *ModelBuilder) SetUnitPrice(unitPrice uint32) *ModelBuilder {
+func (b *ModelBuilder) SetUnitPrice(unitPrice float64) *ModelBuilder {
 	b.unitPrice = unitPrice
 	return b
 }

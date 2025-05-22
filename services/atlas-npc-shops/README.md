@@ -72,7 +72,7 @@ Example Response:
           "templateId": 2000,
           "mesoPrice": 1000,
           "tokenPrice": 0,
-          "unitPrice": 1,
+          "unitPrice": 1.0,
           "slotMax": 100
         },
         {
@@ -80,7 +80,7 @@ Example Response:
           "templateId": 2001,
           "mesoPrice": 1500,
           "tokenPrice": 0,
-          "unitPrice": 1,
+          "unitPrice": 1.0,
           "slotMax": 100
         }
       ]
@@ -107,7 +107,7 @@ Adds a new commodity to an NPC's shop.
         "templateId": 2002,
         "mesoPrice": 2000,
         "tokenPrice": 0,
-        "unitPrice": 1,
+        "unitPrice": 1.0,
         "slotMax": 100
       }
     }
@@ -123,7 +123,7 @@ Adds a new commodity to an NPC's shop.
         "templateId": 2002,
         "mesoPrice": 2000,
         "tokenPrice": 0,
-        "unitPrice": 1,
+        "unitPrice": 1.0,
         "slotMax": 100
       }
     }
@@ -149,7 +149,7 @@ Updates an existing commodity in a shop.
         "templateId": 2002,
         "mesoPrice": 2500,
         "tokenPrice": 0,
-        "unitPrice": 1,
+        "unitPrice": 1.0,
         "slotMax": 100
       }
     }
@@ -165,7 +165,7 @@ Updates an existing commodity in a shop.
         "templateId": 2002,
         "mesoPrice": 2500,
         "tokenPrice": 0,
-        "unitPrice": 1,
+        "unitPrice": 1.0,
         "slotMax": 100
       }
     }

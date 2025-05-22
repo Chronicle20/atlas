@@ -112,11 +112,11 @@ func TestShopsProcessor(t *testing.T) {
         npcId := uint32(2001)
         templateId := uint32(3001)
         mesoPrice := uint32(5000)
-        perfectPitchPrice := uint32(2500)
+        tokenPrice := uint32(2500)
 
         // Create test commodity for the shop
         commoditiesProcessor := test.CreateCommoditiesProcessorWithDB(t, db)
-        _, err := commoditiesProcessor.CreateCommodity(npcId, templateId, mesoPrice, perfectPitchPrice)
+        _, err := commoditiesProcessor.CreateCommodity(npcId, templateId, mesoPrice, tokenPrice)
         if err != nil {
             t.Fatalf("Failed to create test commodity: %v", err)
         }

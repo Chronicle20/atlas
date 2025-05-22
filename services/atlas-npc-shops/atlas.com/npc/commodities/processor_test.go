@@ -35,7 +35,7 @@ func testCreateCommodity(t *testing.T, processor commodities.Processor, db *gorm
 	npcId := uint32(1001)
 	templateId := uint32(2001)
 	mesoPrice := uint32(1000)
-	perfectPitchPrice := uint32(500)
+	tokenPrice := uint32(500)
 
 	// Create commodity
 	// Default values for new fields
@@ -43,7 +43,7 @@ func testCreateCommodity(t *testing.T, processor commodities.Processor, db *gorm
 	tokenItemId := uint32(0)
 	period := uint32(0)
 	levelLimited := uint32(0)
-	commodity, err := processor.CreateCommodity(npcId, templateId, mesoPrice, discountRate, tokenItemId, perfectPitchPrice, period, levelLimited)
+	commodity, err := processor.CreateCommodity(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
 	if err != nil {
 		t.Fatalf("Failed to create commodity: %v", err)
 	}
@@ -55,8 +55,8 @@ func testCreateCommodity(t *testing.T, processor commodities.Processor, db *gorm
 	if commodity.MesoPrice() != mesoPrice {
 		t.Errorf("Expected meso price %d, got %d", mesoPrice, commodity.MesoPrice())
 	}
-	if commodity.PerfectPitchPrice() != perfectPitchPrice {
-		t.Errorf("Expected perfect pitch price %d, got %d", perfectPitchPrice, commodity.PerfectPitchPrice())
+	if commodity.TokenPrice() != tokenPrice {
+		t.Errorf("Expected token price %d, got %d", tokenPrice, commodity.TokenPrice())
 	}
 
 	// Verify commodity exists in database
@@ -75,7 +75,7 @@ func testGetByNpcId(t *testing.T, processor commodities.Processor, db *gorm.DB) 
 	npcId := uint32(1002)
 	templateId := uint32(2002)
 	mesoPrice := uint32(2000)
-	perfectPitchPrice := uint32(1000)
+	tokenPrice := uint32(1000)
 
 	// Create test commodity
 	// Default values for new fields
@@ -83,7 +83,7 @@ func testGetByNpcId(t *testing.T, processor commodities.Processor, db *gorm.DB) 
 	tokenItemId := uint32(0)
 	period := uint32(0)
 	levelLimited := uint32(0)
-	_, err := processor.CreateCommodity(npcId, templateId, mesoPrice, discountRate, tokenItemId, perfectPitchPrice, period, levelLimited)
+	_, err := processor.CreateCommodity(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
 	if err != nil {
 		t.Fatalf("Failed to create test commodity: %v", err)
 	}
@@ -106,8 +106,8 @@ func testGetByNpcId(t *testing.T, processor commodities.Processor, db *gorm.DB) 
 			if c.MesoPrice() != mesoPrice {
 				t.Errorf("Expected meso price %d, got %d", mesoPrice, c.MesoPrice())
 			}
-			if c.PerfectPitchPrice() != perfectPitchPrice {
-				t.Errorf("Expected perfect pitch price %d, got %d", perfectPitchPrice, c.PerfectPitchPrice())
+			if c.TokenPrice() != tokenPrice {
+				t.Errorf("Expected token price %d, got %d", tokenPrice, c.TokenPrice())
 			}
 		}
 	}
@@ -122,12 +122,12 @@ func testUpdateCommodity(t *testing.T, processor commodities.Processor, db *gorm
 	npcId := uint32(1003)
 	templateId := uint32(2003)
 	mesoPrice := uint32(3000)
-	perfectPitchPrice := uint32(1500)
+	tokenPrice := uint32(1500)
 
 	// Updated values
 	updatedTemplateId := uint32(2004)
 	updatedMesoPrice := uint32(3500)
-	updatedPerfectPitchPrice := uint32(1750)
+	updatedTokenPrice := uint32(1750)
 
 	// Create test commodity
 	// Default values for new fields
@@ -135,7 +135,7 @@ func testUpdateCommodity(t *testing.T, processor commodities.Processor, db *gorm
 	tokenItemId := uint32(0)
 	period := uint32(0)
 	levelLimited := uint32(0)
-	commodity, err := processor.CreateCommodity(npcId, templateId, mesoPrice, discountRate, tokenItemId, perfectPitchPrice, period, levelLimited)
+	commodity, err := processor.CreateCommodity(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
 	if err != nil {
 		t.Fatalf("Failed to create test commodity: %v", err)
 	}
@@ -146,7 +146,7 @@ func testUpdateCommodity(t *testing.T, processor commodities.Processor, db *gorm
 	updatedTokenItemId := uint32(0)
 	updatedPeriod := uint32(0)
 	updatedLevelLimited := uint32(0)
-	updatedCommodity, err := processor.UpdateCommodity(commodity.Id(), updatedTemplateId, updatedMesoPrice, updatedDiscountRate, updatedTokenItemId, updatedPerfectPitchPrice, updatedPeriod, updatedLevelLimited)
+	updatedCommodity, err := processor.UpdateCommodity(commodity.Id(), updatedTemplateId, updatedMesoPrice, updatedDiscountRate, updatedTokenItemId, updatedTokenPrice, updatedPeriod, updatedLevelLimited)
 	if err != nil {
 		t.Fatalf("Failed to update commodity: %v", err)
 	}
@@ -158,8 +158,8 @@ func testUpdateCommodity(t *testing.T, processor commodities.Processor, db *gorm
 	if updatedCommodity.MesoPrice() != updatedMesoPrice {
 		t.Errorf("Expected meso price %d, got %d", updatedMesoPrice, updatedCommodity.MesoPrice())
 	}
-	if updatedCommodity.PerfectPitchPrice() != updatedPerfectPitchPrice {
-		t.Errorf("Expected perfect pitch price %d, got %d", updatedPerfectPitchPrice, updatedCommodity.PerfectPitchPrice())
+	if updatedCommodity.TokenPrice() != updatedTokenPrice {
+		t.Errorf("Expected token price %d, got %d", updatedTokenPrice, updatedCommodity.TokenPrice())
 	}
 
 	// Verify commodity was updated in database
@@ -174,8 +174,8 @@ func testUpdateCommodity(t *testing.T, processor commodities.Processor, db *gorm
 	if entity.MesoPrice != updatedMesoPrice {
 		t.Errorf("Expected meso price %d, got %d", updatedMesoPrice, entity.MesoPrice)
 	}
-	if entity.TokenPrice != updatedPerfectPitchPrice {
-		t.Errorf("Expected token price %d, got %d", updatedPerfectPitchPrice, entity.TokenPrice)
+	if entity.TokenPrice != updatedTokenPrice {
+		t.Errorf("Expected token price %d, got %d", updatedTokenPrice, entity.TokenPrice)
 	}
 }
 
@@ -184,7 +184,7 @@ func testDeleteCommodity(t *testing.T, processor commodities.Processor, db *gorm
 	npcId := uint32(1004)
 	templateId := uint32(2005)
 	mesoPrice := uint32(4000)
-	perfectPitchPrice := uint32(2000)
+	tokenPrice := uint32(2000)
 
 	// Create test commodity
 	// Default values for new fields
@@ -192,7 +192,7 @@ func testDeleteCommodity(t *testing.T, processor commodities.Processor, db *gorm
 	tokenItemId := uint32(0)
 	period := uint32(0)
 	levelLimited := uint32(0)
-	commodity, err := processor.CreateCommodity(npcId, templateId, mesoPrice, discountRate, tokenItemId, perfectPitchPrice, period, levelLimited)
+	commodity, err := processor.CreateCommodity(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
 	if err != nil {
 		t.Fatalf("Failed to create test commodity: %v", err)
 	}

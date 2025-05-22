@@ -36,7 +36,7 @@ type Model struct {
 	id              uint32
 	tradeBlock      bool
 	price           uint32
-	unitPrice       uint32
+	unitPrice       float64
 	slotMax         uint32
 	timeLimited     bool
 	notSale         bool
@@ -172,6 +172,14 @@ func (m Model) JumpIncrease() uint32 {
 
 func (m Model) CursedRate() uint32 {
 	return m.cursed
+}
+
+func (m Model) UnitPrice() float64 {
+	return m.unitPrice
+}
+
+func (m Model) SlotMax() uint32 {
+	return m.slotMax
 }
 
 type RewardModel struct {

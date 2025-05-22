@@ -14,6 +14,8 @@ type Model struct {
 	tokenPrice   uint32
 	period       uint32
 	levelLimit   uint32
+	unitPrice    float64
+	slotMax      uint32
 }
 
 // Id returns the model's id
@@ -61,9 +63,14 @@ func (m *Model) NpcId() uint32 {
 	return m.npcId
 }
 
-// PerfectPitchPrice returns the model's tokenPrice for backward compatibility
-func (m *Model) PerfectPitchPrice() uint32 {
-	return m.tokenPrice
+// UnitPrice returns the model's unitPrice
+func (m *Model) UnitPrice() float64 {
+	return m.unitPrice
+}
+
+// SlotMax returns the model's slotMax
+func (m *Model) SlotMax() uint32 {
+	return m.slotMax
 }
 
 // ModelBuilder is used to build Model instances
@@ -77,6 +84,8 @@ type ModelBuilder struct {
 	tokenPrice   uint32
 	period       uint32
 	levelLimit   uint32
+	unitPrice    float64
+	slotMax      uint32
 }
 
 // SetId sets the id for the ModelBuilder
@@ -133,6 +142,18 @@ func (b *ModelBuilder) SetLevelLimit(levelLimit uint32) *ModelBuilder {
 	return b
 }
 
+// SetUnitPrice sets the unitPrice for the ModelBuilder
+func (b *ModelBuilder) SetUnitPrice(unitPrice float64) *ModelBuilder {
+	b.unitPrice = unitPrice
+	return b
+}
+
+// SetSlotMax sets the slotMax for the ModelBuilder
+func (b *ModelBuilder) SetSlotMax(slotMax uint32) *ModelBuilder {
+	b.slotMax = slotMax
+	return b
+}
+
 // Build creates a new Model instance with the builder's values
 func (b *ModelBuilder) Build() Model {
 	return Model{
@@ -145,6 +166,8 @@ func (b *ModelBuilder) Build() Model {
 		tokenPrice:   b.tokenPrice,
 		period:       b.period,
 		levelLimit:   b.levelLimit,
+		unitPrice:    b.unitPrice,
+		slotMax:      b.slotMax,
 	}
 }
 
@@ -160,5 +183,7 @@ func Clone(m Model) *ModelBuilder {
 		tokenPrice:   m.tokenPrice,
 		period:       m.period,
 		levelLimit:   m.levelLimit,
+		unitPrice:    m.unitPrice,
+		slotMax:      m.slotMax,
 	}
 }

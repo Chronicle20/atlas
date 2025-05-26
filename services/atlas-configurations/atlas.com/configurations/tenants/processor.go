@@ -66,3 +66,7 @@ func (p *Processor) UpdateById(tenantId uuid.UUID, input RestModel) error {
 
 	return database.ExecuteTransaction(p.db, update(p.ctx, tenantId, input.Region, input.MajorVersion, input.MinorVersion, *rm))
 }
+
+func (p *Processor) DeleteById(tenantId uuid.UUID) error {
+	return database.ExecuteTransaction(p.db, delete(p.ctx, tenantId))
+}

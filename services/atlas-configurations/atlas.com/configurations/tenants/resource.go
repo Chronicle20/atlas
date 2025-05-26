@@ -18,6 +18,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("", rest.RegisterHandler(l)(si)("get_configuration_tenants", handleGetConfigurationTenants(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{tenantId}", rest.RegisterHandler(l)(si)("get_configuration_tenant", handleGetConfigurationTenant(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{tenantId}", rest.RegisterInputHandler[RestModel](l)(si)("update_configuration_tenant", handleUpdateConfigurationTenant(db))).Methods(http.MethodPatch)
+			r.HandleFunc("/{tenantId}", rest.RegisterHandler(l)(si)("delete_configuration_tenant", handleDeleteConfigurationTenant(db))).Methods(http.MethodDelete)
 		}
 	}
 }
@@ -65,6 +66,20 @@ func handleUpdateConfigurationTenant(db *gorm.DB) rest.InputHandler[RestModel] {
 				err := NewProcessor(d.Logger(), d.Context(), db).UpdateById(tenantId, input)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to update configuration tenant.")
+					w.WriteHeader(http.StatusInternalServerError)
+				}
+			}
+		})
+	}
+}
+
+func handleDeleteConfigurationTenant(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				err := NewProcessor(d.Logger(), d.Context(), db).DeleteById(tenantId)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to delete configuration tenant.")
 					w.WriteHeader(http.StatusInternalServerError)
 				}
 			}

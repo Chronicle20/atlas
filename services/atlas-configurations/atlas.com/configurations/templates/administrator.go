@@ -42,3 +42,18 @@ func update(ctx context.Context, templateId uuid.UUID, region string, majorVersi
 		return nil
 	}
 }
+
+func delete(ctx context.Context, templateId uuid.UUID) func(db *gorm.DB) error {
+	return func(db *gorm.DB) error {
+		e, err := byIdEntityProvider(ctx)(templateId)(db)()
+		if err != nil {
+			return err
+		}
+
+		err = db.Delete(&e).Error
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}

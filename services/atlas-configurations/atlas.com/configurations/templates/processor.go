@@ -80,3 +80,7 @@ func (p *Processor) UpdateById(templateId uuid.UUID, input RestModel) error {
 
 	return database.ExecuteTransaction(p.db, update(p.ctx, templateId, input.Region, input.MajorVersion, input.MinorVersion, *rm))
 }
+
+func (p *Processor) DeleteById(templateId uuid.UUID) error {
+	return database.ExecuteTransaction(p.db, delete(p.ctx, templateId))
+}

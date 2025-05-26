@@ -18,7 +18,8 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)("create_configuration_template", handleCreateConfigurationTemplate(db))).Methods(http.MethodPost)
 			r.HandleFunc("", rest.RegisterHandler(l)(si)("get_configuration_template", handleGetConfigurationTemplate(db))).Methods(http.MethodGet).Queries("region", "{region}", "majorVersion", "{majorVersion}", "minorVersion", "{minorVersion}")
 			r.HandleFunc("", rest.RegisterHandler(l)(si)("get_configuration_templates", handleGetConfigurationTemplates(db))).Methods(http.MethodGet)
-			r.HandleFunc("/{tenantId}", rest.RegisterInputHandler[RestModel](l)(si)("update_configuration_template", handleUpdateConfigurationTemplate(db))).Methods(http.MethodPatch)
+			r.HandleFunc("/{templateId}", rest.RegisterInputHandler[RestModel](l)(si)("update_configuration_template", handleUpdateConfigurationTemplate(db))).Methods(http.MethodPatch)
+			r.HandleFunc("/{templateId}", rest.RegisterHandler(l)(si)("delete_configuration_template", handleDeleteConfigurationTemplate(db))).Methods(http.MethodDelete)
 		}
 	}
 }
@@ -28,7 +29,7 @@ func handleCreateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel]
 		return func(w http.ResponseWriter, r *http.Request) {
 			err := NewProcessor(d.Logger(), d.Context(), db).Create(input)
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Unable to create configuration tenant.")
+				d.Logger().WithError(err).Errorf("Unable to create configuration template.")
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		}
@@ -81,7 +82,21 @@ func handleUpdateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel]
 			return func(w http.ResponseWriter, r *http.Request) {
 				err := NewProcessor(d.Logger(), d.Context(), db).UpdateById(templateId, input)
 				if err != nil {
-					d.Logger().WithError(err).Errorf("Unable to update configuration tenant.")
+					d.Logger().WithError(err).Errorf("Unable to update configuration template.")
+					w.WriteHeader(http.StatusInternalServerError)
+				}
+			}
+		})
+	}
+}
+
+func handleDeleteConfigurationTemplate(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseTemplateId(d.Logger(), func(templateId uuid.UUID) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				err := NewProcessor(d.Logger(), d.Context(), db).DeleteById(templateId)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to delete configuration template.")
 					w.WriteHeader(http.StatusInternalServerError)
 				}
 			}

@@ -56,7 +56,7 @@ export interface Template {
 
 export async function fetchTemplates(): Promise<Template[]> {
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/configurations/templates/", {
+    const response = await fetch(rootUrl + "/api/configurations/templates", {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -131,4 +131,37 @@ export const deleteTemplate = async (templateId: string) => {
     if (!response.ok) throw new Error("Failed to delete template.");
 
     return true;
+};
+
+export const createTemplate = async (attributes: TemplateAttributes) => {
+    const input = {
+        data: {
+            type: "templates",
+            attributes: attributes,
+        },
+    };
+
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    const response = await fetch(`${rootUrl}/api/configurations/templates`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(input),
+    });
+
+    if (!response.ok) throw new Error("Failed to create template.");
+
+    const responseData = await response.json();
+    return responseData.data;
+};
+
+export const cloneTemplate = (template: Template): TemplateAttributes => {
+    // Create a deep copy of the template attributes
+    const clonedAttributes: TemplateAttributes = JSON.parse(JSON.stringify(template.attributes));
+
+    // Clear the region, majorVersion, and minorVersion as required
+    clonedAttributes.region = "";
+    clonedAttributes.majorVersion = 0;
+    clonedAttributes.minorVersion = 0;
+
+    return clonedAttributes;
 };

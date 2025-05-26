@@ -22,9 +22,10 @@ export type Template = {
 
 interface ColumnProps {
     onDelete?: (id: string) => void;
+    onClone?: (id: string) => void;
 }
 
-export const getColumns = ({ onDelete }: ColumnProps): ColumnDef<Template>[] => [
+export const getColumns = ({ onDelete, onClone }: ColumnProps): ColumnDef<Template>[] => [
     {
         accessorKey: "id",
         header: "Id",
@@ -60,6 +61,13 @@ export const getColumns = ({ onDelete }: ColumnProps): ColumnDef<Template>[] => 
                                 View Template
                             </Link>
                         </DropdownMenuItem>
+                        {onClone && (
+                            <DropdownMenuItem 
+                                onClick={() => onClone(id)}
+                            >
+                                Clone Template
+                            </DropdownMenuItem>
+                        )}
                         {onDelete && (
                             <DropdownMenuItem 
                                 className="text-destructive focus:text-destructive"

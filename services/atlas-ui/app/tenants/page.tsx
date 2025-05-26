@@ -1,11 +1,53 @@
 "use client"
 
-import {useTenant} from "@/context/tenant-context";
-import {DataTable} from "@/components/data-table";
-import {columns} from "@/app/tenants/columns";
+import { useState } from "react";
+import { useTenant } from "@/context/tenant-context";
+import { DataTable } from "@/components/data-table";
+import { getColumns } from "@/app/tenants/columns";
+import { deleteTenant } from "@/lib/tenants";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Page() {
-    const {tenants} = useTenant()
+    const { tenants, refreshTenants } = useTenant();
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [tenantToDelete, setTenantToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // Function to open delete confirmation dialog
+    const openDeleteDialog = (id: string) => {
+        setTenantToDelete(id);
+        setDeleteDialogOpen(true);
+    };
+
+    // Function to handle tenant deletion
+    const handleDeleteTenant = async () => {
+        if (!tenantToDelete) return;
+
+        try {
+            setIsDeleting(true);
+            await deleteTenant(tenantToDelete);
+
+            // Refresh tenant data using the context function
+            await refreshTenants();
+        } catch (err) {
+            console.error("Failed to delete tenant:", err);
+        } finally {
+            setIsDeleting(false);
+            setDeleteDialogOpen(false);
+            setTenantToDelete(null);
+        }
+    };
+
+    const columns = getColumns({ onDelete: openDeleteDialog });
 
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
@@ -15,8 +57,30 @@ export default function Page() {
                 </div>
             </div>
             <div className="mt-4">
-                <DataTable columns={columns} data={tenants}/>
+                <DataTable columns={columns} data={tenants} />
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the tenant.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={handleDeleteTenant}
+                            disabled={isDeleting}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {isDeleting ? "Deleting..." : "Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

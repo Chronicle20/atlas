@@ -20,7 +20,11 @@ export type Template = {
     }
 }
 
-export const columns: ColumnDef<Template>[] = [
+interface ColumnProps {
+    onDelete?: (id: string) => void;
+}
+
+export const getColumns = ({ onDelete }: ColumnProps): ColumnDef<Template>[] => [
     {
         accessorKey: "id",
         header: "Id",
@@ -40,6 +44,8 @@ export const columns: ColumnDef<Template>[] = [
     {
         id: "actions",
         cell: ({ row }) => {
+            const id = row.getValue("id") as string;
+
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -50,10 +56,18 @@ export const columns: ColumnDef<Template>[] = [
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                            <Link href={"/templates/" + row.getValue("id") + "/properties"}>
+                            <Link href={"/templates/" + id + "/properties"}>
                                 View Template
                             </Link>
                         </DropdownMenuItem>
+                        {onDelete && (
+                            <DropdownMenuItem 
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => onDelete(id)}
+                            >
+                                Delete
+                            </DropdownMenuItem>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             )

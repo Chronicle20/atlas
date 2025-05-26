@@ -7,6 +7,7 @@ type TenantContextType = {
     tenants: Tenant[];
     activeTenant: Tenant | null;
     setActiveTenant: (tenant: Tenant) => void;
+    refreshTenants: () => Promise<void>;
 };
 
 // Create Context
@@ -43,8 +44,28 @@ export function TenantProvider({children}: { children: ReactNode }) {
         localStorage.setItem(LOCAL_STORAGE_KEY, tenant.id);
     };
 
+    // Function to refresh tenants list
+    const refreshTenants = async () => {
+        try {
+            setLoading(true);
+            const data = await fetchTenants();
+            setTenants(data);
+
+            // If active tenant was deleted, set a new one
+            if (activeTenant && !data.find(t => t.id === activeTenant.id)) {
+                const storedId = localStorage.getItem(LOCAL_STORAGE_KEY);
+                const storedTenant = data.find((t) => t.id === storedId);
+                setActiveTenantState(storedTenant ?? data[0] ?? null);
+            }
+        } catch (err) {
+            console.error("Failed to refresh tenants:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
-        <TenantContext.Provider value={{tenants, activeTenant, setActiveTenant}}>
+        <TenantContext.Provider value={{tenants, activeTenant, setActiveTenant, refreshTenants}}>
             {children}
         </TenantContext.Provider>
     );

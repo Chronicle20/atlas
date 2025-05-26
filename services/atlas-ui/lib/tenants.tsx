@@ -113,3 +113,15 @@ export const updateTenant = async (tenant: Tenant | undefined, updatedAttributes
     // If the request is successful, update the local tenant state
     return {...tenant, attributes: {...tenant.attributes, ...updatedAttributes}};
 }
+
+export const deleteTenant = async (tenantId: string) => {
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    const response = await fetch(`${rootUrl}/api/configurations/tenants/${tenantId}`, {
+        method: "DELETE",
+        headers: {"Content-Type": "application/json"},
+    });
+
+    if (!response.ok) throw new Error("Failed to delete tenant.");
+
+    return true;
+}

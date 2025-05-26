@@ -120,3 +120,15 @@ export const updateTemplate = async (template: Template | undefined, updatedAttr
     // If the request is successful, update the local template state
     return {...template, attributes: {...template.attributes, ...updatedAttributes}};
 };
+
+export const deleteTemplate = async (templateId: string) => {
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    const response = await fetch(`${rootUrl}/api/configurations/templates/${templateId}`, {
+        method: "DELETE",
+        headers: {"Content-Type": "application/json"},
+    });
+
+    if (!response.ok) throw new Error("Failed to delete template.");
+
+    return true;
+};

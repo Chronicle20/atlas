@@ -1,14 +1,27 @@
 "use client"
 
 import {DataTable} from "@/components/data-table";
-import {columns} from "@/app/templates/columns";
+import {getColumns} from "@/app/templates/columns";
 import {useEffect, useState} from "react";
-import {fetchTemplates, Template} from "@/lib/templates";
+import {fetchTemplates, Template, deleteTemplate} from "@/lib/templates";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Page() {
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchDataAgain = () => {
         setLoading(true)
@@ -21,6 +34,33 @@ export default function Page() {
     useEffect(() => {
         fetchDataAgain()
     }, [])
+
+    // Function to open delete confirmation dialog
+    const openDeleteDialog = (id: string) => {
+        setTemplateToDelete(id);
+        setDeleteDialogOpen(true);
+    };
+
+    // Function to handle template deletion
+    const handleDeleteTemplate = async () => {
+        if (!templateToDelete) return;
+
+        try {
+            setIsDeleting(true);
+            await deleteTemplate(templateToDelete);
+
+            // Refresh template data
+            fetchDataAgain();
+        } catch (err) {
+            console.error("Failed to delete template:", err);
+        } finally {
+            setIsDeleting(false);
+            setDeleteDialogOpen(false);
+            setTemplateToDelete(null);
+        }
+    };
+
+    const columns = getColumns({ onDelete: openDeleteDialog });
 
     if (loading) return <div>Loading...</div>; // Show loading message while fetching data
     if (error) return <div>Error: {error}</div>; // Show error message if fetching failed
@@ -35,6 +75,28 @@ export default function Page() {
             <div className="mt-4">
                 <DataTable columns={columns} data={templates} onRefresh={fetchDataAgain}/>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the template.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={handleDeleteTemplate}
+                            disabled={isDeleting}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {isDeleting ? "Deleting..." : "Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

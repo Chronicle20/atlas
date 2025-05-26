@@ -20,7 +20,11 @@ export type Tenant = {
     }
 }
 
-export const columns: ColumnDef<Tenant>[] = [
+interface ColumnProps {
+    onDelete?: (id: string) => void;
+}
+
+export const getColumns = ({ onDelete }: ColumnProps): ColumnDef<Tenant>[] => [
     {
         accessorKey: "id",
         header: "Id",
@@ -40,6 +44,8 @@ export const columns: ColumnDef<Tenant>[] = [
     {
         id: "actions",
         cell: ({ row }) => {
+            const id = row.getValue("id") as string;
+
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -50,10 +56,18 @@ export const columns: ColumnDef<Tenant>[] = [
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                            <Link href={"/tenants/" + row.getValue("id") + "/properties"}>
+                            <Link href={"/tenants/" + id + "/properties"}>
                                 View Tenant
                             </Link>
                         </DropdownMenuItem>
+                        {onDelete && (
+                            <DropdownMenuItem 
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => onDelete(id)}
+                            >
+                                Delete
+                            </DropdownMenuItem>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             )

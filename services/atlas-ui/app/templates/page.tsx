@@ -5,7 +5,6 @@ import {getColumns} from "@/app/templates/columns";
 import {useEffect, useState} from "react";
 import {fetchTemplates, Template, deleteTemplate, cloneTemplate, createTemplate} from "@/lib/templates";
 import {createTenant, createTenantFromTemplate} from "@/lib/tenants";
-import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -44,7 +43,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function Page() {
-    const router = useRouter();
     const [templates, setTemplates] = useState<Template[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);

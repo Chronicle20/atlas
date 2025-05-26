@@ -53,18 +53,36 @@ func (p *Processor) GetByRegionAndVersion(region string, majorVersion uint16, mi
 	return p.ByRegionAndVersionProvider(region, majorVersion, minorVersion)()
 }
 
-func (p *Processor) Create(input RestModel) error {
+func (p *Processor) Create(input RestModel) (uuid.UUID, error) {
 	res, err := json.Marshal(input)
 	if err != nil {
-		return err
+		return uuid.Nil, err
 	}
 	rm := &json.RawMessage{}
 	err = rm.UnmarshalJSON(res)
 	if err != nil {
-		return err
+		return uuid.Nil, err
 	}
 
-	return database.ExecuteTransaction(p.db, create(input.Region, input.MajorVersion, input.MinorVersion, *rm))
+	var templateId uuid.UUID
+	err = database.ExecuteTransaction(p.db, func(db *gorm.DB) error {
+		e := &Entity{
+			Region:       input.Region,
+			MajorVersion: input.MajorVersion,
+			MinorVersion: input.MinorVersion,
+			Data:         *rm,
+		}
+		err := db.Save(e).Error
+		if err != nil {
+			return err
+		}
+		templateId = e.Id
+		return nil
+	})
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return templateId, nil
 }
 
 func (p *Processor) UpdateById(templateId uuid.UUID, input RestModel) error {

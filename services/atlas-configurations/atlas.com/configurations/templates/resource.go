@@ -27,11 +27,24 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleCreateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			err := NewProcessor(d.Logger(), d.Context(), db).Create(input)
+			templateId, err := NewProcessor(d.Logger(), d.Context(), db).Create(input)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to create configuration template.")
 				w.WriteHeader(http.StatusInternalServerError)
+				return
 			}
+
+			// Set the Location header to the URL of the newly created resource
+			w.Header().Set("Location", "/configurations/templates/"+templateId.String())
+
+			// Get the created resource
+			input.Id = templateId.String()
+
+			// Return the created resource
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			w.WriteHeader(http.StatusCreated)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(input)
 		}
 	}
 }

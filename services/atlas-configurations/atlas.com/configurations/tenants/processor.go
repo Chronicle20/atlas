@@ -70,3 +70,35 @@ func (p *Processor) UpdateById(tenantId uuid.UUID, input RestModel) error {
 func (p *Processor) DeleteById(tenantId uuid.UUID) error {
 	return database.ExecuteTransaction(p.db, delete(p.ctx, tenantId))
 }
+
+func (p *Processor) Create(input RestModel) (uuid.UUID, error) {
+	res, err := json.Marshal(input)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	rm := &json.RawMessage{}
+	err = rm.UnmarshalJSON(res)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	var tenantId uuid.UUID
+	err = database.ExecuteTransaction(p.db, func(db *gorm.DB) error {
+		e := &Entity{
+			Region:       input.Region,
+			MajorVersion: input.MajorVersion,
+			MinorVersion: input.MinorVersion,
+			Data:         *rm,
+		}
+		err := db.Create(e).Error
+		if err != nil {
+			return err
+		}
+		tenantId = e.Id
+		return nil
+	})
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return tenantId, nil
+}

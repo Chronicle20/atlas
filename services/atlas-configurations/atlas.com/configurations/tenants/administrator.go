@@ -33,6 +33,22 @@ func delete(ctx context.Context, tenantId uuid.UUID) func(db *gorm.DB) error {
 	}
 }
 
+func create(ctx context.Context, region string, majorVersion uint16, minorVersion uint16, data json.RawMessage) func(db *gorm.DB) error {
+	return func(db *gorm.DB) error {
+		e := &Entity{
+			Region:       region,
+			MajorVersion: majorVersion,
+			MinorVersion: minorVersion,
+			Data:         data,
+		}
+		err := db.Create(e).Error
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
 func update(ctx context.Context, tenantId uuid.UUID, region string, majorVersion uint16, minorVersion uint16, data json.RawMessage) func(db *gorm.DB) error {
 	return func(db *gorm.DB) error {
 		e, err := byIdEntityProvider(ctx)(tenantId)(db)()

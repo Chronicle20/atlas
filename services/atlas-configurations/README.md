@@ -33,6 +33,7 @@ The service exposes the following RESTful endpoints:
 
 - `GET /api/configurations/tenants` - Get all configuration tenants
 - `GET /api/configurations/tenants/{tenantId}` - Get a specific configuration tenant
+- `POST /api/configurations/tenants` - Create a new configuration tenant
 - `PATCH /api/configurations/tenants/{tenantId}` - Update a configuration tenant
 - `DELETE /api/configurations/tenants/{tenantId}` - Delete a configuration tenant
 

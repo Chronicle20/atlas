@@ -26,7 +26,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleCreateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			err := Create(d.Logger())(d.Context())(db)(input)
+			err := NewProcessor(d.Logger(), d.Context(), db).Create(input)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to create configuration tenant.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -41,14 +41,16 @@ func handleGetConfigurationTemplate(db *gorm.DB) rest.GetHandler {
 			return rest.ParseMajorVersion(d.Logger(), func(majorVersion uint16) http.HandlerFunc {
 				return rest.ParseMinorVersion(d.Logger(), func(minorVersion uint16) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
-						cts, err := GetByRegionAndVersion(d.Logger())(d.Context())(db)(region, majorVersion, minorVersion)
+						cts, err := NewProcessor(d.Logger(), d.Context(), db).GetByRegionAndVersion(region, majorVersion, minorVersion)
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Unable to get configuration templates.")
 							w.WriteHeader(http.StatusInternalServerError)
 							return
 						}
 
-						server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(cts)
+						query := r.URL.Query()
+						queryParams := jsonapi.ParseQueryFields(&query)
+						server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(cts)
 					}
 				})
 			})
@@ -59,14 +61,16 @@ func handleGetConfigurationTemplate(db *gorm.DB) rest.GetHandler {
 func handleGetConfigurationTemplates(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cts, err := GetAll(d.Logger())(d.Context())(db)()
+			cts, err := NewProcessor(d.Logger(), d.Context(), db).GetAll()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get configuration templates.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(cts)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(cts)
 		}
 	}
 }
@@ -75,7 +79,7 @@ func handleUpdateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel]
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 		return rest.ParseTemplateId(d.Logger(), func(templateId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				err := UpdateById(d.Logger())(d.Context())(db)(templateId, input)
+				err := NewProcessor(d.Logger(), d.Context(), db).UpdateById(templateId, input)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to update configuration tenant.")
 					w.WriteHeader(http.StatusInternalServerError)

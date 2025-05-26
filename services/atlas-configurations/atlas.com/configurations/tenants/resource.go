@@ -25,14 +25,16 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleGetConfigurationTenants(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cts, err := GetAll(d.Logger())(d.Context())(db)()
+			cts, err := NewProcessor(d.Logger(), d.Context(), db).GetAll()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get configuration tenants.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(cts)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(cts)
 		}
 	}
 }
@@ -41,14 +43,16 @@ func handleGetConfigurationTenant(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				cts, err := GetById(d.Logger())(d.Context())(db)(tenantId)
+				cts, err := NewProcessor(d.Logger(), d.Context(), db).GetById(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get configuration tenants.")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 
-				server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(cts)
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(cts)
 			}
 		})
 	}
@@ -58,7 +62,7 @@ func handleUpdateConfigurationTenant(db *gorm.DB) rest.InputHandler[RestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				err := UpdateById(d.Logger())(d.Context())(db)(tenantId, input)
+				err := NewProcessor(d.Logger(), d.Context(), db).UpdateById(tenantId, input)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to update configuration tenant.")
 					w.WriteHeader(http.StatusInternalServerError)

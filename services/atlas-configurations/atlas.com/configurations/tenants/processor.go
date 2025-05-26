@@ -1,28 +1,37 @@
 package tenants
 
 import (
+	"atlas-configurations/database"
 	"context"
 	"encoding/json"
-	"atlas-configurations/database"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-func byIdProvider(ctx context.Context) func(db *gorm.DB) func(id uuid.UUID) model.Provider[RestModel] {
-	return func(db *gorm.DB) func(id uuid.UUID) model.Provider[RestModel] {
-		return func(id uuid.UUID) model.Provider[RestModel] {
-			return model.Map(Make)(byIdEntityProvider(ctx)(id)(db))
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
 }
 
-func allProvider(ctx context.Context) func(db *gorm.DB) func() model.Provider[[]RestModel] {
-	return func(db *gorm.DB) func() model.Provider[[]RestModel] {
-		return func() model.Provider[[]RestModel] {
-			return model.SliceMap(Make)(allEntityProvider(ctx)(db))()
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
+		db:  db,
+	}
+	return p
+}
+
+func (p *Processor) ByIdProvider(id uuid.UUID) model.Provider[RestModel] {
+	return model.Map(Make)(byIdEntityProvider(p.ctx)(id)(p.db))
+}
+
+func (p *Processor) AllProvider() model.Provider[[]RestModel] {
+	return func() ([]RestModel, error) {
+		return model.SliceMap(Make)(allEntityProvider(p.ctx)(p.db))()()
 	}
 }
 
@@ -36,40 +45,24 @@ func Make(e Entity) (RestModel, error) {
 	return rm, nil
 }
 
-func GetAll(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func() ([]RestModel, error) {
-	return func(ctx context.Context) func(db *gorm.DB) func() ([]RestModel, error) {
-		return func(db *gorm.DB) func() ([]RestModel, error) {
-			return allProvider(ctx)(db)()
-		}
-	}
+func (p *Processor) GetAll() ([]RestModel, error) {
+	return p.AllProvider()()
 }
 
-func GetById(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(id uuid.UUID) (RestModel, error) {
-	return func(ctx context.Context) func(db *gorm.DB) func(id uuid.UUID) (RestModel, error) {
-		return func(db *gorm.DB) func(id uuid.UUID) (RestModel, error) {
-			return func(id uuid.UUID) (RestModel, error) {
-				return byIdProvider(ctx)(db)(id)()
-			}
-		}
-	}
+func (p *Processor) GetById(id uuid.UUID) (RestModel, error) {
+	return p.ByIdProvider(id)()
 }
 
-func UpdateById(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(tenantId uuid.UUID, input RestModel) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(tenantId uuid.UUID, input RestModel) error {
-		return func(db *gorm.DB) func(tenantId uuid.UUID, input RestModel) error {
-			return func(tenantId uuid.UUID, input RestModel) error {
-				res, err := json.Marshal(input)
-				if err != nil {
-					return err
-				}
-				rm := &json.RawMessage{}
-				err = rm.UnmarshalJSON(res)
-				if err != nil {
-					return err
-				}
-
-				return database.ExecuteTransaction(db, update(ctx, tenantId, input.Region, input.MajorVersion, input.MinorVersion, *rm))
-			}
-		}
+func (p *Processor) UpdateById(tenantId uuid.UUID, input RestModel) error {
+	res, err := json.Marshal(input)
+	if err != nil {
+		return err
 	}
+	rm := &json.RawMessage{}
+	err = rm.UnmarshalJSON(res)
+	if err != nil {
+		return err
+	}
+
+	return database.ExecuteTransaction(p.db, update(p.ctx, tenantId, input.Region, input.MajorVersion, input.MinorVersion, *rm))
 }

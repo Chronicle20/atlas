@@ -19,20 +19,27 @@ const (
 	ServiceTypeDrops   = ServiceType("drops-service")
 )
 
-func byIdProvider(ctx context.Context) func(db *gorm.DB) func(id uuid.UUID) model.Provider[interface{}] {
-	return func(db *gorm.DB) func(id uuid.UUID) model.Provider[interface{}] {
-		return func(id uuid.UUID) model.Provider[interface{}] {
-			return model.Map(Make)(byIdEntityProvider(ctx)(id)(db))
-		}
-	}
+type Processor struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
 }
 
-func allProvider(ctx context.Context) func(db *gorm.DB) func() model.Provider[[]interface{}] {
-	return func(db *gorm.DB) func() model.Provider[[]interface{}] {
-		return func() model.Provider[[]interface{}] {
-			return model.SliceMap(Make)(allEntityProvider(ctx)(db))()
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
+	p := &Processor{
+		l:   l,
+		ctx: ctx,
+		db:  db,
 	}
+	return p
+}
+
+func (p *Processor) ByIdProvider(id uuid.UUID) model.Provider[interface{}] {
+	return model.Map(Make)(byIdEntityProvider(p.ctx)(id)(p.db))
+}
+
+func (p *Processor) AllProvider() model.Provider[[]interface{}] {
+	return model.SliceMap(Make)(allEntityProvider(p.ctx)(p.db))()
 }
 
 func Make(e Entity) (interface{}, error) {
@@ -64,20 +71,10 @@ func Make(e Entity) (interface{}, error) {
 	return nil, errors.New("invalid service type")
 }
 
-func GetAll(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func() ([]interface{}, error) {
-	return func(ctx context.Context) func(db *gorm.DB) func() ([]interface{}, error) {
-		return func(db *gorm.DB) func() ([]interface{}, error) {
-			return allProvider(ctx)(db)()
-		}
-	}
+func (p *Processor) GetAll() ([]interface{}, error) {
+	return p.AllProvider()()
 }
 
-func GetById(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(id uuid.UUID) (interface{}, error) {
-	return func(ctx context.Context) func(db *gorm.DB) func(id uuid.UUID) (interface{}, error) {
-		return func(db *gorm.DB) func(id uuid.UUID) (interface{}, error) {
-			return func(id uuid.UUID) (interface{}, error) {
-				return byIdProvider(ctx)(db)(id)()
-			}
-		}
-	}
+func (p *Processor) GetById(id uuid.UUID) (interface{}, error) {
+	return p.ByIdProvider(id)()
 }

@@ -24,14 +24,16 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleGetServiceConfigurations(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cts, err := GetAll(d.Logger())(d.Context())(db)()
+			cts, err := NewProcessor(d.Logger(), d.Context(), db).GetAll()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get configuration tenants.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			server.Marshal[[]interface{}](d.Logger())(w)(c.ServerInformation())(cts)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]interface{}](d.Logger())(w)(c.ServerInformation())(queryParams)(cts)
 		}
 	}
 }
@@ -40,14 +42,16 @@ func handleGetServiceConfiguration(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseServiceId(d.Logger(), func(serviceId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				cts, err := GetById(d.Logger())(d.Context())(db)(serviceId)
+				cts, err := NewProcessor(d.Logger(), d.Context(), db).GetById(serviceId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to get configuration tenants.")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 
-				server.Marshal[interface{}](d.Logger())(w)(c.ServerInformation())(cts)
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[interface{}](d.Logger())(w)(c.ServerInformation())(queryParams)(cts)
 			}
 		})
 	}

@@ -4,6 +4,7 @@ import {DataTable} from "@/components/data-table";
 import {getColumns} from "@/app/templates/columns";
 import {useEffect, useState} from "react";
 import {fetchTemplates, Template, deleteTemplate, cloneTemplate, createTemplate} from "@/lib/templates";
+import {createTenant, createTenantFromTemplate} from "@/lib/tenants";
 import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ const cloneTemplateFormSchema = z.object({
 
 type CloneTemplateFormValues = z.infer<typeof cloneTemplateFormSchema>;
 
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -55,6 +57,11 @@ export default function Page() {
     const [templateToClone, setTemplateToClone] = useState<Template | null>(null);
     const [isCloning, setIsCloning] = useState(false);
 
+    // Create tenant from template state
+    const [createTenantDialogOpen, setCreateTenantDialogOpen] = useState(false);
+    const [templateForTenant, setTemplateForTenant] = useState<Template | null>(null);
+    const [isCreatingTenant, setIsCreatingTenant] = useState(false);
+
     // Clone template form
     const form = useForm<CloneTemplateFormValues>({
         resolver: zodResolver(cloneTemplateFormSchema),
@@ -65,6 +72,7 @@ export default function Page() {
         },
         mode: "onChange",
     });
+
 
     const fetchDataAgain = () => {
         setLoading(true)
@@ -157,9 +165,54 @@ export default function Page() {
         }
     };
 
+    // Function to open create tenant dialog
+    const openCreateTenantDialog = (id: string) => {
+        const template = templates.find(t => t.id === id);
+        if (template) {
+            setTemplateForTenant(template);
+            setCreateTenantDialogOpen(true);
+        }
+    };
+
+    // Function to handle tenant creation from template
+    const handleCreateTenantFromTemplate = async () => {
+        if (!templateForTenant) return;
+
+        try {
+            setIsCreatingTenant(true);
+
+            // Create tenant attributes from template
+            const tenantAttributes = createTenantFromTemplate(templateForTenant);
+
+            // Create the new tenant
+            const newTenant = await createTenant(tenantAttributes);
+
+            // Show success message
+            toast.success("Tenant created successfully");
+
+            // Close the dialog
+            setCreateTenantDialogOpen(false);
+            setTemplateForTenant(null);
+
+            // Navigate to the new tenant
+            console.log(`Navigating to: /tenants/${newTenant.id}/properties`);
+
+            // Use window.location.replace for a more forceful navigation
+            window.location.replace(`/tenants/${newTenant.id}/properties`);
+
+            // The code below this point may not execute due to the page navigation
+        } catch (err) {
+            console.error("Failed to create tenant:", err);
+            toast.error("Failed to create tenant");
+        } finally {
+            setIsCreatingTenant(false);
+        }
+    };
+
     const columns = getColumns({ 
         onDelete: openDeleteDialog,
-        onClone: openCloneDialog
+        onClone: openCloneDialog,
+        onCreateTenant: openCreateTenantDialog
     });
 
     if (loading) return <div>Loading...</div>; // Show loading message while fetching data
@@ -275,6 +328,33 @@ export default function Page() {
                             </DialogFooter>
                         </form>
                     </Form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Create Tenant from Template Dialog */}
+            <Dialog open={createTenantDialogOpen} onOpenChange={setCreateTenantDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Create Tenant from Template</DialogTitle>
+                        <DialogDescription>
+                            Create a new tenant based on the selected template. All information from the template will be used.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={() => setCreateTenantDialogOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            onClick={handleCreateTenantFromTemplate} 
+                            disabled={isCreatingTenant}
+                        >
+                            {isCreatingTenant ? "Creating..." : "Create Tenant"}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

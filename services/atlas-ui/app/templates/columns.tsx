@@ -23,9 +23,10 @@ export type Template = {
 interface ColumnProps {
     onDelete?: (id: string) => void;
     onClone?: (id: string) => void;
+    onCreateTenant?: (id: string) => void;
 }
 
-export const getColumns = ({ onDelete, onClone }: ColumnProps): ColumnDef<Template>[] => [
+export const getColumns = ({ onDelete, onClone, onCreateTenant }: ColumnProps): ColumnDef<Template>[] => [
     {
         accessorKey: "id",
         header: "Id",
@@ -66,6 +67,13 @@ export const getColumns = ({ onDelete, onClone }: ColumnProps): ColumnDef<Templa
                                 onClick={() => onClone(id)}
                             >
                                 Clone Template
+                            </DropdownMenuItem>
+                        )}
+                        {onCreateTenant && (
+                            <DropdownMenuItem 
+                                onClick={() => onCreateTenant(id)}
+                            >
+                                Create Tenant from Template
                             </DropdownMenuItem>
                         )}
                         {onDelete && (

@@ -125,3 +125,31 @@ export const deleteTenant = async (tenantId: string) => {
 
     return true;
 }
+
+export const createTenant = async (attributes: TenantAttributes) => {
+    const input = {
+        data: {
+            type: "tenants",
+            attributes: attributes,
+        },
+    };
+
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    const response = await fetch(`${rootUrl}/api/configurations/tenants`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(input),
+    });
+
+    if (!response.ok) throw new Error("Failed to create tenant.");
+
+    const responseData = await response.json();
+    return responseData.data;
+};
+
+export const createTenantFromTemplate = (template: import("@/lib/templates").Template): TenantAttributes => {
+    // Create a deep copy of the template attributes
+    const tenantAttributes: TenantAttributes = JSON.parse(JSON.stringify(template.attributes));
+
+    return tenantAttributes;
+};

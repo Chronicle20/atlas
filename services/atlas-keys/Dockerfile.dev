@@ -14,7 +14,7 @@ WORKDIR /atlas.com/keys
 
 RUN go build -o /server
 
-FROM alpine:3.21
+FROM alpine:3.22
 
 # Port 8080 belongs to our application
 EXPOSE 8080

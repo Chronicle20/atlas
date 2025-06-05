@@ -7,14 +7,14 @@ import (
 )
 
 type Model struct {
-	id                uint32
+	id                skill.Id
 	level             byte
 	masterLevel       byte
 	expiration        time.Time
 	cooldownExpiresAt time.Time
 }
 
-func (m Model) Id() uint32 {
+func (m Model) Id() skill.Id {
 	return m.id
 }
 

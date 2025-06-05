@@ -49,7 +49,7 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 
 		var sm skill2.Model
 		for _, rs := range c.Skills() {
-			if rs.Id() == sui.SkillId() {
+			if rs.Id() == skill.Id(sui.SkillId()) {
 				sm = rs
 			}
 		}

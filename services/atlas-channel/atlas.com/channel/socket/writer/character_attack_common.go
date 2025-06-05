@@ -28,7 +28,7 @@ func WriteCommonAttackBody(l logrus.FieldLogger) func(ctx context.Context) func(
 					// Cannot rely on ai.SkillLevel here because it is not provided GMS < 95
 					var sk skill.Model
 					for _, tsk := range c.Skills() {
-						if tsk.Id() == ai.SkillId() {
+						if tsk.Id() == skill2.Id(ai.SkillId()) {
 							sk = tsk
 						}
 					}
@@ -256,7 +256,7 @@ func getMasteryFromSkill(l logrus.FieldLogger) func(ctx context.Context) func(st
 
 			var s skill.Model
 			for _, rs := range skills {
-				if skill2.Id(rs.Id()) == skillId {
+				if rs.Id() == skillId {
 					s = rs
 				}
 			}

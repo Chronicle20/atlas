@@ -8,6 +8,7 @@ import (
 	"atlas-channel/socket/model"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	skill2 "github.com/Chronicle20/atlas-constants/skill"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,7 +23,7 @@ func UseShadowPartner(l logrus.FieldLogger) func(ctx context.Context) func(m _ma
 			}
 
 			if effect.Cooldown() > 0 {
-				_ = skill.NewProcessor(l, ctx).ApplyCooldown(m, info.SkillId(), effect.Cooldown())(characterId)
+				_ = skill.NewProcessor(l, ctx).ApplyCooldown(m, skill2.Id(info.SkillId()), effect.Cooldown())(characterId)
 			}
 
 			// TODO consume summoning rock

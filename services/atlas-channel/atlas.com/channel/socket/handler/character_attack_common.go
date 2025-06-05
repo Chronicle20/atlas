@@ -12,6 +12,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
+	skill3 "github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 )
@@ -31,7 +32,7 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						// Process skill
 						var sk skill.Model
 						for _, tsk := range c.Skills() {
-							if tsk.Id() == ai.SkillId() {
+							if tsk.Id() == skill3.Id(ai.SkillId()) {
 								sk = tsk
 							}
 						}

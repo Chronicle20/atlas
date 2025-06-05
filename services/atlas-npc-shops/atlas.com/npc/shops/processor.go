@@ -37,6 +37,8 @@ type Processor interface {
 	AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
 	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
 	RemoveCommodity(id uuid.UUID) error
+	DeleteAllCommoditiesByNpcId(npcId uint32) error
+	DeleteAllShops() error
 	EnterAndEmit(characterId uint32, npcId uint32) error
 	Enter(mb *message.Buffer) func(characterId uint32) func(npcId uint32) error
 	ExitAndEmit(characterId uint32) error
@@ -235,6 +237,16 @@ func (p *ProcessorImpl) Exit(mb *message.Buffer) func(characterId uint32) error 
 
 func (p *ProcessorImpl) GetCharactersInShop(shopId uint32) []uint32 {
 	return getRegistry().GetCharactersInShop(p.t.Id(), shopId)
+}
+
+func (p *ProcessorImpl) DeleteAllCommoditiesByNpcId(npcId uint32) error {
+	commoditiesProcessor := commodities.NewProcessor(p.l, p.ctx, p.db)
+	return commoditiesProcessor.DeleteAllCommoditiesByNpcId(npcId)
+}
+
+func (p *ProcessorImpl) DeleteAllShops() error {
+	commoditiesProcessor := commodities.NewProcessor(p.l, p.ctx, p.db)
+	return commoditiesProcessor.DeleteAllCommodities()
 }
 
 func (p *ProcessorImpl) GetAllShops() ([]Model, error) {

@@ -392,3 +392,21 @@ Creates multiple shops in a single request.
     ]
   }
   ```
+
+#### Delete All Shops
+
+Deletes all shops for the current tenant.
+
+- **URL**: `/api/shops`
+- **Method**: DELETE
+- **Response**: No content (204)
+
+#### Delete All Commodities for an NPC
+
+Deletes all commodities associated with a specific NPC's shop.
+
+- **URL**: `/api/npcs/{npcId}/shop/commodities`
+- **Method**: DELETE
+- **URL Parameters**: 
+  - `npcId` - The ID of the NPC
+- **Response**: No content (204)

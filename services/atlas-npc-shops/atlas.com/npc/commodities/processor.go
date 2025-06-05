@@ -23,6 +23,8 @@ type Processor interface {
 	CreateCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
 	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
 	DeleteCommodity(id uuid.UUID) error
+	DeleteAllCommoditiesByNpcId(npcId uint32) error
+	DeleteAllCommodities() error
 	WithTransaction(tx *gorm.DB) Processor
 }
 
@@ -157,14 +159,10 @@ func (p *ProcessorImpl) CommodityIdToNpcIdMapProvider() model.Provider[map[uuid.
 	return getCommodityIdToNpcIdMap(p.t.Id())(p.db)
 }
 
-func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
-	newProcessor := &ProcessorImpl{
-		l:   p.l,
-		ctx: p.ctx,
-		db:  tx,
-		t:   p.t,
-	}
-	newProcessor.GetByNpcIdFn = model.CollapseProvider(newProcessor.ByNpcIdProvider)
-	newProcessor.GetAllByTenantFn = newProcessor.ByTenantProvider()
-	return newProcessor
+func (p *ProcessorImpl) DeleteAllCommoditiesByNpcId(npcId uint32) error {
+	return deleteAllCommoditiesByNpcId(p.ctx, p.db)(npcId)
+}
+
+func (p *ProcessorImpl) DeleteAllCommodities() error {
+	return deleteAllCommodities(p.ctx, p.db)()
 }

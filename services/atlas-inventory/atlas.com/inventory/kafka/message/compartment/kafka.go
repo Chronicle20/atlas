@@ -58,6 +58,7 @@ const (
 	CommandCancelReservation = "CANCEL_RESERVATION"
 	CommandIncreaseCapacity  = "INCREASE_CAPACITY"
 	CommandCreateAsset       = "CREATE_ASSET"
+	CommandRecharge          = "RECHARGE"
 )
 
 type Command[E any] struct {
@@ -129,4 +130,9 @@ type CreateAssetCommandBody struct {
 	OwnerId      uint32    `json:"ownerId"`
 	Flag         uint16    `json:"flag"`
 	Rechargeable uint64    `json:"rechargeable"`
+}
+
+type RechargeCommandBody struct {
+	Slot     int16  `json:"slot"`
+	Quantity uint32 `json:"quantity"`
 }

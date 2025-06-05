@@ -2,12 +2,12 @@
 
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState } from "react";
-import { Commodity, Shop, createCommodity, deleteCommodity, fetchNPCShop, updateCommodity, updateShop } from "@/lib/npcs";
+import { Commodity, Shop, createCommodity, deleteCommodity, fetchNPCShop, updateCommodity, updateShop, deleteAllCommoditiesForNPC } from "@/lib/npcs";
 import { DataTable } from "@/components/data-table";
 import { getColumns } from "./columns";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Upload, Download } from "lucide-react";
+import { PlusCircle, Upload, Download, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ export default function Page() {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isBulkUpdateDialogOpen, setIsBulkUpdateDialogOpen] = useState(false);
+    const [isDeleteAllCommoditiesDialogOpen, setIsDeleteAllCommoditiesDialogOpen] = useState(false);
     const [bulkUpdateJson, setBulkUpdateJson] = useState("");
     const [currentCommodity, setCurrentCommodity] = useState<Commodity | null>(null);
     const [formData, setFormData] = useState<Partial<Commodity>>({
@@ -179,6 +180,19 @@ export default function Page() {
         URL.revokeObjectURL(url);
 
         toast.success("Shop data exported successfully");
+    };
+
+    const handleDeleteAllCommodities = async () => {
+        if (!activeTenant) return;
+
+        try {
+            await deleteAllCommoditiesForNPC(activeTenant, npcId);
+            toast.success("All commodities deleted successfully");
+            setIsDeleteAllCommoditiesDialogOpen(false);
+            fetchDataAgain();
+        } catch (err) {
+            toast.error("Failed to delete all commodities: " + (err instanceof Error ? err.message : String(err)));
+        }
     };
 
     if (loading) return <div>Loading...</div>;
@@ -401,6 +415,26 @@ export default function Page() {
                 </DialogContent>
             </Dialog>
 
+            <Dialog open={isDeleteAllCommoditiesDialogOpen} onOpenChange={setIsDeleteAllCommoditiesDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete All Commodities</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <p className="text-destructive font-semibold">Warning: This action cannot be undone.</p>
+                        <p>Are you sure you want to delete all commodities for this NPC's shop?</p>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsDeleteAllCommoditiesDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleDeleteAllCommodities}>
+                            Delete All Commodities
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <div className="mt-4">
                 <DataTable
                     columns={columns}
@@ -421,6 +455,11 @@ export default function Page() {
                             icon: <Download className="h-4 w-4" />,
                             label: "Export Shop",
                             onClick: handleExportShop
+                        },
+                        {
+                            icon: <Trash2 className="h-4 w-4" />,
+                            label: "Delete All Commodities",
+                            onClick: () => setIsDeleteAllCommoditiesDialogOpen(true)
                         }
                     ]}
                 />

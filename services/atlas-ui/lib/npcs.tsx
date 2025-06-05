@@ -174,3 +174,25 @@ export async function updateShop(tenant: Tenant, npcId: number, commodities: Com
     const responseData = await response.json();
     return responseData.data;
 }
+
+export async function deleteAllShops(tenant: Tenant): Promise<void> {
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    const response = await fetch(rootUrl + "/api/shops", {
+        method: "DELETE",
+        headers: tenantHeaders(tenant),
+    });
+    if (!response.ok) {
+        throw new Error("Failed to delete all shops.");
+    }
+}
+
+export async function deleteAllCommoditiesForNPC(tenant: Tenant, npcId: number): Promise<void> {
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop/commodities", {
+        method: "DELETE",
+        headers: tenantHeaders(tenant),
+    });
+    if (!response.ok) {
+        throw new Error("Failed to delete all commodities for NPC.");
+    }
+}

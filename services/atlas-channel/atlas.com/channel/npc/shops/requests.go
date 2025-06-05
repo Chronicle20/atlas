@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	npcShop = "npcs/%d/shop"
+	npcShop = "npcs/%d/shop?include=commodities"
 )
 
 func getBaseRequest() string {

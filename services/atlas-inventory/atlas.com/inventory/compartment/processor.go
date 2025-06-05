@@ -779,3 +779,59 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(m _map.Model, cha
 		return p.dropProcessor.RequestPickUp(mb)(m, dropId, characterId)
 	}
 }
+
+func (p *Processor) RechargeAssetAndEmit(characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.RechargeAsset(buf)(characterId, inventoryType, slot, quantity)
+	})
+}
+
+func (p *Processor) RechargeAsset(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
+	return func(characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
+		p.l.Debugf("Character [%d] attempting to recharge asset in inventory [%d] slot [%d] with quantity [%d].", characterId, inventoryType, slot, quantity)
+
+		// Only TypeValueUse compartment type should support this functionality
+		if inventoryType != inventory.TypeValueUse {
+			p.l.Errorf("Recharge operation not supported for inventory type [%d]. Only TypeValueUse is supported.", inventoryType)
+			return errors.New("recharge operation not supported for this inventory type")
+		}
+
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		var a asset.Model[any]
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
+				return err
+			}
+
+			// Ensure the item exists in the compartment
+			a, err = p.assetProcessor.WithTransaction(tx).GetBySlot(c.Id(), slot)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to get asset in compartment [%s] by slot [%d].", c.Id(), slot)
+				return err
+			}
+
+			// Update the quantity with the provided quantity
+			newQuantity := a.Quantity() + quantity
+			err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(characterId, c.Id(), a, newQuantity)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to update quantity of asset [%d] to [%d].", a.Id(), newQuantity)
+				return err
+			}
+
+			return nil
+		})
+
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Character [%d] unable to recharge asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return txErr
+		}
+
+		p.l.Debugf("Character [%d] recharged asset [%d] with quantity [%d].", characterId, a.Id(), quantity)
+		return nil
+	}
+}

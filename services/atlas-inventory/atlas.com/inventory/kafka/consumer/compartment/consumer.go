@@ -42,6 +42,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelItemReservationCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleIncreaseCapacityCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateAssetCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRechargeItemCommand(db))))
 		}
 	}
 }
@@ -148,5 +149,14 @@ func handleCreateAssetCommand(db *gorm.DB) message.Handler[compartment2.Command[
 			return
 		}
 		_ = compartment.NewProcessor(l, ctx, db).CreateAssetAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.TemplateId, c.Body.Quantity, c.Body.Expiration, c.Body.OwnerId, c.Body.Flag, c.Body.Rechargeable)
+	}
+}
+
+func handleRechargeItemCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.RechargeCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.RechargeCommandBody]) {
+		if c.Type != compartment2.CommandRecharge {
+			return
+		}
+		_ = compartment.NewProcessor(l, ctx, db).RechargeAssetAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot, c.Body.Quantity)
 	}
 }

@@ -26,6 +26,9 @@ type Processor interface {
 	DeleteAllCommoditiesByNpcId(npcId uint32) error
 	DeleteAllCommodities() error
 	WithTransaction(tx *gorm.DB) Processor
+	ExistsByNpcId(npcId uint32) (bool, error)
+	GetDistinctNpcIds() ([]uint32, error)
+	DistinctNpcIdsProvider() model.Provider[[]uint32]
 }
 
 type ProcessorImpl struct {
@@ -59,6 +62,9 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	}
 	newProcessor.GetByNpcIdFn = p.GetByNpcIdFn
 	newProcessor.GetAllByTenantFn = p.GetAllByTenantFn
+	newProcessor.CreateFn = p.CreateFn
+	newProcessor.UpdateFn = p.UpdateFn
+	newProcessor.DeleteFn = p.DeleteFn
 	return newProcessor
 }
 
@@ -165,4 +171,16 @@ func (p *ProcessorImpl) DeleteAllCommoditiesByNpcId(npcId uint32) error {
 
 func (p *ProcessorImpl) DeleteAllCommodities() error {
 	return deleteAllCommodities(p.ctx, p.db)()
+}
+
+func (p *ProcessorImpl) ExistsByNpcId(npcId uint32) (bool, error) {
+	return existsByNpcId(p.t.Id(), npcId)(p.db)()
+}
+
+func (p *ProcessorImpl) GetDistinctNpcIds() ([]uint32, error) {
+	return p.DistinctNpcIdsProvider()()
+}
+
+func (p *ProcessorImpl) DistinctNpcIdsProvider() model.Provider[[]uint32] {
+	return getDistinctNpcIds(p.t.Id())(p.db)
 }

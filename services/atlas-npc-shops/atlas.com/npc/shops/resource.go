@@ -3,6 +3,8 @@ package shops
 import (
 	"atlas-npc/commodities"
 	"atlas-npc/rest"
+	"context"
+	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
@@ -26,10 +28,12 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)("create_shop", handleCreateShop)).Methods(http.MethodPost)
 			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)("update_shop", handleUpdateShop)).Methods(http.MethodPut)
 			r.HandleFunc("/characters", rest.RegisterHandler(l)(db)(si)("get_shop_characters", handleGetShopCharacters)).Methods(http.MethodGet)
-			r.HandleFunc("/commodities", rest.RegisterInputHandler[commodities.RestModel](l)(db)(si)("add_commodity", handleAddCommodity)).Methods(http.MethodPost)
-			r.HandleFunc("/commodities", rest.RegisterHandler(l)(db)(si)("delete_all_commodities", handleDeleteAllCommodities)).Methods(http.MethodDelete)
-			r.HandleFunc("/commodities/{commodityId}", rest.RegisterInputHandler[commodities.RestModel](l)(db)(si)("update_commodity", handleUpdateCommodity)).Methods(http.MethodPut)
-			r.HandleFunc("/commodities/{commodityId}", rest.RegisterHandler(l)(db)(si)("remove_commodity", handleRemoveCommodity)).Methods(http.MethodDelete)
+
+			// Commodities are now a relationship of shops
+			r.HandleFunc("/relationships/commodities", rest.RegisterInputHandler[commodities.RestModel](l)(db)(si)("add_commodity", handleAddCommodity)).Methods(http.MethodPost)
+			r.HandleFunc("/relationships/commodities", rest.RegisterHandler(l)(db)(si)("delete_all_commodities", handleDeleteAllCommodities)).Methods(http.MethodDelete)
+			r.HandleFunc("/relationships/commodities/{commodityId}", rest.RegisterInputHandler[commodities.RestModel](l)(db)(si)("update_commodity", handleUpdateCommodity)).Methods(http.MethodPut)
+			r.HandleFunc("/relationships/commodities/{commodityId}", rest.RegisterHandler(l)(db)(si)("remove_commodity", handleRemoveCommodity)).Methods(http.MethodDelete)
 		}
 	}
 }
@@ -38,8 +42,13 @@ func handleGetShop(d *rest.HandlerDependency, c *rest.HandlerContext) http.Handl
 	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-			res, err := model.Map(Transform)(p.ByNpcIdProvider(npcId))()
+			res, err := model.Map(Transform)(p.ByNpcIdProvider(decoratorsFromInclude(d.Logger(), d.Context(), d.DB(), r)...)(npcId))()
 			if err != nil {
+				if errors.Is(err, ErrNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -50,6 +59,17 @@ func handleGetShop(d *rest.HandlerDependency, c *rest.HandlerContext) http.Handl
 			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
+}
+
+func decoratorsFromInclude(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, r *http.Request) []model.Decorator[Model] {
+	query := r.URL.Query()
+	includes := query["include"]
+	for _, include := range includes {
+		if include == "commodities" {
+			return model.Decorators(NewProcessor(l, ctx, db).CommodityDecorator)
+		}
+	}
+	return make([]model.Decorator[Model], 0)
 }
 
 func handleAddCommodity(d *rest.HandlerDependency, c *rest.HandlerContext, i commodities.RestModel) http.HandlerFunc {
@@ -191,7 +211,7 @@ func handleGetAllShops(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 		p := NewProcessor(d.Logger(), d.Context(), d.DB())
 
 		// Get all shops using the processor
-		shops, err := p.GetAllShops()
+		shops, err := p.GetAllShops(decoratorsFromInclude(d.Logger(), d.Context(), d.DB(), r)...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Getting all shops.")
 			w.WriteHeader(http.StatusInternalServerError)

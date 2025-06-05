@@ -48,26 +48,46 @@ Example Response:
     "type": "shops",
     "id": "shop-9000001",
     "attributes": {
-      "npcId": 9000001,
-      "commodities": [
-        {
-          "id": "550e8400-e29b-41d4-a716-446655440000",
+      "npcId": 9000001
+    },
+    "relationships": {
+      "commodities": {
+        "data": [
+          {
+            "type": "commodities",
+            "id": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          {
+            "type": "commodities",
+            "id": "550e8400-e29b-41d4-a716-446655440001"
+          }
+        ]
+      }
+    },
+    "included": [
+      {
+        "type": "commodities",
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "attributes": {
           "templateId": 2000,
           "mesoPrice": 1000,
           "tokenPrice": 0,
           "unitPrice": 1.0,
           "slotMax": 100
-        },
-        {
-          "id": "550e8400-e29b-41d4-a716-446655440001",
+        }
+      },
+      {
+        "type": "commodities",
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "attributes": {
           "templateId": 2001,
           "mesoPrice": 1500,
           "tokenPrice": 0,
           "unitPrice": 1.0,
           "slotMax": 100
         }
-      ]
-    }
+      }
+    ]
   }
 }
 ```
@@ -76,7 +96,7 @@ Example Response:
 
 Adds a new commodity to an NPC's shop.
 
-- **URL**: `/api/npcs/{npcId}/shop/commodities`
+- **URL**: `/api/npcs/{npcId}/shop/relationships/commodities`
 - **Method**: POST
 - **URL Parameters**: 
   - `npcId` - The ID of the NPC
@@ -117,7 +137,7 @@ Adds a new commodity to an NPC's shop.
 
 Updates an existing commodity in a shop.
 
-- **URL**: `/api/npcs/{npcId}/shop/commodities/{commodityId}`
+- **URL**: `/api/npcs/{npcId}/shop/relationships/commodities/{commodityId}`
 - **Method**: PUT
 - **URL Parameters**: 
   - `npcId` - The ID of the NPC
@@ -159,7 +179,7 @@ Updates an existing commodity in a shop.
 
 Removes a commodity from a shop.
 
-- **URL**: `/api/npcs/{npcId}/shop/commodities/{commodityId}`
+- **URL**: `/api/npcs/{npcId}/shop/relationships/commodities/{commodityId}`
 - **Method**: DELETE
 - **URL Parameters**: 
   - `npcId` - The ID of the NPC
@@ -181,27 +201,47 @@ Creates a new shop for a specific NPC with the provided commodities.
       "type": "shops",
       "id": "shop-9000001",
       "attributes": {
-        "npcId": 9000001,
-        "commodities": [
-          {
-            "id": "00000000-0000-0000-0000-000000000000",
-            "templateId": 2000,
-            "mesoPrice": 1000,
-            "tokenPrice": 0,
-            "unitPrice": 1.0,
-            "slotMax": 100
-          },
-          {
-            "id": "00000000-0000-0000-0000-000000000000",
-            "templateId": 2001,
-            "mesoPrice": 1500,
-            "tokenPrice": 0,
-            "unitPrice": 1.0,
-            "slotMax": 100
-          }
-        ]
+        "npcId": 9000001
+      },
+      "relationships": {
+        "commodities": {
+          "data": [
+            {
+              "type": "commodities",
+              "id": "00000000-0000-0000-0000-000000000000"
+            },
+            {
+              "type": "commodities",
+              "id": "00000000-0000-0000-0000-000000000000"
+            }
+          ]
+        }
       }
-    }
+    },
+    "included": [
+      {
+        "type": "commodities",
+        "id": "00000000-0000-0000-0000-000000000000",
+        "attributes": {
+          "templateId": 2000,
+          "mesoPrice": 1000,
+          "tokenPrice": 0,
+          "unitPrice": 1.0,
+          "slotMax": 100
+        }
+      },
+      {
+        "type": "commodities",
+        "id": "00000000-0000-0000-0000-000000000000",
+        "attributes": {
+          "templateId": 2001,
+          "mesoPrice": 1500,
+          "tokenPrice": 0,
+          "unitPrice": 1.0,
+          "slotMax": 100
+        }
+      }
+    ]
   }
   ```
 - **Response**: JSON object containing the created shop with commodities
@@ -211,26 +251,46 @@ Creates a new shop for a specific NPC with the provided commodities.
       "type": "shops",
       "id": "shop-9000001",
       "attributes": {
-        "npcId": 9000001,
-        "commodities": [
-          {
-            "id": "550e8400-e29b-41d4-a716-446655440000",
+        "npcId": 9000001
+      },
+      "relationships": {
+        "commodities": {
+          "data": [
+            {
+              "type": "commodities",
+              "id": "550e8400-e29b-41d4-a716-446655440000"
+            },
+            {
+              "type": "commodities",
+              "id": "550e8400-e29b-41d4-a716-446655440001"
+            }
+          ]
+        }
+      },
+      "included": [
+        {
+          "type": "commodities",
+          "id": "550e8400-e29b-41d4-a716-446655440000",
+          "attributes": {
             "templateId": 2000,
             "mesoPrice": 1000,
             "tokenPrice": 0,
             "unitPrice": 1.0,
             "slotMax": 100
-          },
-          {
-            "id": "550e8400-e29b-41d4-a716-446655440001",
+          }
+        },
+        {
+          "type": "commodities",
+          "id": "550e8400-e29b-41d4-a716-446655440001",
+          "attributes": {
             "templateId": 2001,
             "mesoPrice": 1500,
             "tokenPrice": 0,
             "unitPrice": 1.0,
             "slotMax": 100
           }
-        ]
-      }
+        }
+      ]
     }
   }
   ```
@@ -250,27 +310,47 @@ Updates an existing shop for a specific NPC by deleting all existing commodities
       "type": "shops",
       "id": "shop-9000001",
       "attributes": {
-        "npcId": 9000001,
-        "commodities": [
-          {
-            "id": "00000000-0000-0000-0000-000000000000",
-            "templateId": 2000,
-            "mesoPrice": 1000,
-            "tokenPrice": 0,
-            "unitPrice": 1.0,
-            "slotMax": 100
-          },
-          {
-            "id": "00000000-0000-0000-0000-000000000000",
-            "templateId": 2001,
-            "mesoPrice": 1500,
-            "tokenPrice": 0,
-            "unitPrice": 1.0,
-            "slotMax": 100
-          }
-        ]
+        "npcId": 9000001
+      },
+      "relationships": {
+        "commodities": {
+          "data": [
+            {
+              "type": "commodities",
+              "id": "00000000-0000-0000-0000-000000000000"
+            },
+            {
+              "type": "commodities",
+              "id": "00000000-0000-0000-0000-000000000000"
+            }
+          ]
+        }
       }
-    }
+    },
+    "included": [
+      {
+        "type": "commodities",
+        "id": "00000000-0000-0000-0000-000000000000",
+        "attributes": {
+          "templateId": 2000,
+          "mesoPrice": 1000,
+          "tokenPrice": 0,
+          "unitPrice": 1.0,
+          "slotMax": 100
+        }
+      },
+      {
+        "type": "commodities",
+        "id": "00000000-0000-0000-0000-000000000000",
+        "attributes": {
+          "templateId": 2001,
+          "mesoPrice": 1500,
+          "tokenPrice": 0,
+          "unitPrice": 1.0,
+          "slotMax": 100
+        }
+      }
+    ]
   }
   ```
 - **Response**: JSON object containing the updated shop with commodities
@@ -280,26 +360,46 @@ Updates an existing shop for a specific NPC by deleting all existing commodities
       "type": "shops",
       "id": "shop-9000001",
       "attributes": {
-        "npcId": 9000001,
-        "commodities": [
-          {
-            "id": "550e8400-e29b-41d4-a716-446655440000",
+        "npcId": 9000001
+      },
+      "relationships": {
+        "commodities": {
+          "data": [
+            {
+              "type": "commodities",
+              "id": "550e8400-e29b-41d4-a716-446655440000"
+            },
+            {
+              "type": "commodities",
+              "id": "550e8400-e29b-41d4-a716-446655440001"
+            }
+          ]
+        }
+      },
+      "included": [
+        {
+          "type": "commodities",
+          "id": "550e8400-e29b-41d4-a716-446655440000",
+          "attributes": {
             "templateId": 2000,
             "mesoPrice": 1000,
             "tokenPrice": 0,
             "unitPrice": 1.0,
             "slotMax": 100
-          },
-          {
-            "id": "550e8400-e29b-41d4-a716-446655440001",
+          }
+        },
+        {
+          "type": "commodities",
+          "id": "550e8400-e29b-41d4-a716-446655440001",
+          "attributes": {
             "templateId": 2001,
             "mesoPrice": 1500,
             "tokenPrice": 0,
             "unitPrice": 1.0,
             "slotMax": 100
           }
-        ]
-      }
+        }
+      ]
     }
   }
   ```
@@ -318,34 +418,58 @@ Creates multiple shops in a single request.
         "type": "shops",
         "id": "shop-9000001",
         "attributes": {
-          "npcId": 9000001,
-          "commodities": [
-            {
-              "id": "00000000-0000-0000-0000-000000000000",
-              "templateId": 2000,
-              "mesoPrice": 1000,
-              "tokenPrice": 0,
-              "unitPrice": 1.0,
-              "slotMax": 100
-            }
-          ]
+          "npcId": 9000001
+        },
+        "relationships": {
+          "commodities": {
+            "data": [
+              {
+                "type": "commodities",
+                "id": "00000000-0000-0000-0000-000000000000"
+              }
+            ]
+          }
         }
       },
       {
         "type": "shops",
         "id": "shop-9000002",
         "attributes": {
-          "npcId": 9000002,
-          "commodities": [
-            {
-              "id": "00000000-0000-0000-0000-000000000000",
-              "templateId": 2001,
-              "mesoPrice": 1500,
-              "tokenPrice": 0,
-              "unitPrice": 1.0,
-              "slotMax": 100
-            }
-          ]
+          "npcId": 9000002
+        },
+        "relationships": {
+          "commodities": {
+            "data": [
+              {
+                "type": "commodities",
+                "id": "00000000-0000-0000-0000-000000000000"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "included": [
+      {
+        "type": "commodities",
+        "id": "00000000-0000-0000-0000-000000000000",
+        "attributes": {
+          "templateId": 2000,
+          "mesoPrice": 1000,
+          "tokenPrice": 0,
+          "unitPrice": 1.0,
+          "slotMax": 100
+        }
+      },
+      {
+        "type": "commodities",
+        "id": "00000000-0000-0000-0000-000000000000",
+        "attributes": {
+          "templateId": 2001,
+          "mesoPrice": 1500,
+          "tokenPrice": 0,
+          "unitPrice": 1.0,
+          "slotMax": 100
         }
       }
     ]
@@ -359,34 +483,58 @@ Creates multiple shops in a single request.
         "type": "shops",
         "id": "shop-9000001",
         "attributes": {
-          "npcId": 9000001,
-          "commodities": [
-            {
-              "id": "550e8400-e29b-41d4-a716-446655440000",
-              "templateId": 2000,
-              "mesoPrice": 1000,
-              "tokenPrice": 0,
-              "unitPrice": 1.0,
-              "slotMax": 100
-            }
-          ]
+          "npcId": 9000001
+        },
+        "relationships": {
+          "commodities": {
+            "data": [
+              {
+                "type": "commodities",
+                "id": "550e8400-e29b-41d4-a716-446655440000"
+              }
+            ]
+          }
         }
       },
       {
         "type": "shops",
         "id": "shop-9000002",
         "attributes": {
-          "npcId": 9000002,
-          "commodities": [
-            {
-              "id": "550e8400-e29b-41d4-a716-446655440001",
-              "templateId": 2001,
-              "mesoPrice": 1500,
-              "tokenPrice": 0,
-              "unitPrice": 1.0,
-              "slotMax": 100
-            }
-          ]
+          "npcId": 9000002
+        },
+        "relationships": {
+          "commodities": {
+            "data": [
+              {
+                "type": "commodities",
+                "id": "550e8400-e29b-41d4-a716-446655440001"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "included": [
+      {
+        "type": "commodities",
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "attributes": {
+          "templateId": 2000,
+          "mesoPrice": 1000,
+          "tokenPrice": 0,
+          "unitPrice": 1.0,
+          "slotMax": 100
+        }
+      },
+      {
+        "type": "commodities",
+        "id": "550e8400-e29b-41d4-a716-446655440001",
+        "attributes": {
+          "templateId": 2001,
+          "mesoPrice": 1500,
+          "tokenPrice": 0,
+          "unitPrice": 1.0,
+          "slotMax": 100
         }
       }
     ]
@@ -405,7 +553,7 @@ Deletes all shops for the current tenant.
 
 Deletes all commodities associated with a specific NPC's shop.
 
-- **URL**: `/api/npcs/{npcId}/shop/commodities`
+- **URL**: `/api/npcs/{npcId}/shop/relationships/commodities`
 - **Method**: DELETE
 - **URL Parameters**: 
   - `npcId` - The ID of the NPC

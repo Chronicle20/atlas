@@ -5,13 +5,17 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/npcs/{{npcId}}/shop
+  url: {{scheme}}://{{host}}:{{port}}/api/npcs/{{npcId}}/shop?include=commodities
   body: none
   auth: none
 }
 
+params:query {
+  include: commodities
+}
+
 vars:pre-request {
-  npcId: 11000
+  npcId: 1100011
 }
 
 docs {

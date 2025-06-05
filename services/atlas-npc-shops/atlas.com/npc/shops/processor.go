@@ -15,6 +15,7 @@ import (
 	"atlas-npc/kafka/message/shops"
 	"atlas-npc/kafka/producer"
 	"context"
+	"errors"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	skill2 "github.com/Chronicle20/atlas-constants/skill"
@@ -27,10 +28,11 @@ import (
 )
 
 type Processor interface {
-	GetByNpcId(npcId uint32) (Model, error)
-	ByNpcIdProvider(npcId uint32) model.Provider[Model]
-	GetAllShops() ([]Model, error)
-	AllShopsProvider() model.Provider[[]Model]
+	CommodityDecorator(m Model) Model
+	GetByNpcId(decorators ...model.Decorator[Model]) func(npcId uint32) (Model, error)
+	ByNpcIdProvider(decorators ...model.Decorator[Model]) func(npcId uint32) model.Provider[Model]
+	GetAllShops(decorators ...model.Decorator[Model]) ([]Model, error)
+	AllShopsProvider(decorators ...model.Decorator[Model]) model.Provider[[]Model]
 	CreateShop(npcId uint32, commodities []commodities.Model) (Model, error)
 	UpdateShop(npcId uint32, commodities []commodities.Model) (Model, error)
 	CreateShops(shops []Model) ([]Model, error)
@@ -52,13 +54,15 @@ type Processor interface {
 	GetCharactersInShop(shopId uint32) []uint32
 }
 
+var ErrNotFound = errors.New("not found")
+
 type ProcessorImpl struct {
 	l             logrus.FieldLogger
 	ctx           context.Context
 	db            *gorm.DB
 	t             tenant.Model
-	GetByNpcIdFn  func(npcId uint32) (Model, error)
-	GetAllShopsFn func() ([]Model, error)
+	GetByNpcIdFn  func(decorators ...model.Decorator[Model]) func(npcId uint32) (Model, error)
+	GetAllShopsFn func(decorators ...model.Decorator[Model]) ([]Model, error)
 	cp            commodities.Processor
 	charP         *character.Processor
 	compP         *compartment.Processor
@@ -78,23 +82,38 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		invP:  inventory2.NewProcessor(l, ctx),
 		kp:    producer.ProviderImpl(l)(ctx),
 	}
-	p.GetByNpcIdFn = model.CollapseProvider(p.ByNpcIdProvider)
-	p.GetAllShopsFn = func() ([]Model, error) {
-		return p.AllShopsProvider()()
-	}
 	return p
 }
 
-func (p *ProcessorImpl) GetByNpcId(npcId uint32) (Model, error) {
-	return p.GetByNpcIdFn(npcId)
+func (p *ProcessorImpl) CommodityDecorator(m Model) Model {
+	cms, err := p.cp.GetByNpcId(m.NpcId())
+	if err != nil {
+		return m
+	}
+	return Clone(m).SetCommodities(cms).Build()
 }
 
-func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32) model.Provider[Model] {
-	cms, err := p.cp.GetByNpcId(npcId)
-	if err != nil {
-		return model.ErrorProvider[Model](err)
+func (p *ProcessorImpl) GetByNpcId(decorators ...model.Decorator[Model]) func(npcId uint32) (Model, error) {
+	return func(npcId uint32) (Model, error) {
+		if p.GetByNpcIdFn != nil {
+			return p.GetByNpcIdFn(decorators...)(npcId)
+		}
+		return p.ByNpcIdProvider(decorators...)(npcId)()
 	}
-	return model.FixedProvider(NewBuilder(npcId).SetCommodities(cms).Build())
+}
+
+func (p *ProcessorImpl) ByNpcIdProvider(decorators ...model.Decorator[Model]) func(npcId uint32) model.Provider[Model] {
+	return func(npcId uint32) model.Provider[Model] {
+		ok, err := p.cp.ExistsByNpcId(npcId)
+		if err != nil {
+			return model.ErrorProvider[Model](err)
+		}
+		if !ok {
+			return model.ErrorProvider[Model](ErrNotFound)
+		}
+		m := NewBuilder(npcId).Build()
+		return model.Map(model.Decorate(decorators))(model.FixedProvider(m))
+	}
 }
 
 func (p *ProcessorImpl) AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error) {
@@ -212,7 +231,7 @@ func (p *ProcessorImpl) Enter(mb *message.Buffer) func(characterId uint32) func(
 	return func(characterId uint32) func(npcId uint32) error {
 		return func(npcId uint32) error {
 			p.l.Debugf("Character [%d] attempting to enter shop [%d].", characterId, npcId)
-			_, err := p.GetByNpcId(npcId)
+			_, err := p.GetByNpcId(p.CommodityDecorator)(npcId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Cannot locate shop [%d] character [%d] is attempting to enter.", npcId, characterId)
 				return err
@@ -249,40 +268,22 @@ func (p *ProcessorImpl) DeleteAllShops() error {
 	return commoditiesProcessor.DeleteAllCommodities()
 }
 
-func (p *ProcessorImpl) GetAllShops() ([]Model, error) {
-	return p.GetAllShopsFn()
+func (p *ProcessorImpl) GetAllShops(decorators ...model.Decorator[Model]) ([]Model, error) {
+	if p.GetAllShopsFn != nil {
+		return p.GetAllShopsFn(decorators...)
+	}
+	return p.AllShopsProvider(decorators...)()
 }
 
-func (p *ProcessorImpl) AllShopsProvider() model.Provider[[]Model] {
-	// Get all commodities for the tenant using the commodities processor
-	allCommodities, err := p.cp.GetAllByTenant()
+func (p *ProcessorImpl) AllShopsProvider(decorators ...model.Decorator[Model]) model.Provider[[]Model] {
+	npcIds, err := p.cp.GetDistinctNpcIds()
 	if err != nil {
-		return model.ErrorProvider[[]Model](err)
+		return model.FixedProvider[[]Model](make([]Model, 0))
 	}
-
-	// Initialize a map to store shop builders by NPC ID
-	shopBuilders := make(map[uint32]*ModelBuilder)
-
-	// Iterate over all commodities and accumulate them in shop builders
-	for _, commodity := range allCommodities {
-		npcId := commodity.NpcId()
-
-		// If we don't have a builder for this NPC ID yet, create one
-		if _, exists := shopBuilders[npcId]; !exists {
-			shopBuilders[npcId] = NewBuilder(npcId)
-		}
-
-		// Add the commodity to the appropriate shop builder
-		shopBuilders[npcId].AddCommodity(commodity)
-	}
-
-	// Build all shops from the accumulated builders
-	shops := make([]Model, 0, len(shopBuilders))
-	for _, builder := range shopBuilders {
-		shops = append(shops, builder.Build())
-	}
-
-	return model.FixedProvider(shops)
+	sbp := model.SliceMap(func(npcId uint32) (Model, error) {
+		return NewBuilder(npcId).Build(), nil
+	})(model.FixedProvider(npcIds))(model.ParallelMap())
+	return model.SliceMap(model.Decorate(decorators))(sbp)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) BuyAndEmit(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error {

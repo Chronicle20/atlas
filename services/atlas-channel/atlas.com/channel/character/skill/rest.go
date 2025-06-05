@@ -1,6 +1,7 @@
 package skill
 
 import (
+	"github.com/Chronicle20/atlas-constants/skill"
 	"strconv"
 	"time"
 )
@@ -32,7 +33,7 @@ func (r *RestModel) SetID(strId string) error {
 
 func Extract(rm RestModel) (Model, error) {
 	return Model{
-		id:                rm.Id,
+		id:                skill.Id(rm.Id),
 		level:             rm.Level,
 		masterLevel:       rm.MasterLevel,
 		expiration:        rm.Expiration,

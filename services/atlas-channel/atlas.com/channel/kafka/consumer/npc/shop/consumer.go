@@ -1,6 +1,7 @@
 package shop
 
 import (
+	"atlas-channel/character/skill"
 	consumer2 "atlas-channel/kafka/consumer"
 	shops2 "atlas-channel/kafka/message/npc/shop"
 	"atlas-channel/npc/shops"
@@ -54,13 +55,18 @@ func handleEnteredStatusEvent(l logrus.FieldLogger, sc server.Model, wp writer.P
 		if err != nil {
 			return
 		}
-		p := shops.NewProcessor(l, ctx)
-		nsm, err := p.GetShop(e.Body.NpcTemplateId)
+		sms, err := skill.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to get skills for character [%d].", s.CharacterId())
+			return
+		}
+
+		nsm, err := shops.NewProcessor(l, ctx).GetShop(e.Body.NpcTemplateId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get shop for NPC [%d].", e.Body.NpcTemplateId)
 			return
 		}
-		bp := writer.NPCShopBody(l, tenant.MustFromContext(ctx))(e.Body.NpcTemplateId, nsm.Commodities())
+		bp := writer.NPCShopBody(l, tenant.MustFromContext(ctx))(e.Body.NpcTemplateId, nsm.Commodities(), sms)
 		_ = session.Announce(l)(ctx)(wp)(writer.NPCShop)(bp)(s)
 	}
 }

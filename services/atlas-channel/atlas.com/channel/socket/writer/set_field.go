@@ -215,7 +215,7 @@ func WriteSkillInfo(tenant tenant.Model) func(w *response.Writer, c character.Mo
 
 		w.WriteShort(uint16(len(c.Skills())))
 		for i, s := range c.Skills() {
-			w.WriteInt(s.Id())
+			w.WriteInt(uint32(s.Id()))
 			w.WriteInt(uint32(s.Level()))
 			w.WriteInt64(msTime(s.Expiration()))
 			if s.IsFourthJob() {
@@ -230,7 +230,7 @@ func WriteSkillInfo(tenant tenant.Model) func(w *response.Writer, c character.Mo
 			w.WriteShort(uint16(len(onCooldown)))
 			for _, i := range onCooldown {
 				s := c.Skills()[i]
-				w.WriteInt(s.Id())
+				w.WriteInt(uint32(s.Id()))
 				cd := uint32(s.CooldownExpiresAt().Sub(time.Now()).Seconds())
 				w.WriteShort(uint16(cd))
 			}

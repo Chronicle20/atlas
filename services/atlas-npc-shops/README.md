@@ -235,6 +235,75 @@ Creates a new shop for a specific NPC with the provided commodities.
   }
   ```
 
+#### Update Shop
+
+Updates an existing shop for a specific NPC by deleting all existing commodities and recreating the shop with the provided commodities.
+
+- **URL**: `/api/npcs/{npcId}/shop`
+- **Method**: PUT
+- **URL Parameters**: 
+  - `npcId` - The ID of the NPC
+- **Request Body**: JSON object containing shop details with commodities
+  ```json
+  {
+    "data": {
+      "type": "shops",
+      "id": "shop-9000001",
+      "attributes": {
+        "npcId": 9000001,
+        "commodities": [
+          {
+            "id": "00000000-0000-0000-0000-000000000000",
+            "templateId": 2000,
+            "mesoPrice": 1000,
+            "tokenPrice": 0,
+            "unitPrice": 1.0,
+            "slotMax": 100
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000000",
+            "templateId": 2001,
+            "mesoPrice": 1500,
+            "tokenPrice": 0,
+            "unitPrice": 1.0,
+            "slotMax": 100
+          }
+        ]
+      }
+    }
+  }
+  ```
+- **Response**: JSON object containing the updated shop with commodities
+  ```json
+  {
+    "data": {
+      "type": "shops",
+      "id": "shop-9000001",
+      "attributes": {
+        "npcId": 9000001,
+        "commodities": [
+          {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "templateId": 2000,
+            "mesoPrice": 1000,
+            "tokenPrice": 0,
+            "unitPrice": 1.0,
+            "slotMax": 100
+          },
+          {
+            "id": "550e8400-e29b-41d4-a716-446655440001",
+            "templateId": 2001,
+            "mesoPrice": 1500,
+            "tokenPrice": 0,
+            "unitPrice": 1.0,
+            "slotMax": 100
+          }
+        ]
+      }
+    }
+  }
+  ```
+
 #### Bulk Create Shops
 
 Creates multiple shops in a single request.

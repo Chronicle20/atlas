@@ -23,6 +23,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r := router.PathPrefix("/npcs/{npcId}/shop").Subrouter()
 			r.HandleFunc("", rest.RegisterHandler(l)(db)(si)("get_shop", handleGetShop)).Methods(http.MethodGet)
 			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)("create_shop", handleCreateShop)).Methods(http.MethodPost)
+			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)("update_shop", handleUpdateShop)).Methods(http.MethodPut)
 			r.HandleFunc("/characters", rest.RegisterHandler(l)(db)(si)("get_shop_characters", handleGetShopCharacters)).Methods(http.MethodGet)
 			r.HandleFunc("/commodities", rest.RegisterInputHandler[commodities.RestModel](l)(db)(si)("add_commodity", handleAddCommodity)).Methods(http.MethodPost)
 			r.HandleFunc("/commodities/{commodityId}", rest.RegisterInputHandler[commodities.RestModel](l)(db)(si)("update_commodity", handleUpdateCommodity)).Methods(http.MethodPut)
@@ -215,6 +216,48 @@ func handleCreateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestM
 
 			// Return the response
 			w.WriteHeader(http.StatusCreated)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restShop)
+		}
+	})
+}
+
+func handleUpdateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
+	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			p := NewProcessor(d.Logger(), d.Context(), d.DB())
+
+			// Extract commodities from the REST model
+			commodityModels := make([]commodities.Model, 0, len(i.Commodities))
+			for _, cr := range i.Commodities {
+				cm, err := commodities.Extract(cr)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Extracting commodity model.")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				commodityModels = append(commodityModels, cm)
+			}
+
+			// Update the shop
+			shop, err := p.UpdateShop(npcId, commodityModels)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Updating shop.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			// Transform the shop model to a REST model
+			restShop, err := Transform(shop)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			// Return the response
+			w.WriteHeader(http.StatusOK)
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restShop)

@@ -2,7 +2,7 @@
 
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState } from "react";
-import { Commodity, Shop, createCommodity, deleteCommodity, fetchNPCShop, updateCommodity, updateShop, deleteAllCommoditiesForNPC } from "@/lib/npcs";
+import { Commodity, CommodityAttributes, Shop, createCommodity, deleteCommodity, fetchNPCShop, updateCommodity, updateShop, deleteAllCommoditiesForNPC } from "@/lib/npcs";
 import { DataTable } from "@/components/data-table";
 import { getColumns } from "./columns";
 import { useParams } from "next/navigation";
@@ -31,7 +31,7 @@ export default function Page() {
     const [isDeleteAllCommoditiesDialogOpen, setIsDeleteAllCommoditiesDialogOpen] = useState(false);
     const [bulkUpdateJson, setBulkUpdateJson] = useState("");
     const [currentCommodity, setCurrentCommodity] = useState<Commodity | null>(null);
-    const [formData, setFormData] = useState<Partial<Commodity>>({
+    const [formData, setFormData] = useState<CommodityAttributes>({
         templateId: 0,
         mesoPrice: 0,
         discountRate: 0,
@@ -47,9 +47,14 @@ export default function Page() {
         setLoading(true);
 
         fetchNPCShop(activeTenant, npcId)
-            .then((shopData) => {
-                setShop(shopData);
-                setCommodities(shopData.attributes.commodities);
+            .then((response) => {
+                setShop(response.data);
+                // Extract commodities from included array if available
+                if (response.included && response.included.length > 0) {
+                    setCommodities(response.included);
+                } else {
+                    setCommodities([]);
+                }
             })
             .catch((err) => setError(err.message))
             .finally(() => setLoading(false));
@@ -71,7 +76,7 @@ export default function Page() {
         if (!activeTenant) return;
 
         try {
-            await createCommodity(activeTenant, npcId, formData as Omit<Commodity, 'id'>);
+            await createCommodity(activeTenant, npcId, formData);
             setIsCreateDialogOpen(false);
             setFormData({
                 templateId: 0,
@@ -92,13 +97,13 @@ export default function Page() {
     const handleEditCommodity = (commodity: Commodity) => {
         setCurrentCommodity(commodity);
         setFormData({
-            templateId: commodity.templateId,
-            mesoPrice: commodity.mesoPrice,
-            discountRate: commodity.discountRate,
-            tokenItemId: commodity.tokenItemId,
-            tokenPrice: commodity.tokenPrice,
-            period: commodity.period,
-            levelLimit: commodity.levelLimit
+            templateId: commodity.attributes.templateId,
+            mesoPrice: commodity.attributes.mesoPrice,
+            discountRate: commodity.attributes.discountRate,
+            tokenItemId: commodity.attributes.tokenItemId,
+            tokenPrice: commodity.attributes.tokenPrice,
+            period: commodity.attributes.period,
+            levelLimit: commodity.attributes.levelLimit
         });
         setIsEditDialogOpen(true);
     };
@@ -134,7 +139,14 @@ export default function Page() {
 
         try {
             const jsonData = JSON.parse(bulkUpdateJson);
-            await updateShop(activeTenant, npcId, jsonData.data.attributes.commodities);
+
+            // Extract commodities from the included array if available
+            let commoditiesToUpdate: Commodity[] = [];
+            if (jsonData.data.included && jsonData.data.included.length > 0) {
+                commoditiesToUpdate = jsonData.data.included;
+            }
+
+            await updateShop(activeTenant, npcId, commoditiesToUpdate);
             setIsBulkUpdateDialogOpen(false);
             setBulkUpdateJson("");
             fetchDataAgain();
@@ -145,15 +157,26 @@ export default function Page() {
     };
 
     const handleExportShop = () => {
-        // Create a JSON object with the shop data
+        // Create commodity references for relationships section
+        const commodityReferences = commodities.map(commodity => ({
+            type: "commodities",
+            id: commodity.id
+        }));
+
+        // Create a JSON object with the shop data in the new format
         const shopData = {
             data: {
                 type: "shops",
                 id: `shop-${npcId}`,
                 attributes: {
-                    npcId: npcId,
-                    commodities: commodities
-                }
+                    npcId: npcId
+                },
+                relationships: {
+                    commodities: {
+                        data: commodityReferences
+                    }
+                },
+                included: commodities
             }
         };
 
@@ -422,7 +445,7 @@ export default function Page() {
                     </DialogHeader>
                     <div className="py-4">
                         <p className="text-destructive font-semibold">Warning: This action cannot be undone.</p>
-                        <p>Are you sure you want to delete all commodities for this NPC's shop?</p>
+                        <p>Are you sure you want to delete all commodities for this shop?</p>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsDeleteAllCommoditiesDialogOpen(false)}>

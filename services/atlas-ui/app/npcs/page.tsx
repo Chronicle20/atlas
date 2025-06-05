@@ -42,7 +42,7 @@ export default function Page() {
             const jsonData = JSON.parse(bulkCreateJson);
             await bulkCreateShops(activeTenant, jsonData.data.map((shop: Shop) => ({
                 npcId: shop.attributes.npcId,
-                commodities: shop.attributes.commodities
+                commodities: shop.included
             })));
 
             toast.success("Shops created successfully");

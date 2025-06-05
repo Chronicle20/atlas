@@ -2,22 +2,27 @@ package shops
 
 import (
 	"atlas-npc/character"
+	"atlas-npc/character/skill"
 	"atlas-npc/commodities"
 	"atlas-npc/compartment"
 	"atlas-npc/data/consumable"
 	"atlas-npc/data/equipable"
 	"atlas-npc/data/etc"
 	"atlas-npc/data/setup"
+	inventory2 "atlas-npc/inventory"
 	"atlas-npc/kafka/message"
 	"atlas-npc/kafka/message/shops"
 	"atlas-npc/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
+	skill2 "github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"math"
 )
 
 type Processor interface {
@@ -51,6 +56,7 @@ type ProcessorImpl struct {
 	cp            commodities.Processor
 	charP         *character.Processor
 	compP         *compartment.Processor
+	invP          *inventory2.Processor
 	kp            producer.Provider
 }
 
@@ -63,6 +69,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		cp:    commodities.NewProcessor(l, ctx, db),
 		charP: character.NewProcessor(l, ctx),
 		compP: compartment.NewProcessor(l, ctx),
+		invP:  inventory2.NewProcessor(l, ctx),
 		kp:    producer.ProviderImpl(l)(ctx),
 	}
 	p.GetByNpcIdFn = model.CollapseProvider(p.ByNpcIdProvider)
@@ -344,9 +351,62 @@ func (p *ProcessorImpl) Recharge(mb *message.Buffer) func(characterId uint32) fu
 				p.l.Errorf("Character [%d] is not in a shop.", characterId)
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
 			}
+			c, err := p.charP.GetById(p.charP.InventoryDecorator)(characterId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to retrieve character [%d].", characterId)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+			rim, ok := c.Inventory().Consumable().FindBySlot(int16(slot))
+			if !ok {
+				p.l.Errorf("Unable to retrieve item in slot [%d] for character [%d] being recharged.", slot, characterId)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+			cm, err := consumable.NewProcessor(p.l, p.ctx).GetById(rim.TemplateId())
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to get item template [%d].", rim.TemplateId())
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+			sms, err := skill.NewProcessor(p.l, p.ctx).GetByCharacterId(characterId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to locate skills for character [%d].", characterId)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+			addSlotMax := uint16(0)
+			if item.IsThrowingStar(item.Id(rim.TemplateId())) {
+				addSlotMax += uint16(skill.GetLevel(sms, skill2.NightWalkerStage2ClawMasteryId)) * 10
+				addSlotMax += uint16(skill.GetLevel(sms, skill2.AssassinClawMasteryId)) * 10
+			}
+			if item.IsBullet(item.Id(rim.TemplateId())) {
+				addSlotMax += uint16(skill.GetLevel(sms, skill2.GunslingerGunMasteryId)) * 10
+			}
+			slotMax := uint16(cm.SlotMax()) + addSlotMax
+			if rim.Quantity() >= uint32(slotMax) {
+				p.l.Warnf("Character [%d] attempting to recharge item [%d] in slot [%d] that does not need recharging.", characterId, rim.TemplateId(), slot)
+				return nil
+			}
+			price := math.Ceil(cm.UnitPrice() * float64(uint32(slotMax)-rim.Quantity()))
+			if c.Meso() < uint32(price) {
+				p.l.Debugf("Character [%d] has [%d] meso. Needs [%d] meso to recharge item [%d] in slot [%d].", characterId, c.Meso(), price, rim.TemplateId(), slot)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorNotEnoughMoney2))
+			}
 
-			// TODO: Implement recharge logic
-			return mb.Put(shops.EnvStatusEventTopic, reasonErrorEventProvider(characterId, shops.ErrorGenericErrorWithReason, "not implemented"))
+			// Decrement character's meso
+			err = p.charP.RequestChangeMeso(c.WorldId(), c.Id(), c.Id(), "SHOP", -int32(price))
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to decrement meso for character [%d].", characterId)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+
+			// Recharge the item
+			quantityToAdd := uint32(slotMax) - rim.Quantity()
+			err = p.compP.RequestRechargeItem(characterId, inventory.TypeValueUse, int16(slot), quantityToAdd)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to recharge item for character [%d].", characterId)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+
+			p.l.Debugf("Character [%d] recharged item [%d] in slot [%d] with [%d] quantity.", characterId, rim.TemplateId(), slot, quantityToAdd)
+			return nil
 		}
 	}
 }

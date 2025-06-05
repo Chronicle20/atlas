@@ -33,3 +33,7 @@ func (p *Processor) RequestCreateItem(characterId uint32, templateId uint32, qua
 func (p *Processor) RequestDestroyItem(characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestDestroyAssetCommandProvider(characterId, inventoryType, slot, quantity))
 }
+
+func (p *Processor) RequestRechargeItem(characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestRechargeAssetCommandProvider(characterId, inventoryType, slot, quantity))
+}

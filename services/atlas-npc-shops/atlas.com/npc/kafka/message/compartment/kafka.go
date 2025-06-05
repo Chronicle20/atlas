@@ -6,6 +6,7 @@ const (
 	EnvCommandTopic    = "COMMAND_TOPIC_COMPARTMENT"
 	CommandDestroy     = "DESTROY"
 	CommandCreateAsset = "CREATE_ASSET"
+	CommandRecharge    = "RECHARGE"
 )
 
 type Command[E any] struct {
@@ -27,4 +28,9 @@ type CreateAssetCommandBody struct {
 	OwnerId      uint32    `json:"ownerId"`
 	Flag         uint16    `json:"flag"`
 	Rechargeable uint64    `json:"rechargeable"`
+}
+
+type RechargeCommandBody struct {
+	Slot     int16  `json:"slot"`
+	Quantity uint32 `json:"quantity"`
 }

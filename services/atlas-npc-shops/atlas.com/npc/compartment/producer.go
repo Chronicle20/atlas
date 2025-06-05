@@ -40,3 +40,17 @@ func RequestDestroyAssetCommandProvider(characterId uint32, inventoryType invent
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func RequestRechargeAssetCommandProvider(characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.RechargeCommandBody]{
+		CharacterId:   characterId,
+		InventoryType: byte(inventoryType),
+		Type:          compartment.CommandRecharge,
+		Body: compartment.RechargeCommandBody{
+			Slot:     slot,
+			Quantity: quantity,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -50,7 +50,7 @@ func testGetByNpcId(t *testing.T, processor shops.Processor, db *gorm.DB) {
 	}
 
 	// Get shop by NPC ID
-	shop, err := processor.GetByNpcId(npcId)
+	shop, err := processor.GetByNpcId(processor.CommodityDecorator)(npcId)
 	if err != nil {
 		t.Fatalf("Failed to get shop by NPC ID: %v", err)
 	}

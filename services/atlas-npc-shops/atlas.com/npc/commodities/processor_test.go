@@ -28,6 +28,14 @@ func TestCommoditiesProcessor(t *testing.T) {
 	t.Run("TestDeleteCommodity", func(t *testing.T) {
 		testDeleteCommodity(t, processor, db)
 	})
+
+	t.Run("TestExistsByNpcId", func(t *testing.T) {
+		testExistsByNpcId(t, processor, db)
+	})
+
+	t.Run("TestGetDistinctNpcIds", func(t *testing.T) {
+		testGetDistinctNpcIds(t, processor, db)
+	})
 }
 
 func testCreateCommodity(t *testing.T, processor commodities.Processor, db *gorm.DB) {
@@ -208,5 +216,126 @@ func testDeleteCommodity(t *testing.T, processor commodities.Processor, db *gorm
 	result := db.Where("id = ?", commodity.Id()).First(&entity)
 	if result.Error == nil || result.Error.Error() != "record not found" {
 		t.Errorf("Expected commodity to be deleted, but it still exists")
+	}
+}
+
+func testExistsByNpcId(t *testing.T, processor commodities.Processor, db *gorm.DB) {
+	// Test data for a new NPC that doesn't have commodities yet
+	nonExistentNpcId := uint32(9999)
+
+	// Test data for an NPC that will have commodities
+	existentNpcId := uint32(1005)
+	templateId := uint32(2006)
+	mesoPrice := uint32(5000)
+	tokenPrice := uint32(2500)
+
+	// Check if commodities exist for the non-existent NPC
+	exists, err := processor.ExistsByNpcId(nonExistentNpcId)
+	if err != nil {
+		t.Fatalf("Failed to check if commodities exist for non-existent NPC: %v", err)
+	}
+	if exists {
+		t.Errorf("Expected no commodities to exist for NPC %d, but they do", nonExistentNpcId)
+	}
+
+	// Create a commodity for the existent NPC
+	// Default values for new fields
+	discountRate := byte(0)
+	tokenItemId := uint32(0)
+	period := uint32(0)
+	levelLimited := uint32(0)
+	_, err = processor.CreateCommodity(existentNpcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+	if err != nil {
+		t.Fatalf("Failed to create test commodity: %v", err)
+	}
+
+	// Check if commodities exist for the existent NPC
+	exists, err = processor.ExistsByNpcId(existentNpcId)
+	if err != nil {
+		t.Fatalf("Failed to check if commodities exist for existent NPC: %v", err)
+	}
+	if !exists {
+		t.Errorf("Expected commodities to exist for NPC %d, but they don't", existentNpcId)
+	}
+}
+
+func testGetDistinctNpcIds(t *testing.T, processor commodities.Processor, db *gorm.DB) {
+	// Test data for multiple NPCs
+	npcId1 := uint32(2001)
+	npcId2 := uint32(2002)
+	npcId3 := uint32(2003)
+	templateId := uint32(3001)
+	mesoPrice := uint32(1000)
+	tokenPrice := uint32(500)
+
+	// Default values for new fields
+	discountRate := byte(0)
+	tokenItemId := uint32(0)
+	period := uint32(0)
+	levelLimited := uint32(0)
+
+	// Create commodities for each NPC
+	_, err := processor.CreateCommodity(npcId1, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+	if err != nil {
+		t.Fatalf("Failed to create test commodity for NPC %d: %v", npcId1, err)
+	}
+
+	_, err = processor.CreateCommodity(npcId2, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+	if err != nil {
+		t.Fatalf("Failed to create test commodity for NPC %d: %v", npcId2, err)
+	}
+
+	// Create multiple commodities for the same NPC to test distinct
+	_, err = processor.CreateCommodity(npcId3, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+	if err != nil {
+		t.Fatalf("Failed to create first test commodity for NPC %d: %v", npcId3, err)
+	}
+
+	_, err = processor.CreateCommodity(npcId3, templateId+1, mesoPrice+100, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+	if err != nil {
+		t.Fatalf("Failed to create second test commodity for NPC %d: %v", npcId3, err)
+	}
+
+	// Get distinct NPC IDs
+	npcIds, err := processor.GetDistinctNpcIds()
+	if err != nil {
+		t.Fatalf("Failed to get distinct NPC IDs: %v", err)
+	}
+
+	// Verify that all expected NPC IDs are in the result
+	// Note: The result may include NPC IDs from other tests, so we only check for the presence of our test NPCs
+	foundNpc1 := false
+	foundNpc2 := false
+	foundNpc3 := false
+
+	for _, id := range npcIds {
+		if id == npcId1 {
+			foundNpc1 = true
+		} else if id == npcId2 {
+			foundNpc2 = true
+		} else if id == npcId3 {
+			foundNpc3 = true
+		}
+	}
+
+	if !foundNpc1 {
+		t.Errorf("Expected NPC ID %d to be in the result, but it wasn't", npcId1)
+	}
+	if !foundNpc2 {
+		t.Errorf("Expected NPC ID %d to be in the result, but it wasn't", npcId2)
+	}
+	if !foundNpc3 {
+		t.Errorf("Expected NPC ID %d to be in the result, but it wasn't", npcId3)
+	}
+
+	// Verify that NPC ID 3 appears only once in the result (distinct)
+	count := 0
+	for _, id := range npcIds {
+		if id == npcId3 {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Errorf("Expected NPC ID %d to appear exactly once in the result, but it appeared %d times", npcId3, count)
 	}
 }

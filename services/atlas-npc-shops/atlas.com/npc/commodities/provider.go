@@ -53,3 +53,33 @@ func getCommodityIdToNpcIdMap(tenantId uuid.UUID) database.EntityProvider[map[uu
 		return model.FixedProvider(commodityIdToNpcId)
 	}
 }
+
+// existsByNpcId returns a provider that checks if any commodities exist for a given NPC ID
+func existsByNpcId(tenantId uuid.UUID, npcId uint32) database.EntityProvider[bool] {
+	return func(db *gorm.DB) model.Provider[bool] {
+		var count int64
+		err := db.Model(&Entity{}).
+			Where(&Entity{TenantId: tenantId, NpcId: npcId}).
+			Count(&count).Error
+		if err != nil {
+			return model.ErrorProvider[bool](err)
+		}
+		return model.FixedProvider(count > 0)
+	}
+}
+
+// getDistinctNpcIds returns a provider that gets a distinct list of NPC IDs for a tenant
+func getDistinctNpcIds(tenantId uuid.UUID) database.EntityProvider[[]uint32] {
+	return func(db *gorm.DB) model.Provider[[]uint32] {
+		var results []uint32
+		err := db.Table("commodities").
+			Select("DISTINCT npc_id").
+			Where("tenant_id = ?", tenantId).
+			Order("npc_id").
+			Pluck("npc_id", &results).Error
+		if err != nil {
+			return model.ErrorProvider[[]uint32](err)
+		}
+		return model.FixedProvider(results)
+	}
+}

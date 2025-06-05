@@ -62,3 +62,17 @@ func deleteCommodity(ctx context.Context, db *gorm.DB) func(id uuid.UUID) error 
 		return db.Where(&Entity{Id: id, TenantId: t.Id()}).Delete(&Entity{}).Error
 	}
 }
+
+func deleteAllCommoditiesByNpcId(ctx context.Context, db *gorm.DB) func(npcId uint32) error {
+	return func(npcId uint32) error {
+		t := tenant.MustFromContext(ctx)
+		return db.Where(&Entity{NpcId: npcId, TenantId: t.Id()}).Delete(&Entity{}).Error
+	}
+}
+
+func deleteAllCommodities(ctx context.Context, db *gorm.DB) func() error {
+	return func() error {
+		t := tenant.MustFromContext(ctx)
+		return db.Where(&Entity{TenantId: t.Id()}).Delete(&Entity{}).Error
+	}
+}

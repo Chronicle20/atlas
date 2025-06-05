@@ -23,7 +23,12 @@ type Processor interface {
 	CreateCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
 	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
 	DeleteCommodity(id uuid.UUID) error
+	DeleteAllCommoditiesByNpcId(npcId uint32) error
+	DeleteAllCommodities() error
 	WithTransaction(tx *gorm.DB) Processor
+	ExistsByNpcId(npcId uint32) (bool, error)
+	GetDistinctNpcIds() ([]uint32, error)
+	DistinctNpcIdsProvider() model.Provider[[]uint32]
 }
 
 type ProcessorImpl struct {
@@ -45,13 +50,29 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
 	}
-	p.GetByNpcIdFn = model.CollapseProvider(p.ByNpcIdProvider)
-	p.GetAllByTenantFn = p.ByTenantProvider()
 	return p
 }
 
+func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
+	newProcessor := &ProcessorImpl{
+		l:   p.l,
+		ctx: p.ctx,
+		db:  tx,
+		t:   p.t,
+	}
+	newProcessor.GetByNpcIdFn = p.GetByNpcIdFn
+	newProcessor.GetAllByTenantFn = p.GetAllByTenantFn
+	newProcessor.CreateFn = p.CreateFn
+	newProcessor.UpdateFn = p.UpdateFn
+	newProcessor.DeleteFn = p.DeleteFn
+	return newProcessor
+}
+
 func (p *ProcessorImpl) GetByNpcId(npcId uint32) ([]Model, error) {
-	return p.GetByNpcIdFn(npcId)
+	if p.GetByNpcIdFn != nil {
+		return p.GetByNpcIdFn(npcId)
+	}
+	return p.ByNpcIdProvider(npcId)()
 }
 
 func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32) model.Provider[[]Model] {
@@ -144,14 +165,22 @@ func (p *ProcessorImpl) CommodityIdToNpcIdMapProvider() model.Provider[map[uuid.
 	return getCommodityIdToNpcIdMap(p.t.Id())(p.db)
 }
 
-func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
-	newProcessor := &ProcessorImpl{
-		l:   p.l,
-		ctx: p.ctx,
-		db:  tx,
-		t:   p.t,
-	}
-	newProcessor.GetByNpcIdFn = model.CollapseProvider(newProcessor.ByNpcIdProvider)
-	newProcessor.GetAllByTenantFn = newProcessor.ByTenantProvider()
-	return newProcessor
+func (p *ProcessorImpl) DeleteAllCommoditiesByNpcId(npcId uint32) error {
+	return deleteAllCommoditiesByNpcId(p.ctx, p.db)(npcId)
+}
+
+func (p *ProcessorImpl) DeleteAllCommodities() error {
+	return deleteAllCommodities(p.ctx, p.db)()
+}
+
+func (p *ProcessorImpl) ExistsByNpcId(npcId uint32) (bool, error) {
+	return existsByNpcId(p.t.Id(), npcId)(p.db)()
+}
+
+func (p *ProcessorImpl) GetDistinctNpcIds() ([]uint32, error) {
+	return p.DistinctNpcIdsProvider()()
+}
+
+func (p *ProcessorImpl) DistinctNpcIdsProvider() model.Provider[[]uint32] {
+	return getDistinctNpcIds(p.t.Id())(p.db)
 }

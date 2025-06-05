@@ -3,6 +3,7 @@ package shops
 import (
 	"atlas-npc/commodities"
 	"fmt"
+	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
 )
 
@@ -10,7 +11,7 @@ import (
 type RestModel struct {
 	Id          string                  `json:"id"`
 	NpcId       uint32                  `json:"npcId"`
-	Commodities []commodities.RestModel `json:"commodities"`
+	Commodities []commodities.RestModel `json:"-"` // Commodities are now a relationship, not a direct attribute
 }
 
 // GetID to satisfy jsonapi.MarshalIdentifier interface
@@ -27,6 +28,75 @@ func (r *RestModel) SetID(id string) error {
 // GetName to satisfy jsonapi.EntityNamer interface
 func (r RestModel) GetName() string {
 	return "shops"
+}
+
+// GetReferences to satisfy jsonapi.MarshalReferences interface
+func (r RestModel) GetReferences() []jsonapi.Reference {
+	return []jsonapi.Reference{
+		{
+			Type: "commodities",
+			Name: "commodities",
+		},
+	}
+}
+
+// GetReferencedIDs to satisfy jsonapi.MarshalLinkedRelations interface
+func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
+	var result []jsonapi.ReferenceID
+	for _, c := range r.Commodities {
+		result = append(result, jsonapi.ReferenceID{
+			ID:   c.GetID(),
+			Type: "commodities",
+			Name: "commodities",
+		})
+	}
+	return result
+}
+
+// GetReferencedStructs to satisfy jsonapi.MarshalIncludedRelations interface
+func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
+	var result []jsonapi.MarshalIdentifier
+	for _, c := range r.Commodities {
+		result = append(result, c)
+	}
+	return result
+}
+
+// SetToOneReferenceID to satisfy jsonapi.UnmarshalToOneRelations interface
+func (r *RestModel) SetToOneReferenceID(name, ID string) error {
+	return nil
+}
+
+// SetToManyReferenceIDs to satisfy jsonapi.UnmarshalToManyRelations interface
+func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+	if name == "commodities" {
+		r.Commodities = make([]commodities.RestModel, 0)
+		for _, id := range IDs {
+			commodity := commodities.RestModel{}
+			commodity.SetID(id)
+			r.Commodities = append(r.Commodities, commodity)
+		}
+	}
+	return nil
+}
+
+// SetReferencedStructs to satisfy jsonapi.UnmarshalIncludedRelations interface
+func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+	if refMap, ok := references["commodities"]; ok {
+		commodities := make([]commodities.RestModel, 0)
+		for _, ri := range r.Commodities {
+			if ref, ok := refMap[ri.GetID()]; ok {
+				wip := ri
+				err := jsonapi.ProcessIncludeData(&wip, ref, references)
+				if err != nil {
+					return err
+				}
+				commodities = append(commodities, wip)
+			}
+		}
+		r.Commodities = commodities
+	}
+	return nil
 }
 
 // Transform converts a Model to a RestModel

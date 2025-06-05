@@ -2,10 +2,10 @@
 
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState } from "react";
-import {NPC, fetchNPCs, bulkCreateShops, Shop} from "@/lib/npcs";
+import {NPC, fetchNPCs, bulkCreateShops, Shop, deleteAllShops} from "@/lib/npcs";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, RefreshCw, Upload } from "lucide-react";
+import { MoreHorizontal, RefreshCw, Upload, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,6 +19,7 @@ export default function Page() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isBulkCreateDialogOpen, setIsBulkCreateDialogOpen] = useState(false);
+    const [isDeleteAllShopsDialogOpen, setIsDeleteAllShopsDialogOpen] = useState(false);
     const [bulkCreateJson, setBulkCreateJson] = useState("");
 
     const fetchDataAgain = () => {
@@ -41,7 +42,7 @@ export default function Page() {
             const jsonData = JSON.parse(bulkCreateJson);
             await bulkCreateShops(activeTenant, jsonData.data.map((shop: Shop) => ({
                 npcId: shop.attributes.npcId,
-                commodities: shop.attributes.commodities
+                commodities: shop.included
             })));
 
             toast.success("Shops created successfully");
@@ -50,6 +51,19 @@ export default function Page() {
             fetchDataAgain();
         } catch (err) {
             toast.error("Failed to create shops: " + (err instanceof Error ? err.message : String(err)));
+        }
+    };
+
+    const handleDeleteAllShops = async () => {
+        if (!activeTenant) return;
+
+        try {
+            await deleteAllShops(activeTenant);
+            toast.success("All shops deleted successfully");
+            setIsDeleteAllShopsDialogOpen(false);
+            fetchDataAgain();
+        } catch (err) {
+            toast.error("Failed to delete all shops: " + (err instanceof Error ? err.message : String(err)));
         }
     };
 
@@ -88,6 +102,10 @@ export default function Page() {
                                 <DropdownMenuItem onClick={() => setIsBulkCreateDialogOpen(true)}>
                                     <Upload className="h-4 w-4 mr-2" />
                                     Bulk Create Shops
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setIsDeleteAllShopsDialogOpen(true)}>
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete All Shops
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -153,6 +171,26 @@ export default function Page() {
                         </Button>
                         <Button onClick={handleBulkCreateShops}>
                             Create Shops
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isDeleteAllShopsDialogOpen} onOpenChange={setIsDeleteAllShopsDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete All Shops</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <p className="text-destructive font-semibold">Warning: This action cannot be undone.</p>
+                        <p>Are you sure you want to delete all shops for the current tenant?</p>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsDeleteAllShopsDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleDeleteAllShops}>
+                            Delete All Shops
                         </Button>
                     </DialogFooter>
                 </DialogContent>

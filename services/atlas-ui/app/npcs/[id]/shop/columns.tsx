@@ -19,31 +19,31 @@ export const getColumns = ({onEdit, onDelete}: ColumnProps): ColumnDef<Commodity
             header: "ID",
         },
         {
-            accessorKey: "templateId",
+            accessorFn: (row) => row.attributes.templateId,
             header: "Template ID",
         },
         {
-            accessorKey: "mesoPrice",
+            accessorFn: (row) => row.attributes.mesoPrice,
             header: "Meso Price",
         },
         {
-            accessorKey: "discountRate",
+            accessorFn: (row) => row.attributes.discountRate,
             header: "Discount Rate",
         },
         {
-            accessorKey: "tokenItemId",
+            accessorFn: (row) => row.attributes.tokenItemId,
             header: "Token Item ID",
         },
         {
-            accessorKey: "tokenPrice",
+            accessorFn: (row) => row.attributes.tokenPrice,
             header: "Token Price",
         },
         {
-            accessorKey: "period",
+            accessorFn: (row) => row.attributes.period,
             header: "Period",
         },
         {
-            accessorKey: "levelLimit",
+            accessorFn: (row) => row.attributes.levelLimit,
             header: "Level Limit",
         },
         {

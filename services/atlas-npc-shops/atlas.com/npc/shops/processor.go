@@ -30,6 +30,8 @@ type Processor interface {
 	ByNpcIdProvider(npcId uint32) model.Provider[Model]
 	GetAllShops() ([]Model, error)
 	AllShopsProvider() model.Provider[[]Model]
+	CreateShop(npcId uint32, commodities []commodities.Model) (Model, error)
+	CreateShops(shops []Model) ([]Model, error)
 	AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
 	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
 	RemoveCommodity(id uuid.UUID) error
@@ -101,6 +103,44 @@ func (p *ProcessorImpl) UpdateCommodity(id uuid.UUID, templateId uint32, mesoPri
 
 func (p *ProcessorImpl) RemoveCommodity(id uuid.UUID) error {
 	return p.cp.DeleteCommodity(id)
+}
+
+func (p *ProcessorImpl) CreateShop(npcId uint32, commodities []commodities.Model) (Model, error) {
+	// Create a new shop with the given NPC ID and commodities
+	shop := NewBuilder(npcId).SetCommodities(commodities).Build()
+
+	// For each commodity, create it in the database
+	for _, commodity := range commodities {
+		_, err := p.cp.CreateCommodity(
+			npcId, 
+			commodity.TemplateId(), 
+			commodity.MesoPrice(), 
+			commodity.DiscountRate(), 
+			commodity.TokenItemId(), 
+			commodity.TokenPrice(), 
+			commodity.Period(), 
+			commodity.LevelLimit(),
+		)
+		if err != nil {
+			return Model{}, err
+		}
+	}
+
+	return shop, nil
+}
+
+func (p *ProcessorImpl) CreateShops(shops []Model) ([]Model, error) {
+	createdShops := make([]Model, 0, len(shops))
+
+	for _, shop := range shops {
+		createdShop, err := p.CreateShop(shop.NpcId(), shop.Commodities())
+		if err != nil {
+			return nil, err
+		}
+		createdShops = append(createdShops, createdShop)
+	}
+
+	return createdShops, nil
 }
 
 func (p *ProcessorImpl) EnterAndEmit(characterId uint32, npcId uint32) error {

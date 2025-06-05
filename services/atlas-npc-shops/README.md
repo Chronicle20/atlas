@@ -16,23 +16,6 @@ A RESTful service that provides NPC shop functionality for the Mushroom game. Th
 - `DB_PORT` - PostgreSQL database port
 - `DB_NAME` - PostgreSQL database name
 
-## Dependencies
-
-- Go 1.24.2
-- PostgreSQL database
-- Jaeger for distributed tracing
-- Chronicle20/atlas-model
-- Chronicle20/atlas-rest
-- Chronicle20/atlas-tenant
-- GORM for database operations
-- Gorilla Mux for routing
-
-## Setup
-
-1. Ensure PostgreSQL is running and accessible
-2. Set the required environment variables
-3. Run the service using `go run atlas.com/npc/main.go` or build and run the Docker container
-
 ## API
 
 ### Header
@@ -182,3 +165,161 @@ Removes a commodity from a shop.
   - `npcId` - The ID of the NPC
   - `commodityId` - The UUID of the commodity
 - **Response**: No content (204)
+
+#### Create Shop
+
+Creates a new shop for a specific NPC with the provided commodities.
+
+- **URL**: `/api/npcs/{npcId}/shop`
+- **Method**: POST
+- **URL Parameters**: 
+  - `npcId` - The ID of the NPC
+- **Request Body**: JSON object containing shop details with commodities
+  ```json
+  {
+    "data": {
+      "type": "shops",
+      "id": "shop-9000001",
+      "attributes": {
+        "npcId": 9000001,
+        "commodities": [
+          {
+            "id": "00000000-0000-0000-0000-000000000000",
+            "templateId": 2000,
+            "mesoPrice": 1000,
+            "tokenPrice": 0,
+            "unitPrice": 1.0,
+            "slotMax": 100
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000000",
+            "templateId": 2001,
+            "mesoPrice": 1500,
+            "tokenPrice": 0,
+            "unitPrice": 1.0,
+            "slotMax": 100
+          }
+        ]
+      }
+    }
+  }
+  ```
+- **Response**: JSON object containing the created shop with commodities
+  ```json
+  {
+    "data": {
+      "type": "shops",
+      "id": "shop-9000001",
+      "attributes": {
+        "npcId": 9000001,
+        "commodities": [
+          {
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "templateId": 2000,
+            "mesoPrice": 1000,
+            "tokenPrice": 0,
+            "unitPrice": 1.0,
+            "slotMax": 100
+          },
+          {
+            "id": "550e8400-e29b-41d4-a716-446655440001",
+            "templateId": 2001,
+            "mesoPrice": 1500,
+            "tokenPrice": 0,
+            "unitPrice": 1.0,
+            "slotMax": 100
+          }
+        ]
+      }
+    }
+  }
+  ```
+
+#### Bulk Create Shops
+
+Creates multiple shops in a single request.
+
+- **URL**: `/api/shops`
+- **Method**: POST
+- **Request Body**: JSON array containing multiple shop objects
+  ```json
+  {
+    "data": [
+      {
+        "type": "shops",
+        "id": "shop-9000001",
+        "attributes": {
+          "npcId": 9000001,
+          "commodities": [
+            {
+              "id": "00000000-0000-0000-0000-000000000000",
+              "templateId": 2000,
+              "mesoPrice": 1000,
+              "tokenPrice": 0,
+              "unitPrice": 1.0,
+              "slotMax": 100
+            }
+          ]
+        }
+      },
+      {
+        "type": "shops",
+        "id": "shop-9000002",
+        "attributes": {
+          "npcId": 9000002,
+          "commodities": [
+            {
+              "id": "00000000-0000-0000-0000-000000000000",
+              "templateId": 2001,
+              "mesoPrice": 1500,
+              "tokenPrice": 0,
+              "unitPrice": 1.0,
+              "slotMax": 100
+            }
+          ]
+        }
+      }
+    ]
+  }
+  ```
+- **Response**: JSON array containing the created shops with their commodities
+  ```json
+  {
+    "data": [
+      {
+        "type": "shops",
+        "id": "shop-9000001",
+        "attributes": {
+          "npcId": 9000001,
+          "commodities": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440000",
+              "templateId": 2000,
+              "mesoPrice": 1000,
+              "tokenPrice": 0,
+              "unitPrice": 1.0,
+              "slotMax": 100
+            }
+          ]
+        }
+      },
+      {
+        "type": "shops",
+        "id": "shop-9000002",
+        "attributes": {
+          "npcId": 9000002,
+          "commodities": [
+            {
+              "id": "550e8400-e29b-41d4-a716-446655440001",
+              "templateId": 2001,
+              "mesoPrice": 1500,
+              "tokenPrice": 0,
+              "unitPrice": 1.0,
+              "slotMax": 100
+            }
+          ]
+        }
+      }
+    ]
+  }
+  ```

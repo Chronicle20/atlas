@@ -45,13 +45,26 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
 	}
-	p.GetByNpcIdFn = model.CollapseProvider(p.ByNpcIdProvider)
-	p.GetAllByTenantFn = p.ByTenantProvider()
 	return p
 }
 
+func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
+	newProcessor := &ProcessorImpl{
+		l:   p.l,
+		ctx: p.ctx,
+		db:  tx,
+		t:   p.t,
+	}
+	newProcessor.GetByNpcIdFn = p.GetByNpcIdFn
+	newProcessor.GetAllByTenantFn = p.GetAllByTenantFn
+	return newProcessor
+}
+
 func (p *ProcessorImpl) GetByNpcId(npcId uint32) ([]Model, error) {
-	return p.GetByNpcIdFn(npcId)
+	if p.GetByNpcIdFn != nil {
+		return p.GetByNpcIdFn(npcId)
+	}
+	return p.ByNpcIdProvider(npcId)()
 }
 
 func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32) model.Provider[[]Model] {

@@ -105,3 +105,72 @@ export async function deleteCommodity(tenant: Tenant, npcId: number, commodityId
         throw new Error("Failed to delete commodity.");
     }
 }
+
+export async function createShop(tenant: Tenant, npcId: number, commodities: Omit<Commodity, 'id'>[]): Promise<Shop> {
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop", {
+        method: "POST",
+        headers: tenantHeaders(tenant),
+        body: JSON.stringify({
+            data: {
+                type: "shops",
+                id: `shop-${npcId}`,
+                attributes: {
+                    npcId: npcId,
+                    commodities: commodities
+                }
+            }
+        }),
+    });
+    if (!response.ok) {
+        throw new Error("Failed to create shop.");
+    }
+    const responseData = await response.json();
+    return responseData.data;
+}
+
+export async function bulkCreateShops(tenant: Tenant, shops: { npcId: number, commodities: Omit<Commodity, 'id'>[] }[]): Promise<Shop[]> {
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    const response = await fetch(rootUrl + "/api/shops", {
+        method: "POST",
+        headers: tenantHeaders(tenant),
+        body: JSON.stringify({
+            data: shops.map(shop => ({
+                type: "shops",
+                id: `shop-${shop.npcId}`,
+                attributes: {
+                    npcId: shop.npcId,
+                    commodities: shop.commodities
+                }
+            }))
+        }),
+    });
+    if (!response.ok) {
+        throw new Error("Failed to bulk create shops.");
+    }
+    const responseData = await response.json();
+    return responseData.data;
+}
+
+export async function updateShop(tenant: Tenant, npcId: number, commodities: Commodity[]): Promise<Shop> {
+    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+    const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop", {
+        method: "PUT",
+        headers: tenantHeaders(tenant),
+        body: JSON.stringify({
+            data: {
+                type: "shops",
+                id: `shop-${npcId}`,
+                attributes: {
+                    npcId: npcId,
+                    commodities: commodities
+                }
+            }
+        }),
+    });
+    if (!response.ok) {
+        throw new Error("Failed to update shop.");
+    }
+    const responseData = await response.json();
+    return responseData.data;
+}

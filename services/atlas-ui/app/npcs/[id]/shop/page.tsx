@@ -2,15 +2,16 @@
 
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState } from "react";
-import { Commodity, Shop, createCommodity, deleteCommodity, fetchNPCShop, updateCommodity } from "@/lib/npcs";
+import { Commodity, Shop, createCommodity, deleteCommodity, fetchNPCShop, updateCommodity, updateShop } from "@/lib/npcs";
 import { DataTable } from "@/components/data-table";
 import { getColumns } from "./columns";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Upload, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {toast} from "sonner";
 
 export default function Page() {
@@ -26,6 +27,8 @@ export default function Page() {
     // Dialog states
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isBulkUpdateDialogOpen, setIsBulkUpdateDialogOpen] = useState(false);
+    const [bulkUpdateJson, setBulkUpdateJson] = useState("");
     const [currentCommodity, setCurrentCommodity] = useState<Commodity | null>(null);
     const [formData, setFormData] = useState<Partial<Commodity>>({
         templateId: 0,
@@ -123,6 +126,59 @@ export default function Page() {
         } catch {
             toast.error("Failed to delete commodity");
         }
+    };
+
+    const handleBulkUpdateShop = async () => {
+        if (!activeTenant) return;
+
+        try {
+            const jsonData = JSON.parse(bulkUpdateJson);
+            await updateShop(activeTenant, npcId, jsonData.data.attributes.commodities);
+            setIsBulkUpdateDialogOpen(false);
+            setBulkUpdateJson("");
+            fetchDataAgain();
+            toast.success("Shop updated successfully");
+        } catch (err) {
+            toast.error("Failed to update shop: " + (err instanceof Error ? err.message : String(err)));
+        }
+    };
+
+    const handleExportShop = () => {
+        // Create a JSON object with the shop data
+        const shopData = {
+            data: {
+                type: "shops",
+                id: `shop-${npcId}`,
+                attributes: {
+                    npcId: npcId,
+                    commodities: commodities
+                }
+            }
+        };
+
+        // Convert to JSON string with pretty formatting
+        const jsonString = JSON.stringify(shopData, null, 2);
+
+        // Create a blob with the JSON data
+        const blob = new Blob([jsonString], { type: 'application/json' });
+
+        // Create a URL for the blob
+        const url = URL.createObjectURL(blob);
+
+        // Create a temporary anchor element
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `shop-${npcId}.json`;
+
+        // Trigger the download
+        document.body.appendChild(a);
+        a.click();
+
+        // Clean up
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        toast.success("Shop data exported successfully");
     };
 
     if (loading) return <div>Loading...</div>;
@@ -321,6 +377,30 @@ export default function Page() {
                 </DialogContent>
             </Dialog>
 
+            <Dialog open={isBulkUpdateDialogOpen} onOpenChange={setIsBulkUpdateDialogOpen}>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle>Bulk Update Shop</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <Textarea
+                            placeholder="Paste JSON data here..."
+                            value={bulkUpdateJson}
+                            onChange={(e) => setBulkUpdateJson(e.target.value)}
+                            className="min-h-[300px] font-mono"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsBulkUpdateDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleBulkUpdateShop}>
+                            Update Shop
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <div className="mt-4">
                 <DataTable
                     columns={columns}
@@ -331,6 +411,16 @@ export default function Page() {
                             icon: <PlusCircle className="h-4 w-4" />,
                             label: "Add Commodity",
                             onClick: () => setIsCreateDialogOpen(true)
+                        },
+                        {
+                            icon: <Upload className="h-4 w-4" />,
+                            label: "Bulk Update Shop",
+                            onClick: () => setIsBulkUpdateDialogOpen(true)
+                        },
+                        {
+                            icon: <Download className="h-4 w-4" />,
+                            label: "Export Shop",
+                            onClick: handleExportShop
                         }
                     ]}
                 />

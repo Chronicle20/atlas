@@ -9,6 +9,7 @@ import (
 	"atlas-npc/data/equipable"
 	"atlas-npc/data/etc"
 	"atlas-npc/data/setup"
+	"atlas-npc/database"
 	inventory2 "atlas-npc/inventory"
 	"atlas-npc/kafka/message"
 	"atlas-npc/kafka/message/shops"
@@ -30,6 +31,9 @@ type Processor interface {
 	ByNpcIdProvider(npcId uint32) model.Provider[Model]
 	GetAllShops() ([]Model, error)
 	AllShopsProvider() model.Provider[[]Model]
+	CreateShop(npcId uint32, commodities []commodities.Model) (Model, error)
+	UpdateShop(npcId uint32, commodities []commodities.Model) (Model, error)
+	CreateShops(shops []Model) ([]Model, error)
 	AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
 	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
 	RemoveCommodity(id uuid.UUID) error
@@ -101,6 +105,101 @@ func (p *ProcessorImpl) UpdateCommodity(id uuid.UUID, templateId uint32, mesoPri
 
 func (p *ProcessorImpl) RemoveCommodity(id uuid.UUID) error {
 	return p.cp.DeleteCommodity(id)
+}
+
+func (p *ProcessorImpl) CreateShop(npcId uint32, commodities []commodities.Model) (Model, error) {
+	// Create a new shop with the given NPC ID and commodities
+	shop := NewBuilder(npcId).SetCommodities(commodities).Build()
+
+	// For each commodity, create it in the database
+	for _, commodity := range commodities {
+		_, err := p.cp.CreateCommodity(
+			npcId,
+			commodity.TemplateId(),
+			commodity.MesoPrice(),
+			commodity.DiscountRate(),
+			commodity.TokenItemId(),
+			commodity.TokenPrice(),
+			commodity.Period(),
+			commodity.LevelLimit(),
+		)
+		if err != nil {
+			return Model{}, err
+		}
+	}
+
+	return shop, nil
+}
+
+func (p *ProcessorImpl) UpdateShop(npcId uint32, commodities []commodities.Model) (Model, error) {
+	p.l.Debugf("Updating shop for NPC [%d] with [%d] commodities.", npcId, len(commodities))
+
+	var shop Model
+	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		// Get existing commodities for the NPC ID
+		existingCommodities, err := p.cp.WithTransaction(tx).GetByNpcId(npcId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to retrieve existing commodities for NPC [%d].", npcId)
+			return err
+		}
+		p.l.Debugf("Found [%d] existing commodities for NPC [%d].", len(existingCommodities), npcId)
+
+		// Delete all existing commodities
+		for i, commodity := range existingCommodities {
+			p.l.Debugf("Deleting commodity [%d/%d] with ID [%s] for NPC [%d].", i+1, len(existingCommodities), commodity.Id(), npcId)
+			err = p.cp.WithTransaction(tx).DeleteCommodity(commodity.Id())
+			if err != nil {
+				p.l.WithError(err).Errorf("Failed to delete commodity [%s] for NPC [%d].", commodity.Id(), npcId)
+				return err
+			}
+		}
+		p.l.Debugf("Successfully deleted all [%d] existing commodities for NPC [%d].", len(existingCommodities), npcId)
+
+		// Create a new shop with the given NPC ID and commodities
+		shop = NewBuilder(npcId).SetCommodities(commodities).Build()
+		p.l.Debugf("Created new shop model for NPC [%d].", npcId)
+
+		// For each commodity, create it in the database
+		for i, commodity := range commodities {
+			p.l.Debugf("Creating commodity [%d/%d] with template ID [%d] for NPC [%d].", i+1, len(commodities), commodity.TemplateId(), npcId)
+			_, err = p.cp.WithTransaction(tx).CreateCommodity(
+				npcId,
+				commodity.TemplateId(),
+				commodity.MesoPrice(),
+				commodity.DiscountRate(),
+				commodity.TokenItemId(),
+				commodity.TokenPrice(),
+				commodity.Period(),
+				commodity.LevelLimit(),
+			)
+			if err != nil {
+				p.l.WithError(err).Errorf("Failed to create commodity with template ID [%d] for NPC [%d].", commodity.TemplateId(), npcId)
+				return err
+			}
+		}
+		p.l.Debugf("Successfully created all [%d] new commodities for NPC [%d].", len(commodities), npcId)
+		return nil
+	})
+	if txErr != nil {
+		p.l.WithError(txErr).Errorf("Transaction failed while updating shop for NPC [%d].", npcId)
+		return Model{}, txErr
+	}
+	p.l.Debugf("Successfully updated shop for NPC [%d] with [%d] commodities.", npcId, len(commodities))
+	return shop, nil
+}
+
+func (p *ProcessorImpl) CreateShops(shops []Model) ([]Model, error) {
+	createdShops := make([]Model, 0, len(shops))
+
+	for _, shop := range shops {
+		createdShop, err := p.CreateShop(shop.NpcId(), shop.Commodities())
+		if err != nil {
+			return nil, err
+		}
+		createdShops = append(createdShops, createdShop)
+	}
+
+	return createdShops, nil
 }
 
 func (p *ProcessorImpl) EnterAndEmit(characterId uint32, npcId uint32) error {

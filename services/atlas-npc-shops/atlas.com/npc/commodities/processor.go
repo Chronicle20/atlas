@@ -23,6 +23,7 @@ type Processor interface {
 	CreateCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
 	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
 	DeleteCommodity(id uuid.UUID) error
+	WithTransaction(tx *gorm.DB) Processor
 }
 
 type ProcessorImpl struct {
@@ -141,4 +142,16 @@ func (p *ProcessorImpl) GetCommodityIdToNpcIdMap() (map[uuid.UUID]uint32, error)
 
 func (p *ProcessorImpl) CommodityIdToNpcIdMapProvider() model.Provider[map[uuid.UUID]uint32] {
 	return getCommodityIdToNpcIdMap(p.t.Id())(p.db)
+}
+
+func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
+	newProcessor := &ProcessorImpl{
+		l:   p.l,
+		ctx: p.ctx,
+		db:  tx,
+		t:   p.t,
+	}
+	newProcessor.GetByNpcIdFn = model.CollapseProvider(newProcessor.ByNpcIdProvider)
+	newProcessor.GetAllByTenantFn = newProcessor.ByTenantProvider()
+	return newProcessor
 }

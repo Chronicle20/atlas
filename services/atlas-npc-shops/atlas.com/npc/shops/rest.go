@@ -82,7 +82,20 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 
 // SetReferencedStructs to satisfy jsonapi.UnmarshalIncludedRelations interface
 func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
-	// We'll handle the included relationships manually in the test
+	if refMap, ok := references["commodities"]; ok {
+		commodities := make([]commodities.RestModel, 0)
+		for _, ri := range r.Commodities {
+			if ref, ok := refMap[ri.GetID()]; ok {
+				wip := ri
+				err := jsonapi.ProcessIncludeData(&wip, ref, references)
+				if err != nil {
+					return err
+				}
+				commodities = append(commodities, wip)
+			}
+		}
+		r.Commodities = commodities
+	}
 	return nil
 }
 

@@ -13,6 +13,13 @@
     {
       "matchUpdateTypes": ["major"],
       "automerge": false
+    },
+    {
+      "matchManagers": ["gomod"],
+      "matchDatasources": ["golang-version"],
+      "matchPackageNames": ["go"],
+      "enabled": true,
+      "automerge": false
     }
   ]
 }

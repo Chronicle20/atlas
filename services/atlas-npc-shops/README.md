@@ -33,15 +33,17 @@ MINOR_VERSION:1
 
 #### Get Shop by NPC ID
 
-Retrieves shop information for a specific NPC, including all commodities sold by that NPC.
+Retrieves shop information for a specific NPC.
 
 - **URL**: `/api/npcs/{npcId}/shop`
 - **Method**: GET
 - **URL Parameters**: 
   - `npcId` - The ID of the NPC
-- **Response**: JSON object containing shop information and commodities
+- **Query Parameters**:
+  - `include` - Optional. Specify "commodities" to include the commodities associated with the shop in the response.
+- **Response**: JSON object containing shop information and optionally commodities
 
-Example Response:
+Example Response (with include=commodities):
 ```json
 {
   "data": {
@@ -540,6 +542,82 @@ Creates multiple shops in a single request.
     ]
   }
   ```
+
+#### Get All Shops
+
+Retrieves all shops for the current tenant.
+
+- **URL**: `/api/shops`
+- **Method**: GET
+- **Query Parameters**:
+  - `include` - Optional. Specify "commodities" to include the commodities associated with each shop in the response.
+- **Response**: JSON array containing shop information and optionally commodities
+
+Example Response (with include=commodities):
+```json
+{
+  "data": [
+    {
+      "type": "shops",
+      "id": "shop-9000001",
+      "attributes": {
+        "npcId": 9000001
+      },
+      "relationships": {
+        "commodities": {
+          "data": [
+            {
+              "type": "commodities",
+              "id": "550e8400-e29b-41d4-a716-446655440000"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "shops",
+      "id": "shop-9000002",
+      "attributes": {
+        "npcId": 9000002
+      },
+      "relationships": {
+        "commodities": {
+          "data": [
+            {
+              "type": "commodities",
+              "id": "550e8400-e29b-41d4-a716-446655440001"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "included": [
+    {
+      "type": "commodities",
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "attributes": {
+        "templateId": 2000,
+        "mesoPrice": 1000,
+        "tokenPrice": 0,
+        "unitPrice": 1.0,
+        "slotMax": 100
+      }
+    },
+    {
+      "type": "commodities",
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "attributes": {
+        "templateId": 2001,
+        "mesoPrice": 1500,
+        "tokenPrice": 0,
+        "unitPrice": 1.0,
+        "slotMax": 100
+      }
+    }
+  ]
+}
+```
 
 #### Delete All Shops
 

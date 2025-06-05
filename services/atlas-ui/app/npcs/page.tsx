@@ -2,7 +2,7 @@
 
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState } from "react";
-import { NPC, fetchNPCs, bulkCreateShops } from "@/lib/npcs";
+import {NPC, fetchNPCs, bulkCreateShops, Shop} from "@/lib/npcs";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, RefreshCw, Upload } from "lucide-react";
@@ -39,7 +39,7 @@ export default function Page() {
 
         try {
             const jsonData = JSON.parse(bulkCreateJson);
-            await bulkCreateShops(activeTenant, jsonData.data.map((shop: any) => ({
+            await bulkCreateShops(activeTenant, jsonData.data.map((shop: Shop) => ({
                 npcId: shop.attributes.npcId,
                 commodities: shop.attributes.commodities
             })));

@@ -2,7 +2,7 @@
 
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState } from "react";
-import {NPC, fetchNPCs, createShop, Shop, deleteAllShops, updateShop, Commodity, CommodityAttributes} from "@/lib/npcs";
+import {NPC, fetchNPCs, deleteAllShops, updateShop, Commodity} from "@/lib/npcs";
 import { tenantHeaders } from "@/lib/headers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,6 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export default function Page() {
     const { activeTenant } = useTenant();
@@ -69,9 +67,7 @@ export default function Page() {
             if (!response.ok) {
                 throw new Error("Failed to create shop.");
             }
-
-            const responseData = await response.json();
-
+            await response.json();
             toast.success("Shop created successfully");
             setIsCreateShopDialogOpen(false);
             setCreateShopJson("");

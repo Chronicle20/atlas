@@ -3,7 +3,7 @@
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState } from "react";
 import {NPC, fetchNPCs, bulkCreateShops, Shop, deleteAllShops, updateShop, Commodity} from "@/lib/npcs";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, RefreshCw, Upload, Trash2, ShoppingBag } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";

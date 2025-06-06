@@ -36,7 +36,7 @@ export default function Page() {
         templateId: 0,
         mesoPrice: 0,
         discountRate: 0,
-        tokenItemId: 0,
+        tokenTemplateId: 0,
         tokenPrice: 0,
         period: 0,
         levelLimit: 0
@@ -65,6 +65,36 @@ export default function Page() {
         fetchDataAgain();
     }, [activeTenant, npcId]);
 
+    // Reset form data when dialogs are closed
+    useEffect(() => {
+        if (!isEditDialogOpen) {
+            setFormData({
+                templateId: 0,
+                mesoPrice: 0,
+                discountRate: 0,
+                tokenTemplateId: 0,
+                tokenPrice: 0,
+                period: 0,
+                levelLimit: 0
+            });
+        }
+    }, [isEditDialogOpen]);
+
+    // Reset form data when create dialog is closed
+    useEffect(() => {
+        if (!isCreateDialogOpen) {
+            setFormData({
+                templateId: 0,
+                mesoPrice: 0,
+                discountRate: 0,
+                tokenTemplateId: 0,
+                tokenPrice: 0,
+                period: 0,
+                levelLimit: 0
+            });
+        }
+    }, [isCreateDialogOpen]);
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData({
@@ -83,7 +113,7 @@ export default function Page() {
                 templateId: 0,
                 mesoPrice: 0,
                 discountRate: 0,
-                tokenItemId: 0,
+                tokenTemplateId: 0,
                 tokenPrice: 0,
                 period: 0,
                 levelLimit: 0
@@ -101,7 +131,7 @@ export default function Page() {
             templateId: commodity.attributes.templateId,
             mesoPrice: commodity.attributes.mesoPrice,
             discountRate: commodity.attributes.discountRate,
-            tokenItemId: commodity.attributes.tokenItemId,
+            tokenTemplateId: commodity.attributes.tokenTemplateId,
             tokenPrice: commodity.attributes.tokenPrice,
             period: commodity.attributes.period,
             levelLimit: commodity.attributes.levelLimit
@@ -235,7 +265,7 @@ export default function Page() {
                     <h2 className="text-2xl font-bold tracking-tight">NPC #{npcId} Shop</h2>
                 </div>
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-xl">
                         <DialogHeader>
                             <DialogTitle>Add New Commodity</DialogTitle>
                         </DialogHeader>
@@ -274,12 +304,12 @@ export default function Page() {
                                 />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="tokenItemId" className="text-right">Token Item ID</Label>
+                                <Label htmlFor="tokenTemplateId" className="text-right">Token Template ID</Label>
                                 <Input
-                                    id="tokenItemId"
-                                    name="tokenItemId"
+                                    id="tokenTemplateId"
+                                    name="tokenTemplateId"
                                     type="number"
-                                    value={formData.tokenItemId}
+                                    value={formData.tokenTemplateId}
                                     onChange={handleInputChange}
                                     className="col-span-3"
                                 />
@@ -326,7 +356,7 @@ export default function Page() {
             </div>
 
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-xl">
                     <DialogHeader>
                         <DialogTitle>Edit Commodity</DialogTitle>
                     </DialogHeader>
@@ -365,12 +395,12 @@ export default function Page() {
                             />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-tokenItemId" className="text-right">Token Item ID</Label>
+                            <Label htmlFor="edit-tokenTemplateId" className="text-right">Token Template ID</Label>
                             <Input
-                                id="edit-tokenItemId"
-                                name="tokenItemId"
+                                id="edit-tokenTemplateId"
+                                name="tokenTemplateId"
                                 type="number"
-                                value={formData.tokenItemId}
+                                value={formData.tokenTemplateId}
                                 onChange={handleInputChange}
                                 className="col-span-3"
                             />

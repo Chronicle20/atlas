@@ -5,7 +5,7 @@ export interface CommodityAttributes {
     templateId: number;
     mesoPrice: number;
     discountRate: number;
-    tokenItemId: number;
+    tokenTemplateId: number;
     tokenPrice: number;
     period: number;
     levelLimit: number;
@@ -157,9 +157,9 @@ export async function createShop(tenant: Tenant, npcId: number, commodities: Omi
                     commodities: {
                         data: commodityReferences
                     }
-                },
-                included: includedCommodities
-            }
+                }
+            },
+            included: includedCommodities
         }),
     });
     if (!response.ok) {

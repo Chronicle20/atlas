@@ -380,12 +380,12 @@ export default function Page() {
                             />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-tokenItemId" className="text-right">Token Item ID</Label>
+                            <Label htmlFor="edit-tokenTemplateId" className="text-right">Token Template ID</Label>
                             <Input
-                                id="edit-tokenItemId"
-                                name="tokenItemId"
+                                id="edit-tokenTemplateId"
+                                name="tokenTemplateId"
                                 type="number"
-                                value={formData.tokenItemId}
+                                value={formData.tokenTemplateId}
                                 onChange={handleInputChange}
                                 className="col-span-3"
                             />

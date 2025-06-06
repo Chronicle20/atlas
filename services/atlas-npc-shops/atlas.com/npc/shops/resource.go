@@ -250,7 +250,7 @@ func handleCreateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestM
 			}
 
 			// Create the shop
-			shop, err := p.CreateShop(npcId, commodityModels)
+			shop, err := p.CreateShop(npcId, i.Recharger, commodityModels)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating shop.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -292,7 +292,7 @@ func handleUpdateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestM
 			}
 
 			// Update the shop
-			shop, err := p.UpdateShop(npcId, commodityModels)
+			shop, err := p.UpdateShop(npcId, i.Recharger, commodityModels)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Updating shop.")
 				w.WriteHeader(http.StatusInternalServerError)

@@ -33,8 +33,8 @@ type Processor interface {
 	ByNpcIdProvider(decorators ...model.Decorator[Model]) func(npcId uint32) model.Provider[Model]
 	GetAllShops(decorators ...model.Decorator[Model]) ([]Model, error)
 	AllShopsProvider(decorators ...model.Decorator[Model]) model.Provider[[]Model]
-	CreateShop(npcId uint32, commodities []commodities.Model) (Model, error)
-	UpdateShop(npcId uint32, commodities []commodities.Model) (Model, error)
+	CreateShop(npcId uint32, recharger bool, commodities []commodities.Model) (Model, error)
+	UpdateShop(npcId uint32, recharger bool, commodities []commodities.Model) (Model, error)
 	AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
 	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
 	RemoveCommodity(id uuid.UUID) error
@@ -103,14 +103,41 @@ func (p *ProcessorImpl) GetByNpcId(decorators ...model.Decorator[Model]) func(np
 
 func (p *ProcessorImpl) ByNpcIdProvider(decorators ...model.Decorator[Model]) func(npcId uint32) model.Provider[Model] {
 	return func(npcId uint32) model.Provider[Model] {
-		ok, err := p.cp.ExistsByNpcId(npcId)
+		// First check if the shop entity exists
+		shopExists, err := existsByNpcId(p.t.Id(), npcId)(p.db)()
 		if err != nil {
 			return model.ErrorProvider[Model](err)
 		}
-		if !ok {
-			return model.ErrorProvider[Model](ErrNotFound)
+
+		// If the shop entity doesn't exist, check if commodities exist
+		if !shopExists {
+			commoditiesExist, err := p.cp.ExistsByNpcId(npcId)
+			if err != nil {
+				return model.ErrorProvider[Model](err)
+			}
+			if !commoditiesExist {
+				return model.ErrorProvider[Model](ErrNotFound)
+			}
+
+			// If commodities exist but shop doesn't, create a shop entity with default values
+			_, err = createShop(p.t.Id(), npcId, true)(p.db)()
+			if err != nil {
+				return model.ErrorProvider[Model](err)
+			}
 		}
-		m := NewBuilder(npcId).Build()
+
+		// Get the shop entity
+		shopEntity, err := getByNpcId(p.t.Id(), npcId)(p.db)()
+		if err != nil {
+			return model.ErrorProvider[Model](err)
+		}
+
+		// Convert entity to model
+		m, err := Make(shopEntity)
+		if err != nil {
+			return model.ErrorProvider[Model](err)
+		}
+
 		return model.Map(model.Decorate(decorators))(model.FixedProvider(m))
 	}
 }
@@ -127,9 +154,12 @@ func (p *ProcessorImpl) RemoveCommodity(id uuid.UUID) error {
 	return p.cp.DeleteCommodity(id)
 }
 
-func (p *ProcessorImpl) CreateShop(npcId uint32, commodities []commodities.Model) (Model, error) {
-	// Create a new shop with the given NPC ID and commodities
-	shop := NewBuilder(npcId).SetCommodities(commodities).Build()
+func (p *ProcessorImpl) CreateShop(npcId uint32, recharger bool, commodities []commodities.Model) (Model, error) {
+	// Create a shop entity with default recharger=true
+	shopEntity, err := createShop(p.t.Id(), npcId, recharger)(p.db)()
+	if err != nil {
+		return Model{}, err
+	}
 
 	// For each commodity, create it in the database
 	for _, commodity := range commodities {
@@ -148,14 +178,29 @@ func (p *ProcessorImpl) CreateShop(npcId uint32, commodities []commodities.Model
 		}
 	}
 
-	return shop, nil
+	// Convert entity to model and add commodities
+	shop, err := Make(shopEntity)
+	if err != nil {
+		return Model{}, err
+	}
+	return Clone(shop).SetCommodities(commodities).Build(), nil
 }
 
-func (p *ProcessorImpl) UpdateShop(npcId uint32, commodities []commodities.Model) (Model, error) {
+func (p *ProcessorImpl) UpdateShop(npcId uint32, recharger bool, commodities []commodities.Model) (Model, error) {
 	p.l.Debugf("Updating shop for NPC [%d] with [%d] commodities.", npcId, len(commodities))
 
 	var shop Model
 	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		// Update or create the shop entity with the provided recharger value
+		var shopEntity Entity
+		var err error
+		shopEntity, err = updateShop(p.t.Id(), npcId, recharger)(tx)()
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to update/create shop entity for NPC [%d].", npcId)
+			return err
+		}
+		p.l.Debugf("Updated/created shop entity for NPC [%d] with recharger=[%t].", npcId, recharger)
+
 		// Get existing commodities for the NPC ID
 		existingCommodities, err := p.cp.WithTransaction(tx).GetByNpcId(npcId)
 		if err != nil {
@@ -174,10 +219,6 @@ func (p *ProcessorImpl) UpdateShop(npcId uint32, commodities []commodities.Model
 			}
 		}
 		p.l.Debugf("Successfully deleted all [%d] existing commodities for NPC [%d].", len(existingCommodities), npcId)
-
-		// Create a new shop with the given NPC ID and commodities
-		shop = NewBuilder(npcId).SetCommodities(commodities).Build()
-		p.l.Debugf("Created new shop model for NPC [%d].", npcId)
 
 		// For each commodity, create it in the database
 		for i, commodity := range commodities {
@@ -198,6 +239,16 @@ func (p *ProcessorImpl) UpdateShop(npcId uint32, commodities []commodities.Model
 			}
 		}
 		p.l.Debugf("Successfully created all [%d] new commodities for NPC [%d].", len(commodities), npcId)
+
+		// Convert entity to model and add commodities
+		shopModel, err := Make(shopEntity)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to convert shop entity to model for NPC [%d].", npcId)
+			return err
+		}
+		shop = Clone(shopModel).SetCommodities(commodities).Build()
+		p.l.Debugf("Created shop model for NPC [%d].", npcId)
+
 		return nil
 	})
 	if txErr != nil {
@@ -249,8 +300,14 @@ func (p *ProcessorImpl) DeleteAllCommoditiesByNpcId(npcId uint32) error {
 }
 
 func (p *ProcessorImpl) DeleteAllShops() error {
-	commoditiesProcessor := commodities.NewProcessor(p.l, p.ctx, p.db)
-	return commoditiesProcessor.DeleteAllCommodities()
+	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		_, err := deleteAllShops(p.t.Id())(tx)()
+		if err != nil {
+			return err
+		}
+		return p.cp.WithTransaction(tx).DeleteAllCommodities()
+	})
+
 }
 
 func (p *ProcessorImpl) GetAllShops(decorators ...model.Decorator[Model]) ([]Model, error) {
@@ -261,13 +318,41 @@ func (p *ProcessorImpl) GetAllShops(decorators ...model.Decorator[Model]) ([]Mod
 }
 
 func (p *ProcessorImpl) AllShopsProvider(decorators ...model.Decorator[Model]) model.Provider[[]Model] {
-	npcIds, err := p.cp.GetDistinctNpcIds()
+	// Get all shop entities
+	shopEntities, err := getAllShops(p.t.Id())(p.db)()
 	if err != nil {
-		return model.FixedProvider[[]Model](make([]Model, 0))
+		// If there's an error getting shop entities, fall back to getting NPC IDs from commodities
+		npcIds, err := p.cp.GetDistinctNpcIds()
+		if err != nil {
+			return model.FixedProvider[[]Model](make([]Model, 0))
+		}
+
+		// Create shop entities for each NPC ID if they don't exist
+		for _, npcId := range npcIds {
+			shopExists, err := existsByNpcId(p.t.Id(), npcId)(p.db)()
+			if err != nil {
+				continue
+			}
+			if !shopExists {
+				_, err = createShop(p.t.Id(), npcId, true)(p.db)()
+				if err != nil {
+					continue
+				}
+			}
+		}
+
+		// Try to get all shop entities again
+		shopEntities, err = getAllShops(p.t.Id())(p.db)()
+		if err != nil {
+			return model.FixedProvider[[]Model](make([]Model, 0))
+		}
 	}
-	sbp := model.SliceMap(func(npcId uint32) (Model, error) {
-		return NewBuilder(npcId).Build(), nil
-	})(model.FixedProvider(npcIds))(model.ParallelMap())
+
+	// Convert entities to models
+	sbp := model.SliceMap(func(entity Entity) (Model, error) {
+		return Make(entity)
+	})(model.FixedProvider(shopEntities))(model.ParallelMap())
+
 	return model.SliceMap(model.Decorate(decorators))(sbp)(model.ParallelMap())
 }
 
@@ -443,9 +528,21 @@ func (p *ProcessorImpl) Recharge(mb *message.Buffer) func(characterId uint32) fu
 		return func(slot uint16) error {
 			p.l.Debugf("Character [%d] attempting to recharge item from slot [%d].", characterId, slot)
 
-			_, inShop := getRegistry().GetShop(p.t.Id(), characterId)
+			shopId, inShop := getRegistry().GetShop(p.t.Id(), characterId)
 			if !inShop {
 				p.l.Errorf("Character [%d] is not in a shop.", characterId)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+
+			// Check if the shop allows recharging
+			shopEntity, err := getByNpcId(p.t.Id(), shopId)(p.db)()
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to retrieve shop entity for NPC [%d].", shopId)
+				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+			}
+
+			if !shopEntity.Recharger {
+				p.l.Errorf("Character [%d] attempting to recharge item in shop [%d] that does not allow recharging.", characterId, shopId)
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
 			}
 			c, err := p.charP.GetById(p.charP.InventoryDecorator)(characterId)

@@ -48,7 +48,7 @@ func CreateShopsProcessor(t *testing.T) (shops.Processor, *gorm.DB, func()) {
 	logger := logrus.New()
 
 	// Set up test database with migrations
-	db := SetupTestDB(t, commodities.Migration)
+	db := SetupTestDB(t, commodities.Migration, shops.Migration)
 
 	// Create test context
 	ctx := CreateTestContext()

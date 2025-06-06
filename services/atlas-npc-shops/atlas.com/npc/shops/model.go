@@ -5,6 +5,7 @@ import "atlas-npc/commodities"
 type Model struct {
 	npcId       uint32
 	commodities []commodities.Model
+	recharger   bool
 }
 
 // NpcId returns a pointer to the model's npcId
@@ -15,6 +16,11 @@ func (m *Model) NpcId() uint32 {
 // Commodities returns a pointer to the model's commodities
 func (m *Model) Commodities() []commodities.Model {
 	return m.commodities
+}
+
+// Recharger returns whether rechargeables can be recharged at this shop
+func (m *Model) Recharger() bool {
+	return m.recharger
 }
 
 // NewBuilder is used to initialize a new ModelBuilder
@@ -28,6 +34,7 @@ func NewBuilder(npcId uint32) *ModelBuilder {
 type ModelBuilder struct {
 	npcId       uint32
 	commodities []commodities.Model
+	recharger   bool
 }
 
 // SetNpcId sets the npcId for the ModelBuilder
@@ -48,11 +55,18 @@ func (b *ModelBuilder) AddCommodity(commodity commodities.Model) *ModelBuilder {
 	return b
 }
 
+// SetRecharger sets whether rechargeables can be recharged at this shop
+func (b *ModelBuilder) SetRecharger(recharger bool) *ModelBuilder {
+	b.recharger = recharger
+	return b
+}
+
 // Build creates a new Model instance with the builder's values
 func (b *ModelBuilder) Build() Model {
 	return Model{
 		npcId:       b.npcId,
 		commodities: b.commodities,
+		recharger:   b.recharger,
 	}
 }
 
@@ -61,5 +75,6 @@ func Clone(model Model) *ModelBuilder {
 	return &ModelBuilder{
 		npcId:       model.npcId,
 		commodities: model.commodities,
+		recharger:   model.recharger,
 	}
 }

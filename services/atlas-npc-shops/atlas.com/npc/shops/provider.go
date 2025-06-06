@@ -1,68 +1,49 @@
 package shops
 
 import (
-	"atlas-npc/kafka/message/shops"
-	"github.com/Chronicle20/atlas-kafka/producer"
+	"atlas-npc/database"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/segmentio/kafka-go"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-func enteredEventProvider(characterId uint32, npcId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &shops.StatusEvent[shops.StatusEventEnteredBody]{
-		CharacterId: characterId,
-		Type:        shops.StatusEventTypeEntered,
-		Body: shops.StatusEventEnteredBody{
-			NpcTemplateId: npcId,
-		},
+// getByNpcId returns a provider that gets a shop entity by NPC ID
+func getByNpcId(tenantId uuid.UUID, npcId uint32) database.EntityProvider[Entity] {
+	return func(db *gorm.DB) model.Provider[Entity] {
+		var result Entity
+		err := db.Where(&Entity{TenantId: tenantId, NpcId: npcId}).First(&result).Error
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return model.ErrorProvider[Entity](ErrNotFound)
+			}
+			return model.ErrorProvider[Entity](err)
+		}
+		return model.FixedProvider(result)
 	}
-	return producer.SingleMessageProvider(key, value)
 }
 
-func exitedEventProvider(characterId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &shops.StatusEvent[shops.StatusEventExitedBody]{
-		CharacterId: characterId,
-		Type:        shops.StatusEventTypeExited,
-		Body:        shops.StatusEventExitedBody{},
+// getAllShops returns a provider that gets all shop entities for a tenant
+func getAllShops(tenantId uuid.UUID) database.EntityProvider[[]Entity] {
+	return func(db *gorm.DB) model.Provider[[]Entity] {
+		var results []Entity
+		err := db.Where(&Entity{TenantId: tenantId}).Find(&results).Error
+		if err != nil {
+			return model.ErrorProvider[[]Entity](err)
+		}
+		return model.FixedProvider(results)
 	}
-	return producer.SingleMessageProvider(key, value)
 }
 
-func errorEventProvider(characterId uint32, errorMsg string) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &shops.StatusEvent[shops.StatusEventErrorBody]{
-		CharacterId: characterId,
-		Type:        shops.StatusEventTypeError,
-		Body: shops.StatusEventErrorBody{
-			Error: errorMsg,
-		},
+// existsByNpcId returns a provider that checks if a shop exists for a given NPC ID
+func existsByNpcId(tenantId uuid.UUID, npcId uint32) database.EntityProvider[bool] {
+	return func(db *gorm.DB) model.Provider[bool] {
+		var count int64
+		err := db.Model(&Entity{}).
+			Where(&Entity{TenantId: tenantId, NpcId: npcId}).
+			Count(&count).Error
+		if err != nil {
+			return model.ErrorProvider[bool](err)
+		}
+		return model.FixedProvider(count > 0)
 	}
-	return producer.SingleMessageProvider(key, value)
-}
-
-func levelLimitErrorEventProvider(characterId uint32, errorMsg string, levelLimit uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &shops.StatusEvent[shops.StatusEventErrorBody]{
-		CharacterId: characterId,
-		Type:        shops.StatusEventTypeError,
-		Body: shops.StatusEventErrorBody{
-			Error:      errorMsg,
-			LevelLimit: levelLimit,
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
-func reasonErrorEventProvider(characterId uint32, errorMsg string, reason string) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &shops.StatusEvent[shops.StatusEventErrorBody]{
-		CharacterId: characterId,
-		Type:        shops.StatusEventTypeError,
-		Body: shops.StatusEventErrorBody{
-			Error:  errorMsg,
-			Reason: reason,
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
 }

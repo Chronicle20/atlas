@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"atlas-data/database"
 	"atlas-data/document"
 	"atlas-data/xml"
 	"context"
@@ -29,11 +30,13 @@ func Register(s *document.Storage[string, RestModel]) func(ctx context.Context) 
 	}
 }
 
-func RegisterMonster(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-		return func(ctx context.Context) func(path string) {
-			return func(path string) {
-				_ = Register(NewStorage(l, db))(ctx)(Read(l)(ctx)(xml.FromPathProvider(path)))
+func RegisterMonster(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+		return func(ctx context.Context) func(path string) error {
+			return func(path string) error {
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+					return Register(NewStorage(l, tx))(ctx)(Read(l)(ctx)(xml.FromPathProvider(path)))
+				})
 			}
 		}
 	}

@@ -117,6 +117,15 @@ func Connect(l logrus.FieldLogger, configurators ...Configurator) *gorm.DB {
 		if err != nil {
 			return true, err
 		}
+
+		sqlDB, err := db.DB()
+		if err != nil {
+			return true, err
+		}
+
+		sqlDB.SetMaxOpenConns(30)
+		sqlDB.SetMaxIdleConns(10)
+
 		return false, err
 	}
 

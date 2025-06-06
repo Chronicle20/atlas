@@ -3,16 +3,16 @@ package commodities
 import "github.com/google/uuid"
 
 type Model struct {
-	id           uuid.UUID
-	templateId   uint32
-	mesoPrice    uint32
-	discountRate byte
-	tokenItemId  uint32
-	tokenPrice   uint32
-	period       uint32
-	levelLimit   uint32
-	unitPrice    float64
-	slotMax      uint32
+	id              uuid.UUID
+	templateId      uint32
+	mesoPrice       uint32
+	discountRate    byte
+	tokenTemplateId uint32
+	tokenPrice      uint32
+	period          uint32
+	levelLimit      uint32
+	unitPrice       float64
+	slotMax         uint32
 }
 
 // Id returns the model's id
@@ -35,9 +35,9 @@ func (m *Model) DiscountRate() byte {
 	return m.discountRate
 }
 
-// TokenItemId returns the model's tokenItemId
-func (m *Model) TokenItemId() uint32 {
-	return m.tokenItemId
+// TokenTemplateId returns the model's tokenTemplateId
+func (m *Model) TokenTemplateId() uint32 {
+	return m.tokenTemplateId
 }
 
 // TokenPrice returns the model's tokenPrice
@@ -72,16 +72,16 @@ func (m *Model) Quantity() uint16 {
 
 // ModelBuilder is used to build Model instances
 type ModelBuilder struct {
-	id           uuid.UUID
-	templateId   uint32
-	mesoPrice    uint32
-	discountRate byte
-	tokenItemId  uint32
-	tokenPrice   uint32
-	period       uint32
-	levelLimit   uint32
-	unitPrice    float64
-	slotMax      uint32
+	id              uuid.UUID
+	templateId      uint32
+	mesoPrice       uint32
+	discountRate    byte
+	tokenTemplateId uint32
+	tokenPrice      uint32
+	period          uint32
+	levelLimit      uint32
+	unitPrice       float64
+	slotMax         uint32
 }
 
 // SetId sets the id for the ModelBuilder
@@ -108,9 +108,9 @@ func (b *ModelBuilder) SetDiscountRate(discountRate byte) *ModelBuilder {
 	return b
 }
 
-// SetTokenItemId sets the tokenItemId for the ModelBuilder
-func (b *ModelBuilder) SetTokenItemId(tokenItemId uint32) *ModelBuilder {
-	b.tokenItemId = tokenItemId
+// SetTokenTemplateId sets the tokenTemplateId for the ModelBuilder
+func (b *ModelBuilder) SetTokenTemplateId(tokenTemplateId uint32) *ModelBuilder {
+	b.tokenTemplateId = tokenTemplateId
 	return b
 }
 
@@ -147,31 +147,31 @@ func (b *ModelBuilder) SetSlotMax(slotMax uint32) *ModelBuilder {
 // Build creates a new Model instance with the builder's values
 func (b *ModelBuilder) Build() Model {
 	return Model{
-		id:           b.id,
-		templateId:   b.templateId,
-		mesoPrice:    b.mesoPrice,
-		discountRate: b.discountRate,
-		tokenItemId:  b.tokenItemId,
-		tokenPrice:   b.tokenPrice,
-		period:       b.period,
-		levelLimit:   b.levelLimit,
-		unitPrice:    b.unitPrice,
-		slotMax:      b.slotMax,
+		id:              b.id,
+		templateId:      b.templateId,
+		mesoPrice:       b.mesoPrice,
+		discountRate:    b.discountRate,
+		tokenTemplateId: b.tokenTemplateId,
+		tokenPrice:      b.tokenPrice,
+		period:          b.period,
+		levelLimit:      b.levelLimit,
+		unitPrice:       b.unitPrice,
+		slotMax:         b.slotMax,
 	}
 }
 
 // Clone creates a new ModelBuilder with values from the given Model
 func Clone(m Model) *ModelBuilder {
 	return &ModelBuilder{
-		id:           m.id,
-		templateId:   m.templateId,
-		mesoPrice:    m.mesoPrice,
-		discountRate: m.discountRate,
-		tokenItemId:  m.tokenItemId,
-		tokenPrice:   m.tokenPrice,
-		period:       m.period,
-		levelLimit:   m.levelLimit,
-		unitPrice:    m.unitPrice,
-		slotMax:      m.slotMax,
+		id:              m.id,
+		templateId:      m.templateId,
+		mesoPrice:       m.mesoPrice,
+		discountRate:    m.discountRate,
+		tokenTemplateId: m.tokenTemplateId,
+		tokenPrice:      m.tokenPrice,
+		period:          m.period,
+		levelLimit:      m.levelLimit,
+		unitPrice:       m.unitPrice,
+		slotMax:         m.slotMax,
 	}
 }

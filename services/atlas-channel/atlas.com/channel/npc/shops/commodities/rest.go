@@ -4,16 +4,16 @@ import "github.com/google/uuid"
 
 // RestModel is a JSON API representation of the Model
 type RestModel struct {
-	Id           string  `json:"id"`
-	TemplateId   uint32  `json:"templateId"`
-	MesoPrice    uint32  `json:"mesoPrice"`
-	DiscountRate byte    `json:"discountRate"`
-	TokenItemId  uint32  `json:"tokenItemId"`
-	TokenPrice   uint32  `json:"tokenPrice"`
-	Period       uint32  `json:"period"`
-	LevelLimit   uint32  `json:"levelLimit"`
-	UnitPrice    float64 `json:"unitPrice"`
-	SlotMax      uint32  `json:"slotMax"`
+	Id              string  `json:"id"`
+	TemplateId      uint32  `json:"templateId"`
+	MesoPrice       uint32  `json:"mesoPrice"`
+	DiscountRate    byte    `json:"discountRate"`
+	TokenTemplateId uint32  `json:"tokenTemplateId"`
+	TokenPrice      uint32  `json:"tokenPrice"`
+	Period          uint32  `json:"period"`
+	LevelLimit      uint32  `json:"levelLimit"`
+	UnitPrice       float64 `json:"unitPrice"`
+	SlotMax         uint32  `json:"slotMax"`
 }
 
 // GetID to satisfy jsonapi.MarshalIdentifier interface
@@ -35,16 +35,16 @@ func (r RestModel) GetName() string {
 // Transform converts a Model to a RestModel
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:           m.id.String(),
-		TemplateId:   m.templateId,
-		MesoPrice:    m.mesoPrice,
-		DiscountRate: m.discountRate,
-		TokenItemId:  m.tokenItemId,
-		TokenPrice:   m.tokenPrice,
-		Period:       m.period,
-		LevelLimit:   m.levelLimit,
-		UnitPrice:    m.unitPrice,
-		SlotMax:      m.slotMax,
+		Id:              m.id.String(),
+		TemplateId:      m.templateId,
+		MesoPrice:       m.mesoPrice,
+		DiscountRate:    m.discountRate,
+		TokenTemplateId: m.tokenTemplateId,
+		TokenPrice:      m.tokenPrice,
+		Period:          m.period,
+		LevelLimit:      m.levelLimit,
+		UnitPrice:       m.unitPrice,
+		SlotMax:         m.slotMax,
 	}, nil
 }
 
@@ -61,7 +61,7 @@ func Extract(rm RestModel) (Model, error) {
 		SetTemplateId(rm.TemplateId).
 		SetMesoPrice(rm.MesoPrice).
 		SetDiscountRate(rm.DiscountRate).
-		SetTokenItemId(rm.TokenItemId).
+		SetTokenTemplateId(rm.TokenTemplateId).
 		SetTokenPrice(rm.TokenPrice).
 		SetPeriod(rm.Period).
 		SetLevelLimit(rm.LevelLimit).

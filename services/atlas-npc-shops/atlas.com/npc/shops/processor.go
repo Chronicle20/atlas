@@ -35,7 +35,6 @@ type Processor interface {
 	AllShopsProvider(decorators ...model.Decorator[Model]) model.Provider[[]Model]
 	CreateShop(npcId uint32, commodities []commodities.Model) (Model, error)
 	UpdateShop(npcId uint32, commodities []commodities.Model) (Model, error)
-	CreateShops(shops []Model) ([]Model, error)
 	AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
 	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
 	RemoveCommodity(id uuid.UUID) error
@@ -209,19 +208,6 @@ func (p *ProcessorImpl) UpdateShop(npcId uint32, commodities []commodities.Model
 	return shop, nil
 }
 
-func (p *ProcessorImpl) CreateShops(shops []Model) ([]Model, error) {
-	createdShops := make([]Model, 0, len(shops))
-
-	for _, shop := range shops {
-		createdShop, err := p.CreateShop(shop.NpcId(), shop.Commodities())
-		if err != nil {
-			return nil, err
-		}
-		createdShops = append(createdShops, createdShop)
-	}
-
-	return createdShops, nil
-}
 
 func (p *ProcessorImpl) EnterAndEmit(characterId uint32, npcId uint32) error {
 	return message.Emit(p.kp)(model.Flip(model.Flip(p.Enter)(characterId))(npcId))

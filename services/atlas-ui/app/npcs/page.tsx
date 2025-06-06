@@ -2,10 +2,10 @@
 
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState } from "react";
-import {NPC, fetchNPCs, bulkCreateShops, Shop, deleteAllShops} from "@/lib/npcs";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {NPC, fetchNPCs, bulkCreateShops, Shop, deleteAllShops, updateShop, Commodity} from "@/lib/npcs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, RefreshCw, Upload, Trash2 } from "lucide-react";
+import { MoreHorizontal, RefreshCw, Upload, Trash2, ShoppingBag } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -20,7 +20,10 @@ export default function Page() {
     const [error, setError] = useState<string | null>(null);
     const [isBulkCreateDialogOpen, setIsBulkCreateDialogOpen] = useState(false);
     const [isDeleteAllShopsDialogOpen, setIsDeleteAllShopsDialogOpen] = useState(false);
+    const [isBulkUpdateShopDialogOpen, setIsBulkUpdateShopDialogOpen] = useState(false);
+    const [selectedNpcId, setSelectedNpcId] = useState<number | null>(null);
     const [bulkCreateJson, setBulkCreateJson] = useState("");
+    const [bulkUpdateShopJson, setBulkUpdateShopJson] = useState("");
 
     const fetchDataAgain = () => {
         if (!activeTenant) return;
@@ -67,15 +70,51 @@ export default function Page() {
         }
     };
 
+    const handleBulkUpdateShop = async () => {
+        if (!activeTenant || !selectedNpcId) return;
+
+        try {
+            const jsonData = JSON.parse(bulkUpdateShopJson);
+
+            // Extract commodities from the included array if available
+            let commoditiesToUpdate: Commodity[] = [];
+            if (jsonData.data.included && jsonData.data.included.length > 0) {
+                commoditiesToUpdate = jsonData.data.included;
+            }
+
+            await updateShop(activeTenant, selectedNpcId, commoditiesToUpdate);
+            setIsBulkUpdateShopDialogOpen(false);
+            setBulkUpdateShopJson("");
+            fetchDataAgain();
+            toast.success("Shop updated successfully");
+        } catch (err) {
+            toast.error("Failed to update shop: " + (err instanceof Error ? err.message : String(err)));
+        }
+    };
+
     useEffect(() => {
         fetchDataAgain();
     }, [activeTenant]);
+
+    // Prevent body scrolling when this page is mounted
+    useEffect(() => {
+        // Save the original styles
+        const originalOverflow = document.documentElement.style.overflow;
+
+        // Apply overflow: hidden to html element
+        document.documentElement.style.overflow = 'hidden';
+
+        // Cleanup function to restore original styles when component unmounts
+        return () => {
+            document.documentElement.style.overflow = originalOverflow;
+        };
+    }, []);
 
     if (loading) return <div>Loading...</div>;
     if (error) return <div>Error: {error}</div>;
 
     return (
-        <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
+        <div className="flex flex-col flex-1 space-y-6 p-10 pb-4 h-[calc(100vh-4rem)] overflow-hidden">
             <div className="flex flex-col space-y-4">
                 <h2 className="text-2xl font-bold tracking-tight">NPCs</h2>
                 <div className="flex items-center justify-between">
@@ -113,43 +152,67 @@ export default function Page() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {npcs.map((npc) => (
-                    <Card key={npc.id} className="overflow-hidden">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-lg">NPC #{npc.id}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="pb-2">
-                            <div className="text-sm">
-                                <p>Has Shop: {npc.hasShop ? "Yes" : "No"}</p>
-                            </div>
-                        </CardContent>
-                        <CardFooter className="flex justify-end">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="h-8 w-8 p-0">
-                                        <span className="sr-only">Open menu</span>
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    {npc.hasShop && (
-                                        <DropdownMenuItem asChild>
+            <div className="overflow-auto h-[calc(100vh-10rem)] pr-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {npcs.map((npc) => (
+                        <Card key={npc.id} className="overflow-hidden">
+                            <CardHeader className="pb-2 flex justify-between items-start">
+                                <CardTitle className="text-lg">NPC #{npc.id}</CardTitle>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                            <span className="sr-only">Open menu</span>
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        {npc.hasShop && (
+                                            <DropdownMenuItem onClick={() => {
+                                                setSelectedNpcId(npc.id);
+                                                setIsBulkUpdateShopDialogOpen(true);
+                                            }}>
+                                                <Upload className="h-4 w-4 mr-2" />
+                                                Bulk Update Shop
+                                            </DropdownMenuItem>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </CardHeader>
+                            <CardContent className="pb-2">
+                                <div className="text-sm">
+                                    {npc.hasShop ? (
+                                        <Button 
+                                            variant="default" 
+                                            size="sm"
+                                            className="cursor-pointer"
+                                            asChild
+                                            title="Shop Active"
+                                        >
                                             <Link href={`/npcs/${npc.id}/shop`}>
-                                                View Shop
+                                                <ShoppingBag className="h-4 w-4" />
                                             </Link>
-                                        </DropdownMenuItem>
+                                        </Button>
+                                    ) : (
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            className="cursor-not-allowed opacity-50"
+                                            disabled
+                                            title="Shop Inactive"
+                                        >
+                                            <ShoppingBag className="h-4 w-4" />
+                                        </Button>
                                     )}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </CardFooter>
-                    </Card>
-                ))}
-                {npcs.length === 0 && (
-                    <div className="col-span-full text-center py-10">
-                        No NPCs found.
-                    </div>
-                )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                    {npcs.length === 0 && (
+                        <div className="col-span-full text-center py-10">
+                            No NPCs found.
+                        </div>
+                    )}
+                </div>
             </div>
 
             <Dialog open={isBulkCreateDialogOpen} onOpenChange={setIsBulkCreateDialogOpen}>
@@ -191,6 +254,30 @@ export default function Page() {
                         </Button>
                         <Button variant="destructive" onClick={handleDeleteAllShops}>
                             Delete All Shops
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isBulkUpdateShopDialogOpen} onOpenChange={setIsBulkUpdateShopDialogOpen}>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle>Bulk Update Shop</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <Textarea
+                            placeholder="Paste JSON data here..."
+                            value={bulkUpdateShopJson}
+                            onChange={(e) => setBulkUpdateShopJson(e.target.value)}
+                            className="min-h-[300px] font-mono"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsBulkUpdateShopDialogOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleBulkUpdateShop}>
+                            Update Shop
                         </Button>
                     </DialogFooter>
                 </DialogContent>

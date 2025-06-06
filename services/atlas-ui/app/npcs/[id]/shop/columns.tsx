@@ -12,11 +12,14 @@ interface ColumnProps {
     onDelete: (commodityId: string) => void;
 }
 
+export const hiddenColumns = ["id"];
+
 export const getColumns = ({onEdit, onDelete}: ColumnProps): ColumnDef<Commodity>[] => {
     return [
         {
             accessorKey: "id",
             header: "ID",
+            enableHiding: false,
         },
         {
             accessorFn: (row) => row.attributes.templateId,

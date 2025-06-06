@@ -2,27 +2,30 @@
 
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState } from "react";
-import {NPC, fetchNPCs, bulkCreateShops, Shop, deleteAllShops, updateShop, Commodity} from "@/lib/npcs";
+import {NPC, fetchNPCs, createShop, Shop, deleteAllShops, updateShop, Commodity, CommodityAttributes} from "@/lib/npcs";
+import { tenantHeaders } from "@/lib/headers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, RefreshCw, Upload, Trash2, ShoppingBag } from "lucide-react";
+import { MoreHorizontal, RefreshCw, Upload, Trash2, ShoppingBag, Plus } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function Page() {
     const { activeTenant } = useTenant();
     const [npcs, setNpcs] = useState<NPC[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isBulkCreateDialogOpen, setIsBulkCreateDialogOpen] = useState(false);
+    const [isCreateShopDialogOpen, setIsCreateShopDialogOpen] = useState(false);
     const [isDeleteAllShopsDialogOpen, setIsDeleteAllShopsDialogOpen] = useState(false);
     const [isBulkUpdateShopDialogOpen, setIsBulkUpdateShopDialogOpen] = useState(false);
     const [selectedNpcId, setSelectedNpcId] = useState<number | null>(null);
-    const [bulkCreateJson, setBulkCreateJson] = useState("");
+    const [createShopJson, setCreateShopJson] = useState("");
     const [bulkUpdateShopJson, setBulkUpdateShopJson] = useState("");
 
     const fetchDataAgain = () => {
@@ -38,22 +41,43 @@ export default function Page() {
             .finally(() => setLoading(false));
     };
 
-    const handleBulkCreateShops = async () => {
+    const handleCreateShop = async () => {
         if (!activeTenant) return;
 
         try {
-            const jsonData = JSON.parse(bulkCreateJson);
-            await bulkCreateShops(activeTenant, jsonData.data.map((shop: Shop) => ({
-                npcId: shop.attributes.npcId,
-                commodities: shop.included
-            })));
+            // Send the entire JSON as is to the server
+            const jsonData = JSON.parse(createShopJson);
 
-            toast.success("Shops created successfully");
-            setIsBulkCreateDialogOpen(false);
-            setBulkCreateJson("");
+            if (!jsonData.data || !jsonData.data.attributes || !jsonData.data.attributes.npcId) {
+                toast.error("Invalid JSON format. Missing npcId in data.attributes");
+                return;
+            }
+
+            const npcId = parseInt(jsonData.data.attributes.npcId);
+            if (isNaN(npcId)) {
+                toast.error("Please provide a valid NPC ID in the JSON");
+                return;
+            }
+
+            const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+            const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop", {
+                method: "POST",
+                headers: tenantHeaders(activeTenant),
+                body: createShopJson
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to create shop.");
+            }
+
+            const responseData = await response.json();
+
+            toast.success("Shop created successfully");
+            setIsCreateShopDialogOpen(false);
+            setCreateShopJson("");
             fetchDataAgain();
         } catch (err) {
-            toast.error("Failed to create shops: " + (err instanceof Error ? err.message : String(err)));
+            toast.error("Failed to create shop: " + (err instanceof Error ? err.message : String(err)));
         }
     };
 
@@ -138,9 +162,9 @@ export default function Page() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setIsBulkCreateDialogOpen(true)}>
-                                    <Upload className="h-4 w-4 mr-2" />
-                                    Bulk Create Shops
+                                <DropdownMenuItem onClick={() => setIsCreateShopDialogOpen(true)}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Create Shop
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setIsDeleteAllShopsDialogOpen(true)}>
                                     <Trash2 className="h-4 w-4 mr-2" />
@@ -215,25 +239,25 @@ export default function Page() {
                 </div>
             </div>
 
-            <Dialog open={isBulkCreateDialogOpen} onOpenChange={setIsBulkCreateDialogOpen}>
+            <Dialog open={isCreateShopDialogOpen} onOpenChange={setIsCreateShopDialogOpen}>
                 <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
-                        <DialogTitle>Bulk Create Shops</DialogTitle>
+                        <DialogTitle>Create Shop</DialogTitle>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <Textarea
                             placeholder="Paste JSON data here..."
-                            value={bulkCreateJson}
-                            onChange={(e) => setBulkCreateJson(e.target.value)}
+                            value={createShopJson}
+                            onChange={(e) => setCreateShopJson(e.target.value)}
                             className="min-h-[300px] font-mono"
                         />
                     </div>
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsBulkCreateDialogOpen(false)}>
+                        <Button variant="outline" onClick={() => setIsCreateShopDialogOpen(false)}>
                             Cancel
                         </Button>
-                        <Button onClick={handleBulkCreateShops}>
-                            Create Shops
+                        <Button onClick={handleCreateShop}>
+                            Create Shop
                         </Button>
                     </DialogFooter>
                 </DialogContent>

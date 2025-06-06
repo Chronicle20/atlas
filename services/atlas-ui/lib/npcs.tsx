@@ -157,9 +157,9 @@ export async function createShop(tenant: Tenant, npcId: number, commodities: Omi
                     commodities: {
                         data: commodityReferences
                     }
-                },
-                included: includedCommodities
-            }
+                }
+            },
+            included: includedCommodities
         }),
     });
     if (!response.ok) {

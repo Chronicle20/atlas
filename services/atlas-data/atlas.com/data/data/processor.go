@@ -152,40 +152,45 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 		return func(db *gorm.DB) func(name string, path string) error {
 			return func(name string, path string) error {
 				l.Infof("Starting worker [%s] at [%s].", name, path)
+				var err error
 				if name == WorkerMap {
 					_ = _map.InitString(t, filepath.Join(path, "String.wz", "Map.img.xml"))
 					_ = npc.InitString(t, filepath.Join(path, "String.wz", "Npc.img.xml"))
-					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Map.wz", "Map"), _map.RegisterMap(db))()
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Map.wz", "Map"), _map.RegisterMap(db))()
 					_ = _map.GetMapStringRegistry().Clear(t)
 					_ = npc.GetNpcStringRegistry().Clear(t)
 				} else if name == WorkerMonster {
 					_ = monster.InitString(t, filepath.Join(path, "String.wz", "Mob.img.xml"))
 					_ = monster.InitGauge(t, filepath.Join(path, "UI.wz", "UIWindow.img.xml"))
-					_ = RegisterAllData(l)(ctx)(path, "Mob.wz", monster.RegisterMonster(db))()
+					err = RegisterAllData(l)(ctx)(path, "Mob.wz", monster.RegisterMonster(db))()
 					_ = monster.GetMonsterStringRegistry().Clear(t)
 					_ = monster.GetMonsterGaugeRegistry().Clear(t)
 				} else if name == WorkerCharacter {
-					_ = RegisterAllData(l)(ctx)(path, "Character.wz", equipment.RegisterEquipment(db))()
+					err = RegisterAllData(l)(ctx)(path, "Character.wz", equipment.RegisterEquipment(db))()
 				} else if name == WorkerReactor {
-					_ = RegisterAllData(l)(ctx)(path, "Reactor.wz", reactor.RegisterReactor(db))()
+					err = RegisterAllData(l)(ctx)(path, "Reactor.wz", reactor.RegisterReactor(db))()
 				} else if name == WorkerSkill {
-					_ = RegisterAllData(l)(ctx)(path, "Skill.wz", skill.RegisterSkill(db))()
+					err = RegisterAllData(l)(ctx)(path, "Skill.wz", skill.RegisterSkill(db))()
 				} else if name == WorkerPet {
-					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Pet"), pet.RegisterPet(db))()
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Pet"), pet.RegisterPet(db))()
 				} else if name == WorkerConsume {
-					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Consume"), consumable.RegisterConsumable(db))()
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Consume"), consumable.RegisterConsumable(db))()
 				} else if name == WorkerCash {
-					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Cash"), cash.RegisterCash(db))()
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Cash"), cash.RegisterCash(db))()
 				} else if name == WorkerCommodity {
-					_ = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "Commodity.img.xml"), commodity.RegisterCommodity(db))()
+					err = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "Commodity.img.xml"), commodity.RegisterCommodity(db))()
 				} else if name == WorkerEtc {
-					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Etc"), etc.RegisterEtc(db))()
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Etc"), etc.RegisterEtc(db))()
 				} else if name == WorkerSetup {
-					_ = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Install"), setup.RegisterSetup(db))()
+					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Install"), setup.RegisterSetup(db))()
 				} else if name == WorkerCharacterCreation {
-					_ = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "MakeCharInfo.img.xml"), templates.RegisterCharacterTemplate(db))()
+					err = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "MakeCharInfo.img.xml"), templates.RegisterCharacterTemplate(db))()
 				}
-
+				if err != nil {
+					l.WithError(err).Errorf("Worker [%s] failed with error.", name)
+					return err
+				}
+				l.Infof("Worker [%s] completed.", name)
 				return nil
 			}
 		}
@@ -193,7 +198,7 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 }
 
 type Worker func() error
-type RegisterFunc func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string)
+type RegisterFunc func(l logrus.FieldLogger) func(ctx context.Context) func(filePath string) error
 
 func RegisterAllData(l logrus.FieldLogger) func(ctx context.Context) func(rootDir string, wzFilePath string, rf RegisterFunc) Worker {
 	return func(ctx context.Context) func(rootDir string, wzFileName string, rf RegisterFunc) Worker {
@@ -207,6 +212,7 @@ func RegisterAllData(l logrus.FieldLogger) func(ctx context.Context) func(rootDi
 
 				// Channel to collect file paths
 				fileChan := make(chan string)
+				errChan := make(chan error)
 				var wg sync.WaitGroup
 
 				// Start a worker pool for processing files
@@ -215,12 +221,23 @@ func RegisterAllData(l logrus.FieldLogger) func(ctx context.Context) func(rootDi
 					wg.Add(1)
 					go func() {
 						for filePath := range fileChan {
-							rf(l)(ctx)(filePath)
+							if err := rf(l)(ctx)(filePath); err != nil {
+								errChan <- fmt.Errorf("error processing %s: %w", filePath, err)
+							}
 						}
 						wg.Done()
 					}()
 				}
 
+				// Start error collector
+				var errors []error
+				go func() {
+					for err := range errChan {
+						errors = append(errors, err)
+					}
+				}()
+
+				// Walk directory and send files
 				err := filepath.WalkDir(baseDir, func(path string, d fs.DirEntry, err error) error {
 					if err != nil {
 						return fmt.Errorf("error accessing path %s: %w", path, err)

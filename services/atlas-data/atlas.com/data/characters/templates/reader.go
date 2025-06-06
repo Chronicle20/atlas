@@ -3,7 +3,6 @@ package templates
 import (
 	"atlas-data/xml"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"strconv"
 )
@@ -17,11 +16,13 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 
 		res := make([]RestModel, 0)
 
+		index := uint32(0)
 		// Process Info/CharMale and Info/CharFemale
 		infoNode, err := exml.ChildByName("Info")
 		if err == nil {
 			for _, charNode := range infoNode.ChildNodes {
-				model := processCharacterNode(&charNode)
+				model := processCharacterNode(index, &charNode)
+				index++
 				res = append(res, model)
 			}
 		}
@@ -29,7 +30,8 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 		// Process all character nodes at the root level except "Info" and "Name"
 		for _, charNode := range exml.ChildNodes {
 			if charNode.Name != "Info" && charNode.Name != "Name" {
-				model := processCharacterNode(&charNode)
+				model := processCharacterNode(index, &charNode)
+				index++
 				res = append(res, model)
 			}
 		}
@@ -38,9 +40,9 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 	}
 }
 
-func processCharacterNode(charNode *xml.Node) RestModel {
+func processCharacterNode(index uint32, charNode *xml.Node) RestModel {
 	model := RestModel{
-		Id:            uuid.New().String(),
+		Id:            index,
 		CharacterType: charNode.Name,
 		Faces:         make([]uint32, 0),
 		HairStyles:    make([]uint32, 0),

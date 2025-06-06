@@ -1,6 +1,7 @@
 package reactor
 
 import (
+	"atlas-data/database"
 	"atlas-data/document"
 	"atlas-data/xml"
 	"context"
@@ -55,15 +56,17 @@ func extractPathAndID(path string) (string, uint32, error) {
 	return dir, uint32(id), nil
 }
 
-func RegisterReactor(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-		return func(ctx context.Context) func(path string) {
-			return func(path string) {
+func RegisterReactor(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+		return func(ctx context.Context) func(path string) error {
+			return func(path string) error {
 				parentPath, reactorId, err := extractPathAndID(path)
 				if err != nil {
-					return
+					return err
 				}
-				_ = Register(NewStorage(l, db))(ctx)(Read(l)(parentPath, reactorId, xml.FromParentPathProvider(7)))
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+					return Register(NewStorage(l, tx))(ctx)(Read(l)(parentPath, reactorId, xml.FromParentPathProvider(7)))
+				})
 			}
 		}
 	}

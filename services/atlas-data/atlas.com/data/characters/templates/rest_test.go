@@ -88,24 +88,24 @@ func TestRestModelMethods(t *testing.T) {
 	model := res[0]
 
 	// Set a known ID for testing
-	model.Id = "test-id"
+	model.Id = 0
 
 	if model.GetName() != "characterTemplates" {
 		t.Fatalf("model.GetName() = %s, want characterTemplates", model.GetName())
 	}
 
 	// Test GetID
-	if model.GetID() != "test-id" {
-		t.Fatalf("model.GetID() = %s, want test-id", model.GetID())
+	if model.GetID() != "0" {
+		t.Fatalf("model.GetID() = %s, want 0", model.GetID())
 	}
 
 	// Test SetID
-	err = model.SetID("new-id")
+	err = model.SetID("1")
 	if err != nil {
 		t.Fatalf("model.SetID() returned error: %v", err)
 	}
-	if model.Id != "new-id" {
-		t.Fatalf("model.Id = %s, want new-id", model.Id)
+	if model.Id != 1 {
+		t.Fatalf("model.Id = %d, want 1", model.Id)
 	}
 }
 

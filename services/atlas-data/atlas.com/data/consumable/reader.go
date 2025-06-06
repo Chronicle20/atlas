@@ -2,6 +2,7 @@ package consumable
 
 import (
 	"atlas-data/xml"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"strconv"
@@ -163,6 +164,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 					m.Rewards = append(m.Rewards, RewardRestModel{itemId, count, prob})
 				}
 			}
+			m.Rechargeable = item.IsBullet(item.Id(consumableId)) || item.IsThrowingStar(item.Id(consumableId))
 
 			res = append(res, m)
 		}

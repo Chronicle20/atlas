@@ -98,11 +98,20 @@ export default function Page() {
 
             // Extract commodities from the included array if available
             let commoditiesToUpdate: Commodity[] = [];
-            if (jsonData.data.included && jsonData.data.included.length > 0) {
+
+            // Check for commodities in the root level included array (standard JSON:API format)
+            if (jsonData.included && jsonData.included.length > 0) {
+                commoditiesToUpdate = jsonData.included;
+            }
+            // Fallback to check for commodities in data.included (alternative format)
+            else if (jsonData.data.included && jsonData.data.included.length > 0) {
                 commoditiesToUpdate = jsonData.data.included;
             }
 
-            await updateShop(activeTenant, selectedNpcId, commoditiesToUpdate);
+            // Get recharger value from JSON data if available
+            const rechargerValue = jsonData.data.attributes?.recharger;
+
+            await updateShop(activeTenant, selectedNpcId, commoditiesToUpdate, rechargerValue);
             setIsBulkUpdateShopDialogOpen(false);
             setBulkUpdateShopJson("");
             fetchDataAgain();

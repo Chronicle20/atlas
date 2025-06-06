@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {toast} from "sonner";
 
 export default function Page() {
@@ -22,6 +23,7 @@ export default function Page() {
 
     const [, setShop] = useState<Shop | null>(null);
     const [commodities, setCommodities] = useState<Commodity[]>([]);
+    const [recharger, setRecharger] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -50,6 +52,8 @@ export default function Page() {
         fetchNPCShop(activeTenant, npcId)
             .then((response) => {
                 setShop(response.data);
+                // Set recharger state from shop data
+                setRecharger(response.data.attributes.recharger || false);
                 // Extract commodities from included array if available
                 if (response.included && response.included.length > 0) {
                     setCommodities(response.included);
@@ -173,17 +177,42 @@ export default function Page() {
 
             // Extract commodities from the included array if available
             let commoditiesToUpdate: Commodity[] = [];
-            if (jsonData.data.included && jsonData.data.included.length > 0) {
+
+            // Check for commodities in the root level included array (standard JSON:API format)
+            if (jsonData.included && jsonData.included.length > 0) {
+                commoditiesToUpdate = jsonData.included;
+            }
+            // Fallback to check for commodities in data.included (alternative format)
+            else if (jsonData.data.included && jsonData.data.included.length > 0) {
                 commoditiesToUpdate = jsonData.data.included;
             }
 
-            await updateShop(activeTenant, npcId, commoditiesToUpdate);
+            // Get recharger value from JSON data if available, otherwise use current state
+            const rechargerValue = jsonData.data.attributes?.recharger !== undefined 
+                ? jsonData.data.attributes.recharger 
+                : recharger;
+
+            await updateShop(activeTenant, npcId, commoditiesToUpdate, rechargerValue);
             setIsBulkUpdateDialogOpen(false);
             setBulkUpdateJson("");
             fetchDataAgain();
             toast.success("Shop updated successfully");
         } catch (err) {
             toast.error("Failed to update shop: " + (err instanceof Error ? err.message : String(err)));
+        }
+    };
+
+    const handleRechargerToggle = async (checked: boolean) => {
+        if (!activeTenant) return;
+
+        try {
+            setRecharger(checked);
+            await updateShop(activeTenant, npcId, commodities, checked);
+            toast.success("Shop recharger status updated successfully");
+        } catch (err) {
+            // Revert state if update fails
+            setRecharger(!checked);
+            toast.error("Failed to update shop recharger status: " + (err instanceof Error ? err.message : String(err)));
         }
     };
 
@@ -200,15 +229,16 @@ export default function Page() {
                 type: "shops",
                 id: `shop-${npcId}`,
                 attributes: {
-                    npcId: npcId
+                    npcId: npcId,
+                    recharger: recharger
                 },
                 relationships: {
                     commodities: {
                         data: commodityReferences
                     }
-                },
-                included: commodities
-            }
+                }
+            },
+            included: commodities
         };
 
         // Convert to JSON string with pretty formatting
@@ -488,6 +518,17 @@ export default function Page() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <div className="flex items-center space-x-2 mt-4 mb-4">
+                <div className="flex items-center space-x-2">
+                    <Switch
+                        id="recharger-toggle"
+                        checked={recharger}
+                        onCheckedChange={handleRechargerToggle}
+                    />
+                    <Label htmlFor="recharger-toggle" className="font-medium">Recharger</Label>
+                </div>
+            </div>
 
             <div className="mt-4">
                 <DataTable

@@ -29,6 +29,7 @@ export interface Shop {
     id: string;
     attributes: {
         npcId: number;
+        recharger?: boolean;
     };
     relationships?: {
         commodities: {
@@ -127,7 +128,7 @@ export async function deleteCommodity(tenant: Tenant, npcId: number, commodityId
     }
 }
 
-export async function createShop(tenant: Tenant, npcId: number, commodities: Omit<CommodityAttributes, 'id'>[]): Promise<Shop> {
+export async function createShop(tenant: Tenant, npcId: number, commodities: Omit<CommodityAttributes, 'id'>[], recharger?: boolean): Promise<Shop> {
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
 
     // Create commodity data for included section
@@ -151,7 +152,8 @@ export async function createShop(tenant: Tenant, npcId: number, commodities: Omi
                 type: "shops",
                 id: `shop-${npcId}`,
                 attributes: {
-                    npcId: npcId
+                    npcId: npcId,
+                    recharger: recharger
                 },
                 relationships: {
                     commodities: {
@@ -169,54 +171,7 @@ export async function createShop(tenant: Tenant, npcId: number, commodities: Omi
     return responseData.data;
 }
 
-export async function bulkCreateShops(tenant: Tenant, shops: { npcId: number, commodities: Omit<CommodityAttributes, 'id'>[] }[]): Promise<Shop[]> {
-    const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-
-    // Transform each shop to the new format
-    const transformedShops = shops.map(shop => {
-        // Create commodity data for included section
-        const includedCommodities = shop.commodities.map((commodity, index) => ({
-            type: "commodities",
-            id: `temp-id-${shop.npcId}-${index}`, // Temporary ID, will be replaced by server
-            attributes: commodity
-        }));
-
-        // Create commodity references for relationships section
-        const commodityReferences = includedCommodities.map(commodity => ({
-            type: "commodities",
-            id: commodity.id
-        }));
-
-        return {
-            type: "shops",
-            id: `shop-${shop.npcId}`,
-            attributes: {
-                npcId: shop.npcId
-            },
-            relationships: {
-                commodities: {
-                    data: commodityReferences
-                }
-            },
-            included: includedCommodities
-        };
-    });
-
-    const response = await fetch(rootUrl + "/api/shops", {
-        method: "POST",
-        headers: tenantHeaders(tenant),
-        body: JSON.stringify({
-            data: transformedShops
-        }),
-    });
-    if (!response.ok) {
-        throw new Error("Failed to bulk create shops.");
-    }
-    const responseData = await response.json();
-    return responseData.data;
-}
-
-export async function updateShop(tenant: Tenant, npcId: number, commodities: Commodity[]): Promise<Shop> {
+export async function updateShop(tenant: Tenant, npcId: number, commodities: Commodity[], recharger?: boolean): Promise<Shop> {
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
 
     // Create commodity references for relationships section
@@ -240,15 +195,16 @@ export async function updateShop(tenant: Tenant, npcId: number, commodities: Com
                 type: "shops",
                 id: `shop-${npcId}`,
                 attributes: {
-                    npcId: npcId
+                    npcId: npcId,
+                    recharger: recharger
                 },
                 relationships: {
                     commodities: {
                         data: commodityReferences
                     }
-                },
-                included: includedCommodities
-            }
+                }
+            },
+            included: includedCommodities
         }),
     });
     if (!response.ok) {

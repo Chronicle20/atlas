@@ -95,6 +95,7 @@ type RestModel struct {
 	Morphs          map[uint32]uint32  `json:"morphs"`
 	Skills          []uint32           `json:"skills"`
 	Rewards         []RewardRestModel  `json:"rewards"`
+	Rechargeable    bool               `json:"rechargeable"`
 }
 
 func (r RestModel) GetName() string {

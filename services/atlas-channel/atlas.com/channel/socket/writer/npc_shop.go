@@ -25,7 +25,7 @@ func NPCShopBody(_ logrus.FieldLogger, t tenant.Model) func(templateId uint32, c
 					w.WriteByte(c.DiscountRate())
 				}
 				if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-					w.WriteInt(c.TokenItemId())
+					w.WriteInt(c.TokenTemplateId())
 				}
 				w.WriteInt(c.TokenPrice())
 				// Changes confirmation prompt to indicate a time-restricted item.

@@ -34,8 +34,8 @@ export const getColumns = ({onEdit, onDelete}: ColumnProps): ColumnDef<Commodity
             header: "Discount Rate",
         },
         {
-            accessorFn: (row) => row.attributes.tokenItemId,
-            header: "Token Item ID",
+            accessorFn: (row) => row.attributes.tokenTemplateId,
+            header: "Token Template ID",
         },
         {
             accessorFn: (row) => row.attributes.tokenPrice,

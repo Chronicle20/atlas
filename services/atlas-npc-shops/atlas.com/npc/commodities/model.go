@@ -5,17 +5,17 @@ import (
 )
 
 type Model struct {
-	id           uuid.UUID
-	npcId        uint32
-	templateId   uint32
-	mesoPrice    uint32
-	discountRate byte
-	tokenItemId  uint32
-	tokenPrice   uint32
-	period       uint32
-	levelLimit   uint32
-	unitPrice    float64
-	slotMax      uint32
+	id             uuid.UUID
+	npcId          uint32
+	templateId     uint32
+	mesoPrice      uint32
+	discountRate   byte
+	tokenTemplateId uint32
+	tokenPrice     uint32
+	period         uint32
+	levelLimit     uint32
+	unitPrice      float64
+	slotMax        uint32
 }
 
 // Id returns the model's id
@@ -38,9 +38,9 @@ func (m *Model) DiscountRate() byte {
 	return m.discountRate
 }
 
-// TokenItemId returns the model's tokenItemId
-func (m *Model) TokenItemId() uint32 {
-	return m.tokenItemId
+// TokenTemplateId returns the model's tokenTemplateId
+func (m *Model) TokenTemplateId() uint32 {
+	return m.tokenTemplateId
 }
 
 // TokenPrice returns the model's tokenPrice
@@ -80,7 +80,7 @@ type ModelBuilder struct {
 	templateId   uint32
 	mesoPrice    uint32
 	discountRate byte
-	tokenItemId  uint32
+	tokenTemplateId  uint32
 	tokenPrice   uint32
 	period       uint32
 	levelLimit   uint32
@@ -118,9 +118,9 @@ func (b *ModelBuilder) SetDiscountRate(discountRate byte) *ModelBuilder {
 	return b
 }
 
-// SetTokenItemId sets the tokenItemId for the ModelBuilder
-func (b *ModelBuilder) SetTokenItemId(tokenItemId uint32) *ModelBuilder {
-	b.tokenItemId = tokenItemId
+// SetTokenTemplateId sets the tokenTemplateId for the ModelBuilder
+func (b *ModelBuilder) SetTokenTemplateId(tokenTemplateId uint32) *ModelBuilder {
+	b.tokenTemplateId = tokenTemplateId
 	return b
 }
 
@@ -162,7 +162,7 @@ func (b *ModelBuilder) Build() Model {
 		templateId:   b.templateId,
 		mesoPrice:    b.mesoPrice,
 		discountRate: b.discountRate,
-		tokenItemId:  b.tokenItemId,
+		tokenTemplateId:  b.tokenTemplateId,
 		tokenPrice:   b.tokenPrice,
 		period:       b.period,
 		levelLimit:   b.levelLimit,
@@ -179,7 +179,7 @@ func Clone(m Model) *ModelBuilder {
 		templateId:   m.templateId,
 		mesoPrice:    m.mesoPrice,
 		discountRate: m.discountRate,
-		tokenItemId:  m.tokenItemId,
+		tokenTemplateId:  m.tokenTemplateId,
 		tokenPrice:   m.tokenPrice,
 		period:       m.period,
 		levelLimit:   m.levelLimit,

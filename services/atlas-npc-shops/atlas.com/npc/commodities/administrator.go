@@ -7,21 +7,21 @@ import (
 	"gorm.io/gorm"
 )
 
-func createCommodity(ctx context.Context, db *gorm.DB) func(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
-	return func(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
+func createCommodity(ctx context.Context, db *gorm.DB) func(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
+	return func(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
 		t := tenant.MustFromContext(ctx)
 		id := uuid.New()
 		entity := Entity{
-			Id:           id,
-			TenantId:     t.Id(),
-			NpcId:        npcId,
-			TemplateId:   templateId,
-			MesoPrice:    mesoPrice,
-			DiscountRate: discountRate,
-			TokenItemId:  tokenItemId,
-			TokenPrice:   tokenPrice,
-			Period:       period,
-			LevelLimit:   levelLimited,
+			Id:              id,
+			TenantId:        t.Id(),
+			NpcId:           npcId,
+			TemplateId:      templateId,
+			MesoPrice:       mesoPrice,
+			DiscountRate:    discountRate,
+			TokenTemplateId: tokenTemplateId,
+			TokenPrice:      tokenPrice,
+			Period:          period,
+			LevelLimit:      levelLimited,
 		}
 
 		if err := db.Create(&entity).Error; err != nil {
@@ -32,8 +32,8 @@ func createCommodity(ctx context.Context, db *gorm.DB) func(npcId uint32, templa
 	}
 }
 
-func updateCommodity(ctx context.Context, db *gorm.DB) func(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
-	return func(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
+func updateCommodity(ctx context.Context, db *gorm.DB) func(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
+	return func(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
 		t := tenant.MustFromContext(ctx)
 		var entity Entity
 		if err := db.Where(&Entity{Id: id, TenantId: t.Id()}).First(&entity).Error; err != nil {
@@ -43,7 +43,7 @@ func updateCommodity(ctx context.Context, db *gorm.DB) func(id uuid.UUID, templa
 		entity.TemplateId = templateId
 		entity.MesoPrice = mesoPrice
 		entity.DiscountRate = discountRate
-		entity.TokenItemId = tokenItemId
+		entity.TokenTemplateId = tokenTemplateId
 		entity.TokenPrice = tokenPrice
 		entity.Period = period
 		entity.LevelLimit = levelLimited

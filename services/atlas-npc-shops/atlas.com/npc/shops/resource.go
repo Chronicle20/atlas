@@ -77,11 +77,11 @@ func handleAddCommodity(d *rest.HandlerDependency, c *rest.HandlerContext, i com
 			p := NewProcessor(d.Logger(), d.Context(), d.DB())
 			// Default values for new fields
 			discountRate := i.DiscountRate
-			tokenItemId := i.TokenItemId
+			tokenTemplateId := i.TokenTemplateId
 			tokenPrice := i.TokenPrice
 			period := i.Period
 			levelLimited := i.LevelLimit
-			commodity, err := p.AddCommodity(npcId, i.TemplateId, i.MesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+			commodity, err := p.AddCommodity(npcId, i.TemplateId, i.MesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Adding commodity.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -110,11 +110,11 @@ func handleUpdateCommodity(d *rest.HandlerDependency, c *rest.HandlerContext, i 
 				p := NewProcessor(d.Logger(), d.Context(), d.DB())
 				// Default values for new fields
 				discountRate := i.DiscountRate
-				tokenItemId := i.TokenItemId
+				tokenTemplateId := i.TokenTemplateId
 				tokenPrice := i.TokenPrice
 				period := i.Period
 				levelLimited := i.LevelLimit
-				commodity, err := p.UpdateCommodity(commodityId, i.TemplateId, i.MesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+				commodity, err := p.UpdateCommodity(commodityId, i.TemplateId, i.MesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Updating commodity.")
 					w.WriteHeader(http.StatusInternalServerError)
@@ -315,4 +315,3 @@ func handleUpdateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestM
 		}
 	})
 }
-

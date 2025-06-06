@@ -11,6 +11,7 @@ import (
 type RestModel struct {
 	Id          string                  `json:"id"`
 	NpcId       uint32                  `json:"npcId"`
+	Recharger   bool                    `json:"recharger"`
 	Commodities []commodities.RestModel `json:"-"` // Commodities are now a relationship, not a direct attribute
 }
 
@@ -113,6 +114,7 @@ func Transform(m Model) (RestModel, error) {
 	return RestModel{
 		Id:          fmt.Sprintf("shop-%d", m.NpcId()),
 		NpcId:       m.NpcId(),
+		Recharger:   m.Recharger(),
 		Commodities: commodityRest,
 	}, nil
 }
@@ -130,6 +132,7 @@ func Extract(rm RestModel) (Model, error) {
 
 	return NewBuilder(rm.NpcId).
 		SetCommodities(commodityModels).
+		SetRecharger(rm.Recharger).
 		Build(), nil
 }
 

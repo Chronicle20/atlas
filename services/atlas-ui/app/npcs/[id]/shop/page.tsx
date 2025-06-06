@@ -65,6 +65,21 @@ export default function Page() {
         fetchDataAgain();
     }, [activeTenant, npcId]);
 
+    // Reset form data when edit dialog is closed
+    useEffect(() => {
+        if (!isEditDialogOpen) {
+            setFormData({
+                templateId: 0,
+                mesoPrice: 0,
+                discountRate: 0,
+                tokenTemplateId: 0,
+                tokenPrice: 0,
+                period: 0,
+                levelLimit: 0
+            });
+        }
+    }, [isEditDialogOpen]);
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData({

@@ -1,6 +1,7 @@
 package pet
 
 import (
+	"atlas-data/database"
 	"atlas-data/document"
 	"atlas-data/xml"
 	"context"
@@ -29,11 +30,13 @@ func Register(s *document.Storage[string, RestModel]) func(ctx context.Context) 
 	}
 }
 
-func RegisterPet(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-		return func(ctx context.Context) func(path string) {
-			return func(path string) {
-				_ = Register(NewStorage(l, db))(ctx)(Read(l)(xml.FromPathProvider(path)))
+func RegisterPet(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+		return func(ctx context.Context) func(path string) error {
+			return func(path string) error {
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+					return Register(NewStorage(l, tx))(ctx)(Read(l)(xml.FromPathProvider(path)))
+				})
 			}
 		}
 	}

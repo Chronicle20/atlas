@@ -1,6 +1,7 @@
 package _map
 
 import (
+	"atlas-data/database"
 	"atlas-data/document"
 	"atlas-data/map/monster"
 	"atlas-data/map/npc"
@@ -61,15 +62,17 @@ func extractPathAndID(path string) (string, uint32, error) {
 	return dir, uint32(id), nil
 }
 
-func RegisterMap(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) {
-		return func(ctx context.Context) func(path string) {
-			return func(path string) {
+func RegisterMap(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+		return func(ctx context.Context) func(path string) error {
+			return func(path string) error {
 				parentPath, mapId, err := extractPathAndID(path)
 				if err != nil {
-					return
+					return err
 				}
-				_ = Register(NewStorage(l, db))(ctx)(Read(l)(ctx)(parentPath, mapId, xml.FromParentPathProvider(9)))
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+					return Register(NewStorage(l, tx))(ctx)(Read(l)(ctx)(parentPath, mapId, xml.FromParentPathProvider(9)))
+				})
 			}
 		}
 	}

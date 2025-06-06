@@ -105,3 +105,7 @@ func (s *Storage[I, M]) Add(ctx context.Context) func(m M) model.Provider[M] {
 		return model.FixedProvider(m)
 	}
 }
+
+func (s *Storage[I, M]) Logger() logrus.FieldLogger {
+	return s.l
+}

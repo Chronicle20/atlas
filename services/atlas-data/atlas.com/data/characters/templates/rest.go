@@ -1,7 +1,9 @@
 package templates
 
+import "strconv"
+
 type RestModel struct {
-	Id            string   `json:"-"`
+	Id            uint32   `json:"-"`
 	CharacterType string   `json:"characterType"`
 	Faces         []uint32 `json:"faces"`
 	HairStyles    []uint32 `json:"hairStyles"`
@@ -18,10 +20,14 @@ func (r RestModel) GetName() string {
 }
 
 func (r RestModel) GetID() string {
-	return r.Id
+	return strconv.Itoa(int(r.Id))
 }
 
 func (r *RestModel) SetID(strId string) error {
-	r.Id = strId
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
 	return nil
 }

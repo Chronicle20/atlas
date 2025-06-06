@@ -10,7 +10,7 @@ type RestModel struct {
 	TemplateId   uint32  `json:"templateId"`
 	MesoPrice    uint32  `json:"mesoPrice"`
 	DiscountRate byte    `json:"discountRate"`
-	TokenItemId  uint32  `json:"tokenItemId"`
+	TokenTemplateId  uint32  `json:"tokenTemplateId"`
 	TokenPrice   uint32  `json:"tokenPrice"`
 	Period       uint32  `json:"period"`
 	LevelLimit   uint32  `json:"levelLimit"`
@@ -41,7 +41,7 @@ func Transform(m Model) (RestModel, error) {
 		TemplateId:   m.templateId,
 		MesoPrice:    m.mesoPrice,
 		DiscountRate: m.discountRate,
-		TokenItemId:  m.tokenItemId,
+		TokenTemplateId:  m.tokenTemplateId,
 		TokenPrice:   m.tokenPrice,
 		Period:       m.period,
 		LevelLimit:   m.levelLimit,
@@ -63,7 +63,7 @@ func Extract(rm RestModel) (Model, error) {
 		SetTemplateId(rm.TemplateId).
 		SetMesoPrice(rm.MesoPrice).
 		SetDiscountRate(rm.DiscountRate).
-		SetTokenItemId(rm.TokenItemId).
+		SetTokenTemplateId(rm.TokenTemplateId).
 		SetTokenPrice(rm.TokenPrice).
 		SetPeriod(rm.Period).
 		SetLevelLimit(rm.LevelLimit).

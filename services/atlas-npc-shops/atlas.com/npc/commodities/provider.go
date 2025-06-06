@@ -39,6 +39,7 @@ func getCommodityIdToNpcIdMap(tenantId uuid.UUID) database.EntityProvider[map[uu
 		err := db.Table("commodities").
 			Select("id, npc_id").
 			Where("tenant_id = ?", tenantId).
+			Where("deleted_at IS NULL").
 			Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[map[uuid.UUID]uint32](err)
@@ -75,6 +76,7 @@ func getDistinctNpcIds(tenantId uuid.UUID) database.EntityProvider[[]uint32] {
 		err := db.Table("commodities").
 			Select("DISTINCT npc_id").
 			Where("tenant_id = ?", tenantId).
+			Where("deleted_at IS NULL").
 			Order("npc_id").
 			Pluck("npc_id", &results).Error
 		if err != nil {

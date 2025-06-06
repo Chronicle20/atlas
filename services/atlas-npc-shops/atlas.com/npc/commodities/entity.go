@@ -14,7 +14,7 @@ type Entity struct {
 	TemplateId   uint32    `gorm:"not null"`
 	MesoPrice    uint32    `gorm:"not null"`
 	DiscountRate byte      `gorm:"not null;default:0"`
-	TokenItemId  uint32    `gorm:"not null;default:0"`
+	TokenTemplateId  uint32    `gorm:"not null;default:0"`
 	TokenPrice   uint32    `gorm:"not null;default:0"`
 	Period       uint32    `gorm:"not null;default:0"`
 	LevelLimit   uint32    `gorm:"not null;default:0"`
@@ -32,7 +32,7 @@ func Make(entity Entity) (Model, error) {
 		templateId:   entity.TemplateId,
 		mesoPrice:    entity.MesoPrice,
 		discountRate: entity.DiscountRate,
-		tokenItemId:  entity.TokenItemId,
+		tokenTemplateId:  entity.TokenTemplateId,
 		tokenPrice:   entity.TokenPrice,
 		period:       entity.Period,
 		levelLimit:   entity.LevelLimit,

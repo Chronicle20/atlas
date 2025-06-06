@@ -20,8 +20,8 @@ type Processor interface {
 	ByTenantProvider() model.Provider[[]Model]
 	GetCommodityIdToNpcIdMap() (map[uuid.UUID]uint32, error)
 	CommodityIdToNpcIdMapProvider() model.Provider[map[uuid.UUID]uint32]
-	CreateCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
-	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
+	CreateCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
+	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
 	DeleteCommodity(id uuid.UUID) error
 	DeleteAllCommoditiesByNpcId(npcId uint32) error
 	DeleteAllCommodities() error
@@ -38,8 +38,8 @@ type ProcessorImpl struct {
 	t                tenant.Model
 	GetByNpcIdFn     func(npcId uint32) ([]Model, error)
 	GetAllByTenantFn func() ([]Model, error)
-	CreateFn         func(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
-	UpdateFn         func(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
+	CreateFn         func(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
+	UpdateFn         func(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
 	DeleteFn         func(id uuid.UUID) error
 }
 
@@ -115,23 +115,23 @@ func (p *ProcessorImpl) DataDecorator(m Model) Model {
 	return b.Build()
 }
 
-func (p *ProcessorImpl) CreateCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
+func (p *ProcessorImpl) CreateCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
 	if p.CreateFn != nil {
-		return p.CreateFn(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+		return p.CreateFn(npcId, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 	}
-	c, err := createCommodity(p.ctx, p.db)(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+	c, err := createCommodity(p.ctx, p.db)(npcId, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 	if err != nil {
 		return Model{}, err
 	}
 	return model.Map(model.Decorate(model.Decorators(p.DataDecorator)))(model.FixedProvider(c))()
 }
 
-func (p *ProcessorImpl) UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
+func (p *ProcessorImpl) UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
 	if p.UpdateFn != nil {
-		return p.UpdateFn(id, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+		return p.UpdateFn(id, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 
 	}
-	c, err := updateCommodity(p.ctx, p.db)(id, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+	c, err := updateCommodity(p.ctx, p.db)(id, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 	if err != nil {
 		return Model{}, err
 	}

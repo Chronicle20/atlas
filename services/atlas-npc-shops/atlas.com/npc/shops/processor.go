@@ -35,9 +35,8 @@ type Processor interface {
 	AllShopsProvider(decorators ...model.Decorator[Model]) model.Provider[[]Model]
 	CreateShop(npcId uint32, commodities []commodities.Model) (Model, error)
 	UpdateShop(npcId uint32, commodities []commodities.Model) (Model, error)
-	CreateShops(shops []Model) ([]Model, error)
-	AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
-	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
+	AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
+	UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error)
 	RemoveCommodity(id uuid.UUID) error
 	DeleteAllCommoditiesByNpcId(npcId uint32) error
 	DeleteAllShops() error
@@ -116,12 +115,12 @@ func (p *ProcessorImpl) ByNpcIdProvider(decorators ...model.Decorator[Model]) fu
 	}
 }
 
-func (p *ProcessorImpl) AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error) {
-	return p.cp.CreateCommodity(npcId, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+func (p *ProcessorImpl) AddCommodity(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error) {
+	return p.cp.CreateCommodity(npcId, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 }
 
-func (p *ProcessorImpl) UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenItemId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error) {
-	return p.cp.UpdateCommodity(id, templateId, mesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+func (p *ProcessorImpl) UpdateCommodity(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (commodities.Model, error) {
+	return p.cp.UpdateCommodity(id, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 }
 
 func (p *ProcessorImpl) RemoveCommodity(id uuid.UUID) error {
@@ -139,7 +138,7 @@ func (p *ProcessorImpl) CreateShop(npcId uint32, commodities []commodities.Model
 			commodity.TemplateId(),
 			commodity.MesoPrice(),
 			commodity.DiscountRate(),
-			commodity.TokenItemId(),
+			commodity.TokenTemplateId(),
 			commodity.TokenPrice(),
 			commodity.Period(),
 			commodity.LevelLimit(),
@@ -188,7 +187,7 @@ func (p *ProcessorImpl) UpdateShop(npcId uint32, commodities []commodities.Model
 				commodity.TemplateId(),
 				commodity.MesoPrice(),
 				commodity.DiscountRate(),
-				commodity.TokenItemId(),
+				commodity.TokenTemplateId(),
 				commodity.TokenPrice(),
 				commodity.Period(),
 				commodity.LevelLimit(),
@@ -207,20 +206,6 @@ func (p *ProcessorImpl) UpdateShop(npcId uint32, commodities []commodities.Model
 	}
 	p.l.Debugf("Successfully updated shop for NPC [%d] with [%d] commodities.", npcId, len(commodities))
 	return shop, nil
-}
-
-func (p *ProcessorImpl) CreateShops(shops []Model) ([]Model, error) {
-	createdShops := make([]Model, 0, len(shops))
-
-	for _, shop := range shops {
-		createdShop, err := p.CreateShop(shop.NpcId(), shop.Commodities())
-		if err != nil {
-			return nil, err
-		}
-		createdShops = append(createdShops, createdShop)
-	}
-
-	return createdShops, nil
 }
 
 func (p *ProcessorImpl) EnterAndEmit(characterId uint32, npcId uint32) error {

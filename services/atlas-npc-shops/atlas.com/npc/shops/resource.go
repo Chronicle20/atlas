@@ -18,9 +18,8 @@ import (
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
-			// Add endpoints to get and create shops for a tenant
+			// Add endpoints to get and delete shops for a tenant
 			router.HandleFunc("/shops", rest.RegisterHandler(l)(db)(si)("get_all_shops", handleGetAllShops)).Methods(http.MethodGet)
-			router.HandleFunc("/shops", rest.RegisterInputHandler[[]RestModel](l)(db)(si)("create_shops", handleCreateShops)).Methods(http.MethodPost)
 			router.HandleFunc("/shops", rest.RegisterHandler(l)(db)(si)("delete_all_shops", handleDeleteAllShops)).Methods(http.MethodDelete)
 
 			r := router.PathPrefix("/npcs/{npcId}/shop").Subrouter()
@@ -78,11 +77,11 @@ func handleAddCommodity(d *rest.HandlerDependency, c *rest.HandlerContext, i com
 			p := NewProcessor(d.Logger(), d.Context(), d.DB())
 			// Default values for new fields
 			discountRate := i.DiscountRate
-			tokenItemId := i.TokenItemId
+			tokenTemplateId := i.TokenTemplateId
 			tokenPrice := i.TokenPrice
 			period := i.Period
 			levelLimited := i.LevelLimit
-			commodity, err := p.AddCommodity(npcId, i.TemplateId, i.MesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+			commodity, err := p.AddCommodity(npcId, i.TemplateId, i.MesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Adding commodity.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -111,11 +110,11 @@ func handleUpdateCommodity(d *rest.HandlerDependency, c *rest.HandlerContext, i 
 				p := NewProcessor(d.Logger(), d.Context(), d.DB())
 				// Default values for new fields
 				discountRate := i.DiscountRate
-				tokenItemId := i.TokenItemId
+				tokenTemplateId := i.TokenTemplateId
 				tokenPrice := i.TokenPrice
 				period := i.Period
 				levelLimited := i.LevelLimit
-				commodity, err := p.UpdateCommodity(commodityId, i.TemplateId, i.MesoPrice, discountRate, tokenItemId, tokenPrice, period, levelLimited)
+				commodity, err := p.UpdateCommodity(commodityId, i.TemplateId, i.MesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Updating commodity.")
 					w.WriteHeader(http.StatusInternalServerError)
@@ -315,52 +314,4 @@ func handleUpdateShop(d *rest.HandlerDependency, c *rest.HandlerContext, i RestM
 			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restShop)
 		}
 	})
-}
-
-func handleCreateShops(d *rest.HandlerDependency, c *rest.HandlerContext, i []RestModel) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		p := NewProcessor(d.Logger(), d.Context(), d.DB())
-
-		// Extract shop models from the REST models
-		shopModels := make([]Model, 0, len(i))
-		for _, rs := range i {
-			// Extract commodities for each shop
-			commodityModels := make([]commodities.Model, 0, len(rs.Commodities))
-			for _, cr := range rs.Commodities {
-				cm, err := commodities.Extract(cr)
-				if err != nil {
-					d.Logger().WithError(err).Errorf("Extracting commodity model.")
-					w.WriteHeader(http.StatusBadRequest)
-					return
-				}
-				commodityModels = append(commodityModels, cm)
-			}
-
-			// Create a shop model
-			shopModel := NewBuilder(rs.NpcId).SetCommodities(commodityModels).Build()
-			shopModels = append(shopModels, shopModel)
-		}
-
-		// Create the shops
-		createdShops, err := p.CreateShops(shopModels)
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating shops.")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		// Transform the shop models to REST models
-		restShops, err := model.SliceMap(Transform)(model.FixedProvider(createdShops))(model.ParallelMap())()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating REST models.")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		// Return the response
-		w.WriteHeader(http.StatusCreated)
-		query := r.URL.Query()
-		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restShops)
-	}
 }

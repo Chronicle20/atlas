@@ -49,7 +49,7 @@ func TestShopRestModel(t *testing.T) {
 		SetTemplateId(2000).
 		SetMesoPrice(1000).
 		SetDiscountRate(0).
-		SetTokenItemId(0).
+		SetTokenTemplateId(0).
 		SetTokenPrice(0).
 		SetPeriod(0).
 		SetLevelLimit(0).
@@ -65,7 +65,7 @@ func TestShopRestModel(t *testing.T) {
 		SetTemplateId(2001).
 		SetMesoPrice(1500).
 		SetDiscountRate(0).
-		SetTokenItemId(0).
+		SetTokenTemplateId(0).
 		SetTokenPrice(0).
 		SetPeriod(0).
 		SetLevelLimit(0).
@@ -151,8 +151,8 @@ func TestShopRestModel(t *testing.T) {
 		if discountRate, ok := attrs["discountRate"].(float64); ok {
 			commodity.DiscountRate = byte(discountRate)
 		}
-		if tokenItemId, ok := attrs["tokenItemId"].(float64); ok {
-			commodity.TokenItemId = uint32(tokenItemId)
+		if tokenTemplateId, ok := attrs["tokenTemplateId"].(float64); ok {
+			commodity.TokenTemplateId = uint32(tokenTemplateId)
 		}
 		if tokenPrice, ok := attrs["tokenPrice"].(float64); ok {
 			commodity.TokenPrice = uint32(tokenPrice)

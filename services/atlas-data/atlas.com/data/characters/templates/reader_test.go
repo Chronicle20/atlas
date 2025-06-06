@@ -360,7 +360,7 @@ func TestProcessCharacterNode(t *testing.T) {
 	}
 
 	// Process the node
-	model := processCharacterNode(node)
+	model := processCharacterNode(0, node)
 
 	// Check the model
 	if model.CharacterType != "TestCharacter" {

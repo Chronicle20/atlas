@@ -21,7 +21,7 @@ export default function Page() {
     const params = useParams();
     const npcId = Number(params.id);
 
-    const [shop, setShop] = useState<Shop | null>(null);
+    const [, setShop] = useState<Shop | null>(null);
     const [commodities, setCommodities] = useState<Commodity[]>([]);
     const [recharger, setRecharger] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);

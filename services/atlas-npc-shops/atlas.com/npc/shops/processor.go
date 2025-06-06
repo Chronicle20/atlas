@@ -155,7 +155,6 @@ func (p *ProcessorImpl) RemoveCommodity(id uuid.UUID) error {
 }
 
 func (p *ProcessorImpl) CreateShop(npcId uint32, recharger bool, commodities []commodities.Model) (Model, error) {
-	// Create a shop entity with default recharger=true
 	shopEntity, err := createShop(p.t.Id(), npcId, recharger)(p.db)()
 	if err != nil {
 		return Model{}, err

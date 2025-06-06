@@ -11,7 +11,7 @@ type Entity struct {
 	Id        uuid.UUID `gorm:"type:uuid;primaryKey"`
 	TenantId  uuid.UUID `gorm:"type:uuid;not null"`
 	NpcId     uint32    `gorm:"not null"`
-	Recharger bool      `gorm:"not null;default:true"`
+	Recharger bool      `gorm:"not null"`
 }
 
 func (e *Entity) TableName() string {

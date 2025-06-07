@@ -4,7 +4,6 @@ import (
 	"atlas-npc/commodities"
 	"atlas-npc/data/consumable"
 	"atlas-npc/shops"
-	"context"
 	"encoding/json"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
@@ -15,23 +14,7 @@ import (
 	"testing"
 )
 
-// mockConsumableCache is a mock implementation of the shops.ConsumableCacheInterface
-type mockConsumableCache struct {
-	consumables map[uuid.UUID][]consumable.Model
-}
-
-// GetConsumables returns the rechargeable consumables for a tenant
-func (c *mockConsumableCache) GetConsumables(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID) []consumable.Model {
-	if consumables, ok := c.consumables[tenantId]; ok {
-		return consumables
-	}
-	return []consumable.Model{}
-}
-
-// SetConsumables sets the rechargeable consumables for a tenant
-func (c *mockConsumableCache) SetConsumables(tenantId uuid.UUID, consumables []consumable.Model) {
-	c.consumables[tenantId] = consumables
-}
+// The mockConsumableCache is defined in processor_test.go
 
 // testLogger creates a logger for testing
 func testLogger() logrus.FieldLogger {
@@ -59,7 +42,7 @@ func (s *testServerInformation) GetPrefix() string {
 // TestShopRestModel tests the shop REST model
 func TestShopRestModel(t *testing.T) {
 	// Save the original cache instance
-	originalCache := shops.GetConsumableCache()
+	originalCache = shops.GetConsumableCache()
 
 	// Create a mock cache
 	mockCache := &mockConsumableCache{

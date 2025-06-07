@@ -81,6 +81,7 @@ func testGetByNpcId(t *testing.T, processor shops.Processor, db *gorm.DB) {
 	templateId := uint32(3001)
 	mesoPrice := uint32(5000)
 	tokenPrice := uint32(2500)
+	recharger := false
 
 	// Create test commodity for the shop
 	// Default values for new fields
@@ -88,9 +89,15 @@ func testGetByNpcId(t *testing.T, processor shops.Processor, db *gorm.DB) {
 	tokenTemplateId := uint32(0)
 	period := uint32(0)
 	levelLimited := uint32(0)
-	_, err := processor.AddCommodity(npcId, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
+	commodity, err := processor.AddCommodity(npcId, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 	if err != nil {
 		t.Fatalf("Failed to create test commodity: %v", err)
+	}
+
+	// Create the shop entity with the commodity
+	_, err = processor.CreateShop(npcId, recharger, []commodities.Model{commodity})
+	if err != nil {
+		t.Fatalf("Failed to create shop: %v", err)
 	}
 
 	// Get shop by NPC ID

@@ -110,6 +110,18 @@ export default function Page() {
     const handleCreateCommodity = async () => {
         if (!activeTenant) return;
 
+        // Validate that either mesoPrice or tokenPrice is greater than zero
+        if (formData.mesoPrice <= 0 && formData.tokenPrice <= 0) {
+            toast.error("Either Meso Price or Token Price must be greater than zero");
+            return;
+        }
+
+        // Validate that templateId is greater than zero
+        if (formData.templateId <= 0) {
+            toast.error("Template ID must be greater than zero");
+            return;
+        }
+
         try {
             await createCommodity(activeTenant, npcId, formData);
             setIsCreateDialogOpen(false);
@@ -145,6 +157,18 @@ export default function Page() {
 
     const handleUpdateCommodity = async () => {
         if (!activeTenant || !currentCommodity) return;
+
+        // Validate that either mesoPrice or tokenPrice is greater than zero
+        if (formData.mesoPrice <= 0 && formData.tokenPrice <= 0) {
+            toast.error("Either Meso Price or Token Price must be greater than zero");
+            return;
+        }
+
+        // Validate that templateId is greater than zero
+        if (formData.templateId <= 0) {
+            toast.error("Template ID must be greater than zero");
+            return;
+        }
 
         try {
             await updateCommodity(activeTenant, npcId, currentCommodity.id, formData);

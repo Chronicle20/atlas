@@ -40,14 +40,22 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 func handleGetShop(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-			res, err := model.Map(Transform)(p.ByNpcIdProvider(decoratorsFromInclude(d.Logger(), d.Context(), d.DB(), r)...)(npcId))()
+			// Get the shop model with decorators
+			shopModel, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ByNpcIdProvider(decoratorsFromInclude(d.Logger(), d.Context(), d.DB(), r)...)(npcId)()
 			if err != nil {
 				if errors.Is(err, ErrNotFound) {
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
 
+				d.Logger().WithError(err).Errorf("Retrieving shop model.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			// Transform the shop model to a REST model
+			res, err := Transform(shopModel)
+			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return

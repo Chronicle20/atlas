@@ -2,16 +2,48 @@ package shops_test
 
 import (
 	"atlas-npc/commodities"
+	"atlas-npc/data/consumable"
 	"atlas-npc/shops"
 	"atlas-npc/test"
+	"context"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"testing"
 )
+
+// mockConsumableCache is a mock implementation of the ConsumableCacheInterface
+type mockConsumableCache struct {
+	consumables map[uuid.UUID][]consumable.Model
+}
+
+// GetConsumables returns the rechargeable consumables for a tenant
+func (c *mockConsumableCache) GetConsumables(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID) []consumable.Model {
+	if consumables, ok := c.consumables[tenantId]; ok {
+		return consumables
+	}
+	return []consumable.Model{}
+}
+
+// SetConsumables sets the rechargeable consumables for a tenant
+func (c *mockConsumableCache) SetConsumables(tenantId uuid.UUID, consumables []consumable.Model) {
+	c.consumables[tenantId] = consumables
+}
+
+// originalCache stores the original cache instance
+var originalCache shops.ConsumableCacheInterface
 
 func TestShopsProcessor(t *testing.T) {
 	// Create processor, database, and cleanup function
 	processor, db, cleanup := test.CreateShopsProcessor(t)
 	defer cleanup()
+
+	// Mock the processor's RechargeableConsumablesDecorator method to do nothing
+	if p, ok := processor.(*shops.ProcessorImpl); ok {
+		p.RechargeableConsumablesDecoratorFn = func(m shops.Model) shops.Model {
+			return m
+		}
+	}
 
 	// Run tests
 	t.Run("TestGetByNpcId", func(t *testing.T) {
@@ -49,6 +81,7 @@ func testGetByNpcId(t *testing.T, processor shops.Processor, db *gorm.DB) {
 	templateId := uint32(3001)
 	mesoPrice := uint32(5000)
 	tokenPrice := uint32(2500)
+	recharger := false
 
 	// Create test commodity for the shop
 	// Default values for new fields
@@ -56,9 +89,15 @@ func testGetByNpcId(t *testing.T, processor shops.Processor, db *gorm.DB) {
 	tokenTemplateId := uint32(0)
 	period := uint32(0)
 	levelLimited := uint32(0)
-	_, err := processor.AddCommodity(npcId, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
+	commodity, err := processor.AddCommodity(npcId, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 	if err != nil {
 		t.Fatalf("Failed to create test commodity: %v", err)
+	}
+
+	// Create the shop entity with the commodity
+	_, err = processor.CreateShop(npcId, recharger, []commodities.Model{commodity})
+	if err != nil {
+		t.Fatalf("Failed to create shop: %v", err)
 	}
 
 	// Get shop by NPC ID

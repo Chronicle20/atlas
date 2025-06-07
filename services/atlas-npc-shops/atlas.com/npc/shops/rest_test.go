@@ -2,6 +2,7 @@ package shops_test
 
 import (
 	"atlas-npc/commodities"
+	"atlas-npc/data/consumable"
 	"atlas-npc/shops"
 	"encoding/json"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -12,6 +13,8 @@ import (
 	"net/http/httptest"
 	"testing"
 )
+
+// The mockConsumableCache is defined in processor_test.go
 
 // testLogger creates a logger for testing
 func testLogger() logrus.FieldLogger {
@@ -38,6 +41,21 @@ func (s *testServerInformation) GetPrefix() string {
 
 // TestShopRestModel tests the shop REST model
 func TestShopRestModel(t *testing.T) {
+	// Save the original cache instance
+	originalCache = shops.GetConsumableCache()
+
+	// Create a mock cache
+	mockCache := &mockConsumableCache{
+		consumables: make(map[uuid.UUID][]consumable.Model),
+	}
+
+	// Replace the singleton instance with the mock
+	shops.SetConsumableCacheForTesting(mockCache)
+
+	// Restore the original cache instance after the test
+	defer func() {
+		shops.SetConsumableCacheForTesting(originalCache)
+	}()
 	// Create a shop model with commodities
 	npcId := uint32(9000001)
 
@@ -73,9 +91,10 @@ func TestShopRestModel(t *testing.T) {
 		SetSlotMax(100).
 		Build()
 
-	// Create shop model
+	// Create shop model with recharger flag set to true
 	shopModel := shops.NewBuilder(npcId).
 		SetCommodities([]commodities.Model{commodity1, commodity2}).
+		SetRecharger(true).
 		Build()
 
 	// Transform the model to a RestModel
@@ -207,6 +226,11 @@ func TestShopRestModel(t *testing.T) {
 	// Verify the contents match the initial model
 	if extractedModel.NpcId() != shopModel.NpcId() {
 		t.Errorf("Expected NPC ID %d, got %d", shopModel.NpcId(), extractedModel.NpcId())
+	}
+
+	// Verify the recharger flag
+	if extractedModel.Recharger() != shopModel.Recharger() {
+		t.Errorf("Expected Recharger %v, got %v", shopModel.Recharger(), extractedModel.Recharger())
 	}
 
 	if len(extractedModel.Commodities()) != len(shopModel.Commodities()) {

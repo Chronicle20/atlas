@@ -50,7 +50,8 @@ Example Response (with include=commodities):
     "type": "shops",
     "id": "shop-9000001",
     "attributes": {
-      "npcId": 9000001
+      "npcId": 9000001,
+      "recharger": true
     },
     "relationships": {
       "commodities": {
@@ -203,7 +204,8 @@ Creates a new shop for a specific NPC with the provided commodities.
       "type": "shops",
       "id": "shop-9000001",
       "attributes": {
-        "npcId": 9000001
+        "npcId": 9000001,
+        "recharger": true
       },
       "relationships": {
         "commodities": {
@@ -253,7 +255,8 @@ Creates a new shop for a specific NPC with the provided commodities.
       "type": "shops",
       "id": "shop-9000001",
       "attributes": {
-        "npcId": 9000001
+        "npcId": 9000001,
+        "recharger": true
       },
       "relationships": {
         "commodities": {
@@ -312,7 +315,8 @@ Updates an existing shop for a specific NPC by deleting all existing commodities
       "type": "shops",
       "id": "shop-9000001",
       "attributes": {
-        "npcId": 9000001
+        "npcId": 9000001,
+        "recharger": true
       },
       "relationships": {
         "commodities": {
@@ -362,7 +366,8 @@ Updates an existing shop for a specific NPC by deleting all existing commodities
       "type": "shops",
       "id": "shop-9000001",
       "attributes": {
-        "npcId": 9000001
+        "npcId": 9000001,
+        "recharger": true
       },
       "relationships": {
         "commodities": {
@@ -425,7 +430,8 @@ Example Response (with include=commodities):
       "type": "shops",
       "id": "shop-9000001",
       "attributes": {
-        "npcId": 9000001
+        "npcId": 9000001,
+        "recharger": true
       },
       "relationships": {
         "commodities": {
@@ -442,7 +448,8 @@ Example Response (with include=commodities):
       "type": "shops",
       "id": "shop-9000002",
       "attributes": {
-        "npcId": 9000002
+        "npcId": 9000002,
+        "recharger": false
       },
       "relationships": {
         "commodities": {

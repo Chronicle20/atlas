@@ -533,7 +533,15 @@ export default function Page() {
             <div className="mt-4">
                 <DataTable
                     columns={columns}
-                    data={commodities}
+                    data={commodities.filter(commodity => {
+                        // Filter out commodities that both don't have a meso price and don't have a token price if recharger is set
+                        if (recharger && 
+                            commodity.attributes.mesoPrice <= 0 && 
+                            commodity.attributes.tokenPrice <= 0) {
+                            return false;
+                        }
+                        return true;
+                    })}
                     onRefresh={fetchDataAgain}
                     headerActions={[
                         {

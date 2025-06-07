@@ -771,8 +771,86 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(m _map.Model, cha
 		if !ok {
 			return errors.New("invalid inventory item")
 		}
-		err := p.CreateAsset(mb)(characterId, inventoryType, templateId, quantity, time.Time{}, 0, 0, 0)
-		if err != nil {
+
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			// Get the compartment for the character and inventory type
+			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
+				return err
+			}
+
+			// Get all assets in the compartment
+			assets, err := p.assetProcessor.WithTransaction(tx).GetByCompartmentId(c.Id())
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to get assets in compartment [%s].", c.Id())
+				return err
+			}
+
+			// Get the slot max for this item
+			slotMax, err := p.assetProcessor.GetSlotMax(templateId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to get slot max for item [%d].", templateId)
+				return err
+			}
+
+			// Check if any existing asset has the same templateId and can be stacked
+			var assetToUpdate asset.Model[any]
+			for _, a := range assets {
+				if a.TemplateId() == templateId && a.HasQuantity() && a.Quantity() < slotMax {
+					assetToUpdate = a
+					break
+				}
+			}
+
+			if assetToUpdate.Id() != 0 {
+				// Calculate new quantity
+				newQuantity := assetToUpdate.Quantity() + quantity
+
+				// Check if the new quantity exceeds the slot max
+				if newQuantity > slotMax {
+					// Split the quantity
+					remainingQuantity := newQuantity - slotMax
+
+					// Update the existing asset to max
+					err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(characterId, c.Id(), assetToUpdate, slotMax)
+					if err != nil {
+						p.l.WithError(err).Errorf("Unable to update quantity of asset [%d] to [%d].", assetToUpdate.Id(), slotMax)
+						return err
+					}
+					p.l.Debugf("Character [%d] increased quantity of asset [%d] to max [%d].", characterId, assetToUpdate.Id(), slotMax)
+
+					// Create a new asset with the remaining quantity
+					err = p.CreateAsset(mb)(characterId, inventoryType, templateId, remainingQuantity, time.Time{}, 0, 0, 0)
+					if err != nil {
+						p.l.WithError(err).Errorf("Unable to create asset [%d] for character [%d] with remaining quantity [%d].", templateId, characterId, remainingQuantity)
+						return err
+					}
+				} else {
+					// Update the quantity of the existing asset
+					err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(characterId, c.Id(), assetToUpdate, newQuantity)
+					if err != nil {
+						p.l.WithError(err).Errorf("Unable to update quantity of asset [%d] to [%d].", assetToUpdate.Id(), newQuantity)
+						return err
+					}
+					p.l.Debugf("Character [%d] increased quantity of asset [%d] to [%d].", characterId, assetToUpdate.Id(), newQuantity)
+				}
+			} else {
+				// Create a new asset
+				err = p.CreateAsset(mb)(characterId, inventoryType, templateId, quantity, time.Time{}, 0, 0, 0)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to create asset [%d] for character [%d].", templateId, characterId)
+					return err
+				}
+			}
+			return nil
+		})
+
+		if txErr != nil {
 			mb = message.NewBuffer()
 			return p.dropProcessor.CancelReservation(mb)(m, dropId, characterId)
 		}

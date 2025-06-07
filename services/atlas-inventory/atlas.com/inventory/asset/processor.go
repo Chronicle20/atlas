@@ -2,6 +2,9 @@ package asset
 
 import (
 	"atlas-inventory/cash"
+	"atlas-inventory/data/consumable"
+	"atlas-inventory/data/etc"
+	"atlas-inventory/data/setup"
 	"atlas-inventory/database"
 	"atlas-inventory/equipable"
 	"atlas-inventory/kafka/message"
@@ -31,19 +34,25 @@ type Processor struct {
 	stackableProcessor *stackable.Processor
 	cashProcessor      *cash.Processor
 	petProcessor       *pet.Processor
+	consumableProcessor *consumable.Processor
+	setupProcessor     *setup.Processor
+	etcProcessor       *etc.Processor
 	GetByCompartmentId func(uuid.UUID) ([]Model[any], error)
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
 	p := &Processor{
-		l:                  l,
-		ctx:                ctx,
-		db:                 db,
-		t:                  tenant.MustFromContext(ctx),
-		equipableProcessor: equipable.NewProcessor(l, ctx),
-		stackableProcessor: stackable.NewProcessor(l, ctx, db),
-		cashProcessor:      cash.NewProcessor(l, ctx),
-		petProcessor:       pet.NewProcessor(l, ctx),
+		l:                   l,
+		ctx:                 ctx,
+		db:                  db,
+		t:                   tenant.MustFromContext(ctx),
+		equipableProcessor:  equipable.NewProcessor(l, ctx),
+		stackableProcessor:  stackable.NewProcessor(l, ctx, db),
+		cashProcessor:       cash.NewProcessor(l, ctx),
+		petProcessor:        pet.NewProcessor(l, ctx),
+		consumableProcessor: consumable.NewProcessor(l, ctx),
+		setupProcessor:      setup.NewProcessor(l, ctx),
+		etcProcessor:        etc.NewProcessor(l, ctx),
 	}
 	p.GetByCompartmentId = model.CollapseProvider(p.ByCompartmentIdProvider)
 	return p
@@ -51,15 +60,18 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 
 func (p *Processor) WithTransaction(db *gorm.DB) *Processor {
 	return &Processor{
-		l:                  p.l,
-		ctx:                p.ctx,
-		db:                 db,
-		t:                  p.t,
-		equipableProcessor: p.equipableProcessor,
-		stackableProcessor: p.stackableProcessor,
-		cashProcessor:      p.cashProcessor,
-		petProcessor:       p.petProcessor,
-		GetByCompartmentId: p.GetByCompartmentId,
+		l:                   p.l,
+		ctx:                 p.ctx,
+		db:                  db,
+		t:                   p.t,
+		equipableProcessor:  p.equipableProcessor,
+		stackableProcessor:  p.stackableProcessor,
+		cashProcessor:       p.cashProcessor,
+		petProcessor:        p.petProcessor,
+		consumableProcessor: p.consumableProcessor,
+		setupProcessor:      p.setupProcessor,
+		etcProcessor:        p.etcProcessor,
+		GetByCompartmentId:  p.GetByCompartmentId,
 	}
 }
 
@@ -474,6 +486,37 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 			return Model[any]{}, txErr
 		}
 		return a, nil
+	}
+}
+
+// GetSlotMax retrieves the maximum slot capacity for a given asset template
+func (p *Processor) GetSlotMax(templateId uint32) (uint32, error) {
+	inventoryType, ok := inventory.TypeFromItemId(templateId)
+	if !ok {
+		return 0, errors.New("unknown item type")
+	}
+
+	switch inventoryType {
+	case inventory.TypeValueUse:
+		model, err := p.consumableProcessor.GetById(templateId)
+		if err != nil {
+			return 0, err
+		}
+		return model.SlotMax(), nil
+	case inventory.TypeValueSetup:
+		model, err := p.setupProcessor.GetById(templateId)
+		if err != nil {
+			return 0, err
+		}
+		return model.SlotMax(), nil
+	case inventory.TypeValueETC:
+		model, err := p.etcProcessor.GetById(templateId)
+		if err != nil {
+			return 0, err
+		}
+		return model.SlotMax(), nil
+	default:
+		return 1, nil // Default to 1 for non-stackable items
 	}
 }
 

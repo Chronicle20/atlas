@@ -29,6 +29,7 @@ import (
 
 type Processor interface {
 	CommodityDecorator(m Model) Model
+	RechargeableConsumablesDecorator(m Model) Model
 	GetByNpcId(decorators ...model.Decorator[Model]) func(npcId uint32) (Model, error)
 	ByNpcIdProvider(decorators ...model.Decorator[Model]) func(npcId uint32) model.Provider[Model]
 	GetAllShops(decorators ...model.Decorator[Model]) ([]Model, error)
@@ -56,17 +57,18 @@ type Processor interface {
 var ErrNotFound = errors.New("not found")
 
 type ProcessorImpl struct {
-	l             logrus.FieldLogger
-	ctx           context.Context
-	db            *gorm.DB
-	t             tenant.Model
-	GetByNpcIdFn  func(decorators ...model.Decorator[Model]) func(npcId uint32) (Model, error)
-	GetAllShopsFn func(decorators ...model.Decorator[Model]) ([]Model, error)
-	cp            commodities.Processor
-	charP         *character.Processor
-	compP         *compartment.Processor
-	invP          *inventory2.Processor
-	kp            producer.Provider
+	l                                logrus.FieldLogger
+	ctx                              context.Context
+	db                               *gorm.DB
+	t                                tenant.Model
+	GetByNpcIdFn                     func(decorators ...model.Decorator[Model]) func(npcId uint32) (Model, error)
+	GetAllShopsFn                    func(decorators ...model.Decorator[Model]) ([]Model, error)
+	RechargeableConsumablesDecoratorFn func(m Model) Model
+	cp                               commodities.Processor
+	charP                            *character.Processor
+	compP                            *compartment.Processor
+	invP                             *inventory2.Processor
+	kp                               producer.Provider
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -111,19 +113,7 @@ func (p *ProcessorImpl) ByNpcIdProvider(decorators ...model.Decorator[Model]) fu
 
 		// If the shop entity doesn't exist, check if commodities exist
 		if !shopExists {
-			commoditiesExist, err := p.cp.ExistsByNpcId(npcId)
-			if err != nil {
-				return model.ErrorProvider[Model](err)
-			}
-			if !commoditiesExist {
-				return model.ErrorProvider[Model](ErrNotFound)
-			}
-
-			// If commodities exist but shop doesn't, create a shop entity with default values
-			_, err = createShop(p.t.Id(), npcId, true)(p.db)()
-			if err != nil {
-				return model.ErrorProvider[Model](err)
-			}
+			return model.ErrorProvider[Model](ErrNotFound)
 		}
 
 		// Get the shop entity
@@ -138,7 +128,7 @@ func (p *ProcessorImpl) ByNpcIdProvider(decorators ...model.Decorator[Model]) fu
 			return model.ErrorProvider[Model](err)
 		}
 
-		return model.Map(model.Decorate(decorators))(model.FixedProvider(m))
+		return model.Map(model.Decorate(append(decorators, p.RechargeableConsumablesDecorator)))(model.FixedProvider(m))
 	}
 }
 
@@ -352,7 +342,7 @@ func (p *ProcessorImpl) AllShopsProvider(decorators ...model.Decorator[Model]) m
 		return Make(entity)
 	})(model.FixedProvider(shopEntities))(model.ParallelMap())
 
-	return model.SliceMap(model.Decorate(decorators))(sbp)(model.ParallelMap())
+	return model.SliceMap(model.Decorate(append(decorators, p.RechargeableConsumablesDecorator)))(sbp)(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) BuyAndEmit(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error {
@@ -602,4 +592,43 @@ func (p *ProcessorImpl) Recharge(mb *message.Buffer) func(characterId uint32) fu
 			return nil
 		}
 	}
+}
+
+// RechargeableConsumablesDecorator adds rechargeable consumables to a shop model
+func (p *ProcessorImpl) RechargeableConsumablesDecorator(m Model) Model {
+	// If a custom decorator function is set, use it
+	if p.RechargeableConsumablesDecoratorFn != nil {
+		return p.RechargeableConsumablesDecoratorFn(m)
+	}
+
+	// Only add rechargeable consumables to shops that have the recharger flag set to true
+	if !m.Recharger() {
+		return m
+	}
+
+	// Get rechargeable consumables from the cache
+	rechargeableConsumables := GetConsumableCache().GetConsumables(p.l, p.ctx, p.t.Id())
+
+	// Convert consumable.Model to commodities.Model
+	commoditiesModels := make([]commodities.Model, 0, len(rechargeableConsumables))
+	for _, c := range rechargeableConsumables {
+		// Create a commodity model with default values
+		cm := (&commodities.ModelBuilder{}).
+			SetId(uuid.New()).
+			SetTemplateId(c.Id()).
+			SetSlotMax(c.SlotMax()).
+			SetUnitPrice(c.UnitPrice()).
+			Build()
+		commoditiesModels = append(commoditiesModels, cm)
+	}
+
+	// Get existing commodities
+	existingCommodities := m.Commodities()
+
+	// Combine existing commodities with rechargeable consumables
+	allCommodities := make([]commodities.Model, 0, len(existingCommodities)+len(commoditiesModels))
+	allCommodities = append(allCommodities, existingCommodities...)
+	allCommodities = append(allCommodities, commoditiesModels...)
+
+	return Clone(m).SetCommodities(allCommodities).Build()
 }

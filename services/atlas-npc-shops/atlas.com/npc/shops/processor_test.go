@@ -2,16 +2,48 @@ package shops_test
 
 import (
 	"atlas-npc/commodities"
+	"atlas-npc/data/consumable"
 	"atlas-npc/shops"
 	"atlas-npc/test"
+	"context"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"testing"
 )
+
+// mockConsumableCache is a mock implementation of the ConsumableCacheInterface
+type mockConsumableCache struct {
+	consumables map[uuid.UUID][]consumable.Model
+}
+
+// GetConsumables returns the rechargeable consumables for a tenant
+func (c *mockConsumableCache) GetConsumables(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID) []consumable.Model {
+	if consumables, ok := c.consumables[tenantId]; ok {
+		return consumables
+	}
+	return []consumable.Model{}
+}
+
+// SetConsumables sets the rechargeable consumables for a tenant
+func (c *mockConsumableCache) SetConsumables(tenantId uuid.UUID, consumables []consumable.Model) {
+	c.consumables[tenantId] = consumables
+}
+
+// originalCache stores the original cache instance
+var originalCache shops.ConsumableCacheInterface
 
 func TestShopsProcessor(t *testing.T) {
 	// Create processor, database, and cleanup function
 	processor, db, cleanup := test.CreateShopsProcessor(t)
 	defer cleanup()
+
+	// Mock the processor's RechargeableConsumablesDecorator method to do nothing
+	if p, ok := processor.(*shops.ProcessorImpl); ok {
+		p.RechargeableConsumablesDecoratorFn = func(m shops.Model) shops.Model {
+			return m
+		}
+	}
 
 	// Run tests
 	t.Run("TestGetByNpcId", func(t *testing.T) {

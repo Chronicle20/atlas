@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	Resource = "data/consumables"
-	ById     = Resource + "/%d"
+	Resource     = "data/consumables"
+	ById         = Resource + "/%d"
+	Rechargeable = Resource + "?fields[consumables]=rechargeable,slotMax,unitPrice&filter[rechargeable]=true"
 )
 
 func getBaseRequest() string {
@@ -17,4 +18,8 @@ func getBaseRequest() string {
 
 func requestById(id uint32) requests.Request[RestModel] {
 	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
+}
+
+func requestRechargeable() requests.Request[[]RestModel] {
+	return rest.MakeGetRequest[[]RestModel](getBaseRequest() + Rechargeable)
 }

@@ -274,8 +274,12 @@ func (p *ProcessorImpl) ExitAndEmit(characterId uint32) error {
 func (p *ProcessorImpl) Exit(mb *message.Buffer) func(characterId uint32) error {
 	return func(characterId uint32) error {
 		p.l.Debugf("Character [%d] attempting to exit shop.", characterId)
+		_, inShop := getRegistry().GetShop(p.t.Id(), characterId)
 		getRegistry().RemoveCharacter(p.t.Id(), characterId)
-		return mb.Put(shops.EnvStatusEventTopic, exitedEventProvider(characterId))
+		if inShop {
+			return mb.Put(shops.EnvStatusEventTopic, exitedEventProvider(characterId))
+		}
+		return nil
 	}
 }
 

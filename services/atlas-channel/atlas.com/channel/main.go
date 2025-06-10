@@ -282,6 +282,8 @@ func produceWriters() []string {
 		writer.CharacterKeyMapAutoMp,
 		writer.NPCShop,
 		writer.NPCShopOperation,
+		writer.CompartmentMerge,
+		writer.CompartmentSort,
 	}
 }
 
@@ -346,6 +348,8 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CashShopOperationHandle] = handler.CashShopOperationHandleFunc
 	handlerMap[handler.CashShopCheckWalletHandle] = handler.CashShopCheckWalletHandleFunc
 	handlerMap[handler.NPCShopHandle] = handler.NPCShopHandleFunc
+	handlerMap[handler.CompartmentMerge] = handler.CompartmentMergeHandleFunc
+	handlerMap[handler.CompartmentSort] = handler.CompartmentSortHandleFunc
 	return handlerMap
 }
 

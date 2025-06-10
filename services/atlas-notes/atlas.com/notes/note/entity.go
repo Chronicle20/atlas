@@ -50,16 +50,6 @@ func MakeEntity(tenantId uuid.UUID, n Model) Entity {
 	}
 }
 
-// MakeNotes converts multiple Entity objects to Model domain models
-func MakeNotes(entities []Entity) []Model {
-	result := make([]Model, len(entities))
-	for i, e := range entities {
-		n, _ := Make(e)
-		result[i] = n
-	}
-	return result
-}
-
 // Migration sets up the notes table in the database
 func Migration(db *gorm.DB) error {
 	return db.AutoMigrate(&Entity{})

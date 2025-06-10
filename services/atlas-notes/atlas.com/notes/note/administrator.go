@@ -37,7 +37,11 @@ func updateNote(db *gorm.DB) func(tenantId uuid.UUID) func(note Model) (Model, e
 				return Model{}, err
 			}
 
-			return getByIdProvider(db)(tenantId)(note.Id())()
+			entity, err = getByIdProvider(tenantId)(note.Id())(db)()
+			if err != nil {
+				return Model{}, err
+			}
+			return Make(entity)
 		}
 	}
 }

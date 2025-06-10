@@ -100,6 +100,32 @@
 - Functional approach to resource provisioning
 - Error handling integrated into the provider chain
 
+#### Database Entity Provider Pattern
+- Uses the `database.EntityProvider[E any]` interface to retrieve domain entities from the database
+- Follows a curried function pattern for parameter application
+- Returns a `model.Provider[E]` that lazily evaluates to an entity or error
+- Example: `func getByIdProvider(tenantId uuid.UUID) func(id uint32) database.EntityProvider[Entity]`
+- Database queries are executed only when the provider is invoked
+- Entity-to-model transformation is performed using:
+  - `model.Map[Entity, Model](Make)` for single entity transformation
+  - `model.SliceMap[Entity, Model](Make)` for slice of entities transformation
+- Transformation functions (e.g., `Make`) convert database entities to domain models
+- Example of entity-to-model mapping:
+```
+// ByIdProvider retrieves a note by ID
+func (p *ProcessorImpl) ByIdProvider(id uint32) model.Provider[Model] {
+  return model.Map[Entity, Model](Make)(getByIdProvider(p.t.Id())(id)(p.db))
+}
+
+// ByCharacterProvider retrieves all notes for a character
+func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[[]Model] {
+  return model.SliceMap[Entity, Model](Make)(getByCharacterIdProvider(p.t.Id())(characterId)(p.db))(model.ParallelMap())
+}
+```
+- Promotes clean separation between database access and domain logic
+- Enables composition of data access operations with transformation functions
+- Supports parallel processing of entity collections with `model.ParallelMap()`
+
 ### Factory Pattern
 - Creation of complex objects encapsulated in factory functions
 - Ensures proper initialization and validation

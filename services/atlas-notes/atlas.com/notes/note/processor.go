@@ -115,7 +115,7 @@ func (p *ProcessorImpl) UpdateAndEmit(id uint32, characterId uint32, senderId ui
 // Delete deletes a note
 func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uint32) error {
 	return func(id uint32) error {
-		m, err := getByIdProvider(p.db)(p.t.Id())(id)()
+		m, err := p.ByIdProvider(id)()
 		if err != nil {
 			return err
 		}
@@ -165,15 +165,15 @@ func (p *ProcessorImpl) DeleteAllAndEmit(characterId uint32) error {
 
 // ByIdProvider retrieves a note by ID
 func (p *ProcessorImpl) ByIdProvider(id uint32) model.Provider[Model] {
-	return getByIdProvider(p.db)(p.t.Id())(id)
+	return model.Map[Entity, Model](Make)(getByIdProvider(p.t.Id())(id)(p.db))
 }
 
 // ByCharacterProvider retrieves all notes for a character
 func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[[]Model] {
-	return getByCharacterIdProvider(p.db)(p.t.Id())(characterId)
+	return model.SliceMap[Entity, Model](Make)(getByCharacterIdProvider(p.t.Id())(characterId)(p.db))(model.ParallelMap())
 }
 
 // InTenantProvider retrieves all notes in a tenant
 func (p *ProcessorImpl) InTenantProvider() model.Provider[[]Model] {
-	return getAllProvider(p.db)(p.t.Id())
+	return model.SliceMap[Entity, Model](Make)(getAllProvider(p.t.Id())(p.db))(model.ParallelMap())
 }

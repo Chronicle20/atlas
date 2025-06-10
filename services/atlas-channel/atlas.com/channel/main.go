@@ -282,6 +282,7 @@ func produceWriters() []string {
 		writer.CharacterKeyMapAutoMp,
 		writer.NPCShop,
 		writer.NPCShopOperation,
+		writer.NoteOperation,
 	}
 }
 

@@ -1,8 +1,8 @@
 package note
 
 import (
-	"fmt"
 	"strconv"
+	"time"
 )
 
 const (
@@ -12,22 +12,26 @@ const (
 
 // RestModel is the JSON:API resource for notes
 type RestModel struct {
-	Id          string `json:"-"`
-	CharacterId string `json:"characterId"`
-	SenderId    string `json:"senderId"`
-	Message     string `json:"message"`
-	Flag        string `json:"flag"`
-	Timestamp   string `json:"timestamp"`
+	Id          uint32    `json:"-"`
+	CharacterId uint32    `json:"characterId"`
+	SenderId    uint32    `json:"senderId"`
+	Message     string    `json:"message"`
+	Flag        byte      `json:"flag"`
+	Timestamp   time.Time `json:"timestamp"`
 }
 
 // GetID returns the resource ID
 func (n RestModel) GetID() string {
-	return n.Id
+	return strconv.Itoa(int(n.Id))
 }
 
 // SetID sets the resource ID
-func (n *RestModel) SetID(id string) error {
-	n.Id = id
+func (n *RestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	n.Id = uint32(id)
 	return nil
 }
 
@@ -39,35 +43,23 @@ func (n RestModel) GetName() string {
 // Transform converts a Model domain model to a RestModel
 func Transform(n Model) (RestModel, error) {
 	return RestModel{
-		Id:          fmt.Sprintf("%d", n.Id()),
-		CharacterId: fmt.Sprintf("%d", n.CharacterId()),
-		SenderId:    fmt.Sprintf("%d", n.SenderId()),
+		Id:          n.Id(),
+		CharacterId: n.CharacterId(),
+		SenderId:    n.SenderId(),
 		Message:     n.Message(),
-		Flag:        fmt.Sprintf("%d", n.Flag()),
-		Timestamp:   n.Timestamp().Format("2006-01-02T15:04:05Z07:00"),
+		Flag:        n.Flag(),
+		Timestamp:   n.Timestamp(),
 	}, nil
 }
 
 // Extract converts a RestModel to parameters for creating or updating a Model
 func Extract(r RestModel) (Model, error) {
-	characterId, err := strconv.ParseUint(r.CharacterId, 10, 32)
-	if err != nil {
-		return Model{}, err
-	}
-
-	senderId, err := strconv.ParseUint(r.SenderId, 10, 32)
-	if err != nil {
-		return Model{}, err
-	}
-
-	flag, err := strconv.ParseUint(r.Flag, 10, 8)
-	if err != nil {
-		return Model{}, err
-	}
 	return NewBuilder().
-		SetCharacterId(uint32(characterId)).
-		SetSenderId(uint32(senderId)).
+		SetId(r.Id).
+		SetCharacterId(r.CharacterId).
+		SetSenderId(r.SenderId).
 		SetMessage(r.Message).
-		SetFlag(byte(flag)).
+		SetFlag(r.Flag).
+		SetTimestamp(r.Timestamp).
 		Build(), nil
 }

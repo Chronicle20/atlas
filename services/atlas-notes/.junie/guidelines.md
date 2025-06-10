@@ -173,6 +173,97 @@ func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[[
 - Implements JSON:API interfaces for serialization
 - Transform/Extract functions for conversion between domain models and REST models
 
+#### REST Model Structure
+- REST models are defined as structs with appropriate data types (not just strings):
+  - Numeric IDs use `uint32` for database compatibility
+  - Timestamps use `time.Time` for proper date handling
+  - Flags use `byte` for compact storage
+  - Text fields use `string` for variable-length content
+- JSON tags control field visibility and naming in API responses:
+  - `json:"-"` hides fields from JSON output (e.g., internal IDs)
+  - `json:"fieldName"` specifies the JSON property name
+- Example REST model structure:
+```
+// RestModel is the JSON:API resource for notes
+type RestModel struct {
+    Id          uint32    `json:"-"`           // Hidden from JSON output
+    CharacterId uint32    `json:"characterId"` // Exposed as "characterId" in JSON
+    SenderId    uint32    `json:"senderId"`    // Exposed as "senderId" in JSON
+    Message     string    `json:"message"`     // Exposed as "message" in JSON
+    Flag        byte      `json:"flag"`        // Exposed as "flag" in JSON
+    Timestamp   time.Time `json:"timestamp"`   // Exposed as "timestamp" in JSON
+}
+```
+
+#### JSON:API Interface Implementation
+- REST models implement the JSON:API resource interface with three required methods:
+  - `GetID() string`: Returns the resource ID as a string
+  - `SetID(id string) error`: Sets the resource ID from a string
+  - `GetName() string`: Returns the resource type name (collection name)
+- Example implementation:
+```
+// GetID returns the resource ID
+func (n RestModel) GetID() string {
+    return strconv.Itoa(int(n.Id))  // Convert uint32 to string
+}
+
+// SetID sets the resource ID
+func (n *RestModel) SetID(strId string) error {
+    id, err := strconv.Atoi(strId)  // Convert string to int
+    if err != nil {
+        return err
+    }
+    n.Id = uint32(id)  // Store as uint32
+    return nil
+}
+
+// GetName returns the resource name
+func (n RestModel) GetName() string {
+    return "notes"  // Collection name in plural form
+}
+```
+
+#### Transform/Extract Functions
+- Transform and Extract functions must satisfy the model.Transformer interface:
+  - `func Transform(domainModel) (restModel, error)`: Converts domain model to REST model
+  - `func Extract(restModel) (domainModel, error)`: Converts REST model to domain model
+- Both functions return an error to handle validation or conversion failures
+- These functions enable bidirectional conversion between domain and REST models
+- Example implementation:
+```
+// Transform converts a Model domain model to a RestModel
+func Transform(n Model) (RestModel, error) {
+    return RestModel{
+        Id:          n.Id(),
+        CharacterId: n.CharacterId(),
+        SenderId:    n.SenderId(),
+        Message:     n.Message(),
+        Flag:        n.Flag(),
+        Timestamp:   n.Timestamp(),
+    }, nil
+}
+
+// Extract converts a RestModel to parameters for creating or updating a Model
+func Extract(r RestModel) (Model, error) {
+    return NewBuilder().
+        SetId(r.Id).
+        SetCharacterId(r.CharacterId).
+        SetSenderId(r.SenderId).
+        SetMessage(r.Message).
+        SetFlag(r.Flag).
+        SetTimestamp(r.Timestamp).
+        Build(), nil
+}
+```
+- These functions are used with model.Map and model.SliceMap for transforming single models and collections:
+```
+// Transform a single model
+rm, err := model.Map(Transform)(modelProvider)()
+
+// Transform a collection of models
+rms, err := model.SliceMap(Transform)(modelCollectionProvider)(model.ParallelMap())()
+```
+
 ### Error Handling
 - Consistent error responses following JSON:API format
 - Descriptive error messages and codes

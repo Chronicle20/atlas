@@ -12,7 +12,7 @@ func Migration(db *gorm.DB) error {
 
 type Entity struct {
 	TenantId      uuid.UUID      `gorm:"not null"`
-	Id            uuid.UUID      `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	Id            uuid.UUID      `gorm:"primaryKey;type:uuid;"`
 	CharacterId   uint32         `gorm:"not null"`
 	InventoryType inventory.Type `gorm:"not null"`
 	Capacity      uint32         `gorm:"capacity"`
@@ -20,6 +20,13 @@ type Entity struct {
 
 func (e Entity) TableName() string {
 	return "compartments"
+}
+
+func (e *Entity) BeforeCreate(_ *gorm.DB) (err error) {
+	if e.Id == uuid.Nil {
+		e.Id = uuid.New()
+	}
+	return
 }
 
 func Make(e Entity) (Model, error) {

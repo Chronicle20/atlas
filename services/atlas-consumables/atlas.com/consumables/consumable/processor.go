@@ -81,6 +81,8 @@ func (p *Processor) RequestItemConsume(characterId uint32, slot int16, itemId it
 		itemConsumer = ConsumePetFood(transactionId, characterId, slot, itemId, quantity)
 	} else if item2.GetClassification(itemId) == item2.ClassificationPetConsumable {
 		itemConsumer = ConsumeCashPetFood(transactionId, characterId, slot, itemId, quantity)
+	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableSummoningSack {
+		itemConsumer = ConsumeSummoningSack(transactionId, characterId, slot, itemId, quantity)
 	}
 
 	handler := compartment.Consume(itemConsumer)
@@ -323,6 +325,35 @@ func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16,
 			}
 
 			err = cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
+			if err != nil {
+				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+			return nil
+		}
+	}
+}
+
+func ConsumeSummoningSack(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
+	return func(l logrus.FieldLogger) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			c, err := character.NewProcessor(l, ctx).GetById()(characterId)
+			if err != nil {
+				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+
+			ci, err := consumable3.NewProcessor(l, ctx).GetById(uint32(itemId))
+			if err != nil {
+				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+
+			for mid, prob := range ci.MonsterSummons() {
+				roll := uint32(rand.Int31n(100))
+				if roll < prob {
+					// TODO
+					l.Debugf("Character [%d] use of summoning sack [%d] spawned monster [%d] at [%d,%d].", characterId, itemId, mid, c.X(), c.Y())
+				}
+			}
+			err = compartment.NewProcessor(l, ctx).ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
 			if err != nil {
 				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}

@@ -159,6 +159,27 @@
 
 ## Kafka and Messaging
 
+### File Organization
+- **Kafka Directory Structure**: Located at `kafka` with three main subdirectories:
+  - `consumer`: Contains Kafka consumer implementations
+  - `message`: Contains message definitions
+  - `producer`: Contains Kafka producer interfaces and common functionality
+
+#### Consumer Files
+- Base consumer interface and functionality in `kafka/consumer/consumer.go`
+- Domain-specific consumers in subdirectories (e.g., `kafka/consumer/character/consumer.go`)
+- Consumers handle incoming Kafka messages and trigger appropriate business logic
+
+#### Message Files
+- Common message types and utilities in `kafka/message/message.go`
+- Domain-specific message definitions in `kafka/message/{domain}/kafka.go` (e.g., `kafka/message/character/kafka.go`, `kafka/message/note/kafka.go`)
+- Message files define command and event structures, constants for topic names, and helper functions for message creation
+
+#### Producer Files
+- Common producer interface and functionality in `kafka/producer/producer.go`
+- Domain-specific producer implementations in domain packages (e.g., `note/producer.go`)
+- Producers handle message serialization and sending to Kafka topics
+
 ### Message Structure
 - Consistent message format across the application
 - Clear separation between message creation and emission

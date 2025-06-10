@@ -47,10 +47,11 @@
 - **model.go**: Domain models and builders
 - **entity.go**: Database entities
 - **processor.go**: Business logic and service implementations
-- **rest.go**: API endpoints and JSON:API models
+- **rest.go**: JSON:API models
 - **producer.go/consumer.go**: Kafka message producers and consumers
 - **administrator.go**: Database modification functions
 - **provider.go**: Database accessor functions
+- **resource.go**: API endpoints
 
 ## Domain Modeling
 
@@ -107,6 +108,32 @@
 - Used for tracking runtime state (e.g., shop registry)
 - Thread-safe access to shared resources
 - Clear ownership of state management
+
+### Processor Pattern
+- Core component for implementing domain business logic
+- Implements a well-defined interface with dual method signatures for each operation
+- Dependencies (logger, context, database, tenant, producer) injected via constructor
+- Each business operation has two versions:
+  - Pure business logic version with nested functional approach (e.g., `Create`)
+  - Message-emitting version that integrates with Kafka (e.g., `CreateAndEmit`)
+- Pure business logic methods:
+  - Accept a message buffer as first parameter to collect messages during processing
+  - Use curried functions (nested functions) to allow partial application
+  - Return domain models and errors
+  - Example: `Create(mb *message.Buffer) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error)`
+- Message-emitting methods:
+  - Provide a flattened interface for direct use
+  - Internally use the pure business logic methods combined with message emission
+  - Use functional composition with `model.Flip` to transform function signatures
+  - Example: `CreateAndEmit(characterId uint32, senderId uint32, msg string, flag byte) (Model, error)`
+- Provider methods:
+  - Return lazy-evaluated functions that retrieve domain models
+  - Follow the Provider pattern for resource access
+  - Example: `ByIdProvider(id uint32) model.Provider[Model]`
+- Promotes separation of concerns:
+  - Business logic is isolated from message emission
+  - Database operations are separated from domain logic
+  - Testability is enhanced by allowing business logic to be tested without message emission
 
 ## API Conventions
 

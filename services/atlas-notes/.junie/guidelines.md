@@ -137,9 +137,24 @@ func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[[
 
 ### Processor Pattern
 - Core component for implementing domain business logic
-- Implements a well-defined interface with dual method signatures for each operation
-- Dependencies (logger, context, database, tenant, producer) injected via constructor
-- Each business operation has two versions:
+- Exposes a well-defined interface with dual method signatures for each operation:
+  - Nested functional methods that return curried functions for deferred execution
+  - Flat `AndEmit` methods for immediate business logic execution and Kafka event emission
+- Interface includes support for create, update, delete, and retrieval operations, all using Go's functional style
+- Dependencies (logger, context, database, tenant, producer) are injected via constructor
+- Business logic methods:
+  - Use a message buffer to accumulate Kafka messages
+  - Are curried to support partial application
+  - Return domain models and errors
+- Emission methods:
+  - Compose nested functions using `model.Flip` to produce flat function signatures
+  - Call Kafka producers using `Emit` or `EmitWithResult` utilities
+- Promotes separation of concerns:
+  - Domain logic is independent of message emission
+  - Kafka emission can be disabled during testing
+- Providers are used for lazy evaluation of database queries
+  - Methods such as `ByIdProvider`, `ByCharacterProvider`, and `InTenantProvider` return `model.Provider`
+  - `model.Map` and `model.SliceMap` are used to transform database entities into domain models
   - Pure business logic version with nested functional approach (e.g., `Create`)
   - Message-emitting version that integrates with Kafka (e.g., `CreateAndEmit`)
 - Pure business logic methods:
@@ -377,26 +392,26 @@ server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryPar
 #### Command Messages
 - Generic structure with type parameter for the body: `Command[E any]`
 - Common members across all commands:
-    - `CharacterId`: Identifies the character the command applies to
-    - `Type`: String identifier for the command type (e.g., "ENTER", "EXIT", "BUY")
-    - `Body`: Generic field containing command-specific data
+  - `CharacterId`: Identifies the character the command applies to
+  - `Type`: String identifier for the command type (e.g., "ENTER", "EXIT", "BUY")
+  - `Body`: Generic field containing command-specific data
 - Command bodies are strongly typed structs specific to each command type
 - Examples:
-    - `CommandShopEnterBody`: Contains `NpcTemplateId`
-    - `CommandShopBuyBody`: Contains `Slot`, `ItemTemplateId`, `Quantity`, `DiscountPrice`
-    - `RequestChangeMesoBody`: Contains `ActorId`, `ActorType`, `Amount`
+  - `CommandShopEnterBody`: Contains `NpcTemplateId`
+  - `CommandShopBuyBody`: Contains `Slot`, `ItemTemplateId`, `Quantity`, `DiscountPrice`
+  - `RequestChangeMesoBody`: Contains `ActorId`, `ActorType`, `Amount`
 
 #### StatusEvent Messages
 - Generic structure with type parameter for the body: `StatusEvent[E any]`
 - Common members across all status events:
-    - `CharacterId`: Identifies the character the event applies to
-    - `Type`: String identifier for the event type (e.g., "ENTERED", "EXITED", "ERROR")
-    - `Body`: Generic field containing event-specific data
+  - `CharacterId`: Identifies the character the event applies to
+  - `Type`: String identifier for the event type (e.g., "ENTERED", "EXITED", "ERROR")
+  - `Body`: Generic field containing event-specific data
 - Status event bodies are strongly typed structs specific to each event type
 - Examples:
-    - `StatusEventEnteredBody`: Contains `NpcTemplateId`
-    - `StatusEventErrorBody`: Contains `Error`, `LevelLimit`, `Reason`
-    - `StatusEventMapChangedBody`: Contains `ChannelId`, `OldMapId`, `TargetMapId`, `TargetPortalId`
+  - `StatusEventEnteredBody`: Contains `NpcTemplateId`
+  - `StatusEventErrorBody`: Contains `Error`, `LevelLimit`, `Reason`
+  - `StatusEventMapChangedBody`: Contains `ChannelId`, `OldMapId`, `TargetMapId`, `TargetPortalId`
 
 ### Producer/Consumer Pattern
 - Dedicated producers and consumers for each domain

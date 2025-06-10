@@ -18,6 +18,8 @@ import (
 	"atlas-consumables/kafka/producer"
 	"atlas-consumables/map"
 	character2 "atlas-consumables/map/character"
+	"atlas-consumables/monster"
+	"atlas-consumables/monster/drop/position"
 	"atlas-consumables/pet"
 	"context"
 	"errors"
@@ -61,7 +63,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) RequestItemConsume(characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
+func (p *Processor) RequestItemConsume(worldId byte, channelId byte, characterId uint32, slot int16, itemId item2.Id, quantity int16) error {
 	transactionId := uuid.New()
 	p.l.Debugf("Creating OneTime topic consumer to await transaction [%s] completion or cancellation.", transactionId.String())
 	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
@@ -81,6 +83,8 @@ func (p *Processor) RequestItemConsume(characterId uint32, slot int16, itemId it
 		itemConsumer = ConsumePetFood(transactionId, characterId, slot, itemId, quantity)
 	} else if item2.GetClassification(itemId) == item2.ClassificationPetConsumable {
 		itemConsumer = ConsumeCashPetFood(transactionId, characterId, slot, itemId, quantity)
+	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableSummoningSack {
+		itemConsumer = ConsumeSummoningSack(transactionId, worldId, channelId, characterId, slot, itemId, quantity)
 	}
 
 	handler := compartment.Consume(itemConsumer)
@@ -323,6 +327,44 @@ func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16,
 			}
 
 			err = cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
+			if err != nil {
+				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+			return nil
+		}
+	}
+}
+
+func ConsumeSummoningSack(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32, slot int16, itemId item2.Id, quantity int16) ItemConsumer {
+	return func(l logrus.FieldLogger) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			c, err := character.NewProcessor(l, ctx).GetById()(characterId)
+			if err != nil {
+				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+
+			ci, err := consumable3.NewProcessor(l, ctx).GetById(uint32(itemId))
+			if err != nil {
+				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+
+			pos, err := position.NewProcessor(l, ctx).GetInMap(c.MapId(), c.X(), c.Y(), c.X(), c.Y())()
+			if err != nil {
+				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			}
+
+			for mid, prob := range ci.MonsterSummons() {
+				roll := uint32(rand.Int31n(100))
+				if roll < prob {
+					err = monster.NewProcessor(l, ctx).CreateMonster(worldId, channelId, c.MapId(), mid, pos.X(), pos.Y(), 0, 0)
+					if err != nil {
+						l.WithError(err).Errorf("Unable to summon monster [%d] for character [%d] summoning bag.", mid, characterId)
+					} else {
+						l.Debugf("Character [%d] use of summoning sack [%d] spawned monster [%d] at [%d,%d].", characterId, itemId, mid, c.X(), c.Y())
+					}
+				}
+			}
+			err = compartment.NewProcessor(l, ctx).ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
 			if err != nil {
 				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}

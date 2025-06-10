@@ -40,6 +40,8 @@ type Model struct {
 	spawnPoint         uint32
 	gm                 int
 	meso               uint32
+	x                  int16
+	y                  int16
 	equipment          equipment.Model
 	inventory          inventory.Model
 }
@@ -213,11 +215,11 @@ func (m Model) Meso() uint32 {
 }
 
 func (m Model) X() int16 {
-	return 0
+	return m.x
 }
 
 func (m Model) Y() int16 {
-	return 0
+	return m.y
 }
 
 func (m Model) Stance() byte {

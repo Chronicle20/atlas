@@ -170,6 +170,10 @@ func (m Model) CursedRate() uint32 {
 	return m.cursed
 }
 
+func (m Model) MonsterSummons() map[uint32]uint32 {
+	return m.monsterSummons
+}
+
 type RewardModel struct {
 	itemId uint32
 	count  uint32

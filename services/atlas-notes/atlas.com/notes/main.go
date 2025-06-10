@@ -1,10 +1,13 @@
 package main
 
 import (
+	"atlas-notes/database"
 	"atlas-notes/logger"
+	"atlas-notes/note"
 	"atlas-notes/service"
 	"atlas-notes/tracing"
 	"github.com/Chronicle20/atlas-rest/server"
+	"os"
 )
 
 const serviceName = "atlas-notes"
@@ -25,14 +28,14 @@ func (s Server) GetPrefix() string {
 func GetServer() Server {
 	return Server{
 		baseUrl: "",
-		prefix:  "/api/notes/",
+		prefix:  "/api/",
 	}
 }
 
 func main() {
-  l := logger.CreateLogger(serviceName)
+	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
-	
+
 	tdm := service.GetTeardownManager()
 
 	tc, err := tracing.InitTracer(l)(serviceName)
@@ -40,8 +43,17 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix())
-	
+	// Connect to the database
+	db := database.Connect(l, database.SetMigrations(note.Migration))
+
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(note.InitResource(GetServer())(db)).
+		Run()
+
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
 	tdm.Wait()

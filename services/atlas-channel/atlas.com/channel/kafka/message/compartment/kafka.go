@@ -17,6 +17,8 @@ const (
 	CommandCancelReservation = "CANCEL_RESERVATION"
 	CommandIncreaseCapacity  = "INCREASE_CAPACITY"
 	CommandCreateAsset       = "CREATE_ASSET"
+	CommandMerge             = "MERGE"
+	CommandSort              = "SORT"
 )
 
 type Command[E any] struct {
@@ -89,6 +91,12 @@ type CreateAssetCommandBody struct {
 	Rechargeable uint64    `json:"rechargeable"`
 }
 
+type MergeCommandBody struct {
+}
+
+type SortCommandBody struct {
+}
+
 const (
 	EnvEventTopicStatus                 = "EVENT_TOPIC_COMPARTMENT_STATUS"
 	StatusEventTypeCreated              = "CREATED"
@@ -96,6 +104,8 @@ const (
 	StatusEventTypeCapacityChanged      = "CAPACITY_CHANGED"
 	StatusEventTypeReserved             = "RESERVED"
 	StatusEventTypeReservationCancelled = "RESERVATION_CANCELLED"
+	StatusEventTypeMergeComplete        = "MERGE_COMPLETE"
+	StatusEventTypeSortComplete         = "SORT_COMPLETE"
 )
 
 type StatusEvent[E any] struct {
@@ -128,4 +138,12 @@ type ReservationCancelledEventBody struct {
 	ItemId   uint32 `json:"itemId"`
 	Slot     int16  `json:"slot"`
 	Quantity uint32 `json:"quantity"`
+}
+
+type MergeCompleteEventBody struct {
+	Type byte `json:"type"`
+}
+
+type SortCompleteEventBody struct {
+	Type byte `json:"type"`
 }

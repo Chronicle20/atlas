@@ -69,3 +69,25 @@ func DropAssetCommandProvider(m _map.Model, characterId uint32, inventoryType in
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func MergeCommandProvider(characterId uint32, inventoryType inventory.Type) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.MergeCommandBody]{
+		CharacterId:   characterId,
+		InventoryType: byte(inventoryType),
+		Type:          compartment.CommandMerge,
+		Body:          compartment.MergeCommandBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func SortCommandProvider(characterId uint32, inventoryType inventory.Type) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.SortCommandBody]{
+		CharacterId:   characterId,
+		InventoryType: byte(inventoryType),
+		Type:          compartment.CommandSort,
+		Body:          compartment.SortCommandBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

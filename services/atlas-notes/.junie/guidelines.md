@@ -178,6 +178,78 @@ func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[[
 - Descriptive error messages and codes
 - Proper HTTP status codes for different error conditions
 
+### RESTful Resource Implementation
+- Resource endpoints defined in `resource.go` files
+- Common helper functions for parameter extraction and response handling
+- Consistent pattern for all endpoint handlers
+
+#### Parameter Extraction
+- URL path parameters extracted using helper functions:
+  - `rest.ParseCharacterId`: Extracts and validates character IDs from URL paths
+  - `rest.ParseNoteId`: Extracts and validates note IDs from URL paths
+- Query parameters extracted using:
+  - `r.URL.Query()`: Gets all query parameters
+  - `jsonapi.ParseQueryFields(&query)`: Parses JSON:API specific query parameters (fields, includes, etc.)
+- Request body parsing handled by:
+  - `rest.ParseInput`: Deserializes JSON:API request bodies into model structs
+  - `Extract`: Converts REST models to domain models with proper type conversion
+
+#### Handler Registration
+- Handlers registered using helper functions:
+  - `rest.RegisterHandler`: For handlers that don't require request body parsing
+  - `rest.RegisterInputHandler`: For handlers that require request body parsing
+- These functions provide consistent dependency injection and error handling
+- Example:
+```
+registerHandler := rest.RegisterHandler(l)(db)(si)
+registerInputHandler := rest.RegisterInputHandler[RestModel](l)(db)(si)
+
+router.HandleFunc("/notes", registerHandler("get_all_notes", GetAllNotesHandler)).Methods(http.MethodGet)
+router.HandleFunc("/notes", registerInputHandler("create_note", CreateNoteHandler)).Methods(http.MethodPost)
+```
+
+#### Domain Processing
+- Processors used to manipulate domain data:
+  - Created with `NewProcessor(logger, context, db)`
+  - Provider methods (e.g., `ByIdProvider`, `ByCharacterProvider`) retrieve domain models
+  - Action methods (e.g., `CreateAndEmit`, `UpdateAndEmit`) modify domain data and emit events
+- Example:
+```
+// Retrieve data
+mp := NewProcessor(d.Logger(), d.Context(), d.DB()).ByIdProvider(noteId)
+
+// Modify data
+m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(
+    im.CharacterId(), im.SenderId(), im.Message(), im.Flag())
+```
+
+#### Model Transformation
+- Domain models transformed to REST models using:
+  - `model.Map(Transform)`: For single model transformation
+  - `model.SliceMap(Transform)(model.ParallelMap())`: For transforming collections with parallel processing
+- `Transform` function converts domain models to REST models with proper type conversion
+- `Extract` function converts REST models back to domain models
+- Example:
+```
+// Transform a single model
+rm, err := model.Map(Transform)(mp)()
+
+// Transform a collection of models
+rm, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
+```
+
+#### Response Marshaling
+- Responses marshaled using common function:
+  - `server.MarshalResponse[T](logger)(writer)(serverInfo)(queryParams)(model)`
+- Works with both single models and collections
+- Handles JSON:API formatting, including sparse fieldsets and includes
+- Example:
+```
+query := r.URL.Query()
+queryParams := jsonapi.ParseQueryFields(&query)
+server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+```
+
 ### Resource Naming
 - Resources named using plural nouns (e.g., "shops", "commodities")
 - Consistent URL structure for all resources

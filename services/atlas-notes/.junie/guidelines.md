@@ -391,10 +391,10 @@ server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryPar
 - Example:
 ```go
 func CreateNoteStatusEventProvider(characterId uint32, noteId uint32, senderId uint32, msg string, flag byte, timestamp time.Time) model.Provider[[]kafka.Message] {
-    key := producer.CreateKey(int(characterId))
-    body := note.StatusEventCreatedBody{ ... }
-    value := note.StatusEvent[note.StatusEventCreatedBody]{ CharacterId: characterId, Type: ..., Body: body }
-    return producer.SingleMessageProvider(key, value)
+key := producer.CreateKey(int(characterId))
+body := note.StatusEventCreatedBody{ ... }
+value := note.StatusEvent[note.StatusEventCreatedBody]{ CharacterId: characterId, Type: ..., Body: body }
+return producer.SingleMessageProvider(key, value)
 }
 ```
 
@@ -510,6 +510,16 @@ func CreateNoteStatusEventProvider(characterId uint32, noteId uint32, senderId u
 - Comprehensive CRUD operation testing
 
 ### Mocking
+### Mock Processor Requirements
+- Every concrete processor must have a corresponding `ProcessorMock` implementation to support automated testing.
+- The mock should reside in a `mock` subpackage within the same domain package as the real processor.
+- The mock struct must implement the `Processor` interface and expose overrideable function fields for each method:
+  - e.g., `CreateFunc`, `UpdateAndEmitFunc`, `ByIdProviderFunc`, etc.
+- Each method should check whether its corresponding function field is nil, and fallback to a default no-op or zero-value response when unset.
+- This structure allows for precise and minimal overrides during testing without affecting unrelated behavior.
+- Mocks should be used to simulate business logic behavior, Kafka emissions, and provider returns without invoking real infrastructure or state.
+
+
 - Interface-based design enables easy mocking
 - Mock implementations for external services
 - Dependency injection facilitates testing with mocks

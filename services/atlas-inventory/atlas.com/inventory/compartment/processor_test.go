@@ -238,3 +238,66 @@ func TestMergeAndCompact(t *testing.T) {
 		}
 	}
 }
+
+// TestMergeAndCompactOverflow tests the behavior of the MergeAndCompact function
+// This test verifies that the MergeAndSort function correctly sorts assets by template ID
+func TestMergeAndCompactOverflow(t *testing.T) {
+	// Create a character ID
+	characterId := uint32(1)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t)
+
+	mb := message.NewBuffer()
+
+	dcpi := &dcp.ProcessorImpl{}
+	dcpi.GetByIdFn = func(itemId uint32) (consumable.Model, error) {
+		rm := consumable.RestModel{SlotMax: 100}
+		m, err := consumable.Extract(rm)
+		if err != nil {
+			return consumable.Model{}, err
+		}
+		return m, nil
+	}
+
+	ap := asset.NewProcessor(l, ctx, db).WithConsumableProcessor(dcpi)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	var err error
+	_, err = cp.Create(mb)(characterId, inventory.TypeValueUse, 40)
+	if err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
+	if err != nil {
+		t.Fatalf("Failed to create asset 1: %v", err)
+	}
+	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
+	if err != nil {
+		t.Fatalf("Failed to create asset 1: %v", err)
+	}
+	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
+	if err != nil {
+		t.Fatalf("Failed to create asset 1: %v", err)
+	}
+
+	err = cp.MergeAndCompact(mb)(characterId, inventory.TypeValueUse)
+	if err != nil {
+		t.Fatalf("Failed to merge and sort assets: %v", err)
+	}
+
+	c, err := cp.GetByCharacterAndType(characterId)(inventory.TypeValueUse)
+	if err != nil {
+		t.Fatalf("Failed to get compartment: %v", err)
+	}
+	for _, a := range c.Assets() {
+		if a.TemplateId() == 2120000 && a.Slot() == 1 && a.Quantity() != 100 {
+			t.Fatalf("Asset 2120000 was not merged to slot 1 correctly")
+		}
+		if a.TemplateId() == 2120000 && a.Slot() == 2 && a.Quantity() != 50 {
+			t.Fatalf("Asset 2120000 was not merged to slot 2 correctly")
+		}
+	}
+}

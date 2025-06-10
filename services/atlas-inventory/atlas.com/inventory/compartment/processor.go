@@ -396,7 +396,7 @@ func (p *Processor) Move(mb *message.Buffer) func(characterId uint32) func(inven
 						}
 
 						// Determine if we should merge or swap
-						if err == nil && canMergeAssets(inventoryType, a1, a2, p.t, characterId) {
+						if err == nil && p.canMergeAssets(inventoryType, a1, a2, characterId) {
 							return p.WithTransaction(tx).mergeAssets(mb)(characterId, c, a1, a2, source, destination)
 						}
 
@@ -502,7 +502,7 @@ func (p *Processor) mergeAssets(mb *message.Buffer) func(characterId uint32, c M
 }
 
 // canMergeAssets checks if two assets can be merged based on the specified rules
-func canMergeAssets(inventoryType inventory.Type, sourceAsset asset.Model[any], destAsset asset.Model[any], t tenant.Model, characterId uint32) bool {
+func (p *Processor) canMergeAssets(inventoryType inventory.Type, sourceAsset asset.Model[any], destAsset asset.Model[any], characterId uint32) bool {
 	// Rule 1: Inventories of type Equip cannot support merging
 	if inventoryType == inventory.TypeValueEquip {
 		return false
@@ -531,8 +531,8 @@ func canMergeAssets(inventoryType inventory.Type, sourceAsset asset.Model[any], 
 	}
 
 	// Rule 4: Neither asset can have an active reservation
-	sourceReserved := GetReservationRegistry().GetReservedQuantity(t, characterId, inventoryType, sourceAsset.Slot())
-	destReserved := GetReservationRegistry().GetReservedQuantity(t, characterId, inventoryType, destAsset.Slot())
+	sourceReserved := GetReservationRegistry().GetReservedQuantity(p.t, characterId, inventoryType, sourceAsset.Slot())
+	destReserved := GetReservationRegistry().GetReservedQuantity(p.t, characterId, inventoryType, destAsset.Slot())
 	if sourceReserved > 0 || destReserved > 0 {
 		return false
 	}
@@ -543,6 +543,17 @@ func canMergeAssets(inventoryType inventory.Type, sourceAsset asset.Model[any], 
 	}
 
 	// TODO: Rule 6: Assets must have the same owner to be stackable
+
+	// Rule 7: Check if destination asset has already reached its slot max
+	slotMax, err := p.assetProcessor.GetSlotMax(destAsset.TemplateId())
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to get slot max for item [%d].", destAsset.TemplateId())
+		return false
+	}
+
+	if destAsset.Quantity() >= slotMax {
+		return false
+	}
 
 	return true
 }
@@ -1111,7 +1122,7 @@ func (p *Processor) MergeAndCompact(mb *message.Buffer) func(characterId uint32,
 			// Merge combinable assets.
 			for i := 0; i < len(positiveSlotAssets); i++ {
 				for j := i + 1; j < len(positiveSlotAssets); j++ {
-					if canMergeAssets(c.Type(), positiveSlotAssets[i], positiveSlotAssets[j], p.t, characterId) {
+					if p.canMergeAssets(c.Type(), positiveSlotAssets[j], positiveSlotAssets[i], characterId) {
 						err = p.Move(mb)(characterId)(inventoryType)(positiveSlotAssets[j].Slot())(positiveSlotAssets[i].Slot())
 						if err != nil {
 							p.l.WithError(err).Errorf("Unable to move assets [%d] and [%d] in compartment [%s].", positiveSlotAssets[i].Id(), positiveSlotAssets[j].Id(), c.Id())

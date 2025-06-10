@@ -33,6 +33,8 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				var t string
 				t, _ = topic.EnvProvider(l)(compartment.EnvEventTopicStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentItemReservationCancelledEvent(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentMergeCompleteEvent(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentSortCompleteEvent(sc, wp))))
 			}
 		}
 	}
@@ -50,5 +52,35 @@ func handleCompartmentItemReservationCancelledEvent(sc server.Model, wp writer.P
 		}
 
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true)))
+	}
+}
+
+func handleCompartmentMergeCompleteEvent(sc server.Model, wp writer.Producer) message.Handler[compartment.StatusEvent[compartment.MergeCompleteEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.MergeCompleteEventBody]) {
+		if e.Type != compartment.StatusEventTypeMergeComplete {
+			return
+		}
+
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.CompartmentMerge)(writer.CompartmentMergeBody(e.Body.Type)))
+	}
+}
+
+func handleCompartmentSortCompleteEvent(sc server.Model, wp writer.Producer) message.Handler[compartment.StatusEvent[compartment.SortCompleteEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.SortCompleteEventBody]) {
+		if e.Type != compartment.StatusEventTypeSortComplete {
+			return
+		}
+
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.CompartmentSort)(writer.CompartmentSortBody(e.Body.Type)))
 	}
 }

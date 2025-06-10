@@ -480,6 +480,17 @@ func CreateNoteStatusEventProvider(characterId uint32, noteId uint32, senderId u
 - Context-rich error messages
 - Proper error propagation through the call stack
 
+## Documentation Practices
+
+- All services must maintain a clearly written and up-to-date `README.md` file at the root of the service directory.
+- The `README.md` should include:
+  - A brief description of the service and its purpose
+  - Setup instructions including environment variables and dependencies
+  - Usage examples for key operations or endpoints
+  - Any configuration flags or feature toggles relevant to deployment or development
+- Any time a significant change is made to API contracts, behavior, environment configuration, or service outputs, the `README.md` must be updated accordingly.
+- This ensures that both human developers and automation agents referencing the service have reliable and actionable documentation.
+
 ## Testing Conventions
 
 ### Test Organization

@@ -283,6 +283,9 @@ func produceWriters() []string {
 		writer.NPCShop,
 		writer.NPCShopOperation,
 		writer.NoteOperation,
+		writer.SpawnKite,
+		writer.SpawnKiteError,
+		writer.DestroyKite,
 	}
 }
 

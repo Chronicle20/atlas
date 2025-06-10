@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-// CreateNoteStatusEvent creates a status event for note creation
-func CreateNoteStatusEvent(characterId uint32, noteId uint32, senderId uint32, msg string, flag byte, timestamp time.Time) model.Provider[[]kafka.Message] {
+// CreateNoteStatusEventProvider creates a status event for note creation
+func CreateNoteStatusEventProvider(characterId uint32, noteId uint32, senderId uint32, msg string, flag byte, timestamp time.Time) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	body := note.StatusEventCreatedBody{
 		NoteId:   noteId,
@@ -26,8 +26,8 @@ func CreateNoteStatusEvent(characterId uint32, noteId uint32, senderId uint32, m
 	return producer.SingleMessageProvider(key, value)
 }
 
-// UpdateNoteStatusEvent creates a status event for note update
-func UpdateNoteStatusEvent(characterId uint32, noteId uint32, senderId uint32, msg string, flag byte, timestamp time.Time) model.Provider[[]kafka.Message] {
+// UpdateNoteStatusEventProvider creates a status event for note update
+func UpdateNoteStatusEventProvider(characterId uint32, noteId uint32, senderId uint32, msg string, flag byte, timestamp time.Time) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	body := note.StatusEventUpdatedBody{
 		NoteId:   noteId,
@@ -44,8 +44,8 @@ func UpdateNoteStatusEvent(characterId uint32, noteId uint32, senderId uint32, m
 	return producer.SingleMessageProvider(key, value)
 }
 
-// DeleteNoteStatusEvent creates a status event for note deletion
-func DeleteNoteStatusEvent(characterId uint32, noteId uint32) model.Provider[[]kafka.Message] {
+// DeleteNoteStatusEventProvider creates a status event for note deletion
+func DeleteNoteStatusEventProvider(characterId uint32, noteId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	body := note.StatusEventDeletedBody{
 		NoteId: noteId,

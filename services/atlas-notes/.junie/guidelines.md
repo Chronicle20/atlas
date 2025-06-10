@@ -380,6 +380,24 @@ server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryPar
 - Message files define command and event structures, constants for topic names, and helper functions for message creation
 
 #### Producer Files
+#### Event Producer Provider Pattern
+- Kafka event producers must follow the `Provider` pattern and return `model.Provider[[]kafka.Message]`
+- Each producer function should end in `Provider` to indicate that message creation is deferred until invoked
+- The return value is a provider that yields a slice of Kafka messages, promoting testability and composability
+- Event keys are generated using helper functions like `producer.CreateKey`, ensuring partitioning consistency
+- Event values are composed using structured domain-specific bodies wrapped in generic message containers (e.g., `StatusEvent[T]`)
+- Kafka messages are constructed via the `producer.SingleMessageProvider(key, value)` utility, abstracting serialization and formatting
+- This approach ensures clear separation between event construction and emission, supporting both batch and single-message workflows
+- Example:
+```go
+func CreateNoteStatusEventProvider(characterId uint32, noteId uint32, senderId uint32, msg string, flag byte, timestamp time.Time) model.Provider[[]kafka.Message] {
+    key := producer.CreateKey(int(characterId))
+    body := note.StatusEventCreatedBody{ ... }
+    value := note.StatusEvent[note.StatusEventCreatedBody]{ CharacterId: characterId, Type: ..., Body: body }
+    return producer.SingleMessageProvider(key, value)
+}
+```
+
 - Common producer interface and functionality in `kafka/producer/producer.go`
 - Domain-specific producer implementations in domain packages (e.g., `note/producer.go`)
 - Producers handle message serialization and sending to Kafka topics

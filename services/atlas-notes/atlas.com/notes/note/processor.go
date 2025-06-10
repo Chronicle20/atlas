@@ -60,7 +60,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(characterId uint32) func
 					if err != nil {
 						return Model{}, err
 					}
-					err = mb.Put(note.EnvEventTopicNoteStatus, CreateNoteStatusEvent(m.CharacterId(), m.Id(), m.SenderId(), m.Message(), m.Flag(), m.Timestamp()))
+					err = mb.Put(note.EnvEventTopicNoteStatus, CreateNoteStatusEventProvider(m.CharacterId(), m.Id(), m.SenderId(), m.Message(), m.Flag(), m.Timestamp()))
 					if err != nil {
 						return Model{}, err
 					}
@@ -95,7 +95,7 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(id uint32) func(characte
 						if err != nil {
 							return Model{}, err
 						}
-						err = mb.Put(note.EnvEventTopicNoteStatus, UpdateNoteStatusEvent(m.CharacterId(), m.Id(), m.SenderId(), m.Message(), m.Flag(), m.Timestamp()))
+						err = mb.Put(note.EnvEventTopicNoteStatus, UpdateNoteStatusEventProvider(m.CharacterId(), m.Id(), m.SenderId(), m.Message(), m.Flag(), m.Timestamp()))
 						if err != nil {
 							return Model{}, err
 						}
@@ -124,7 +124,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uint32) error {
 		if err != nil {
 			return err
 		}
-		err = mb.Put(note.EnvEventTopicNoteStatus, DeleteNoteStatusEvent(m.CharacterId(), id))
+		err = mb.Put(note.EnvEventTopicNoteStatus, DeleteNoteStatusEventProvider(m.CharacterId(), id))
 		if err != nil {
 			return err
 		}
@@ -145,7 +145,7 @@ func (p *ProcessorImpl) DeleteAll(mb *message.Buffer) func(characterId uint32) e
 			return err
 		}
 		for _, m := range ms {
-			err = mb.Put(note.EnvEventTopicNoteStatus, DeleteNoteStatusEvent(m.CharacterId(), m.Id()))
+			err = mb.Put(note.EnvEventTopicNoteStatus, DeleteNoteStatusEventProvider(m.CharacterId(), m.Id()))
 			if err != nil {
 				return err
 			}

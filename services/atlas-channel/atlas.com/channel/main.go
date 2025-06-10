@@ -284,6 +284,10 @@ func produceWriters() []string {
 		writer.NPCShopOperation,
 		writer.CompartmentMerge,
 		writer.CompartmentSort,
+		writer.NoteOperation,
+		writer.SpawnKite,
+		writer.SpawnKiteError,
+		writer.DestroyKite,
 	}
 }
 
@@ -350,6 +354,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.NPCShopHandle] = handler.NPCShopHandleFunc
 	handlerMap[handler.CompartmentMerge] = handler.CompartmentMergeHandleFunc
 	handlerMap[handler.CompartmentSort] = handler.CompartmentSortHandleFunc
+	handlerMap[handler.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
 	return handlerMap
 }
 

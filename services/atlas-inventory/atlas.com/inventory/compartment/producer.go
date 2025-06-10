@@ -78,3 +78,29 @@ func ReservationCancelledEventStatusProvider(id uuid.UUID, characterId uint32, i
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func MergeCompleteEventStatusProvider(id uuid.UUID, characterId uint32, inventoryType inventory.Type) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.StatusEvent[compartment.MergeCompleteEventBody]{
+		CharacterId:   characterId,
+		CompartmentId: id,
+		Type:          compartment.StatusEventTypeMergeComplete,
+		Body: compartment.MergeCompleteEventBody{
+			Type: byte(inventoryType),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func SortCompleteEventStatusProvider(id uuid.UUID, characterId uint32, inventoryType inventory.Type) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.StatusEvent[compartment.SortCompleteEventBody]{
+		CharacterId:   characterId,
+		CompartmentId: id,
+		Type:          compartment.StatusEventTypeSortComplete,
+		Body: compartment.SortCompleteEventBody{
+			Type: byte(inventoryType),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -12,6 +12,8 @@ const (
 	StatusEventTypeCapacityChanged      = "CAPACITY_CHANGED"
 	StatusEventTypeReserved             = "RESERVED"
 	StatusEventTypeReservationCancelled = "RESERVATION_CANCELLED"
+	StatusEventTypeMergeComplete        = "MERGE_COMPLETE"
+	StatusEventTypeSortComplete         = "SORT_COMPLETE"
 )
 
 type StatusEvent[E any] struct {
@@ -46,6 +48,18 @@ type ReservationCancelledEventBody struct {
 	Quantity uint32 `json:"quantity"`
 }
 
+type MergeAndSortCompleteEventBody struct {
+	Type byte `json:"type"`
+}
+
+type MergeCompleteEventBody struct {
+	Type byte `json:"type"`
+}
+
+type SortCompleteEventBody struct {
+	Type byte `json:"type"`
+}
+
 const (
 	EnvCommandTopic          = "COMMAND_TOPIC_COMPARTMENT"
 	CommandEquip             = "EQUIP"
@@ -59,6 +73,8 @@ const (
 	CommandIncreaseCapacity  = "INCREASE_CAPACITY"
 	CommandCreateAsset       = "CREATE_ASSET"
 	CommandRecharge          = "RECHARGE"
+	CommandMerge             = "MERGE"
+	CommandSort              = "SORT"
 )
 
 type Command[E any] struct {
@@ -135,4 +151,10 @@ type CreateAssetCommandBody struct {
 type RechargeCommandBody struct {
 	Slot     int16  `json:"slot"`
 	Quantity uint32 `json:"quantity"`
+}
+
+type MergeCommandBody struct {
+}
+
+type SortCommandBody struct {
 }

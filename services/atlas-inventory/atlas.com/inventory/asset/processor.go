@@ -26,22 +26,21 @@ import (
 )
 
 type Processor struct {
-	l                  logrus.FieldLogger
-	ctx                context.Context
-	db                 *gorm.DB
-	t                  tenant.Model
-	equipableProcessor *equipable.Processor
-	stackableProcessor *stackable.Processor
-	cashProcessor      *cash.Processor
-	petProcessor       *pet.Processor
-	consumableProcessor *consumable.Processor
-	setupProcessor     *setup.Processor
-	etcProcessor       *etc.Processor
-	GetByCompartmentId func(uuid.UUID) ([]Model[any], error)
+	l                   logrus.FieldLogger
+	ctx                 context.Context
+	db                  *gorm.DB
+	t                   tenant.Model
+	equipableProcessor  *equipable.Processor
+	stackableProcessor  *stackable.Processor
+	cashProcessor       *cash.Processor
+	petProcessor        *pet.Processor
+	consumableProcessor consumable.Processor
+	setupProcessor      *setup.Processor
+	etcProcessor        *etc.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
-	p := &Processor{
+	return &Processor{
 		l:                   l,
 		ctx:                 ctx,
 		db:                  db,
@@ -54,15 +53,13 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		setupProcessor:      setup.NewProcessor(l, ctx),
 		etcProcessor:        etc.NewProcessor(l, ctx),
 	}
-	p.GetByCompartmentId = model.CollapseProvider(p.ByCompartmentIdProvider)
-	return p
 }
 
-func (p *Processor) WithTransaction(db *gorm.DB) *Processor {
+func (p *Processor) WithTransaction(tx *gorm.DB) *Processor {
 	return &Processor{
 		l:                   p.l,
 		ctx:                 p.ctx,
-		db:                  db,
+		db:                  tx,
 		t:                   p.t,
 		equipableProcessor:  p.equipableProcessor,
 		stackableProcessor:  p.stackableProcessor,
@@ -71,13 +68,32 @@ func (p *Processor) WithTransaction(db *gorm.DB) *Processor {
 		consumableProcessor: p.consumableProcessor,
 		setupProcessor:      p.setupProcessor,
 		etcProcessor:        p.etcProcessor,
-		GetByCompartmentId:  p.GetByCompartmentId,
+	}
+}
+
+func (p *Processor) WithConsumableProcessor(conp consumable.Processor) *Processor {
+	return &Processor{
+		l:                   p.l,
+		ctx:                 p.ctx,
+		db:                  p.db,
+		t:                   p.t,
+		equipableProcessor:  p.equipableProcessor,
+		stackableProcessor:  p.stackableProcessor,
+		cashProcessor:       p.cashProcessor,
+		petProcessor:        p.petProcessor,
+		consumableProcessor: conp,
+		setupProcessor:      p.setupProcessor,
+		etcProcessor:        p.etcProcessor,
 	}
 }
 
 func (p *Processor) ByCompartmentIdProvider(compartmentId uuid.UUID) model.Provider[[]Model[any]] {
 	ap := model.SliceMap(Make)(getByCompartmentId(p.t.Id(), compartmentId)(p.db))(model.ParallelMap())
 	return model.SliceMap(p.DecorateAsset)(ap)(model.ParallelMap())
+}
+
+func (p *Processor) GetByCompartmentId(compartmentId uuid.UUID) ([]Model[any], error) {
+	return p.ByCompartmentIdProvider(compartmentId)()
 }
 
 func (p *Processor) DecorateAsset(m Model[any]) (Model[any], error) {

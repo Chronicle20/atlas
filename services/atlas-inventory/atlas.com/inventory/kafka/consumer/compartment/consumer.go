@@ -43,6 +43,8 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleIncreaseCapacityCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateAssetCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRechargeItemCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMergeCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSortCommand(db))))
 		}
 	}
 }
@@ -158,5 +160,23 @@ func handleRechargeItemCommand(db *gorm.DB) message.Handler[compartment2.Command
 			return
 		}
 		_ = compartment.NewProcessor(l, ctx, db).RechargeAssetAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot, c.Body.Quantity)
+	}
+}
+
+func handleMergeCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.MergeCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.MergeCommandBody]) {
+		if c.Type != compartment2.CommandMerge {
+			return
+		}
+		_ = compartment.NewProcessor(l, ctx, db).MergeAndCompactAndEmit(c.CharacterId, inventory.Type(c.InventoryType))
+	}
+}
+
+func handleSortCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.SortCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.SortCommandBody]) {
+		if c.Type != compartment2.CommandSort {
+			return
+		}
+		_ = compartment.NewProcessor(l, ctx, db).CompactAndSortAndEmit(c.CharacterId, inventory.Type(c.InventoryType))
 	}
 }

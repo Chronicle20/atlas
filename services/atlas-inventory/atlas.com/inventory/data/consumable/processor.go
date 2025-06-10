@@ -6,24 +6,29 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type Processor interface {
+	GetById(itemId uint32) (Model, error)
+	GetRechargeable() ([]Model, error)
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) GetById(itemId uint32) (Model, error) {
+func (p *ProcessorImpl) GetById(itemId uint32) (Model, error) {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(itemId), Extract)()
 }
 
-func (p *Processor) GetRechargeable() ([]Model, error) {
+func (p *ProcessorImpl) GetRechargeable() ([]Model, error) {
 	restModels, err := requestRechargeable()(p.l, p.ctx)
 	if err != nil {
 		return nil, err

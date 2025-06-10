@@ -16,6 +16,7 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/google/uuid"
 	"math"
+	"sort"
 	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
@@ -25,17 +26,14 @@ import (
 )
 
 type Processor struct {
-	l                     logrus.FieldLogger
-	ctx                   context.Context
-	db                    *gorm.DB
-	t                     tenant.Model
-	assetProcessor        *asset.Processor
-	dropProcessor         *drop.Processor
-	equipmentProcessor    *equipment.Processor
-	producer              producer.Provider
-	GetById               func(id uuid.UUID) (Model, error)
-	GetByCharacterId      func(characterId uint32) ([]Model, error)
-	GetByCharacterAndType func(characterId uint32) func(inventoryType inventory.Type) (Model, error)
+	l                  logrus.FieldLogger
+	ctx                context.Context
+	db                 *gorm.DB
+	t                  tenant.Model
+	assetProcessor     *asset.Processor
+	dropProcessor      *drop.Processor
+	equipmentProcessor *equipment.Processor
+	producer           producer.Provider
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
@@ -47,27 +45,34 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		assetProcessor:     asset.NewProcessor(l, ctx, db),
 		dropProcessor:      drop.NewProcessor(l, ctx),
 		equipmentProcessor: equipment.NewProcessor(l, ctx),
+		producer:           producer.ProviderImpl(l)(ctx),
 	}
-	p.producer = producer.ProviderImpl(l)(ctx)
-	p.GetById = model.CollapseProvider(p.ByIdProvider)
-	p.GetByCharacterId = model.CollapseProvider(p.ByCharacterIdProvider)
-	p.GetByCharacterAndType = model.Compose(model.CollapseProvider, p.ByCharacterAndTypeProvider)
 	return p
 }
 
 func (p *Processor) WithTransaction(db *gorm.DB) *Processor {
 	return &Processor{
-		l:                     p.l,
-		ctx:                   p.ctx,
-		db:                    db,
-		t:                     p.t,
-		assetProcessor:        p.assetProcessor,
-		dropProcessor:         p.dropProcessor,
-		equipmentProcessor:    p.equipmentProcessor,
-		producer:              p.producer,
-		GetById:               p.GetById,
-		GetByCharacterId:      p.GetByCharacterId,
-		GetByCharacterAndType: p.GetByCharacterAndType,
+		l:                  p.l,
+		ctx:                p.ctx,
+		db:                 db,
+		t:                  p.t,
+		assetProcessor:     p.assetProcessor,
+		dropProcessor:      p.dropProcessor,
+		equipmentProcessor: p.equipmentProcessor,
+		producer:           p.producer,
+	}
+}
+
+func (p *Processor) WithAssetProcessor(ap *asset.Processor) *Processor {
+	return &Processor{
+		l:                  p.l,
+		ctx:                p.ctx,
+		db:                 p.db,
+		t:                  p.t,
+		assetProcessor:     ap,
+		dropProcessor:      p.dropProcessor,
+		equipmentProcessor: p.equipmentProcessor,
+		producer:           p.producer,
 	}
 }
 
@@ -79,12 +84,20 @@ func (p *Processor) ByIdProvider(id uuid.UUID) model.Provider[Model] {
 	return model.Map(p.DecorateAsset)(model.FixedProvider(cs))
 }
 
+func (p *Processor) GetById(id uuid.UUID) (Model, error) {
+	return p.ByIdProvider(id)()
+}
+
 func (p *Processor) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
 	cs, err := model.SliceMap(Make)(getByCharacter(p.t.Id(), characterId)(p.db))(model.ParallelMap())()
 	if err != nil {
 		return model.ErrorProvider[[]Model](err)
 	}
 	return model.SliceMap(p.DecorateAsset)(model.FixedProvider(cs))(model.ParallelMap())
+}
+
+func (p *Processor) GetByCharacterId(characterId uint32) ([]Model, error) {
+	return p.ByCharacterIdProvider(characterId)()
 }
 
 func (p *Processor) ByCharacterAndTypeProvider(characterId uint32) func(inventoryType inventory.Type) model.Provider[Model] {
@@ -95,6 +108,13 @@ func (p *Processor) ByCharacterAndTypeProvider(characterId uint32) func(inventor
 		}
 		return model.Map(p.DecorateAsset)(model.FixedProvider(cs))
 	}
+}
+
+func (p *Processor) GetByCharacterAndType(characterId uint32) func(inventoryType inventory.Type) (Model, error) {
+	return func(inventoryType inventory.Type) (Model, error) {
+		return p.ByCharacterAndTypeProvider(characterId)(inventoryType)()
+	}
+
 }
 
 func (p *Processor) DecorateAsset(m Model) (Model, error) {
@@ -325,7 +345,22 @@ func (p *Processor) RemoveEquip(mb *message.Buffer) func(characterId uint32) fun
 }
 
 func (p *Processor) MoveAndEmit(characterId uint32, inventoryType inventory.Type, source int16, destination int16) error {
-	return message.Emit(p.producer)(model.Flip(model.Flip(model.Flip(model.Flip(p.Move)(characterId))(inventoryType))(source))(destination))
+	return message.Emit(p.producer)(model.Flip(model.Flip(model.Flip(model.Flip(p.MoveAndLock)(characterId))(inventoryType))(source))(destination))
+}
+
+func (p *Processor) MoveAndLock(mb *message.Buffer) func(characterId uint32) func(inventoryType inventory.Type) func(source int16) func(destination int16) error {
+	return func(characterId uint32) func(inventoryType inventory.Type) func(source int16) func(destination int16) error {
+		return func(inventoryType inventory.Type) func(source int16) func(destination int16) error {
+			return func(source int16) func(destination int16) error {
+				return func(destination int16) error {
+					invLock := LockRegistry().Get(characterId, inventoryType)
+					invLock.Lock()
+					defer invLock.Unlock()
+					return p.Move(mb)(characterId)(inventoryType)(source)(destination)
+				}
+			}
+		}
+	}
 }
 
 func (p *Processor) Move(mb *message.Buffer) func(characterId uint32) func(inventoryType inventory.Type) func(source int16) func(destination int16) error {
@@ -334,9 +369,6 @@ func (p *Processor) Move(mb *message.Buffer) func(characterId uint32) func(inven
 			return func(source int16) func(destination int16) error {
 				return func(destination int16) error {
 					p.l.Debugf("Attempting to move asset in slot [%d] to [%d] for character [%d].", source, destination, characterId)
-					invLock := LockRegistry().Get(characterId, inventoryType)
-					invLock.Lock()
-					defer invLock.Unlock()
 
 					var a1 asset.Model[any]
 					txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
@@ -364,7 +396,7 @@ func (p *Processor) Move(mb *message.Buffer) func(characterId uint32) func(inven
 						}
 
 						// Determine if we should merge or swap
-						if err == nil && canMergeAssets(inventoryType, a1, a2, p.t, characterId, source, destination) {
+						if err == nil && canMergeAssets(inventoryType, a1, a2, p.t, characterId) {
 							return p.WithTransaction(tx).mergeAssets(mb)(characterId, c, a1, a2, source, destination)
 						}
 
@@ -470,7 +502,7 @@ func (p *Processor) mergeAssets(mb *message.Buffer) func(characterId uint32, c M
 }
 
 // canMergeAssets checks if two assets can be merged based on the specified rules
-func canMergeAssets(inventoryType inventory.Type, sourceAsset asset.Model[any], destAsset asset.Model[any], t tenant.Model, characterId uint32, sourceSlot int16, destSlot int16) bool {
+func canMergeAssets(inventoryType inventory.Type, sourceAsset asset.Model[any], destAsset asset.Model[any], t tenant.Model, characterId uint32) bool {
 	// Rule 1: Inventories of type Equip cannot support merging
 	if inventoryType == inventory.TypeValueEquip {
 		return false
@@ -499,8 +531,8 @@ func canMergeAssets(inventoryType inventory.Type, sourceAsset asset.Model[any], 
 	}
 
 	// Rule 4: Neither asset can have an active reservation
-	sourceReserved := GetReservationRegistry().GetReservedQuantity(t, characterId, inventoryType, sourceSlot)
-	destReserved := GetReservationRegistry().GetReservedQuantity(t, characterId, inventoryType, destSlot)
+	sourceReserved := GetReservationRegistry().GetReservedQuantity(t, characterId, inventoryType, sourceAsset.Slot())
+	destReserved := GetReservationRegistry().GetReservedQuantity(t, characterId, inventoryType, destAsset.Slot())
 	if sourceReserved > 0 || destReserved > 0 {
 		return false
 	}
@@ -1031,6 +1063,244 @@ func (p *Processor) RechargeAsset(mb *message.Buffer) func(characterId uint32, i
 		}
 
 		p.l.Debugf("Character [%d] recharged asset [%d] with quantity [%d].", characterId, a.Id(), quantity)
+		return nil
+	}
+}
+
+func (p *Processor) MergeAndCompactAndEmit(characterId uint32, inventoryType inventory.Type) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.MergeAndCompact(buf)(characterId, inventoryType)
+	})
+}
+
+func (p *Processor) CompactAndSortAndEmit(characterId uint32, inventoryType inventory.Type) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.CompactAndSort(buf)(characterId, inventoryType)
+	})
+}
+
+func (p *Processor) MergeAndCompact(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type) error {
+	return func(characterId uint32, inventoryType inventory.Type) error {
+		p.l.Debugf("Character [%d] attempting to merge and compact assets in inventory [%d].", characterId, inventoryType)
+
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		var compartmentId uuid.UUID
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
+				return err
+			}
+			compartmentId = c.Id()
+			as := c.Assets()
+			sort.Slice(as, func(i, j int) bool {
+				return as[i].Slot() < as[j].Slot()
+			})
+
+			// Filter out assets with negative slot values
+			var positiveSlotAssets []asset.Model[any]
+			for _, a := range as {
+				if a.Slot() >= 0 {
+					positiveSlotAssets = append(positiveSlotAssets, a)
+				}
+			}
+
+			// Merge combinable assets.
+			for i := 0; i < len(positiveSlotAssets); i++ {
+				for j := i + 1; j < len(positiveSlotAssets); j++ {
+					if canMergeAssets(c.Type(), positiveSlotAssets[i], positiveSlotAssets[j], p.t, characterId) {
+						err = p.Move(mb)(characterId)(inventoryType)(positiveSlotAssets[j].Slot())(positiveSlotAssets[i].Slot())
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to move assets [%d] and [%d] in compartment [%s].", positiveSlotAssets[i].Id(), positiveSlotAssets[j].Id(), c.Id())
+							return err
+						}
+						c, err = p.GetByCharacterAndType(characterId)(inventoryType)
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
+						}
+						as = c.Assets()
+
+						// Rebuild the positive slot assets list
+						positiveSlotAssets = nil
+						for _, a := range as {
+							if a.Slot() >= 0 {
+								positiveSlotAssets = append(positiveSlotAssets, a)
+							}
+						}
+
+						sort.Slice(positiveSlotAssets, func(i, j int) bool {
+							return positiveSlotAssets[i].Slot() < positiveSlotAssets[j].Slot()
+						})
+						j--
+					}
+				}
+			}
+
+			// Compact
+			for i := 0; i < len(positiveSlotAssets); i++ {
+				var nextFree int16
+				nextFree, err = c.NextFreeSlot()
+				if err != nil {
+					continue
+				}
+				if positiveSlotAssets[i].Slot() >= nextFree {
+					err = p.Move(mb)(characterId)(inventoryType)(positiveSlotAssets[i].Slot())(nextFree)
+					if err != nil {
+						p.l.WithError(err).Errorf("Unable to move assets [%d] in compartment [%s].", positiveSlotAssets[i].Id(), c.Id())
+						return err
+					}
+					c, err = p.GetByCharacterAndType(characterId)(inventoryType)
+					if err != nil {
+						p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
+					}
+					as = c.Assets()
+
+					// Rebuild the positive slot assets list
+					positiveSlotAssets = nil
+					for _, a := range as {
+						if a.Slot() >= 0 {
+							positiveSlotAssets = append(positiveSlotAssets, a)
+						}
+					}
+
+					sort.Slice(positiveSlotAssets, func(i, j int) bool {
+						return positiveSlotAssets[i].Slot() < positiveSlotAssets[j].Slot()
+					})
+				}
+			}
+
+			return nil
+		})
+
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Character [%d] unable to merge and compact assets in inventory [%d].", characterId, inventoryType)
+			return txErr
+		}
+
+		// Emit the status event for successful completion
+		err := mb.Put(compartment.EnvEventTopicStatus, MergeCompleteEventStatusProvider(compartmentId, characterId, inventoryType))
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to emit merge and compact complete event for character [%d], inventory [%d].", characterId, inventoryType)
+			return err
+		}
+
+		p.l.Debugf("Character [%d] successfully merged and compacted assets in inventory [%d].", characterId, inventoryType)
+		return nil
+	}
+}
+
+func (p *Processor) CompactAndSort(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type) error {
+	return func(characterId uint32, inventoryType inventory.Type) error {
+		p.l.Debugf("Character [%d] attempting to compact and sort assets in inventory [%d].", characterId, inventoryType)
+
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		var compartmentId uuid.UUID
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
+				return err
+			}
+			compartmentId = c.Id()
+			as := c.Assets()
+
+			// Filter out assets with negative slot values
+			var positiveSlotAssets []asset.Model[any]
+			for _, a := range as {
+				if a.Slot() >= 0 {
+					positiveSlotAssets = append(positiveSlotAssets, a)
+				}
+			}
+
+			// Compact
+			for i := 0; i < len(positiveSlotAssets); i++ {
+				var nextFree int16
+				nextFree, err = c.NextFreeSlot()
+				if err != nil {
+					continue
+				}
+				if positiveSlotAssets[i].Slot() >= nextFree {
+					err = p.Move(mb)(characterId)(inventoryType)(positiveSlotAssets[i].Slot())(nextFree)
+					if err != nil {
+						p.l.WithError(err).Errorf("Unable to move assets [%d] in compartment [%s].", positiveSlotAssets[i].Id(), c.Id())
+						return err
+					}
+					c, err = p.GetByCharacterAndType(characterId)(inventoryType)
+					if err != nil {
+						p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
+					}
+					as = c.Assets()
+
+					// Rebuild the positive slot assets list
+					positiveSlotAssets = nil
+					for _, a := range as {
+						if a.Slot() >= 0 {
+							positiveSlotAssets = append(positiveSlotAssets, a)
+						}
+					}
+
+					sort.Slice(positiveSlotAssets, func(i, j int) bool {
+						return positiveSlotAssets[i].Slot() < positiveSlotAssets[j].Slot()
+					})
+				}
+			}
+
+			// Sorting assets
+			for i := 0; i < len(positiveSlotAssets); i++ {
+				minIdx := i
+				for j := i + 1; j < len(positiveSlotAssets); j++ {
+					if positiveSlotAssets[j].TemplateId() < positiveSlotAssets[minIdx].TemplateId() {
+						minIdx = j
+					}
+				}
+				if minIdx != i {
+					err = p.Move(mb)(characterId)(inventoryType)(positiveSlotAssets[minIdx].Slot())(positiveSlotAssets[i].Slot())
+					if err != nil {
+						p.l.WithError(err).Errorf("Unable to move assets [%d] and [%d] in compartment [%s].", positiveSlotAssets[i].Id(), positiveSlotAssets[minIdx].Id(), c.Id())
+						return err
+					}
+					c, err = p.GetByCharacterAndType(characterId)(inventoryType)
+					if err != nil {
+						p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
+					}
+					as = c.Assets()
+
+					// Rebuild the positive slot assets list
+					positiveSlotAssets = nil
+					for _, a := range as {
+						if a.Slot() >= 0 {
+							positiveSlotAssets = append(positiveSlotAssets, a)
+						}
+					}
+
+					sort.Slice(positiveSlotAssets, func(i, j int) bool {
+						return positiveSlotAssets[i].Slot() < positiveSlotAssets[j].Slot()
+					})
+				}
+			}
+
+			return nil
+		})
+
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Character [%d] unable to compact and sort assets in inventory [%d].", characterId, inventoryType)
+			return txErr
+		}
+
+		// Emit the status event for successful completion
+		err := mb.Put(compartment.EnvEventTopicStatus, SortCompleteEventStatusProvider(compartmentId, characterId, inventoryType))
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to emit compact and sort complete event for character [%d], inventory [%d].", characterId, inventoryType)
+			return err
+		}
+
+		p.l.Debugf("Character [%d] successfully compacted and sorted assets in inventory [%d].", characterId, inventoryType)
 		return nil
 	}
 }

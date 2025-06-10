@@ -35,7 +35,7 @@ func handleRequestItemConsume(l logrus.FieldLogger, ctx context.Context, c consu
 	if c.Type != consumable2.CommandRequestItemConsume {
 		return
 	}
-	err := consumable.NewProcessor(l, ctx).RequestItemConsume(c.CharacterId, c.Body.Source, item.Id(c.Body.ItemId), c.Body.Quantity)
+	err := consumable.NewProcessor(l, ctx).RequestItemConsume(c.WorldId, c.ChannelId, c.CharacterId, c.Body.Source, item.Id(c.Body.ItemId), c.Body.Quantity)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to consume item in slot [%d] as expected.", c.CharacterId, c.Body.Source)
 	}

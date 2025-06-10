@@ -37,3 +37,13 @@ func (p *Processor) Move(characterId uint32, inventoryType inventory.Type, sourc
 func (p *Processor) Drop(m _map.Model, characterId uint32, inventoryType inventory.Type, source int16, quantity int16, x int16, y int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(DropAssetCommandProvider(m, characterId, inventoryType, source, quantity, x, y))
 }
+
+func (p *Processor) Merge(characterId uint32, inventoryType inventory.Type, updateTime uint32) error {
+	p.l.Debugf("Character [%d] attempting to merge compartment [%d]. updateTime [%d].", characterId, inventoryType, updateTime)
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(MergeCommandProvider(characterId, inventoryType))
+}
+
+func (p *Processor) Sort(characterId uint32, inventoryType inventory.Type, updateTime uint32) error {
+	p.l.Debugf("Character [%d] attempting to sort compartment [%d]. updateTime [%d].", characterId, inventoryType, updateTime)
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(SortCommandProvider(characterId, inventoryType))
+}

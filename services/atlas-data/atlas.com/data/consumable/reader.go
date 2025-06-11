@@ -39,7 +39,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			m := RestModel{
 				Id:             consumableId,
 				Spec:           make(map[SpecType]int32),
-				MonsterSummons: make(map[uint32]uint32),
+				MonsterSummons: make([]Summons, 0),
 				Skills:         make([]uint32, 0),
 				Morphs:         make(map[uint32]uint32),
 				Rewards:        make([]RewardRestModel, 0),
@@ -99,7 +99,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 				for _, mo := range mos.ChildNodes {
 					mid := uint32(mo.GetIntegerWithDefault("id", 0))
 					prob := uint32(mo.GetIntegerWithDefault("prob", 0))
-					m.MonsterSummons[mid] = prob
+					m.MonsterSummons = append(m.MonsterSummons, Summons{TemplateId: mid, Probability: prob})
 				}
 			}
 

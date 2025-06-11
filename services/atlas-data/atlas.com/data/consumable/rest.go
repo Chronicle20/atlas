@@ -36,6 +36,11 @@ const (
 	SpecTypeOnlyPickup           = SpecType("onlyPickup")
 )
 
+type Summons struct {
+	TemplateId  uint32 `json:"templateId"`
+	Probability uint32 `json:"probability"`
+}
+
 type RestModel struct {
 	Id              uint32             `json:"-"`
 	TradeBlock      bool               `json:"tradeBlock"`
@@ -91,7 +96,7 @@ type RestModel struct {
 	IncreaseSTR     uint32             `json:"increaseSTR"`
 	IncreaseSpeed   uint32             `json:"increaseSpeed"`
 	Spec            map[SpecType]int32 `json:"spec"`
-	MonsterSummons  map[uint32]uint32  `json:"monsterSummons"`
+	MonsterSummons  []Summons          `json:"monsterSummons"`
 	Morphs          map[uint32]uint32  `json:"morphs"`
 	Skills          []uint32           `json:"skills"`
 	Rewards         []RewardRestModel  `json:"rewards"`

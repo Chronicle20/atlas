@@ -66,7 +66,17 @@ func handleCompartmentMergeCompleteEvent(sc server.Model, wp writer.Producer) me
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.CompartmentMerge)(writer.CompartmentMergeBody(e.Body.Type)))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+			err := enableActions(l)(ctx)(wp)(s)
+			if err != nil {
+				return err
+			}
+			err = session.Announce(l)(ctx)(wp)(writer.CompartmentMerge)(writer.CompartmentMergeBody(e.Body.Type))(s)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
 	}
 }
 
@@ -81,6 +91,24 @@ func handleCompartmentSortCompleteEvent(sc server.Model, wp writer.Producer) mes
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.CompartmentSort)(writer.CompartmentSortBody(e.Body.Type)))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+			err := enableActions(l)(ctx)(wp)(s)
+			if err != nil {
+				return err
+			}
+			err = session.Announce(l)(ctx)(wp)(writer.CompartmentSort)(writer.CompartmentSortBody(e.Body.Type))(s)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	}
+}
+
+func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
+		return func(wp writer.Producer) func(s session.Model) error {
+			return session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true))
+		}
 	}
 }

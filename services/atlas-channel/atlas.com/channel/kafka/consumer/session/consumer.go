@@ -9,6 +9,7 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	session2 "atlas-channel/kafka/message/account/session"
 	"atlas-channel/macro"
+	"atlas-channel/note"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
@@ -240,6 +241,48 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							mms = append(mms, model2.NewMacro(sm.Name(), sm.Shout(), sm.SkillId1(), sm.SkillId2(), sm.SkillId3()))
 						}
 						err = session.Announce(l)(ctx)(wp)(writer.CharacterSkillMacro)(writer.CharacterSkillMacroBody(l, tenant.MustFromContext(ctx))(model2.NewMacros(mms...)))(s)
+						if err != nil {
+							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
+						}
+					}()
+					go func() {
+						var nms []note.Model
+						nms, err = note.NewProcessor(l, ctx).GetByCharacter(s.CharacterId())
+						if err != nil {
+							l.WithError(err).Errorf("Unable to read notes for character [%d].", c.Id())
+							return
+						}
+						if len(nms) == 0 {
+							return
+						}
+
+						cnm := make(map[uint32]string)
+
+						var wnms []model2.Note
+						wnms, err = model.SliceMap(func(m note.Model) (model2.Note, error) {
+							var sn string
+							var ok bool
+							if sn, ok = cnm[m.SenderId()]; !ok {
+								c, err = character.NewProcessor(l, ctx).GetById()(m.SenderId())
+								if err != nil {
+									cnm[m.SenderId()] = "Unknown"
+									sn = "Unknown"
+								} else {
+									cnm[m.SenderId()] = c.Name()
+									sn = c.Name()
+								}
+							}
+
+							return model2.Note{
+								Id:         m.Id(),
+								SenderName: sn,
+								Message:    m.Message(),
+								Timestamp:  m.Timestamp(),
+								Flag:       m.Flag(),
+							}, nil
+						})(model.FixedProvider(nms))(model.ParallelMap())()
+
+						err = session.Announce(l)(ctx)(wp)(writer.NoteOperation)(writer.NoteDisplayBody(l, tenant.MustFromContext(ctx))(wnms))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}

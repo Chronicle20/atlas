@@ -355,6 +355,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CompartmentMerge] = handler.CompartmentMergeHandleFunc
 	handlerMap[handler.CompartmentSort] = handler.CompartmentSortHandleFunc
 	handlerMap[handler.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
+	handlerMap[handler.NoteOperationHandle] = handler.NoteOperationHandleFunc
 	return handlerMap
 }
 

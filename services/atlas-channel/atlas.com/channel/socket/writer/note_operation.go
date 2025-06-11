@@ -5,7 +5,6 @@ import (
 	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 const (
@@ -54,28 +53,22 @@ func getNoteOperation(l logrus.FieldLogger) func(options map[string]interface{},
 		var genericCodes interface{}
 		var ok bool
 		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
+			l.Errorf("Code [%s] not configured for use.", key)
+			return 0
 		}
 
 		var codes map[string]interface{}
 		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
+			l.Errorf("Code [%s] not configured for use.", key)
+			return 0
 		}
 
-		var code interface{}
-		if code, ok = codes[key]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
+		res, ok := codes[key].(float64)
+		if !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return 0
 		}
-
-		op, err := strconv.ParseUint(code.(string), 0, 16)
-		if err != nil {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return byte(res)
 	}
 }
 
@@ -83,28 +76,22 @@ func getNoteError(l logrus.FieldLogger) func(options map[string]interface{}, key
 	return func(options map[string]interface{}, key string) byte {
 		var genericCodes interface{}
 		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
+		if genericCodes, ok = options["errors"]; !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return 0
 		}
 
 		var codes map[string]interface{}
 		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
+			l.Errorf("Code [%s] not configured for use.", key)
+			return 0
 		}
 
-		var code interface{}
-		if code, ok = codes[key]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
+		res, ok := codes[key].(float64)
+		if !ok {
+			l.Errorf("Code [%s] not configured for use.", key)
+			return 0
 		}
-
-		op, err := strconv.ParseUint(code.(string), 0, 16)
-		if err != nil {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return byte(res)
 	}
 }

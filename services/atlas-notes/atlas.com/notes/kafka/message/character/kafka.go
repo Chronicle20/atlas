@@ -12,5 +12,5 @@ type StatusEvent[E any] struct {
 	Body        E      `json:"body"`
 }
 
-type statusEventDeletedBody struct {
+type StatusEventDeletedBody struct {
 }

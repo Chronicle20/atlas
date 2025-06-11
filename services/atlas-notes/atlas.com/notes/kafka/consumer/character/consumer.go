@@ -3,8 +3,11 @@ package character
 import (
 	consumer2 "atlas-notes/kafka/consumer"
 	character2 "atlas-notes/kafka/message/character"
+	"atlas-notes/note"
+	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
+	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
@@ -24,6 +27,16 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
 			t, _ = topic.EnvProvider(l)(character2.EnvEventTopicCharacterStatus)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterDeleted(db))))
 		}
+	}
+}
+
+func handleCharacterDeleted(db *gorm.DB) message.Handler[character2.StatusEvent[character2.StatusEventDeletedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventDeletedBody]) {
+		if e.Type != character2.StatusEventTypeDeleted {
+			return
+		}
+		_ = note.NewProcessor(l, ctx, db).DeleteAllAndEmit(e.CharacterId)
 	}
 }

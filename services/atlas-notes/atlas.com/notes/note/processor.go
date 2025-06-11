@@ -20,6 +20,8 @@ type Processor interface {
 	DeleteAndEmit(id uint32) error
 	DeleteAll(mb *message.Buffer) func(characterId uint32) error
 	DeleteAllAndEmit(characterId uint32) error
+	Discard(mb *message.Buffer) func(characterId uint32) func(noteIds []uint32) error
+	DiscardAndEmit(characterId uint32, noteIds []uint32) error
 	ByIdProvider(id uint32) model.Provider[Model]
 	ByCharacterProvider(characterId uint32) model.Provider[[]Model]
 	InTenantProvider() model.Provider[[]Model]
@@ -176,4 +178,43 @@ func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[[
 // InTenantProvider retrieves all notes in a tenant
 func (p *ProcessorImpl) InTenantProvider() model.Provider[[]Model] {
 	return model.SliceMap[Entity, Model](Make)(getAllProvider(p.t.Id())(p.db))(model.ParallelMap())
+}
+
+// Discard discards multiple notes for a character
+func (p *ProcessorImpl) Discard(mb *message.Buffer) func(characterId uint32) func(noteIds []uint32) error {
+	return func(characterId uint32) func(noteIds []uint32) error {
+		return func(noteIds []uint32) error {
+			for _, noteId := range noteIds {
+				// Check if the note exists and belongs to the character
+				m, err := p.ByIdProvider(noteId)()
+				if err != nil {
+					return err
+				}
+
+				if m.CharacterId() != characterId {
+					continue // Skip notes that don't belong to this character
+				}
+
+				// Delete the note
+				err = deleteNote(p.db)(p.t.Id())(noteId)
+				if err != nil {
+					return err
+				}
+
+				// Add delete event to message buffer
+				err = mb.Put(note.EnvEventTopicNoteStatus, DeleteNoteStatusEventProvider(characterId, noteId))
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}
+}
+
+// DiscardAndEmit discards multiple notes for a character and emits status events
+func (p *ProcessorImpl) DiscardAndEmit(characterId uint32, noteIds []uint32) error {
+	return message.Emit(p.producer)(func(mb *message.Buffer) error {
+		return p.Discard(mb)(characterId)(noteIds)
+	})
 }

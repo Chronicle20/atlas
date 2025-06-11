@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-notes/database"
 	"atlas-notes/kafka/consumer/character"
+	note_consumer "atlas-notes/kafka/consumer/note"
 	"atlas-notes/logger"
 	"atlas-notes/note"
 	"atlas-notes/service"
@@ -51,7 +52,9 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
+	note_consumer.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	note_consumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.New(l).
 		WithContext(tdm.Context()).

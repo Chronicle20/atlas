@@ -77,7 +77,7 @@ func GetAllNotesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 func GetCharacterNotesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			mp := new(ProcessorImpl).ByCharacterProvider(characterId)
+			mp := NewProcessor(d.Logger(), d.Context(), d.DB()).ByCharacterProvider(characterId)
 			rm, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
@@ -96,7 +96,7 @@ func GetCharacterNotesHandler(d *rest.HandlerDependency, c *rest.HandlerContext)
 func GetNoteHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseNoteId(d.Logger(), func(noteId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			mp := new(ProcessorImpl).ByIdProvider(noteId)
+			mp := NewProcessor(d.Logger(), d.Context(), d.DB()).ByIdProvider(noteId)
 			rm, err := model.Map(Transform)(mp)()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")

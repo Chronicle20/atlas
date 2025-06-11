@@ -4,9 +4,11 @@ import "time"
 
 const (
 	EnvCommandTopicCharacterNote = "COMMAND_TOPIC_CHARACTER_NOTE"
+	EnvCommandTopic              = "COMMAND_TOPIC_NOTE"
 	EnvEventTopicNoteStatus      = "EVENT_TOPIC_NOTE_STATUS"
 
-	CommandTypeCreate = "CREATE"
+	CommandTypeCreate  = "CREATE"
+	CommandTypeDiscard = "DISCARD"
 
 	StatusEventTypeCreated = "CREATED"
 	StatusEventTypeUpdated = "UPDATED"
@@ -25,6 +27,11 @@ type CommandCreateBody struct {
 	SenderId uint32 `json:"senderId"`
 	Message  string `json:"message"`
 	Flag     byte   `json:"flag"`
+}
+
+// CommandDiscardBody contains data for discarding notes
+type CommandDiscardBody struct {
+	NoteIds []uint32 `json:"noteIds"`
 }
 
 // StatusEvent represents a Kafka status event for note operations

@@ -12,6 +12,7 @@ const (
 	NoteOperationShow        = "SHOW"         // 3
 	NoteOperationSendSuccess = "SEND_SUCCESS" // 4
 	NoteOperationSendError   = "SEND_ERROR"   // 5
+	NoteOperationRefresh     = "REFRESH"
 
 	NoteSendErrorReceiverOnline    = "RECEIVER_ONLINE"
 	NoteSendErrorReceiverUnknown   = "RECEIVER_UNKNOWN"
@@ -45,6 +46,13 @@ func NoteSendError(l logrus.FieldLogger) func(error string) BodyProducer {
 			w.WriteByte(getNoteError(l)(options, error))
 			return w.Bytes()
 		}
+	}
+}
+
+func NoteRefresh(l logrus.FieldLogger) BodyProducer {
+	return func(w *response.Writer, options map[string]interface{}) []byte {
+		w.WriteByte(getNoteOperation(l)(options, NoteOperationRefresh))
+		return w.Bytes()
 	}
 }
 

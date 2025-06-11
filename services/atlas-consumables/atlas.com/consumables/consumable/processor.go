@@ -353,17 +353,19 @@ func ConsumeSummoningSack(transactionId uuid.UUID, worldId byte, channelId byte,
 				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
-			for mid, prob := range ci.MonsterSummons() {
+			l.Debugf("Character [%d] summoning [%d] monsters at [%d,%d]. They are at [%d,%d].", characterId, len(ci.MonsterSummons()), pos.X(), pos.Y(), c.X(), c.Y())
+			for _, msm := range ci.MonsterSummons() {
 				roll := uint32(rand.Int31n(100))
-				if roll < prob {
-					err = monster.NewProcessor(l, ctx).CreateMonster(worldId, channelId, c.MapId(), mid, pos.X(), pos.Y(), 0, 0)
+				if roll < msm.Probability() {
+					err = monster.NewProcessor(l, ctx).CreateMonster(worldId, channelId, c.MapId(), msm.TemplateId(), pos.X(), pos.Y(), 0, 0)
 					if err != nil {
-						l.WithError(err).Errorf("Unable to summon monster [%d] for character [%d] summoning bag.", mid, characterId)
+						l.WithError(err).Errorf("Unable to summon monster [%d] for character [%d] summoning bag.", msm.TemplateId(), characterId)
 					} else {
-						l.Debugf("Character [%d] use of summoning sack [%d] spawned monster [%d] at [%d,%d].", characterId, itemId, mid, c.X(), c.Y())
+						l.Debugf("Character [%d] use of summoning sack [%d] spawned monster [%d] at [%d,%d].", characterId, itemId, msm.TemplateId(), c.X(), c.Y())
 					}
 				}
 			}
+
 			err = compartment.NewProcessor(l, ctx).ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
 			if err != nil {
 				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)

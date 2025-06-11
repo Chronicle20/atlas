@@ -122,6 +122,8 @@ func Extract(rm RestModel) (Model, error) {
 		mapId:              rm.MapId,
 		spawnPoint:         rm.SpawnPoint,
 		gm:                 rm.Gm,
+		x:                  rm.X,
+		y:                  rm.Y,
 		meso:               rm.Meso,
 	}, nil
 }

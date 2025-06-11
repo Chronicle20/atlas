@@ -4,9 +4,12 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/note"
 	"atlas-channel/session"
+	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,6 +18,7 @@ const (
 
 	NoteOperationSend    = "SEND"
 	NoteOperationDiscard = "DISCARD"
+	NoteOperationRequest = "REQUEST"
 )
 
 func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -73,6 +77,49 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 				l.WithError(err).Errorf("Character [%d] unable to discard notes.", s.CharacterId())
 			}
 			return
+		}
+		if isNoteOperation(l)(readerOptions, op, NoteOperationRequest) {
+			var nms []note.Model
+			nms, err := note.NewProcessor(l, ctx).GetByCharacter(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to read notes for character [%d].", s.CharacterId())
+				return
+			}
+			if len(nms) == 0 {
+				return
+			}
+
+			cnm := make(map[uint32]string)
+
+			var wnms []model2.Note
+			wnms, err = model.SliceMap(func(m note.Model) (model2.Note, error) {
+				var sn string
+				var ok bool
+				if sn, ok = cnm[m.SenderId()]; !ok {
+					var c character.Model
+					c, err = character.NewProcessor(l, ctx).GetById()(m.SenderId())
+					if err != nil {
+						cnm[m.SenderId()] = "Unknown"
+						sn = "Unknown"
+					} else {
+						cnm[m.SenderId()] = c.Name()
+						sn = c.Name()
+					}
+				}
+
+				return model2.Note{
+					Id:         m.Id(),
+					SenderName: sn,
+					Message:    m.Message(),
+					Timestamp:  m.Timestamp(),
+					Flag:       m.Flag(),
+				}, nil
+			})(model.FixedProvider(nms))(model.ParallelMap())()
+
+			err = session.Announce(l)(ctx)(wp)(writer.NoteOperation)(writer.NoteDisplayBody(l, tenant.MustFromContext(ctx))(wnms))(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
+			}
 		}
 
 		l.Debugf("Character [%d] attempting to perform note operation [%d].", s.CharacterId(), op)

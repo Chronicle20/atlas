@@ -11,27 +11,20 @@ Atlas Consumables is a microservice that manages consumable items in the game, i
 - Equipment enhancement scrolls
 
 ### Environment Variables
-- `JAEGER_HOST` - Jaeger [host]:[port] for distributed tracing
+- `JAEGER_HOST_PORT` - Jaeger [host]:[port] for distributed tracing
 - `LOG_LEVEL` - Logging level (Panic / Fatal / Error / Warn / Info / Debug / Trace)
+- `BOOTSTRAP_SERVERS` - Kafka bootstrap servers
 - `COMMAND_TOPIC_CONSUMABLE` - Kafka topic for consumable commands
 - `EVENT_TOPIC_CONSUMABLE_STATUS` - Kafka topic for consumable status events
+- `COMMAND_TOPIC_CHARACTER` - Kafka topic for character commands
+- `EVENT_TOPIC_CHARACTER_STATUS` - Kafka topic for character status events
+- `COMMAND_TOPIC_COMPARTMENT` - Kafka topic for compartment commands
+- `EVENT_TOPIC_COMPARTMENT_STATUS` - Kafka topic for compartment status events
+- `COMMAND_TOPIC_CHARACTER_BUFF` - Kafka topic for character buff commands
+- `COMMAND_TOPIC_EQUIPABLE` - Kafka topic for equipable commands
+- `COMMAND_TOPIC_PET` - Kafka topic for pet commands
 
 ## API
-
-### REST API
-
-The service implements a JSON:API compliant REST interface for managing consumable items.
-
-#### Headers
-
-All RESTful requests require the following header information to identify the server instance:
-
-```
-TENANT_ID: 083839c6-c47c-42a6-9585-76492795d123
-REGION: GMS
-MAJOR_VERSION: 83
-MINOR_VERSION: 1
-```
 
 ### Kafka Integration
 

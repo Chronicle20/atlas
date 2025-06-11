@@ -11,6 +11,7 @@ func createNote(db *gorm.DB) func(tenantId uuid.UUID) func(note Model) (Model, e
 	return func(tenantId uuid.UUID) func(note Model) (Model, error) {
 		return func(note Model) (Model, error) {
 			entity := MakeEntity(tenantId, note)
+			entity.ID = 0
 
 			err := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 				return tx.Create(&entity).Error

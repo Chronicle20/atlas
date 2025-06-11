@@ -3,9 +3,8 @@ package note
 import "time"
 
 const (
-	EnvCommandTopicCharacterNote = "COMMAND_TOPIC_CHARACTER_NOTE"
-	EnvCommandTopic              = "COMMAND_TOPIC_NOTE"
-	EnvEventTopicNoteStatus      = "EVENT_TOPIC_NOTE_STATUS"
+	EnvCommandTopic         = "COMMAND_TOPIC_NOTE"
+	EnvEventTopicNoteStatus = "EVENT_TOPIC_NOTE_STATUS"
 
 	CommandTypeCreate  = "CREATE"
 	CommandTypeDiscard = "DISCARD"

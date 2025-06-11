@@ -206,6 +206,8 @@ func (p *ProcessorImpl) Discard(mb *message.Buffer) func(characterId uint32) fun
 				if err != nil {
 					return err
 				}
+
+				// TODO award fame when a note is discarded
 			}
 			return nil
 		}

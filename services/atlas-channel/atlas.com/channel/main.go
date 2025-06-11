@@ -27,6 +27,7 @@ import (
 	"atlas-channel/kafka/consumer/message"
 	"atlas-channel/kafka/consumer/messenger"
 	"atlas-channel/kafka/consumer/monster"
+	note3 "atlas-channel/kafka/consumer/note"
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/npc/shop"
 	"atlas-channel/kafka/consumer/party"
@@ -114,6 +115,7 @@ func main() {
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
+	note3.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
@@ -182,6 +184,7 @@ func main() {
 				pet.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				consumable.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 				cashshop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				note3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, ten.IPAddress, c.Port)
@@ -355,6 +358,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CompartmentMerge] = handler.CompartmentMergeHandleFunc
 	handlerMap[handler.CompartmentSort] = handler.CompartmentSortHandleFunc
 	handlerMap[handler.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
+	handlerMap[handler.NoteOperationHandle] = handler.NoteOperationHandleFunc
 	return handlerMap
 }
 

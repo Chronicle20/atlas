@@ -5,6 +5,11 @@ import (
 	"strconv"
 )
 
+type Summon struct {
+	TemplateId  uint32 `json:"templateId"`
+	Probability uint32 `json:"probability"`
+}
+
 type RestModel struct {
 	Id              uint32             `json:"-"`
 	TradeBlock      bool               `json:"tradeBlock"`
@@ -60,7 +65,7 @@ type RestModel struct {
 	IncreaseSTR     uint32             `json:"increaseSTR"`
 	IncreaseSpeed   uint32             `json:"increaseSpeed"`
 	Spec            map[SpecType]int32 `json:"spec"`
-	MonsterSummons  map[uint32]uint32  `json:"monsterSummons"`
+	MonsterSummons  []Summon           `json:"monsterSummons"`
 	Morphs          map[uint32]uint32  `json:"morphs"`
 	Skills          []uint32           `json:"skills"`
 	Rewards         []RewardRestModel  `json:"rewards"`
@@ -88,6 +93,16 @@ func Extract(rm RestModel) (Model, error) {
 	if err != nil {
 		return Model{}, err
 	}
+	ms, err := model.SliceMap(func(m Summon) (SummonModel, error) {
+		return SummonModel{
+			templateId:  m.TemplateId,
+			probability: m.Probability,
+		}, nil
+	})(model.FixedProvider(rm.MonsterSummons))(model.ParallelMap())()
+	if err != nil {
+		return Model{}, err
+	}
+
 	return Model{
 		id:              rm.Id,
 		tradeBlock:      rm.TradeBlock,
@@ -143,7 +158,7 @@ func Extract(rm RestModel) (Model, error) {
 		incSpeed:        rm.IncreaseSpeed,
 		incJump:         rm.IncreaseJump,
 		spec:            rm.Spec,
-		monsterSummons:  rm.MonsterSummons,
+		monsterSummons:  ms,
 		morphs:          rm.Morphs,
 		skills:          rm.Skills,
 		rewards:         rs,

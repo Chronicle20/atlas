@@ -135,3 +135,124 @@ Item Model:
   "purchasedBy": 12345
 }
 ```
+
+#### Cash Inventory
+- GET /accounts/{accountId}/cash-shop/inventory - Get cash inventory for an account
+- POST /accounts/{accountId}/cash-shop/inventory - Create a cash inventory for an account
+
+Cash Inventory Model (JSON:API format):
+```json
+{
+  "data": {
+    "type": "cash-inventories",
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "attributes": {
+      "accountId": 12345
+    },
+    "relationships": {
+      "compartments": {
+        "data": [
+          { "type": "compartments", "id": "550e8400-e29b-41d4-a716-446655440001" },
+          { "type": "compartments", "id": "550e8400-e29b-41d4-a716-446655440002" },
+          { "type": "compartments", "id": "550e8400-e29b-41d4-a716-446655440003" }
+        ]
+      }
+    }
+  },
+  "included": [
+    {
+      "type": "compartments",
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "attributes": {
+        "accountId": 12345,
+        "type": "explorer",
+        "capacity": 55
+      },
+      "relationships": {
+        "assets": {
+          "data": []
+        }
+      }
+    },
+    {
+      "type": "compartments",
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "attributes": {
+        "accountId": 12345,
+        "type": "cygnus",
+        "capacity": 55
+      },
+      "relationships": {
+        "assets": {
+          "data": []
+        }
+      }
+    },
+    {
+      "type": "compartments",
+      "id": "550e8400-e29b-41d4-a716-446655440003",
+      "attributes": {
+        "accountId": 12345,
+        "type": "legend",
+        "capacity": 55
+      },
+      "relationships": {
+        "assets": {
+          "data": []
+        }
+      }
+    }
+  ]
+}
+```
+
+#### Cash Compartment
+- GET /accounts/{accountId}/cash-shop/inventory/compartments - Get all cash compartments for an account
+- GET /accounts/{accountId}/cash-shop/inventory/compartments?type={compartmentType} - Get a specific cash compartment by type
+
+Cash Compartment Model (JSON:API format):
+```json
+{
+  "data": {
+    "type": "compartments",
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "attributes": {
+      "accountId": 12345,
+      "type": "explorer",
+      "capacity": 55
+    },
+    "relationships": {
+      "assets": {
+        "data": [
+          { "type": "assets", "id": "550e8400-e29b-41d4-a716-446655440001" }
+        ]
+      }
+    }
+  },
+  "included": [
+    {
+      "type": "assets",
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "attributes": {
+        "compartmentId": "550e8400-e29b-41d4-a716-446655440000"
+      },
+      "relationships": {
+        "item": {
+          "data": { "type": "items", "id": "1001" }
+        }
+      }
+    },
+    {
+      "type": "items",
+      "id": "1001",
+      "attributes": {
+        "cashId": 12345678,
+        "templateId": 5000,
+        "quantity": 1,
+        "flag": 0,
+        "purchasedBy": 12345
+      }
+    }
+  ]
+}
+```

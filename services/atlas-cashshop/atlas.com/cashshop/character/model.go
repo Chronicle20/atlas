@@ -43,3 +43,7 @@ type Model struct {
 func (m Model) Inventory() inventory.Model {
 	return m.inventory
 }
+
+func (m Model) AccountId() uint32 {
+	return m.accountId
+}

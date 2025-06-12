@@ -3,8 +3,8 @@ package cashshop
 import (
 	"atlas-cashshop/cashshop/commodity"
 	"atlas-cashshop/character"
-	"atlas-cashshop/database"
 	inventory2 "atlas-cashshop/character/inventory"
+	"atlas-cashshop/database"
 	"atlas-cashshop/kafka/message/cashshop"
 	"atlas-cashshop/kafka/producer"
 	cashshop2 "atlas-cashshop/kafka/producer/cashshop"
@@ -66,7 +66,12 @@ func purchaseInventoryIncrease(l logrus.FieldLogger) func(ctx context.Context) f
 
 				l.Debugf("Character [%d] attempting to purchase inventory [%d] increase using currency [%d]. Cost is [%d].", characterId, inventoryType, currency, cost)
 				txErr := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
-					w, err := wallet.GetByCharacterId(ctx)(tx)(characterId)
+					c, err := character.GetByIdWithInventory(l)(ctx)()(characterId)
+					if err != nil {
+						return err
+					}
+
+					w, err := wallet.NewProcessor(l, ctx, tx).GetByAccountId(c.AccountId())
 					if err != nil {
 						return err
 					}
@@ -88,10 +93,6 @@ func purchaseInventoryIncrease(l logrus.FieldLogger) func(ctx context.Context) f
 						return ErrInsufficientFunds
 					}
 
-					c, err := character.GetByIdWithInventory(l)(ctx)()(characterId)
-					if err != nil {
-						return err
-					}
 					slots := uint32(0)
 					if inventoryType == inventory2.TypeValueEquip {
 						slots = c.Inventory().Equipable().Capacity()
@@ -110,7 +111,7 @@ func purchaseInventoryIncrease(l logrus.FieldLogger) func(ctx context.Context) f
 					}
 					newCapacity = slots + amount
 
-					_, err = wallet.Update(l)(ctx)(tx)(characterId, credit, points, prepaid)
+					_, err = wallet.NewProcessor(l, ctx, tx).Update(c.AccountId(), credit, points, prepaid)
 					if err != nil {
 						return err
 					}

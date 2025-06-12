@@ -16,7 +16,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerGet := rest.RegisterHandler(l)(si)
-			r := router.PathPrefix("/characters/{characterId}/cash-shop/wallet").Subrouter()
+			r := router.PathPrefix("/accounts/{accountId}/wallet").Subrouter()
 			r.HandleFunc("", registerGet("get_wallet", handleGetWallet(db))).Methods(http.MethodGet)
 			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)("create_wallet", handleCreateWallet(db))).Methods(http.MethodPost)
 			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)("update_wallet", handleUpdateWallet(db))).Methods(http.MethodPatch)
@@ -26,9 +26,9 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 
 func handleGetWallet(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, err := GetByCharacterId(d.Context())(db)(characterId)
+				m, err := NewProcessor(d.Logger(), d.Context(), db).GetByAccountId(accountId)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					w.WriteHeader(http.StatusNotFound)
 					return
@@ -55,9 +55,9 @@ func handleGetWallet(db *gorm.DB) rest.GetHandler {
 
 func handleCreateWallet(db *gorm.DB) rest.InputHandler[RestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
-		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, err := Create(d.Logger())(d.Context())(db)(characterId, input.Credit, input.Points, input.Prepaid)
+				m, err := NewProcessor(d.Logger(), d.Context(), db).Create(accountId, input.Credit, input.Points, input.Prepaid)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -80,9 +80,9 @@ func handleCreateWallet(db *gorm.DB) rest.InputHandler[RestModel] {
 
 func handleUpdateWallet(db *gorm.DB) rest.InputHandler[RestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
-		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, err := Update(d.Logger())(d.Context())(db)(characterId, input.Credit, input.Points, input.Prepaid)
+				m, err := NewProcessor(d.Logger(), d.Context(), db).Update(accountId, input.Credit, input.Points, input.Prepaid)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return

@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-cashshop/database"
 	"atlas-cashshop/item"
+	"atlas-cashshop/kafka/consumer/account"
 	"atlas-cashshop/kafka/consumer/cashshop"
 	"atlas-cashshop/kafka/consumer/character"
 	"atlas-cashshop/logger"
@@ -52,8 +53,10 @@ func main() {
 	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, item.Migration))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	account.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
+	account.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 	cashshop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 

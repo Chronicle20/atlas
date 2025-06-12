@@ -84,6 +84,20 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 	}
 }
 
+type AccountIdHandler func(accountId uint32) http.HandlerFunc
+
+func ParseAccountId(l logrus.FieldLogger, next AccountIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		accountId, err := strconv.Atoi(mux.Vars(r)["accountId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse accountId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint32(accountId))(w, r)
+	}
+}
+
 type CharacterIdHandler func(characterId uint32) http.HandlerFunc
 
 func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.HandlerFunc {

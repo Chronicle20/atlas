@@ -37,6 +37,6 @@ func handleStatusEventDeleted(db *gorm.DB) message.Handler[character.StatusEvent
 		if e.Type != character.StatusEventTypeDeleted {
 			return
 		}
-		_ = wishlist.NewProcessor(l, ctx, db).DeleteAll(e.CharacterId)
+		_ = wishlist.NewProcessor(l, ctx, db).DeleteAllAndEmit(e.CharacterId)
 	}
 }

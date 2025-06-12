@@ -39,7 +39,7 @@ func handleStatusEventCreated(db *gorm.DB) message.Handler[account.StatusEvent] 
 			return
 		}
 		l.Debugf("Account [%d] was created. Initializing cash shop information...", e.AccountId)
-		_, _ = wallet.NewProcessor(l, ctx, db).Create(e.AccountId, 0, 0, 0)
+		_, _ = wallet.NewProcessor(l, ctx, db).CreateAndEmit(e.AccountId, 0, 0, 0)
 	}
 }
 
@@ -48,6 +48,6 @@ func handleStatusEventDeleted(db *gorm.DB) message.Handler[account.StatusEvent] 
 		if e.Status != account.EventStatusDeleted {
 			return
 		}
-		_ = wallet.NewProcessor(l, ctx, db).Delete(e.AccountId)
+		_ = wallet.NewProcessor(l, ctx, db).DeleteAndEmit(e.AccountId)
 	}
 }

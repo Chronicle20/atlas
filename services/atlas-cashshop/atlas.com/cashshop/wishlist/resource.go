@@ -59,7 +59,7 @@ func handleAddToWishlist(db *gorm.DB) rest.InputHandler[RestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, err := NewProcessor(d.Logger(), d.Context(), db).Add(characterId, input.SerialNumber)
+				m, err := NewProcessor(d.Logger(), d.Context(), db).AddAndEmit(characterId, input.SerialNumber)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -84,7 +84,7 @@ func handleClearWishlist(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				err := NewProcessor(d.Logger(), d.Context(), db).DeleteAll(characterId)
+				err := NewProcessor(d.Logger(), d.Context(), db).DeleteAllAndEmit(characterId)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -100,7 +100,7 @@ func handleRemoveFromWishlist(db *gorm.DB) rest.GetHandler {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return rest.ParseItemId(d.Logger(), func(itemId uuid.UUID) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					err := NewProcessor(d.Logger(), d.Context(), db).Delete(characterId, itemId)
+					err := NewProcessor(d.Logger(), d.Context(), db).DeleteAndEmit(characterId, itemId)
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						return

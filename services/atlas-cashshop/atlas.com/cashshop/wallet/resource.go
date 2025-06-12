@@ -57,7 +57,7 @@ func handleCreateWallet(db *gorm.DB) rest.InputHandler[RestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 		return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, err := NewProcessor(d.Logger(), d.Context(), db).Create(accountId, input.Credit, input.Points, input.Prepaid)
+				m, err := NewProcessor(d.Logger(), d.Context(), db).CreateAndEmit(accountId, input.Credit, input.Points, input.Prepaid)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -82,7 +82,7 @@ func handleUpdateWallet(db *gorm.DB) rest.InputHandler[RestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 		return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, err := NewProcessor(d.Logger(), d.Context(), db).Update(accountId, input.Credit, input.Points, input.Prepaid)
+				m, err := NewProcessor(d.Logger(), d.Context(), db).UpdateAndEmit(accountId, input.Credit, input.Points, input.Prepaid)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return

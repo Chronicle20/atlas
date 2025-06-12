@@ -16,7 +16,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerGet := rest.RegisterHandler(l)(si)
-			r := router.PathPrefix("/api/accounts/{accountId}/cash-shop/inventory/compartments").Subrouter()
+			r := router.PathPrefix("/accounts/{accountId}/cash-shop/inventory/compartments").Subrouter()
 			r.HandleFunc("", registerGet("get_cash_compartments", handleGetCompartments(db))).Methods(http.MethodGet).Queries("type", "{type}")
 		}
 	}

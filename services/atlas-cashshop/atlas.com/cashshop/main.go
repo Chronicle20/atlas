@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-cashshop/cashshop/inventory"
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
 	"atlas-cashshop/database"
@@ -74,6 +75,7 @@ func main() {
 		AddRouteInitializer(wishlist.InitResource(GetServer())(db)).
 		AddRouteInitializer(item.InitResource(GetServer())(db)).
 		AddRouteInitializer(compartment.InitResource(GetServer())(db)).
+		AddRouteInitializer(inventory.InitResource(GetServer())(db)).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

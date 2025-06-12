@@ -55,7 +55,7 @@ func handleStatusEventInventoryCapacityIncreased(sc server.Model, wp writer.Prod
 			if err != nil {
 				return err
 			}
-			w, err := wallet.NewProcessor(l, ctx).GetByCharacterId(e.CharacterId)
+			w, err := wallet.NewProcessor(l, ctx).GetByAccountId(s.AccountId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve cash shop wallet for character [%d].", s.CharacterId())
 				err = session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)(writer.CashShopCashQueryResultBody(t)(0, 0, 0))(s)

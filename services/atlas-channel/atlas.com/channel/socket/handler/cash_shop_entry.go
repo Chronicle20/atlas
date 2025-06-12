@@ -82,7 +82,7 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			l.WithError(err).Errorf("Unable to update wish list for character [%d].", s.CharacterId())
 		}
 
-		w, err := wallet.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
+		w, err := wallet.NewProcessor(l, ctx).GetByAccountId(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve cash shop wallet for character [%d].", s.CharacterId())
 			err = session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)(writer.CashShopCashQueryResultBody(t)(0, 0, 0))(s)

@@ -1,6 +1,7 @@
 package account
 
 import (
+	"atlas-cashshop/cashshop/inventory"
 	consumer2 "atlas-cashshop/kafka/consumer"
 	"atlas-cashshop/kafka/message/account"
 	"atlas-cashshop/wallet"
@@ -39,7 +40,21 @@ func handleStatusEventCreated(db *gorm.DB) message.Handler[account.StatusEvent] 
 			return
 		}
 		l.Debugf("Account [%d] was created. Initializing cash shop information...", e.AccountId)
-		_, _ = wallet.NewProcessor(l, ctx, db).CreateAndEmit(e.AccountId, 0, 0, 0)
+
+		// Create wallet
+		_, err := wallet.NewProcessor(l, ctx, db).CreateAndEmit(e.AccountId, 0, 0, 0)
+		if err != nil {
+			l.WithError(err).Errorf("Could not create wallet for account [%d].", e.AccountId)
+			return
+		}
+
+		// Create inventory with default compartments
+		// Default capacity is 55, but this can be changed as needed
+		_, err = inventory.NewProcessor(l, ctx, db).CreateAndEmit(e.AccountId)
+		if err != nil {
+			l.WithError(err).Errorf("Could not create inventory for account [%d].", e.AccountId)
+			return
+		}
 	}
 }
 
@@ -48,6 +63,19 @@ func handleStatusEventDeleted(db *gorm.DB) message.Handler[account.StatusEvent] 
 		if e.Status != account.EventStatusDeleted {
 			return
 		}
-		_ = wallet.NewProcessor(l, ctx, db).DeleteAndEmit(e.AccountId)
+
+		// Delete wallet
+		err := wallet.NewProcessor(l, ctx, db).DeleteAndEmit(e.AccountId)
+		if err != nil {
+			l.WithError(err).Errorf("Could not delete wallet for account [%d].", e.AccountId)
+			return
+		}
+
+		// Delete inventory, compartments, and assets
+		err = inventory.NewProcessor(l, ctx, db).DeleteAndEmit(e.AccountId)
+		if err != nil {
+			l.WithError(err).Errorf("Could not delete inventory for account [%d].", e.AccountId)
+			return
+		}
 	}
 }

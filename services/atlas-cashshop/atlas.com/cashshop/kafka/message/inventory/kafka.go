@@ -1,9 +1,8 @@
 package inventory
 
-const (
-	EnvCommandTopic         = "COMMAND_TOPIC_INVENTORY"
-	CommandIncreaseCapacity = "INCREASE_CAPACITY"
-)
+const EnvCommandTopic = "COMMAND_TOPIC_INVENTORY"
+
+const CommandIncreaseCapacity = "INCREASE_CAPACITY"
 
 type Command[E any] struct {
 	CharacterId   uint32 `json:"characterId"`

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"atlas-cashshop/cashshop/inventory/asset"
+	"atlas-cashshop/cashshop/inventory/compartment"
 	"atlas-cashshop/database"
 	"atlas-cashshop/item"
 	"atlas-cashshop/kafka/consumer/account"
@@ -51,7 +53,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, item.Migration))
+	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, item.Migration, compartment.Migration, asset.Migration))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	account.InitConsumers(l)(cmf)(consumerGroupId)

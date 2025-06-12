@@ -1,5 +1,7 @@
 github.com/Chronicle20/atlas-constants v1.0.16 h1:M8+zGgBomy48tBwISR6VMDEoKWSbetFZqxAnFqDUVhU=
 github.com/Chronicle20/atlas-constants v1.0.16/go.mod h1:iBrQ04uVlMm1Tw0e0shhxwXng0zBtUsSSgSuXr/QhCU=
+github.com/Chronicle20/atlas-constants v1.0.17 h1:r/c6DvhdwD6Svq6hRmRQdI1EbmOy0BvMNhZNO+tFYKw=
+github.com/Chronicle20/atlas-constants v1.0.17/go.mod h1:JsiEQ+QVbOKMHuukglodzmb6jjq2YCJAklEh4zqhSew=
 github.com/Chronicle20/atlas-kafka v1.1.10 h1:23RjA+ASwNLsw9Jg2U4iZAmqRJ+MN2EpVwO0HO75rr0=
 github.com/Chronicle20/atlas-kafka v1.1.10/go.mod h1:ZduYibZ/IdgnptyYBDjbOBB6Y2Hmefk/LTAlY7G39Yc=
 github.com/Chronicle20/atlas-kafka v1.1.11 h1:ZSJ8E06FC5GE4jO65t2xYW6/0Xm43nuEV9EtZgioK9c=

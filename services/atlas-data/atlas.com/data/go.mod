@@ -3,7 +3,7 @@ module atlas-data
 go 1.24.2
 
 require (
-	github.com/Chronicle20/atlas-constants v1.0.16
+	github.com/Chronicle20/atlas-constants v1.0.17
 	github.com/Chronicle20/atlas-kafka v1.1.11
 	github.com/Chronicle20/atlas-model v1.2.4
 	github.com/Chronicle20/atlas-rest v1.2.15

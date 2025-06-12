@@ -119,7 +119,7 @@ func (p *ProcessorImpl) PurchaseInventoryIncrease(mb *message.Buffer) func(chara
 			}
 			newCapacity = slots + amount
 
-			_, err = p.walP.WithTransaction(tx).Update(c.AccountId(), credit, points, prepaid)
+			_, err = p.walP.WithTransaction(tx).Update(mb)(c.AccountId(), credit, points, prepaid)
 			if err != nil {
 				return err
 			}

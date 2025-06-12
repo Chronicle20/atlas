@@ -25,6 +25,8 @@ A RESTful resource which provides cashshop services.
 - BOOTSTRAP_SERVERS - Kafka bootstrap servers
 - EVENT_TOPIC_CHARACTER_STATUS - Topic for character status events
 - EVENT_TOPIC_ACCOUNT_STATUS - Topic for account status events
+- EVENT_TOPIC_WALLET_STATUS - Topic for wallet status events
+- EVENT_TOPIC_WISHLIST_STATUS - Topic for wishlist status events
 - COMMAND_TOPIC_CASH_SHOP - Topic for cash shop commands
 - EVENT_TOPIC_CASH_SHOP_STATUS - Topic for cash shop status events
 - COMMAND_TOPIC_INVENTORY - Topic for inventory commands
@@ -58,6 +60,18 @@ Processes cash shop commands:
 Emits cash shop status events:
 - INVENTORY_CAPACITY_INCREASED: When inventory capacity is increased
 - ERROR: When an error occurs
+
+#### Wallet Status Events
+Emits wallet status events:
+- CREATED: When a wallet is created
+- UPDATED: When a wallet is updated
+- DELETED: When a wallet is deleted
+
+#### Wishlist Status Events
+Emits wishlist status events:
+- ADDED: When an item is added to a wishlist
+- DELETED: When an item is removed from a wishlist
+- DELETED_ALL: When all items are removed from a wishlist
 
 #### Inventory Commands
 Sends inventory commands:

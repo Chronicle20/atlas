@@ -9,55 +9,50 @@ import (
 	"gorm.io/gorm"
 )
 
-func byCharacterIdProvider(ctx context.Context) func(db *gorm.DB) func(characterId uint32) model.Provider[[]Model] {
-	t := tenant.MustFromContext(ctx)
-	return func(db *gorm.DB) func(characterId uint32) model.Provider[[]Model] {
-		return func(characterId uint32) model.Provider[[]Model] {
-			return model.SliceMap(Make)(byCharacterIdEntityProvider(t.Id(), characterId)(db))(model.ParallelMap())
-		}
-	}
+type Processor interface {
+	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
+	GetByCharacterId(characterId uint32) ([]Model, error)
+	Add(characterId uint32, serialNumber uint32) (Model, error)
+	Delete(characterId uint32, itemId uuid.UUID) error
+	DeleteAll(characterId uint32) error
 }
 
-func GetByCharacterId(ctx context.Context) func(db *gorm.DB) func(characterId uint32) ([]Model, error) {
-	return func(db *gorm.DB) func(characterId uint32) ([]Model, error) {
-		return func(characterId uint32) ([]Model, error) {
-			return byCharacterIdProvider(ctx)(db)(characterId)()
-		}
-	}
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
+	t   tenant.Model
 }
 
-func Add(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, serialNumber uint32) (Model, error) {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, serialNumber uint32) (Model, error) {
-		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(characterId uint32, serialNumber uint32) (Model, error) {
-			return func(characterId uint32, serialNumber uint32) (Model, error) {
-				l.Debugf("Character [%d] adding [%d] to their wishlist.", characterId, serialNumber)
-				return createEntity(db, t, characterId, serialNumber)
-			}
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	p := &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+		db:  db,
+		t:   tenant.MustFromContext(ctx),
 	}
+	return p
 }
 
-func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, itemId uuid.UUID) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, itemId uuid.UUID) error {
-		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(characterId uint32, itemId uuid.UUID) error {
-			return func(characterId uint32, itemId uuid.UUID) error {
-				l.Debugf("Deleting wish list item [%s] for character [%d].", itemId, characterId)
-				return deleteEntity(ctx)(db, t.Id(), characterId, itemId)
-			}
-		}
-	}
+func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
+	return model.SliceMap(Make)(byCharacterIdEntityProvider(p.t.Id(), characterId)(p.db))(model.ParallelMap())
 }
 
-func DeleteAll(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) error {
-		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(characterId uint32) error {
-			return func(characterId uint32) error {
-				l.Debugf("Deleting wish list for character [%d].", characterId)
-				return deleteEntityForCharacter(ctx)(db, t.Id(), characterId)
-			}
-		}
-	}
+func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
+	return p.ByCharacterIdProvider(characterId)()
+}
+
+func (p *ProcessorImpl) Add(characterId uint32, serialNumber uint32) (Model, error) {
+	p.l.Debugf("Character [%d] adding [%d] to their wishlist.", characterId, serialNumber)
+	return createEntity(p.db, p.t, characterId, serialNumber)
+}
+
+func (p *ProcessorImpl) Delete(characterId uint32, itemId uuid.UUID) error {
+	p.l.Debugf("Deleting wish list item [%s] for character [%d].", itemId, characterId)
+	return deleteEntity(p.ctx)(p.db, p.t.Id(), characterId, itemId)
+}
+
+func (p *ProcessorImpl) DeleteAll(characterId uint32) error {
+	p.l.Debugf("Deleting wish list for character [%d].", characterId)
+	return deleteEntityForCharacter(p.ctx)(p.db, p.t.Id(), characterId)
 }

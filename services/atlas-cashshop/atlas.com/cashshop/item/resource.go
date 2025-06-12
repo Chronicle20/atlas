@@ -28,7 +28,7 @@ func handleGetItem(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return ParseItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				ms, err := GetById(d.Context())(db)(itemId)
+				ms, err := NewProcessor(d.Logger(), d.Context(), db).GetById(itemId)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					w.WriteHeader(http.StatusNotFound)
 					return

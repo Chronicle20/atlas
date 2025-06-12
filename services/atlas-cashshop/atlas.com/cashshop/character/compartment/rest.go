@@ -1,20 +1,23 @@
-package inventory
+package compartment
 
 import (
-	"atlas-cashshop/character/compartment"
+	"atlas-cashshop/asset"
 	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
+	"strconv"
 )
 
 type RestModel struct {
-	Id           uuid.UUID               `json:"-"`
-	CharacterId  uint32                  `json:"characterId"`
-	Compartments []compartment.RestModel `json:"-"`
+	Id            uuid.UUID             `json:"-"`
+	InventoryType inventory.Type        `json:"type"`
+	Capacity      uint32                `json:"capacity"`
+	Assets        []asset.BaseRestModel `json:"-"`
 }
 
 func (r RestModel) GetName() string {
-	return "inventories"
+	return "compartments"
 }
 
 func (r RestModel) GetID() string {
@@ -33,15 +36,15 @@ func (r *RestModel) SetID(strId string) error {
 func (r RestModel) GetReferences() []jsonapi.Reference {
 	return []jsonapi.Reference{
 		{
-			Type: "compartments",
-			Name: "compartments",
+			Type: "assets",
+			Name: "assets",
 		},
 	}
 }
 
 func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
 	var result []jsonapi.ReferenceID
-	for _, v := range r.Compartments {
+	for _, v := range r.Assets {
 		result = append(result, jsonapi.ReferenceID{
 			ID:   v.GetID(),
 			Type: v.GetName(),
@@ -53,8 +56,8 @@ func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
 
 func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	var result []jsonapi.MarshalIdentifier
-	for key := range r.Compartments {
-		result = append(result, r.Compartments[key])
+	for key := range r.Assets {
+		result = append(result, r.Assets[key])
 	}
 
 	return result
@@ -65,65 +68,60 @@ func (r *RestModel) SetToOneReferenceID(name, ID string) error {
 }
 
 func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
-	if name == "compartments" {
+	if name == "assets" {
 		for _, idStr := range IDs {
-			id, err := uuid.Parse(idStr)
+			id, err := strconv.Atoi(idStr)
 			if err != nil {
 				return err
 			}
-			r.Compartments = append(r.Compartments, compartment.RestModel{Id: id})
+			r.Assets = append(r.Assets, asset.BaseRestModel{Id: uint32(id)})
 		}
 	}
 	return nil
 }
 
 func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
-	if refMap, ok := references["compartments"]; ok {
-		compartments := make([]compartment.RestModel, 0)
-		for _, ri := range r.Compartments {
+	if refMap, ok := references["assets"]; ok {
+		assets := make([]asset.BaseRestModel, 0)
+		for _, ri := range r.Assets {
 			if ref, ok := refMap[ri.GetID()]; ok {
 				wip := ri
 				err := jsonapi.ProcessIncludeData(&wip, ref, references)
 				if err != nil {
 					return err
 				}
-				compartments = append(compartments, wip)
+				assets = append(assets, wip)
 			}
 		}
-		r.Compartments = compartments
+		r.Assets = assets
 	}
 	return nil
 }
 
 func Transform(m Model) (RestModel, error) {
-	cs := make([]compartment.RestModel, 0)
-	for _, v := range m.compartments {
-		c, err := compartment.Transform(v)
-		if err != nil {
-			return RestModel{}, nil
-		}
-		cs = append(cs, c)
+	as, err := model.SliceMap(asset.Transform)(model.FixedProvider(m.assets))(model.ParallelMap())()
+	if err != nil {
+		return RestModel{}, err
 	}
 
 	return RestModel{
-		Id:           uuid.New(),
-		CharacterId:  m.characterId,
-		Compartments: cs,
+		Id:            m.id,
+		InventoryType: m.inventoryType,
+		Capacity:      m.capacity,
+		Assets:        as,
 	}, nil
 }
 
 func Extract(rm RestModel) (Model, error) {
-	cs := make(map[inventory.Type]compartment.Model)
-	for _, v := range rm.Compartments {
-		c, err := compartment.Extract(v)
-		if err != nil {
-			return Model{}, nil
-		}
-		cs[c.Type()] = c
+	as, err := model.SliceMap(asset.Extract)(model.FixedProvider(rm.Assets))(model.ParallelMap())()
+	if err != nil {
+		return Model{}, nil
 	}
 
 	return Model{
-		characterId:  rm.CharacterId,
-		compartments: cs,
+		id:            rm.Id,
+		inventoryType: rm.InventoryType,
+		capacity:      rm.Capacity,
+		assets:        as,
 	}, nil
 }

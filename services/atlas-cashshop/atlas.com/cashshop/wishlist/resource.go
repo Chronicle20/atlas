@@ -30,7 +30,7 @@ func handleGetWishlist(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				ms, err := GetByCharacterId(d.Context())(db)(characterId)
+				ms, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacterId(characterId)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					w.WriteHeader(http.StatusNotFound)
 					return
@@ -59,7 +59,7 @@ func handleAddToWishlist(db *gorm.DB) rest.InputHandler[RestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, err := Add(d.Logger())(d.Context())(db)(characterId, input.SerialNumber)
+				m, err := NewProcessor(d.Logger(), d.Context(), db).Add(characterId, input.SerialNumber)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -84,7 +84,7 @@ func handleClearWishlist(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				err := DeleteAll(d.Logger())(d.Context())(db)(characterId)
+				err := NewProcessor(d.Logger(), d.Context(), db).DeleteAll(characterId)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -100,7 +100,7 @@ func handleRemoveFromWishlist(db *gorm.DB) rest.GetHandler {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return rest.ParseItemId(d.Logger(), func(itemId uuid.UUID) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					err := Delete(d.Logger())(d.Context())(db)(characterId, itemId)
+					err := NewProcessor(d.Logger(), d.Context(), db).Delete(characterId, itemId)
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						return

@@ -2,12 +2,12 @@ package cashshop
 
 import (
 	cashshop3 "atlas-cashshop/cashshop"
-	"atlas-cashshop/character/inventory"
 	consumer2 "atlas-cashshop/kafka/consumer"
 	"atlas-cashshop/kafka/message/cashshop"
 	"atlas-cashshop/kafka/producer"
 	cashshop2 "atlas-cashshop/kafka/producer/cashshop"
 	"context"
+	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -45,7 +45,7 @@ func handleCommandRequestPurchase(db *gorm.DB) message.Handler[cashshop.Command[
 		if c.Type != cashshop.CommandTypeRequestPurchase {
 			return
 		}
-		_ = cashshop3.Purchase(l)(ctx)(db)(c.CharacterId, c.Body.Currency, c.Body.SerialNumber)
+		_ = cashshop3.NewProcessor(l, ctx, db).Purchase(c.CharacterId, c.Body.Currency, c.Body.SerialNumber)
 	}
 }
 
@@ -54,7 +54,7 @@ func handleCommandRequestInventoryIncreaseByType(db *gorm.DB) message.Handler[ca
 		if c.Type != cashshop.CommandTypeRequestInventoryIncreaseByType {
 			return
 		}
-		_ = cashshop3.PurchaseInventoryIncreaseByType(l)(ctx)(db)(c.CharacterId, c.Body.Currency, inventory.Type(c.Body.InventoryType))
+		_ = cashshop3.NewProcessor(l, ctx, db).PurchaseInventoryIncreaseByTypeAndEmit(c.CharacterId, c.Body.Currency, inventory.Type(c.Body.InventoryType))
 	}
 }
 
@@ -63,7 +63,7 @@ func handleCommandRequestInventoryIncreaseByItem(db *gorm.DB) message.Handler[ca
 		if c.Type != cashshop.CommandTypeRequestInventoryIncreaseByItem {
 			return
 		}
-		_ = cashshop3.PurchaseInventoryIncreaseByItem(l)(ctx)(db)(c.CharacterId, c.Body.Currency, c.Body.SerialNumber)
+		_ = cashshop3.NewProcessor(l, ctx, db).PurchaseInventoryIncreaseByItemAndEmit(c.CharacterId, c.Body.Currency, c.Body.SerialNumber)
 	}
 }
 

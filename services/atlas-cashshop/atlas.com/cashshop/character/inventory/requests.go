@@ -1,4 +1,4 @@
-package character
+package inventory
 
 import (
 	"atlas-cashshop/rest"
@@ -7,12 +7,12 @@ import (
 )
 
 const (
-	Resource = "characters"
-	ById     = Resource + "/%d"
+	Resource = "characters/%d/inventory"
+	ById     = Resource
 )
 
 func getBaseRequest() string {
-	return requests.RootUrl("CHARACTERS")
+	return requests.RootUrl("INVENTORY")
 }
 
 func requestById(id uint32) requests.Request[RestModel] {

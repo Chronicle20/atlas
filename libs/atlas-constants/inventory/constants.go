@@ -1,6 +1,9 @@
 package inventory
 
-import "math"
+import (
+	"github.com/Chronicle20/atlas-constants/item"
+	"math"
+)
 
 type Type int8
 
@@ -14,7 +17,7 @@ const (
 
 var Types = []Type{TypeValueEquip, TypeValueUse, TypeValueSetup, TypeValueETC, TypeValueCash}
 
-func TypeFromItemId(itemId uint32) (Type, bool) {
+func TypeFromItemId(itemId item.Id) (Type, bool) {
 	t := int8(math.Floor(float64(itemId) / 1000000))
 	if t >= 1 && t <= 5 {
 		return Type(t), true

@@ -73,6 +73,7 @@ func main() {
 		AddRouteInitializer(wallet.InitResource(GetServer())(db)).
 		AddRouteInitializer(wishlist.InitResource(GetServer())(db)).
 		AddRouteInitializer(item.InitResource(GetServer())(db)).
+		AddRouteInitializer(compartment.InitResource(GetServer())(db)).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

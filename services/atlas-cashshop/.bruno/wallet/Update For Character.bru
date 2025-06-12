@@ -5,7 +5,7 @@ meta {
 }
 
 patch {
-  url: {{scheme}}://{{host}}:{{port}}/api/characters/1/cash-shop/wallet
+  url: {{scheme}}://{{host}}:{{port}}/api/accounts/{{accountId}}/wallet
   body: json
   auth: none
 }
@@ -23,4 +23,8 @@ body:json {
       }
     }
   }
+}
+
+vars:pre-request {
+  accountId: 1
 }

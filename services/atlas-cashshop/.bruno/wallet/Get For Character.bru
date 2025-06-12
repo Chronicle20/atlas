@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/characters/1/cash-shop/wallet
+  url: {{scheme}}://{{host}}:{{port}}/api/accounts/{{accountId}}/wallet
   body: none
   auth: none
+}
+
+vars:pre-request {
+  accountId: 1
 }

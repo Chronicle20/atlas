@@ -18,8 +18,10 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerGet := rest.RegisterHandler(l)(si)
+			registerInput := rest.RegisterInputHandler[RestModel](l)(si)
 			r := router.PathPrefix("/cash-shop/items").Subrouter()
 			r.HandleFunc("", registerGet("get_item", handleGetItem(db))).Methods(http.MethodGet)
+			r.HandleFunc("", registerInput("create_item", handleCreateItem(db))).Methods(http.MethodPost)
 		}
 	}
 }
@@ -50,6 +52,37 @@ func handleGetItem(db *gorm.DB) rest.GetHandler {
 				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
 		})
+	}
+}
+
+func handleCreateItem(db *gorm.DB) rest.InputHandler[RestModel] {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			im, err := Extract(i)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Extracting model.")
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			m, err := NewProcessor(d.Logger(), d.Context(), db).CreateAndEmit(im.TemplateId(), im.Quantity(), im.PurchasedBy())
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating item.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			restModel, err := Transform(m)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModel)
+		}
 	}
 }
 

@@ -3,6 +3,7 @@ package item
 import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"time"
 )
 
 func Migration(db *gorm.DB) error {
@@ -15,9 +16,9 @@ type Entity struct {
 	CashId      uint64    `gorm:"not null"`
 	TemplateId  uint32    `gorm:"not null"`
 	Quantity    uint32    `gorm:"not null"`
-	Owner       uint32    `gorm:"not null"`
 	Flag        uint16    `gorm:"not null"`
 	PurchasedBy uint32    `gorm:"not null"`
+	Expiration  time.Time `gorm:"not null"`
 }
 
 func (e Entity) TableName() string {
@@ -30,8 +31,8 @@ func Make(e Entity) (Model, error) {
 		cashId:      e.CashId,
 		templateId:  e.TemplateId,
 		quantity:    e.Quantity,
-		owner:       e.Owner,
 		flag:        e.Flag,
 		purchasedBy: e.PurchasedBy,
+		expiration:  e.Expiration,
 	}, nil
 }

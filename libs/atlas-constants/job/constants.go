@@ -1288,12 +1288,20 @@ func IsBeginner(jobId Id) bool {
 	return IsA(jobId, BeginnerId, NoblesseId, LegendId, EvanId)
 }
 
-func Type(jobId Id) uint16 {
-	return uint16(jobId / 1000)
+type Type uint16
+
+func GetType(jobId Id) Type {
+	return Type(jobId / 1000)
 }
 
+const (
+	TypeExplorer = Type(0)
+	TypeCygnus   = Type(1)
+	TypeLegend   = Type(2)
+)
+
 func IsCygnus(jobId Id) bool {
-	return Type(jobId) == 1
+	return GetType(jobId) == TypeCygnus
 }
 
 func GetSkillBook(jobId Id) int {

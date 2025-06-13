@@ -4,7 +4,7 @@ import "time"
 
 type Model struct {
 	id          uint32
-	cashId      uint64
+	cashId      int64
 	templateId  uint32
 	quantity    uint32
 	flag        uint16
@@ -16,7 +16,7 @@ func (m Model) Id() uint32 {
 	return m.id
 }
 
-func (m Model) CashId() uint64 {
+func (m Model) CashId() int64 {
 	return m.cashId
 }
 
@@ -42,7 +42,7 @@ func (m Model) Expiration() time.Time {
 
 type Builder struct {
 	id          uint32
-	cashId      uint64
+	cashId      int64
 	templateId  uint32
 	quantity    uint32
 	flag        uint16
@@ -59,7 +59,7 @@ func (b *Builder) SetId(id uint32) *Builder {
 	return b
 }
 
-func (b *Builder) SetCashId(cashId uint64) *Builder {
+func (b *Builder) SetCashId(cashId int64) *Builder {
 	b.cashId = cashId
 	return b
 }

@@ -130,7 +130,10 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			serialNumber := r.ReadUint64()
 			inventoryType := r.ReadByte()
 			slot := r.ReadInt16()
-			l.Infof("Character [%d] moving [%d] to inventory [%d] to slot [%d].", s.CharacterId(), serialNumber, inventoryType, slot)
+			err = cashshop.NewProcessor(l, ctx).MoveFromCashInventory(s.CharacterId(), serialNumber, inventoryType, slot)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to move item [%d] from cash inventory to inventory [%d] slot [%d] for character [%d].", serialNumber, inventoryType, slot, s.CharacterId())
+			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationMoveToCashInventory) {

@@ -63,6 +63,36 @@ type EquipableRestData struct {
 	HammersApplied uint32 `json:"hammersApplied"`
 }
 
+type CashEquipableRestData struct {
+	CashId         int64  `json:"cashId,string"`
+	Strength       uint16 `json:"strength"`
+	Dexterity      uint16 `json:"dexterity"`
+	Intelligence   uint16 `json:"intelligence"`
+	Luck           uint16 `json:"luck"`
+	HP             uint16 `json:"hp"`
+	MP             uint16 `json:"mp"`
+	WeaponAttack   uint16 `json:"weaponAttack"`
+	MagicAttack    uint16 `json:"magicAttack"`
+	WeaponDefense  uint16 `json:"weaponDefense"`
+	MagicDefense   uint16 `json:"magicDefense"`
+	Accuracy       uint16 `json:"accuracy"`
+	Avoidability   uint16 `json:"avoidability"`
+	Hands          uint16 `json:"hands"`
+	Speed          uint16 `json:"speed"`
+	Jump           uint16 `json:"jump"`
+	Slots          uint16 `json:"slots"`
+	OwnerId        uint32 `json:"ownerId"`
+	Locked         bool   `json:"locked"`
+	Spikes         bool   `json:"spikes"`
+	KarmaUsed      bool   `json:"karmaUsed"`
+	Cold           bool   `json:"cold"`
+	CanBeTraded    bool   `json:"canBeTraded"`
+	LevelType      byte   `json:"levelType"`
+	Level          byte   `json:"level"`
+	Experience     uint32 `json:"experience"`
+	HammersApplied uint32 `json:"hammersApplied"`
+}
+
 type ConsumableRestData struct {
 	Quantity     uint32 `json:"quantity"`
 	OwnerId      uint32 `json:"ownerId"`
@@ -83,7 +113,7 @@ type EtcRestData struct {
 }
 
 type CashRestData struct {
-	CashId      uint64 `json:"cashId"`
+	CashId      int64  `json:"cashId,string"`
 	Quantity    uint32 `json:"quantity"`
 	OwnerId     uint32 `json:"ownerId"`
 	Flag        uint16 `json:"flag"`
@@ -119,6 +149,13 @@ func (r *BaseRestModel) UnmarshalJSON(data []byte) error {
 		var rd EquipableRestData
 		if err := json.Unmarshal(temp.ReferenceData, &rd); err != nil {
 			return fmt.Errorf("error unmarshaling %s referenceData: %w", ReferenceTypeEquipable, err)
+		}
+		r.ReferenceData = rd
+	}
+	if ReferenceType(temp.ReferenceType) == ReferenceTypeCashEquipable {
+		var rd CashEquipableRestData
+		if err := json.Unmarshal(temp.ReferenceData, &rd); err != nil {
+			return fmt.Errorf("error unmarshaling %s referenceData: %w", ReferenceTypeCashEquipable, err)
 		}
 		r.ReferenceData = rd
 	}
@@ -198,6 +235,13 @@ func Transform(m Model[any]) (BaseRestModel, error) {
 				Level:          em.level,
 				Experience:     em.experience,
 				HammersApplied: em.hammersApplied,
+			}
+		}
+	}
+	if m.ReferenceType() == ReferenceTypeCashEquipable {
+		if cem, ok := m.referenceData.(CashEquipableReferenceData); ok {
+			brm.ReferenceData = CashEquipableRestData{
+				CashId: cem.GetCashId(),
 			}
 		}
 	}
@@ -297,6 +341,11 @@ func Extract(rm BaseRestModel) (Model[any], error) {
 			level:          erm.Level,
 			experience:     erm.Experience,
 			hammersApplied: erm.HammersApplied,
+		}
+	}
+	if cem, ok := rm.ReferenceData.(CashEquipableRestData); ok {
+		m.referenceData = CashEquipableReferenceData{
+			cashId: cem.CashId,
 		}
 	}
 	if crm, ok := rm.ReferenceData.(ConsumableRestData); ok {

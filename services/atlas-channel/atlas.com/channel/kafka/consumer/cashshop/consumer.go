@@ -3,6 +3,7 @@ package cashshop
 import (
 	"atlas-channel/cashshop/inventory/asset"
 	"atlas-channel/cashshop/wallet"
+	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
 	cashshop2 "atlas-channel/kafka/message/cashshop"
 	"atlas-channel/server"
@@ -36,6 +37,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventInventoryCapacityIncreased(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventPurchase(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventError(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCashItemMovedToInventory(sc, wp))))
 			}
 		}
 	}
@@ -115,9 +117,54 @@ func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		// TODO this is not a generic error generator
+		// Use the generic error handler
 		op := session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopInventoryCapacityIncreaseFailedBody(l)(e.Body.Error))
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, op)
+		return
+	}
+}
+
+func handleStatusEventCashItemMovedToInventory(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.CashItemMovedToInventoryEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.CashItemMovedToInventoryEventBody]) {
+		if e.Type != cashshop2.StatusEventTypeCashItemMovedToInventory {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+			// Retrieve the character and decorate with inventory
+			c, err := character.NewProcessor(l, ctx).GetById(character.NewProcessor(l, ctx).InventoryDecorator)(e.CharacterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve character [%d].", e.CharacterId)
+				return err
+			}
+
+			comp, ok := c.Inventory().CompartmentById(e.Body.CompartmentId)
+			if !ok {
+				l.Errorf("Unable to retrieve compartment [%s] for character [%d].", e.Body.CompartmentId, e.CharacterId)
+				return nil
+			}
+			as, ok := comp.FindBySlot(e.Body.Slot)
+			if !ok {
+				l.Errorf("Unable to retrieve asset in slot [%d] of compartment [%s] for character [%d].", e.Body.Slot, e.Body.CompartmentId, e.CharacterId)
+				return nil
+			}
+
+			// Retrieve the asset from the character's inventory
+			// Announce to the character that the cash item has been moved to their inventory
+			err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopCashItemMovedToInventoryBody(l, t)(*as))(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce cash item moved to inventory to character [%d].", e.CharacterId)
+				return err
+			}
+			l.Infof("Cash item moved to inventory for character [%d], compartment [%s], slot [%d]", e.CharacterId, e.Body.CompartmentId, e.Body.Slot)
+
+			return nil
+		})
 		return
 	}
 }

@@ -375,7 +375,7 @@ func WriteCashEquipableInfo(tenant tenant.Model) func(w *response.Writer, zeroPo
 			w.WriteInt(e.TemplateId())
 			w.WriteBool(true)
 			if true {
-				w.WriteLong(e.ReferenceData().GetCashId()) // cash sn
+				w.WriteInt64(e.ReferenceData().GetCashId())
 			}
 			w.WriteInt64(msTime(e.Expiration()))
 			w.WriteByte(byte(e.ReferenceData().GetSlots()))
@@ -425,7 +425,7 @@ func WriteCashItemInfo(zeroPosition bool) func(w *response.Writer) model.Operato
 			w.WriteByte(2)
 			w.WriteInt(i.TemplateId())
 			w.WriteBool(true)
-			w.WriteLong(i.ReferenceData().CashId())
+			w.WriteInt64(i.ReferenceData().CashId())
 			w.WriteInt64(msTime(i.Expiration()))
 			w.WriteShort(uint16(i.Quantity()))
 			w.WriteAsciiString("") // TODO

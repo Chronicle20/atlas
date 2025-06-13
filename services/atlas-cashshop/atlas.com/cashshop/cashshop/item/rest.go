@@ -4,7 +4,7 @@ import "strconv"
 
 type RestModel struct {
 	Id          uint32 `json:"-"`
-	CashId      uint64 `json:"cashId"`
+	CashId      int64  `json:"cashId"`
 	TemplateId  uint32 `json:"templateId"`
 	Quantity    uint32 `json:"quantity"`
 	Flag        uint16 `json:"flag"`

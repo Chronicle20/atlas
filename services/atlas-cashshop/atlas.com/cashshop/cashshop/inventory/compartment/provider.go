@@ -47,32 +47,3 @@ func getAllByAccountIdProvider(tenantId uuid.UUID) func(accountId uint32) databa
 		}
 	}
 }
-
-// ByIdProvider retrieves a compartment by ID
-func ByIdProvider(tenantId uuid.UUID) func(id uuid.UUID) func(db *gorm.DB) model.Provider[Model] {
-	return func(id uuid.UUID) func(db *gorm.DB) model.Provider[Model] {
-		return func(db *gorm.DB) model.Provider[Model] {
-			return model.Map[Entity, Model](Make)(getByIdProvider(tenantId)(id)(db))
-		}
-	}
-}
-
-// ByAccountIdAndTypeProvider retrieves a compartment by account ID and type
-func ByAccountIdAndTypeProvider(tenantId uuid.UUID) func(accountId uint32) func(type_ CompartmentType) func(db *gorm.DB) model.Provider[Model] {
-	return func(accountId uint32) func(type_ CompartmentType) func(db *gorm.DB) model.Provider[Model] {
-		return func(type_ CompartmentType) func(db *gorm.DB) model.Provider[Model] {
-			return func(db *gorm.DB) model.Provider[Model] {
-				return model.Map[Entity, Model](Make)(getByAccountIdAndTypeProvider(tenantId)(accountId)(type_)(db))
-			}
-		}
-	}
-}
-
-// AllByAccountIdProvider retrieves all compartments for an account
-func AllByAccountIdProvider(tenantId uuid.UUID) func(accountId uint32) func(db *gorm.DB) model.Provider[[]Model] {
-	return func(accountId uint32) func(db *gorm.DB) model.Provider[[]Model] {
-		return func(db *gorm.DB) model.Provider[[]Model] {
-			return model.SliceMap[Entity, Model](Make)(getAllByAccountIdProvider(tenantId)(accountId)(db))(model.ParallelMap())
-		}
-	}
-}

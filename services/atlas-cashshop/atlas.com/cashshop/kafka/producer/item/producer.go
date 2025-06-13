@@ -7,7 +7,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func CreateStatusEventProvider(id uint32, cashId uint64, templateId uint32, quantity uint32, purchasedBy uint32, flag uint16) model.Provider[[]kafka.Message] {
+func CreateStatusEventProvider(id uint32, cashId int64, templateId uint32, quantity uint32, purchasedBy uint32, flag uint16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(id))
 	value := &item.StatusEvent[item.StatusEventCreatedBody]{
 		CharacterId: id,

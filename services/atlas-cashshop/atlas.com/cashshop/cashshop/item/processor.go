@@ -14,8 +14,8 @@ import (
 )
 
 type Processor interface {
-	ByIdProvider(itemId uint32) model.Provider[[]Model]
-	GetById(itemId uint32) ([]Model, error)
+	ByIdProvider(itemId uint32) model.Provider[Model]
+	GetById(itemId uint32) (Model, error)
 	Create(mb *message.Buffer) func(templateId uint32) func(quantity uint32) func(purchasedBy uint32) (Model, error)
 	CreateAndEmit(templateId uint32, quantity uint32, purchasedBy uint32) (Model, error)
 }
@@ -39,11 +39,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	return p
 }
 
-func (p *ProcessorImpl) ByIdProvider(id uint32) model.Provider[[]Model] {
-	return model.SliceMap(Make)(byIdEntityProvider(p.t.Id(), id)(p.db))(model.ParallelMap())
+func (p *ProcessorImpl) ByIdProvider(id uint32) model.Provider[Model] {
+	return model.Map(Make)(byIdEntityProvider(p.t.Id(), id)(p.db))
 }
 
-func (p *ProcessorImpl) GetById(id uint32) ([]Model, error) {
+func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
 	return p.ByIdProvider(id)()
 }
 

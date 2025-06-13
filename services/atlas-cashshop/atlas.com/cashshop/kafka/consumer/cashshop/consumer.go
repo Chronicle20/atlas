@@ -45,7 +45,7 @@ func handleCommandRequestPurchase(db *gorm.DB) message.Handler[cashshop.Command[
 		if c.Type != cashshop.CommandTypeRequestPurchase {
 			return
 		}
-		_ = cashshop3.NewProcessor(l, ctx, db).Purchase(c.CharacterId, c.Body.Currency, c.Body.SerialNumber)
+		_ = cashshop3.NewProcessor(l, ctx, db).PurchaseAndEmit(c.CharacterId, c.Body.Currency, c.Body.SerialNumber)
 	}
 }
 

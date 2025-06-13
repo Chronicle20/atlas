@@ -1,7 +1,7 @@
 package item
 
 import (
-	itemModel "atlas-cashshop/item"
+	itemModel "atlas-cashshop/cashshop/item"
 	consumer2 "atlas-cashshop/kafka/consumer"
 	itemMessage "atlas-cashshop/kafka/message/item"
 	"context"

@@ -1,7 +1,7 @@
 package asset
 
 import (
-	"atlas-cashshop/item"
+	"atlas-cashshop/cashshop/item"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 )

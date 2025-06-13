@@ -1,16 +1,16 @@
 package asset
 
 import (
-	"atlas-cashshop/item"
+	"atlas-cashshop/cashshop/item"
 	"github.com/google/uuid"
 	"time"
 )
 
 // Model represents a cash shop inventory asset
 type Model struct {
-	id          uuid.UUID
+	id            uuid.UUID
 	compartmentId uuid.UUID
-	item        item.Model
+	item          item.Model
 }
 
 // Id returns the unique identifier of this asset
@@ -46,25 +46,25 @@ func (m Model) Expiration() time.Time {
 // Clone creates a builder from this model
 func Clone(m Model) *ModelBuilder {
 	return &ModelBuilder{
-		id:          m.id,
+		id:            m.id,
 		compartmentId: m.compartmentId,
-		item:        m.item,
+		item:          m.item,
 	}
 }
 
 // ModelBuilder is a builder for the Model
 type ModelBuilder struct {
-	id          uuid.UUID
+	id            uuid.UUID
 	compartmentId uuid.UUID
-	item        item.Model
+	item          item.Model
 }
 
 // NewBuilder creates a new ModelBuilder
 func NewBuilder(id uuid.UUID, compartmentId uuid.UUID, item item.Model) *ModelBuilder {
 	return &ModelBuilder{
-		id:          id,
+		id:            id,
 		compartmentId: compartmentId,
-		item:        item,
+		item:          item,
 	}
 }
 
@@ -77,8 +77,8 @@ func (b *ModelBuilder) SetItem(item item.Model) *ModelBuilder {
 // Build creates a Model from this builder
 func (b *ModelBuilder) Build() Model {
 	return Model{
-		id:          b.id,
+		id:            b.id,
 		compartmentId: b.compartmentId,
-		item:        b.item,
+		item:          b.item,
 	}
 }

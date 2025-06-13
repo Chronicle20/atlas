@@ -3,7 +3,7 @@ package inventory
 import (
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
-	"atlas-cashshop/item"
+	"atlas-cashshop/cashshop/item"
 	"atlas-cashshop/logger"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"

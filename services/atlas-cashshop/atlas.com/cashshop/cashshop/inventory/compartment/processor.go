@@ -1,6 +1,7 @@
 package compartment
 
 import (
+	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/compartment"
 	"atlas-cashshop/kafka/producer"
@@ -19,8 +20,10 @@ const DefaultCapacity = uint32(55)
 type Processor interface {
 	WithTransaction(tx *gorm.DB) Processor
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
+	GetByAccountIdAndType(accountId uint32, type_ CompartmentType) (Model, error)
 	ByAccountIdAndTypeProvider(accountId uint32, type_ CompartmentType) model.Provider[Model]
 	AllByAccountIdProvider(accountId uint32) model.Provider[[]Model]
+	GetByAccountId(accountId uint32) ([]Model, error)
 	Create(mb *message.Buffer) func(accountId uint32) func(type_ CompartmentType) func(capacity uint32) (Model, error)
 	CreateAndEmit(accountId uint32, type_ CompartmentType, capacity uint32) (Model, error)
 	UpdateCapacity(mb *message.Buffer) func(id uuid.UUID) func(capacity uint32) (Model, error)
@@ -38,6 +41,7 @@ type ProcessorImpl struct {
 	db  *gorm.DB
 	t   tenant.Model
 	p   producer.Provider
+	cap asset.Processor
 }
 
 // NewProcessor creates a new Processor instance
@@ -48,6 +52,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
 		p:   producer.ProviderImpl(l)(ctx),
+		cap: asset.NewProcessor(l, ctx, db),
 	}
 	return p
 }
@@ -60,22 +65,43 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 		db:  tx,
 		t:   p.t,
 		p:   p.p,
+		cap: p.cap,
 	}
+}
+
+func (p *ProcessorImpl) DecorateAssets(m Model) Model {
+	// Get all assets for this compartment
+	assets, err := p.cap.GetByCompartmentId(m.Id())
+	if err != nil {
+		return m
+	}
+	return Clone(m).SetAssets(assets).Build()
 }
 
 // ByIdProvider returns a provider for retrieving a compartment by ID
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
-	return ByIdProvider(p.t.Id())(id)(p.db)
+	cp := model.Map[Entity, Model](Make)(getByIdProvider(p.t.Id())(id)(p.db))
+	return model.Map(model.Decorate(model.Decorators(p.DecorateAssets)))(cp)
 }
 
 // ByAccountIdAndTypeProvider returns a provider for retrieving a compartment by account ID and type
 func (p *ProcessorImpl) ByAccountIdAndTypeProvider(accountId uint32, type_ CompartmentType) model.Provider[Model] {
-	return ByAccountIdAndTypeProvider(p.t.Id())(accountId)(type_)(p.db)
+	cp := model.Map[Entity, Model](Make)(getByAccountIdAndTypeProvider(p.t.Id())(accountId)(type_)(p.db))
+	return model.Map(model.Decorate(model.Decorators(p.DecorateAssets)))(cp)
+}
+
+func (p *ProcessorImpl) GetByAccountIdAndType(accountId uint32, type_ CompartmentType) (Model, error) {
+	return p.ByAccountIdAndTypeProvider(accountId, type_)()
 }
 
 // AllByAccountIdProvider returns a provider for retrieving all compartments for an account
 func (p *ProcessorImpl) AllByAccountIdProvider(accountId uint32) model.Provider[[]Model] {
-	return AllByAccountIdProvider(p.t.Id())(accountId)(p.db)
+	cp := model.SliceMap[Entity, Model](Make)(getAllByAccountIdProvider(p.t.Id())(accountId)(p.db))(model.ParallelMap())
+	return model.SliceMap(model.Decorate(model.Decorators(p.DecorateAssets)))(cp)(model.ParallelMap())
+}
+
+func (p *ProcessorImpl) GetByAccountId(accountId uint32) ([]Model, error) {
+	return p.AllByAccountIdProvider(accountId)()
 }
 
 // Create creates a new compartment

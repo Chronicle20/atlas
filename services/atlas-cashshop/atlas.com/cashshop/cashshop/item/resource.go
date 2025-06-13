@@ -20,8 +20,8 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			registerGet := rest.RegisterHandler(l)(si)
 			registerInput := rest.RegisterInputHandler[RestModel](l)(si)
 			r := router.PathPrefix("/cash-shop/items").Subrouter()
-			r.HandleFunc("", registerGet("get_item", handleGetItem(db))).Methods(http.MethodGet)
 			r.HandleFunc("", registerInput("create_item", handleCreateItem(db))).Methods(http.MethodPost)
+			r.HandleFunc("/{itemId}", registerGet("get_item", handleGetItem(db))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -40,7 +40,7 @@ func handleGetItem(db *gorm.DB) rest.GetHandler {
 					return
 				}
 
-				res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+				res, err := model.Map(Transform)(model.FixedProvider(ms))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					w.WriteHeader(http.StatusInternalServerError)
@@ -49,7 +49,7 @@ func handleGetItem(db *gorm.DB) rest.GetHandler {
 
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
-				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
 		})
 	}

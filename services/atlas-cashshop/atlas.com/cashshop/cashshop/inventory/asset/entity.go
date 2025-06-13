@@ -1,7 +1,7 @@
 package asset
 
 import (
-	"atlas-cashshop/item"
+	"atlas-cashshop/cashshop/item"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -25,10 +25,10 @@ func (e Entity) TableName() string {
 }
 
 // Make converts an Entity to a Model
-func Make(e Entity, item item.Model) (Model, error) {
+func Make(e Entity) (Model, error) {
 	return NewBuilder(
 		e.Id,
 		e.CompartmentId,
-		item,
+		item.NewBuilder().SetId(e.ItemId).Build(),
 	).Build(), nil
 }

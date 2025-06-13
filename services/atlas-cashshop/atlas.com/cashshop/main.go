@@ -4,8 +4,8 @@ import (
 	"atlas-cashshop/cashshop/inventory"
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
+	item2 "atlas-cashshop/cashshop/item"
 	"atlas-cashshop/database"
-	"atlas-cashshop/item"
 	"atlas-cashshop/kafka/consumer/account"
 	"atlas-cashshop/kafka/consumer/cashshop"
 	"atlas-cashshop/kafka/consumer/character"
@@ -54,7 +54,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, item.Migration, compartment.Migration, asset.Migration))
+	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, item2.Migration, compartment.Migration, asset.Migration))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	account.InitConsumers(l)(cmf)(consumerGroupId)
@@ -73,8 +73,9 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(wallet.InitResource(GetServer())(db)).
 		AddRouteInitializer(wishlist.InitResource(GetServer())(db)).
-		AddRouteInitializer(item.InitResource(GetServer())(db)).
+		AddRouteInitializer(item2.InitResource(GetServer())(db)).
 		AddRouteInitializer(compartment.InitResource(GetServer())(db)).
+		AddRouteInitializer(asset.InitResource(GetServer())(db)).
 		AddRouteInitializer(inventory.InitResource(GetServer())(db)).
 		Run()
 

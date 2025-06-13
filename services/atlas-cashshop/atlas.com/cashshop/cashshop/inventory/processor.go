@@ -2,7 +2,6 @@ package inventory
 
 import (
 	"atlas-cashshop/cashshop/inventory/compartment"
-	"atlas-cashshop/item"
 	"atlas-cashshop/kafka/message"
 	inventoryMsg "atlas-cashshop/kafka/message/cashshop/inventory"
 	"atlas-cashshop/kafka/producer"
@@ -32,6 +31,7 @@ type ProcessorImpl struct {
 	db  *gorm.DB
 	t   tenant.Model
 	p   producer.Provider
+	ccp compartment.Processor
 }
 
 // NewProcessor creates a new Processor instance
@@ -42,6 +42,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		db:  db,
 		t:   tenant.MustFromContext(ctx),
 		p:   producer.ProviderImpl(l)(ctx),
+		ccp: compartment.NewProcessor(l, ctx, db),
 	}
 	return p
 }
@@ -54,16 +55,30 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 		db:  tx,
 		t:   p.t,
 		p:   p.p,
+		ccp: p.ccp,
 	}
 }
 
 // ByAccountIdProvider returns a provider for retrieving an inventory by account ID
 func (p *ProcessorImpl) ByAccountIdProvider(accountId uint32) model.Provider[Model] {
-	return ByAccountIdProvider(p.t.Id())(accountId)(func(itemId uint32) model.Provider[item.Model] {
-		return func() (item.Model, error) {
-			return item.Model{}, nil
+	return func() (Model, error) {
+		// Get all compartments for the account
+		compartments, err := p.ccp.GetByAccountId(accountId)
+		if err != nil {
+			return Model{}, err
 		}
-	})(p.db)
+
+		// Create the inventory builder
+		builder := NewBuilder(accountId)
+
+		// For each compartment, get its assets and add them to the compartment
+		for _, c := range compartments {
+			builder.SetCompartment(c)
+		}
+
+		// Build and return the inventory
+		return builder.Build(), nil
+	}
 }
 
 // GetByAccountId retrieves an inventory by account ID

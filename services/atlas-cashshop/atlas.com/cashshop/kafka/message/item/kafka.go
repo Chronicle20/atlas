@@ -28,7 +28,7 @@ type StatusEvent[E any] struct {
 }
 
 type StatusEventCreatedBody struct {
-	CashId      uint64 `json:"cashId"`
+	CashId      int64  `json:"cashId"`
 	TemplateId  uint32 `json:"templateId"`
 	Quantity    uint32 `json:"quantity"`
 	PurchasedBy uint32 `json:"purchasedBy"`

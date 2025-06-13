@@ -13,7 +13,7 @@ func Migration(db *gorm.DB) error {
 type Entity struct {
 	Id          uint32    `gorm:"primaryKey;autoIncrement:true"`
 	TenantId    uuid.UUID `gorm:"not null"`
-	CashId      uint64    `gorm:"not null"`
+	CashId      int64     `gorm:"not null"`
 	TemplateId  uint32    `gorm:"not null"`
 	Quantity    uint32    `gorm:"not null"`
 	Flag        uint16    `gorm:"not null"`

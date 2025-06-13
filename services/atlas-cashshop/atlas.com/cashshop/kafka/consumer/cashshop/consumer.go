@@ -36,6 +36,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestStorageIncrease(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestStorageIncreaseByItem(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestCharacterSlotIncreaseByItem(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandMoveFromCashInventory(db))))
 		}
 	}
 }
@@ -91,5 +92,14 @@ func handleCommandRequestCharacterSlotIncreaseByItem(db *gorm.DB) message.Handle
 			return
 		}
 		_ = producer.ProviderImpl(l)(ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(c.CharacterId, "UNKNOWN_ERROR"))
+	}
+}
+
+func handleCommandMoveFromCashInventory(db *gorm.DB) message.Handler[cashshop.Command[cashshop.MoveFromCashInventoryCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c cashshop.Command[cashshop.MoveFromCashInventoryCommandBody]) {
+		if c.Type != cashshop.CommandTypeMoveFromCashInventory {
+			return
+		}
+		_ = cashshop3.NewProcessor(l, ctx, db).MoveFromCashInventoryAndEmit(c.CharacterId, c.Body.SerialNumber, c.Body.InventoryType, c.Body.Slot)
 	}
 }

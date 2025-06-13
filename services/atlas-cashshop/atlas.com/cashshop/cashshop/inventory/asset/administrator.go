@@ -25,3 +25,8 @@ func create(db *gorm.DB) func(tenantId uuid.UUID) func(compartmentId uuid.UUID) 
 		}
 	}
 }
+
+// deleteByItemId deletes an asset entity by tenant ID, compartment ID, and item ID
+func deleteByItemId(db *gorm.DB, tenantId uuid.UUID, itemId uint32) error {
+	return db.Where("tenant_id = ? AND item_id = ?", tenantId, itemId).Delete(&Entity{}).Error
+}

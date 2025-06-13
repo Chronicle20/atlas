@@ -10,10 +10,10 @@ const (
 // StatusEvent represents a cash compartment status event
 // According to the requirements, it should always contain the compartmentId and type
 type StatusEvent[E any] struct {
-	CompartmentId string `json:"compartmentId"`
-	Type          string `json:"type"`
+	CompartmentId   string `json:"compartmentId"`
+	Type            string `json:"type"`
 	CompartmentType string `json:"compartmentType"`
-	Body          E      `json:"body"`
+	Body            E      `json:"body"`
 }
 
 // StatusEventCreatedBody contains information for compartment creation events

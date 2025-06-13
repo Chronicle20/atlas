@@ -32,6 +32,12 @@ type Processor interface {
 
 	// CreateAndEmit creates a new asset and emits Kafka messages
 	CreateAndEmit(compartmentId uuid.UUID, itemId uint32) (Model, error)
+
+	// MovedFrom deletes an asset by compartment ID and item ID
+	MovedFrom(mb *message.Buffer) func(cashItemId uint32) error
+
+	// MovedFromAndEmit deletes an asset by compartment ID and item ID and emits Kafka messages
+	MovedFromAndEmit(cashItemId uint32) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -123,4 +129,34 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(compartmentId uuid.UUID)
 // CreateAndEmit creates a new asset and emits Kafka messages
 func (p *ProcessorImpl) CreateAndEmit(compartmentId uuid.UUID, itemId uint32) (Model, error) {
 	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(p.Create)(compartmentId))(itemId)
+}
+
+// MovedFrom deletes an asset by compartment ID and item ID
+func (p *ProcessorImpl) MovedFrom(mb *message.Buffer) func(cashItemId uint32) error {
+	return func(cashItemId uint32) error {
+		p.l.Debugf("Deleting asset with item Id [%d].", cashItemId)
+		p.db.Debug()
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			// Delete the asset entity
+			err := deleteByItemId(tx, p.t.Id(), cashItemId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to delete asset entity item [%d].", cashItemId)
+				return err
+			}
+			return nil
+		})
+
+		if txErr != nil {
+			return txErr
+		}
+
+		return nil
+	}
+}
+
+// MovedFromAndEmit deletes an asset by compartment ID and item ID and emits Kafka messages
+func (p *ProcessorImpl) MovedFromAndEmit(cashItemId uint32) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.MovedFrom(buf)(cashItemId)
+	})
 }

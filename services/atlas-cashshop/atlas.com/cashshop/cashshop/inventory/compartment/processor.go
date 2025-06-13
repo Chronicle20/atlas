@@ -3,7 +3,7 @@ package compartment
 import (
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/kafka/message"
-	"atlas-cashshop/kafka/message/compartment"
+	"atlas-cashshop/kafka/message/cashshop/compartment"
 	"atlas-cashshop/kafka/producer"
 	compartmentProducer "atlas-cashshop/kafka/producer/cashshop/inventory/compartment"
 	"context"

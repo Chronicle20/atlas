@@ -1,6 +1,7 @@
 package cashshop
 
 import (
+	"atlas-channel/cashshop/inventory/asset"
 	"atlas-channel/cashshop/wallet"
 	consumer2 "atlas-channel/kafka/consumer"
 	cashshop2 "atlas-channel/kafka/message/cashshop"
@@ -33,6 +34,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				var t string
 				t, _ = topic.EnvProvider(l)(cashshop2.EnvEventTopicStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventInventoryCapacityIncreased(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventPurchase(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventError(sc, wp))))
 			}
 		}
@@ -63,6 +65,37 @@ func handleStatusEventInventoryCapacityIncreased(sc server.Model, wp writer.Prod
 			err = session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)(writer.CashShopCashQueryResultBody(t)(w.Credit(), w.Points(), w.Prepaid()))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce cash shop wallet to character [%d].", s.CharacterId())
+				return err
+			}
+			return nil
+		})
+		return
+	}
+}
+
+func handleStatusEventPurchase(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.PurchaseEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.PurchaseEventBody]) {
+		if e.Type != cashshop2.StatusEventTypePurchase {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
+			// Retrieve the asset that was purchased
+			a, err := asset.NewProcessor(l, ctx).GetById(s.AccountId(), e.Body.CompartmentId, e.Body.AssetId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve asset [%s] for character [%d].", e.Body.AssetId, e.CharacterId)
+				return err
+			}
+
+			// Announce the purchase success to the character session
+			err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopCashInventoryPurchaseSuccessBody(l)(s.AccountId(), e.CharacterId, a))(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce cash shop purchase success to character [%d].", e.CharacterId)
 				return err
 			}
 			return nil

@@ -2,8 +2,9 @@ package writer
 
 import (
 	"atlas-channel/account"
-	"atlas-channel/cashshop/inventory"
+	"atlas-channel/cashshop/inventory/asset"
 	"atlas-channel/cashshop/wishlist"
+	"github.com/Chronicle20/atlas-model/model"
 
 	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -18,6 +19,7 @@ const (
 	CashShopOperationInventoryCapacityIncreaseFailed  = "INVENTORY_CAPACITY_INCREASE_FAILED"
 	CashShopOperationLoadWishlist                     = "LOAD_WISHLIST"
 	CashShopOperationUpdateWishlist                   = "UPDATE_WISHLIST"
+	CashShopOperationPurchaseSuccess                  = "PURCHASE_SUCCESS"
 
 	CashShopOperationErrorUnknown                           = "UNKNOWN_ERROR"                         // 0x00
 	CashShopOperationErrorRequestTimedOut                   = "REQUEST_TIMED_OUT"                     // 0xA3
@@ -76,27 +78,44 @@ const (
 
 )
 
-func CashShopCashInventoryBody(l logrus.FieldLogger) func(a account.Model, characterId uint32, inventory inventory.Model) BodyProducer {
-	return func(a account.Model, characterId uint32, inventory inventory.Model) BodyProducer {
+func CashShopCashInventoryBody(l logrus.FieldLogger) func(a account.Model, characterId uint32, assets []asset.Model) BodyProducer {
+	return func(a account.Model, characterId uint32, assets []asset.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationLoadInventorySuccess))
-			w.WriteShort(uint16(len(inventory.Items())))
-			for _, i := range inventory.Items() {
-				w.WriteLong(i.Id())
-				w.WriteInt(a.Id())
-				w.WriteInt(characterId)
-				w.WriteInt(i.ItemId())
-				w.WriteInt(i.SerialNumber())
-				w.WriteInt16(i.Quantity())
-				WritePaddedString(w, i.PurchasedByName(), 13)
-				w.WriteInt64(msTime(i.Expiration()))
-				w.WriteInt(i.PaybackRate())
-				w.WriteInt(i.DiscountRate())
+			w.WriteShort(uint16(len(assets)))
+			for _, i := range assets {
+				_ = WriteCashInventoryItem(a.Id(), characterId, i)(w)
 			}
 			w.WriteShort(0) // TODO storage slots
 			w.WriteInt16(a.CharacterSlots())
 			return w.Bytes()
 		}
+	}
+}
+
+func CashShopCashInventoryPurchaseSuccessBody(l logrus.FieldLogger) func(accountId uint32, characterId uint32, asset asset.Model) BodyProducer {
+	return func(accountId uint32, characterId uint32, asset asset.Model) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationPurchaseSuccess))
+			_ = WriteCashInventoryItem(accountId, characterId, asset)(w)
+			return w.Bytes()
+		}
+	}
+}
+
+func WriteCashInventoryItem(accountId uint32, characterId uint32, a asset.Model) model.Operator[*response.Writer] {
+	return func(w *response.Writer) error {
+		w.WriteLong(a.Item().CashId())
+		w.WriteInt(accountId)
+		w.WriteInt(characterId)
+		w.WriteInt(a.Item().TemplateId())
+		w.WriteInt(a.Item().Id())
+		w.WriteInt16(int16(a.Item().Quantity()))
+		WritePaddedString(w, "", 13) // TODO
+		w.WriteInt64(msTime(a.Expiration()))
+		w.WriteInt(0) // TODO
+		w.WriteInt(0) // TODO
+		return nil
 	}
 }
 

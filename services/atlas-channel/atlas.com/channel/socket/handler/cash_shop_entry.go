@@ -4,15 +4,13 @@ import (
 	"atlas-channel/account"
 	"atlas-channel/buddylist"
 	"atlas-channel/cashshop"
-	"atlas-channel/cashshop/inventory"
-	"atlas-channel/cashshop/inventory/item"
+	"atlas-channel/cashshop/inventory/compartment"
 	"atlas-channel/cashshop/wallet"
 	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
-
 	"github.com/Chronicle20/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -56,13 +54,14 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			return
 		}
 
-		items := make([]item.Model, 0)
-		items = append(items, item.NewModel(1, 1041009, 10000255, 1))
-		items = append(items, item.NewModel(2, 1041071, 10000256, 1))
+		// TODO select correct compartment
+		ccp, err := compartment.NewProcessor(l, ctx).GetByAccountIdAndType(s.AccountId(), compartment.TypeExplorer)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to retrieve compartment for character [%d].", s.CharacterId())
+			ccp = compartment.Model{}
+		}
 
-		inv := inventory.NewModel(items)
-
-		err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopCashInventoryBody(l)(a, s.CharacterId(), inv))(s)
+		err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopCashInventoryBody(l)(a, s.CharacterId(), ccp.Assets()))(s)
 		if err != nil {
 			return
 		}

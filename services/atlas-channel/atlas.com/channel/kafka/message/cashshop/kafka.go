@@ -1,5 +1,9 @@
 package cashshop
 
+import (
+	"github.com/google/uuid"
+)
+
 const (
 	EnvCommandTopic                               = "COMMAND_TOPIC_CASH_SHOP"
 	CommandTypeRequestPurchase                    = "REQUEST_PURCHASE"
@@ -50,6 +54,7 @@ const (
 	EventCashShopStatusTypeCharacterEnter     = "CHARACTER_ENTER"
 	EventCashShopStatusTypeCharacterExit      = "CHARACTER_EXIT"
 	StatusEventTypeInventoryCapacityIncreased = "INVENTORY_CAPACITY_INCREASED"
+	StatusEventTypePurchase                   = "PURCHASE"
 	StatusEventTypeError                      = "ERROR"
 )
 
@@ -75,4 +80,12 @@ type CharacterMovementBody struct {
 	CharacterId uint32 `json:"characterId"`
 	ChannelId   byte   `json:"channelId"`
 	MapId       uint32 `json:"mapId"`
+}
+
+type PurchaseEventBody struct {
+	TemplateId    uint32    `json:"templateId"`
+	Price         uint32    `json:"price"`
+	CompartmentId uuid.UUID `json:"compartmentId"`
+	AssetId       uuid.UUID `json:"assetId"`
+	ItemId        uint32    `json:"itemId"`
 }

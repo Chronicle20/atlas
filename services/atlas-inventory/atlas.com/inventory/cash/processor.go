@@ -22,8 +22,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) ByEquipmentIdModelProvider(itemId uint32) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(itemId), Extract)
+func (p *Processor) ByEquipmentIdModelProvider(id uint32) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(id), Extract)
 }
 
 func (p *Processor) UpdateQuantity(itemId uint32, quantity uint32) error {

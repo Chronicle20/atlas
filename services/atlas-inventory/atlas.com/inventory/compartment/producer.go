@@ -104,3 +104,38 @@ func SortCompleteEventStatusProvider(id uuid.UUID, characterId uint32, inventory
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func CashItemMovedEventStatusProvider(id uuid.UUID, characterId uint32, cashItemId uint32, slot int16, templateId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.StatusEvent[compartment.CashItemMovedEventBody]{
+		CharacterId:   characterId,
+		CompartmentId: id,
+		Type:          compartment.StatusEventTypeCashItemMoved,
+		Body: compartment.CashItemMovedEventBody{
+			CashItemId: cashItemId,
+			Slot:       slot,
+			TemplateId: templateId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ErrorEventStatusProvider(id uuid.UUID, characterId uint32, errorCode string, cashItemId ...uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	body := compartment.ErrorEventBody{
+		ErrorCode: errorCode,
+	}
+
+	// Include cash item ID if provided
+	if len(cashItemId) > 0 {
+		body.CashItemId = cashItemId[0]
+	}
+
+	value := &compartment.StatusEvent[compartment.ErrorEventBody]{
+		CharacterId:   characterId,
+		CompartmentId: id,
+		Type:          compartment.StatusEventTypeError,
+		Body:          body,
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -100,6 +100,8 @@ func (p *Processor) DecorateAsset(m Model[any]) (Model[any], error) {
 	var decorator model.Transformer[Model[any], Model[any]]
 	if m.IsEquipable() {
 		decorator = p.DecorateEquipable
+	} else if m.IsCashEquipable() {
+		decorator = p.DecorateCashEquipable
 	} else if m.IsConsumable() || m.IsSetup() || m.IsEtc() {
 		decorator = p.DecorateStackable
 	} else if m.IsCash() || m.IsPet() {
@@ -179,6 +181,18 @@ func MakeEquipableReferenceData(e equipable.Model) EquipableReferenceData {
 	}
 }
 
+func (p *Processor) DecorateCashEquipable(m Model[any]) (Model[any], error) {
+	ci, err := p.cashProcessor.GetById(m.ReferenceId())
+	if err != nil {
+		return m, errors.New("cannot locate reference")
+	}
+	return Clone(m).
+		SetReferenceData(CashEquipableReferenceData{
+			cashId: ci.CashId(),
+		}).
+		Build(), nil
+}
+
 func (p *Processor) DecorateStackable(m Model[any]) (Model[any], error) {
 	s, err := p.stackableProcessor.GetById(m.ReferenceId())
 	if err != nil {
@@ -232,8 +246,9 @@ func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
 		}
 		return Clone(m).
 			SetReferenceData(CashReferenceData{
+				cashId:     ci.CashId(),
 				quantity:   ci.Quantity(),
-				ownerId:    ci.OwnerId(),
+				ownerId:    0, // TODO
 				flag:       ci.Flag(),
 				purchaseBy: ci.PurchasedBy(),
 			}).
@@ -274,12 +289,14 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32, compartm
 				var deleteRefFunc func(id uint32) error
 				if a.ReferenceType() == ReferenceTypeEquipable {
 					deleteRefFunc = p.equipableProcessor.Delete
+				} else if a.ReferenceType() == ReferenceTypeCashEquipable {
+					// TODO Cash Shop
 				} else if a.ReferenceType() == ReferenceTypeConsumable || a.ReferenceType() == ReferenceTypeSetup || a.ReferenceType() == ReferenceTypeEtc {
 					deleteRefFunc = p.stackableProcessor.Delete
 				} else if a.ReferenceType() == ReferenceTypeCash {
-					// TODO
+					// TODO Cash Shop
 				} else if a.ReferenceType() == ReferenceTypePet {
-					// TODO
+					// TODO Cash Shop
 				}
 
 				if deleteRefFunc == nil {
@@ -441,6 +458,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 
 			var rd interface{}
 			if inventoryType == inventory.TypeValueEquip {
+				// TODO determine if we're creating an Equip or Cash Equip
 				e, err := p.equipableProcessor.Create(templateId)()
 				if err != nil {
 					return err
@@ -570,6 +588,40 @@ func (p *Processor) Acquire(mb *message.Buffer) func(characterId uint32, compart
 			}
 			a = Clone(a).SetReferenceData(rd).Build()
 			return mb.Put(asset.EnvEventTopicStatus, CreatedEventStatusProvider(characterId, a))
+		})
+		if txErr != nil {
+			return Model[any]{}, txErr
+		}
+		return a, nil
+	}
+}
+
+func (p *Processor) AcquireCashItem(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, cashItemId uint32) (Model[any], error) {
+	return func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, cashItemId uint32) (Model[any], error) {
+		p.l.Debugf("Character [%d] attempting to acquire cash item [%d] in slot [%d] of compartment [%s].", characterId, cashItemId, slot, compartmentId.String())
+		var a Model[any]
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			// For cash items, we use ReferenceTypeCash
+			var referenceType ReferenceType
+			if type_ == inventory.TypeValueEquip {
+				referenceType = ReferenceTypeCashEquipable
+			} else {
+				referenceType = ReferenceTypeCash
+			}
+
+			// Verify the cash item exists
+			ci, err := p.cashProcessor.GetById(cashItemId)
+			if err != nil {
+				return err
+			}
+
+			// Create the asset with the cash item reference
+			expiration := time.Time{} // Cash items typically don't expire
+			a, err = create(p.db, p.t.Id(), compartmentId, ci.TemplateId(), slot, expiration, cashItemId, referenceType)
+			if err != nil {
+				return err
+			}
+			return nil
 		})
 		if txErr != nil {
 			return Model[any]{}, txErr

@@ -14,6 +14,10 @@ const (
 	StatusEventTypeReservationCancelled = "RESERVATION_CANCELLED"
 	StatusEventTypeMergeComplete        = "MERGE_COMPLETE"
 	StatusEventTypeSortComplete         = "SORT_COMPLETE"
+	StatusEventTypeCashItemMoved        = "CASH_ITEM_MOVED"
+	StatusEventTypeError                = "ERROR"
+
+	StatusEventErrorTypeCashItemMoveFailed = "CASH_ITEM_MOVE_FAILED"
 )
 
 type StatusEvent[E any] struct {
@@ -60,6 +64,17 @@ type SortCompleteEventBody struct {
 	Type byte `json:"type"`
 }
 
+type CashItemMovedEventBody struct {
+	CashItemId uint32 `json:"cashItemId"`
+	Slot       int16  `json:"slot"`
+	TemplateId uint32 `json:"templateId"`
+}
+
+type ErrorEventBody struct {
+	ErrorCode  string `json:"errorCode"`
+	CashItemId uint32 `json:"cashItemId,omitempty"`
+}
+
 const (
 	EnvCommandTopic          = "COMMAND_TOPIC_COMPARTMENT"
 	CommandEquip             = "EQUIP"
@@ -75,6 +90,7 @@ const (
 	CommandRecharge          = "RECHARGE"
 	CommandMerge             = "MERGE"
 	CommandSort              = "SORT"
+	CommandMoveCashItem      = "MOVE_CASH_ITEM"
 )
 
 type Command[E any] struct {
@@ -157,4 +173,9 @@ type MergeCommandBody struct {
 }
 
 type SortCommandBody struct {
+}
+
+type MoveCashItemCommandBody struct {
+	Slot       int16  `json:"slot"`
+	CashItemId uint32 `json:"cashItemId"`
 }

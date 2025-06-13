@@ -1203,6 +1203,92 @@ func (p *Processor) MergeAndCompact(mb *message.Buffer) func(characterId uint32,
 	}
 }
 
+func (p *Processor) MoveCashItemAndEmit(characterId uint32, inventoryType inventory.Type, slot int16, cashItemId uint32) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
+		return p.MoveCashItem(mb)(characterId)(inventoryType)(slot)(cashItemId)
+	})
+}
+
+func (p *Processor) MoveCashItem(mb *message.Buffer) func(characterId uint32) func(inventoryType inventory.Type) func(slot int16) func(cashItemId uint32) error {
+	return func(characterId uint32) func(inventoryType inventory.Type) func(slot int16) func(cashItemId uint32) error {
+		return func(inventoryType inventory.Type) func(slot int16) func(cashItemId uint32) error {
+			return func(slot int16) func(cashItemId uint32) error {
+				return func(cashItemId uint32) error {
+					p.l.Debugf("Character [%d] attempting to move cash item [%d] to slot [%d] in inventory type [%d].", characterId, cashItemId, slot, inventoryType)
+
+					// Lock the inventory to prevent concurrent modifications
+					invLock := LockRegistry().Get(characterId, inventoryType)
+					invLock.Lock()
+					defer invLock.Unlock()
+
+					var c Model
+					var a asset.Model[any]
+					txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+						// Get the compartment for the character and inventory type
+						var err error
+						c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
+							return err
+						}
+
+						// Check if the specified slot is available
+						targetSlot := slot
+						if targetSlot < 0 {
+							// If no slot specified or invalid slot, find the next free slot
+							nfs, err := c.NextFreeSlot()
+							if err != nil {
+								p.l.WithError(err).Errorf("Unable to find next free slot in compartment [%s] for character [%d].", c.Id(), characterId)
+								return err
+							}
+							targetSlot = nfs
+						} else {
+							// Check if the slot is already occupied
+							assets, err := p.assetProcessor.WithTransaction(tx).GetByCompartmentId(c.Id())
+							if err != nil {
+								p.l.WithError(err).Errorf("Unable to get assets in compartment [%s] for character [%d].", c.Id(), characterId)
+								return err
+							}
+
+							for _, asset := range assets {
+								if asset.Slot() == targetSlot {
+									// Slot is occupied, find the next free slot
+									nfs, err := c.NextFreeSlot()
+									if err != nil {
+										p.l.WithError(err).Errorf("Unable to find next free slot in compartment [%s] for character [%d].", c.Id(), characterId)
+										return err
+									}
+									targetSlot = nfs
+									break
+								}
+							}
+						}
+
+						// Create the asset for the cash item
+						a, err = p.assetProcessor.WithTransaction(tx).AcquireCashItem(mb)(characterId, c.Id(), c.Type(), targetSlot, cashItemId)
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to acquire cash item [%d] for character [%d].", cashItemId, characterId)
+							return err
+						}
+
+						// Emit a status event for the successful move
+						return mb.Put(compartment.EnvEventTopicStatus, CashItemMovedEventStatusProvider(c.Id(), characterId, cashItemId, targetSlot, a.TemplateId()))
+					})
+
+					if txErr != nil {
+						p.l.WithError(txErr).Errorf("Character [%d] unable to move cash item [%d] to inventory [%d].", characterId, cashItemId, inventoryType)
+						_ = mb.Put(compartment.EnvEventTopicStatus, ErrorEventStatusProvider(c.Id(), characterId, compartment.StatusEventErrorTypeCashItemMoveFailed, cashItemId))
+						return txErr
+					}
+
+					p.l.Debugf("Character [%d] successfully moved cash item [%d] to slot [%d] in inventory [%d].", characterId, cashItemId, a.Slot(), inventoryType)
+					return nil
+				}
+			}
+		}
+	}
+}
+
 func (p *Processor) CompactAndSort(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type) error {
 	return func(characterId uint32, inventoryType inventory.Type) error {
 		p.l.Debugf("Character [%d] attempting to compact and sort assets in inventory [%d].", characterId, inventoryType)

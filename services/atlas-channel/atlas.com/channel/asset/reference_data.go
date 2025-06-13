@@ -319,7 +319,7 @@ func (b *EquipableReferenceDataBuilder) SetExpiration(value time.Time) *Equipabl
 }
 
 type CashEquipableReferenceData struct {
-	cashId         uint64
+	cashId         int64
 	strength       uint16
 	dexterity      uint16
 	intelligence   uint16
@@ -349,7 +349,7 @@ type CashEquipableReferenceData struct {
 	expiration     time.Time
 }
 
-func (e CashEquipableReferenceData) GetCashId() uint64         { return e.cashId }
+func (e CashEquipableReferenceData) GetCashId() int64          { return e.cashId }
 func (e CashEquipableReferenceData) GetStrength() uint16       { return e.strength }
 func (e CashEquipableReferenceData) GetDexterity() uint16      { return e.dexterity }
 func (e CashEquipableReferenceData) GetIntelligence() uint16   { return e.intelligence }
@@ -379,7 +379,7 @@ func (e CashEquipableReferenceData) GetHammersApplied() uint32 { return e.hammer
 func (e CashEquipableReferenceData) GetExpiration() time.Time  { return e.expiration }
 
 type CashEquipableReferenceDataBuilder struct {
-	cashId         uint64
+	cashId         int64
 	strength       uint16
 	dexterity      uint16
 	intelligence   uint16
@@ -483,7 +483,7 @@ func (b *CashEquipableReferenceDataBuilder) Build() CashEquipableReferenceData {
 	}
 }
 
-func (b *CashEquipableReferenceDataBuilder) SetCashId(value uint64) *CashEquipableReferenceDataBuilder {
+func (b *CashEquipableReferenceDataBuilder) SetCashId(value int64) *CashEquipableReferenceDataBuilder {
 	b.cashId = value
 	return b
 }
@@ -777,7 +777,7 @@ func (b *EtcReferenceDataBuilder) Build() EtcReferenceData {
 }
 
 type CashReferenceData struct {
-	cashId     uint64
+	cashId     int64
 	quantity   uint32
 	ownerId    uint32
 	flag       uint16
@@ -788,7 +788,7 @@ func (c CashReferenceData) Quantity() uint32 {
 	return c.quantity
 }
 
-func (c CashReferenceData) CashId() uint64 {
+func (c CashReferenceData) CashId() int64 {
 	return c.cashId
 }
 
@@ -801,7 +801,7 @@ func (c CashReferenceData) Flag() uint16 {
 }
 
 type CashReferenceDataBuilder struct {
-	cashId     uint64
+	cashId     int64
 	quantity   uint32
 	ownerId    uint32
 	flag       uint16
@@ -812,7 +812,7 @@ func NewCashReferenceDataBuilder() *CashReferenceDataBuilder {
 	return &CashReferenceDataBuilder{}
 }
 
-func (b *CashReferenceDataBuilder) SetCashId(value uint64) *CashReferenceDataBuilder {
+func (b *CashReferenceDataBuilder) SetCashId(value int64) *CashReferenceDataBuilder {
 	b.cashId = value
 	return b
 }

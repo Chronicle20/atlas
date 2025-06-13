@@ -73,3 +73,8 @@ func (p *Processor) RequestPurchase(characterId uint32, serialNumber uint32, isP
 	p.l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d]", characterId, serialNumber, currency, zero)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency))
 }
+
+func (p *Processor) MoveFromCashInventory(characterId uint32, serialNumber uint64, inventoryType byte, slot int16) error {
+	p.l.Infof("Character [%d] moving [%d] to inventory [%d] to slot [%d].", characterId, serialNumber, inventoryType, slot)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(MoveFromCashInventoryCommandProvider(characterId, serialNumber, inventoryType, slot))
+}

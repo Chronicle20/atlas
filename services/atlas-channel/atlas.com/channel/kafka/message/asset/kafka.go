@@ -223,7 +223,7 @@ type EquipableReferenceData struct {
 }
 
 type CashEquipableReferenceData struct {
-	CashId         uint64    `json:"cashId"`
+	CashId         int64     `json:"cashId,string"`
 	Strength       uint16    `json:"strength"`
 	Dexterity      uint16    `json:"dexterity"`
 	Intelligence   uint16    `json:"intelligence"`
@@ -273,7 +273,7 @@ type EtcReferenceData struct {
 }
 
 type CashReferenceData struct {
-	CashId      uint64 `json:"cashId"`
+	CashId      int64  `json:"cashId,string"`
 	Quantity    uint32 `json:"quantity"`
 	OwnerId     uint32 `json:"ownerId"`
 	Flag        uint16 `json:"flag"`

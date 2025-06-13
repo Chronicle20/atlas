@@ -5,12 +5,13 @@ import "time"
 type ReferenceType string
 
 const (
-	ReferenceTypeEquipable  = ReferenceType("equipable")
-	ReferenceTypeConsumable = ReferenceType("consumable")
-	ReferenceTypeSetup      = ReferenceType("setup")
-	ReferenceTypeEtc        = ReferenceType("etc")
-	ReferenceTypeCash       = ReferenceType("cash")
-	ReferenceTypePet        = ReferenceType("pet")
+	ReferenceTypeEquipable     = ReferenceType("equipable")
+	ReferenceTypeCashEquipable = ReferenceType("cash-equipable")
+	ReferenceTypeConsumable    = ReferenceType("consumable")
+	ReferenceTypeSetup         = ReferenceType("setup")
+	ReferenceTypeEtc           = ReferenceType("etc")
+	ReferenceTypeCash          = ReferenceType("cash")
+	ReferenceTypePet           = ReferenceType("pet")
 )
 
 type Model[E any] struct {
@@ -65,6 +66,10 @@ func (m Model[E]) HasQuantity() bool {
 
 func (m Model[E]) IsEquipable() bool {
 	return m.referenceType == ReferenceTypeEquipable
+}
+
+func (m Model[E]) IsCashEquipable() bool {
+	return m.referenceType == ReferenceTypeCashEquipable
 }
 
 func (m Model[E]) IsConsumable() bool {

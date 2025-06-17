@@ -881,7 +881,7 @@ func (p *Processor) AttemptEquipmentPickUpAndEmit(m _map.Model, characterId uint
 func (p *Processor) AttemptEquipmentPickUp(mb *message.Buffer) func(m _map.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error {
 	return func(m _map.Model, characterId uint32, dropId uint32, templateId uint32, referenceId uint32) error {
 
-		inventoryType, ok := inventory.TypeFromItemId(templateId)
+		inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 		if !ok {
 			return errors.New("invalid inventory item")
 		}
@@ -931,7 +931,7 @@ func (p *Processor) AttemptItemPickUpAndEmit(m _map.Model, characterId uint32, d
 
 func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(m _map.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
 	return func(m _map.Model, characterId uint32, dropId uint32, templateId uint32, quantity uint32) error {
-		inventoryType, ok := inventory.TypeFromItemId(templateId)
+		inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 		if !ok {
 			return errors.New("invalid inventory item")
 		}

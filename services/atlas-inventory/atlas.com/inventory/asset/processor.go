@@ -493,7 +493,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			var referenceId uint32
 			var referenceType ReferenceType
-			inventoryType, ok := inventory.TypeFromItemId(templateId)
+			inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 			if !ok {
 				return errors.New("unknown item type")
 			}
@@ -567,7 +567,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 
 // GetSlotMax retrieves the maximum slot capacity for a given asset template
 func (p *Processor) GetSlotMax(templateId uint32) (uint32, error) {
-	inventoryType, ok := inventory.TypeFromItemId(templateId)
+	inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 	if !ok {
 		return 0, errors.New("unknown item type")
 	}
@@ -602,7 +602,7 @@ func (p *Processor) Acquire(mb *message.Buffer) func(characterId uint32, compart
 		var a Model[any]
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			var referenceType ReferenceType
-			inventoryType, ok := inventory.TypeFromItemId(templateId)
+			inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 			if !ok {
 				return errors.New("unknown item type")
 			}

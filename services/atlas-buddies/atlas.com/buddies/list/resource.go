@@ -40,7 +40,7 @@ func handleGetBuddyList(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				bl, err := GetByCharacterId(d.Logger())(d.Context())(db)(characterId)
+				bl, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacterId(characterId)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					w.WriteHeader(http.StatusNotFound)
 					return
@@ -81,7 +81,7 @@ func handleGetBuddiesInBuddyList(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				bl, err := GetByCharacterId(d.Logger())(d.Context())(db)(characterId)
+				bl, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacterId(characterId)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					w.WriteHeader(http.StatusNotFound)
 					return

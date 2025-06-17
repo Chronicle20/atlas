@@ -39,7 +39,7 @@ func handleCreateBuddyListCommand(db *gorm.DB) func(l logrus.FieldLogger, ctx co
 		if c.Type != list2.CommandTypeCreate {
 			return
 		}
-		_, err := list.Create(l)(ctx)(db)(c.CharacterId, c.Body.Capacity)
+		_, err := list.NewProcessor(l, ctx, db).Create(c.CharacterId, c.Body.Capacity)
 		if err != nil {
 			l.WithError(err).Errorf("Error creating buddy list for character [%d].", c.CharacterId)
 		}
@@ -51,7 +51,7 @@ func handleRequestBuddyAddCommand(db *gorm.DB) message.Handler[list2.Command[lis
 		if c.Type != list2.CommandTypeRequestAdd {
 			return
 		}
-		err := list.RequestAddBuddy(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.CharacterId, c.Body.Group)
+		err := list.NewProcessor(l, ctx, db).RequestAddBuddyAndEmit(c.CharacterId, c.WorldId, c.Body.CharacterId, c.Body.Group)
 		if err != nil {
 			l.WithError(err).Errorf("Error attempting to add [%d] to character [%d] buddy list.", c.Body.CharacterId, c.CharacterId)
 		}
@@ -63,7 +63,7 @@ func handleRequestBuddyDeleteCommand(db *gorm.DB) message.Handler[list2.Command[
 		if c.Type != list2.CommandTypeRequestDelete {
 			return
 		}
-		err := list.RequestDeleteBuddy(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.CharacterId)
+		err := list.NewProcessor(l, ctx, db).RequestDeleteBuddyAndEmit(c.CharacterId, c.WorldId, c.Body.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Error attempting to delete [%d] to character [%d] buddy list.", c.Body.CharacterId, c.CharacterId)
 		}

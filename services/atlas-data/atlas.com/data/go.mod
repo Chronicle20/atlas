@@ -1,6 +1,6 @@
 module atlas-data
 
-go 1.24.2
+go 1.24.4
 
 require (
 	github.com/Chronicle20/atlas-constants v1.0.17
@@ -23,7 +23,6 @@ require (
 )
 
 require (
-	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect

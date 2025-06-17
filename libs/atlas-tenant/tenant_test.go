@@ -14,18 +14,18 @@ func TestSerialization(t *testing.T) {
 
 	tenant, err := Register(id, region, majorVersion, minorVersion)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	data, err := json.Marshal(&tenant)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	var resTenant Model
 	err = json.Unmarshal(data, &resTenant)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	if !tenant.Is(resTenant) {

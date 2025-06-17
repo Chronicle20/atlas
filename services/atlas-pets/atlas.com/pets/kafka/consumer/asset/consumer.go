@@ -40,7 +40,7 @@ func handleAssetDeleted(db *gorm.DB) message.Handler[asset.StatusEvent[asset.Cre
 			return
 		}
 
-		it, ok := inventory.TypeFromItemId(e.TemplateId)
+		it, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 		if !ok {
 			return
 		}

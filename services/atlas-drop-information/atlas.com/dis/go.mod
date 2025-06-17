@@ -1,6 +1,6 @@
 module atlas-drops-information
 
-go 1.24.2
+go 1.24.4
 
 require (
 	github.com/Chronicle20/atlas-model v1.2.4

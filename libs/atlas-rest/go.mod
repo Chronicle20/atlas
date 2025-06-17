@@ -1,6 +1,6 @@
 module github.com/Chronicle20/atlas-rest
 
-go 1.23.1
+go 1.24.4
 
 require (
 	github.com/Chronicle20/atlas-model v1.2.4

@@ -3,10 +3,10 @@ module atlas-equipables
 go 1.24.4
 
 require (
-	github.com/Chronicle20/atlas-kafka v1.1.11
-	github.com/Chronicle20/atlas-model v1.2.4
+	github.com/Chronicle20/atlas-kafka v1.1.12
+	github.com/Chronicle20/atlas-model v1.2.5
 	github.com/Chronicle20/atlas-rest v1.2.15
-	github.com/Chronicle20/atlas-tenant v1.0.6
+	github.com/Chronicle20/atlas-tenant v1.0.7
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jtumidanski/api2go v1.0.4
@@ -24,7 +24,7 @@ require (
 require (
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
-	github.com/go-logr/logr v1.4.2 // indirect
+	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect

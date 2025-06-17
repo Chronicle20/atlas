@@ -5,7 +5,7 @@ go 1.24.4
 require (
 	github.com/Chronicle20/atlas-kafka v1.1.12
 	github.com/Chronicle20/atlas-model v1.2.5
-	github.com/Chronicle20/atlas-rest v1.2.15
+	github.com/Chronicle20/atlas-rest v1.2.16
 	github.com/jtumidanski/api2go v1.0.4
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/segmentio/kafka-go v0.4.48

@@ -3,7 +3,7 @@ module atlas-drops-information
 go 1.24.4
 
 require (
-	github.com/Chronicle20/atlas-model v1.2.4
+	github.com/Chronicle20/atlas-model v1.2.5
 	github.com/Chronicle20/atlas-rest v1.2.15
 	github.com/Chronicle20/atlas-tenant v1.0.6
 	github.com/google/uuid v1.6.0

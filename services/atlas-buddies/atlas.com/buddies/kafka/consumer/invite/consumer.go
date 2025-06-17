@@ -43,7 +43,7 @@ func handleAcceptedStatusEvent(db *gorm.DB) func(l logrus.FieldLogger, ctx conte
 			return
 		}
 
-		_ = list.AcceptInvite(l)(ctx)(db)(e.Body.TargetId, e.WorldId, e.Body.OriginatorId)
+		_ = list.NewProcessor(l, ctx, db).AcceptInviteAndEmit(e.Body.TargetId, e.WorldId, e.Body.OriginatorId)
 	}
 }
 
@@ -57,6 +57,6 @@ func handleRejectedStatusEvent(db *gorm.DB) func(l logrus.FieldLogger, ctx conte
 			return
 		}
 
-		_ = list.DeleteBuddy(l)(ctx)(db)(e.Body.OriginatorId, e.WorldId, e.Body.TargetId)
+		_ = list.NewProcessor(l, ctx, db).DeleteBuddyAndEmit(e.Body.OriginatorId, e.WorldId, e.Body.TargetId)
 	}
 }

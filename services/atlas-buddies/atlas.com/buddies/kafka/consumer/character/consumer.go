@@ -41,7 +41,7 @@ func handleStatusEventCreated(db *gorm.DB) message.Handler[character.StatusEvent
 		if e.Type != character.StatusEventTypeCreated {
 			return
 		}
-		_, _ = list.Create(l)(ctx)(db)(e.CharacterId, 30)
+		_, _ = list.NewProcessor(l, ctx, db).Create(e.CharacterId, 30)
 	}
 }
 
@@ -51,7 +51,7 @@ func handleStatusEventDeleted(db *gorm.DB) message.Handler[character.StatusEvent
 			return
 		}
 
-		err := list.Delete(l)(ctx)(db)(e.CharacterId, e.WorldId)
+		err := list.NewProcessor(l, ctx, db).DeleteAndEmit(e.CharacterId, e.WorldId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to delete for character [%d].", e.CharacterId)
 		}
@@ -63,7 +63,7 @@ func handleStatusEventLogin(db *gorm.DB) func(l logrus.FieldLogger, ctx context.
 		if event.Type != character.StatusEventTypeLogin {
 			return
 		}
-		err := list.UpdateBuddyChannel(l)(ctx)(db)(event.CharacterId, event.WorldId, int8(event.Body.ChannelId))
+		err := list.NewProcessor(l, ctx, db).UpdateBuddyChannelAndEmit(event.CharacterId, event.WorldId, int8(event.Body.ChannelId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process login for character [%d].", event.CharacterId)
 		}
@@ -75,7 +75,7 @@ func handleStatusEventLogout(db *gorm.DB) func(l logrus.FieldLogger, ctx context
 		if event.Type != character.StatusEventTypeLogout {
 			return
 		}
-		err := list.UpdateBuddyChannel(l)(ctx)(db)(event.CharacterId, event.WorldId, -1)
+		err := list.NewProcessor(l, ctx, db).UpdateBuddyChannelAndEmit(event.CharacterId, event.WorldId, -1)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process logout for character [%d].", event.CharacterId)
 		}
@@ -90,7 +90,7 @@ func handleStatusEventChannelChanged(db *gorm.DB) func(l logrus.FieldLogger, ctx
 		if event.Body.ChannelId == event.Body.OldChannelId {
 			return
 		}
-		err := list.UpdateBuddyChannel(l)(ctx)(db)(event.CharacterId, event.WorldId, int8(event.Body.ChannelId))
+		err := list.NewProcessor(l, ctx, db).UpdateBuddyChannelAndEmit(event.CharacterId, event.WorldId, int8(event.Body.ChannelId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process change channel for character [%d].", event.CharacterId)
 		}

@@ -74,7 +74,7 @@ func TestSpanPropagation(t *testing.T) {
 
 	req, err := http.NewRequest(http.MethodGet, "www.google.com", nil)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	w := httptest.NewRecorder()
 
@@ -83,10 +83,10 @@ func TestSpanPropagation(t *testing.T) {
 	server.RetrieveSpan(l, "test-handler", context.Background(), func(l logrus.FieldLogger, ctx context.Context) http.HandlerFunc {
 		span := trace.SpanFromContext(ctx)
 		if !span.SpanContext().TraceID().IsValid() {
-			t.Fatalf(errors.New("invalid trace id").Error())
+			t.Fatal(errors.New("invalid trace id").Error())
 		}
 		if span.SpanContext().TraceID() != ispan.SpanContext().TraceID() {
-			t.Fatalf(errors.New("invalid trace id").Error())
+			t.Fatal(errors.New("invalid trace id").Error())
 		}
 		return func(w http.ResponseWriter, r *http.Request) {
 		}
@@ -101,7 +101,7 @@ func TestNullSpanPropagation(t *testing.T) {
 
 	req, err := http.NewRequest(http.MethodGet, "www.google.com", nil)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	w := httptest.NewRecorder()
 
@@ -113,14 +113,14 @@ func TestNullSpanPropagation(t *testing.T) {
 		called = true
 		span := trace.SpanFromContext(ctx)
 		if !span.SpanContext().TraceID().IsValid() {
-			t.Fatalf(errors.New("invalid trace id").Error())
+			t.Fatal(errors.New("invalid trace id").Error())
 		}
 		return func(w http.ResponseWriter, r *http.Request) {
 		}
 	})(w, req)
 
 	if !called {
-		t.Fatalf(errors.New("invalid trace").Error())
+		t.Fatal(errors.New("invalid trace").Error())
 	}
 }
 
@@ -133,30 +133,30 @@ func TestTenantPropagation(t *testing.T) {
 
 	it, err := tenant.Create(uuid, region, majorVersion, minorVersion)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	ictx := tenant.WithContext(context.Background(), it)
 
 	ctxId := ictx.Value(tenant.ID)
 	if ctxId != uuid {
-		t.Fatalf(errors.New("invalid tenant id").Error())
+		t.Fatal(errors.New("invalid tenant id").Error())
 	}
 	ctxRegion := ictx.Value(tenant.Region)
 	if ctxRegion != region {
-		t.Fatalf(errors.New("invalid tenant region").Error())
+		t.Fatal(errors.New("invalid tenant region").Error())
 	}
 	ctxMajorVersion := ictx.Value(tenant.MajorVersion)
 	if ctxMajorVersion != majorVersion {
-		t.Fatalf(errors.New("invalid tenant major version").Error())
+		t.Fatal(errors.New("invalid tenant major version").Error())
 	}
 	ctxMinorVersion := ictx.Value(tenant.MinorVersion)
 	if ctxMinorVersion != minorVersion {
-		t.Fatalf(errors.New("invalid tenant minor version").Error())
+		t.Fatal(errors.New("invalid tenant minor version").Error())
 	}
 
 	req, err := http.NewRequest(http.MethodGet, "www.google.com", nil)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	w := httptest.NewRecorder()
 
@@ -168,17 +168,17 @@ func TestTenantPropagation(t *testing.T) {
 		called = true
 		ot, err := tenant.FromContext(tctx)()
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		if !it.Is(ot) {
-			t.Fatalf(errors.New("invalid tenant").Error())
+			t.Fatal(errors.New("invalid tenant").Error())
 		}
 		return func(w http.ResponseWriter, r *http.Request) {
 		}
 	})(w, req)
 
 	if !called {
-		t.Fatalf(errors.New("invalid tenant").Error())
+		t.Fatal(errors.New("invalid tenant").Error())
 	}
 }

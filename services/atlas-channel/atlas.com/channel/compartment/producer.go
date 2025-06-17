@@ -91,3 +91,17 @@ func SortCommandProvider(characterId uint32, inventoryType inventory.Type) model
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func MoveToCommandProvider(characterId uint32, inventoryType inventory.Type, slot int16, otherInventory string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.MoveToCommandBody]{
+		CharacterId:   characterId,
+		InventoryType: byte(inventoryType),
+		Type:          compartment.CommandMoveTo,
+		Body: compartment.MoveToCommandBody{
+			Slot:           slot,
+			OtherInventory: otherInventory,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -47,3 +47,8 @@ func (p *Processor) Sort(characterId uint32, inventoryType inventory.Type, updat
 	p.l.Debugf("Character [%d] attempting to sort compartment [%d]. updateTime [%d].", characterId, inventoryType, updateTime)
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(SortCommandProvider(characterId, inventoryType))
 }
+
+func (p *Processor) MoveToOtherInventory(characterId uint32, inventoryType inventory.Type, slot int16, otherInventory string) error {
+	p.l.Debugf("Character [%d] attempting to move item in [%d] slot [%d] to [%s] inventory.", characterId, inventoryType, slot, otherInventory)
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(MoveToCommandProvider(characterId, inventoryType, slot, otherInventory))
+}

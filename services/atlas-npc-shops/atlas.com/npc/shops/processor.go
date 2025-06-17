@@ -57,18 +57,18 @@ type Processor interface {
 var ErrNotFound = errors.New("not found")
 
 type ProcessorImpl struct {
-	l                                logrus.FieldLogger
-	ctx                              context.Context
-	db                               *gorm.DB
-	t                                tenant.Model
-	GetByNpcIdFn                     func(decorators ...model.Decorator[Model]) func(npcId uint32) (Model, error)
-	GetAllShopsFn                    func(decorators ...model.Decorator[Model]) ([]Model, error)
+	l                                  logrus.FieldLogger
+	ctx                                context.Context
+	db                                 *gorm.DB
+	t                                  tenant.Model
+	GetByNpcIdFn                       func(decorators ...model.Decorator[Model]) func(npcId uint32) (Model, error)
+	GetAllShopsFn                      func(decorators ...model.Decorator[Model]) ([]Model, error)
 	RechargeableConsumablesDecoratorFn func(m Model) Model
-	cp                               commodities.Processor
-	charP                            *character.Processor
-	compP                            *compartment.Processor
-	invP                             *inventory2.Processor
-	kp                               producer.Provider
+	cp                                 commodities.Processor
+	charP                              *character.Processor
+	compP                              *compartment.Processor
+	invP                               *inventory2.Processor
+	kp                                 producer.Provider
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -400,7 +400,7 @@ func (p *ProcessorImpl) Buy(mb *message.Buffer) func(characterId uint32) func(sl
 					p.l.Errorf("Character [%d] is attempting to buy item [%d] from slot [%d] but they do not have enough meso.", characterId, itemTemplateId, slot)
 					return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorNotEnoughMoney))
 				}
-				it, ok := inventory.TypeFromItemId(itemTemplateId)
+				it, ok := inventory.TypeFromItemId(item.Id(itemTemplateId))
 				if !ok {
 					p.l.Errorf("Character [%d] is attempting to buy item [%d] from slot [%d] but it is not a valid item.", characterId, itemTemplateId, slot)
 					return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
@@ -446,7 +446,7 @@ func (p *ProcessorImpl) Sell(mb *message.Buffer) func(characterId uint32) func(s
 				p.l.WithError(err).Errorf("Cannot locate character [%d].", characterId)
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
 			}
-			it, ok := inventory.TypeFromItemId(itemTemplateId)
+			it, ok := inventory.TypeFromItemId(item.Id(itemTemplateId))
 			if !ok {
 				p.l.Errorf("Character [%d] is attempting to sell item [%d] from slot [%d] but it is not a valid item.", characterId, itemTemplateId, slot)
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))

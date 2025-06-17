@@ -46,6 +46,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMergeCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSortCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMoveCashItemCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMoveToCommand(db))))
 		}
 	}
 }
@@ -188,5 +189,14 @@ func handleMoveCashItemCommand(db *gorm.DB) message.Handler[compartment2.Command
 			return
 		}
 		_ = compartment.NewProcessor(l, ctx, db).MoveCashItemAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot, c.Body.CashItemId)
+	}
+}
+
+func handleMoveToCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.MoveToCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.MoveToCommandBody]) {
+		if c.Type != compartment2.CommandMoveTo {
+			return
+		}
+		_ = compartment.NewProcessor(l, ctx, db).MoveToAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot, c.Body.OtherInventory)
 	}
 }

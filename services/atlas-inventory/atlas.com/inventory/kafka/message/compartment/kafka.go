@@ -15,6 +15,7 @@ const (
 	StatusEventTypeMergeComplete        = "MERGE_COMPLETE"
 	StatusEventTypeSortComplete         = "SORT_COMPLETE"
 	StatusEventTypeCashItemMoved        = "CASH_ITEM_MOVED"
+	StatusEventTypeCashItemRemoved      = "CASH_ITEM_REMOVED"
 	StatusEventTypeError                = "ERROR"
 
 	StatusEventErrorTypeCashItemMoveFailed = "CASH_ITEM_MOVE_FAILED"
@@ -91,6 +92,9 @@ const (
 	CommandMerge             = "MERGE"
 	CommandSort              = "SORT"
 	CommandMoveCashItem      = "MOVE_CASH_ITEM"
+	CommandMoveTo            = "MOVE_TO"
+
+	CashInventoryType = "CASH"
 )
 
 type Command[E any] struct {
@@ -178,4 +182,9 @@ type SortCommandBody struct {
 type MoveCashItemCommandBody struct {
 	Slot       int16  `json:"slot"`
 	CashItemId uint32 `json:"cashItemId"`
+}
+
+type MoveToCommandBody struct {
+	Slot           int16  `json:"slot"`
+	OtherInventory string `json:"otherInventory"`
 }

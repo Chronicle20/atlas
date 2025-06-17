@@ -1289,6 +1289,96 @@ func (p *Processor) MoveCashItem(mb *message.Buffer) func(characterId uint32) fu
 	}
 }
 
+func (p *Processor) MoveToAndEmit(characterId uint32, inventoryType inventory.Type, slot int16, otherInventory string) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
+		return p.MoveTo(mb)(characterId)(inventoryType)(slot)(otherInventory)
+	})
+}
+
+func (p *Processor) MoveTo(mb *message.Buffer) func(characterId uint32) func(inventoryType inventory.Type) func(slot int16) func(otherInventory string) error {
+	return func(characterId uint32) func(inventoryType inventory.Type) func(slot int16) func(otherInventory string) error {
+		return func(inventoryType inventory.Type) func(slot int16) func(otherInventory string) error {
+			return func(slot int16) func(otherInventory string) error {
+				return func(otherInventory string) error {
+					p.l.Debugf("Character [%d] attempting to move cash item from slot [%d] in inventory type [%d] to [%s].", characterId, slot, inventoryType, otherInventory)
+
+					// Lock the inventory to prevent concurrent modifications
+					invLock := LockRegistry().Get(characterId, inventoryType)
+					invLock.Lock()
+					defer invLock.Unlock()
+
+					var c Model
+					var foundAsset bool
+					var assetToRemove asset.Model[any]
+					var referenceId uint32
+					txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+						// Get the compartment for the character and inventory type
+						var err error
+						c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
+							return err
+						}
+
+						// Get all assets in the compartment
+						assets, err := p.assetProcessor.WithTransaction(tx).GetByCompartmentId(c.Id())
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to get assets in compartment [%s] for character [%d].", c.Id(), characterId)
+							return err
+						}
+
+						// Find the asset in the specified slot
+						foundAsset = false
+						for _, a := range assets {
+							if a.Slot() == slot {
+								assetToRemove = a
+								foundAsset = true
+								break
+							}
+						}
+
+						if !foundAsset {
+							err = errors.New("no asset found in the specified slot")
+							p.l.WithError(err).Errorf("Character [%d] unable to find asset in slot [%d] in inventory [%d].", characterId, slot, inventoryType)
+							return err
+						}
+
+						// Check if this is a cash item (has a reference ID)
+						if assetToRemove.ReferenceType() != asset.ReferenceTypeCash && assetToRemove.ReferenceType() != asset.ReferenceTypeCashEquipable {
+							err = errors.New("asset is not a cash item")
+							p.l.WithError(err).Errorf("Character [%d] attempted to move non-cash item from slot [%d] in inventory [%d].", characterId, slot, inventoryType)
+							return err
+						}
+
+						// Store the reference ID for the status event
+						referenceId = assetToRemove.ReferenceId()
+
+						// Delete the asset silently (without emitting delete messages)
+						// We're using a new message buffer that we don't emit
+						silentBuffer := message.NewBuffer()
+						err = p.assetProcessor.WithTransaction(tx).Delete(silentBuffer)(characterId, c.Id())(assetToRemove)
+						if err != nil {
+							p.l.WithError(err).Errorf("Unable to delete asset [%d] for character [%d].", assetToRemove.Id(), characterId)
+							return err
+						}
+
+						// Emit a status event for the successful move
+						return mb.Put(compartment.EnvEventTopicStatus, CashItemRemovedEventStatusProvider(c.Id(), characterId, referenceId))
+					})
+
+					if txErr != nil {
+						p.l.WithError(txErr).Errorf("Character [%d] unable to move cash item from slot [%d] in inventory [%d] to [%s].", characterId, slot, inventoryType, otherInventory)
+						return txErr
+					}
+
+					p.l.Debugf("Character [%d] successfully moved cash item [%d] from slot [%d] in inventory [%d] to [%s].", characterId, referenceId, slot, inventoryType, otherInventory)
+					return nil
+				}
+			}
+		}
+	}
+}
+
 func (p *Processor) CompactAndSort(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type) error {
 	return func(characterId uint32, inventoryType inventory.Type) error {
 		p.l.Debugf("Character [%d] attempting to compact and sort assets in inventory [%d].", characterId, inventoryType)

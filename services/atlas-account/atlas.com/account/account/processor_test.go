@@ -1,6 +1,7 @@
 package account
 
 import (
+	"atlas-account/kafka/message"
 	"context"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -18,7 +19,8 @@ func TestCreate(t *testing.T) {
 
 	tctx := tenant.WithContext(context.Background(), st)
 
-	m, err := Create(l, db, tctx)(testName, testPassword)
+	mb := message.NewBuffer()
+	m, err := NewProcessor(l, tctx, db).Create(mb)(testName)(testPassword)
 	if err != nil {
 		t.Fatalf("Unable to create account: %v", err)
 	}

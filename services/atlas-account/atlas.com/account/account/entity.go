@@ -7,10 +7,10 @@ import (
 )
 
 func Migration(db *gorm.DB) error {
-	return db.AutoMigrate(&entity{})
+	return db.AutoMigrate(&Entity{})
 }
 
-type entity struct {
+type Entity struct {
 	TenantId  uuid.UUID `gorm:"not null"`
 	ID        uint32    `gorm:"primaryKey;autoIncrement;not null"`
 	Name      string    `gorm:"not null"`
@@ -24,6 +24,6 @@ type entity struct {
 	UpdatedAt time.Time // Automatically managed by GORM for update time
 }
 
-func (e entity) TableName() string {
+func (e Entity) TableName() string {
 	return "accounts"
 }

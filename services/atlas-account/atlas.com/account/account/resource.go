@@ -1,6 +1,7 @@
 package account
 
 import (
+	account2 "atlas-account/kafka/message/account"
 	"atlas-account/kafka/producer"
 	"atlas-account/rest"
 	"github.com/Chronicle20/atlas-model/model"
@@ -38,7 +39,7 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-			a, err := Update(d.Logger(), d.DB(), d.Context())(accountId, im)
+			a, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Update(accountId, im)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to update account [%d].", accountId)
 				w.WriteHeader(http.StatusNotFound)
@@ -61,7 +62,7 @@ func handleUpdateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 
 func handleCreateAccount(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvCreateAccountCommandTopic)(createCommandProvider(input.Name, input.Password))
+		_ = producer.ProviderImpl(d.Logger())(d.Context())(account2.EnvCommandTopicCreateAccount)(createCommandProvider(input.Name, input.Password))
 		w.WriteHeader(http.StatusAccepted)
 	}
 }
@@ -82,7 +83,7 @@ func parseName(l logrus.FieldLogger, next nameHandler) http.HandlerFunc {
 func handleGetAccountByName(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return parseName(d.Logger(), func(name string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			res, err := model.Map(Transform)(ByNameProvider(d.DB())(d.Context())(name))()
+			res, err := model.Map(Transform)(NewProcessor(d.Logger(), d.Context(), d.DB()).ByNameProvider(name))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve account by name [%s].", name)
 				w.WriteHeader(http.StatusNotFound)
@@ -98,7 +99,7 @@ func handleGetAccountByName(d *rest.HandlerDependency, c *rest.HandlerContext) h
 
 func handleGetAccounts(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		as, err := GetByTenant(d.DB())(d.Context())
+		as, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetByTenant()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to locate accounts.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -121,7 +122,7 @@ func handleGetAccounts(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 func handleGetAccountById(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(id uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			res, err := model.Map(Transform)(ByIdProvider(d.DB())(d.Context())(id))()
+			res, err := model.Map(Transform)(NewProcessor(d.Logger(), d.Context(), d.DB()).ByIdProvider(id))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to locate account [%d].", id)
 				w.WriteHeader(http.StatusNotFound)
@@ -138,7 +139,7 @@ func handleGetAccountById(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 func handleDeleteAccountSession(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			_ = producer.ProviderImpl(d.Logger())(d.Context())(EnvSessionCommandTopic)(logoutCommandProvider(accountId))
+			_ = producer.ProviderImpl(d.Logger())(d.Context())(account2.EnvCommandSessionTopic)(logoutCommandProvider(accountId))
 			w.WriteHeader(http.StatusAccepted)
 		}
 	})

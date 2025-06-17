@@ -5,11 +5,11 @@ import (
 	"gorm.io/gorm"
 )
 
-type EntityUpdateFunction func() ([]string, func(e *entity))
+type EntityUpdateFunction func() ([]string, func(e *Entity))
 
 func create(db *gorm.DB) func(tenant tenant.Model, name string, password string, gender byte) (Model, error) {
 	return func(tenant tenant.Model, name string, password string, gender byte) (Model, error) {
-		a := &entity{
+		a := &Entity{
 			TenantId: tenant.Id(),
 			Name:     name,
 			Password: password,
@@ -21,30 +21,30 @@ func create(db *gorm.DB) func(tenant tenant.Model, name string, password string,
 			return Model{}, err
 		}
 
-		return modelFromEntity(*a)
+		return Make(*a)
 	}
 }
 
 func update(db *gorm.DB) func(modifiers ...EntityUpdateFunction) IdOperator {
 	return func(modifiers ...EntityUpdateFunction) IdOperator {
 		return func(tenant tenant.Model, id uint32) error {
-			e := &entity{}
+			e := &Entity{}
 			var columns []string
 			for _, modifier := range modifiers {
 				c, u := modifier()
 				columns = append(columns, c...)
 				u(e)
 			}
-			return db.Model(&entity{TenantId: tenant.Id(), ID: id}).Select(columns).Updates(e).Error
+			return db.Model(&Entity{TenantId: tenant.Id(), ID: id}).Select(columns).Updates(e).Error
 		}
 	}
 }
 
 func updatePic(pic string) EntityUpdateFunction {
-	return func() ([]string, func(e *entity)) {
+	return func() ([]string, func(e *Entity)) {
 		var cs = []string{"pic"}
 
-		uf := func(e *entity) {
+		uf := func(e *Entity) {
 			e.PIC = pic
 		}
 		return cs, uf
@@ -52,10 +52,10 @@ func updatePic(pic string) EntityUpdateFunction {
 }
 
 func updatePin(pin string) EntityUpdateFunction {
-	return func() ([]string, func(e *entity)) {
+	return func() ([]string, func(e *Entity)) {
 		var cs = []string{"pin"}
 
-		uf := func(e *entity) {
+		uf := func(e *Entity) {
 			e.PIN = pin
 		}
 		return cs, uf
@@ -63,10 +63,10 @@ func updatePin(pin string) EntityUpdateFunction {
 }
 
 func updateTos(tos bool) EntityUpdateFunction {
-	return func() ([]string, func(e *entity)) {
+	return func() ([]string, func(e *Entity)) {
 		var cs = []string{"tos"}
 
-		uf := func(e *entity) {
+		uf := func(e *Entity) {
 			e.TOS = tos
 		}
 		return cs, uf
@@ -74,17 +74,17 @@ func updateTos(tos bool) EntityUpdateFunction {
 }
 
 func updateGender(gender byte) EntityUpdateFunction {
-	return func() ([]string, func(e *entity)) {
+	return func() ([]string, func(e *Entity)) {
 		var cs = []string{"gender"}
 
-		uf := func(e *entity) {
+		uf := func(e *Entity) {
 			e.Gender = gender
 		}
 		return cs, uf
 	}
 }
 
-func modelFromEntity(a entity) (Model, error) {
+func Make(a Entity) (Model, error) {
 	r := Model{
 		tenantId:  a.TenantId,
 		id:        a.ID,

@@ -7,45 +7,45 @@ import (
 	"gorm.io/gorm"
 )
 
-func entityById(tenant tenant.Model, id uint32) database.EntityProvider[entity] {
-	return func(db *gorm.DB) model.Provider[entity] {
+func entityById(tenant tenant.Model, id uint32) database.EntityProvider[Entity] {
+	return func(db *gorm.DB) model.Provider[Entity] {
 		where := map[string]interface{}{"tenant_id": tenant.Id(), "id": id}
-		var result = entity{}
+		var result = Entity{}
 		err := db.Where(where).First(&result).Error
 		if err != nil {
-			return model.ErrorProvider[entity](err)
+			return model.ErrorProvider[Entity](err)
 		}
-		return model.FixedProvider[entity](result)
+		return model.FixedProvider[Entity](result)
 	}
 }
 
-func entitiesByName(tenant tenant.Model, name string) database.EntityProvider[[]entity] {
-	return func(db *gorm.DB) model.Provider[[]entity] {
-		var results []entity
-		err := db.Where(&entity{TenantId: tenant.Id(), Name: name}).First(&results).Error
+func entitiesByName(tenant tenant.Model, name string) database.EntityProvider[[]Entity] {
+	return func(db *gorm.DB) model.Provider[[]Entity] {
+		var results []Entity
+		err := db.Where(&Entity{TenantId: tenant.Id(), Name: name}).First(&results).Error
 		if err != nil {
-			return model.ErrorProvider[[]entity](err)
+			return model.ErrorProvider[[]Entity](err)
 		}
-		return model.FixedProvider[[]entity](results)
+		return model.FixedProvider[[]Entity](results)
 	}
 }
 
-func allInTenant(tenant tenant.Model) database.EntityProvider[[]entity] {
-	return func(db *gorm.DB) model.Provider[[]entity] {
-		var results []entity
-		err := db.Where(&entity{TenantId: tenant.Id()}).Find(&results).Error
+func allInTenant(tenant tenant.Model) database.EntityProvider[[]Entity] {
+	return func(db *gorm.DB) model.Provider[[]Entity] {
+		var results []Entity
+		err := db.Where(&Entity{TenantId: tenant.Id()}).Find(&results).Error
 		if err != nil {
-			return model.ErrorProvider[[]entity](err)
+			return model.ErrorProvider[[]Entity](err)
 		}
-		return model.FixedProvider[[]entity](results)
+		return model.FixedProvider[[]Entity](results)
 	}
 }
 
-func allEntities(db *gorm.DB) model.Provider[[]entity] {
-	var results []entity
+func allEntities(db *gorm.DB) model.Provider[[]Entity] {
+	var results []Entity
 	err := db.Find(&results).Error
 	if err != nil {
-		return model.ErrorProvider[[]entity](err)
+		return model.ErrorProvider[[]Entity](err)
 	}
-	return model.FixedProvider[[]entity](results)
+	return model.FixedProvider[[]Entity](results)
 }

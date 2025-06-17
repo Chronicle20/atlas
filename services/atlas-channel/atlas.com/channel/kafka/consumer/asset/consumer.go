@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -59,7 +60,7 @@ func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handle
 		}
 
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
-			inventoryType, ok := inventory.TypeFromItemId(e.TemplateId)
+			inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 			if !ok {
 				l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
 				return errors.New("unable to identify inventory type")
@@ -93,7 +94,7 @@ func handleAssetUpdatedEvent(sc server.Model, wp writer.Producer) message.Handle
 		}
 
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.CharacterId, func(s session.Model) error {
-			inventoryType, ok := inventory.TypeFromItemId(e.TemplateId)
+			inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 			if !ok {
 				l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
 				return errors.New("unable to identify inventory type")
@@ -234,7 +235,7 @@ func handleAssetQuantityUpdatedEvent(sc server.Model, wp writer.Producer) messag
 			return
 		}
 
-		inventoryType, ok := inventory.TypeFromItemId(e.TemplateId)
+		inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 		if !ok {
 			l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
 			return
@@ -277,7 +278,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 
 					errChannels := make(chan error, 3)
 					go func() {
-						inventoryType, ok := inventory.TypeFromItemId(e.TemplateId)
+						inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 						if !ok {
 							l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
 							return
@@ -293,7 +294,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 						errChannels <- _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), updateAppearance(l)(ctx)(wp)(c))
 					}()
 					go func() {
-						it, ok := inventory.TypeFromItemId(e.TemplateId)
+						it, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 						if !ok || it != inventory.TypeValueEquip {
 							return
 						}
@@ -353,7 +354,7 @@ func handleAssetDeletedEvent(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		inventoryType, ok := inventory.TypeFromItemId(e.TemplateId)
+		inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 		if !ok {
 			l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
 			return

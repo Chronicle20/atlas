@@ -4,7 +4,7 @@ import "time"
 
 type Model struct {
 	id         uint32
-	cashId     uint64
+	cashId     int64
 	templateId uint32
 	name       string
 	level      byte
@@ -21,7 +21,7 @@ func (m Model) Id() uint32 {
 	return m.id
 }
 
-func (m Model) CashId() uint64 {
+func (m Model) CashId() int64 {
 	return m.cashId
 }
 

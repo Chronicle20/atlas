@@ -151,23 +151,27 @@ func (p *Processor) DecorateEquipable(m Model[any]) (Model[any], error) {
 
 func MakeEquipableReferenceData(e equipable.Model) EquipableReferenceData {
 	return EquipableReferenceData{
-		strength:       e.Strength(),
-		dexterity:      e.Dexterity(),
-		intelligence:   e.Intelligence(),
-		luck:           e.Luck(),
-		hp:             e.HP(),
-		mp:             e.MP(),
-		weaponAttack:   e.WeaponAttack(),
-		magicAttack:    e.MagicAttack(),
-		weaponDefense:  e.WeaponDefense(),
-		magicDefense:   e.MagicDefense(),
-		accuracy:       e.Accuracy(),
-		avoidability:   e.Avoidability(),
-		hands:          e.Hands(),
-		speed:          e.Speed(),
-		jump:           e.Jump(),
-		slots:          e.Slots(),
-		ownerId:        e.OwnerId(),
+		StatisticData: StatisticData{
+			strength:      e.Strength(),
+			dexterity:     e.Dexterity(),
+			intelligence:  e.Intelligence(),
+			luck:          e.Luck(),
+			hp:            e.HP(),
+			mp:            e.MP(),
+			weaponAttack:  e.WeaponAttack(),
+			magicAttack:   e.MagicAttack(),
+			weaponDefense: e.WeaponDefense(),
+			magicDefense:  e.MagicDefense(),
+			accuracy:      e.Accuracy(),
+			avoidability:  e.Avoidability(),
+			hands:         e.Hands(),
+			speed:         e.Speed(),
+			jump:          e.Jump(),
+		},
+		slots: e.Slots(),
+		OwnerData: OwnerData{
+			ownerId: e.OwnerId(),
+		},
 		locked:         e.Locked(),
 		spikes:         e.Spikes(),
 		karmaUsed:      e.KarmaUsed(),
@@ -188,7 +192,9 @@ func (p *Processor) DecorateCashEquipable(m Model[any]) (Model[any], error) {
 	}
 	return Clone(m).
 		SetReferenceData(CashEquipableReferenceData{
-			cashId: ci.CashId(),
+			CashData: CashData{
+				cashId: ci.CashId(),
+			},
 		}).
 		Build(), nil
 }
@@ -215,25 +221,43 @@ func (p *Processor) DecorateStackable(m Model[any]) (Model[any], error) {
 
 func MakeEtcReferenceData(s stackable.Model) EtcReferenceData {
 	return EtcReferenceData{
-		quantity: s.Quantity(),
-		ownerId:  s.OwnerId(),
-		flag:     s.Flag(),
+		StackableData: StackableData{
+			quantity: s.Quantity(),
+		},
+		OwnerData: OwnerData{
+			ownerId: s.OwnerId(),
+		},
+		FlagData: FlagData{
+			flag: s.Flag(),
+		},
 	}
 }
 
 func MakeSetupReferenceData(s stackable.Model) SetupReferenceData {
 	return SetupReferenceData{
-		quantity: s.Quantity(),
-		ownerId:  s.OwnerId(),
-		flag:     s.Flag(),
+		StackableData: StackableData{
+			quantity: s.Quantity(),
+		},
+		OwnerData: OwnerData{
+			ownerId: s.OwnerId(),
+		},
+		FlagData: FlagData{
+			flag: s.Flag(),
+		},
 	}
 }
 
 func MakeConsumableReferenceData(s stackable.Model) ConsumableReferenceData {
 	return ConsumableReferenceData{
-		quantity:     s.Quantity(),
-		ownerId:      s.OwnerId(),
-		flag:         s.Flag(),
+		StackableData: StackableData{
+			quantity: s.Quantity(),
+		},
+		OwnerData: OwnerData{
+			ownerId: s.OwnerId(),
+		},
+		FlagData: FlagData{
+			flag: s.Flag(),
+		},
 		rechargeable: s.Rechargeable(),
 	}
 }
@@ -246,11 +270,21 @@ func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
 		}
 		return Clone(m).
 			SetReferenceData(CashReferenceData{
-				cashId:     ci.CashId(),
-				quantity:   ci.Quantity(),
-				ownerId:    0, // TODO
-				flag:       ci.Flag(),
-				purchaseBy: ci.PurchasedBy(),
+				CashData: CashData{
+					cashId: ci.CashId(),
+				},
+				StackableData: StackableData{
+					quantity: ci.Quantity(),
+				},
+				OwnerData: OwnerData{
+					ownerId: 0, // TODO
+				},
+				FlagData: FlagData{
+					flag: ci.Flag(),
+				},
+				PurchaseData: PurchaseData{
+					purchaseBy: ci.PurchasedBy(),
+				},
 			}).
 			Build(), nil
 	} else if m.ReferenceType() == ReferenceTypePet {
@@ -268,10 +302,18 @@ func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
 
 func MakePetReferenceData(pi pet.Model) PetReferenceData {
 	return PetReferenceData{
-		cashId:     pi.CashId(),
-		ownerId:    pi.OwnerId(),
-		flag:       pi.Flag(),
-		purchaseBy: pi.PurchaseBy(),
+		CashData: CashData{
+			cashId: pi.CashId(),
+		},
+		OwnerData: OwnerData{
+			ownerId: pi.OwnerId(),
+		},
+		FlagData: FlagData{
+			flag: pi.Flag(),
+		},
+		PurchaseData: PurchaseData{
+			purchaseBy: pi.PurchaseBy(),
+		},
 		name:       pi.Name(),
 		level:      pi.Level(),
 		closeness:  pi.Closeness(),

@@ -19,6 +19,9 @@ const (
 	CommandCreateAsset       = "CREATE_ASSET"
 	CommandMerge             = "MERGE"
 	CommandSort              = "SORT"
+	CommandMoveTo            = "MOVE_TO"
+
+	CashInventoryType = "CASH"
 )
 
 type Command[E any] struct {
@@ -95,6 +98,11 @@ type MergeCommandBody struct {
 }
 
 type SortCommandBody struct {
+}
+
+type MoveToCommandBody struct {
+	Slot           int16  `json:"slot"`
+	OtherInventory string `json:"otherInventory"`
 }
 
 const (

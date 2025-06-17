@@ -23,7 +23,7 @@ func (r *Respawn) Run() {
 	ctx, span := otel.GetTracerProvider().Tracer("atlas-buffs").Start(context.Background(), "expiration_task")
 	defer span.End()
 
-	_ = character.ExpireBuffs(r.l)(ctx)
+	_ = character.ExpireBuffs(r.l, ctx)
 }
 
 func (r *Respawn) SleepTime() time.Duration {

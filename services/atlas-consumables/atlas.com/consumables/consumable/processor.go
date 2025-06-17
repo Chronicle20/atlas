@@ -69,7 +69,7 @@ func (p *Processor) RequestItemConsume(worldId byte, channelId byte, characterId
 	t, _ := topic.EnvProvider(p.l)(compartment2.EnvEventTopicStatus)()
 	validator := once.ReservationValidator(transactionId, uint32(itemId))
 
-	it, ok := inventory2.TypeFromItemId(uint32(itemId))
+	it, ok := inventory2.TypeFromItemId(itemId)
 	if !ok {
 		return errors.New("invalid item id")
 	}

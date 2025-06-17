@@ -15,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/async"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -118,7 +119,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 			// prepare assets for creation.
 			assetMap := make(map[inventory.Type][]uint32)
 			for _, aid := range template.Items {
-				it, ok := inventory.TypeFromItemId(aid)
+				it, ok := inventory.TypeFromItemId(item.Id(aid))
 				if !ok {
 					continue
 				}

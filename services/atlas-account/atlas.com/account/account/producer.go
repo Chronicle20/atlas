@@ -1,6 +1,7 @@
 package account
 
 import (
+	account2 "atlas-account/kafka/message/account"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
@@ -10,7 +11,7 @@ import (
 
 func createCommandProvider(name string, password string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(rand.Int())
-	value := &createCommand{
+	value := &account2.CreateCommand{
 		Name:     name,
 		Password: password,
 	}
@@ -18,21 +19,21 @@ func createCommandProvider(name string, password string) model.Provider[[]kafka.
 }
 
 func createdEventProvider() func(accountId uint32, name string) model.Provider[[]kafka.Message] {
-	return accountStatusEventProvider(EventStatusCreated)
+	return accountStatusEventProvider(account2.EventStatusCreated)
 }
 
 func loggedInEventProvider() func(accountId uint32, name string) model.Provider[[]kafka.Message] {
-	return accountStatusEventProvider(EventStatusLoggedIn)
+	return accountStatusEventProvider(account2.EventStatusLoggedIn)
 }
 
 func loggedOutEventProvider() func(accountId uint32, name string) model.Provider[[]kafka.Message] {
-	return accountStatusEventProvider(EventStatusLoggedOut)
+	return accountStatusEventProvider(account2.EventStatusLoggedOut)
 }
 
 func accountStatusEventProvider(status string) func(accountId uint32, name string) model.Provider[[]kafka.Message] {
 	return func(accountId uint32, name string) model.Provider[[]kafka.Message] {
 		key := producer.CreateKey(int(accountId))
-		value := &statusEvent{
+		value := &account2.StatusEvent{
 			AccountId: accountId,
 			Name:      name,
 			Status:    status,
@@ -43,44 +44,44 @@ func accountStatusEventProvider(status string) func(accountId uint32, name strin
 
 func logoutCommandProvider(accountId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
-	value := &accountSessionCommand[logoutCommandBody]{
+	value := &account2.SessionCommand[account2.LogoutSessionCommandBody]{
 		SessionId: uuid.Nil,
 		AccountId: accountId,
-		Issuer:    SessionCommandIssuerInternal,
-		Type:      SessionCommandTypeLogout,
-		Body:      logoutCommandBody{},
+		Issuer:    account2.SessionCommandIssuerInternal,
+		Type:      account2.SessionCommandTypeLogout,
+		Body:      account2.LogoutSessionCommandBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
 func createdStatusProvider(sessionId uuid.UUID, accountId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
-	value := &sessionStatusEvent[createdSessionStatusEventBody]{
+	value := &account2.SessionStatusEvent[account2.CreatedSessionStatusEventBody]{
 		SessionId: sessionId,
 		AccountId: accountId,
-		Type:      SessionEventStatusTypeCreated,
-		Body:      createdSessionStatusEventBody{},
+		Type:      account2.SessionEventStatusTypeCreated,
+		Body:      account2.CreatedSessionStatusEventBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
 func requestLicenseAgreementStatusProvider(sessionId uuid.UUID, accountId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
-	value := &sessionStatusEvent[any]{
+	value := &account2.SessionStatusEvent[any]{
 		SessionId: sessionId,
 		AccountId: accountId,
-		Type:      SessionEventStatusTypeRequestLicenseAgreement,
+		Type:      account2.SessionEventStatusTypeRequestLicenseAgreement,
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
 func stateChangedStatusProvider(sessionId uuid.UUID, accountId uint32, state uint8, params interface{}) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
-	value := &sessionStatusEvent[stateChangedSessionStatusEventBody]{
+	value := &account2.SessionStatusEvent[account2.StateChangedSessionStatusEventBody]{
 		SessionId: sessionId,
 		AccountId: accountId,
-		Type:      SessionEventStatusTypeStateChanged,
-		Body: stateChangedSessionStatusEventBody{
+		Type:      account2.SessionEventStatusTypeStateChanged,
+		Body: account2.StateChangedSessionStatusEventBody{
 			State:  state,
 			Params: params,
 		},
@@ -90,11 +91,11 @@ func stateChangedStatusProvider(sessionId uuid.UUID, accountId uint32, state uin
 
 func errorStatusProvider(sessionId uuid.UUID, accountId uint32, code string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
-	value := &sessionStatusEvent[errorSessionStatusEventBody]{
+	value := &account2.SessionStatusEvent[account2.ErrorSessionStatusEventBody]{
 		SessionId: sessionId,
 		AccountId: accountId,
-		Type:      SessionEventStatusTypeError,
-		Body: errorSessionStatusEventBody{
+		Type:      account2.SessionEventStatusTypeError,
+		Body: account2.ErrorSessionStatusEventBody{
 			Code: code,
 		},
 	}

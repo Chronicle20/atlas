@@ -13,7 +13,7 @@ func setupTestDatabase(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
-	err = db.AutoMigrate(entity{})
+	err = db.AutoMigrate(Entity{})
 	if err != nil {
 		t.Fatalf("Failed to auto migrate: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestInternalUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to retrieve updated account: %v", err)
 	}
-	r, err := modelFromEntity(re)
+	r, err := Make(re)
 	if err != nil {
 		t.Fatalf("Failed to retrieve updated account: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestInternalGetByName(t *testing.T) {
 		t.Fatalf("Number of records mismatch. Expected %v, got %v", 1, len(re))
 	}
 
-	r, err := modelFromEntity(re[0])
+	r, err := Make(re[0])
 	if err != nil {
 		t.Fatalf("Failed to retrieve account: %v", err)
 	}

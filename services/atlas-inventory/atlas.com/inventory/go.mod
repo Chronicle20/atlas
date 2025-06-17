@@ -1,6 +1,6 @@
 module atlas-inventory
 
-go 1.24.2
+go 1.24.4
 
 require (
 	github.com/Chronicle20/atlas-constants v1.0.17
@@ -14,7 +14,6 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/segmentio/kafka-go v0.4.48
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.10.0
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	go.elastic.co/ecslogrus v1.0.0
 	golang.org/x/net v0.41.0
@@ -25,7 +24,6 @@ require (
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -40,7 +38,6 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
@@ -52,5 +49,4 @@ require (
 	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

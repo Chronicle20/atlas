@@ -6,6 +6,7 @@ import (
 	"atlas-npc/data/setup"
 	"context"
 	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -84,7 +85,7 @@ func (p *ProcessorImpl) DataDecorator(m Model) Model {
 	b := Clone(m)
 
 	// Determine the inventory type from the templateId
-	it, ok := inventory.TypeFromItemId(m.TemplateId())
+	it, ok := inventory.TypeFromItemId(item.Id(m.TemplateId()))
 	if !ok {
 		return b.Build()
 	}

@@ -23,7 +23,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetBuffs(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cm, err := GetById(d.Context())(characterId)
+			cm, err := NewProcessor(d.Logger(), d.Context()).GetById(characterId)
 			if errors.Is(err, ErrNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 				return

@@ -6,6 +6,7 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -92,16 +93,20 @@ func SortCommandProvider(characterId uint32, inventoryType inventory.Type) model
 	return producer.SingleMessageProvider(key, value)
 }
 
-func MoveToCommandProvider(characterId uint32, inventoryType inventory.Type, slot int16, otherInventory string) model.Provider[[]kafka.Message] {
+func TransferProvider(accountId uint32, characterId uint32, assetId uint32, fromId uuid.UUID, fromType byte, fromInventoryType string, toId uuid.UUID, toType byte, toInventoryType string, referenceId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &compartment.Command[compartment.MoveToCommandBody]{
-		CharacterId:   characterId,
-		InventoryType: byte(inventoryType),
-		Type:          compartment.CommandMoveTo,
-		Body: compartment.MoveToCommandBody{
-			Slot:           slot,
-			OtherInventory: otherInventory,
-		},
+	value := &compartment.TransferCommand{
+		TransactionId:       uuid.New(),
+		AccountId:           accountId,
+		CharacterId:         characterId,
+		AssetId:             assetId,
+		FromCompartmentId:   fromId,
+		FromCompartmentType: fromType,
+		FromInventoryType:   fromInventoryType,
+		ToCompartmentId:     toId,
+		ToCompartmentType:   toType,
+		ToInventoryType:     toInventoryType,
+		ReferenceId:         referenceId,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

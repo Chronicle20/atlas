@@ -129,7 +129,7 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 			}
 
 			// Create the cash item
-			im, err := p.itmP.Create(mb)(ci.ItemId())(1)(characterId)
+			im, err := p.itmP.Create(mb)(ci.ItemId())(ci.Count())(characterId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create cash item for character [%d].", characterId)
 				_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))

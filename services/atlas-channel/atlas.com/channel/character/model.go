@@ -264,7 +264,7 @@ func (m Model) SetInventory(i inventory.Model) Model {
 			s := a.Slot()
 			if s < -100 {
 				cash = true
-				s -= 100
+				s += 100
 			}
 
 			es, err := slot.GetSlotByPosition(slot.Position(s))

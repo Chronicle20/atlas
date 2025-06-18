@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/characters/1/inventory
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/inventory
   body: none
   auth: none
+}
+
+vars:pre-request {
+  characterId: 56
 }

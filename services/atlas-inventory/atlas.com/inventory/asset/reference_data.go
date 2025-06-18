@@ -326,6 +326,11 @@ func (b *EquipableReferenceDataBuilder) Build() EquipableReferenceData {
 	}
 }
 
+func (b *EquipableReferenceDataBuilder) SetStrength(value uint16) *EquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetStrength(value)
+	return b
+}
+
 func (b *EquipableReferenceDataBuilder) SetDexterity(value uint16) *EquipableReferenceDataBuilder {
 	b.StatisticDataBuilder.SetDexterity(value)
 	return b

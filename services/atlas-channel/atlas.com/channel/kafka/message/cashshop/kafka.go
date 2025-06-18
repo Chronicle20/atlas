@@ -1,5 +1,9 @@
 package cashshop
 
+import (
+	"github.com/google/uuid"
+)
+
 const (
 	EnvCommandTopic                               = "COMMAND_TOPIC_CASH_SHOP"
 	CommandTypeRequestPurchase                    = "REQUEST_PURCHASE"
@@ -8,6 +12,7 @@ const (
 	CommandTypeRequestStorageIncrease             = "REQUEST_STORAGE_INCREASE"
 	CommandTypeRequestStorageIncreaseByItem       = "REQUEST_STORAGE_INCREASE_BY_ITEM"
 	CommandTypeRequestCharacterSlotIncreaseByItem = "REQUEST_CHARACTER_SLOT_INCREASE_BY_ITEM"
+	CommandTypeMoveFromCashInventory              = "MOVE_FROM_CASH_INVENTORY"
 )
 
 type Command[E any] struct {
@@ -45,12 +50,20 @@ type RequestCharacterSlotIncreaseByItemCommandBody struct {
 	SerialNumber uint32 `json:"serialNumber"`
 }
 
+type MoveFromCashInventoryCommandBody struct {
+	SerialNumber  uint64 `json:"serialNumber"`
+	InventoryType byte   `json:"inventoryType"`
+	Slot          int16  `json:"slot"`
+}
+
 const (
 	EnvEventTopicStatus                       = "EVENT_TOPIC_CASH_SHOP_STATUS"
 	EventCashShopStatusTypeCharacterEnter     = "CHARACTER_ENTER"
 	EventCashShopStatusTypeCharacterExit      = "CHARACTER_EXIT"
 	StatusEventTypeInventoryCapacityIncreased = "INVENTORY_CAPACITY_INCREASED"
+	StatusEventTypePurchase                   = "PURCHASE"
 	StatusEventTypeError                      = "ERROR"
+	StatusEventTypeCashItemMovedToInventory   = "CASH_ITEM_MOVED_TO_INVENTORY"
 )
 
 // TODO multiple services have different impl of this
@@ -68,11 +81,25 @@ type InventoryCapacityIncreasedBody struct {
 }
 
 type ErrorEventBody struct {
-	Error string `json:"error"`
+	Error      string `json:"error"`
+	CashItemId uint32 `json:"cashItemId,omitempty"`
 }
 
 type CharacterMovementBody struct {
 	CharacterId uint32 `json:"characterId"`
 	ChannelId   byte   `json:"channelId"`
 	MapId       uint32 `json:"mapId"`
+}
+
+type PurchaseEventBody struct {
+	TemplateId    uint32    `json:"templateId"`
+	Price         uint32    `json:"price"`
+	CompartmentId uuid.UUID `json:"compartmentId"`
+	AssetId       uuid.UUID `json:"assetId"`
+	ItemId        uint32    `json:"itemId"`
+}
+
+type CashItemMovedToInventoryEventBody struct {
+	CompartmentId uuid.UUID `json:"compartmentId"`
+	Slot          int16     `json:"slot"`
 }

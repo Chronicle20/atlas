@@ -10,6 +10,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 	"strconv"
 	"strings"
 )
@@ -263,7 +264,7 @@ func (m Model) SetInventory(i inventory.Model) Model {
 			s := a.Slot()
 			if s < -100 {
 				cash = true
-				s -= 100
+				s += 100
 			}
 
 			es, err := slot.GetSlotByPosition(slot.Position(s))
@@ -279,7 +280,7 @@ func (m Model) SetInventory(i inventory.Model) Model {
 				var crd asset.CashEquipableReferenceData
 				crd, ok = a.ReferenceData().(asset.CashEquipableReferenceData)
 				if ok {
-					ea := asset.NewBuilder[asset.CashEquipableReferenceData](a.Id(), a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
+					ea := asset.NewBuilder[asset.CashEquipableReferenceData](a.Id(), uuid.Nil, a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
 						SetSlot(a.Slot()).
 						SetExpiration(a.Expiration()).
 						SetReferenceData(crd).
@@ -290,7 +291,7 @@ func (m Model) SetInventory(i inventory.Model) Model {
 				var erd asset.EquipableReferenceData
 				erd, ok = a.ReferenceData().(asset.EquipableReferenceData)
 				if ok {
-					ea := asset.NewBuilder[asset.EquipableReferenceData](a.Id(), a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
+					ea := asset.NewBuilder[asset.EquipableReferenceData](a.Id(), uuid.Nil, a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
 						SetSlot(a.Slot()).
 						SetExpiration(a.Expiration()).
 						SetReferenceData(erd).

@@ -20,10 +20,10 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) ByCharacterIdProvider(characterId uint32) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
+func (p *Processor) ByAccountIdProvider(accountId uint32) model.Provider[Model] {
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByAccountId(accountId), Extract)
 }
 
-func (p *Processor) GetByCharacterId(characterId uint32) (Model, error) {
-	return p.ByCharacterIdProvider(characterId)()
+func (p *Processor) GetByAccountId(accountId uint32) (Model, error) {
+	return p.ByAccountIdProvider(accountId)()
 }

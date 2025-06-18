@@ -7,13 +7,13 @@ import (
 )
 
 const (
-	Resource = "characters/%d/cash-shop/wallet"
+	Resource = "accounts/%d/wallet"
 )
 
 func getBaseRequest() string {
 	return requests.RootUrl("CASHSHOP")
 }
 
-func requestByCharacterId(characterId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
+func requestByAccountId(accountId uint32) requests.Request[RestModel] {
+	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, accountId))
 }

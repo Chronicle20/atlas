@@ -365,6 +365,7 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32, compartm
 		}
 	}
 }
+
 func (p *Processor) Drop(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
 	return func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
 		return func(a Model[any]) error {
@@ -638,8 +639,9 @@ func (p *Processor) Acquire(mb *message.Buffer) func(characterId uint32, compart
 	}
 }
 
-func (p *Processor) AcquireCashItem(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, cashItemId uint32) (Model[any], error) {
+func (p *Processor) Accept(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, cashItemId uint32) (Model[any], error) {
 	return func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, cashItemId uint32) (Model[any], error) {
+		// TODO this eventually needs to not be cash item specific
 		p.l.Debugf("Character [%d] attempting to acquire cash item [%d] in slot [%d] of compartment [%s].", characterId, cashItemId, slot, compartmentId.String())
 		var a Model[any]
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
@@ -669,5 +671,26 @@ func (p *Processor) AcquireCashItem(mb *message.Buffer) func(characterId uint32,
 			return Model[any]{}, txErr
 		}
 		return a, nil
+	}
+}
+
+func (p *Processor) Release(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
+	return func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
+		return func(a Model[any]) error {
+			p.l.Debugf("Attempting to release asset [%d].", a.Id())
+			txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+				err := deleteById(tx, p.t.Id(), a.Id())
+				if err != nil {
+					return err
+				}
+				return nil
+			})
+			if txErr != nil {
+				p.l.WithError(txErr).Errorf("Unable to delete asset [%d].", a.Id())
+				return txErr
+			}
+			p.l.Debugf("Deleted asset [%d].", a.Id())
+			return nil
+		}
 	}
 }

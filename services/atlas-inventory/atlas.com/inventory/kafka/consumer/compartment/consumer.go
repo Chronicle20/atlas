@@ -45,8 +45,8 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRechargeItemCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMergeCommand(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSortCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMoveCashItemCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMoveToCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAcceptCommand(db))))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleReleaseCommand(db))))
 		}
 	}
 }
@@ -183,20 +183,20 @@ func handleSortCommand(db *gorm.DB) message.Handler[compartment2.Command[compart
 	}
 }
 
-func handleMoveCashItemCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.MoveCashItemCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.MoveCashItemCommandBody]) {
-		if c.Type != compartment2.CommandMoveCashItem {
+func handleAcceptCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.AcceptCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.AcceptCommandBody]) {
+		if c.Type != compartment2.CommandAccept {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).MoveCashItemAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot, c.Body.CashItemId)
+		_ = compartment.NewProcessor(l, ctx, db).AcceptAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.TransactionId, c.Body.ReferenceId)
 	}
 }
 
-func handleMoveToCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.MoveToCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.MoveToCommandBody]) {
-		if c.Type != compartment2.CommandMoveTo {
+func handleReleaseCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.ReleaseCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.ReleaseCommandBody]) {
+		if c.Type != compartment2.CommandRelease {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).MoveToAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot, c.Body.OtherInventory)
+		_ = compartment.NewProcessor(l, ctx, db).ReleaseAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.TransactionId, c.Body.AssetId)
 	}
 }

@@ -105,52 +105,42 @@ func SortCompleteEventStatusProvider(id uuid.UUID, characterId uint32, inventory
 	return producer.SingleMessageProvider(key, value)
 }
 
-func CashItemMovedEventStatusProvider(id uuid.UUID, characterId uint32, cashItemId uint32, slot int16, templateId uint32) model.Provider[[]kafka.Message] {
+func AcceptedEventStatusProvider(id uuid.UUID, characterId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &compartment.StatusEvent[compartment.CashItemMovedEventBody]{
+	value := &compartment.StatusEvent[compartment.AcceptedEventBody]{
 		CharacterId:   characterId,
 		CompartmentId: id,
-		Type:          compartment.StatusEventTypeCashItemMoved,
-		Body: compartment.CashItemMovedEventBody{
-			CashItemId: cashItemId,
-			Slot:       slot,
-			TemplateId: templateId,
+		Type:          compartment.StatusEventTypeAccepted,
+		Body: compartment.AcceptedEventBody{
+			TransactionId: transactionId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func CashItemRemovedEventStatusProvider(id uuid.UUID, characterId uint32, referenceId uint32) model.Provider[[]kafka.Message] {
+func ReleasedEventStatusProvider(id uuid.UUID, characterId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &compartment.StatusEvent[compartment.CashItemMovedEventBody]{
+	value := &compartment.StatusEvent[compartment.ReleasedEventBody]{
 		CharacterId:   characterId,
 		CompartmentId: id,
-		Type:          compartment.StatusEventTypeCashItemRemoved,
-		Body: compartment.CashItemMovedEventBody{
-			CashItemId: referenceId,
-			Slot:       -1, // Indicate the item has been removed
-			TemplateId: 0,  // Not needed for removal
+		Type:          compartment.StatusEventTypeReleased,
+		Body: compartment.ReleasedEventBody{
+			TransactionId: transactionId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func ErrorEventStatusProvider(id uuid.UUID, characterId uint32, errorCode string, cashItemId ...uint32) model.Provider[[]kafka.Message] {
+func ErrorEventStatusProvider(id uuid.UUID, characterId uint32, errorCode string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	body := compartment.ErrorEventBody{
-		ErrorCode: errorCode,
-	}
-
-	// Include cash item ID if provided
-	if len(cashItemId) > 0 {
-		body.CashItemId = cashItemId[0]
-	}
-
 	value := &compartment.StatusEvent[compartment.ErrorEventBody]{
 		CharacterId:   characterId,
 		CompartmentId: id,
 		Type:          compartment.StatusEventTypeError,
-		Body:          body,
+		Body: compartment.ErrorEventBody{
+			ErrorCode:     errorCode,
+			TransactionId: transactionId,
+		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

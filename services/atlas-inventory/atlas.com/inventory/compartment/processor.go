@@ -1203,179 +1203,131 @@ func (p *Processor) MergeAndCompact(mb *message.Buffer) func(characterId uint32,
 	}
 }
 
-func (p *Processor) MoveCashItemAndEmit(characterId uint32, inventoryType inventory.Type, slot int16, cashItemId uint32) error {
+func (p *Processor) AcceptAndEmit(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, referenceId uint32) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.MoveCashItem(mb)(characterId)(inventoryType)(slot)(cashItemId)
+		return p.Accept(mb)(characterId, inventoryType, transactionId, referenceId)
 	})
 }
 
-func (p *Processor) MoveCashItem(mb *message.Buffer) func(characterId uint32) func(inventoryType inventory.Type) func(slot int16) func(cashItemId uint32) error {
-	return func(characterId uint32) func(inventoryType inventory.Type) func(slot int16) func(cashItemId uint32) error {
-		return func(inventoryType inventory.Type) func(slot int16) func(cashItemId uint32) error {
-			return func(slot int16) func(cashItemId uint32) error {
-				return func(cashItemId uint32) error {
-					p.l.Debugf("Character [%d] attempting to move cash item [%d] to slot [%d] in inventory type [%d].", characterId, cashItemId, slot, inventoryType)
+func (p *Processor) Accept(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, referenceId uint32) error {
+	return func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, referenceId uint32) error {
+		p.l.Debugf("Character [%d] attempting to accept asset referred to by [%d] in inventory [%d].", characterId, referenceId, inventoryType)
 
-					// Lock the inventory to prevent concurrent modifications
-					invLock := LockRegistry().Get(characterId, inventoryType)
-					invLock.Lock()
-					defer invLock.Unlock()
+		// Lock the inventory to prevent concurrent modifications
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
 
-					var c Model
-					var a asset.Model[any]
-					txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-						// Get the compartment for the character and inventory type
-						var err error
-						c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
-						if err != nil {
-							p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
-							return err
-						}
-
-						// Check if the specified slot is available
-						targetSlot := slot
-						if targetSlot < 0 {
-							// If no slot specified or invalid slot, find the next free slot
-							nfs, err := c.NextFreeSlot()
-							if err != nil {
-								p.l.WithError(err).Errorf("Unable to find next free slot in compartment [%s] for character [%d].", c.Id(), characterId)
-								return err
-							}
-							targetSlot = nfs
-						} else {
-							// Check if the slot is already occupied
-							assets, err := p.assetProcessor.WithTransaction(tx).GetByCompartmentId(c.Id())
-							if err != nil {
-								p.l.WithError(err).Errorf("Unable to get assets in compartment [%s] for character [%d].", c.Id(), characterId)
-								return err
-							}
-
-							for _, asset := range assets {
-								if asset.Slot() == targetSlot {
-									// Slot is occupied, find the next free slot
-									nfs, err := c.NextFreeSlot()
-									if err != nil {
-										p.l.WithError(err).Errorf("Unable to find next free slot in compartment [%s] for character [%d].", c.Id(), characterId)
-										return err
-									}
-									targetSlot = nfs
-									break
-								}
-							}
-						}
-
-						// Create the asset for the cash item
-						a, err = p.assetProcessor.WithTransaction(tx).AcquireCashItem(mb)(characterId, c.Id(), c.Type(), targetSlot, cashItemId)
-						if err != nil {
-							p.l.WithError(err).Errorf("Unable to acquire cash item [%d] for character [%d].", cashItemId, characterId)
-							return err
-						}
-
-						// Emit a status event for the successful move
-						return mb.Put(compartment.EnvEventTopicStatus, CashItemMovedEventStatusProvider(c.Id(), characterId, cashItemId, targetSlot, a.TemplateId()))
-					})
-
-					if txErr != nil {
-						p.l.WithError(txErr).Errorf("Character [%d] unable to move cash item [%d] to inventory [%d].", characterId, cashItemId, inventoryType)
-						_ = mb.Put(compartment.EnvEventTopicStatus, ErrorEventStatusProvider(c.Id(), characterId, compartment.StatusEventErrorTypeCashItemMoveFailed, cashItemId))
-						return txErr
-					}
-
-					p.l.Debugf("Character [%d] successfully moved cash item [%d] to slot [%d] in inventory [%d].", characterId, cashItemId, a.Slot(), inventoryType)
-					return nil
-				}
+		var c Model
+		var a asset.Model[any]
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			// Get the compartment for the character and inventory type
+			var err error
+			c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
+				return err
 			}
+
+			// Find the next free slot
+			targetSlot, err := c.NextFreeSlot()
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to find next free slot in compartment [%s] for character [%d].", c.Id(), characterId)
+				return err
+			}
+
+			// Create the asset for the cash item
+			a, err = p.assetProcessor.WithTransaction(tx).Accept(mb)(characterId, c.Id(), c.Type(), targetSlot, referenceId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to acquire cash item [%d] for character [%d].", referenceId, characterId)
+				return err
+			}
+
+			// Emit a status event for the successful move
+			return mb.Put(compartment.EnvEventTopicStatus, AcceptedEventStatusProvider(c.Id(), characterId, transactionId))
+		})
+
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Character [%d] unable to move cash item [%d] to inventory [%d].", characterId, referenceId, inventoryType)
+			_ = mb.Put(compartment.EnvEventTopicStatus, ErrorEventStatusProvider(c.Id(), characterId, compartment.AcceptCommandFailed, transactionId))
+			return nil
 		}
+
+		p.l.Debugf("Character [%d] successfully moved cash item [%d] to slot [%d] in inventory [%d].", characterId, referenceId, a.Slot(), inventoryType)
+		return nil
 	}
 }
 
-func (p *Processor) MoveToAndEmit(characterId uint32, inventoryType inventory.Type, slot int16, otherInventory string) error {
+func (p *Processor) ReleaseAndEmit(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, assetId uint32) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(mb *message.Buffer) error {
-		return p.MoveTo(mb)(characterId)(inventoryType)(slot)(otherInventory)
+		return p.Release(mb)(characterId, inventoryType, transactionId, assetId)
 	})
 }
 
-func (p *Processor) MoveTo(mb *message.Buffer) func(characterId uint32) func(inventoryType inventory.Type) func(slot int16) func(otherInventory string) error {
-	return func(characterId uint32) func(inventoryType inventory.Type) func(slot int16) func(otherInventory string) error {
-		return func(inventoryType inventory.Type) func(slot int16) func(otherInventory string) error {
-			return func(slot int16) func(otherInventory string) error {
-				return func(otherInventory string) error {
-					p.l.Debugf("Character [%d] attempting to move cash item from slot [%d] in inventory type [%d] to [%s].", characterId, slot, inventoryType, otherInventory)
+func (p *Processor) Release(mb *message.Buffer) func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, assetId uint32) error {
+	return func(characterId uint32, inventoryType inventory.Type, transactionId uuid.UUID, assetId uint32) error {
+		p.l.Debugf("Character [%d] attempting to release asset [%d] from inventory [%d].", characterId, assetId, inventoryType)
 
-					// Lock the inventory to prevent concurrent modifications
-					invLock := LockRegistry().Get(characterId, inventoryType)
-					invLock.Lock()
-					defer invLock.Unlock()
+		// Lock the inventory to prevent concurrent modifications
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
 
-					var c Model
-					var foundAsset bool
-					var assetToRemove asset.Model[any]
-					var referenceId uint32
-					txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-						// Get the compartment for the character and inventory type
-						var err error
-						c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
-						if err != nil {
-							p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
-							return err
-						}
+		var c Model
+		var foundAsset bool
+		var assetToRemove asset.Model[any]
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			// Get the compartment for the character and inventory type
+			var err error
+			c, err = p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to get compartment by type [%d] for character [%d].", inventoryType, characterId)
+				return err
+			}
 
-						// Get all assets in the compartment
-						assets, err := p.assetProcessor.WithTransaction(tx).GetByCompartmentId(c.Id())
-						if err != nil {
-							p.l.WithError(err).Errorf("Unable to get assets in compartment [%s] for character [%d].", c.Id(), characterId)
-							return err
-						}
+			// Get all assets in the compartment
+			assets, err := p.assetProcessor.WithTransaction(tx).GetByCompartmentId(c.Id())
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to get assets in compartment [%s] for character [%d].", c.Id(), characterId)
+				return err
+			}
 
-						// Find the asset in the specified slot
-						foundAsset = false
-						for _, a := range assets {
-							if a.Slot() == slot {
-								assetToRemove = a
-								foundAsset = true
-								break
-							}
-						}
-
-						if !foundAsset {
-							err = errors.New("no asset found in the specified slot")
-							p.l.WithError(err).Errorf("Character [%d] unable to find asset in slot [%d] in inventory [%d].", characterId, slot, inventoryType)
-							return err
-						}
-
-						// Check if this is a cash item (has a reference ID)
-						if assetToRemove.ReferenceType() != asset.ReferenceTypeCash && assetToRemove.ReferenceType() != asset.ReferenceTypeCashEquipable {
-							err = errors.New("asset is not a cash item")
-							p.l.WithError(err).Errorf("Character [%d] attempted to move non-cash item from slot [%d] in inventory [%d].", characterId, slot, inventoryType)
-							return err
-						}
-
-						// Store the reference ID for the status event
-						referenceId = assetToRemove.ReferenceId()
-
-						// Delete the asset silently (without emitting delete messages)
-						// We're using a new message buffer that we don't emit
-						silentBuffer := message.NewBuffer()
-						err = p.assetProcessor.WithTransaction(tx).Delete(silentBuffer)(characterId, c.Id())(assetToRemove)
-						if err != nil {
-							p.l.WithError(err).Errorf("Unable to delete asset [%d] for character [%d].", assetToRemove.Id(), characterId)
-							return err
-						}
-
-						// Emit a status event for the successful move
-						return mb.Put(compartment.EnvEventTopicStatus, CashItemRemovedEventStatusProvider(c.Id(), characterId, referenceId))
-					})
-
-					if txErr != nil {
-						p.l.WithError(txErr).Errorf("Character [%d] unable to move cash item from slot [%d] in inventory [%d] to [%s].", characterId, slot, inventoryType, otherInventory)
-						return txErr
-					}
-
-					p.l.Debugf("Character [%d] successfully moved cash item [%d] from slot [%d] in inventory [%d] to [%s].", characterId, referenceId, slot, inventoryType, otherInventory)
-					return nil
+			// Find the asset in the specified slot
+			foundAsset = false
+			for _, a := range assets {
+				if a.ReferenceId() == assetId {
+					assetToRemove = a
+					foundAsset = true
+					break
 				}
 			}
+
+			if !foundAsset {
+				p.l.Errorf("Unable to find asset [%d] in compartment [%s] for character [%d].", assetId, c.Id(), characterId)
+				return errors.New("unable to find asset in compartment")
+			}
+
+			// Delete the asset silently (without emitting delete messages)
+			// We're using a new message buffer that we don't emit
+			silentBuffer := message.NewBuffer()
+			err = p.assetProcessor.WithTransaction(tx).Release(silentBuffer)(characterId, c.Id())(assetToRemove)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to delete asset [%d] for character [%d].", assetToRemove.Id(), characterId)
+				return err
+			}
+
+			// Emit a status event for the successful move
+			return mb.Put(compartment.EnvEventTopicStatus, ReleasedEventStatusProvider(c.Id(), characterId, transactionId))
+		})
+
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Character [%d] unable to release asset [%d] from inventory [%d].", characterId, assetId, inventoryType)
+			_ = mb.Put(compartment.EnvEventTopicStatus, ErrorEventStatusProvider(c.Id(), characterId, compartment.ReleaseCommandFailed, transactionId))
+			return nil
 		}
+
+		p.l.Debugf("Character [%d] successfully released asset [%d] from inventory [%d].", characterId, assetId, inventoryType)
+		return nil
 	}
 }
 

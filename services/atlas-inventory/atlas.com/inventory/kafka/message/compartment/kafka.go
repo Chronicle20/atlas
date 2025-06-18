@@ -6,77 +6,6 @@ import (
 )
 
 const (
-	EnvEventTopicStatus                 = "EVENT_TOPIC_COMPARTMENT_STATUS"
-	StatusEventTypeCreated              = "CREATED"
-	StatusEventTypeDeleted              = "DELETED"
-	StatusEventTypeCapacityChanged      = "CAPACITY_CHANGED"
-	StatusEventTypeReserved             = "RESERVED"
-	StatusEventTypeReservationCancelled = "RESERVATION_CANCELLED"
-	StatusEventTypeMergeComplete        = "MERGE_COMPLETE"
-	StatusEventTypeSortComplete         = "SORT_COMPLETE"
-	StatusEventTypeCashItemMoved        = "CASH_ITEM_MOVED"
-	StatusEventTypeCashItemRemoved      = "CASH_ITEM_REMOVED"
-	StatusEventTypeError                = "ERROR"
-
-	StatusEventErrorTypeCashItemMoveFailed = "CASH_ITEM_MOVE_FAILED"
-)
-
-type StatusEvent[E any] struct {
-	CharacterId   uint32    `json:"characterId"`
-	CompartmentId uuid.UUID `json:"compartmentId"`
-	Type          string    `json:"type"`
-	Body          E         `json:"body"`
-}
-
-type CreatedStatusEventBody struct {
-	Type     byte   `json:"type"`
-	Capacity uint32 `json:"capacity"`
-}
-
-type DeletedStatusEventBody struct {
-}
-
-type CapacityChangedEventBody struct {
-	Type     byte   `json:"type"`
-	Capacity uint32 `json:"capacity"`
-}
-
-type ReservedEventBody struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	ItemId        uint32    `json:"itemId"`
-	Slot          int16     `json:"slot"`
-	Quantity      uint32    `json:"quantity"`
-}
-type ReservationCancelledEventBody struct {
-	ItemId   uint32 `json:"itemId"`
-	Slot     int16  `json:"slot"`
-	Quantity uint32 `json:"quantity"`
-}
-
-type MergeAndSortCompleteEventBody struct {
-	Type byte `json:"type"`
-}
-
-type MergeCompleteEventBody struct {
-	Type byte `json:"type"`
-}
-
-type SortCompleteEventBody struct {
-	Type byte `json:"type"`
-}
-
-type CashItemMovedEventBody struct {
-	CashItemId uint32 `json:"cashItemId"`
-	Slot       int16  `json:"slot"`
-	TemplateId uint32 `json:"templateId"`
-}
-
-type ErrorEventBody struct {
-	ErrorCode  string `json:"errorCode"`
-	CashItemId uint32 `json:"cashItemId,omitempty"`
-}
-
-const (
 	EnvCommandTopic          = "COMMAND_TOPIC_COMPARTMENT"
 	CommandEquip             = "EQUIP"
 	CommandUnequip           = "UNEQUIP"
@@ -91,10 +20,8 @@ const (
 	CommandRecharge          = "RECHARGE"
 	CommandMerge             = "MERGE"
 	CommandSort              = "SORT"
-	CommandMoveCashItem      = "MOVE_CASH_ITEM"
-	CommandMoveTo            = "MOVE_TO"
-
-	CashInventoryType = "CASH"
+	CommandAccept            = "ACCEPT"
+	CommandRelease           = "RELEASE"
 )
 
 type Command[E any] struct {
@@ -179,12 +106,86 @@ type MergeCommandBody struct {
 type SortCommandBody struct {
 }
 
-type MoveCashItemCommandBody struct {
-	Slot       int16  `json:"slot"`
-	CashItemId uint32 `json:"cashItemId"`
+type AcceptCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	ReferenceId   uint32    `json:"referenceId"`
 }
 
-type MoveToCommandBody struct {
-	Slot           int16  `json:"slot"`
-	OtherInventory string `json:"otherInventory"`
+type ReleaseCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	AssetId       uint32    `json:"assetId"`
+}
+
+const (
+	EnvEventTopicStatus                 = "EVENT_TOPIC_COMPARTMENT_STATUS"
+	StatusEventTypeCreated              = "CREATED"
+	StatusEventTypeDeleted              = "DELETED"
+	StatusEventTypeCapacityChanged      = "CAPACITY_CHANGED"
+	StatusEventTypeReserved             = "RESERVED"
+	StatusEventTypeReservationCancelled = "RESERVATION_CANCELLED"
+	StatusEventTypeMergeComplete        = "MERGE_COMPLETE"
+	StatusEventTypeSortComplete         = "SORT_COMPLETE"
+	StatusEventTypeAccepted             = "ACCEPTED"
+	StatusEventTypeReleased             = "RELEASED"
+	StatusEventTypeError                = "ERROR"
+
+	AcceptCommandFailed  = "ACCEPT_COMMAND_FAILED"
+	ReleaseCommandFailed = "RELEASE_COMMAND_FAILED"
+)
+
+type StatusEvent[E any] struct {
+	CharacterId   uint32    `json:"characterId"`
+	CompartmentId uuid.UUID `json:"compartmentId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
+}
+
+type CreatedStatusEventBody struct {
+	Type     byte   `json:"type"`
+	Capacity uint32 `json:"capacity"`
+}
+
+type DeletedStatusEventBody struct {
+}
+
+type CapacityChangedEventBody struct {
+	Type     byte   `json:"type"`
+	Capacity uint32 `json:"capacity"`
+}
+
+type ReservedEventBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	ItemId        uint32    `json:"itemId"`
+	Slot          int16     `json:"slot"`
+	Quantity      uint32    `json:"quantity"`
+}
+type ReservationCancelledEventBody struct {
+	ItemId   uint32 `json:"itemId"`
+	Slot     int16  `json:"slot"`
+	Quantity uint32 `json:"quantity"`
+}
+
+type MergeAndSortCompleteEventBody struct {
+	Type byte `json:"type"`
+}
+
+type MergeCompleteEventBody struct {
+	Type byte `json:"type"`
+}
+
+type SortCompleteEventBody struct {
+	Type byte `json:"type"`
+}
+
+type AcceptedEventBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+}
+
+type ReleasedEventBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+}
+
+type ErrorEventBody struct {
+	ErrorCode     string    `json:"errorCode"`
+	TransactionId uuid.UUID `json:"transactionId"`
 }

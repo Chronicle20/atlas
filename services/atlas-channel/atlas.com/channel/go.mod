@@ -3,12 +3,12 @@ module atlas-channel
 go 1.24.4
 
 require (
-	github.com/Chronicle20/atlas-constants v1.0.17
-	github.com/Chronicle20/atlas-kafka v1.1.11
-	github.com/Chronicle20/atlas-model v1.2.4
-	github.com/Chronicle20/atlas-rest v1.2.15
-	github.com/Chronicle20/atlas-socket v1.2.6
-	github.com/Chronicle20/atlas-tenant v1.0.6
+	github.com/Chronicle20/atlas-constants v1.0.18
+	github.com/Chronicle20/atlas-kafka v1.1.12
+	github.com/Chronicle20/atlas-model v1.2.5
+	github.com/Chronicle20/atlas-rest v1.2.16
+	github.com/Chronicle20/atlas-socket v1.2.7
+	github.com/Chronicle20/atlas-tenant v1.0.7
 	github.com/google/uuid v1.6.0
 	github.com/jtumidanski/api2go v1.0.4
 	github.com/segmentio/kafka-go v0.4.48
@@ -23,10 +23,10 @@ require (
 require (
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
-	github.com/go-logr/logr v1.4.2 // indirect
+	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3 // indirect
-	github.com/klauspost/compress v1.17.11 // indirect
+	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
@@ -35,7 +35,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.6.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250519155744-55703ea1f237 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250519155744-55703ea1f237 // indirect
 	google.golang.org/grpc v1.72.1 // indirect

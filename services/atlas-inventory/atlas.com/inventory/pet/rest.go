@@ -7,7 +7,7 @@ import (
 
 type RestModel struct {
 	Id         uint32    `json:"-"`
-	CashId     uint64    `json:"cashId"`
+	CashId     int64     `json:"cashId"`
 	TemplateId uint32    `json:"templateId"`
 	Name       string    `json:"name"`
 	Level      byte      `json:"level"`

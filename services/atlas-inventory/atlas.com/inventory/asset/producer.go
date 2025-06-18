@@ -95,71 +95,102 @@ func UpdatedEventStatusProvider(characterId uint32, a Model[any]) model.Provider
 func getReferenceData(data any) interface{} {
 	if erd, ok := data.(EquipableReferenceData); ok {
 		return asset.EquipableReferenceData{
-			Strength:       erd.Strength(),
-			Dexterity:      erd.Dexterity(),
-			Intelligence:   erd.Intelligence(),
-			Luck:           erd.Luck(),
-			Hp:             erd.HP(),
-			Mp:             erd.MP(),
-			WeaponAttack:   erd.WeaponAttack(),
-			MagicAttack:    erd.MagicAttack(),
-			WeaponDefense:  erd.WeaponDefense(),
-			MagicDefense:   erd.MagicDefense(),
-			Accuracy:       erd.Accuracy(),
-			Avoidability:   erd.Avoidability(),
-			Hands:          erd.Hands(),
-			Speed:          erd.Speed(),
-			Jump:           erd.Jump(),
-			Slots:          erd.Slots(),
-			OwnerId:        erd.OwnerId(),
-			Locked:         erd.IsLocked(),
-			Spikes:         erd.HasSpikes(),
-			KarmaUsed:      erd.IsKarmaUsed(),
-			Cold:           erd.IsCold(),
-			CanBeTraded:    erd.CanBeTraded(),
-			LevelType:      erd.LevelType(),
-			Level:          erd.Level(),
-			Experience:     erd.Experience(),
-			HammersApplied: erd.HammersApplied(),
-			Expiration:     erd.Expiration(),
+			BaseData: asset.BaseData{
+				OwnerId: erd.ownerId,
+			},
+			StatisticData: asset.StatisticData{
+				Strength:      erd.strength,
+				Dexterity:     erd.dexterity,
+				Intelligence:  erd.intelligence,
+				Luck:          erd.luck,
+				Hp:            erd.hp,
+				Mp:            erd.mp,
+				WeaponAttack:  erd.weaponAttack,
+				MagicAttack:   erd.magicAttack,
+				WeaponDefense: erd.weaponDefense,
+				MagicDefense:  erd.magicDefense,
+				Accuracy:      erd.accuracy,
+				Avoidability:  erd.avoidability,
+				Hands:         erd.hands,
+				Speed:         erd.speed,
+				Jump:          erd.jump,
+			},
+			Slots:          erd.slots,
+			Locked:         erd.locked,
+			Spikes:         erd.spikes,
+			KarmaUsed:      erd.karmaUsed,
+			Cold:           erd.cold,
+			CanBeTraded:    erd.canBeTraded,
+			LevelType:      erd.levelType,
+			Level:          erd.level,
+			Experience:     erd.experience,
+			HammersApplied: erd.hammersApplied,
 		}
 	}
-	// TODO CashEquipableReferenceData
+	if crd, ok := data.(CashEquipableReferenceData); ok {
+		return asset.CashEquipableReferenceData{
+			CashData: asset.CashData{
+				CashId: crd.cashId,
+			},
+		}
+	}
 	if crd, ok := data.(ConsumableReferenceData); ok {
 		return asset.ConsumableReferenceData{
-			Quantity:     crd.Quantity(),
-			OwnerId:      crd.OwnerId(),
+			BaseData: asset.BaseData{
+				OwnerId: crd.ownerId,
+			},
+			StackableData: asset.StackableData{
+				Quantity: crd.quantity,
+			},
 			Flag:         crd.Flag(),
 			Rechargeable: crd.Rechargeable(),
 		}
 	}
 	if srd, ok := data.(SetupReferenceData); ok {
 		return asset.SetupReferenceData{
-			Quantity: srd.Quantity(),
-			OwnerId:  srd.OwnerId(),
-			Flag:     srd.Flag(),
+			BaseData: asset.BaseData{
+				OwnerId: srd.ownerId,
+			},
+			StackableData: asset.StackableData{
+				Quantity: srd.quantity,
+			},
+			Flag: srd.Flag(),
 		}
 	}
 	if trd, ok := data.(EtcReferenceData); ok {
 		return asset.EtcReferenceData{
-			Quantity: trd.Quantity(),
-			OwnerId:  trd.OwnerId(),
-			Flag:     trd.Flag(),
+			BaseData: asset.BaseData{
+				OwnerId: trd.ownerId,
+			},
+			StackableData: asset.StackableData{
+				Quantity: trd.quantity,
+			},
+			Flag: trd.Flag(),
 		}
 	}
 	if crd, ok := data.(CashReferenceData); ok {
 		return asset.CashReferenceData{
-			CashId:      crd.CashId(),
-			Quantity:    crd.Quantity(),
-			OwnerId:     crd.OwnerId(),
+			BaseData: asset.BaseData{
+				OwnerId: crd.ownerId,
+			},
+			StackableData: asset.StackableData{
+				Quantity: crd.quantity,
+			},
+			CashData: asset.CashData{
+				CashId: crd.cashId,
+			},
 			Flag:        crd.Flag(),
 			PurchasedBy: crd.PurchaseBy(),
 		}
 	}
 	if prd, ok := data.(PetReferenceData); ok {
 		return asset.PetReferenceData{
-			CashId:      prd.CashId(),
-			OwnerId:     prd.OwnerId(),
+			BaseData: asset.BaseData{
+				OwnerId: prd.ownerId,
+			},
+			CashData: asset.CashData{
+				CashId: prd.cashId,
+			},
 			Flag:        prd.Flag(),
 			PurchasedBy: prd.PurchaseBy(),
 			Name:        prd.Name(),

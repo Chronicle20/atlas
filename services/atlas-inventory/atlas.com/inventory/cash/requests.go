@@ -16,6 +16,6 @@ func getBaseRequest() string {
 	return requests.RootUrl("CASHSHOP")
 }
 
-func requestById(itemId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+itemResource, itemId))
+func requestById(id uint32) requests.Request[RestModel] {
+	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+itemResource, id))
 }

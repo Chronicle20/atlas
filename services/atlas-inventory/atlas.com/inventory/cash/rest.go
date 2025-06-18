@@ -4,10 +4,9 @@ import "strconv"
 
 type RestModel struct {
 	Id          uint32 `json:"-"`
-	CashId      uint64 `json:"cashId"`
+	CashId      int64  `json:"cashId,string"`
 	TemplateId  uint32 `json:"templateId"`
 	Quantity    uint32 `json:"quantity"`
-	Owner       uint32 `json:"owner"`
 	Flag        uint16 `json:"flag"`
 	PurchasedBy uint32 `json:"purchasedBy"`
 }
@@ -35,7 +34,6 @@ func Transform(m Model) (RestModel, error) {
 		CashId:      m.cashId,
 		TemplateId:  m.templateId,
 		Quantity:    m.quantity,
-		Owner:       m.ownerId,
 		Flag:        m.flag,
 		PurchasedBy: m.purchasedBy,
 	}, nil
@@ -47,7 +45,6 @@ func Extract(rm RestModel) (Model, error) {
 		cashId:      rm.CashId,
 		templateId:  rm.TemplateId,
 		quantity:    rm.Quantity,
-		ownerId:     rm.Owner,
 		flag:        rm.Flag,
 		purchasedBy: rm.PurchasedBy,
 	}, nil

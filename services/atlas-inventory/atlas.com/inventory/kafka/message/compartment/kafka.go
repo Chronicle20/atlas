@@ -6,61 +6,6 @@ import (
 )
 
 const (
-	EnvEventTopicStatus                 = "EVENT_TOPIC_COMPARTMENT_STATUS"
-	StatusEventTypeCreated              = "CREATED"
-	StatusEventTypeDeleted              = "DELETED"
-	StatusEventTypeCapacityChanged      = "CAPACITY_CHANGED"
-	StatusEventTypeReserved             = "RESERVED"
-	StatusEventTypeReservationCancelled = "RESERVATION_CANCELLED"
-	StatusEventTypeMergeComplete        = "MERGE_COMPLETE"
-	StatusEventTypeSortComplete         = "SORT_COMPLETE"
-)
-
-type StatusEvent[E any] struct {
-	CharacterId   uint32    `json:"characterId"`
-	CompartmentId uuid.UUID `json:"compartmentId"`
-	Type          string    `json:"type"`
-	Body          E         `json:"body"`
-}
-
-type CreatedStatusEventBody struct {
-	Type     byte   `json:"type"`
-	Capacity uint32 `json:"capacity"`
-}
-
-type DeletedStatusEventBody struct {
-}
-
-type CapacityChangedEventBody struct {
-	Type     byte   `json:"type"`
-	Capacity uint32 `json:"capacity"`
-}
-
-type ReservedEventBody struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	ItemId        uint32    `json:"itemId"`
-	Slot          int16     `json:"slot"`
-	Quantity      uint32    `json:"quantity"`
-}
-type ReservationCancelledEventBody struct {
-	ItemId   uint32 `json:"itemId"`
-	Slot     int16  `json:"slot"`
-	Quantity uint32 `json:"quantity"`
-}
-
-type MergeAndSortCompleteEventBody struct {
-	Type byte `json:"type"`
-}
-
-type MergeCompleteEventBody struct {
-	Type byte `json:"type"`
-}
-
-type SortCompleteEventBody struct {
-	Type byte `json:"type"`
-}
-
-const (
 	EnvCommandTopic          = "COMMAND_TOPIC_COMPARTMENT"
 	CommandEquip             = "EQUIP"
 	CommandUnequip           = "UNEQUIP"
@@ -75,6 +20,8 @@ const (
 	CommandRecharge          = "RECHARGE"
 	CommandMerge             = "MERGE"
 	CommandSort              = "SORT"
+	CommandAccept            = "ACCEPT"
+	CommandRelease           = "RELEASE"
 )
 
 type Command[E any] struct {
@@ -157,4 +104,88 @@ type MergeCommandBody struct {
 }
 
 type SortCommandBody struct {
+}
+
+type AcceptCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	ReferenceId   uint32    `json:"referenceId"`
+}
+
+type ReleaseCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	AssetId       uint32    `json:"assetId"`
+}
+
+const (
+	EnvEventTopicStatus                 = "EVENT_TOPIC_COMPARTMENT_STATUS"
+	StatusEventTypeCreated              = "CREATED"
+	StatusEventTypeDeleted              = "DELETED"
+	StatusEventTypeCapacityChanged      = "CAPACITY_CHANGED"
+	StatusEventTypeReserved             = "RESERVED"
+	StatusEventTypeReservationCancelled = "RESERVATION_CANCELLED"
+	StatusEventTypeMergeComplete        = "MERGE_COMPLETE"
+	StatusEventTypeSortComplete         = "SORT_COMPLETE"
+	StatusEventTypeAccepted             = "ACCEPTED"
+	StatusEventTypeReleased             = "RELEASED"
+	StatusEventTypeError                = "ERROR"
+
+	AcceptCommandFailed  = "ACCEPT_COMMAND_FAILED"
+	ReleaseCommandFailed = "RELEASE_COMMAND_FAILED"
+)
+
+type StatusEvent[E any] struct {
+	CharacterId   uint32    `json:"characterId"`
+	CompartmentId uuid.UUID `json:"compartmentId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
+}
+
+type CreatedStatusEventBody struct {
+	Type     byte   `json:"type"`
+	Capacity uint32 `json:"capacity"`
+}
+
+type DeletedStatusEventBody struct {
+}
+
+type CapacityChangedEventBody struct {
+	Type     byte   `json:"type"`
+	Capacity uint32 `json:"capacity"`
+}
+
+type ReservedEventBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	ItemId        uint32    `json:"itemId"`
+	Slot          int16     `json:"slot"`
+	Quantity      uint32    `json:"quantity"`
+}
+type ReservationCancelledEventBody struct {
+	ItemId   uint32 `json:"itemId"`
+	Slot     int16  `json:"slot"`
+	Quantity uint32 `json:"quantity"`
+}
+
+type MergeAndSortCompleteEventBody struct {
+	Type byte `json:"type"`
+}
+
+type MergeCompleteEventBody struct {
+	Type byte `json:"type"`
+}
+
+type SortCompleteEventBody struct {
+	Type byte `json:"type"`
+}
+
+type AcceptedEventBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+}
+
+type ReleasedEventBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+}
+
+type ErrorEventBody struct {
+	ErrorCode     string    `json:"errorCode"`
+	TransactionId uuid.UUID `json:"transactionId"`
 }

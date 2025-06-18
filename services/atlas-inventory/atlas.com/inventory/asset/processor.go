@@ -100,6 +100,8 @@ func (p *Processor) DecorateAsset(m Model[any]) (Model[any], error) {
 	var decorator model.Transformer[Model[any], Model[any]]
 	if m.IsEquipable() {
 		decorator = p.DecorateEquipable
+	} else if m.IsCashEquipable() {
+		decorator = p.DecorateCashEquipable
 	} else if m.IsConsumable() || m.IsSetup() || m.IsEtc() {
 		decorator = p.DecorateStackable
 	} else if m.IsCash() || m.IsPet() {
@@ -149,23 +151,27 @@ func (p *Processor) DecorateEquipable(m Model[any]) (Model[any], error) {
 
 func MakeEquipableReferenceData(e equipable.Model) EquipableReferenceData {
 	return EquipableReferenceData{
-		strength:       e.Strength(),
-		dexterity:      e.Dexterity(),
-		intelligence:   e.Intelligence(),
-		luck:           e.Luck(),
-		hp:             e.HP(),
-		mp:             e.MP(),
-		weaponAttack:   e.WeaponAttack(),
-		magicAttack:    e.MagicAttack(),
-		weaponDefense:  e.WeaponDefense(),
-		magicDefense:   e.MagicDefense(),
-		accuracy:       e.Accuracy(),
-		avoidability:   e.Avoidability(),
-		hands:          e.Hands(),
-		speed:          e.Speed(),
-		jump:           e.Jump(),
-		slots:          e.Slots(),
-		ownerId:        e.OwnerId(),
+		StatisticData: StatisticData{
+			strength:      e.Strength(),
+			dexterity:     e.Dexterity(),
+			intelligence:  e.Intelligence(),
+			luck:          e.Luck(),
+			hp:            e.HP(),
+			mp:            e.MP(),
+			weaponAttack:  e.WeaponAttack(),
+			magicAttack:   e.MagicAttack(),
+			weaponDefense: e.WeaponDefense(),
+			magicDefense:  e.MagicDefense(),
+			accuracy:      e.Accuracy(),
+			avoidability:  e.Avoidability(),
+			hands:         e.Hands(),
+			speed:         e.Speed(),
+			jump:          e.Jump(),
+		},
+		slots: e.Slots(),
+		OwnerData: OwnerData{
+			ownerId: e.OwnerId(),
+		},
 		locked:         e.Locked(),
 		spikes:         e.Spikes(),
 		karmaUsed:      e.KarmaUsed(),
@@ -177,6 +183,20 @@ func MakeEquipableReferenceData(e equipable.Model) EquipableReferenceData {
 		hammersApplied: e.HammersApplied(),
 		expiration:     e.Expiration(),
 	}
+}
+
+func (p *Processor) DecorateCashEquipable(m Model[any]) (Model[any], error) {
+	ci, err := p.cashProcessor.GetById(m.ReferenceId())
+	if err != nil {
+		return m, errors.New("cannot locate reference")
+	}
+	return Clone(m).
+		SetReferenceData(CashEquipableReferenceData{
+			CashData: CashData{
+				cashId: ci.CashId(),
+			},
+		}).
+		Build(), nil
 }
 
 func (p *Processor) DecorateStackable(m Model[any]) (Model[any], error) {
@@ -201,25 +221,43 @@ func (p *Processor) DecorateStackable(m Model[any]) (Model[any], error) {
 
 func MakeEtcReferenceData(s stackable.Model) EtcReferenceData {
 	return EtcReferenceData{
-		quantity: s.Quantity(),
-		ownerId:  s.OwnerId(),
-		flag:     s.Flag(),
+		StackableData: StackableData{
+			quantity: s.Quantity(),
+		},
+		OwnerData: OwnerData{
+			ownerId: s.OwnerId(),
+		},
+		FlagData: FlagData{
+			flag: s.Flag(),
+		},
 	}
 }
 
 func MakeSetupReferenceData(s stackable.Model) SetupReferenceData {
 	return SetupReferenceData{
-		quantity: s.Quantity(),
-		ownerId:  s.OwnerId(),
-		flag:     s.Flag(),
+		StackableData: StackableData{
+			quantity: s.Quantity(),
+		},
+		OwnerData: OwnerData{
+			ownerId: s.OwnerId(),
+		},
+		FlagData: FlagData{
+			flag: s.Flag(),
+		},
 	}
 }
 
 func MakeConsumableReferenceData(s stackable.Model) ConsumableReferenceData {
 	return ConsumableReferenceData{
-		quantity:     s.Quantity(),
-		ownerId:      s.OwnerId(),
-		flag:         s.Flag(),
+		StackableData: StackableData{
+			quantity: s.Quantity(),
+		},
+		OwnerData: OwnerData{
+			ownerId: s.OwnerId(),
+		},
+		FlagData: FlagData{
+			flag: s.Flag(),
+		},
 		rechargeable: s.Rechargeable(),
 	}
 }
@@ -232,10 +270,21 @@ func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
 		}
 		return Clone(m).
 			SetReferenceData(CashReferenceData{
-				quantity:   ci.Quantity(),
-				ownerId:    ci.OwnerId(),
-				flag:       ci.Flag(),
-				purchaseBy: ci.PurchasedBy(),
+				CashData: CashData{
+					cashId: ci.CashId(),
+				},
+				StackableData: StackableData{
+					quantity: ci.Quantity(),
+				},
+				OwnerData: OwnerData{
+					ownerId: 0, // TODO
+				},
+				FlagData: FlagData{
+					flag: ci.Flag(),
+				},
+				PurchaseData: PurchaseData{
+					purchaseBy: ci.PurchasedBy(),
+				},
 			}).
 			Build(), nil
 	} else if m.ReferenceType() == ReferenceTypePet {
@@ -253,10 +302,18 @@ func (p *Processor) DecorateCash(m Model[any]) (Model[any], error) {
 
 func MakePetReferenceData(pi pet.Model) PetReferenceData {
 	return PetReferenceData{
-		cashId:     pi.CashId(),
-		ownerId:    pi.OwnerId(),
-		flag:       pi.Flag(),
-		purchaseBy: pi.PurchaseBy(),
+		CashData: CashData{
+			cashId: pi.CashId(),
+		},
+		OwnerData: OwnerData{
+			ownerId: pi.OwnerId(),
+		},
+		FlagData: FlagData{
+			flag: pi.Flag(),
+		},
+		PurchaseData: PurchaseData{
+			purchaseBy: pi.PurchaseBy(),
+		},
 		name:       pi.Name(),
 		level:      pi.Level(),
 		closeness:  pi.Closeness(),
@@ -274,12 +331,14 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32, compartm
 				var deleteRefFunc func(id uint32) error
 				if a.ReferenceType() == ReferenceTypeEquipable {
 					deleteRefFunc = p.equipableProcessor.Delete
+				} else if a.ReferenceType() == ReferenceTypeCashEquipable {
+					// TODO Cash Shop
 				} else if a.ReferenceType() == ReferenceTypeConsumable || a.ReferenceType() == ReferenceTypeSetup || a.ReferenceType() == ReferenceTypeEtc {
 					deleteRefFunc = p.stackableProcessor.Delete
 				} else if a.ReferenceType() == ReferenceTypeCash {
-					// TODO
+					// TODO Cash Shop
 				} else if a.ReferenceType() == ReferenceTypePet {
-					// TODO
+					// TODO Cash Shop
 				}
 
 				if deleteRefFunc == nil {
@@ -306,6 +365,7 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32, compartm
 		}
 	}
 }
+
 func (p *Processor) Drop(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
 	return func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
 		return func(a Model[any]) error {
@@ -441,6 +501,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32, compartm
 
 			var rd interface{}
 			if inventoryType == inventory.TypeValueEquip {
+				// TODO determine if we're creating an Equip or Cash Equip
 				e, err := p.equipableProcessor.Create(templateId)()
 				if err != nil {
 					return err
@@ -575,5 +636,61 @@ func (p *Processor) Acquire(mb *message.Buffer) func(characterId uint32, compart
 			return Model[any]{}, txErr
 		}
 		return a, nil
+	}
+}
+
+func (p *Processor) Accept(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, cashItemId uint32) (Model[any], error) {
+	return func(characterId uint32, compartmentId uuid.UUID, type_ inventory.Type, slot int16, cashItemId uint32) (Model[any], error) {
+		// TODO this eventually needs to not be cash item specific
+		p.l.Debugf("Character [%d] attempting to acquire cash item [%d] in slot [%d] of compartment [%s].", characterId, cashItemId, slot, compartmentId.String())
+		var a Model[any]
+		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			// For cash items, we use ReferenceTypeCash
+			var referenceType ReferenceType
+			if type_ == inventory.TypeValueEquip {
+				referenceType = ReferenceTypeCashEquipable
+			} else {
+				referenceType = ReferenceTypeCash
+			}
+
+			// Verify the cash item exists
+			ci, err := p.cashProcessor.GetById(cashItemId)
+			if err != nil {
+				return err
+			}
+
+			// Create the asset with the cash item reference
+			expiration := time.Time{} // Cash items typically don't expire
+			a, err = create(p.db, p.t.Id(), compartmentId, ci.TemplateId(), slot, expiration, cashItemId, referenceType)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+		if txErr != nil {
+			return Model[any]{}, txErr
+		}
+		return a, nil
+	}
+}
+
+func (p *Processor) Release(mb *message.Buffer) func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
+	return func(characterId uint32, compartmentId uuid.UUID) func(a Model[any]) error {
+		return func(a Model[any]) error {
+			p.l.Debugf("Attempting to release asset [%d].", a.Id())
+			txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+				err := deleteById(tx, p.t.Id(), a.Id())
+				if err != nil {
+					return err
+				}
+				return nil
+			})
+			if txErr != nil {
+				p.l.WithError(txErr).Errorf("Unable to delete asset [%d].", a.Id())
+				return txErr
+			}
+			p.l.Debugf("Deleted asset [%d].", a.Id())
+			return nil
+		}
 	}
 }

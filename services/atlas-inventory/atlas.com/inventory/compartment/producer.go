@@ -104,3 +104,43 @@ func SortCompleteEventStatusProvider(id uuid.UUID, characterId uint32, inventory
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func AcceptedEventStatusProvider(id uuid.UUID, characterId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.StatusEvent[compartment.AcceptedEventBody]{
+		CharacterId:   characterId,
+		CompartmentId: id,
+		Type:          compartment.StatusEventTypeAccepted,
+		Body: compartment.AcceptedEventBody{
+			TransactionId: transactionId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ReleasedEventStatusProvider(id uuid.UUID, characterId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.StatusEvent[compartment.ReleasedEventBody]{
+		CharacterId:   characterId,
+		CompartmentId: id,
+		Type:          compartment.StatusEventTypeReleased,
+		Body: compartment.ReleasedEventBody{
+			TransactionId: transactionId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ErrorEventStatusProvider(id uuid.UUID, characterId uint32, errorCode string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.StatusEvent[compartment.ErrorEventBody]{
+		CharacterId:   characterId,
+		CompartmentId: id,
+		Type:          compartment.StatusEventTypeError,
+		Body: compartment.ErrorEventBody{
+			ErrorCode:     errorCode,
+			TransactionId: transactionId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

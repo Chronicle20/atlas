@@ -38,24 +38,38 @@ type UpdatedStatusEventBody[E any] struct {
 	Expiration    time.Time `json:"expiration"`
 }
 
+type BaseData struct {
+	OwnerId uint32 `json:"ownerId"`
+}
+type StatisticData struct {
+	Strength      uint16 `json:"strength"`
+	Dexterity     uint16 `json:"dexterity"`
+	Intelligence  uint16 `json:"intelligence"`
+	Luck          uint16 `json:"luck"`
+	Hp            uint16 `json:"hp"`
+	Mp            uint16 `json:"mp"`
+	WeaponAttack  uint16 `json:"weaponAttack"`
+	MagicAttack   uint16 `json:"magicAttack"`
+	WeaponDefense uint16 `json:"weaponDefense"`
+	MagicDefense  uint16 `json:"magicDefense"`
+	Accuracy      uint16 `json:"accuracy"`
+	Avoidability  uint16 `json:"avoidability"`
+	Hands         uint16 `json:"hands"`
+	Speed         uint16 `json:"speed"`
+	Jump          uint16 `json:"jump"`
+}
+
+type CashData struct {
+	CashId int64 `json:"cashId,string"`
+}
+
+type StackableData struct {
+	Quantity uint32 `json:"quantity"`
+}
 type EquipableReferenceData struct {
-	Strength       uint16    `json:"strength"`
-	Dexterity      uint16    `json:"dexterity"`
-	Intelligence   uint16    `json:"intelligence"`
-	Luck           uint16    `json:"luck"`
-	Hp             uint16    `json:"hp"`
-	Mp             uint16    `json:"mp"`
-	WeaponAttack   uint16    `json:"weaponAttack"`
-	MagicAttack    uint16    `json:"magicAttack"`
-	WeaponDefense  uint16    `json:"weaponDefense"`
-	MagicDefense   uint16    `json:"magicDefense"`
-	Accuracy       uint16    `json:"accuracy"`
-	Avoidability   uint16    `json:"avoidability"`
-	Hands          uint16    `json:"hands"`
-	Speed          uint16    `json:"speed"`
-	Jump           uint16    `json:"jump"`
+	BaseData
+	StatisticData
 	Slots          uint16    `json:"slots"`
-	OwnerId        uint32    `json:"ownerId"`
 	Locked         bool      `json:"locked"`
 	Spikes         bool      `json:"spikes"`
 	KarmaUsed      bool      `json:"karmaUsed"`
@@ -69,24 +83,10 @@ type EquipableReferenceData struct {
 }
 
 type CashEquipableReferenceData struct {
-	CashId         uint64    `json:"cashId"`
-	Strength       uint16    `json:"strength"`
-	Dexterity      uint16    `json:"dexterity"`
-	Intelligence   uint16    `json:"intelligence"`
-	Luck           uint16    `json:"luck"`
-	Hp             uint16    `json:"hp"`
-	Mp             uint16    `json:"mp"`
-	WeaponAttack   uint16    `json:"weaponAttack"`
-	MagicAttack    uint16    `json:"magicAttack"`
-	WeaponDefense  uint16    `json:"weaponDefense"`
-	MagicDefense   uint16    `json:"magicDefense"`
-	Accuracy       uint16    `json:"accuracy"`
-	Avoidability   uint16    `json:"avoidability"`
-	Hands          uint16    `json:"hands"`
-	Speed          uint16    `json:"speed"`
-	Jump           uint16    `json:"jump"`
+	CashData
+	BaseData
+	StatisticData
 	Slots          uint16    `json:"slots"`
-	OwnerId        uint32    `json:"ownerId"`
 	Locked         bool      `json:"locked"`
 	Spikes         bool      `json:"spikes"`
 	KarmaUsed      bool      `json:"karmaUsed"`
@@ -100,35 +100,35 @@ type CashEquipableReferenceData struct {
 }
 
 type ConsumableReferenceData struct {
-	Quantity     uint32 `json:"quantity"`
-	OwnerId      uint32 `json:"ownerId"`
+	BaseData
+	StackableData
 	Flag         uint16 `json:"flag"`
 	Rechargeable uint64 `json:"rechargeable"`
 }
 
 type SetupReferenceData struct {
-	Quantity uint32 `json:"quantity"`
-	OwnerId  uint32 `json:"ownerId"`
-	Flag     uint16 `json:"flag"`
+	BaseData
+	StackableData
+	Flag uint16 `json:"flag"`
 }
 
 type EtcReferenceData struct {
-	Quantity uint32 `json:"quantity"`
-	OwnerId  uint32 `json:"ownerId"`
-	Flag     uint16 `json:"flag"`
+	BaseData
+	StackableData
+	Flag uint16 `json:"flag"`
 }
 
 type CashReferenceData struct {
-	CashId      uint64 `json:"cashId"`
-	Quantity    uint32 `json:"quantity"`
-	OwnerId     uint32 `json:"ownerId"`
+	BaseData
+	CashData
+	StackableData
 	Flag        uint16 `json:"flag"`
 	PurchasedBy uint32 `json:"purchasedBy"`
 }
 
 type PetReferenceData struct {
-	CashId      uint64 `json:"cashId"`
-	OwnerId     uint32 `json:"ownerId"`
+	BaseData
+	CashData
 	Flag        uint16 `json:"flag"`
 	PurchasedBy uint32 `json:"purchasedBy"`
 	Name        string `json:"name"`

@@ -1,209 +1,129 @@
 package inventory
 
 import (
-	"atlas-cashshop/character/inventory/equipable"
-	"atlas-cashshop/character/inventory/item"
-	"github.com/Chronicle20/atlas-model/model"
+	"atlas-cashshop/character/compartment"
+	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
-	"strconv"
 )
 
 type RestModel struct {
-	Equipable EquipableRestModel `json:"equipable"`
-	Useable   ItemRestModel      `json:"useable"`
-	Setup     ItemRestModel      `json:"setup"`
-	Etc       ItemRestModel      `json:"etc"`
-	Cash      ItemRestModel      `json:"cash"`
+	Id           uuid.UUID               `json:"-"`
+	CharacterId  uint32                  `json:"characterId"`
+	Compartments []compartment.RestModel `json:"-"`
 }
 
-type EquipableRestModel struct {
-	Type     string                `json:"-"`
-	Capacity uint32                `json:"capacity"`
-	Items    []equipable.RestModel `json:"items"`
-}
-
-func (r EquipableRestModel) GetName() string {
+func (r RestModel) GetName() string {
 	return "inventories"
 }
 
-func (r EquipableRestModel) GetID() string {
-	return r.Type
+func (r RestModel) GetID() string {
+	return r.Id.String()
 }
 
-func (r EquipableRestModel) GetReferences() []jsonapi.Reference {
-	return []jsonapi.Reference{
-		{
-			Type: "equipables",
-			Name: "equipables",
-		},
-	}
-}
-
-func (r EquipableRestModel) GetReferencedIDs() []jsonapi.ReferenceID {
-	var result []jsonapi.ReferenceID
-	for _, v := range r.Items {
-		result = append(result, jsonapi.ReferenceID{
-			ID:   v.GetID(),
-			Type: "equipables",
-			Name: "equipables",
-		})
-	}
-	return result
-}
-
-func (r EquipableRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
-	var result []jsonapi.MarshalIdentifier
-	for key := range r.Items {
-		result = append(result, r.Items[key])
-	}
-
-	return result
-}
-
-func (r *EquipableRestModel) SetToOneReferenceID(name, ID string) error {
-	return nil
-}
-
-func (r *EquipableRestModel) SetToManyReferenceIDs(name string, IDs []string) error {
-	if name == "equipables" {
-		for _, idStr := range IDs {
-			id, err := strconv.Atoi(idStr)
-			if err != nil {
-				return err
-			}
-			r.Items = append(r.Items, equipable.RestModel{Id: uint32(id)})
-		}
-	}
-	return nil
-}
-
-func (r *EquipableRestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
-	if refMap, ok := references["equipables"]; ok {
-		items := make([]equipable.RestModel, 0)
-		for _, ri := range r.Items {
-			if ref, ok := refMap[ri.GetID()]; ok {
-				wip := ri
-				err := jsonapi.ProcessIncludeData(&wip, ref, references)
-				if err != nil {
-					return err
-				}
-				items = append(items, wip)
-			}
-		}
-		r.Items = items
-	}
-	return nil
-}
-
-type ItemRestModel struct {
-	Type     string           `json:"-"`
-	Capacity uint32           `json:"capacity"`
-	Items    []item.RestModel `json:"items"`
-}
-
-func (r ItemRestModel) GetName() string {
-	return "inventories"
-}
-
-func (r ItemRestModel) GetID() string {
-	return r.Type
-}
-
-func (r ItemRestModel) GetReferences() []jsonapi.Reference {
-	return []jsonapi.Reference{
-		{
-			Type: "items",
-			Name: "items",
-		},
-	}
-}
-
-func (r ItemRestModel) GetReferencedIDs() []jsonapi.ReferenceID {
-	var result []jsonapi.ReferenceID
-	for _, v := range r.Items {
-		result = append(result, jsonapi.ReferenceID{
-			ID:   v.GetID(),
-			Type: "items",
-			Name: "items",
-		})
-	}
-	return result
-}
-
-func (r ItemRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
-	var result []jsonapi.MarshalIdentifier
-	for key := range r.Items {
-		result = append(result, r.Items[key])
-	}
-
-	return result
-}
-
-func (r *ItemRestModel) SetToOneReferenceID(name, ID string) error {
-	return nil
-}
-
-func (r *ItemRestModel) SetToManyReferenceIDs(name string, IDs []string) error {
-	if name == "items" {
-		for _, idStr := range IDs {
-			id, err := strconv.Atoi(idStr)
-			if err != nil {
-				return err
-			}
-			r.Items = append(r.Items, item.RestModel{Id: uint32(id)})
-		}
-	}
-	return nil
-}
-
-func (r *ItemRestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
-	if refMap, ok := references["items"]; ok {
-		items := make([]item.RestModel, 0)
-		for _, ri := range r.Items {
-			if ref, ok := refMap[ri.GetID()]; ok {
-				wip := ri
-				err := jsonapi.ProcessIncludeData(&wip, ref, references)
-				if err != nil {
-					return err
-				}
-				items = append(items, wip)
-			}
-		}
-		r.Items = items
-	}
-	return nil
-}
-
-func Extract(model RestModel) (Model, error) {
-	e, err := ExtractEquipable(model.Equipable)
+func (r *RestModel) SetID(strId string) error {
+	id, err := uuid.Parse(strId)
 	if err != nil {
-		return Model{}, err
+		return err
+	}
+	r.Id = id
+	return nil
+}
+
+func (r RestModel) GetReferences() []jsonapi.Reference {
+	return []jsonapi.Reference{
+		{
+			Type: "compartments",
+			Name: "compartments",
+		},
+	}
+}
+
+func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID {
+	var result []jsonapi.ReferenceID
+	for _, v := range r.Compartments {
+		result = append(result, jsonapi.ReferenceID{
+			ID:   v.GetID(),
+			Type: v.GetName(),
+			Name: v.GetName(),
+		})
+	}
+	return result
+}
+
+func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
+	var result []jsonapi.MarshalIdentifier
+	for key := range r.Compartments {
+		result = append(result, r.Compartments[key])
 	}
 
-	return Model{
-		equipable: e,
-		useable:   ExtractItem(model.Useable),
-		setup:     ExtractItem(model.Setup),
-		etc:       ExtractItem(model.Etc),
-		cash:      ExtractItem(model.Cash),
+	return result
+}
+
+func (r *RestModel) SetToOneReferenceID(name, ID string) error {
+	return nil
+}
+
+func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+	if name == "compartments" {
+		for _, idStr := range IDs {
+			id, err := uuid.Parse(idStr)
+			if err != nil {
+				return err
+			}
+			r.Compartments = append(r.Compartments, compartment.RestModel{Id: id})
+		}
+	}
+	return nil
+}
+
+func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+	if refMap, ok := references["compartments"]; ok {
+		compartments := make([]compartment.RestModel, 0)
+		for _, ri := range r.Compartments {
+			if ref, ok := refMap[ri.GetID()]; ok {
+				wip := ri
+				err := jsonapi.ProcessIncludeData(&wip, ref, references)
+				if err != nil {
+					return err
+				}
+				compartments = append(compartments, wip)
+			}
+		}
+		r.Compartments = compartments
+	}
+	return nil
+}
+
+func Transform(m Model) (RestModel, error) {
+	cs := make([]compartment.RestModel, 0)
+	for _, v := range m.compartments {
+		c, err := compartment.Transform(v)
+		if err != nil {
+			return RestModel{}, nil
+		}
+		cs = append(cs, c)
+	}
+
+	return RestModel{
+		Id:           uuid.New(),
+		CharacterId:  m.characterId,
+		Compartments: cs,
 	}, nil
 }
 
-func ExtractItem(rm ItemRestModel) ItemModel {
-	return ItemModel{
-		capacity: rm.Capacity,
-		items:    item.ExtractAll(rm.Items),
-	}
-}
-
-func ExtractEquipable(rm EquipableRestModel) (EquipableModel, error) {
-	es, err := model.SliceMap(equipable.Extract)(model.FixedProvider(rm.Items))(model.ParallelMap())()
-	if err != nil {
-		return EquipableModel{}, err
+func Extract(rm RestModel) (Model, error) {
+	cs := make(map[inventory.Type]compartment.Model)
+	for _, v := range rm.Compartments {
+		c, err := compartment.Extract(v)
+		if err != nil {
+			return Model{}, nil
+		}
+		cs[c.Type()] = c
 	}
 
-	return EquipableModel{
-		capacity: rm.Capacity,
-		items:    es,
+	return Model{
+		characterId:  rm.CharacterId,
+		compartments: cs,
 	}, nil
 }

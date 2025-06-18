@@ -1,0 +1,30 @@
+meta {
+  name: Create Inventory
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/accounts/{{accountId}}/cash-shop/inventory
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data": {
+      "type": "cash-inventories",
+      "id": "194cc755-0356-4a61-b20c-a3126e6018d0",
+      "attributes": {
+        "accountId": 1
+      },
+      "relationships": {
+        "compartments": {}
+      }
+    }
+  }
+}
+
+vars:pre-request {
+  accountId: 1
+}

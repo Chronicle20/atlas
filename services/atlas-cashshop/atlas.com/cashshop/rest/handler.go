@@ -84,6 +84,20 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 	}
 }
 
+type AccountIdHandler func(accountId uint32) http.HandlerFunc
+
+func ParseAccountId(l logrus.FieldLogger, next AccountIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		accountId, err := strconv.Atoi(mux.Vars(r)["accountId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse accountId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint32(accountId))(w, r)
+	}
+}
+
 type CharacterIdHandler func(characterId uint32) http.HandlerFunc
 
 func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.HandlerFunc {
@@ -123,5 +137,33 @@ func ParseItemId(l logrus.FieldLogger, next ItemIdHandler) http.HandlerFunc {
 			return
 		}
 		next(itemId)(w, r)
+	}
+}
+
+type CompartmentIdHandler func(compartmentId uuid.UUID) http.HandlerFunc
+
+func ParseCompartmentId(l logrus.FieldLogger, next CompartmentIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		compartmentId, err := uuid.Parse(mux.Vars(r)["compartmentId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse compartmentId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(compartmentId)(w, r)
+	}
+}
+
+type AssetIdHandler func(assetId uuid.UUID) http.HandlerFunc
+
+func ParseAssetId(l logrus.FieldLogger, next AssetIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		assetId, err := uuid.Parse(mux.Vars(r)["assetId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse assetId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(assetId)(w, r)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"atlas-cashshop/kafka/message/cashshop"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -28,6 +29,22 @@ func InventoryCapacityIncreasedStatusEventProvider(characterId uint32, inventory
 			InventoryType: inventoryType,
 			Capacity:      capacity,
 			Amount:        amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func PurchaseStatusEventProvider(characterId uint32, templateId, price uint32, compartmentId uuid.UUID, assetId uuid.UUID, itemId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.StatusEvent[cashshop.PurchaseEventBody]{
+		CharacterId: characterId,
+		Type:        cashshop.StatusEventTypePurchase,
+		Body: cashshop.PurchaseEventBody{
+			TemplateId:    templateId,
+			Price:         price,
+			CompartmentId: compartmentId,
+			AssetId:       assetId,
+			ItemId:        itemId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

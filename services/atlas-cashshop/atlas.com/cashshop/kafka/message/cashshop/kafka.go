@@ -1,5 +1,7 @@
 package cashshop
 
+import "github.com/google/uuid"
+
 const (
 	EnvCommandTopic                               = "COMMAND_TOPIC_CASH_SHOP"
 	CommandTypeRequestPurchase                    = "REQUEST_PURCHASE"
@@ -48,6 +50,7 @@ type RequestCharacterSlotIncreaseByItemCommandBody struct {
 const (
 	EnvEventTopicStatus                       = "EVENT_TOPIC_CASH_SHOP_STATUS"
 	StatusEventTypeInventoryCapacityIncreased = "INVENTORY_CAPACITY_INCREASED"
+	StatusEventTypePurchase                   = "PURCHASE"
 	StatusEventTypeError                      = "ERROR"
 )
 
@@ -64,5 +67,14 @@ type InventoryCapacityIncreasedBody struct {
 }
 
 type ErrorEventBody struct {
-	Error string `json:"error"`
+	Error      string `json:"error"`
+	CashItemId uint32 `json:"cashItemId,omitempty"`
+}
+
+type PurchaseEventBody struct {
+	TemplateId    uint32    `json:"templateId"`
+	Price         uint32    `json:"price"`
+	CompartmentId uuid.UUID `json:"compartmentId"`
+	AssetId       uuid.UUID `json:"assetId"`
+	ItemId        uint32    `json:"itemId"`
 }

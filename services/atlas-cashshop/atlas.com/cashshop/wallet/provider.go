@@ -7,10 +7,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func byCharacterIdEntityProvider(tenantId uuid.UUID, characterId uint32) database.EntityProvider[Entity] {
+func byAccountIdEntityProvider(tenantId uuid.UUID, accountId uint32) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
 		var result Entity
-		err := db.Where(&Entity{TenantId: tenantId, CharacterId: characterId}).First(&result).Error
+		err := db.Where(&Entity{TenantId: tenantId, AccountId: accountId}).First(&result).Error
 		if err != nil {
 			return model.ErrorProvider[Entity](err)
 		}

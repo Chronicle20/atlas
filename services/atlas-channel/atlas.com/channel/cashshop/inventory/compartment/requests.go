@@ -21,5 +21,5 @@ func requestByAccountId(accountId uint32) requests.Request[[]RestModel] {
 
 // requestByAccountIdAndType creates a GET request for a specific compartment by account ID and type
 func requestByAccountIdAndType(accountId uint32, compartmentType CompartmentType) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource+"?type=%s", accountId, string(compartmentType)))
+	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource+"?type=%d", accountId, byte(compartmentType)))
 }

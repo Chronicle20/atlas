@@ -21,6 +21,7 @@ const (
 	CashShopOperationUpdateWishlist                   = "UPDATE_WISHLIST"
 	CashShopOperationPurchaseSuccess                  = "PURCHASE_SUCCESS"
 	CashShopOperationCashItemMovedToInventory         = "CASH_ITEM_MOVED_TO_INVENTORY"
+	CashShopOperationCashItemMovedToCashInventory     = "CASH_ITEM_MOVED_TO_CASH_INVENTORY"
 
 	CashShopOperationErrorUnknown                           = "UNKNOWN_ERROR"                         // 0x00
 	CashShopOperationErrorRequestTimedOut                   = "REQUEST_TIMED_OUT"                     // 0xA3
@@ -180,6 +181,16 @@ func CashShopCashItemMovedToInventoryBody(l logrus.FieldLogger, t tenant.Model) 
 			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationCashItemMovedToInventory))
 			w.WriteShort(uint16(a.Slot()))
 			_ = WriteAssetInfo(t)(true)(w)(a)
+			return w.Bytes()
+		}
+	}
+}
+
+func CashShopCashItemMovedToCashInventoryBody(l logrus.FieldLogger, t tenant.Model) func(accountId uint32, characterId uint32, a asset.Model) BodyProducer {
+	return func(accountId uint32, characterId uint32, a asset.Model) BodyProducer {
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationCashItemMovedToCashInventory))
+			_ = WriteCashInventoryItem(accountId, characterId, a)(w)
 			return w.Bytes()
 		}
 	}

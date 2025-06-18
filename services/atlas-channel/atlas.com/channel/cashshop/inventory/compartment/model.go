@@ -6,12 +6,12 @@ import (
 )
 
 // CompartmentType represents the type of cash shop inventory compartment
-type CompartmentType string
+type CompartmentType byte
 
 const (
-	TypeExplorer = CompartmentType("explorer")
-	TypeCygnus   = CompartmentType("cygnus")
-	TypeLegend   = CompartmentType("legend")
+	TypeExplorer = CompartmentType(1) // "explorer"
+	TypeCygnus   = CompartmentType(2) // "cygnus"
+	TypeLegend   = CompartmentType(3) // "legend"
 )
 
 // Model represents a cash shop inventory compartment

@@ -2,7 +2,6 @@ package character
 
 import (
 	consumer2 "atlas-cashshop/kafka/consumer"
-	"atlas-cashshop/kafka/consumer/character/compartment"
 	"atlas-cashshop/kafka/message/character"
 	"atlas-cashshop/wishlist"
 	"context"
@@ -19,7 +18,6 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
 			rf(consumer2.NewConfig(l)("character_status_event")(character.EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-			compartment.InitConsumers(l)(rf)(consumerGroupId)
 		}
 	}
 }
@@ -30,9 +28,6 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			var t string
 			t, _ = topic.EnvProvider(l)(character.EnvEventTopicStatus)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeleted(db))))
-
-			// Register compartment handlers
-			compartment.InitHandlers(l)(db)(rf)
 		}
 	}
 }

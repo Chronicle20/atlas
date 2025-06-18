@@ -6,21 +6,21 @@ import (
 )
 
 // CompartmentType represents the type of cash shop inventory compartment
-type CompartmentType string
+type CompartmentType byte
 
 const (
-	TypeExplorer = CompartmentType("explorer")
-	TypeCygnus   = CompartmentType("cygnus")
-	TypeLegend   = CompartmentType("legend")
+	TypeExplorer = CompartmentType(1) // "explorer"
+	TypeCygnus   = CompartmentType(2) // "cygnus"
+	TypeLegend   = CompartmentType(3) // "legend"
 )
 
 // Model represents a cash shop inventory compartment
 type Model struct {
-	id         uuid.UUID
-	accountId  uint32
-	type_      CompartmentType
-	capacity   uint32
-	assets     []asset.Model
+	id        uuid.UUID
+	accountId uint32
+	type_     CompartmentType
+	capacity  uint32
+	assets    []asset.Model
 }
 
 // Id returns the unique identifier of this compartment
@@ -71,31 +71,31 @@ func (m Model) FindByTemplateId(templateId uint32) (*asset.Model, bool) {
 // Clone creates a builder from this model
 func Clone(m Model) *ModelBuilder {
 	return &ModelBuilder{
-		id:         m.id,
-		accountId:  m.accountId,
-		type_:      m.type_,
-		capacity:   m.capacity,
-		assets:     m.assets,
+		id:        m.id,
+		accountId: m.accountId,
+		type_:     m.type_,
+		capacity:  m.capacity,
+		assets:    m.assets,
 	}
 }
 
 // ModelBuilder is a builder for the Model
 type ModelBuilder struct {
-	id         uuid.UUID
-	accountId  uint32
-	type_      CompartmentType
-	capacity   uint32
-	assets     []asset.Model
+	id        uuid.UUID
+	accountId uint32
+	type_     CompartmentType
+	capacity  uint32
+	assets    []asset.Model
 }
 
 // NewBuilder creates a new ModelBuilder
 func NewBuilder(id uuid.UUID, accountId uint32, type_ CompartmentType, capacity uint32) *ModelBuilder {
 	return &ModelBuilder{
-		id:         id,
-		accountId:  accountId,
-		type_:      type_,
-		capacity:   capacity,
-		assets:     make([]asset.Model, 0),
+		id:        id,
+		accountId: accountId,
+		type_:     type_,
+		capacity:  capacity,
+		assets:    make([]asset.Model, 0),
 	}
 }
 
@@ -120,10 +120,10 @@ func (b *ModelBuilder) SetAssets(as []asset.Model) *ModelBuilder {
 // Build creates a Model from this builder
 func (b *ModelBuilder) Build() Model {
 	return Model{
-		id:         b.id,
-		accountId:  b.accountId,
-		type_:      b.type_,
-		capacity:   b.capacity,
-		assets:     b.assets,
+		id:        b.id,
+		accountId: b.accountId,
+		type_:     b.type_,
+		capacity:  b.capacity,
+		assets:    b.assets,
 	}
 }

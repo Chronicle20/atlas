@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 )
 
 // InitResource initializes the cash compartment resource
@@ -29,14 +30,21 @@ func handleGetCompartments(db *gorm.DB) rest.GetHandler {
 			return func(w http.ResponseWriter, r *http.Request) {
 				// Get the compartment type from the query parameter
 				query := r.URL.Query()
-				typeParam := query.Get("type")
+				typeStr := r.URL.Query().Get("type")
 
 				// Create a compartment processor
 				processor := NewProcessor(d.Logger(), d.Context(), db)
 
 				// If a type parameter was provided, get only that compartment
-				if typeParam != "" {
-					compartmentType := CompartmentType(typeParam)
+				if typeStr != "" {
+					typeInt, err := strconv.Atoi(typeStr)
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Invalid type parameter: %s", typeStr)
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+
+					compartmentType := CompartmentType(typeInt)
 
 					// Get the compartment by account ID and type
 					compartmentProvider := processor.ByAccountIdAndTypeProvider(accountId, compartmentType)

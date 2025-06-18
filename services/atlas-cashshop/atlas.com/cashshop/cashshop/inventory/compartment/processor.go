@@ -7,6 +7,7 @@ import (
 	"atlas-cashshop/kafka/producer"
 	compartmentProducer "atlas-cashshop/kafka/producer/cashshop/inventory/compartment"
 	"context"
+	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -19,6 +20,7 @@ const DefaultCapacity = uint32(55)
 // Processor interface defines the operations for cash shop inventory compartments
 type Processor interface {
 	WithTransaction(tx *gorm.DB) Processor
+	GetById(id uuid.UUID) (Model, error)
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
 	GetByAccountIdAndType(accountId uint32, type_ CompartmentType) (Model, error)
 	ByAccountIdAndTypeProvider(accountId uint32, type_ CompartmentType) model.Provider[Model]
@@ -32,6 +34,10 @@ type Processor interface {
 	DeleteAndEmit(id uuid.UUID) error
 	DeleteAllByAccountId(mb *message.Buffer) func(accountId uint32) error
 	DeleteAllByAccountIdAndEmit(accountId uint32) error
+	AcceptAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error
+	Accept(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error
+	ReleaseAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error
+	Release(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -78,6 +84,10 @@ func (p *ProcessorImpl) DecorateAssets(m Model) Model {
 	return Clone(m).SetAssets(assets).Build()
 }
 
+func (p *ProcessorImpl) GetById(id uuid.UUID) (Model, error) {
+	return p.ByIdProvider(id)()
+}
+
 // ByIdProvider returns a provider for retrieving a compartment by ID
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
 	cp := model.Map[Entity, Model](Make)(getByIdProvider(p.t.Id())(id)(p.db))
@@ -119,7 +129,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(accountId uint32) func(t
 				}
 
 				// Add message to buffer
-				_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.CreateStatusEventProvider(model.Id().String(), string(type_), capacity))
+				_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.CreateStatusEventProvider(model.Id(), byte(type_), capacity))
 
 				return model, nil
 			}
@@ -158,7 +168,7 @@ func (p *ProcessorImpl) UpdateCapacity(mb *message.Buffer) func(id uuid.UUID) fu
 			}
 
 			// Add message to buffer
-			_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.UpdateStatusEventProvider(id.String(), string(model.Type()), capacity))
+			_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.UpdateStatusEventProvider(id, byte(model.Type()), capacity))
 
 			return model, nil
 		}
@@ -188,7 +198,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uuid.UUID) error {
 		p.l.Debugf("Deleting compartment [%s].", id)
 
 		// Get the compartment to get the account ID
-		model, err := p.ByIdProvider(id)()
+		m, err := p.ByIdProvider(id)()
 		if err != nil {
 			p.l.WithError(err).Errorf("Could not find compartment [%s] to delete.", id)
 			return err
@@ -201,9 +211,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uuid.UUID) error {
 			return err
 		}
 
-		// Add message to buffer
-		_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.DeleteStatusEventProvider(id.String(), string(model.Type())))
-
+		_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.DeleteStatusEventProvider(id, byte(m.Type())))
 		return nil
 	}
 }
@@ -229,18 +237,27 @@ func (p *ProcessorImpl) DeleteAndEmit(id uuid.UUID) error {
 func (p *ProcessorImpl) DeleteAllByAccountId(mb *message.Buffer) func(accountId uint32) error {
 	return func(accountId uint32) error {
 		p.l.Debugf("Deleting all compartments for account [%d].", accountId)
+		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+			cscm, err := p.GetByAccountId(accountId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Could not get compartments for account [%d].", accountId)
+				return err
+			}
+			for _, ccm := range cscm {
+				err = deleteEntity(p.db, p.t.Id(), ccm.Id())
+				if err != nil {
+					p.l.WithError(err).Errorf("Could not delete compartment [%s].", ccm.Id())
+					return err
+				}
 
-		// Delete all compartments
-		err := deleteAllByAccountId(p.db, p.t.Id(), accountId)
-		if err != nil {
-			p.l.WithError(err).Errorf("Could not delete compartments for account [%d].", accountId)
-			return err
+				_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.DeleteStatusEventProvider(ccm.Id(), byte(ccm.Type())))
+			}
+			return nil
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Could not delete all compartments for account [%d].", accountId)
+			return txErr
 		}
-
-		// Add message to buffer
-		// For DeleteAllByAccountId, we don't have compartment IDs, so we'll emit an inventory deletion event instead
-		_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.DeleteStatusEventProvider("all", "all"))
-
 		return nil
 	}
 }
@@ -260,4 +277,84 @@ func (p *ProcessorImpl) DeleteAllByAccountIdAndEmit(accountId uint32) error {
 	}
 
 	return nil
+}
+
+func (p *ProcessorImpl) AcceptAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.Accept(buf)(accountId, id, type_, assetId, transactionId)
+	})
+}
+
+func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error {
+	return func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error {
+		p.l.Debugf("Handling accepting asset for account [%d], compartment [%s], type [%d].", accountId, id, type_)
+
+		// Get the compartment
+		ccm, err := p.GetById(id)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to get compartment for ID [%s].", id)
+			_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.ErrorStatusEventProvider(id, byte(type_), "UNKNOWN_ERROR", transactionId))
+			return err
+		}
+
+		// Create the asset entity in the database
+		_, err = p.cap.Create(mb)(id)(assetId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to create asset for compartment [%s] with item ID [%d].", id, assetId)
+			_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.ErrorStatusEventProvider(id, byte(type_), "ASSET_CREATION_FAILED", transactionId))
+			return err
+		}
+
+		// Add an AcceptedStatusEventProvider result to the buffer
+		_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.AcceptedStatusEventProvider(id, byte(ccm.Type()), transactionId))
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) ReleaseAndEmit(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.Release(buf)(accountId, id, type_, assetId, transactionId)
+	})
+}
+
+func (p *ProcessorImpl) Release(mb *message.Buffer) func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error {
+	return func(accountId uint32, id uuid.UUID, type_ CompartmentType, assetId uint32, transactionId uuid.UUID) error {
+		p.l.Debugf("Handling releasing asset for account [%d], compartment [%d], type [%d].", accountId, id, type_)
+
+		// Get the compartment
+		ccm, err := p.GetById(id)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to get compartment for ID [%s].", id)
+			_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.ErrorStatusEventProvider(id, byte(type_), "UNKNOWN_ERROR", transactionId))
+			return err
+		}
+
+		// Find the asset in the compartment
+		//var targetAsset asset.Model
+		found := false
+		for _, a := range ccm.Assets() {
+			if a.Item().Id() == assetId {
+				//targetAsset = a
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			p.l.Errorf("Asset with ID [%d] not found in compartment [%s].", assetId, ccm.Id())
+			_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.ErrorStatusEventProvider(id, byte(type_), "ITEM_NOT_FOUND", transactionId))
+			return errors.New("asset not found")
+		}
+
+		// Delete the asset entity from the database
+		err = p.cap.Release(mb)(assetId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to remove cash compartment - cash item association for account [%d], cash item [%d].", accountId, assetId)
+			return err
+		}
+
+		// Emit a cash shop status event for "cash shop item moved to inventory"
+		_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.ReleasedStatusEventProvider(id, byte(type_), transactionId))
+		return nil
+	}
 }

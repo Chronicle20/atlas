@@ -15,29 +15,14 @@ import (
 
 // Processor provides functions to manipulate assets
 type Processor interface {
-	// ByIdProvider retrieves an asset by ID
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
-
-	// GetById retrieves an asset by ID
 	GetById(id uuid.UUID) (Model, error)
-
-	// ByCompartmentIdProvider retrieves all assets for a compartment
 	ByCompartmentIdProvider(compartmentId uuid.UUID) model.Provider[[]Model]
-
-	// GetByCompartmentId retrieves all assets for a compartment
 	GetByCompartmentId(compartmentId uuid.UUID) ([]Model, error)
-
-	// Create creates a new asset
 	Create(mb *message.Buffer) func(compartmentId uuid.UUID) func(itemId uint32) (Model, error)
-
-	// CreateAndEmit creates a new asset and emits Kafka messages
 	CreateAndEmit(compartmentId uuid.UUID, itemId uint32) (Model, error)
-
-	// MovedFrom deletes an asset by compartment ID and item ID
-	MovedFrom(mb *message.Buffer) func(cashItemId uint32) error
-
-	// MovedFromAndEmit deletes an asset by compartment ID and item ID and emits Kafka messages
-	MovedFromAndEmit(cashItemId uint32) error
+	Release(mb *message.Buffer) func(cashItemId uint32) error
+	ReleaseAndEmit(cashItemId uint32) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -131,8 +116,7 @@ func (p *ProcessorImpl) CreateAndEmit(compartmentId uuid.UUID, itemId uint32) (M
 	return message.EmitWithResult[Model, uint32](p.p)(model.Flip(p.Create)(compartmentId))(itemId)
 }
 
-// MovedFrom deletes an asset by compartment ID and item ID
-func (p *ProcessorImpl) MovedFrom(mb *message.Buffer) func(cashItemId uint32) error {
+func (p *ProcessorImpl) Release(mb *message.Buffer) func(cashItemId uint32) error {
 	return func(cashItemId uint32) error {
 		p.l.Debugf("Deleting asset with item Id [%d].", cashItemId)
 		p.db.Debug()
@@ -154,9 +138,8 @@ func (p *ProcessorImpl) MovedFrom(mb *message.Buffer) func(cashItemId uint32) er
 	}
 }
 
-// MovedFromAndEmit deletes an asset by compartment ID and item ID and emits Kafka messages
-func (p *ProcessorImpl) MovedFromAndEmit(cashItemId uint32) error {
+func (p *ProcessorImpl) ReleaseAndEmit(cashItemId uint32) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.MovedFrom(buf)(cashItemId)
+		return p.Release(buf)(cashItemId)
 	})
 }

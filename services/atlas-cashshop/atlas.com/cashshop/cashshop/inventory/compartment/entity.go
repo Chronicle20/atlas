@@ -15,7 +15,7 @@ type Entity struct {
 	Id        uuid.UUID `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
 	TenantId  uuid.UUID `gorm:"not null"`
 	AccountId uint32    `gorm:"not null"`
-	Type      string    `gorm:"not null"`
+	Type      byte      `gorm:"not null"`
 	Capacity  uint32    `gorm:"not null;default:55"`
 }
 

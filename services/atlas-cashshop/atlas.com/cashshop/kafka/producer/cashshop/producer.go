@@ -49,16 +49,3 @@ func PurchaseStatusEventProvider(characterId uint32, templateId, price uint32, c
 	}
 	return producer.SingleMessageProvider(key, value)
 }
-
-func CashItemMovedToInventoryStatusEventProvider(characterId uint32, compartmentId uuid.UUID, slot int16) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &cashshop.StatusEvent[cashshop.CashItemMovedToInventoryEventBody]{
-		CharacterId: characterId,
-		Type:        cashshop.StatusEventTypeCashItemMovedToInventory,
-		Body: cashshop.CashItemMovedToInventoryEventBody{
-			CompartmentId: compartmentId,
-			Slot:          slot,
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}

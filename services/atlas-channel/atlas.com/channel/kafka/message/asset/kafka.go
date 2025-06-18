@@ -1,8 +1,6 @@
 package asset
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/google/uuid"
 	"time"
 )
@@ -33,87 +31,6 @@ type CreatedStatusEventBody[E any] struct {
 	Expiration    time.Time `json:"expiration"`
 }
 
-func convertMapToStruct[T any](in any) (T, error) {
-	var out T
-	b, err := json.Marshal(in)
-	if err != nil {
-		return out, err
-	}
-	err = json.Unmarshal(b, &out)
-	return out, err
-}
-
-func (b *CreatedStatusEventBody[E]) UnmarshalJSON(data []byte) error {
-	type rawBody struct {
-		ReferenceId   uint32          `json:"referenceId"`
-		ReferenceType string          `json:"referenceType"`
-		ReferenceData json.RawMessage `json:"referenceData"`
-		Expiration    time.Time       `json:"expiration"`
-	}
-
-	var raw rawBody
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
-	}
-
-	var typed any
-	var err error
-	if raw.ReferenceType == "equipable" {
-		typed, err = convertMapToStruct[EquipableReferenceData](raw.ReferenceData)
-		if err != nil {
-			return err
-		}
-	}
-	if raw.ReferenceType == "cashEquipable" {
-		typed, err = convertMapToStruct[CashEquipableReferenceData](raw.ReferenceData)
-		if err != nil {
-			return err
-		}
-	}
-	if raw.ReferenceType == "consumable" {
-		typed, err = convertMapToStruct[ConsumableReferenceData](raw.ReferenceData)
-		if err != nil {
-			return err
-		}
-	}
-	if raw.ReferenceType == "setup" {
-		typed, err = convertMapToStruct[SetupReferenceData](raw.ReferenceData)
-		if err != nil {
-			return err
-		}
-	}
-	if raw.ReferenceType == "etc" {
-		typed, err = convertMapToStruct[EtcReferenceData](raw.ReferenceData)
-		if err != nil {
-			return err
-		}
-	}
-	if raw.ReferenceType == "cash" {
-		typed, err = convertMapToStruct[CashReferenceData](raw.ReferenceData)
-		if err != nil {
-			return err
-		}
-	}
-	if raw.ReferenceType == "pet" {
-		typed, err = convertMapToStruct[PetReferenceData](raw.ReferenceData)
-		if err != nil {
-			return err
-		}
-	}
-	var ref E
-	ref, ok := typed.(E)
-	if !ok {
-		return fmt.Errorf("type assertion to E failed")
-	}
-
-	b.ReferenceId = raw.ReferenceId
-	b.ReferenceType = raw.ReferenceType
-	b.ReferenceData = ref
-	b.Expiration = raw.Expiration
-
-	return nil
-}
-
 type UpdatedStatusEventBody[E any] struct {
 	ReferenceId   uint32    `json:"referenceId"`
 	ReferenceType string    `json:"referenceType"`
@@ -121,95 +38,38 @@ type UpdatedStatusEventBody[E any] struct {
 	Expiration    time.Time `json:"expiration"`
 }
 
-func (b *UpdatedStatusEventBody[E]) UnmarshalJSON(data []byte) error {
-	type rawBody struct {
-		ReferenceId   uint32          `json:"referenceId"`
-		ReferenceType string          `json:"referenceType"`
-		ReferenceData json.RawMessage `json:"referenceData"`
-		Expiration    time.Time       `json:"expiration"`
-	}
-
-	var raw rawBody
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
-	}
-
-	var typed any
-	var err error
-	if raw.ReferenceType == "equipable" {
-		typed, err = convertMapToStruct[EquipableReferenceData](raw.ReferenceData)
-		if err != nil {
-			return err
-		}
-	}
-	if raw.ReferenceType == "cashEquipable" {
-		typed, err = convertMapToStruct[CashEquipableReferenceData](raw.ReferenceData)
-		if err != nil {
-			return err
-		}
-	}
-	if raw.ReferenceType == "consumable" {
-		typed, err = convertMapToStruct[ConsumableReferenceData](raw.ReferenceData)
-		if err != nil {
-			return err
-		}
-	}
-	if raw.ReferenceType == "setup" {
-		typed, err = convertMapToStruct[SetupReferenceData](raw.ReferenceData)
-		if err != nil {
-			return err
-		}
-	}
-	if raw.ReferenceType == "etc" {
-		typed, err = convertMapToStruct[EtcReferenceData](raw.ReferenceData)
-		if err != nil {
-			return err
-		}
-	}
-	if raw.ReferenceType == "cash" {
-		typed, err = convertMapToStruct[CashReferenceData](raw.ReferenceData)
-		if err != nil {
-			return err
-		}
-	}
-	if raw.ReferenceType == "pet" {
-		typed, err = convertMapToStruct[PetReferenceData](raw.ReferenceData)
-		if err != nil {
-			return err
-		}
-	}
-	var ref E
-	ref, ok := typed.(E)
-	if !ok {
-		return fmt.Errorf("type assertion to E failed")
-	}
-
-	b.ReferenceId = raw.ReferenceId
-	b.ReferenceType = raw.ReferenceType
-	b.ReferenceData = ref
-	b.Expiration = raw.Expiration
-
-	return nil
+type BaseData struct {
+	OwnerId uint32 `json:"ownerId"`
+}
+type StatisticData struct {
+	Strength      uint16 `json:"strength"`
+	Dexterity     uint16 `json:"dexterity"`
+	Intelligence  uint16 `json:"intelligence"`
+	Luck          uint16 `json:"luck"`
+	Hp            uint16 `json:"hp"`
+	Mp            uint16 `json:"mp"`
+	WeaponAttack  uint16 `json:"weaponAttack"`
+	MagicAttack   uint16 `json:"magicAttack"`
+	WeaponDefense uint16 `json:"weaponDefense"`
+	MagicDefense  uint16 `json:"magicDefense"`
+	Accuracy      uint16 `json:"accuracy"`
+	Avoidability  uint16 `json:"avoidability"`
+	Hands         uint16 `json:"hands"`
+	Speed         uint16 `json:"speed"`
+	Jump          uint16 `json:"jump"`
 }
 
+type CashData struct {
+	CashId int64 `json:"cashId,string"`
+}
+
+type StackableData struct {
+	Quantity uint32 `json:"quantity"`
+}
 type EquipableReferenceData struct {
-	Strength       uint16    `json:"strength"`
-	Dexterity      uint16    `json:"dexterity"`
-	Intelligence   uint16    `json:"intelligence"`
-	Luck           uint16    `json:"luck"`
-	Hp             uint16    `json:"hp"`
-	Mp             uint16    `json:"mp"`
-	WeaponAttack   uint16    `json:"weaponAttack"`
-	MagicAttack    uint16    `json:"magicAttack"`
-	WeaponDefense  uint16    `json:"weaponDefense"`
-	MagicDefense   uint16    `json:"magicDefense"`
-	Accuracy       uint16    `json:"accuracy"`
-	Avoidability   uint16    `json:"avoidability"`
-	Hands          uint16    `json:"hands"`
-	Speed          uint16    `json:"speed"`
-	Jump           uint16    `json:"jump"`
+	BaseData
+	StatisticData
 	Slots          uint16    `json:"slots"`
-	OwnerId        uint32    `json:"ownerId"`
 	Locked         bool      `json:"locked"`
 	Spikes         bool      `json:"spikes"`
 	KarmaUsed      bool      `json:"karmaUsed"`
@@ -223,24 +83,10 @@ type EquipableReferenceData struct {
 }
 
 type CashEquipableReferenceData struct {
-	CashId         uint64    `json:"cashId"`
-	Strength       uint16    `json:"strength"`
-	Dexterity      uint16    `json:"dexterity"`
-	Intelligence   uint16    `json:"intelligence"`
-	Luck           uint16    `json:"luck"`
-	Hp             uint16    `json:"hp"`
-	Mp             uint16    `json:"mp"`
-	WeaponAttack   uint16    `json:"weaponAttack"`
-	MagicAttack    uint16    `json:"magicAttack"`
-	WeaponDefense  uint16    `json:"weaponDefense"`
-	MagicDefense   uint16    `json:"magicDefense"`
-	Accuracy       uint16    `json:"accuracy"`
-	Avoidability   uint16    `json:"avoidability"`
-	Hands          uint16    `json:"hands"`
-	Speed          uint16    `json:"speed"`
-	Jump           uint16    `json:"jump"`
+	CashData
+	BaseData
+	StatisticData
 	Slots          uint16    `json:"slots"`
-	OwnerId        uint32    `json:"ownerId"`
 	Locked         bool      `json:"locked"`
 	Spikes         bool      `json:"spikes"`
 	KarmaUsed      bool      `json:"karmaUsed"`
@@ -254,35 +100,35 @@ type CashEquipableReferenceData struct {
 }
 
 type ConsumableReferenceData struct {
-	Quantity     uint32 `json:"quantity"`
-	OwnerId      uint32 `json:"ownerId"`
+	BaseData
+	StackableData
 	Flag         uint16 `json:"flag"`
 	Rechargeable uint64 `json:"rechargeable"`
 }
 
 type SetupReferenceData struct {
-	Quantity uint32 `json:"quantity"`
-	OwnerId  uint32 `json:"ownerId"`
-	Flag     uint16 `json:"flag"`
+	BaseData
+	StackableData
+	Flag uint16 `json:"flag"`
 }
 
 type EtcReferenceData struct {
-	Quantity uint32 `json:"quantity"`
-	OwnerId  uint32 `json:"ownerId"`
-	Flag     uint16 `json:"flag"`
+	BaseData
+	StackableData
+	Flag uint16 `json:"flag"`
 }
 
 type CashReferenceData struct {
-	CashId      uint64 `json:"cashId"`
-	Quantity    uint32 `json:"quantity"`
-	OwnerId     uint32 `json:"ownerId"`
+	BaseData
+	CashData
+	StackableData
 	Flag        uint16 `json:"flag"`
 	PurchasedBy uint32 `json:"purchasedBy"`
 }
 
 type PetReferenceData struct {
-	CashId      uint64 `json:"cashId"`
-	OwnerId     uint32 `json:"ownerId"`
+	BaseData
+	CashData
 	Flag        uint16 `json:"flag"`
 	PurchasedBy uint32 `json:"purchasedBy"`
 	Name        string `json:"name"`

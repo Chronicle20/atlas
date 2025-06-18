@@ -1,9 +1,15 @@
 package cashshop
 
 import (
+	"atlas-channel/asset"
+	asset2 "atlas-channel/cashshop/inventory/asset"
+	"atlas-channel/cashshop/inventory/compartment"
+	compartment2 "atlas-channel/compartment"
 	"atlas-channel/kafka/message/cashshop"
 	"atlas-channel/kafka/producer"
 	"context"
+	"errors"
+	"github.com/Chronicle20/atlas-constants/inventory"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/sirupsen/logrus"
 )
@@ -72,4 +78,94 @@ func (p *Processor) RequestCharacterSlotIncreasePurchaseByItem(characterId uint3
 func (p *Processor) RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error {
 	p.l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d]", characterId, serialNumber, currency, zero)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency))
+}
+
+func (p *Processor) MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, slot int16) error {
+	p.l.Infof("Character [%d] moving [%d] to inventory [%d] to slot [%d].", characterId, serialNumber, inventoryType, slot)
+	cp := compartment2.NewProcessor(p.l, p.ctx)
+
+	// Get the character's destination compartment
+	// TODO identify correct compartment type
+	cscm, err := compartment.NewProcessor(p.l, p.ctx).GetByAccountIdAndType(accountId, compartment.TypeExplorer)
+	if err != nil {
+		return err
+	}
+
+	// Get the character's source compartment
+	ccm, err := cp.GetByType(characterId, inventory.Type(inventoryType))
+	if err != nil {
+		return err
+	}
+
+	// Check if the compartment has the asset with CashId matching the serialNumber
+	var foundAsset *asset2.Model
+	for _, a := range cscm.Assets() {
+		// Check if the asset is cash-equipable, cash, or pet
+		if uint64(a.Item().CashId()) == serialNumber {
+			assetCopy := a
+			foundAsset = &assetCopy
+			break
+		}
+	}
+
+	if foundAsset == nil {
+		p.l.Errorf("Character [%d] does not have asset with CashId [%d] in inventory [%d].", characterId, serialNumber, inventoryType)
+		return errors.New("asset not found")
+	}
+	return cp.Transfer(accountId, characterId, foundAsset.Item().Id(), cscm.Id(), byte(cscm.Type()), "CASH_SHOP", ccm.Id(), byte(ccm.Type()), "CHARACTER", foundAsset.Item().Id())
+}
+
+func (p *Processor) MoveToCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte) error {
+	p.l.Infof("Character [%d] moving [%d] from inventory [%d] to cash inventory.", characterId, serialNumber, inventoryType)
+	cp := compartment2.NewProcessor(p.l, p.ctx)
+
+	// Get the character's destination compartment
+	// TODO identify correct compartment type
+	cscm, err := compartment.NewProcessor(p.l, p.ctx).GetByAccountIdAndType(accountId, compartment.TypeExplorer)
+	if err != nil {
+		return err
+	}
+
+	// Get the character's source compartment
+	ccm, err := cp.GetByType(characterId, inventory.Type(inventoryType))
+	if err != nil {
+		return err
+	}
+
+	// Check if the compartment has the asset with CashId matching the serialNumber
+	var foundAsset *asset.Model[any]
+	for _, a := range ccm.Assets() {
+		// Check if the asset is cash-equipable, cash, or pet
+		if a.IsCashEquipable() {
+			if cashEquipable, ok := a.ReferenceData().(asset.CashEquipableReferenceData); ok {
+				if uint64(cashEquipable.CashId()) == serialNumber {
+					assetCopy := a
+					foundAsset = &assetCopy
+					break
+				}
+			}
+		} else if a.IsCash() {
+			if cash, ok := a.ReferenceData().(asset.CashData); ok {
+				if uint64(cash.CashId()) == serialNumber {
+					assetCopy := a
+					foundAsset = &assetCopy
+					break
+				}
+			}
+		} else if a.IsPet() {
+			if pet, ok := a.ReferenceData().(asset.PetReferenceData); ok {
+				if uint64(pet.CashId()) == serialNumber {
+					assetCopy := a
+					foundAsset = &assetCopy
+					break
+				}
+			}
+		}
+	}
+
+	if foundAsset == nil {
+		p.l.Errorf("Character [%d] does not have asset with CashId [%d] in inventory [%d].", characterId, serialNumber, inventoryType)
+		return errors.New("asset not found")
+	}
+	return cp.Transfer(accountId, characterId, foundAsset.Id(), ccm.Id(), byte(ccm.Type()), "CHARACTER", cscm.Id(), byte(cscm.Type()), "CASH_SHOP", foundAsset.ReferenceId())
 }

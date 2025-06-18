@@ -1,6 +1,9 @@
 package asset
 
-import "time"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
 type ReferenceType string
 
@@ -16,6 +19,7 @@ const (
 
 type Model[E any] struct {
 	id            uint32
+	compartmentId uuid.UUID
 	slot          int16
 	templateId    uint32
 	expiration    time.Time
@@ -96,9 +100,14 @@ func (m Model[E]) ReferenceData() E {
 	return m.referenceData
 }
 
+func (m Model[E]) CompartmentId() uuid.UUID {
+	return m.compartmentId
+}
+
 func Clone[E any](m Model[E]) *ModelBuilder[E] {
 	return &ModelBuilder[E]{
 		id:            m.id,
+		compartmentId: m.compartmentId,
 		slot:          m.slot,
 		templateId:    m.templateId,
 		expiration:    m.expiration,
@@ -110,6 +119,7 @@ func Clone[E any](m Model[E]) *ModelBuilder[E] {
 
 type ModelBuilder[E any] struct {
 	id            uint32
+	compartmentId uuid.UUID
 	slot          int16
 	templateId    uint32
 	expiration    time.Time
@@ -118,9 +128,10 @@ type ModelBuilder[E any] struct {
 	referenceData E
 }
 
-func NewBuilder[E any](id uint32, templateId uint32, referenceId uint32, referenceType ReferenceType) *ModelBuilder[E] {
+func NewBuilder[E any](id uint32, compartmentId uuid.UUID, templateId uint32, referenceId uint32, referenceType ReferenceType) *ModelBuilder[E] {
 	return &ModelBuilder[E]{
 		id:            id,
+		compartmentId: compartmentId,
 		slot:          0,
 		templateId:    templateId,
 		expiration:    time.Time{},
@@ -147,6 +158,7 @@ func (b *ModelBuilder[E]) SetReferenceData(e E) *ModelBuilder[E] {
 func (b *ModelBuilder[E]) Build() Model[E] {
 	return Model[E]{
 		id:            b.id,
+		compartmentId: b.compartmentId,
 		slot:          b.slot,
 		templateId:    b.templateId,
 		expiration:    b.expiration,

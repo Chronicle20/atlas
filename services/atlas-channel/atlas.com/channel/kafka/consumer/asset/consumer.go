@@ -66,7 +66,7 @@ func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handle
 				return errors.New("unable to identify inventory type")
 			}
 
-			a := asset.NewBuilder[any](e.AssetId, e.TemplateId, e.Body.ReferenceId, asset.ReferenceType(e.Body.ReferenceType)).
+			a := asset.NewBuilder[any](e.AssetId, e.CompartmentId, e.TemplateId, e.Body.ReferenceId, asset.ReferenceType(e.Body.ReferenceType)).
 				SetSlot(e.Slot).
 				SetExpiration(e.Body.Expiration).
 				SetReferenceData(getReferenceData(e.Body.ReferenceData)).
@@ -100,7 +100,7 @@ func handleAssetUpdatedEvent(sc server.Model, wp writer.Producer) message.Handle
 				return errors.New("unable to identify inventory type")
 			}
 
-			a := asset.NewBuilder[any](e.AssetId, e.TemplateId, e.Body.ReferenceId, asset.ReferenceType(e.Body.ReferenceType)).
+			a := asset.NewBuilder[any](e.AssetId, e.CompartmentId, e.TemplateId, e.Body.ReferenceId, asset.ReferenceType(e.Body.ReferenceType)).
 				SetSlot(e.Slot).
 				SetExpiration(e.Body.Expiration).
 				SetReferenceData(getReferenceData(e.Body.ReferenceData)).

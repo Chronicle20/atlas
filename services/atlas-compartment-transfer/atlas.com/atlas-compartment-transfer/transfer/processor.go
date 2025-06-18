@@ -8,6 +8,7 @@ import (
 	"atlas-compartment-transfer/kafka/producer"
 	compartment5 "atlas-compartment-transfer/kafka/producer/cashshop/compartment"
 	compartment3 "atlas-compartment-transfer/kafka/producer/character/compartment"
+	compartment6 "atlas-compartment-transfer/kafka/producer/compartment"
 	"context"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -17,9 +18,20 @@ import (
 // TransactionStep represents the next step in the transfer saga
 type TransactionStep func(mb *message.Buffer) error
 
+// TransferInfo holds information about a transfer
+type TransferInfo struct {
+	Step              TransactionStep
+	CharacterId       uint32
+	AccountId         uint32
+	AssetId           uint32
+	ToCompartmentId   uuid.UUID
+	ToCompartmentType byte
+	ToInventoryType   string
+}
+
 // TransactionCache is a singleton that holds the transaction cache
 type TransactionCache struct {
-	txCache   map[uuid.UUID]TransactionStep
+	txCache   map[uuid.UUID]TransferInfo
 	cacheLock sync.RWMutex
 }
 
@@ -31,26 +43,26 @@ var once sync.Once
 func GetTransactionCache() *TransactionCache {
 	once.Do(func() {
 		instance = &TransactionCache{
-			txCache:   make(map[uuid.UUID]TransactionStep),
+			txCache:   make(map[uuid.UUID]TransferInfo),
 			cacheLock: sync.RWMutex{},
 		}
 	})
 	return instance
 }
 
-// Store stores a transaction step in the cache
-func (tc *TransactionCache) Store(transactionId uuid.UUID, step TransactionStep) {
+// Store stores transfer information in the cache
+func (tc *TransactionCache) Store(transactionId uuid.UUID, info TransferInfo) {
 	tc.cacheLock.Lock()
 	defer tc.cacheLock.Unlock()
-	tc.txCache[transactionId] = step
+	tc.txCache[transactionId] = info
 }
 
-// Get retrieves a transaction step from the cache
-func (tc *TransactionCache) Get(transactionId uuid.UUID) (TransactionStep, bool) {
+// Get retrieves transfer information from the cache
+func (tc *TransactionCache) Get(transactionId uuid.UUID) (TransferInfo, bool) {
 	tc.cacheLock.RLock()
 	defer tc.cacheLock.RUnlock()
-	step, exists := tc.txCache[transactionId]
-	return step, exists
+	info, exists := tc.txCache[transactionId]
+	return info, exists
 }
 
 // Delete removes a transaction step from the cache
@@ -94,19 +106,40 @@ func (p *ProcessorImpl) Process(mb *message.Buffer) func(cmd compartment.Transfe
 		p.l.Debugf("Initiating compartment transfer [%s] for character [%d].", cmd.TransactionId, cmd.CharacterId)
 
 		// Step 1: Handle FromInventoryType
+		var info TransferInfo
+		nextStep := p.createReleaseStep(cmd)
+
 		if cmd.ToInventoryType == compartment.InventoryTypeCharacter {
 			p.l.Debugf("Informing [%s] inventory to receive that [%d] via transfer [%s].", cmd.ToInventoryType, cmd.AssetId, cmd.TransactionId)
 			_ = mb.Put(compartment2.EnvCommandTopic, compartment3.AcceptCommandProvider(cmd.CharacterId, cmd.ToCompartmentType, cmd.TransactionId, cmd.ReferenceId))
+
+			info = TransferInfo{
+				Step:              nextStep,
+				CharacterId:       cmd.CharacterId,
+				AccountId:         cmd.AccountId,
+				AssetId:           cmd.AssetId,
+				ToCompartmentId:   cmd.ToCompartmentId,
+				ToCompartmentType: cmd.ToCompartmentType,
+				ToInventoryType:   cmd.ToInventoryType,
+			}
+
 		} else if cmd.ToInventoryType == compartment.InventoryTypeCashShop {
 			p.l.Debugf("Informing [%s] inventory to receive that [%d] via transfer [%s].", cmd.ToInventoryType, cmd.AssetId, cmd.TransactionId)
 			_ = mb.Put(compartment4.EnvCommandTopic, compartment5.AcceptCommandProvider(cmd.AccountId, cmd.ToCompartmentId, cmd.ToCompartmentType, cmd.TransactionId, cmd.ReferenceId))
+
+			info = TransferInfo{
+				Step:              nextStep,
+				CharacterId:       cmd.CharacterId,
+				AccountId:         cmd.AccountId,
+				AssetId:           cmd.ReferenceId,
+				ToCompartmentId:   cmd.ToCompartmentId,
+				ToCompartmentType: cmd.ToCompartmentType,
+				ToInventoryType:   cmd.ToInventoryType,
+			}
 		}
 
-		// Create next step function for release
-		nextStep := p.createReleaseStep(cmd)
-
-		// Store transaction and next step in cache
-		GetTransactionCache().Store(cmd.TransactionId, nextStep)
+		// Store transaction and transfer info in cache
+		GetTransactionCache().Store(cmd.TransactionId, info)
 		return nil
 	}
 }
@@ -135,23 +168,23 @@ func (p *ProcessorImpl) HandleAccepted(mb *message.Buffer) func(transactionId uu
 	return func(transactionId uuid.UUID) error {
 		p.l.Debugf("Target compartment accepted transfer. Removing from original inventory. TransferId: [%s]", transactionId)
 
-		// Get next step from cache
-		nextStep, exists := GetTransactionCache().Get(transactionId)
+		// Get transfer info from cache
+		info, exists := GetTransactionCache().Get(transactionId)
 
 		if !exists {
-			p.l.Warn("No next step found for transaction")
+			p.l.Warn("No transfer info found for transaction")
 			return nil
 		}
 
 		// Execute next step
-		err := nextStep(mb)
+		err := info.Step(mb)
 		if err != nil {
 			p.l.WithError(err).Error("Failed to execute next step")
 			return err
 		}
 
-		// Remove transaction from cache
-		GetTransactionCache().Delete(transactionId)
+		// Note: We no longer delete the transaction from the cache here
+		// so that HandleReleased can access the transfer info
 
 		return nil
 	}
@@ -167,7 +200,30 @@ func (p *ProcessorImpl) HandleAcceptedAndEmit(transactionId uuid.UUID) error {
 // HandleReleased handles the released status event
 func (p *ProcessorImpl) HandleReleased(mb *message.Buffer) func(transactionId uuid.UUID) error {
 	return func(transactionId uuid.UUID) error {
-		// TODO emit saga concluded event
+		p.l.Debugf("Asset released from original inventory. Transfer completed. TransferId: [%s]", transactionId)
+
+		// Get transfer info from cache
+		info, exists := GetTransactionCache().Get(transactionId)
+
+		if !exists {
+			p.l.Warn("No transfer info found for transaction")
+			return nil
+		}
+
+		// Emit completed status event
+		_ = mb.Put(compartment.EnvEventTopicStatus, compartment6.CompletedStatusEventProvider(
+			info.CharacterId,
+			transactionId,
+			info.AccountId,
+			info.AssetId,
+			info.ToCompartmentId,
+			info.ToCompartmentType,
+			info.ToInventoryType,
+		))
+
+		// Remove transaction from cache
+		GetTransactionCache().Delete(transactionId)
+
 		return nil
 	}
 }
@@ -183,6 +239,15 @@ func (p *ProcessorImpl) HandleReleasedAndEmit(transactionId uuid.UUID) error {
 func (p *ProcessorImpl) HandleError(mb *message.Buffer) func(transactionId uuid.UUID) error {
 	return func(transactionId uuid.UUID) error {
 		p.l.Debugf("Transfer failed. TransferId: [%s]", transactionId)
+
+		// Get transfer info from cache
+		_, exists := GetTransactionCache().Get(transactionId)
+
+		// If no transfer info exists, just return
+		if !exists {
+			p.l.Warn("No transfer info found for transaction")
+			return nil
+		}
 
 		// Remove transaction from cache
 		GetTransactionCache().Delete(transactionId)

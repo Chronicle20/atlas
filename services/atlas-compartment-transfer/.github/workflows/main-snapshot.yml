@@ -12,7 +12,7 @@ jobs:
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Build and Push AMD64 Image
         run: |
-          IMAGE_NAME=ghcr.io/chronicle20/atlas-atlas-compartment-transfer/atlas-atlas-compartment-transfer
+          IMAGE_NAME=ghcr.io/chronicle20/atlas-compartment-transfer/atlas-compartment-transfer
           docker build -t $IMAGE_NAME:latest-amd64 .
           docker push $IMAGE_NAME:latest-amd64
 
@@ -24,7 +24,7 @@ jobs:
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Build and Push ARM64 Image
         run: |
-          IMAGE_NAME=ghcr.io/chronicle20/atlas-atlas-compartment-transfer/atlas-atlas-compartment-transfer
+          IMAGE_NAME=ghcr.io/chronicle20/atlas-compartment-transfer/atlas-compartment-transfer
           docker build -t $IMAGE_NAME:latest-arm64 .
           docker push $IMAGE_NAME:latest-arm64
 
@@ -36,7 +36,7 @@ jobs:
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Create and Push Multi-Arch Manifest
         run: |
-          IMAGE_NAME=ghcr.io/chronicle20/atlas-atlas-compartment-transfer/atlas-atlas-compartment-transfer
+          IMAGE_NAME=ghcr.io/chronicle20/atlas-compartment-transfer/atlas-compartment-transfer
           docker manifest create $IMAGE_NAME:latest \
             --amend $IMAGE_NAME:latest-amd64 \
             --amend $IMAGE_NAME:latest-arm64

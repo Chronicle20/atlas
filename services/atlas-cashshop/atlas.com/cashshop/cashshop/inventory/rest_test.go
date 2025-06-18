@@ -152,7 +152,7 @@ func TestInventoryTransformSerializeDeserializeExtract(t *testing.T) {
 	explorerOut := oeam.Explorer()
 
 	if explorerIn.Type() != explorerOut.Type() {
-		t.Errorf("Explorer compartment type mismatch: expected %s, got %s", explorerIn.Type(), explorerOut.Type())
+		t.Errorf("Explorer compartment type mismatch: expected %d, got %d", explorerIn.Type(), explorerOut.Type())
 	}
 
 	if explorerIn.AccountId() != explorerOut.AccountId() {
@@ -172,7 +172,7 @@ func TestInventoryTransformSerializeDeserializeExtract(t *testing.T) {
 	cygnusOut := oeam.Cygnus()
 
 	if cygnusIn.Type() != cygnusOut.Type() {
-		t.Errorf("Cygnus compartment type mismatch: expected %s, got %s", cygnusIn.Type(), cygnusOut.Type())
+		t.Errorf("Cygnus compartment type mismatch: expected %d, got %d", cygnusIn.Type(), cygnusOut.Type())
 	}
 
 	if cygnusIn.AccountId() != cygnusOut.AccountId() {
@@ -192,7 +192,7 @@ func TestInventoryTransformSerializeDeserializeExtract(t *testing.T) {
 	legendOut := oeam.Legend()
 
 	if legendIn.Type() != legendOut.Type() {
-		t.Errorf("Legend compartment type mismatch: expected %s, got %s", legendIn.Type(), legendOut.Type())
+		t.Errorf("Legend compartment type mismatch: expected %d, got %d", legendIn.Type(), legendOut.Type())
 	}
 
 	if legendIn.AccountId() != legendOut.AccountId() {

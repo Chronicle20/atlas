@@ -145,7 +145,7 @@ func (p *Processor) MoveToCashInventory(accountId uint32, characterId uint32, se
 				}
 			}
 		} else if a.IsCash() {
-			if cash, ok := a.ReferenceData().(asset.CashData); ok {
+			if cash, ok := a.ReferenceData().(asset.CashReferenceData); ok {
 				if uint64(cash.CashId()) == serialNumber {
 					assetCopy := a
 					foundAsset = &assetCopy

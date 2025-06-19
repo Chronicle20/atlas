@@ -8,7 +8,7 @@ import (
 
 // Model is the domain model for a transport route
 type Model struct {
-	id                     string
+	id                     uuid.UUID
 	name                   string
 	startMapID             uint32
 	stagingMapID           uint32
@@ -22,7 +22,7 @@ type Model struct {
 
 // NewModel creates a new transport route model
 func NewModel(
-	id string,
+	id uuid.UUID,
 	name string,
 	startMapID uint32,
 	stagingMapID uint32,
@@ -48,7 +48,7 @@ func NewModel(
 }
 
 // Id returns the route ID
-func (m Model) Id() string {
+func (m Model) Id() uuid.UUID {
 	return m.id
 }
 
@@ -99,7 +99,7 @@ func (m Model) CycleInterval() time.Duration {
 
 // Builder is a builder for Model
 type Builder struct {
-	id                     string
+	id                     uuid.UUID
 	name                   string
 	startMapID             uint32
 	stagingMapID           uint32
@@ -114,12 +114,12 @@ type Builder struct {
 // NewBuilder creates a new builder for Model
 func NewBuilder() *Builder {
 	return &Builder{
-		id: uuid.New().String(),
+		id: uuid.New(),
 	}
 }
 
 // SetId sets the route ID
-func (b *Builder) SetId(id string) *Builder {
+func (b *Builder) SetId(id uuid.UUID) *Builder {
 	b.id = id
 	return b
 }
@@ -197,16 +197,16 @@ func (b *Builder) Build() Model {
 // SharedVesselModel is the domain model for a shared vessel
 type SharedVesselModel struct {
 	id              string
-	routeAID        string
-	routeBID        string
+	routeAID        uuid.UUID
+	routeBID        uuid.UUID
 	turnaroundDelay time.Duration
 }
 
 // NewSharedVesselModel creates a new shared vessel model
 func NewSharedVesselModel(
 	id string,
-	routeAID string,
-	routeBID string,
+	routeAID uuid.UUID,
+	routeBID uuid.UUID,
 	turnaroundDelay time.Duration,
 ) SharedVesselModel {
 	return SharedVesselModel{
@@ -223,12 +223,12 @@ func (m SharedVesselModel) Id() string {
 }
 
 // RouteAID returns the ID of route A
-func (m SharedVesselModel) RouteAID() string {
+func (m SharedVesselModel) RouteAID() uuid.UUID {
 	return m.routeAID
 }
 
 // RouteBID returns the ID of route B
-func (m SharedVesselModel) RouteBID() string {
+func (m SharedVesselModel) RouteBID() uuid.UUID {
 	return m.routeBID
 }
 
@@ -240,8 +240,8 @@ func (m SharedVesselModel) TurnaroundDelay() time.Duration {
 // SharedVesselBuilder is a builder for SharedVesselModel
 type SharedVesselBuilder struct {
 	id              string
-	routeAID        string
-	routeBID        string
+	routeAID        uuid.UUID
+	routeBID        uuid.UUID
 	turnaroundDelay time.Duration
 }
 
@@ -259,13 +259,13 @@ func (b *SharedVesselBuilder) SetId(id string) *SharedVesselBuilder {
 }
 
 // SetRouteAID sets the ID of route A
-func (b *SharedVesselBuilder) SetRouteAID(routeAID string) *SharedVesselBuilder {
+func (b *SharedVesselBuilder) SetRouteAID(routeAID uuid.UUID) *SharedVesselBuilder {
 	b.routeAID = routeAID
 	return b
 }
 
 // SetRouteBID sets the ID of route B
-func (b *SharedVesselBuilder) SetRouteBID(routeBID string) *SharedVesselBuilder {
+func (b *SharedVesselBuilder) SetRouteBID(routeBID uuid.UUID) *SharedVesselBuilder {
 	b.routeBID = routeBID
 	return b
 }
@@ -289,7 +289,7 @@ func (b *SharedVesselBuilder) Build() SharedVesselModel {
 // TripScheduleModel is the domain model for a trip schedule
 type TripScheduleModel struct {
 	tripID         string
-	routeID        string
+	routeID        uuid.UUID
 	boardingOpen   time.Time
 	boardingClosed time.Time
 	departure      time.Time
@@ -299,7 +299,7 @@ type TripScheduleModel struct {
 // NewTripScheduleModel creates a new trip schedule model
 func NewTripScheduleModel(
 	tripID string,
-	routeID string,
+	routeID uuid.UUID,
 	boardingOpen time.Time,
 	boardingClosed time.Time,
 	departure time.Time,
@@ -321,7 +321,7 @@ func (m TripScheduleModel) TripID() string {
 }
 
 // RouteID returns the route ID
-func (m TripScheduleModel) RouteID() string {
+func (m TripScheduleModel) RouteID() uuid.UUID {
 	return m.routeID
 }
 
@@ -348,7 +348,7 @@ func (m TripScheduleModel) Arrival() time.Time {
 // TripScheduleBuilder is a builder for TripScheduleModel
 type TripScheduleBuilder struct {
 	tripID         string
-	routeID        string
+	routeID        uuid.UUID
 	boardingOpen   time.Time
 	boardingClosed time.Time
 	departure      time.Time
@@ -367,7 +367,7 @@ func (b *TripScheduleBuilder) SetTripID(tripID string) *TripScheduleBuilder {
 }
 
 // SetRouteID sets the route ID
-func (b *TripScheduleBuilder) SetRouteID(routeID string) *TripScheduleBuilder {
+func (b *TripScheduleBuilder) SetRouteID(routeID uuid.UUID) *TripScheduleBuilder {
 	b.routeID = routeID
 	return b
 }

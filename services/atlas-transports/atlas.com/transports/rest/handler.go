@@ -3,6 +3,8 @@ package rest
 import (
 	"context"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -78,5 +80,19 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 				})
 			})
 		}
+	}
+}
+
+type RouteIdHandler func(routeId uuid.UUID) http.HandlerFunc
+
+func ParseRouteId(l logrus.FieldLogger, next RouteIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		routeId, err := uuid.Parse(mux.Vars(r)["routeId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse routeId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(routeId)(w, r)
 	}
 }

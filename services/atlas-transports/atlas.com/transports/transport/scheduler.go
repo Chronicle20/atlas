@@ -2,6 +2,7 @@ package transport
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"time"
 )
 
@@ -95,7 +96,7 @@ func (s *Scheduler) computeSharedVesselSchedule(vessel SharedVesselModel, startO
 	}
 
 	// If either route is not found, return empty schedule
-	if routeA.Id() == "" || routeB.Id() == "" {
+	if routeA.Id() == uuid.Nil || routeB.Id() == uuid.Nil {
 		return schedules
 	}
 
@@ -144,7 +145,7 @@ func (s *Scheduler) computeSharedVesselSchedule(vessel SharedVesselModel, startO
 }
 
 // GetScheduleForRoute returns the trip schedule for a specific route
-func (s *Scheduler) GetScheduleForRoute(routeID string, schedules []TripScheduleModel) []TripScheduleModel {
+func (s *Scheduler) GetScheduleForRoute(routeID uuid.UUID, schedules []TripScheduleModel) []TripScheduleModel {
 	var routeSchedules []TripScheduleModel
 	for _, schedule := range schedules {
 		if schedule.RouteID() == routeID {

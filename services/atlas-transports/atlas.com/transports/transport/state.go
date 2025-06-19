@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"github.com/google/uuid"
 	"time"
 )
 
@@ -10,20 +11,20 @@ type RouteState string
 const (
 	// AwaitingReturn indicates that the vessel is not yet available
 	AwaitingReturn RouteState = "awaiting_return"
-	
+
 	// OpenEntry indicates that players can board
 	OpenEntry RouteState = "open_entry"
-	
+
 	// LockedEntry indicates that boarding is closed and the vessel is in pre-departure phase
 	LockedEntry RouteState = "locked_entry"
-	
+
 	// InTransit indicates that characters are in the en-route map
 	InTransit RouteState = "in_transit"
 )
 
 // RouteStateModel represents the current state of a transport route
 type RouteStateModel struct {
-	routeID       string
+	routeID       uuid.UUID
 	status        RouteState
 	nextDeparture time.Time
 	boardingEnds  time.Time
@@ -31,7 +32,7 @@ type RouteStateModel struct {
 
 // NewRouteStateModel creates a new route state model
 func NewRouteStateModel(
-	routeID string,
+	routeID uuid.UUID,
 	status RouteState,
 	nextDeparture time.Time,
 	boardingEnds time.Time,
@@ -45,7 +46,7 @@ func NewRouteStateModel(
 }
 
 // RouteID returns the route ID
-func (m RouteStateModel) RouteID() string {
+func (m RouteStateModel) RouteID() uuid.UUID {
 	return m.routeID
 }
 
@@ -66,7 +67,7 @@ func (m RouteStateModel) BoardingEnds() time.Time {
 
 // RouteStateBuilder is a builder for RouteStateModel
 type RouteStateBuilder struct {
-	routeID       string
+	routeID       uuid.UUID
 	status        RouteState
 	nextDeparture time.Time
 	boardingEnds  time.Time
@@ -80,7 +81,7 @@ func NewRouteStateBuilder() *RouteStateBuilder {
 }
 
 // SetRouteID sets the route ID
-func (b *RouteStateBuilder) SetRouteID(routeID string) *RouteStateBuilder {
+func (b *RouteStateBuilder) SetRouteID(routeID uuid.UUID) *RouteStateBuilder {
 	b.routeID = routeID
 	return b
 }

@@ -1,52 +1,57 @@
 package transport
 
 import (
+	"github.com/google/uuid"
 	"time"
 )
 
 // RestModel is the JSON:API resource for a transport route
 type RestModel struct {
-	ID                string        `json:"-"`
-	Name              string        `json:"name"`
-	StartMapID        uint32        `json:"startMapId"`
-	StagingMapID      uint32        `json:"stagingMapId"`
-	EnRouteMapID      uint32        `json:"enRouteMapId"`
-	DestinationMapID  uint32        `json:"destinationMapId"`
-	CycleInterval     time.Duration `json:"cycleInterval"`
+	ID               uuid.UUID     `json:"-"`
+	Name             string        `json:"name"`
+	StartMapID       uint32        `json:"startMapId"`
+	StagingMapID     uint32        `json:"stagingMapId"`
+	EnRouteMapID     uint32        `json:"enRouteMapId"`
+	DestinationMapID uint32        `json:"destinationMapId"`
+	CycleInterval    time.Duration `json:"cycleInterval"`
 }
 
 // GetID returns the resource ID
 func (r RestModel) GetID() string {
-	return r.ID
+	return r.ID.String()
 }
 
 // SetID sets the resource ID
-func (r *RestModel) SetID(id string) error {
+func (r *RestModel) SetID(idStr string) error {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return err
+	}
 	r.ID = id
 	return nil
 }
 
 // GetName returns the resource name
 func (r RestModel) GetName() string {
-	return "route"
+	return "routes"
 }
 
 // Transform converts a Model to a RestModel
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		ID:                m.Id(),
-		Name:              m.Name(),
-		StartMapID:        m.StartMapID(),
-		StagingMapID:      m.StagingMapID(),
-		EnRouteMapID:      m.EnRouteMapID(),
-		DestinationMapID:  m.DestinationMapID(),
-		CycleInterval:     m.CycleInterval(),
+		ID:               m.Id(),
+		Name:             m.Name(),
+		StartMapID:       m.StartMapID(),
+		StagingMapID:     m.StagingMapID(),
+		EnRouteMapID:     m.EnRouteMapID(),
+		DestinationMapID: m.DestinationMapID(),
+		CycleInterval:    m.CycleInterval(),
 	}, nil
 }
 
 // RouteStateRestModel is the JSON:API resource for a route state
 type RouteStateRestModel struct {
-	ID            string    `json:"-"`
+	ID            uuid.UUID `json:"-"`
 	Status        string    `json:"status"`
 	NextDeparture time.Time `json:"nextDeparture"`
 	BoardingEnds  time.Time `json:"boardingEnds"`
@@ -54,11 +59,15 @@ type RouteStateRestModel struct {
 
 // GetID returns the resource ID
 func (r RouteStateRestModel) GetID() string {
-	return r.ID
+	return r.ID.String()
 }
 
 // SetID sets the resource ID
-func (r *RouteStateRestModel) SetID(id string) error {
+func (r *RouteStateRestModel) SetID(idStr string) error {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return err
+	}
 	r.ID = id
 	return nil
 }
@@ -80,11 +89,11 @@ func TransformState(m RouteStateModel) (RouteStateRestModel, error) {
 
 // TripScheduleRestModel is the JSON:API resource for a trip schedule
 type TripScheduleRestModel struct {
-	ID            string    `json:"-"`
-	BoardingOpen  time.Time `json:"boardingOpen"`
+	ID             string    `json:"-"`
+	BoardingOpen   time.Time `json:"boardingOpen"`
 	BoardingClosed time.Time `json:"boardingClosed"`
-	Departure     time.Time `json:"departure"`
-	Arrival       time.Time `json:"arrival"`
+	Departure      time.Time `json:"departure"`
+	Arrival        time.Time `json:"arrival"`
 }
 
 // GetID returns the resource ID

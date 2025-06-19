@@ -6,6 +6,8 @@ import (
 	"atlas-transports/tracing"
 	"atlas-transports/transport"
 	"github.com/Chronicle20/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"os"
 	"time"
 )
@@ -43,12 +45,15 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	// Load sample routes
-	routes, sharedVessels := transport.LoadSampleRoutes()
-	l.Infof("Loaded %d routes and %d shared vessels", len(routes), len(sharedVessels))
+	ten1, _ := tenant.Create(uuid.MustParse("083839c6-c47c-42a6-9585-76492795d123"), "GMS", 83, 1)
+	tenants := []tenant.Model{ten1}
 
-	// Create processor
-	processor := transport.NewProcessor(l, routes, sharedVessels)
+	// TODO load this from a configuration source
+	for _, t := range tenants {
+		routes, sharedVessels := transport.LoadSampleRoutes()
+		ctx := tenant.WithContext(tdm.Context(), t)
+		_ = transport.NewProcessor(l, ctx).AddTenant(routes, sharedVessels)
+	}
 
 	// Start a background goroutine to periodically update route states
 	go func() {
@@ -60,7 +65,9 @@ func main() {
 			case <-tdm.Context().Done():
 				return
 			case <-ticker.C:
-				processor.UpdateStates()
+				for _, t := range tenants {
+					transport.NewProcessor(l, tenant.WithContext(tdm.Context(), t)).UpdateStates()
+				}
 			}
 		}
 	}()
@@ -71,7 +78,7 @@ func main() {
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
-		AddRouteInitializer(transport.InitResource(GetServer())(processor)).
+		AddRouteInitializer(transport.InitResource(GetServer())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

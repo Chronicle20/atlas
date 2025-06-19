@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+// Variable to allow mocking time.Now for testing
+var timeNow = time.Now
+
 // Scheduler computes trip schedules for transport routes
 type Scheduler struct {
 	routes        []Model
@@ -22,7 +25,7 @@ func NewScheduler(routes []Model, sharedVessels []SharedVesselModel) *Scheduler 
 
 // ComputeSchedule computes the trip schedule for all routes for the current UTC day
 func (s *Scheduler) ComputeSchedule() []TripScheduleModel {
-	now := time.Now().UTC()
+	now := timeNow().UTC()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	endOfDay := startOfDay.Add(24 * time.Hour)
 

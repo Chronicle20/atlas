@@ -44,7 +44,6 @@ func (p *ProcessorImpl) AddTenant(routes []Model, sharedVessels []SharedVesselMo
 
 // ByIdProvider returns a provider for a route by id
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
-	// We already have the tenant information in the processor, so we don't need to extract it from the context
 	return func() (Model, error) {
 		for _, route := range getRouteRegistry().GetRoutes(p.t) {
 			if route.Id() == id {
@@ -57,7 +56,6 @@ func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
 
 // RouteStateByIdProvider returns a provider for a route state by route id
 func (p *ProcessorImpl) RouteStateByIdProvider(id uuid.UUID) model.Provider[RouteStateModel] {
-	// We already have the tenant information in the processor, so we don't need to extract it from the context
 	return func() (RouteStateModel, error) {
 		// Find the route
 		_, err := p.ByIdProvider(id)()
@@ -81,7 +79,6 @@ func (p *ProcessorImpl) RouteStateByIdProvider(id uuid.UUID) model.Provider[Rout
 
 // RouteScheduleByIdProvider returns a provider for a route schedule by route id
 func (p *ProcessorImpl) RouteScheduleByIdProvider(id uuid.UUID) model.Provider[[]TripScheduleModel] {
-	// We already have the tenant information in the processor, so we don't need to extract it from the context
 	return func() ([]TripScheduleModel, error) {
 		// Find the route
 		routeProvider := p.ByIdProvider(id)
@@ -99,7 +96,6 @@ func (p *ProcessorImpl) RouteScheduleByIdProvider(id uuid.UUID) model.Provider[[
 
 // AllRoutesProvider returns a provider for all routes
 func (p *ProcessorImpl) AllRoutesProvider() model.Provider[[]Model] {
-	// We already have the tenant information in the processor, so we don't need to extract it from the context
 	return func() ([]Model, error) {
 		return getRouteRegistry().GetRoutes(p.t), nil
 	}
@@ -107,7 +103,6 @@ func (p *ProcessorImpl) AllRoutesProvider() model.Provider[[]Model] {
 
 // UpdateStates updates the states of all routes
 func (p *ProcessorImpl) UpdateStates() {
-	// We already have the tenant information in the processor, so we don't need to extract it from the context
 	now := time.Now()
 	for _, stateMachine := range getRouteRegistry().GetStateMachines(p.t) {
 		stateMachine.UpdateState(now, getSchedulerRegistry().Get(p.t).ComputeSchedule())

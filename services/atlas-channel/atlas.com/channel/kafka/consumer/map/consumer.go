@@ -5,6 +5,7 @@ import (
 	"atlas-channel/chalkboard"
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
+	mapData "atlas-channel/data/map"
 	npc2 "atlas-channel/data/npc"
 	"atlas-channel/drop"
 	"atlas-channel/guild"
@@ -29,6 +30,7 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -68,6 +70,7 @@ func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l
 }
 
 func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(m _map2.Model) model.Operator[session.Model] {
+	t := tenant.MustFromContext(ctx)
 	return func(m _map2.Model) model.Operator[session.Model] {
 		return func(s session.Model) error {
 			l.Debugf("Processing character [%d] entering map [%d].", s.CharacterId(), m.MapId())
@@ -112,7 +115,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 					if k != s.CharacterId() {
 						for _, p := range v.Pets() {
 							if p.Slot() >= 0 {
-								err = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(tenant.MustFromContext(ctx))(p))(s)
+								err = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p))(s)
 								if err != nil {
 									l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", k, s.CharacterId())
 								}
@@ -126,7 +129,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				for k := range cms {
 					for _, p := range cms[s.CharacterId()].Pets() {
 						if p.Slot() >= 0 {
-							err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.WorldId(), s.ChannelId())(k, session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(tenant.MustFromContext(ctx))(p)))
+							err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.WorldId(), s.ChannelId())(k, session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p)))
 							if err != nil {
 								l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", s.CharacterId(), k)
 							}
@@ -192,6 +195,18 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				_ = model.ForEachSlice(oip, func(oid uint32) error {
 					return session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(oid, cms[oid].Hp(), cms[oid].MaxHp()))(s)
 				}, model.ParallelExecute())
+			}()
+
+			go func() {
+				var md mapData.Model
+				md, err = mapData.NewProcessor(l, ctx).GetById(m.MapId())
+				if err != nil {
+					l.WithError(err).Errorf("Unable to retrieve map data for map [%d].", m.MapId())
+					return
+				}
+				if md.Clock() {
+					_ = session.Announce(l)(ctx)(wp)(writer.Clock)(writer.TownClockBody(l, t)(time.Now()))(s)
+				}
 			}()
 			return nil
 		}

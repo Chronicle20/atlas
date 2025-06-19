@@ -19,6 +19,10 @@ func (m Model) Price() uint32 {
 	return m.price
 }
 
+func (m Model) Count() uint32 {
+	return m.count
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:       rm.Id,

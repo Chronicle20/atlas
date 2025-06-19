@@ -7,23 +7,28 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type Processor interface {
+	GetByCharacterId(characterId uint32) (Model, error)
+	ByCharacterIdProvider(characterId uint32) model.Provider[Model]
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) ByCharacterIdProvider(characterId uint32) model.Provider[Model] {
+func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)
 }
 
-func (p *Processor) GetByCharacterId(characterId uint32) (Model, error) {
+func (p *ProcessorImpl) GetByCharacterId(characterId uint32) (Model, error) {
 	return p.ByCharacterIdProvider(characterId)()
 }

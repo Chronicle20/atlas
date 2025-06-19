@@ -65,9 +65,9 @@ type ProcessorImpl struct {
 	GetAllShopsFn                      func(decorators ...model.Decorator[Model]) ([]Model, error)
 	RechargeableConsumablesDecoratorFn func(m Model) Model
 	cp                                 commodities.Processor
-	charP                              *character.Processor
-	compP                              *compartment.Processor
-	invP                               *inventory2.Processor
+	charP                              character.Processor
+	compP                              compartment.Processor
+	invP                               inventory2.Processor
 	kp                                 producer.Provider
 }
 

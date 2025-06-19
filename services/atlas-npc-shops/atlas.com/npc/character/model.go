@@ -1,8 +1,9 @@
 package character
 
 import (
-	"atlas-npc/compartment"
+	"atlas-npc/character/skill"
 	"atlas-npc/inventory"
+	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-constants/world"
 	"strconv"
 	"strings"
@@ -36,8 +37,12 @@ type Model struct {
 	mapId              uint32
 	spawnPoint         uint32
 	gm                 int
+	x                  int16
+	y                  int16
+	stance             byte
 	meso               uint32
 	inventory          inventory.Model
+	skills             []skill.Model
 }
 
 func (m Model) Gm() bool {
@@ -129,28 +134,28 @@ func (m Model) Ap() uint16 {
 }
 
 func (m Model) HasSPTable() bool {
-	switch m.jobId {
-	case 2001:
+	switch job.Id(m.jobId) {
+	case job.EvanId:
 		return true
-	case 2200:
+	case job.EvanStage1Id:
 		return true
-	case 2210:
+	case job.EvanStage2Id:
 		return true
-	case 2211:
+	case job.EvanStage3Id:
 		return true
-	case 2212:
+	case job.EvanStage4Id:
 		return true
-	case 2213:
+	case job.EvanStage5Id:
 		return true
-	case 2214:
+	case job.EvanStage6Id:
 		return true
-	case 2215:
+	case job.EvanStage7Id:
 		return true
-	case 2216:
+	case job.EvanStage8Id:
 		return true
-	case 2217:
+	case job.EvanStage9Id:
 		return true
-	case 2218:
+	case job.EvanStage10Id:
 		return true
 	default:
 		return false
@@ -208,32 +213,32 @@ func (m Model) Meso() uint32 {
 	return m.meso
 }
 
+func (m Model) Inventory() inventory.Model {
+	return m.inventory
+}
+
 func (m Model) X() int16 {
-	return 0
+	return m.x
 }
 
 func (m Model) Y() int16 {
-	return 0
+	return m.y
 }
 
 func (m Model) Stance() byte {
-	return 0
+	return m.stance
 }
 
 func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
-func (m Model) SetInventory(i inventory.Model) Model {
-	ec := compartment.NewBuilder(i.Equipable().Id(), m.Id(), i.Equipable().Type(), i.Equipable().Capacity())
-	for _, a := range i.Equipable().Assets() {
-		if a.Slot() > 0 {
-			ec = ec.AddAsset(a)
-		}
-	}
+func (m Model) Skills() []skill.Model {
+	return m.skills
+}
 
+func (m Model) SetInventory(i inventory.Model) Model {
 	ib := inventory.NewBuilder(m.Id()).
-		SetEquipable(ec.Build()).
 		SetConsumable(i.Consumable()).
 		SetSetup(i.Setup()).
 		SetEtc(i.ETC()).
@@ -242,8 +247,8 @@ func (m Model) SetInventory(i inventory.Model) Model {
 	return Clone(m).SetInventory(ib.Build()).Build()
 }
 
-func (m Model) Inventory() inventory.Model {
-	return m.inventory
+func (m Model) SetSkills(ms []skill.Model) Model {
+	return Clone(m).SetSkills(ms).Build()
 }
 
 func Clone(m Model) *ModelBuilder {
@@ -275,8 +280,12 @@ func Clone(m Model) *ModelBuilder {
 		mapId:              m.mapId,
 		spawnPoint:         m.spawnPoint,
 		gm:                 m.gm,
+		x:                  m.x,
+		y:                  m.y,
+		stance:             m.stance,
 		meso:               m.meso,
 		inventory:          m.inventory,
+		skills:             m.skills,
 	}
 }
 
@@ -313,6 +322,7 @@ type ModelBuilder struct {
 	stance             byte
 	meso               uint32
 	inventory          inventory.Model
+	skills             []skill.Model
 }
 
 func NewModelBuilder() *ModelBuilder {
@@ -351,6 +361,7 @@ func (b *ModelBuilder) SetSpawnPoint(v uint32) *ModelBuilder         { b.spawnPo
 func (b *ModelBuilder) SetGm(v int) *ModelBuilder                    { b.gm = v; return b }
 func (b *ModelBuilder) SetMeso(v uint32) *ModelBuilder               { b.meso = v; return b }
 func (b *ModelBuilder) SetInventory(v inventory.Model) *ModelBuilder { b.inventory = v; return b }
+func (b *ModelBuilder) SetSkills(v []skill.Model) *ModelBuilder      { b.skills = v; return b }
 
 func (b *ModelBuilder) Build() Model {
 	return Model{
@@ -381,7 +392,11 @@ func (b *ModelBuilder) Build() Model {
 		mapId:              b.mapId,
 		spawnPoint:         b.spawnPoint,
 		gm:                 b.gm,
+		x:                  b.x,
+		y:                  b.y,
+		stance:             b.stance,
 		meso:               b.meso,
 		inventory:          b.inventory,
+		skills:             b.skills,
 	}
 }

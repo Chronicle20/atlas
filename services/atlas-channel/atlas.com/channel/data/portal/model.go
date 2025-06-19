@@ -10,3 +10,7 @@ type Model struct {
 	targetMapId uint32
 	scriptName  string
 }
+
+func (m Model) Id() uint32 {
+	return m.id
+}

@@ -1,6 +1,8 @@
 package skill
 
-import "atlas-channel/skill/effect"
+import (
+	"atlas-channel/data/skill/effect"
+)
 
 type Model struct {
 	id            uint32

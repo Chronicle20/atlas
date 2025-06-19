@@ -5,13 +5,13 @@ import (
 	"atlas-channel/chalkboard"
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
+	npc2 "atlas-channel/data/npc"
 	"atlas-channel/drop"
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
 	_map3 "atlas-channel/kafka/message/map"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
-	"atlas-channel/npc"
 	"atlas-channel/party"
 	"atlas-channel/reactor"
 	"atlas-channel/server"
@@ -140,7 +140,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			}()
 
 			go func() {
-				err = npc.NewProcessor(l, ctx).ForEachInMap(m.MapId(), spawnNPCForSession(l)(ctx)(wp)(s))
+				err = npc2.NewProcessor(l, ctx).ForEachInMap(m.MapId(), spawnNPCForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn npcs for character [%d].", s.CharacterId())
 				}
@@ -252,11 +252,11 @@ func despawnForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 	}
 }
 
-func spawnNPCForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[npc.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[npc.Model] {
-		return func(wp writer.Producer) func(s session.Model) model.Operator[npc.Model] {
-			return func(s session.Model) model.Operator[npc.Model] {
-				return func(n npc.Model) error {
+func spawnNPCForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[npc2.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[npc2.Model] {
+		return func(wp writer.Producer) func(s session.Model) model.Operator[npc2.Model] {
+			return func(s session.Model) model.Operator[npc2.Model] {
+				return func(n npc2.Model) error {
 					err := session.Announce(l)(ctx)(wp)(writer.SpawnNPC)(writer.SpawnNPCBody(l)(n))(s)
 					if err != nil {
 						return err

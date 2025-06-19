@@ -316,12 +316,12 @@ func getStreetName(tenant tenant.Model, mapId uint32) string {
 
 func getClock(exml xml.Node) bool {
 	_, err := exml.ChildByName("clock")
-	return err != nil
+	return err == nil
 }
 
 func isBoat(exml xml.Node) bool {
 	_, err := exml.ChildByName("shipObj")
-	return err != nil
+	return err == nil
 }
 
 func getBackgroundTypes(exml xml.Node) []BackgroundTypeRestModel {

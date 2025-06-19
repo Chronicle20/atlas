@@ -7,14 +7,18 @@ import (
 	"math"
 )
 
-type Processor struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	sp  *equipable.Processor
+type Processor interface {
+	Exists(itemId uint32) bool
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	sp  equipable.Processor
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		sp:  equipable.NewProcessor(l, ctx),
@@ -22,7 +26,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) Exists(itemId uint32) bool {
+func (p *ProcessorImpl) Exists(itemId uint32) bool {
 	inventoryType := byte(math.Floor(float64(itemId) / 1000000))
 	if inventoryType == 1 {
 		_, err := p.sp.GetById(itemId)

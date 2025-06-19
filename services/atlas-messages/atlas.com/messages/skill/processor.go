@@ -10,31 +10,38 @@ import (
 	"time"
 )
 
-type Processor struct {
+type Processor interface {
+	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
+	GetByCharacterId(characterId uint32) ([]Model, error)
+	RequestCreate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error
+	RequestUpdate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
+func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())
 }
 
-func (p *Processor) GetByCharacterId(characterId uint32) ([]Model, error) {
+func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return p.ByCharacterIdProvider(characterId)()
 }
 
-func (p *Processor) RequestCreate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
+func (p *ProcessorImpl) RequestCreate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(skill2.EnvCommandTopic)(createCommandProvider(characterId, skillId, level, masterLevel, expiration))
 }
 
-func (p *Processor) RequestUpdate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
+func (p *ProcessorImpl) RequestUpdate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(skill2.EnvCommandTopic)(updateCommandProvider(characterId, skillId, level, masterLevel, expiration))
 }

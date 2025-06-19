@@ -10,20 +10,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type Processor interface {
+	RequestCreateItem(characterId uint32, templateId uint32, quantity uint32) error
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) RequestCreateItem(characterId uint32, templateId uint32, quantity uint32) error {
+func (p *ProcessorImpl) RequestCreateItem(characterId uint32, templateId uint32, quantity uint32) error {
 	inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 	if !ok {
 		return errors.New("invalid templateId")

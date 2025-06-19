@@ -13,15 +13,23 @@ import (
 	"strconv"
 )
 
-type Processor struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	pp  *portal.Processor
-	dp  *_map.Processor
+type Processor interface {
+	Exists(mapId uint32) bool
+	CharacterIdsInMapStringProvider(worldId byte, channelId byte, mapStr string) model.Provider[[]uint32]
+	CharacterIdsInMapProvider(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32]
+	WarpRandom(worldId byte) func(channelId byte) func(characterId uint32) func(mapId uint32) error
+	WarpToPortal(worldId byte, channelId byte, characterId uint32, mapId uint32, pp model.Provider[uint32]) error
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	pp  portal.Processor
+	dp  _map.Processor
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		pp:  portal.NewProcessor(l, ctx),
@@ -30,7 +38,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) Exists(mapId uint32) bool {
+func (p *ProcessorImpl) Exists(mapId uint32) bool {
 	_, err := p.dp.GetById(mapId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to find requested map [%d].", mapId)
@@ -39,7 +47,7 @@ func (p *Processor) Exists(mapId uint32) bool {
 	return true
 }
 
-func (p *Processor) CharacterIdsInMapStringProvider(worldId byte, channelId byte, mapStr string) model.Provider[[]uint32] {
+func (p *ProcessorImpl) CharacterIdsInMapStringProvider(worldId byte, channelId byte, mapStr string) model.Provider[[]uint32] {
 	mapId, err := strconv.ParseUint(mapStr, 10, 32)
 	if err != nil {
 		return model.ErrorProvider[[]uint32](err)
@@ -47,11 +55,11 @@ func (p *Processor) CharacterIdsInMapStringProvider(worldId byte, channelId byte
 	return p.CharacterIdsInMapProvider(worldId, channelId, uint32(mapId))
 }
 
-func (p *Processor) CharacterIdsInMapProvider(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
+func (p *ProcessorImpl) CharacterIdsInMapProvider(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
 	return requests.SliceProvider[RestModel, uint32](p.l, p.ctx)(requestCharactersInMap(worldId, channelId, mapId), Extract, model.Filters[uint32]())
 }
 
-func (p *Processor) WarpRandom(worldId byte) func(channelId byte) func(characterId uint32) func(mapId uint32) error {
+func (p *ProcessorImpl) WarpRandom(worldId byte) func(channelId byte) func(characterId uint32) func(mapId uint32) error {
 	return func(channelId byte) func(characterId uint32) func(mapId uint32) error {
 		return func(characterId uint32) func(mapId uint32) error {
 			return func(mapId uint32) error {
@@ -61,7 +69,7 @@ func (p *Processor) WarpRandom(worldId byte) func(channelId byte) func(character
 	}
 }
 
-func (p *Processor) WarpToPortal(worldId byte, channelId byte, characterId uint32, mapId uint32, pp model.Provider[uint32]) error {
+func (p *ProcessorImpl) WarpToPortal(worldId byte, channelId byte, characterId uint32, mapId uint32, pp model.Provider[uint32]) error {
 	id, err := pp()
 	if err != nil {
 		return err

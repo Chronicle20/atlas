@@ -8,24 +8,29 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type Processor interface {
+	GetById(uniqueId uint32) (Model, error)
+	GetEffect(uniqueId uint32, level byte) (effect.Model, error)
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) GetById(uniqueId uint32) (Model, error) {
+func (p *ProcessorImpl) GetById(uniqueId uint32) (Model, error) {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(uniqueId), Extract)()
 }
 
-func (p *Processor) GetEffect(uniqueId uint32, level byte) (effect.Model, error) {
+func (p *ProcessorImpl) GetEffect(uniqueId uint32, level byte) (effect.Model, error) {
 	s, err := p.GetById(uniqueId)
 	if err != nil {
 		return effect.Model{}, err

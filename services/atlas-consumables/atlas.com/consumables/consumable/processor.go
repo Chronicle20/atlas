@@ -447,7 +447,7 @@ func (p *Processor) ValidateScrollUse(c character.Model, scrollItem asset.Model[
 		if err != nil {
 			return false
 		}
-		if equipItem.ReferenceData().GetLevel() >= byte(es.Slots()) {
+		if equipItem.ReferenceData().Level() >= byte(es.Slots()) {
 			return false
 		}
 		return true
@@ -456,7 +456,7 @@ func (p *Processor) ValidateScrollUse(c character.Model, scrollItem asset.Model[
 		return true
 	} else {
 		// If a regular scroll ensure we have an open slot.
-		return equipItem.ReferenceData().GetSlots() > 0
+		return equipItem.ReferenceData().Slots() > 0
 	}
 }
 
@@ -602,7 +602,7 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 func applyChaos(m asset.EquipableReferenceData) ([]equipable.Change, error) {
 	currents := make([]uint16, 0)
 	changers := make([]func(int16) equipable.Change, 0)
-	currents = append(currents, m.GetStrength(), m.GetDexterity(), m.GetIntelligence(), m.GetLuck(), m.GetWeaponAttack(), m.GetWeaponDefense(), m.GetMagicAttack(), m.GetMagicDefense(), m.GetAccuracy(), m.GetAvoidability(), m.GetSpeed(), m.GetJump(), m.GetHP(), m.GetMP())
+	currents = append(currents, m.Strength(), m.Dexterity(), m.Intelligence(), m.Luck(), m.WeaponAttack(), m.WeaponDefense(), m.MagicAttack(), m.MagicDefense(), m.Accuracy(), m.Avoidability(), m.Speed(), m.Jump(), m.HP(), m.MP())
 	changers = append(changers, equipable.AddStrength, equipable.AddDexterity, equipable.AddIntelligence, equipable.AddLuck, equipable.AddWeaponAttack, equipable.AddWeaponDefense, equipable.AddMagicAttack, equipable.AddMagicDefense, equipable.AddAccuracy, equipable.AddAvoidability, equipable.AddSpeed, equipable.AddJump, equipable.AddHP, equipable.AddMP)
 	return generateChaosChanges(currents, changers)
 }

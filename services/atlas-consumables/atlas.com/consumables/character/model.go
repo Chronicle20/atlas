@@ -5,8 +5,11 @@ import (
 	"atlas-consumables/compartment"
 	"atlas-consumables/equipment"
 	"atlas-consumables/inventory"
+	"atlas-consumables/pet"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 	"strconv"
 	"strings"
 )
@@ -39,9 +42,11 @@ type Model struct {
 	mapId              uint32
 	spawnPoint         uint32
 	gm                 int
-	meso               uint32
 	x                  int16
 	y                  int16
+	stance             byte
+	meso               uint32
+	pets               []pet.Model
 	equipment          equipment.Model
 	inventory          inventory.Model
 }
@@ -135,28 +140,28 @@ func (m Model) Ap() uint16 {
 }
 
 func (m Model) HasSPTable() bool {
-	switch m.jobId {
-	case 2001:
+	switch job.Id(m.jobId) {
+	case job.EvanId:
 		return true
-	case 2200:
+	case job.EvanStage1Id:
 		return true
-	case 2210:
+	case job.EvanStage2Id:
 		return true
-	case 2211:
+	case job.EvanStage3Id:
 		return true
-	case 2212:
+	case job.EvanStage4Id:
 		return true
-	case 2213:
+	case job.EvanStage5Id:
 		return true
-	case 2214:
+	case job.EvanStage6Id:
 		return true
-	case 2215:
+	case job.EvanStage7Id:
 		return true
-	case 2216:
+	case job.EvanStage8Id:
 		return true
-	case 2217:
+	case job.EvanStage9Id:
 		return true
-	case 2218:
+	case job.EvanStage10Id:
 		return true
 	default:
 		return false
@@ -206,12 +211,24 @@ func (m Model) SpawnPoint() byte {
 	return 0
 }
 
+func (m Model) Equipment() equipment.Model {
+	return m.equipment
+}
+
+func (m Model) Pets() []pet.Model {
+	return m.pets
+}
+
 func (m Model) AccountId() uint32 {
 	return m.accountId
 }
 
 func (m Model) Meso() uint32 {
 	return m.meso
+}
+
+func (m Model) Inventory() inventory.Model {
+	return m.inventory
 }
 
 func (m Model) X() int16 {
@@ -223,19 +240,11 @@ func (m Model) Y() int16 {
 }
 
 func (m Model) Stance() byte {
-	return 0
+	return m.stance
 }
 
 func (m Model) WorldId() world.Id {
 	return m.worldId
-}
-
-func (m Model) Inventory() inventory.Model {
-	return m.inventory
-}
-
-func (m Model) Equipment() equipment.Model {
-	return m.equipment
 }
 
 func (m Model) SetInventory(i inventory.Model) Model {
@@ -249,7 +258,7 @@ func (m Model) SetInventory(i inventory.Model) Model {
 			s := a.Slot()
 			if s < -100 {
 				cash = true
-				s -= 100
+				s += 100
 			}
 
 			es, err := slot.GetSlotByPosition(slot.Position(s))
@@ -265,7 +274,7 @@ func (m Model) SetInventory(i inventory.Model) Model {
 				var crd asset.CashEquipableReferenceData
 				crd, ok = a.ReferenceData().(asset.CashEquipableReferenceData)
 				if ok {
-					ea := asset.NewBuilder[asset.CashEquipableReferenceData](a.Id(), a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
+					ea := asset.NewBuilder[asset.CashEquipableReferenceData](a.Id(), uuid.Nil, a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
 						SetSlot(a.Slot()).
 						SetExpiration(a.Expiration()).
 						SetReferenceData(crd).
@@ -276,7 +285,7 @@ func (m Model) SetInventory(i inventory.Model) Model {
 				var erd asset.EquipableReferenceData
 				erd, ok = a.ReferenceData().(asset.EquipableReferenceData)
 				if ok {
-					ea := asset.NewBuilder[asset.EquipableReferenceData](a.Id(), a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
+					ea := asset.NewBuilder[asset.EquipableReferenceData](a.Id(), uuid.Nil, a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
 						SetSlot(a.Slot()).
 						SetExpiration(a.Expiration()).
 						SetReferenceData(erd).
@@ -296,6 +305,10 @@ func (m Model) SetInventory(i inventory.Model) Model {
 		SetCash(i.Cash())
 
 	return Clone(m).SetInventory(ib.Build()).SetEquipment(eq).Build()
+}
+
+func (m Model) SetPets(ms []pet.Model) Model {
+	return Clone(m).SetPets(ms).Build()
 }
 
 func Clone(m Model) *ModelBuilder {
@@ -329,7 +342,9 @@ func Clone(m Model) *ModelBuilder {
 		gm:                 m.gm,
 		x:                  m.x,
 		y:                  m.y,
+		stance:             m.stance,
 		meso:               m.meso,
+		pets:               m.pets,
 		equipment:          m.equipment,
 		inventory:          m.inventory,
 	}
@@ -367,6 +382,7 @@ type ModelBuilder struct {
 	y                  int16
 	stance             byte
 	meso               uint32
+	pets               []pet.Model
 	equipment          equipment.Model
 	inventory          inventory.Model
 }
@@ -406,6 +422,7 @@ func (b *ModelBuilder) SetMapId(v uint32) *ModelBuilder              { b.mapId =
 func (b *ModelBuilder) SetSpawnPoint(v uint32) *ModelBuilder         { b.spawnPoint = v; return b }
 func (b *ModelBuilder) SetGm(v int) *ModelBuilder                    { b.gm = v; return b }
 func (b *ModelBuilder) SetMeso(v uint32) *ModelBuilder               { b.meso = v; return b }
+func (b *ModelBuilder) SetPets(v []pet.Model) *ModelBuilder          { b.pets = v; return b }
 func (b *ModelBuilder) SetEquipment(v equipment.Model) *ModelBuilder { b.equipment = v; return b }
 func (b *ModelBuilder) SetInventory(v inventory.Model) *ModelBuilder { b.inventory = v; return b }
 
@@ -440,7 +457,9 @@ func (b *ModelBuilder) Build() Model {
 		gm:                 b.gm,
 		x:                  b.x,
 		y:                  b.y,
+		stance:             b.stance,
 		meso:               b.meso,
+		pets:               b.pets,
 		equipment:          b.equipment,
 		inventory:          b.inventory,
 	}

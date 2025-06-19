@@ -2,24 +2,212 @@ package asset
 
 import "time"
 
+type OwnerData struct {
+	ownerId uint32
+}
+
+func (d OwnerData) OwnerId() uint32 { return d.ownerId }
+
+type OwnerDataBuilder struct {
+	ownerId uint32
+}
+
+func (b *OwnerDataBuilder) SetOwnerId(value uint32) *OwnerDataBuilder {
+	b.ownerId = value
+	return b
+}
+
+type StackableData struct {
+	quantity uint32
+}
+
+func (d StackableData) Quantity() uint32 { return d.quantity }
+
+type StackableDataBuilder struct {
+	quantity uint32
+}
+
+func (b *StackableDataBuilder) SetQuantity(value uint32) *StackableDataBuilder {
+	b.quantity = value
+	return b
+}
+
+type FlagData struct {
+	flag uint16
+}
+
+func (d FlagData) Flag() uint16 { return d.flag }
+
+type FlagDataBuilder struct {
+	flag uint16
+}
+
+func (b *FlagDataBuilder) SetFlag(value uint16) *FlagDataBuilder {
+	b.flag = value
+	return b
+}
+
+type CashData struct {
+	cashId int64
+}
+
+func (d CashData) CashId() int64 { return d.cashId }
+
+type CashDataBuilder struct {
+	cashId int64
+}
+
+func (b *CashDataBuilder) SetCashId(value int64) *CashDataBuilder {
+	b.cashId = value
+	return b
+}
+
+type PurchaseData struct {
+	purchaseBy uint32
+}
+
+func (d PurchaseData) PurchaseBy() uint32 { return d.purchaseBy }
+
+type PurchaseDataBuilder struct {
+	purchaseBy uint32
+}
+
+func (b *PurchaseDataBuilder) SetPurchaseBy(value uint32) *PurchaseDataBuilder {
+	b.purchaseBy = value
+	return b
+}
+
+type StatisticData struct {
+	strength      uint16
+	dexterity     uint16
+	intelligence  uint16
+	luck          uint16
+	hp            uint16
+	mp            uint16
+	weaponAttack  uint16
+	magicAttack   uint16
+	weaponDefense uint16
+	magicDefense  uint16
+	accuracy      uint16
+	avoidability  uint16
+	hands         uint16
+	speed         uint16
+	jump          uint16
+}
+
+func (e StatisticData) Strength() uint16      { return e.strength }
+func (e StatisticData) Dexterity() uint16     { return e.dexterity }
+func (e StatisticData) Intelligence() uint16  { return e.intelligence }
+func (e StatisticData) Luck() uint16          { return e.luck }
+func (e StatisticData) HP() uint16            { return e.hp }
+func (e StatisticData) MP() uint16            { return e.mp }
+func (e StatisticData) WeaponAttack() uint16  { return e.weaponAttack }
+func (e StatisticData) MagicAttack() uint16   { return e.magicAttack }
+func (e StatisticData) WeaponDefense() uint16 { return e.weaponDefense }
+func (e StatisticData) MagicDefense() uint16  { return e.magicDefense }
+func (e StatisticData) Accuracy() uint16      { return e.accuracy }
+func (e StatisticData) Avoidability() uint16  { return e.avoidability }
+func (e StatisticData) Hands() uint16         { return e.hands }
+func (e StatisticData) Speed() uint16         { return e.speed }
+func (e StatisticData) Jump() uint16          { return e.jump }
+
+type StatisticDataBuilder struct {
+	strength      uint16
+	dexterity     uint16
+	intelligence  uint16
+	luck          uint16
+	hp            uint16
+	mp            uint16
+	weaponAttack  uint16
+	magicAttack   uint16
+	weaponDefense uint16
+	magicDefense  uint16
+	accuracy      uint16
+	avoidability  uint16
+	hands         uint16
+	speed         uint16
+	jump          uint16
+}
+
+func (b *StatisticDataBuilder) SetStrength(value uint16) *StatisticDataBuilder {
+	b.strength = value
+	return b
+}
+
+func (b *StatisticDataBuilder) SetDexterity(value uint16) *StatisticDataBuilder {
+	b.dexterity = value
+	return b
+}
+
+func (b *StatisticDataBuilder) SetIntelligence(value uint16) *StatisticDataBuilder {
+	b.intelligence = value
+	return b
+}
+
+func (b *StatisticDataBuilder) SetLuck(value uint16) *StatisticDataBuilder {
+	b.luck = value
+	return b
+}
+
+func (b *StatisticDataBuilder) SetHp(value uint16) *StatisticDataBuilder {
+	b.hp = value
+	return b
+}
+
+func (b *StatisticDataBuilder) SetMp(value uint16) *StatisticDataBuilder {
+	b.mp = value
+	return b
+}
+
+func (b *StatisticDataBuilder) SetWeaponAttack(value uint16) *StatisticDataBuilder {
+	b.weaponAttack = value
+	return b
+}
+
+func (b *StatisticDataBuilder) SetMagicAttack(value uint16) *StatisticDataBuilder {
+	b.magicAttack = value
+	return b
+}
+
+func (b *StatisticDataBuilder) SetWeaponDefense(value uint16) *StatisticDataBuilder {
+	b.weaponDefense = value
+	return b
+}
+
+func (b *StatisticDataBuilder) SetMagicDefense(value uint16) *StatisticDataBuilder {
+	b.magicDefense = value
+	return b
+}
+
+func (b *StatisticDataBuilder) SetAccuracy(value uint16) *StatisticDataBuilder {
+	b.accuracy = value
+	return b
+}
+
+func (b *StatisticDataBuilder) SetAvoidability(value uint16) *StatisticDataBuilder {
+	b.avoidability = value
+	return b
+}
+
+func (b *StatisticDataBuilder) SetHands(value uint16) *StatisticDataBuilder {
+	b.hands = value
+	return b
+}
+
+func (b *StatisticDataBuilder) SetSpeed(value uint16) *StatisticDataBuilder {
+	b.speed = value
+	return b
+}
+
+func (b *StatisticDataBuilder) SetJump(value uint16) *StatisticDataBuilder {
+	b.jump = value
+	return b
+}
+
 type EquipableReferenceData struct {
-	strength       uint16
-	dexterity      uint16
-	intelligence   uint16
-	luck           uint16
-	hp             uint16
-	mp             uint16
-	weaponAttack   uint16
-	magicAttack    uint16
-	weaponDefense  uint16
-	magicDefense   uint16
-	accuracy       uint16
-	avoidability   uint16
-	hands          uint16
-	speed          uint16
-	jump           uint16
+	StatisticData
+	OwnerData
 	slots          uint16
-	ownerId        uint32
 	locked         bool
 	spikes         bool
 	karmaUsed      bool
@@ -32,52 +220,22 @@ type EquipableReferenceData struct {
 	expiration     time.Time
 }
 
-func (e EquipableReferenceData) GetStrength() uint16       { return e.strength }
-func (e EquipableReferenceData) GetDexterity() uint16      { return e.dexterity }
-func (e EquipableReferenceData) GetIntelligence() uint16   { return e.intelligence }
-func (e EquipableReferenceData) GetLuck() uint16           { return e.luck }
-func (e EquipableReferenceData) GetHP() uint16             { return e.hp }
-func (e EquipableReferenceData) GetMP() uint16             { return e.mp }
-func (e EquipableReferenceData) GetWeaponAttack() uint16   { return e.weaponAttack }
-func (e EquipableReferenceData) GetMagicAttack() uint16    { return e.magicAttack }
-func (e EquipableReferenceData) GetWeaponDefense() uint16  { return e.weaponDefense }
-func (e EquipableReferenceData) GetMagicDefense() uint16   { return e.magicDefense }
-func (e EquipableReferenceData) GetAccuracy() uint16       { return e.accuracy }
-func (e EquipableReferenceData) GetAvoidability() uint16   { return e.avoidability }
-func (e EquipableReferenceData) GetHands() uint16          { return e.hands }
-func (e EquipableReferenceData) GetSpeed() uint16          { return e.speed }
-func (e EquipableReferenceData) GetJump() uint16           { return e.jump }
-func (e EquipableReferenceData) GetSlots() uint16          { return e.slots }
-func (e EquipableReferenceData) GetOwnerId() uint32        { return e.ownerId }
-func (e EquipableReferenceData) IsLocked() bool            { return e.locked }
-func (e EquipableReferenceData) HasSpikes() bool           { return e.spikes }
-func (e EquipableReferenceData) IsKarmaUsed() bool         { return e.karmaUsed }
-func (e EquipableReferenceData) IsCold() bool              { return e.cold }
-func (e EquipableReferenceData) CanBeTraded() bool         { return e.canBeTraded }
-func (e EquipableReferenceData) GetLevelType() byte        { return e.levelType }
-func (e EquipableReferenceData) GetLevel() byte            { return e.level }
-func (e EquipableReferenceData) GetExperience() uint32     { return e.experience }
-func (e EquipableReferenceData) GetHammersApplied() uint32 { return e.hammersApplied }
-func (e EquipableReferenceData) GetExpiration() time.Time  { return e.expiration }
+func (e EquipableReferenceData) Slots() uint16          { return e.slots }
+func (e EquipableReferenceData) IsLocked() bool         { return e.locked }
+func (e EquipableReferenceData) HasSpikes() bool        { return e.spikes }
+func (e EquipableReferenceData) IsKarmaUsed() bool      { return e.karmaUsed }
+func (e EquipableReferenceData) IsCold() bool           { return e.cold }
+func (e EquipableReferenceData) CanBeTraded() bool      { return e.canBeTraded }
+func (e EquipableReferenceData) LevelType() byte        { return e.levelType }
+func (e EquipableReferenceData) Level() byte            { return e.level }
+func (e EquipableReferenceData) Experience() uint32     { return e.experience }
+func (e EquipableReferenceData) HammersApplied() uint32 { return e.hammersApplied }
+func (e EquipableReferenceData) Expiration() time.Time  { return e.expiration }
 
 type EquipableReferenceDataBuilder struct {
-	strength       uint16
-	dexterity      uint16
-	intelligence   uint16
-	luck           uint16
-	hp             uint16
-	mp             uint16
-	weaponAttack   uint16
-	magicAttack    uint16
-	weaponDefense  uint16
-	magicDefense   uint16
-	accuracy       uint16
-	avoidability   uint16
-	hands          uint16
-	speed          uint16
-	jump           uint16
+	StatisticDataBuilder
+	OwnerDataBuilder
 	slots          uint16
-	ownerId        uint32
 	locked         bool
 	spikes         bool
 	karmaUsed      bool
@@ -97,58 +255,64 @@ func NewEquipableReferenceDataBuilder() *EquipableReferenceDataBuilder {
 
 // Clone initializes the builder with data from the provided model.
 func (b *EquipableReferenceDataBuilder) Clone(model EquipableReferenceData) *EquipableReferenceDataBuilder {
-	*b = EquipableReferenceDataBuilder{
-		strength:       model.strength,
-		dexterity:      model.dexterity,
-		intelligence:   model.intelligence,
-		luck:           model.luck,
-		hp:             model.hp,
-		mp:             model.mp,
-		weaponAttack:   model.weaponAttack,
-		magicAttack:    model.magicAttack,
-		weaponDefense:  model.weaponDefense,
-		magicDefense:   model.magicDefense,
-		accuracy:       model.accuracy,
-		avoidability:   model.avoidability,
-		hands:          model.hands,
-		speed:          model.speed,
-		jump:           model.jump,
-		slots:          model.slots,
-		ownerId:        model.ownerId,
-		locked:         model.locked,
-		spikes:         model.spikes,
-		karmaUsed:      model.karmaUsed,
-		cold:           model.cold,
-		canBeTraded:    model.canBeTraded,
-		levelType:      model.levelType,
-		level:          model.level,
-		experience:     model.experience,
-		hammersApplied: model.hammersApplied,
-		expiration:     model.expiration,
+	b.StatisticDataBuilder = StatisticDataBuilder{
+		strength:      model.strength,
+		dexterity:     model.dexterity,
+		intelligence:  model.intelligence,
+		luck:          model.luck,
+		hp:            model.hp,
+		mp:            model.mp,
+		weaponAttack:  model.weaponAttack,
+		magicAttack:   model.magicAttack,
+		weaponDefense: model.weaponDefense,
+		magicDefense:  model.magicDefense,
+		accuracy:      model.accuracy,
+		avoidability:  model.avoidability,
+		hands:         model.hands,
+		speed:         model.speed,
+		jump:          model.jump,
 	}
+	b.OwnerDataBuilder = OwnerDataBuilder{
+		ownerId: model.ownerId,
+	}
+	b.slots = model.slots
+	b.locked = model.locked
+	b.spikes = model.spikes
+	b.karmaUsed = model.karmaUsed
+	b.cold = model.cold
+	b.canBeTraded = model.canBeTraded
+	b.levelType = model.levelType
+	b.level = model.level
+	b.experience = model.experience
+	b.hammersApplied = model.hammersApplied
+	b.expiration = model.expiration
 	return b
 }
 
 // Build assembles the final EquipableReferenceData from the builder.
 func (b *EquipableReferenceDataBuilder) Build() EquipableReferenceData {
 	return EquipableReferenceData{
-		strength:       b.strength,
-		dexterity:      b.dexterity,
-		intelligence:   b.intelligence,
-		luck:           b.luck,
-		hp:             b.hp,
-		mp:             b.mp,
-		weaponAttack:   b.weaponAttack,
-		magicAttack:    b.magicAttack,
-		weaponDefense:  b.weaponDefense,
-		magicDefense:   b.magicDefense,
-		accuracy:       b.accuracy,
-		avoidability:   b.avoidability,
-		hands:          b.hands,
-		speed:          b.speed,
-		jump:           b.jump,
+		StatisticData: StatisticData{
+			strength:      b.StatisticDataBuilder.strength,
+			dexterity:     b.StatisticDataBuilder.dexterity,
+			intelligence:  b.StatisticDataBuilder.intelligence,
+			luck:          b.StatisticDataBuilder.luck,
+			hp:            b.StatisticDataBuilder.hp,
+			mp:            b.StatisticDataBuilder.mp,
+			weaponAttack:  b.StatisticDataBuilder.weaponAttack,
+			magicAttack:   b.StatisticDataBuilder.magicAttack,
+			weaponDefense: b.StatisticDataBuilder.weaponDefense,
+			magicDefense:  b.StatisticDataBuilder.magicDefense,
+			accuracy:      b.StatisticDataBuilder.accuracy,
+			avoidability:  b.StatisticDataBuilder.avoidability,
+			hands:         b.StatisticDataBuilder.hands,
+			speed:         b.StatisticDataBuilder.speed,
+			jump:          b.StatisticDataBuilder.jump,
+		},
+		OwnerData: OwnerData{
+			ownerId: b.OwnerDataBuilder.ownerId,
+		},
 		slots:          b.slots,
-		ownerId:        b.ownerId,
 		locked:         b.locked,
 		spikes:         b.spikes,
 		karmaUsed:      b.karmaUsed,
@@ -163,79 +327,77 @@ func (b *EquipableReferenceDataBuilder) Build() EquipableReferenceData {
 }
 
 func (b *EquipableReferenceDataBuilder) SetStrength(value uint16) *EquipableReferenceDataBuilder {
-	b.strength = value
+	b.StatisticDataBuilder.SetStrength(value)
 	return b
 }
 
-// Setters for EquipableReferenceDataBuilder
-
 func (b *EquipableReferenceDataBuilder) SetDexterity(value uint16) *EquipableReferenceDataBuilder {
-	b.dexterity = value
+	b.StatisticDataBuilder.SetDexterity(value)
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetIntelligence(value uint16) *EquipableReferenceDataBuilder {
-	b.intelligence = value
+	b.StatisticDataBuilder.SetIntelligence(value)
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetLuck(value uint16) *EquipableReferenceDataBuilder {
-	b.luck = value
+	b.StatisticDataBuilder.SetLuck(value)
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetHp(value uint16) *EquipableReferenceDataBuilder {
-	b.hp = value
+	b.StatisticDataBuilder.SetHp(value)
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetMp(value uint16) *EquipableReferenceDataBuilder {
-	b.mp = value
+	b.StatisticDataBuilder.SetMp(value)
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetWeaponAttack(value uint16) *EquipableReferenceDataBuilder {
-	b.weaponAttack = value
+	b.StatisticDataBuilder.SetWeaponAttack(value)
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetMagicAttack(value uint16) *EquipableReferenceDataBuilder {
-	b.magicAttack = value
+	b.StatisticDataBuilder.SetMagicAttack(value)
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetWeaponDefense(value uint16) *EquipableReferenceDataBuilder {
-	b.weaponDefense = value
+	b.StatisticDataBuilder.SetWeaponDefense(value)
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetMagicDefense(value uint16) *EquipableReferenceDataBuilder {
-	b.magicDefense = value
+	b.StatisticDataBuilder.SetMagicDefense(value)
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetAccuracy(value uint16) *EquipableReferenceDataBuilder {
-	b.accuracy = value
+	b.StatisticDataBuilder.SetAccuracy(value)
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetAvoidability(value uint16) *EquipableReferenceDataBuilder {
-	b.avoidability = value
+	b.StatisticDataBuilder.SetAvoidability(value)
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetHands(value uint16) *EquipableReferenceDataBuilder {
-	b.hands = value
+	b.StatisticDataBuilder.SetHands(value)
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetSpeed(value uint16) *EquipableReferenceDataBuilder {
-	b.speed = value
+	b.StatisticDataBuilder.SetSpeed(value)
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetJump(value uint16) *EquipableReferenceDataBuilder {
-	b.jump = value
+	b.StatisticDataBuilder.SetJump(value)
 	return b
 }
 
@@ -245,7 +407,7 @@ func (b *EquipableReferenceDataBuilder) SetSlots(value uint16) *EquipableReferen
 }
 
 func (b *EquipableReferenceDataBuilder) SetOwnerId(value uint32) *EquipableReferenceDataBuilder {
-	b.ownerId = value
+	b.OwnerDataBuilder.SetOwnerId(value)
 	return b
 }
 
@@ -299,21 +461,291 @@ func (b *EquipableReferenceDataBuilder) SetExpiration(value time.Time) *Equipabl
 	return b
 }
 
+type CashEquipableReferenceData struct {
+	StatisticData
+	OwnerData
+	CashData
+	slots          uint16
+	locked         bool
+	spikes         bool
+	karmaUsed      bool
+	cold           bool
+	canBeTraded    bool
+	levelType      byte
+	level          byte
+	experience     uint32
+	hammersApplied uint32
+	expiration     time.Time
+}
+
+func (e CashEquipableReferenceData) GetSlots() uint16          { return e.slots }
+func (e CashEquipableReferenceData) IsLocked() bool            { return e.locked }
+func (e CashEquipableReferenceData) HasSpikes() bool           { return e.spikes }
+func (e CashEquipableReferenceData) IsKarmaUsed() bool         { return e.karmaUsed }
+func (e CashEquipableReferenceData) IsCold() bool              { return e.cold }
+func (e CashEquipableReferenceData) CanBeTraded() bool         { return e.canBeTraded }
+func (e CashEquipableReferenceData) GetLevelType() byte        { return e.levelType }
+func (e CashEquipableReferenceData) GetLevel() byte            { return e.level }
+func (e CashEquipableReferenceData) GetExperience() uint32     { return e.experience }
+func (e CashEquipableReferenceData) GetHammersApplied() uint32 { return e.hammersApplied }
+func (e CashEquipableReferenceData) GetExpiration() time.Time  { return e.expiration }
+
+type CashEquipableReferenceDataBuilder struct {
+	StatisticDataBuilder
+	OwnerDataBuilder
+	CashDataBuilder
+	slots          uint16
+	locked         bool
+	spikes         bool
+	karmaUsed      bool
+	cold           bool
+	canBeTraded    bool
+	levelType      byte
+	level          byte
+	experience     uint32
+	hammersApplied uint32
+	expiration     time.Time
+}
+
+// NewCashEquipableReferenceDataBuilder creates a new builder instance.
+func NewCashEquipableReferenceDataBuilder() *CashEquipableReferenceDataBuilder {
+	return &CashEquipableReferenceDataBuilder{}
+}
+
+// Clone initializes the builder with data from the provided model.
+func (b *CashEquipableReferenceDataBuilder) Clone(model CashEquipableReferenceData) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder = StatisticDataBuilder{
+		strength:      model.strength,
+		dexterity:     model.dexterity,
+		intelligence:  model.intelligence,
+		luck:          model.luck,
+		hp:            model.hp,
+		mp:            model.mp,
+		weaponAttack:  model.weaponAttack,
+		magicAttack:   model.magicAttack,
+		weaponDefense: model.weaponDefense,
+		magicDefense:  model.magicDefense,
+		accuracy:      model.accuracy,
+		avoidability:  model.avoidability,
+		hands:         model.hands,
+		speed:         model.speed,
+		jump:          model.jump,
+	}
+	b.OwnerDataBuilder = OwnerDataBuilder{
+		ownerId: model.ownerId,
+	}
+	b.CashDataBuilder = CashDataBuilder{
+		cashId: model.cashId,
+	}
+	b.slots = model.slots
+	b.locked = model.locked
+	b.spikes = model.spikes
+	b.karmaUsed = model.karmaUsed
+	b.cold = model.cold
+	b.canBeTraded = model.canBeTraded
+	b.levelType = model.levelType
+	b.level = model.level
+	b.experience = model.experience
+	b.hammersApplied = model.hammersApplied
+	b.expiration = model.expiration
+	return b
+}
+
+// Build assembles the final CashEquipableReferenceData from the builder.
+func (b *CashEquipableReferenceDataBuilder) Build() CashEquipableReferenceData {
+	return CashEquipableReferenceData{
+		StatisticData: StatisticData{
+			strength:      b.StatisticDataBuilder.strength,
+			dexterity:     b.StatisticDataBuilder.dexterity,
+			intelligence:  b.StatisticDataBuilder.intelligence,
+			luck:          b.StatisticDataBuilder.luck,
+			hp:            b.StatisticDataBuilder.hp,
+			mp:            b.StatisticDataBuilder.mp,
+			weaponAttack:  b.StatisticDataBuilder.weaponAttack,
+			magicAttack:   b.StatisticDataBuilder.magicAttack,
+			weaponDefense: b.StatisticDataBuilder.weaponDefense,
+			magicDefense:  b.StatisticDataBuilder.magicDefense,
+			accuracy:      b.StatisticDataBuilder.accuracy,
+			avoidability:  b.StatisticDataBuilder.avoidability,
+			hands:         b.StatisticDataBuilder.hands,
+			speed:         b.StatisticDataBuilder.speed,
+			jump:          b.StatisticDataBuilder.jump,
+		},
+		OwnerData: OwnerData{
+			ownerId: b.OwnerDataBuilder.ownerId,
+		},
+		CashData: CashData{
+			cashId: b.CashDataBuilder.cashId,
+		},
+		slots:          b.slots,
+		locked:         b.locked,
+		spikes:         b.spikes,
+		karmaUsed:      b.karmaUsed,
+		cold:           b.cold,
+		canBeTraded:    b.canBeTraded,
+		levelType:      b.levelType,
+		level:          b.level,
+		experience:     b.experience,
+		hammersApplied: b.hammersApplied,
+		expiration:     b.expiration,
+	}
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetCashId(value int64) *CashEquipableReferenceDataBuilder {
+	b.CashDataBuilder.SetCashId(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetStrength(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetStrength(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetDexterity(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetDexterity(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetIntelligence(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetIntelligence(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetLuck(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetLuck(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetHp(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetHp(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetMp(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetMp(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetWeaponAttack(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetWeaponAttack(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetMagicAttack(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetMagicAttack(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetWeaponDefense(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetWeaponDefense(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetMagicDefense(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetMagicDefense(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetAccuracy(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetAccuracy(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetAvoidability(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetAvoidability(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetHands(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetHands(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetSpeed(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetSpeed(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetJump(value uint16) *CashEquipableReferenceDataBuilder {
+	b.StatisticDataBuilder.SetJump(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetSlots(value uint16) *CashEquipableReferenceDataBuilder {
+	b.slots = value
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetOwnerId(value uint32) *CashEquipableReferenceDataBuilder {
+	b.OwnerDataBuilder.SetOwnerId(value)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetLocked(value bool) *CashEquipableReferenceDataBuilder {
+	b.locked = value
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetSpikes(value bool) *CashEquipableReferenceDataBuilder {
+	b.spikes = value
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetKarmaUsed(value bool) *CashEquipableReferenceDataBuilder {
+	b.karmaUsed = value
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetCold(value bool) *CashEquipableReferenceDataBuilder {
+	b.cold = value
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetCanBeTraded(value bool) *CashEquipableReferenceDataBuilder {
+	b.canBeTraded = value
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetLevelType(value byte) *CashEquipableReferenceDataBuilder {
+	b.levelType = value
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetLevel(value byte) *CashEquipableReferenceDataBuilder {
+	b.level = value
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetExperience(value uint32) *CashEquipableReferenceDataBuilder {
+	b.experience = value
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetHammersApplied(value uint32) *CashEquipableReferenceDataBuilder {
+	b.hammersApplied = value
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetExpiration(value time.Time) *CashEquipableReferenceDataBuilder {
+	b.expiration = value
+	return b
+}
+
 type ConsumableReferenceData struct {
-	quantity     uint32
-	ownerId      uint32
-	flag         uint16
+	OwnerData
+	StackableData
+	FlagData
 	rechargeable uint64
 }
 
-func (c ConsumableReferenceData) Quantity() uint32 {
-	return c.quantity
+func (c ConsumableReferenceData) Rechargeable() uint64 {
+	return c.rechargeable
 }
 
 type ConsumableReferenceDataBuilder struct {
-	quantity     uint32
-	ownerId      uint32
-	flag         uint16
+	OwnerDataBuilder
+	StackableDataBuilder
+	FlagDataBuilder
 	rechargeable uint64
 }
 
@@ -322,17 +754,17 @@ func NewConsumableReferenceDataBuilder() *ConsumableReferenceDataBuilder {
 }
 
 func (b *ConsumableReferenceDataBuilder) SetQuantity(value uint32) *ConsumableReferenceDataBuilder {
-	b.quantity = value
+	b.StackableDataBuilder.SetQuantity(value)
 	return b
 }
 
 func (b *ConsumableReferenceDataBuilder) SetOwnerId(value uint32) *ConsumableReferenceDataBuilder {
-	b.ownerId = value
+	b.OwnerDataBuilder.SetOwnerId(value)
 	return b
 }
 
 func (b *ConsumableReferenceDataBuilder) SetFlag(value uint16) *ConsumableReferenceDataBuilder {
-	b.flag = value
+	b.FlagDataBuilder.SetFlag(value)
 	return b
 }
 
@@ -343,27 +775,29 @@ func (b *ConsumableReferenceDataBuilder) SetRechargeable(value uint64) *Consumab
 
 func (b *ConsumableReferenceDataBuilder) Build() ConsumableReferenceData {
 	return ConsumableReferenceData{
-		quantity:     b.quantity,
-		ownerId:      b.ownerId,
-		flag:         b.flag,
+		OwnerData: OwnerData{
+			ownerId: b.OwnerDataBuilder.ownerId,
+		},
+		StackableData: StackableData{
+			quantity: b.StackableDataBuilder.quantity,
+		},
+		FlagData: FlagData{
+			flag: b.FlagDataBuilder.flag,
+		},
 		rechargeable: b.rechargeable,
 	}
 }
 
 type SetupReferenceData struct {
-	quantity uint32
-	ownerId  uint32
-	flag     uint16
-}
-
-func (c SetupReferenceData) Quantity() uint32 {
-	return c.quantity
+	OwnerData
+	StackableData
+	FlagData
 }
 
 type SetupReferenceDataBuilder struct {
-	quantity uint32
-	ownerId  uint32
-	flag     uint16
+	OwnerDataBuilder
+	StackableDataBuilder
+	FlagDataBuilder
 }
 
 func NewSetupReferenceDataBuilder() *SetupReferenceDataBuilder {
@@ -371,42 +805,44 @@ func NewSetupReferenceDataBuilder() *SetupReferenceDataBuilder {
 }
 
 func (b *SetupReferenceDataBuilder) SetQuantity(value uint32) *SetupReferenceDataBuilder {
-	b.quantity = value
+	b.StackableDataBuilder.SetQuantity(value)
 	return b
 }
 
 func (b *SetupReferenceDataBuilder) SetOwnerId(value uint32) *SetupReferenceDataBuilder {
-	b.ownerId = value
+	b.OwnerDataBuilder.SetOwnerId(value)
 	return b
 }
 
 func (b *SetupReferenceDataBuilder) SetFlag(value uint16) *SetupReferenceDataBuilder {
-	b.flag = value
+	b.FlagDataBuilder.SetFlag(value)
 	return b
 }
 
 func (b *SetupReferenceDataBuilder) Build() SetupReferenceData {
 	return SetupReferenceData{
-		quantity: b.quantity,
-		ownerId:  b.ownerId,
-		flag:     b.flag,
+		OwnerData: OwnerData{
+			ownerId: b.OwnerDataBuilder.ownerId,
+		},
+		StackableData: StackableData{
+			quantity: b.StackableDataBuilder.quantity,
+		},
+		FlagData: FlagData{
+			flag: b.FlagDataBuilder.flag,
+		},
 	}
 }
 
 type EtcReferenceData struct {
-	quantity uint32
-	ownerId  uint32
-	flag     uint16
-}
-
-func (c EtcReferenceData) Quantity() uint32 {
-	return c.quantity
+	OwnerData
+	StackableData
+	FlagData
 }
 
 type EtcReferenceDataBuilder struct {
-	quantity uint32
-	ownerId  uint32
-	flag     uint16
+	OwnerDataBuilder
+	StackableDataBuilder
+	FlagDataBuilder
 }
 
 func NewEtcReferenceDataBuilder() *EtcReferenceDataBuilder {
@@ -414,92 +850,104 @@ func NewEtcReferenceDataBuilder() *EtcReferenceDataBuilder {
 }
 
 func (b *EtcReferenceDataBuilder) SetQuantity(value uint32) *EtcReferenceDataBuilder {
-	b.quantity = value
+	b.StackableDataBuilder.SetQuantity(value)
 	return b
 }
 
 func (b *EtcReferenceDataBuilder) SetOwnerId(value uint32) *EtcReferenceDataBuilder {
-	b.ownerId = value
+	b.OwnerDataBuilder.SetOwnerId(value)
 	return b
 }
 
 func (b *EtcReferenceDataBuilder) SetFlag(value uint16) *EtcReferenceDataBuilder {
-	b.flag = value
+	b.FlagDataBuilder.SetFlag(value)
 	return b
 }
 
 func (b *EtcReferenceDataBuilder) Build() EtcReferenceData {
 	return EtcReferenceData{
-		quantity: b.quantity,
-		ownerId:  b.ownerId,
-		flag:     b.flag,
+		OwnerData: OwnerData{
+			ownerId: b.OwnerDataBuilder.ownerId,
+		},
+		StackableData: StackableData{
+			quantity: b.StackableDataBuilder.quantity,
+		},
+		FlagData: FlagData{
+			flag: b.FlagDataBuilder.flag,
+		},
 	}
 }
 
 type CashReferenceData struct {
-	cashId     uint64
-	quantity   uint32
-	ownerId    uint32
-	flag       uint16
-	purchaseBy uint32
-}
-
-func (c CashReferenceData) Quantity() uint32 {
-	return c.quantity
+	OwnerData
+	StackableData
+	FlagData
+	CashData
+	PurchaseData
 }
 
 type CashReferenceDataBuilder struct {
-	cashId     uint64
-	quantity   uint32
-	ownerId    uint32
-	flag       uint16
-	purchaseBy uint32
+	OwnerDataBuilder
+	StackableDataBuilder
+	FlagDataBuilder
+	CashDataBuilder
+	PurchaseDataBuilder
 }
 
 func NewCashReferenceDataBuilder() *CashReferenceDataBuilder {
 	return &CashReferenceDataBuilder{}
 }
 
-func (b *CashReferenceDataBuilder) SetCashId(value uint64) *CashReferenceDataBuilder {
-	b.cashId = value
+func (b *CashReferenceDataBuilder) SetCashId(value int64) *CashReferenceDataBuilder {
+	b.CashDataBuilder.SetCashId(value)
 	return b
 }
 
 func (b *CashReferenceDataBuilder) SetQuantity(value uint32) *CashReferenceDataBuilder {
-	b.quantity = value
+	b.StackableDataBuilder.SetQuantity(value)
 	return b
 }
 
 func (b *CashReferenceDataBuilder) SetOwnerId(value uint32) *CashReferenceDataBuilder {
-	b.ownerId = value
+	b.OwnerDataBuilder.SetOwnerId(value)
 	return b
 }
 
 func (b *CashReferenceDataBuilder) SetFlag(value uint16) *CashReferenceDataBuilder {
-	b.flag = value
+	b.FlagDataBuilder.SetFlag(value)
 	return b
 }
 
 func (b *CashReferenceDataBuilder) SetPurchaseBy(value uint32) *CashReferenceDataBuilder {
-	b.purchaseBy = value
+	b.PurchaseDataBuilder.SetPurchaseBy(value)
 	return b
 }
 
 func (b *CashReferenceDataBuilder) Build() CashReferenceData {
 	return CashReferenceData{
-		cashId:     b.cashId,
-		quantity:   b.quantity,
-		ownerId:    b.ownerId,
-		flag:       b.flag,
-		purchaseBy: b.purchaseBy,
+		OwnerData: OwnerData{
+			ownerId: b.OwnerDataBuilder.ownerId,
+		},
+		StackableData: StackableData{
+			quantity: b.StackableDataBuilder.quantity,
+		},
+		FlagData: FlagData{
+			flag: b.FlagDataBuilder.flag,
+		},
+		CashData: CashData{
+			cashId: b.CashDataBuilder.cashId,
+		},
+		PurchaseData: PurchaseData{
+			purchaseBy: b.PurchaseDataBuilder.purchaseBy,
+		},
 	}
 }
 
 type PetReferenceData struct {
-	cashId        uint64
-	ownerId       uint32
-	flag          uint16
-	purchaseBy    uint32
+	OwnerData
+	FlagData
+	CashData
+	PurchaseData
 	name          string
 	level         byte
 	closeness     uint16
@@ -512,11 +960,31 @@ type PetReferenceData struct {
 	attribute2    uint16
 }
 
+func (d PetReferenceData) Name() string {
+	return d.name
+}
+
+func (d PetReferenceData) Level() byte {
+	return d.level
+}
+
+func (d PetReferenceData) Closeness() uint16 {
+	return d.closeness
+}
+
+func (d PetReferenceData) Fullness() byte {
+	return d.fullness
+}
+
+func (d PetReferenceData) Slot() int8 {
+	return d.slot
+}
+
 type PetReferenceDataBuilder struct {
-	cashId        uint64
-	ownerId       uint32
-	flag          uint16
-	purchaseBy    uint32
+	OwnerDataBuilder
+	FlagDataBuilder
+	CashDataBuilder
+	PurchaseDataBuilder
 	name          string
 	level         byte
 	closeness     uint16
@@ -533,23 +1001,23 @@ func NewPetReferenceDataBuilder() *PetReferenceDataBuilder {
 	return &PetReferenceDataBuilder{}
 }
 
-func (b *PetReferenceDataBuilder) SetCashId(value uint64) *PetReferenceDataBuilder {
-	b.cashId = value
+func (b *PetReferenceDataBuilder) SetCashId(value int64) *PetReferenceDataBuilder {
+	b.CashDataBuilder.SetCashId(value)
 	return b
 }
 
 func (b *PetReferenceDataBuilder) SetOwnerId(value uint32) *PetReferenceDataBuilder {
-	b.ownerId = value
+	b.OwnerDataBuilder.SetOwnerId(value)
 	return b
 }
 
 func (b *PetReferenceDataBuilder) SetFlag(value uint16) *PetReferenceDataBuilder {
-	b.flag = value
+	b.FlagDataBuilder.SetFlag(value)
 	return b
 }
 
 func (b *PetReferenceDataBuilder) SetPurchaseBy(value uint32) *PetReferenceDataBuilder {
-	b.purchaseBy = value
+	b.PurchaseDataBuilder.SetPurchaseBy(value)
 	return b
 }
 
@@ -605,10 +1073,18 @@ func (b *PetReferenceDataBuilder) SetAttribute2(value uint16) *PetReferenceDataB
 
 func (b *PetReferenceDataBuilder) Build() PetReferenceData {
 	return PetReferenceData{
-		cashId:        b.cashId,
-		ownerId:       b.ownerId,
-		flag:          b.flag,
-		purchaseBy:    b.purchaseBy,
+		OwnerData: OwnerData{
+			ownerId: b.OwnerDataBuilder.ownerId,
+		},
+		FlagData: FlagData{
+			flag: b.FlagDataBuilder.flag,
+		},
+		CashData: CashData{
+			cashId: b.CashDataBuilder.cashId,
+		},
+		PurchaseData: PurchaseData{
+			purchaseBy: b.PurchaseDataBuilder.purchaseBy,
+		},
 		name:          b.name,
 		level:         b.level,
 		closeness:     b.closeness,

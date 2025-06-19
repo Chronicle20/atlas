@@ -7,6 +7,7 @@ import (
 	"atlas-login/inventory/compartment/asset"
 	"atlas-login/pet"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
+	"github.com/google/uuid"
 	"strconv"
 	"strings"
 )
@@ -232,7 +233,7 @@ func (m Model) SetInventory(i inventory.Model) Model {
 			s := a.Slot()
 			if s < -100 {
 				cash = true
-				s -= 100
+				s += 100
 			}
 
 			es, err := slot.GetSlotByPosition(slot.Position(s))
@@ -244,18 +245,28 @@ func (m Model) SetInventory(i inventory.Model) Model {
 				continue
 			}
 
-			val, ok := a.ReferenceData().(asset.EquipableReferenceData)
-			if !ok {
-				continue
-			}
-			ea := asset.NewBuilder[asset.EquipableReferenceData](a.Id(), a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
-				SetReferenceData(val).
-				Build()
-
 			if cash {
-				v.CashEquipable = &ea
+				var crd asset.CashEquipableReferenceData
+				crd, ok = a.ReferenceData().(asset.CashEquipableReferenceData)
+				if ok {
+					ea := asset.NewBuilder[asset.CashEquipableReferenceData](a.Id(), uuid.Nil, a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
+						SetSlot(a.Slot()).
+						SetExpiration(a.Expiration()).
+						SetReferenceData(crd).
+						Build()
+					v.CashEquipable = &ea
+				}
 			} else {
-				v.Equipable = &ea
+				var erd asset.EquipableReferenceData
+				erd, ok = a.ReferenceData().(asset.EquipableReferenceData)
+				if ok {
+					ea := asset.NewBuilder[asset.EquipableReferenceData](a.Id(), uuid.Nil, a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
+						SetSlot(a.Slot()).
+						SetExpiration(a.Expiration()).
+						SetReferenceData(erd).
+						Build()
+					v.Equipable = &ea
+				}
 			}
 			eq.Set(es.Type, v)
 		}

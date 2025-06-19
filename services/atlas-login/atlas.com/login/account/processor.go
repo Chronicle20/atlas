@@ -10,52 +10,68 @@ import (
 
 type LoginErr string
 
-type Processor struct {
+type Processor interface {
+	ForAccountByName(name string, operator model.Operator[Model])
+	ForAccountById(id uint32, operator model.Operator[Model])
+	ByNameModelProvider(name string) model.Provider[Model]
+	ByIdModelProvider(id uint32) model.Provider[Model]
+	AllProvider() model.Provider[[]Model]
+	GetById(id uint32) (Model, error)
+	GetByName(name string) (Model, error)
+	IsLoggedIn(id uint32) bool
+	InitializeRegistry() error
+	UpdatePin(id uint32, pin string) error
+	UpdatePic(id uint32, pic string) error
+	UpdateTos(id uint32, tos bool) error
+	UpdateGender(id uint32, gender byte) error
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) ForAccountByName(name string, operator model.Operator[Model]) {
+func (p *ProcessorImpl) ForAccountByName(name string, operator model.Operator[Model]) {
 	_ = model.For[Model](p.ByNameModelProvider(name), operator)
 }
 
-func (p *Processor) ForAccountById(id uint32, operator model.Operator[Model]) {
+func (p *ProcessorImpl) ForAccountById(id uint32, operator model.Operator[Model]) {
 	_ = model.For[Model](p.ByIdModelProvider(id), operator)
 }
 
-func (p *Processor) ByNameModelProvider(name string) model.Provider[Model] {
+func (p *ProcessorImpl) ByNameModelProvider(name string) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestAccountByName(name), Extract)
 }
 
-func (p *Processor) ByIdModelProvider(id uint32) model.Provider[Model] {
+func (p *ProcessorImpl) ByIdModelProvider(id uint32) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestAccountById(id), Extract)
 }
 
-func (p *Processor) AllProvider() model.Provider[[]Model] {
+func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestAccounts(), Extract, model.Filters[Model]())
 }
 
-func (p *Processor) GetById(id uint32) (Model, error) {
+func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
 	return p.ByIdModelProvider(id)()
 }
 
-func (p *Processor) GetByName(name string) (Model, error) {
+func (p *ProcessorImpl) GetByName(name string) (Model, error) {
 	return p.ByNameModelProvider(name)()
 }
 
-func (p *Processor) IsLoggedIn(id uint32) bool {
+func (p *ProcessorImpl) IsLoggedIn(id uint32) bool {
 	return GetRegistry().LoggedIn(Key{Tenant: tenant.MustFromContext(p.ctx), Id: id})
 }
 
-func (p *Processor) InitializeRegistry() error {
+func (p *ProcessorImpl) InitializeRegistry() error {
 	as, err := model.CollectToMap[Model, Key, bool](p.AllProvider(), KeyForTenantFunc(tenant.MustFromContext(p.ctx)), IsLogged)()
 	if err != nil {
 		return err
@@ -68,7 +84,7 @@ func IsLogged(m Model) bool {
 	return m.LoggedIn() > 0
 }
 
-func (p *Processor) UpdatePin(id uint32, pin string) error {
+func (p *ProcessorImpl) UpdatePin(id uint32, pin string) error {
 	a, err := p.GetById(id)
 	if err != nil {
 		return err
@@ -81,7 +97,7 @@ func (p *Processor) UpdatePin(id uint32, pin string) error {
 	return nil
 }
 
-func (p *Processor) UpdatePic(id uint32, pic string) error {
+func (p *ProcessorImpl) UpdatePic(id uint32, pic string) error {
 	a, err := p.GetById(id)
 	if err != nil {
 		return err
@@ -94,7 +110,7 @@ func (p *Processor) UpdatePic(id uint32, pic string) error {
 	return nil
 }
 
-func (p *Processor) UpdateTos(id uint32, tos bool) error {
+func (p *ProcessorImpl) UpdateTos(id uint32, tos bool) error {
 	a, err := p.GetById(id)
 	if err != nil {
 		return err
@@ -107,7 +123,7 @@ func (p *Processor) UpdateTos(id uint32, tos bool) error {
 	return nil
 }
 
-func (p *Processor) UpdateGender(id uint32, gender byte) error {
+func (p *ProcessorImpl) UpdateGender(id uint32, gender byte) error {
 	a, err := p.GetById(id)
 	if err != nil {
 		return err

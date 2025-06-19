@@ -16,16 +16,34 @@ import (
 	"net"
 )
 
-type Processor struct {
+type Processor interface {
+	AllInTenantProvider() ([]Model, error)
+	ByIdModelProvider(sessionId uuid.UUID) model.Provider[Model]
+	IfPresentById(sessionId uuid.UUID, f model.Operator[Model])
+	ByAccountIdModelProvider(accountId uint32) model.Provider[Model]
+	IfPresentByAccountId(accountId uint32, f model.Operator[Model]) error
+	SetAccountId(id uuid.UUID, accountId uint32) Model
+	UpdateLastRequest(id uuid.UUID) Model
+	SetWorldId(id uuid.UUID, worldId byte) Model
+	SetChannelId(id uuid.UUID, channelId byte) Model
+	SessionCreated(s Model) error
+	Create(locale byte) func(sessionId uuid.UUID, conn net.Conn)
+	DestroyByIdWithSpan(sessionId uuid.UUID)
+	DestroyById(sessionId uuid.UUID)
+	Destroy(s Model) error
+	Decrypt(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	t   tenant.Model
 	kp  producer.Provider
-	sp  *session.Processor
+	sp  session.Processor
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		t:   tenant.MustFromContext(ctx),
@@ -35,15 +53,15 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) WithContext(ctx context.Context) *Processor {
+func (p *ProcessorImpl) WithContext(ctx context.Context) Processor {
 	return NewProcessor(p.l, ctx)
 }
 
-func (p *Processor) AllInTenantProvider() ([]Model, error) {
+func (p *ProcessorImpl) AllInTenantProvider() ([]Model, error) {
 	return getRegistry().GetInTenant(p.t.Id()), nil
 }
 
-func (p *Processor) ByIdModelProvider(sessionId uuid.UUID) model.Provider[Model] {
+func (p *ProcessorImpl) ByIdModelProvider(sessionId uuid.UUID) model.Provider[Model] {
 	t := tenant.MustFromContext(p.ctx)
 	return func() (Model, error) {
 		s, ok := getRegistry().Get(t.Id(), sessionId)
@@ -54,7 +72,7 @@ func (p *Processor) ByIdModelProvider(sessionId uuid.UUID) model.Provider[Model]
 	}
 }
 
-func (p *Processor) IfPresentById(sessionId uuid.UUID, f model.Operator[Model]) {
+func (p *ProcessorImpl) IfPresentById(sessionId uuid.UUID, f model.Operator[Model]) {
 	s, err := p.ByIdModelProvider(sessionId)()
 	if err != nil {
 		return
@@ -62,12 +80,12 @@ func (p *Processor) IfPresentById(sessionId uuid.UUID, f model.Operator[Model]) 
 	_ = f(s)
 }
 
-func (p *Processor) ByAccountIdModelProvider(accountId uint32) model.Provider[Model] {
+func (p *ProcessorImpl) ByAccountIdModelProvider(accountId uint32) model.Provider[Model] {
 	return model.FirstProvider[Model](p.AllInTenantProvider, model.Filters(AccountIdFilter(accountId)))
 }
 
 // IfPresentByAccountId executes an Operator if a session exists for the accountId
-func (p *Processor) IfPresentByAccountId(accountId uint32, f model.Operator[Model]) error {
+func (p *ProcessorImpl) IfPresentByAccountId(accountId uint32, f model.Operator[Model]) error {
 	s, err := p.ByAccountIdModelProvider(accountId)()
 	if err != nil {
 		return nil
@@ -81,7 +99,7 @@ func AccountIdFilter(referenceId uint32) model.Filter[Model] {
 	}
 }
 
-func (p *Processor) SetAccountId(id uuid.UUID, accountId uint32) Model {
+func (p *ProcessorImpl) SetAccountId(id uuid.UUID, accountId uint32) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
@@ -92,7 +110,7 @@ func (p *Processor) SetAccountId(id uuid.UUID, accountId uint32) Model {
 	return s
 }
 
-func (p *Processor) UpdateLastRequest(id uuid.UUID) Model {
+func (p *ProcessorImpl) UpdateLastRequest(id uuid.UUID) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
@@ -103,7 +121,7 @@ func (p *Processor) UpdateLastRequest(id uuid.UUID) Model {
 	return s
 }
 
-func (p *Processor) SetWorldId(id uuid.UUID, worldId byte) Model {
+func (p *ProcessorImpl) SetWorldId(id uuid.UUID, worldId byte) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
@@ -114,7 +132,7 @@ func (p *Processor) SetWorldId(id uuid.UUID, worldId byte) Model {
 	return s
 }
 
-func (p *Processor) SetChannelId(id uuid.UUID, channelId byte) Model {
+func (p *ProcessorImpl) SetChannelId(id uuid.UUID, channelId byte) Model {
 	s := Model{}
 	var ok bool
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
@@ -125,11 +143,11 @@ func (p *Processor) SetChannelId(id uuid.UUID, channelId byte) Model {
 	return s
 }
 
-func (p *Processor) SessionCreated(s Model) error {
+func (p *ProcessorImpl) SessionCreated(s Model) error {
 	return p.kp(session2.EnvEventTopicSessionStatus)(session3.CreatedStatusEventProvider(s.SessionId(), s.AccountId()))
 }
 
-func (p *Processor) Create(locale byte) func(sessionId uuid.UUID, conn net.Conn) {
+func (p *ProcessorImpl) Create(locale byte) func(sessionId uuid.UUID, conn net.Conn) {
 	return func(sessionId uuid.UUID, conn net.Conn) {
 		fl := p.l.WithField("session", sessionId)
 		fl.Debugf("Creating session.")
@@ -143,13 +161,13 @@ func (p *Processor) Create(locale byte) func(sessionId uuid.UUID, conn net.Conn)
 	}
 }
 
-func (p *Processor) DestroyByIdWithSpan(sessionId uuid.UUID) {
+func (p *ProcessorImpl) DestroyByIdWithSpan(sessionId uuid.UUID) {
 	sctx, span := otel.GetTracerProvider().Tracer("atlas-login").Start(p.ctx, "session-destroy")
 	defer span.End()
 	p.WithContext(sctx).DestroyById(sessionId)
 }
 
-func (p *Processor) DestroyById(sessionId uuid.UUID) {
+func (p *ProcessorImpl) DestroyById(sessionId uuid.UUID) {
 	s, ok := getRegistry().Get(p.t.Id(), sessionId)
 	if !ok {
 		return
@@ -157,7 +175,7 @@ func (p *Processor) DestroyById(sessionId uuid.UUID) {
 	_ = p.Destroy(s)
 }
 
-func (p *Processor) Destroy(s Model) error {
+func (p *ProcessorImpl) Destroy(s Model) error {
 	p.l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 	getRegistry().Remove(p.t.Id(), s.SessionId())
 	s.Disconnect()
@@ -165,7 +183,7 @@ func (p *Processor) Destroy(s Model) error {
 	return p.kp(session2.EnvEventTopicSessionStatus)(session3.DestroyedStatusEventProvider(s.SessionId(), s.AccountId()))
 }
 
-func (p *Processor) Decrypt(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
+func (p *ProcessorImpl) Decrypt(hasAes bool, hasMapleEncryption bool) func(sessionId uuid.UUID, input []byte) []byte {
 	return func(sessionId uuid.UUID, input []byte) []byte {
 		s, ok := getRegistry().Get(p.t.Id(), sessionId)
 		if !ok {

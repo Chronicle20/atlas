@@ -79,6 +79,9 @@ The service supports the following GM commands:
   - Example: `@warp map 100000000` - Warps all characters in the current map to map 100000000
   - Example: `@warp PlayerName 100000000` - Warps the player named "PlayerName" to map 100000000
 
+- `@query map` - Shows the ID of the character's current map
+  - Example: `@query map` - Displays your current map ID
+
 ## Message Types
 
 The service handles the following types of messages:

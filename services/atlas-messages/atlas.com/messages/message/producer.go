@@ -82,3 +82,19 @@ func petChatEventProvider(worldId byte, channelId byte, mapId uint32, petId uint
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func pinkTextChatEventProvider(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipients []uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(actorId))
+	value := message2.ChatEvent[message2.PinkTextChatBody]{
+		WorldId:   worldId,
+		ChannelId: channelId,
+		MapId:     mapId,
+		ActorId:   actorId,
+		Message:   message,
+		Type:      message2.ChatTypePinkText,
+		Body: message2.PinkTextChatBody{
+			Recipients: recipients,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

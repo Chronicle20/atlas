@@ -16,6 +16,7 @@ type Processor interface {
 	HandleWhisper(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipientName string) error
 	HandleMessenger(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipients []uint32) error
 	HandlePet(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error
+	IssuePinkText(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipients []uint32) error
 }
 
 type ProcessorImpl struct {
@@ -131,6 +132,14 @@ func (p *ProcessorImpl) HandlePet(worldId byte, channelId byte, mapId uint32, ac
 	err := producer.ProviderImpl(p.l)(p.ctx)(message2.EnvEventTopicChat)(petChatEventProvider(worldId, channelId, mapId, actorId, message, ownerId, petSlot, nType, nAction, balloon))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to relay message from character [%d] pet [%d].", ownerId, actorId)
+	}
+	return err
+}
+
+func (p *ProcessorImpl) IssuePinkText(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipients []uint32) error {
+	err := producer.ProviderImpl(p.l)(p.ctx)(message2.EnvEventTopicChat)(pinkTextChatEventProvider(worldId, channelId, mapId, actorId, message, recipients))
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to relay message from actorId [%d].", actorId)
 	}
 	return err
 }

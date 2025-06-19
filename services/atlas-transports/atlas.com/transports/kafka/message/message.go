@@ -1,7 +1,7 @@
 package message
 
 import (
-	"atlas-pets/kafka/producer"
+	"atlas-transports/kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )

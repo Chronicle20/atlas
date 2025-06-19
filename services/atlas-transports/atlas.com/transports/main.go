@@ -5,6 +5,7 @@ import (
 	"atlas-transports/service"
 	"atlas-transports/tracing"
 	"github.com/Chronicle20/atlas-rest/server"
+	"os"
 )
 
 const serviceName = "atlas-transports"
@@ -30,9 +31,9 @@ func GetServer() Server {
 }
 
 func main() {
-  l := logger.CreateLogger(serviceName)
+	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
-	
+
 	tdm := service.GetTeardownManager()
 
 	tc, err := tracing.InitTracer(l)(serviceName)
@@ -40,8 +41,13 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix())
-	
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		Run()
+
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 
 	tdm.Wait()

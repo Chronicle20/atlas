@@ -11,6 +11,7 @@ const (
 	ChatTypeWhisper   = "WHISPER"
 	ChatTypeMessenger = "MESSENGER"
 	ChatTypePet       = "PET"
+	ChatTypePinkText  = "PINK_TEXT"
 )
 
 type ChatEvent[E any] struct {
@@ -45,4 +46,8 @@ type PetChatBody struct {
 	Type    byte   `json:"type"`
 	Action  byte   `json:"action"`
 	Balloon bool   `json:"balloon"`
+}
+
+type PinkTextChatBody struct {
+	Recipients []uint32 `json:"recipients"`
 }

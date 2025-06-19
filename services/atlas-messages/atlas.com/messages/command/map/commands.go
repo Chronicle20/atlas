@@ -4,6 +4,7 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	"atlas-messages/map"
+	"atlas-messages/message"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
@@ -14,8 +15,6 @@ import (
 
 func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
-		cp := character.NewProcessor(l, ctx)
-		mp := _map.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			re := regexp.MustCompile(`@warp\s+(\w+)\s+(\d+)`)
 			match := re.FindStringSubmatch(m)
@@ -32,9 +31,9 @@ func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(wo
 			if match[1] == "me" {
 				idProvider = model.ToSliceProvider(model.FixedProvider(c.Id()))
 			} else if match[1] == "map" {
-				idProvider = mp.CharacterIdsInMapStringProvider(worldId, channelId, match[2])
+				idProvider = _map.NewProcessor(l, ctx).CharacterIdsInMapStringProvider(worldId, channelId, match[2])
 			} else {
-				idProvider = model.ToSliceProvider(cp.IdByNameProvider(match[1]))
+				idProvider = model.ToSliceProvider(character.NewProcessor(l, ctx).IdByNameProvider(match[1]))
 			}
 
 			return warpCommandProducer(worldId, channelId, c.Id(), idProvider, match[2])
@@ -71,4 +70,22 @@ func warpCommandProducer(worldId byte, channelId byte, actorId uint32, idProvide
 			return err
 		}
 	}, true
+}
+
+func WhereAmICommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(worldId byte, channelId byte, character character.Model, m string) (command.Executor, bool) {
+	return func(_ context.Context) func(worldId byte, channelId byte, character character.Model, m string) (command.Executor, bool) {
+		return func(worldId byte, channelId byte, character character.Model, m string) (command.Executor, bool) {
+			re := regexp.MustCompile(`@query map`)
+			match := re.FindStringSubmatch(m)
+			if len(match) != 1 {
+				return nil, false
+			}
+
+			return func(l logrus.FieldLogger) func(ctx context.Context) error {
+				return func(ctx context.Context) error {
+					return message.NewProcessor(l, ctx).IssuePinkText(worldId, channelId, character.MapId(), 0, "You are in map "+strconv.Itoa(int(character.MapId())), []uint32{character.Id()})
+				}
+			}, true
+		}
+	}
 }

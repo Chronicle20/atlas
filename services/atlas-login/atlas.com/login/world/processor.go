@@ -8,14 +8,23 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	cp  *channel.Processor
+type Processor interface {
+	AllProvider() model.Provider[[]Model]
+	GetAll(decorators ...model.Decorator[Model]) ([]Model, error)
+	ByIdModelProvider(worldId byte) model.Provider[Model]
+	GetById(worldId byte) (Model, error)
+	GetCapacityStatus(worldId byte) Status
+	ChannelLoadDecorator(m Model) Model
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	cp  channel.Processor
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		cp:  channel.NewProcessor(l, ctx),
@@ -23,23 +32,23 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) AllProvider() model.Provider[[]Model] {
+func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestWorlds(), Extract, model.Filters[Model]())
 }
 
-func (p *Processor) GetAll(decorators ...model.Decorator[Model]) ([]Model, error) {
+func (p *ProcessorImpl) GetAll(decorators ...model.Decorator[Model]) ([]Model, error) {
 	return model.SliceMap(model.Decorate(decorators))(p.AllProvider())(model.ParallelMap())()
 }
 
-func (p *Processor) ByIdModelProvider(worldId byte) model.Provider[Model] {
+func (p *ProcessorImpl) ByIdModelProvider(worldId byte) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestWorld(worldId), Extract)
 }
 
-func (p *Processor) GetById(worldId byte) (Model, error) {
+func (p *ProcessorImpl) GetById(worldId byte) (Model, error) {
 	return p.ByIdModelProvider(worldId)()
 }
 
-func (p *Processor) GetCapacityStatus(worldId byte) Status {
+func (p *ProcessorImpl) GetCapacityStatus(worldId byte) Status {
 	w, err := p.GetById(worldId)
 	if err != nil {
 		return StatusFull
@@ -47,7 +56,7 @@ func (p *Processor) GetCapacityStatus(worldId byte) Status {
 	return w.CapacityStatus()
 }
 
-func (p *Processor) ChannelLoadDecorator(m Model) Model {
+func (p *ProcessorImpl) ChannelLoadDecorator(m Model) Model {
 	nm, err := model.Fold[channel.Model, Model](p.cp.ByWorldModelProvider(m.Id()), Clone(m), foldChannelLoad)()
 	if err != nil {
 		return m

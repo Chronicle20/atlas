@@ -5,20 +5,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+type Processor interface {
+	SeedCharacter(accountId uint32, worldId byte, name string, jobIndex uint32, subJobIndex uint16, face uint32, hair uint32, color uint32, skinColor uint32, gender byte, top uint32, bottom uint32, shoes uint32, weapon uint32, strength byte, dexterity byte, intelligence byte, luck byte) error
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) SeedCharacter(accountId uint32, worldId byte, name string, jobIndex uint32, subJobIndex uint16,
+func (p *ProcessorImpl) SeedCharacter(accountId uint32, worldId byte, name string, jobIndex uint32, subJobIndex uint16,
 	face uint32, hair uint32, color uint32, skinColor uint32, gender byte,
 	top uint32, bottom uint32, shoes uint32, weapon uint32,
 	strength byte, dexterity byte, intelligence byte, luck byte) error {

@@ -291,6 +291,7 @@ func produceWriters() []string {
 		writer.SpawnKite,
 		writer.SpawnKiteError,
 		writer.DestroyKite,
+		writer.Clock,
 	}
 }
 

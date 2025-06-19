@@ -10,6 +10,7 @@ A RESTful resource which provides data services for Mushroom game data. The serv
 - JAEGER_HOST_PORT - Jaeger [host]:[port]
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
 - GAME_DATA_ROOT_DIR - Root directory of game data
+- REST_PORT - Port for the REST API server
 
 ## API
 
@@ -24,60 +25,159 @@ MAJOR_VERSION:83
 MINOR_VERSION:1
 ```
 
+### Common Query Parameters
+
+All endpoints support the following JSON API query parameters:
+- `fields[resourceType]` - Comma-separated list of fields to include in the response
+- `include` - Comma-separated list of related resources to include
+
 ### Requests
 
-#### [GET] Get Default Equipment Statistics
+#### Cash Items
 
-```/api/gis/equipment/{itemId}```
+##### [GET] Get Cash Item
 
-#### [GET] Get Expected Equipment Slots
+```/api/data/cash/items/{itemId}```
 
-```/api/gis/equipment/{itemId}/slots```
+#### Character Templates
 
-#### [GET] Get Map Information
+##### [GET] Get Character Templates
 
-```/api/gis/maps/{mapId}```
+```/api/data/characters/templates```
 
-#### [GET] Get Portal Information In Map
+#### Commodity Items
 
-```/api/gis/maps/{mapId}/portals```
+##### [GET] Get Commodity Item
 
-#### [GET] Get Portal Information In Map By Portal Name
+```/api/data/commodity/items/{itemId}```
 
-```/api/gis/maps/{mapId}/portals?name={name}```
+#### Consumables
 
-#### [GET] Get Specific Portal Information In Map
+##### [GET] Get All Consumables
 
-```/api/gis/maps/{mapId}/portals/{portalId}```
+```/api/data/consumables```
 
-#### [GET] Get Reactor Information In Map
+Query Parameters:
+- `filter[rechargeable]` - Filter consumables by rechargeable status (true/false)
 
-```/api/gis/maps/{mapId}/reactors```
+##### [GET] Get Consumable
 
-#### [GET] Get NPC Information In Map
+```/api/data/consumables/{itemId}```
 
-```/api/gis/maps/{mapId}/npcs```
+#### Equipment
 
-#### [GET] Get Specific NPC Information In Map
+##### [GET] Get Equipment Statistics
 
-```/api/gis/maps/{mapId}/npcs/{npcId}```
+```/api/data/equipment/{equipmentId}```
 
-#### [GET] Get NPC Information In Map By Object Id
+##### [GET] Get Equipment Slots
 
-```/api/gis/maps/{mapId}/npcs?objectId={objectId}```
+```/api/data/equipment/{equipmentId}/slots```
 
-#### [GET] Get Monster Information In Map
+#### ETC Items
 
-```/api/gis/maps/{mapId}/monsters```
+##### [GET] Get ETC Item
 
-#### [POST] Get Drop Position In Map
+```/api/data/etcs/{itemId}```
 
-```/api/gis/maps/{mapId}/dropPosition```
+#### Maps
 
-#### [GET] Get Monster Information
+##### [GET] Get All Maps
 
-```/api/gis/monsters/{monsterId}```
+```/api/data/maps```
 
-#### [GET] Get Lose Items For Monster
+##### [GET] Get Map Information
 
-```/api/gis/monsters/{monsterId}/loseItems```
+```/api/data/maps/{mapId}```
+
+##### [GET] Get Portal Information In Map
+
+```/api/data/maps/{mapId}/portals```
+
+##### [GET] Get Portal Information In Map By Portal Name
+
+```/api/data/maps/{mapId}/portals?name={name}```
+
+##### [GET] Get Specific Portal Information In Map
+
+```/api/data/maps/{mapId}/portals/{portalId}```
+
+##### [GET] Get Reactor Information In Map
+
+```/api/data/maps/{mapId}/reactors```
+
+##### [GET] Get NPC Information In Map
+
+```/api/data/maps/{mapId}/npcs```
+
+##### [GET] Get Specific NPC Information In Map
+
+```/api/data/maps/{mapId}/npcs/{npcId}```
+
+##### [GET] Get NPC Information In Map By Object Id
+
+```/api/data/maps/{mapId}/npcs?objectId={objectId}```
+
+##### [GET] Get Monster Information In Map
+
+```/api/data/maps/{mapId}/monsters```
+
+##### [POST] Get Drop Position In Map
+
+```/api/data/maps/{mapId}/drops/position```
+
+Request Body:
+```json
+{
+  "initialX": 0,
+  "initialY": 0,
+  "fallbackX": 0,
+  "fallbackY": 0
+}
+```
+
+##### [POST] Get Foothold Below Position In Map
+
+```/api/data/maps/{mapId}/footholds/below```
+
+Request Body:
+```json
+{
+  "x": 0,
+  "y": 0
+}
+```
+
+#### Monsters
+
+##### [GET] Get Monster Information
+
+```/api/data/monsters/{monsterId}```
+
+##### [GET] Get Lose Items For Monster
+
+```/api/data/monsters/{monsterId}/loseItems```
+
+#### Pets
+
+##### [GET] Get Pet Information
+
+```/api/data/pets/{petId}```
+
+#### Reactors
+
+##### [GET] Get Reactor Information
+
+```/api/data/reactors/{reactorId}```
+
+#### Setups
+
+##### [GET] Get Setup Information
+
+```/api/data/setups/{setupId}```
+
+#### Skills
+
+##### [GET] Get Skill Information
+
+```/api/data/skills/{skillId}```

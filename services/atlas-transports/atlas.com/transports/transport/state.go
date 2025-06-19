@@ -131,13 +131,38 @@ func NewStateMachine(route Model) *StateMachine {
 func (sm *StateMachine) UpdateState(now time.Time, trips []TripScheduleModel) RouteStateModel {
 	// Find the next trip
 	var nextTrip *TripScheduleModel
+	var inTransitTrip *TripScheduleModel
+	var futureTrip *TripScheduleModel
+	var arrivedTrip *TripScheduleModel
+
 	for i := range trips {
 		trip := trips[i]
-		if trip.RouteID() == sm.route.Id() && trip.Departure().After(now) {
-			if nextTrip == nil || trip.Departure().Before(nextTrip.Departure()) {
-				nextTrip = &trip
+		if trip.RouteID() == sm.route.Id() {
+			// Check if the trip is currently in transit (departed but not arrived)
+			if trip.Departure().Before(now) && trip.Arrival().After(now) {
+				if inTransitTrip == nil || trip.Departure().After(inTransitTrip.Departure()) {
+					// For in-transit trips, prefer the most recently departed one
+					inTransitTrip = &trip
+				}
+			} else if trip.Departure().After(now) {
+				// For future trips, prefer the one departing soonest
+				if futureTrip == nil || trip.Departure().Before(futureTrip.Departure()) {
+					futureTrip = &trip
+				}
+			} else if trip.Arrival().Before(now) {
+				// For arrived trips, prefer the most recently arrived one
+				if arrivedTrip == nil || trip.Arrival().After(arrivedTrip.Arrival()) {
+					arrivedTrip = &trip
+				}
 			}
 		}
+	}
+
+	// Prioritize in-transit trips over future trips
+	if inTransitTrip != nil {
+		nextTrip = inTransitTrip
+	} else {
+		nextTrip = futureTrip
 	}
 
 	// If no next trip, set state to awaiting_return
@@ -182,13 +207,27 @@ func (sm *StateMachine) UpdateState(now time.Time, trips []TripScheduleModel) Ro
 			SetNextDeparture(nextTrip.Departure()).
 			SetBoardingEnds(nextTrip.BoardingClosed()).
 			Build()
-	} else {
-		// After arrival, waiting for next trip
+	} else if futureTrip != nil {
+		// After arrival, but there's a future trip
 		sm.state = NewRouteStateBuilder().
 			SetRouteID(sm.route.Id()).
 			SetStatus(AwaitingReturn).
-			SetNextDeparture(nextTrip.Departure()).
-			SetBoardingEnds(nextTrip.BoardingClosed()).
+			SetNextDeparture(futureTrip.Departure()).
+			SetBoardingEnds(futureTrip.BoardingClosed()).
+			Build()
+	} else if arrivedTrip != nil {
+		// After arrival, no future trips, but we have an arrived trip
+		sm.state = NewRouteStateBuilder().
+			SetRouteID(sm.route.Id()).
+			SetStatus(AwaitingReturn).
+			SetNextDeparture(arrivedTrip.Departure()).
+			SetBoardingEnds(arrivedTrip.BoardingClosed()).
+			Build()
+	} else {
+		// No trips at all
+		sm.state = NewRouteStateBuilder().
+			SetRouteID(sm.route.Id()).
+			SetStatus(AwaitingReturn).
 			Build()
 	}
 

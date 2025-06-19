@@ -10,14 +10,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	cp  *character.Processor
+type Processor interface {
+	HandleGeneral(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, balloonOnly bool) error
+	HandleMulti(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, chatType string, recipients []uint32) error
+	HandleWhisper(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipientName string) error
+	HandleMessenger(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipients []uint32) error
+	HandlePet(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	cp  character.Processor
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		cp:  character.NewProcessor(l, ctx),
@@ -25,7 +33,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) HandleGeneral(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, balloonOnly bool) error {
+func (p *ProcessorImpl) HandleGeneral(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, balloonOnly bool) error {
 	c, err := p.cp.GetById()(actorId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to locate character chatting [%d].", actorId)
@@ -48,7 +56,7 @@ func (p *Processor) HandleGeneral(worldId byte, channelId byte, mapId uint32, ac
 	return err
 }
 
-func (p *Processor) HandleMulti(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, chatType string, recipients []uint32) error {
+func (p *ProcessorImpl) HandleMulti(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, chatType string, recipients []uint32) error {
 	c, err := p.cp.GetById()(actorId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to locate character chatting [%d].", actorId)
@@ -71,7 +79,7 @@ func (p *Processor) HandleMulti(worldId byte, channelId byte, mapId uint32, acto
 	return err
 }
 
-func (p *Processor) HandleWhisper(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipientName string) error {
+func (p *ProcessorImpl) HandleWhisper(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipientName string) error {
 	c, err := p.cp.GetById()(actorId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to locate character chatting [%d].", actorId)
@@ -104,7 +112,7 @@ func (p *Processor) HandleWhisper(worldId byte, channelId byte, mapId uint32, ac
 	return err
 }
 
-func (p *Processor) HandleMessenger(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipients []uint32) error {
+func (p *ProcessorImpl) HandleMessenger(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, recipients []uint32) error {
 	c, err := p.cp.GetById()(actorId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to locate character chatting [%d].", actorId)
@@ -118,7 +126,7 @@ func (p *Processor) HandleMessenger(worldId byte, channelId byte, mapId uint32, 
 	return err
 }
 
-func (p *Processor) HandlePet(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error {
+func (p *ProcessorImpl) HandlePet(worldId byte, channelId byte, mapId uint32, actorId uint32, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error {
 	p.l.Debugf("Character [%d] pet [%d] sent message [%s].", ownerId, actorId, message)
 	err := producer.ProviderImpl(p.l)(p.ctx)(message2.EnvEventTopicChat)(petChatEventProvider(worldId, channelId, mapId, actorId, message, ownerId, petSlot, nType, nAction, balloon))
 	if err != nil {

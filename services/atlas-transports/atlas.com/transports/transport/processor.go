@@ -71,9 +71,9 @@ func (p *ProcessorImpl) RouteStateByIdProvider(id uuid.UUID) model.Provider[Rout
 
 		// Update the state based on the current time
 		now := time.Now()
-		state := stateMachine.UpdateState(now, getSchedulerRegistry().Get(p.t).ComputeSchedule())
+		result := stateMachine.UpdateState(now, getSchedulerRegistry().Get(p.t).ComputeSchedule())
 
-		return state, nil
+		return result.State(), nil
 	}
 }
 
@@ -105,6 +105,7 @@ func (p *ProcessorImpl) AllRoutesProvider() model.Provider[[]Model] {
 func (p *ProcessorImpl) UpdateStates() {
 	now := time.Now()
 	for _, stateMachine := range getRouteRegistry().GetStateMachines(p.t) {
-		stateMachine.UpdateState(now, getSchedulerRegistry().Get(p.t).ComputeSchedule())
+		// Call UpdateState but we don't need to use the result here
+		_ = stateMachine.UpdateState(now, getSchedulerRegistry().Get(p.t).ComputeSchedule())
 	}
 }

@@ -114,6 +114,22 @@ func (b *RouteStateBuilder) Build() RouteStateModel {
 	)
 }
 
+// StateUpdateResult represents the result of updating a route's state
+type StateUpdateResult struct {
+	state       RouteStateModel
+	stateChanged bool
+}
+
+// State returns the updated route state
+func (r StateUpdateResult) State() RouteStateModel {
+	return r.state
+}
+
+// StateChanged returns true if the state status changed during the update
+func (r StateUpdateResult) StateChanged() bool {
+	return r.stateChanged
+}
+
 // StateMachine manages the state transitions for a transport route
 type StateMachine struct {
 	route Model
@@ -128,7 +144,14 @@ func NewStateMachine(route Model) *StateMachine {
 }
 
 // UpdateState updates the state of the route based on the current time and trip schedule
-func (sm *StateMachine) UpdateState(now time.Time, trips []TripScheduleModel) RouteStateModel {
+// Returns a StateUpdateResult containing the updated state and a boolean indicating if the state status changed
+func (sm *StateMachine) UpdateState(now time.Time, trips []TripScheduleModel) StateUpdateResult {
+	// Store the previous status to detect changes
+	previousStatus := RouteState("")
+	if (RouteStateModel{}) != sm.state {
+		previousStatus = sm.state.Status()
+	}
+
 	// Find the next trip
 	var nextTrip *TripScheduleModel
 	var inTransitTrip *TripScheduleModel
@@ -171,7 +194,17 @@ func (sm *StateMachine) UpdateState(now time.Time, trips []TripScheduleModel) Ro
 			SetRouteID(sm.route.Id()).
 			SetStatus(AwaitingReturn).
 			Build()
-		return sm.state
+
+		// Check if the status changed
+		// For the "No trips scheduled" case, stateChanged should be false for the first update
+		stateChanged := false
+		if previousStatus != "" {
+			stateChanged = previousStatus != AwaitingReturn
+		}
+		return StateUpdateResult{
+			state:       sm.state,
+			stateChanged: stateChanged,
+		}
 	}
 
 	// Determine the state based on the current time and next trip
@@ -231,7 +264,12 @@ func (sm *StateMachine) UpdateState(now time.Time, trips []TripScheduleModel) Ro
 			Build()
 	}
 
-	return sm.state
+	// Check if the status changed
+	stateChanged := previousStatus == "" || previousStatus != sm.state.Status()
+	return StateUpdateResult{
+		state:       sm.state,
+		stateChanged: stateChanged,
+	}
 }
 
 // GetState returns the current state of the route

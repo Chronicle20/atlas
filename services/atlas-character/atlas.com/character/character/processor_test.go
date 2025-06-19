@@ -87,3 +87,53 @@ func TestCreateSunny(t *testing.T) {
 		t.Fatalf("Number of output messages should be 1, was %d", len(outputMessages))
 	}
 }
+
+func TestGetByIdWithZeroCharacter(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	db := testDatabase(t)
+
+	// Create a character
+	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("ZeroTest").SetLevel(1).SetExperience(0).Build()
+	var outputMessages = make([]kafka.Message, 0)
+	created, err := character.Create(testLogger())(db)(tctx)(testProducer(&outputMessages))(input)
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Retrieve the character using the ID assigned by the database
+	retrieved, err := character.GetById(tctx)(db)()(created.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve character with ID %d: %v", created.Id(), err)
+	}
+	if retrieved.Id() != created.Id() {
+		t.Fatalf("Character ID should be %d, was %d", created.Id(), retrieved.Id())
+	}
+	if retrieved.Name() != "ZeroTest" {
+		t.Fatalf("Character name should be ZeroTest, was %s", retrieved.Name())
+	}
+}
+
+func TestGetByIdWithNonZeroCharacter(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	db := testDatabase(t)
+
+	// Create a character
+	input := character.NewModelBuilder().SetAccountId(2000).SetWorldId(0).SetName("NonZeroTest").SetLevel(1).SetExperience(0).Build()
+	var outputMessages = make([]kafka.Message, 0)
+	created, err := character.Create(testLogger())(db)(tctx)(testProducer(&outputMessages))(input)
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+
+	// Retrieve the character using the ID assigned by the database
+	retrieved, err := character.GetById(tctx)(db)()(created.Id())
+	if err != nil {
+		t.Fatalf("Failed to retrieve character with ID %d: %v", created.Id(), err)
+	}
+	if retrieved.Id() != created.Id() {
+		t.Fatalf("Character ID should be %d, was %d", created.Id(), retrieved.Id())
+	}
+	if retrieved.Name() != "NonZeroTest" {
+		t.Fatalf("Character name should be NonZeroTest, was %s", retrieved.Name())
+	}
+}

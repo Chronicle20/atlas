@@ -9,7 +9,8 @@ import (
 
 func getById(tenantId uuid.UUID, characterId uint32) database.EntityProvider[entity] {
 	return func(db *gorm.DB) model.Provider[entity] {
-		return database.Query[entity](db, &entity{TenantId: tenantId, ID: characterId})
+		where := map[string]interface{}{"tenant_id": tenantId, "id": characterId}
+		return database.Query[entity](db, where)
 	}
 }
 

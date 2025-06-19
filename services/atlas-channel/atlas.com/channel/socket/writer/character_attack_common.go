@@ -3,7 +3,7 @@ package writer
 import (
 	"atlas-channel/character"
 	"atlas-channel/character/skill"
-	skill3 "atlas-channel/skill"
+	skill3 "atlas-channel/data/skill"
 	"atlas-channel/socket/model"
 	"context"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"

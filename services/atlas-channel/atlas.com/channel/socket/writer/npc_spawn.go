@@ -1,7 +1,7 @@
 package writer
 
 import (
-	"atlas-channel/npc"
+	"atlas-channel/data/npc"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )

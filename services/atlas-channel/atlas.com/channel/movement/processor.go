@@ -1,11 +1,11 @@
 package movement
 
 import (
+	"atlas-channel/data/npc"
 	movement2 "atlas-channel/kafka/message/movement"
 	"atlas-channel/kafka/producer"
 	_map2 "atlas-channel/map"
 	"atlas-channel/monster"
-	"atlas-channel/npc"
 	"atlas-channel/pet"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"

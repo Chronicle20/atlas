@@ -3,9 +3,9 @@ package handler
 import (
 	"atlas-channel/character"
 	skill2 "atlas-channel/character/skill"
+	skill3 "atlas-channel/data/skill"
 	_map "atlas-channel/map"
 	"atlas-channel/session"
-	skill3 "atlas-channel/skill"
 	"atlas-channel/skill/handler"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"

@@ -1,9 +1,9 @@
 package buff
 
 import (
+	"atlas-channel/data/skill/effect/statup"
 	buff2 "atlas-channel/kafka/message/buff"
 	"atlas-channel/kafka/producer"
-	"atlas-channel/skill/effect/statup"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"

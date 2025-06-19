@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/sirupsen/logrus"
 )
 
@@ -27,7 +28,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) RequestCreateItem(characterId uint32, templateId uint32, quantity uint32) error {
-	inventoryType, ok := inventory.TypeFromItemId(templateId)
+	inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 	if !ok {
 		return errors.New("invalid templateId")
 	}

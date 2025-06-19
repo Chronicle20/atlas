@@ -69,11 +69,8 @@ func (p *ProcessorImpl) RouteStateByIdProvider(id uuid.UUID) model.Provider[Rout
 			return RouteStateModel{}, errors.New("state machine not found for route")
 		}
 
-		// Update the state based on the current time
-		now := time.Now()
-		result := stateMachine.UpdateState(now, getSchedulerRegistry().Get(p.t).ComputeSchedule())
-
-		return result.State(), nil
+		// Just return the current state without updating it
+		return stateMachine.GetState(), nil
 	}
 }
 

@@ -22,7 +22,7 @@ type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	t   tenant.Model
-	ip  *inventory.Processor
+	ip  inventory.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {

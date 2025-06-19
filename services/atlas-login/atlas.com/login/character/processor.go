@@ -25,7 +25,7 @@ type Processor interface {
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
-	ip  *inventory.Processor
+	ip  *inventory.ProcessorImpl
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {

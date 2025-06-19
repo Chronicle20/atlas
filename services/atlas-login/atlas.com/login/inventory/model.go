@@ -4,6 +4,7 @@ import (
 	"atlas-login/inventory/compartment"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 )
 
 type Model struct {
@@ -33,6 +34,15 @@ func (m Model) Cash() compartment.Model {
 
 func (m Model) CompartmentByType(it inventory.Type) compartment.Model {
 	return m.compartments[it]
+}
+
+func (m Model) CompartmentById(id uuid.UUID) (compartment.Model, bool) {
+	for _, c := range m.compartments {
+		if c.Id() == id {
+			return c, true
+		}
+	}
+	return compartment.Model{}, false
 }
 
 func (m Model) CharacterId() uint32 {

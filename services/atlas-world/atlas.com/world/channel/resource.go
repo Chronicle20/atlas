@@ -53,7 +53,7 @@ func handleRegisterChannelServer(d *rest.HandlerDependency, c *rest.HandlerConte
 	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			t := tenant.MustFromContext(d.Context())
-			_ = producer.ProviderImpl(d.Logger())(d.Context())(channel2.EnvEventTopicStatus)(channel3.StartedEventProvider(t, worldId, input.ChannelId, input.IpAddress, input.Port))
+			_ = producer.ProviderImpl(d.Logger())(d.Context())(channel2.EnvEventTopicStatus)(channel3.StartedEventProvider(t, worldId, input.ChannelId, input.IpAddress, input.Port, input.CurrentCapacity, input.MaxCapacity))
 			w.WriteHeader(http.StatusAccepted)
 		}
 	})

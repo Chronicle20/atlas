@@ -6,12 +6,14 @@ import (
 )
 
 type RestModel struct {
-	Id        uuid.UUID `json:"-"`
-	WorldId   byte      `json:"worldId"`
-	ChannelId byte      `json:"channelId"`
-	IpAddress string    `json:"ipAddress"`
-	Port      int       `json:"port"`
-	CreatedAt time.Time `json:"createdAt"`
+	Id              uuid.UUID `json:"-"`
+	WorldId         byte      `json:"worldId"`
+	ChannelId       byte      `json:"channelId"`
+	IpAddress       string    `json:"ipAddress"`
+	Port            int       `json:"port"`
+	CurrentCapacity uint32    `json:"currentCapacity"`
+	MaxCapacity     uint32    `json:"maxCapacity"`
+	CreatedAt       time.Time `json:"createdAt"`
 }
 
 func (r RestModel) GetName() string {
@@ -29,12 +31,14 @@ func (r *RestModel) SetID(id string) error {
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:        m.Id(),
-		WorldId:   m.WorldId(),
-		ChannelId: m.ChannelId(),
-		IpAddress: m.IpAddress(),
-		Port:      m.Port(),
-		CreatedAt: m.CreatedAt(),
+		Id:              m.Id(),
+		WorldId:         m.WorldId(),
+		ChannelId:       m.ChannelId(),
+		IpAddress:       m.IpAddress(),
+		Port:            m.Port(),
+		CurrentCapacity: m.CurrentCapacity(),
+		MaxCapacity:     m.MaxCapacity(),
+		CreatedAt:       m.CreatedAt(),
 	}, nil
 }
 
@@ -46,6 +50,8 @@ func Extract(r RestModel) (Model, error) {
 		SetChannelId(r.ChannelId).
 		SetIpAddress(r.IpAddress).
 		SetPort(r.Port).
+		SetCurrentCapacity(r.CurrentCapacity).
+		SetMaxCapacity(r.MaxCapacity).
 		SetCreatedAt(r.CreatedAt).
 		Build(), nil
 }

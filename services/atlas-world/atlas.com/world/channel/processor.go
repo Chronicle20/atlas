@@ -20,7 +20,7 @@ type Processor interface {
 	ByWorldProvider(worldId byte) model.Provider[[]Model]
 	GetById(worldId byte, channelId byte) (Model, error)
 	ByIdProvider(worldId byte, channelId byte) model.Provider[Model]
-	Register(worldId byte, channelId byte, ipAddress string, port int) (Model, error)
+	Register(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) (Model, error)
 	Unregister(worldId byte, channelId byte) error
 	RequestStatus(mb *message.Buffer) error
 	RequestStatusAndEmit() error
@@ -70,7 +70,7 @@ func (p *ProcessorImpl) ByIdProvider(worldId byte, channelId byte) model.Provide
 }
 
 // Register registers a new channel server
-func (p *ProcessorImpl) Register(worldId byte, channelId byte, ipAddress string, port int) (Model, error) {
+func (p *ProcessorImpl) Register(worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) (Model, error) {
 	p.l.Debugf("Registering world [%d] channel [%d] for tenant [%s].", worldId, channelId, p.t.String())
 	m := NewBuilder().
 		SetId(uuid.New()).
@@ -78,6 +78,8 @@ func (p *ProcessorImpl) Register(worldId byte, channelId byte, ipAddress string,
 		SetChannelId(channelId).
 		SetIpAddress(ipAddress).
 		SetPort(port).
+		SetCurrentCapacity(currentCapacity).
+		SetMaxCapacity(maxCapacity).
 		Build()
 	return GetChannelRegistry().Register(p.t, m), nil
 }

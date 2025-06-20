@@ -16,9 +16,11 @@ const (
 )
 
 type StatusEvent struct {
-	Type      string `json:"type"`
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	IpAddress string `json:"ipAddress"`
-	Port      int    `json:"port"`
+	Type            string `json:"type"`
+	WorldId         byte   `json:"worldId"`
+	ChannelId       byte   `json:"channelId"`
+	IpAddress       string `json:"ipAddress"`
+	Port            int    `json:"port"`
+	CurrentCapacity uint32 `json:"currentCapacity"`
+	MaxCapacity     uint32 `json:"maxCapacity"`
 }

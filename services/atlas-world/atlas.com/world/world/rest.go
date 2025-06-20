@@ -10,12 +10,12 @@ import (
 type RestModel struct {
 	Id                 string              `json:"-"`
 	Name               string              `json:"name"`
-	Flag               int                 `json:"flag"`
+	State              byte                `json:"state"`
 	Message            string              `json:"message"`
 	EventMessage       string              `json:"eventMessage"`
 	Recommended        bool                `json:"recommended"`
 	RecommendedMessage string              `json:"recommendedMessage"`
-	CapacityStatus     uint32              `json:"capacityStatus"`
+	CapacityStatus     uint16              `json:"capacityStatus"`
 	Channels           []channel.RestModel `json:"-"`
 }
 
@@ -75,14 +75,29 @@ func Transform(m Model) (RestModel, error) {
 	return RestModel{
 		Id:                 strconv.Itoa(int(m.Id())),
 		Name:               m.Name(),
-		Flag:               getFlag(m.Flag()),
+		State:              byte(m.State()),
 		Message:            m.Message(),
 		EventMessage:       m.EventMessage(),
 		Recommended:        m.RecommendedMessage() != "",
 		RecommendedMessage: m.RecommendedMessage(),
-		CapacityStatus:     m.CapacityStatus(),
+		CapacityStatus:     uint16(m.CapacityStatus()),
 		Channels:           cms,
 	}, nil
+}
+
+// SetToManyReferenceIDs implements the jsonapi.UnmarshalToManyRelations interface
+func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
+	if name == "channels" {
+		r.Channels = make([]channel.RestModel, len(IDs))
+		for i, id := range IDs {
+			r.Channels[i] = channel.RestModel{}
+			err := r.Channels[i].SetID(id)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // Extract converts a RestModel to a Model using the Builder pattern
@@ -92,9 +107,6 @@ func Extract(r RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	// Convert flag int back to string
-	flagStr := getFlagString(r.Flag)
-
 	cms, err := model.SliceMap(channel.Extract)(model.FixedProvider(r.Channels))(model.ParallelMap())()
 	if err != nil {
 		return Model{}, err
@@ -103,27 +115,11 @@ func Extract(r RestModel) (Model, error) {
 	return NewBuilder().
 		SetId(byte(id)).
 		SetName(r.Name).
-		SetFlag(flagStr).
+		SetState(State(r.State)).
 		SetMessage(r.Message).
 		SetEventMessage(r.EventMessage).
 		SetRecommendedMessage(r.RecommendedMessage).
-		SetCapacityStatus(r.CapacityStatus).
+		SetCapacityStatus(Status(r.CapacityStatus)).
 		SetChannels(cms).
 		Build(), nil
-}
-
-// getFlagString converts a flag int back to its string representation
-func getFlagString(flag int) string {
-	switch flag {
-	case 0:
-		return "NOTHING"
-	case 1:
-		return "EVENT"
-	case 2:
-		return "NEW"
-	case 3:
-		return "HOT"
-	default:
-		return "NOTHING"
-	}
 }

@@ -8,22 +8,24 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func StartedEventProvider(tenant tenant.Model, worldId byte, channelId byte, ipAddress string, port int) model.Provider[[]kafka.Message] {
-	return EventProvider(tenant, worldId, channelId, channel2.StatusTypeStarted, ipAddress, port)
+func StartedEventProvider(tenant tenant.Model, worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) model.Provider[[]kafka.Message] {
+	return EventProvider(tenant, worldId, channelId, channel2.StatusTypeStarted, ipAddress, port, currentCapacity, maxCapacity)
 }
 
-func ShutdownEventProvider(tenant tenant.Model, worldId byte, channelId byte, ipAddress string, port int) model.Provider[[]kafka.Message] {
-	return EventProvider(tenant, worldId, channelId, channel2.StatusTypeShutdown, ipAddress, port)
+func ShutdownEventProvider(tenant tenant.Model, worldId byte, channelId byte, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) model.Provider[[]kafka.Message] {
+	return EventProvider(tenant, worldId, channelId, channel2.StatusTypeShutdown, ipAddress, port, currentCapacity, maxCapacity)
 }
 
-func EventProvider(tenant tenant.Model, worldId byte, channelId byte, status string, ipAddress string, port int) model.Provider[[]kafka.Message] {
+func EventProvider(tenant tenant.Model, worldId byte, channelId byte, status string, ipAddress string, port int, currentCapacity uint32, maxCapacity uint32) model.Provider[[]kafka.Message] {
 	key := []byte(tenant.Id().String())
 	value := &channel2.StatusEvent{
-		Type:      status,
-		WorldId:   worldId,
-		ChannelId: channelId,
-		IpAddress: ipAddress,
-		Port:      port,
+		Type:            status,
+		WorldId:         worldId,
+		ChannelId:       channelId,
+		IpAddress:       ipAddress,
+		Port:            port,
+		CurrentCapacity: currentCapacity,
+		MaxCapacity:     maxCapacity,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

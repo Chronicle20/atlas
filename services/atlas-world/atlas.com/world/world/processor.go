@@ -81,7 +81,7 @@ func (p *ProcessorImpl) ByWorldIdProvider(decorators ...model.Decorator[Model]) 
 		m := NewBuilder().
 			SetId(worldId).
 			SetName(wc.Name).
-			SetFlag(wc.Flag).
+			SetState(getFlag(wc.Flag)).
 			SetMessage(wc.ServerMessage).
 			SetEventMessage(wc.EventMessage).
 			SetRecommendedMessage(wc.WhyAmIRecommended).
@@ -110,7 +110,7 @@ func mapDistinctWorldId(channelServers []channel.Model) []byte {
 	return keys
 }
 
-func getFlag(flag string) int {
+func getFlag(flag string) State {
 	switch flag {
 	case "NOTHING":
 		return 0

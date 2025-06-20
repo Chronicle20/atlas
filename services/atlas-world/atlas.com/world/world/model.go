@@ -4,14 +4,28 @@ import (
 	"atlas-world/channel"
 )
 
+type State byte
+type Status uint16
+
+const (
+	StateNormal State = 0
+	StateEvent  State = 1
+	StateNew    State = 2
+	StateHot    State = 3
+
+	StatusNormal          Status = 0
+	StatusHighlyPopulated Status = 1
+	StatusFull            Status = 2
+)
+
 type Model struct {
 	id                 byte
 	name               string
-	flag               string
+	state              State
 	message            string
 	eventMessage       string
 	recommendedMessage string
-	capacityStatus     uint32
+	capacityStatus     Status
 	channels           []channel.Model
 }
 
@@ -23,8 +37,8 @@ func (m Model) Name() string {
 	return m.name
 }
 
-func (m Model) Flag() string {
-	return m.flag
+func (m Model) State() State {
+	return m.state
 }
 
 func (m Model) Message() string {
@@ -35,11 +49,15 @@ func (m Model) EventMessage() string {
 	return m.eventMessage
 }
 
+func (m Model) Recommended() bool {
+	return m.recommendedMessage != ""
+}
+
 func (m Model) RecommendedMessage() string {
 	return m.recommendedMessage
 }
 
-func (m Model) CapacityStatus() uint32 {
+func (m Model) CapacityStatus() Status {
 	return m.capacityStatus
 }
 
@@ -51,11 +69,11 @@ func (m Model) Channels() []channel.Model {
 type Builder struct {
 	id                 byte
 	name               string
-	flag               string
+	state              State
 	message            string
 	eventMessage       string
 	recommendedMessage string
-	capacityStatus     uint32
+	capacityStatus     Status
 	channels           []channel.Model
 }
 
@@ -76,9 +94,9 @@ func (b *Builder) SetName(name string) *Builder {
 	return b
 }
 
-// SetFlag sets the flag field
-func (b *Builder) SetFlag(flag string) *Builder {
-	b.flag = flag
+// SetState sets the state field
+func (b *Builder) SetState(state State) *Builder {
+	b.state = state
 	return b
 }
 
@@ -101,7 +119,7 @@ func (b *Builder) SetRecommendedMessage(recommendedMessage string) *Builder {
 }
 
 // SetCapacityStatus sets the capacityStatus field
-func (b *Builder) SetCapacityStatus(capacityStatus uint32) *Builder {
+func (b *Builder) SetCapacityStatus(capacityStatus Status) *Builder {
 	b.capacityStatus = capacityStatus
 	return b
 }
@@ -117,7 +135,7 @@ func (b *Builder) Build() Model {
 	return Model{
 		id:                 b.id,
 		name:               b.name,
-		flag:               b.flag,
+		state:              b.state,
 		message:            b.message,
 		eventMessage:       b.eventMessage,
 		recommendedMessage: b.recommendedMessage,
@@ -131,7 +149,7 @@ func (m Model) ToBuilder() *Builder {
 	return NewBuilder().
 		SetId(m.id).
 		SetName(m.name).
-		SetFlag(m.flag).
+		SetState(m.state).
 		SetMessage(m.message).
 		SetEventMessage(m.eventMessage).
 		SetRecommendedMessage(m.recommendedMessage).

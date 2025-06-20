@@ -6,12 +6,14 @@ import (
 )
 
 type Model struct {
-	id        uuid.UUID
-	worldId   byte
-	channelId byte
-	ipAddress string
-	port      int
-	createdAt time.Time
+	id              uuid.UUID
+	worldId         byte
+	channelId       byte
+	ipAddress       string
+	port            int
+	currentCapacity uint32
+	maxCapacity     uint32
+	createdAt       time.Time
 }
 
 func (m Model) Id() uuid.UUID {
@@ -38,14 +40,24 @@ func (m Model) CreatedAt() time.Time {
 	return m.createdAt
 }
 
+func (m Model) CurrentCapacity() uint32 {
+	return m.currentCapacity
+}
+
+func (m Model) MaxCapacity() uint32 {
+	return m.maxCapacity
+}
+
 // Builder is used to construct a Model instance
 type Builder struct {
-	id        uuid.UUID
-	worldId   byte
-	channelId byte
-	ipAddress string
-	port      int
-	createdAt time.Time
+	id              uuid.UUID
+	worldId         byte
+	channelId       byte
+	ipAddress       string
+	port            int
+	currentCapacity uint32
+	maxCapacity     uint32
+	createdAt       time.Time
 }
 
 // NewBuilder creates a new Builder instance
@@ -91,15 +103,29 @@ func (b *Builder) SetCreatedAt(createdAt time.Time) *Builder {
 	return b
 }
 
+// SetCurrentCapacity sets the currentCapacity field
+func (b *Builder) SetCurrentCapacity(currentCapacity uint32) *Builder {
+	b.currentCapacity = currentCapacity
+	return b
+}
+
+// SetMaxCapacity sets the maxCapacity field
+func (b *Builder) SetMaxCapacity(maxCapacity uint32) *Builder {
+	b.maxCapacity = maxCapacity
+	return b
+}
+
 // Build creates a new Model instance with the Builder's values
 func (b *Builder) Build() Model {
 	return Model{
-		id:        b.id,
-		worldId:   b.worldId,
-		channelId: b.channelId,
-		ipAddress: b.ipAddress,
-		port:      b.port,
-		createdAt: b.createdAt,
+		id:              b.id,
+		worldId:         b.worldId,
+		channelId:       b.channelId,
+		ipAddress:       b.ipAddress,
+		port:            b.port,
+		currentCapacity: b.currentCapacity,
+		maxCapacity:     b.maxCapacity,
+		createdAt:       b.createdAt,
 	}
 }
 
@@ -111,5 +137,7 @@ func (m Model) ToBuilder() *Builder {
 		SetChannelId(m.channelId).
 		SetIpAddress(m.ipAddress).
 		SetPort(m.port).
+		SetCurrentCapacity(m.currentCapacity).
+		SetMaxCapacity(m.maxCapacity).
 		SetCreatedAt(m.createdAt)
 }

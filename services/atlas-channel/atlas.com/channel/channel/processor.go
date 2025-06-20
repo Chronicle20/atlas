@@ -23,7 +23,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 }
 
 func (p *Processor) Register(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
-	return registerChannel(p.l)(p.ctx)(worldId, channelId, ipAddress, port)
+	return registerChannel(p.l)(p.ctx)(NewBuilder().
+		SetWorldId(byte(worldId)).
+		SetChannelId(byte(channelId)).
+		SetIpAddress(ipAddress).
+		SetPort(port).
+		SetCurrentCapacity(0).
+		SetMaxCapacity(0).
+		Build())
 }
 
 func (p *Processor) ByIdModelProvider(worldId world.Id, channelId channel.Id) model.Provider[Model] {

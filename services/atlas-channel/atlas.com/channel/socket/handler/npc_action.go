@@ -1,8 +1,8 @@
 package handler
 
 import (
+	"atlas-channel/data/npc"
 	"atlas-channel/movement"
-	"atlas-channel/npc"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"

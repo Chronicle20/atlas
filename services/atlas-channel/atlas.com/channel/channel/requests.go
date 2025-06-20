@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,17 +24,14 @@ func requestChannel(worldId world.Id, channelId channel.Id) requests.Request[Res
 	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ChannelResource, worldId, channelId))
 }
 
-func registerChannel(l logrus.FieldLogger) func(ctx context.Context) func(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
-	return func(ctx context.Context) func(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
-		return func(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
-			i := RestModel{
-				Id:        uuid.Nil,
-				WorldId:   byte(worldId),
-				ChannelId: byte(channelId),
-				IpAddress: ipAddress,
-				Port:      port,
+func registerChannel(l logrus.FieldLogger) func(ctx context.Context) func(c Model) error {
+	return func(ctx context.Context) func(c Model) error {
+		return func(c Model) error {
+			i, err := model.Map(Transform)(model.FixedProvider(c))()
+			if err != nil {
+				return err
 			}
-			_, err := rest.MakePostRequest[RestModel](fmt.Sprintf(getBaseRequest()+ChannelsResource, worldId), i)(l, ctx)
+			_, err = rest.MakePostRequest[RestModel](fmt.Sprintf(getBaseRequest()+ChannelsResource, c.WorldId()), i)(l, ctx)
 			return err
 		}
 	}

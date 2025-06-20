@@ -165,14 +165,15 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					go func() {
 						g, _ := guild.NewProcessor(l, ctx).GetByMemberId(c.Id())
 						if g.Id() != 0 {
-							err := session.Announce(l)(ctx)(wp)(writer.GuildOperation)(writer.GuildInfoBody(l, t)(g))(s)
+							err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(writer.GuildInfoBody(l, t)(g))(s)
 							if err != nil {
 								l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 							}
 						}
 					}()
 					go func() {
-						km, err := model.CollectToMap[key.Model, int32, key.Model](key.NewProcessor(l, ctx).ByCharacterIdProvider(s.CharacterId()), func(m key.Model) int32 {
+						var km map[int32]key.Model
+						km, err = model.CollectToMap[key.Model, int32, key.Model](key.NewProcessor(l, ctx).ByCharacterIdProvider(s.CharacterId()), func(m key.Model) int32 {
 							return m.Key()
 						}, func(m key.Model) key.Model {
 							return m
@@ -206,7 +207,8 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						}
 					}()
 					go func() {
-						bs, err := buff.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
+						var bs []buff.Model
+						bs, err = buff.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
 						if err != nil {
 							l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
 							return
@@ -217,7 +219,8 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						}
 					}()
 					go func() {
-						w, err := world.NewProcessor(l, ctx).GetById(byte(s.WorldId()))
+						var w world.Model
+						w, err = world.NewProcessor(l, ctx).GetById(byte(s.WorldId()))
 						if err != nil {
 							return
 						}

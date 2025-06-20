@@ -35,7 +35,7 @@ func (t *Timeout) Run() {
 		tctx := tenant.WithContext(sctx, te)
 		return model.ForEachSlice(model.FixedProvider(GetChannelRegistry().ChannelServers(te)), func(c Model) error {
 			if c.CreatedAt().Add(time.Second * 15).Before(time.Now()) {
-				return Unregister(t.l)(tctx)(c.WorldId(), c.ChannelId())
+				return NewProcessor(t.l, tctx).Unregister(c.WorldId(), c.ChannelId())
 			}
 			return nil
 		})

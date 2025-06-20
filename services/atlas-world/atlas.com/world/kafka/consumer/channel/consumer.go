@@ -31,11 +31,11 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 
 func handleEventStatus(l logrus.FieldLogger, ctx context.Context, e channel2.StatusEvent) {
 	if e.Type == channel2.StatusTypeStarted {
-		l.Debugf("Registering channel [%d] for world [%d] at [%s:%d].", e.ChannelId, e.WorldId, e.IpAddress, e.Port)
-		_, _ = channel.Register(l)(ctx)(e.WorldId, e.ChannelId, e.IpAddress, e.Port)
+		l.Debugf("Registering channel [%d] for world [%d] at [%s:%d] with capacity [%d/%d].", e.ChannelId, e.WorldId, e.IpAddress, e.Port, e.CurrentCapacity, e.MaxCapacity)
+		_, _ = channel.NewProcessor(l, ctx).Register(e.WorldId, e.ChannelId, e.IpAddress, e.Port, e.CurrentCapacity, e.MaxCapacity)
 	} else if e.Type == channel2.StatusTypeShutdown {
 		l.Debugf("Unregistering channel [%d] for world [%d] at [%s:%d].", e.ChannelId, e.WorldId, e.IpAddress, e.Port)
-		_ = channel.Unregister(l)(ctx)(e.WorldId, e.ChannelId)
+		_ = channel.NewProcessor(l, ctx).Unregister(e.WorldId, e.ChannelId)
 	} else {
 		l.Errorf("Unhandled event status [%s].", e.Type)
 	}

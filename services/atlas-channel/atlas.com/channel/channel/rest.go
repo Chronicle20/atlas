@@ -2,14 +2,18 @@ package channel
 
 import (
 	"github.com/google/uuid"
+	"time"
 )
 
 type RestModel struct {
-	Id        uuid.UUID `json:"-"`
-	WorldId   byte      `json:"worldId"`
-	ChannelId byte      `json:"channelId"`
-	IpAddress string    `json:"ipAddress"`
-	Port      int       `json:"port"`
+	Id              uuid.UUID `json:"-"`
+	WorldId         byte      `json:"worldId"`
+	ChannelId       byte      `json:"channelId"`
+	IpAddress       string    `json:"ipAddress"`
+	Port            int       `json:"port"`
+	CurrentCapacity int       `json:"currentCapacity"`
+	MaxCapacity     int       `json:"maxCapacity"`
+	CreatedAt       time.Time `json:"createdAt"`
 }
 
 func (r RestModel) GetName() string {
@@ -27,20 +31,27 @@ func (r *RestModel) SetID(id string) error {
 
 func Transform(m Model) (RestModel, error) {
 	return RestModel{
-		Id:        m.Id(),
-		WorldId:   m.WorldId(),
-		ChannelId: m.ChannelId(),
-		IpAddress: m.IpAddress(),
-		Port:      m.Port(),
+		Id:              m.Id(),
+		WorldId:         m.WorldId(),
+		ChannelId:       m.ChannelId(),
+		IpAddress:       m.IpAddress(),
+		Port:            m.Port(),
+		CurrentCapacity: m.CurrentCapacity(),
+		MaxCapacity:     m.MaxCapacity(),
+		CreatedAt:       m.CreatedAt(),
 	}, nil
 }
 
-func Extract(rm RestModel) (Model, error) {
-	return Model{
-		id:        rm.Id,
-		worldId:   rm.WorldId,
-		channelId: rm.ChannelId,
-		ipAddress: rm.IpAddress,
-		port:      rm.Port,
-	}, nil
+// Extract converts a RestModel to a Model using the Builder pattern
+func Extract(r RestModel) (Model, error) {
+	return NewBuilder().
+		SetId(r.Id).
+		SetWorldId(r.WorldId).
+		SetChannelId(r.ChannelId).
+		SetIpAddress(r.IpAddress).
+		SetPort(r.Port).
+		SetCurrentCapacity(r.CurrentCapacity).
+		SetMaxCapacity(r.MaxCapacity).
+		SetCreatedAt(r.CreatedAt).
+		Build(), nil
 }

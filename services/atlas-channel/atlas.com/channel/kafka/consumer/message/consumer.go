@@ -43,6 +43,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleWhisperChat(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMessengerChat(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handlePetChat(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handlePinkChat(sc, wp))))
 			}
 		}
 	}
@@ -188,5 +189,33 @@ func handlePetChat(sc server.Model, wp writer.Producer) message.Handler[message3
 
 		p := pet.NewModelBuilder(e.ActorId, 0, 0, "").SetOwnerID(e.Body.OwnerId).SetSlot(e.Body.PetSlot).Build()
 		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Map(), session.Announce(l)(ctx)(wp)(writer.PetChat)(writer.PetChatBody(p, e.Body.Type, e.Body.Action, e.Message, e.Body.Balloon)))
+	}
+}
+
+func handlePinkChat(sc server.Model, wp writer.Producer) message.Handler[message3.ChatEvent[message3.PinkTextChatBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e message3.ChatEvent[message3.PinkTextChatBody]) {
+		if e.Type != message3.ChatTypePinkText {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), world.Id(e.WorldId), channel.Id(e.ChannelId)) {
+			return
+		}
+
+		characterName := ""
+
+		c, err := character.NewProcessor(l, ctx).GetById()(e.ActorId)
+		if err == nil {
+			characterName = c.Name()
+		}
+
+		// TODO retrieve medal name
+		for _, cid := range e.Body.Recipients {
+			bp := session.Announce(l)(ctx)(wp)(writer.WorldMessage)(writer.WorldMessagePinkTextBody(l, sc.Tenant())("", characterName, e.Message))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(cid, bp)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)
+			}
+		}
 	}
 }

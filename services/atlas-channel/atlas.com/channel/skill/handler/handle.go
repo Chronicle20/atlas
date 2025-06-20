@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"atlas-channel/skill/effect"
+	"atlas-channel/data/skill/effect"
 	"atlas-channel/socket/model"
 	"context"
 	_map "github.com/Chronicle20/atlas-constants/map"

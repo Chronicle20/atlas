@@ -54,7 +54,11 @@ func decorateNameForMessage(medal string, characterName string) string {
 }
 
 func decorateMegaphoneMessage(medal string, characterName string, message string) string {
-	return fmt.Sprintf("%s : %s", decorateNameForMessage(medal, characterName), message)
+	name := decorateNameForMessage(medal, characterName)
+	if len(name) == 0 {
+		return message
+	}
+	return fmt.Sprintf("%s : %s", name, message)
 }
 
 func WorldMessageMegaphoneBody(l logrus.FieldLogger, t tenant.Model) func(medal string, characterName string, message string) BodyProducer {

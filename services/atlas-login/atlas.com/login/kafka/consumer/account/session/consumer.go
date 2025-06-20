@@ -186,7 +186,7 @@ func announceError(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 func announceServerInformation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 		p := world.NewProcessor(l, ctx)
-		ws, err := p.GetAll(p.ChannelLoadDecorator)
+		ws, err := p.GetAll()
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve worlds to display to session.")
 		}
@@ -210,13 +210,13 @@ func announceRecommendedWorlds(l logrus.FieldLogger) func(ctx context.Context) f
 			serverListRecommendationFunc := session.Announce(l)(wp)(writer.ServerListRecommendations)
 			return func(ws []world.Model) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					var rs = make([]world.Recommendation, 0)
+					var rs = make([]model2.Recommendation, 0)
 					for _, x := range ws {
 						if x.Recommended() {
-							rs = append(rs, x.Recommendation())
+							rs = append(rs, model2.NewWorldRecommendation(x.Id(), x.RecommendedMessage()))
 						}
 					}
-					err := serverListRecommendationFunc(s, writer.ServerListRecommendationsBody(rs))
+					err := serverListRecommendationFunc(s, writer.ServerListRecommendationsBody(l, ctx)(rs))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue recommended worlds")
 						return err
@@ -253,7 +253,12 @@ func announceServerList(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 			return func(ws []world.Model) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					for _, x := range ws {
-						err := serverListEntryFunc(s, writer.ServerListEntryBody(t)(x.Id(), x.Name(), x.State(), x.EventMessage(), x.ChannelLoad()))
+						var cls []model2.Load
+						for _, c := range x.Channels() {
+							cls = append(cls, model2.NewChannelLoad(c.ChannelId(), c.CurrentCapacity()))
+						}
+
+						err := serverListEntryFunc(s, writer.ServerListEntryBody(t)(x.Id(), x.Name(), x.State(), x.EventMessage(), cls))
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write server list entry for [%d]", x.Id())
 						}

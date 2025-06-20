@@ -1,7 +1,7 @@
 package writer
 
 import (
-	"atlas-login/channel"
+	"atlas-login/socket/model"
 	"atlas-login/world"
 	"fmt"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -11,8 +11,8 @@ import (
 const ServerListEntry = "ServerListEntry"
 const ServerListEnd = "ServerListEnd"
 
-func ServerListEntryBody(tenant tenant.Model) func(worldId byte, worldName string, state world.State, eventMessage string, channelLoad []channel.Load) BodyProducer {
-	return func(worldId byte, worldName string, state world.State, eventMessage string, channelLoad []channel.Load) BodyProducer {
+func ServerListEntryBody(tenant tenant.Model) func(worldId byte, worldName string, state world.State, eventMessage string, channelLoad []model.Load) BodyProducer {
+	return func(worldId byte, worldName string, state world.State, eventMessage string, channelLoad []model.Load) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(worldId)
 			w.WriteAsciiString(worldName)
@@ -37,7 +37,7 @@ func ServerListEntryBody(tenant tenant.Model) func(worldId byte, worldName strin
 			w.WriteByte(byte(len(channelLoad)))
 			for _, x := range channelLoad {
 				w.WriteAsciiString(fmt.Sprintf("%s - %d", worldName, x.ChannelId()))
-				w.WriteInt(uint32(x.Capacity()))
+				w.WriteInt(x.Capacity())
 				w.WriteByte(1)
 				w.WriteByte(x.ChannelId() - 1)
 				w.WriteBool(false) // adult channel

@@ -12,65 +12,75 @@ import (
 
 var errWorldNotFound = errors.New("world not found")
 
-func AllWorldProvider(ctx context.Context) model.Provider[[]Model] {
-	worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(tenant.MustFromContext(ctx)))
-	return model.SliceMap[byte, Model](worldTransformer(ctx))(model.FixedProvider[[]byte](worldIds))(model.ParallelMap())
+type Processor interface {
+	GetWorlds() ([]Model, error)
+	AllWorldProvider() model.Provider[[]Model]
+	GetWorld(worldId byte) (Model, error)
+	ByWorldIdProvider(worldId byte) model.Provider[Model]
 }
 
-func GetWorlds(_ logrus.FieldLogger) func(ctx context.Context) ([]Model, error) {
-	return func(ctx context.Context) ([]Model, error) {
-		return AllWorldProvider(ctx)()
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	t   tenant.Model
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+		t:   tenant.MustFromContext(ctx),
 	}
 }
 
-func worldTransformer(ctx context.Context) func(b byte) (Model, error) {
-	return func(b byte) (Model, error) {
-		return ByWorldIdProvider(ctx)(b)()
-	}
+func (p *ProcessorImpl) AllWorldProvider() model.Provider[[]Model] {
+	worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(p.t))
+	return model.SliceMap[byte, Model](p.worldTransformer)(model.FixedProvider[[]byte](worldIds))(model.ParallelMap())
 }
 
-func ByWorldIdProvider(ctx context.Context) func(worldId byte) model.Provider[Model] {
-	t := tenant.MustFromContext(ctx)
-	return func(worldId byte) model.Provider[Model] {
-		worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(t))
-		var exists = false
-		for _, wid := range worldIds {
-			if wid == worldId {
-				exists = true
-			}
-		}
-		if !exists {
-			return model.ErrorProvider[Model](errWorldNotFound)
-		}
-
-		c, err := configuration.GetTenantConfig(t.Id())
-		if err != nil {
-			return model.ErrorProvider[Model](err)
-		}
-
-		if len(c.Worlds) <= 0 || int(worldId) >= len(c.Worlds) {
-			return model.ErrorProvider[Model](errors.New("world not found"))
-		}
-		wc := c.Worlds[worldId]
-		m := Model{
-			id:                 worldId,
-			name:               wc.Name,
-			flag:               wc.Flag,
-			message:            wc.ServerMessage,
-			eventMessage:       wc.EventMessage,
-			recommendedMessage: wc.WhyAmIRecommended,
-			capacityStatus:     0,
-		}
-		return model.FixedProvider[Model](m)
-	}
+func (p *ProcessorImpl) GetWorlds() ([]Model, error) {
+	return p.AllWorldProvider()()
 }
 
-func GetWorld(_ logrus.FieldLogger) func(ctx context.Context) func(worldId byte) (Model, error) {
-	return func(ctx context.Context) func(worldId byte) (Model, error) {
-		return func(worldId byte) (Model, error) {
-			return ByWorldIdProvider(ctx)(worldId)()
+func (p *ProcessorImpl) worldTransformer(b byte) (Model, error) {
+	return p.ByWorldIdProvider(b)()
+}
+
+func (p *ProcessorImpl) ByWorldIdProvider(worldId byte) model.Provider[Model] {
+	worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(p.t))
+	var exists = false
+	for _, wid := range worldIds {
+		if wid == worldId {
+			exists = true
 		}
 	}
+	if !exists {
+		return model.ErrorProvider[Model](errWorldNotFound)
+	}
+
+	c, err := configuration.GetTenantConfig(p.t.Id())
+	if err != nil {
+		return model.ErrorProvider[Model](err)
+	}
+
+	if len(c.Worlds) <= 0 || int(worldId) >= len(c.Worlds) {
+		return model.ErrorProvider[Model](errors.New("world not found"))
+	}
+	wc := c.Worlds[worldId]
+	m := Model{
+		id:                 worldId,
+		name:               wc.Name,
+		flag:               wc.Flag,
+		message:            wc.ServerMessage,
+		eventMessage:       wc.EventMessage,
+		recommendedMessage: wc.WhyAmIRecommended,
+		capacityStatus:     0,
+	}
+	return model.FixedProvider[Model](m)
+}
+
+func (p *ProcessorImpl) GetWorld(worldId byte) (Model, error) {
+	return p.ByWorldIdProvider(worldId)()
 }
 
 func mapDistinctWorldId(channelServers []channel.Model) []byte {

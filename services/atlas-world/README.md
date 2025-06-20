@@ -11,8 +11,6 @@ A RESTful resource which provides world services.
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
 - BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
-- TOPIC_CHANNEL_SERVICE - Kafka Topic for transmitting Channel Service events
-  - Announces when channel services start and stop.
 - COMMAND_TOPIC_CHANNEL_STATUS - Kafka Topic for issuing Channel Service commands.
   - Used for requesting started channel services to identify status.
 
@@ -33,24 +31,24 @@ MINOR_VERSION:1
 
 #### [GET] Get Worlds
 
-```/api/wrg/worlds/```
+```/api/worlds/```
 
 #### [GET] Get World By Id
 
-```/api/wrg/worlds/{worldId}```
+```/api/worlds/{worldId}```
 
 #### [GET] Get Channels For World
 
-```/api/wrg/worlds/{worldId}/channels```
+```/api/worlds/{worldId}/channels```
 
 #### [GET] Get Channel By Id
 
-```/api/wrg/worlds/{worldId}/channels/{channelId}```
+```/api/worlds/{worldId}/channels/{channelId}```
 
 #### [POST] Register Channel
 
-```/api/wrg/worlds/{worldId}/channels```
+```/api/worlds/{worldId}/channels```
 
 #### [DELETE] Unregister Channel
 
-```/api/wrg/worlds/{worldId}/channels/{channelId}```
+```/api/worlds/{worldId}/channels/{channelId}```

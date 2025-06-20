@@ -29,7 +29,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetWorld(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			ws, err := GetWorld(d.Logger())(d.Context())(worldId)
+			ws, err := NewProcessor(d.Logger(), d.Context()).GetWorld(worldId)
 			if err != nil {
 				if errors.Is(err, errWorldNotFound) {
 					w.WriteHeader(http.StatusNotFound)
@@ -40,33 +40,37 @@ func handleGetWorld(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			res, err := model.Map(Transform)(model.FixedProvider(ws))()
+			rm, err := model.Map(Transform)(model.FixedProvider(ws))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 		}
 	})
 }
 
 func handleGetWorlds(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ws, err := GetWorlds(d.Logger())(d.Context())
+		ws, err := NewProcessor(d.Logger(), d.Context()).GetWorlds()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to get all channel servers.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		res, err := model.SliceMap(Transform)(model.FixedProvider(ws))(model.ParallelMap())()
+		rm, err := model.SliceMap(Transform)(model.FixedProvider(ws))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 	}
 }

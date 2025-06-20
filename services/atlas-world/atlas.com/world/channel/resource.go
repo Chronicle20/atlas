@@ -29,20 +29,22 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetChannelServers(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cs, err := GetByWorld(d.Context())(worldId)
+			cs, err := NewProcessor(d.Logger(), d.Context()).GetByWorld(worldId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to get all channel servers.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			res, err := model.SliceMap(Transform)(model.FixedProvider(cs))(model.ParallelMap())()
+			rm, err := model.SliceMap(Transform)(model.FixedProvider(cs))(model.ParallelMap())()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 		}
 	})
 }
@@ -61,7 +63,7 @@ func handleGetChannel(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				ch, err := GetById(d.Context())(worldId, channelId)
+				ch, err := NewProcessor(d.Logger(), d.Context()).GetById(worldId, channelId)
 				if err != nil {
 					if errors.Is(err, ErrChannelNotFound) {
 						w.WriteHeader(http.StatusNotFound)
@@ -72,14 +74,16 @@ func handleGetChannel(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
-				res, err := model.Map(Transform)(model.FixedProvider(ch))()
+				rm, err := model.Map(Transform)(model.FixedProvider(ch))()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 
-				server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 			}
 		})
 	})

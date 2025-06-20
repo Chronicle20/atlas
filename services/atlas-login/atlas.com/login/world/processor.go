@@ -9,12 +9,11 @@ import (
 )
 
 type Processor interface {
+	GetAll() ([]Model, error)
 	AllProvider() model.Provider[[]Model]
-	GetAll(decorators ...model.Decorator[Model]) ([]Model, error)
-	ByIdModelProvider(worldId byte) model.Provider[Model]
 	GetById(worldId byte) (Model, error)
+	ByIdModelProvider(worldId byte) model.Provider[Model]
 	GetCapacityStatus(worldId byte) Status
-	ChannelLoadDecorator(m Model) Model
 }
 
 type ProcessorImpl struct {
@@ -36,8 +35,8 @@ func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestWorlds(), Extract, model.Filters[Model]())
 }
 
-func (p *ProcessorImpl) GetAll(decorators ...model.Decorator[Model]) ([]Model, error) {
-	return model.SliceMap(model.Decorate(decorators))(p.AllProvider())(model.ParallelMap())()
+func (p *ProcessorImpl) GetAll() ([]Model, error) {
+	return p.AllProvider()()
 }
 
 func (p *ProcessorImpl) ByIdModelProvider(worldId byte) model.Provider[Model] {
@@ -54,16 +53,4 @@ func (p *ProcessorImpl) GetCapacityStatus(worldId byte) Status {
 		return StatusFull
 	}
 	return w.CapacityStatus()
-}
-
-func (p *ProcessorImpl) ChannelLoadDecorator(m Model) Model {
-	nm, err := model.Fold[channel.Model, Model](p.cp.ByWorldModelProvider(m.Id()), Clone(m), foldChannelLoad)()
-	if err != nil {
-		return m
-	}
-	return nm
-}
-
-func foldChannelLoad(m Model, c channel.Model) (Model, error) {
-	return CloneWorld(m).AddChannelLoad(c.ChannelId(), c.Capacity()).Build(), nil
 }

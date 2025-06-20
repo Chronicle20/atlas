@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	WorldsResource = "worlds/"
-	WorldsById     = WorldsResource + "%d"
+	WorldsResource        = "worlds"
+	WorldsIncludeChannels = WorldsResource + "?include=channels"
+	WorldsById            = WorldsResource + "/%d"
 )
 
 func getBaseRequest() string {
@@ -16,7 +17,7 @@ func getBaseRequest() string {
 }
 
 func requestWorlds() requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](getBaseRequest() + WorldsResource)
+	return rest.MakeGetRequest[[]RestModel](getBaseRequest() + WorldsIncludeChannels)
 }
 
 func requestWorld(worldId byte) requests.Request[RestModel] {

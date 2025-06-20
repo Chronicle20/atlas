@@ -2133,8 +2133,8 @@ const (
 	HiddenStreetStage24GriffeyBase1Id                  = Id(970032400)
 	HiddenStreetStage25LeviathanBase1Id                = Id(970032500)
 	HiddenStreetStage26PapulatusBase1Id                = Id(970032600)
-	HiddenStreetStage27PianusBase1Id                   = Id(970032700) // 12
-	HiddenStreetStage1ManoBase2Id                      = Id(970040100) //18
+	HiddenStreetStage27PianusBase1Id                   = Id(970032700)
+	HiddenStreetStage1ManoBase2Id                      = Id(970040100)
 	HiddenStreetStage2StumpyBase2Id                    = Id(970040200)
 	HiddenStreetStage3DeoBase2Id                       = Id(970040300)
 	HiddenStreetStage4KingSlimeBase2Id                 = Id(970040400)

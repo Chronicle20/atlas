@@ -37,3 +37,79 @@ func (m Model) Port() int {
 func (m Model) CreatedAt() time.Time {
 	return m.createdAt
 }
+
+// Builder is used to construct a Model instance
+type Builder struct {
+	id        uuid.UUID
+	worldId   byte
+	channelId byte
+	ipAddress string
+	port      int
+	createdAt time.Time
+}
+
+// NewBuilder creates a new Builder instance
+func NewBuilder() *Builder {
+	return &Builder{
+		createdAt: time.Now(),
+	}
+}
+
+// SetId sets the id field
+func (b *Builder) SetId(id uuid.UUID) *Builder {
+	b.id = id
+	return b
+}
+
+// SetWorldId sets the worldId field
+func (b *Builder) SetWorldId(worldId byte) *Builder {
+	b.worldId = worldId
+	return b
+}
+
+// SetChannelId sets the channelId field
+func (b *Builder) SetChannelId(channelId byte) *Builder {
+	b.channelId = channelId
+	return b
+}
+
+// SetIpAddress sets the ipAddress field
+func (b *Builder) SetIpAddress(ipAddress string) *Builder {
+	b.ipAddress = ipAddress
+	return b
+}
+
+// SetPort sets the port field
+func (b *Builder) SetPort(port int) *Builder {
+	b.port = port
+	return b
+}
+
+// SetCreatedAt sets the createdAt field
+func (b *Builder) SetCreatedAt(createdAt time.Time) *Builder {
+	b.createdAt = createdAt
+	return b
+}
+
+// Build creates a new Model instance with the Builder's values
+func (b *Builder) Build() Model {
+	return Model{
+		id:        b.id,
+		worldId:   b.worldId,
+		channelId: b.channelId,
+		ipAddress: b.ipAddress,
+		port:      b.port,
+		createdAt: b.createdAt,
+	}
+}
+
+// ToBuilder creates a Builder initialized with the Model's values
+func (m Model) ToBuilder() *Builder {
+	return NewBuilder().
+		SetId(m.id).
+		SetWorldId(m.worldId).
+		SetChannelId(m.channelId).
+		SetIpAddress(m.ipAddress).
+		SetPort(m.port).
+		SetCreatedAt(m.createdAt)
+}

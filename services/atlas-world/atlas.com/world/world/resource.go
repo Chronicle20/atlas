@@ -26,10 +26,20 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 	}
 }
 
+func decoratorsFromInclude(r *http.Request, p Processor) []model.Decorator[Model] {
+	var decorators = make([]model.Decorator[Model], 0)
+	include := r.URL.Query().Get("include")
+	if include == "channels" {
+		decorators = append(decorators, p.ChannelDecorator)
+	}
+	return decorators
+}
+
 func handleGetWorld(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			ws, err := NewProcessor(d.Logger(), d.Context()).GetWorld(worldId)
+			p := NewProcessor(d.Logger(), d.Context())
+			ws, err := p.GetWorld(decoratorsFromInclude(r, p)...)(worldId)
 			if err != nil {
 				if errors.Is(err, errWorldNotFound) {
 					w.WriteHeader(http.StatusNotFound)
@@ -40,9 +50,11 @@ func handleGetWorld(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+
+			// Transform world to REST model
 			rm, err := model.Map(Transform)(model.FixedProvider(ws))()
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
+				d.Logger().WithError(err).Errorf("Creating world REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -56,21 +68,24 @@ func handleGetWorld(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 
 func handleGetWorlds(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ws, err := NewProcessor(d.Logger(), d.Context()).GetWorlds()
+		p := NewProcessor(d.Logger(), d.Context())
+		ws, err := p.GetWorlds(decoratorsFromInclude(r, p)...)
 		if err != nil {
-			d.Logger().WithError(err).Errorf("Unable to get all channel servers.")
+			d.Logger().WithError(err).Errorf("Unable to get all worlds.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		rm, err := model.SliceMap(Transform)(model.FixedProvider(ws))(model.ParallelMap())()
+
+		// Transform worlds to REST models
+		rms, err := model.SliceMap(Transform)(model.FixedProvider(ws))(model.ParallelMap())()
 		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating REST model.")
+			d.Logger().WithError(err).Errorf("Creating world REST models.")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
 	}
 }

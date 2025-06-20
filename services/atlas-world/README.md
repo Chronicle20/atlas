@@ -33,9 +33,13 @@ MINOR_VERSION:1
 
 ```/api/worlds/```
 
+Returns a list of all worlds. Each world now includes its channels as related resources following the JSON:API specification.
+
 #### [GET] Get World By Id
 
 ```/api/worlds/{worldId}```
+
+Returns a specific world by ID. The world now includes its channels as related resources following the JSON:API specification.
 
 #### [GET] Get Channels For World
 
@@ -52,3 +56,68 @@ MINOR_VERSION:1
 #### [DELETE] Unregister Channel
 
 ```/api/worlds/{worldId}/channels/{channelId}```
+
+### JSON:API Relationships
+
+The world endpoints now follow the [JSON:API specification](https://jsonapi.org/) for relationships. This means that:
+
+1. World resources include a `relationships` object with a `channels` relationship
+2. Channel resources are included in the `included` array of the response
+3. You can use the `include` query parameter to control which related resources are included
+
+Example request to get a world with its channels:
+
+```
+GET /api/worlds/0?include=channels
+```
+
+Example response:
+
+```json
+{
+  "data": {
+    "type": "worlds",
+    "id": "0",
+    "attributes": {
+      "name": "Scania",
+      "flag": 0,
+      "message": "Welcome to Scania!",
+      "eventMessage": "",
+      "recommended": true,
+      "recommendedMessage": "This world is recommended for new players.",
+      "capacityStatus": 0
+    },
+    "relationships": {
+      "channels": {
+        "data": [
+          { "type": "channels", "id": "123e4567-e89b-12d3-a456-426614174000" },
+          { "type": "channels", "id": "123e4567-e89b-12d3-a456-426614174001" }
+        ]
+      }
+    }
+  },
+  "included": [
+    {
+      "type": "channels",
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "attributes": {
+        "worldId": 0,
+        "channelId": 0,
+        "ipAddress": "127.0.0.1",
+        "port": 8585,
+        "createdAt": "2023-06-01T12:00:00Z"
+      }
+    },
+    {
+      "type": "channels",
+      "id": "123e4567-e89b-12d3-a456-426614174001",
+      "attributes": {
+        "worldId": 0,
+        "channelId": 1,
+        "ipAddress": "127.0.0.1",
+        "port": 8586,
+        "createdAt": "2023-06-01T12:01:00Z"
+      }
+    }
+  ]
+}

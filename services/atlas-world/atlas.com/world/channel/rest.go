@@ -37,3 +37,15 @@ func Transform(m Model) (RestModel, error) {
 		CreatedAt: m.CreatedAt(),
 	}, nil
 }
+
+// Extract converts a RestModel to a Model using the Builder pattern
+func Extract(r RestModel) (Model, error) {
+	return NewBuilder().
+		SetId(r.Id).
+		SetWorldId(r.WorldId).
+		SetChannelId(r.ChannelId).
+		SetIpAddress(r.IpAddress).
+		SetPort(r.Port).
+		SetCreatedAt(r.CreatedAt).
+		Build(), nil
+}

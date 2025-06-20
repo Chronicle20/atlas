@@ -11,7 +11,6 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 // Processor defines the interface for channel processing operations
@@ -73,14 +72,13 @@ func (p *ProcessorImpl) ByIdProvider(worldId byte, channelId byte) model.Provide
 // Register registers a new channel server
 func (p *ProcessorImpl) Register(worldId byte, channelId byte, ipAddress string, port int) (Model, error) {
 	p.l.Debugf("Registering world [%d] channel [%d] for tenant [%s].", worldId, channelId, p.t.String())
-	m := Model{
-		id:        uuid.New(),
-		worldId:   worldId,
-		channelId: channelId,
-		ipAddress: ipAddress,
-		port:      port,
-		createdAt: time.Now(),
-	}
+	m := NewBuilder().
+		SetId(uuid.New()).
+		SetWorldId(worldId).
+		SetChannelId(channelId).
+		SetIpAddress(ipAddress).
+		SetPort(port).
+		Build()
 	return GetChannelRegistry().Register(p.t, m), nil
 }
 

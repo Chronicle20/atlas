@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/worlds
+  url: {{scheme}}://{{host}}:{{port}}/api/worlds?include=channels
   body: none
   auth: none
+}
+
+params:query {
+  include: channels
 }

@@ -17,7 +17,6 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 		registerHandler := rest.RegisterHandler(l)(si)
 		r.HandleFunc("/routes", registerHandler("get_all_routes", GetAllRoutesHandler)).Methods(http.MethodGet)
 		r.HandleFunc("/routes/{routeId}", registerHandler("get_route", GetRouteHandler)).Methods(http.MethodGet)
-		r.HandleFunc("/routes/{routeId}/state", registerHandler("get_route_state", GetRouteStateHandler)).Methods(http.MethodGet)
 		r.HandleFunc("/routes/{routeId}/schedule", registerHandler("get_route_schedule", GetRouteScheduleHandler)).Methods(http.MethodGet)
 	}
 }
@@ -26,10 +25,9 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func GetRouteHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseRouteId(d.Logger(), func(routeId uuid.UUID) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			// Get route from processor, passing the context to extract tenant information
-			restModel, err := model.Map(Transform)(NewProcessor(d.Logger(), d.Context()).ByIdProvider(routeId))()
+			rm, err := model.Map(Transform)(NewProcessor(d.Logger(), d.Context()).ByIdProvider(routeId))()
 			if err != nil {
-				d.Logger().WithError(err).Errorln("Error transforming route")
+				d.Logger().WithError(err).Errorln("Error retrieving route")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -37,26 +35,7 @@ func GetRouteHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.Han
 			// Marshal response
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModel)
-		}
-	})
-}
-
-// GetRouteStateHandler returns a handler for the GET /routes/:id/state endpoint
-func GetRouteStateHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseRouteId(d.Logger(), func(routeId uuid.UUID) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			restModel, err := model.Map(TransformState)(NewProcessor(d.Logger(), d.Context()).RouteStateByIdProvider(routeId))()
-			if err != nil {
-				d.Logger().WithError(err).Errorln("Error transforming route state")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			// Marshal response
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RouteStateRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModel)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 		}
 	})
 }
@@ -65,9 +44,9 @@ func GetRouteStateHandler(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 func GetRouteScheduleHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseRouteId(d.Logger(), func(routeId uuid.UUID) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			restModels, err := model.SliceMap(TransformSchedule)(NewProcessor(d.Logger(), d.Context()).RouteScheduleByIdProvider(routeId))(model.ParallelMap())()
+			rm, err := model.Map(Transform)(NewProcessor(d.Logger(), d.Context()).ByIdProvider(routeId))()
 			if err != nil {
-				d.Logger().WithError(err).Errorln("Error transforming trip schedule")
+				d.Logger().WithError(err).Errorln("Error retrieving route")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -75,7 +54,7 @@ func GetRouteScheduleHandler(d *rest.HandlerDependency, c *rest.HandlerContext) 
 			// Marshal response
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]TripScheduleRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+			server.MarshalResponse[[]TripScheduleRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm.Schedule)
 		}
 	})
 }
@@ -83,10 +62,9 @@ func GetRouteScheduleHandler(d *rest.HandlerDependency, c *rest.HandlerContext) 
 // GetAllRoutesHandler returns a handler for the GET /routes endpoint
 func GetAllRoutesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Get all routes from processor, passing the context to extract tenant information
-		restModels, err := model.SliceMap(Transform)(NewProcessor(d.Logger(), d.Context()).AllRoutesProvider())(model.ParallelMap())()
+		rm, err := model.SliceMap(Transform)(NewProcessor(d.Logger(), d.Context()).AllRoutesProvider())(model.ParallelMap())()
 		if err != nil {
-			d.Logger().WithError(err).Errorln("Error transforming routes")
+			d.Logger().WithError(err).Errorln("Error retrieving routes")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -94,6 +72,6 @@ func GetAllRoutesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http
 		// Marshal response
 		query := r.URL.Query()
 		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(restModels)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 	}
 }

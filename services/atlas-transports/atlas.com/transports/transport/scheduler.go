@@ -1,7 +1,6 @@
 package transport
 
 import (
-	"fmt"
 	"github.com/google/uuid"
 	"time"
 )
@@ -61,13 +60,9 @@ func (s *Scheduler) computeRouteSchedule(route Model, startOfDay, endOfDay time.
 
 		// Only include trips that are fully contained within the day
 		if arrival.Before(endOfDay) {
-			// Create trip ID in the format: {routeID}_{departureTimestamp}
-			tripID := fmt.Sprintf("%s_%s", route.Id(), departure.Format("20060102T150405"))
-
 			// Create trip schedule
 			schedule := NewTripScheduleBuilder().
-				SetTripID(tripID).
-				SetRouteID(route.Id()).
+				SetRouteId(route.Id()).
 				SetBoardingOpen(boardingOpen).
 				SetBoardingClosed(boardingClosed).
 				SetDeparture(departure).
@@ -123,13 +118,9 @@ func (s *Scheduler) computeSharedVesselSchedule(vessel SharedVesselModel, startO
 
 		// Only include trips that are fully contained within the day
 		if arrival.Before(endOfDay) {
-			// Create trip ID in the format: {routeID}_{departureTimestamp}
-			tripID := fmt.Sprintf("%s_%s", route.Id(), departure.Format("20060102T150405"))
-
 			// Create trip schedule
 			schedule := NewTripScheduleBuilder().
-				SetTripID(tripID).
-				SetRouteID(route.Id()).
+				SetRouteId(route.Id()).
 				SetBoardingOpen(boardingOpen).
 				SetBoardingClosed(boardingClosed).
 				SetDeparture(departure).
@@ -145,15 +136,4 @@ func (s *Scheduler) computeSharedVesselSchedule(vessel SharedVesselModel, startO
 	}
 
 	return schedules
-}
-
-// GetScheduleForRoute returns the trip schedule for a specific route
-func (s *Scheduler) GetScheduleForRoute(routeID uuid.UUID, schedules []TripScheduleModel) []TripScheduleModel {
-	var routeSchedules []TripScheduleModel
-	for _, schedule := range schedules {
-		if schedule.RouteID() == routeID {
-			routeSchedules = append(routeSchedules, schedule)
-		}
-	}
-	return routeSchedules
 }

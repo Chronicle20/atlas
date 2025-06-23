@@ -14,9 +14,7 @@ type Processor interface {
 	AddTenant(routes []Model, sharedVessels []SharedVesselModel) error
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
 	AllRoutesProvider() model.Provider[[]Model]
-	RouteStateByIdProvider(id uuid.UUID) model.Provider[RouteStateModel]
-	RouteScheduleByIdProvider(routeId uuid.UUID) model.Provider[[]TripScheduleModel]
-	UpdateStates()
+	UpdateStates() error
 }
 
 // ProcessorImpl handles business logic for transport routes
@@ -35,74 +33,63 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) AddTenant(routes []Model, sharedVessels []SharedVesselModel) error {
-	p.l.Debugf("Adding [%d] routes for tenant [%s].", len(routes), p.t.Id())
-	getRouteRegistry().AddTenant(p.t, routes)
-	getSchedulerRegistry().AddTenant(p.t, NewScheduler(routes, sharedVessels))
+func (p *ProcessorImpl) AddTenant(distinctRoutes []Model, sharedVessels []SharedVesselModel) error {
+	p.l.Debugf("Adding [%d] routes for tenant [%s].", len(distinctRoutes), p.t.Id())
+	routeMap := make(map[uuid.UUID]Model)
+	for _, route := range distinctRoutes {
+		routeMap[route.Id()] = route
+	}
+	schedules := NewScheduler(distinctRoutes, sharedVessels).ComputeSchedule()
+	for _, schedule := range schedules {
+		if route, ok := routeMap[schedule.RouteId()]; ok {
+			routeMap[route.Id()] = route.Builder().AddToSchedule(schedule).Build()
+		}
+	}
+	scheduledRoutes := make([]Model, 0)
+	for _, route := range routeMap {
+		scheduledRoutes = append(scheduledRoutes, route)
+	}
+
+	getRouteRegistry().AddTenant(p.t, scheduledRoutes)
 	return nil
 }
 
 // ByIdProvider returns a provider for a route by id
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
 	return func() (Model, error) {
-		for _, route := range getRouteRegistry().GetRoutes(p.t) {
-			if route.Id() == id {
-				return route, nil
-			}
-		}
-		return Model{}, errors.New("route not found")
-	}
-}
-
-// RouteStateByIdProvider returns a provider for a route state by route id
-func (p *ProcessorImpl) RouteStateByIdProvider(id uuid.UUID) model.Provider[RouteStateModel] {
-	return func() (RouteStateModel, error) {
-		// Find the route
-		_, err := p.ByIdProvider(id)()
-		if err != nil {
-			return RouteStateModel{}, err
-		}
-
-		// Get the state machine for this route
-		stateMachine, ok := getRouteRegistry().GetRouteStateMachine(p.t, id)
+		m, ok := getRouteRegistry().GetRoute(p.t, id)
 		if !ok {
-			return RouteStateModel{}, errors.New("state machine not found for route")
+			return Model{}, errors.New("route not found")
 		}
-
-		// Just return the current state without updating it
-		return stateMachine.GetState(), nil
-	}
-}
-
-// RouteScheduleByIdProvider returns a provider for a route schedule by route id
-func (p *ProcessorImpl) RouteScheduleByIdProvider(id uuid.UUID) model.Provider[[]TripScheduleModel] {
-	return func() ([]TripScheduleModel, error) {
-		// Find the route
-		routeProvider := p.ByIdProvider(id)
-		_, err := routeProvider()
-		if err != nil {
-			return nil, err
-		}
-
-		// Get the schedule for this route
-		routeSchedules := getSchedulerRegistry().Get(p.t).GetScheduleForRoute(id, getSchedulerRegistry().Get(p.t).ComputeSchedule())
-
-		return routeSchedules, nil
+		return m, nil
 	}
 }
 
 // AllRoutesProvider returns a provider for all routes
 func (p *ProcessorImpl) AllRoutesProvider() model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		return getRouteRegistry().GetRoutes(p.t), nil
+		return getRouteRegistry().GetRoutes(p.t)
 	}
 }
 
 // UpdateStates updates the states of all routes
-func (p *ProcessorImpl) UpdateStates() {
+func (p *ProcessorImpl) UpdateStates() error {
 	now := time.Now()
-	for _, stateMachine := range getRouteRegistry().GetStateMachines(p.t) {
-		// Call UpdateState but we don't need to use the result here
-		_ = stateMachine.UpdateState(now, getSchedulerRegistry().Get(p.t).ComputeSchedule())
+
+	routes, err := getRouteRegistry().GetRoutes(p.t)
+	if err != nil {
+		return err
 	}
+	for _, route := range routes {
+		r, changed := route.UpdateState(now)
+		if changed {
+			err = getRouteRegistry().UpdateRoute(p.t, r)
+			if err != nil {
+				p.l.WithError(err).Errorf("Error updating route [%s].", route.Id())
+			}
+			p.l.Debugf("Route [%s] has entered state [%s], from [%s].", route.Id(), r.State(), route.State())
+			// TODO emit a state changed event
+		}
+	}
+	return nil
 }

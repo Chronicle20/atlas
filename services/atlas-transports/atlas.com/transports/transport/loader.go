@@ -10,59 +10,35 @@ import (
 func LoadSampleRoutes() ([]Model, []SharedVesselModel) {
 	// Create sample routes
 	// Ellinia to Orbis Ferry
-	reof := NewBuilder().
-		SetId(uuid.New()).
-		SetName("Ellinia Ferry").
-		SetStartMapID(101000300).
-		SetStagingMapID(200090000).
-		SetEnRouteMapID(200090100).
-		SetDestinationMapID(200000100).
-		SetBoardingWindowDuration(5 * time.Minute).
-		SetPreDepartureDuration(10 * time.Second).
+	reof := NewBuilder("Ellinia Ferry", 101000300, 200090000, 200090100, 200000100).
+		SetBoardingWindowDuration(4 * time.Minute).
+		SetPreDepartureDuration(1 * time.Minute).
 		SetTravelDuration(15 * time.Minute).
-		SetCycleInterval(20 * time.Minute).
+		SetCycleInterval(40 * time.Minute).
 		Build()
 
 	// Orbis to Ellinia Ferry
-	roef := NewBuilder().
-		SetId(uuid.New()).
-		SetName("Orbis Ferry").
-		SetStartMapID(200000100).
-		SetStagingMapID(200090010).
-		SetEnRouteMapID(200090110).
-		SetDestinationMapID(101000300).
-		SetBoardingWindowDuration(5 * time.Minute).
-		SetPreDepartureDuration(10 * time.Second).
+	roef := NewBuilder("Orbis Ferry", 200000100, 200090010, 200090110, 101000300).
+		SetBoardingWindowDuration(4 * time.Minute).
+		SetPreDepartureDuration(1 * time.Minute).
 		SetTravelDuration(15 * time.Minute).
-		SetCycleInterval(20 * time.Minute).
+		SetCycleInterval(40 * time.Minute).
 		Build()
 
 	// Ludibrium to Orbis Train
-	rlot := NewBuilder().
-		SetId(uuid.New()).
-		SetName("Ludibrium Train").
-		SetStartMapID(220000100).
-		SetStagingMapID(220000111).
-		SetEnRouteMapID(200000122).
-		SetDestinationMapID(200000100).
-		SetBoardingWindowDuration(2 * time.Minute).
-		SetPreDepartureDuration(30 * time.Second).
-		SetTravelDuration(2 * time.Minute).
-		SetCycleInterval(15 * time.Minute).
+	rlot := NewBuilder("Ludibrium Train", 220000100, 220000111, 200000122, 200000100).
+		SetBoardingWindowDuration(4 * time.Minute).
+		SetPreDepartureDuration(1 * time.Minute).
+		SetTravelDuration(15 * time.Minute).
+		SetCycleInterval(40 * time.Minute).
 		Build()
 
 	// Orbis to Ludibrium Train
-	rolt := NewBuilder().
-		SetId(uuid.New()).
-		SetName("Orbis Train").
-		SetStartMapID(200000100).
-		SetStagingMapID(200000121).
-		SetEnRouteMapID(200000122).
-		SetDestinationMapID(220000100).
-		SetBoardingWindowDuration(2 * time.Minute).
-		SetPreDepartureDuration(30 * time.Second).
-		SetTravelDuration(2 * time.Minute).
-		SetCycleInterval(15 * time.Minute).
+	rolt := NewBuilder("Orbis Train", 200000100, 200000121, 200000122, 220000100).
+		SetBoardingWindowDuration(4 * time.Minute).
+		SetPreDepartureDuration(1 * time.Minute).
+		SetTravelDuration(15 * time.Minute).
+		SetCycleInterval(40 * time.Minute).
 		Build()
 
 	routes := []Model{reof, roef, rlot, rolt}

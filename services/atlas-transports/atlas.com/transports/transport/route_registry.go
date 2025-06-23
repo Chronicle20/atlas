@@ -8,8 +8,7 @@ import (
 
 type RouteRegistry struct {
 	mutex         sync.RWMutex
-	stateRegister map[uuid.UUID]map[uuid.UUID]*StateMachine
-	routes        map[uuid.UUID][]Model
+	routeRegister map[uuid.UUID]map[uuid.UUID]Model
 }
 
 var routeRegistry *RouteRegistry
@@ -18,8 +17,7 @@ var routeRegistryOnce sync.Once
 func getRouteRegistry() *RouteRegistry {
 	routeRegistryOnce.Do(func() {
 		routeRegistry = &RouteRegistry{}
-		routeRegistry.stateRegister = make(map[uuid.UUID]map[uuid.UUID]*StateMachine)
-		routeRegistry.routes = make(map[uuid.UUID][]Model)
+		routeRegistry.routeRegister = make(map[uuid.UUID]map[uuid.UUID]Model)
 	})
 	return routeRegistry
 }
@@ -27,50 +25,50 @@ func getRouteRegistry() *RouteRegistry {
 func (r *RouteRegistry) AddTenant(t tenant.Model, routes []Model) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	var tenantStates map[uuid.UUID]*StateMachine
+	var tenantStates map[uuid.UUID]Model
 	var ok bool
-	if tenantStates, ok = r.stateRegister[t.Id()]; !ok {
-		tenantStates = make(map[uuid.UUID]*StateMachine)
-		r.stateRegister[t.Id()] = tenantStates
+	if tenantStates, ok = r.routeRegister[t.Id()]; !ok {
+		tenantStates = make(map[uuid.UUID]Model)
+		r.routeRegister[t.Id()] = tenantStates
 	}
 	for _, route := range routes {
-		tenantStates[route.Id()] = NewStateMachine(route)
+		tenantStates[route.Id()] = route
 	}
-	r.routes[t.Id()] = routes
 }
 
-func (r *RouteRegistry) GetRoutes(t tenant.Model) []Model {
+func (r *RouteRegistry) GetRoute(t tenant.Model, id uuid.UUID) (Model, bool) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	return r.routes[t.Id()]
+
+	if _, ok := r.routeRegister[t.Id()]; !ok {
+		return Model{}, false
+	}
+
+	if route, ok := r.routeRegister[t.Id()][id]; ok {
+		return route, true
+	}
+	return Model{}, false
 }
 
-func (r *RouteRegistry) GetRouteStateMachine(t tenant.Model, id uuid.UUID) (*StateMachine, bool) {
+func (r *RouteRegistry) GetRoutes(t tenant.Model) ([]Model, error) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+	if tenantRegister, ok := r.routeRegister[t.Id()]; ok {
+		var routes []Model
+		for _, route := range tenantRegister {
+			routes = append(routes, route)
+		}
+		return routes, nil
+	}
+	return make([]Model, 0), nil
+}
+
+func (r *RouteRegistry) UpdateRoute(t tenant.Model, route Model) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	var tenantStates map[uuid.UUID]*StateMachine
-	var ok bool
-	if tenantStates, ok = r.stateRegister[t.Id()]; !ok {
-		return nil, false
+	if _, ok := r.routeRegister[t.Id()]; !ok {
+		r.routeRegister[t.Id()] = make(map[uuid.UUID]Model)
 	}
-	var stateMachine *StateMachine
-	if stateMachine, ok = tenantStates[id]; !ok {
-		return nil, false
-	}
-	return stateMachine, true
-}
-
-func (r *RouteRegistry) GetStateMachines(t tenant.Model) []*StateMachine {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-	var tenantStates map[uuid.UUID]*StateMachine
-	var ok bool
-	if tenantStates, ok = r.stateRegister[t.Id()]; !ok {
-		return nil
-	}
-	var stateMachines []*StateMachine
-	for _, stateMachine := range tenantStates {
-		stateMachines = append(stateMachines, stateMachine)
-	}
-	return stateMachines
+	r.routeRegister[t.Id()][route.Id()] = route
+	return nil
 }

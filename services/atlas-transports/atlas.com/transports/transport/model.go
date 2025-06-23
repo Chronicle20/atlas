@@ -10,41 +10,16 @@ import (
 type Model struct {
 	id                     uuid.UUID
 	name                   string
-	startMapID             uint32
-	stagingMapID           uint32
-	enRouteMapID           uint32
-	destinationMapID       uint32
+	startMapId             uint32
+	stagingMapId           uint32
+	enRouteMapId           uint32
+	destinationMapId       uint32
+	state                  RouteState
+	schedule               []TripScheduleModel
 	boardingWindowDuration time.Duration
 	preDepartureDuration   time.Duration
 	travelDuration         time.Duration
 	cycleInterval          time.Duration
-}
-
-// NewModel creates a new transport route model
-func NewModel(
-	id uuid.UUID,
-	name string,
-	startMapID uint32,
-	stagingMapID uint32,
-	enRouteMapID uint32,
-	destinationMapID uint32,
-	boardingWindowDuration time.Duration,
-	preDepartureDuration time.Duration,
-	travelDuration time.Duration,
-	cycleInterval time.Duration,
-) Model {
-	return Model{
-		id:                     id,
-		name:                   name,
-		startMapID:             startMapID,
-		stagingMapID:           stagingMapID,
-		enRouteMapID:           enRouteMapID,
-		destinationMapID:       destinationMapID,
-		boardingWindowDuration: boardingWindowDuration,
-		preDepartureDuration:   preDepartureDuration,
-		travelDuration:         travelDuration,
-		cycleInterval:          cycleInterval,
-	}
 }
 
 // Id returns the route ID
@@ -57,24 +32,24 @@ func (m Model) Name() string {
 	return m.name
 }
 
-// StartMapID returns the starting map ID
-func (m Model) StartMapID() uint32 {
-	return m.startMapID
+// StartMapId returns the starting map ID
+func (m Model) StartMapId() uint32 {
+	return m.startMapId
 }
 
-// StagingMapID returns the staging map ID
-func (m Model) StagingMapID() uint32 {
-	return m.stagingMapID
+// StagingMapId returns the staging map ID
+func (m Model) StagingMapId() uint32 {
+	return m.stagingMapId
 }
 
-// EnRouteMapID returns the en-route map ID
-func (m Model) EnRouteMapID() uint32 {
-	return m.enRouteMapID
+// EnRouteMapId returns the en-route map ID
+func (m Model) EnRouteMapId() uint32 {
+	return m.enRouteMapId
 }
 
-// DestinationMapID returns the destination map ID
-func (m Model) DestinationMapID() uint32 {
-	return m.destinationMapID
+// DestinationMapId returns the destination map ID
+func (m Model) DestinationMapId() uint32 {
+	return m.destinationMapId
 }
 
 // BoardingWindowDuration returns the boarding window duration
@@ -97,14 +72,100 @@ func (m Model) CycleInterval() time.Duration {
 	return m.cycleInterval
 }
 
+func (m Model) Builder() *Builder {
+	return NewBuilder(m.Name(), m.StartMapId(), m.StagingMapId(), m.EnRouteMapId(), m.DestinationMapId()).
+		SetId(m.Id()).
+		SetState(m.state).
+		SetSchedule(m.schedule).
+		SetBoardingWindowDuration(m.boardingWindowDuration).
+		SetPreDepartureDuration(m.preDepartureDuration).
+		SetTravelDuration(m.travelDuration).
+		SetCycleInterval(m.cycleInterval)
+}
+
+func (m Model) UpdateState(now time.Time) (Model, bool) {
+	newState := m.processStateChange(now)
+	return m.Builder().SetState(newState).Build(), m.State() != newState
+}
+
+func (m Model) processStateChange(now time.Time) RouteState {
+	// Find the next trip
+	var nextTrip *TripScheduleModel
+	var inTransitTrip *TripScheduleModel
+	var futureTrip *TripScheduleModel
+	var arrivedTrip *TripScheduleModel
+
+	for i := range m.Schedule() {
+		trip := m.schedule[i]
+		if trip.RouteId() == m.Id() {
+			// Check if the trip is currently in transit (departed but not arrived)
+			if trip.Departure().Before(now) && trip.Arrival().After(now) {
+				if inTransitTrip == nil || trip.Departure().After(inTransitTrip.Departure()) {
+					// For in-transit trips, prefer the most recently departed one
+					inTransitTrip = &trip
+				}
+			} else if trip.Departure().After(now) {
+				// For future trips, prefer the one departing soonest
+				if futureTrip == nil || trip.Departure().Before(futureTrip.Departure()) {
+					futureTrip = &trip
+				}
+			} else if trip.Arrival().Before(now) {
+				// For arrived trips, prefer the most recently arrived one
+				if arrivedTrip == nil || trip.Arrival().After(arrivedTrip.Arrival()) {
+					arrivedTrip = &trip
+				}
+			}
+		}
+	}
+
+	// Prioritize in-transit trips over future trips
+	if inTransitTrip != nil {
+		nextTrip = inTransitTrip
+	} else {
+		nextTrip = futureTrip
+	}
+
+	// If no next trip, set state to awaiting_return
+	if nextTrip == nil {
+		return OutOfService
+	}
+
+	// Determine the state based on the current time and next trip
+	if now.Before(nextTrip.BoardingOpen()) {
+		return AwaitingReturn
+	} else if now.Before(nextTrip.BoardingClosed()) {
+		return OpenEntry
+	} else if now.Before(nextTrip.Departure()) {
+		return LockedEntry
+	} else if now.Before(nextTrip.Arrival()) {
+		return InTransit
+	} else if futureTrip != nil {
+		return AwaitingReturn
+	} else if arrivedTrip != nil {
+		return AwaitingReturn
+	} else {
+		return OutOfService
+	}
+}
+
+func (m Model) State() RouteState {
+	return m.state
+}
+
+func (m Model) Schedule() []TripScheduleModel {
+	return m.schedule
+}
+
 // Builder is a builder for Model
 type Builder struct {
 	id                     uuid.UUID
 	name                   string
-	startMapID             uint32
-	stagingMapID           uint32
-	enRouteMapID           uint32
-	destinationMapID       uint32
+	startMapId             uint32
+	stagingMapId           uint32
+	enRouteMapId           uint32
+	destinationMapId       uint32
+	state                  RouteState
+	schedule               []TripScheduleModel
 	boardingWindowDuration time.Duration
 	preDepartureDuration   time.Duration
 	travelDuration         time.Duration
@@ -112,9 +173,16 @@ type Builder struct {
 }
 
 // NewBuilder creates a new builder for Model
-func NewBuilder() *Builder {
+func NewBuilder(name string, startMapId uint32, stagingMapId uint32, enRouteMapId uint32, destinationMapId uint32) *Builder {
 	return &Builder{
-		id: uuid.New(),
+		id:               uuid.New(),
+		name:             name,
+		startMapId:       startMapId,
+		stagingMapId:     stagingMapId,
+		enRouteMapId:     enRouteMapId,
+		destinationMapId: destinationMapId,
+		state:            OutOfService,
+		schedule:         []TripScheduleModel{},
 	}
 }
 
@@ -130,27 +198,27 @@ func (b *Builder) SetName(name string) *Builder {
 	return b
 }
 
-// SetStartMapID sets the starting map ID
-func (b *Builder) SetStartMapID(startMapID uint32) *Builder {
-	b.startMapID = startMapID
+// SetStartMapId sets the starting map ID
+func (b *Builder) SetStartMapId(startMapId uint32) *Builder {
+	b.startMapId = startMapId
 	return b
 }
 
-// SetStagingMapID sets the staging map ID
-func (b *Builder) SetStagingMapID(stagingMapID uint32) *Builder {
-	b.stagingMapID = stagingMapID
+// SetStagingMapId sets the staging map ID
+func (b *Builder) SetStagingMapId(stagingMapId uint32) *Builder {
+	b.stagingMapId = stagingMapId
 	return b
 }
 
-// SetEnRouteMapID sets the en-route map ID
-func (b *Builder) SetEnRouteMapID(enRouteMapID uint32) *Builder {
-	b.enRouteMapID = enRouteMapID
+// SetEnRouteMapId sets the en-route map ID
+func (b *Builder) SetEnRouteMapId(enRouteMapId uint32) *Builder {
+	b.enRouteMapId = enRouteMapId
 	return b
 }
 
-// SetDestinationMapID sets the destination map ID
-func (b *Builder) SetDestinationMapID(destinationMapID uint32) *Builder {
-	b.destinationMapID = destinationMapID
+// SetDestinationMapId sets the destination map ID
+func (b *Builder) SetDestinationMapId(destinationMapId uint32) *Builder {
+	b.destinationMapId = destinationMapId
 	return b
 }
 
@@ -180,18 +248,35 @@ func (b *Builder) SetCycleInterval(cycleInterval time.Duration) *Builder {
 
 // Build builds the Model
 func (b *Builder) Build() Model {
-	return NewModel(
-		b.id,
-		b.name,
-		b.startMapID,
-		b.stagingMapID,
-		b.enRouteMapID,
-		b.destinationMapID,
-		b.boardingWindowDuration,
-		b.preDepartureDuration,
-		b.travelDuration,
-		b.cycleInterval,
-	)
+	return Model{
+		id:                     b.id,
+		name:                   b.name,
+		startMapId:             b.startMapId,
+		stagingMapId:           b.stagingMapId,
+		enRouteMapId:           b.enRouteMapId,
+		destinationMapId:       b.destinationMapId,
+		state:                  b.state,
+		schedule:               b.schedule,
+		boardingWindowDuration: b.boardingWindowDuration,
+		preDepartureDuration:   b.preDepartureDuration,
+		travelDuration:         b.travelDuration,
+		cycleInterval:          b.cycleInterval,
+	}
+}
+
+func (b *Builder) SetState(state RouteState) *Builder {
+	b.state = state
+	return b
+}
+
+func (b *Builder) SetSchedule(schedule []TripScheduleModel) *Builder {
+	b.schedule = schedule
+	return b
+}
+
+func (b *Builder) AddToSchedule(schedule TripScheduleModel) *Builder {
+	b.schedule = append(b.schedule, schedule)
+	return b
 }
 
 // SharedVesselModel is the domain model for a shared vessel
@@ -288,8 +373,8 @@ func (b *SharedVesselBuilder) Build() SharedVesselModel {
 
 // TripScheduleModel is the domain model for a trip schedule
 type TripScheduleModel struct {
-	tripID         string
-	routeID        uuid.UUID
+	tripId         uuid.UUID
+	routeId        uuid.UUID
 	boardingOpen   time.Time
 	boardingClosed time.Time
 	departure      time.Time
@@ -297,17 +382,10 @@ type TripScheduleModel struct {
 }
 
 // NewTripScheduleModel creates a new trip schedule model
-func NewTripScheduleModel(
-	tripID string,
-	routeID uuid.UUID,
-	boardingOpen time.Time,
-	boardingClosed time.Time,
-	departure time.Time,
-	arrival time.Time,
-) TripScheduleModel {
+func NewTripScheduleModel(tripId uuid.UUID, routeId uuid.UUID, boardingOpen time.Time, boardingClosed time.Time, departure time.Time, arrival time.Time) TripScheduleModel {
 	return TripScheduleModel{
-		tripID:         tripID,
-		routeID:        routeID,
+		tripId:         tripId,
+		routeId:        routeId,
 		boardingOpen:   boardingOpen,
 		boardingClosed: boardingClosed,
 		departure:      departure,
@@ -315,14 +393,9 @@ func NewTripScheduleModel(
 	}
 }
 
-// TripID returns the trip ID
-func (m TripScheduleModel) TripID() string {
-	return m.tripID
-}
-
-// RouteID returns the route ID
-func (m TripScheduleModel) RouteID() uuid.UUID {
-	return m.routeID
+// TripId returns the trip ID
+func (m TripScheduleModel) TripId() uuid.UUID {
+	return m.tripId
 }
 
 // BoardingOpen returns the boarding open time
@@ -345,10 +418,24 @@ func (m TripScheduleModel) Arrival() time.Time {
 	return m.arrival
 }
 
+func (m TripScheduleModel) RouteId() uuid.UUID {
+	return m.routeId
+}
+
+func (m TripScheduleModel) Builder() *TripScheduleBuilder {
+	return NewTripScheduleBuilder().
+		SetTripId(m.tripId).
+		SetRouteId(m.routeId).
+		SetBoardingOpen(m.boardingOpen).
+		SetBoardingClosed(m.boardingClosed).
+		SetDeparture(m.departure).
+		SetArrival(m.arrival)
+}
+
 // TripScheduleBuilder is a builder for TripScheduleModel
 type TripScheduleBuilder struct {
-	tripID         string
-	routeID        uuid.UUID
+	tripId         uuid.UUID
+	routeId        uuid.UUID
 	boardingOpen   time.Time
 	boardingClosed time.Time
 	departure      time.Time
@@ -357,18 +444,20 @@ type TripScheduleBuilder struct {
 
 // NewTripScheduleBuilder creates a new builder for TripScheduleModel
 func NewTripScheduleBuilder() *TripScheduleBuilder {
-	return &TripScheduleBuilder{}
+	return &TripScheduleBuilder{
+		tripId: uuid.New(),
+	}
 }
 
-// SetTripID sets the trip ID
-func (b *TripScheduleBuilder) SetTripID(tripID string) *TripScheduleBuilder {
-	b.tripID = tripID
+// SetTripId sets the trip ID
+func (b *TripScheduleBuilder) SetTripId(tripId uuid.UUID) *TripScheduleBuilder {
+	b.tripId = tripId
 	return b
 }
 
-// SetRouteID sets the route ID
-func (b *TripScheduleBuilder) SetRouteID(routeID uuid.UUID) *TripScheduleBuilder {
-	b.routeID = routeID
+// SetRouteId sets the route ID
+func (b *TripScheduleBuilder) SetRouteId(routeId uuid.UUID) *TripScheduleBuilder {
+	b.routeId = routeId
 	return b
 }
 
@@ -399,8 +488,8 @@ func (b *TripScheduleBuilder) SetArrival(arrival time.Time) *TripScheduleBuilder
 // Build builds the TripScheduleModel
 func (b *TripScheduleBuilder) Build() TripScheduleModel {
 	return NewTripScheduleModel(
-		b.tripID,
-		b.routeID,
+		b.tripId,
+		b.routeId,
 		b.boardingOpen,
 		b.boardingClosed,
 		b.departure,

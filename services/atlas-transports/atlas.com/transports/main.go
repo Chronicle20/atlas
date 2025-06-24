@@ -1,10 +1,12 @@
 package main
 
 import (
+	"atlas-transports/kafka/consumer/channel"
 	"atlas-transports/logger"
 	"atlas-transports/service"
 	"atlas-transports/tracing"
 	"atlas-transports/transport"
+	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -13,6 +15,7 @@ import (
 )
 
 const serviceName = "atlas-transports"
+const consumerGroupId = "Transport Service"
 
 type Server struct {
 	baseUrl string
@@ -44,6 +47,10 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
+
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	channel.InitConsumers(l)(cmf)(consumerGroupId)
+	channel.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	ten1, _ := tenant.Create(uuid.MustParse("083839c6-c47c-42a6-9585-76492795d123"), "GMS", 83, 1)
 	tenants := []tenant.Model{ten1}

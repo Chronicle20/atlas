@@ -1,6 +1,7 @@
 package transport
 
 import (
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -11,10 +12,10 @@ import (
 type RestModel struct {
 	ID               uuid.UUID               `json:"-"`
 	Name             string                  `json:"name"`
-	StartMapID       uint32                  `json:"startMapId"`
-	StagingMapID     uint32                  `json:"stagingMapId"`
-	EnRouteMapID     uint32                  `json:"enRouteMapId"`
-	DestinationMapID uint32                  `json:"destinationMapId"`
+	StartMapID       _map.Id                 `json:"startMapId"`
+	StagingMapID     _map.Id                 `json:"stagingMapId"`
+	EnRouteMapID     _map.Id                 `json:"enRouteMapId"`
+	DestinationMapID _map.Id                 `json:"destinationMapId"`
 	State            string                  `json:"state"`
 	CycleInterval    time.Duration           `json:"cycleInterval"`
 	Schedule         []TripScheduleRestModel `json:"-"`

@@ -5,16 +5,13 @@ import (
 	"time"
 )
 
-// Variable to allow mocking time.Now for testing
 var timeNow = time.Now
 
-// Scheduler computes trip schedules for transport routes
 type Scheduler struct {
 	routes        []Model
 	sharedVessels []SharedVesselModel
 }
 
-// NewScheduler creates a new scheduler
 func NewScheduler(routes []Model, sharedVessels []SharedVesselModel) *Scheduler {
 	return &Scheduler{
 		routes:        routes,
@@ -22,7 +19,6 @@ func NewScheduler(routes []Model, sharedVessels []SharedVesselModel) *Scheduler 
 	}
 }
 
-// ComputeSchedule computes the trip schedule for all routes for the current UTC day
 func (s *Scheduler) ComputeSchedule() []TripScheduleModel {
 	now := timeNow().UTC()
 	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
@@ -30,13 +26,20 @@ func (s *Scheduler) ComputeSchedule() []TripScheduleModel {
 
 	var schedules []TripScheduleModel
 
-	// Process regular routes
+	sharedRouteIds := make(map[uuid.UUID]bool)
+	for _, vessel := range s.sharedVessels {
+		sharedRouteIds[vessel.RouteAID()] = true
+		sharedRouteIds[vessel.RouteBID()] = true
+	}
+
 	for _, route := range s.routes {
+		if _, isShared := sharedRouteIds[route.Id()]; isShared {
+			continue
+		}
 		routeSchedules := s.computeRouteSchedule(route, startOfDay, endOfDay)
 		schedules = append(schedules, routeSchedules...)
 	}
 
-	// Process shared vessels
 	for _, vessel := range s.sharedVessels {
 		vesselSchedules := s.computeSharedVesselSchedule(vessel, startOfDay, endOfDay)
 		schedules = append(schedules, vesselSchedules...)
@@ -45,22 +48,17 @@ func (s *Scheduler) ComputeSchedule() []TripScheduleModel {
 	return schedules
 }
 
-// computeRouteSchedule computes the trip schedule for a single route
 func (s *Scheduler) computeRouteSchedule(route Model, startOfDay, endOfDay time.Time) []TripScheduleModel {
 	var schedules []TripScheduleModel
-
-	// Start at midnight and compute trips until the end of the day
 	currentTime := startOfDay
+
 	for currentTime.Before(endOfDay) {
-		// Calculate trip times
 		boardingOpen := currentTime
 		boardingClosed := boardingOpen.Add(route.BoardingWindowDuration())
 		departure := boardingClosed.Add(route.PreDepartureDuration())
 		arrival := departure.Add(route.TravelDuration())
 
-		// Only include trips that are fully contained within the day
 		if arrival.Before(endOfDay) {
-			// Create trip schedule
 			schedule := NewTripScheduleBuilder().
 				SetRouteId(route.Id()).
 				SetBoardingOpen(boardingOpen).
@@ -68,22 +66,17 @@ func (s *Scheduler) computeRouteSchedule(route Model, startOfDay, endOfDay time.
 				SetDeparture(departure).
 				SetArrival(arrival).
 				Build()
-
 			schedules = append(schedules, schedule)
 		}
-
-		// Move to the next cycle
 		currentTime = currentTime.Add(route.CycleInterval())
 	}
 
 	return schedules
 }
 
-// computeSharedVesselSchedule computes the trip schedule for a shared vessel
 func (s *Scheduler) computeSharedVesselSchedule(vessel SharedVesselModel, startOfDay, endOfDay time.Time) []TripScheduleModel {
 	var schedules []TripScheduleModel
 
-	// Find the routes for this shared vessel
 	var routeA, routeB Model
 	for _, route := range s.routes {
 		if route.Id() == vessel.RouteAID() {
@@ -93,14 +86,12 @@ func (s *Scheduler) computeSharedVesselSchedule(vessel SharedVesselModel, startO
 		}
 	}
 
-	// If either route is not found, return empty schedule
 	if routeA.Id() == uuid.Nil || routeB.Id() == uuid.Nil {
 		return schedules
 	}
 
-	// Start at midnight and compute trips until the end of the day
 	currentTime := startOfDay
-	isRouteA := true // Start with route A
+	isRouteA := true
 
 	for currentTime.Before(endOfDay) {
 		var route Model
@@ -110,15 +101,12 @@ func (s *Scheduler) computeSharedVesselSchedule(vessel SharedVesselModel, startO
 			route = routeB
 		}
 
-		// Calculate trip times
 		boardingOpen := currentTime
 		boardingClosed := boardingOpen.Add(route.BoardingWindowDuration())
 		departure := boardingClosed.Add(route.PreDepartureDuration())
 		arrival := departure.Add(route.TravelDuration())
 
-		// Only include trips that are fully contained within the day
 		if arrival.Before(endOfDay) {
-			// Create trip schedule
 			schedule := NewTripScheduleBuilder().
 				SetRouteId(route.Id()).
 				SetBoardingOpen(boardingOpen).
@@ -126,11 +114,9 @@ func (s *Scheduler) computeSharedVesselSchedule(vessel SharedVesselModel, startO
 				SetDeparture(departure).
 				SetArrival(arrival).
 				Build()
-
 			schedules = append(schedules, schedule)
 		}
 
-		// Move to the next cycle, alternating between routes
 		currentTime = arrival.Add(vessel.TurnaroundDelay())
 		isRouteA = !isRouteA
 	}

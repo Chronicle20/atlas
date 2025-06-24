@@ -1,6 +1,7 @@
 package transport
 
 import (
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"time"
 
 	"github.com/google/uuid"
@@ -10,10 +11,10 @@ import (
 type Model struct {
 	id                     uuid.UUID
 	name                   string
-	startMapId             uint32
-	stagingMapId           uint32
-	enRouteMapId           uint32
-	destinationMapId       uint32
+	startMapId             _map.Id
+	stagingMapId           _map.Id
+	enRouteMapId           _map.Id
+	destinationMapId       _map.Id
 	state                  RouteState
 	schedule               []TripScheduleModel
 	boardingWindowDuration time.Duration
@@ -33,22 +34,22 @@ func (m Model) Name() string {
 }
 
 // StartMapId returns the starting map ID
-func (m Model) StartMapId() uint32 {
+func (m Model) StartMapId() _map.Id {
 	return m.startMapId
 }
 
 // StagingMapId returns the staging map ID
-func (m Model) StagingMapId() uint32 {
+func (m Model) StagingMapId() _map.Id {
 	return m.stagingMapId
 }
 
 // EnRouteMapId returns the en-route map ID
-func (m Model) EnRouteMapId() uint32 {
+func (m Model) EnRouteMapId() _map.Id {
 	return m.enRouteMapId
 }
 
 // DestinationMapId returns the destination map ID
-func (m Model) DestinationMapId() uint32 {
+func (m Model) DestinationMapId() _map.Id {
 	return m.destinationMapId
 }
 
@@ -160,10 +161,10 @@ func (m Model) Schedule() []TripScheduleModel {
 type Builder struct {
 	id                     uuid.UUID
 	name                   string
-	startMapId             uint32
-	stagingMapId           uint32
-	enRouteMapId           uint32
-	destinationMapId       uint32
+	startMapId             _map.Id
+	stagingMapId           _map.Id
+	enRouteMapId           _map.Id
+	destinationMapId       _map.Id
 	state                  RouteState
 	schedule               []TripScheduleModel
 	boardingWindowDuration time.Duration
@@ -173,7 +174,7 @@ type Builder struct {
 }
 
 // NewBuilder creates a new builder for Model
-func NewBuilder(name string, startMapId uint32, stagingMapId uint32, enRouteMapId uint32, destinationMapId uint32) *Builder {
+func NewBuilder(name string, startMapId _map.Id, stagingMapId _map.Id, enRouteMapId _map.Id, destinationMapId _map.Id) *Builder {
 	return &Builder{
 		id:               uuid.New(),
 		name:             name,
@@ -199,25 +200,25 @@ func (b *Builder) SetName(name string) *Builder {
 }
 
 // SetStartMapId sets the starting map ID
-func (b *Builder) SetStartMapId(startMapId uint32) *Builder {
+func (b *Builder) SetStartMapId(startMapId _map.Id) *Builder {
 	b.startMapId = startMapId
 	return b
 }
 
 // SetStagingMapId sets the staging map ID
-func (b *Builder) SetStagingMapId(stagingMapId uint32) *Builder {
+func (b *Builder) SetStagingMapId(stagingMapId _map.Id) *Builder {
 	b.stagingMapId = stagingMapId
 	return b
 }
 
 // SetEnRouteMapId sets the en-route map ID
-func (b *Builder) SetEnRouteMapId(enRouteMapId uint32) *Builder {
+func (b *Builder) SetEnRouteMapId(enRouteMapId _map.Id) *Builder {
 	b.enRouteMapId = enRouteMapId
 	return b
 }
 
 // SetDestinationMapId sets the destination map ID
-func (b *Builder) SetDestinationMapId(destinationMapId uint32) *Builder {
+func (b *Builder) SetDestinationMapId(destinationMapId _map.Id) *Builder {
 	b.destinationMapId = destinationMapId
 	return b
 }

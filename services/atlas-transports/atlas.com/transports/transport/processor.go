@@ -1,11 +1,14 @@
 package transport
 
 import (
+	"atlas-transports/kafka/message/transport"
+	"atlas-transports/kafka/producer"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"time"
 )
@@ -87,8 +90,17 @@ func (p *ProcessorImpl) UpdateStates() error {
 			if err != nil {
 				p.l.WithError(err).Errorf("Error updating route [%s].", route.Id())
 			}
-			p.l.Debugf("Route [%s] has entered state [%s], from [%s].", route.Id(), r.State(), route.State())
-			// TODO emit a state changed event
+			var messageProvider model.Provider[[]kafka.Message]
+			if r.State() == InTransit {
+				p.l.Debugf("Transport for route [%s] has departed.", r.Id())
+				messageProvider = DepartedStatusEventProvider(r.Id(), r.StartMapId())
+			} else if r.State() == OpenEntry {
+				p.l.Debugf("Transport for route [%s] has arrived.", r.Id())
+				messageProvider = ArrivedStatusEventProvider(r.Id(), r.DestinationMapId())
+			}
+			if messageProvider != nil {
+				_ = producer.ProviderImpl(p.l)(p.ctx)(transport.EnvEventTopicStatus)(messageProvider)
+			}
 		}
 	}
 	return nil

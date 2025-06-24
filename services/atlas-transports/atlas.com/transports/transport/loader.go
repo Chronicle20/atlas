@@ -1,6 +1,7 @@
 package transport
 
 import (
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"time"
 
 	"github.com/google/uuid"
@@ -10,7 +11,7 @@ import (
 func LoadSampleRoutes() ([]Model, []SharedVesselModel) {
 	// Create sample routes
 	// Ellinia to Orbis Ferry
-	reof := NewBuilder("Ellinia Ferry", 101000300, 200090000, 200090100, 200000100).
+	reof := NewBuilder("Ellinia Ferry", _map.VictoriaRoadElliniaStationId, _map.DuringTheRideToElliniaId, _map.OnAVoyageLudibriumId, _map.OrbisOrbisStationEnterenceId).
 		SetBoardingWindowDuration(4 * time.Minute).
 		SetPreDepartureDuration(1 * time.Minute).
 		SetTravelDuration(15 * time.Minute).
@@ -18,7 +19,7 @@ func LoadSampleRoutes() ([]Model, []SharedVesselModel) {
 		Build()
 
 	// Orbis to Ellinia Ferry
-	roef := NewBuilder("Orbis Ferry", 200000100, 200090010, 200090110, 101000300).
+	roef := NewBuilder("Orbis Ferry", _map.OrbisOrbisStationEnterenceId, _map.DuringTheRideToOrbisId, _map.OnAVoyageOrbisId, _map.VictoriaRoadElliniaStationId).
 		SetBoardingWindowDuration(4 * time.Minute).
 		SetPreDepartureDuration(1 * time.Minute).
 		SetTravelDuration(15 * time.Minute).
@@ -26,7 +27,7 @@ func LoadSampleRoutes() ([]Model, []SharedVesselModel) {
 		Build()
 
 	// Ludibrium to Orbis Train
-	rlot := NewBuilder("Ludibrium Train", 220000100, 220000111, 200000122, 200000100).
+	rlot := NewBuilder("Ludibrium Train", _map.LudibriumLudibriumTicketingPlaceId, _map.LudibriumBeforeTheDepartureOrbisId, _map.OrbisBeforeTheDepartureLudibriumId, _map.OrbisOrbisStationEnterenceId).
 		SetBoardingWindowDuration(4 * time.Minute).
 		SetPreDepartureDuration(1 * time.Minute).
 		SetTravelDuration(15 * time.Minute).
@@ -34,7 +35,7 @@ func LoadSampleRoutes() ([]Model, []SharedVesselModel) {
 		Build()
 
 	// Orbis to Ludibrium Train
-	rolt := NewBuilder("Orbis Train", 200000100, 200000121, 200000122, 220000100).
+	rolt := NewBuilder("Orbis Train", _map.OrbisOrbisStationEnterenceId, _map.OrbisStationLudibriumId, _map.OrbisBeforeTheDepartureLudibriumId, _map.LudibriumLudibriumTicketingPlaceId).
 		SetBoardingWindowDuration(4 * time.Minute).
 		SetPreDepartureDuration(1 * time.Minute).
 		SetTravelDuration(15 * time.Minute).

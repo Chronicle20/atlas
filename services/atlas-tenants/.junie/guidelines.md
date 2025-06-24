@@ -46,12 +46,23 @@
 ### File Organization
 - **model.go**: Domain models and builders
 - **entity.go**: Database entities
-- **processor.go**: Business logic and service implementations
+- **processor.go**: Business logic and service implementations (should not directly access the database)
 - **rest.go**: JSON:API models
 - **producer.go/consumer.go**: Kafka message producers and consumers
-- **administrator.go**: Database modification functions
-- **provider.go**: Database accessor functions
+- **administrator.go**: Database modification functions (create, update, delete operations)
+- **provider.go**: Database accessor functions (read operations)
 - **resource.go**: API endpoints
+
+#### Separation of Concerns
+- **Processors** should focus exclusively on domain logic and orchestration. They should not contain direct database access code but instead rely on administrators and providers.
+- **Administrators** are responsible for all database modification operations (create, update, delete). They encapsulate transaction management and database-specific logic.
+- **Providers** handle all database read operations and return data in a format that can be easily transformed into domain models.
+
+This separation ensures:
+1. Domain logic remains clean and focused on business rules
+2. Database access patterns are consistent across the application
+3. Testing is simplified through clear boundaries between components
+4. Changes to database schema or ORM have minimal impact on domain logic
 
 ## Domain Modeling
 
@@ -137,6 +148,9 @@ func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[[
 
 ### Processor Pattern
 - Core component for implementing domain business logic
+- **Should not directly access the database** but instead use:
+  - **Administrator functions** for database modifications (create, update, delete)
+  - **Provider functions** for database queries (read operations)
 - Exposes a well-defined interface with dual method signatures for each operation:
   - Nested functional methods that return curried functions for deferred execution
   - Flat `AndEmit` methods for immediate business logic execution and Kafka event emission
@@ -146,12 +160,14 @@ func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[[
   - Use a message buffer to accumulate Kafka messages
   - Are curried to support partial application
   - Return domain models and errors
+  - Call administrator functions for database modifications
 - Emission methods:
   - Compose nested functions using `model.Flip` to produce flat function signatures
   - Call Kafka producers using `Emit` or `EmitWithResult` utilities
 - Promotes separation of concerns:
   - Domain logic is independent of message emission
   - Kafka emission can be disabled during testing
+  - Database access is delegated to specialized functions
 - Providers are used for lazy evaluation of database queries
   - Methods such as `ByIdProvider`, `ByCharacterProvider`, and `InTenantProvider` return `model.Provider`
   - `model.Map` and `model.SliceMap` are used to transform database entities into domain models
@@ -293,6 +309,26 @@ rms, err := model.SliceMap(Transform)(modelCollectionProvider)(model.ParallelMap
 - URL path parameters extracted using helper functions:
   - `rest.ParseCharacterId`: Extracts and validates character IDs from URL paths
   - `rest.ParseNoteId`: Extracts and validates note IDs from URL paths
+  - `rest.ParseTenantId`: Extracts and validates tenant IDs from URL paths
+- When creating new endpoints that require ID extraction from URLs, always use the appropriate helper function (e.g., `ParseTenantId` for tenant endpoints) to ensure consistent error handling and validation
+- When introducing new types of URL parameters that need extraction, create new helper functions following the same pattern as existing helpers:
+  - Name the function `Parse[ParameterType]` (e.g., `ParseItemId`, `ParseShopId`)
+  - Implement consistent error handling and validation
+  - Return a handler function that accepts the extracted parameter
+  - Example pattern to follow:
+  ```
+  func Parse[ParameterType](l logrus.FieldLogger, next [ParameterType]Handler) http.HandlerFunc {
+      return func(w http.ResponseWriter, r *http.Request) {
+          param, err := [appropriate parsing logic]
+          if err != nil {
+              l.WithError(err).Errorf("Unable to properly parse [parameterName] from path.")
+              w.WriteHeader(http.StatusBadRequest)
+              return
+          }
+          next(param)(w, r)
+      }
+  }
+  ```
 - Query parameters extracted using:
   - `r.URL.Query()`: Gets all query parameters
   - `jsonapi.ParseQueryFields(&query)`: Parses JSON:API specific query parameters (fields, includes, etc.)

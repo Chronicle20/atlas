@@ -4,6 +4,7 @@ import (
 	"atlas-tenants/database"
 	"atlas-tenants/logger"
 	"atlas-tenants/service"
+	"atlas-tenants/tenant"
 	"atlas-tenants/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -44,7 +45,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	_ = database.Connect(l, database.SetMigrations())
+	db := database.Connect(l, database.SetMigrations(tenant.MigrateEntities))
 
 	_ = consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 
@@ -53,6 +54,7 @@ func main() {
 		WithContext(tdm.Context()).
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
+		AddRouteInitializer(tenant.RegisterRoutes(db)(GetServer())).
 		SetPort(os.Getenv("REST_PORT")).
 		Run()
 

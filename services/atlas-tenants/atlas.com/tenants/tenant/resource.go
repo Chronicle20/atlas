@@ -2,6 +2,7 @@ package tenant
 
 import (
 	"atlas-tenants/rest"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -16,22 +17,12 @@ func GetAllTenantsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			processor := NewProcessor(d.Logger(), d.Context(), db)
-			tenants, err := processor.GetAll()
+
+			restModels, err := model.SliceMap(Transform)(processor.AllProvider())(model.ParallelMap())()
 			if err != nil {
-				d.Logger().WithError(err).Error("Failed to get all tenants")
+				d.Logger().WithError(err).Error("Failed to transform tenant")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
-			}
-
-			restModels := make([]RestModel, len(tenants))
-			for i, tenant := range tenants {
-				rm, err := Transform(tenant)
-				if err != nil {
-					d.Logger().WithError(err).Error("Failed to transform tenant")
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-				restModels[i] = rm
 			}
 
 			query := r.URL.Query()
@@ -47,17 +38,11 @@ func GetTenantByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				processor := NewProcessor(d.Logger(), d.Context(), db)
-				tenant, err := processor.GetById(tenantId)
+
+				rm, err := model.Map(Transform)(processor.ByIdProvider(tenantId))()
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to get tenant")
 					w.WriteHeader(http.StatusNotFound)
-					return
-				}
-
-				rm, err := Transform(tenant)
-				if err != nil {
-					d.Logger().WithError(err).Error("Failed to transform tenant")
-					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 

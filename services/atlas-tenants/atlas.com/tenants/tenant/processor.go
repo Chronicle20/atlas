@@ -36,6 +36,12 @@ type Processor interface {
 
 	// GetAll gets all tenants
 	GetAll() ([]Model, error)
+
+	// ByIdProvider returns a provider for a tenant by ID
+	ByIdProvider(id uuid.UUID) model.Provider[Model]
+
+	// AllProvider returns a provider for all tenants
+	AllProvider() model.Provider[[]Model]
 }
 
 // ProcessorImpl implements the Processor interface
@@ -235,4 +241,14 @@ func (p *ProcessorImpl) GetById(id uuid.UUID) (Model, error) {
 // GetAll gets all tenants
 func (p *ProcessorImpl) GetAll() ([]Model, error) {
 	return model.SliceMap(Make)(GetAllProvider()(p.db))(model.ParallelMap())()
+}
+
+// ByIdProvider returns a provider for a tenant by ID
+func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
+	return model.Map(Make)(GetByIdProvider(id)(p.db))
+}
+
+// AllProvider returns a provider for all tenants
+func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
+	return model.SliceMap(Make)(GetAllProvider()(p.db))(model.ParallelMap())
 }

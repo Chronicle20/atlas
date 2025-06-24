@@ -78,3 +78,12 @@ func (p *ProcessorImpl) Put(saga Saga[any]) error {
 
 	return nil
 }
+
+func GetCurrentStep[T any](saga Saga[T]) (Step[T], bool) {
+	for idx, step := range saga.Steps {
+		if step.Status == Pending {
+			return saga.Steps[idx], true
+		}
+	}
+	return Step[T]{}, false
+}

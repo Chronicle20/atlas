@@ -1,0 +1,11 @@
+meta {
+  name: Get Routes
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/transports/routes
+  body: none
+  auth: inherit
+}

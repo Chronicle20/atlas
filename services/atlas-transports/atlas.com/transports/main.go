@@ -2,7 +2,7 @@ package main
 
 import (
 	"atlas-transports/kafka/consumer/channel"
-	character "atlas-transports/kafka/consumer/character"
+	"atlas-transports/kafka/consumer/character"
 	"atlas-transports/logger"
 	"atlas-transports/service"
 	"atlas-transports/tracing"

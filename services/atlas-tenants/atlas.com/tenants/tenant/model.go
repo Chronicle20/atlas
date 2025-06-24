@@ -106,12 +106,12 @@ func (b *Builder) Build() Model {
 }
 
 // Make converts an Entity to a Model
-func Make(e Entity) Model {
+func Make(e Entity) (Model, error) {
 	return NewBuilder().
 		SetId(e.ID).
 		SetName(e.Name).
 		SetRegion(e.Region).
 		SetMajorVersion(e.MajorVersion).
 		SetMinorVersion(e.MinorVersion).
-		Build()
+		Build(), nil
 }

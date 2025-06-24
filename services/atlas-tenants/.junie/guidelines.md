@@ -173,6 +173,25 @@ func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[[
   - `model.Map` and `model.SliceMap` are used to transform database entities into domain models
   - Pure business logic version with nested functional approach (e.g., `Create`)
   - Message-emitting version that integrates with Kafka (e.g., `CreateAndEmit`)
+- **Retrieval methods must use transformation helpers**:
+  - All `GetById` and `GetAll` methods must use the helper transformation functions with providers
+  - Use `model.Map(Make)` for single entity transformation in `GetById` methods
+  - Use `model.SliceMap(Make)(model.ParallelMap())` for collections in `GetAll` methods
+  - Example implementation:
+  ```
+  // GetById gets a tenant by ID
+  func (p *ProcessorImpl) GetById(id uuid.UUID) (Model, error) {
+      return model.Map(Make)(GetByIdProvider(id)(p.db))()
+  }
+
+  // GetAll gets all tenants
+  func (p *ProcessorImpl) GetAll() ([]Model, error) {
+      return model.SliceMap(Make)(GetAllProvider()(p.db))(model.ParallelMap())()
+  }
+  ```
+  - This pattern ensures consistent transformation from database entities to domain models
+  - Promotes code reuse and maintainability
+  - Enables parallel processing for collections with `model.ParallelMap()`
 - Pure business logic methods:
   - Accept a message buffer as first parameter to collect messages during processing
   - Use curried functions (nested functions) to allow partial application

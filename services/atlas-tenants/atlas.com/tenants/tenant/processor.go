@@ -3,6 +3,7 @@ package tenant
 import (
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -97,7 +98,10 @@ func (p *ProcessorImpl) Update(id uuid.UUID, name string, region string, majorVe
 		return Model{}, err
 	}
 
-	m := Make(e)
+	m, err := Make(e)
+	if err != nil {
+		return Model{}, err
+	}
 
 	// In a real implementation, we would emit a Kafka message here
 	p.l.WithFields(logrus.Fields{
@@ -122,7 +126,10 @@ func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 		return err
 	}
 
-	m := Make(e)
+	m, err := Make(e)
+	if err != nil {
+		return err
+	}
 
 	err = DeleteTenant(p.db, id)
 	if err != nil {
@@ -142,30 +149,10 @@ func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 
 // GetById gets a tenant by ID
 func (p *ProcessorImpl) GetById(id uuid.UUID) (Model, error) {
-	provider := GetByIdProvider(id)(p.db)
-	e, err := provider()
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return Model{}, errors.New("tenant not found")
-		}
-		return Model{}, err
-	}
-
-	return Make(e), nil
+	return model.Map(Make)(GetByIdProvider(id)(p.db))()
 }
 
 // GetAll gets all tenants
 func (p *ProcessorImpl) GetAll() ([]Model, error) {
-	provider := GetAllProvider()(p.db)
-	entities, err := provider()
-	if err != nil {
-		return nil, err
-	}
-
-	models := make([]Model, len(entities))
-	for i, e := range entities {
-		models[i] = Make(e)
-	}
-
-	return models, nil
+	return model.SliceMap(Make)(GetAllProvider()(p.db))(model.ParallelMap())()
 }

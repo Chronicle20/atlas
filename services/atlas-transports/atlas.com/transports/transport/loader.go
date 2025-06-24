@@ -11,7 +11,7 @@ import (
 func LoadSampleRoutes() ([]Model, []SharedVesselModel) {
 	// Create sample routes
 	// Ellinia to Orbis Ferry
-	reof := NewBuilder("Ellinia Ferry", _map.VictoriaRoadElliniaStationId, _map.DuringTheRideToElliniaId, _map.OnAVoyageLudibriumId, _map.OrbisOrbisStationEnterenceId).
+	reof := NewBuilder("Ellinia Ferry", _map.VictoriaRoadElliniaStationId, _map.VictoriaRoadBeforeTakeoffToOrbisId, _map.DuringTheRideToOrbisId, _map.OrbisOrbisStationEnterenceId).
 		SetBoardingWindowDuration(4 * time.Minute).
 		SetPreDepartureDuration(1 * time.Minute).
 		SetTravelDuration(15 * time.Minute).
@@ -19,7 +19,7 @@ func LoadSampleRoutes() ([]Model, []SharedVesselModel) {
 		Build()
 
 	// Orbis to Ellinia Ferry
-	roef := NewBuilder("Orbis Ferry", _map.OrbisOrbisStationEnterenceId, _map.DuringTheRideToOrbisId, _map.OnAVoyageOrbisId, _map.VictoriaRoadElliniaStationId).
+	roef := NewBuilder("Orbis Ferry", _map.OrbisOrbisStationEnterenceId, _map.OrbisBeforeTakeoffToElliniaId, _map.DuringTheRideToElliniaId, _map.VictoriaRoadElliniaStationId).
 		SetBoardingWindowDuration(4 * time.Minute).
 		SetPreDepartureDuration(1 * time.Minute).
 		SetTravelDuration(15 * time.Minute).

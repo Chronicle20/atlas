@@ -106,12 +106,11 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 			if err != nil {
 				p.l.WithError(err).Errorf("Error updating route [%s].", route.Id())
 			}
-			if r.State() == OpenEntry {
-				p.l.Debugf("Transport for route [%s] has arrived.", r.Id())
+			if r.State() == AwaitingReturn {
+				p.l.Debugf("Transport for route [%s] has arrived at [%d].", r.Id(), r.DestinationMapId())
 				err = model.ForEachSlice(model.FixedProvider(p.chanP.GetAll()), func(c channel2.Model) error {
 					ff := field.NewBuilder(c.WorldId(), c.Id(), r.EnRouteMapId()).Build()
 					tf := field.NewBuilder(c.WorldId(), c.Id(), r.DestinationMapId()).Build()
-					p.l.Debugf("Transport for route [%s] is unloading characters in field [%s] to field [%s].", r.Id(), ff.Id(), tf.Id())
 					return p.warpTo(mb)(ff, tf)
 				}, model.ParallelExecute())
 				err = mb.Put(transport.EnvEventTopicStatus, ArrivedStatusEventProvider(r.Id(), r.DestinationMapId()))
@@ -120,13 +119,12 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 					return err
 				}
 			} else if r.State() == LockedEntry {
-				p.l.Debugf("Transport for route [%s] has locked doors.", r.Id())
+				p.l.Debugf("Transport for route [%s] has locked doors at [%d].", r.Id(), r.StagingMapId())
 			} else if r.State() == InTransit {
-				p.l.Debugf("Transport for route [%s] has departed.", r.Id())
+				p.l.Debugf("Transport for route [%s] has departed [%d].", r.Id(), r.StagingMapId())
 				err = model.ForEachSlice(model.FixedProvider(p.chanP.GetAll()), func(c channel2.Model) error {
 					ff := field.NewBuilder(c.WorldId(), c.Id(), r.StagingMapId()).Build()
 					tf := field.NewBuilder(c.WorldId(), c.Id(), r.EnRouteMapId()).Build()
-					p.l.Debugf("Transport for route [%s] is loading characters in field [%s] to field [%s].", r.Id(), ff.Id(), tf.Id())
 					return p.warpTo(mb)(ff, tf)
 				}, model.ParallelExecute())
 				err = mb.Put(transport.EnvEventTopicStatus, DepartedStatusEventProvider(r.Id(), r.StartMapId()))
@@ -147,7 +145,11 @@ func (p *ProcessorImpl) warpTo(mb *message.Buffer) func(fromField field.Model, t
 		if err != nil {
 			return err
 		}
+		if len(cids) == 0 {
+			return nil
+		}
 		// TODO perhaps we don't want to warp everyone to a random location
+		p.l.Debugf("Transporting characters in field [%s] to field [%s].", ff.Id(), tf.Id())
 		for _, cid := range cids {
 			err = p.charP.WarpRandom(mb)(cid)(tf.Id())
 			if err != nil {

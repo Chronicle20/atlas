@@ -73,7 +73,7 @@ func main() {
 				return
 			case <-ticker.C:
 				for _, t := range tenants {
-					transport.NewProcessor(l, tenant.WithContext(tdm.Context(), t)).UpdateStates()
+					transport.NewProcessor(l, tenant.WithContext(tdm.Context(), t)).UpdateRoutes()
 				}
 			}
 		}

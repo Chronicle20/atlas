@@ -11,6 +11,7 @@ import (
 	"errors"
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
+	map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -24,6 +25,8 @@ type Processor interface {
 	AllRoutesProvider() model.Provider[[]Model]
 	UpdateRoutes() error
 	UpdateRouteAndEmit(route Model) error
+	WarpToRouteStartMapOnLogout(mb *message.Buffer) func(characterId uint32, f field.Model) error
+	WarpToRouteStartMapOnLogoutAndEmit(characterId uint32, f field.Model) error
 }
 
 // ProcessorImpl handles business logic for transport routes
@@ -150,22 +153,40 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 
 func (p *ProcessorImpl) warpTo(mb *message.Buffer) func(fromField field.Model, toField field.Model) error {
 	return func(ff field.Model, tf field.Model) error {
-		var cids []uint32
-		cids, err := p.mp.CharacterIdsInMapProvider(ff.WorldId(), ff.ChannelId(), ff.MapId())()
+		cp := p.mp.CharacterIdsInMapProvider(ff.WorldId(), ff.ChannelId(), ff.MapId())
+		return model.ForEachSlice(cp, model.Flip(p.charP.WarpRandom(mb))(tf.Id()))
+	}
+}
+
+func (p *ProcessorImpl) WarpToRouteStartMapOnLogout(mb *message.Buffer) func(characterId uint32, f field.Model) error {
+	return func(characterId uint32, f field.Model) error {
+		// Get all routes for the tenant
+		routes, err := p.AllRoutesProvider()()
 		if err != nil {
+			p.l.WithError(err).Error("Failed to get routes for tenant")
 			return err
 		}
-		if len(cids) == 0 {
-			return nil
-		}
-		// TODO perhaps we don't want to warp everyone to a random location
-		p.l.Debugf("Transporting characters in field [%s] to field [%s].", ff.Id(), tf.Id())
-		for _, cid := range cids {
-			err = p.charP.WarpRandom(mb)(cid)(tf.Id())
-			if err != nil {
-				return err
+
+		for _, route := range routes {
+			var mapIds []map2.Id
+			mapIds = append(mapIds, route.StagingMapId())
+			mapIds = append(mapIds, route.EnRouteMapIds()...)
+
+			for _, routeMapId := range mapIds {
+				if routeMapId != f.MapId() {
+					continue
+				}
+				p.l.Debugf("Character [%d] logged out in map [%d] for route [%s], warping to start map [%d]", characterId, f.MapId(), route.Id(), route.StartMapId())
+				tf := field.NewBuilder(f.WorldId(), f.ChannelId(), route.StartMapId()).Build()
+				return p.charP.WarpRandom(mb)(characterId)(tf.Id())
 			}
 		}
 		return nil
 	}
+}
+
+func (p *ProcessorImpl) WarpToRouteStartMapOnLogoutAndEmit(characterId uint32, f field.Model) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.WarpToRouteStartMapOnLogout(mb)(characterId, f)
+	})
 }

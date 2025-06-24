@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-transports/kafka/consumer/channel"
+	character "atlas-transports/kafka/consumer/character"
 	"atlas-transports/logger"
 	"atlas-transports/service"
 	"atlas-transports/tracing"
@@ -50,7 +51,9 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	channel.InitConsumers(l)(cmf)(consumerGroupId)
+	character.InitConsumers(l)(cmf)(consumerGroupId)
 	channel.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	ten1, _ := tenant.Create(uuid.MustParse("083839c6-c47c-42a6-9585-76492795d123"), "GMS", 83, 1)
 	tenants := []tenant.Model{ten1}

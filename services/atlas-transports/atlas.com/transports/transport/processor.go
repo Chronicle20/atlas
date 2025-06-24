@@ -108,11 +108,17 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 			}
 			if r.State() == AwaitingReturn {
 				p.l.Debugf("Transport for route [%s] has arrived at [%d].", r.Id(), r.DestinationMapId())
-				err = model.ForEachSlice(model.FixedProvider(p.chanP.GetAll()), func(c channel2.Model) error {
-					ff := field.NewBuilder(c.WorldId(), c.Id(), r.EnRouteMapId()).Build()
-					tf := field.NewBuilder(c.WorldId(), c.Id(), r.DestinationMapId()).Build()
-					return p.warpTo(mb)(ff, tf)
-				}, model.ParallelExecute())
+				for _, enRouteMapId := range r.EnRouteMapIds() {
+					err = model.ForEachSlice(model.FixedProvider(p.chanP.GetAll()), func(c channel2.Model) error {
+						ff := field.NewBuilder(c.WorldId(), c.Id(), enRouteMapId).Build()
+						tf := field.NewBuilder(c.WorldId(), c.Id(), r.DestinationMapId()).Build()
+						return p.warpTo(mb)(ff, tf)
+					}, model.ParallelExecute())
+					if err != nil {
+						p.l.WithError(err).Errorf("Error warping characters from enroute map [%d] to destination map [%d].", enRouteMapId, r.DestinationMapId())
+						return err
+					}
+				}
 				err = mb.Put(transport.EnvEventTopicStatus, ArrivedStatusEventProvider(r.Id(), r.DestinationMapId()))
 				if err != nil {
 					p.l.WithError(err).Errorf("Error sending status event for route [%s].", r.Id())
@@ -124,9 +130,13 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 				p.l.Debugf("Transport for route [%s] has departed [%d].", r.Id(), r.StagingMapId())
 				err = model.ForEachSlice(model.FixedProvider(p.chanP.GetAll()), func(c channel2.Model) error {
 					ff := field.NewBuilder(c.WorldId(), c.Id(), r.StagingMapId()).Build()
-					tf := field.NewBuilder(c.WorldId(), c.Id(), r.EnRouteMapId()).Build()
+					tf := field.NewBuilder(c.WorldId(), c.Id(), r.EnRouteMapIds()[0]).Build()
 					return p.warpTo(mb)(ff, tf)
 				}, model.ParallelExecute())
+				if err != nil {
+					p.l.WithError(err).Errorf("Error warping characters from staging map [%d] to enroute map.", r.StagingMapId())
+					return err
+				}
 				err = mb.Put(transport.EnvEventTopicStatus, DepartedStatusEventProvider(r.Id(), r.StartMapId()))
 				if err != nil {
 					p.l.WithError(err).Errorf("Error sending status event for route [%s].", r.Id())

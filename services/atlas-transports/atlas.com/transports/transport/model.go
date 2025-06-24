@@ -13,7 +13,7 @@ type Model struct {
 	name                   string
 	startMapId             _map.Id
 	stagingMapId           _map.Id
-	enRouteMapId           _map.Id
+	enRouteMapIds          []_map.Id
 	destinationMapId       _map.Id
 	state                  RouteState
 	schedule               []TripScheduleModel
@@ -43,10 +43,11 @@ func (m Model) StagingMapId() _map.Id {
 	return m.stagingMapId
 }
 
-// EnRouteMapId returns the en-route map ID
-func (m Model) EnRouteMapId() _map.Id {
-	return m.enRouteMapId
+// EnRouteMapIds returns the en-route map IDs
+func (m Model) EnRouteMapIds() []_map.Id {
+	return m.enRouteMapIds
 }
+
 
 // DestinationMapId returns the destination map ID
 func (m Model) DestinationMapId() _map.Id {
@@ -74,8 +75,12 @@ func (m Model) CycleInterval() time.Duration {
 }
 
 func (m Model) Builder() *Builder {
-	return NewBuilder(m.Name(), m.StartMapId(), m.StagingMapId(), m.EnRouteMapId(), m.DestinationMapId()).
+	return NewBuilder(m.Name()).
 		SetId(m.Id()).
+		SetStartMapId(m.StartMapId()).
+		SetStagingMapId(m.StagingMapId()).
+		SetEnRouteMapIds(m.EnRouteMapIds()).
+		SetDestinationMapId(m.DestinationMapId()).
 		SetState(m.state).
 		SetSchedule(m.schedule).
 		SetBoardingWindowDuration(m.boardingWindowDuration).
@@ -163,7 +168,7 @@ type Builder struct {
 	name                   string
 	startMapId             _map.Id
 	stagingMapId           _map.Id
-	enRouteMapId           _map.Id
+	enRouteMapIds          []_map.Id
 	destinationMapId       _map.Id
 	state                  RouteState
 	schedule               []TripScheduleModel
@@ -174,14 +179,11 @@ type Builder struct {
 }
 
 // NewBuilder creates a new builder for Model
-func NewBuilder(name string, startMapId _map.Id, stagingMapId _map.Id, enRouteMapId _map.Id, destinationMapId _map.Id) *Builder {
+func NewBuilder(name string) *Builder {
 	return &Builder{
 		id:               uuid.New(),
 		name:             name,
-		startMapId:       startMapId,
-		stagingMapId:     stagingMapId,
-		enRouteMapId:     enRouteMapId,
-		destinationMapId: destinationMapId,
+		enRouteMapIds:    []_map.Id{},
 		state:            OutOfService,
 		schedule:         []TripScheduleModel{},
 	}
@@ -211,9 +213,16 @@ func (b *Builder) SetStagingMapId(stagingMapId _map.Id) *Builder {
 	return b
 }
 
-// SetEnRouteMapId sets the en-route map ID
-func (b *Builder) SetEnRouteMapId(enRouteMapId _map.Id) *Builder {
-	b.enRouteMapId = enRouteMapId
+
+// SetEnRouteMapIds sets the en-route map IDs
+func (b *Builder) SetEnRouteMapIds(enRouteMapIds []_map.Id) *Builder {
+	b.enRouteMapIds = enRouteMapIds
+	return b
+}
+
+// AddEnRouteMapId adds an en-route map ID
+func (b *Builder) AddEnRouteMapId(enRouteMapId _map.Id) *Builder {
+	b.enRouteMapIds = append(b.enRouteMapIds, enRouteMapId)
 	return b
 }
 
@@ -254,7 +263,7 @@ func (b *Builder) Build() Model {
 		name:                   b.name,
 		startMapId:             b.startMapId,
 		stagingMapId:           b.stagingMapId,
-		enRouteMapId:           b.enRouteMapId,
+		enRouteMapIds:          b.enRouteMapIds,
 		destinationMapId:       b.destinationMapId,
 		state:                  b.state,
 		schedule:               b.schedule,

@@ -389,12 +389,23 @@ server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryPar
 - Kafka messages are constructed via the `producer.SingleMessageProvider(key, value)` utility, abstracting serialization and formatting
 - This approach ensures clear separation between event construction and emission, supporting both batch and single-message workflows
 - Example:
-```go
+```
+// CreateNoteStatusEventProvider creates a provider for note status events
 func CreateNoteStatusEventProvider(characterId uint32, noteId uint32, senderId uint32, msg string, flag byte, timestamp time.Time) model.Provider[[]kafka.Message] {
-key := producer.CreateKey(int(characterId))
-body := note.StatusEventCreatedBody{ ... }
-value := note.StatusEvent[note.StatusEventCreatedBody]{ CharacterId: characterId, Type: ..., Body: body }
-return producer.SingleMessageProvider(key, value)
+    key := producer.CreateKey(int(characterId))
+    body := note.StatusEventCreatedBody{
+        NoteId:    noteId,
+        SenderId:  senderId,
+        Message:   msg,
+        Flag:      flag,
+        Timestamp: timestamp,
+    }
+    value := note.StatusEvent[note.StatusEventCreatedBody]{
+        CharacterId: characterId,
+        Type:        "CREATED",
+        Body:        body,
+    }
+    return producer.SingleMessageProvider(key, value)
 }
 ```
 
@@ -406,6 +417,33 @@ return producer.SingleMessageProvider(key, value)
 - Consistent message format across the application
 - Clear separation between message creation and emission
 - Topic-based routing for different message types
+
+### Event and Command Naming Conventions
+- **Event Naming**:
+  - Events are named using past tense verbs to indicate something that has happened (e.g., `Created`, `Updated`, `Deleted`)
+  - Event struct names follow the pattern `[Domain]Event` or `[Domain][Action]Event` (e.g., `RouteStateEvent`, `NoteCreatedEvent`)
+  - Event types (string identifiers) use uppercase constants (e.g., `CREATED`, `UPDATED`, `ERROR`)
+  - Status events use the pattern `StatusEvent[E any]` with a generic type parameter for the body
+
+- **Command Naming**:
+  - Commands are named using imperative verbs to indicate an action to be performed (e.g., `Create`, `Update`, `Delete`)
+  - Command struct names follow the pattern `Command[E any]` with a generic type parameter for the body
+  - Command types (string identifiers) use uppercase constants (e.g., `ENTER`, `EXIT`, `BUY`)
+  - Command bodies are named with the pattern `Command[Action]Body` (e.g., `CommandShopEnterBody`, `CommandShopBuyBody`)
+
+### Topic Naming Conventions
+- Topic names use lowercase words separated by dots (`.`)
+- Topics follow the pattern `[domain].[entity].[action]` or `[domain].[entity].[event-type]`
+- Command topics use the suffix `.commands` (e.g., `shop.item.commands`, `character.inventory.commands`)
+- Event topics use the suffix `.events` (e.g., `shop.item.events`, `character.inventory.events`)
+- Status event topics use the suffix `.status` (e.g., `shop.status`, `note.status`)
+- Error topics use the suffix `.errors` (e.g., `shop.errors`, `note.errors`)
+- Topics should be domain-specific and clearly indicate the type of messages they contain
+- Examples:
+  - `route.state.transitions` - For route state transition events
+  - `character.shop.commands` - For shop-related commands for characters
+  - `inventory.item.events` - For inventory item-related events
+  - `note.status` - For note status events
 
 #### Command Messages
 - Generic structure with type parameter for the body: `Command[E any]`

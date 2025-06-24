@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,7 +15,11 @@ func TestStateMachine_UpdateState(t *testing.T) {
 
 	// Create a test route
 	routeID := uuid.New()
-	route := NewBuilder("Test Route", 100, 101, 102, 103).
+	route := NewBuilder("Test Route").
+		SetStartMapId(100).
+		SetStagingMapId(101).
+		SetEnRouteMapIds([]_map.Id{102}).
+		SetDestinationMapId(103).
 		SetId(routeID).
 		SetBoardingWindowDuration(5 * time.Minute).
 		SetPreDepartureDuration(2 * time.Minute).
@@ -191,7 +196,11 @@ func TestStateMachine_UpdateState(t *testing.T) {
 func TestStateMachine_GetState(t *testing.T) {
 	// Create a test route
 	routeID := uuid.New()
-	route := NewBuilder("Test Route", 0, 0, 0, 0).
+	route := NewBuilder("Test Route").
+		SetStartMapId(0).
+		SetStagingMapId(0).
+		SetEnRouteMapIds([]_map.Id{0}).
+		SetDestinationMapId(0).
 		SetId(routeID).
 		Build()
 
@@ -230,7 +239,11 @@ func TestStateMachine_MultipleTrips(t *testing.T) {
 
 	// Create a test route
 	routeID := uuid.New()
-	route := NewBuilder("Test Route", 0, 0, 0, 0).
+	route := NewBuilder("Test Route").
+		SetStartMapId(0).
+		SetStagingMapId(0).
+		SetEnRouteMapIds([]_map.Id{0}).
+		SetDestinationMapId(0).
 		SetId(routeID).
 		Build()
 	trip1 := uuid.New()
@@ -291,7 +304,11 @@ func TestStateMachine_StateChanged(t *testing.T) {
 
 	// Create a test route
 	routeID := uuid.New()
-	route := NewBuilder("Test Route", 100, 101, 102, 103).
+	route := NewBuilder("Test Route").
+		SetStartMapId(100).
+		SetStagingMapId(101).
+		SetEnRouteMapIds([]_map.Id{102}).
+		SetDestinationMapId(103).
 		SetId(routeID).
 		SetBoardingWindowDuration(5 * time.Minute).
 		SetPreDepartureDuration(2 * time.Minute).

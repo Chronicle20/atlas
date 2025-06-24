@@ -15,8 +15,8 @@ import (
 func GetAllTenantsHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			p := NewProcessor(d.Logger(), d.Context(), db)
-			tenants, err := p.GetAll()
+			processor := NewProcessor(d.Logger(), d.Context(), db)
+			tenants, err := processor.GetAll()
 			if err != nil {
 				d.Logger().WithError(err).Error("Failed to get all tenants")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -46,8 +46,8 @@ func GetTenantByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				p := NewProcessor(d.Logger(), d.Context(), db)
-				tenant, err := p.GetById(tenantId)
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				tenant, err := processor.GetById(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to get tenant")
 					w.WriteHeader(http.StatusNotFound)
@@ -80,8 +80,8 @@ func CreateTenantHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 				return
 			}
 
-			p := NewProcessor(d.Logger(), d.Context(), db)
-			tenant, err := p.Create(name, region, majorVersion, minorVersion)
+			processor := NewProcessor(d.Logger(), d.Context(), db)
+			tenant, err := processor.CreateAndEmit(name, region, majorVersion, minorVersion)
 			if err != nil {
 				d.Logger().WithError(err).Error("Failed to create tenant")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -115,8 +115,8 @@ func UpdateTenantHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 					return
 				}
 
-				p := NewProcessor(d.Logger(), d.Context(), db)
-				tenant, err := p.Update(tenantId, name, region, majorVersion, minorVersion)
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				tenant, err := processor.UpdateAndEmit(tenantId, name, region, majorVersion, minorVersion)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to update tenant")
 					w.WriteHeader(http.StatusInternalServerError)
@@ -143,8 +143,8 @@ func DeleteTenantHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				p := NewProcessor(d.Logger(), d.Context(), db)
-				err := p.Delete(tenantId)
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				err := processor.DeleteAndEmit(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to delete tenant")
 					w.WriteHeader(http.StatusInternalServerError)

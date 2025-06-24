@@ -1,15 +1,17 @@
 package tenant
 
 import (
-	"encoding/json"
+	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
-	"log"
 )
 
 const (
-	EVENT_TOPIC_TENANT_STATUS = "tenant.status"
+	EventTopicTenantStatus = "tenant.status"
+	EventTypeCreated       = "CREATED"
+	EventTypeUpdated       = "UPDATED"
+	EventTypeDeleted       = "DELETED"
 )
 
 // StatusEvent is a generic event for tenant status changes
@@ -76,21 +78,5 @@ func CreateStatusEventProvider(tenantId uuid.UUID, eventType string, name string
 		Type:     eventType,
 		Body:     body,
 	}
-
-	return model.FixedProvider([]kafka.Message{
-		{
-			Topic: EVENT_TOPIC_TENANT_STATUS,
-			Key:   key,
-			Value: mustMarshal(value),
-		},
-	})
-}
-
-// mustMarshal marshals the value to JSON and panics on error
-func mustMarshal(v interface{}) []byte {
-	data, err := json.Marshal(v)
-	if err != nil {
-		log.Fatalf("Failed to marshal JSON: %v", err)
-	}
-	return data
+	return producer.SingleMessageProvider(key, value)
 }

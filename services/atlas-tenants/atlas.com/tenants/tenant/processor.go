@@ -1,6 +1,8 @@
 package tenant
 
 import (
+	"atlas-tenants/kafka/message"
+	"atlas-tenants/kafka/producer"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-model/model"
@@ -12,13 +14,22 @@ import (
 // Processor defines the interface for tenant operations
 type Processor interface {
 	// Create creates a new tenant
-	Create(name string, region string, majorVersion uint16, minorVersion uint16) (Model, error)
+	Create(mb *message.Buffer) func(name string, region string, majorVersion uint16, minorVersion uint16) (Model, error)
+
+	// CreateAndEmit creates a new tenant and emits a Kafka message
+	CreateAndEmit(name string, region string, majorVersion uint16, minorVersion uint16) (Model, error)
 
 	// Update updates an existing tenant
-	Update(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (Model, error)
+	Update(mb *message.Buffer) func(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (Model, error)
+
+	// UpdateAndEmit updates an existing tenant and emits a Kafka message
+	UpdateAndEmit(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (Model, error)
 
 	// Delete deletes a tenant
-	Delete(id uuid.UUID) error
+	Delete(mb *message.Buffer) func(id uuid.UUID) error
+
+	// DeleteAndEmit deletes a tenant and emits a Kafka message
+	DeleteAndEmit(id uuid.UUID) error
 
 	// GetById gets a tenant by ID
 	GetById(id uuid.UUID) (Model, error)
@@ -32,6 +43,7 @@ type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	db  *gorm.DB
+	p   producer.Provider
 }
 
 // NewProcessor creates a new processor
@@ -40,111 +52,179 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		l:   l,
 		ctx: ctx,
 		db:  db,
+		p:   producer.ProviderImpl(l)(ctx),
 	}
 }
 
 // Create creates a new tenant
-func (p *ProcessorImpl) Create(name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
-	m := NewBuilder().
-		SetName(name).
-		SetRegion(region).
-		SetMajorVersion(majorVersion).
-		SetMinorVersion(minorVersion).
-		Build()
+func (p *ProcessorImpl) Create(mb *message.Buffer) func(name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
+	return func(name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
+		m := NewBuilder().
+			SetName(name).
+			SetRegion(region).
+			SetMajorVersion(majorVersion).
+			SetMinorVersion(minorVersion).
+			Build()
 
-	e := Entity{
-		ID:           m.Id(),
-		Name:         m.Name(),
-		Region:       m.Region(),
-		MajorVersion: m.MajorVersion(),
-		MinorVersion: m.MinorVersion(),
+		e := Entity{
+			ID:           m.Id(),
+			Name:         m.Name(),
+			Region:       m.Region(),
+			MajorVersion: m.MajorVersion(),
+			MinorVersion: m.MinorVersion(),
+		}
+
+		err := CreateTenant(p.db, e)
+		if err != nil {
+			return Model{}, err
+		}
+
+		// Create and add the Kafka message to the buffer
+		err = mb.Put(EventTopicTenantStatus, CreateStatusEventProvider(
+			m.Id(),
+			EventTypeCreated,
+			m.Name(),
+			m.Region(),
+			m.MajorVersion(),
+			m.MinorVersion(),
+		))
+		if err != nil {
+			return Model{}, err
+		}
+
+		p.l.WithFields(logrus.Fields{
+			"tenantId": m.Id().String(),
+			"event":    EventTypeCreated,
+			"name":     m.Name(),
+			"region":   m.Region(),
+		}).Info("Tenant created")
+
+		return m, nil
 	}
+}
 
-	err := CreateTenant(p.db, e)
-	if err != nil {
-		return Model{}, err
-	}
-
-	// In a real implementation, we would emit a Kafka message here
-	p.l.WithFields(logrus.Fields{
-		"tenantId": m.Id().String(),
-		"event":    "CREATED",
-		"name":     m.Name(),
-		"region":   m.Region(),
-	}).Info("Tenant created")
-
-	return m, nil
+// CreateAndEmit creates a new tenant and emits a Kafka message
+func (p *ProcessorImpl) CreateAndEmit(name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
+	return message.EmitWithResult[Model, string](p.p)(func(mb *message.Buffer) func(string) (Model, error) {
+		return func(name string) (Model, error) {
+			return p.Create(mb)(name, region, majorVersion, minorVersion)
+		}
+	})(name)
 }
 
 // Update updates an existing tenant
-func (p *ProcessorImpl) Update(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
-	// First get the tenant to ensure it exists
-	provider := GetByIdProvider(id)(p.db)
-	e, err := provider()
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return Model{}, errors.New("tenant not found")
+func (p *ProcessorImpl) Update(mb *message.Buffer) func(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
+	return func(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
+		// First get the tenant to ensure it exists
+		provider := GetByIdProvider(id)(p.db)
+		e, err := provider()
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return Model{}, errors.New("tenant not found")
+			}
+			return Model{}, err
 		}
-		return Model{}, err
+
+		e.Name = name
+		e.Region = region
+		e.MajorVersion = majorVersion
+		e.MinorVersion = minorVersion
+
+		err = UpdateTenant(p.db, e)
+		if err != nil {
+			return Model{}, err
+		}
+
+		m, err := Make(e)
+		if err != nil {
+			return Model{}, err
+		}
+
+		// Create and add the Kafka message to the buffer
+		err = mb.Put(EventTopicTenantStatus, CreateStatusEventProvider(
+			m.Id(),
+			EventTypeUpdated,
+			m.Name(),
+			m.Region(),
+			m.MajorVersion(),
+			m.MinorVersion(),
+		))
+		if err != nil {
+			return Model{}, err
+		}
+
+		p.l.WithFields(logrus.Fields{
+			"tenantId": m.Id().String(),
+			"event":    EventTypeUpdated,
+			"name":     m.Name(),
+			"region":   m.Region(),
+		}).Info("Tenant updated")
+
+		return m, nil
 	}
+}
 
-	e.Name = name
-	e.Region = region
-	e.MajorVersion = majorVersion
-	e.MinorVersion = minorVersion
-
-	err = UpdateTenant(p.db, e)
-	if err != nil {
-		return Model{}, err
-	}
-
-	m, err := Make(e)
-	if err != nil {
-		return Model{}, err
-	}
-
-	// In a real implementation, we would emit a Kafka message here
-	p.l.WithFields(logrus.Fields{
-		"tenantId": m.Id().String(),
-		"event":    "UPDATED",
-		"name":     m.Name(),
-		"region":   m.Region(),
-	}).Info("Tenant updated")
-
-	return m, nil
+// UpdateAndEmit updates an existing tenant and emits a Kafka message
+func (p *ProcessorImpl) UpdateAndEmit(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
+	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+		return func(id uuid.UUID) (Model, error) {
+			return p.Update(mb)(id, name, region, majorVersion, minorVersion)
+		}
+	})(id)
 }
 
 // Delete deletes a tenant
-func (p *ProcessorImpl) Delete(id uuid.UUID) error {
-	// First get the tenant to ensure it exists and to log its details
-	provider := GetByIdProvider(id)(p.db)
-	e, err := provider()
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("tenant not found")
+func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uuid.UUID) error {
+	return func(id uuid.UUID) error {
+		// First get the tenant to ensure it exists and to log its details
+		provider := GetByIdProvider(id)(p.db)
+		e, err := provider()
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("tenant not found")
+			}
+			return err
 		}
-		return err
+
+		m, err := Make(e)
+		if err != nil {
+			return err
+		}
+
+		err = DeleteTenant(p.db, id)
+		if err != nil {
+			return err
+		}
+
+		// Create and add the Kafka message to the buffer
+		err = mb.Put(EventTopicTenantStatus, CreateStatusEventProvider(
+			m.Id(),
+			EventTypeDeleted,
+			m.Name(),
+			m.Region(),
+			m.MajorVersion(),
+			m.MinorVersion(),
+		))
+		if err != nil {
+			return err
+		}
+
+		p.l.WithFields(logrus.Fields{
+			"tenantId": m.Id().String(),
+			"event":    EventTypeDeleted,
+			"name":     m.Name(),
+			"region":   m.Region(),
+		}).Info("Tenant deleted")
+
+		return nil
 	}
+}
 
-	m, err := Make(e)
-	if err != nil {
-		return err
-	}
-
-	err = DeleteTenant(p.db, id)
-	if err != nil {
-		return err
-	}
-
-	// In a real implementation, we would emit a Kafka message here
-	p.l.WithFields(logrus.Fields{
-		"tenantId": m.Id().String(),
-		"event":    "DELETED",
-		"name":     m.Name(),
-		"region":   m.Region(),
-	}).Info("Tenant deleted")
-
-	return nil
+// DeleteAndEmit deletes a tenant and emits a Kafka message
+func (p *ProcessorImpl) DeleteAndEmit(id uuid.UUID) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.Delete(mb)(id)
+	})
 }
 
 // GetById gets a tenant by ID

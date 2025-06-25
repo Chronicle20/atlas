@@ -5,12 +5,12 @@ import (
 	"atlas-transports/kafka/consumer/character"
 	"atlas-transports/logger"
 	"atlas-transports/service"
+	tenant2 "atlas-transports/tenant"
 	"atlas-transports/tracing"
 	"atlas-transports/transport"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"os"
 	"time"
 )
@@ -55,8 +55,10 @@ func main() {
 	channel.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
-	ten1, _ := tenant.Create(uuid.MustParse("083839c6-c47c-42a6-9585-76492795d123"), "GMS", 83, 1)
-	tenants := []tenant.Model{ten1}
+	tenants, err := tenant2.NewProcessor(l, tdm.Context()).GetAll()
+	if err != nil {
+		l.WithError(err).Fatal("Unable to load tenants.")
+	}
 
 	// TODO load this from a configuration source
 	for _, t := range tenants {

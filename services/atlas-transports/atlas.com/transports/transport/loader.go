@@ -11,7 +11,7 @@ import (
 func LoadSampleRoutes() ([]Model, []SharedVesselModel) {
 	// Create sample routes
 	// Ellinia to Orbis Ferry
-	reofBuilder := NewBuilder("Ellinia Ferry").
+	reofBuilder := NewBuilder("Ellinia to Orbis Ferry").
 		SetStartMapId(_map.VictoriaRoadElliniaStationId).
 		SetStagingMapId(_map.VictoriaRoadBeforeTakeoffToOrbisId).
 		AddEnRouteMapId(_map.DuringTheRideToOrbisId).
@@ -25,7 +25,7 @@ func LoadSampleRoutes() ([]Model, []SharedVesselModel) {
 	reof := reofBuilder.Build()
 
 	// Orbis to Ellinia Ferry
-	roefBuilder := NewBuilder("Orbis Ferry").
+	roefBuilder := NewBuilder("Orbis to Ellinia Ferry").
 		SetStartMapId(_map.OrbisOrbisStationEnterenceId).
 		SetStagingMapId(_map.OrbisBeforeTakeoffToElliniaId).
 		AddEnRouteMapId(_map.DuringTheRideToElliniaId).
@@ -39,7 +39,7 @@ func LoadSampleRoutes() ([]Model, []SharedVesselModel) {
 	roef := roefBuilder.Build()
 
 	// Ludibrium to Orbis Train
-	rlotBuilder := NewBuilder("Ludibrium Train").
+	rlotBuilder := NewBuilder("Ludibrium to Orbis Train").
 		SetStartMapId(_map.LudibriumStationOrbisId).
 		SetStagingMapId(_map.LudibriumBeforeTheDepartureOrbisId).
 		AddEnRouteMapId(_map.OnAVoyageOrbisId).
@@ -52,7 +52,7 @@ func LoadSampleRoutes() ([]Model, []SharedVesselModel) {
 	rlot := rlotBuilder.Build()
 
 	// Orbis to Ludibrium Train
-	roltBuilder := NewBuilder("Orbis Train").
+	roltBuilder := NewBuilder("Orbis to Ludibrium Train").
 		SetStartMapId(_map.OrbisStationLudibriumId).
 		SetStagingMapId(_map.OrbisBeforeTheDepartureLudibriumId).
 		AddEnRouteMapId(_map.OnAVoyageLudibriumId).

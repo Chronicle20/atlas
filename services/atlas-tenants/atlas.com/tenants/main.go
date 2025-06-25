@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-tenants/configuration"
 	"atlas-tenants/database"
 	"atlas-tenants/logger"
 	"atlas-tenants/service"
@@ -45,16 +46,17 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(tenant.MigrateEntities))
+	db := database.Connect(l, database.SetMigrations(tenant.MigrateEntities, configuration.MigrateEntities))
 
 	_ = consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 
-	// Create and run server
+	// CreateRoute and run server
 	server.New(l).
 		WithContext(tdm.Context()).
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		AddRouteInitializer(tenant.RegisterRoutes(db)(GetServer())).
+		AddRouteInitializer(configuration.RegisterRoutes(db)(GetServer())).
 		SetPort(os.Getenv("REST_PORT")).
 		Run()
 

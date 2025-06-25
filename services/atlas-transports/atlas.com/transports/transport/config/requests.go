@@ -13,7 +13,7 @@ const (
 )
 
 func getBaseRequest() string {
-	return requests.RootUrl("CONFIGURATIONS")
+	return requests.RootUrl("TENANTS")
 }
 
 // requestRoutes creates a request for routes for a tenant

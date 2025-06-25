@@ -18,6 +18,7 @@ import (
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
+	"atlas-channel/transport/route"
 	"context"
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map2 "github.com/Chronicle20/atlas-constants/map"
@@ -206,6 +207,20 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				}
 				if md.Clock() {
 					_ = session.Announce(l)(ctx)(wp)(writer.Clock)(writer.TownClockBody(l, t)(time.Now()))(s)
+				}
+			}()
+
+			go func() {
+				var hasShip bool
+				hasShip, err = route.NewProcessor(l, ctx).IsBoatInMap(m.MapId())
+				if err != nil {
+					l.WithError(err).Errorf("Unable to retrieve boat data for map [%d].", m.MapId())
+					return
+				}
+				if hasShip {
+					_ = session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l, t)(writer.TransportStateEnter1, false))(s)
+				} else {
+					_ = session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l, t)(writer.TransportStateMove1, false))(s)
 				}
 			}()
 			return nil

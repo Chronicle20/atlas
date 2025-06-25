@@ -1,0 +1,16 @@
+meta {
+  name: Delete Tenant Configuration Route
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{scheme}}://{{host}}:{{port}}/api/tenants/{{tenantId}}/configurations/routes/{{routeId}}
+  body: json
+  auth: inherit
+}
+
+vars:pre-request {
+  tenantId: 083839c6-c47c-42a6-9585-76492795d123
+  routeId: 24bb11dd-44aa-48c2-998e-a1f1644b9130
+}

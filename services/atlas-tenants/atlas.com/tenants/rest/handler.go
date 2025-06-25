@@ -92,3 +92,17 @@ func ParseTenantId(l logrus.FieldLogger, next TenantIdHandler) http.HandlerFunc 
 		next(tenantId)(w, r)
 	}
 }
+
+type RouteIdHandler func(routeId string) http.HandlerFunc
+
+func ParseRouteId(l logrus.FieldLogger, next RouteIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		routeId, ok := mux.Vars(r)["routeId"]
+		if !ok {
+			l.Errorf("Route ID not provided in path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(routeId)(w, r)
+	}
+}

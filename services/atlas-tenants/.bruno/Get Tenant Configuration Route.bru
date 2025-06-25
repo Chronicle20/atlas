@@ -1,0 +1,16 @@
+meta {
+  name: Get Tenant Configuration Route
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/tenants/{{tenantId}}/configurations/routes/{{routeId}}
+  body: json
+  auth: inherit
+}
+
+vars:pre-request {
+  tenantId: 083839c6-c47c-42a6-9585-76492795d123
+  routeId: 46dd31ff-66cc-4ae4-aa9f-c3f1666d9152
+}

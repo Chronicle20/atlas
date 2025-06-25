@@ -292,6 +292,7 @@ func produceWriters() []string {
 		writer.SpawnKiteError,
 		writer.DestroyKite,
 		writer.Clock,
+		writer.FieldTransportState,
 	}
 }
 

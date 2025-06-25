@@ -13,6 +13,7 @@ type RouteRestModel struct {
 	StagingMapId           uint32   `json:"stagingMapId"`
 	EnRouteMapIds          []uint32 `json:"enRouteMapIds"`
 	DestinationMapId       uint32   `json:"destinationMapId"`
+	ObservationMapId       uint32   `json:"observationMapId"`
 	BoardingWindowDuration uint32   `json:"boardingWindowDuration"`
 	PreDepartureDuration   uint32   `json:"preDepartureDuration"`
 	TravelDuration         uint32   `json:"travelDuration"`
@@ -70,6 +71,11 @@ func TransformRoute(data map[string]interface{}) (RouteRestModel, error) {
 		destinationMapId = uint32(val)
 	}
 
+	observationMapId := uint32(0)
+	if val, ok := attributes["observationMapId"].(float64); ok {
+		observationMapId = uint32(val)
+	}
+
 	boardingWindowDuration := uint32(0)
 	if val, ok := attributes["boardingWindowDuration"].(float64); ok {
 		boardingWindowDuration = uint32(val)
@@ -97,6 +103,7 @@ func TransformRoute(data map[string]interface{}) (RouteRestModel, error) {
 		StagingMapId:           stagingMapId,
 		EnRouteMapIds:          enRouteMapIds,
 		DestinationMapId:       destinationMapId,
+		ObservationMapId:       observationMapId,
 		BoardingWindowDuration: boardingWindowDuration,
 		PreDepartureDuration:   preDepartureDuration,
 		TravelDuration:         travelDuration,
@@ -115,6 +122,7 @@ func ExtractRoute(r RouteRestModel) (map[string]interface{}, error) {
 			"stagingMapId":           r.StagingMapId,
 			"enRouteMapIds":          r.EnRouteMapIds,
 			"destinationMapId":       r.DestinationMapId,
+			"observationMapId":       r.ObservationMapId,
 			"boardingWindowDuration": r.BoardingWindowDuration,
 			"preDepartureDuration":   r.PreDepartureDuration,
 			"travelDuration":         r.TravelDuration,

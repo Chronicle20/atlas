@@ -1,10 +1,5 @@
 package tenant
 
-import (
-	"github.com/google/uuid"
-	"strconv"
-)
-
 // RestModel is the JSON:API resource for tenants
 type RestModel struct {
 	Id           string `json:"-"`
@@ -42,20 +37,11 @@ func Transform(m Model) (RestModel, error) {
 }
 
 // Extract converts a RestModel to parameters for creating or updating a Model
-func Extract(r RestModel) (string, string, uint16, uint16, error) {
-	return r.Name, r.Region, r.MajorVersion, r.MinorVersion, nil
-}
-
-// ExtractId extracts the UUID from a string ID
-func ExtractId(id string) (uuid.UUID, error) {
-	return uuid.Parse(id)
-}
-
-// ParseUint16 parses a string to a uint16
-func ParseUint16(s string) (uint16, error) {
-	i, err := strconv.ParseUint(s, 10, 16)
-	if err != nil {
-		return 0, err
-	}
-	return uint16(i), nil
+func Extract(r RestModel) (Model, error) {
+	return NewBuilder().
+		SetName(r.Name).
+		SetRegion(r.Region).
+		SetMajorVersion(r.MajorVersion).
+		SetMinorVersion(r.MinorVersion).
+		Build(), nil
 }

@@ -1,0 +1,11 @@
+meta {
+  name: Get Tenants
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/tenants
+  body: none
+  auth: inherit
+}

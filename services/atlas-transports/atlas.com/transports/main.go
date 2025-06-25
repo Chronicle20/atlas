@@ -5,12 +5,13 @@ import (
 	"atlas-transports/kafka/consumer/character"
 	"atlas-transports/logger"
 	"atlas-transports/service"
+	tenant2 "atlas-transports/tenant"
 	"atlas-transports/tracing"
 	"atlas-transports/transport"
+	"atlas-transports/transport/config"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"os"
 	"time"
 )
@@ -55,13 +56,21 @@ func main() {
 	channel.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
-	ten1, _ := tenant.Create(uuid.MustParse("083839c6-c47c-42a6-9585-76492795d123"), "GMS", 83, 1)
-	tenants := []tenant.Model{ten1}
+	tenants, err := tenant2.NewProcessor(l, tdm.Context()).GetAll()
+	if err != nil {
+		l.WithError(err).Fatal("Unable to load tenants.")
+	}
 
-	// TODO load this from a configuration source
+	// Load configurations from the configuration service
+	configProcessor := config.NewProcessor(l, tdm.Context())
 	for _, t := range tenants {
-		routes, sharedVessels := transport.LoadSampleRoutes()
 		ctx := tenant.WithContext(tdm.Context(), t)
+		routes, sharedVessels, err := configProcessor.LoadConfigurationsForTenant(t)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to load configurations for tenant [%s], using empty configuration", t.Id())
+			routes = []transport.Model{}
+			sharedVessels = []transport.SharedVesselModel{}
+		}
 		_ = transport.NewProcessor(l, ctx).AddTenant(routes, sharedVessels)
 	}
 

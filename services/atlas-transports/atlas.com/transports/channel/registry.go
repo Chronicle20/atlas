@@ -33,6 +33,17 @@ func (r *Registry) Add(tenantId uuid.UUID, model channel.Model) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	// Check if the model already exists for this tenant
+	models, ok := r.store[tenantId]
+	if ok {
+		for _, m := range models {
+			// If a model with the same worldId and id already exists, don't add it again
+			if m.WorldId() == model.WorldId() && m.Id() == model.Id() {
+				return
+			}
+		}
+	}
+
 	r.store[tenantId] = append(r.store[tenantId], model)
 }
 
@@ -48,7 +59,7 @@ func (r *Registry) Remove(tenantId uuid.UUID, worldId world.Id, id channel.Id) {
 
 	filtered := models[:0]
 	for _, m := range models {
-		if m.WorldId() != worldId && m.Id() != id {
+		if m.WorldId() != worldId || m.Id() != id {
 			filtered = append(filtered, m)
 		}
 	}

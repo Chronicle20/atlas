@@ -20,6 +20,7 @@ func TestStateMachine_UpdateState(t *testing.T) {
 		SetStagingMapId(101).
 		SetEnRouteMapIds([]_map.Id{102}).
 		SetDestinationMapId(103).
+		SetObservationMapId(104).
 		SetId(routeID).
 		SetBoardingWindowDuration(5 * time.Minute).
 		SetPreDepartureDuration(2 * time.Minute).
@@ -201,6 +202,7 @@ func TestStateMachine_GetState(t *testing.T) {
 		SetStagingMapId(0).
 		SetEnRouteMapIds([]_map.Id{0}).
 		SetDestinationMapId(0).
+		SetObservationMapId(0).
 		SetId(routeID).
 		Build()
 
@@ -244,6 +246,7 @@ func TestStateMachine_MultipleTrips(t *testing.T) {
 		SetStagingMapId(0).
 		SetEnRouteMapIds([]_map.Id{0}).
 		SetDestinationMapId(0).
+		SetObservationMapId(0).
 		SetId(routeID).
 		Build()
 	trip1 := uuid.New()
@@ -309,6 +312,7 @@ func TestStateMachine_StateChanged(t *testing.T) {
 		SetStagingMapId(101).
 		SetEnRouteMapIds([]_map.Id{102}).
 		SetDestinationMapId(103).
+		SetObservationMapId(104).
 		SetId(routeID).
 		SetBoardingWindowDuration(5 * time.Minute).
 		SetPreDepartureDuration(2 * time.Minute).

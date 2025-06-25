@@ -15,6 +15,7 @@ type Model struct {
 	stagingMapId           _map.Id
 	enRouteMapIds          []_map.Id
 	destinationMapId       _map.Id
+	observationMapId       _map.Id
 	state                  RouteState
 	schedule               []TripScheduleModel
 	boardingWindowDuration time.Duration
@@ -48,10 +49,14 @@ func (m Model) EnRouteMapIds() []_map.Id {
 	return m.enRouteMapIds
 }
 
-
 // DestinationMapId returns the destination map ID
 func (m Model) DestinationMapId() _map.Id {
 	return m.destinationMapId
+}
+
+// ObservationMapId returns the observation map ID
+func (m Model) ObservationMapId() _map.Id {
+	return m.observationMapId
 }
 
 // BoardingWindowDuration returns the boarding window duration
@@ -81,6 +86,7 @@ func (m Model) Builder() *Builder {
 		SetStagingMapId(m.StagingMapId()).
 		SetEnRouteMapIds(m.EnRouteMapIds()).
 		SetDestinationMapId(m.DestinationMapId()).
+		SetObservationMapId(m.ObservationMapId()).
 		SetState(m.state).
 		SetSchedule(m.schedule).
 		SetBoardingWindowDuration(m.boardingWindowDuration).
@@ -101,23 +107,44 @@ func (m Model) processStateChange(now time.Time) RouteState {
 	var futureTrip *TripScheduleModel
 	var arrivedTrip *TripScheduleModel
 
+	// Get the current time of day
+	nowTimeOfDay := time.Date(0, 1, 1, now.Hour(), now.Minute(), now.Second(), now.Nanosecond(), time.UTC)
+
 	for i := range m.Schedule() {
 		trip := m.schedule[i]
 		if trip.RouteId() == m.Id() {
-			// Check if the trip is currently in transit (departed but not arrived)
-			if trip.Departure().Before(now) && trip.Arrival().After(now) {
-				if inTransitTrip == nil || trip.Departure().After(inTransitTrip.Departure()) {
-					// For in-transit trips, prefer the most recently departed one
-					inTransitTrip = &trip
+			// Extract time of day from trip times
+			tripDepartureTimeOfDay := time.Date(0, 1, 1, trip.Departure().Hour(), trip.Departure().Minute(), trip.Departure().Second(), trip.Departure().Nanosecond(), time.UTC)
+			tripArrivalTimeOfDay := time.Date(0, 1, 1, trip.Arrival().Hour(), trip.Arrival().Minute(), trip.Arrival().Second(), trip.Arrival().Nanosecond(), time.UTC)
+
+			// Handle cases where times cross midnight
+			if tripArrivalTimeOfDay.Before(tripDepartureTimeOfDay) {
+				// If arrival is before departure in time of day, it means arrival is on the next day
+				if nowTimeOfDay.After(tripDepartureTimeOfDay) || nowTimeOfDay.Before(tripArrivalTimeOfDay) {
+					// Current time is either after departure or before arrival (crossing midnight)
+					if inTransitTrip == nil || tripDepartureTimeOfDay.After(time.Date(0, 1, 1, inTransitTrip.Departure().Hour(), inTransitTrip.Departure().Minute(), inTransitTrip.Departure().Second(), inTransitTrip.Departure().Nanosecond(), time.UTC)) {
+						inTransitTrip = &trip
+					}
 				}
-			} else if trip.Departure().After(now) {
-				// For future trips, prefer the one departing soonest
-				if futureTrip == nil || trip.Departure().Before(futureTrip.Departure()) {
+			} else {
+				// Normal case (no midnight crossing)
+				if nowTimeOfDay.After(tripDepartureTimeOfDay) && nowTimeOfDay.Before(tripArrivalTimeOfDay) {
+					if inTransitTrip == nil || tripDepartureTimeOfDay.After(time.Date(0, 1, 1, inTransitTrip.Departure().Hour(), inTransitTrip.Departure().Minute(), inTransitTrip.Departure().Second(), inTransitTrip.Departure().Nanosecond(), time.UTC)) {
+						inTransitTrip = &trip
+					}
+				}
+			}
+
+			// Handle future trips
+			if tripDepartureTimeOfDay.After(nowTimeOfDay) {
+				if futureTrip == nil || tripDepartureTimeOfDay.Before(time.Date(0, 1, 1, futureTrip.Departure().Hour(), futureTrip.Departure().Minute(), futureTrip.Departure().Second(), futureTrip.Departure().Nanosecond(), time.UTC)) {
 					futureTrip = &trip
 				}
-			} else if trip.Arrival().Before(now) {
-				// For arrived trips, prefer the most recently arrived one
-				if arrivedTrip == nil || trip.Arrival().After(arrivedTrip.Arrival()) {
+			}
+
+			// Handle arrived trips
+			if tripArrivalTimeOfDay.Before(nowTimeOfDay) {
+				if arrivedTrip == nil || tripArrivalTimeOfDay.After(time.Date(0, 1, 1, arrivedTrip.Arrival().Hour(), arrivedTrip.Arrival().Minute(), arrivedTrip.Arrival().Second(), arrivedTrip.Arrival().Nanosecond(), time.UTC)) {
 					arrivedTrip = &trip
 				}
 			}
@@ -136,21 +163,41 @@ func (m Model) processStateChange(now time.Time) RouteState {
 		return OutOfService
 	}
 
-	// Determine the state based on the current time and next trip
-	if now.Before(nextTrip.BoardingOpen()) {
-		return AwaitingReturn
-	} else if now.Before(nextTrip.BoardingClosed()) {
-		return OpenEntry
-	} else if now.Before(nextTrip.Departure()) {
-		return LockedEntry
-	} else if now.Before(nextTrip.Arrival()) {
-		return InTransit
-	} else if futureTrip != nil {
-		return AwaitingReturn
-	} else if arrivedTrip != nil {
-		return AwaitingReturn
+	// Extract time of day from next trip times for comparison
+	nextTripBoardingOpenTimeOfDay := time.Date(0, 1, 1, nextTrip.BoardingOpen().Hour(), nextTrip.BoardingOpen().Minute(), nextTrip.BoardingOpen().Second(), nextTrip.BoardingOpen().Nanosecond(), time.UTC)
+	nextTripBoardingClosedTimeOfDay := time.Date(0, 1, 1, nextTrip.BoardingClosed().Hour(), nextTrip.BoardingClosed().Minute(), nextTrip.BoardingClosed().Second(), nextTrip.BoardingClosed().Nanosecond(), time.UTC)
+	nextTripDepartureTimeOfDay := time.Date(0, 1, 1, nextTrip.Departure().Hour(), nextTrip.Departure().Minute(), nextTrip.Departure().Second(), nextTrip.Departure().Nanosecond(), time.UTC)
+	nextTripArrivalTimeOfDay := time.Date(0, 1, 1, nextTrip.Arrival().Hour(), nextTrip.Arrival().Minute(), nextTrip.Arrival().Second(), nextTrip.Arrival().Nanosecond(), time.UTC)
+
+	// Handle cases where times cross midnight
+	if nextTripArrivalTimeOfDay.Before(nextTripDepartureTimeOfDay) {
+		// If arrival is before departure in time of day, it means arrival is on the next day
+		if nowTimeOfDay.Before(nextTripBoardingOpenTimeOfDay) && nowTimeOfDay.After(nextTripArrivalTimeOfDay) {
+			return AwaitingReturn
+		} else if nowTimeOfDay.Before(nextTripBoardingClosedTimeOfDay) {
+			return OpenEntry
+		} else if nowTimeOfDay.Before(nextTripDepartureTimeOfDay) {
+			return LockedEntry
+		} else {
+			return InTransit
+		}
 	} else {
-		return OutOfService
+		// Normal case (no midnight crossing)
+		if nowTimeOfDay.Before(nextTripBoardingOpenTimeOfDay) {
+			return AwaitingReturn
+		} else if nowTimeOfDay.Before(nextTripBoardingClosedTimeOfDay) {
+			return OpenEntry
+		} else if nowTimeOfDay.Before(nextTripDepartureTimeOfDay) {
+			return LockedEntry
+		} else if nowTimeOfDay.Before(nextTripArrivalTimeOfDay) {
+			return InTransit
+		} else if futureTrip != nil {
+			return AwaitingReturn
+		} else if arrivedTrip != nil {
+			return AwaitingReturn
+		} else {
+			return OutOfService
+		}
 	}
 }
 
@@ -170,6 +217,7 @@ type Builder struct {
 	stagingMapId           _map.Id
 	enRouteMapIds          []_map.Id
 	destinationMapId       _map.Id
+	observationMapId       _map.Id
 	state                  RouteState
 	schedule               []TripScheduleModel
 	boardingWindowDuration time.Duration
@@ -181,11 +229,11 @@ type Builder struct {
 // NewBuilder creates a new builder for Model
 func NewBuilder(name string) *Builder {
 	return &Builder{
-		id:               uuid.New(),
-		name:             name,
-		enRouteMapIds:    []_map.Id{},
-		state:            OutOfService,
-		schedule:         []TripScheduleModel{},
+		id:            uuid.New(),
+		name:          name,
+		enRouteMapIds: []_map.Id{},
+		state:         OutOfService,
+		schedule:      []TripScheduleModel{},
 	}
 }
 
@@ -213,7 +261,6 @@ func (b *Builder) SetStagingMapId(stagingMapId _map.Id) *Builder {
 	return b
 }
 
-
 // SetEnRouteMapIds sets the en-route map IDs
 func (b *Builder) SetEnRouteMapIds(enRouteMapIds []_map.Id) *Builder {
 	b.enRouteMapIds = enRouteMapIds
@@ -229,6 +276,12 @@ func (b *Builder) AddEnRouteMapId(enRouteMapId _map.Id) *Builder {
 // SetDestinationMapId sets the destination map ID
 func (b *Builder) SetDestinationMapId(destinationMapId _map.Id) *Builder {
 	b.destinationMapId = destinationMapId
+	return b
+}
+
+// SetObservationMapId sets the observation map ID
+func (b *Builder) SetObservationMapId(observationMapId _map.Id) *Builder {
+	b.observationMapId = observationMapId
 	return b
 }
 
@@ -265,6 +318,7 @@ func (b *Builder) Build() Model {
 		stagingMapId:           b.stagingMapId,
 		enRouteMapIds:          b.enRouteMapIds,
 		destinationMapId:       b.destinationMapId,
+		observationMapId:       b.observationMapId,
 		state:                  b.state,
 		schedule:               b.schedule,
 		boardingWindowDuration: b.boardingWindowDuration,
@@ -291,7 +345,8 @@ func (b *Builder) AddToSchedule(schedule TripScheduleModel) *Builder {
 
 // SharedVesselModel is the domain model for a shared vessel
 type SharedVesselModel struct {
-	id              string
+	id              uuid.UUID
+	name            string
 	routeAID        uuid.UUID
 	routeBID        uuid.UUID
 	turnaroundDelay time.Duration
@@ -299,7 +354,8 @@ type SharedVesselModel struct {
 
 // NewSharedVesselModel creates a new shared vessel model
 func NewSharedVesselModel(
-	id string,
+	id uuid.UUID,
+	name string,
 	routeAID uuid.UUID,
 	routeBID uuid.UUID,
 	turnaroundDelay time.Duration,
@@ -313,7 +369,7 @@ func NewSharedVesselModel(
 }
 
 // Id returns the shared vessel ID
-func (m SharedVesselModel) Id() string {
+func (m SharedVesselModel) Id() uuid.UUID {
 	return m.id
 }
 
@@ -334,7 +390,8 @@ func (m SharedVesselModel) TurnaroundDelay() time.Duration {
 
 // SharedVesselBuilder is a builder for SharedVesselModel
 type SharedVesselBuilder struct {
-	id              string
+	id              uuid.UUID
+	name            string
 	routeAID        uuid.UUID
 	routeBID        uuid.UUID
 	turnaroundDelay time.Duration
@@ -343,13 +400,18 @@ type SharedVesselBuilder struct {
 // NewSharedVesselBuilder creates a new builder for SharedVesselModel
 func NewSharedVesselBuilder() *SharedVesselBuilder {
 	return &SharedVesselBuilder{
-		id: uuid.New().String(),
+		id: uuid.New(),
 	}
 }
 
 // SetId sets the shared vessel ID
-func (b *SharedVesselBuilder) SetId(id string) *SharedVesselBuilder {
+func (b *SharedVesselBuilder) SetId(id uuid.UUID) *SharedVesselBuilder {
 	b.id = id
+	return b
+}
+
+func (b *SharedVesselBuilder) SetName(name string) *SharedVesselBuilder {
+	b.name = name
 	return b
 }
 
@@ -375,6 +437,7 @@ func (b *SharedVesselBuilder) SetTurnaroundDelay(turnaroundDelay time.Duration) 
 func (b *SharedVesselBuilder) Build() SharedVesselModel {
 	return NewSharedVesselModel(
 		b.id,
+		b.name,
 		b.routeAID,
 		b.routeBID,
 		b.turnaroundDelay,

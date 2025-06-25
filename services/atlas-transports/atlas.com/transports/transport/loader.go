@@ -40,9 +40,9 @@ func LoadSampleRoutes() ([]Model, []SharedVesselModel) {
 
 	// Ludibrium to Orbis Train
 	rlotBuilder := NewBuilder("Ludibrium Train").
-		SetStartMapId(_map.LudibriumLudibriumTicketingPlaceId).
+		SetStartMapId(_map.LudibriumStationOrbisId).
 		SetStagingMapId(_map.LudibriumBeforeTheDepartureOrbisId).
-		AddEnRouteMapId(_map.OrbisBeforeTheDepartureLudibriumId).
+		AddEnRouteMapId(_map.OnAVoyageOrbisId).
 		SetDestinationMapId(_map.OrbisOrbisStationEnterenceId).
 		SetBoardingWindowDuration(4 * time.Minute).
 		SetPreDepartureDuration(1 * time.Minute).
@@ -53,9 +53,9 @@ func LoadSampleRoutes() ([]Model, []SharedVesselModel) {
 
 	// Orbis to Ludibrium Train
 	roltBuilder := NewBuilder("Orbis Train").
-		SetStartMapId(_map.OrbisOrbisStationEnterenceId).
-		SetStagingMapId(_map.OrbisStationLudibriumId).
-		AddEnRouteMapId(_map.OrbisBeforeTheDepartureLudibriumId).
+		SetStartMapId(_map.OrbisStationLudibriumId).
+		SetStagingMapId(_map.OrbisBeforeTheDepartureLudibriumId).
+		AddEnRouteMapId(_map.OnAVoyageLudibriumId).
 		SetDestinationMapId(_map.LudibriumLudibriumTicketingPlaceId).
 		SetBoardingWindowDuration(4 * time.Minute).
 		SetPreDepartureDuration(1 * time.Minute).

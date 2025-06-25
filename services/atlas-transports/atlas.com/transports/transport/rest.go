@@ -16,6 +16,7 @@ type RestModel struct {
 	StagingMapID     _map.Id                 `json:"stagingMapId"`
 	EnRouteMapIDs    []_map.Id               `json:"enRouteMapIds"`
 	DestinationMapID _map.Id                 `json:"destinationMapId"`
+	ObservationMapID _map.Id                 `json:"observationMapId"`
 	State            string                  `json:"state"`
 	CycleInterval    time.Duration           `json:"cycleInterval"`
 	Schedule         []TripScheduleRestModel `json:"-"`
@@ -114,6 +115,7 @@ func Transform(m Model) (RestModel, error) {
 		StagingMapID:     m.StagingMapId(),
 		EnRouteMapIDs:    m.EnRouteMapIds(),
 		DestinationMapID: m.DestinationMapId(),
+		ObservationMapID: m.ObservationMapId(),
 		State:            string(m.State()),
 		CycleInterval:    m.CycleInterval(),
 		Schedule:         schedule,
@@ -136,6 +138,7 @@ func Extract(r RestModel) (Model, error) {
 		SetStagingMapId(r.StagingMapID).
 		SetEnRouteMapIds(r.EnRouteMapIDs).
 		SetDestinationMapId(r.DestinationMapID).
+		SetObservationMapId(r.ObservationMapID).
 		SetState(RouteState(r.State)).
 		SetSchedule(schedule).
 		SetCycleInterval(r.CycleInterval).

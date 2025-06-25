@@ -122,7 +122,9 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 						return err
 					}
 				}
-				err = mb.Put(transport.EnvEventTopicStatus, ArrivedStatusEventProvider(r.Id(), r.DestinationMapId()))
+			}
+			if r.State() == OpenEntry {
+				err = mb.Put(transport.EnvEventTopicStatus, ArrivedStatusEventProvider(r.Id(), r.ObservationMapId()))
 				if err != nil {
 					p.l.WithError(err).Errorf("Error sending status event for route [%s].", r.Id())
 					return err
@@ -140,7 +142,7 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 					p.l.WithError(err).Errorf("Error warping characters from staging map [%d] to enroute map.", r.StagingMapId())
 					return err
 				}
-				err = mb.Put(transport.EnvEventTopicStatus, DepartedStatusEventProvider(r.Id(), r.StartMapId()))
+				err = mb.Put(transport.EnvEventTopicStatus, DepartedStatusEventProvider(r.Id(), r.ObservationMapId()))
 				if err != nil {
 					p.l.WithError(err).Errorf("Error sending status event for route [%s].", r.Id())
 					return err

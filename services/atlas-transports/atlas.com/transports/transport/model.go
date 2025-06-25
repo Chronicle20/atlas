@@ -15,6 +15,7 @@ type Model struct {
 	stagingMapId           _map.Id
 	enRouteMapIds          []_map.Id
 	destinationMapId       _map.Id
+	observationMapId       _map.Id
 	state                  RouteState
 	schedule               []TripScheduleModel
 	boardingWindowDuration time.Duration
@@ -53,6 +54,11 @@ func (m Model) DestinationMapId() _map.Id {
 	return m.destinationMapId
 }
 
+// ObservationMapId returns the observation map ID
+func (m Model) ObservationMapId() _map.Id {
+	return m.observationMapId
+}
+
 // BoardingWindowDuration returns the boarding window duration
 func (m Model) BoardingWindowDuration() time.Duration {
 	return m.boardingWindowDuration
@@ -80,6 +86,7 @@ func (m Model) Builder() *Builder {
 		SetStagingMapId(m.StagingMapId()).
 		SetEnRouteMapIds(m.EnRouteMapIds()).
 		SetDestinationMapId(m.DestinationMapId()).
+		SetObservationMapId(m.ObservationMapId()).
 		SetState(m.state).
 		SetSchedule(m.schedule).
 		SetBoardingWindowDuration(m.boardingWindowDuration).
@@ -210,6 +217,7 @@ type Builder struct {
 	stagingMapId           _map.Id
 	enRouteMapIds          []_map.Id
 	destinationMapId       _map.Id
+	observationMapId       _map.Id
 	state                  RouteState
 	schedule               []TripScheduleModel
 	boardingWindowDuration time.Duration
@@ -271,6 +279,12 @@ func (b *Builder) SetDestinationMapId(destinationMapId _map.Id) *Builder {
 	return b
 }
 
+// SetObservationMapId sets the observation map ID
+func (b *Builder) SetObservationMapId(observationMapId _map.Id) *Builder {
+	b.observationMapId = observationMapId
+	return b
+}
+
 // SetBoardingWindowDuration sets the boarding window duration
 func (b *Builder) SetBoardingWindowDuration(boardingWindowDuration time.Duration) *Builder {
 	b.boardingWindowDuration = boardingWindowDuration
@@ -304,6 +318,7 @@ func (b *Builder) Build() Model {
 		stagingMapId:           b.stagingMapId,
 		enRouteMapIds:          b.enRouteMapIds,
 		destinationMapId:       b.destinationMapId,
+		observationMapId:       b.observationMapId,
 		state:                  b.state,
 		schedule:               b.schedule,
 		boardingWindowDuration: b.boardingWindowDuration,

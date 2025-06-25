@@ -15,6 +15,7 @@ type RouteRestModel struct {
 	StagingMapId           _map.Id       `json:"stagingMapId"`
 	EnRouteMapIds          []_map.Id     `json:"enRouteMapIds"`
 	DestinationMapId       _map.Id       `json:"destinationMapId"`
+	ObservationMapId       _map.Id       `json:"observationMapId"`
 	BoardingWindowDuration time.Duration `json:"boardingWindowDuration"`
 	PreDepartureDuration   time.Duration `json:"preDepartureDuration"`
 	TravelDuration         time.Duration `json:"travelDuration"`
@@ -48,6 +49,7 @@ func ExtractRoute(r RouteRestModel) (transport.Model, error) {
 		SetStartMapId(r.StartMapId).
 		SetStagingMapId(r.StagingMapId).
 		SetDestinationMapId(r.DestinationMapId).
+		SetObservationMapId(r.ObservationMapId).
 		SetBoardingWindowDuration(r.BoardingWindowDuration * time.Minute).
 		SetPreDepartureDuration(r.PreDepartureDuration * time.Minute).
 		SetTravelDuration(r.TravelDuration * time.Minute).

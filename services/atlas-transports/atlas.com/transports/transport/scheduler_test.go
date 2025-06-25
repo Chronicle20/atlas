@@ -32,6 +32,7 @@ func TestScheduler_ComputeSchedule_SharedVesselOverridesRouteSchedule(t *testing
 		SetStagingMapId(101).
 		SetEnRouteMapIds([]_map.Id{102}).
 		SetDestinationMapId(103).
+		SetObservationMapId(104).
 		SetId(uuid.MustParse("11111111-1111-1111-1111-111111111111")).
 		SetBoardingWindowDuration(5 * time.Minute).
 		SetPreDepartureDuration(2 * time.Minute).
@@ -44,6 +45,7 @@ func TestScheduler_ComputeSchedule_SharedVesselOverridesRouteSchedule(t *testing
 		SetStagingMapId(201).
 		SetEnRouteMapIds([]_map.Id{202}).
 		SetDestinationMapId(203).
+		SetObservationMapId(204).
 		SetId(uuid.MustParse("22222222-2222-2222-2222-222222222222")).
 		SetBoardingWindowDuration(6 * time.Minute).
 		SetPreDepartureDuration(3 * time.Minute).
@@ -56,6 +58,7 @@ func TestScheduler_ComputeSchedule_SharedVesselOverridesRouteSchedule(t *testing
 		SetStagingMapId(301).
 		SetEnRouteMapIds([]_map.Id{302}).
 		SetDestinationMapId(303).
+		SetObservationMapId(304).
 		SetId(uuid.MustParse("33333333-3333-3333-3333-333333333333")).
 		SetBoardingWindowDuration(4 * time.Minute).
 		SetPreDepartureDuration(1 * time.Minute).

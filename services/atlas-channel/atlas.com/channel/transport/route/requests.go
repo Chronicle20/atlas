@@ -24,7 +24,7 @@ func getBaseRequest() string {
 
 // requestInTenant creates a request to get all routes in a tenant
 func requestInTenant() requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest() + Resource))
+	return rest.MakeGetRequest[[]RestModel](getBaseRequest() + Resource)
 }
 
 // requestById creates a request to get a route by ID

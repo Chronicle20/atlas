@@ -62,9 +62,7 @@ func RegisterHandler(l logrus.FieldLogger) func(si jsonapi.ServerInformation) fu
 		return func(handlerName string, handler GetHandler) http.HandlerFunc {
 			return server.RetrieveSpan(l, handlerName, context.Background(), func(sl logrus.FieldLogger, sctx context.Context) http.HandlerFunc {
 				fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
-				return server.ParseTenant(fl, sctx, func(tl logrus.FieldLogger, tctx context.Context) http.HandlerFunc {
-					return handler(&HandlerDependency{l: tl, ctx: tctx}, &HandlerContext{si: si})
-				})
+				return handler(&HandlerDependency{l: fl, ctx: sctx}, &HandlerContext{si: si})
 			})
 		}
 	}
@@ -75,9 +73,7 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 		return func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
 			return server.RetrieveSpan(l, handlerName, context.Background(), func(sl logrus.FieldLogger, sctx context.Context) http.HandlerFunc {
 				fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
-				return server.ParseTenant(fl, sctx, func(tl logrus.FieldLogger, tctx context.Context) http.HandlerFunc {
-					return ParseInput[M](&HandlerDependency{l: tl, ctx: tctx}, &HandlerContext{si: si}, handler)
-				})
+				return ParseInput[M](&HandlerDependency{l: fl, ctx: sctx}, &HandlerContext{si: si}, handler)
 			})
 		}
 	}

@@ -110,7 +110,7 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 				p.l.WithError(err).Errorf("Error updating route [%s].", route.Id())
 			}
 			if r.State() == AwaitingReturn {
-				p.l.Debugf("Transport for route [%s] has arrived at [%d].", r.Id(), r.DestinationMapId())
+				p.l.Infof("Transport for route [%s] has arrived at [%d].", r.Id(), r.DestinationMapId())
 				for _, enRouteMapId := range r.EnRouteMapIds() {
 					err = model.ForEachSlice(model.FixedProvider(p.chanP.GetAll()), func(c channel2.Model) error {
 						ff := field.NewBuilder(c.WorldId(), c.Id(), enRouteMapId).Build()
@@ -128,9 +128,9 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 					return err
 				}
 			} else if r.State() == LockedEntry {
-				p.l.Debugf("Transport for route [%s] has locked doors at [%d].", r.Id(), r.StagingMapId())
+				p.l.Infof("Transport for route [%s] has locked doors at [%d].", r.Id(), r.StagingMapId())
 			} else if r.State() == InTransit {
-				p.l.Debugf("Transport for route [%s] has departed [%d].", r.Id(), r.StagingMapId())
+				p.l.Infof("Transport for route [%s] has departed [%d].", r.Id(), r.StagingMapId())
 				err = model.ForEachSlice(model.FixedProvider(p.chanP.GetAll()), func(c channel2.Model) error {
 					ff := field.NewBuilder(c.WorldId(), c.Id(), r.StagingMapId()).Build()
 					tf := field.NewBuilder(c.WorldId(), c.Id(), r.EnRouteMapIds()[0]).Build()
@@ -154,7 +154,10 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 func (p *ProcessorImpl) warpTo(mb *message.Buffer) func(fromField field.Model, toField field.Model) error {
 	return func(ff field.Model, tf field.Model) error {
 		cp := p.mp.CharacterIdsInMapProvider(ff.WorldId(), ff.ChannelId(), ff.MapId())
-		return model.ForEachSlice(cp, model.Flip(p.charP.WarpRandom(mb))(tf.Id()))
+		return model.ForEachSlice(cp, func(characterId uint32) error {
+			p.l.Infof("Warping character [%d] from map [%d] to map [%d].", characterId, ff.MapId(), tf.MapId())
+			return p.charP.WarpRandom(mb)(characterId)(tf.Id())
+		})
 	}
 }
 

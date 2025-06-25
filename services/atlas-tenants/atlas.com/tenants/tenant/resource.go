@@ -58,7 +58,7 @@ func GetTenantByIdHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 func CreateTenantHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, model RestModel) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model RestModel) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			name, region, majorVersion, minorVersion, err := Extract(model)
+			im, err := Extract(model)
 			if err != nil {
 				d.Logger().WithError(err).Error("Failed to extract tenant data")
 				w.WriteHeader(http.StatusBadRequest)
@@ -66,7 +66,7 @@ func CreateTenantHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 			}
 
 			processor := NewProcessor(d.Logger(), d.Context(), db)
-			tenant, err := processor.CreateAndEmit(name, region, majorVersion, minorVersion)
+			tenant, err := processor.CreateAndEmit(im.Name(), im.Region(), im.MajorVersion(), im.MinorVersion())
 			if err != nil {
 				d.Logger().WithError(err).Error("Failed to create tenant")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -93,7 +93,7 @@ func UpdateTenantHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, model RestModel) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				name, region, majorVersion, minorVersion, err := Extract(model)
+				im, err := Extract(model)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to extract tenant data")
 					w.WriteHeader(http.StatusBadRequest)
@@ -101,7 +101,7 @@ func UpdateTenantHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 				}
 
 				processor := NewProcessor(d.Logger(), d.Context(), db)
-				tenant, err := processor.UpdateAndEmit(tenantId, name, region, majorVersion, minorVersion)
+				tenant, err := processor.UpdateAndEmit(tenantId, im.Name(), im.Region(), im.MajorVersion(), im.MinorVersion())
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to update tenant")
 					w.WriteHeader(http.StatusInternalServerError)

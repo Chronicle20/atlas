@@ -85,7 +85,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(name string, region stri
 			return Model{}, err
 		}
 
-		// Create and add the Kafka message to the buffer
+		// CreateRoute and add the Kafka message to the buffer
 		err = mb.Put(EventTopicTenantStatus, CreateStatusEventProvider(
 			m.Id(),
 			EventTypeCreated,
@@ -146,7 +146,7 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(id uuid.UUID, name strin
 			return Model{}, err
 		}
 
-		// Create and add the Kafka message to the buffer
+		// CreateRoute and add the Kafka message to the buffer
 		err = mb.Put(EventTopicTenantStatus, CreateStatusEventProvider(
 			m.Id(),
 			EventTypeUpdated,
@@ -202,7 +202,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uuid.UUID) error {
 			return err
 		}
 
-		// Create and add the Kafka message to the buffer
+		// CreateRoute and add the Kafka message to the buffer
 		err = mb.Put(EventTopicTenantStatus, CreateStatusEventProvider(
 			m.Id(),
 			EventTypeDeleted,

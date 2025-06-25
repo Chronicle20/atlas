@@ -50,7 +50,7 @@ func main() {
 
 	_ = consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 
-	// Create and run server
+	// CreateRoute and run server
 	server.New(l).
 		WithContext(tdm.Context()).
 		WithWaitGroup(tdm.WaitGroup()).

@@ -7,16 +7,16 @@ import (
 
 // RouteRestModel is the JSON:API resource for routes
 type RouteRestModel struct {
-	Id                     string `json:"-"`
-	Name                   string `json:"name"`
-	StartMapId             uint32 `json:"startMapId"`
-	StagingMapId           uint32 `json:"stagingMapId"`
+	Id                     string   `json:"-"`
+	Name                   string   `json:"name"`
+	StartMapId             uint32   `json:"startMapId"`
+	StagingMapId           uint32   `json:"stagingMapId"`
 	EnRouteMapIds          []uint32 `json:"enRouteMapIds"`
-	DestinationMapId       uint32 `json:"destinationMapId"`
-	BoardingWindowDuration uint32 `json:"boardingWindowDuration"`
-	PreDepartureDuration   uint32 `json:"preDepartureDuration"`
-	TravelDuration         uint32 `json:"travelDuration"`
-	CycleInterval          uint32 `json:"cycleInterval"`
+	DestinationMapId       uint32   `json:"destinationMapId"`
+	BoardingWindowDuration uint32   `json:"boardingWindowDuration"`
+	PreDepartureDuration   uint32   `json:"preDepartureDuration"`
+	TravelDuration         uint32   `json:"travelDuration"`
+	CycleInterval          uint32   `json:"cycleInterval"`
 }
 
 // GetID returns the resource ID
@@ -161,6 +161,119 @@ func ExtractRouteFromModel(m Model, routeId string) (map[string]interface{}, err
 	// Check if it's a single resource
 	if data, ok := resourceData["data"].(map[string]interface{}); ok {
 		if routeId == "" || (data["id"] != nil && data["id"].(string) == routeId) {
+			return data, nil
+		}
+	}
+
+	return nil, gorm.ErrRecordNotFound
+}
+
+// VesselRestModel is the JSON:API resource for vessels
+type VesselRestModel struct {
+	Id              string `json:"-"`
+	Name            string `json:"name"`
+	RouteAID        string `json:"routeAID"`
+	RouteBID        string `json:"routeBID"`
+	TurnaroundDelay uint32 `json:"turnaroundDelay"`
+}
+
+// GetID returns the resource ID
+func (v VesselRestModel) GetID() string {
+	return v.Id
+}
+
+// SetID sets the resource ID
+func (v *VesselRestModel) SetID(id string) error {
+	v.Id = id
+	return nil
+}
+
+// GetName returns the resource name
+func (v VesselRestModel) GetName() string {
+	return "vessels"
+}
+
+// TransformVessel converts a map[string]interface{} to a VesselRestModel
+func TransformVessel(data map[string]interface{}) (VesselRestModel, error) {
+	id, _ := data["id"].(string)
+
+	attributes, ok := data["attributes"].(map[string]interface{})
+	if !ok {
+		attributes = make(map[string]interface{})
+	}
+
+	name, _ := attributes["name"].(string)
+
+	routeAID, _ := attributes["routeAID"].(string)
+
+	routeBID, _ := attributes["routeBID"].(string)
+
+	turnaroundDelay := uint32(0)
+	if val, ok := attributes["turnaroundDelay"].(float64); ok {
+		turnaroundDelay = uint32(val)
+	}
+
+	return VesselRestModel{
+		Id:              id,
+		Name:            name,
+		RouteAID:        routeAID,
+		RouteBID:        routeBID,
+		TurnaroundDelay: turnaroundDelay,
+	}, nil
+}
+
+// ExtractVessel converts a VesselRestModel to a map[string]interface{}
+func ExtractVessel(v VesselRestModel) (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"type": "vessels",
+		"id":   v.Id,
+		"attributes": map[string]interface{}{
+			"name":            v.Name,
+			"routeAID":        v.RouteAID,
+			"routeBID":        v.RouteBID,
+			"turnaroundDelay": v.TurnaroundDelay,
+		},
+	}, nil
+}
+
+// CreateVesselJsonData creates a JSON:API compliant data structure for vessels
+func CreateVesselJsonData(vessels []map[string]interface{}) (json.RawMessage, error) {
+	data := map[string]interface{}{
+		"data": vessels,
+	}
+	return json.Marshal(data)
+}
+
+// CreateSingleVesselJsonData creates a JSON:API compliant data structure for a single vessel
+func CreateSingleVesselJsonData(vessel map[string]interface{}) (json.RawMessage, error) {
+	data := map[string]interface{}{
+		"data": vessel,
+	}
+	return json.Marshal(data)
+}
+
+// ExtractVesselFromModel extracts a vessel from a Model
+func ExtractVesselFromModel(m Model, vesselId string) (map[string]interface{}, error) {
+	var resourceData map[string]interface{}
+	if err := json.Unmarshal(m.ResourceData(), &resourceData); err != nil {
+		return nil, err
+	}
+
+	// Check if it's an array of resources
+	if resources, ok := resourceData["data"].([]interface{}); ok {
+		for _, resource := range resources {
+			if resourceMap, ok := resource.(map[string]interface{}); ok {
+				if id, ok := resourceMap["id"].(string); ok && (vesselId == "" || id == vesselId) {
+					return resourceMap, nil
+				}
+			}
+		}
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	// Check if it's a single resource
+	if data, ok := resourceData["data"].(map[string]interface{}); ok {
+		if vesselId == "" || (data["id"] != nil && data["id"].(string) == vesselId) {
 			return data, nil
 		}
 	}

@@ -106,3 +106,17 @@ func ParseRouteId(l logrus.FieldLogger, next RouteIdHandler) http.HandlerFunc {
 		next(routeId)(w, r)
 	}
 }
+
+type VesselIdHandler func(vesselId string) http.HandlerFunc
+
+func ParseVesselId(l logrus.FieldLogger, next VesselIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vesselId, ok := mux.Vars(r)["vesselId"]
+		if !ok {
+			l.Errorf("Vessel ID not provided in path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(vesselId)(w, r)
+	}
+}

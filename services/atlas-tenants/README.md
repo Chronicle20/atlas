@@ -7,6 +7,7 @@ A RESTful microservice that provides tenant management for the Mushroom game pla
 The Atlas Tenants Service is responsible for managing tenant information across the Mushroom game platform. It provides:
 
 - REST API for tenant CRUD operations
+- REST API for tenant-specific configuration management (routes, vessels)
 - Kafka event emission for tenant state changes
 
 ## Environment Variables
@@ -181,3 +182,287 @@ Deletes a tenant.
 **Response**: 204 No Content
 
 **Response**: 404 Not Found (if tenant doesn't exist)
+
+### Route Configuration Endpoints
+
+#### GET /api/tenants/{tenantId}/configurations/routes
+
+Retrieves all routes for a specific tenant.
+
+**Response**: 200 OK
+```json
+{
+  "data": [
+    {
+      "type": "routes",
+      "id": "12aba1dd-3799-42a2-991e-f1f1633b9129",
+      "attributes": {
+        "name": "Ellinia to Orbis Ferry",
+        "startMapId": 101000300,
+        "stagingMapId": 101000301,
+        "enRouteMapIds": [200090010, 200090011],
+        "destinationMapId": 200000100,
+        "boardingWindowDuration": 4,
+        "preDepartureDuration": 1,
+        "travelDuration": 15,
+        "cycleInterval": 40
+      }
+    }
+  ]
+}
+```
+
+#### GET /api/tenants/{tenantId}/configurations/routes/{routeId}
+
+Retrieves a specific route by ID.
+
+**Response**: 200 OK
+```json
+{
+  "data": {
+    "type": "routes",
+    "id": "12aba1dd-3799-42a2-991e-f1f1633b9129",
+    "attributes": {
+      "name": "Ellinia to Orbis Ferry",
+      "startMapId": 101000300,
+      "stagingMapId": 101000301,
+      "enRouteMapIds": [200090010, 200090011],
+      "destinationMapId": 200000100,
+      "boardingWindowDuration": 4,
+      "preDepartureDuration": 1,
+      "travelDuration": 15,
+      "cycleInterval": 40
+    }
+  }
+}
+```
+
+**Response**: 404 Not Found (if route doesn't exist)
+
+#### POST /api/tenants/{tenantId}/configurations/routes
+
+Creates a new route.
+
+**Request Body**:
+```json
+{
+  "data": {
+    "type": "routes",
+    "attributes": {
+      "name": "Ellinia to Orbis Ferry",
+      "startMapId": 101000300,
+      "stagingMapId": 101000301,
+      "enRouteMapIds": [200090010, 200090011],
+      "destinationMapId": 200000100,
+      "boardingWindowDuration": 4,
+      "preDepartureDuration": 1,
+      "travelDuration": 15,
+      "cycleInterval": 40
+    }
+  }
+}
+```
+
+**Response**: 201 Created
+```json
+{
+  "data": {
+    "type": "routes",
+    "id": "12aba1dd-3799-42a2-991e-f1f1633b9129",
+    "attributes": {
+      "name": "Ellinia to Orbis Ferry",
+      "startMapId": 101000300,
+      "stagingMapId": 101000301,
+      "enRouteMapIds": [200090010, 200090011],
+      "destinationMapId": 200000100,
+      "boardingWindowDuration": 4,
+      "preDepartureDuration": 1,
+      "travelDuration": 15,
+      "cycleInterval": 40
+    }
+  }
+}
+```
+
+#### PATCH /api/tenants/{tenantId}/configurations/routes/{routeId}
+
+Updates an existing route.
+
+**Request Body**:
+```json
+{
+  "data": {
+    "type": "routes",
+    "id": "12aba1dd-3799-42a2-991e-f1f1633b9129",
+    "attributes": {
+      "name": "Ellinia to Orbis Ferry",
+      "startMapId": 101000300,
+      "stagingMapId": 101000301,
+      "enRouteMapIds": [200090010, 200090011],
+      "destinationMapId": 200000100,
+      "boardingWindowDuration": 4,
+      "preDepartureDuration": 1,
+      "travelDuration": 15,
+      "cycleInterval": 40
+    }
+  }
+}
+```
+
+**Response**: 200 OK
+```json
+{
+  "data": {
+    "type": "routes",
+    "id": "12aba1dd-3799-42a2-991e-f1f1633b9129",
+    "attributes": {
+      "name": "Ellinia to Orbis Ferry",
+      "startMapId": 101000300,
+      "stagingMapId": 101000301,
+      "enRouteMapIds": [200090010, 200090011],
+      "destinationMapId": 200000100,
+      "boardingWindowDuration": 4,
+      "preDepartureDuration": 1,
+      "travelDuration": 15,
+      "cycleInterval": 40
+    }
+  }
+}
+```
+
+**Response**: 404 Not Found (if route doesn't exist)
+
+#### DELETE /api/tenants/{tenantId}/configurations/routes/{routeId}
+
+Deletes a route.
+
+**Response**: 204 No Content
+
+**Response**: 404 Not Found (if route doesn't exist)
+
+### Vessel Configuration Endpoints
+
+#### GET /api/tenants/{tenantId}/configurations/vessels
+
+Retrieves all vessels for a specific tenant.
+
+**Response**: 200 OK
+```json
+{
+  "data": [
+    {
+      "type": "vessels",
+      "id": "12aba1dd-3799-42a2-991e-f1f1633b9129",
+      "attributes": {
+        "name": "Ellinia-Orbis Ferry",
+        "routeAID": "uuid-for-route-a",
+        "routeBID": "uuid-for-route-b",
+        "turnaroundDelay": 0
+      }
+    }
+  ]
+}
+```
+
+#### GET /api/tenants/{tenantId}/configurations/vessels/{vesselId}
+
+Retrieves a specific vessel by ID.
+
+**Response**: 200 OK
+```json
+{
+  "data": {
+    "type": "vessels",
+    "id": "12aba1dd-3799-42a2-991e-f1f1633b9129",
+    "attributes": {
+      "name": "Ellinia-Orbis Ferry",
+      "routeAID": "uuid-for-route-a",
+      "routeBID": "uuid-for-route-b",
+      "turnaroundDelay": 0
+    }
+  }
+}
+```
+
+**Response**: 404 Not Found (if vessel doesn't exist)
+
+#### POST /api/tenants/{tenantId}/configurations/vessels
+
+Creates a new vessel.
+
+**Request Body**:
+```json
+{
+  "data": {
+    "type": "vessels",
+    "attributes": {
+      "name": "Ellinia-Orbis Ferry",
+      "routeAID": "uuid-for-route-a",
+      "routeBID": "uuid-for-route-b",
+      "turnaroundDelay": 0
+    }
+  }
+}
+```
+
+**Response**: 201 Created
+```json
+{
+  "data": {
+    "type": "vessels",
+    "id": "12aba1dd-3799-42a2-991e-f1f1633b9129",
+    "attributes": {
+      "name": "Ellinia-Orbis Ferry",
+      "routeAID": "uuid-for-route-a",
+      "routeBID": "uuid-for-route-b",
+      "turnaroundDelay": 0
+    }
+  }
+}
+```
+
+#### PATCH /api/tenants/{tenantId}/configurations/vessels/{vesselId}
+
+Updates an existing vessel.
+
+**Request Body**:
+```json
+{
+  "data": {
+    "type": "vessels",
+    "id": "12aba1dd-3799-42a2-991e-f1f1633b9129",
+    "attributes": {
+      "name": "Ellinia-Orbis Ferry",
+      "routeAID": "uuid-for-route-a",
+      "routeBID": "uuid-for-route-b",
+      "turnaroundDelay": 0
+    }
+  }
+}
+```
+
+**Response**: 200 OK
+```json
+{
+  "data": {
+    "type": "vessels",
+    "id": "12aba1dd-3799-42a2-991e-f1f1633b9129",
+    "attributes": {
+      "name": "Ellinia-Orbis Ferry",
+      "routeAID": "uuid-for-route-a",
+      "routeBID": "uuid-for-route-b",
+      "turnaroundDelay": 0
+    }
+  }
+}
+```
+
+**Response**: 404 Not Found (if vessel doesn't exist)
+
+#### DELETE /api/tenants/{tenantId}/configurations/vessels/{vesselId}
+
+Deletes a vessel.
+
+**Response**: 204 No Content
+
+**Response**: 404 Not Found (if vessel doesn't exist)

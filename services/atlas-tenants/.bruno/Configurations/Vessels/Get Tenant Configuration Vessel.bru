@@ -1,0 +1,16 @@
+meta {
+  name: Get Tenant Configuration Vessel
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/tenants/{{tenantId}}/configurations/vessels/{{vesselId}}
+  body: json
+  auth: inherit
+}
+
+vars:pre-request {
+  tenantId: 083839c6-c47c-42a6-9585-76492795d123
+  vesselId: 12aba1dd-3799-42a2-991e-f1f1633b9130
+}

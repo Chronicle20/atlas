@@ -10,9 +10,9 @@ A Golang service to manage transportation routes within a MapleStory private ser
 - Manages repeatable transportation schedules across maps
 - Supports shared-vessel back-and-forth simulation
 - Exposes real-time route state via REST API
-- Precomputes and exposes a daily schedule per route
+- Precomputes and exposes a schedule per route that works irrespective of the day
 - Uses local server time for all scheduling logic
-- All routes share a default schedule alignment, starting at midnight (00:00) of the current day
+- All routes share a default schedule alignment, starting at midnight (00:00)
 
 ## Environment
 
@@ -82,7 +82,7 @@ Example response:
 
 #### `GET /routes/:id/schedule`
 
-Returns the full schedule of precomputed trips for the current UTC day.
+Returns the full schedule of precomputed trips that works irrespective of the day.
 
 Example response:
 ```json

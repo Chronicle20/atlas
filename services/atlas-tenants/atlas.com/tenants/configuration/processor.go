@@ -58,16 +58,16 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(tenantID uuid.UUID) func
 			// Check if configuration already exists
 			existingProvider := GetByTenantIdAndResourceNameProvider(tenantID, "routes")(p.db)
 			existing, err := existingProvider()
-			
+
 			var resourceData json.RawMessage
-			
+
 			if err == nil {
 				// Configuration exists, update it
 				var existingData map[string]interface{}
 				if err := json.Unmarshal(existing.ResourceData, &existingData); err != nil {
 					return Model{}, err
 				}
-				
+
 				// Check if it's an array of resources
 				if resources, ok := existingData["data"].([]interface{}); ok {
 					// Add the new route to the array
@@ -84,12 +84,12 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(tenantID uuid.UUID) func
 						return Model{}, err
 					}
 				}
-				
+
 				existing.ResourceData = resourceData
 				if err := UpdateConfiguration(p.db, existing); err != nil {
 					return Model{}, err
 				}
-				
+
 				return Make(existing)
 			} else if errors.Is(err, gorm.ErrRecordNotFound) {
 				// Configuration doesn't exist, create it
@@ -97,17 +97,18 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(tenantID uuid.UUID) func
 				if err != nil {
 					return Model{}, err
 				}
-				
+
 				entity := Entity{
+					ID:           uuid.New(),
 					TenantID:     tenantID,
 					ResourceName: "routes",
 					ResourceData: resourceData,
 				}
-				
+
 				if err := CreateConfiguration(p.db, entity); err != nil {
 					return Model{}, err
 				}
-				
+
 				return Make(entity)
 			} else {
 				// Other error
@@ -124,9 +125,9 @@ func (p *ProcessorImpl) CreateAndEmit(tenantID uuid.UUID, route map[string]inter
 	if err != nil {
 		return Model{}, err
 	}
-	
+
 	// No events to emit for now
-	
+
 	return result, nil
 }
 
@@ -141,15 +142,15 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(tenantID uuid.UUID) func
 				if err != nil {
 					return Model{}, err
 				}
-				
+
 				var existingData map[string]interface{}
 				if err := json.Unmarshal(existing.ResourceData, &existingData); err != nil {
 					return Model{}, err
 				}
-				
+
 				// Ensure the route ID matches
 				route["id"] = routeID
-				
+
 				// Check if it's an array of resources
 				if resources, ok := existingData["data"].([]interface{}); ok {
 					found := false
@@ -162,11 +163,11 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(tenantID uuid.UUID) func
 							}
 						}
 					}
-					
+
 					if !found {
 						return Model{}, errors.New("route not found")
 					}
-					
+
 					existingData["data"] = resources
 				} else if data, ok := existingData["data"].(map[string]interface{}); ok {
 					if id, ok := data["id"].(string); ok && id == routeID {
@@ -177,17 +178,17 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(tenantID uuid.UUID) func
 				} else {
 					return Model{}, errors.New("invalid resource data format")
 				}
-				
+
 				resourceData, err := json.Marshal(existingData)
 				if err != nil {
 					return Model{}, err
 				}
-				
+
 				existing.ResourceData = resourceData
 				if err := UpdateConfiguration(p.db, existing); err != nil {
 					return Model{}, err
 				}
-				
+
 				return Make(existing)
 			}
 		}
@@ -201,9 +202,9 @@ func (p *ProcessorImpl) UpdateAndEmit(tenantID uuid.UUID, routeID string, route 
 	if err != nil {
 		return Model{}, err
 	}
-	
+
 	// No events to emit for now
-	
+
 	return result, nil
 }
 
@@ -223,9 +224,9 @@ func (p *ProcessorImpl) DeleteAndEmit(tenantID uuid.UUID, routeID string) error 
 	if err != nil {
 		return err
 	}
-	
+
 	// No events to emit for now
-	
+
 	return nil
 }
 

@@ -48,7 +48,6 @@ func (m Model) EnRouteMapIds() []_map.Id {
 	return m.enRouteMapIds
 }
 
-
 // DestinationMapId returns the destination map ID
 func (m Model) DestinationMapId() _map.Id {
 	return m.destinationMapId
@@ -222,11 +221,11 @@ type Builder struct {
 // NewBuilder creates a new builder for Model
 func NewBuilder(name string) *Builder {
 	return &Builder{
-		id:               uuid.New(),
-		name:             name,
-		enRouteMapIds:    []_map.Id{},
-		state:            OutOfService,
-		schedule:         []TripScheduleModel{},
+		id:            uuid.New(),
+		name:          name,
+		enRouteMapIds: []_map.Id{},
+		state:         OutOfService,
+		schedule:      []TripScheduleModel{},
 	}
 }
 
@@ -253,7 +252,6 @@ func (b *Builder) SetStagingMapId(stagingMapId _map.Id) *Builder {
 	b.stagingMapId = stagingMapId
 	return b
 }
-
 
 // SetEnRouteMapIds sets the en-route map IDs
 func (b *Builder) SetEnRouteMapIds(enRouteMapIds []_map.Id) *Builder {
@@ -332,7 +330,8 @@ func (b *Builder) AddToSchedule(schedule TripScheduleModel) *Builder {
 
 // SharedVesselModel is the domain model for a shared vessel
 type SharedVesselModel struct {
-	id              string
+	id              uuid.UUID
+	name            string
 	routeAID        uuid.UUID
 	routeBID        uuid.UUID
 	turnaroundDelay time.Duration
@@ -340,7 +339,8 @@ type SharedVesselModel struct {
 
 // NewSharedVesselModel creates a new shared vessel model
 func NewSharedVesselModel(
-	id string,
+	id uuid.UUID,
+	name string,
 	routeAID uuid.UUID,
 	routeBID uuid.UUID,
 	turnaroundDelay time.Duration,
@@ -354,7 +354,7 @@ func NewSharedVesselModel(
 }
 
 // Id returns the shared vessel ID
-func (m SharedVesselModel) Id() string {
+func (m SharedVesselModel) Id() uuid.UUID {
 	return m.id
 }
 
@@ -375,7 +375,8 @@ func (m SharedVesselModel) TurnaroundDelay() time.Duration {
 
 // SharedVesselBuilder is a builder for SharedVesselModel
 type SharedVesselBuilder struct {
-	id              string
+	id              uuid.UUID
+	name            string
 	routeAID        uuid.UUID
 	routeBID        uuid.UUID
 	turnaroundDelay time.Duration
@@ -384,13 +385,18 @@ type SharedVesselBuilder struct {
 // NewSharedVesselBuilder creates a new builder for SharedVesselModel
 func NewSharedVesselBuilder() *SharedVesselBuilder {
 	return &SharedVesselBuilder{
-		id: uuid.New().String(),
+		id: uuid.New(),
 	}
 }
 
 // SetId sets the shared vessel ID
-func (b *SharedVesselBuilder) SetId(id string) *SharedVesselBuilder {
+func (b *SharedVesselBuilder) SetId(id uuid.UUID) *SharedVesselBuilder {
 	b.id = id
+	return b
+}
+
+func (b *SharedVesselBuilder) SetName(name string) *SharedVesselBuilder {
+	b.name = name
 	return b
 }
 
@@ -416,6 +422,7 @@ func (b *SharedVesselBuilder) SetTurnaroundDelay(turnaroundDelay time.Duration) 
 func (b *SharedVesselBuilder) Build() SharedVesselModel {
 	return NewSharedVesselModel(
 		b.id,
+		b.name,
 		b.routeAID,
 		b.routeBID,
 		b.turnaroundDelay,

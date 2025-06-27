@@ -5,6 +5,7 @@ import (
 	"atlas-saga-orchestrator/compartment"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -242,7 +243,12 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 		if payload, ok = st.Payload.(WarpToRandomPortalPayload); !ok {
 			return errors.New("invalid payload")
 		}
-		err = character.NewProcessor(p.l, p.ctx).WarpRandomAndEmit(payload.CharacterId, payload.FieldId)
+		var f field.Model
+		f, ok = field.FromId(payload.FieldId)
+		if !ok {
+			return errors.New("invalid field id")
+		}
+		err = character.NewProcessor(p.l, p.ctx).WarpRandomAndEmit(s.TransactionId, payload.CharacterId, f)
 		if err != nil {
 			p.l.WithFields(logrus.Fields{
 				"transaction_id": s.TransactionId.String(),
@@ -258,7 +264,12 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 		if payload, ok = st.Payload.(WarpToPortalPayload); !ok {
 			return errors.New("invalid payload")
 		}
-		err = character.NewProcessor(p.l, p.ctx).WarpToPortalAndEmit(payload.CharacterId, payload.FieldId, model.FixedProvider(payload.PortalId))
+		var f field.Model
+		f, ok = field.FromId(payload.FieldId)
+		if !ok {
+			return errors.New("invalid field id")
+		}
+		err = character.NewProcessor(p.l, p.ctx).WarpToPortalAndEmit(s.TransactionId, payload.CharacterId, f, model.FixedProvider(payload.PortalId))
 		if err != nil {
 			p.l.WithFields(logrus.Fields{
 				"transaction_id": s.TransactionId.String(),

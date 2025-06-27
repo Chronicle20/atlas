@@ -6,18 +6,18 @@ import (
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	"atlas-saga-orchestrator/kafka/producer"
 	"context"
-	"errors"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
-	WarpRandom(mb *message.Buffer) func(characterId uint32) func(fieldId field.Id) error
-	WarpRandomAndEmit(characterId uint32, fieldId field.Id) error
-	WarpToPortalAndEmit(characterId uint32, fieldId field.Id, pp model.Provider[uint32]) error
-	WarpToPortal(mb *message.Buffer) func(characterId uint32, fieldId field.Id, pp model.Provider[uint32]) error
+	WarpRandomAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model) error
+	WarpRandom(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model) error
+	WarpToPortalAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
+	WarpToPortal(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
 }
 
 type ProcessorImpl struct {
@@ -38,40 +38,30 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) WarpRandomAndEmit(characterId uint32, fieldId field.Id) error {
+func (p *ProcessorImpl) WarpRandomAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.WarpRandom(mb)(characterId)(fieldId)
+		return p.WarpRandom(mb)(transactionId, characterId, field)
 	})
 }
 
-func (p *ProcessorImpl) WarpRandom(mb *message.Buffer) func(characterId uint32) func(fieldId field.Id) error {
-	return func(characterId uint32) func(fieldId field.Id) error {
-		return func(fieldId field.Id) error {
-			f, ok := field.FromId(fieldId)
-			if !ok {
-				return errors.New("invalid field")
-			}
-			return p.WarpToPortal(mb)(characterId, fieldId, p.pp.RandomSpawnPointIdProvider(f.MapId()))
-		}
+func (p *ProcessorImpl) WarpRandom(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model) error {
+	return func(transactionId uuid.UUID, characterId uint32, field field.Model) error {
+		return p.WarpToPortal(mb)(transactionId, characterId, field, p.pp.RandomSpawnPointIdProvider(field.MapId()))
 	}
 }
 
-func (p *ProcessorImpl) WarpToPortalAndEmit(characterId uint32, fieldId field.Id, pp model.Provider[uint32]) error {
+func (p *ProcessorImpl) WarpToPortalAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.WarpToPortal(mb)(characterId, fieldId, pp)
+		return p.WarpToPortal(mb)(transactionId, characterId, field, pp)
 	})
 }
 
-func (p *ProcessorImpl) WarpToPortal(mb *message.Buffer) func(characterId uint32, fieldId field.Id, pp model.Provider[uint32]) error {
-	return func(characterId uint32, fieldId field.Id, pp model.Provider[uint32]) error {
-		f, ok := field.FromId(fieldId)
-		if !ok {
-			return errors.New("invalid field")
-		}
+func (p *ProcessorImpl) WarpToPortal(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error {
+	return func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error {
 		portalId, err := pp()
 		if err != nil {
 			return err
 		}
-		return mb.Put(character2.EnvCommandTopic, ChangeMapProvider(f.WorldId(), f.ChannelId(), characterId, f.MapId(), portalId))
+		return mb.Put(character2.EnvCommandTopic, ChangeMapProvider(transactionId, characterId, field, portalId))
 	}
 }

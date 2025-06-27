@@ -1,12 +1,10 @@
 package character
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_CHARACTER"
-	CommandCharacterChangeMap = "CHANGE_MAP"
-	CommandChangeJob          = "CHANGE_JOB"
-	CommandAwardExperience    = "AWARD_EXPERIENCE"
-	CommandAwardLevel         = "AWARD_LEVEL"
-	CommandRequestChangeMeso  = "REQUEST_CHANGE_MESO"
+	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER"
+	CommandChangeJob         = "CHANGE_JOB"
+	CommandAwardLevel        = "AWARD_LEVEL"
+	CommandRequestChangeMeso = "REQUEST_CHANGE_MESO"
 
 	ExperienceDistributionTypeWhite        = "WHITE"
 	ExperienceDistributionTypeYellow       = "YELLOW"
@@ -31,26 +29,9 @@ type Command[E any] struct {
 	Body        E      `json:"body"`
 }
 
-type ChangeMapBody struct {
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	PortalId  uint32 `json:"portalId"`
-}
-
 type ChangeJobCommandBody struct {
 	ChannelId byte   `json:"channelId"`
 	JobId     uint16 `json:"jobId"`
-}
-
-type AwardExperienceCommandBody struct {
-	ChannelId     byte                      `json:"channelId"`
-	Distributions []ExperienceDistributions `json:"distributions"`
-}
-
-type ExperienceDistributions struct {
-	ExperienceType string `json:"experienceType"`
-	Amount         uint32 `json:"amount"`
-	Attr1          uint32 `json:"attr1"`
 }
 
 type AwardLevelCommandBody struct {

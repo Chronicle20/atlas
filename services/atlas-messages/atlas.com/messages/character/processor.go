@@ -16,7 +16,6 @@ type Processor interface {
 	GetByName(decorators ...model.Decorator[Model]) func(name string) (Model, error)
 	IdByNameProvider(name string) model.Provider[uint32]
 	SkillModelDecorator(m Model) Model
-	AwardExperience(worldId byte, channelId byte, characterId uint32, amount uint32) error
 	AwardLevel(worldId byte, channelId byte, characterId uint32, amount byte) error
 	ChangeJob(worldId byte, channelId byte, characterId uint32, jobId uint16) error
 	RequestChangeMeso(worldId byte, channelId byte, characterId uint32, actorId uint32, actorType string, amount int32) error
@@ -71,10 +70,6 @@ func (p *ProcessorImpl) SkillModelDecorator(m Model) Model {
 		return m
 	}
 	return m.SetSkills(ms)
-}
-
-func (p *ProcessorImpl) AwardExperience(worldId byte, channelId byte, characterId uint32, amount uint32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character.EnvCommandTopic)(awardExperienceCommandProvider(characterId, worldId, channelId, amount))
 }
 
 func (p *ProcessorImpl) AwardLevel(worldId byte, channelId byte, characterId uint32, amount byte) error {

@@ -4,6 +4,9 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	_map "atlas-messages/map"
+	"atlas-messages/saga"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -15,6 +18,7 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
+		sp := saga.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var amountStr string
@@ -52,12 +56,23 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
-					cids, err := idProvider()
+					var cids []uint32
+					cids, err = idProvider()
 					if err != nil {
 						return err
 					}
 					for _, id := range cids {
-						err = cp.AwardExperience(worldId, channelId, id, amount)
+						err = sp.Create(saga.NewBuilder().
+							AddStep("give_experience", saga.Pending, saga.AwardExperience, saga.AwardExperiencePayload{
+								CharacterId: id,
+								WorldId:     world.Id(worldId),
+								ChannelId:   channel.Id(channelId),
+								Distributions: []saga.ExperienceDistributions{{
+									ExperienceType: "WHITE",
+									Amount:         amount,
+								}},
+							}).
+							Build())
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with [%d] experience.", id, amount)
 						}

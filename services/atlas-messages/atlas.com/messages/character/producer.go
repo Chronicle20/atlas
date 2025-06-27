@@ -7,38 +7,6 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func ChangeMapProvider(worldId byte, channelId byte, characterId uint32, mapId uint32, portalId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &character2.Command[character2.ChangeMapBody]{
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        character2.CommandCharacterChangeMap,
-		Body: character2.ChangeMapBody{
-			ChannelId: channelId,
-			MapId:     mapId,
-			PortalId:  portalId,
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
-func awardExperienceCommandProvider(characterId uint32, worldId byte, channelId byte, amount uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &character2.Command[character2.AwardExperienceCommandBody]{
-		CharacterId: characterId,
-		WorldId:     worldId,
-		Type:        character2.CommandAwardExperience,
-		Body: character2.AwardExperienceCommandBody{
-			ChannelId: channelId,
-			Distributions: []character2.ExperienceDistributions{{
-				ExperienceType: character2.ExperienceDistributionTypeWhite,
-				Amount:         amount,
-			}},
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
 func awardLevelCommandProvider(characterId uint32, worldId byte, channelId byte, amount byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.Command[character2.AwardLevelCommandBody]{

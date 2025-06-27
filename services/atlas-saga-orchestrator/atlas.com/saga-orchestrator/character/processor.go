@@ -22,6 +22,8 @@ type Processor interface {
 	WarpToPortal(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
 	AwardExperienceAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error
 	AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error
+	AwardLevelAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
+	AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
 }
 
 type ProcessorImpl struct {
@@ -79,5 +81,17 @@ func (p *ProcessorImpl) AwardExperienceAndEmit(transactionId uuid.UUID, worldId 
 func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error {
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error {
 		return mb.Put(character2.EnvCommandTopic, AwardExperienceProvider(transactionId, worldId, characterId, channelId, distributions))
+	}
+}
+
+func (p *ProcessorImpl) AwardLevelAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.AwardLevel(mb)(transactionId, worldId, characterId, channelId, amount)
+	})
+}
+
+func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error {
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error {
+		return mb.Put(character2.EnvCommandTopic, AwardLevelProvider(transactionId, worldId, characterId, channelId, amount))
 	}
 }

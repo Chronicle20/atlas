@@ -94,6 +94,7 @@ type Action string
 const (
 	AwardInventory     Action = "award_inventory"
 	AwardExperience    Action = "award_experience"
+	AwardLevel         Action = "award_level"
 	WarpToRandomPortal Action = "warp_to_random_portal"
 	WarpToPortal       Action = "warp_to_portal"
 )
@@ -141,6 +142,14 @@ type AwardExperiencePayload struct {
 	Distributions []ExperienceDistributions `json:"distributions"` // List of experience distributions to award
 }
 
+// AwardLevelPayload represents the payload required to award levels to a character.
+type AwardLevelPayload struct {
+	CharacterId uint32      `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id    `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id  `json:"channelId"`   // ChannelId associated with the action
+	Amount      byte        `json:"amount"`      // Number of levels to award
+}
+
 type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
@@ -172,6 +181,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case AwardExperience:
 		var payload AwardExperiencePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case AwardLevel:
+		var payload AwardLevelPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

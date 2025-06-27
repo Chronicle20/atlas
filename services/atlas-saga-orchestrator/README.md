@@ -95,3 +95,26 @@ The service consumes messages from the following Kafka topics:
 ### Supported Actions
 
 - `award_inventory` - Awards items to a character's inventory
+  - Payload: `{"characterId": 12345, "item": {"templateId": 2000, "quantity": 1}}`
+  - Triggers a compartment command to create the item
+  - Completes when the item is successfully added to the inventory
+
+- `award_experience` - Awards experience points to a character
+  - Payload: `{"characterId": 12345, "worldId": 0, "channelId": 0, "distributions": [{"experienceType": "WHITE", "amount": 1000, "attr1": 0}]}`
+  - Triggers a character command to award experience
+  - Completes when the StatusEventTypeExperienceChanged event is received
+
+- `award_level` - Awards levels to a character
+  - Payload: `{"characterId": 12345, "worldId": 0, "channelId": 0, "amount": 1}`
+  - Triggers a character command to award levels
+  - Completes when the StatusEventTypeLevelChanged event is received
+
+- `warp_to_random_portal` - Warps a character to a random portal in a field
+  - Payload: `{"characterId": 12345, "fieldId": 100000000}`
+  - Triggers a character command to warp to a random portal
+  - Completes when the StatusEventTypeMapChanged event is received
+
+- `warp_to_portal` - Warps a character to a specific portal in a field
+  - Payload: `{"characterId": 12345, "fieldId": 100000000, "portalId": 1}`
+  - Triggers a character command to warp to the specified portal
+  - Completes when the StatusEventTypeMapChanged event is received

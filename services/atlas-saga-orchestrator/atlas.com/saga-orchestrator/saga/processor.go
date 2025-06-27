@@ -298,6 +298,22 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			return err
 		}
 	}
+	if st.Action == AwardLevel {
+		var payload AwardLevelPayload
+		if payload, ok = st.Payload.(AwardLevelPayload); !ok {
+			return errors.New("invalid payload")
+		}
+		err = character.NewProcessor(p.l, p.ctx).AwardLevelAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
+		if err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_id":        st.StepId,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("Unable to award level.")
+			return err
+		}
+	}
 	return nil
 }
 

@@ -41,3 +41,18 @@ func AwardExperienceProvider(transactionId uuid.UUID, worldId world.Id, characte
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func AwardLevelProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.AwardLevelCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          character2.CommandAwardLevel,
+		Body: character2.AwardLevelCommandBody{
+			ChannelId: channelId,
+			Amount:    amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

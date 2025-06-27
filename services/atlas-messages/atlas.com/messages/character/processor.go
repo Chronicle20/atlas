@@ -1,7 +1,6 @@
 package character
 
 import (
-	"atlas-messages/inventory"
 	"atlas-messages/kafka/message/character"
 	"atlas-messages/kafka/producer"
 	"atlas-messages/skill"
@@ -16,7 +15,6 @@ type Processor interface {
 	ByNameProvider(decorators ...model.Decorator[Model]) func(name string) model.Provider[[]Model]
 	GetByName(decorators ...model.Decorator[Model]) func(name string) (Model, error)
 	IdByNameProvider(name string) model.Provider[uint32]
-	InventoryDecorator(m Model) Model
 	SkillModelDecorator(m Model) Model
 	AwardExperience(worldId byte, channelId byte, characterId uint32, amount uint32) error
 	AwardLevel(worldId byte, channelId byte, characterId uint32, amount byte) error
@@ -27,7 +25,6 @@ type Processor interface {
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
-	ip  inventory.Processor
 	sp  skill.Processor
 }
 
@@ -35,7 +32,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
-		ip:  inventory.NewProcessor(l, ctx),
 		sp:  skill.NewProcessor(l, ctx),
 	}
 	return p
@@ -67,14 +63,6 @@ func (p *ProcessorImpl) IdByNameProvider(name string) model.Provider[uint32] {
 		return model.ErrorProvider[uint32](err)
 	}
 	return model.FixedProvider(c.Id())
-}
-
-func (p *ProcessorImpl) InventoryDecorator(m Model) Model {
-	i, err := p.ip.GetByCharacterId(m.Id())
-	if err != nil {
-		return m
-	}
-	return m.SetInventory(i)
 }
 
 func (p *ProcessorImpl) SkillModelDecorator(m Model) Model {

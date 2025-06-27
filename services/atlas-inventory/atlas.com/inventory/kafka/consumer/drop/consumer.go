@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -43,11 +44,13 @@ func handleDropReservation(db *gorm.DB) message.Handler[drop.StatusEvent[drop.Re
 		}
 		m := _map.NewModel(world.Id(e.WorldId))(channel.Id(e.ChannelId))(_map.Id(e.MapId))
 		if e.Body.EquipmentId > 0 {
-			_ = compartment.NewProcessor(l, ctx, db).AttemptEquipmentPickUpAndEmit(m, e.Body.CharacterId, e.DropId, e.Body.ItemId, e.Body.EquipmentId)
+			// TODO this needs to be added to drop event
+			_ = compartment.NewProcessor(l, ctx, db).AttemptEquipmentPickUpAndEmit(uuid.New(), m, e.Body.CharacterId, e.DropId, e.Body.ItemId, e.Body.EquipmentId)
 			return
 		}
 		if e.Body.ItemId > 0 {
-			_ = compartment.NewProcessor(l, ctx, db).AttemptItemPickUpAndEmit(m, e.Body.CharacterId, e.DropId, e.Body.ItemId, e.Body.Quantity)
+			// TODO this needs to be added to drop event
+			_ = compartment.NewProcessor(l, ctx, db).AttemptItemPickUpAndEmit(uuid.New(), m, e.Body.CharacterId, e.DropId, e.Body.ItemId, e.Body.Quantity)
 			return
 		}
 	}

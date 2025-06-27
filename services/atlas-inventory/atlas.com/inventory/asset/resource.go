@@ -56,7 +56,7 @@ func handleDeleteAsset(db *gorm.DB) rest.GetHandler {
 			return rest.ParseCompartmentId(d.Logger(), func(compartmentId uuid.UUID) http.HandlerFunc {
 				return rest.ParseAssetId(d.Logger(), func(assetId uint32) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
-						err := NewProcessor(d.Logger(), d.Context(), db).DeleteAndEmit(characterId, compartmentId, assetId)
+						err := NewProcessor(d.Logger(), d.Context(), db).DeleteAndEmit(uuid.New(), characterId, compartmentId, assetId)
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Unable to delete asset [%d].", assetId)
 							w.WriteHeader(http.StatusInternalServerError)

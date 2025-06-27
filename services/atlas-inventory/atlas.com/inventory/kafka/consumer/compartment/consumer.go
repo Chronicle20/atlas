@@ -14,6 +14,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"math"
@@ -56,7 +57,7 @@ func handleEquipItemCommand(db *gorm.DB) message.Handler[compartment2.Command[co
 		if c.Type != compartment2.CommandEquip {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).EquipItemAndEmit(c.CharacterId, c.Body.Source, c.Body.Destination)
+		_ = compartment.NewProcessor(l, ctx, db).EquipItemAndEmit(c.TransactionId, c.CharacterId, c.Body.Source, c.Body.Destination)
 	}
 }
 
@@ -65,7 +66,7 @@ func handleUnequipItemCommand(db *gorm.DB) message.Handler[compartment2.Command[
 		if c.Type != compartment2.CommandUnequip {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).RemoveEquipAndEmit(c.CharacterId, c.Body.Source, c.Body.Destination)
+		_ = compartment.NewProcessor(l, ctx, db).RemoveEquipAndEmit(c.TransactionId, c.CharacterId, c.Body.Source, c.Body.Destination)
 	}
 }
 
@@ -74,7 +75,7 @@ func handleMoveItemCommand(db *gorm.DB) message.Handler[compartment2.Command[com
 		if c.Type != compartment2.CommandMove {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).MoveAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Source, c.Body.Destination)
+		_ = compartment.NewProcessor(l, ctx, db).MoveAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.Source, c.Body.Destination)
 	}
 }
 
@@ -83,7 +84,7 @@ func handleIncreaseCapacityCommand(db *gorm.DB) message.Handler[compartment2.Com
 		if c.Type != compartment2.CommandIncreaseCapacity {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).IncreaseCapacityAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Amount)
+		_ = compartment.NewProcessor(l, ctx, db).IncreaseCapacityAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.Amount)
 	}
 }
 
@@ -94,7 +95,7 @@ func handleDropItemCommand(db *gorm.DB) message.Handler[compartment2.Command[com
 		}
 
 		m := _map.NewModel(world.Id(c.Body.WorldId))(channel.Id(c.Body.ChannelId))(_map.Id(c.Body.MapId))
-		_ = compartment.NewProcessor(l, ctx, db).DropAndEmit(c.CharacterId, inventory.Type(c.InventoryType), m, c.Body.X, c.Body.Y, c.Body.Source, c.Body.Quantity)
+		_ = compartment.NewProcessor(l, ctx, db).DropAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType), m, c.Body.X, c.Body.Y, c.Body.Source, c.Body.Quantity)
 	}
 }
 
@@ -112,7 +113,12 @@ func handleRequestReserveItemCommand(db *gorm.DB) message.Handler[compartment2.C
 			})
 		}
 
-		_ = compartment.NewProcessor(l, ctx, db).RequestReserveAndEmit(c.CharacterId, inventory.Type(c.InventoryType), reserves, c.Body.TransactionId)
+		// TODO producers of this command need to be updated to use main TransactionId and not Body.TransactionId
+		transactionId := c.TransactionId
+		if transactionId == uuid.Nil {
+			transactionId = c.Body.TransactionId
+		}
+		_ = compartment.NewProcessor(l, ctx, db).RequestReserveAndEmit(transactionId, c.CharacterId, inventory.Type(c.InventoryType), reserves)
 	}
 }
 
@@ -121,7 +127,13 @@ func handleCancelItemReservationCommand(db *gorm.DB) message.Handler[compartment
 		if c.Type != compartment2.CommandCancelReservation {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).CancelReservationAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.TransactionId, c.Body.Slot)
+
+		// TODO producers of this command need to be updated to use main TransactionId and not Body.TransactionId
+		transactionId := c.TransactionId
+		if transactionId == uuid.Nil {
+			transactionId = c.Body.TransactionId
+		}
+		_ = compartment.NewProcessor(l, ctx, db).CancelReservationAndEmit(transactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot)
 	}
 }
 
@@ -130,7 +142,13 @@ func handleConsumeItemCommand(db *gorm.DB) message.Handler[compartment2.Command[
 		if c.Type != compartment2.CommandConsume {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).ConsumeAssetAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.TransactionId, c.Body.Slot)
+
+		// TODO producers of this command need to be updated to use main TransactionId and not Body.TransactionId
+		transactionId := c.TransactionId
+		if transactionId == uuid.Nil {
+			transactionId = c.Body.TransactionId
+		}
+		_ = compartment.NewProcessor(l, ctx, db).ConsumeAssetAndEmit(transactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot)
 	}
 }
 
@@ -143,7 +161,7 @@ func handleDestroyItemCommand(db *gorm.DB) message.Handler[compartment2.Command[
 		if quantity == 0 {
 			quantity = math.MaxInt32
 		}
-		_ = compartment.NewProcessor(l, ctx, db).DestroyAssetAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot, quantity)
+		_ = compartment.NewProcessor(l, ctx, db).DestroyAssetAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot, quantity)
 	}
 }
 
@@ -152,7 +170,7 @@ func handleCreateAssetCommand(db *gorm.DB) message.Handler[compartment2.Command[
 		if c.Type != compartment2.CommandCreateAsset {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).CreateAssetAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.TemplateId, c.Body.Quantity, c.Body.Expiration, c.Body.OwnerId, c.Body.Flag, c.Body.Rechargeable)
+		_ = compartment.NewProcessor(l, ctx, db).CreateAssetAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.TemplateId, c.Body.Quantity, c.Body.Expiration, c.Body.OwnerId, c.Body.Flag, c.Body.Rechargeable)
 	}
 }
 
@@ -161,7 +179,7 @@ func handleRechargeItemCommand(db *gorm.DB) message.Handler[compartment2.Command
 		if c.Type != compartment2.CommandRecharge {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).RechargeAssetAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot, c.Body.Quantity)
+		_ = compartment.NewProcessor(l, ctx, db).RechargeAssetAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.Slot, c.Body.Quantity)
 	}
 }
 
@@ -170,7 +188,7 @@ func handleMergeCommand(db *gorm.DB) message.Handler[compartment2.Command[compar
 		if c.Type != compartment2.CommandMerge {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).MergeAndCompactAndEmit(c.CharacterId, inventory.Type(c.InventoryType))
+		_ = compartment.NewProcessor(l, ctx, db).MergeAndCompactAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType))
 	}
 }
 
@@ -179,7 +197,7 @@ func handleSortCommand(db *gorm.DB) message.Handler[compartment2.Command[compart
 		if c.Type != compartment2.CommandSort {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).CompactAndSortAndEmit(c.CharacterId, inventory.Type(c.InventoryType))
+		_ = compartment.NewProcessor(l, ctx, db).CompactAndSortAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType))
 	}
 }
 
@@ -188,7 +206,13 @@ func handleAcceptCommand(db *gorm.DB) message.Handler[compartment2.Command[compa
 		if c.Type != compartment2.CommandAccept {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).AcceptAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.TransactionId, c.Body.ReferenceId)
+
+		// TODO producers of this command need to be updated to use main TransactionId and not Body.TransactionId
+		transactionId := c.TransactionId
+		if transactionId == uuid.Nil {
+			transactionId = c.Body.TransactionId
+		}
+		_ = compartment.NewProcessor(l, ctx, db).AcceptAndEmit(transactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.ReferenceId)
 	}
 }
 
@@ -197,6 +221,12 @@ func handleReleaseCommand(db *gorm.DB) message.Handler[compartment2.Command[comp
 		if c.Type != compartment2.CommandRelease {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).ReleaseAndEmit(c.CharacterId, inventory.Type(c.InventoryType), c.Body.TransactionId, c.Body.AssetId)
+
+		// TODO producers of this command need to be updated to use main TransactionId and not Body.TransactionId
+		transactionId := c.TransactionId
+		if transactionId == uuid.Nil {
+			transactionId = c.Body.TransactionId
+		}
+		_ = compartment.NewProcessor(l, ctx, db).ReleaseAndEmit(transactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.AssetId)
 	}
 }

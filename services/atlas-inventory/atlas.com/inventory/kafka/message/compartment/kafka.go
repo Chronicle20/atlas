@@ -25,10 +25,11 @@ const (
 )
 
 type Command[E any] struct {
-	CharacterId   uint32 `json:"characterId"`
-	InventoryType byte   `json:"inventoryType"`
-	Type          string `json:"type"`
-	Body          E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	CharacterId   uint32    `json:"characterId"`
+	InventoryType byte      `json:"inventoryType"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type EquipCommandBody struct {
@@ -134,6 +135,7 @@ const (
 )
 
 type StatusEvent[E any] struct {
+	TransactionId uuid.UUID `json:"transactionId"`
 	CharacterId   uint32    `json:"characterId"`
 	CompartmentId uuid.UUID `json:"compartmentId"`
 	Type          string    `json:"type"`

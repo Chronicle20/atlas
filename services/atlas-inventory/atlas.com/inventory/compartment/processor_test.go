@@ -73,25 +73,25 @@ func TestCompactAndSort(t *testing.T) {
 	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
 
 	var err error
-	_, err = cp.Create(mb)(characterId, inventory.TypeValueUse, 40)
+	_, err = cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 40)
 	if err != nil {
 		t.Fatalf("Failed to create compartment: %v", err)
 	}
 
 	// Create assets with gaps in slots
-	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
 
 	// Create an asset with a higher template ID but in a higher slot
-	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2070000, 3, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2070000, 3, time.Time{}, 0, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create asset 2: %v", err)
 	}
 
 	// Call CompactAndSort
-	err = cp.CompactAndSort(mb)(characterId, inventory.TypeValueUse)
+	err = cp.CompactAndSort(mb)(uuid.New(), characterId, inventory.TypeValueUse)
 	if err != nil {
 		t.Fatalf("Failed to compact and sort assets: %v", err)
 	}
@@ -139,25 +139,25 @@ func TestSort(t *testing.T) {
 	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
 
 	var err error
-	_, err = cp.Create(mb)(characterId, inventory.TypeValueUse, 40)
+	_, err = cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 40)
 	if err != nil {
 		t.Fatalf("Failed to create compartment: %v", err)
 	}
 
 	// Create two assets with the same template ID but in different slots
-	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
 
 	// Create an asset with a lower template ID but in a higher slot
-	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2070000, 5, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2070000, 5, time.Time{}, 0, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create asset 3: %v", err)
 	}
 
 	// Call CompactAndSort
-	err = cp.CompactAndSort(mb)(characterId, inventory.TypeValueUse)
+	err = cp.CompactAndSort(mb)(uuid.New(), characterId, inventory.TypeValueUse)
 	if err != nil {
 		t.Fatalf("Failed to merge and sort assets: %v", err)
 	}
@@ -206,24 +206,24 @@ func TestMergeAndCompact(t *testing.T) {
 	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
 
 	var err error
-	_, err = cp.Create(mb)(characterId, inventory.TypeValueUse, 40)
+	_, err = cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 40)
 	if err != nil {
 		t.Fatalf("Failed to create compartment: %v", err)
 	}
-	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
-	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
-	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
 
-	err = cp.MergeAndCompact(mb)(characterId, inventory.TypeValueUse)
+	err = cp.MergeAndCompact(mb)(uuid.New(), characterId, inventory.TypeValueUse)
 	if err != nil {
 		t.Fatalf("Failed to merge and sort assets: %v", err)
 	}
@@ -266,24 +266,24 @@ func TestMergeAndCompactOverflow(t *testing.T) {
 	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
 
 	var err error
-	_, err = cp.Create(mb)(characterId, inventory.TypeValueUse, 40)
+	_, err = cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 40)
 	if err != nil {
 		t.Fatalf("Failed to create compartment: %v", err)
 	}
-	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
-	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
-	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
 
-	err = cp.MergeAndCompact(mb)(characterId, inventory.TypeValueUse)
+	err = cp.MergeAndCompact(mb)(uuid.New(), characterId, inventory.TypeValueUse)
 	if err != nil {
 		t.Fatalf("Failed to merge and sort assets: %v", err)
 	}
@@ -329,20 +329,20 @@ func TestMergeAndCompactGood(t *testing.T) {
 	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
 
 	var err error
-	_, err = cp.Create(mb)(characterId, inventory.TypeValueUse, 40)
+	_, err = cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 40)
 	if err != nil {
 		t.Fatalf("Failed to create compartment: %v", err)
 	}
-	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2120000, 100, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 100, time.Time{}, 0, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
-	err = cp.CreateAsset(mb)(characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
 
-	err = cp.MergeAndCompact(mb)(characterId, inventory.TypeValueUse)
+	err = cp.MergeAndCompact(mb)(uuid.New(), characterId, inventory.TypeValueUse)
 	if err != nil {
 		t.Fatalf("Failed to merge and sort assets: %v", err)
 	}

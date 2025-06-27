@@ -290,10 +290,10 @@ func (p *ProcessorImpl) positionAtPortal(mapId _map.Id, portalId uint32) model.O
 	}
 }
 
-func announceMapChanged(provider producer.Provider) func(transactionId uuid.UUID, oldField field.Model, portalId uint32) model.Operator[Model] {
-	return func(transactionId uuid.UUID, oldField field.Model, portalId uint32) model.Operator[Model] {
+func announceMapChanged(provider producer.Provider) func(transactionId uuid.UUID, newField field.Model, portalId uint32) model.Operator[Model] {
+	return func(transactionId uuid.UUID, newField field.Model, portalId uint32) model.Operator[Model] {
 		return func(c Model) error {
-			newField := field.NewBuilder(oldField.WorldId(), oldField.ChannelId(), c.MapId()).Build()
+			oldField := field.NewBuilder(newField.WorldId(), newField.ChannelId(), c.MapId()).Build()
 			return provider(character2.EnvEventTopicCharacterStatus)(mapChangedEventProvider(transactionId, c.Id(), oldField, newField, portalId))
 		}
 	}

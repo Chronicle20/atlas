@@ -11,6 +11,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -40,7 +41,7 @@ func handleDropReservation(db *gorm.DB) message.Handler[drop2.StatusEvent[drop2.
 		}
 		if e.Body.Meso > 0 {
 			f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).Build()
-			_ = character.NewProcessor(l, ctx, db).AttemptMesoPickUp(f, e.Body.CharacterId, e.DropId, e.Body.Meso)
+			_ = character.NewProcessor(l, ctx, db).AttemptMesoPickUp(uuid.New(), f, e.Body.CharacterId, e.DropId, e.Body.Meso)
 			return
 		}
 	}

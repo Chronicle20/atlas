@@ -5,6 +5,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 const (
@@ -38,10 +39,11 @@ const (
 )
 
 type Command[E any] struct {
-	WorldId     world.Id `json:"worldId"`
-	CharacterId uint32   `json:"characterId"`
-	Type        string   `json:"type"`
-	Body        E        `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       world.Id  `json:"worldId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type ChangeMapBody struct {
@@ -133,10 +135,11 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId     world.Id `json:"worldId"`
-	CharacterId uint32   `json:"characterId"`
-	Type        string   `json:"type"`
-	Body        E        `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       world.Id  `json:"worldId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type StatusEventCreatedBody struct {
@@ -218,12 +221,13 @@ const (
 )
 
 type MovementCommand struct {
-	WorldId    world.Id   `json:"worldId"`
-	ChannelId  channel.Id `json:"channelId"`
-	MapId      _map.Id    `json:"mapId"`
-	ObjectId   uint64     `json:"objectId"`
-	ObserverId uint32     `json:"observerId"`
-	X          int16      `json:"x"`
-	Y          int16      `json:"y"`
-	Stance     byte       `json:"stance"`
+	TransactionId uuid.UUID  `json:"transactionId"`
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	MapId         _map.Id    `json:"mapId"`
+	ObjectId      uint64     `json:"objectId"`
+	ObserverId    uint32     `json:"observerId"`
+	X             int16      `json:"x"`
+	Y             int16      `json:"y"`
+	Stance        byte       `json:"stance"`
 }

@@ -58,7 +58,7 @@ func handleChangeMap(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context
 		}
 
 		f := field.NewBuilder(c.WorldId, c.Body.ChannelId, c.Body.MapId).Build()
-		err := character.NewProcessor(l, ctx, db).ChangeMap(c.CharacterId, f, c.Body.PortalId)
+		err := character.NewProcessor(l, ctx, db).ChangeMap(c.TransactionId, c.CharacterId, f, c.Body.PortalId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to change character [%d] map.", c.CharacterId)
 		}
@@ -72,7 +72,7 @@ func handleChangeJob(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context
 		}
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).ChangeJob(c.CharacterId, cha, c.Body.JobId)
+		_ = character.NewProcessor(l, ctx, db).ChangeJob(c.TransactionId, c.CharacterId, cha, c.Body.JobId)
 	}
 }
 
@@ -90,7 +90,7 @@ func handleAwardExperience(db *gorm.DB) func(l logrus.FieldLogger, ctx context.C
 		}
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).AwardExperience(c.CharacterId, cha, es)
+		_ = character.NewProcessor(l, ctx, db).AwardExperience(c.TransactionId, c.CharacterId, cha, es)
 	}
 }
 
@@ -101,7 +101,7 @@ func handleAwardLevel(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Contex
 		}
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).AwardLevel(c.CharacterId, cha, c.Body.Amount)
+		_ = character.NewProcessor(l, ctx, db).AwardLevel(c.TransactionId, c.CharacterId, cha, c.Body.Amount)
 	}
 }
 
@@ -111,7 +111,7 @@ func handleRequestChangeMeso(db *gorm.DB) message.Handler[character2.Command[cha
 			return
 		}
 
-		_ = character.NewProcessor(l, ctx, db).RequestChangeMeso(c.CharacterId, c.Body.Amount, c.Body.ActorId, c.Body.ActorType)
+		_ = character.NewProcessor(l, ctx, db).RequestChangeMeso(c.TransactionId, c.CharacterId, c.Body.Amount, c.Body.ActorId, c.Body.ActorType)
 	}
 }
 
@@ -122,7 +122,7 @@ func handleRequestDropMeso(db *gorm.DB) message.Handler[character2.Command[chara
 		}
 
 		f := field.NewBuilder(c.WorldId, c.Body.ChannelId, c.Body.MapId).Build()
-		_ = character.NewProcessor(l, ctx, db).RequestDropMeso(f, c.CharacterId, c.Body.Amount)
+		_ = character.NewProcessor(l, ctx, db).RequestDropMeso(c.TransactionId, f, c.CharacterId, c.Body.Amount)
 	}
 }
 
@@ -132,7 +132,7 @@ func handleRequestChangeFame(db *gorm.DB) message.Handler[character2.Command[cha
 			return
 		}
 
-		_ = character.NewProcessor(l, ctx, db).RequestChangeFame(c.CharacterId, c.Body.Amount, c.Body.ActorId, c.Body.ActorType)
+		_ = character.NewProcessor(l, ctx, db).RequestChangeFame(c.TransactionId, c.CharacterId, c.Body.Amount, c.Body.ActorId, c.Body.ActorType)
 	}
 }
 
@@ -149,7 +149,7 @@ func handleRequestDistributeAp(db *gorm.DB) message.Handler[character2.Command[c
 		if err != nil {
 			return
 		}
-		_ = character.NewProcessor(l, ctx, db).RequestDistributeAp(c.CharacterId, ds)
+		_ = character.NewProcessor(l, ctx, db).RequestDistributeAp(c.TransactionId, c.CharacterId, ds)
 	}
 }
 
@@ -158,7 +158,7 @@ func handleRequestDistributeSp(db *gorm.DB) message.Handler[character2.Command[c
 		if c.Type != character2.CommandRequestDistributeSp {
 			return
 		}
-		_ = character.NewProcessor(l, ctx, db).RequestDistributeSp(c.CharacterId, c.Body.SkillId, c.Body.Amount)
+		_ = character.NewProcessor(l, ctx, db).RequestDistributeSp(c.TransactionId, c.CharacterId, c.Body.SkillId, c.Body.Amount)
 	}
 }
 
@@ -176,7 +176,7 @@ func handleChangeHP(db *gorm.DB) message.Handler[character2.Command[character2.C
 		}
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).ChangeHP(cha, c.CharacterId, c.Body.Amount)
+		_ = character.NewProcessor(l, ctx, db).ChangeHP(c.TransactionId, cha, c.CharacterId, c.Body.Amount)
 	}
 }
 
@@ -187,7 +187,7 @@ func handleChangeMP(db *gorm.DB) message.Handler[character2.Command[character2.C
 		}
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).ChangeMP(cha, c.CharacterId, c.Body.Amount)
+		_ = character.NewProcessor(l, ctx, db).ChangeMP(c.TransactionId, cha, c.CharacterId, c.Body.Amount)
 	}
 }
 
@@ -198,7 +198,7 @@ func handleLevelChangedStatusEvent(db *gorm.DB) message.Handler[character2.Statu
 		}
 
 		cha := channel.NewModel(e.WorldId, e.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).ProcessLevelChange(cha, e.CharacterId, e.Body.Amount)
+		_ = character.NewProcessor(l, ctx, db).ProcessLevelChange(e.TransactionId, cha, e.CharacterId, e.Body.Amount)
 	}
 }
 
@@ -208,7 +208,7 @@ func handleJobChangedStatusEvent(db *gorm.DB) message.Handler[character2.StatusE
 			return
 		}
 		cha := channel.NewModel(e.WorldId, e.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).ProcessJobChange(cha, e.CharacterId, e.Body.JobId)
+		_ = character.NewProcessor(l, ctx, db).ProcessJobChange(e.TransactionId, cha, e.CharacterId, e.Body.JobId)
 	}
 }
 

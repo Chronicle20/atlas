@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -192,7 +193,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(m)
+		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(uuid.New(), m)
 		if err != nil {
 			if errors.Is(err, blockedNameErr) || errors.Is(err, invalidLevelErr) {
 				w.WriteHeader(http.StatusBadRequest)
@@ -220,7 +221,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 func handleDeleteCharacter(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAndEmit(characterId)
+			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAndEmit(uuid.New(), characterId)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return

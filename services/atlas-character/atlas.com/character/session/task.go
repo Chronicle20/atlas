@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
@@ -43,7 +44,7 @@ func (t *Timeout) Run() {
 			t.l.Debugf("Timing out record for character [%d].", m.CharacterId())
 			GetRegistry().Remove(m.Tenant(), m.CharacterId())
 
-			err := cp.Logout(m.CharacterId())(cha)
+			err := cp.Logout(uuid.New(), m.CharacterId(), cha)
 			if err != nil {
 				t.l.WithError(err).Errorf("Unable to logout character [%d] as a result of session being destroyed.", m.CharacterId())
 			}

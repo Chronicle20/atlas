@@ -16,9 +16,7 @@ type Processor interface {
 	GetByName(decorators ...model.Decorator[Model]) func(name string) (Model, error)
 	IdByNameProvider(name string) model.Provider[uint32]
 	SkillModelDecorator(m Model) Model
-	AwardLevel(worldId byte, channelId byte, characterId uint32, amount byte) error
 	ChangeJob(worldId byte, channelId byte, characterId uint32, jobId uint16) error
-	RequestChangeMeso(worldId byte, channelId byte, characterId uint32, actorId uint32, actorType string, amount int32) error
 }
 
 type ProcessorImpl struct {
@@ -72,14 +70,6 @@ func (p *ProcessorImpl) SkillModelDecorator(m Model) Model {
 	return m.SetSkills(ms)
 }
 
-func (p *ProcessorImpl) AwardLevel(worldId byte, channelId byte, characterId uint32, amount byte) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character.EnvCommandTopic)(awardLevelCommandProvider(characterId, worldId, channelId, amount))
-}
-
 func (p *ProcessorImpl) ChangeJob(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character.EnvCommandTopic)(changeJobCommandProvider(characterId, worldId, channelId, jobId))
-}
-
-func (p *ProcessorImpl) RequestChangeMeso(worldId byte, channelId byte, characterId uint32, actorId uint32, actorType string, amount int32) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character.EnvCommandTopic)(requestChangeMesoCommandProvider(characterId, worldId, actorId, actorType, amount))
 }

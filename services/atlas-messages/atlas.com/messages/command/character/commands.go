@@ -88,6 +88,7 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
+		sp := saga.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var amountStr string
@@ -130,7 +131,14 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 						return err
 					}
 					for _, id := range cids {
-						err = cp.AwardLevel(worldId, channelId, id, amount)
+						err = sp.Create(saga.NewBuilder().
+							AddStep("give_level", saga.Pending, saga.AwardLevel, saga.AwardLevelPayload{
+								CharacterId: id,
+								WorldId:     world.Id(worldId),
+								ChannelId:   channel.Id(channelId),
+								Amount:      amount,
+							}).
+							Build())
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with [%d] level(s).", id, amount)
 						}
@@ -201,6 +209,7 @@ func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
+		sp := saga.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var amountStr string
@@ -243,7 +252,16 @@ func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 						return err
 					}
 					for _, id := range cids {
-						err = cp.RequestChangeMeso(worldId, channelId, id, c.Id(), "CHARACTER", amount)
+						err = sp.Create(saga.NewBuilder().
+							AddStep("give_mesos", saga.Pending, saga.AwardMesos, saga.AwardMesosPayload{
+								CharacterId: id,
+								WorldId:     world.Id(worldId),
+								ChannelId:   channel.Id(channelId),
+								ActorId:     c.Id(),
+								ActorType:   "CHARACTER",
+								Amount:      amount,
+							}).
+							Build())
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with [%d] meso.", id, amount)
 						}

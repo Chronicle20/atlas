@@ -93,6 +93,30 @@ func Extract(r RestModel) (Saga, error) {
 				return Saga{}, err
 			}
 			payload = payloadAwardItemActionPayload
+		} else if step.Action == WarpToRandomPortal {
+			var pbs []byte
+			pbs, err = json.Marshal(step.Payload)
+			if err != nil {
+				return Saga{}, err
+			}
+			var payloadWarpToRandomPortalPayload WarpToRandomPortalPayload
+			err = json.Unmarshal(pbs, &payloadWarpToRandomPortalPayload)
+			if err != nil {
+				return Saga{}, err
+			}
+			payload = payloadWarpToRandomPortalPayload
+		} else if step.Action == WarpToPortal {
+			var pbs []byte
+			pbs, err = json.Marshal(step.Payload)
+			if err != nil {
+				return Saga{}, err
+			}
+			var payloadWarpToPortalPayload WarpToPortalPayload
+			err = json.Unmarshal(pbs, &payloadWarpToPortalPayload)
+			if err != nil {
+				return Saga{}, err
+			}
+			payload = payloadWarpToPortalPayload
 		} else {
 			payload = step.Payload
 		}

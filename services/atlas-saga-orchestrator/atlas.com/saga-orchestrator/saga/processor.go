@@ -1,6 +1,7 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
 	"context"
 	"errors"
@@ -218,6 +219,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 		"saga_type":      s.SagaType,
 		"tenant_id":      p.t.Id().String(),
 	}).Debugf("Progressing saga step [%s].", st.StepId)
+
 	if st.Action == AwardInventory {
 		var payload AwardItemActionPayload
 		if payload, ok = st.Payload.(AwardItemActionPayload); !ok {
@@ -231,6 +233,39 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 				"step_id":        st.StepId,
 				"tenant_id":      p.t.Id().String(),
 			}).WithError(err).Error("Unable to award item.")
+			return err
+		}
+		return nil
+	}
+	if st.Action == WarpToRandomPortal {
+		var payload WarpToRandomPortalPayload
+		if payload, ok = st.Payload.(WarpToRandomPortalPayload); !ok {
+			return errors.New("invalid payload")
+		}
+		err = character.NewProcessor(p.l, p.ctx).WarpRandomAndEmit(payload.CharacterId, payload.FieldId)
+		if err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_id":        st.StepId,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("Unable to warp to random portal.")
+			return err
+		}
+	}
+	if st.Action == WarpToPortal {
+		var payload WarpToPortalPayload
+		if payload, ok = st.Payload.(WarpToPortalPayload); !ok {
+			return errors.New("invalid payload")
+		}
+		err = character.NewProcessor(p.l, p.ctx).WarpToPortalAndEmit(payload.CharacterId, payload.FieldId, model.FixedProvider(payload.PortalId))
+		if err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_id":        st.StepId,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("Unable to warp to random portal.")
 			return err
 		}
 	}

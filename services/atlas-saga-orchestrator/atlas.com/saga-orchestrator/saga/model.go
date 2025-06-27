@@ -3,6 +3,7 @@ package saga
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/google/uuid"
 	"time"
 )
@@ -15,14 +16,6 @@ const (
 	InventoryTransaction Type = "inventory_transaction"
 	QuestReward          Type = "quest_reward"
 	TradeTransaction     Type = "trade_transaction"
-)
-
-// Define a custom type for Action
-type Action string
-
-// Constants for different actions
-const (
-	AwardInventory Action = "award_inventory"
 )
 
 // Saga represents the entire saga transaction.
@@ -92,6 +85,16 @@ const (
 	Failed    Status = "failed"
 )
 
+// Define a custom type for Action
+type Action string
+
+// Constants for different actions
+const (
+	AwardInventory     Action = "award_inventory"
+	WarpToRandomPortal Action = "warp_to_random_portal"
+	WarpToPortal       Action = "warp_to_portal"
+)
+
 // Step represents a single step within a saga.
 type Step[T any] struct {
 	StepId    string    `json:"stepId"`    // Unique ID for the step
@@ -104,14 +107,27 @@ type Step[T any] struct {
 
 // AwardItemActionPayload represents the data needed to execute a specific action in a step.
 type AwardItemActionPayload struct {
-	CharacterId uint32      `json:"characterId"` // Character ID associated with the action
+	CharacterId uint32      `json:"characterId"` // CharacterId associated with the action
 	Item        ItemPayload `json:"item"`        // List of items involved in the action
 }
 
 // ItemPayload represents an individual item in a transaction, such as in inventory manipulation.
 type ItemPayload struct {
-	TemplateId uint32 `json:"templateId"` // Template ID of the item
+	TemplateId uint32 `json:"templateId"` // TemplateId of the item
 	Quantity   uint32 `json:"quantity"`   // Quantity of the item
+}
+
+// WarpToRandomPortalPayload represents the payload required to warp to a random portal within a specific field.
+type WarpToRandomPortalPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
+	FieldId     field.Id `json:"fieldId"`     // FieldId references the unique identifier of the field associated with the warp action.
+}
+
+// WarpToPortalPayload represents the payload required to warp a character to a specific portal in a field.
+type WarpToPortalPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
+	FieldId     field.Id `json:"fieldId"`     // FieldId references the unique identifier of the field associated with the warp action.
+	PortalId    uint32   `json:"portalId"`    // PortalId specifies the unique identifier of the portal for the warp action.
 }
 
 // Custom UnmarshalJSON for Step[T] to handle the generics
@@ -133,6 +149,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	switch s.Action {
 	case AwardInventory:
 		var payload AwardItemActionPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case WarpToRandomPortal:
+		var payload WarpToRandomPortalPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case WarpToPortal:
+		var payload WarpToPortalPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

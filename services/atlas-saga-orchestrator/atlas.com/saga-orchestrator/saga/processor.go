@@ -85,11 +85,7 @@ func (p *ProcessorImpl) Put(saga Saga) error {
 func (p *ProcessorImpl) StepCompleted(transactionId uuid.UUID, success bool) error {
 	s, err := p.GetById(transactionId)
 	if err != nil {
-		p.l.WithFields(logrus.Fields{
-			"transaction_id": transactionId.String(),
-			"tenant_id":      p.t.Id().String(),
-		}).Debug("Unable to locate saga being completed.")
-		return err
+		return nil
 	}
 
 	if s.Failing() {

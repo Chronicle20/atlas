@@ -66,83 +66,90 @@ func Transform(s Saga) (RestModel, error) {
 	}, nil
 }
 
+// PayloadUnmarshaler is a function type for unmarshaling payloads
+type PayloadUnmarshaler func(interface{}) (any, error)
+
+// payloadUnmarshalers maps action types to their payload unmarshalers
+var payloadUnmarshalers = map[Action]PayloadUnmarshaler{
+	AwardInventory:     unmarshalAwardInventoryPayload,
+	AwardExperience:    unmarshalAwardExperiencePayload,
+	AwardLevel:         unmarshalAwardLevelPayload,
+	WarpToRandomPortal: unmarshalWarpToRandomPortalPayload,
+	WarpToPortal:       unmarshalWarpToPortalPayload,
+}
+
+// parseTime parses a time string in RFC3339 format, returning current time if parsing fails
+func parseTime(timeStr string) time.Time {
+	t, err := time.Parse(time.RFC3339, timeStr)
+	if err != nil {
+		return time.Now()
+	}
+	return t
+}
+
+// unmarshalPayload unmarshals a payload based on the action type
+func unmarshalPayload(action Action, rawPayload interface{}) (any, error) {
+	// If no unmarshaler is registered for this action, return the payload as is
+	unmarshaler, exists := payloadUnmarshalers[action]
+	if !exists {
+		return rawPayload, nil
+	}
+
+	return unmarshaler(rawPayload)
+}
+
+// unmarshalGenericPayload is a helper function for unmarshaling payloads
+func unmarshalGenericPayload[T any](rawPayload interface{}) (T, error) {
+	var result T
+
+	// Marshal the raw payload to JSON
+	pbs, err := json.Marshal(rawPayload)
+	if err != nil {
+		return result, err
+	}
+
+	// Unmarshal the JSON to the specific type
+	err = json.Unmarshal(pbs, &result)
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
+}
+
+// Unmarshalers for specific payload types
+func unmarshalAwardInventoryPayload(rawPayload interface{}) (any, error) {
+	return unmarshalGenericPayload[AwardItemActionPayload](rawPayload)
+}
+
+func unmarshalAwardExperiencePayload(rawPayload interface{}) (any, error) {
+	return unmarshalGenericPayload[AwardExperiencePayload](rawPayload)
+}
+
+func unmarshalAwardLevelPayload(rawPayload interface{}) (any, error) {
+	return unmarshalGenericPayload[AwardLevelPayload](rawPayload)
+}
+
+func unmarshalWarpToRandomPortalPayload(rawPayload interface{}) (any, error) {
+	return unmarshalGenericPayload[WarpToRandomPortalPayload](rawPayload)
+}
+
+func unmarshalWarpToPortalPayload(rawPayload interface{}) (any, error) {
+	return unmarshalGenericPayload[WarpToPortalPayload](rawPayload)
+}
+
 // Extract converts a REST model to a domain model
 func Extract(r RestModel) (Saga, error) {
 	steps := make([]Step[any], len(r.Steps))
 	for i, step := range r.Steps {
-		createdAt, err := time.Parse(time.RFC3339, step.CreatedAt)
-		if err != nil {
-			createdAt = time.Now()
-		}
+		// Parse timestamps
+		createdAt := parseTime(step.CreatedAt)
+		updatedAt := parseTime(step.UpdatedAt)
 
-		updatedAt, err := time.Parse(time.RFC3339, step.UpdatedAt)
+		// Unmarshal payload based on action type
+		payload, err := unmarshalPayload(step.Action, step.Payload)
 		if err != nil {
-			updatedAt = time.Now()
-		}
-
-		var payload any
-		if step.Action == AwardInventory {
-			var pbs []byte
-			pbs, err = json.Marshal(step.Payload)
-			if err != nil {
-				return Saga{}, err
-			}
-			var payloadAwardItemActionPayload AwardItemActionPayload
-			err = json.Unmarshal(pbs, &payloadAwardItemActionPayload)
-			if err != nil {
-				return Saga{}, err
-			}
-			payload = payloadAwardItemActionPayload
-		} else if step.Action == AwardExperience {
-			var pbs []byte
-			pbs, err = json.Marshal(step.Payload)
-			if err != nil {
-				return Saga{}, err
-			}
-			var payloadAwardExperiencePayload AwardExperiencePayload
-			err = json.Unmarshal(pbs, &payloadAwardExperiencePayload)
-			if err != nil {
-				return Saga{}, err
-			}
-			payload = payloadAwardExperiencePayload
-		} else if step.Action == AwardLevel {
-			var pbs []byte
-			pbs, err = json.Marshal(step.Payload)
-			if err != nil {
-				return Saga{}, err
-			}
-			var payloadAwardLevelPayload AwardLevelPayload
-			err = json.Unmarshal(pbs, &payloadAwardLevelPayload)
-			if err != nil {
-				return Saga{}, err
-			}
-			payload = payloadAwardLevelPayload
-		} else if step.Action == WarpToRandomPortal {
-			var pbs []byte
-			pbs, err = json.Marshal(step.Payload)
-			if err != nil {
-				return Saga{}, err
-			}
-			var payloadWarpToRandomPortalPayload WarpToRandomPortalPayload
-			err = json.Unmarshal(pbs, &payloadWarpToRandomPortalPayload)
-			if err != nil {
-				return Saga{}, err
-			}
-			payload = payloadWarpToRandomPortalPayload
-		} else if step.Action == WarpToPortal {
-			var pbs []byte
-			pbs, err = json.Marshal(step.Payload)
-			if err != nil {
-				return Saga{}, err
-			}
-			var payloadWarpToPortalPayload WarpToPortalPayload
-			err = json.Unmarshal(pbs, &payloadWarpToPortalPayload)
-			if err != nil {
-				return Saga{}, err
-			}
-			payload = payloadWarpToPortalPayload
-		} else {
-			payload = step.Payload
+			return Saga{}, err
 		}
 
 		steps[i] = Step[any]{

@@ -6,6 +6,7 @@ import (
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -26,17 +27,21 @@ type Processor interface {
 
 // ProcessorImpl is the implementation of the Processor interface
 type ProcessorImpl struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	t   tenant.Model
+	l     logrus.FieldLogger
+	ctx   context.Context
+	t     tenant.Model
+	charP character.Processor
+	compP compartment.Processor
 }
 
 // NewProcessor creates a new saga processor
 func NewProcessor(logger logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
 	return &ProcessorImpl{
-		l:   logger,
-		ctx: ctx,
-		t:   tenant.MustFromContext(ctx),
+		l:     logger,
+		ctx:   ctx,
+		t:     tenant.MustFromContext(ctx),
+		charP: character.NewProcessor(logger, ctx),
+		compP: compartment.NewProcessor(logger, ctx),
 	}
 }
 
@@ -185,6 +190,18 @@ func (p *ProcessorImpl) MarkEarliestPendingStep(transactionId uuid.UUID, status 
 	return nil
 }
 
+// ActionHandler is a function type for handling different saga action types
+type ActionHandler func(p *ProcessorImpl, s Saga, st Step[any]) error
+
+// actionHandlers maps action types to their handler functions
+var actionHandlers = map[Action]ActionHandler{
+	AwardInventory:     handleAwardInventory,
+	WarpToRandomPortal: handleWarpToRandomPortal,
+	WarpToPortal:       handleWarpToPortal,
+	AwardExperience:    handleAwardExperience,
+	AwardLevel:         handleAwardLevel,
+}
+
 func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 	s, err := p.GetById(transactionId)
 	if err != nil {
@@ -222,98 +239,119 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 		"tenant_id":      p.t.Id().String(),
 	}).Debugf("Progressing saga step [%s].", st.StepId)
 
-	if st.Action == AwardInventory {
-		var payload AwardItemActionPayload
-		if payload, ok = st.Payload.(AwardItemActionPayload); !ok {
-			return errors.New("invalid payload")
-		}
-		err = compartment.NewProcessor(p.l, p.ctx).RequestCreateItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity)
-		if err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_id":        st.StepId,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("Unable to award item.")
-			return err
-		}
-		return nil
+	// Get the handler for this action type
+	handler, exists := actionHandlers[st.Action]
+	if !exists {
+		return fmt.Errorf("unknown action type: %s", st.Action)
 	}
-	if st.Action == WarpToRandomPortal {
-		var payload WarpToRandomPortalPayload
-		if payload, ok = st.Payload.(WarpToRandomPortalPayload); !ok {
-			return errors.New("invalid payload")
-		}
-		var f field.Model
-		f, ok = field.FromId(payload.FieldId)
-		if !ok {
-			return errors.New("invalid field id")
-		}
-		err = character.NewProcessor(p.l, p.ctx).WarpRandomAndEmit(s.TransactionId, payload.CharacterId, f)
-		if err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_id":        st.StepId,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("Unable to warp to random portal.")
-			return err
-		}
+
+	// Execute the handler
+	return handler(p, s, st)
+}
+
+// logActionError logs an error that occurred during action processing
+func (p *ProcessorImpl) logActionError(s Saga, st Step[any], err error, errorMsg string) {
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId.String(),
+		"saga_type":      s.SagaType,
+		"step_id":        st.StepId,
+		"tenant_id":      p.t.Id().String(),
+	}).WithError(err).Error(errorMsg)
+}
+
+// handleAwardInventory handles the AwardInventory action
+func handleAwardInventory(p *ProcessorImpl, s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(AwardItemActionPayload)
+	if !ok {
+		return errors.New("invalid payload")
 	}
-	if st.Action == WarpToPortal {
-		var payload WarpToPortalPayload
-		if payload, ok = st.Payload.(WarpToPortalPayload); !ok {
-			return errors.New("invalid payload")
-		}
-		var f field.Model
-		f, ok = field.FromId(payload.FieldId)
-		if !ok {
-			return errors.New("invalid field id")
-		}
-		err = character.NewProcessor(p.l, p.ctx).WarpToPortalAndEmit(s.TransactionId, payload.CharacterId, f, model.FixedProvider(payload.PortalId))
-		if err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_id":        st.StepId,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("Unable to warp to random portal.")
-			return err
-		}
+
+	err := p.compP.RequestCreateItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity)
+
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to award item.")
+		return err
 	}
-	if st.Action == AwardExperience {
-		var payload AwardExperiencePayload
-		if payload, ok = st.Payload.(AwardExperiencePayload); !ok {
-			return errors.New("invalid payload")
-		}
-		eds := TransformExperienceDistributions(payload.Distributions)
-		err = character.NewProcessor(p.l, p.ctx).AwardExperienceAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, eds)
-		if err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_id":        st.StepId,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("Unable to award experience.")
-			return err
-		}
+
+	return nil
+}
+
+// handleWarpToRandomPortal handles the WarpToRandomPortal action
+func handleWarpToRandomPortal(p *ProcessorImpl, s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(WarpToRandomPortalPayload)
+	if !ok {
+		return errors.New("invalid payload")
 	}
-	if st.Action == AwardLevel {
-		var payload AwardLevelPayload
-		if payload, ok = st.Payload.(AwardLevelPayload); !ok {
-			return errors.New("invalid payload")
-		}
-		err = character.NewProcessor(p.l, p.ctx).AwardLevelAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
-		if err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_id":        st.StepId,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("Unable to award level.")
-			return err
-		}
+
+	f, ok := field.FromId(payload.FieldId)
+	if !ok {
+		return errors.New("invalid field id")
 	}
+
+	err := p.charP.WarpRandomAndEmit(s.TransactionId, payload.CharacterId, f)
+
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to warp to random portal.")
+		return err
+	}
+
+	return nil
+}
+
+// handleWarpToPortal handles the WarpToPortal action
+func handleWarpToPortal(p *ProcessorImpl, s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(WarpToPortalPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	f, ok := field.FromId(payload.FieldId)
+	if !ok {
+		return errors.New("invalid field id")
+	}
+
+	err := p.charP.WarpToPortalAndEmit(s.TransactionId, payload.CharacterId, f, model.FixedProvider(payload.PortalId))
+
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to warp to specific portal.")
+		return err
+	}
+
+	return nil
+}
+
+// handleAwardExperience handles the AwardExperience action
+func handleAwardExperience(p *ProcessorImpl, s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(AwardExperiencePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	eds := TransformExperienceDistributions(payload.Distributions)
+	err := p.charP.AwardExperienceAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, eds)
+
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to award experience.")
+		return err
+	}
+
+	return nil
+}
+
+// handleAwardLevel handles the AwardLevel action
+func handleAwardLevel(p *ProcessorImpl, s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(AwardLevelPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := p.charP.AwardLevelAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
+
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to award level.")
+		return err
+	}
+
 	return nil
 }
 

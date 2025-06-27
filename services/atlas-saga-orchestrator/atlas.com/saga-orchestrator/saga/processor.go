@@ -200,6 +200,7 @@ var actionHandlers = map[Action]ActionHandler{
 	WarpToPortal:       handleWarpToPortal,
 	AwardExperience:    handleAwardExperience,
 	AwardLevel:         handleAwardLevel,
+	AwardMesos:         handleAwardMesos,
 }
 
 func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
@@ -349,6 +350,23 @@ func handleAwardLevel(p *ProcessorImpl, s Saga, st Step[any]) error {
 
 	if err != nil {
 		p.logActionError(s, st, err, "Unable to award level.")
+		return err
+	}
+
+	return nil
+}
+
+// handleAwardMesos handles the AwardMesos action
+func handleAwardMesos(p *ProcessorImpl, s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(AwardMesosPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := p.charP.AwardMesosAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.ActorId, payload.ActorType, payload.Amount)
+
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to award mesos.")
 		return err
 	}
 

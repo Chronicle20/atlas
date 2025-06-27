@@ -24,6 +24,8 @@ type Processor interface {
 	AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error
 	AwardLevelAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
 	AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
+	AwardMesosAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
+	AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
 }
 
 type ProcessorImpl struct {
@@ -93,5 +95,17 @@ func (p *ProcessorImpl) AwardLevelAndEmit(transactionId uuid.UUID, worldId world
 func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error {
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error {
 		return mb.Put(character2.EnvCommandTopic, AwardLevelProvider(transactionId, worldId, characterId, channelId, amount))
+	}
+}
+
+func (p *ProcessorImpl) AwardMesosAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.AwardMesos(mb)(transactionId, worldId, characterId, channelId, actorId, actorType, amount)
+	})
+}
+
+func (p *ProcessorImpl) AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
+		return mb.Put(character2.EnvCommandTopic, AwardMesosProvider(transactionId, worldId, characterId, channelId, actorId, actorType, amount))
 	}
 }

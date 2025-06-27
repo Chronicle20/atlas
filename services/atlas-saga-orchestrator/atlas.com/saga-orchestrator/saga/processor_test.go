@@ -509,6 +509,96 @@ func TestHandleAwardExperience(t *testing.T) {
 	}
 }
 
+func TestHandleAwardMesos(t *testing.T) {
+	tests := []struct {
+		name          string
+		payload       AwardMesosPayload
+		mockError     error
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "Success case",
+			payload: AwardMesosPayload{
+				CharacterId: 12345,
+				WorldId:     0,
+				ChannelId:   0,
+				ActorId:     0,
+				ActorType:   "SYSTEM",
+				Amount:      1000,
+			},
+			mockError:   nil,
+			expectError: false,
+		},
+		{
+			name: "Error case",
+			payload: AwardMesosPayload{
+				CharacterId: 12345,
+				WorldId:     0,
+				ChannelId:   0,
+				ActorId:     0,
+				ActorType:   "SYSTEM",
+				Amount:      1000,
+			},
+			mockError:     errors.New("failed to award mesos"),
+			expectError:   true,
+			errorContains: "failed to award mesos",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			charP := &mock.ProcessorMock{}
+			compP := &mock2.ProcessorMock{}
+
+			processor, _ := setupTestProcessor(charP, compP)
+
+			// Configure mock
+			charP.AwardMesosAndEmitFunc = func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
+				// Verify parameters
+				assert.Equal(t, tt.payload.CharacterId, characterId)
+				assert.Equal(t, tt.payload.WorldId, worldId)
+				assert.Equal(t, tt.payload.ChannelId, channelId)
+				assert.Equal(t, tt.payload.ActorId, actorId)
+				assert.Equal(t, tt.payload.ActorType, actorType)
+				assert.Equal(t, tt.payload.Amount, amount)
+
+				return tt.mockError
+			}
+
+			// Create test saga and step
+			transactionId := uuid.New()
+			saga := Saga{
+				TransactionId: transactionId,
+				SagaType:      QuestReward,
+				InitiatedBy:   "test",
+			}
+
+			step := Step[any]{
+				StepId:    "test-step",
+				Status:    Pending,
+				Action:    AwardMesos,
+				Payload:   tt.payload,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+
+			// Execute
+			err := handleAwardMesos(processor, saga, step)
+
+			// Verify
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestTransformExperienceDistributions(t *testing.T) {
 	tests := []struct {
 		name     string

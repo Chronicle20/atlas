@@ -29,6 +29,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterMapChangedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterExperienceChangedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterLevelChangedEvent)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterMesoChangedEvent)))
 	}
 }
 
@@ -48,6 +49,13 @@ func handleCharacterExperienceChangedEvent(l logrus.FieldLogger, ctx context.Con
 
 func handleCharacterLevelChangedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.LevelChangedStatusEventBody]) {
 	if e.Type != character2.StatusEventTypeLevelChanged {
+		return
+	}
+	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+}
+
+func handleCharacterMesoChangedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.MesoChangedStatusEventBody]) {
+	if e.Type != character2.StatusEventTypeMesoChanged {
 		return
 	}
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)

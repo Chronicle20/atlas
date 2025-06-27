@@ -74,6 +74,7 @@ var payloadUnmarshalers = map[Action]PayloadUnmarshaler{
 	AwardInventory:     unmarshalAwardInventoryPayload,
 	AwardExperience:    unmarshalAwardExperiencePayload,
 	AwardLevel:         unmarshalAwardLevelPayload,
+	AwardMesos:         unmarshalAwardMesosPayload,
 	WarpToRandomPortal: unmarshalWarpToRandomPortalPayload,
 	WarpToPortal:       unmarshalWarpToPortalPayload,
 }
@@ -136,6 +137,10 @@ func unmarshalWarpToRandomPortalPayload(rawPayload interface{}) (any, error) {
 
 func unmarshalWarpToPortalPayload(rawPayload interface{}) (any, error) {
 	return unmarshalGenericPayload[WarpToPortalPayload](rawPayload)
+}
+
+func unmarshalAwardMesosPayload(rawPayload interface{}) (any, error) {
+	return unmarshalGenericPayload[AwardMesosPayload](rawPayload)
 }
 
 // Extract converts a REST model to a domain model

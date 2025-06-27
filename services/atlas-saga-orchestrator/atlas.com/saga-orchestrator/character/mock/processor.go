@@ -20,6 +20,8 @@ type ProcessorMock struct {
 	AwardExperienceFunc        func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error
 	AwardLevelAndEmitFunc      func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
 	AwardLevelFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
+	AwardMesosAndEmitFunc      func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
+	AwardMesosFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
 }
 
 // WarpRandomAndEmit is a mock implementation of the character.Processor.WarpRandomAndEmit method
@@ -90,6 +92,24 @@ func (m *ProcessorMock) AwardLevel(mb *message.Buffer) func(transactionId uuid.U
 		return m.AwardLevelFunc(mb)
 	}
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error {
+		return nil
+	}
+}
+
+// AwardMesosAndEmit is a mock implementation of the character.Processor.AwardMesosAndEmit method
+func (m *ProcessorMock) AwardMesosAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
+	if m.AwardMesosAndEmitFunc != nil {
+		return m.AwardMesosAndEmitFunc(transactionId, worldId, characterId, channelId, actorId, actorType, amount)
+	}
+	return nil
+}
+
+// AwardMesos is a mock implementation of the character.Processor.AwardMesos method
+func (m *ProcessorMock) AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
+	if m.AwardMesosFunc != nil {
+		return m.AwardMesosFunc(mb)
+	}
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
 		return nil
 	}
 }

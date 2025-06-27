@@ -109,6 +109,11 @@ The service consumes messages from the following Kafka topics:
   - Triggers a character command to award levels
   - Completes when the StatusEventTypeLevelChanged event is received
 
+- `award_mesos` - Awards mesos (currency) to a character
+  - Payload: `{"characterId": 12345, "worldId": 0, "channelId": 0, "actorId": 0, "actorType": "SYSTEM", "amount": 1000}`
+  - Triggers a character command to award mesos
+  - Completes when the StatusEventTypeMesoChanged event is received
+
 - `warp_to_random_portal` - Warps a character to a random portal in a field
   - Payload: `{"characterId": 12345, "fieldId": 100000000}`
   - Triggers a character command to warp to a random portal

@@ -56,3 +56,19 @@ func AwardLevelProvider(transactionId uuid.UUID, worldId world.Id, characterId u
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func AwardMesosProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.RequestChangeMesoBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          character2.CommandRequestChangeMeso,
+		Body: character2.RequestChangeMesoBody{
+			ActorId:   actorId,
+			ActorType: actorType,
+			Amount:    amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

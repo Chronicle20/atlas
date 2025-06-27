@@ -1,7 +1,7 @@
 package skill
 
 import (
-	"atlas-character/skill/data/effect"
+	"atlas-character/data/skill/effect"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-rest/requests"

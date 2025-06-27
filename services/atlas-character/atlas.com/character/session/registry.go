@@ -2,6 +2,8 @@ package session
 
 import (
 	"errors"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"sync"
@@ -26,7 +28,7 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) Add(t tenant.Model, characterId uint32, worldId byte, channelId byte, state State) error {
+func (r *Registry) Add(t tenant.Model, characterId uint32, worldId world.Id, channelId channel.Id, state State) error {
 	r.mutex.Lock()
 	if _, ok := r.lockRegistry[t.Id()]; !ok {
 		r.lockRegistry[t.Id()] = &sync.RWMutex{}
@@ -53,7 +55,7 @@ func (r *Registry) Add(t tenant.Model, characterId uint32, worldId byte, channel
 	return nil
 }
 
-func (r *Registry) Set(t tenant.Model, characterId uint32, worldId byte, channelId byte, state State) error {
+func (r *Registry) Set(t tenant.Model, characterId uint32, worldId world.Id, channelId channel.Id, state State) error {
 	r.mutex.Lock()
 	if _, ok := r.lockRegistry[t.Id()]; !ok {
 		r.lockRegistry[t.Id()] = &sync.RWMutex{}

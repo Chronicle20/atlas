@@ -1,7 +1,7 @@
 package effect
 
 import (
-	"atlas-character/skill/data/effect/statup"
+	"atlas-character/data/skill/effect/statup"
 	"github.com/Chronicle20/atlas-model/model"
 )
 

@@ -1,6 +1,9 @@
 package character
 
 import (
+	"github.com/Chronicle20/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -10,7 +13,7 @@ import (
 
 type EntityUpdateFunction func() ([]string, func(e *entity))
 
-func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, maxHP uint16, maxMP uint16, jobId uint16, gender byte, hair uint32, face uint32, skinColor byte, mapId uint32) (Model, error) {
+func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, maxHP uint16, maxMP uint16, jobId job.Id, gender byte, hair uint32, face uint32, skinColor byte, mapId _map.Id) (Model, error) {
 	e := &entity{
 		TenantId:     tenantId,
 		AccountId:    accountId,
@@ -187,7 +190,7 @@ func SetHPMPUsed(value int) EntityUpdateFunction {
 	}
 }
 
-func SetMapId(mapId uint32) EntityUpdateFunction {
+func SetMapId(mapId _map.Id) EntityUpdateFunction {
 	return func() ([]string, func(e *entity)) {
 		return []string{"MapId"}, func(e *entity) {
 			e.MapId = mapId
@@ -221,7 +224,7 @@ func SetSP(amount uint32, bookId uint32) EntityUpdateFunction {
 	}
 }
 
-func SetJob(jobId uint16) EntityUpdateFunction {
+func SetJob(jobId job.Id) EntityUpdateFunction {
 	return func() ([]string, func(e *entity)) {
 		return []string{"JobId"}, func(e *entity) {
 			e.JobId = jobId

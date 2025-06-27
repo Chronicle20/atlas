@@ -3,6 +3,7 @@ package session
 import (
 	"atlas-character/character"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
@@ -34,13 +35,15 @@ func (t *Timeout) Run() {
 	t.l.Debugf("Executing timeout task.")
 	cs := GetRegistry().GetAll()
 	for _, m := range cs {
+		tctx := tenant.WithContext(sctx, m.Tenant())
+		cp := character.NewProcessor(t.l, tctx, t.db)
+		cha := channel.NewModel(m.WorldId(), m.ChannelId())
+
 		if m.State() == StateTransition && cur.Sub(m.Age()) > t.timeout {
 			t.l.Debugf("Timing out record for character [%d].", m.CharacterId())
 			GetRegistry().Remove(m.Tenant(), m.CharacterId())
 
-			tctx := tenant.WithContext(sctx, m.Tenant())
-
-			err := character.Logout(t.l)(t.db)(tctx)(m.CharacterId())(m.WorldId())(m.ChannelId())
+			err := cp.Logout(m.CharacterId())(cha)
 			if err != nil {
 				t.l.WithError(err).Errorf("Unable to logout character [%d] as a result of session being destroyed.", m.CharacterId())
 			}

@@ -1,7 +1,7 @@
 package skill
 
 import (
-	"atlas-character/skill/data/effect"
+	"atlas-character/data/skill/effect"
 	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
 )

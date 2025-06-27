@@ -80,6 +80,7 @@ type ProcessorImpl struct {
 	t   tenant.Model
 	pp  portal.Processor
 	sp  skill2.Processor
+	sdp skill3.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -90,6 +91,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		t:   tenant.MustFromContext(ctx),
 		pp:  portal.NewProcessor(l, ctx),
 		sp:  skill2.NewProcessor(l, ctx),
+		sdp: skill3.NewProcessor(l, ctx),
 	}
 }
 
@@ -655,7 +657,7 @@ func (p *ProcessorImpl) getMaxHpGrowth(c Model) (uint16, error) {
 
 	if improvingHPSkillId > 0 {
 		var improvingHPSkillLevel = c.GetSkillLevel(uint32(improvingHPSkillId))
-		se, err := skill3.GetEffect(p.l)(p.ctx)(uint32(improvingHPSkillId), improvingHPSkillLevel)
+		se, err := p.sdp.GetEffect(uint32(improvingHPSkillId), improvingHPSkillLevel)
 		if err == nil {
 			resMax = uint16(int16(resMax) + se.Y())
 		}
@@ -718,7 +720,7 @@ func (p *ProcessorImpl) getMaxMpGrowth(c Model) (uint16, error) {
 
 	if improvingMPSkillId > 0 {
 		var improvingMPSkillLevel = c.GetSkillLevel(uint32(improvingMPSkillId))
-		se, err := skill3.GetEffect(p.l)(p.ctx)(uint32(improvingMPSkillId), improvingMPSkillLevel)
+		se, err := p.sdp.GetEffect(uint32(improvingMPSkillId), improvingMPSkillLevel)
 		if err == nil {
 			resMax = uint16(int16(resMax) + se.X())
 		}
@@ -941,14 +943,14 @@ func (p *ProcessorImpl) computeOnLevelAddedHPandMP(c Model) (uint16, uint16) {
 
 	if improvingHPSkillId > 0 {
 		var improvingHPSkillLevel = c.GetSkillLevel(uint32(improvingHPSkillId))
-		se, err := skill3.GetEffect(p.l)(p.ctx)(uint32(improvingHPSkillId), improvingHPSkillLevel)
+		se, err := p.sdp.GetEffect(uint32(improvingHPSkillId), improvingHPSkillLevel)
 		if err == nil {
 			addedHP = uint16(int16(addedHP) + se.X())
 		}
 	}
 	if improvingMPSkillId > 0 {
 		var improvingMPSkillLevel = c.GetSkillLevel(uint32(improvingMPSkillId))
-		se, err := skill3.GetEffect(p.l)(p.ctx)(uint32(improvingMPSkillId), improvingMPSkillLevel)
+		se, err := p.sdp.GetEffect(uint32(improvingMPSkillId), improvingMPSkillLevel)
 		if err == nil {
 			addedMP = uint16(int16(addedMP) + se.X())
 		}

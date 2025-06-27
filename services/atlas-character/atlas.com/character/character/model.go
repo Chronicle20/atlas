@@ -3,6 +3,8 @@ package character
 import (
 	"atlas-character/skill"
 	"github.com/Chronicle20/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"strconv"
 	"strings"
 )
@@ -10,7 +12,7 @@ import (
 type Model struct {
 	id                 uint32
 	accountId          uint32
-	worldId            byte
+	worldId            world.Id
 	name               string
 	level              byte
 	experience         uint32
@@ -25,7 +27,7 @@ type Model struct {
 	maxMp              uint16
 	meso               uint32
 	hpMpUsed           int
-	jobId              uint16
+	jobId              job.Id
 	skinColor          byte
 	gender             byte
 	fame               int16
@@ -33,7 +35,7 @@ type Model struct {
 	face               uint32
 	ap                 uint16
 	sp                 string
-	mapId              uint32
+	mapId              _map.Id
 	spawnPoint         uint32
 	gm                 int
 	skills             []skill.Model
@@ -71,7 +73,7 @@ func (m Model) Luck() uint16 {
 	return m.luck
 }
 
-func (m Model) JobId() uint16 {
+func (m Model) JobId() job.Id {
 	return m.jobId
 }
 
@@ -91,7 +93,7 @@ func (m Model) Experience() uint32 {
 	return m.experience
 }
 
-func (m Model) MapId() uint32 {
+func (m Model) MapId() _map.Id {
 	return m.mapId
 }
 
@@ -136,7 +138,7 @@ func (m Model) AccountId() uint32 {
 	return m.accountId
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
@@ -205,14 +207,14 @@ func (m Model) GetSkillLevel(skillId uint32) byte {
 type modelBuilder struct {
 	id                 uint32
 	accountId          uint32
-	worldId            byte
+	worldId            world.Id
 	name               string
 	gender             byte
 	skinColor          byte
 	face               uint32
 	hair               uint32
 	level              byte
-	jobId              uint16
+	jobId              job.Id
 	strength           uint16
 	dexterity          uint16
 	intelligence       uint16
@@ -227,7 +229,7 @@ type modelBuilder struct {
 	experience         uint32
 	fame               int16
 	gachaponExperience uint32
-	mapId              uint32
+	mapId              _map.Id
 	spawnPoint         uint32
 	gm                 int
 	meso               uint32
@@ -282,7 +284,7 @@ func (c *modelBuilder) SetAccountId(accountId uint32) *modelBuilder {
 	return c
 }
 
-func (c *modelBuilder) SetWorldId(worldId byte) *modelBuilder {
+func (c *modelBuilder) SetWorldId(worldId world.Id) *modelBuilder {
 	c.worldId = worldId
 	return c
 }
@@ -317,7 +319,7 @@ func (c *modelBuilder) SetLevel(level byte) *modelBuilder {
 	return c
 }
 
-func (c *modelBuilder) SetJobId(jobId uint16) *modelBuilder {
+func (c *modelBuilder) SetJobId(jobId job.Id) *modelBuilder {
 	c.jobId = jobId
 	return c
 }
@@ -387,7 +389,7 @@ func (c *modelBuilder) SetGachaponExperience(gachaponExperience uint32) *modelBu
 	return c
 }
 
-func (c *modelBuilder) SetMapId(mapId uint32) *modelBuilder {
+func (c *modelBuilder) SetMapId(mapId _map.Id) *modelBuilder {
 	c.mapId = mapId
 	return c
 }

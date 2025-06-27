@@ -1,6 +1,8 @@
 package session
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"time"
 )
@@ -16,8 +18,8 @@ const (
 type Model struct {
 	tenant      tenant.Model
 	characterId uint32
-	worldId     byte
-	channelId   byte
+	worldId     world.Id
+	channelId   channel.Id
 	state       State
 	age         time.Time
 }
@@ -38,10 +40,10 @@ func (m Model) Tenant() tenant.Model {
 	return m.tenant
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
-func (m Model) ChannelId() byte {
+func (m Model) ChannelId() channel.Id {
 	return m.channelId
 }

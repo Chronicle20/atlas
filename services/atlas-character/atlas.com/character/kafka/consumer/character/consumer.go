@@ -3,7 +3,10 @@ package character
 import (
 	"atlas-character/character"
 	consumer2 "atlas-character/kafka/consumer"
+	character2 "atlas-character/kafka/message/character"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -16,9 +19,9 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("character_command")(EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-			rf(consumer2.NewConfig(l)("character_event_status")(EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-			rf(consumer2.NewConfig(l)("character_movement_command")(EnvCommandTopicMovement)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("character_command")(character2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("character_event_status")(character2.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("character_movement_command")(character2.EnvCommandTopicMovement)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -27,7 +30,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
-			t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
+			t, _ = topic.EnvProvider(l)(character2.EnvCommandTopic)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMap(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeJob(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardExperience(db))))
@@ -39,98 +42,103 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDistributeSp(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeHP(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMP(db))))
-			t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent)))
-			t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+			t, _ = topic.EnvProvider(l)(character2.EnvCommandTopicMovement)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(db))))
+			t, _ = topic.EnvProvider(l)(character2.EnvEventTopicCharacterStatus)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLevelChangedStatusEvent(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleJobChangedStatusEvent(db))))
 		}
 	}
 }
 
-func handleChangeMap(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c command[changeMapBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[changeMapBody]) {
-		if c.Type != CommandChangeMap {
+func handleChangeMap(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeMapBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeMapBody]) {
+		if c.Type != character2.CommandChangeMap {
 			return
 		}
 
-		err := character.ChangeMap(l, db, ctx)(c.CharacterId, c.WorldId, c.Body.ChannelId, c.Body.MapId, c.Body.PortalId)
+		f := field.NewBuilder(c.WorldId, c.Body.ChannelId, c.Body.MapId).Build()
+		err := character.NewProcessor(l, ctx, db).ChangeMap(c.TransactionId, c.CharacterId, f, c.Body.PortalId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to change character [%d] map.", c.CharacterId)
 		}
 	}
 }
 
-func handleChangeJob(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c command[changeJobCommandBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[changeJobCommandBody]) {
-		if c.Type != CommandChangeJob {
+func handleChangeJob(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeJobCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeJobCommandBody]) {
+		if c.Type != character2.CommandChangeJob {
 			return
 		}
 
-		_ = character.ChangeJob(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.ChannelId, c.Body.JobId)
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).ChangeJob(c.TransactionId, c.CharacterId, cha, c.Body.JobId)
 	}
 }
 
-func handleAwardExperience(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c command[awardExperienceCommandBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[awardExperienceCommandBody]) {
-		if c.Type != CommandAwardExperience {
+func handleAwardExperience(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.AwardExperienceCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.AwardExperienceCommandBody]) {
+		if c.Type != character2.CommandAwardExperience {
 			return
 		}
 
-		es, err := model.SliceMap(func(m experienceDistributions) (character.ExperienceModel, error) {
+		es, err := model.SliceMap(func(m character2.ExperienceDistributions) (character.ExperienceModel, error) {
 			return character.NewExperienceModel(m.ExperienceType, m.Amount, m.Attr1), nil
 		})(model.FixedProvider(c.Body.Distributions))()()
 		if err != nil {
 			return
 		}
 
-		_ = character.AwardExperience(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.ChannelId, es)
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).AwardExperience(c.TransactionId, c.CharacterId, cha, es)
 	}
 }
 
-func handleAwardLevel(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c command[awardLevelCommandBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[awardLevelCommandBody]) {
-		if c.Type != CommandAwardLevel {
+func handleAwardLevel(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.AwardLevelCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.AwardLevelCommandBody]) {
+		if c.Type != character2.CommandAwardLevel {
 			return
 		}
 
-		_ = character.AwardLevel(l)(ctx)(db)(c.CharacterId, c.WorldId, c.Body.ChannelId, c.Body.Amount)
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).AwardLevel(c.TransactionId, c.CharacterId, cha, c.Body.Amount)
 	}
 }
 
-func handleRequestChangeMeso(db *gorm.DB) message.Handler[command[requestChangeMesoBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestChangeMesoBody]) {
-		if c.Type != CommandRequestChangeMeso {
+func handleRequestChangeMeso(db *gorm.DB) message.Handler[character2.Command[character2.RequestChangeMesoBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.RequestChangeMesoBody]) {
+		if c.Type != character2.CommandRequestChangeMeso {
 			return
 		}
 
-		_ = character.RequestChangeMeso(l)(ctx)(db)(c.CharacterId, c.Body.Amount, c.Body.ActorId, c.Body.ActorType)
+		_ = character.NewProcessor(l, ctx, db).RequestChangeMeso(c.TransactionId, c.CharacterId, c.Body.Amount, c.Body.ActorId, c.Body.ActorType)
 	}
 }
 
-func handleRequestDropMeso(db *gorm.DB) message.Handler[command[requestDropMesoCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestDropMesoCommandBody]) {
-		if c.Type != CommandRequestDropMeso {
+func handleRequestDropMeso(db *gorm.DB) message.Handler[character2.Command[character2.RequestDropMesoCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.RequestDropMesoCommandBody]) {
+		if c.Type != character2.CommandRequestDropMeso {
 			return
 		}
 
-		_ = character.RequestDropMeso(l)(ctx)(db)(c.WorldId, c.Body.ChannelId, c.Body.MapId, c.CharacterId, c.Body.Amount)
+		f := field.NewBuilder(c.WorldId, c.Body.ChannelId, c.Body.MapId).Build()
+		_ = character.NewProcessor(l, ctx, db).RequestDropMeso(c.TransactionId, f, c.CharacterId, c.Body.Amount)
 	}
 }
 
-func handleRequestChangeFame(db *gorm.DB) message.Handler[command[requestChangeFameBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestChangeFameBody]) {
-		if c.Type != CommandRequestChangeFame {
+func handleRequestChangeFame(db *gorm.DB) message.Handler[character2.Command[character2.RequestChangeFameBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.RequestChangeFameBody]) {
+		if c.Type != character2.CommandRequestChangeFame {
 			return
 		}
 
-		_ = character.RequestChangeFame(l)(ctx)(db)(c.CharacterId, c.Body.Amount, c.Body.ActorId, c.Body.ActorType)
+		_ = character.NewProcessor(l, ctx, db).RequestChangeFame(c.TransactionId, c.CharacterId, c.Body.Amount, c.Body.ActorId, c.Body.ActorType)
 	}
 }
 
-func handleRequestDistributeAp(db *gorm.DB) message.Handler[command[requestDistributeApCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestDistributeApCommandBody]) {
-		if c.Type != CommandRequestDistributeAp {
+func handleRequestDistributeAp(db *gorm.DB) message.Handler[character2.Command[character2.RequestDistributeApCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.RequestDistributeApCommandBody]) {
+		if c.Type != character2.CommandRequestDistributeAp {
 			return
 		}
 
@@ -141,65 +149,74 @@ func handleRequestDistributeAp(db *gorm.DB) message.Handler[command[requestDistr
 		if err != nil {
 			return
 		}
-		_ = character.RequestDistributeAp(l)(ctx)(db)(c.CharacterId, ds)
+		_ = character.NewProcessor(l, ctx, db).RequestDistributeAp(c.TransactionId, c.CharacterId, ds)
 	}
 }
 
-func handleRequestDistributeSp(db *gorm.DB) message.Handler[command[requestDistributeSpCommandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestDistributeSpCommandBody]) {
-		if c.Type != CommandRequestDistributeSp {
+func handleRequestDistributeSp(db *gorm.DB) message.Handler[character2.Command[character2.RequestDistributeSpCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.RequestDistributeSpCommandBody]) {
+		if c.Type != character2.CommandRequestDistributeSp {
 			return
 		}
-		_ = character.RequestDistributeSp(l)(ctx)(db)(c.CharacterId, c.Body.SkillId, c.Body.Amount)
+		_ = character.NewProcessor(l, ctx, db).RequestDistributeSp(c.TransactionId, c.CharacterId, c.Body.SkillId, c.Body.Amount)
 	}
 }
 
-func transform(m DistributePair) (character.Distribution, error) {
+func transform(m character2.DistributePair) (character.Distribution, error) {
 	return character.Distribution{
 		Ability: m.Ability,
 		Amount:  m.Amount,
 	}, nil
 }
 
-func handleChangeHP(db *gorm.DB) message.Handler[command[changeHPBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[changeHPBody]) {
-		if c.Type != CommandChangeHP {
+func handleChangeHP(db *gorm.DB) message.Handler[character2.Command[character2.ChangeHPBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeHPBody]) {
+		if c.Type != character2.CommandChangeHP {
 			return
 		}
-		_ = character.ChangeHP(l)(ctx)(db)(c.WorldId, c.Body.ChannelId, c.CharacterId, c.Body.Amount)
+
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).ChangeHP(c.TransactionId, cha, c.CharacterId, c.Body.Amount)
 	}
 }
 
-func handleChangeMP(db *gorm.DB) message.Handler[command[changeMPBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[changeMPBody]) {
-		if c.Type != CommandChangeMP {
+func handleChangeMP(db *gorm.DB) message.Handler[character2.Command[character2.ChangeMPBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeMPBody]) {
+		if c.Type != character2.CommandChangeMP {
 			return
 		}
-		_ = character.ChangeMP(l)(ctx)(db)(c.WorldId, c.Body.ChannelId, c.CharacterId, c.Body.Amount)
+
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).ChangeMP(c.TransactionId, cha, c.CharacterId, c.Body.Amount)
 	}
 }
 
-func handleLevelChangedStatusEvent(db *gorm.DB) message.Handler[statusEvent[levelChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[levelChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeLevelChanged {
+func handleLevelChangedStatusEvent(db *gorm.DB) message.Handler[character2.StatusEvent[character2.LevelChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.LevelChangedStatusEventBody]) {
+		if e.Type != character2.StatusEventTypeLevelChanged {
 			return
 		}
-		_ = character.ProcessLevelChange(l)(ctx)(db)(e.WorldId, e.Body.ChannelId, e.CharacterId, e.Body.Amount)
+
+		cha := channel.NewModel(e.WorldId, e.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).ProcessLevelChange(e.TransactionId, cha, e.CharacterId, e.Body.Amount)
 	}
 }
 
-func handleJobChangedStatusEvent(db *gorm.DB) message.Handler[statusEvent[jobChangedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[jobChangedStatusEventBody]) {
-		if e.Type != StatusEventTypeJobChanged {
+func handleJobChangedStatusEvent(db *gorm.DB) message.Handler[character2.StatusEvent[character2.JobChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.JobChangedStatusEventBody]) {
+		if e.Type != character2.StatusEventTypeJobChanged {
 			return
 		}
-		_ = character.ProcessJobChange(l)(ctx)(db)(e.WorldId, e.Body.ChannelId, e.CharacterId, e.Body.JobId)
+		cha := channel.NewModel(e.WorldId, e.Body.ChannelId)
+		_ = character.NewProcessor(l, ctx, db).ProcessJobChange(e.TransactionId, cha, e.CharacterId, e.Body.JobId)
 	}
 }
 
-func handleMovementEvent(l logrus.FieldLogger, ctx context.Context, c movementCommand) {
-	err := character.Move(ctx)(uint32(c.ObjectId))(c.WorldId)(c.ChannelId)(c.MapId)(c.X, c.Y, c.Stance)
-	if err != nil {
-		l.WithError(err).Errorf("Error processing movement for character [%d].", c.ObjectId)
+func handleMovementEvent(db *gorm.DB) message.Handler[character2.MovementCommand] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.MovementCommand) {
+		err := character.NewProcessor(l, ctx, db).Move(uint32(c.ObjectId), c.X, c.Y, c.Stance)
+		if err != nil {
+			l.WithError(err).Errorf("Error processing movement for character [%d].", c.ObjectId)
+		}
 	}
 }

@@ -1,6 +1,8 @@
 package effect
 
-import "atlas-character/skill/data/effect/statup"
+import (
+	"atlas-character/data/skill/effect/statup"
+)
 
 type Model struct {
 	weaponAttack  int16

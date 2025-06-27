@@ -1,31 +1,39 @@
 package drop
 
 import (
+	drop2 "atlas-character/kafka/message/drop"
 	"atlas-character/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/sirupsen/logrus"
 )
 
-func CreateForMesos(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, mesos uint32, dropType byte, x int16, y int16, ownerId uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, mesos uint32, dropType byte, x int16, y int16, ownerId uint32) error {
-		return func(worldId byte, channelId byte, mapId uint32, mesos uint32, dropType byte, x int16, y int16, ownerId uint32) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(dropMesoProvider(worldId, channelId, mapId, mesos, dropType, x, y, ownerId))
-		}
+type Processor interface {
+	CreateForMesos(field field.Model, mesos uint32, dropType byte, x int16, y int16, ownerId uint32) error
+	RequestPickUp(field field.Model, dropId uint32, characterId uint32) error
+	CancelReservation(field field.Model, dropId uint32, characterId uint32) error
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
 	}
 }
 
-func RequestPickUp(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
-		return func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestPickUpCommandProvider(worldId, channelId, mapId, dropId, characterId))
-		}
-	}
+func (p *ProcessorImpl) CreateForMesos(field field.Model, mesos uint32, dropType byte, x int16, y int16, ownerId uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(drop2.EnvCommandTopic)(dropMesoProvider(field, mesos, dropType, x, y, ownerId))
 }
 
-func CancelReservation(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
-		return func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(cancelReservationCommandProvider(worldId, channelId, mapId, dropId, characterId))
-		}
-	}
+func (p *ProcessorImpl) RequestPickUp(field field.Model, dropId uint32, characterId uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(drop2.EnvCommandTopic)(requestPickUpCommandProvider(field, dropId, characterId))
+}
+
+func (p *ProcessorImpl) CancelReservation(field field.Model, dropId uint32, characterId uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(drop2.EnvCommandTopic)(cancelReservationCommandProvider(field, dropId, characterId))
 }

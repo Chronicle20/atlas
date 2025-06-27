@@ -1,19 +1,21 @@
 package drop
 
 import (
+	drop2 "atlas-character/kafka/message/drop"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 
-func dropMesoProvider(worldId byte, channelId byte, mapId uint32, mesos uint32, dropType byte, x int16, y int16, ownerId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(mapId))
-	value := &command[spawnFromCharacterCommandBody]{
-		WorldId:   worldId,
-		ChannelId: channelId,
-		MapId:     mapId,
-		Type:      CommandTypeSpawnFromCharacter,
-		Body: spawnFromCharacterCommandBody{
+func dropMesoProvider(field field.Model, mesos uint32, dropType byte, x int16, y int16, ownerId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(field.MapId()))
+	value := &drop2.Command[drop2.SpawnFromCharacterCommandBody]{
+		WorldId:   field.WorldId(),
+		ChannelId: field.ChannelId(),
+		MapId:     field.MapId(),
+		Type:      drop2.CommandTypeSpawnFromCharacter,
+		Body: drop2.SpawnFromCharacterCommandBody{
 			Mesos:      mesos,
 			DropType:   dropType,
 			X:          x,
@@ -28,14 +30,14 @@ func dropMesoProvider(worldId byte, channelId byte, mapId uint32, mesos uint32, 
 	return producer.SingleMessageProvider(key, value)
 }
 
-func cancelReservationCommandProvider(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(mapId))
-	value := &command[cancelReservationCommandBody]{
-		WorldId:   worldId,
-		ChannelId: channelId,
-		MapId:     mapId,
-		Type:      CommandTypeCancelReservation,
-		Body: cancelReservationCommandBody{
+func cancelReservationCommandProvider(field field.Model, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(field.MapId()))
+	value := &drop2.Command[drop2.CancelReservationCommandBody]{
+		WorldId:   field.WorldId(),
+		ChannelId: field.ChannelId(),
+		MapId:     field.MapId(),
+		Type:      drop2.CommandTypeCancelReservation,
+		Body: drop2.CancelReservationCommandBody{
 			DropId:      dropId,
 			CharacterId: characterId,
 		},
@@ -43,14 +45,14 @@ func cancelReservationCommandProvider(worldId byte, channelId byte, mapId uint32
 	return producer.SingleMessageProvider(key, value)
 }
 
-func requestPickUpCommandProvider(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(mapId))
-	value := &command[requestPickUpCommandBody]{
-		WorldId:   worldId,
-		ChannelId: channelId,
-		MapId:     mapId,
-		Type:      CommandTypeRequestPickUp,
-		Body: requestPickUpCommandBody{
+func requestPickUpCommandProvider(field field.Model, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(field.MapId()))
+	value := &drop2.Command[drop2.RequestPickUpCommandBody]{
+		WorldId:   field.WorldId(),
+		ChannelId: field.ChannelId(),
+		MapId:     field.MapId(),
+		Type:      drop2.CommandTypeRequestPickUp,
+		Body: drop2.RequestPickUpCommandBody{
 			DropId:      dropId,
 			CharacterId: characterId,
 		},

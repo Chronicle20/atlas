@@ -1,11 +1,13 @@
 package character
 
 import (
-	"atlas-character/kafka/producer"
 	"atlas-character/rest"
 	"errors"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -36,7 +38,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 
 func handleGetCharacters(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cs, err := GetAll(d.DB())(d.Context())(decoratorsFromInclude(r, d, c)...)
+		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetAll(decoratorsFromInclude(r, d, c)...)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to get characters.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -71,7 +73,7 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 			return
 		}
 
-		cs, err := GetForAccountInWorld(d.DB())(d.Context())(uint32(accountId), byte(worldId), decoratorsFromInclude(r, d, c)...)
+		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetForAccountInWorld(decoratorsFromInclude(r, d, c)...)(uint32(accountId), world.Id(worldId))
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to get characters for account %d in world %d.", accountId, worldId)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -111,7 +113,7 @@ func handleGetCharactersByMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 			return
 		}
 
-		cs, err := GetForMapInWorld(d.DB())(d.Context())(byte(worldId), uint32(mapId), decoratorsFromInclude(r, d, c)...)
+		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetForMapInWorld(decoratorsFromInclude(r, d, c)...)(world.Id(worldId), _map.Id(mapId))
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Unable to get characters for map %d in world %d.", mapId, worldId)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -140,7 +142,7 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 			return
 		}
 
-		cs, err := GetForName(d.DB())(d.Context())(name, decoratorsFromInclude(r, d, c)...)
+		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetForName(decoratorsFromInclude(r, d, c)...)(name)
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Getting character %s.", name)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -163,7 +165,7 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 func handleGetCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			cs, err := GetById(d.Context())(d.DB())(decoratorsFromInclude(r, d, c)...)(characterId)
+			cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(decoratorsFromInclude(r, d, c)...)(characterId)
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 				return
@@ -191,7 +193,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		cs, err := Create(d.Logger())(d.DB())(d.Context())(producer.ProviderImpl(d.Logger())(d.Context()))(m)
+		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(uuid.New(), m)
 		if err != nil {
 			if errors.Is(err, blockedNameErr) || errors.Is(err, invalidLevelErr) {
 				w.WriteHeader(http.StatusBadRequest)
@@ -219,7 +221,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 func handleDeleteCharacter(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			err := Delete(d.Logger())(d.DB())(d.Context())(producer.ProviderImpl(d.Logger())(d.Context()))(characterId)
+			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAndEmit(uuid.New(), characterId)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return

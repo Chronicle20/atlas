@@ -2,6 +2,8 @@ package character
 
 import (
 	"atlas-character/database"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -14,14 +16,14 @@ func getById(tenantId uuid.UUID, characterId uint32) database.EntityProvider[ent
 	}
 }
 
-func getForAccountInWorld(tenantId uuid.UUID, accountId uint32, worldId byte) database.EntityProvider[[]entity] {
+func getForAccountInWorld(tenantId uuid.UUID, accountId uint32, worldId world.Id) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		where := map[string]interface{}{"tenant_id": tenantId, "account_id": accountId, "world": worldId}
 		return database.SliceQuery[entity](db, where)
 	}
 }
 
-func getForMapInWorld(tenantId uuid.UUID, worldId byte, mapId uint32) database.EntityProvider[[]entity] {
+func getForMapInWorld(tenantId uuid.UUID, worldId world.Id, mapId _map.Id) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, World: worldId, MapId: mapId})
 	}

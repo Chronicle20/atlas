@@ -1,6 +1,9 @@
 package character
 
 import (
+	"github.com/Chronicle20/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -13,7 +16,7 @@ type entity struct {
 	TenantId           uuid.UUID `gorm:"not null"`
 	ID                 uint32    `gorm:"primaryKey;autoIncrement;not null"`
 	AccountId          uint32    `gorm:"not null"`
-	World              byte      `gorm:"not null"`
+	World              world.Id  `gorm:"not null"`
 	Name               string    `gorm:"not null"`
 	Level              byte      `gorm:"not null;default=1"`
 	Experience         uint32    `gorm:"not null;default=0"`
@@ -28,7 +31,7 @@ type entity struct {
 	MaxMP              uint16    `gorm:"not null;default=5"`
 	Meso               uint32    `gorm:"not null;default=0"`
 	HPMPUsed           int       `gorm:"not null;default=0"`
-	JobId              uint16    `gorm:"not null;default=0"`
+	JobId              job.Id    `gorm:"not null;default=0"`
 	SkinColor          byte      `gorm:"not null;default=0"`
 	Gender             byte      `gorm:"not null;default=0"`
 	Fame               int16     `gorm:"not null;default=0"`
@@ -36,7 +39,7 @@ type entity struct {
 	Face               uint32    `gorm:"not null;default=0"`
 	AP                 uint16    `gorm:"not null;default=0"`
 	SP                 string    `gorm:"not null;default=0,0,0,0,0,0,0,0,0,0"`
-	MapId              uint32    `gorm:"not null;default=0"`
+	MapId              _map.Id   `gorm:"not null;default=0"`
 	SpawnPoint         uint32    `gorm:"not null;default=0"`
 	GM                 int       `gorm:"not null;default=0"`
 	X                  int16     `gorm:"not null;default=0"`

@@ -2,15 +2,12 @@ package character_test
 
 import (
 	"atlas-character/character"
-	"atlas-character/kafka/producer"
+	"atlas-character/kafka/message"
 	"context"
 	"testing"
 
-	producer2 "github.com/Chronicle20/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
@@ -44,27 +41,12 @@ func testLogger() logrus.FieldLogger {
 	return l
 }
 
-func testProducer(output *[]kafka.Message) producer.Provider {
-	return func(token string) producer2.MessageProducer {
-		return func(provider model.Provider[[]kafka.Message]) error {
-			res, err := provider()
-			if err != nil {
-				return err
-			}
-			*output = append(*output, res...)
-			return nil
-		}
-	}
-}
-
 func TestCreateSunny(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("Atlas").SetLevel(1).SetExperience(0).Build()
 
-	var outputMessages = make([]kafka.Message, 0)
-
-	c, err := character.Create(testLogger())(testDatabase(t))(tctx)(testProducer(&outputMessages))(input)
+	c, err := character.NewProcessor(testLogger(), tctx, testDatabase(t)).Create(message.NewBuffer())(uuid.New(), input)
 	if err != nil {
 		t.Fatalf("Failed to create model: %v", err)
 	}
@@ -83,25 +65,20 @@ func TestCreateSunny(t *testing.T) {
 	if c.Experience() != 0 {
 		t.Fatalf("Experience should be 0, was %d", c.Experience())
 	}
-	if len(outputMessages) != 1 {
-		t.Fatalf("Number of output messages should be 1, was %d", len(outputMessages))
-	}
 }
 
 func TestGetByIdWithZeroCharacter(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
-	db := testDatabase(t)
-
 	// Create a character
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("ZeroTest").SetLevel(1).SetExperience(0).Build()
-	var outputMessages = make([]kafka.Message, 0)
-	created, err := character.Create(testLogger())(db)(tctx)(testProducer(&outputMessages))(input)
+	cp := character.NewProcessor(testLogger(), tctx, testDatabase(t))
+	created, err := cp.Create(message.NewBuffer())(uuid.New(), input)
 	if err != nil {
 		t.Fatalf("Failed to create model: %v", err)
 	}
 
 	// Retrieve the character using the ID assigned by the database
-	retrieved, err := character.GetById(tctx)(db)()(created.Id())
+	retrieved, err := cp.GetById()(created.Id())
 	if err != nil {
 		t.Fatalf("Failed to retrieve character with ID %d: %v", created.Id(), err)
 	}
@@ -115,18 +92,16 @@ func TestGetByIdWithZeroCharacter(t *testing.T) {
 
 func TestGetByIdWithNonZeroCharacter(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
-	db := testDatabase(t)
-
 	// Create a character
 	input := character.NewModelBuilder().SetAccountId(2000).SetWorldId(0).SetName("NonZeroTest").SetLevel(1).SetExperience(0).Build()
-	var outputMessages = make([]kafka.Message, 0)
-	created, err := character.Create(testLogger())(db)(tctx)(testProducer(&outputMessages))(input)
+	cp := character.NewProcessor(testLogger(), tctx, testDatabase(t))
+	created, err := cp.Create(message.NewBuffer())(uuid.New(), input)
 	if err != nil {
 		t.Fatalf("Failed to create model: %v", err)
 	}
 
 	// Retrieve the character using the ID assigned by the database
-	retrieved, err := character.GetById(tctx)(db)()(created.Id())
+	retrieved, err := cp.GetById()(created.Id())
 	if err != nil {
 		t.Fatalf("Failed to retrieve character with ID %d: %v", created.Id(), err)
 	}

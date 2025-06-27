@@ -1,5 +1,11 @@
 package character
 
+import (
+	"github.com/Chronicle20/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 type BuilderConfiguration struct {
 	useStarting4AP           bool
 	useAutoAssignStartersAP  bool
@@ -24,7 +30,7 @@ func (b *BuilderConfiguration) UseAutoAssignStartersAP() bool {
 
 type Builder struct {
 	accountId    uint32
-	worldId      byte
+	worldId      world.Id
 	name         string
 	level        byte
 	strength     uint16
@@ -33,21 +39,21 @@ type Builder struct {
 	luck         uint16
 	maxHp        uint16
 	maxMp        uint16
-	jobId        uint16
+	jobId        job.Id
 	skinColor    byte
 	gender       byte
 	hair         uint32
 	face         uint32
 	ap           uint16
-	mapId        uint32
+	mapId        _map.Id
 }
 
-func (b *Builder) SetJobId(jobId uint16) *Builder {
+func (b *Builder) SetJobId(jobId job.Id) *Builder {
 	b.jobId = jobId
 	return b
 }
 
-func (b *Builder) SetMapId(mapId uint32) *Builder {
+func (b *Builder) SetMapId(mapId _map.Id) *Builder {
 	b.mapId = mapId
 	return b
 }
@@ -84,7 +90,7 @@ func (b *Builder) Build() Model {
 	}
 }
 
-func NewBuilder(c BuilderConfiguration, accountId uint32, worldId byte, name string, skinColor byte, gender byte, hair uint32, face uint32) *Builder {
+func NewBuilder(c BuilderConfiguration, accountId uint32, worldId world.Id, name string, skinColor byte, gender byte, hair uint32, face uint32) *Builder {
 	b := &Builder{
 		accountId: accountId,
 		worldId:   worldId,

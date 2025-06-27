@@ -9,9 +9,10 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func CreatedEventStatusProvider(id uuid.UUID, characterId uint32, inventoryType inventory.Type, capacity uint32) model.Provider[[]kafka.Message] {
+func CreatedEventStatusProvider(transactionId uuid.UUID, id uuid.UUID, characterId uint32, inventoryType inventory.Type, capacity uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.CreatedStatusEventBody]{
+		TransactionId: transactionId,
 		CharacterId:   characterId,
 		CompartmentId: id,
 		Type:          compartment.StatusEventTypeCreated,
@@ -23,9 +24,10 @@ func CreatedEventStatusProvider(id uuid.UUID, characterId uint32, inventoryType 
 	return producer.SingleMessageProvider(key, value)
 }
 
-func DeletedEventStatusProvider(id uuid.UUID, characterId uint32) model.Provider[[]kafka.Message] {
+func DeletedEventStatusProvider(transactionId uuid.UUID, id uuid.UUID, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.DeletedStatusEventBody]{
+		TransactionId: transactionId,
 		CharacterId:   characterId,
 		CompartmentId: id,
 		Type:          compartment.StatusEventTypeDeleted,
@@ -34,9 +36,10 @@ func DeletedEventStatusProvider(id uuid.UUID, characterId uint32) model.Provider
 	return producer.SingleMessageProvider(key, value)
 }
 
-func CapacityChangedEventStatusProvider(id uuid.UUID, characterId uint32, inventoryType inventory.Type, capacity uint32) model.Provider[[]kafka.Message] {
+func CapacityChangedEventStatusProvider(transactionId uuid.UUID, id uuid.UUID, characterId uint32, inventoryType inventory.Type, capacity uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.CapacityChangedEventBody]{
+		TransactionId: transactionId,
 		CharacterId:   characterId,
 		CompartmentId: id,
 		Type:          compartment.StatusEventTypeCapacityChanged,
@@ -48,14 +51,15 @@ func CapacityChangedEventStatusProvider(id uuid.UUID, characterId uint32, invent
 	return producer.SingleMessageProvider(key, value)
 }
 
-func ReservedEventStatusProvider(id uuid.UUID, characterId uint32, itemId uint32, slot int16, quantity uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func ReservedEventStatusProvider(transactionId uuid.UUID, id uuid.UUID, characterId uint32, itemId uint32, slot int16, quantity uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.ReservedEventBody]{
+		TransactionId: transactionId,
 		CharacterId:   characterId,
 		CompartmentId: id,
 		Type:          compartment.StatusEventTypeReserved,
 		Body: compartment.ReservedEventBody{
-			TransactionId: transactionId,
+			TransactionId: transactionId, // TODO this needs removal from dependent services
 			ItemId:        itemId,
 			Slot:          slot,
 			Quantity:      quantity,
@@ -64,9 +68,10 @@ func ReservedEventStatusProvider(id uuid.UUID, characterId uint32, itemId uint32
 	return producer.SingleMessageProvider(key, value)
 }
 
-func ReservationCancelledEventStatusProvider(id uuid.UUID, characterId uint32, itemId uint32, slot int16, quantity uint32) model.Provider[[]kafka.Message] {
+func ReservationCancelledEventStatusProvider(transactionId uuid.UUID, id uuid.UUID, characterId uint32, itemId uint32, slot int16, quantity uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.ReservationCancelledEventBody]{
+		TransactionId: transactionId,
 		CharacterId:   characterId,
 		CompartmentId: id,
 		Type:          compartment.StatusEventTypeReservationCancelled,
@@ -79,9 +84,10 @@ func ReservationCancelledEventStatusProvider(id uuid.UUID, characterId uint32, i
 	return producer.SingleMessageProvider(key, value)
 }
 
-func MergeCompleteEventStatusProvider(id uuid.UUID, characterId uint32, inventoryType inventory.Type) model.Provider[[]kafka.Message] {
+func MergeCompleteEventStatusProvider(transactionId uuid.UUID, id uuid.UUID, characterId uint32, inventoryType inventory.Type) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.MergeCompleteEventBody]{
+		TransactionId: transactionId,
 		CharacterId:   characterId,
 		CompartmentId: id,
 		Type:          compartment.StatusEventTypeMergeComplete,
@@ -92,9 +98,10 @@ func MergeCompleteEventStatusProvider(id uuid.UUID, characterId uint32, inventor
 	return producer.SingleMessageProvider(key, value)
 }
 
-func SortCompleteEventStatusProvider(id uuid.UUID, characterId uint32, inventoryType inventory.Type) model.Provider[[]kafka.Message] {
+func SortCompleteEventStatusProvider(transactionId uuid.UUID, id uuid.UUID, characterId uint32, inventoryType inventory.Type) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.SortCompleteEventBody]{
+		TransactionId: transactionId,
 		CharacterId:   characterId,
 		CompartmentId: id,
 		Type:          compartment.StatusEventTypeSortComplete,
@@ -105,41 +112,44 @@ func SortCompleteEventStatusProvider(id uuid.UUID, characterId uint32, inventory
 	return producer.SingleMessageProvider(key, value)
 }
 
-func AcceptedEventStatusProvider(id uuid.UUID, characterId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func AcceptedEventStatusProvider(transactionId uuid.UUID, id uuid.UUID, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.AcceptedEventBody]{
+		TransactionId: transactionId,
 		CharacterId:   characterId,
 		CompartmentId: id,
 		Type:          compartment.StatusEventTypeAccepted,
 		Body: compartment.AcceptedEventBody{
-			TransactionId: transactionId,
+			TransactionId: transactionId, // TODO this needs removal from dependent services
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func ReleasedEventStatusProvider(id uuid.UUID, characterId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func ReleasedEventStatusProvider(transactionId uuid.UUID, id uuid.UUID, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.ReleasedEventBody]{
+		TransactionId: transactionId,
 		CharacterId:   characterId,
 		CompartmentId: id,
 		Type:          compartment.StatusEventTypeReleased,
 		Body: compartment.ReleasedEventBody{
-			TransactionId: transactionId,
+			TransactionId: transactionId, // TODO this needs removal from dependent services
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func ErrorEventStatusProvider(id uuid.UUID, characterId uint32, errorCode string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func ErrorEventStatusProvider(transactionId uuid.UUID, id uuid.UUID, characterId uint32, errorCode string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.StatusEvent[compartment.ErrorEventBody]{
+		TransactionId: transactionId,
 		CharacterId:   characterId,
 		CompartmentId: id,
 		Type:          compartment.StatusEventTypeError,
 		Body: compartment.ErrorEventBody{
 			ErrorCode:     errorCode,
-			TransactionId: transactionId,
+			TransactionId: transactionId, // TODO this needs removal from dependent services
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

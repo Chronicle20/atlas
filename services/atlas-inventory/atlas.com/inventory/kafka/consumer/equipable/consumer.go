@@ -10,6 +10,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"gorm.io/gorm"
@@ -50,6 +51,6 @@ func handleUpdatedStatusEvent(db *gorm.DB) message.Handler[equipable2.StatusEven
 		if err != nil {
 			return
 		}
-		_ = ap.RelayUpdateAndEmit(c.CharacterId(), a.ReferenceId(), a.ReferenceType(), a.ReferenceData())
+		_ = ap.RelayUpdateAndEmit(uuid.New(), c.CharacterId(), a.ReferenceId(), a.ReferenceType(), a.ReferenceData())
 	}
 }

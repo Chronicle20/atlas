@@ -3,6 +3,7 @@ package inventory
 import (
 	"atlas-inventory/rest"
 	"errors"
+	"github.com/google/uuid"
 	"net/http"
 
 	"github.com/Chronicle20/atlas-model/model"
@@ -58,7 +59,7 @@ func handleCreateInventory(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				m, err := NewProcessor(d.Logger(), d.Context(), db).CreateAndEmit(characterId)
+				m, err := NewProcessor(d.Logger(), d.Context(), db).CreateAndEmit(uuid.New(), characterId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to create inventory for character [%d].", characterId)
 					w.WriteHeader(http.StatusInternalServerError)
@@ -84,7 +85,7 @@ func handleDeleteInventory(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				err := NewProcessor(d.Logger(), d.Context(), db).DeleteAndEmit(characterId)
+				err := NewProcessor(d.Logger(), d.Context(), db).DeleteAndEmit(uuid.New(), characterId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to create inventory for character [%d].", characterId)
 					w.WriteHeader(http.StatusInternalServerError)

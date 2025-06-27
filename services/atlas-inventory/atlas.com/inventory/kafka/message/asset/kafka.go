@@ -15,6 +15,7 @@ const (
 )
 
 type StatusEvent[E any] struct {
+	TransactionId uuid.UUID `json:"transactionId"`
 	CharacterId   uint32    `json:"characterId"`
 	CompartmentId uuid.UUID `json:"compartmentId"`
 	AssetId       uint32    `json:"assetId"`

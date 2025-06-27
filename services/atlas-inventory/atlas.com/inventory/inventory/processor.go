@@ -10,46 +10,52 @@ import (
 	"errors"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-type Processor struct {
+type Processor interface {
+	WithTransaction(db *gorm.DB) Processor
+	GetByCharacterId(characterId uint32) (Model, error)
+	ByCharacterIdProvider(characterId uint32) model.Provider[Model]
+	CreateAndEmit(transactionId uuid.UUID, characterId uint32) (Model, error)
+	Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) (Model, error)
+	DeleteAndEmit(transactionId uuid.UUID, characterId uint32) error
+	Delete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) error
+}
+
+type ProcessorImpl struct {
 	l                    logrus.FieldLogger
 	ctx                  context.Context
 	db                   *gorm.DB
 	compartmentProcessor *compartment.Processor
-	GetByCharacterId     func(characterId uint32) (Model, error)
-	CreateAndEmit        func(characterId uint32) (Model, error)
-	DeleteAndEmit        func(characterId uint32) error
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	p := &ProcessorImpl{
 		l:                    l,
 		ctx:                  ctx,
 		db:                   db,
 		compartmentProcessor: compartment.NewProcessor(l, ctx, db),
 	}
-	p.GetByCharacterId = model.CollapseProvider(p.ByCharacterIdProvider)
-	p.CreateAndEmit = message.EmitWithResult[Model, uint32](producer.ProviderImpl(l)(ctx))(p.Create)
-	p.DeleteAndEmit = model.Compose(message.Emit(producer.ProviderImpl(l)(ctx)), model.Flip(p.Delete))
 	return p
 }
 
-func (p *Processor) WithTransaction(db *gorm.DB) *Processor {
-	return &Processor{
+func (p *ProcessorImpl) WithTransaction(db *gorm.DB) Processor {
+	return &ProcessorImpl{
 		l:                    p.l,
 		ctx:                  p.ctx,
 		db:                   db,
 		compartmentProcessor: p.compartmentProcessor,
-		GetByCharacterId:     p.GetByCharacterId,
-		CreateAndEmit:        p.CreateAndEmit,
-		DeleteAndEmit:        p.DeleteAndEmit,
 	}
 }
 
-func (p *Processor) ByCharacterIdProvider(characterId uint32) model.Provider[Model] {
+func (p *ProcessorImpl) GetByCharacterId(characterId uint32) (Model, error) {
+	return p.ByCharacterIdProvider(characterId)()
+}
+
+func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[Model] {
 	b, err := model.Fold(p.compartmentProcessor.ByCharacterIdProvider(characterId), BuilderSupplier(characterId), FoldCompartment)()
 	if err != nil {
 		return model.ErrorProvider[Model](err)
@@ -57,8 +63,18 @@ func (p *Processor) ByCharacterIdProvider(characterId uint32) model.Provider[Mod
 	return model.FixedProvider(b.Build())
 }
 
-func (p *Processor) Create(mb *message.Buffer) func(characterId uint32) (Model, error) {
-	return func(characterId uint32) (Model, error) {
+func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, characterId uint32) (Model, error) {
+	var m Model
+	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		var err error
+		m, err = p.Create(buf)(transactionId, characterId)
+		return err
+	})
+	return m, err
+}
+
+func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) (Model, error) {
+	return func(transactionId uuid.UUID, characterId uint32) (Model, error) {
 		p.l.Debugf("Attempting to create inventory for character [%d].", characterId)
 		var i Model
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
@@ -76,7 +92,7 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32) (Model, 
 			b := NewBuilder(characterId)
 			for _, it := range inventory.Types {
 				var c compartment.Model
-				c, err = p.compartmentProcessor.WithTransaction(tx).Create(mb)(characterId, it, 24)
+				c, err = p.compartmentProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, it, 24)
 				if err != nil {
 					return err
 				}
@@ -94,8 +110,14 @@ func (p *Processor) Create(mb *message.Buffer) func(characterId uint32) (Model, 
 	}
 }
 
-func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32) error {
-	return func(characterId uint32) error {
+func (p *ProcessorImpl) DeleteAndEmit(transactionId uuid.UUID, characterId uint32) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.Delete(buf)(transactionId, characterId)
+	})
+}
+
+func (p *ProcessorImpl) Delete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32) error {
 		p.l.Debugf("Attempting to delete inventory for character [%d].", characterId)
 		var i Model
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
@@ -104,7 +126,9 @@ func (p *Processor) Delete(mb *message.Buffer) func(characterId uint32) error {
 			if err != nil {
 				return err
 			}
-			err = model.ForEachSlice(model.FixedProvider(i.Compartments()), p.compartmentProcessor.WithTransaction(tx).DeleteByModel(mb), model.ParallelExecute())
+			err = model.ForEachSlice(model.FixedProvider(i.Compartments()), func(c compartment.Model) error {
+				return p.compartmentProcessor.WithTransaction(tx).DeleteByModel(mb)(transactionId, c)
+			}, model.ParallelExecute())
 			if err != nil {
 				return err
 			}

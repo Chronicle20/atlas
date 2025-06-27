@@ -5,8 +5,13 @@ import (
 	"atlas-messages/command"
 	"atlas-messages/map"
 	"atlas-messages/message"
+	"atlas-messages/saga"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map2 "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"regexp"
@@ -36,16 +41,17 @@ func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(wo
 				idProvider = model.ToSliceProvider(character.NewProcessor(l, ctx).IdByNameProvider(match[1]))
 			}
 
-			return warpCommandProducer(worldId, channelId, c.Id(), idProvider, match[2])
+			return warpCommandProducer(world.Id(worldId), channel.Id(channelId), c.Id(), idProvider, match[2])
 
 		}
 	}
 }
 
-func warpCommandProducer(worldId byte, channelId byte, actorId uint32, idProvider model.Provider[[]uint32], mapStr string) (command.Executor, bool) {
+func warpCommandProducer(worldId world.Id, channelId channel.Id, actorId uint32, idProvider model.Provider[[]uint32], mapStr string) (command.Executor, bool) {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
 			mp := _map.NewProcessor(l, ctx)
+			sp := saga.NewProcessor(l, ctx)
 			requestedMapId, err := strconv.ParseUint(mapStr, 10, 32)
 			if err != nil {
 				return errors.New("map does not exist")
@@ -62,7 +68,12 @@ func warpCommandProducer(worldId byte, channelId byte, actorId uint32, idProvide
 				return err
 			}
 			for _, id := range ids {
-				err = mp.WarpRandom(worldId)(channelId)(id)(uint32(requestedMapId))
+				err = sp.Create(saga.NewBuilder().
+					AddStep("warp_character", saga.Pending, saga.WarpToRandomPortal, saga.WarpToRandomPortalPayload{
+						CharacterId: id,
+						FieldId:     field.NewBuilder(worldId, channelId, _map2.Id(requestedMapId)).Build().Id(),
+					}).
+					Build())
 				if err != nil {
 					l.WithError(err).Errorf("Unable to warp character [%d] via warp map command.", id)
 				}

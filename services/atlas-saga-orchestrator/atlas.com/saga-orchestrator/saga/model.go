@@ -3,7 +3,9 @@ package saga
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"time"
 )
@@ -91,6 +93,7 @@ type Action string
 // Constants for different actions
 const (
 	AwardInventory     Action = "award_inventory"
+	AwardExperience    Action = "award_experience"
 	WarpToRandomPortal Action = "warp_to_random_portal"
 	WarpToPortal       Action = "warp_to_portal"
 )
@@ -130,6 +133,20 @@ type WarpToPortalPayload struct {
 	PortalId    uint32   `json:"portalId"`    // PortalId specifies the unique identifier of the portal for the warp action.
 }
 
+// AwardExperiencePayload represents the payload required to award experience to a character.
+type AwardExperiencePayload struct {
+	CharacterId   uint32                    `json:"characterId"`   // CharacterId associated with the action
+	WorldId       world.Id                  `json:"worldId"`       // WorldId associated with the action
+	ChannelId     channel.Id                `json:"channelId"`     // ChannelId associated with the action
+	Distributions []ExperienceDistributions `json:"distributions"` // List of experience distributions to award
+}
+
+type ExperienceDistributions struct {
+	ExperienceType string `json:"experienceType"`
+	Amount         uint32 `json:"amount"`
+	Attr1          uint32 `json:"attr1"`
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	type Alias Step[T] // Alias to avoid recursion
@@ -149,6 +166,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	switch s.Action {
 	case AwardInventory:
 		var payload AwardItemActionPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case AwardExperience:
+		var payload AwardExperiencePayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

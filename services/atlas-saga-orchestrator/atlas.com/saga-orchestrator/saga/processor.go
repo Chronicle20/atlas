@@ -3,6 +3,7 @@ package saga
 import (
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
+	character2 "atlas-saga-orchestrator/kafka/message/character"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/field"
@@ -280,5 +281,36 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			return err
 		}
 	}
+	if st.Action == AwardExperience {
+		var payload AwardExperiencePayload
+		if payload, ok = st.Payload.(AwardExperiencePayload); !ok {
+			return errors.New("invalid payload")
+		}
+		eds := TransformExperienceDistributions(payload.Distributions)
+		err = character.NewProcessor(p.l, p.ctx).AwardExperienceAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, eds)
+		if err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_id":        st.StepId,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("Unable to award experience.")
+			return err
+		}
+	}
 	return nil
+}
+
+func TransformExperienceDistributions(source []ExperienceDistributions) []character2.ExperienceDistributions {
+	target := make([]character2.ExperienceDistributions, len(source))
+
+	for i, s := range source {
+		target[i] = character2.ExperienceDistributions{
+			ExperienceType: s.ExperienceType,
+			Amount:         s.Amount,
+			Attr1:          s.Attr1,
+		}
+	}
+
+	return target
 }

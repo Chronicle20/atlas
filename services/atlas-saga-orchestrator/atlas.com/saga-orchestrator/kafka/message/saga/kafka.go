@@ -1,5 +1,5 @@
 package saga
 
 const (
-	EnvCommandTopic = "SAGA_COMMAND_TOPIC"
+	EnvCommandTopic = "COMMAND_TOPIC_SAGA"
 )

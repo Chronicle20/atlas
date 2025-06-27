@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-saga-orchestrator/kafka/consumer/asset"
 	saga2 "atlas-saga-orchestrator/kafka/consumer/saga"
 	"atlas-saga-orchestrator/logger"
 	"atlas-saga-orchestrator/saga"
@@ -46,7 +47,9 @@ func main() {
 	}
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	asset.InitConsumers(l)(cmf)(consumerGroupId)
 	saga2.InitConsumers(l)(cmf)(consumerGroupId)
+	asset.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	saga2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	// Create the service with the router

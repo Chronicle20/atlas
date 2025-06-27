@@ -26,11 +26,62 @@ const (
 )
 
 // Saga represents the entire saga transaction.
-type Saga[T any] struct {
-	TransactionID uuid.UUID `json:"transaction_id"` // Unique ID for the transaction
-	SagaType      Type      `json:"saga_type"`      // Type of the saga (e.g., inventory_transaction)
-	InitiatedBy   string    `json:"initiated_by"`   // Who initiated the saga (e.g., NPC ID, user)
-	Steps         []Step[T] `json:"steps"`          // List of steps in the saga
+type Saga struct {
+	TransactionId uuid.UUID   `json:"transactionId"` // Unique ID for the transaction
+	SagaType      Type        `json:"sagaType"`      // Type of the saga (e.g., inventory_transaction)
+	InitiatedBy   string      `json:"initiatedBy"`   // Who initiated the saga (e.g., NPC ID, user)
+	Steps         []Step[any] `json:"steps"`         // List of steps in the saga
+}
+
+func (s *Saga) Failing() bool {
+	for _, step := range s.Steps {
+		if step.Status == Failed {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Saga) GetCurrentStep() (Step[any], bool) {
+	for idx, step := range s.Steps {
+		if step.Status == Pending {
+			return s.Steps[idx], true
+		}
+	}
+	return Step[any]{}, false
+}
+
+// FindFurthestCompletedStepIndex returns the index of the furthest completed step (last one with status "completed")
+// Returns -1 if no completed step is found
+func (s *Saga) FindFurthestCompletedStepIndex() int {
+	furthestCompletedIndex := -1
+	for i := len(s.Steps) - 1; i >= 0; i-- {
+		if s.Steps[i].Status == Completed {
+			furthestCompletedIndex = i
+			break
+		}
+	}
+	return furthestCompletedIndex
+}
+
+// FindEarliestPendingStepIndex returns the index of the earliest pending step (first one with status "pending")
+// Returns -1 if no pending step is found
+func (s *Saga) FindEarliestPendingStepIndex() int {
+	earliestPendingIndex := -1
+	for i := 0; i < len(s.Steps); i++ {
+		if s.Steps[i].Status == Pending {
+			earliestPendingIndex = i
+			break
+		}
+	}
+	return earliestPendingIndex
+}
+
+// SetStepStatus sets the status of a step at the given index
+func (s *Saga) SetStepStatus(index int, status Status) {
+	if index >= 0 && index < len(s.Steps) {
+		s.Steps[index].Status = status
+	}
 }
 
 type Status string
@@ -43,24 +94,24 @@ const (
 
 // Step represents a single step within a saga.
 type Step[T any] struct {
-	StepID    string    `json:"step_id"`    // Unique ID for the step
-	Status    Status    `json:"status"`     // Status of the step (e.g., pending, completed, failed)
-	Action    Action    `json:"action"`     // The Action to be taken (e.g., validate_inventory, deduct_inventory)
-	Payload   T         `json:"payload"`    // Data required for the action (specific to the action type)
-	CreatedAt time.Time `json:"created_at"` // Timestamp of when the step was created
-	UpdatedAt time.Time `json:"updated_at"` // Timestamp of the last update to the step
+	StepId    string    `json:"stepId"`    // Unique ID for the step
+	Status    Status    `json:"status"`    // Status of the step (e.g., pending, completed, failed)
+	Action    Action    `json:"action"`    // The Action to be taken (e.g., validate_inventory, deduct_inventory)
+	Payload   T         `json:"payload"`   // Data required for the action (specific to the action type)
+	CreatedAt time.Time `json:"createdAt"` // Timestamp of when the step was created
+	UpdatedAt time.Time `json:"updatedAt"` // Timestamp of the last update to the step
 }
 
 // AwardItemActionPayload represents the data needed to execute a specific action in a step.
 type AwardItemActionPayload struct {
-	CharacterId uint32        `json:"character_id"` // Character ID associated with the action
-	Items       []ItemPayload `json:"items"`        // List of items involved in the action
+	CharacterId uint32      `json:"characterId"` // Character ID associated with the action
+	Item        ItemPayload `json:"item"`        // List of items involved in the action
 }
 
 // ItemPayload represents an individual item in a transaction, such as in inventory manipulation.
 type ItemPayload struct {
-	TemplateID uint32 `json:"template_id"` // Template ID of the item
-	Quantity   int    `json:"quantity"`    // Quantity of the item
+	TemplateId uint32 `json:"templateId"` // Template ID of the item
+	Quantity   uint32 `json:"quantity"`   // Quantity of the item
 }
 
 // Custom UnmarshalJSON for Step[T] to handle the generics

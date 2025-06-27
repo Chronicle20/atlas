@@ -8,13 +8,13 @@ import (
 // Cache is an interface for a saga cache
 type Cache interface {
 	// GetAll returns all sagas for a tenant
-	GetAll(tenantId uuid.UUID) []Saga[any]
+	GetAll(tenantId uuid.UUID) []Saga
 
 	// GetById returns a saga by its transaction ID for a tenant
-	GetById(tenantId uuid.UUID, transactionId uuid.UUID) (Saga[any], bool)
+	GetById(tenantId uuid.UUID, transactionId uuid.UUID) (Saga, bool)
 
 	// Put adds or updates a saga in the cache for a tenant
-	Put(tenantId uuid.UUID, saga Saga[any])
+	Put(tenantId uuid.UUID, saga Saga)
 
 	// Remove removes a saga from the cache for a tenant
 	Remove(tenantId uuid.UUID, transactionId uuid.UUID) bool
@@ -23,7 +23,7 @@ type Cache interface {
 // InMemoryCache is an in-memory implementation of the Cache interface
 type InMemoryCache struct {
 	// tenantSagas is a map of tenant IDs to maps of transaction IDs to sagas
-	tenantSagas map[uuid.UUID]map[uuid.UUID]Saga[any]
+	tenantSagas map[uuid.UUID]map[uuid.UUID]Saga
 
 	// mutex is used to synchronize access to the cache
 	mutex sync.RWMutex
@@ -37,25 +37,25 @@ var once sync.Once
 func GetCache() Cache {
 	once.Do(func() {
 		instance = &InMemoryCache{
-			tenantSagas: make(map[uuid.UUID]map[uuid.UUID]Saga[any]),
+			tenantSagas: make(map[uuid.UUID]map[uuid.UUID]Saga),
 		}
 	})
 	return instance
 }
 
 // GetAll returns all sagas for a tenant
-func (c *InMemoryCache) GetAll(tenantId uuid.UUID) []Saga[any] {
+func (c *InMemoryCache) GetAll(tenantId uuid.UUID) []Saga {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
 	// Get the tenant's sagas map
 	sagas, exists := c.tenantSagas[tenantId]
 	if !exists {
-		return []Saga[any]{}
+		return []Saga{}
 	}
 
 	// Convert the map to a slice
-	result := make([]Saga[any], 0, len(sagas))
+	result := make([]Saga, 0, len(sagas))
 	for _, saga := range sagas {
 		result = append(result, saga)
 	}
@@ -64,14 +64,14 @@ func (c *InMemoryCache) GetAll(tenantId uuid.UUID) []Saga[any] {
 }
 
 // GetByID returns a saga by its transaction ID for a tenant
-func (c *InMemoryCache) GetById(tenantId uuid.UUID, transactionId uuid.UUID) (Saga[any], bool) {
+func (c *InMemoryCache) GetById(tenantId uuid.UUID, transactionId uuid.UUID) (Saga, bool) {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
 	// Get the tenant's sagas map
 	sagas, exists := c.tenantSagas[tenantId]
 	if !exists {
-		return Saga[any]{}, false
+		return Saga{}, false
 	}
 
 	// Get the saga by transaction ID
@@ -80,17 +80,17 @@ func (c *InMemoryCache) GetById(tenantId uuid.UUID, transactionId uuid.UUID) (Sa
 }
 
 // Put adds or updates a saga in the cache for a tenant
-func (c *InMemoryCache) Put(tenantId uuid.UUID, saga Saga[any]) {
+func (c *InMemoryCache) Put(tenantId uuid.UUID, saga Saga) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
 	// Ensure the tenant's sagas map exists
 	if _, exists := c.tenantSagas[tenantId]; !exists {
-		c.tenantSagas[tenantId] = make(map[uuid.UUID]Saga[any])
+		c.tenantSagas[tenantId] = make(map[uuid.UUID]Saga)
 	}
 
 	// Add or update the saga
-	c.tenantSagas[tenantId][saga.TransactionID] = saga
+	c.tenantSagas[tenantId][saga.TransactionId] = saga
 }
 
 // Remove removes a saga from the cache for a tenant

@@ -1,6 +1,7 @@
 package saga
 
 import (
+	"encoding/json"
 	"github.com/google/uuid"
 	"time"
 )
@@ -44,11 +45,11 @@ func (r RestModel) GetName() string {
 }
 
 // Transform converts a domain model to a REST model
-func Transform(s Saga[any]) (RestModel, error) {
+func Transform(s Saga) (RestModel, error) {
 	steps := make([]StepRestModel, len(s.Steps))
 	for i, step := range s.Steps {
 		steps[i] = StepRestModel{
-			StepID:    step.StepID,
+			StepID:    step.StepId,
 			Status:    step.Status,
 			Action:    step.Action,
 			Payload:   step.Payload,
@@ -58,9 +59,58 @@ func Transform(s Saga[any]) (RestModel, error) {
 	}
 
 	return RestModel{
-		TransactionID: s.TransactionID,
+		TransactionID: s.TransactionId,
 		SagaType:      s.SagaType,
 		InitiatedBy:   s.InitiatedBy,
+		Steps:         steps,
+	}, nil
+}
+
+// Extract converts a REST model to a domain model
+func Extract(r RestModel) (Saga, error) {
+	steps := make([]Step[any], len(r.Steps))
+	for i, step := range r.Steps {
+		createdAt, err := time.Parse(time.RFC3339, step.CreatedAt)
+		if err != nil {
+			createdAt = time.Now()
+		}
+
+		updatedAt, err := time.Parse(time.RFC3339, step.UpdatedAt)
+		if err != nil {
+			updatedAt = time.Now()
+		}
+
+		var payload any
+		if step.Action == AwardInventory {
+			var pbs []byte
+			pbs, err = json.Marshal(step.Payload)
+			if err != nil {
+				return Saga{}, err
+			}
+			var payloadAwardItemActionPayload AwardItemActionPayload
+			err = json.Unmarshal(pbs, &payloadAwardItemActionPayload)
+			if err != nil {
+				return Saga{}, err
+			}
+			payload = payloadAwardItemActionPayload
+		} else {
+			payload = step.Payload
+		}
+
+		steps[i] = Step[any]{
+			StepId:    step.StepID,
+			Status:    step.Status,
+			Action:    step.Action,
+			CreatedAt: createdAt,
+			UpdatedAt: updatedAt,
+			Payload:   payload,
+		}
+	}
+
+	return Saga{
+		TransactionId: r.TransactionID,
+		SagaType:      r.SagaType,
+		InitiatedBy:   r.InitiatedBy,
 		Steps:         steps,
 	}, nil
 }

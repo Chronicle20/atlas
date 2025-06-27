@@ -18,7 +18,7 @@ This service acts as a central coordinator for complex operations that span mult
 - `JAEGER_HOST_PORT` - Jaeger host and port for distributed tracing
 - `LOG_LEVEL` - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
 - `REST_PORT` - Port for the REST API server
-- `SAGA_COMMAND_TOPIC` - Kafka topic for saga commands
+- `COMMAND_TOPIC_SAGA` - Kafka topic for saga commands
 
 ## API
 
@@ -54,7 +54,7 @@ Returns a specific saga by its transaction ID.
 
 The service consumes messages from the following Kafka topics:
 
-- `SAGA_COMMAND_TOPIC` - Processes saga commands for orchestrating distributed transactions
+- `COMMAND_TOPIC_SAGA` - Processes saga commands for orchestrating distributed transactions
 
 ### Message Format
 

@@ -3,9 +3,11 @@ module atlas-saga-orchestrator
 go 1.24.4
 
 require (
+	github.com/Chronicle20/atlas-constants v1.0.19
 	github.com/Chronicle20/atlas-kafka v1.1.12
 	github.com/Chronicle20/atlas-model v1.2.5
 	github.com/Chronicle20/atlas-rest v1.2.16
+	github.com/Chronicle20/atlas-tenant v1.0.7
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jtumidanski/api2go v1.0.4
@@ -17,7 +19,6 @@ require (
 )
 
 require (
-	github.com/Chronicle20/atlas-tenant v1.0.7 // indirect
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect

@@ -44,7 +44,7 @@ func (t *Timeout) Run() {
 			t.l.Debugf("Timing out record for character [%d].", m.CharacterId())
 			GetRegistry().Remove(m.Tenant(), m.CharacterId())
 
-			err := cp.Logout(uuid.New(), m.CharacterId(), cha)
+			err := cp.LogoutAndEmit(uuid.New(), m.CharacterId(), cha)
 			if err != nil {
 				t.l.WithError(err).Errorf("Unable to logout character [%d] as a result of session being destroyed.", m.CharacterId())
 			}

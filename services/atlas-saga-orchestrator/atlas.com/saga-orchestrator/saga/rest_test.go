@@ -130,6 +130,16 @@ func TestUnmarshalPayload(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name:   "DestroyAsset action",
+			action: DestroyAsset,
+			rawPayload: map[string]interface{}{
+				"characterId": float64(12345),
+				"templateId":  float64(2000),
+				"quantity":    float64(5),
+			},
+			expectError: false,
+		},
+		{
 			name:          "Unknown action",
 			action:        "unknown_action",
 			rawPayload:    map[string]interface{}{},

@@ -98,6 +98,7 @@ const (
 	AwardMesos         Action = "award_mesos"
 	WarpToRandomPortal Action = "warp_to_random_portal"
 	WarpToPortal       Action = "warp_to_portal"
+	DestroyAsset       Action = "destroy_asset"
 )
 
 // Step represents a single step within a saga.
@@ -161,6 +162,13 @@ type AwardMesosPayload struct {
 	Amount      int32       `json:"amount"`      // Amount of mesos to award (can be negative for deduction)
 }
 
+// DestroyAssetPayload represents the payload required to destroy an asset in a compartment.
+type DestroyAssetPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item to destroy
+	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy
+}
+
 type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
@@ -216,6 +224,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case WarpToPortal:
 		var payload WarpToPortalPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case DestroyAsset:
+		var payload DestroyAssetPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

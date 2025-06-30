@@ -13,6 +13,7 @@ import (
 
 type Processor interface {
 	RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error
+	RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error
 }
 
 type ProcessorImpl struct {
@@ -34,4 +35,20 @@ func (p *ProcessorImpl) RequestCreateItem(transactionId uuid.UUID, characterId u
 		return errors.New("invalid templateId")
 	}
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, quantity))
+}
+
+func (p *ProcessorImpl) RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
+	inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
+	if !ok {
+		return errors.New("invalid templateId")
+	}
+
+	// TODO: Perform transformation from templateId and quantity to slot and quantity
+	// The compartment kafka command requires slot and quantity, but we're receiving templateId and quantity
+	// This will require looking up the item in the character's inventory to find the slot
+
+	// For now, we'll use a placeholder slot value of -1
+	slot := int16(-1)
+
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestDestroyAssetCommandProvider(transactionId, characterId, inventoryType, slot, quantity))
 }

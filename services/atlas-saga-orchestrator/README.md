@@ -123,3 +123,8 @@ The service consumes messages from the following Kafka topics:
   - Payload: `{"characterId": 12345, "fieldId": 100000000, "portalId": 1}`
   - Triggers a character command to warp to the specified portal
   - Completes when the StatusEventTypeMapChanged event is received
+
+- `destroy_asset` - Destroys an asset in a character's inventory
+  - Payload: `{"characterId": 12345, "templateId": 2000, "quantity": 5}`
+  - Triggers a compartment command to destroy the item
+  - Completes when the StatusEventTypeDeleted event is received

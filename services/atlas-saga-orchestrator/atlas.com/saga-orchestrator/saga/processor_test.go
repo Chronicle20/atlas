@@ -599,6 +599,86 @@ func TestHandleAwardMesos(t *testing.T) {
 	}
 }
 
+func TestHandleDestroyAsset(t *testing.T) {
+	tests := []struct {
+		name          string
+		payload       DestroyAssetPayload
+		mockError     error
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "Success case",
+			payload: DestroyAssetPayload{
+				CharacterId: 12345,
+				TemplateId:  2000,
+				Quantity:    5,
+			},
+			mockError:   nil,
+			expectError: false,
+		},
+		{
+			name: "Error case",
+			payload: DestroyAssetPayload{
+				CharacterId: 12345,
+				TemplateId:  2000,
+				Quantity:    5,
+			},
+			mockError:     errors.New("failed to destroy item"),
+			expectError:   true,
+			errorContains: "failed to destroy item",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			charP := &mock.ProcessorMock{}
+			compP := &mock2.ProcessorMock{}
+
+			processor, _ := setupTestProcessor(charP, compP)
+
+			// Configure mock
+			compP.RequestDestroyItemFunc = func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
+				// Verify parameters
+				assert.Equal(t, tt.payload.CharacterId, characterId)
+				assert.Equal(t, tt.payload.TemplateId, templateId)
+				assert.Equal(t, tt.payload.Quantity, quantity)
+				return tt.mockError
+			}
+
+			// Create test saga and step
+			transactionId := uuid.New()
+			saga := Saga{
+				TransactionId: transactionId,
+				SagaType:      InventoryTransaction,
+				InitiatedBy:   "test",
+			}
+
+			step := Step[any]{
+				StepId:    "test-step",
+				Status:    Pending,
+				Action:    DestroyAsset,
+				Payload:   tt.payload,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+
+			// Execute
+			err := handleDestroyAsset(processor, saga, step)
+
+			// Verify
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestTransformExperienceDistributions(t *testing.T) {
 	tests := []struct {
 		name     string

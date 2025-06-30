@@ -201,6 +201,7 @@ var actionHandlers = map[Action]ActionHandler{
 	AwardExperience:    handleAwardExperience,
 	AwardLevel:         handleAwardLevel,
 	AwardMesos:         handleAwardMesos,
+	DestroyAsset:       handleDestroyAsset,
 }
 
 func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
@@ -367,6 +368,23 @@ func handleAwardMesos(p *ProcessorImpl, s Saga, st Step[any]) error {
 
 	if err != nil {
 		p.logActionError(s, st, err, "Unable to award mesos.")
+		return err
+	}
+
+	return nil
+}
+
+// handleDestroyAsset handles the DestroyAsset action
+func handleDestroyAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(DestroyAssetPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := p.compP.RequestDestroyItem(s.TransactionId, payload.CharacterId, payload.TemplateId, payload.Quantity)
+
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to destroy asset.")
 		return err
 	}
 

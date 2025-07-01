@@ -58,7 +58,7 @@ func handleChangeMap(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context
 		}
 
 		f := field.NewBuilder(c.WorldId, c.Body.ChannelId, c.Body.MapId).Build()
-		err := character.NewProcessor(l, ctx, db).ChangeMap(c.TransactionId, c.CharacterId, f, c.Body.PortalId)
+		err := character.NewProcessor(l, ctx, db).ChangeMapAndEmit(c.TransactionId, c.CharacterId, f, c.Body.PortalId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to change character [%d] map.", c.CharacterId)
 		}
@@ -90,7 +90,7 @@ func handleAwardExperience(db *gorm.DB) func(l logrus.FieldLogger, ctx context.C
 		}
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).AwardExperience(c.TransactionId, c.CharacterId, cha, es)
+		_ = character.NewProcessor(l, ctx, db).AwardExperienceAndEmit(c.TransactionId, c.CharacterId, cha, es)
 	}
 }
 
@@ -101,7 +101,7 @@ func handleAwardLevel(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Contex
 		}
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).AwardLevel(c.TransactionId, c.CharacterId, cha, c.Body.Amount)
+		_ = character.NewProcessor(l, ctx, db).AwardLevelAndEmit(c.TransactionId, c.CharacterId, cha, c.Body.Amount)
 	}
 }
 
@@ -176,7 +176,7 @@ func handleChangeHP(db *gorm.DB) message.Handler[character2.Command[character2.C
 		}
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).ChangeHP(c.TransactionId, cha, c.CharacterId, c.Body.Amount)
+		_ = character.NewProcessor(l, ctx, db).ChangeHPAndEmit(c.TransactionId, cha, c.CharacterId, c.Body.Amount)
 	}
 }
 
@@ -187,7 +187,7 @@ func handleChangeMP(db *gorm.DB) message.Handler[character2.Command[character2.C
 		}
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).ChangeMP(c.TransactionId, cha, c.CharacterId, c.Body.Amount)
+		_ = character.NewProcessor(l, ctx, db).ChangeMPAndEmit(c.TransactionId, cha, c.CharacterId, c.Body.Amount)
 	}
 }
 
@@ -198,7 +198,7 @@ func handleLevelChangedStatusEvent(db *gorm.DB) message.Handler[character2.Statu
 		}
 
 		cha := channel.NewModel(e.WorldId, e.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).ProcessLevelChange(e.TransactionId, cha, e.CharacterId, e.Body.Amount)
+		_ = character.NewProcessor(l, ctx, db).ProcessLevelChangeAndEmit(e.TransactionId, cha, e.CharacterId, e.Body.Amount)
 	}
 }
 
@@ -208,7 +208,7 @@ func handleJobChangedStatusEvent(db *gorm.DB) message.Handler[character2.StatusE
 			return
 		}
 		cha := channel.NewModel(e.WorldId, e.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).ProcessJobChange(e.TransactionId, cha, e.CharacterId, e.Body.JobId)
+		_ = character.NewProcessor(l, ctx, db).ProcessJobChangeAndEmit(e.TransactionId, cha, e.CharacterId, e.Body.JobId)
 	}
 }
 

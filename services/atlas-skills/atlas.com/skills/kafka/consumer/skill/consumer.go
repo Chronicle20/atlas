@@ -40,7 +40,7 @@ func handleCommandRequestCreate(db *gorm.DB) message.Handler[skill2.Command[skil
 			return
 		}
 
-		_, err := skill.Create(l)(ctx)(db)(c.CharacterId, c.Body.SkillId, c.Body.Level, c.Body.MasterLevel, c.Body.Expiration)
+		_, err := skill.NewProcessor(l, ctx, db).CreateAndEmit(c.CharacterId, c.Body.SkillId, c.Body.Level, c.Body.MasterLevel, c.Body.Expiration)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to create skill [%d] for character [%d].", c.Body.SkillId, c.CharacterId)
 		}
@@ -53,7 +53,7 @@ func handleCommandRequestUpdate(db *gorm.DB) message.Handler[skill2.Command[skil
 			return
 		}
 
-		_, err := skill.Update(l)(ctx)(db)(c.CharacterId, c.Body.SkillId, c.Body.Level, c.Body.MasterLevel, c.Body.Expiration)
+		_, err := skill.NewProcessor(l, ctx, db).UpdateAndEmit(c.CharacterId, c.Body.SkillId, c.Body.Level, c.Body.MasterLevel, c.Body.Expiration)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update skill [%d] for character [%d].", c.Body.SkillId, c.CharacterId)
 		}
@@ -66,6 +66,6 @@ func handleCommandSetCooldown(db *gorm.DB) message.Handler[skill2.Command[skill2
 			return
 		}
 
-		_, _ = skill.SetCooldown(l)(ctx)(db)(c.CharacterId, c.Body.SkillId, c.Body.Cooldown)
+		_, _ = skill.NewProcessor(l, ctx, db).SetCooldownAndEmit(c.CharacterId, c.Body.SkillId, c.Body.Cooldown)
 	}
 }

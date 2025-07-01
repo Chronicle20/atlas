@@ -24,19 +24,17 @@ func handleGetSkillMacros(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				ms, err := GetByCharacterId(d.Context())(db)(characterId)
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-				res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+				mp := NewProcessor(d.Logger(), d.Context(), db).ByCharacterIdProvider(characterId)
+				res, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 
-				server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
 		})
 	}

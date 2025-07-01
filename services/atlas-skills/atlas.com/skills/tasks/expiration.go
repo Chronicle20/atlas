@@ -25,7 +25,7 @@ func (r *ExpirationTask) Run() {
 	ctx, span := otel.GetTracerProvider().Tracer("atlas-skills").Start(context.Background(), "expiration_task")
 	defer span.End()
 
-	skill.ExpireCooldowns(r.l)(ctx)(r.db)
+	skill.NewProcessor(r.l, ctx, r.db).ExpireCooldowns()
 }
 
 func (r *ExpirationTask) SleepTime() time.Duration {

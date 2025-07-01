@@ -28,19 +28,21 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
 			t, _ = topic.EnvProvider(l)(character.EnvEventTopicStatus)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout)))
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeleted(db))))
 		}
 	}
 }
 
-func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e character.StatusEvent[character.LogoutStatusEventBody]) {
-	if e.Type != character.EventStatusTypeLogout {
-		return
-	}
-	err := skill.ClearAll(ctx)(e.CharacterId)
-	if err != nil {
-		l.WithError(err).Errorf("Unable to process logout for character [%d].", e.CharacterId)
+func handleStatusEventLogout(db *gorm.DB) message.Handler[character.StatusEvent[character.LogoutStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character.StatusEvent[character.LogoutStatusEventBody]) {
+		if e.Type != character.EventStatusTypeLogout {
+			return
+		}
+		err := skill.NewProcessor(l, ctx, db).ClearAll(e.CharacterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to process logout for character [%d].", e.CharacterId)
+		}
 	}
 }
 
@@ -50,15 +52,15 @@ func handleStatusEventDeleted(db *gorm.DB) message.Handler[character.StatusEvent
 			return
 		}
 
-		err := skill.ClearAll(ctx)(e.CharacterId)
+		err := skill.NewProcessor(l, ctx, db).ClearAll(e.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to delete for character [%d].", e.CharacterId)
 		}
-		err = skill.Delete(ctx)(db)(e.CharacterId)
+		err = skill.NewProcessor(l, ctx, db).Delete(e.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to delete for character [%d].", e.CharacterId)
 		}
-		err = macro.Delete(ctx)(db)(e.CharacterId)
+		err = macro.NewProcessor(l, ctx, db).Delete(e.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to delete for character [%d].", e.CharacterId)
 		}

@@ -202,6 +202,7 @@ var actionHandlers = map[Action]ActionHandler{
 	AwardLevel:         handleAwardLevel,
 	AwardMesos:         handleAwardMesos,
 	DestroyAsset:       handleDestroyAsset,
+	ChangeJob:          handleChangeJob,
 }
 
 func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
@@ -385,6 +386,23 @@ func handleDestroyAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
 
 	if err != nil {
 		p.logActionError(s, st, err, "Unable to destroy asset.")
+		return err
+	}
+
+	return nil
+}
+
+// handleChangeJob handles the ChangeJob action
+func handleChangeJob(p *ProcessorImpl, s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(ChangeJobPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := p.charP.ChangeJobAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.JobId)
+
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to change job.")
 		return err
 	}
 

@@ -8,6 +8,7 @@ import (
 	"context"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -26,6 +27,8 @@ type Processor interface {
 	AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
 	AwardMesosAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
 	AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
+	ChangeJobAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
+	ChangeJob(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
 }
 
 type ProcessorImpl struct {
@@ -107,5 +110,17 @@ func (p *ProcessorImpl) AwardMesosAndEmit(transactionId uuid.UUID, worldId world
 func (p *ProcessorImpl) AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
 		return mb.Put(character2.EnvCommandTopic, AwardMesosProvider(transactionId, worldId, characterId, channelId, actorId, actorType, amount))
+	}
+}
+
+func (p *ProcessorImpl) ChangeJobAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.ChangeJob(mb)(transactionId, worldId, characterId, channelId, jobId)
+	})
+}
+
+func (p *ProcessorImpl) ChangeJob(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error {
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error {
+		return mb.Put(character2.EnvCommandTopic, ChangeJobProvider(transactionId, worldId, characterId, channelId, jobId))
 	}
 }

@@ -4,6 +4,7 @@ import (
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -68,6 +69,21 @@ func AwardMesosProvider(transactionId uuid.UUID, worldId world.Id, characterId u
 			ActorId:   actorId,
 			ActorType: actorType,
 			Amount:    amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ChangeJobProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.ChangeJobCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          character2.CommandChangeJob,
+		Body: character2.ChangeJobCommandBody{
+			ChannelId: channelId,
+			JobId:     jobId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

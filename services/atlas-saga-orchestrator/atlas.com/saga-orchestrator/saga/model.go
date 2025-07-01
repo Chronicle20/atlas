@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"time"
@@ -99,6 +100,7 @@ const (
 	WarpToRandomPortal Action = "warp_to_random_portal"
 	WarpToPortal       Action = "warp_to_portal"
 	DestroyAsset       Action = "destroy_asset"
+	ChangeJob          Action = "change_job"
 )
 
 // Step represents a single step within a saga.
@@ -169,6 +171,14 @@ type DestroyAssetPayload struct {
 	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy
 }
 
+// ChangeJobPayload represents the payload required to change a character's job.
+type ChangeJobPayload struct {
+	CharacterId uint32      `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id    `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id  `json:"channelId"`   // ChannelId associated with the action
+	JobId       job.Id      `json:"jobId"`       // JobId to change to
+}
+
 type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
@@ -230,6 +240,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case DestroyAsset:
 		var payload DestroyAssetPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ChangeJob:
+		var payload ChangeJobPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

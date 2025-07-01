@@ -29,6 +29,7 @@ func TestCondition_Evaluate(t *testing.T) {
 		SetMeso(10000).
 		SetMapId(2000).
 		SetFame(50).
+		SetGender(0). // 0 = male
 		SetInventory(inventoryModel).
 		Build()
 
@@ -301,6 +302,46 @@ func TestCondition_Evaluate(t *testing.T) {
 			},
 			wantPassed:   false,
 			wantContains: "Meso <= 9000",
+		},
+		{
+			name: "Gender equals - pass (male)",
+			condition: Condition{
+				conditionType: GenderCondition,
+				operator:      Equals,
+				value:         0, // 0 = male
+			},
+			wantPassed:   true,
+			wantContains: "Gender = 0",
+		},
+		{
+			name: "Gender equals - fail (female)",
+			condition: Condition{
+				conditionType: GenderCondition,
+				operator:      Equals,
+				value:         1, // 1 = female
+			},
+			wantPassed:   false,
+			wantContains: "Gender = 1",
+		},
+		{
+			name: "Gender not equals - pass (not female)",
+			condition: Condition{
+				conditionType: GenderCondition,
+				operator:      GreaterThan,
+				value:         0, // 0 = male, 1 = female
+			},
+			wantPassed:   false,
+			wantContains: "Gender > 0",
+		},
+		{
+			name: "Gender less than - pass (male < 1)",
+			condition: Condition{
+				conditionType: GenderCondition,
+				operator:      LessThan,
+				value:         1, // 0 = male, 1 = female
+			},
+			wantPassed:   true,
+			wantContains: "Gender < 1",
 		},
 	}
 

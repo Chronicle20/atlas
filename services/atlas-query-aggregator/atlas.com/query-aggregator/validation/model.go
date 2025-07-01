@@ -11,11 +11,12 @@ import (
 type ConditionType string
 
 const (
-	JobCondition  ConditionType = "jobId"
-	MesoCondition ConditionType = "meso"
-	MapCondition  ConditionType = "mapId"
-	FameCondition ConditionType = "fame"
-	ItemCondition ConditionType = "item"
+	JobCondition    ConditionType = "jobId"
+	MesoCondition   ConditionType = "meso"
+	MapCondition    ConditionType = "mapId"
+	FameCondition   ConditionType = "fame"
+	ItemCondition   ConditionType = "item"
+	GenderCondition ConditionType = "gender"
 )
 
 // Operator represents the comparison operator in a condition
@@ -77,7 +78,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -206,6 +207,9 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 	case FameCondition:
 		actualValue = int(character.Fame())
 		description = fmt.Sprintf("Fame %s %d", c.operator, c.value)
+	case GenderCondition:
+		actualValue = int(character.Gender())
+		description = fmt.Sprintf("Gender %s %d", c.operator, c.value)
 	case ItemCondition:
 		// For item conditions, we need to check the inventory
 		itemQuantity := 0

@@ -18,6 +18,7 @@ A RESTful service that provides composite character state validation in the Atla
 - Meso (currency) validation
 - Map ID validation
 - Fame validation
+- Gender validation (0 = male, 1 = female)
 
 ## Environment
 
@@ -72,6 +73,11 @@ Validates a set of conditions against a character's state.
           "value": 50
         },
         {
+          "type": "gender",
+          "operator": "=",
+          "value": 0
+        },
+        {
           "type": "item",
           "operator": ">=",
           "value": 10,
@@ -96,6 +102,7 @@ Validates a set of conditions against a character's state.
         "Passed: Meso >= 10000",
         "Passed: Map ID = 2000",
         "Passed: Fame >= 50",
+        "Passed: Gender = 0",
         "Passed: Item 2000001 quantity >= 10"
       ],
       "results": [
@@ -133,6 +140,14 @@ Validates a set of conditions against a character's state.
         },
         {
           "passed": true,
+          "description": "Gender = 0",
+          "type": "gender",
+          "operator": "=",
+          "value": 0,
+          "actualValue": 0
+        },
+        {
+          "passed": true,
           "description": "Item 2000001 quantity >= 10",
           "type": "item",
           "operator": ">=",
@@ -154,6 +169,7 @@ Validates a set of conditions against a character's state.
 | Meso (Currency) | meso>=10000               | Character Service (character.Meso)                            |
 | Map             | mapId=2000                | Character Service (character.MapId)                           |
 | Fame            | fame>=50                  | Character Service (character.Fame)                            |
+| Gender          | gender=0                  | Character Service (character.Gender) - 0=male, 1=female       |
 | Inventory Item  | item[2000001]>=10         | Inventory Service (quantity of item with template ID 2000001) |
 
 **Supported Operators:**

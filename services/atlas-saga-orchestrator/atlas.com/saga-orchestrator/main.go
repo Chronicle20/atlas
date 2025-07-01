@@ -5,6 +5,7 @@ import (
 	"atlas-saga-orchestrator/kafka/consumer/character"
 	"atlas-saga-orchestrator/kafka/consumer/compartment"
 	saga2 "atlas-saga-orchestrator/kafka/consumer/saga"
+	"atlas-saga-orchestrator/kafka/consumer/skill"
 	"atlas-saga-orchestrator/logger"
 	"atlas-saga-orchestrator/saga"
 	"atlas-saga-orchestrator/service"
@@ -53,10 +54,12 @@ func main() {
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
 	saga2.InitConsumers(l)(cmf)(consumerGroupId)
+	skill.InitConsumers(l)(cmf)(consumerGroupId)
 	asset.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	compartment.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	saga2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	skill.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	// Create the service with the router
 	server.New(l).

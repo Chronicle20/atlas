@@ -4,6 +4,7 @@ import (
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
+	"atlas-saga-orchestrator/skill"
 	"context"
 	"errors"
 	"fmt"
@@ -27,21 +28,23 @@ type Processor interface {
 
 // ProcessorImpl is the implementation of the Processor interface
 type ProcessorImpl struct {
-	l     logrus.FieldLogger
-	ctx   context.Context
-	t     tenant.Model
-	charP character.Processor
-	compP compartment.Processor
+	l      logrus.FieldLogger
+	ctx    context.Context
+	t      tenant.Model
+	charP  character.Processor
+	compP  compartment.Processor
+	skillP skill.Processor
 }
 
 // NewProcessor creates a new saga processor
 func NewProcessor(logger logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
 	return &ProcessorImpl{
-		l:     logger,
-		ctx:   ctx,
-		t:     tenant.MustFromContext(ctx),
-		charP: character.NewProcessor(logger, ctx),
-		compP: compartment.NewProcessor(logger, ctx),
+		l:      logger,
+		ctx:    ctx,
+		t:      tenant.MustFromContext(ctx),
+		charP:  character.NewProcessor(logger, ctx),
+		compP:  compartment.NewProcessor(logger, ctx),
+		skillP: skill.NewProcessor(logger, ctx),
 	}
 }
 
@@ -203,6 +206,8 @@ var actionHandlers = map[Action]ActionHandler{
 	AwardMesos:         handleAwardMesos,
 	DestroyAsset:       handleDestroyAsset,
 	ChangeJob:          handleChangeJob,
+	CreateSkill:        handleCreateSkill,
+	UpdateSkill:        handleUpdateSkill,
 }
 
 func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
@@ -403,6 +408,40 @@ func handleChangeJob(p *ProcessorImpl, s Saga, st Step[any]) error {
 
 	if err != nil {
 		p.logActionError(s, st, err, "Unable to change job.")
+		return err
+	}
+
+	return nil
+}
+
+// handleCreateSkill handles the CreateSkill action
+func handleCreateSkill(p *ProcessorImpl, s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(CreateSkillPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := p.skillP.RequestCreateAndEmit(s.TransactionId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
+
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to create skill.")
+		return err
+	}
+
+	return nil
+}
+
+// handleUpdateSkill handles the UpdateSkill action
+func handleUpdateSkill(p *ProcessorImpl, s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(UpdateSkillPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := p.skillP.RequestUpdateAndEmit(s.TransactionId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
+
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to update skill.")
 		return err
 	}
 

@@ -128,3 +128,18 @@ The service consumes messages from the following Kafka topics:
   - Payload: `{"characterId": 12345, "templateId": 2000, "quantity": 5}`
   - Triggers a compartment command to destroy the item
   - Completes when the StatusEventTypeDeleted event is received
+
+- `change_job` - Changes a character's job
+  - Payload: `{"characterId": 12345, "worldId": 0, "channelId": 0, "jobId": 100}`
+  - Triggers a character command to change the job
+  - Completes when the StatusEventTypeJobChanged event is received
+
+- `create_skill` - Creates a skill for a character
+  - Payload: `{"characterId": 12345, "skillId": 1000, "level": 1, "masterLevel": 1, "expiration": "2023-01-01T00:00:00Z"}`
+  - Triggers a skill command to create the skill
+  - Completes when the StatusEventTypeCreated event is received
+
+- `update_skill` - Updates a skill for a character
+  - Payload: `{"characterId": 12345, "skillId": 1000, "level": 2, "masterLevel": 2, "expiration": "2023-01-01T00:00:00Z"}`
+  - Triggers a skill command to update the skill
+  - Completes when the StatusEventTypeUpdated event is received

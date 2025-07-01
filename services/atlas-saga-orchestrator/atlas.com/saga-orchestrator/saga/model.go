@@ -101,6 +101,8 @@ const (
 	WarpToPortal       Action = "warp_to_portal"
 	DestroyAsset       Action = "destroy_asset"
 	ChangeJob          Action = "change_job"
+	CreateSkill        Action = "create_skill"
+	UpdateSkill        Action = "update_skill"
 )
 
 // Step represents a single step within a saga.
@@ -179,6 +181,24 @@ type ChangeJobPayload struct {
 	JobId       job.Id      `json:"jobId"`       // JobId to change to
 }
 
+// CreateSkillPayload represents the payload required to create a skill for a character.
+type CreateSkillPayload struct {
+	CharacterId  uint32    `json:"characterId"`  // CharacterId associated with the action
+	SkillId      uint32    `json:"skillId"`      // SkillId to create
+	Level        byte      `json:"level"`        // Skill level
+	MasterLevel  byte      `json:"masterLevel"`  // Skill master level
+	Expiration   time.Time `json:"expiration"`   // Skill expiration time
+}
+
+// UpdateSkillPayload represents the payload required to update a skill for a character.
+type UpdateSkillPayload struct {
+	CharacterId  uint32    `json:"characterId"`  // CharacterId associated with the action
+	SkillId      uint32    `json:"skillId"`      // SkillId to update
+	Level        byte      `json:"level"`        // New skill level
+	MasterLevel  byte      `json:"masterLevel"`  // New skill master level
+	Expiration   time.Time `json:"expiration"`   // New skill expiration time
+}
+
 type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
@@ -246,6 +266,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case ChangeJob:
 		var payload ChangeJobPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case CreateSkill:
+		var payload CreateSkillPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case UpdateSkill:
+		var payload UpdateSkillPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

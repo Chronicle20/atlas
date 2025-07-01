@@ -5,6 +5,7 @@ import (
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
@@ -22,6 +23,8 @@ type ProcessorMock struct {
 	AwardLevelFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error
 	AwardMesosAndEmitFunc      func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
 	AwardMesosFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
+	ChangeJobAndEmitFunc       func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
+	ChangeJobFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
 }
 
 // WarpRandomAndEmit is a mock implementation of the character.Processor.WarpRandomAndEmit method
@@ -110,6 +113,24 @@ func (m *ProcessorMock) AwardMesos(mb *message.Buffer) func(transactionId uuid.U
 		return m.AwardMesosFunc(mb)
 	}
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
+		return nil
+	}
+}
+
+// ChangeJobAndEmit is a mock implementation of the character.Processor.ChangeJobAndEmit method
+func (m *ProcessorMock) ChangeJobAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error {
+	if m.ChangeJobAndEmitFunc != nil {
+		return m.ChangeJobAndEmitFunc(transactionId, worldId, characterId, channelId, jobId)
+	}
+	return nil
+}
+
+// ChangeJob is a mock implementation of the character.Processor.ChangeJob method
+func (m *ProcessorMock) ChangeJob(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error {
+	if m.ChangeJobFunc != nil {
+		return m.ChangeJobFunc(mb)
+	}
+	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error {
 		return nil
 	}
 }

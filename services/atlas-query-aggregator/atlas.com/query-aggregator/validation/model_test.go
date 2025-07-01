@@ -11,168 +11,6 @@ import (
 	"time"
 )
 
-func TestNewCondition(t *testing.T) {
-	tests := []struct {
-		name        string
-		expression  string
-		wantType    ConditionType
-		wantOp      Operator
-		wantValue   int
-		wantItemId  uint32
-		shouldError bool
-	}{
-		{
-			name:        "Valid job equals condition",
-			expression:  "jobId=100",
-			wantType:    JobCondition,
-			wantOp:      Equals,
-			wantValue:   100,
-			shouldError: false,
-		},
-		{
-			name:        "Valid meso greater than condition",
-			expression:  "meso>10000",
-			wantType:    MesoCondition,
-			wantOp:      GreaterThan,
-			wantValue:   10000,
-			shouldError: false,
-		},
-		{
-			name:        "Valid map less than condition",
-			expression:  "mapId<2000",
-			wantType:    MapCondition,
-			wantOp:      LessThan,
-			wantValue:   2000,
-			shouldError: false,
-		},
-		{
-			name:        "Valid fame greater than or equal condition",
-			expression:  "fame>=50",
-			wantType:    FameCondition,
-			wantOp:      GreaterEqual,
-			wantValue:   50,
-			shouldError: false,
-		},
-		{
-			name:        "Valid meso less than or equal condition",
-			expression:  "meso<=5000",
-			wantType:    MesoCondition,
-			wantOp:      LessEqual,
-			wantValue:   5000,
-			shouldError: false,
-		},
-		{
-			name:        "Valid item equals condition",
-			expression:  "item[2000001]=10",
-			wantType:    ItemCondition,
-			wantOp:      Equals,
-			wantValue:   10,
-			wantItemId:  2000001,
-			shouldError: false,
-		},
-		{
-			name:        "Valid item greater than condition",
-			expression:  "item[2000002]>5",
-			wantType:    ItemCondition,
-			wantOp:      GreaterThan,
-			wantValue:   5,
-			wantItemId:  2000002,
-			shouldError: false,
-		},
-		{
-			name:        "Valid item less than condition",
-			expression:  "item[2000003]<20",
-			wantType:    ItemCondition,
-			wantOp:      LessThan,
-			wantValue:   20,
-			wantItemId:  2000003,
-			shouldError: false,
-		},
-		{
-			name:        "Valid item greater than or equal condition",
-			expression:  "item[2000004]>=15",
-			wantType:    ItemCondition,
-			wantOp:      GreaterEqual,
-			wantValue:   15,
-			wantItemId:  2000004,
-			shouldError: false,
-		},
-		{
-			name:        "Valid item less than or equal condition",
-			expression:  "item[2000005]<=25",
-			wantType:    ItemCondition,
-			wantOp:      LessEqual,
-			wantValue:   25,
-			wantItemId:  2000005,
-			shouldError: false,
-		},
-		{
-			name:        "Invalid condition format",
-			expression:  "jobId100",
-			shouldError: true,
-		},
-		{
-			name:        "Invalid condition type",
-			expression:  "level=10",
-			shouldError: true,
-		},
-		{
-			name:        "Invalid value",
-			expression:  "jobId=abc",
-			shouldError: true,
-		},
-		{
-			name:        "Invalid item format",
-			expression:  "item2000001>=10",
-			shouldError: true,
-		},
-		{
-			name:        "Invalid item ID",
-			expression:  "item[abc]>=10",
-			shouldError: true,
-		},
-		{
-			name:        "Invalid item quantity",
-			expression:  "item[2000001]>=abc",
-			shouldError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewCondition(tt.expression)
-
-			if tt.shouldError {
-				if err == nil {
-					t.Errorf("NewCondition() error = nil, want error")
-				}
-				return
-			}
-
-			if err != nil {
-				t.Errorf("NewCondition() error = %v, want nil", err)
-				return
-			}
-
-			if got.conditionType != tt.wantType {
-				t.Errorf("NewCondition() conditionType = %v, want %v", got.conditionType, tt.wantType)
-			}
-
-			if got.operator != tt.wantOp {
-				t.Errorf("NewCondition() operator = %v, want %v", got.operator, tt.wantOp)
-			}
-
-			if got.value != tt.wantValue {
-				t.Errorf("NewCondition() value = %v, want %v", got.value, tt.wantValue)
-			}
-
-			// Check itemId for item conditions
-			if got.conditionType == ItemCondition && got.itemId != tt.wantItemId {
-				t.Errorf("NewCondition() itemId = %v, want %v", got.itemId, tt.wantItemId)
-			}
-		})
-	}
-}
 
 func TestCondition_Evaluate(t *testing.T) {
 	// Create test inventory with items
@@ -468,14 +306,14 @@ func TestCondition_Evaluate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotPassed, gotDescription := tt.condition.Evaluate(character)
+			result := tt.condition.Evaluate(character)
 
-			if gotPassed != tt.wantPassed {
-				t.Errorf("Condition.Evaluate() passed = %v, want %v", gotPassed, tt.wantPassed)
+			if result.Passed != tt.wantPassed {
+				t.Errorf("Condition.Evaluate() passed = %v, want %v", result.Passed, tt.wantPassed)
 			}
 
-			if gotDescription != tt.wantContains {
-				t.Errorf("Condition.Evaluate() description = %v, want to contain %v", gotDescription, tt.wantContains)
+			if result.Description != tt.wantContains {
+				t.Errorf("Condition.Evaluate() description = %v, want to contain %v", result.Description, tt.wantContains)
 			}
 		})
 	}
@@ -534,52 +372,95 @@ func TestValidationResult(t *testing.T) {
 		}
 	})
 
-	t.Run("Add passing result", func(t *testing.T) {
+	t.Run("Add passing condition result", func(t *testing.T) {
 		result := NewValidationResult(123)
-		result.AddResult(true, "Test condition")
+		condResult := ConditionResult{
+			Passed:      true,
+			Description: "Test condition",
+			Type:        JobCondition,
+			Operator:    Equals,
+			Value:       100,
+			ActualValue: 100,
+		}
+		result.AddConditionResult(condResult)
 
 		if !result.Passed() {
-			t.Errorf("After AddResult(true) passed = %v, want true", result.Passed())
+			t.Errorf("After AddConditionResult(passing) passed = %v, want true", result.Passed())
 		}
 
 		if len(result.Details()) != 1 {
-			t.Errorf("After AddResult() details length = %v, want 1", len(result.Details()))
+			t.Errorf("After AddConditionResult() details length = %v, want 1", len(result.Details()))
 		}
 
 		if result.Details()[0] != "Passed: Test condition" {
-			t.Errorf("After AddResult() detail = %v, want 'Passed: Test condition'", result.Details()[0])
+			t.Errorf("After AddConditionResult() detail = %v, want 'Passed: Test condition'", result.Details()[0])
 		}
 	})
 
-	t.Run("Add failing result", func(t *testing.T) {
+	t.Run("Add failing condition result", func(t *testing.T) {
 		result := NewValidationResult(123)
-		result.AddResult(false, "Test condition")
+		condResult := ConditionResult{
+			Passed:      false,
+			Description: "Test condition",
+			Type:        JobCondition,
+			Operator:    Equals,
+			Value:       100,
+			ActualValue: 200,
+		}
+		result.AddConditionResult(condResult)
 
 		if result.Passed() {
-			t.Errorf("After AddResult(false) passed = %v, want false", result.Passed())
+			t.Errorf("After AddConditionResult(failing) passed = %v, want false", result.Passed())
 		}
 
 		if len(result.Details()) != 1 {
-			t.Errorf("After AddResult() details length = %v, want 1", len(result.Details()))
+			t.Errorf("After AddConditionResult() details length = %v, want 1", len(result.Details()))
 		}
 
 		if result.Details()[0] != "Failed: Test condition" {
-			t.Errorf("After AddResult() detail = %v, want 'Failed: Test condition'", result.Details()[0])
+			t.Errorf("After AddConditionResult() detail = %v, want 'Failed: Test condition'", result.Details()[0])
 		}
 	})
 
-	t.Run("Multiple results", func(t *testing.T) {
+	t.Run("Multiple condition results", func(t *testing.T) {
 		result := NewValidationResult(123)
-		result.AddResult(true, "Condition 1")
-		result.AddResult(true, "Condition 2")
-		result.AddResult(false, "Condition 3")
+
+		condResult1 := ConditionResult{
+			Passed:      true,
+			Description: "Condition 1",
+			Type:        JobCondition,
+			Operator:    Equals,
+			Value:       100,
+			ActualValue: 100,
+		}
+		result.AddConditionResult(condResult1)
+
+		condResult2 := ConditionResult{
+			Passed:      true,
+			Description: "Condition 2",
+			Type:        MesoCondition,
+			Operator:    GreaterThan,
+			Value:       1000,
+			ActualValue: 2000,
+		}
+		result.AddConditionResult(condResult2)
+
+		condResult3 := ConditionResult{
+			Passed:      false,
+			Description: "Condition 3",
+			Type:        FameCondition,
+			Operator:    GreaterEqual,
+			Value:       50,
+			ActualValue: 40,
+		}
+		result.AddConditionResult(condResult3)
 
 		if result.Passed() {
-			t.Errorf("After mixed AddResult calls passed = %v, want false", result.Passed())
+			t.Errorf("After mixed AddConditionResult calls passed = %v, want false", result.Passed())
 		}
 
 		if len(result.Details()) != 3 {
-			t.Errorf("After multiple AddResult calls details length = %v, want 3", len(result.Details()))
+			t.Errorf("After multiple AddConditionResult calls details length = %v, want 3", len(result.Details()))
 		}
 	})
 }

@@ -27,8 +27,8 @@ func validationHandler(d *rest.HandlerDependency, c *rest.HandlerContext, im Res
 			return
 		}
 
-		// Validate the conditions
-		result, err := NewProcessor(d.Logger(), d.Context()).Validate()(characterId, conditions)
+		// Validate the conditions using the structured validation
+		result, err := NewProcessor(d.Logger(), d.Context()).ValidateStructured()(characterId, conditions)
 		if err != nil {
 			d.Logger().WithError(err).Errorln("Failed to validate conditions")
 			w.WriteHeader(http.StatusBadRequest)

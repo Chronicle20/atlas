@@ -5,9 +5,6 @@ import (
 	"fmt"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
-	"regexp"
-	"strconv"
-	"strings"
 )
 
 // ConditionType represents the type of condition to validate
@@ -32,6 +29,25 @@ const (
 	LessEqual    Operator = "<="
 )
 
+// ConditionInput represents the structured input for creating a condition
+type ConditionInput struct {
+	Type     string `json:"type"`             // e.g., "jobId", "meso", "item"
+	Operator string `json:"operator"`         // e.g., "=", ">=", "<"
+	Value    int    `json:"value"`            // Value or quantity
+	ItemId   uint32 `json:"itemId,omitempty"` // Only for item checks
+}
+
+// ConditionResult represents the result of a condition evaluation
+type ConditionResult struct {
+	Passed      bool
+	Description string
+	Type        ConditionType
+	Operator    Operator
+	Value       int
+	ItemId      uint32
+	ActualValue int
+}
+
 // Condition represents a validation condition
 type Condition struct {
 	conditionType ConditionType
@@ -40,119 +56,141 @@ type Condition struct {
 	itemId        uint32 // Used for item conditions
 }
 
-// NewCondition creates a new condition from a string expression
-func NewCondition(expression string) (Condition, error) {
-	// Check for item condition first (item[ITEM_ID]>=QUANTITY)
-	itemRegex := regexp.MustCompile(`^item\[(\d+)\](>=|<=|=|>|<)(\d+)$`)
-	if matches := itemRegex.FindStringSubmatch(expression); matches != nil {
-		itemId, err := strconv.ParseUint(matches[1], 10, 32)
-		if err != nil {
-			return Condition{}, fmt.Errorf("invalid item ID in condition: %s", matches[1])
-		}
-
-		var op Operator
-		switch matches[2] {
-		case ">=":
-			op = GreaterEqual
-		case "<=":
-			op = LessEqual
-		case "=":
-			op = Equals
-		case ">":
-			op = GreaterThan
-		case "<":
-			op = LessThan
-		}
-
-		quantity, err := strconv.Atoi(matches[3])
-		if err != nil {
-			return Condition{}, fmt.Errorf("invalid quantity in condition: %s", matches[3])
-		}
-
-		return Condition{
-			conditionType: ItemCondition,
-			operator:      op,
-			value:         quantity,
-			itemId:        uint32(itemId),
-		}, nil
-	}
-
-	// Parse standard expressions like "jobId=100", "meso>=10000", etc.
-	var condType ConditionType
-	var op Operator
-	var val string
-
-	// Check for >= or <= first
-	if strings.Contains(expression, ">=") {
-		parts := strings.Split(expression, ">=")
-		if len(parts) != 2 {
-			return Condition{}, fmt.Errorf("invalid condition format: %s", expression)
-		}
-		condType = ConditionType(parts[0])
-		op = GreaterEqual
-		val = parts[1]
-	} else if strings.Contains(expression, "<=") {
-		parts := strings.Split(expression, "<=")
-		if len(parts) != 2 {
-			return Condition{}, fmt.Errorf("invalid condition format: %s", expression)
-		}
-		condType = ConditionType(parts[0])
-		op = LessEqual
-		val = parts[1]
-	} else if strings.Contains(expression, "=") {
-		parts := strings.Split(expression, "=")
-		if len(parts) != 2 {
-			return Condition{}, fmt.Errorf("invalid condition format: %s", expression)
-		}
-		condType = ConditionType(parts[0])
-		op = Equals
-		val = parts[1]
-	} else if strings.Contains(expression, ">") {
-		parts := strings.Split(expression, ">")
-		if len(parts) != 2 {
-			return Condition{}, fmt.Errorf("invalid condition format: %s", expression)
-		}
-		condType = ConditionType(parts[0])
-		op = GreaterThan
-		val = parts[1]
-	} else if strings.Contains(expression, "<") {
-		parts := strings.Split(expression, "<")
-		if len(parts) != 2 {
-			return Condition{}, fmt.Errorf("invalid condition format: %s", expression)
-		}
-		condType = ConditionType(parts[0])
-		op = LessThan
-		val = parts[1]
-	} else {
-		return Condition{}, fmt.Errorf("invalid condition format: %s", expression)
-	}
-
-	// Validate condition type
-	switch condType {
-	case JobCondition, MesoCondition, MapCondition, FameCondition:
-		// Valid condition type
-	default:
-		return Condition{}, fmt.Errorf("unsupported condition type: %s", condType)
-	}
-
-	// Parse value
-	intVal, err := strconv.Atoi(val)
-	if err != nil {
-		return Condition{}, fmt.Errorf("invalid value in condition: %s", val)
-	}
-
-	return Condition{
-		conditionType: condType,
-		operator:      op,
-		value:         intVal,
-	}, nil
+// ConditionBuilder is used to safely construct Condition objects
+type ConditionBuilder struct {
+	conditionType ConditionType
+	operator      Operator
+	value         int
+	itemId        *uint32
+	err           error
 }
 
+// NewConditionBuilder creates a new condition builder
+func NewConditionBuilder() *ConditionBuilder {
+	return &ConditionBuilder{}
+}
+
+// SetType sets the condition type
+func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	switch ConditionType(condType) {
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition:
+		b.conditionType = ConditionType(condType)
+	default:
+		b.err = fmt.Errorf("unsupported condition type: %s", condType)
+	}
+	return b
+}
+
+// SetOperator sets the operator
+func (b *ConditionBuilder) SetOperator(op string) *ConditionBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	switch Operator(op) {
+	case Equals, GreaterThan, LessThan, GreaterEqual, LessEqual:
+		b.operator = Operator(op)
+	default:
+		b.err = fmt.Errorf("unsupported operator: %s", op)
+	}
+	return b
+}
+
+// SetValue sets the value
+func (b *ConditionBuilder) SetValue(value int) *ConditionBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	b.value = value
+	return b
+}
+
+// SetItemId sets the item ID (only for item conditions)
+func (b *ConditionBuilder) SetItemId(itemId uint32) *ConditionBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	b.itemId = &itemId
+	return b
+}
+
+// FromInput creates a condition builder from a ConditionInput
+func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
+	b.SetType(input.Type)
+	b.SetOperator(input.Operator)
+	b.SetValue(input.Value)
+
+	if input.ItemId != 0 {
+		b.SetItemId(input.ItemId)
+	} else if ConditionType(input.Type) == ItemCondition {
+		b.err = fmt.Errorf("itemId is required for item conditions")
+	}
+
+	return b
+}
+
+// Validate validates the builder state
+func (b *ConditionBuilder) Validate() *ConditionBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	// Check if condition type is set
+	if b.conditionType == "" {
+		b.err = fmt.Errorf("condition type is required")
+		return b
+	}
+
+	// Check if operator is set
+	if b.operator == "" {
+		b.err = fmt.Errorf("operator is required")
+		return b
+	}
+
+	// Check if itemId is set for item conditions
+	if b.conditionType == ItemCondition && b.itemId == nil {
+		b.err = fmt.Errorf("itemId is required for item conditions")
+		return b
+	}
+
+	return b
+}
+
+// Build builds a Condition from the builder
+func (b *ConditionBuilder) Build() (Condition, error) {
+	b.Validate()
+
+	if b.err != nil {
+		return Condition{}, b.err
+	}
+
+	condition := Condition{
+		conditionType: b.conditionType,
+		operator:      b.operator,
+		value:         b.value,
+	}
+
+	if b.itemId != nil {
+		condition.itemId = *b.itemId
+	}
+
+	return condition, nil
+}
+
+
 // Evaluate evaluates the condition against a character model
-// Note: ItemCondition is handled separately in the processor
-func (c Condition) Evaluate(character character.Model) (bool, string) {
+// Returns a structured ConditionResult with evaluation details
+func (c Condition) Evaluate(character character.Model) ConditionResult {
 	var actualValue int
+	var passed bool
 	var description string
+	var itemId uint32
 
 	// Get the actual value from the character model based on condition type
 	switch c.conditionType {
@@ -173,7 +211,15 @@ func (c Condition) Evaluate(character character.Model) (bool, string) {
 		itemQuantity := 0
 		it, ok := inventory2.TypeFromItemId(item.Id(c.itemId))
 		if !ok {
-			return false, fmt.Sprintf("Invalid item ID: %d", c.itemId)
+			return ConditionResult{
+				Passed:      false,
+				Description: fmt.Sprintf("Invalid item ID: %d", c.itemId),
+				Type:        c.conditionType,
+				Operator:    c.operator,
+				Value:       c.value,
+				ItemId:      c.itemId,
+				ActualValue: 0,
+			}
 		}
 
 		compartment := character.Inventory().CompartmentByType(it)
@@ -183,49 +229,51 @@ func (c Condition) Evaluate(character character.Model) (bool, string) {
 			}
 		}
 
-		// Compare the item quantity with the expected value
-		var itemResult bool
-		switch c.operator {
-		case Equals:
-			itemResult = itemQuantity == c.value
-		case GreaterThan:
-			itemResult = itemQuantity > c.value
-		case LessThan:
-			itemResult = itemQuantity < c.value
-		case GreaterEqual:
-			itemResult = itemQuantity >= c.value
-		case LessEqual:
-			itemResult = itemQuantity <= c.value
-		}
-
+		actualValue = itemQuantity
+		itemId = c.itemId
 		description = fmt.Sprintf("Item %d quantity %s %d", c.itemId, c.operator, c.value)
-		return itemResult, description
 	default:
-		return false, fmt.Sprintf("Unsupported condition type: %s", c.conditionType)
+		return ConditionResult{
+			Passed:      false,
+			Description: fmt.Sprintf("Unsupported condition type: %s", c.conditionType),
+			Type:        c.conditionType,
+			Operator:    c.operator,
+			Value:       c.value,
+			ActualValue: 0,
+		}
 	}
 
 	// Compare the actual value with the expected value based on the operator
-	var result bool
 	switch c.operator {
 	case Equals:
-		result = actualValue == c.value
+		passed = actualValue == c.value
 	case GreaterThan:
-		result = actualValue > c.value
+		passed = actualValue > c.value
 	case LessThan:
-		result = actualValue < c.value
+		passed = actualValue < c.value
 	case GreaterEqual:
-		result = actualValue >= c.value
+		passed = actualValue >= c.value
 	case LessEqual:
-		result = actualValue <= c.value
+		passed = actualValue <= c.value
 	}
 
-	return result, description
+	return ConditionResult{
+		Passed:      passed,
+		Description: description,
+		Type:        c.conditionType,
+		Operator:    c.operator,
+		Value:       c.value,
+		ItemId:      itemId,
+		ActualValue: actualValue,
+	}
 }
+
 
 // ValidationResult represents the result of a validation
 type ValidationResult struct {
 	passed      bool
 	details     []string
+	results     []ConditionResult
 	characterId uint32
 }
 
@@ -234,6 +282,7 @@ func NewValidationResult(characterId uint32) ValidationResult {
 	return ValidationResult{
 		passed:      true,
 		details:     []string{},
+		results:     []ConditionResult{},
 		characterId: characterId,
 	}
 }
@@ -248,19 +297,26 @@ func (v ValidationResult) Details() []string {
 	return v.details
 }
 
+// Results returns the structured condition results
+func (v ValidationResult) Results() []ConditionResult {
+	return v.results
+}
+
 // CharacterId returns the character ID that was validated
 func (v ValidationResult) CharacterId() uint32 {
 	return v.characterId
 }
 
-// AddResult adds a condition evaluation result to the validation result
-func (v *ValidationResult) AddResult(passed bool, description string) {
-	if !passed {
+
+// AddConditionResult adds a structured condition result to the validation result
+func (v *ValidationResult) AddConditionResult(result ConditionResult) {
+	if !result.Passed {
 		v.passed = false
 	}
 	status := "Passed"
-	if !passed {
+	if !result.Passed {
 		status = "Failed"
 	}
-	v.details = append(v.details, fmt.Sprintf("%s: %s", status, description))
+	v.details = append(v.details, fmt.Sprintf("%s: %s", status, result.Description))
+	v.results = append(v.results, result)
 }

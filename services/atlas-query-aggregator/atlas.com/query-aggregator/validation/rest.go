@@ -12,11 +12,10 @@ const (
 
 // RestModel represents the REST model for validation requests and responses
 type RestModel struct {
-	Id          string   `json:"-"`
-	CharacterId uint32   `json:"characterId"`
-	Conditions  []string `json:"conditions"`
-	Passed      bool     `json:"passed"`
-	Details     []string `json:"details"`
+	Id         uint32            `json:"-"`
+	Conditions []ConditionInput  `json:"conditions,omitempty"`
+	Passed     bool              `json:"passed"`
+	Results    []ConditionResult `json:"results,omitempty"`
 }
 
 // GetName returns the resource name
@@ -25,13 +24,19 @@ func (r RestModel) GetName() string {
 }
 
 // GetID returns the resource ID
+// For validation results, the character ID is used as the resource ID
 func (r RestModel) GetID() string {
-	return r.Id
+	return strconv.FormatUint(uint64(r.Id), 10)
 }
 
 // SetID sets the resource ID
-func (r *RestModel) SetID(id string) error {
-	r.Id = id
+// For validation requests, the ID is parsed and set as the character ID
+func (r *RestModel) SetID(idStr string) error {
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid character ID: %w", err)
+	}
+	r.Id = uint32(id)
 	return nil
 }
 
@@ -68,18 +73,17 @@ func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonap
 // Transform converts a domain model to a REST model
 func Transform(result ValidationResult) (RestModel, error) {
 	return RestModel{
-		Id:          strconv.FormatUint(uint64(result.CharacterId()), 10),
-		CharacterId: result.CharacterId(),
-		Passed:      result.Passed(),
-		Details:     result.Details(),
+		Id:      result.CharacterId(),
+		Passed:  result.Passed(),
+		Results: result.Results(),
 	}, nil
 }
 
-// Extract converts a REST model to domain model parameters
-func Extract(rm RestModel) (uint32, []string, error) {
+// Extract converts a REST model to domain model parameters for structured validation
+func Extract(rm RestModel) (uint32, []ConditionInput, error) {
 	// Validate that CharacterId is provided
-	if rm.CharacterId == 0 {
-		return 0, nil, fmt.Errorf("characterId is required")
+	if rm.Id == 0 {
+		return 0, nil, fmt.Errorf("Id is required")
 	}
 
 	// Validate that at least one condition is provided
@@ -87,5 +91,5 @@ func Extract(rm RestModel) (uint32, []string, error) {
 		return 0, nil, fmt.Errorf("at least one condition is required")
 	}
 
-	return rm.CharacterId, rm.Conditions, nil
+	return rm.Id, rm.Conditions, nil
 }

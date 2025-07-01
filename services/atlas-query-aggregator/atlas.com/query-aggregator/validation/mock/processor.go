@@ -7,15 +7,15 @@ import (
 
 // ProcessorImpl is a mock implementation of the validation.ProcessorImpl
 type ProcessorImpl struct {
-	ValidateFunc func(decorators ...model.Decorator[validation.ValidationResult]) func(characterId uint32, conditionExpressions []string) (validation.ValidationResult, error)
+	ValidateStructuredFunc func(decorators ...model.Decorator[validation.ValidationResult]) func(characterId uint32, conditionInputs []validation.ConditionInput) (validation.ValidationResult, error)
 }
 
-// Validate returns a function that validates conditions against a character
-func (m *ProcessorImpl) Validate(decorators ...model.Decorator[validation.ValidationResult]) func(characterId uint32, conditionExpressions []string) (validation.ValidationResult, error) {
-	if m.ValidateFunc != nil {
-		return m.ValidateFunc(decorators...)
+// ValidateStructured returns a function that validates structured conditions against a character
+func (m *ProcessorImpl) ValidateStructured(decorators ...model.Decorator[validation.ValidationResult]) func(characterId uint32, conditionInputs []validation.ConditionInput) (validation.ValidationResult, error) {
+	if m.ValidateStructuredFunc != nil {
+		return m.ValidateStructuredFunc(decorators...)
 	}
-	return func(characterId uint32, conditionExpressions []string) (validation.ValidationResult, error) {
+	return func(characterId uint32, conditionInputs []validation.ConditionInput) (validation.ValidationResult, error) {
 		return validation.NewValidationResult(characterId), nil
 	}
 }

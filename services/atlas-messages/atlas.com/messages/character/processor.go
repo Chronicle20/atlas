@@ -1,8 +1,6 @@
 package character
 
 import (
-	"atlas-messages/kafka/message/character"
-	"atlas-messages/kafka/producer"
 	"atlas-messages/skill"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
@@ -16,7 +14,6 @@ type Processor interface {
 	GetByName(decorators ...model.Decorator[Model]) func(name string) (Model, error)
 	IdByNameProvider(name string) model.Provider[uint32]
 	SkillModelDecorator(m Model) Model
-	ChangeJob(worldId byte, channelId byte, characterId uint32, jobId uint16) error
 }
 
 type ProcessorImpl struct {
@@ -68,8 +65,4 @@ func (p *ProcessorImpl) SkillModelDecorator(m Model) Model {
 		return m
 	}
 	return m.SetSkills(ms)
-}
-
-func (p *ProcessorImpl) ChangeJob(worldId byte, channelId byte, characterId uint32, jobId uint16) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(character.EnvCommandTopic)(changeJobCommandProvider(characterId, worldId, channelId, jobId))
 }

@@ -6,6 +6,7 @@ import (
 	_map "atlas-messages/map"
 	"atlas-messages/saga"
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
@@ -153,6 +154,7 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
+		sp := saga.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var jobStr string
@@ -193,9 +195,16 @@ func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 						return err
 					}
 					for _, id := range cids {
-						err = cp.ChangeJob(worldId, channelId, id, jobId)
+						err = sp.Create(saga.NewBuilder().
+							AddStep("change_job", saga.Pending, saga.ChangeJob, saga.ChangeJobPayload{
+								CharacterId: id,
+								WorldId:     world.Id(worldId),
+								ChannelId:   channel.Id(channelId),
+								JobId:       job.Id(jobId),
+							}).
+							Build())
 						if err != nil {
-							l.WithError(err).Errorf("Unable to award [%d] with [%d] level(s).", id, jobId)
+							l.WithError(err).Errorf("Unable to change job for character [%d] to job [%d].", id, jobId)
 						}
 					}
 					return err

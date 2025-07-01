@@ -27,29 +27,27 @@ func handleGetSkills(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				ms, err := GetByCharacterId(d.Context())(db)(characterId)
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-				res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+				mp := NewProcessor(d.Logger(), d.Context(), db).ByCharacterIdProvider(characterId)
+				res, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Creating REST model.")
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 
-				server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
 		})
 	}
 }
 
-func handleRequestCreateSkill(_ *gorm.DB) rest.InputHandler[RestModel] {
+func handleRequestCreateSkill(db *gorm.DB) rest.InputHandler[RestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				err := RequestCreate(d.Logger())(d.Context())(characterId, i.Id, i.Level, i.MasterLevel, i.Expiration)
+				err := NewProcessor(d.Logger(), d.Context(), db).RequestCreate(characterId, i.Id, i.Level, i.MasterLevel, i.Expiration)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -65,31 +63,29 @@ func handleGetSkill(db *gorm.DB) rest.GetHandler {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return rest.ParseSkillId(d.Logger(), func(skillId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					m, err := GetById(d.Context())(db)(characterId, skillId)
-					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-					res, err := model.Map(Transform)(model.FixedProvider(m))()
+					mp := NewProcessor(d.Logger(), d.Context(), db).ByIdProvider(characterId, skillId)
+					res, err := model.Map(Transform)(mp)()
 					if err != nil {
 						d.Logger().WithError(err).Errorf("Creating REST model.")
 						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
 
-					server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+					query := r.URL.Query()
+					queryParams := jsonapi.ParseQueryFields(&query)
+					server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 				}
 			})
 		})
 	}
 }
 
-func handleRequestUpdateSkill(_ *gorm.DB) rest.InputHandler[RestModel] {
+func handleRequestUpdateSkill(db *gorm.DB) rest.InputHandler[RestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return rest.ParseSkillId(d.Logger(), func(skillId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					err := RequestUpdate(d.Logger())(d.Context())(characterId, skillId, i.Level, i.MasterLevel, i.Expiration)
+					err := NewProcessor(d.Logger(), d.Context(), db).RequestUpdate(characterId, skillId, i.Level, i.MasterLevel, i.Expiration)
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						return

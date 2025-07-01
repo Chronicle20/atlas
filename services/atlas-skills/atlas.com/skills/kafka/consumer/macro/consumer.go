@@ -44,7 +44,8 @@ func handleCommandUpdate(db *gorm.DB) message.Handler[macro2.Command[macro2.Upda
 			macros = append(macros, macro.NewModel(m.Id, m.Name, m.Shout, skill2.Id(m.SkillId1), skill2.Id(m.SkillId2), skill2.Id(m.SkillId3)))
 		}
 
-		err := macro.Update(l)(ctx)(db)(c.CharacterId, macros)
+		processor := macro.NewProcessor(l, ctx, db)
+		_, err := processor.UpdateAndEmit(c.CharacterId, macros)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update skill macros for character [%d].", c.CharacterId)
 		}

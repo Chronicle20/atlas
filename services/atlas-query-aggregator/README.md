@@ -39,7 +39,7 @@ MINOR_VERSION:1
 
 ### Requests
 
-#### POST /api/qas/validations
+#### POST /api/validations
 
 Validates a set of conditions against a character's state.
 

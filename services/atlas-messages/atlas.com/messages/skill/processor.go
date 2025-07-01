@@ -1,20 +1,15 @@
 package skill
 
 import (
-	skill2 "atlas-messages/kafka/message/character/skill"
-	"atlas-messages/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 type Processor interface {
 	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
 	GetByCharacterId(characterId uint32) ([]Model, error)
-	RequestCreate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error
-	RequestUpdate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error
 }
 
 type ProcessorImpl struct {
@@ -36,12 +31,4 @@ func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return p.ByCharacterIdProvider(characterId)()
-}
-
-func (p *ProcessorImpl) RequestCreate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(skill2.EnvCommandTopic)(createCommandProvider(characterId, skillId, level, masterLevel, expiration))
-}
-
-func (p *ProcessorImpl) RequestUpdate(characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(skill2.EnvCommandTopic)(updateCommandProvider(characterId, skillId, level, masterLevel, expiration))
 }

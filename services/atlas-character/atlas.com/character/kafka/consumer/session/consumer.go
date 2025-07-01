@@ -53,7 +53,7 @@ func handleStatusEvent(db *gorm.DB) message.Handler[session2.StatusEvent] {
 					l.WithError(err).Errorf("Character [%d] already logged in. Eating event.", e.CharacterId)
 					return
 				}
-				err = character.NewProcessor(l, ctx, db).Login(uuid.New(), e.CharacterId, channel.NewModel(e.WorldId, e.ChannelId))
+				err = character.NewProcessor(l, ctx, db).LoginAndEmit(uuid.New(), e.CharacterId, channel.NewModel(e.WorldId, e.ChannelId))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to login character [%d] as a result of session [%s] being created.", e.CharacterId, e.SessionId.String())
 				}
@@ -61,7 +61,7 @@ func handleStatusEvent(db *gorm.DB) message.Handler[session2.StatusEvent] {
 			} else if cs.State() == session.StateTransition {
 				l.Debugf("Processing a session status event of [%s] which will trigger a change channel.", e.Type)
 				err = session.GetRegistry().Set(t, e.CharacterId, e.WorldId, e.ChannelId, session.StateLoggedIn)
-				err = character.NewProcessor(l, ctx, db).ChangeChannel(uuid.New(), e.CharacterId, channel.NewModel(e.WorldId, e.ChannelId), cs.ChannelId())
+				err = character.NewProcessor(l, ctx, db).ChangeChannelAndEmit(uuid.New(), e.CharacterId, channel.NewModel(e.WorldId, e.ChannelId), cs.ChannelId())
 				if err != nil {
 					l.WithError(err).Errorf("Unable to change character [%d] channel as a result of session [%s] being created.", e.CharacterId, e.SessionId.String())
 				}

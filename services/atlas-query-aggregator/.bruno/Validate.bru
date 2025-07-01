@@ -1,0 +1,25 @@
+meta {
+  name: Validate
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/validations
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data": {
+      "type": "validations",
+      "attributes": {
+        "characterId": 56,
+        "conditions": [
+          "jobId=100"
+        ]
+      }
+    }
+  }
+}

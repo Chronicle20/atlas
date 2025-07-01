@@ -72,7 +72,7 @@ func handleChangeJob(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context
 		}
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).ChangeJob(c.TransactionId, c.CharacterId, cha, c.Body.JobId)
+		_ = character.NewProcessor(l, ctx, db).ChangeJobAndEmit(c.TransactionId, c.CharacterId, cha, c.Body.JobId)
 	}
 }
 

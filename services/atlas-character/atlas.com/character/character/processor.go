@@ -61,13 +61,13 @@ type Processor interface {
 	ChangeChannelAndEmit(transactionId uuid.UUID, characterId uint32, currentChannel channel.Model, oldChannelId channel.Id) error
 	ChangeChannel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, currentChannel channel.Model, oldChannelId channel.Id) error
 	ChangeMapAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error
-	ChangeMap(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error
+	ChangeMap(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error
 	ChangeJobAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, jobId job.Id) error
 	ChangeJob(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, jobId job.Id) error
 	AwardExperienceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error
-	AwardExperience(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error
+	AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error
 	AwardLevelAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, level byte) error
-	AwardLevel(transactionId uuid.UUID, characterId uint32, channel channel.Model, level byte) error
+	AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, level byte) error
 	Move(characterId uint32, x int16, y int16, stance byte) error
 	RequestChangeMeso(transactionId uuid.UUID, characterId uint32, amount int32, actorId uint32, actorType string) error
 	AttemptMesoPickUp(transactionId uuid.UUID, field field.Model, characterId uint32, dropId uint32, meso uint32) error
@@ -76,13 +76,13 @@ type Processor interface {
 	RequestDistributeAp(transactionId uuid.UUID, characterId uint32, distributions []Distribution) error
 	RequestDistributeSp(transactionId uuid.UUID, characterId uint32, skillId uint32, amount int8) error
 	ChangeHPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
-	ChangeHP(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
+	ChangeHP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
 	ChangeMPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
-	ChangeMP(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
+	ChangeMP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error
 	ProcessLevelChangeAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount byte) error
-	ProcessLevelChange(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount byte) error
+	ProcessLevelChange(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount byte) error
 	ProcessJobChangeAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error
-	ProcessJobChange(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error
+	ProcessJobChange(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error
 }
 
 type ProcessorImpl struct {
@@ -309,18 +309,17 @@ func (p *ProcessorImpl) ChangeChannel(mb *message.Buffer) func(transactionId uui
 
 func (p *ProcessorImpl) ChangeMapAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		cmf := dynamicUpdate(p.db)(SetMapId(field.MapId()))(p.t.Id())
-		papf := p.positionAtPortal(field.MapId(), portalId)
-		amcf := announceMapChangedWithBuffer(buf)(transactionId, field, portalId)
-		return model.For(p.ByIdProvider()(characterId), model.ThenOperator(cmf, model.Operators(papf, amcf)))
+		return p.ChangeMap(buf)(transactionId, characterId, field, portalId)
 	})
 }
 
-func (p *ProcessorImpl) ChangeMap(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error {
-	cmf := dynamicUpdate(p.db)(SetMapId(field.MapId()))(p.t.Id())
-	papf := p.positionAtPortal(field.MapId(), portalId)
-	amcf := announceMapChanged(producer.ProviderImpl(p.l)(p.ctx))(transactionId, field, portalId)
-	return model.For(p.ByIdProvider()(characterId), model.ThenOperator(cmf, model.Operators(papf, amcf)))
+func (p *ProcessorImpl) ChangeMap(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error {
+		cmf := dynamicUpdate(p.db)(SetMapId(field.MapId()))(p.t.Id())
+		papf := p.positionAtPortal(field.MapId(), portalId)
+		amcf := announceMapChangedWithBuffer(mb)(transactionId, field, portalId)
+		return model.For(p.ByIdProvider()(characterId), model.ThenOperator(cmf, model.Operators(papf, amcf)))
+	}
 }
 
 func (p *ProcessorImpl) positionAtPortal(mapId _map.Id, portalId uint32) model.Operator[Model] {
@@ -394,6 +393,12 @@ func NewExperienceModel(experienceType string, amount uint32, attr1 uint32) Expe
 
 func (p *ProcessorImpl) AwardExperienceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.AwardExperience(buf)(transactionId, characterId, channel, experience)
+	})
+}
+
+func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error {
+	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error {
 		amount := uint32(0)
 		for _, e := range experience {
 			amount += e.amount
@@ -427,59 +432,23 @@ func (p *ProcessorImpl) AwardExperienceAndEmit(transactionId uuid.UUID, characte
 			return txErr
 		}
 
-		_ = buf.Put(character2.EnvEventTopicCharacterStatus, experienceChangedEventProvider(transactionId, characterId, channel, experience, current))
-		_ = buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"EXPERIENCE"}))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, experienceChangedEventProvider(transactionId, characterId, channel, experience, current))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"EXPERIENCE"}))
 		if awardedLevels > 0 {
-			_ = buf.Put(character2.EnvCommandTopic, awardLevelCommandProvider(transactionId, characterId, channel, awardedLevels))
+			_ = mb.Put(character2.EnvCommandTopic, awardLevelCommandProvider(transactionId, characterId, channel, awardedLevels))
 		}
 		return nil
-	})
-}
-
-func (p *ProcessorImpl) AwardExperience(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error {
-	amount := uint32(0)
-	for _, e := range experience {
-		amount += e.amount
 	}
-
-	p.l.Debugf("Attempting to award character [%d] [%d] experience.", characterId, amount)
-	awardedLevels := byte(0)
-	current := uint32(0)
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		c, err := p.WithTransaction(tx).GetById()(characterId)
-		if err != nil {
-			return err
-		}
-
-		curLevel := c.Level()
-		current = c.Experience() + amount
-		for current > GetExperienceNeededForLevel(curLevel) {
-			current -= GetExperienceNeededForLevel(curLevel)
-			curLevel += 1
-			awardedLevels += 1
-		}
-
-		err = dynamicUpdate(tx)(SetExperience(current))(p.t.Id())(c)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if txErr != nil {
-		p.l.WithError(txErr).Errorf("Could not award character [%d] [%d] experience.", characterId, amount)
-		return txErr
-	}
-
-	_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(experienceChangedEventProvider(transactionId, characterId, channel, experience, current))
-	_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel, characterId, []string{"EXPERIENCE"}))
-	if awardedLevels > 0 {
-		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(awardLevelCommandProvider(transactionId, characterId, channel, awardedLevels))
-	}
-	return nil
 }
 
 func (p *ProcessorImpl) AwardLevelAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount byte) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.AwardLevel(buf)(transactionId, characterId, channel, amount)
+	})
+}
+
+func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount byte) error {
+	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount byte) error {
 		p.l.Debugf("Attempting to award character [%d] [%d] level(s).", characterId, amount)
 		actual := amount
 		current := byte(0)
@@ -505,41 +474,10 @@ func (p *ProcessorImpl) AwardLevelAndEmit(transactionId uuid.UUID, characterId u
 			p.l.WithError(txErr).Errorf("Could not award character [%d] [%d] level(s).", characterId, actual)
 			return txErr
 		}
-		_ = buf.Put(character2.EnvEventTopicCharacterStatus, levelChangedEventProvider(transactionId, characterId, channel, actual, current))
-		_ = buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"LEVEL"}))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, levelChangedEventProvider(transactionId, characterId, channel, actual, current))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"LEVEL"}))
 		return nil
-	})
-}
-
-func (p *ProcessorImpl) AwardLevel(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount byte) error {
-	p.l.Debugf("Attempting to award character [%d] [%d] level(s).", characterId, amount)
-	actual := amount
-	current := byte(0)
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		c, err := p.WithTransaction(tx).GetById()(characterId)
-		if err != nil {
-			return err
-		}
-
-		if c.Level()+amount > MaxLevel {
-			p.l.Debugf("Awarding [%d] level(s) would cause character [%d] to go over cap [%d]. Setting change to [%d].", amount, characterId, MaxLevel, actual)
-			actual = MaxLevel - c.Level()
-		}
-		current = c.Level() + actual
-
-		err = dynamicUpdate(tx)(SetLevel(current))(p.t.Id())(c)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if txErr != nil {
-		p.l.WithError(txErr).Errorf("Could not award character [%d] [%d] level(s).", characterId, actual)
-		return txErr
 	}
-	_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(levelChangedEventProvider(transactionId, characterId, channel, actual, current))
-	_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel, characterId, []string{"LEVEL"}))
-	return nil
 }
 
 func (p *ProcessorImpl) Move(characterId uint32, x int16, y int16, stance byte) error {
@@ -874,6 +812,12 @@ func enforceBounds(change int16, current uint16, upperBound uint16, lowerBound u
 
 func (p *ProcessorImpl) ChangeHPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.ChangeHP(buf)(transactionId, channel, characterId, amount)
+	})
+}
+
+func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
+	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
@@ -888,32 +832,19 @@ func (p *ProcessorImpl) ChangeHPAndEmit(transactionId uuid.UUID, channel channel
 			return txErr
 		}
 		// TODO need to emit event when character dies.
-		_ = buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"HP"}))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"HP"}))
 		return nil
-	})
-}
-
-func (p *ProcessorImpl) ChangeHP(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		c, err := p.WithTransaction(tx).GetById()(characterId)
-		if err != nil {
-			return err
-		}
-		// TODO consider effective (temporary) Max HP.
-		adjusted := enforceBounds(amount, c.HP(), c.MaxHP(), 0)
-		p.l.Debugf("Attempting to adjust character [%d] health by [%d] to [%d].", characterId, amount, adjusted)
-		return dynamicUpdate(tx)(SetHealth(adjusted))(p.t.Id())(c)
-	})
-	if txErr != nil {
-		return txErr
 	}
-	// TODO need to emit event when character dies.
-	_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel, characterId, []string{"HP"}))
-	return nil
 }
 
 func (p *ProcessorImpl) ChangeMPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.ChangeMP(buf)(transactionId, channel, characterId, amount)
+	})
+}
+
+func (p *ProcessorImpl) ChangeMP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
+	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
 		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
@@ -927,31 +858,19 @@ func (p *ProcessorImpl) ChangeMPAndEmit(transactionId uuid.UUID, channel channel
 		if txErr != nil {
 			return txErr
 		}
-		_ = buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"MP"}))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"MP"}))
 		return nil
-	})
-}
-
-func (p *ProcessorImpl) ChangeMP(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		c, err := p.WithTransaction(tx).GetById()(characterId)
-		if err != nil {
-			return err
-		}
-		// TODO consider effective (temporary) Max MP.
-		adjusted := enforceBounds(amount, c.MP(), c.MaxMP(), 0)
-		p.l.Debugf("Attempting to adjust character [%d] mana by [%d] to [%d].", characterId, amount, adjusted)
-		return dynamicUpdate(tx)(SetMana(adjusted))(p.t.Id())(c)
-	})
-	if txErr != nil {
-		return txErr
 	}
-	_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel, characterId, []string{"MP"}))
-	return nil
 }
 
 func (p *ProcessorImpl) ProcessLevelChangeAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount byte) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.ProcessLevelChange(buf)(transactionId, channel, characterId, amount)
+	})
+}
+
+func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount byte) error {
+	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount byte) error {
 		var addedAP uint16
 		var addedSP uint32
 		var addedHP uint16
@@ -1020,82 +939,9 @@ func (p *ProcessorImpl) ProcessLevelChangeAndEmit(transactionId uuid.UUID, chann
 		if txErr != nil {
 			return txErr
 		}
-		_ = buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, sus))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, sus))
 		return nil
-	})
-}
-
-func (p *ProcessorImpl) ProcessLevelChange(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount byte) error {
-	var addedAP uint16
-	var addedSP uint32
-	var addedHP uint16
-	var addedMP uint16
-	var addedStr uint16
-	var addedDex uint16
-	var sus = []string{"AVAILABLE_AP", "AVAILABLE_SP", "HP", "MAX_HP", "MP", "MAX_MP"}
-
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		c, err := p.WithTransaction(tx).GetById(p.SkillModelDecorator)(characterId)
-		if err != nil {
-			return err
-		}
-
-		effectiveLevel := c.Level() - amount
-
-		for i := range amount {
-			effectiveLevel = effectiveLevel + i + 1
-
-			if p.t.Region() == "GMS" && p.t.MajorVersion() == 83 {
-				// TODO properly define this range. For these versions, Beginner, Noblesse, and Legend AP are auto assigned.
-				if job.IsBeginner(c.JobId()) && effectiveLevel < 11 {
-					if effectiveLevel < 6 {
-						addedStr += 5
-					} else {
-						addedStr += 4
-						addedDex += 1
-					}
-				} else {
-					addedAP += computeOnLevelAddedAP(c.JobId(), effectiveLevel)
-				}
-			} else {
-				addedAP += computeOnLevelAddedAP(c.JobId(), effectiveLevel)
-			}
-
-			addedSP += computeOnLevelAddedSP(c.JobId())
-			// TODO could potentially pre-compute HP and MP so you don't incur loop cost
-			aHP, aMP := p.computeOnLevelAddedHPandMP(c)
-			addedHP += aHP
-			addedMP += aMP
-		}
-
-		p.l.Debugf("As a result of processing a level change of [%d]. Character [%d] will gain [%d] AP, [%d] SP, [%d] HP, and [%d] MP.", amount, characterId, addedAP, addedSP, addedHP, addedMP)
-		sb := getSkillBook(c.JobId())
-
-		var eufs = []EntityUpdateFunction{
-			SetAP(c.AP() + addedAP),
-			SetSP(c.SP(sb)+addedSP, uint32(sb)),
-			SetHealth(c.MaxHP() + addedHP),
-			SetMaxHP(c.MaxHP() + addedHP),
-			SetMana(c.MaxMP() + addedMP),
-			SetMaxMP(c.MaxMP() + addedMP),
-		}
-
-		if addedStr > 0 {
-			eufs = append(eufs, SetStrength(c.Strength()+addedStr))
-			sus = append(sus, "STRENGTH")
-		}
-		if addedDex > 0 {
-			eufs = append(eufs, SetDexterity(c.Dexterity()+addedDex))
-			sus = append(sus, "DEXTERITY")
-		}
-
-		return dynamicUpdate(tx)(eufs...)(p.t.Id())(c)
-	})
-	if txErr != nil {
-		return txErr
 	}
-	_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel, characterId, sus))
-	return nil
 }
 
 func computeOnLevelAddedAP(jobId job.Id, level byte) uint16 {
@@ -1214,6 +1060,12 @@ func (p *ProcessorImpl) computeOnLevelAddedHPandMP(c Model) (uint16, uint16) {
 
 func (p *ProcessorImpl) ProcessJobChangeAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.ProcessJobChange(buf)(transactionId, channel, characterId, jobId)
+	})
+}
+
+func (p *ProcessorImpl) ProcessJobChange(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error {
+	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error {
 		var addedAP uint16
 		var addedSP uint32
 		var addedHP uint16
@@ -1274,74 +1126,9 @@ func (p *ProcessorImpl) ProcessJobChangeAndEmit(transactionId uuid.UUID, channel
 		if txErr != nil {
 			return txErr
 		}
-		_ = buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"AVAILABLE_AP", "AVAILABLE_SP", "HP", "MAX_HP", "MP", "MAX_MP"}))
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []string{"AVAILABLE_AP", "AVAILABLE_SP", "HP", "MAX_HP", "MP", "MAX_MP"}))
 		return nil
-	})
-}
-
-func (p *ProcessorImpl) ProcessJobChange(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error {
-	var addedAP uint16
-	var addedSP uint32
-	var addedHP uint16
-	var addedMP uint16
-
-	randBoundFunc := func(lower uint16, upper uint16) uint16 {
-		return uint16(rand.Float32()*float32(upper-lower+1)) + lower
 	}
-
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		c, err := p.WithTransaction(tx).GetById(p.SkillModelDecorator)(characterId)
-		if err != nil {
-			return err
-		}
-
-		// TODO award job change AP is this only Cygnus?
-		if job.IsCygnus(jobId) {
-			addedAP = 7
-		}
-
-		addedSP = 1
-		if job.IsA(jobId, job.EvanId, job.EvanStage1Id, job.EvanStage2Id, job.EvanStage3Id, job.EvanStage4Id, job.EvanStage5Id, job.EvanStage6Id, job.EvanStage7Id, job.EvanStage8Id, job.EvanStage9Id, job.EvanStage10Id) {
-			addedAP += 2
-		} else if job.IsFourthJob(jobId) {
-			addedSP += 2
-		}
-
-		if job.IsA(jobId, job.WarriorId, job.DawnWarriorStage1Id, job.AranStage1Id) {
-			addedHP = randBoundFunc(200, 250)
-		} else if job.IsA(jobId, job.MagicianId, job.BlazeWizardStage1Id, job.EvanStage1Id) {
-			addedMP = randBoundFunc(100, 150)
-		} else if job.IsA(jobId, job.BowmanId, job.RogueId, job.PirateId, job.WindArcherStage1Id, job.NightWalkerStage1Id, job.ThunderBreakerStage1Id) {
-			addedHP = randBoundFunc(100, 150)
-			addedMP = randBoundFunc(25, 50)
-		} else if job.IsA(jobId,
-			job.FighterId, job.CrusaderId, job.HeroId,
-			job.PageId, job.CrusaderId, job.WhiteKnightId,
-			job.SpearmanId, job.DragonKnightId, job.DarkKnightId,
-			job.DawnWarriorStage2Id, job.DawnWarriorStage3Id, job.DawnWarriorStage4Id,
-			job.AranStage2Id, job.AranStage3Id, job.AranStage4Id) {
-			addedHP = randBoundFunc(300, 350)
-		} else if job.IsA(jobId,
-			job.FirePoisonWizardId, job.FirePoisonMagicianId, job.FirePoisonArchMagicianId,
-			job.IceLightningWizardId, job.IceLightningMagicianId, job.IceLightningArchMagicianId,
-			job.ClericId, job.PriestId, job.BishopId,
-			job.BlazeWizardStage2Id, job.BlazeWizardStage3Id, job.BlazeWizardStage4Id,
-			job.EvanStage2Id, job.EvanStage3Id, job.EvanStage4Id, job.EvanStage5Id, job.EvanStage6Id, job.EvanStage7Id, job.EvanStage8Id, job.EvanStage9Id, job.EvanStage10Id) {
-			addedMP = randBoundFunc(450, 500)
-		} else if !job.IsBeginner(jobId) {
-			addedHP = randBoundFunc(300, 350)
-			addedMP = randBoundFunc(150, 200)
-		}
-
-		p.l.Debugf("As a result of processing a job change to [%d]. Character [%d] will gain [%d] AP, [%d] SP, [%d] HP, and [%d] MP.", jobId, characterId, addedAP, addedSP, addedHP, addedMP)
-		sb := getSkillBook(c.JobId())
-		return dynamicUpdate(tx)(SetAP(c.AP()+addedAP), SetSP(c.SP(sb)+addedSP, uint32(sb)), SetHealth(c.MaxHP()+addedHP), SetMaxHP(c.MaxHP()+addedHP), SetMana(c.MaxMP()+addedMP), SetMaxMP(c.MaxMP()+addedMP))(p.t.Id())(c)
-	})
-	if txErr != nil {
-		return txErr
-	}
-	_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel, characterId, []string{"AVAILABLE_AP", "AVAILABLE_SP", "HP", "MAX_HP", "MP", "MAX_MP"}))
-	return nil
 }
 
 func getSkillBook(jobId job.Id) int {

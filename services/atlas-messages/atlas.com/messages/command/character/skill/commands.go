@@ -4,6 +4,7 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	"atlas-messages/data/skill"
+	"atlas-messages/saga"
 	skill3 "atlas-messages/skill"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
@@ -17,7 +18,7 @@ func MaxSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fun
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		sdp := skill.NewProcessor(l, ctx)
-		sp := skill3.NewProcessor(l, ctx)
+		sagaProcessor := saga.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			re := regexp.MustCompile(`@skill\s+max\s+(\d+)`)
 			match := re.FindStringSubmatch(m)
@@ -50,11 +51,39 @@ func MaxSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fun
 
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
+					sagaBuilder := saga.NewBuilder().
+						SetSagaType(saga.QuestReward).
+						SetInitiatedBy("COMMAND")
+
 					if s == nil {
-						return sp.RequestCreate(c.Id(), uint32(skillId), masterLevel, masterLevel, time.Time{})
+						sagaBuilder.AddStep(
+							"create_skill",
+							saga.Pending,
+							saga.CreateSkill,
+							saga.CreateSkillPayload{
+								CharacterId: c.Id(),
+								SkillId:     uint32(skillId),
+								Level:       masterLevel,
+								MasterLevel: masterLevel,
+								Expiration:  time.Time{},
+							},
+						)
 					} else {
-						return sp.RequestUpdate(c.Id(), uint32(skillId), masterLevel, masterLevel, time.Time{})
+						sagaBuilder.AddStep(
+							"update_skill",
+							saga.Pending,
+							saga.UpdateSkill,
+							saga.UpdateSkillPayload{
+								CharacterId: c.Id(),
+								SkillId:     uint32(skillId),
+								Level:       masterLevel,
+								MasterLevel: masterLevel,
+								Expiration:  time.Time{},
+							},
+						)
 					}
+
+					return sagaProcessor.Create(sagaBuilder.Build())
 				}
 			}, true
 		}
@@ -65,7 +94,7 @@ func ResetSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		sdp := skill.NewProcessor(l, ctx)
-		sp := skill3.NewProcessor(l, ctx)
+		sagaProcessor := saga.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			re := regexp.MustCompile(`@skill\s+reset\s+(\d+)`)
 			match := re.FindStringSubmatch(m)
@@ -98,11 +127,39 @@ func ResetSkillCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
+					sagaBuilder := saga.NewBuilder().
+						SetSagaType(saga.QuestReward).
+						SetInitiatedBy("COMMAND")
+
 					if s == nil {
-						return sp.RequestCreate(c.Id(), uint32(skillId), 0, masterLevel, time.Time{})
+						sagaBuilder.AddStep(
+							"create_skill",
+							saga.Pending,
+							saga.CreateSkill,
+							saga.CreateSkillPayload{
+								CharacterId: c.Id(),
+								SkillId:     uint32(skillId),
+								Level:       0,
+								MasterLevel: masterLevel,
+								Expiration:  time.Time{},
+							},
+						)
 					} else {
-						return sp.RequestUpdate(c.Id(), uint32(skillId), 0, masterLevel, time.Time{})
+						sagaBuilder.AddStep(
+							"update_skill",
+							saga.Pending,
+							saga.UpdateSkill,
+							saga.UpdateSkillPayload{
+								CharacterId: c.Id(),
+								SkillId:     uint32(skillId),
+								Level:       0,
+								MasterLevel: masterLevel,
+								Expiration:  time.Time{},
+							},
+						)
 					}
+
+					return sagaProcessor.Create(sagaBuilder.Build())
 				}
 			}, true
 		}

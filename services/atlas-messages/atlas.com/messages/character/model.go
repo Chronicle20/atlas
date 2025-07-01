@@ -1,8 +1,6 @@
 package character
 
 import (
-	"atlas-messages/compartment"
-	"atlas-messages/inventory"
 	"atlas-messages/skill"
 	"github.com/Chronicle20/atlas-constants/world"
 	"strconv"
@@ -38,7 +36,6 @@ type Model struct {
 	spawnPoint         uint32
 	gm                 int
 	meso               uint32
-	inventory          inventory.Model
 	skills             []skill.Model
 }
 
@@ -230,24 +227,6 @@ func (m Model) Skills() []skill.Model {
 	return m.skills
 }
 
-func (m Model) SetInventory(i inventory.Model) Model {
-	ec := compartment.NewBuilder(i.Equipable().Id(), m.Id(), i.Equipable().Type(), i.Equipable().Capacity())
-	for _, a := range i.Equipable().Assets() {
-		if a.Slot() > 0 {
-			ec = ec.AddAsset(a)
-		}
-	}
-
-	ib := inventory.NewBuilder(m.Id()).
-		SetEquipable(ec.Build()).
-		SetConsumable(i.Consumable()).
-		SetSetup(i.Setup()).
-		SetEtc(i.ETC()).
-		SetCash(i.Cash())
-
-	return Clone(m).SetInventory(ib.Build()).Build()
-}
-
 func (m Model) SetSkills(ms []skill.Model) Model {
 	return Clone(m).SetSkills(ms).Build()
 }
@@ -282,7 +261,6 @@ func Clone(m Model) *ModelBuilder {
 		spawnPoint:         m.spawnPoint,
 		gm:                 m.gm,
 		meso:               m.meso,
-		inventory:          m.inventory,
 		skills:             m.skills,
 	}
 }
@@ -319,7 +297,6 @@ type ModelBuilder struct {
 	y                  int16
 	stance             byte
 	meso               uint32
-	inventory          inventory.Model
 	skills             []skill.Model
 }
 
@@ -354,12 +331,11 @@ func (b *ModelBuilder) SetGachaponExperience(v uint32) *ModelBuilder {
 	b.gachaponExperience = v
 	return b
 }
-func (b *ModelBuilder) SetMapId(v uint32) *ModelBuilder              { b.mapId = v; return b }
-func (b *ModelBuilder) SetSpawnPoint(v uint32) *ModelBuilder         { b.spawnPoint = v; return b }
-func (b *ModelBuilder) SetGm(v int) *ModelBuilder                    { b.gm = v; return b }
-func (b *ModelBuilder) SetMeso(v uint32) *ModelBuilder               { b.meso = v; return b }
-func (b *ModelBuilder) SetInventory(v inventory.Model) *ModelBuilder { b.inventory = v; return b }
-func (b *ModelBuilder) SetSkills(v []skill.Model) *ModelBuilder      { b.skills = v; return b }
+func (b *ModelBuilder) SetMapId(v uint32) *ModelBuilder         { b.mapId = v; return b }
+func (b *ModelBuilder) SetSpawnPoint(v uint32) *ModelBuilder    { b.spawnPoint = v; return b }
+func (b *ModelBuilder) SetGm(v int) *ModelBuilder               { b.gm = v; return b }
+func (b *ModelBuilder) SetMeso(v uint32) *ModelBuilder          { b.meso = v; return b }
+func (b *ModelBuilder) SetSkills(v []skill.Model) *ModelBuilder { b.skills = v; return b }
 
 func (b *ModelBuilder) Build() Model {
 	return Model{
@@ -391,7 +367,6 @@ func (b *ModelBuilder) Build() Model {
 		spawnPoint:         b.spawnPoint,
 		gm:                 b.gm,
 		meso:               b.meso,
-		inventory:          b.inventory,
 		skills:             b.skills,
 	}
 }

@@ -3,9 +3,9 @@ package inventory
 import (
 	"atlas-messages/character"
 	"atlas-messages/command"
-	"atlas-messages/compartment"
 	"atlas-messages/data/asset"
 	_map "atlas-messages/map"
+	"atlas-messages/saga"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
@@ -16,7 +16,6 @@ import (
 func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
-		ccp := compartment.NewProcessor(l, ctx)
 		ap := asset.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
@@ -77,12 +76,24 @@ func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
-					cids, err := idProvider()
+					sp := saga.NewProcessor(l, ctx)
+					var cids []uint32
+					cids, err = idProvider()
 					if err != nil {
 						return err
 					}
 					for _, id := range cids {
-						err = ccp.RequestCreateItem(id, templateId, quantity)
+						err = sp.Create(saga.NewBuilder().
+							SetSagaType(saga.InventoryTransaction).
+							SetInitiatedBy("atlas-messages").
+							AddStep("give_item", saga.Pending, saga.AwardInventory, saga.AwardItemActionPayload{
+								CharacterId: id,
+								Item: saga.ItemPayload{
+									TemplateId: templateId,
+									Quantity:   quantity,
+								},
+							}).
+							Build())
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with (%d) item [%d].", id, quantity, templateId)
 						}

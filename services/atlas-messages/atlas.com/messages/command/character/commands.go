@@ -4,6 +4,10 @@ import (
 	"atlas-messages/character"
 	"atlas-messages/command"
 	_map "atlas-messages/map"
+	"atlas-messages/saga"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/job"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
@@ -15,6 +19,7 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
+		sp := saga.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var amountStr string
@@ -52,12 +57,23 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
-					cids, err := idProvider()
+					var cids []uint32
+					cids, err = idProvider()
 					if err != nil {
 						return err
 					}
 					for _, id := range cids {
-						err = cp.AwardExperience(worldId, channelId, id, amount)
+						err = sp.Create(saga.NewBuilder().
+							AddStep("give_experience", saga.Pending, saga.AwardExperience, saga.AwardExperiencePayload{
+								CharacterId: id,
+								WorldId:     world.Id(worldId),
+								ChannelId:   channel.Id(channelId),
+								Distributions: []saga.ExperienceDistributions{{
+									ExperienceType: "WHITE",
+									Amount:         amount,
+								}},
+							}).
+							Build())
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with [%d] experience.", id, amount)
 						}
@@ -73,6 +89,7 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
+		sp := saga.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var amountStr string
@@ -115,7 +132,14 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 						return err
 					}
 					for _, id := range cids {
-						err = cp.AwardLevel(worldId, channelId, id, amount)
+						err = sp.Create(saga.NewBuilder().
+							AddStep("give_level", saga.Pending, saga.AwardLevel, saga.AwardLevelPayload{
+								CharacterId: id,
+								WorldId:     world.Id(worldId),
+								ChannelId:   channel.Id(channelId),
+								Amount:      amount,
+							}).
+							Build())
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with [%d] level(s).", id, amount)
 						}
@@ -130,6 +154,7 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
+		sp := saga.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var jobStr string
@@ -170,9 +195,16 @@ func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 						return err
 					}
 					for _, id := range cids {
-						err = cp.ChangeJob(worldId, channelId, id, jobId)
+						err = sp.Create(saga.NewBuilder().
+							AddStep("change_job", saga.Pending, saga.ChangeJob, saga.ChangeJobPayload{
+								CharacterId: id,
+								WorldId:     world.Id(worldId),
+								ChannelId:   channel.Id(channelId),
+								JobId:       job.Id(jobId),
+							}).
+							Build())
 						if err != nil {
-							l.WithError(err).Errorf("Unable to award [%d] with [%d] level(s).", id, jobId)
+							l.WithError(err).Errorf("Unable to change job for character [%d] to job [%d].", id, jobId)
 						}
 					}
 					return err
@@ -186,6 +218,7 @@ func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 	return func(ctx context.Context) func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
+		sp := saga.NewProcessor(l, ctx)
 		return func(worldId byte, channelId byte, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var amountStr string
@@ -228,7 +261,16 @@ func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 						return err
 					}
 					for _, id := range cids {
-						err = cp.RequestChangeMeso(worldId, channelId, id, c.Id(), "CHARACTER", amount)
+						err = sp.Create(saga.NewBuilder().
+							AddStep("give_mesos", saga.Pending, saga.AwardMesos, saga.AwardMesosPayload{
+								CharacterId: id,
+								WorldId:     world.Id(worldId),
+								ChannelId:   channel.Id(channelId),
+								ActorId:     c.Id(),
+								ActorType:   "CHARACTER",
+								Amount:      amount,
+							}).
+							Build())
 						if err != nil {
 							l.WithError(err).Errorf("Unable to award [%d] with [%d] meso.", id, amount)
 						}

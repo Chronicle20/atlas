@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"fmt"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
 )
@@ -72,4 +73,19 @@ func Transform(result ValidationResult) (RestModel, error) {
 		Passed:      result.Passed(),
 		Details:     result.Details(),
 	}, nil
+}
+
+// Extract converts a REST model to domain model parameters
+func Extract(rm RestModel) (uint32, []string, error) {
+	// Validate that CharacterId is provided
+	if rm.CharacterId == 0 {
+		return 0, nil, fmt.Errorf("characterId is required")
+	}
+
+	// Validate that at least one condition is provided
+	if len(rm.Conditions) == 0 {
+		return 0, nil, fmt.Errorf("at least one condition is required")
+	}
+
+	return rm.CharacterId, rm.Conditions, nil
 }

@@ -1,8 +1,14 @@
 package character
 
 import (
+	"atlas-query-aggregator/asset"
+	"atlas-query-aggregator/compartment"
+	"atlas-query-aggregator/equipment"
+	"atlas-query-aggregator/inventory"
+	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 	"strconv"
 	"strings"
 )
@@ -39,6 +45,8 @@ type Model struct {
 	y                  int16
 	stance             byte
 	meso               uint32
+	equipment          equipment.Model
+	inventory          inventory.Model
 }
 
 func (m Model) Gm() bool {
@@ -201,12 +209,20 @@ func (m Model) SpawnPoint() byte {
 	return 0
 }
 
+func (m Model) Equipment() equipment.Model {
+	return m.equipment
+}
+
 func (m Model) AccountId() uint32 {
 	return m.accountId
 }
 
 func (m Model) Meso() uint32 {
 	return m.meso
+}
+
+func (m Model) Inventory() inventory.Model {
+	return m.inventory
 }
 
 func (m Model) X() int16 {
@@ -223,6 +239,66 @@ func (m Model) Stance() byte {
 
 func (m Model) WorldId() world.Id {
 	return m.worldId
+}
+
+func (m Model) SetInventory(i inventory.Model) Model {
+	eq := equipment.NewModel()
+	ec := compartment.NewBuilder(i.Equipable().Id(), m.Id(), i.Equipable().Type(), i.Equipable().Capacity())
+	for _, a := range i.Equipable().Assets() {
+		if a.Slot() > 0 {
+			ec = ec.AddAsset(a)
+		} else {
+			cash := false
+			s := a.Slot()
+			if s < -100 {
+				cash = true
+				s += 100
+			}
+
+			es, err := slot.GetSlotByPosition(slot.Position(s))
+			if err != nil {
+				continue
+			}
+			v, ok := eq.Get(es.Type)
+			if !ok {
+				continue
+			}
+
+			if cash {
+				var crd asset.CashEquipableReferenceData
+				crd, ok = a.ReferenceData().(asset.CashEquipableReferenceData)
+				if ok {
+					ea := asset.NewBuilder[asset.CashEquipableReferenceData](a.Id(), uuid.Nil, a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
+						SetSlot(a.Slot()).
+						SetExpiration(a.Expiration()).
+						SetReferenceData(crd).
+						Build()
+					v.CashEquipable = &ea
+				}
+			} else {
+				var erd asset.EquipableReferenceData
+				erd, ok = a.ReferenceData().(asset.EquipableReferenceData)
+				if ok {
+					ea := asset.NewBuilder[asset.EquipableReferenceData](a.Id(), uuid.Nil, a.TemplateId(), a.ReferenceId(), a.ReferenceType()).
+						SetSlot(a.Slot()).
+						SetExpiration(a.Expiration()).
+						SetReferenceData(erd).
+						Build()
+					v.Equipable = &ea
+				}
+			}
+			eq.Set(es.Type, v)
+		}
+	}
+
+	ib := inventory.NewBuilder(m.Id()).
+		SetEquipable(ec.Build()).
+		SetConsumable(i.Consumable()).
+		SetSetup(i.Setup()).
+		SetEtc(i.ETC()).
+		SetCash(i.Cash())
+
+	return Clone(m).SetInventory(ib.Build()).SetEquipment(eq).Build()
 }
 
 func Clone(m Model) *ModelBuilder {
@@ -258,6 +334,8 @@ func Clone(m Model) *ModelBuilder {
 		y:                  m.y,
 		stance:             m.stance,
 		meso:               m.meso,
+		equipment:          m.equipment,
+		inventory:          m.inventory,
 	}
 }
 
@@ -293,6 +371,8 @@ type ModelBuilder struct {
 	y                  int16
 	stance             byte
 	meso               uint32
+	equipment          equipment.Model
+	inventory          inventory.Model
 }
 
 func NewModelBuilder() *ModelBuilder {
@@ -326,10 +406,12 @@ func (b *ModelBuilder) SetGachaponExperience(v uint32) *ModelBuilder {
 	b.gachaponExperience = v
 	return b
 }
-func (b *ModelBuilder) SetMapId(v uint32) *ModelBuilder      { b.mapId = v; return b }
-func (b *ModelBuilder) SetSpawnPoint(v uint32) *ModelBuilder { b.spawnPoint = v; return b }
-func (b *ModelBuilder) SetGm(v int) *ModelBuilder            { b.gm = v; return b }
-func (b *ModelBuilder) SetMeso(v uint32) *ModelBuilder       { b.meso = v; return b }
+func (b *ModelBuilder) SetMapId(v uint32) *ModelBuilder              { b.mapId = v; return b }
+func (b *ModelBuilder) SetSpawnPoint(v uint32) *ModelBuilder         { b.spawnPoint = v; return b }
+func (b *ModelBuilder) SetGm(v int) *ModelBuilder                    { b.gm = v; return b }
+func (b *ModelBuilder) SetMeso(v uint32) *ModelBuilder               { b.meso = v; return b }
+func (b *ModelBuilder) SetEquipment(v equipment.Model) *ModelBuilder { b.equipment = v; return b }
+func (b *ModelBuilder) SetInventory(v inventory.Model) *ModelBuilder { b.inventory = v; return b }
 
 func (b *ModelBuilder) Build() Model {
 	return Model{
@@ -364,5 +446,7 @@ func (b *ModelBuilder) Build() Model {
 		y:                  b.y,
 		stance:             b.stance,
 		meso:               b.meso,
+		equipment:          b.equipment,
+		inventory:          b.inventory,
 	}
 }

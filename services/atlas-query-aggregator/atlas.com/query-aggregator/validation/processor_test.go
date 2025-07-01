@@ -1,14 +1,20 @@
 package validation
 
 import (
+	"atlas-query-aggregator/asset"
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/character/mock"
+	"atlas-query-aggregator/compartment"
+	"atlas-query-aggregator/inventory"
 	"context"
 	"errors"
+	inventory_type "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestProcessorValidate tests the Validate function of the validation processor
@@ -18,15 +24,15 @@ func TestProcessorValidate(t *testing.T) {
 
 	// Test cases
 	tests := []struct {
-		name               string
-		characterId        uint32
-		conditions         []string
-		decorators         []model.Decorator[ValidationResult]
-		setupMock          func(*mock.ProcessorImpl)
-		wantPassed         bool
-		wantDetailsCount   int
-		wantError          bool
-		wantErrorContains  string
+		name              string
+		characterId       uint32
+		conditions        []string
+		decorators        []model.Decorator[ValidationResult]
+		setupMock         func(*mock.ProcessorImpl)
+		wantPassed        bool
+		wantDetailsCount  int
+		wantError         bool
+		wantErrorContains string
 	}{
 		{
 			name:        "All conditions pass",
@@ -99,6 +105,88 @@ func TestProcessorValidate(t *testing.T) {
 			wantDetailsCount:  0,
 			wantError:         true,
 			wantErrorContains: "invalid condition",
+		},
+		{
+			name:        "Item condition - pass",
+			characterId: 123,
+			conditions:  []string{"item[2000001]>=10"},
+			setupMock: func(m *mock.ProcessorImpl) {
+				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
+					// If a decorator is provided (InventoryDecorator), apply it to the model
+					if len(decorators) > 0 {
+						return func(characterId uint32) (character.Model, error) {
+							// Create a basic character
+							char := character.NewModelBuilder().
+								SetId(characterId).
+								Build()
+
+							// Apply the decorator (which should be InventoryDecorator)
+							return decorators[0](char), nil
+						}
+					}
+
+					// Otherwise return a basic character
+					return func(characterId uint32) (character.Model, error) {
+						return character.NewModelBuilder().
+							SetId(characterId).
+							Build(), nil
+					}
+				}
+
+				// Mock the InventoryDecorator to add inventory with items
+				m.InventoryDecoratorFunc = func(m character.Model) character.Model {
+					// Create a test inventory with items
+					// This is a simplified version of what we did in model_test.go
+					return character.NewModelBuilder().
+						SetId(m.Id()).
+						SetInventory(createTestInventory(m.Id())).
+						Build()
+				}
+			},
+			wantPassed:       true,
+			wantDetailsCount: 1,
+			wantError:        false,
+		},
+		{
+			name:        "Item condition - fail",
+			characterId: 123,
+			conditions:  []string{"item[2000001]>=20"},
+			setupMock: func(m *mock.ProcessorImpl) {
+				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
+					// If a decorator is provided (InventoryDecorator), apply it to the model
+					if len(decorators) > 0 {
+						return func(characterId uint32) (character.Model, error) {
+							// Create a basic character
+							char := character.NewModelBuilder().
+								SetId(characterId).
+								Build()
+
+							// Apply the decorator (which should be InventoryDecorator)
+							return decorators[0](char), nil
+						}
+					}
+
+					// Otherwise return a basic character
+					return func(characterId uint32) (character.Model, error) {
+						return character.NewModelBuilder().
+							SetId(characterId).
+							Build(), nil
+					}
+				}
+
+				// Mock the InventoryDecorator to add inventory with items
+				m.InventoryDecoratorFunc = func(m character.Model) character.Model {
+					// Create a test inventory with items
+					// This is a simplified version of what we did in model_test.go
+					return character.NewModelBuilder().
+						SetId(m.Id()).
+						SetInventory(createTestInventory(m.Id())).
+						Build()
+				}
+			},
+			wantPassed:       false,
+			wantDetailsCount: 1,
+			wantError:        false,
 		},
 		{
 			name:        "With decorator - add custom detail",
@@ -195,6 +283,54 @@ func TestProcessorValidate(t *testing.T) {
 }
 
 // TestValidateConditions tests the condition validation logic directly
+// Helper function to create a test inventory with items for processor tests
+func createTestInventory(characterId uint32) inventory.Model {
+	// Create a test compartment with items
+	compartmentId := uuid.New()
+
+	// Create a builder
+	builder := compartment.NewBuilder(compartmentId, characterId, inventory_type.TypeValueUse, 100)
+
+	// Add some test items
+	// Item 2000001 with quantity 10
+	refData1 := asset.NewConsumableReferenceDataBuilder().
+		SetQuantity(10).
+		Build()
+	item1 := asset.NewBuilder[any](1, compartmentId, 2000001, 1, asset.ReferenceTypeConsumable).
+		SetSlot(1).
+		SetExpiration(time.Now().Add(24 * time.Hour)).
+		SetReferenceData(refData1).
+		Build()
+	builder.AddAsset(item1)
+
+	// Item 2000002 with quantity 5
+	refData2 := asset.NewConsumableReferenceDataBuilder().
+		SetQuantity(5).
+		Build()
+	item2 := asset.NewBuilder[any](2, compartmentId, 2000002, 2, asset.ReferenceTypeConsumable).
+		SetSlot(2).
+		SetExpiration(time.Now().Add(24 * time.Hour)).
+		SetReferenceData(refData2).
+		Build()
+	builder.AddAsset(item2)
+
+	// Item 2000003 with quantity 20
+	refData3 := asset.NewConsumableReferenceDataBuilder().
+		SetQuantity(20).
+		Build()
+	item3 := asset.NewBuilder[any](3, compartmentId, 2000003, 3, asset.ReferenceTypeConsumable).
+		SetSlot(3).
+		SetExpiration(time.Now().Add(24 * time.Hour)).
+		SetReferenceData(refData3).
+		Build()
+	builder.AddAsset(item3)
+
+	// Create inventory model
+	return inventory.NewBuilder(characterId).
+		SetConsumable(builder.Build()).
+		Build()
+}
+
 func TestValidateConditions(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -212,10 +348,10 @@ func TestValidateConditions(t *testing.T) {
 				SetMapId(2000).
 				SetFame(50).
 				Build(),
-			conditions: []string{"jobId=100", "meso>=10000", "mapId=2000", "fame>=50"},
-			wantPassed: true,
+			conditions:  []string{"jobId=100", "meso>=10000", "mapId=2000", "fame>=50"},
+			wantPassed:  true,
 			wantDetails: 4,
-			wantError:  false,
+			wantError:   false,
 		},
 		{
 			name: "Some conditions fail",
@@ -225,13 +361,61 @@ func TestValidateConditions(t *testing.T) {
 				SetMapId(2000).
 				SetFame(50).
 				Build(),
-			conditions: []string{"jobId=100", "meso>=20000", "mapId=2000", "fame>=60"},
-			wantPassed: false,
+			conditions:  []string{"jobId=100", "meso>=20000", "mapId=2000", "fame>=60"},
+			wantPassed:  false,
 			wantDetails: 4,
-			wantError:  false,
+			wantError:   false,
 		},
 		{
-			name: "Invalid condition",
+			name: "Item condition - pass",
+			characterModel: character.NewModelBuilder().
+				SetId(123).
+				SetInventory(createTestInventory(123)).
+				Build(),
+			conditions:  []string{"item[2000001]>=10"},
+			wantPassed:  true,
+			wantDetails: 1,
+			wantError:   false,
+		},
+		{
+			name: "Item condition - fail",
+			characterModel: character.NewModelBuilder().
+				SetId(123).
+				SetInventory(createTestInventory(123)).
+				Build(),
+			conditions:  []string{"item[2000001]>=20"},
+			wantPassed:  false,
+			wantDetails: 1,
+			wantError:   false,
+		},
+		{
+			name: "Item not found",
+			characterModel: character.NewModelBuilder().
+				SetId(123).
+				SetInventory(createTestInventory(123)).
+				Build(),
+			conditions:  []string{"item[9999999]=10"},
+			wantPassed:  false,
+			wantDetails: 1,
+			wantError:   false,
+		},
+		{
+			name: "Mixed conditions",
+			characterModel: character.NewModelBuilder().
+				SetId(123).
+				SetJobId(100).
+				SetMeso(10000).
+				SetMapId(2000).
+				SetFame(50).
+				SetInventory(createTestInventory(123)).
+				Build(),
+			conditions:  []string{"jobId=100", "meso>=10000", "item[2000001]>=10", "item[2000002]>=10"},
+			wantPassed:  false, // One item condition fails
+			wantDetails: 4,
+			wantError:   false,
+		},
+		{
+			name:           "Invalid condition",
 			characterModel: character.NewModelBuilder().Build(),
 			conditions:     []string{"invalid=100"},
 			wantPassed:     true, // Default is true, but error will be returned
@@ -239,7 +423,7 @@ func TestValidateConditions(t *testing.T) {
 			wantError:      true,
 		},
 		{
-			name: "Empty conditions",
+			name:           "Empty conditions",
 			characterModel: character.NewModelBuilder().Build(),
 			conditions:     []string{},
 			wantPassed:     true, // No conditions means all pass

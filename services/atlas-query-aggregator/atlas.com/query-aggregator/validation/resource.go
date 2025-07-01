@@ -19,8 +19,16 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 
 func validationHandler(d *rest.HandlerDependency, c *rest.HandlerContext, im RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Extract parameters from the REST model
+		characterId, conditions, err := Extract(im)
+		if err != nil {
+			d.Logger().WithError(err).Errorln("Failed to extract validation parameters")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		// Validate the conditions
-		result, err := NewProcessor(d.Logger(), d.Context()).Validate()(im.CharacterId, im.Conditions)
+		result, err := NewProcessor(d.Logger(), d.Context()).Validate()(characterId, conditions)
 		if err != nil {
 			d.Logger().WithError(err).Errorln("Failed to validate conditions")
 			w.WriteHeader(http.StatusBadRequest)
@@ -29,8 +37,9 @@ func validationHandler(d *rest.HandlerDependency, c *rest.HandlerContext, im Res
 
 		rms, err := model.Map(Transform)(model.FixedProvider(result))()
 		if err != nil {
-			d.Logger().WithError(err).Error("Failed to retrieve sagas")
+			d.Logger().WithError(err).Error("Failed to transform validation result")
 			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		// Marshal response

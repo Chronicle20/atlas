@@ -89,6 +89,7 @@ Validates a set of conditions against a character's state.
 | Meso (Currency)| meso>=10000              | Character Service (character.Meso) |
 | Map            | mapId=2000               | Character Service (character.MapId) |
 | Fame           | fame>=50                 | Character Service (character.Fame) |
+| Inventory Item | item[2000001]>=10        | Inventory Service (quantity of item with template ID 2000001) |
 
 **Supported Operators:**
 - `=` (equals)

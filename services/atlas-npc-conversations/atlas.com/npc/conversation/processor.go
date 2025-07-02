@@ -270,7 +270,7 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 			return errors.New("listSelection is nil")
 		}
 
-		choice, _ := listSelection.ChoiceFromSelection(selection)
+		choice, _ := listSelection.ChoiceFromSelection(action, selection)
 		nextStateId = choice.NextState()
 
 		// Store the choice context for later use

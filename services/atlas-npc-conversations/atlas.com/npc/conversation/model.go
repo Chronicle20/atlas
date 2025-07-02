@@ -980,7 +980,16 @@ func (l ListSelectionModel) Choices() []ChoiceModel {
 	return l.choices
 }
 
-func (l ListSelectionModel) ChoiceFromSelection(selection int32) (ChoiceModel, error) {
+func (l ListSelectionModel) ChoiceFromSelection(action byte, selection int32) (ChoiceModel, error) {
+	if action == 0 {
+		for _, choice := range l.choices {
+			if choice.Text() == "Exit" {
+				return choice, nil
+			}
+		}
+		return ChoiceModel{}, errors.New("invalid selection")
+	}
+
 	if selection < 0 || selection >= int32(len(l.choices)) {
 		return ChoiceModel{}, errors.New("invalid selection")
 	}

@@ -5,6 +5,7 @@ import (
 	"atlas-saga-orchestrator/compartment"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	"atlas-saga-orchestrator/skill"
+	"atlas-saga-orchestrator/validation"
 	"context"
 	"errors"
 	"fmt"
@@ -34,6 +35,7 @@ type ProcessorImpl struct {
 	charP  character.Processor
 	compP  compartment.Processor
 	skillP skill.Processor
+	validP validation.Processor
 }
 
 // NewProcessor creates a new saga processor
@@ -45,6 +47,7 @@ func NewProcessor(logger logrus.FieldLogger, ctx context.Context) *ProcessorImpl
 		charP:  character.NewProcessor(logger, ctx),
 		compP:  compartment.NewProcessor(logger, ctx),
 		skillP: skill.NewProcessor(logger, ctx),
+		validP: validation.NewProcessor(logger, ctx),
 	}
 }
 
@@ -198,16 +201,17 @@ type ActionHandler func(p *ProcessorImpl, s Saga, st Step[any]) error
 
 // actionHandlers maps action types to their handler functions
 var actionHandlers = map[Action]ActionHandler{
-	AwardInventory:     handleAwardInventory,
-	WarpToRandomPortal: handleWarpToRandomPortal,
-	WarpToPortal:       handleWarpToPortal,
-	AwardExperience:    handleAwardExperience,
-	AwardLevel:         handleAwardLevel,
-	AwardMesos:         handleAwardMesos,
-	DestroyAsset:       handleDestroyAsset,
-	ChangeJob:          handleChangeJob,
-	CreateSkill:        handleCreateSkill,
-	UpdateSkill:        handleUpdateSkill,
+	AwardInventory:         handleAwardInventory,
+	WarpToRandomPortal:     handleWarpToRandomPortal,
+	WarpToPortal:           handleWarpToPortal,
+	AwardExperience:        handleAwardExperience,
+	AwardLevel:             handleAwardLevel,
+	AwardMesos:             handleAwardMesos,
+	DestroyAsset:           handleDestroyAsset,
+	ChangeJob:              handleChangeJob,
+	CreateSkill:            handleCreateSkill,
+	UpdateSkill:            handleUpdateSkill,
+	ValidateCharacterState: handleValidateCharacterState,
 }
 
 func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
@@ -460,4 +464,31 @@ func TransformExperienceDistributions(source []ExperienceDistributions) []charac
 	}
 
 	return target
+}
+
+// handleValidateCharacterState handles the ValidateCharacterState action
+func handleValidateCharacterState(p *ProcessorImpl, s Saga, st Step[any]) error {
+	// Extract the payload
+	payload, ok := st.Payload.(ValidateCharacterStatePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Call the validation processor
+	result, err := p.validP.ValidateCharacterState(payload.CharacterId, payload.Conditions)
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to validate character state.")
+		return err
+	}
+
+	// Check if validation passed
+	if !result.Passed() {
+		// If validation failed, mark the step as failed
+		err := fmt.Errorf("character state validation failed: %v", result.Details())
+		p.logActionError(s, st, err, "Character state validation failed.")
+		return err
+	}
+
+	// If validation passed, return nil to indicate success
+	return nil
 }

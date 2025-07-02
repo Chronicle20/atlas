@@ -5,6 +5,7 @@ import (
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/character/mock"
 	"atlas-query-aggregator/compartment"
+	"atlas-query-aggregator/guild"
 	"atlas-query-aggregator/inventory"
 	"context"
 	"errors"
@@ -19,6 +20,17 @@ import (
 
 
 // TestValidateConditions tests the condition validation logic directly
+// Helper function to create a test guild for processor tests
+func createTestGuild(id uint32, leaderId uint32) guild.Model {
+	// Create a test guild with the given leader ID
+	rm := guild.RestModel{
+		Id:       id,
+		LeaderId: leaderId,
+	}
+	guildModel, _ := guild.Extract(rm)
+	return guildModel
+}
+
 // Helper function to create a test inventory with items for processor tests
 func createTestInventory(characterId uint32) inventory.Model {
 	// Create a test compartment with items
@@ -326,6 +338,98 @@ func TestProcessorValidateStructured(t *testing.T) {
 			wantDetailsCount: 1,
 			wantError:        false,
 		},
+		{
+			name:        "Guild leader condition - pass",
+			characterId: 123,
+			conditions: []ConditionInput{
+				{Type: "guildLeader", Operator: "=", Value: 1},
+			},
+			setupMock: func(m *mock.ProcessorImpl) {
+				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
+					// If a decorator is provided (GuildDecorator), apply it to the model
+					if len(decorators) > 0 {
+						return func(characterId uint32) (character.Model, error) {
+							// Create a basic character
+							char := character.NewModelBuilder().
+								SetId(characterId).
+								Build()
+
+							// Apply the decorator (which should be GuildDecorator)
+							for _, decorator := range decorators {
+								char = decorator(char)
+							}
+							return char, nil
+						}
+					}
+
+					// Otherwise return a basic character
+					return func(characterId uint32) (character.Model, error) {
+						return character.NewModelBuilder().
+							SetId(characterId).
+							Build(), nil
+					}
+				}
+
+				// Mock the GuildDecorator to add a guild with the character as leader
+				m.GuildDecoratorFunc = func(m character.Model) character.Model {
+					// Create a test guild with the character as leader
+					testGuild := createTestGuild(1, m.Id())
+					return character.NewModelBuilder().
+						SetId(m.Id()).
+						SetGuild(testGuild).
+						Build()
+				}
+			},
+			wantPassed:       true,
+			wantDetailsCount: 1,
+			wantError:        false,
+		},
+		{
+			name:        "Guild leader condition - fail",
+			characterId: 123,
+			conditions: []ConditionInput{
+				{Type: "guildLeader", Operator: "=", Value: 1},
+			},
+			setupMock: func(m *mock.ProcessorImpl) {
+				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
+					// If a decorator is provided (GuildDecorator), apply it to the model
+					if len(decorators) > 0 {
+						return func(characterId uint32) (character.Model, error) {
+							// Create a basic character
+							char := character.NewModelBuilder().
+								SetId(characterId).
+								Build()
+
+							// Apply the decorator (which should be GuildDecorator)
+							for _, decorator := range decorators {
+								char = decorator(char)
+							}
+							return char, nil
+						}
+					}
+
+					// Otherwise return a basic character
+					return func(characterId uint32) (character.Model, error) {
+						return character.NewModelBuilder().
+							SetId(characterId).
+							Build(), nil
+					}
+				}
+
+				// Mock the GuildDecorator to add a guild with a different leader
+				m.GuildDecoratorFunc = func(m character.Model) character.Model {
+					// Create a guild with a different leader
+					testGuild := createTestGuild(1, m.Id() + 1)
+					return character.NewModelBuilder().
+						SetId(m.Id()).
+						SetGuild(testGuild).
+						Build()
+				}
+			},
+			wantPassed:       false,
+			wantDetailsCount: 1,
+			wantError:        false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -336,11 +440,14 @@ func TestProcessorValidateStructured(t *testing.T) {
 				tt.setupMock(mockCharProcessor)
 			}
 
-			// Create a validation processor with the mock character processor
+			// No need for a mock guild processor anymore, as we're using the character decorator pattern
+
+			// Create a validation processor with the mock processors
 			processor := &ProcessorImpl{
 				l:                  logger,
 				ctx:                context.Background(),
 				characterProcessor: mockCharProcessor,
+				inventoryProcessor: inventory.NewProcessor(logger, context.Background()),
 			}
 
 			// Call the ValidateStructured function with decorators
@@ -379,4 +486,3 @@ func TestProcessorValidateStructured(t *testing.T) {
 		})
 	}
 }
-

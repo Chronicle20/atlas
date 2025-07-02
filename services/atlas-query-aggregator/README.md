@@ -19,6 +19,7 @@ A RESTful service that provides composite character state validation in the Atla
 - Map ID validation
 - Fame validation
 - Gender validation (0 = male, 1 = female)
+- Guild leader validation (0 = not a leader, 1 = is a leader)
 
 ## Environment
 
@@ -78,6 +79,11 @@ Validates a set of conditions against a character's state.
           "value": 0
         },
         {
+          "type": "guildLeader",
+          "operator": "=",
+          "value": 1
+        },
+        {
           "type": "item",
           "operator": ">=",
           "value": 10,
@@ -103,6 +109,7 @@ Validates a set of conditions against a character's state.
         "Passed: Map ID = 2000",
         "Passed: Fame >= 50",
         "Passed: Gender = 0",
+        "Passed: Guild Leader = 1",
         "Passed: Item 2000001 quantity >= 10"
       ],
       "results": [
@@ -148,6 +155,14 @@ Validates a set of conditions against a character's state.
         },
         {
           "passed": true,
+          "description": "Guild Leader = 1",
+          "type": "guildLeader",
+          "operator": "=",
+          "value": 1,
+          "actualValue": 1
+        },
+        {
+          "passed": true,
           "description": "Item 2000001 quantity >= 10",
           "type": "item",
           "operator": ">=",
@@ -170,6 +185,7 @@ Validates a set of conditions against a character's state.
 | Map             | mapId=2000                | Character Service (character.MapId)                           |
 | Fame            | fame>=50                  | Character Service (character.Fame)                            |
 | Gender          | gender=0                  | Character Service (character.Gender) - 0=male, 1=female       |
+| Guild Leader    | guildLeader=1             | Guild Service (guild.IsLeader) - 0=not a leader, 1=is a leader|
 | Inventory Item  | item[2000001]>=10         | Inventory Service (quantity of item with template ID 2000001) |
 
 **Supported Operators:**

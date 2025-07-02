@@ -4,6 +4,7 @@ import (
 	"atlas-query-aggregator/asset"
 	"atlas-query-aggregator/compartment"
 	"atlas-query-aggregator/equipment"
+	"atlas-query-aggregator/guild"
 	"atlas-query-aggregator/inventory"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/job"
@@ -47,6 +48,7 @@ type Model struct {
 	meso               uint32
 	equipment          equipment.Model
 	inventory          inventory.Model
+	guild              guild.Model
 }
 
 func (m Model) Gm() bool {
@@ -225,6 +227,10 @@ func (m Model) Inventory() inventory.Model {
 	return m.inventory
 }
 
+func (m Model) Guild() guild.Model {
+	return m.guild
+}
+
 func (m Model) X() int16 {
 	return m.x
 }
@@ -301,6 +307,10 @@ func (m Model) SetInventory(i inventory.Model) Model {
 	return Clone(m).SetInventory(ib.Build()).SetEquipment(eq).Build()
 }
 
+func (m Model) SetGuild(g guild.Model) Model {
+	return Clone(m).SetGuild(g).Build()
+}
+
 func Clone(m Model) *ModelBuilder {
 	return &ModelBuilder{
 		id:                 m.id,
@@ -336,6 +346,7 @@ func Clone(m Model) *ModelBuilder {
 		meso:               m.meso,
 		equipment:          m.equipment,
 		inventory:          m.inventory,
+		guild:              m.guild,
 	}
 }
 
@@ -373,6 +384,7 @@ type ModelBuilder struct {
 	meso               uint32
 	equipment          equipment.Model
 	inventory          inventory.Model
+	guild              guild.Model
 }
 
 func NewModelBuilder() *ModelBuilder {
@@ -412,6 +424,7 @@ func (b *ModelBuilder) SetGm(v int) *ModelBuilder                    { b.gm = v;
 func (b *ModelBuilder) SetMeso(v uint32) *ModelBuilder               { b.meso = v; return b }
 func (b *ModelBuilder) SetEquipment(v equipment.Model) *ModelBuilder { b.equipment = v; return b }
 func (b *ModelBuilder) SetInventory(v inventory.Model) *ModelBuilder { b.inventory = v; return b }
+func (b *ModelBuilder) SetGuild(v guild.Model) *ModelBuilder { b.guild = v; return b }
 
 func (b *ModelBuilder) Build() Model {
 	return Model{
@@ -448,5 +461,6 @@ func (b *ModelBuilder) Build() Model {
 		meso:               b.meso,
 		equipment:          b.equipment,
 		inventory:          b.inventory,
+		guild:              b.guild,
 	}
 }

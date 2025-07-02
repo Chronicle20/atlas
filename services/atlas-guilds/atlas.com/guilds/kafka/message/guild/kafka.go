@@ -19,9 +19,9 @@ const (
 )
 
 type Command[E any] struct {
+	TransactionId uuid.UUID `json:"transactionId"`
 	CharacterId   uint32    `json:"characterId"`
 	Type          string    `json:"type"`
-	TransactionId uuid.UUID `json:"transactionId"`
 	Body          E         `json:"body"`
 }
 

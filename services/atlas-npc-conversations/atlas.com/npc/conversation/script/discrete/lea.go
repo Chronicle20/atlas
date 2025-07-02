@@ -78,7 +78,7 @@ func (r Lea) Confirmation(l logrus.FieldLogger) func(ctx context.Context) func(c
 func (r Lea) ValidateChange(l logrus.FieldLogger) func(ctx context.Context) func(c script.Context) script.State {
 	return func(ctx context.Context) func(c script.Context) script.State {
 		return func(c script.Context) script.State {
-			_ = guild.RequestEmblem(l)(ctx)(c.WorldId, c.ChannelId, c.CharacterId)
+			_ = guild.RequestEmblem(l)(ctx)(c.Field.WorldId(), c.Field.ChannelId(), c.CharacterId)
 			return script.Exit()(l)(ctx)(c)
 		}
 	}

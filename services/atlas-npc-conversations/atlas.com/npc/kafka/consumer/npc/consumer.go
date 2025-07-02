@@ -5,6 +5,10 @@ import (
 	consumer2 "atlas-npc-conversations/kafka/consumer"
 	npc2 "atlas-npc-conversations/kafka/message/npc"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -35,7 +39,7 @@ func handleStartConversationCommand(l logrus.FieldLogger, ctx context.Context, c
 	if c.Type != npc2.CommandTypeStartConversation {
 		return
 	}
-	_ = conversation.NewProcessor(l, ctx).Start(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.NpcId, c.CharacterId)
+	_ = conversation.NewProcessor(l, ctx).Start(field.NewBuilder(world.Id(c.Body.WorldId), channel.Id(c.Body.ChannelId), _map.Id(c.Body.MapId)).Build(), c.NpcId, c.CharacterId)
 }
 
 func handleContinueConversationCommand(l logrus.FieldLogger, ctx context.Context, c npc2.Command[npc2.CommandConversationContinueBody]) {

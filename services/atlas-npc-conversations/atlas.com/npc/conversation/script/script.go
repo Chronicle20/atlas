@@ -3,6 +3,7 @@ package script
 import (
 	"atlas-npc-conversations/npc"
 	"context"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/sirupsen/logrus"
 )
 
@@ -13,10 +14,8 @@ const (
 )
 
 type Context struct {
-	WorldId     byte
-	ChannelId   byte
+	Field       field.Model
 	CharacterId uint32
-	MapId       uint32
 	NPCId       uint32
 }
 
@@ -40,7 +39,7 @@ func Exit() StateProducer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) func(c Context) State {
 		return func(ctx context.Context) func(c Context) State {
 			return func(c Context) State {
-				npc.NewProcessor(l, ctx).Dispose(c.WorldId, c.ChannelId, c.CharacterId)
+				npc.NewProcessor(l, ctx).Dispose(c.Field.WorldId(), c.Field.ChannelId(), c.CharacterId)
 				return nil
 			}
 		}
@@ -50,7 +49,7 @@ func Exit() StateProducer {
 func SendListSelection(l logrus.FieldLogger) func(ctx context.Context) func(c Context, message string, s ProcessSelection) State {
 	return func(ctx context.Context) func(c Context, message string, s ProcessSelection) State {
 		return func(c Context, message string, s ProcessSelection) State {
-			npc.NewProcessor(l, ctx).SendSimple(c.WorldId, c.ChannelId, c.CharacterId, c.NPCId)(message)
+			npc.NewProcessor(l, ctx).SendSimple(c.Field.WorldId(), c.Field.ChannelId(), c.CharacterId, c.NPCId)(message)
 			return doListSelectionExit(Exit(), s)
 
 		}
@@ -60,7 +59,7 @@ func SendListSelection(l logrus.FieldLogger) func(ctx context.Context) func(c Co
 func SendListSelectionExit(l logrus.FieldLogger) func(ctx context.Context) func(c Context, message string, s ProcessSelection, exit StateProducer) State {
 	return func(ctx context.Context) func(c Context, message string, s ProcessSelection, exit StateProducer) State {
 		return func(c Context, message string, s ProcessSelection, exit StateProducer) State {
-			npc.NewProcessor(l, ctx).SendSimple(c.WorldId, c.ChannelId, c.CharacterId, c.NPCId)(message)
+			npc.NewProcessor(l, ctx).SendSimple(c.Field.WorldId(), c.Field.ChannelId(), c.CharacterId, c.NPCId)(message)
 			return doListSelectionExit(exit, s)
 		}
 	}
@@ -112,7 +111,7 @@ func SendYesNoExit(l logrus.FieldLogger) func(ctx context.Context) func(c Contex
 func SendOk(l logrus.FieldLogger) func(ctx context.Context) func(c Context, message string, configurations ...SendTalkConfigurator) State {
 	return func(ctx context.Context) func(c Context, message string, configurations ...SendTalkConfigurator) State {
 		return func(c Context, message string, configurations ...SendTalkConfigurator) State {
-			return sendTalk(l, c, message, configurations, npc.NewProcessor(l, ctx).SendOk(c.WorldId, c.ChannelId, c.CharacterId, c.NPCId), func(exit StateProducer) State { return exit(l)(ctx)(c) })
+			return sendTalk(l, c, message, configurations, npc.NewProcessor(l, ctx).SendOk(c.Field.WorldId(), c.Field.ChannelId(), c.CharacterId, c.NPCId), func(exit StateProducer) State { return exit(l)(ctx)(c) })
 		}
 	}
 }
@@ -132,7 +131,7 @@ func sendTalk(l logrus.FieldLogger, c Context, message string, configurations []
 func SendYesNo(l logrus.FieldLogger) func(ctx context.Context) func(c Context, message string, yes StateProducer, no StateProducer, configurations ...SendTalkConfigurator) State {
 	return func(ctx context.Context) func(c Context, message string, yes StateProducer, no StateProducer, configurations ...SendTalkConfigurator) State {
 		return func(c Context, message string, yes StateProducer, no StateProducer, configurations ...SendTalkConfigurator) State {
-			return sendTalk(l, c, message, configurations, npc.NewProcessor(l, ctx).SendYesNo(c.WorldId, c.ChannelId, c.CharacterId, c.NPCId), doYesNo(yes, no))
+			return sendTalk(l, c, message, configurations, npc.NewProcessor(l, ctx).SendYesNo(c.Field.WorldId(), c.Field.ChannelId(), c.CharacterId, c.NPCId), doYesNo(yes, no))
 		}
 	}
 }
@@ -166,7 +165,7 @@ func SetSendTalkExit(exit StateProducer) SendTalkConfigurator {
 func SendNext(l logrus.FieldLogger) func(ctx context.Context) func(c Context, message string, next StateProducer, configurations ...SendTalkConfigurator) State {
 	return func(ctx context.Context) func(c Context, message string, next StateProducer, configurations ...SendTalkConfigurator) State {
 		return func(c Context, message string, next StateProducer, configurations ...SendTalkConfigurator) State {
-			return sendTalk(l, c, message, configurations, npc.NewProcessor(l, ctx).SendNext(c.WorldId, c.ChannelId, c.CharacterId, c.NPCId), doNext(next))
+			return sendTalk(l, c, message, configurations, npc.NewProcessor(l, ctx).SendNext(c.Field.WorldId(), c.Field.ChannelId(), c.CharacterId, c.NPCId), doNext(next))
 		}
 	}
 }
@@ -197,7 +196,7 @@ func doNext(next StateProducer) ProcessStateFunc {
 func SendNextPrevious(l logrus.FieldLogger) func(ctx context.Context) func(c Context, message string, next StateProducer, previous StateProducer, configurations ...SendTalkConfigurator) State {
 	return func(ctx context.Context) func(c Context, message string, next StateProducer, previous StateProducer, configurations ...SendTalkConfigurator) State {
 		return func(c Context, message string, next StateProducer, previous StateProducer, configurations ...SendTalkConfigurator) State {
-			return sendTalk(l, c, message, configurations, npc.NewProcessor(l, ctx).SendNextPrevious(c.WorldId, c.ChannelId, c.CharacterId, c.NPCId), doNextPrevious(next, previous))
+			return sendTalk(l, c, message, configurations, npc.NewProcessor(l, ctx).SendNextPrevious(c.Field.WorldId(), c.Field.ChannelId(), c.CharacterId, c.NPCId), doNextPrevious(next, previous))
 		}
 	}
 }

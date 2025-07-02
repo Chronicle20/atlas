@@ -4,6 +4,8 @@ import (
 	guild2 "atlas-npc-conversations/kafka/message/guild"
 	"atlas-npc-conversations/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -43,38 +45,38 @@ func HasGuild(l logrus.FieldLogger) func(ctx context.Context) func(characterId u
 	}
 }
 
-func RequestName(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) error {
-		return func(worldId byte, channelId byte, characterId uint32) error {
+func RequestName(l logrus.FieldLogger) func(ctx context.Context) func(worldId world.Id, channelId channel.Id, characterId uint32) error {
+	return func(ctx context.Context) func(worldId world.Id, channelId channel.Id, characterId uint32) error {
+		return func(worldId world.Id, channelId channel.Id, characterId uint32) error {
 			l.Debugf("Requesting character [%d] input guild name for creation.", characterId)
-			return producer.ProviderImpl(l)(ctx)(guild2.EnvCommandTopic)(requestNameProvider(worldId, channelId, characterId))
+			return producer.ProviderImpl(l)(ctx)(guild2.EnvCommandTopic)(requestNameProvider(byte(worldId), byte(channelId), characterId))
 		}
 	}
 }
 
-func RequestEmblem(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) error {
-		return func(worldId byte, channelId byte, characterId uint32) error {
+func RequestEmblem(l logrus.FieldLogger) func(ctx context.Context) func(worldId world.Id, channelId channel.Id, characterId uint32) error {
+	return func(ctx context.Context) func(worldId world.Id, channelId channel.Id, characterId uint32) error {
+		return func(worldId world.Id, channelId channel.Id, characterId uint32) error {
 			l.Debugf("Requesting character [%d] input new guild emblem.", characterId)
-			return producer.ProviderImpl(l)(ctx)(guild2.EnvCommandTopic)(requestEmblemProvider(worldId, channelId, characterId))
+			return producer.ProviderImpl(l)(ctx)(guild2.EnvCommandTopic)(requestEmblemProvider(byte(worldId), byte(channelId), characterId))
 		}
 	}
 }
 
-func RequestDisband(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) error {
-		return func(worldId byte, channelId byte, characterId uint32) error {
+func RequestDisband(l logrus.FieldLogger) func(ctx context.Context) func(worldId world.Id, channelId channel.Id, characterId uint32) error {
+	return func(ctx context.Context) func(worldId world.Id, channelId channel.Id, characterId uint32) error {
+		return func(worldId world.Id, channelId channel.Id, characterId uint32) error {
 			l.Debugf("Character [%d] attempting to disband guild.", characterId)
-			return producer.ProviderImpl(l)(ctx)(guild2.EnvCommandTopic)(requestDisbandProvider(worldId, channelId, characterId))
+			return producer.ProviderImpl(l)(ctx)(guild2.EnvCommandTopic)(requestDisbandProvider(byte(worldId), byte(channelId), characterId))
 		}
 	}
 }
 
-func RequestCapacityIncrease(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) error {
-		return func(worldId byte, channelId byte, characterId uint32) error {
+func RequestCapacityIncrease(l logrus.FieldLogger) func(ctx context.Context) func(worldId world.Id, channelId channel.Id, characterId uint32) error {
+	return func(ctx context.Context) func(worldId world.Id, channelId channel.Id, characterId uint32) error {
+		return func(worldId world.Id, channelId channel.Id, characterId uint32) error {
 			l.Debugf("Character [%d] attempting to increase guild capacity.", characterId)
-			return producer.ProviderImpl(l)(ctx)(guild2.EnvCommandTopic)(requestCapacityIncreaseProvider(worldId, channelId, characterId))
+			return producer.ProviderImpl(l)(ctx)(guild2.EnvCommandTopic)(requestCapacityIncreaseProvider(byte(worldId), byte(channelId), characterId))
 		}
 	}
 }

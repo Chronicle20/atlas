@@ -137,7 +137,7 @@ func (r Heracle) MustBeLeaderToIncrease(l logrus.FieldLogger) func(ctx context.C
 func (r Heracle) ValidateCreate(l logrus.FieldLogger) func(ctx context.Context) func(c script.Context) script.State {
 	return func(ctx context.Context) func(c script.Context) script.State {
 		return func(c script.Context) script.State {
-			guild.RequestName(l)(ctx)(c.WorldId, c.ChannelId, c.CharacterId)
+			guild.RequestName(l)(ctx)(c.Field.WorldId(), c.Field.ChannelId(), c.CharacterId)
 			return script.Exit()(l)(ctx)(c)
 		}
 	}
@@ -146,7 +146,7 @@ func (r Heracle) ValidateCreate(l logrus.FieldLogger) func(ctx context.Context) 
 func (r Heracle) PerformDisband(l logrus.FieldLogger) func(ctx context.Context) func(c script.Context) script.State {
 	return func(ctx context.Context) func(c script.Context) script.State {
 		return func(c script.Context) script.State {
-			guild.RequestDisband(l)(ctx)(c.WorldId, c.ChannelId, c.CharacterId)
+			guild.RequestDisband(l)(ctx)(c.Field.WorldId(), c.Field.ChannelId(), c.CharacterId)
 			return script.Exit()(l)(ctx)(c)
 		}
 	}
@@ -155,7 +155,7 @@ func (r Heracle) PerformDisband(l logrus.FieldLogger) func(ctx context.Context) 
 func (r Heracle) ValidateIncrease(l logrus.FieldLogger) func(ctx context.Context) func(c script.Context) script.State {
 	return func(ctx context.Context) func(c script.Context) script.State {
 		return func(c script.Context) script.State {
-			guild.RequestCapacityIncrease(l)(ctx)(c.WorldId, c.ChannelId, c.CharacterId)
+			guild.RequestCapacityIncrease(l)(ctx)(c.Field.WorldId(), c.Field.ChannelId(), c.CharacterId)
 			return script.Exit()(l)(ctx)(c)
 		}
 	}

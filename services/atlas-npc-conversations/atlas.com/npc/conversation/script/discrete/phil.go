@@ -477,13 +477,13 @@ func (r Phil) PerformTransaction(mapId uint32, cost uint32) script.StateProducer
 					return script.SendNextExit(l)(ctx)(c, m.String(), script.Exit(), script.Exit())
 				}
 
-				_ = character.RequestChangeMeso(l)(ctx)(c.CharacterId, c.WorldId, -int32(cost))
+				_ = character.RequestChangeMeso(l)(ctx)(c.CharacterId, c.Field.WorldId(), -int32(cost))
 
 				return func(l logrus.FieldLogger) func(ctx context.Context) func(c script.Context, mode byte, theType byte, selection int32) script.State {
 					return func(ctx context.Context) func(c script.Context, mode byte, theType byte, selection int32) script.State {
 						return func(c script.Context, mode byte, theType byte, selection int32) script.State {
 							if mode == 0 {
-								_ = character.WarpById(l)(ctx)(c.WorldId, c.ChannelId, c.CharacterId, mapId, 0)
+								_ = character.WarpById(l)(ctx)(c.Field.WorldId(), c.Field.ChannelId(), c.CharacterId, mapId, 0)
 							}
 							return nil
 						}

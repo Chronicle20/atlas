@@ -5,12 +5,13 @@ import (
 	registry2 "atlas-npc-conversations/conversation/script/registry"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
-	Start(worldId byte, channelId byte, mapId uint32, npcId uint32, characterId uint32) error
+	Start(field field.Model, npcId uint32, characterId uint32) error
 	Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32) error
 	ContinueViaEvent(characterId uint32, action byte, referenceId int32) error
 	End(characterId uint32) error
@@ -30,8 +31,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) Start(worldId byte, channelId byte, mapId uint32, npcId uint32, characterId uint32) error {
-	p.l.Debugf("Starting conversation with NPC [%d] with character [%d] in map [%d].", npcId, characterId, mapId)
+func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint32) error {
+	p.l.Debugf("Starting conversation with NPC [%d] with character [%d] in map [%d].", npcId, characterId, field.MapId())
 	pctx, err := GetRegistry().GetPreviousContext(p.t, characterId)
 	if err == nil {
 		p.l.Debugf("Previous conversation between character [%d] and npc [%d] exists, avoiding starting new conversation with [%d].", characterId, pctx.ctx.NPCId, npcId)
@@ -45,10 +46,8 @@ func (p *ProcessorImpl) Start(worldId byte, channelId byte, mapId uint32, npcId 
 	}
 
 	sctx := script.Context{
-		WorldId:     worldId,
-		ChannelId:   channelId,
+		Field:       field,
 		CharacterId: characterId,
-		MapId:       mapId,
 		NPCId:       npcId,
 	}
 	ns := (*s).Initial(p.l)(p.ctx)(sctx)
@@ -71,7 +70,7 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 	sctx := s.ctx
 	state := s.ns
 
-	p.l.Debugf("Continuing conversation with NPC [%d] with character [%d] in map [%d].", sctx.NPCId, characterId, sctx.MapId)
+	p.l.Debugf("Continuing conversation with NPC [%d] with character [%d] in map [%d].", sctx.NPCId, characterId, sctx.Field.MapId())
 	p.l.Debugf("Calling continue for NPC [%d] conversation with: mode [%d], type [%d], selection [%d].", sctx.NPCId, action, lastMessageType, selection)
 	ns := state(p.l)(p.ctx)(sctx, action, lastMessageType, selection)
 	if ns != nil {
@@ -91,7 +90,7 @@ func (p *ProcessorImpl) ContinueViaEvent(characterId uint32, action byte, refere
 	sctx := s.ctx
 	state := s.ns
 
-	p.l.Debugf("Continuing conversation with NPC [%d] with character [%d] in map [%d].", sctx.NPCId, characterId, sctx.MapId)
+	p.l.Debugf("Continuing conversation with NPC [%d] with character [%d] in map [%d].", sctx.NPCId, characterId, sctx.Field.MapId())
 	p.l.Debugf("Calling continue for NPC [%d] conversation with: mode [%d], type [%d], selection [%d].", sctx.NPCId, action, 0, referenceId)
 	ns := state(p.l)(p.ctx)(sctx, action, 0, referenceId)
 	if ns != nil {

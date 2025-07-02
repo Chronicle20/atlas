@@ -1,20 +1,40 @@
 package main
 
 import (
-	"atlas-npc-conversations/configuration"
-	"atlas-npc-conversations/conversation/script/registry"
+	"atlas-npc-conversations/conversation"
+	"atlas-npc-conversations/database"
 	"atlas-npc-conversations/kafka/consumer/character"
 	"atlas-npc-conversations/kafka/consumer/npc"
 	"atlas-npc-conversations/logger"
 	"atlas-npc-conversations/service"
 	"atlas-npc-conversations/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/google/uuid"
+	"github.com/Chronicle20/atlas-rest/server"
 	"os"
 )
 
 const serviceName = "atlas-npc-conversations"
 const consumerGroupId = "NPC Conversation Service"
+
+type Server struct {
+	baseUrl string
+	prefix  string
+}
+
+func (s Server) GetBaseURL() string {
+	return s.baseUrl
+}
+
+func (s Server) GetPrefix() string {
+	return s.prefix
+}
+
+func GetServer() Server {
+	return Server{
+		baseUrl: "",
+		prefix:  "/api/",
+	}
+}
 
 func main() {
 	l := logger.CreateLogger(serviceName)
@@ -27,20 +47,22 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")))
+	db := database.Connect(l, database.SetMigrations(conversation.MigrateTable))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	npc.InitConsumers(l)(cmf)(consumerGroupId)
 
-	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	npc.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	character.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
+	npc.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
 
-	for _, s := range configuration.GetTenantConfigs() {
-		for _, sct := range s.NPCs {
-			registry.GetRegistry().InitScript(uuid.MustParse(s.Id), sct.NPCId, sct.Impl)
-		}
-	}
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(conversation.InitResource(GetServer())(db)).
+		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

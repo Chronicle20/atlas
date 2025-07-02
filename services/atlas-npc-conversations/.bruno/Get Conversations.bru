@@ -1,0 +1,11 @@
+meta {
+  name: Get Conversations
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/npcs/conversations
+  body: none
+  auth: inherit
+}

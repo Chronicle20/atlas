@@ -1,20 +1,14 @@
 package conversation
 
 import (
-	"atlas-npc-conversations/conversation/script"
 	"errors"
 	"github.com/Chronicle20/atlas-tenant"
 	"sync"
 )
 
-type Pair struct {
-	ctx script.Context
-	ns  script.State
-}
-
 type Registry struct {
 	lock       sync.RWMutex
-	registry   map[tenant.Model]map[uint32]Pair
+	registry   map[tenant.Model]map[uint32]ConversationContext
 	tenantLock map[tenant.Model]*sync.RWMutex
 }
 
@@ -31,16 +25,16 @@ func GetRegistry() *Registry {
 func initRegistry() *Registry {
 	s := &Registry{
 		lock:       sync.RWMutex{},
-		registry:   make(map[tenant.Model]map[uint32]Pair),
+		registry:   make(map[tenant.Model]map[uint32]ConversationContext),
 		tenantLock: make(map[tenant.Model]*sync.RWMutex),
 	}
 	return s
 }
 
-func (s *Registry) GetPreviousContext(t tenant.Model, characterId uint32) (*Pair, error) {
+func (s *Registry) GetPreviousContext(t tenant.Model, characterId uint32) (ConversationContext, error) {
 	s.lock.Lock()
 	if _, ok := s.registry[t]; !ok {
-		s.registry[t] = make(map[uint32]Pair)
+		s.registry[t] = make(map[uint32]ConversationContext)
 		s.tenantLock[t] = &sync.RWMutex{}
 	}
 	tl := s.tenantLock[t]
@@ -49,30 +43,30 @@ func (s *Registry) GetPreviousContext(t tenant.Model, characterId uint32) (*Pair
 	tl.RLock()
 	if val, ok := s.registry[t][characterId]; ok {
 		tl.RUnlock()
-		return &val, nil
+		return val, nil
 	}
 	tl.RUnlock()
-	return nil, errors.New("unable to previous context")
+	return ConversationContext{}, errors.New("unable to previous context")
 }
 
-func (s *Registry) SetContext(t tenant.Model, characterId uint32, ctx script.Context, ns script.State) {
+func (s *Registry) SetContext(t tenant.Model, characterId uint32, ctx ConversationContext) {
 	s.lock.Lock()
 	if _, ok := s.registry[t]; !ok {
-		s.registry[t] = make(map[uint32]Pair)
+		s.registry[t] = make(map[uint32]ConversationContext)
 		s.tenantLock[t] = &sync.RWMutex{}
 	}
 	tl := s.tenantLock[t]
 	s.lock.Unlock()
 
 	tl.Lock()
-	s.registry[t][characterId] = Pair{ctx, ns}
+	s.registry[t][characterId] = ctx
 	tl.Unlock()
 }
 
 func (s *Registry) ClearContext(t tenant.Model, characterId uint32) {
 	s.lock.Lock()
 	if _, ok := s.registry[t]; !ok {
-		s.registry[t] = make(map[uint32]Pair)
+		s.registry[t] = make(map[uint32]ConversationContext)
 		s.tenantLock[t] = &sync.RWMutex{}
 	}
 	tl := s.tenantLock[t]

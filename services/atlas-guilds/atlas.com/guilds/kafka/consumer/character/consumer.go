@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -33,28 +34,28 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 }
 
 func handleStatusEventLogin(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventLoginBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventLoginBody]) {
-		if event.Type != EventCharacterStatusTypeLogin {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventLoginBody]) {
+		if e.Type != EventCharacterStatusTypeLogin {
 			return
 		}
 
-		err := guild.UpdateMemberOnline(l)(ctx)(db)(event.CharacterId, true)
+		err := guild.NewProcessor(l, ctx, db).UpdateMemberOnline(e.CharacterId, true, uuid.New())
 		if err != nil {
-			l.WithError(err).Errorf("Unable to process login for character [%d].", event.CharacterId)
+			l.WithError(err).Errorf("Unable to process login for character [%d].", e.CharacterId)
 		}
 	}
 }
 
 func handleStatusEventLogout(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventLogoutBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventLogoutBody]) {
-		if event.Type != EventCharacterStatusTypeLogout {
+	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventLogoutBody]) {
+		if e.Type != EventCharacterStatusTypeLogout {
 			return
 
 		}
 
-		err := guild.UpdateMemberOnline(l)(ctx)(db)(event.CharacterId, false)
+		err := guild.NewProcessor(l, ctx, db).UpdateMemberOnline(e.CharacterId, false, uuid.New())
 		if err != nil {
-			l.WithError(err).Errorf("Unable to process logout for character [%d].", event.CharacterId)
+			l.WithError(err).Errorf("Unable to process logout for character [%d].", e.CharacterId)
 		}
 	}
 }

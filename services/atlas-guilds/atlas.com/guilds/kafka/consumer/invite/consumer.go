@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -40,7 +41,7 @@ func handleAcceptedInvite(db *gorm.DB) message.Handler[statusEvent[acceptedEvent
 			return
 		}
 
-		err := guild.Join(l)(ctx)(db)(e.ReferenceId, e.Body.TargetId)
+		err := guild.NewProcessor(l, ctx, db).Join(e.ReferenceId, e.Body.TargetId, uuid.New())
 		if err != nil {
 			l.WithError(err).Errorf("Character [%d] unable to join party [%d].", e.Body.TargetId, e.ReferenceId)
 		}

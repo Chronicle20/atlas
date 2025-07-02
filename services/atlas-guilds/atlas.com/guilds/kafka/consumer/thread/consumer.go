@@ -42,11 +42,11 @@ func handleCommandCreate(db *gorm.DB) message.Handler[command[createCommandBody]
 		if c.Type != CommandTypeCreate {
 			return
 		}
-		g, err := guild.GetById(l)(ctx)(db)(c.GuildId)
+		g, err := guild.NewProcessor(l, ctx, db).GetById(c.GuildId)
 		if err != nil {
 			return
 		}
-		_, _ = thread.Create(l)(ctx)(db)(g.WorldId(), g.Id(), c.CharacterId, c.Body.Title, c.Body.Message, c.Body.EmoticonId, c.Body.Notice)
+		_, _ = thread.NewProcessor(l, ctx, db).Create(g.WorldId(), g.Id(), c.CharacterId, c.Body.Title, c.Body.Message, c.Body.EmoticonId, c.Body.Notice)
 	}
 }
 
@@ -55,11 +55,11 @@ func handleCommandUpdate(db *gorm.DB) message.Handler[command[updateCommandBody]
 		if c.Type != CommandTypeUpdate {
 			return
 		}
-		g, err := guild.GetById(l)(ctx)(db)(c.GuildId)
+		g, err := guild.NewProcessor(l, ctx, db).GetById(c.GuildId)
 		if err != nil {
 			return
 		}
-		_, _ = thread.Update(l)(ctx)(db)(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId, c.Body.Title, c.Body.Message, c.Body.EmoticonId, c.Body.Notice)
+		_, _ = thread.NewProcessor(l, ctx, db).Update(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId, c.Body.Title, c.Body.Message, c.Body.EmoticonId, c.Body.Notice)
 	}
 }
 
@@ -68,11 +68,11 @@ func handleCommandDelete(db *gorm.DB) message.Handler[command[deleteCommandBody]
 		if c.Type != CommandTypeDelete {
 			return
 		}
-		g, err := guild.GetById(l)(ctx)(db)(c.GuildId)
+		g, err := guild.NewProcessor(l, ctx, db).GetById(c.GuildId)
 		if err != nil {
 			return
 		}
-		_ = thread.Delete(l)(ctx)(db)(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId)
+		_ = thread.NewProcessor(l, ctx, db).Delete(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId)
 	}
 }
 
@@ -81,11 +81,11 @@ func handleCommandAddReply(db *gorm.DB) message.Handler[command[addReplyCommandB
 		if c.Type != CommandTypeAddReply {
 			return
 		}
-		g, err := guild.GetById(l)(ctx)(db)(c.GuildId)
+		g, err := guild.NewProcessor(l, ctx, db).GetById(c.GuildId)
 		if err != nil {
 			return
 		}
-		_, _ = thread.Reply(l)(ctx)(db)(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId, c.Body.Message)
+		_, _ = thread.NewProcessor(l, ctx, db).Reply(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId, c.Body.Message)
 	}
 }
 
@@ -94,10 +94,10 @@ func handleCommandDeleteReply(db *gorm.DB) message.Handler[command[deleteReplyCo
 		if c.Type != CommandTypeDeleteReply {
 			return
 		}
-		g, err := guild.GetById(l)(ctx)(db)(c.GuildId)
+		g, err := guild.NewProcessor(l, ctx, db).GetById(c.GuildId)
 		if err != nil {
 			return
 		}
-		_, _ = thread.DeleteReply(l)(ctx)(db)(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId, c.Body.ReplyId)
+		_, _ = thread.NewProcessor(l, ctx, db).DeleteReply(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId, c.Body.ReplyId)
 	}
 }

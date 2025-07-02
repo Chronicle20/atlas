@@ -4,6 +4,7 @@ import (
 	"atlas-guilds/coordinator"
 	"context"
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"gorm.io/gorm"
@@ -39,7 +40,7 @@ func (t *Timeout) Run() {
 	for _, g := range gs {
 		t.l.Infof("Guild creation coordination expired for guild [%s].", g.Name())
 		tctx := tenant.WithContext(sctx, g.Tenant())
-		_ = CreationAgreementResponse(t.l)(tctx)(t.db)(g.LeaderId(), false)
+		_ = NewProcessor(t.l, tctx, t.db).CreationAgreementResponse(g.LeaderId(), false, uuid.New())
 	}
 }
 

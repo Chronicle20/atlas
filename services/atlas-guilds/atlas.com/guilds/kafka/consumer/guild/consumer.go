@@ -46,7 +46,7 @@ func handleCommandRequestCreate(db *gorm.DB) message.Handler[command[requestCrea
 			return
 		}
 
-		_ = guild.RequestCreate(l)(ctx)(db)(c.CharacterId, c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.Body.Name)
+		_ = guild.NewProcessor(l, ctx, db).RequestCreate(c.CharacterId, c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.Body.Name, c.TransactionId)
 	}
 }
 
@@ -56,7 +56,7 @@ func handleCommandCreationAgreement(db *gorm.DB) message.Handler[command[creatio
 			return
 		}
 
-		_ = guild.CreationAgreementResponse(l)(ctx)(db)(c.CharacterId, c.Body.Agreed)
+		_ = guild.NewProcessor(l, ctx, db).CreationAgreementResponse(c.CharacterId, c.Body.Agreed, c.TransactionId)
 	}
 }
 
@@ -66,7 +66,7 @@ func handleCommandChangeEmblem(db *gorm.DB) message.Handler[command[changeEmblem
 			return
 		}
 
-		_ = guild.ChangeEmblem(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.Logo, c.Body.LogoColor, c.Body.LogoBackground, c.Body.LogoBackgroundColor)
+		_ = guild.NewProcessor(l, ctx, db).ChangeEmblem(c.Body.GuildId, c.CharacterId, c.Body.Logo, c.Body.LogoColor, c.Body.LogoBackground, c.Body.LogoBackgroundColor, c.TransactionId)
 	}
 }
 
@@ -76,7 +76,7 @@ func handleCommandChangeNotice(db *gorm.DB) message.Handler[command[changeNotice
 			return
 		}
 
-		_ = guild.ChangeNotice(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.Notice)
+		_ = guild.NewProcessor(l, ctx, db).ChangeNotice(c.Body.GuildId, c.CharacterId, c.Body.Notice, c.TransactionId)
 	}
 }
 
@@ -86,7 +86,7 @@ func handleCommandLeave(db *gorm.DB) message.Handler[command[leaveBody]] {
 			return
 		}
 
-		_ = guild.Leave(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.Force)
+		_ = guild.NewProcessor(l, ctx, db).Leave(c.Body.GuildId, c.CharacterId, c.Body.Force, c.TransactionId)
 	}
 }
 
@@ -96,7 +96,7 @@ func handleCommandRequestInvite(db *gorm.DB) message.Handler[command[requestInvi
 			return
 		}
 
-		_ = guild.RequestInvite(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.TargetId)
+		_ = guild.NewProcessor(l, ctx, db).RequestInvite(c.Body.GuildId, c.CharacterId, c.Body.TargetId)
 	}
 }
 
@@ -106,7 +106,7 @@ func handleCommandChangeTitles(db *gorm.DB) message.Handler[command[changeTitles
 			return
 		}
 
-		_ = guild.ChangeTitles(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.Titles)
+		_ = guild.NewProcessor(l, ctx, db).ChangeTitles(c.Body.GuildId, c.CharacterId, c.Body.Titles, c.TransactionId)
 	}
 }
 
@@ -116,7 +116,7 @@ func handleCommandChangeMemberTitle(db *gorm.DB) message.Handler[command[changeM
 			return
 		}
 
-		_ = guild.ChangeMemberTitle(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.TargetId, c.Body.Title)
+		_ = guild.NewProcessor(l, ctx, db).ChangeMemberTitle(c.Body.GuildId, c.CharacterId, c.Body.TargetId, c.Body.Title, c.TransactionId)
 	}
 }
 
@@ -126,7 +126,7 @@ func handleCommandRequestDisband(db *gorm.DB) message.Handler[command[requestDis
 			return
 		}
 
-		_ = guild.RequestDisband(l)(ctx)(db)(c.CharacterId)
+		_ = guild.NewProcessor(l, ctx, db).RequestDisband(c.CharacterId, c.TransactionId)
 	}
 }
 
@@ -136,6 +136,6 @@ func handleCommandRequestCapacityIncrease(db *gorm.DB) message.Handler[command[r
 			return
 		}
 
-		_ = guild.RequestCapacityIncrease(l)(ctx)(db)(c.CharacterId)
+		_ = guild.NewProcessor(l, ctx, db).RequestCapacityIncrease(c.CharacterId, c.TransactionId)
 	}
 }

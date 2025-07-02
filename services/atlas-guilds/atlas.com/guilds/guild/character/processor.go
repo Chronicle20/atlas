@@ -9,46 +9,48 @@ import (
 	"gorm.io/gorm"
 )
 
-func byIdProvider(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) model.Provider[Model] {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) model.Provider[Model] {
-		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(characterId uint32) model.Provider[Model] {
-			return func(characterId uint32) model.Provider[Model] {
-				return model.Map(Make)(getById(t.Id(), characterId)(db))
-			}
-		}
+type Processor interface {
+	ByIdProvider(characterId uint32) model.Provider[Model]
+	GetById(characterId uint32) (Model, error)
+	SetGuild(characterId uint32, guildId uint32) error
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
+	t   tenant.Model
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+		db:  db,
+		t:   tenant.MustFromContext(ctx),
 	}
 }
 
-func GetById(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) (Model, error) {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32) (Model, error) {
-		return func(db *gorm.DB) func(characterId uint32) (Model, error) {
-			return func(characterId uint32) (Model, error) {
-				return byIdProvider(l)(ctx)(db)(characterId)()
-			}
-		}
-	}
+func (p *ProcessorImpl) ByIdProvider(characterId uint32) model.Provider[Model] {
+	return model.Map(Make)(getById(p.t.Id(), characterId)(p.db))
 }
 
-func SetGuild(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, guildId uint32) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(characterId uint32, guildId uint32) error {
-		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(characterId uint32, guildId uint32) error {
-			return func(characterId uint32, guildId uint32) error {
-				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
-					c, _ := getById(t.Id(), characterId)(tx)()
-					if c.GuildId != 0 {
-						c.GuildId = guildId
-						return tx.Save(&c).Error
-					}
-					c = Entity{
-						TenantId:    t.Id(),
-						CharacterId: characterId,
-						GuildId:     guildId,
-					}
-					return tx.Save(&c).Error
-				})
-			}
+func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
+	return p.ByIdProvider(characterId)()
+}
+
+func (p *ProcessorImpl) SetGuild(characterId uint32, guildId uint32) error {
+	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		c, _ := getById(p.t.Id(), characterId)(tx)()
+		if c.GuildId != 0 {
+			c.GuildId = guildId
+			return tx.Save(&c).Error
 		}
-	}
+		c = Entity{
+			TenantId:    p.t.Id(),
+			CharacterId: characterId,
+			GuildId:     guildId,
+		}
+		return tx.Save(&c).Error
+	})
 }

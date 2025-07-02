@@ -1,5 +1,9 @@
 package guild
 
+import (
+	"github.com/google/uuid"
+)
+
 const (
 	EnvStatusEventTopic                = "EVENT_TOPIC_GUILD_STATUS"
 	StatusEventTypeCreated             = "CREATED"
@@ -17,10 +21,11 @@ const (
 )
 
 type statusEvent[E any] struct {
-	WorldId byte   `json:"worldId"`
-	GuildId uint32 `json:"guildId"`
-	Type    string `json:"type"`
-	Body    E      `json:"body"`
+	WorldId       byte      `json:"worldId"`
+	GuildId       uint32    `json:"guildId"`
+	Type          string    `json:"type"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	Body          E         `json:"body"`
 }
 
 type statusEventRequestAgreementBody struct {

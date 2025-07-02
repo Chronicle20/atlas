@@ -1,5 +1,9 @@
 package guild
 
+import (
+	"github.com/google/uuid"
+)
+
 const (
 	EnvCommandTopic                    = "COMMAND_TOPIC_GUILD"
 	CommandTypeRequestCreate           = "REQUEST_CREATE"
@@ -15,9 +19,10 @@ const (
 )
 
 type command[E any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	CharacterId  uint32    `json:"characterId"`
+	Type         string    `json:"type"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	Body         E         `json:"body"`
 }
 
 type requestCreateBody struct {

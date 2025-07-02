@@ -7,18 +7,26 @@ A RESTful resource which provides guilds services.
 
 ## Environment
 
-- JAEGER_HOST - Jaeger [host]:[port]
+### Configuration
+- JAEGER_HOST_PORT - Jaeger [host]:[port] for distributed tracing
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
+
+### Database
 - DB_USER - Postgres user name
 - DB_PASSWORD - Postgres user password
 - DB_HOST - Postgres Database host
 - DB_PORT - Postgres Database port
 - DB_NAME - Postgres Database name
-- BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
+
+### Kafka
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
+
+#### Command Topics
 - COMMAND_TOPIC_GUILD - Kafka topic for transmitting Guild commands
 - COMMAND_TOPIC_GUILD_THREAD - Kafka topic for transmitting Guild Thread commands
 - COMMAND_TOPIC_INVITE - Kafka topic for transmitting Invite commands
+
+#### Event Topics
 - EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for receiving Character status events
 - EVENT_TOPIC_INVITE_STATUS - Kafka Topic for receiving Invite status events
 - EVENT_TOPIC_GUILD_STATUS - Kafka Topic for receiving Guild status events
@@ -36,5 +44,22 @@ REGION:GMS
 MAJOR_VERSION:83
 MINOR_VERSION:1
 ```
+
+### Endpoints
+
+#### Guild Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/guilds` | Get all guilds |
+| GET | `/guilds?filter[members.id]={memberId}` | Get guilds by member ID |
+| GET | `/guilds/{guildId}` | Get a specific guild by ID |
+
+#### Thread Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/guilds/{guildId}/threads` | Get all threads for a specific guild |
+| GET | `/guilds/{guildId}/threads/{threadId}` | Get a specific thread by ID for a specific guild |
 
 ### Requests

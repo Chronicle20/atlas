@@ -37,7 +37,7 @@ func handleGetGuilds(db *gorm.DB) rest.GetHandler {
 				filters = append(filters, MemberFilter(uint32(memberId)))
 			}
 
-			gs, err := GetSlice(d.Logger())(d.Context())(db)(filters...)
+			gs, err := NewProcessor(d.Logger(), d.Context(), db).GetSlice(filters...)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -50,7 +50,10 @@ func handleGetGuilds(db *gorm.DB) rest.GetHandler {
 				return
 			}
 
-			server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			// Marshal response
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	}
 }
@@ -59,7 +62,7 @@ func handleGetGuild(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseGuildId(d.Logger(), func(guildId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				g, err := GetById(d.Logger())(d.Context())(db)(guildId)
+				g, err := NewProcessor(d.Logger(), d.Context(), db).GetById(guildId)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -71,8 +74,11 @@ func handleGetGuild(db *gorm.DB) rest.GetHandler {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
-
-				server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				
+				// Marshal response
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
 		})
 	}

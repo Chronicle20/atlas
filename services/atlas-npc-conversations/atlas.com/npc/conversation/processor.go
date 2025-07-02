@@ -1,8 +1,6 @@
 package conversation
 
 import (
-	"atlas-npc-conversations/conversation/script"
-	registry2 "atlas-npc-conversations/conversation/script/registry"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/field"
@@ -33,71 +31,75 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint32) error {
 	p.l.Debugf("Starting conversation with NPC [%d] with character [%d] in map [%d].", npcId, characterId, field.MapId())
-	pctx, err := GetRegistry().GetPreviousContext(p.t, characterId)
+	prvNpcId := 0
+	_, err := GetRegistry().GetPreviousContext(p.t, characterId)
 	if err == nil {
-		p.l.Debugf("Previous conversation between character [%d] and npc [%d] exists, avoiding starting new conversation with [%d].", characterId, pctx.ctx.NPCId, npcId)
+		p.l.Debugf("Previous conversation between character [%d] and npc [%d] exists, avoiding starting new conversation with [%d].", characterId, prvNpcId, npcId)
 		return errors.New("another conversation exists")
 	}
 
-	s, err := registry2.GetRegistry().GetScript(p.t, npcId)
-	if err != nil {
-		p.l.Errorf("Script for npc [%d] is not implemented.", npcId)
-		return errors.New("not implemented")
-	}
+	// TODO get conversation
 
-	sctx := script.Context{
-		Field:       field,
-		CharacterId: characterId,
-		NPCId:       npcId,
-	}
-	ns := (*s).Initial(p.l)(p.ctx)(sctx)
+	//sctx := script.Context{
+	//	Field:       field,
+	//	CharacterId: characterId,
+	//	NPCId:       npcId,
+	//}
 
-	if ns != nil {
-		GetRegistry().SetContext(p.t, characterId, sctx, ns)
-	} else {
-		GetRegistry().ClearContext(p.t, characterId)
-	}
+	// TODO process first conversation state
+	// TODO progress state or clear context if conversation is done
+
+	//if ns != nil {
+	//	GetRegistry().SetContext(p.t, characterId, sctx, ns)
+	//} else {
+	//	GetRegistry().ClearContext(p.t, characterId)
+	//}
 
 	return nil
 }
 
 func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32) error {
-	s, err := GetRegistry().GetPreviousContext(p.t, characterId)
+	_, err := GetRegistry().GetPreviousContext(p.t, characterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve conversation context for [%d].", characterId)
 		return errors.New("conversation context not found")
 	}
-	sctx := s.ctx
-	state := s.ns
+	// TODO process next converstation state
+	// TODO progress state or clear context if conversation is done
 
-	p.l.Debugf("Continuing conversation with NPC [%d] with character [%d] in map [%d].", sctx.NPCId, characterId, sctx.Field.MapId())
-	p.l.Debugf("Calling continue for NPC [%d] conversation with: mode [%d], type [%d], selection [%d].", sctx.NPCId, action, lastMessageType, selection)
-	ns := state(p.l)(p.ctx)(sctx, action, lastMessageType, selection)
-	if ns != nil {
-		GetRegistry().SetContext(p.t, characterId, sctx, ns)
-	} else {
-		GetRegistry().ClearContext(p.t, characterId)
-	}
+	//sctx := s.ctx
+	//state := s.ns
+	//
+	//p.l.Debugf("Continuing conversation with NPC [%d] with character [%d] in map [%d].", sctx.NPCId, characterId, sctx.Field.MapId())
+	//p.l.Debugf("Calling continue for NPC [%d] conversation with: mode [%d], type [%d], selection [%d].", sctx.NPCId, action, lastMessageType, selection)
+	//ns := state(p.l)(p.ctx)(sctx, action, lastMessageType, selection)
+	//if ns != nil {
+	//	GetRegistry().SetContext(p.t, characterId, sctx, ns)
+	//} else {
+	//	GetRegistry().ClearContext(p.t, characterId)
+	//}
 	return nil
 }
 
 func (p *ProcessorImpl) ContinueViaEvent(characterId uint32, action byte, referenceId int32) error {
-	s, err := GetRegistry().GetPreviousContext(p.t, characterId)
+	_, err := GetRegistry().GetPreviousContext(p.t, characterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve conversation context for [%d].", characterId)
 		return errors.New("conversation context not found")
 	}
-	sctx := s.ctx
-	state := s.ns
-
-	p.l.Debugf("Continuing conversation with NPC [%d] with character [%d] in map [%d].", sctx.NPCId, characterId, sctx.Field.MapId())
-	p.l.Debugf("Calling continue for NPC [%d] conversation with: mode [%d], type [%d], selection [%d].", sctx.NPCId, action, 0, referenceId)
-	ns := state(p.l)(p.ctx)(sctx, action, 0, referenceId)
-	if ns != nil {
-		GetRegistry().SetContext(p.t, characterId, sctx, ns)
-	} else {
-		GetRegistry().ClearContext(p.t, characterId)
-	}
+	// TODO process next converstation state
+	// TODO progress state or clear context if conversation is done
+	//sctx := s.ctx
+	//state := s.ns
+	//
+	//p.l.Debugf("Continuing conversation with NPC [%d] with character [%d] in map [%d].", sctx.NPCId, characterId, sctx.Field.MapId())
+	//p.l.Debugf("Calling continue for NPC [%d] conversation with: mode [%d], type [%d], selection [%d].", sctx.NPCId, action, 0, referenceId)
+	//ns := state(p.l)(p.ctx)(sctx, action, 0, referenceId)
+	//if ns != nil {
+	//	GetRegistry().SetContext(p.t, characterId, sctx, ns)
+	//} else {
+	//	GetRegistry().ClearContext(p.t, characterId)
+	//}
 	return nil
 }
 

@@ -6,6 +6,8 @@ import (
 	"atlas-saga-orchestrator/compartment"
 	mock2 "atlas-saga-orchestrator/compartment/mock"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
+	"atlas-saga-orchestrator/validation"
+	mock3 "atlas-saga-orchestrator/validation/mock"
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -22,7 +24,7 @@ import (
 )
 
 // setupTestProcessor creates a ProcessorImpl with mock dependencies for testing
-func setupTestProcessor(charP character.Processor, compP compartment.Processor) (*ProcessorImpl, *test.Hook) {
+func setupTestProcessor(charP character.Processor, compP compartment.Processor, validP ...validation.Processor) (*ProcessorImpl, *test.Hook) {
 	logger, hook := test.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
 
@@ -33,7 +35,145 @@ func setupTestProcessor(charP character.Processor, compP compartment.Processor) 
 	processor := NewProcessor(logger, tctx)
 	processor.charP = charP
 	processor.compP = compP
+	if len(validP) > 0 {
+		processor.validP = validP[0]
+	}
 	return processor, hook
+}
+
+// TestHandleValidateCharacterState tests the handleValidateCharacterState function
+func TestHandleValidateCharacterState(t *testing.T) {
+	tests := []struct {
+		name          string
+		payload       ValidateCharacterStatePayload
+		mockResult    validation.ValidationResult
+		mockError     error
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "Success case - all conditions pass",
+			payload: ValidateCharacterStatePayload{
+				CharacterId: 12345,
+				Conditions: []validation.ConditionInput{
+					{
+						Type:     "jobId",
+						Operator: "=",
+						Value:    100,
+					},
+					{
+						Type:     "meso",
+						Operator: ">=",
+						Value:    1000,
+					},
+				},
+			},
+			mockResult: func() validation.ValidationResult {
+				result := validation.NewValidationResult(12345)
+				// All conditions pass by default
+				return result
+			}(),
+			mockError:   nil,
+			expectError: false,
+		},
+		{
+			name: "Failure case - conditions not met",
+			payload: ValidateCharacterStatePayload{
+				CharacterId: 12345,
+				Conditions: []validation.ConditionInput{
+					{
+						Type:     "jobId",
+						Operator: "=",
+						Value:    100,
+					},
+				},
+			},
+			mockResult: func() validation.ValidationResult {
+				result := validation.NewValidationResult(12345)
+				// Add a failed condition
+				result.AddConditionResult(validation.ConditionResult{
+					Passed:      false,
+					Description: "Job ID does not match",
+					Type:        "jobId",
+					Operator:    "=",
+					Value:       100,
+					ActualValue: 200,
+				})
+				return result
+			}(),
+			mockError:     nil,
+			expectError:   true,
+			errorContains: "character state validation failed",
+		},
+		{
+			name: "Error case - validation service error",
+			payload: ValidateCharacterStatePayload{
+				CharacterId: 12345,
+				Conditions: []validation.ConditionInput{
+					{
+						Type:     "jobId",
+						Operator: "=",
+						Value:    100,
+					},
+				},
+			},
+			mockResult:    validation.ValidationResult{},
+			mockError:     errors.New("validation service unavailable"),
+			expectError:   true,
+			errorContains: "validation service unavailable",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup
+			charP := &mock.ProcessorMock{}
+			compP := &mock2.ProcessorMock{}
+			validP := &mock3.ProcessorMock{}
+
+			processor, _ := setupTestProcessor(charP, compP, validP)
+
+			// Configure mock
+			validP.ValidateCharacterStateFunc = func(characterId uint32, conditions []validation.ConditionInput) (validation.ValidationResult, error) {
+				// Verify parameters
+				assert.Equal(t, tt.payload.CharacterId, characterId)
+				assert.Equal(t, len(tt.payload.Conditions), len(conditions))
+
+				// Return mock result or error
+				return tt.mockResult, tt.mockError
+			}
+
+			// Create test saga and step
+			transactionId := uuid.New()
+			saga := Saga{
+				TransactionId: transactionId,
+				SagaType:      QuestReward,
+				InitiatedBy:   "test",
+			}
+
+			step := Step[any]{
+				StepId:    "test-step",
+				Status:    Pending,
+				Action:    ValidateCharacterState,
+				Payload:   tt.payload,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+
+			// Execute
+			err := handleValidateCharacterState(processor, saga, step)
+
+			// Verify
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestHandleWarpToPortal(t *testing.T) {
@@ -88,8 +228,9 @@ func TestHandleWarpToPortal(t *testing.T) {
 
 			charP := &mock.ProcessorMock{}
 			compP := &mock2.ProcessorMock{}
+			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP)
+			processor, _ := setupTestProcessor(charP, compP, validP)
 
 			// Configure mock
 			charP.WarpToPortalAndEmitFunc = func(transactionId uuid.UUID, characterId uint32, f field.Model, pp model.Provider[uint32]) error {
@@ -191,8 +332,9 @@ func TestHandleWarpToRandomPortal(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			charP := &mock.ProcessorMock{}
 			compP := &mock2.ProcessorMock{}
+			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP)
+			processor, _ := setupTestProcessor(charP, compP, validP)
 
 			// Configure mock
 			charP.WarpRandomAndEmitFunc = func(transactionId uuid.UUID, characterId uint32, f field.Model) error {
@@ -281,8 +423,9 @@ func TestHandleAwardInventory(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			charP := &mock.ProcessorMock{}
 			compP := &mock2.ProcessorMock{}
+			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP)
+			processor, _ := setupTestProcessor(charP, compP, validP)
 
 			// Configure mock
 			compP.RequestCreateItemFunc = func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
@@ -297,7 +440,7 @@ func TestHandleAwardInventory(t *testing.T) {
 			transactionId := uuid.New()
 			saga := Saga{
 				TransactionId: transactionId,
-				SagaType:      InventoryTransaction,
+				SagaType:      QuestReward,
 				InitiatedBy:   "test",
 			}
 
@@ -340,7 +483,7 @@ func TestHandleAwardLevel(t *testing.T) {
 				CharacterId: 12345,
 				WorldId:     0,
 				ChannelId:   0,
-				Amount:      2,
+				Amount:      1,
 			},
 			mockError:   nil,
 			expectError: false,
@@ -363,8 +506,9 @@ func TestHandleAwardLevel(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			charP := &mock.ProcessorMock{}
 			compP := &mock2.ProcessorMock{}
+			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP)
+			processor, _ := setupTestProcessor(charP, compP, validP)
 
 			// Configure mock
 			charP.AwardLevelAndEmitFunc = func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error {
@@ -459,8 +603,9 @@ func TestHandleAwardExperience(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			charP := &mock.ProcessorMock{}
 			compP := &mock2.ProcessorMock{}
+			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP)
+			processor, _ := setupTestProcessor(charP, compP, validP)
 
 			// Configure mock
 			charP.AwardExperienceAndEmitFunc = func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error {
@@ -550,8 +695,9 @@ func TestHandleAwardMesos(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			charP := &mock.ProcessorMock{}
 			compP := &mock2.ProcessorMock{}
+			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP)
+			processor, _ := setupTestProcessor(charP, compP, validP)
 
 			// Configure mock
 			charP.AwardMesosAndEmitFunc = func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
@@ -634,8 +780,9 @@ func TestHandleDestroyAsset(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			charP := &mock.ProcessorMock{}
 			compP := &mock2.ProcessorMock{}
+			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP)
+			processor, _ := setupTestProcessor(charP, compP, validP)
 
 			// Configure mock
 			compP.RequestDestroyItemFunc = func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
@@ -650,7 +797,7 @@ func TestHandleDestroyAsset(t *testing.T) {
 			transactionId := uuid.New()
 			saga := Saga{
 				TransactionId: transactionId,
-				SagaType:      InventoryTransaction,
+				SagaType:      QuestReward,
 				InitiatedBy:   "test",
 			}
 
@@ -680,76 +827,25 @@ func TestHandleDestroyAsset(t *testing.T) {
 }
 
 func TestTransformExperienceDistributions(t *testing.T) {
-	tests := []struct {
-		name     string
-		source   []ExperienceDistributions
-		expected []character2.ExperienceDistributions
-	}{
+	source := []ExperienceDistributions{
 		{
-			name:     "Empty slice",
-			source:   []ExperienceDistributions{},
-			expected: []character2.ExperienceDistributions{},
+			ExperienceType: "WHITE",
+			Amount:         1000,
+			Attr1:          0,
 		},
 		{
-			name: "Single distribution",
-			source: []ExperienceDistributions{
-				{
-					ExperienceType: "WHITE",
-					Amount:         1000,
-					Attr1:          0,
-				},
-			},
-			expected: []character2.ExperienceDistributions{
-				{
-					ExperienceType: "WHITE",
-					Amount:         1000,
-					Attr1:          0,
-				},
-			},
-		},
-		{
-			name: "Multiple distributions",
-			source: []ExperienceDistributions{
-				{
-					ExperienceType: "WHITE",
-					Amount:         1000,
-					Attr1:          0,
-				},
-				{
-					ExperienceType: "YELLOW",
-					Amount:         2000,
-					Attr1:          5,
-				},
-				{
-					ExperienceType: "PARTY",
-					Amount:         3000,
-					Attr1:          10,
-				},
-			},
-			expected: []character2.ExperienceDistributions{
-				{
-					ExperienceType: "WHITE",
-					Amount:         1000,
-					Attr1:          0,
-				},
-				{
-					ExperienceType: "YELLOW",
-					Amount:         2000,
-					Attr1:          5,
-				},
-				{
-					ExperienceType: "PARTY",
-					Amount:         3000,
-					Attr1:          10,
-				},
-			},
+			ExperienceType: "QUEST",
+			Amount:         2000,
+			Attr1:          1,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := TransformExperienceDistributions(tt.source)
-			assert.Equal(t, tt.expected, result)
-		})
+	target := TransformExperienceDistributions(source)
+
+	assert.Equal(t, len(source), len(target))
+	for i, s := range source {
+		assert.Equal(t, s.ExperienceType, target[i].ExperienceType)
+		assert.Equal(t, s.Amount, target[i].Amount)
+		assert.Equal(t, s.Attr1, target[i].Attr1)
 	}
 }

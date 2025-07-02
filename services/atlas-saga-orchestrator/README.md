@@ -143,3 +143,9 @@ The service consumes messages from the following Kafka topics:
   - Payload: `{"characterId": 12345, "skillId": 1000, "level": 2, "masterLevel": 2, "expiration": "2023-01-01T00:00:00Z"}`
   - Triggers a skill command to update the skill
   - Completes when the StatusEventTypeUpdated event is received
+
+- `validate_character_state` - Validates a character's state against a set of conditions
+  - Payload: `{"characterId": 12345, "conditions": [{"type": "jobId", "operator": "=", "value": 100}, {"type": "meso", "operator": ">=", "value": 1000}]}`
+  - Makes a synchronous HTTP call to the query-aggregator service's validation endpoint
+  - Completes when all conditions pass, fails if any condition fails
+  - Supported condition types: "jobId", "meso", "mapId", "fame", "item" (requires additional "itemId" field)

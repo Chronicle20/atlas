@@ -11,7 +11,7 @@ import (
 	"net/http"
 )
 
-// InitResource registers the transport routes with the router
+// InitResource registers the routes with the router
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(r *mux.Router, l logrus.FieldLogger) {
 		r.HandleFunc("/sagas", rest.RegisterHandler(l)(si)("get_all_sagas", getAllSagasHandler)).Methods(http.MethodGet)

@@ -1,6 +1,7 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/validation"
 	"encoding/json"
 	"fmt"
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -93,16 +94,17 @@ type Action string
 
 // Constants for different actions
 const (
-	AwardInventory     Action = "award_inventory"
-	AwardExperience    Action = "award_experience"
-	AwardLevel         Action = "award_level"
-	AwardMesos         Action = "award_mesos"
-	WarpToRandomPortal Action = "warp_to_random_portal"
-	WarpToPortal       Action = "warp_to_portal"
-	DestroyAsset       Action = "destroy_asset"
-	ChangeJob          Action = "change_job"
-	CreateSkill        Action = "create_skill"
-	UpdateSkill        Action = "update_skill"
+	AwardInventory         Action = "award_inventory"
+	AwardExperience        Action = "award_experience"
+	AwardLevel             Action = "award_level"
+	AwardMesos             Action = "award_mesos"
+	WarpToRandomPortal     Action = "warp_to_random_portal"
+	WarpToPortal           Action = "warp_to_portal"
+	DestroyAsset           Action = "destroy_asset"
+	ChangeJob              Action = "change_job"
+	CreateSkill            Action = "create_skill"
+	UpdateSkill            Action = "update_skill"
+	ValidateCharacterState Action = "validate_character_state"
 )
 
 // Step represents a single step within a saga.
@@ -197,6 +199,12 @@ type UpdateSkillPayload struct {
 	Level        byte      `json:"level"`        // New skill level
 	MasterLevel  byte      `json:"masterLevel"`  // New skill master level
 	Expiration   time.Time `json:"expiration"`   // New skill expiration time
+}
+
+// ValidateCharacterStatePayload represents the payload required to validate a character's state.
+type ValidateCharacterStatePayload struct {
+	CharacterId uint32                  `json:"characterId"` // CharacterId associated with the action
+	Conditions  []validation.ConditionInput `json:"conditions"`  // Conditions to validate
 }
 
 type ExperienceDistributions struct {

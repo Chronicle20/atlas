@@ -36,13 +36,13 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 
 func handleStatusEventErrorNotEnoughMeso(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventErrorBody[character2.NotEnoughMesoErrorStatusBody]]) {
 	if e.Type == character2.StatusEventTypeError && e.Body.Error == character2.StatusEventErrorTypeNotEnoughMeso {
-		_ = conversation.ContinueViaEvent(l)(ctx)(e.CharacterId, script.ModeCharacterMesoGainError, e.Body.Body.Amount)
+		_ = conversation.NewProcessor(l, ctx).ContinueViaEvent(e.CharacterId, script.ModeCharacterMesoGainError, e.Body.Body.Amount)
 	}
 }
 
 func handleStatusEventError(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventErrorBody[any]]) {
 	if e.Type == character2.StatusEventTypeError && e.Body.Error != character2.StatusEventErrorTypeNotEnoughMeso {
-		_ = conversation.ContinueViaEvent(l)(ctx)(e.CharacterId, script.ModeCharacterError, 0)
+		_ = conversation.NewProcessor(l, ctx).ContinueViaEvent(e.CharacterId, script.ModeCharacterError, 0)
 	}
 }
 
@@ -50,19 +50,19 @@ func handleStatusEventMesoChanged(l logrus.FieldLogger, ctx context.Context, e c
 	if e.Type != character2.StatusEventTypeMesoChanged {
 		return
 	}
-	_ = conversation.ContinueViaEvent(l)(ctx)(e.CharacterId, script.ModeCharacterMesoGained, e.Body.Amount)
+	_ = conversation.NewProcessor(l, ctx).ContinueViaEvent(e.CharacterId, script.ModeCharacterMesoGained, e.Body.Amount)
 }
 
 func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventLogoutBody]) {
 	if e.Type != character2.StatusEventTypeLogout {
 		return
 	}
-	_ = conversation.End(l)(ctx)(e.CharacterId)
+	_ = conversation.NewProcessor(l, ctx).End(e.CharacterId)
 }
 
 func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventChannelChangedBody]) {
 	if e.Type != character2.StatusEventTypeChannelChanged {
 		return
 	}
-	_ = conversation.End(l)(ctx)(e.CharacterId)
+	_ = conversation.NewProcessor(l, ctx).End(e.CharacterId)
 }

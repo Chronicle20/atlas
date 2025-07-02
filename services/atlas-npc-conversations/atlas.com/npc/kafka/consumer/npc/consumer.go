@@ -35,19 +35,19 @@ func handleStartConversationCommand(l logrus.FieldLogger, ctx context.Context, c
 	if c.Type != npc2.CommandTypeStartConversation {
 		return
 	}
-	_ = conversation.Start(l)(ctx)(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.NpcId, c.CharacterId)
+	_ = conversation.NewProcessor(l, ctx).Start(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.NpcId, c.CharacterId)
 }
 
 func handleContinueConversationCommand(l logrus.FieldLogger, ctx context.Context, c npc2.Command[npc2.CommandConversationContinueBody]) {
 	if c.Type != npc2.CommandTypeContinueConversation {
 		return
 	}
-	_ = conversation.Continue(l)(ctx)(c.NpcId, c.CharacterId, c.Body.Action, c.Body.LastMessageType, c.Body.Selection)
+	_ = conversation.NewProcessor(l, ctx).Continue(c.NpcId, c.CharacterId, c.Body.Action, c.Body.LastMessageType, c.Body.Selection)
 }
 
 func handleEndConversationCommand(l logrus.FieldLogger, ctx context.Context, c npc2.Command[npc2.CommandConversationEndBody]) {
 	if c.Type != npc2.CommandTypeEndConversation {
 		return
 	}
-	_ = conversation.End(l)(ctx)(c.CharacterId)
+	_ = conversation.NewProcessor(l, ctx).End(c.CharacterId)
 }

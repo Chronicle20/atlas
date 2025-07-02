@@ -9,51 +9,58 @@ import (
 	"gorm.io/gorm"
 )
 
-func AddMember(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte) (Model, error) {
-	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte) (Model, error) {
-		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte) (Model, error) {
-			return func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte) (Model, error) {
-				var m Model
-				var txErr error
-				txErr = database.ExecuteTransaction(db, func(tx *gorm.DB) error {
-					var err error
-					m, err = create(tx, t, guildId, characterId, name, jobId, level, title)
-					if err != nil {
-						return err
-					}
+type Processor interface {
+	AddMember(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte) (Model, error)
+	RemoveMember(guildId uint32, characterId uint32) error
+}
 
-					err = character.SetGuild(l)(ctx)(tx)(characterId, guildId)
-					if err != nil {
-						return err
-					}
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
+	t   tenant.Model
+}
 
-					return nil
-				})
-				return m, txErr
-			}
-		}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+		db:  db,
+		t:   tenant.MustFromContext(ctx),
 	}
 }
 
-func RemoveMember(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, characterId uint32) error {
-		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(guildId uint32, characterId uint32) error {
-			return func(guildId uint32, characterId uint32) error {
-				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
-					err := tx.Where("tenant_id = ? AND guild_id = ? AND character_id = ?", t.Id(), guildId, characterId).Delete(&Entity{}).Error
-					if err != nil {
-						return err
-					}
-
-					err = character.SetGuild(l)(ctx)(tx)(characterId, 0)
-					if err != nil {
-						return err
-					}
-					return nil
-				})
-			}
+func (p *ProcessorImpl) AddMember(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte) (Model, error) {
+	var m Model
+	var txErr error
+	txErr = database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		var err error
+		m, err = create(tx, p.t, guildId, characterId, name, jobId, level, title)
+		if err != nil {
+			return err
 		}
-	}
+
+		err = character.NewProcessor(p.l, p.ctx, tx).SetGuild(characterId, guildId)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	return m, txErr
+}
+
+func (p *ProcessorImpl) RemoveMember(guildId uint32, characterId uint32) error {
+	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		err := tx.Where("tenant_id = ? AND guild_id = ? AND character_id = ?", p.t.Id(), guildId, characterId).Delete(&Entity{}).Error
+		if err != nil {
+			return err
+		}
+
+		err = character.NewProcessor(p.l, p.ctx, tx).SetGuild(characterId, 0)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 }

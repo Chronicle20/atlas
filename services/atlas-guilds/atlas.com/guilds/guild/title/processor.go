@@ -8,60 +8,60 @@ import (
 	"gorm.io/gorm"
 )
 
-func CreateDefaults(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32) ([]Model, error) {
-	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32) ([]Model, error) {
-		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(guildId uint32) ([]Model, error) {
-			return func(guildId uint32) ([]Model, error) {
-				var results []Model
-				var txErr error
-				txErr = database.ExecuteTransaction(db, func(tx *gorm.DB) error {
-					var err error
-					results, err = createDefault(tx, t, guildId)
-					if err != nil {
-						return err
-					}
-					return nil
-				})
-				return results, txErr
-			}
-		}
+type Processor interface {
+	CreateDefaults(guildId uint32) ([]Model, error)
+	Replace(guildId uint32, titles []string) error
+	Clear(guildId uint32) error
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
+	t   tenant.Model
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+		db:  db,
+		t:   tenant.MustFromContext(ctx),
 	}
 }
 
-func Replace(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, titles []string) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32, titles []string) error {
-		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(guildId uint32, titles []string) error {
-			return func(guildId uint32, titles []string) error {
-				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
-					err := tx.Where("tenant_id = ? AND guild_id = ?", t.Id(), guildId).Delete(&Entity{}).Error
-					if err != nil {
-						return err
-					}
-					_, err = create(tx, t, guildId, titles)
-					if err != nil {
-						return err
-					}
-					return nil
-				})
-			}
+func (p *ProcessorImpl) CreateDefaults(guildId uint32) ([]Model, error) {
+	var results []Model
+	var txErr error
+	txErr = database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		var err error
+		results, err = createDefault(tx, p.t, guildId)
+		if err != nil {
+			return err
 		}
-	}
+		return nil
+	})
+	return results, txErr
 }
 
-func Clear(_ logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(guildId uint32) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(guildId uint32) error {
-		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(guildId uint32) error {
-			return func(guildId uint32) error {
-				err := db.Where("tenant_id = ? AND guild_id = ?", t.Id(), guildId).Delete(&Entity{}).Error
-				if err != nil {
-					return err
-				}
-				return nil
-			}
+func (p *ProcessorImpl) Replace(guildId uint32, titles []string) error {
+	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		err := tx.Where("tenant_id = ? AND guild_id = ?", p.t.Id(), guildId).Delete(&Entity{}).Error
+		if err != nil {
+			return err
 		}
-	}
+		_, err = create(tx, p.t, guildId, titles)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}
 
+func (p *ProcessorImpl) Clear(guildId uint32) error {
+	err := p.db.Where("tenant_id = ? AND guild_id = ?", p.t.Id(), guildId).Delete(&Entity{}).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }

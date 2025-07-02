@@ -2,6 +2,7 @@ package guild
 
 import (
 	"atlas-guilds/database"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -29,7 +30,7 @@ func getById(tenantId uuid.UUID, id uint32) database.EntityProvider[Entity] {
 	}
 }
 
-func getForName(tenantId uuid.UUID, worldId byte, name string) database.EntityProvider[[]Entity] {
+func getForName(tenantId uuid.UUID, worldId world.Id, name string) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
 		err := db.Where("tenant_id = ? AND world_id = ? AND LOWER(name) = LOWER(?)", tenantId, worldId, name).Find(&results).Error

@@ -2,6 +2,8 @@ package coordinator
 
 import (
 	"errors"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"sync"
@@ -26,7 +28,7 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) Initiate(t tenant.Model, worldId byte, channelId byte, name string, leaderId uint32, members []uint32) error {
+func (r *Registry) Initiate(t tenant.Model, worldId world.Id, channelId channel.Id, name string, leaderId uint32, members []uint32) error {
 	r.lock.Lock()
 	if _, ok := r.characterReg[t]; !ok {
 		r.characterReg[t] = make(map[uint32]uuid.UUID)
@@ -45,8 +47,8 @@ func (r *Registry) Initiate(t tenant.Model, worldId byte, channelId byte, name s
 
 	r.agreementReg[agreementId] = Model{
 		tenant:    t,
-		worldId:   worldId,
-		channelId: channelId,
+		worldId:   byte(worldId),
+		channelId: byte(channelId),
 		leaderId:  leaderId,
 		name:      name,
 		requests:  members,

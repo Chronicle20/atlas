@@ -7,24 +7,31 @@ import (
 	"gorm.io/gorm"
 )
 
-func Add(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(threadId uint32, posterId uint32, message string) (Model, error) {
-	return func(ctx context.Context) func(db *gorm.DB) func(threadId uint32, posterId uint32, message string) (Model, error) {
-		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(threadId uint32, posterId uint32, message string) (Model, error) {
-			return func(threadId uint32, posterId uint32, message string) (Model, error) {
-				return create(db, t.Id(), threadId, posterId, message)
-			}
-		}
+type Processor interface {
+	Add(threadId uint32, posterId uint32, message string) (Model, error)
+	Delete(threadId uint32, replyId uint32) error
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	db  *gorm.DB
+	t   tenant.Model
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+		db:  db,
+		t:   tenant.MustFromContext(ctx),
 	}
 }
 
-func Delete(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.DB) func(threadId uint32, replyId uint32) error {
-	return func(ctx context.Context) func(db *gorm.DB) func(threadId uint32, replyId uint32) error {
-		t := tenant.MustFromContext(ctx)
-		return func(db *gorm.DB) func(threadId uint32, replyId uint32) error {
-			return func(threadId uint32, replyId uint32) error {
-				return remove(db, t.Id(), threadId, replyId)
-			}
-		}
-	}
+func (p *ProcessorImpl) Add(threadId uint32, posterId uint32, message string) (Model, error) {
+	return create(p.db, p.t.Id(), threadId, posterId, message)
+}
+
+func (p *ProcessorImpl) Delete(threadId uint32, replyId uint32) error {
+	return remove(p.db, p.t.Id(), threadId, replyId)
 }

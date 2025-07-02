@@ -3,7 +3,12 @@ package guild
 import (
 	"atlas-guilds/guild"
 	consumer2 "atlas-guilds/kafka/consumer"
+	guild2 "atlas-guilds/kafka/message/guild"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -16,7 +21,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("guild_command")(EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("guild_command")(guild2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -25,7 +30,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
-			t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
+			t, _ = topic.EnvProvider(l)(guild2.EnvCommandTopic)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestCreate(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandCreationAgreement(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandChangeEmblem(db))))
@@ -40,102 +45,103 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	}
 }
 
-func handleCommandRequestCreate(db *gorm.DB) message.Handler[command[requestCreateBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestCreateBody]) {
-		if c.Type != CommandTypeRequestCreate {
+func handleCommandRequestCreate(db *gorm.DB) message.Handler[guild2.Command[guild2.RequestCreateBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c guild2.Command[guild2.RequestCreateBody]) {
+		if c.Type != guild2.CommandTypeRequestCreate {
 			return
 		}
 
-		_ = guild.RequestCreate(l)(ctx)(db)(c.CharacterId, c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.Body.Name)
+		f := field.NewBuilder(world.Id(c.Body.WorldId), channel.Id(c.Body.ChannelId), _map.Id(c.Body.MapId)).Build()
+		_ = guild.NewProcessor(l, ctx, db).RequestCreateAndEmit(c.CharacterId, f, c.Body.Name, c.TransactionId)
 	}
 }
 
-func handleCommandCreationAgreement(db *gorm.DB) message.Handler[command[creationAgreementBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[creationAgreementBody]) {
-		if c.Type != CommandTypeCreationAgreement {
+func handleCommandCreationAgreement(db *gorm.DB) message.Handler[guild2.Command[guild2.CreationAgreementBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c guild2.Command[guild2.CreationAgreementBody]) {
+		if c.Type != guild2.CommandTypeCreationAgreement {
 			return
 		}
 
-		_ = guild.CreationAgreementResponse(l)(ctx)(db)(c.CharacterId, c.Body.Agreed)
+		_ = guild.NewProcessor(l, ctx, db).CreationAgreementResponseAndEmit(c.CharacterId, c.Body.Agreed, c.TransactionId)
 	}
 }
 
-func handleCommandChangeEmblem(db *gorm.DB) message.Handler[command[changeEmblemBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[changeEmblemBody]) {
-		if c.Type != CommandTypeChangeEmblem {
+func handleCommandChangeEmblem(db *gorm.DB) message.Handler[guild2.Command[guild2.ChangeEmblemBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c guild2.Command[guild2.ChangeEmblemBody]) {
+		if c.Type != guild2.CommandTypeChangeEmblem {
 			return
 		}
 
-		_ = guild.ChangeEmblem(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.Logo, c.Body.LogoColor, c.Body.LogoBackground, c.Body.LogoBackgroundColor)
+		_ = guild.NewProcessor(l, ctx, db).ChangeEmblemAndEmit(c.Body.GuildId, c.CharacterId, c.Body.Logo, c.Body.LogoColor, c.Body.LogoBackground, c.Body.LogoBackgroundColor, c.TransactionId)
 	}
 }
 
-func handleCommandChangeNotice(db *gorm.DB) message.Handler[command[changeNoticeBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[changeNoticeBody]) {
-		if c.Type != CommandTypeChangeNotice {
+func handleCommandChangeNotice(db *gorm.DB) message.Handler[guild2.Command[guild2.ChangeNoticeBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c guild2.Command[guild2.ChangeNoticeBody]) {
+		if c.Type != guild2.CommandTypeChangeNotice {
 			return
 		}
 
-		_ = guild.ChangeNotice(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.Notice)
+		_ = guild.NewProcessor(l, ctx, db).ChangeNoticeAndEmit(c.Body.GuildId, c.CharacterId, c.Body.Notice, c.TransactionId)
 	}
 }
 
-func handleCommandLeave(db *gorm.DB) message.Handler[command[leaveBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[leaveBody]) {
-		if c.Type != CommandTypeLeave {
+func handleCommandLeave(db *gorm.DB) message.Handler[guild2.Command[guild2.LeaveBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c guild2.Command[guild2.LeaveBody]) {
+		if c.Type != guild2.CommandTypeLeave {
 			return
 		}
 
-		_ = guild.Leave(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.Force)
+		_ = guild.NewProcessor(l, ctx, db).LeaveAndEmit(c.Body.GuildId, c.CharacterId, c.Body.Force, c.TransactionId)
 	}
 }
 
-func handleCommandRequestInvite(db *gorm.DB) message.Handler[command[requestInviteBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestInviteBody]) {
-		if c.Type != CommandTypeRequestInvite {
+func handleCommandRequestInvite(db *gorm.DB) message.Handler[guild2.Command[guild2.RequestInviteBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c guild2.Command[guild2.RequestInviteBody]) {
+		if c.Type != guild2.CommandTypeRequestInvite {
 			return
 		}
 
-		_ = guild.RequestInvite(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.TargetId)
+		_ = guild.NewProcessor(l, ctx, db).RequestInviteAndEmit(c.Body.GuildId, c.CharacterId, c.Body.TargetId)
 	}
 }
 
-func handleCommandChangeTitles(db *gorm.DB) message.Handler[command[changeTitlesBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[changeTitlesBody]) {
-		if c.Type != CommandTypeChangeTitles {
+func handleCommandChangeTitles(db *gorm.DB) message.Handler[guild2.Command[guild2.ChangeTitlesBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c guild2.Command[guild2.ChangeTitlesBody]) {
+		if c.Type != guild2.CommandTypeChangeTitles {
 			return
 		}
 
-		_ = guild.ChangeTitles(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.Titles)
+		_ = guild.NewProcessor(l, ctx, db).ChangeTitlesAndEmit(c.Body.GuildId, c.CharacterId, c.Body.Titles, c.TransactionId)
 	}
 }
 
-func handleCommandChangeMemberTitle(db *gorm.DB) message.Handler[command[changeMemberTitleBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[changeMemberTitleBody]) {
-		if c.Type != CommandTypeChangeMemberTitle {
+func handleCommandChangeMemberTitle(db *gorm.DB) message.Handler[guild2.Command[guild2.ChangeMemberTitleBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c guild2.Command[guild2.ChangeMemberTitleBody]) {
+		if c.Type != guild2.CommandTypeChangeMemberTitle {
 			return
 		}
 
-		_ = guild.ChangeMemberTitle(l)(ctx)(db)(c.Body.GuildId, c.CharacterId, c.Body.TargetId, c.Body.Title)
+		_ = guild.NewProcessor(l, ctx, db).ChangeMemberTitleAndEmit(c.Body.GuildId, c.CharacterId, c.Body.TargetId, c.Body.Title, c.TransactionId)
 	}
 }
 
-func handleCommandRequestDisband(db *gorm.DB) message.Handler[command[requestDisbandBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestDisbandBody]) {
-		if c.Type != CommandTypeRequestDisband {
+func handleCommandRequestDisband(db *gorm.DB) message.Handler[guild2.Command[guild2.RequestDisbandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c guild2.Command[guild2.RequestDisbandBody]) {
+		if c.Type != guild2.CommandTypeRequestDisband {
 			return
 		}
 
-		_ = guild.RequestDisband(l)(ctx)(db)(c.CharacterId)
+		_ = guild.NewProcessor(l, ctx, db).RequestDisbandAndEmit(c.CharacterId, c.TransactionId)
 	}
 }
 
-func handleCommandRequestCapacityIncrease(db *gorm.DB) message.Handler[command[requestCapacityIncreaseBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, c command[requestCapacityIncreaseBody]) {
-		if c.Type != CommandTypeRequestCapacityIncrease {
+func handleCommandRequestCapacityIncrease(db *gorm.DB) message.Handler[guild2.Command[guild2.RequestCapacityIncreaseBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c guild2.Command[guild2.RequestCapacityIncreaseBody]) {
+		if c.Type != guild2.CommandTypeRequestCapacityIncrease {
 			return
 		}
 
-		_ = guild.RequestCapacityIncrease(l)(ctx)(db)(c.CharacterId)
+		_ = guild.NewProcessor(l, ctx, db).RequestCapacityIncreaseAndEmit(c.CharacterId, c.TransactionId)
 	}
 }

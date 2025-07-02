@@ -7,24 +7,24 @@ const (
 	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
 )
 
-type statusEvent[E any] struct {
+type StatusEvent[E any] struct {
 	WorldId     byte   `json:"worldId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
 }
 
-type statusEventLoginBody struct {
+type StatusEventLoginBody struct {
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
 }
 
-type statusEventLogoutBody struct {
+type StatusEventLogoutBody struct {
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
 }
 
-type statusEventChannelChangedBody struct {
+type StatusEventChannelChangedBody struct {
 	ChannelId    byte   `json:"channelId"`
 	OldChannelId byte   `json:"oldChannelId"`
 	MapId        uint32 `json:"mapId"`

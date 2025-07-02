@@ -15,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -25,33 +26,39 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) {
 		var t string
 		t, _ = topic.EnvProvider(l)(npc2.EnvCommandTopic)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStartConversationCommand)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleContinueConversationCommand)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleEndConversationCommand)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStartConversationCommand(db))))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleContinueConversationCommand(db))))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleEndConversationCommand(db))))
 	}
 }
 
-func handleStartConversationCommand(l logrus.FieldLogger, ctx context.Context, c npc2.Command[npc2.CommandConversationStartBody]) {
-	if c.Type != npc2.CommandTypeStartConversation {
-		return
+func handleStartConversationCommand(db *gorm.DB) message.Handler[npc2.Command[npc2.CommandConversationStartBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c npc2.Command[npc2.CommandConversationStartBody]) {
+		if c.Type != npc2.CommandTypeStartConversation {
+			return
+		}
+		_ = conversation.NewProcessor(l, ctx, db).Start(field.NewBuilder(world.Id(c.Body.WorldId), channel.Id(c.Body.ChannelId), _map.Id(c.Body.MapId)).Build(), c.NpcId, c.CharacterId)
 	}
-	_ = conversation.NewProcessor(l, ctx).Start(field.NewBuilder(world.Id(c.Body.WorldId), channel.Id(c.Body.ChannelId), _map.Id(c.Body.MapId)).Build(), c.NpcId, c.CharacterId)
 }
 
-func handleContinueConversationCommand(l logrus.FieldLogger, ctx context.Context, c npc2.Command[npc2.CommandConversationContinueBody]) {
-	if c.Type != npc2.CommandTypeContinueConversation {
-		return
+func handleContinueConversationCommand(db *gorm.DB) message.Handler[npc2.Command[npc2.CommandConversationContinueBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c npc2.Command[npc2.CommandConversationContinueBody]) {
+		if c.Type != npc2.CommandTypeContinueConversation {
+			return
+		}
+		_ = conversation.NewProcessor(l, ctx, db).Continue(c.NpcId, c.CharacterId, c.Body.Action, c.Body.LastMessageType, c.Body.Selection)
 	}
-	_ = conversation.NewProcessor(l, ctx).Continue(c.NpcId, c.CharacterId, c.Body.Action, c.Body.LastMessageType, c.Body.Selection)
 }
 
-func handleEndConversationCommand(l logrus.FieldLogger, ctx context.Context, c npc2.Command[npc2.CommandConversationEndBody]) {
-	if c.Type != npc2.CommandTypeEndConversation {
-		return
+func handleEndConversationCommand(db *gorm.DB) message.Handler[npc2.Command[npc2.CommandConversationEndBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c npc2.Command[npc2.CommandConversationEndBody]) {
+		if c.Type != npc2.CommandTypeEndConversation {
+			return
+		}
+		_ = conversation.NewProcessor(l, ctx, db).End(c.CharacterId)
 	}
-	_ = conversation.NewProcessor(l, ctx).End(c.CharacterId)
 }

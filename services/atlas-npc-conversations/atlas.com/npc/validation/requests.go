@@ -11,5 +11,5 @@ func getBaseRequest() string {
 }
 
 func requestById(id uint32, body RestModel) requests.Request[RestModel] {
-	return rest.MakePostRequest[RestModel](fmt.Sprint(getBaseRequest()+"/api/validations"), body)
+	return rest.MakePostRequest[RestModel](fmt.Sprint(getBaseRequest()+"validations"), body)
 }

@@ -94,18 +94,22 @@ type Action string
 
 // Constants for different actions
 const (
-	AwardInventory         Action = "award_inventory" // Deprecated: Use AwardAsset instead
-	AwardAsset             Action = "award_asset"     // Preferred over AwardInventory
-	AwardExperience        Action = "award_experience"
-	AwardLevel             Action = "award_level"
-	AwardMesos             Action = "award_mesos"
-	WarpToRandomPortal     Action = "warp_to_random_portal"
-	WarpToPortal           Action = "warp_to_portal"
-	DestroyAsset           Action = "destroy_asset"
-	ChangeJob              Action = "change_job"
-	CreateSkill            Action = "create_skill"
-	UpdateSkill            Action = "update_skill"
-	ValidateCharacterState Action = "validate_character_state"
+	AwardInventory             Action = "award_inventory" // Deprecated: Use AwardAsset instead
+	AwardAsset                 Action = "award_asset"     // Preferred over AwardInventory
+	AwardExperience            Action = "award_experience"
+	AwardLevel                 Action = "award_level"
+	AwardMesos                 Action = "award_mesos"
+	WarpToRandomPortal         Action = "warp_to_random_portal"
+	WarpToPortal               Action = "warp_to_portal"
+	DestroyAsset               Action = "destroy_asset"
+	ChangeJob                  Action = "change_job"
+	CreateSkill                Action = "create_skill"
+	UpdateSkill                Action = "update_skill"
+	ValidateCharacterState     Action = "validate_character_state"
+	RequestGuildName           Action = "request_guild_name"
+	RequestGuildEmblem         Action = "request_guild_emblem"
+	RequestGuildDisband        Action = "request_guild_disband"
+	RequestGuildCapacityIncrease Action = "request_guild_capacity_increase"
 )
 
 // Step represents a single step within a saga.
@@ -206,6 +210,34 @@ type UpdateSkillPayload struct {
 type ValidateCharacterStatePayload struct {
 	CharacterId uint32                  `json:"characterId"` // CharacterId associated with the action
 	Conditions  []validation.ConditionInput `json:"conditions"`  // Conditions to validate
+}
+
+// RequestGuildNamePayload represents the payload required to request a guild name.
+type RequestGuildNamePayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+}
+
+// RequestGuildEmblemPayload represents the payload required to request a guild emblem change.
+type RequestGuildEmblemPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+}
+
+// RequestGuildDisbandPayload represents the payload required to request a guild disband.
+type RequestGuildDisbandPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+}
+
+// RequestGuildCapacityIncreasePayload represents the payload required to request a guild capacity increase.
+type RequestGuildCapacityIncreasePayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
 }
 
 type ExperienceDistributions struct {

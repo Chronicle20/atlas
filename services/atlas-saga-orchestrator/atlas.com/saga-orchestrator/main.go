@@ -4,6 +4,7 @@ import (
 	"atlas-saga-orchestrator/kafka/consumer/asset"
 	"atlas-saga-orchestrator/kafka/consumer/character"
 	"atlas-saga-orchestrator/kafka/consumer/compartment"
+	"atlas-saga-orchestrator/kafka/consumer/guild"
 	saga2 "atlas-saga-orchestrator/kafka/consumer/saga"
 	"atlas-saga-orchestrator/kafka/consumer/skill"
 	"atlas-saga-orchestrator/logger"
@@ -53,11 +54,13 @@ func main() {
 	asset.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
+	guild.InitConsumers(l)(cmf)(consumerGroupId)
 	saga2.InitConsumers(l)(cmf)(consumerGroupId)
 	skill.InitConsumers(l)(cmf)(consumerGroupId)
 	asset.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	compartment.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	guild.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	saga2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	skill.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 

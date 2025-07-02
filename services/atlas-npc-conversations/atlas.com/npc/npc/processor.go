@@ -1,6 +1,7 @@
 package npc
 
 import (
+	npc2 "atlas-npc-conversations/kafka/message/npc"
 	"atlas-npc-conversations/kafka/producer"
 	"context"
 	"github.com/sirupsen/logrus"
@@ -29,7 +30,7 @@ const (
 func Dispose(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) {
 	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) {
 		return func(worldId byte, channelId byte, characterId uint32) {
-			_ = producer.ProviderImpl(l)(ctx)(EnvEventTopicCharacterStatus)(enableActionsProvider(worldId, channelId, characterId))
+			_ = producer.ProviderImpl(l)(ctx)(npc2.EnvEventTopicCharacterStatus)(enableActionsProvider(worldId, channelId, characterId))
 		}
 	}
 }
@@ -98,7 +99,7 @@ func SendNPCTalk(l logrus.FieldLogger) func(ctx context.Context) func(worldId by
 				for _, configuration := range configurations {
 					configuration(config)
 				}
-				_ = producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(simpleConversationProvider(worldId, channelId, characterId, npcId, message, config.MessageType(), config.Speaker()))
+				_ = producer.ProviderImpl(l)(ctx)(npc2.EnvConversationCommandTopic)(simpleConversationProvider(worldId, channelId, characterId, npcId, message, config.MessageType(), config.Speaker()))
 			}
 		}
 	}

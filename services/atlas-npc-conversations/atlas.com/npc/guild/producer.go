@@ -1,6 +1,7 @@
 package guild
 
 import (
+	guild2 "atlas-npc-conversations/kafka/message/guild"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
@@ -8,10 +9,10 @@ import (
 
 func requestNameProvider(worldId byte, channelId byte, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[requestNameBody]{
+	value := &guild2.Command[guild2.RequestNameBody]{
 		CharacterId: characterId,
-		Type:        CommandTypeRequestName,
-		Body: requestNameBody{
+		Type:        guild2.CommandTypeRequestName,
+		Body: guild2.RequestNameBody{
 			WorldId:   worldId,
 			ChannelId: channelId,
 		},
@@ -21,10 +22,10 @@ func requestNameProvider(worldId byte, channelId byte, characterId uint32) model
 
 func requestEmblemProvider(worldId byte, channelId byte, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[requestEmblemBody]{
+	value := &guild2.Command[guild2.RequestEmblemBody]{
 		CharacterId: characterId,
-		Type:        CommandTypeRequestEmblem,
-		Body: requestEmblemBody{
+		Type:        guild2.CommandTypeRequestEmblem,
+		Body: guild2.RequestEmblemBody{
 			WorldId:   worldId,
 			ChannelId: channelId,
 		},
@@ -34,10 +35,10 @@ func requestEmblemProvider(worldId byte, channelId byte, characterId uint32) mod
 
 func requestDisbandProvider(worldId byte, channelId byte, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[requestDisbandBody]{
+	value := &guild2.Command[guild2.RequestDisbandBody]{
 		CharacterId: characterId,
-		Type:        CommandTypeRequestDisband,
-		Body: requestDisbandBody{
+		Type:        guild2.CommandTypeRequestDisband,
+		Body: guild2.RequestDisbandBody{
 			WorldId:   worldId,
 			ChannelId: channelId,
 		},
@@ -47,10 +48,10 @@ func requestDisbandProvider(worldId byte, channelId byte, characterId uint32) mo
 
 func requestCapacityIncreaseProvider(worldId byte, channelId byte, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &command[requestCapacityIncreaseBody]{
+	value := &guild2.Command[guild2.RequestCapacityIncreaseBody]{
 		CharacterId: characterId,
-		Type:        CommandTypeRequestCapacityIncrease,
-		Body: requestCapacityIncreaseBody{
+		Type:        guild2.CommandTypeRequestCapacityIncrease,
+		Body: guild2.RequestCapacityIncreaseBody{
 			WorldId:   worldId,
 			ChannelId: channelId,
 		},

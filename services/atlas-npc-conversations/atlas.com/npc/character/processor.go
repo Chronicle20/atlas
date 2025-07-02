@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-npc-conversations/job"
+	character2 "atlas-npc-conversations/kafka/message/character"
 	"atlas-npc-conversations/kafka/producer"
 	"atlas-npc-conversations/portal"
 	"context"
@@ -70,7 +71,7 @@ func RequestChangeMeso(l logrus.FieldLogger) func(ctx context.Context) func(char
 	return func(ctx context.Context) func(characterId uint32, worldId byte, amount int32) error {
 		return func(characterId uint32, worldId byte, amount int32) error {
 			l.Debugf("Requesting to change character [%d] meso by [%d].", characterId, amount)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestChangeMesoCommandProvider(characterId, worldId, amount))
+			return producer.ProviderImpl(l)(ctx)(character2.EnvCommandTopic)(requestChangeMesoCommandProvider(characterId, worldId, amount))
 		}
 	}
 }
@@ -83,7 +84,7 @@ func WarpToPortal(l logrus.FieldLogger) func(ctx context.Context) func(worldId b
 				return err
 			}
 
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(changeMapProvider(worldId, channelId, characterId, mapId, pid))
+			return producer.ProviderImpl(l)(ctx)(character2.EnvCommandTopic)(changeMapProvider(worldId, channelId, characterId, mapId, pid))
 		}
 	}
 }

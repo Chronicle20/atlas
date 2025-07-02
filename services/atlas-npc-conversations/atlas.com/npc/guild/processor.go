@@ -1,6 +1,7 @@
 package guild
 
 import (
+	guild2 "atlas-npc-conversations/kafka/message/guild"
 	"atlas-npc-conversations/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
@@ -46,7 +47,7 @@ func RequestName(l logrus.FieldLogger) func(ctx context.Context) func(worldId by
 	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) error {
 		return func(worldId byte, channelId byte, characterId uint32) error {
 			l.Debugf("Requesting character [%d] input guild name for creation.", characterId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestNameProvider(worldId, channelId, characterId))
+			return producer.ProviderImpl(l)(ctx)(guild2.EnvCommandTopic)(requestNameProvider(worldId, channelId, characterId))
 		}
 	}
 }
@@ -55,7 +56,7 @@ func RequestEmblem(l logrus.FieldLogger) func(ctx context.Context) func(worldId 
 	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) error {
 		return func(worldId byte, channelId byte, characterId uint32) error {
 			l.Debugf("Requesting character [%d] input new guild emblem.", characterId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestEmblemProvider(worldId, channelId, characterId))
+			return producer.ProviderImpl(l)(ctx)(guild2.EnvCommandTopic)(requestEmblemProvider(worldId, channelId, characterId))
 		}
 	}
 }
@@ -64,7 +65,7 @@ func RequestDisband(l logrus.FieldLogger) func(ctx context.Context) func(worldId
 	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) error {
 		return func(worldId byte, channelId byte, characterId uint32) error {
 			l.Debugf("Character [%d] attempting to disband guild.", characterId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestDisbandProvider(worldId, channelId, characterId))
+			return producer.ProviderImpl(l)(ctx)(guild2.EnvCommandTopic)(requestDisbandProvider(worldId, channelId, characterId))
 		}
 	}
 }
@@ -73,7 +74,7 @@ func RequestCapacityIncrease(l logrus.FieldLogger) func(ctx context.Context) fun
 	return func(ctx context.Context) func(worldId byte, channelId byte, characterId uint32) error {
 		return func(worldId byte, channelId byte, characterId uint32) error {
 			l.Debugf("Character [%d] attempting to increase guild capacity.", characterId)
-			return producer.ProviderImpl(l)(ctx)(EnvCommandTopic)(requestCapacityIncreaseProvider(worldId, channelId, characterId))
+			return producer.ProviderImpl(l)(ctx)(guild2.EnvCommandTopic)(requestCapacityIncreaseProvider(worldId, channelId, characterId))
 		}
 	}
 }

@@ -8,28 +8,28 @@ const (
 	CommandTypeRequestCapacityIncrease = "REQUEST_CAPACITY_INCREASE"
 )
 
-type command[E any] struct {
+type Command[E any] struct {
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
 }
 
-type requestNameBody struct {
+type RequestNameBody struct {
 	WorldId   byte `json:"worldId"`
 	ChannelId byte `json:"channelId"`
 }
 
-type requestEmblemBody struct {
+type RequestEmblemBody struct {
 	WorldId   byte `json:"worldId"`
 	ChannelId byte `json:"channelId"`
 }
 
-type requestDisbandBody struct {
+type RequestDisbandBody struct {
 	WorldId   byte `json:"worldId"`
 	ChannelId byte `json:"channelId"`
 }
 
-type requestCapacityIncreaseBody struct {
+type RequestCapacityIncreaseBody struct {
 	WorldId   byte `json:"worldId"`
 	ChannelId byte `json:"channelId"`
 }

@@ -1,6 +1,7 @@
 package invite
 
 import (
+	"atlas-invites/kafka/message"
 	invite2 "atlas-invites/kafka/message/invite"
 	"atlas-invites/kafka/producer"
 	"context"
@@ -14,15 +15,19 @@ const StartInviteId = uint32(1000000000)
 type Processor interface {
 	GetByCharacterId(characterId uint32) ([]Model, error)
 	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
-	Create(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32) error
-	Accept(referenceId uint32, worldId byte, inviteType string, actorId uint32) error
-	Reject(originatorId uint32, worldId byte, inviteType string, actorId uint32) error
+	CreateAndEmit(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32) (Model, error)
+	Create(mb *message.Buffer) func(referenceId uint32) func(worldId byte) func(inviteType string) func(originatorId uint32) func(targetId uint32) (Model, error)
+	AcceptAndEmit(referenceId uint32, worldId byte, inviteType string, actorId uint32) (Model, error)
+	Accept(mb *message.Buffer) func(referenceId uint32) func(worldId byte) func(inviteType string) func(actorId uint32) (Model, error)
+	RejectAndEmit(originatorId uint32, worldId byte, inviteType string, actorId uint32) (Model, error)
+	Reject(mb *message.Buffer) func(originatorId uint32) func(worldId byte) func(inviteType string) func(actorId uint32) (Model, error)
 }
 
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	t   tenant.Model
+	p   producer.Provider
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
@@ -30,6 +35,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		l:   l,
 		ctx: ctx,
 		t:   tenant.MustFromContext(ctx),
+		p:   producer.ProviderImpl(l)(ctx),
 	}
 }
 
@@ -45,39 +51,113 @@ func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider
 	return model.FixedProvider(is)
 }
 
-func (p *ProcessorImpl) Create(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32) error {
-	i := GetRegistry().Create(p.t, originatorId, worldId, targetId, inviteType, referenceId)
-	return producer.ProviderImpl(p.l)(p.ctx)(invite2.EnvEventStatusTopic)(createdStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId()))
+// Create implements the business logic for creating an invite
+func (p *ProcessorImpl) Create(mb *message.Buffer) func(referenceId uint32) func(worldId byte) func(inviteType string) func(originatorId uint32) func(targetId uint32) (Model, error) {
+	return func(referenceId uint32) func(worldId byte) func(inviteType string) func(originatorId uint32) func(targetId uint32) (Model, error) {
+		return func(worldId byte) func(inviteType string) func(originatorId uint32) func(targetId uint32) (Model, error) {
+			return func(inviteType string) func(originatorId uint32) func(targetId uint32) (Model, error) {
+				return func(originatorId uint32) func(targetId uint32) (Model, error) {
+					return func(targetId uint32) (Model, error) {
+						i := GetRegistry().Create(p.t, originatorId, worldId, targetId, inviteType, referenceId)
+						err := mb.Put(invite2.EnvEventStatusTopic, createdStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId()))
+						if err != nil {
+							return Model{}, err
+						}
+						return i, nil
+					}
+				}
+			}
+		}
+	}
 }
 
-func (p *ProcessorImpl) Accept(referenceId uint32, worldId byte, inviteType string, actorId uint32) error {
-	i, err := GetRegistry().GetByReference(p.t, actorId, inviteType, referenceId)
-	if err != nil {
-		p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
+// CreateAndEmit implements the business logic for creating an invite and emitting the event
+func (p *ProcessorImpl) CreateAndEmit(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32) (Model, error) {
+	var m Model
+	err := message.Emit(p.p)(func(buf *message.Buffer) error {
+		var err error
+		m, err = p.Create(buf)(referenceId)(worldId)(inviteType)(originatorId)(targetId)
 		return err
-	}
-
-	err = GetRegistry().Delete(p.t, actorId, inviteType, i.OriginatorId())
-	if err != nil {
-		p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
-		return err
-	}
-
-	return producer.ProviderImpl(p.l)(p.ctx)(invite2.EnvEventStatusTopic)(acceptedStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId()))
+	})
+	return m, err
 }
 
-func (p *ProcessorImpl) Reject(originatorId uint32, worldId byte, inviteType string, actorId uint32) error {
-	i, err := GetRegistry().GetByOriginator(p.t, actorId, inviteType, originatorId)
-	if err != nil {
-		p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
-		return err
-	}
+// Accept implements the business logic for accepting an invite
+func (p *ProcessorImpl) Accept(mb *message.Buffer) func(referenceId uint32) func(worldId byte) func(inviteType string) func(actorId uint32) (Model, error) {
+	return func(referenceId uint32) func(worldId byte) func(inviteType string) func(actorId uint32) (Model, error) {
+		return func(worldId byte) func(inviteType string) func(actorId uint32) (Model, error) {
+			return func(inviteType string) func(actorId uint32) (Model, error) {
+				return func(actorId uint32) (Model, error) {
+					i, err := GetRegistry().GetByReference(p.t, actorId, inviteType, referenceId)
+					if err != nil {
+						p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
+						return Model{}, err
+					}
 
-	err = GetRegistry().Delete(p.t, actorId, inviteType, originatorId)
-	if err != nil {
-		p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
-		return err
-	}
+					err = GetRegistry().Delete(p.t, actorId, inviteType, i.OriginatorId())
+					if err != nil {
+						p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
+						return Model{}, err
+					}
 
-	return producer.ProviderImpl(p.l)(p.ctx)(invite2.EnvEventStatusTopic)(rejectedStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId()))
+					err = mb.Put(invite2.EnvEventStatusTopic, acceptedStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId()))
+					if err != nil {
+						return Model{}, err
+					}
+					return i, nil
+				}
+			}
+		}
+	}
+}
+
+// AcceptAndEmit implements the business logic for accepting an invite and emitting the event
+func (p *ProcessorImpl) AcceptAndEmit(referenceId uint32, worldId byte, inviteType string, actorId uint32) (Model, error) {
+	var m Model
+	err := message.Emit(p.p)(func(buf *message.Buffer) error {
+		var err error
+		m, err = p.Accept(buf)(referenceId)(worldId)(inviteType)(actorId)
+		return err
+	})
+	return m, err
+}
+
+// Reject implements the business logic for rejecting an invite
+func (p *ProcessorImpl) Reject(mb *message.Buffer) func(originatorId uint32) func(worldId byte) func(inviteType string) func(actorId uint32) (Model, error) {
+	return func(originatorId uint32) func(worldId byte) func(inviteType string) func(actorId uint32) (Model, error) {
+		return func(worldId byte) func(inviteType string) func(actorId uint32) (Model, error) {
+			return func(inviteType string) func(actorId uint32) (Model, error) {
+				return func(actorId uint32) (Model, error) {
+					i, err := GetRegistry().GetByOriginator(p.t, actorId, inviteType, originatorId)
+					if err != nil {
+						p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
+						return Model{}, err
+					}
+
+					err = GetRegistry().Delete(p.t, actorId, inviteType, originatorId)
+					if err != nil {
+						p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
+						return Model{}, err
+					}
+
+					err = mb.Put(invite2.EnvEventStatusTopic, rejectedStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId()))
+					if err != nil {
+						return Model{}, err
+					}
+					return i, nil
+				}
+			}
+		}
+	}
+}
+
+// RejectAndEmit implements the business logic for rejecting an invite and emitting the event
+func (p *ProcessorImpl) RejectAndEmit(originatorId uint32, worldId byte, inviteType string, actorId uint32) (Model, error) {
+	var m Model
+	err := message.Emit(p.p)(func(buf *message.Buffer) error {
+		var err error
+		m, err = p.Reject(buf)(originatorId)(worldId)(inviteType)(actorId)
+		return err
+	})
+	return m, err
 }

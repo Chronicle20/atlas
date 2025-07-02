@@ -31,6 +31,7 @@ func Make(e Entity) (Model, error) {
 		return Model{}, err
 	}
 
+	data.Id = e.ID
 	m, err := Extract(data)
 	if err != nil {
 		return Model{}, err

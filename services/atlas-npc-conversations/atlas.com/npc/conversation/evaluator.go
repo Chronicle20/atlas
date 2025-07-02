@@ -89,6 +89,7 @@ func (e *EvaluatorImpl) EvaluateCondition(characterId uint32, condition Conditio
 		Type:     condition.Type(),
 		Operator: condition.Operator(),
 		Value:    value,
+		ItemId:   condition.ItemId(),
 	}
 
 	// Validate the character state using the validation processor

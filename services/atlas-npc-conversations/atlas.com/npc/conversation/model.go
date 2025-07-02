@@ -329,6 +329,12 @@ func (d DialogueModel) ChoiceFromAction(action byte) (ChoiceModel, bool) {
 		} else {
 			choiceText = "Next"
 		}
+	} else if d.dialogueType == SendOk {
+		if action == 255 {
+			choiceText = "Exit"
+		} else {
+			choiceText = "Ok"
+		}
 	} else if d.dialogueType == SendYesNo {
 		if action == 255 {
 			choiceText = "Exit"
@@ -397,8 +403,8 @@ func (b *DialogueBuilder) Build() (*DialogueModel, error) {
 	// Validate choices based on dialogue type
 	switch b.dialogueType {
 	case SendOk:
-		if len(b.choices) != 1 {
-			return nil, errors.New("sendOk requires exactly 1 choices")
+		if len(b.choices) != 2 {
+			return nil, errors.New("sendOk requires exactly 2 choices")
 		}
 	case SendNext:
 		if len(b.choices) != 2 {
@@ -624,6 +630,7 @@ type ConditionModel struct {
 	conditionType string
 	operator      string
 	value         string
+	itemId        uint32
 }
 
 // Type returns the condition type
@@ -641,11 +648,16 @@ func (c ConditionModel) Value() string {
 	return c.value
 }
 
+func (c ConditionModel) ItemId() uint32 {
+	return c.itemId
+}
+
 // ConditionBuilder is a builder for ConditionModel
 type ConditionBuilder struct {
 	conditionType string
 	operator      string
 	value         string
+	itemId        uint32
 }
 
 // NewConditionBuilder creates a new ConditionBuilder
@@ -671,6 +683,11 @@ func (b *ConditionBuilder) SetValue(value string) *ConditionBuilder {
 	return b
 }
 
+func (b *ConditionBuilder) SetItemId(itemId uint32) *ConditionBuilder {
+	b.itemId = itemId
+	return b
+}
+
 // Build builds the ConditionModel
 func (b *ConditionBuilder) Build() (ConditionModel, error) {
 	if b.conditionType == "" {
@@ -687,6 +704,7 @@ func (b *ConditionBuilder) Build() (ConditionModel, error) {
 		conditionType: b.conditionType,
 		operator:      b.operator,
 		value:         b.value,
+		itemId:        b.itemId,
 	}, nil
 }
 

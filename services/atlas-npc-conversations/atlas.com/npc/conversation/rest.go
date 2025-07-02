@@ -155,6 +155,7 @@ type RestConditionModel struct {
 	Type     string `json:"type"`     // Condition type
 	Operator string `json:"operator"` // Operator
 	Value    string `json:"value"`    // Value
+	ItemId   uint32 `json:"itemId,omitempty"`
 }
 
 // RestOutcomeModel represents the REST model for outcomes
@@ -351,6 +352,7 @@ func TransformGenericAction(m GenericActionModel) (RestGenericActionModel, error
 				Type:     condition.Type(),
 				Operator: condition.Operator(),
 				Value:    condition.Value(),
+				ItemId:   condition.ItemId(),
 			})
 		}
 
@@ -573,6 +575,7 @@ func ExtractOutcome(r RestOutcomeModel) (OutcomeModel, error) {
 			SetType(c.Type).
 			SetOperator(c.Operator).
 			SetValue(c.Value).
+			SetItemId(c.ItemId).
 			Build()
 
 		if err != nil {

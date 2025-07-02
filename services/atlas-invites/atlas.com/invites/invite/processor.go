@@ -1,6 +1,7 @@
 package invite
 
 import (
+	invite2 "atlas-invites/kafka/message/invite"
 	"atlas-invites/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-model/model"
@@ -10,75 +11,73 @@ import (
 
 const StartInviteId = uint32(1000000000)
 
-func Create(l logrus.FieldLogger) func(ctx context.Context) func(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32) error {
-	return func(ctx context.Context) func(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32) error {
-		return func(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32) error {
-			t := tenant.MustFromContext(ctx)
-			i := GetRegistry().Create(t, originatorId, worldId, targetId, inviteType, referenceId)
-			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(createdStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId()))
-		}
+type Processor interface {
+	GetByCharacterId(characterId uint32) ([]Model, error)
+	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
+	Create(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32) error
+	Accept(referenceId uint32, worldId byte, inviteType string, actorId uint32) error
+	Reject(originatorId uint32, worldId byte, inviteType string, actorId uint32) error
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	t   tenant.Model
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+		t:   tenant.MustFromContext(ctx),
 	}
 }
 
-func Accept(l logrus.FieldLogger) func(ctx context.Context) func(referenceId uint32, worldId byte, inviteType string, actorId uint32) error {
-	return func(ctx context.Context) func(referenceId uint32, worldId byte, inviteType string, actorId uint32) error {
-		return func(referenceId uint32, worldId byte, inviteType string, actorId uint32) error {
-			t := tenant.MustFromContext(ctx)
-			i, err := GetRegistry().GetByReference(t, actorId, inviteType, referenceId)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to locate invite being acted upon.")
-				return err
-			}
-
-			err = GetRegistry().Delete(t, actorId, inviteType, i.OriginatorId())
-			if err != nil {
-				l.WithError(err).Errorf("Unable to locate invite being acted upon.")
-				return err
-			}
-
-			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(acceptedStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId()))
-		}
-	}
+func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
+	return p.ByCharacterIdProvider(characterId)()
 }
 
-func Reject(l logrus.FieldLogger) func(ctx context.Context) func(originatorId uint32, worldId byte, inviteType string, actorId uint32) error {
-	return func(ctx context.Context) func(originatorId uint32, worldId byte, inviteType string, actorId uint32) error {
-		return func(originatorId uint32, worldId byte, inviteType string, actorId uint32) error {
-			t := tenant.MustFromContext(ctx)
-			i, err := GetRegistry().GetByOriginator(t, actorId, inviteType, originatorId)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to locate invite being acted upon.")
-				return err
-			}
-
-			err = GetRegistry().Delete(t, actorId, inviteType, originatorId)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to locate invite being acted upon.")
-				return err
-			}
-
-			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(rejectedStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId()))
-		}
+func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
+	is, err := GetRegistry().GetForCharacter(p.t, characterId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
 	}
+	return model.FixedProvider(is)
 }
 
-func byCharacterIdProvider(_ logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) model.Provider[[]Model] {
-	return func(ctx context.Context) func(characterId uint32) model.Provider[[]Model] {
-		return func(characterId uint32) model.Provider[[]Model] {
-			t := tenant.MustFromContext(ctx)
-			is, err := GetRegistry().GetForCharacter(t, characterId)
-			if err != nil {
-				return model.ErrorProvider[[]Model](err)
-			}
-			return model.FixedProvider(is)
-		}
-	}
+func (p *ProcessorImpl) Create(referenceId uint32, worldId byte, inviteType string, originatorId uint32, targetId uint32) error {
+	i := GetRegistry().Create(p.t, originatorId, worldId, targetId, inviteType, referenceId)
+	return producer.ProviderImpl(p.l)(p.ctx)(invite2.EnvEventStatusTopic)(createdStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId()))
 }
 
-func GetByCharacterId(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) ([]Model, error) {
-	return func(ctx context.Context) func(characterId uint32) ([]Model, error) {
-		return func(characterId uint32) ([]Model, error) {
-			return byCharacterIdProvider(l)(ctx)(characterId)()
-		}
+func (p *ProcessorImpl) Accept(referenceId uint32, worldId byte, inviteType string, actorId uint32) error {
+	i, err := GetRegistry().GetByReference(p.t, actorId, inviteType, referenceId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
+		return err
 	}
+
+	err = GetRegistry().Delete(p.t, actorId, inviteType, i.OriginatorId())
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
+		return err
+	}
+
+	return producer.ProviderImpl(p.l)(p.ctx)(invite2.EnvEventStatusTopic)(acceptedStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId()))
+}
+
+func (p *ProcessorImpl) Reject(originatorId uint32, worldId byte, inviteType string, actorId uint32) error {
+	i, err := GetRegistry().GetByOriginator(p.t, actorId, inviteType, originatorId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
+		return err
+	}
+
+	err = GetRegistry().Delete(p.t, actorId, inviteType, originatorId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
+		return err
+	}
+
+	return producer.ProviderImpl(p.l)(p.ctx)(invite2.EnvEventStatusTopic)(rejectedStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId()))
 }

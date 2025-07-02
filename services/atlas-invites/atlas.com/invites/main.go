@@ -3,12 +3,14 @@ package main
 import (
 	"atlas-invites/character"
 	"atlas-invites/invite"
+	invite2 "atlas-invites/kafka/consumer/invite"
 	"atlas-invites/logger"
 	"atlas-invites/service"
 	"atlas-invites/tasks"
 	"atlas-invites/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"os"
 	"time"
 )
 
@@ -47,10 +49,17 @@ func main() {
 	}
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
-	invite.InitConsumers(l)(cmf)(consumerGroupId)
-	invite.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	invite2.InitConsumers(l)(cmf)(consumerGroupId)
+	invite2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), character.InitResource(GetServer()))
+	// Create the service with the router
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(character.InitResource(GetServer())).
+		Run()
 
 	go tasks.Register(l, tdm.Context())(invite.NewInviteTimeout(l, time.Second*time.Duration(5)))
 

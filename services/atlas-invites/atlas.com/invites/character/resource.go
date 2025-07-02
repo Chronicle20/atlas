@@ -26,7 +26,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetCharacterInvites(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			is, err := invite.GetByCharacterId(d.Logger())(d.Context())(characterId)
+			is, err := invite.NewProcessor(d.Logger(), d.Context()).GetByCharacterId(characterId)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -39,7 +39,10 @@ func handleGetCharacterInvites(d *rest.HandlerDependency, c *rest.HandlerContext
 				return
 			}
 
-			server.Marshal[[]invite.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			// Marshal response
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]invite.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
 }

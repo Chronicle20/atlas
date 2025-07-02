@@ -18,6 +18,7 @@ A RESTful service that provides composite character state validation in the Atla
 - Meso (currency) validation
 - Map ID validation
 - Fame validation
+- Gender validation (0 = male, 1 = female)
 
 ## Environment
 
@@ -39,22 +40,49 @@ MINOR_VERSION:1
 
 ### Requests
 
-#### POST /api/qas/validations
+#### POST /api/validations
 
 Validates a set of conditions against a character's state.
 
-**Request Body:**
+**Request Body (Structured Format - Recommended):**
 ```json
 {
   "data": {
+    "id": "56",
     "type": "validations",
     "attributes": {
-      "characterId": 123,
       "conditions": [
-        "jobId=100",
-        "meso>=10000",
-        "mapId=2000",
-        "fame>=50"
+        {
+          "type": "jobId",
+          "operator": "=",
+          "value": 100
+        },
+        {
+          "type": "meso",
+          "operator": ">=",
+          "value": 10000
+        },
+        {
+          "type": "mapId",
+          "operator": "=",
+          "value": 2000
+        },
+        {
+          "type": "fame",
+          "operator": ">=",
+          "value": 50
+        },
+        {
+          "type": "gender",
+          "operator": "=",
+          "value": 0
+        },
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 10,
+          "itemId": 2000001
+        }
       ]
     }
   }
@@ -66,15 +94,67 @@ Validates a set of conditions against a character's state.
 {
   "data": {
     "type": "validations",
-    "id": "123",
+    "id": "56",
     "attributes": {
-      "characterId": 123,
       "passed": true,
       "details": [
         "Passed: Job ID = 100",
         "Passed: Meso >= 10000",
         "Passed: Map ID = 2000",
-        "Passed: Fame >= 50"
+        "Passed: Fame >= 50",
+        "Passed: Gender = 0",
+        "Passed: Item 2000001 quantity >= 10"
+      ],
+      "results": [
+        {
+          "passed": true,
+          "description": "Job ID = 100",
+          "type": "jobId",
+          "operator": "=",
+          "value": 100,
+          "actualValue": 100
+        },
+        {
+          "passed": true,
+          "description": "Meso >= 10000",
+          "type": "meso",
+          "operator": ">=",
+          "value": 10000,
+          "actualValue": 15000
+        },
+        {
+          "passed": true,
+          "description": "Map ID = 2000",
+          "type": "mapId",
+          "operator": "=",
+          "value": 2000,
+          "actualValue": 2000
+        },
+        {
+          "passed": true,
+          "description": "Fame >= 50",
+          "type": "fame",
+          "operator": ">=",
+          "value": 50,
+          "actualValue": 75
+        },
+        {
+          "passed": true,
+          "description": "Gender = 0",
+          "type": "gender",
+          "operator": "=",
+          "value": 0,
+          "actualValue": 0
+        },
+        {
+          "passed": true,
+          "description": "Item 2000001 quantity >= 10",
+          "type": "item",
+          "operator": ">=",
+          "value": 10,
+          "itemId": 2000001,
+          "actualValue": 15
+        }
       ]
     }
   }
@@ -83,13 +163,14 @@ Validates a set of conditions against a character's state.
 
 **Supported Conditions:**
 
-| Condition      | Expression Format Example | Source                         |
-|----------------|--------------------------|---------------------------------|
-| Job            | jobId=100                | Character Service (character.JobId) |
-| Meso (Currency)| meso>=10000              | Character Service (character.Meso) |
-| Map            | mapId=2000               | Character Service (character.MapId) |
-| Fame           | fame>=50                 | Character Service (character.Fame) |
-| Inventory Item | item[2000001]>=10        | Inventory Service (quantity of item with template ID 2000001) |
+| Condition       | Expression Format Example | Source                                                        |
+|-----------------|---------------------------|---------------------------------------------------------------|
+| Job             | jobId=100                 | Character Service (character.JobId)                           |
+| Meso (Currency) | meso>=10000               | Character Service (character.Meso)                            |
+| Map             | mapId=2000                | Character Service (character.MapId)                           |
+| Fame            | fame>=50                  | Character Service (character.Fame)                            |
+| Gender          | gender=0                  | Character Service (character.Gender) - 0=male, 1=female       |
+| Inventory Item  | item[2000001]>=10         | Inventory Service (quantity of item with template ID 2000001) |
 
 **Supported Operators:**
 - `=` (equals)

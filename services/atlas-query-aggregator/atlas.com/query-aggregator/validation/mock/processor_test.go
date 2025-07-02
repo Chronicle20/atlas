@@ -7,12 +7,12 @@ import (
 	"testing"
 )
 
-func TestProcessor_Validate(t *testing.T) {
+func TestProcessor_ValidateStructured(t *testing.T) {
 	t.Run("Default behavior", func(t *testing.T) {
 		processor := &ProcessorImpl{}
 
-		// Call Validate with no custom function
-		result, err := processor.Validate()(123, []string{})
+		// Call ValidateStructured with no custom function
+		result, err := processor.ValidateStructured()(123, []validation.ConditionInput{})
 
 		// Check that there's no error
 		if err != nil {
@@ -32,17 +32,27 @@ func TestProcessor_Validate(t *testing.T) {
 
 	t.Run("Custom behavior - success", func(t *testing.T) {
 		processor := &ProcessorImpl{
-			ValidateFunc: func(decorators ...model.Decorator[validation.ValidationResult]) func(characterId uint32, conditionExpressions []string) (validation.ValidationResult, error) {
-				return func(characterId uint32, conditionExpressions []string) (validation.ValidationResult, error) {
+			ValidateStructuredFunc: func(decorators ...model.Decorator[validation.ValidationResult]) func(characterId uint32, conditionInputs []validation.ConditionInput) (validation.ValidationResult, error) {
+				return func(characterId uint32, conditionInputs []validation.ConditionInput) (validation.ValidationResult, error) {
 					result := validation.NewValidationResult(characterId)
-					result.AddResult(true, "Custom condition")
+					condResult := validation.ConditionResult{
+						Passed:      true,
+						Description: "Custom condition",
+						Type:        validation.JobCondition,
+						Operator:    validation.Equals,
+						Value:       100,
+						ActualValue: 100,
+					}
+					result.AddConditionResult(condResult)
 					return result, nil
 				}
 			},
 		}
 
-		// Call Validate with custom function
-		result, err := processor.Validate()(123, []string{"test"})
+		// Call ValidateStructured with custom function
+		result, err := processor.ValidateStructured()(123, []validation.ConditionInput{
+			{Type: "jobId", Operator: "=", Value: 100},
+		})
 
 		// Check that there's no error
 		if err != nil {
@@ -67,15 +77,17 @@ func TestProcessor_Validate(t *testing.T) {
 
 	t.Run("Custom behavior - failure", func(t *testing.T) {
 		processor := &ProcessorImpl{
-			ValidateFunc: func(decorators ...model.Decorator[validation.ValidationResult]) func(characterId uint32, conditionExpressions []string) (validation.ValidationResult, error) {
-				return func(characterId uint32, conditionExpressions []string) (validation.ValidationResult, error) {
+			ValidateStructuredFunc: func(decorators ...model.Decorator[validation.ValidationResult]) func(characterId uint32, conditionInputs []validation.ConditionInput) (validation.ValidationResult, error) {
+				return func(characterId uint32, conditionInputs []validation.ConditionInput) (validation.ValidationResult, error) {
 					return validation.ValidationResult{}, errors.New("custom error")
 				}
 			},
 		}
 
-		// Call Validate with custom function
-		_, err := processor.Validate()(123, []string{"test"})
+		// Call ValidateStructured with custom function
+		_, err := processor.ValidateStructured()(123, []validation.ConditionInput{
+			{Type: "jobId", Operator: "=", Value: 100},
+		})
 
 		// Check that there's an error
 		if err == nil {

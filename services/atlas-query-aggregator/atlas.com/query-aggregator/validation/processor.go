@@ -10,7 +10,8 @@ import (
 )
 
 type Processor interface {
-	Validate(decorators ...model.Decorator[ValidationResult]) func(characterId uint32, conditionExpressions []string) (ValidationResult, error)
+	// ValidateStructured validates a list of structured condition inputs against a character
+	ValidateStructured(decorators ...model.Decorator[ValidationResult]) func(characterId uint32, conditionInputs []ConditionInput) (ValidationResult, error)
 }
 
 // ProcessorImpl handles validation logic
@@ -31,18 +32,19 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-// Validate validates a list of conditions against a character
-func (p *ProcessorImpl) Validate(decorators ...model.Decorator[ValidationResult]) func(characterId uint32, conditionExpressions []string) (ValidationResult, error) {
-	return func(characterId uint32, conditionExpressions []string) (ValidationResult, error) {
+
+// ValidateStructured validates a list of structured condition inputs against a character
+func (p *ProcessorImpl) ValidateStructured(decorators ...model.Decorator[ValidationResult]) func(characterId uint32, conditionInputs []ConditionInput) (ValidationResult, error) {
+	return func(characterId uint32, conditionInputs []ConditionInput) (ValidationResult, error) {
 		// Create a new validation result
 		result := NewValidationResult(characterId)
 
 		// Parse all conditions
-		conditions := make([]Condition, 0, len(conditionExpressions))
+		conditions := make([]Condition, 0, len(conditionInputs))
 		needsInventory := false
 
-		for _, expr := range conditionExpressions {
-			condition, err := NewCondition(expr)
+		for _, input := range conditionInputs {
+			condition, err := NewConditionBuilder().FromInput(input).Build()
 			if err != nil {
 				return result, fmt.Errorf("invalid condition: %w", err)
 			}
@@ -72,8 +74,8 @@ func (p *ProcessorImpl) Validate(decorators ...model.Decorator[ValidationResult]
 
 		// Evaluate each condition
 		for _, condition := range conditions {
-			passed, description := condition.Evaluate(characterData)
-			result.AddResult(passed, description)
+			conditionResult := condition.Evaluate(characterData)
+			result.AddConditionResult(conditionResult)
 		}
 
 		// Apply decorators

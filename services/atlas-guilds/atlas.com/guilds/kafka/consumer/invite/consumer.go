@@ -3,6 +3,7 @@ package invite
 import (
 	"atlas-guilds/guild"
 	consumer2 "atlas-guilds/kafka/consumer"
+	invite2 "atlas-guilds/kafka/message/invite"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -17,7 +18,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("invite_status_event")(EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("invite_status_event")(invite2.EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -26,18 +27,18 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
-			t, _ = topic.EnvProvider(l)(EnvEventStatusTopic)()
+			t, _ = topic.EnvProvider(l)(invite2.EnvEventStatusTopic)()
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAcceptedInvite(db))))
 		}
 	}
 }
 
-func handleAcceptedInvite(db *gorm.DB) message.Handler[statusEvent[acceptedEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e statusEvent[acceptedEventBody]) {
-		if e.Type != EventInviteStatusTypeAccepted {
+func handleAcceptedInvite(db *gorm.DB) message.Handler[invite2.StatusEvent[invite2.AcceptedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.AcceptedEventBody]) {
+		if e.Type != invite2.EventInviteStatusTypeAccepted {
 			return
 		}
-		if e.InviteType != InviteTypeGuild {
+		if e.InviteType != invite2.InviteTypeGuild {
 			return
 		}
 

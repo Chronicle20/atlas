@@ -8,6 +8,7 @@ import (
 	"atlas-guilds/guild/member"
 	"atlas-guilds/guild/title"
 	"atlas-guilds/invite"
+	guild2 "atlas-guilds/kafka/message/guild"
 	"atlas-guilds/kafka/producer"
 	"atlas-guilds/party"
 	"context"
@@ -128,43 +129,43 @@ func (p *ProcessorImpl) GetByMemberId(memberId uint32) (Model, error) {
 
 func (p *ProcessorImpl) RequestCreate(characterId uint32, worldId byte, channelId byte, mapId uint32, name string, transactionId uuid.UUID) error {
 	if p.nameInUse(worldId, name) {
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, ErrorNameInUse, transactionId))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, ErrorNameInUse, transactionId))
 		return errors.New("name in use")
 	}
 
 	if isValidName(name) {
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError, transactionId))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError, transactionId))
 		return errors.New("invalid name")
 	}
 
 	c, err := character.NewProcessor(p.l, p.ctx).GetById(characterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve character [%d] attempting to create guild.", characterId)
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError, transactionId))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError, transactionId))
 		return err
 	}
 
 	if c.Gm() {
 		p.l.WithError(err).Errorf("Game administrators cannot create guild.")
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, ErrorCannotAsAdmin, transactionId))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, ErrorCannotAsAdmin, transactionId))
 		return err
 	}
 
 	pa, err := party.NewProcessor(p.l, p.ctx).GetByMemberId(characterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve party for character [%d] attempting to create guild.", characterId)
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError, transactionId))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError, transactionId))
 		return err
 	}
 	if pa.LeaderId() != characterId {
 		p.l.WithError(err).Errorf("Character [%d] must be party leader to create guild.", characterId)
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError, transactionId))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError, transactionId))
 		return errors.New("must be party leader")
 	}
 
 	if len(pa.Members()) < MemberThreshold {
 		p.l.WithError(err).Errorf("Unable to create guild with less than [%d] party members.", MemberThreshold)
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError, transactionId))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError, transactionId))
 		return errors.New("not enough members")
 	}
 
@@ -180,18 +181,18 @@ func (p *ProcessorImpl) RequestCreate(characterId uint32, worldId byte, channelI
 	}
 	if alreadyInGuild {
 		p.l.WithError(err).Errorf("All party members must not be in a guild.")
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError, transactionId))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError, transactionId))
 		return errors.New("party member in guild")
 	}
 
 	err = coordinator.GetRegistry().Initiate(p.t, worldId, channelId, name, characterId, members)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to initialize a guild creation coordinator.")
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError, transactionId))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventErrorProvider(worldId, characterId, CreateError, transactionId))
 		return errors.New("creation coordinator initialization failed")
 	}
 
-	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventRequestAgreementProvider(worldId, characterId, name, transactionId))
+	_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventRequestAgreementProvider(worldId, characterId, name, transactionId))
 	return nil
 }
 
@@ -291,7 +292,7 @@ func (p *ProcessorImpl) CreationAgreementResponse(characterId uint32, agreed boo
 	}
 
 	p.l.Debugf("Guild [%d] created.", g.Id())
-	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventCreatedProvider(g.WorldId(), g.Id(), transactionId))
+	_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventCreatedProvider(g.WorldId(), g.Id(), transactionId))
 	return nil
 }
 
@@ -301,7 +302,7 @@ func (p *ProcessorImpl) ChangeEmblem(guildId uint32, characterId uint32, logo ui
 	if err != nil {
 		return err
 	}
-	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventEmblemUpdatedProvider(g.WorldId(), g.Id(), logo, logoColor, logoBackground, logoBackgroundColor, transactionId))
+	_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventEmblemUpdatedProvider(g.WorldId(), g.Id(), logo, logoColor, logoBackground, logoBackgroundColor, transactionId))
 	return nil
 }
 
@@ -316,7 +317,7 @@ func (p *ProcessorImpl) UpdateMemberOnline(characterId uint32, online bool, tran
 		if err != nil {
 			return err
 		}
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventMemberStatusUpdatedProvider(g.WorldId(), g.Id(), characterId, online, transactionId))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventMemberStatusUpdatedProvider(g.WorldId(), g.Id(), characterId, online, transactionId))
 		return nil
 	})
 }
@@ -327,7 +328,7 @@ func (p *ProcessorImpl) ChangeNotice(guildId uint32, characterId uint32, notice 
 	if err != nil {
 		return err
 	}
-	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventNoticeUpdatedProvider(g.WorldId(), g.Id(), notice, transactionId))
+	_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventNoticeUpdatedProvider(g.WorldId(), g.Id(), notice, transactionId))
 	return nil
 }
 
@@ -343,7 +344,7 @@ func (p *ProcessorImpl) Leave(guildId uint32, characterId uint32, force bool, tr
 		return err
 	}
 
-	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventMemberLeftProvider(g.WorldId(), g.Id(), characterId, force, transactionId))
+	_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventMemberLeftProvider(g.WorldId(), g.Id(), characterId, force, transactionId))
 	return nil
 }
 
@@ -378,7 +379,7 @@ func (p *ProcessorImpl) Join(guildId uint32, characterId uint32, transactionId u
 		return err
 	}
 
-	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventMemberJoinedProvider(g.WorldId(), g.Id(), characterId, c.Name(), c.JobId(), c.Level(), 5, 5, transactionId))
+	_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventMemberJoinedProvider(g.WorldId(), g.Id(), characterId, c.Name(), c.JobId(), c.Level(), 5, 5, transactionId))
 	return nil
 }
 
@@ -394,7 +395,7 @@ func (p *ProcessorImpl) ChangeTitles(guildId uint32, characterId uint32, titles 
 		return err
 	}
 
-	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventTitlesUpdatedProvider(g.WorldId(), g.Id(), titles, transactionId))
+	_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventTitlesUpdatedProvider(g.WorldId(), g.Id(), titles, transactionId))
 	return nil
 }
 
@@ -410,7 +411,7 @@ func (p *ProcessorImpl) ChangeMemberTitle(guildId uint32, characterId uint32, ta
 		if err != nil {
 			return err
 		}
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventMemberTitleUpdatedProvider(g.WorldId(), g.Id(), targetId, title, transactionId))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventMemberTitleUpdatedProvider(g.WorldId(), g.Id(), targetId, title, transactionId))
 		return nil
 	})
 }
@@ -434,7 +435,7 @@ func (p *ProcessorImpl) RequestDisband(characterId uint32, transactionId uuid.UU
 		_ = title.NewProcessor(p.l, p.ctx, tx).Clear(g.Id())
 		_ = deleteGuild(tx, p.t.Id(), g.Id())
 
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventDisbandedProvider(g.WorldId(), g.Id(), members, transactionId))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventDisbandedProvider(g.WorldId(), g.Id(), members, transactionId))
 		return nil
 	})
 }
@@ -453,6 +454,6 @@ func (p *ProcessorImpl) RequestCapacityIncrease(characterId uint32, transactionI
 	if err != nil {
 		return err
 	}
-	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventCapacityUpdatedProvider(g.WorldId(), g.Id(), g.Capacity(), transactionId))
+	_ = producer.ProviderImpl(p.l)(p.ctx)(guild2.EnvStatusEventTopic)(statusEventCapacityUpdatedProvider(g.WorldId(), g.Id(), g.Capacity(), transactionId))
 	return nil
 }

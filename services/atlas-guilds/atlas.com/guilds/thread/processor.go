@@ -2,6 +2,7 @@ package thread
 
 import (
 	"atlas-guilds/database"
+	thread2 "atlas-guilds/kafka/message/thread"
 	"atlas-guilds/kafka/producer"
 	"atlas-guilds/thread/reply"
 	"context"
@@ -71,7 +72,7 @@ func (p *ProcessorImpl) Create(worldId byte, guildId uint32, posterId uint32, ti
 		p.l.Debugf("Unable to create thread for guild [%d].", guildId)
 		return Model{}, err
 	}
-	err = producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventCreatedProvider(worldId, guildId, thr.Id(), posterId))
+	err = producer.ProviderImpl(p.l)(p.ctx)(thread2.EnvStatusEventTopic)(statusEventCreatedProvider(worldId, guildId, thr.Id(), posterId))
 	if err != nil {
 		p.l.Debugf("Unable to report thread [%d] created for guild [%d].", thr.Id(), guildId)
 	}
@@ -97,7 +98,7 @@ func (p *ProcessorImpl) Update(worldId byte, guildId uint32, threadId uint32, po
 	if txErr != nil {
 		return Model{}, txErr
 	}
-	err := producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventUpdatedProvider(worldId, guildId, thr.Id(), posterId))
+	err := producer.ProviderImpl(p.l)(p.ctx)(thread2.EnvStatusEventTopic)(statusEventUpdatedProvider(worldId, guildId, thr.Id(), posterId))
 	if err != nil {
 		p.l.Debugf("Unable to report thread [%d] updated for guild [%d].", thr.Id(), guildId)
 	}
@@ -131,7 +132,7 @@ func (p *ProcessorImpl) Delete(worldId byte, guildId uint32, threadId uint32, ac
 		p.l.Debugf("Unable to delete guild [%d] thread [%d].", guildId, threadId)
 		return txErr
 	}
-	err := producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventDeletedProvider(worldId, guildId, threadId, actorId))
+	err := producer.ProviderImpl(p.l)(p.ctx)(thread2.EnvStatusEventTopic)(statusEventDeletedProvider(worldId, guildId, threadId, actorId))
 	if err != nil {
 		p.l.Debugf("Unable to report thread [%d] deleted for guild [%d].", threadId, guildId)
 	}
@@ -162,7 +163,7 @@ func (p *ProcessorImpl) Reply(worldId byte, guildId uint32, threadId uint32, pos
 	if txErr != nil {
 		return Model{}, txErr
 	}
-	err := producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventReplyAddedProvider(worldId, guildId, threadId, posterId, rp.Id()))
+	err := producer.ProviderImpl(p.l)(p.ctx)(thread2.EnvStatusEventTopic)(statusEventReplyAddedProvider(worldId, guildId, threadId, posterId, rp.Id()))
 	if err != nil {
 		p.l.Debugf("Unable to report thread [%d] replied to for guild [%d].", thr.Id(), guildId)
 	}
@@ -192,7 +193,7 @@ func (p *ProcessorImpl) DeleteReply(worldId byte, guildId uint32, threadId uint3
 	if txErr != nil {
 		return Model{}, txErr
 	}
-	err := producer.ProviderImpl(p.l)(p.ctx)(EnvStatusEventTopic)(statusEventReplyDeletedProvider(worldId, guildId, threadId, actorId, replyId))
+	err := producer.ProviderImpl(p.l)(p.ctx)(thread2.EnvStatusEventTopic)(statusEventReplyDeletedProvider(worldId, guildId, threadId, actorId, replyId))
 	if err != nil {
 		p.l.Debugf("Unable to report thread [%d] reply removed for guild [%d].", thr.Id(), guildId)
 	}

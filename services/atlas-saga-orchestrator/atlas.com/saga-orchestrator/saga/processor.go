@@ -201,7 +201,8 @@ type ActionHandler func(p *ProcessorImpl, s Saga, st Step[any]) error
 
 // actionHandlers maps action types to their handler functions
 var actionHandlers = map[Action]ActionHandler{
-	AwardInventory:         handleAwardInventory,
+	AwardInventory:         handleAwardAsset, // Deprecated: Use AwardAsset instead
+	AwardAsset:             handleAwardAsset, // Preferred over AwardInventory
 	WarpToRandomPortal:     handleWarpToRandomPortal,
 	WarpToPortal:           handleWarpToPortal,
 	AwardExperience:        handleAwardExperience,
@@ -271,8 +272,8 @@ func (p *ProcessorImpl) logActionError(s Saga, st Step[any], err error, errorMsg
 	}).WithError(err).Error(errorMsg)
 }
 
-// handleAwardInventory handles the AwardInventory action
-func handleAwardInventory(p *ProcessorImpl, s Saga, st Step[any]) error {
+// handleAwardAsset handles the AwardAsset and AwardInventory actions
+func handleAwardAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(AwardItemActionPayload)
 	if !ok {
 		return errors.New("invalid payload")
@@ -281,11 +282,17 @@ func handleAwardInventory(p *ProcessorImpl, s Saga, st Step[any]) error {
 	err := p.compP.RequestCreateItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity)
 
 	if err != nil {
-		p.logActionError(s, st, err, "Unable to award item.")
+		p.logActionError(s, st, err, "Unable to award asset.")
 		return err
 	}
 
 	return nil
+}
+
+// handleAwardInventory is a wrapper for handleAwardAsset for backward compatibility
+// Deprecated: Use handleAwardAsset instead
+func handleAwardInventory(p *ProcessorImpl, s Saga, st Step[any]) error {
+	return handleAwardAsset(p, s, st)
 }
 
 // handleWarpToRandomPortal handles the WarpToRandomPortal action

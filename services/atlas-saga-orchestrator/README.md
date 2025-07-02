@@ -94,7 +94,12 @@ The service consumes messages from the following Kafka topics:
 
 ### Supported Actions
 
-- `award_inventory` - Awards items to a character's inventory
+- `award_asset` - Awards items to a character's inventory
+  - Payload: `{"characterId": 12345, "item": {"templateId": 2000, "quantity": 1}}`
+  - Triggers a compartment command to create the item
+  - Completes when the item is successfully added to the inventory
+
+- `award_inventory` - (Deprecated: Use `award_asset` instead) Awards items to a character's inventory
   - Payload: `{"characterId": 12345, "item": {"templateId": 2000, "quantity": 1}}`
   - Triggers a compartment command to create the item
   - Completes when the item is successfully added to the inventory

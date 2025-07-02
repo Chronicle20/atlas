@@ -94,7 +94,8 @@ type Action string
 
 // Constants for different actions
 const (
-	AwardInventory         Action = "award_inventory"
+	AwardInventory         Action = "award_inventory" // Deprecated: Use AwardAsset instead
+	AwardAsset             Action = "award_asset"     // Preferred over AwardInventory
 	AwardExperience        Action = "award_experience"
 	AwardLevel             Action = "award_level"
 	AwardMesos             Action = "award_mesos"
@@ -230,7 +231,7 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 
 	// Now handle the Payload field based on the Action type (you can customize this)
 	switch s.Action {
-	case AwardInventory:
+	case AwardInventory, AwardAsset: // Handle both action types the same way
 		var payload AwardItemActionPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)

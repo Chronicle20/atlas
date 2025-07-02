@@ -42,7 +42,7 @@ func handleAcceptedInvite(db *gorm.DB) message.Handler[invite2.StatusEvent[invit
 			return
 		}
 
-		err := guild.NewProcessor(l, ctx, db).Join(e.ReferenceId, e.Body.TargetId, uuid.New())
+		err := guild.NewProcessor(l, ctx, db).JoinAndEmit(e.ReferenceId, e.Body.TargetId, uuid.New())
 		if err != nil {
 			l.WithError(err).Errorf("Character [%d] unable to join party [%d].", e.Body.TargetId, e.ReferenceId)
 		}

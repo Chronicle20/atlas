@@ -47,7 +47,7 @@ func handleCommandCreate(db *gorm.DB) message.Handler[thread2.Command[thread2.Cr
 		if err != nil {
 			return
 		}
-		_, _ = thread.NewProcessor(l, ctx, db).Create(g.WorldId(), g.Id(), c.CharacterId, c.Body.Title, c.Body.Message, c.Body.EmoticonId, c.Body.Notice)
+		_, _ = thread.NewProcessor(l, ctx, db).CreateAndEmit(g.WorldId(), g.Id(), c.CharacterId, c.Body.Title, c.Body.Message, c.Body.EmoticonId, c.Body.Notice)
 	}
 }
 
@@ -60,7 +60,7 @@ func handleCommandUpdate(db *gorm.DB) message.Handler[thread2.Command[thread2.Up
 		if err != nil {
 			return
 		}
-		_, _ = thread.NewProcessor(l, ctx, db).Update(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId, c.Body.Title, c.Body.Message, c.Body.EmoticonId, c.Body.Notice)
+		_, _ = thread.NewProcessor(l, ctx, db).UpdateAndEmit(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId, c.Body.Title, c.Body.Message, c.Body.EmoticonId, c.Body.Notice)
 	}
 }
 
@@ -73,7 +73,7 @@ func handleCommandDelete(db *gorm.DB) message.Handler[thread2.Command[thread2.De
 		if err != nil {
 			return
 		}
-		_ = thread.NewProcessor(l, ctx, db).Delete(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId)
+		_ = thread.NewProcessor(l, ctx, db).DeleteAndEmit(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId)
 	}
 }
 
@@ -86,7 +86,7 @@ func handleCommandAddReply(db *gorm.DB) message.Handler[thread2.Command[thread2.
 		if err != nil {
 			return
 		}
-		_, _ = thread.NewProcessor(l, ctx, db).Reply(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId, c.Body.Message)
+		_, _ = thread.NewProcessor(l, ctx, db).ReplyAndEmit(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId, c.Body.Message)
 	}
 }
 
@@ -99,6 +99,6 @@ func handleCommandDeleteReply(db *gorm.DB) message.Handler[thread2.Command[threa
 		if err != nil {
 			return
 		}
-		_, _ = thread.NewProcessor(l, ctx, db).DeleteReply(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId, c.Body.ReplyId)
+		_, _ = thread.NewProcessor(l, ctx, db).DeleteReplyAndEmit(g.WorldId(), g.Id(), c.Body.ThreadId, c.CharacterId, c.Body.ReplyId)
 	}
 }

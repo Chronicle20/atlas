@@ -40,7 +40,7 @@ func (t *Timeout) Run() {
 	for _, g := range gs {
 		t.l.Infof("Guild creation coordination expired for guild [%s].", g.Name())
 		tctx := tenant.WithContext(sctx, g.Tenant())
-		_ = NewProcessor(t.l, tctx, t.db).CreationAgreementResponse(g.LeaderId(), false, uuid.New())
+		_ = NewProcessor(t.l, tctx, t.db).CreationAgreementResponseAndEmit(g.LeaderId(), false, uuid.New())
 	}
 }
 

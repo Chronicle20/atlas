@@ -5,6 +5,10 @@ import (
 	consumer2 "atlas-guilds/kafka/consumer"
 	guild2 "atlas-guilds/kafka/message/guild"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -47,7 +51,8 @@ func handleCommandRequestCreate(db *gorm.DB) message.Handler[guild2.Command[guil
 			return
 		}
 
-		_ = guild.NewProcessor(l, ctx, db).RequestCreate(c.CharacterId, c.Body.WorldId, c.Body.ChannelId, c.Body.MapId, c.Body.Name, c.TransactionId)
+		f := field.NewBuilder(world.Id(c.Body.WorldId), channel.Id(c.Body.ChannelId), _map.Id(c.Body.MapId)).Build()
+		_ = guild.NewProcessor(l, ctx, db).RequestCreateAndEmit(c.CharacterId, f, c.Body.Name, c.TransactionId)
 	}
 }
 
@@ -57,7 +62,7 @@ func handleCommandCreationAgreement(db *gorm.DB) message.Handler[guild2.Command[
 			return
 		}
 
-		_ = guild.NewProcessor(l, ctx, db).CreationAgreementResponse(c.CharacterId, c.Body.Agreed, c.TransactionId)
+		_ = guild.NewProcessor(l, ctx, db).CreationAgreementResponseAndEmit(c.CharacterId, c.Body.Agreed, c.TransactionId)
 	}
 }
 
@@ -67,7 +72,7 @@ func handleCommandChangeEmblem(db *gorm.DB) message.Handler[guild2.Command[guild
 			return
 		}
 
-		_ = guild.NewProcessor(l, ctx, db).ChangeEmblem(c.Body.GuildId, c.CharacterId, c.Body.Logo, c.Body.LogoColor, c.Body.LogoBackground, c.Body.LogoBackgroundColor, c.TransactionId)
+		_ = guild.NewProcessor(l, ctx, db).ChangeEmblemAndEmit(c.Body.GuildId, c.CharacterId, c.Body.Logo, c.Body.LogoColor, c.Body.LogoBackground, c.Body.LogoBackgroundColor, c.TransactionId)
 	}
 }
 
@@ -77,7 +82,7 @@ func handleCommandChangeNotice(db *gorm.DB) message.Handler[guild2.Command[guild
 			return
 		}
 
-		_ = guild.NewProcessor(l, ctx, db).ChangeNotice(c.Body.GuildId, c.CharacterId, c.Body.Notice, c.TransactionId)
+		_ = guild.NewProcessor(l, ctx, db).ChangeNoticeAndEmit(c.Body.GuildId, c.CharacterId, c.Body.Notice, c.TransactionId)
 	}
 }
 
@@ -87,7 +92,7 @@ func handleCommandLeave(db *gorm.DB) message.Handler[guild2.Command[guild2.Leave
 			return
 		}
 
-		_ = guild.NewProcessor(l, ctx, db).Leave(c.Body.GuildId, c.CharacterId, c.Body.Force, c.TransactionId)
+		_ = guild.NewProcessor(l, ctx, db).LeaveAndEmit(c.Body.GuildId, c.CharacterId, c.Body.Force, c.TransactionId)
 	}
 }
 
@@ -97,7 +102,7 @@ func handleCommandRequestInvite(db *gorm.DB) message.Handler[guild2.Command[guil
 			return
 		}
 
-		_ = guild.NewProcessor(l, ctx, db).RequestInvite(c.Body.GuildId, c.CharacterId, c.Body.TargetId)
+		_ = guild.NewProcessor(l, ctx, db).RequestInviteAndEmit(c.Body.GuildId, c.CharacterId, c.Body.TargetId)
 	}
 }
 
@@ -107,7 +112,7 @@ func handleCommandChangeTitles(db *gorm.DB) message.Handler[guild2.Command[guild
 			return
 		}
 
-		_ = guild.NewProcessor(l, ctx, db).ChangeTitles(c.Body.GuildId, c.CharacterId, c.Body.Titles, c.TransactionId)
+		_ = guild.NewProcessor(l, ctx, db).ChangeTitlesAndEmit(c.Body.GuildId, c.CharacterId, c.Body.Titles, c.TransactionId)
 	}
 }
 
@@ -117,7 +122,7 @@ func handleCommandChangeMemberTitle(db *gorm.DB) message.Handler[guild2.Command[
 			return
 		}
 
-		_ = guild.NewProcessor(l, ctx, db).ChangeMemberTitle(c.Body.GuildId, c.CharacterId, c.Body.TargetId, c.Body.Title, c.TransactionId)
+		_ = guild.NewProcessor(l, ctx, db).ChangeMemberTitleAndEmit(c.Body.GuildId, c.CharacterId, c.Body.TargetId, c.Body.Title, c.TransactionId)
 	}
 }
 
@@ -127,7 +132,7 @@ func handleCommandRequestDisband(db *gorm.DB) message.Handler[guild2.Command[gui
 			return
 		}
 
-		_ = guild.NewProcessor(l, ctx, db).RequestDisband(c.CharacterId, c.TransactionId)
+		_ = guild.NewProcessor(l, ctx, db).RequestDisbandAndEmit(c.CharacterId, c.TransactionId)
 	}
 }
 
@@ -137,6 +142,6 @@ func handleCommandRequestCapacityIncrease(db *gorm.DB) message.Handler[guild2.Co
 			return
 		}
 
-		_ = guild.NewProcessor(l, ctx, db).RequestCapacityIncrease(c.CharacterId, c.TransactionId)
+		_ = guild.NewProcessor(l, ctx, db).RequestCapacityIncreaseAndEmit(c.CharacterId, c.TransactionId)
 	}
 }

@@ -2,16 +2,17 @@ package guild
 
 import (
 	guild2 "atlas-guilds/kafka/message/guild"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
-func statusEventRequestAgreementProvider(worldId byte, characterId uint32, proposedName string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func statusEventRequestAgreementProvider(worldId world.Id, characterId uint32, proposedName string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &guild2.StatusEvent[guild2.StatusEventRequestAgreementBody]{
-		WorldId:       worldId,
+		WorldId:       byte(worldId),
 		GuildId:       0,
 		Type:          guild2.StatusEventTypeRequestAgreement,
 		TransactionId: transactionId,
@@ -173,10 +174,10 @@ func statusEventTitlesUpdatedProvider(worldId byte, guildId uint32, titles []str
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventErrorProvider(worldId byte, characterId uint32, error string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+func statusEventErrorProvider(worldId world.Id, characterId uint32, error string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &guild2.StatusEvent[guild2.StatusEventErrorBody]{
-		WorldId:       worldId,
+		WorldId:       byte(worldId),
 		GuildId:       0,
 		Type:          guild2.StatusEventTypeError,
 		TransactionId: transactionId,

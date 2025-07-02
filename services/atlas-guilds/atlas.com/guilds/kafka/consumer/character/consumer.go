@@ -40,7 +40,7 @@ func handleStatusEventLogin(db *gorm.DB) func(l logrus.FieldLogger, ctx context.
 			return
 		}
 
-		err := guild.NewProcessor(l, ctx, db).UpdateMemberOnline(e.CharacterId, true, uuid.New())
+		err := guild.NewProcessor(l, ctx, db).UpdateMemberOnlineAndEmit(e.CharacterId, true, uuid.New())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process login for character [%d].", e.CharacterId)
 		}
@@ -54,7 +54,7 @@ func handleStatusEventLogout(db *gorm.DB) func(l logrus.FieldLogger, ctx context
 
 		}
 
-		err := guild.NewProcessor(l, ctx, db).UpdateMemberOnline(e.CharacterId, false, uuid.New())
+		err := guild.NewProcessor(l, ctx, db).UpdateMemberOnlineAndEmit(e.CharacterId, false, uuid.New())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process logout for character [%d].", e.CharacterId)
 		}

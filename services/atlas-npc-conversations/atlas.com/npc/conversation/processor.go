@@ -22,9 +22,6 @@ type Processor interface {
 	// Continue continues a conversation with an NPC
 	Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32) error
 
-	// ContinueViaEvent continues a conversation via an event
-	ContinueViaEvent(characterId uint32, action byte, referenceId int32) error
-
 	// End ends a conversation
 	End(characterId uint32) error
 
@@ -330,103 +327,6 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 			return err
 		}
 	}
-	return nil
-}
-
-func (p *ProcessorImpl) ContinueViaEvent(characterId uint32, action byte, referenceId int32) error {
-	// Get the previous context
-	cc, err := GetRegistry().GetPreviousContext(p.t, characterId)
-	if err != nil {
-		p.l.WithError(err).Errorf("Unable to retrieve conversation context for [%d].", characterId)
-		return errors.New("conversation context not found")
-	}
-
-	p.l.Debugf("Continuing conversation via event for character [%d] with NPC [%d] in map [%d].", characterId, cc.NpcId(), cc.Field().MapId())
-	p.l.Debugf("Event details: action [%d], referenceId [%d].", action, referenceId)
-
-	// Get the current state
-	currentStateId := cc.CurrentState()
-	conversation := cc.Conversation()
-
-	// Find the current state in the conversation - just to validate it exists
-	_, err = conversation.FindState(currentStateId)
-	if err != nil {
-		p.l.WithError(err).Errorf("Failed to find state [%s] for character [%d]", currentStateId, characterId)
-		return err
-	}
-
-	// Process the event based on the action
-	// For now, we'll just use the referenceId as a direct reference to the next state ID
-	// In a more complex implementation, we might have a mapping of event references to state transitions
-
-	// Find the next state using the referenceId
-	var nextStateId string
-
-	// This is a simplified approach - in a real implementation, you might have a more complex mapping
-	// between event references and state transitions
-	if referenceId >= 0 {
-		// Use the referenceId as an index into the available states
-		states := conversation.States()
-		if int(referenceId) < len(states) {
-			nextStateId = states[referenceId].Id()
-		} else {
-			return fmt.Errorf("invalid referenceId: %d (states: %d)", referenceId, len(states))
-		}
-	} else {
-		// Negative referenceId could be used for special transitions
-		// For now, just end the conversation
-		nextStateId = ""
-	}
-
-	// If there's a next state, process it
-	if nextStateId != "" {
-		// Find the next state
-		nextState, err := conversation.FindState(nextStateId)
-		if err != nil {
-			p.l.WithError(err).Errorf("Failed to find next state [%s] for character [%d]", nextStateId, characterId)
-			return err
-		}
-
-		// Process the next state
-		finalStateId, err := p.processState(cc, nextState)
-		if err != nil {
-			p.l.WithError(err).Errorf("Failed to process next state [%s] for character [%d]", nextStateId, characterId)
-			return err
-		}
-
-		// If there's a final state, update the context and store it
-		if finalStateId != "" {
-			// Update the context with the final state
-			builder := NewConversationContextBuilder().
-				SetField(cc.Field()).
-				SetCharacterId(characterId).
-				SetNpcId(cc.NpcId()).
-				SetCurrentState(finalStateId).
-				SetConversation(conversation)
-
-			// Preserve existing context
-			existingContext := cc.Context()
-			for k, v := range existingContext {
-				builder.AddContextValue(k, v)
-			}
-
-			newCtx, err := builder.Build()
-			if err != nil {
-				p.l.WithError(err).Errorf("Failed to update conversation context for character [%d]", characterId)
-				return err
-			}
-
-			// Store the updated context
-			GetRegistry().SetContext(p.t, characterId, newCtx)
-		} else {
-			// No final state, end the conversation
-			GetRegistry().ClearContext(p.t, characterId)
-		}
-	} else {
-		// No next state, end the conversation
-		GetRegistry().ClearContext(p.t, characterId)
-	}
-
 	return nil
 }
 

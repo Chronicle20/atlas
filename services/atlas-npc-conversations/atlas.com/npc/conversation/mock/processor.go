@@ -33,6 +33,9 @@ type ProcessorMock struct {
 	// ByNpcIdProviderFunc is a function field for the ByNpcIdProvider method
 	ByNpcIdProviderFunc func(npcId uint32) model.Provider[conversation.Model]
 
+	// AllByNpcIdProviderFunc is a function field for the AllByNpcIdProvider method
+	AllByNpcIdProviderFunc func(npcId uint32) model.Provider[[]conversation.Model]
+
 	// AllProviderFunc is a function field for the AllProvider method
 	AllProviderFunc func() model.Provider[[]conversation.Model]
 }
@@ -83,6 +86,17 @@ func (m *ProcessorMock) ByNpcIdProvider(npcId uint32) model.Provider[conversatio
 	// Default implementation returns a provider that returns an empty model
 	return func() (conversation.Model, error) {
 		return conversation.Model{}, nil
+	}
+}
+
+// AllByNpcIdProvider is a mock implementation of the conversation.Processor.AllByNpcIdProvider method
+func (m *ProcessorMock) AllByNpcIdProvider(npcId uint32) model.Provider[[]conversation.Model] {
+	if m.AllByNpcIdProviderFunc != nil {
+		return m.AllByNpcIdProviderFunc(npcId)
+	}
+	// Default implementation returns a provider that returns an empty slice
+	return func() ([]conversation.Model, error) {
+		return []conversation.Model{}, nil
 	}
 }
 

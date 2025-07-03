@@ -35,19 +35,19 @@ func handleCreateCommand(l logrus.FieldLogger, ctx context.Context, c invite2.Co
 	if c.Type != invite2.CommandInviteTypeCreate {
 		return
 	}
-	_, _ = invite3.NewProcessor(l, ctx).CreateAndEmit(c.Body.ReferenceId, c.WorldId, c.InviteType, c.Body.OriginatorId, c.Body.TargetId)
+	_, _ = invite3.NewProcessor(l, ctx).CreateAndEmit(c.Body.ReferenceId, c.WorldId, c.InviteType, c.Body.OriginatorId, c.Body.TargetId, c.TransactionId)
 }
 
 func handleAcceptCommand(l logrus.FieldLogger, ctx context.Context, c invite2.CommandEvent[invite2.AcceptCommandBody]) {
 	if c.Type != invite2.CommandInviteTypeAccept {
 		return
 	}
-	_, _ = invite3.NewProcessor(l, ctx).AcceptAndEmit(c.Body.ReferenceId, c.WorldId, c.InviteType, c.Body.TargetId)
+	_, _ = invite3.NewProcessor(l, ctx).AcceptAndEmit(c.Body.ReferenceId, c.WorldId, c.InviteType, c.Body.TargetId, c.TransactionId)
 }
 
 func handleRejectCommand(l logrus.FieldLogger, ctx context.Context, c invite2.CommandEvent[invite2.RejectCommandBody]) {
 	if c.Type != invite2.CommandInviteTypeReject {
 		return
 	}
-	_, _ = invite3.NewProcessor(l, ctx).RejectAndEmit(c.Body.OriginatorId, c.WorldId, c.InviteType, c.Body.TargetId)
+	_, _ = invite3.NewProcessor(l, ctx).RejectAndEmit(c.Body.OriginatorId, c.WorldId, c.InviteType, c.Body.TargetId, c.TransactionId)
 }

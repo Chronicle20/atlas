@@ -1,5 +1,9 @@
 package invite
 
+import (
+	"github.com/google/uuid"
+)
+
 const (
 	EnvCommandTopic         = "COMMAND_TOPIC_INVITE"
 	CommandInviteTypeCreate = "CREATE"
@@ -22,10 +26,11 @@ const (
 )
 
 type CommandEvent[E any] struct {
-	WorldId    byte   `json:"worldId"`
-	InviteType string `json:"inviteType"`
-	Type       string `json:"type"`
-	Body       E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       byte      `json:"worldId"`
+	InviteType    string    `json:"inviteType"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type CreateCommandBody struct {
@@ -45,11 +50,12 @@ type RejectCommandBody struct {
 }
 
 type StatusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	InviteType  string `json:"inviteType"`
-	ReferenceId uint32 `json:"referenceId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       byte      `json:"worldId"`
+	InviteType    string    `json:"inviteType"`
+	ReferenceId   uint32    `json:"referenceId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type CreatedEventBody struct {

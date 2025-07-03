@@ -30,7 +30,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {Button} from "@/components/ui/button";
-import {RefreshCw, ZoomIn, ZoomOut, Info, Edit, Trash, MessageSquare, Cog, Hammer, List} from "lucide-react";
+import {RefreshCw, ZoomIn, ZoomOut, Info, Edit, Trash, MessageSquare, Cog, Hammer, List, X} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -103,9 +103,11 @@ interface CustomNodeProps extends NodeProps {
   style?: React.CSSProperties;
   onNodeEdit?: (nodeId: string) => void; // Add callback for node editing
   onNodeDelete?: (nodeId: string) => void; // Add callback for node deletion
+  onEdgeRemove?: (edgeId: string) => void; // Add callback for edge removal
+  onTextEdit?: (nodeId: string, text: string) => void; // Add callback for text editing
 }
 
-const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: CustomNodeProps) => {
+const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, onEdgeRemove, onTextEdit, ...props}: CustomNodeProps) => {
   const {label, type, text, operations, outcomes, choices, craftAction, id} = data as NodeData;
 
   return (
@@ -137,7 +139,11 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
             </div>
           </div>
           {text && (
-              <div className="text-xs mt-2 p-1 bg-black/10 rounded">
+              <div 
+                className="text-xs mt-2 p-1 bg-black/10 rounded cursor-pointer hover:bg-black/20"
+                onClick={() => onTextEdit && onTextEdit(id, text)}
+                title="Click to edit"
+              >
                 {text}
               </div>
           )}
@@ -160,16 +166,41 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
                 <div className="font-medium">Outcomes:</div>
                 <div className="space-y-2 mt-1">
                   {outcomes.map((outcome: { nextState: string; conditions: string[] }, index: number) => (
-                      <div key={index} className="bg-black/10 rounded p-2 relative">
-                        {outcome.conditions.length > 0 ? (
-                            <div>
-                              {outcome.conditions.map((condition: string, condIndex: number) => (
-                                  <div key={condIndex}>{condition}</div>
-                              ))}
-                            </div>
-                        ) : (
-                            <div className="italic">No conditions (default outcome)</div>
-                        )}
+                      <div key={index} className="bg-black/10 rounded p-2 relative min-h-[32px]">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            {outcome.conditions.length > 0 ? (
+                                <div>
+                                  {outcome.conditions.map((condition: string, condIndex: number) => (
+                                      <div key={condIndex}>{condition}</div>
+                                  ))}
+                                </div>
+                            ) : (
+                                <div className="italic">Otherwise</div>
+                            )}
+                          </div>
+                          <div className="w-5 h-5 ml-2 flex-shrink-0">
+                            {outcome.nextState && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-5 w-5" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Create a change object to remove the edge
+                                  const edgeId = `${id}-to-${outcome.nextState}-${index}`;
+                                  const edgeRemoveChange = {
+                                    id: edgeId,
+                                    type: 'remove' as const,
+                                  };
+                                  onEdgeRemove && onEdgeRemove(edgeId);
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
                         {/* Source handle for this outcome */}
                         <Handle
                           id={`outcome-${index}`}
@@ -196,7 +227,7 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
               <div className="text-xs mt-2">
                 <div className="font-medium">Craft Action:</div>
                 <div className="space-y-2 mt-1">
-                  <div className="bg-black/10 rounded p-2 border border-white/20 relative">
+                  <div className="bg-black/10 rounded p-2 border border-white/20 relative min-h-[32px]">
                     <div className="flex items-center">
                       <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
                       <span>Success: {craftAction.successState || 'Not set'}</span>
@@ -217,7 +248,7 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
                     />
                   </div>
 
-                  <div className="bg-black/10 rounded p-2 border border-white/20 relative">
+                  <div className="bg-black/10 rounded p-2 border border-white/20 relative min-h-[32px]">
                     <div className="flex items-center">
                       <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
                       <span>Failure: {craftAction.failureState || 'Not set'}</span>
@@ -238,7 +269,7 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
                     />
                   </div>
 
-                  <div className="bg-black/10 rounded p-2 border border-white/20 relative">
+                  <div className="bg-black/10 rounded p-2 border border-white/20 relative min-h-[32px]">
                     <div className="flex items-center">
                       <div className="w-3 h-3 rounded-full bg-amber-500 mr-2"></div>
                       <span>Missing Materials: {craftAction.missingMaterialsState || 'Not set'}</span>
@@ -267,8 +298,33 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
                 <div className="font-medium">Choices:</div>
                 <div className="grid grid-cols-1 gap-2 mt-1">
                   {choices.map((choice: { text: string; nextState: string | null }, index: number) => (
-                      <div key={index} className="bg-black/10 rounded p-2 border border-white/20 relative">
-                        {choice.text}
+                      <div key={index} className="bg-black/10 rounded p-2 border border-white/20 relative min-h-[32px]">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            {choice.text}
+                          </div>
+                          <div className="w-5 h-5 ml-2 flex-shrink-0">
+                            {choice.nextState && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-5 w-5" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Create a change object to remove the edge
+                                  const edgeId = `${id}-to-${choice.nextState}-${index}`;
+                                  const edgeRemoveChange = {
+                                    id: edgeId,
+                                    type: 'remove' as const,
+                                  };
+                                  onEdgeRemove && onEdgeRemove(edgeId);
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
                         {/* Source handle for this choice */}
                         <Handle
                           id={`choice-${index}`}
@@ -295,10 +351,21 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
 };
 
 // Define node types factory function outside the component
-const createNodeTypes = (onNodeEdit: (nodeId: string) => void, onNodeDelete: (nodeId: string) => void) => {
+const createNodeTypes = (
+  onNodeEdit: (nodeId: string) => void, 
+  onNodeDelete: (nodeId: string) => void,
+  onEdgeRemove: (edgeId: string) => void,
+  onTextEdit: (nodeId: string, text: string) => void
+) => {
   return {
     customNode: (props: CustomNodeProps) => (
-      <CustomNode {...props} onNodeEdit={onNodeEdit} onNodeDelete={onNodeDelete} />
+      <CustomNode 
+        {...props} 
+        onNodeEdit={onNodeEdit} 
+        onNodeDelete={onNodeDelete} 
+        onEdgeRemove={onEdgeRemove} 
+        onTextEdit={onTextEdit} 
+      />
     )
   };
 };
@@ -661,6 +728,11 @@ export default function ConversationPage() {
   // State for backup of conversation before editing
   const [conversationBackup, setConversationBackup] = useState<Conversation | null>(null);
 
+  // State for text editing dialog
+  const [isTextEditDialogOpen, setIsTextEditDialogOpen] = useState(false);
+  const [editingNodeId, setEditingNodeId] = useState<string>('');
+  const [editingText, setEditingText] = useState<string>('');
+
   // Handle dialogue type change - defined first to avoid circular dependency
   const handleDialogueTypeChange = useCallback((newDialogueType: "sendOk" | "sendYesNo" | "sendSimple" | "sendNext") => {
     setEditDialogueType(newDialogueType);
@@ -998,6 +1070,55 @@ export default function ConversationPage() {
     setIsDeleteDialogOpen(true);
   }, []);
 
+  // Handle text edit
+  const handleTextEdit = useCallback((nodeId: string, text: string) => {
+    // Create a backup of the conversation state
+    if (conversation) {
+      setConversationBackup(JSON.parse(JSON.stringify(conversation)));
+    }
+
+    setEditingNodeId(nodeId);
+    setEditingText(text);
+    setIsTextEditDialogOpen(true);
+  }, [conversation]);
+
+  // Handle save text changes
+  const handleSaveTextChanges = useCallback(() => {
+    if (!conversation || !editingNodeId) return;
+
+    // Create a copy of the conversation
+    const updatedConversation = { ...conversation };
+
+    // Find the node state in the conversation
+    const nodeState = updatedConversation.attributes.states.find(state => state.id === editingNodeId);
+
+    if (nodeState) {
+      // Update the text based on node type
+      if (nodeState.type === 'dialogue' && nodeState.dialogue) {
+        nodeState.dialogue.text = editingText;
+      } else if (nodeState.type === 'listSelection' && nodeState.listSelection) {
+        nodeState.listSelection.title = editingText;
+      }
+
+      // Update the conversation in state
+      setConversation(updatedConversation);
+
+      // Process the updated conversation to update nodes and edges
+      const { nodes: processedNodes, edges: processedEdges } = processConversationData(updatedConversation);
+      setNodes(processedNodes);
+      setEdges(processedEdges);
+
+      // Close the dialog
+      setIsTextEditDialogOpen(false);
+
+      // Clear the backup
+      setConversationBackup(null);
+
+      // Show success message
+      toast.success("Text updated successfully");
+    }
+  }, [conversation, editingNodeId, editingText, setNodes, setEdges]);
+
   // Handle confirm delete
   const handleConfirmDelete = useCallback(() => {
     if (!conversation || !selectedNodeId) return;
@@ -1087,8 +1208,19 @@ export default function ConversationPage() {
 
   // Use the factory function to create nodeTypes with the edit and delete handlers
   const nodeTypes = useMemo(
-    () => createNodeTypes(handleNodeEdit, handleNodeDelete),
-    [handleNodeEdit, handleNodeDelete]
+    () => createNodeTypes(
+      handleNodeEdit, 
+      handleNodeDelete, 
+      (edgeId) => {
+        const edgeRemoveChange = {
+          id: edgeId,
+          type: 'remove' as const,
+        };
+        handleEdgesChange([edgeRemoveChange]);
+      },
+      handleTextEdit
+    ),
+    [handleNodeEdit, handleNodeDelete, handleEdgesChange, handleTextEdit]
   );
 
   const reactFlowInstance = useReactFlow();
@@ -1197,14 +1329,43 @@ export default function ConversationPage() {
       console.log('New connection created:', connectionInfo);
     }
 
-    // Create the new connection
+    // Create the new connection with a specific ID format
+    let edgeId = '';
+    let edgeStyle = { stroke: '#64748b' };
+
+    // Generate the edge ID based on the connection type
+    if (sourceNode && targetNode && params.sourceHandle) {
+      if (params.sourceHandle.startsWith('choice-')) {
+        const choiceIndex = parseInt(params.sourceHandle.split('-')[1]);
+        edgeId = `${sourceNode.id}-to-${targetNode.id}-${choiceIndex}`;
+      } else if (params.sourceHandle.startsWith('outcome-')) {
+        const outcomeIndex = parseInt(params.sourceHandle.split('-')[1]);
+        edgeId = `${sourceNode.id}-to-${targetNode.id}-${outcomeIndex}`;
+      } else if (params.sourceHandle === 'success') {
+        edgeId = `${sourceNode.id}-to-${targetNode.id}-success`;
+        edgeStyle = { stroke: '#22c55e' };
+      } else if (params.sourceHandle === 'failure') {
+        edgeId = `${sourceNode.id}-to-${targetNode.id}-failure`;
+        edgeStyle = { stroke: '#ef4444' };
+      } else if (params.sourceHandle === 'missing') {
+        edgeId = `${sourceNode.id}-to-${targetNode.id}-missing`;
+        edgeStyle = { stroke: '#f59e0b' };
+      }
+    }
+
+    // If we couldn't generate a specific ID, use a default format
+    if (!edgeId && sourceNode && targetNode) {
+      edgeId = `${sourceNode.id}-to-${targetNode.id}-${Date.now()}`;
+    }
+
     setEdges(eds => addEdge({
       ...params,
+      id: edgeId,
       type: 'smoothstep',
       animated: false,
-      style: { stroke: '#64748b' },
+      style: edgeStyle,
     }, eds));
-  }, [isHandleConnected, setEdges, nodes, conversation, setConversation]);
+  }, [isHandleConnected, setEdges, setNodes, nodes, conversation, setConversation, processConversationData]);
 
   // Edge update handlers for drag-and-drop deletion
   const onEdgeUpdateStart = useCallback(() => {
@@ -1301,21 +1462,11 @@ export default function ConversationPage() {
   }, [conversation, setConversation, setEdges]);
 
   const onEdgeUpdateEnd = useCallback((event: MouseEvent | TouchEvent, edge: Edge) => {
-    // If the edge update was not successful (i.e., the edge was dropped into free space),
-    // remove the edge from the edges array
-    if (!edgeUpdateSuccessful) {
-      // Create a change object to remove the edge
-      const edgeRemoveChange: EdgeChange = {
-        id: edge.id,
-        type: 'remove',
-      };
+    // "Delete Edge on Drop" functionality has been removed
+    // Edges can now only be removed using the clear button
 
-      // Use the existing handleEdgesChange function to remove the edge
-      // This will also update the conversation data
-      handleEdgesChange([edgeRemoveChange]);
-    }
     // Note: handleType parameter is required by ReactFlow but not used in this implementation
-  }, [edgeUpdateSuccessful, handleEdgesChange]);
+  }, []);
 
   // Helper function to update an edge
   const updateEdge = (oldEdge: Edge, newConnection: Connection, edges: Edge[]) => {
@@ -1528,6 +1679,36 @@ export default function ConversationPage() {
     }
   }, [loading, handleReorganize]);
 
+  // Update nodes and edges when conversation changes
+  const prevConversationRef = useRef<Conversation | null>(null);
+  useEffect(() => {
+    // Only update if the conversation has actually changed
+    if (conversation && conversation !== prevConversationRef.current) {
+      prevConversationRef.current = conversation;
+
+      // Process the conversation to get updated nodes and edges
+      const { nodes: processedNodes, edges: processedEdges } = processConversationData(conversation);
+
+      // Create a map of existing node positions
+      const nodePositions = new Map<string, { x: number, y: number }>();
+      nodes.forEach(node => {
+        nodePositions.set(node.id, { ...node.position });
+      });
+
+      // Update nodes with new data but preserve positions
+      const updatedNodes = processedNodes.map(node => {
+        return {
+          ...node,
+          position: nodePositions.get(node.id) || node.position
+        };
+      });
+
+      // Update the nodes and edges state
+      setNodes(updatedNodes);
+      setEdges(processedEdges);
+    }
+  }, [conversation, nodes, processConversationData, setNodes, setEdges]);
+
   const handleZoomIn = () => {
     reactFlowInstance.zoomIn();
   };
@@ -1646,144 +1827,17 @@ export default function ConversationPage() {
 
               {editNodeType === 'dialogue' && (
                 <div>
-                  <h3 className="text-lg font-semibold">Dialogue</h3>
-                  <div className="border p-4 rounded-md">
-                    <div className="mb-4">
-                      <p className="font-medium">Dialogue Type:</p>
-                      <select 
-                        value={editDialogueType} 
-                        onChange={(e) => handleDialogueTypeChange(e.target.value as "sendOk" | "sendYesNo" | "sendSimple" | "sendNext")}
-                        className="w-full p-2 border rounded-md"
-                      >
-                        <option value="sendOk">sendOk</option>
-                        <option value="sendYesNo">sendYesNo</option>
-                        <option value="sendSimple">sendSimple</option>
-                        <option value="sendNext">sendNext</option>
-                      </select>
-                    </div>
-                    <p className="font-medium">Text:</p>
-                    <textarea 
-                      value={editNodeText} 
-                      onChange={(e) => setEditNodeText(e.target.value)}
-                      className="w-full p-2 border rounded-md min-h-[100px]"
-                    />
-
-                    <div className="mt-4">
-                        <p className="font-medium">Choices:</p>
-                        <div className="space-y-2 mt-2">
-                          {editChoices.map((choice, index) => (
-                            <div key={index} className="border p-2 rounded-md">
-                              <p><span className="font-medium">Text:</span> {choice.text}</p>
-                              <p><span className="font-medium">Next State:</span> {choice.nextState || 'None'}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                  </div>
-                </div>
-              )}
-
-              {editNodeType === 'genericAction' && (
-                <div>
-                  <h3 className="text-lg font-semibold">Generic Action</h3>
-                  <div className="border p-4 rounded-md">
-                    {selectedNodeState.type === 'genericAction' && selectedNodeState.genericAction?.operations && selectedNodeState.genericAction.operations.length > 0 && (
-                      <div>
-                        <p className="font-medium">Operations:</p>
-                        <div className="space-y-2 mt-2">
-                          {selectedNodeState.genericAction.operations.map((op, index) => (
-                            <div key={index} className="border p-2 rounded-md">
-                              <p><span className="font-medium">Type:</span> {op.type}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedNodeState.type === 'genericAction' && selectedNodeState.genericAction?.outcomes && selectedNodeState.genericAction.outcomes.length > 0 && (
-                      <div className="mt-4">
-                        <p className="font-medium">Outcomes:</p>
-                        <div className="space-y-2 mt-2">
-                          {selectedNodeState.genericAction.outcomes.map((outcome, index) => (
-                            <div key={index} className="border p-2 rounded-md">
-                              <p><span className="font-medium">Next State:</span> {outcome.nextState}</p>
-                              {outcome.conditions && outcome.conditions.length > 0 && (
-                                <div>
-                                  <p className="font-medium mt-2">Conditions:</p>
-                                  <div className="space-y-1 mt-1">
-                                    {outcome.conditions.map((condition, condIndex) => (
-                                      <p key={condIndex}>{condition.type} {condition.operator} {condition.value}</p>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {editNodeType === 'craftAction' && (
-                <div>
-                  <h3 className="text-lg font-semibold">Craft Action</h3>
-                  <div className="border p-4 rounded-md">
-                    <div className="grid grid-cols-3 gap-4 mt-4">
-                      {selectedNodeState.type === 'craftAction' && selectedNodeState.craftAction?.successState && (
-                        <div>
-                          <p className="font-medium">Success State:</p>
-                          <p>{selectedNodeState.craftAction.successState}</p>
-                        </div>
-                      )}
-
-                      {selectedNodeState.type === 'craftAction' && selectedNodeState.craftAction?.failureState && (
-                        <div>
-                          <p className="font-medium">Failure State:</p>
-                          <p>{selectedNodeState.craftAction.failureState}</p>
-                        </div>
-                      )}
-
-                      {selectedNodeState.type === 'craftAction' && selectedNodeState.craftAction?.missingMaterialsState && (
-                        <div>
-                          <p className="font-medium">Missing Materials State:</p>
-                          <p>{selectedNodeState.craftAction.missingMaterialsState}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {editNodeType === 'listSelection' && (
-                <div>
-                  <h3 className="text-lg font-semibold">List Selection</h3>
-                  <div className="border p-4 rounded-md">
-                    <div>
-                      <p className="font-medium">Title:</p>
-                      <input 
-                        type="text" 
-                        value={editNodeTitle} 
-                        onChange={(e) => setEditNodeTitle(e.target.value)}
-                        className="w-full p-2 border rounded-md"
-                      />
-                    </div>
-
-                    {selectedNodeState.type === 'listSelection' && selectedNodeState.listSelection?.choices && selectedNodeState.listSelection.choices.length > 0 && (
-                      <div className="mt-4">
-                        <p className="font-medium">Choices:</p>
-                        <div className="space-y-2 mt-2">
-                          {selectedNodeState.listSelection.choices.map((choice, index) => (
-                            <div key={index} className="border p-2 rounded-md">
-                              <p><span className="font-medium">Text:</span> {choice.text}</p>
-                              <p><span className="font-medium">Next State:</span> {choice.nextState || 'None'}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <h3 className="text-lg font-semibold">Dialogue Type</h3>
+                  <select 
+                    value={editDialogueType} 
+                    onChange={(e) => handleDialogueTypeChange(e.target.value as "sendOk" | "sendYesNo" | "sendSimple" | "sendNext")}
+                    className="w-full p-2 border rounded-md"
+                  >
+                    <option value="sendOk">sendOk</option>
+                    <option value="sendYesNo">sendYesNo</option>
+                    <option value="sendSimple">sendSimple</option>
+                    <option value="sendNext">sendNext</option>
+                  </select>
                 </div>
               )}
             </div>
@@ -1846,93 +1900,17 @@ export default function ConversationPage() {
 
             {editNodeType === 'dialogue' && (
               <div>
-                <h3 className="text-lg font-semibold">Dialogue</h3>
-                <div className="border p-4 rounded-md">
-                  <div className="mb-4">
-                    <p className="font-medium">Dialogue Type:</p>
-                    <select 
-                      value={editDialogueType} 
-                      onChange={(e) => handleDialogueTypeChange(e.target.value as "sendOk" | "sendYesNo" | "sendSimple" | "sendNext")}
-                      className="w-full p-2 border rounded-md"
-                    >
-                      <option value="sendOk">sendOk</option>
-                      <option value="sendYesNo">sendYesNo</option>
-                      <option value="sendSimple">sendSimple</option>
-                      <option value="sendNext">sendNext</option>
-                    </select>
-                  </div>
-                  <p className="font-medium">Text:</p>
-                  <textarea 
-                    value={editNodeText} 
-                    onChange={(e) => setEditNodeText(e.target.value)}
-                    className="w-full p-2 border rounded-md min-h-[100px]"
-                    placeholder="Enter dialogue text here..."
-                  />
-
-                  {/* Display choices that will be created */}
-                  <div className="mt-4">
-                    <p className="font-medium">Choices:</p>
-                    <div className="space-y-2 mt-2">
-                      {editChoices.map((choice, index) => (
-                        <div key={index} className="border p-2 rounded-md">
-                          <p><span className="font-medium">Text:</span> {choice.text}</p>
-                          <p><span className="font-medium">Next State:</span> {choice.nextState || 'None'}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {editNodeType === 'listSelection' && (
-              <div>
-                <h3 className="text-lg font-semibold">List Selection</h3>
-                <div className="border p-4 rounded-md">
-                  <div>
-                    <p className="font-medium">Title:</p>
-                    <input 
-                      type="text" 
-                      value={editNodeTitle} 
-                      onChange={(e) => setEditNodeTitle(e.target.value)}
-                      className="w-full p-2 border rounded-md"
-                      placeholder="Enter list selection title here..."
-                    />
-                  </div>
-
-                  {/* Display choices that will be created */}
-                  <div className="mt-4">
-                    <p className="font-medium">Choices:</p>
-                    <div className="space-y-2 mt-2">
-                      <div className="border p-2 rounded-md">
-                        <p><span className="font-medium">Text:</span> Exit</p>
-                        <p><span className="font-medium">Next State:</span> None</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {editNodeType === 'genericAction' && (
-              <div>
-                <h3 className="text-lg font-semibold">Generic Action</h3>
-                <div className="border p-4 rounded-md">
-                  <p className="text-sm text-muted-foreground">
-                    You can add operations and outcomes after creating the node.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {editNodeType === 'craftAction' && (
-              <div>
-                <h3 className="text-lg font-semibold">Craft Action</h3>
-                <div className="border p-4 rounded-md">
-                  <p className="text-sm text-muted-foreground">
-                    You can configure recipe ID, quantity, and state transitions after creating the node.
-                  </p>
-                </div>
+                <h3 className="text-lg font-semibold">Dialogue Type</h3>
+                <select 
+                  value={editDialogueType} 
+                  onChange={(e) => handleDialogueTypeChange(e.target.value as "sendOk" | "sendYesNo" | "sendSimple" | "sendNext")}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="sendOk">sendOk</option>
+                  <option value="sendYesNo">sendYesNo</option>
+                  <option value="sendSimple">sendSimple</option>
+                  <option value="sendNext">sendNext</option>
+                </select>
               </div>
             )}
           </div>
@@ -1956,6 +1934,42 @@ export default function ConversationPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleConfirmDelete}>Yes, Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Text Edit Dialog */}
+      <Dialog 
+        open={isTextEditDialogOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            // Dialog is being closed without saving, restore the backup
+            if (conversationBackup) {
+              setConversation(conversationBackup);
+              // Clear the backup
+              setConversationBackup(null);
+            }
+            setIsTextEditDialogOpen(false);
+          } else {
+            setIsTextEditDialogOpen(true);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Text</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <textarea 
+              value={editingText} 
+              onChange={(e) => setEditingText(e.target.value)}
+              className="w-full p-2 border rounded-md min-h-[150px]"
+              placeholder="Enter text here..."
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTextEditDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveTextChanges}>Apply</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

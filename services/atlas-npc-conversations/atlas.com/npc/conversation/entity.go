@@ -105,6 +105,19 @@ func GetAllProvider(tenantId uuid.UUID) func(db *gorm.DB) func() ([]Entity, erro
 	}
 }
 
+// GetAllByNpcIdProvider returns a provider for retrieving all conversations for a specific NPC ID
+func GetAllByNpcIdProvider(tenantId uuid.UUID) func(npcId uint32) func(db *gorm.DB) func() ([]Entity, error) {
+	return func(npcId uint32) func(db *gorm.DB) func() ([]Entity, error) {
+		return func(db *gorm.DB) func() ([]Entity, error) {
+			return func() ([]Entity, error) {
+				var entities []Entity
+				result := db.Where("tenant_id = ? AND npc_id = ?", tenantId, npcId).Find(&entities)
+				return entities, result.Error
+			}
+		}
+	}
+}
+
 // MigrateTable creates or updates the conversations table
 func MigrateTable(db *gorm.DB) error {
 	return db.AutoMigrate(&Entity{})

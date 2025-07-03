@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"fmt"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -105,5 +106,21 @@ func ParseConversationId(l logrus.FieldLogger, next ConversationIdHandler) http.
 			return
 		}
 		next(conversationId)(w, r)
+	}
+}
+
+type NpcIdHandler func(npcId uint32) http.HandlerFunc
+
+func ParseNpcId(l logrus.FieldLogger, next NpcIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		npcIdStr := mux.Vars(r)["npcId"]
+		var npcId uint32
+		_, err := fmt.Sscanf(npcIdStr, "%d", &npcId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse npcId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(npcId)(w, r)
 	}
 }

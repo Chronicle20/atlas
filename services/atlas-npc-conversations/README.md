@@ -113,50 +113,99 @@ MAJOR_VERSION:83
 MINOR_VERSION:1
 ```
 
-### Requests
+### Endpoints
 
-#### Start Conversation
+The service provides the following RESTful endpoints for managing NPC conversations:
+
+#### Get All Conversations
+
+Retrieves all NPC conversation definitions.
 
 ```
-POST /api/conversations/start
+GET /npcs/conversations
+```
+
+#### Get Conversation by ID
+
+Retrieves a specific NPC conversation definition by its UUID.
+
+```
+GET /npcs/conversations/{conversationId}
+```
+
+#### Get Conversations by NPC ID
+
+Retrieves all NPC conversation definitions for a specific NPC.
+
+```
+GET /npcs/{npcId}/conversations
+```
+
+#### Create Conversation
+
+Creates a new NPC conversation definition.
+
+```
+POST /npcs/conversations
 {
-  "characterId": 12345,
-  "npcId": 9010000,
-  "mapId": 100000000
+  "data": {
+    "type": "conversations",
+    "attributes": {
+      "npcId": 9010000,
+      "startState": "greeting",
+      "states": [
+        {
+          "id": "greeting",
+          "type": "dialogue",
+          "dialogue": {
+            "dialogueType": "sendYesNo",
+            "text": "Hello! Would you like to receive a reward?",
+            "choices": [
+              {
+                "text": "Yes",
+                "nextState": "reward"
+              },
+              {
+                "text": "No",
+                "nextState": "goodbye"
+              }
+            ]
+          }
+        },
+        // Additional states...
+      ]
+    }
+  }
 }
 ```
 
-#### Continue Conversation
+#### Update Conversation
+
+Updates an existing NPC conversation definition.
 
 ```
-POST /api/conversations/continue
+PATCH /npcs/conversations/{conversationId}
 {
-  "characterId": 12345,
-  "npcId": 9010000,
-  "action": 1,
-  "lastMessageType": 0,
-  "selection": 0
+  "data": {
+    "type": "conversations",
+    "id": "{conversationId}",
+    "attributes": {
+      "npcId": 9010000,
+      "startState": "greeting",
+      "states": [
+        // Updated states...
+      ]
+    }
+  }
 }
 ```
 
-#### Continue Conversation via Event
+#### Delete Conversation
+
+Deletes an NPC conversation definition.
 
 ```
-POST /api/conversations/event
-{
-  "characterId": 12345,
-  "action": 1,
-  "referenceId": 0
-}
-```
-
-#### End Conversation
-
-```
-POST /api/conversations/end
-{
-  "characterId": 12345
-}
+DELETE /npcs/conversations/{conversationId}
 ```
 
 ## Example Conversation
@@ -165,69 +214,78 @@ Here's a simplified example of a conversation tree:
 
 ```json
 {
-  "npcId": 9010000,
-  "startState": "greeting",
-  "states": [
-    {
-      "id": "greeting",
-      "type": "dialogue",
-      "dialogue": {
-        "dialogueType": "sendYesNo",
-        "text": "Hello! Would you like to receive a reward?",
-        "choices": [
-          {
-            "text": "Yes",
-            "nextState": "reward"
-          },
-          {
-            "text": "No",
-            "nextState": "goodbye"
+  "data": {
+    "type": "conversations",
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "attributes": {
+      "npcId": 9010000,
+      "startState": "greeting",
+      "states": [
+        {
+          "id": "greeting",
+          "type": "dialogue",
+          "dialogue": {
+            "dialogueType": "sendYesNo",
+            "text": "Hello! Would you like to receive a reward?",
+            "choices": [
+              {
+                "text": "Yes",
+                "nextState": "reward"
+              },
+              {
+                "text": "No",
+                "nextState": "goodbye"
+              }
+            ]
           }
-        ],
-        "exit": false
-      }
-    },
-    {
-      "id": "reward",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [
-          {
-            "type": "award_item",
-            "params": {
-              "itemId": 2000000,
-              "quantity": 10
-            }
+        },
+        {
+          "id": "reward",
+          "type": "genericAction",
+          "genericAction": {
+            "operations": [
+              {
+                "type": "award_item",
+                "params": {
+                  "itemId": "2000000",
+                  "quantity": "10"
+                }
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [
+                  {
+                    "type": "constant",
+                    "operator": "eq",
+                    "value": "true"
+                  }
+                ],
+                "nextState": "thanks"
+              }
+            ]
           }
-        ],
-        "outcomes": [
-          {
-            "condition": "true",
-            "nextState": "thanks"
+        },
+        {
+          "id": "thanks",
+          "type": "dialogue",
+          "dialogue": {
+            "dialogueType": "sendOk",
+            "text": "Here's your reward! Thanks for visiting!",
+            "choices": []
           }
-        ]
-      }
-    },
-    {
-      "id": "thanks",
-      "type": "dialogue",
-      "dialogue": {
-        "dialogueType": "sendOk",
-        "text": "Here's your reward! Thanks for visiting!",
-        "choices": [],
-        "exit": true
-      }
-    },
-    {
-      "id": "goodbye",
-      "type": "dialogue",
-      "dialogue": {
-        "dialogueType": "sendOk",
-        "text": "Goodbye! Come back soon!",
-        "choices": [],
-        "exit": true
-      }
+        },
+        {
+          "id": "goodbye",
+          "type": "dialogue",
+          "dialogue": {
+            "dialogueType": "sendOk",
+            "text": "Goodbye! Come back soon!",
+            "choices": []
+          }
+        }
+      ]
     }
-  ]
+  }
 }
 ```

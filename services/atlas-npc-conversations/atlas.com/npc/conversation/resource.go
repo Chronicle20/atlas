@@ -22,6 +22,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			// Register handlers
 			router.HandleFunc("/npcs/conversations", registerHandler("get_all_conversations", GetAllConversationsHandler)).Methods(http.MethodGet)
 			router.HandleFunc("/npcs/conversations/{conversationId}", registerHandler("get_conversation", GetConversationHandler)).Methods(http.MethodGet)
+			router.HandleFunc("/npcs/{npcId}/conversations", registerHandler("get_conversations_by_npc", GetConversationsByNpcHandler)).Methods(http.MethodGet)
 			router.HandleFunc("/npcs/conversations", registerInputHandler("create_conversation", CreateConversationHandler)).Methods(http.MethodPost)
 			router.HandleFunc("/npcs/conversations/{conversationId}", registerInputHandler("update_conversation", UpdateConversationHandler)).Methods(http.MethodPatch)
 			router.HandleFunc("/npcs/conversations/{conversationId}", registerHandler("delete_conversation", DeleteConversationHandler)).Methods(http.MethodDelete)
@@ -160,6 +161,25 @@ func DeleteConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 
 			// Return success
 			w.WriteHeader(http.StatusNoContent)
+		}
+	})
+}
+
+// GetConversationsByNpcHandler handles GET /npcs/{npcId}/conversations
+func GetConversationsByNpcHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseNpcId(d.Logger(), func(npcId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			mp := NewProcessor(d.Logger(), d.Context(), d.DB()).AllByNpcIdProvider(npcId)
+			rm, err := model.SliceMap(Transform)(mp)(model.ParallelMap())()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 		}
 	})
 }

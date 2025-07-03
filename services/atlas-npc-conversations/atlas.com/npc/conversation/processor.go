@@ -40,6 +40,9 @@ type Processor interface {
 	// ByNpcIdProvider returns a provider for retrieving a conversation by NPC ID
 	ByNpcIdProvider(npcId uint32) model.Provider[Model]
 
+	// AllByNpcIdProvider returns a provider for retrieving all conversations for a specific NPC ID
+	AllByNpcIdProvider(npcId uint32) model.Provider[[]Model]
+
 	// AllProvider returns a provider for retrieving all conversations
 	AllProvider() model.Provider[[]Model]
 }
@@ -81,6 +84,11 @@ func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32) model.Provider[Model] {
 // AllProvider returns a provider for retrieving all conversations
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
 	return model.SliceMap[Entity, Model](Make)(GetAllProvider(p.t.Id())(p.db))(model.ParallelMap())
+}
+
+// AllByNpcIdProvider returns a provider for retrieving all conversations for a specific NPC ID
+func (p *ProcessorImpl) AllByNpcIdProvider(npcId uint32) model.Provider[[]Model] {
+	return model.SliceMap[Entity, Model](Make)(GetAllByNpcIdProvider(p.t.Id())(npcId)(p.db))(model.ParallelMap())
 }
 
 // Create creates a new conversation

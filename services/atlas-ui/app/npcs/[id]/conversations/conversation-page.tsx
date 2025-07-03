@@ -149,22 +149,20 @@ const CustomNode = ({data, isConnectable, onNodeEdit, ...props}: CustomNodeProps
                             <div className="italic">No conditions (default outcome)</div>
                         )}
                         {/* Source handle for this outcome */}
-                        {outcome.nextState && (
-                          <Handle
-                            id={`outcome-${index}`}
-                            type="source"
-                            position={Position.Right}
-                            style={{
-                              background: '#555',
-                              width: 8,
-                              height: 8,
-                              right: -24,
-                              top: '50%',
-                              transform: 'translateY(-50%)'
-                            }}
-                            isConnectable={isConnectable}
-                          />
-                        )}
+                        <Handle
+                          id={`outcome-${index}`}
+                          type="source"
+                          position={Position.Right}
+                          style={{
+                            background: '#555',
+                            width: 8,
+                            height: 8,
+                            right: -24,
+                            top: '50%',
+                            transform: 'translateY(-50%)'
+                          }}
+                          isConnectable={isConnectable}
+                        />
                       </div>
                   ))}
                 </div>
@@ -176,74 +174,68 @@ const CustomNode = ({data, isConnectable, onNodeEdit, ...props}: CustomNodeProps
               <div className="text-xs mt-2">
                 <div className="font-medium">Craft Action:</div>
                 <div className="space-y-2 mt-1">
-                  {craftAction.successState && (
-                    <div className="bg-black/10 rounded p-2 border border-white/20 relative">
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                        <span>Success: {craftAction.successState}</span>
-                      </div>
-                      <Handle
-                        id="success"
-                        type="source"
-                        position={Position.Right}
-                        style={{
-                          background: '#22c55e',
-                          width: 8,
-                          height: 8,
-                          right: -24,
-                          top: '50%',
-                          transform: 'translateY(-50%)'
-                        }}
-                        isConnectable={isConnectable}
-                      />
+                  <div className="bg-black/10 rounded p-2 border border-white/20 relative">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                      <span>Success: {craftAction.successState || 'Not set'}</span>
                     </div>
-                  )}
+                    <Handle
+                      id="success"
+                      type="source"
+                      position={Position.Right}
+                      style={{
+                        background: '#22c55e',
+                        width: 8,
+                        height: 8,
+                        right: -24,
+                        top: '50%',
+                        transform: 'translateY(-50%)'
+                      }}
+                      isConnectable={isConnectable}
+                    />
+                  </div>
 
-                  {craftAction.failureState && (
-                    <div className="bg-black/10 rounded p-2 border border-white/20 relative">
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
-                        <span>Failure: {craftAction.failureState}</span>
-                      </div>
-                      <Handle
-                        id="failure"
-                        type="source"
-                        position={Position.Right}
-                        style={{
-                          background: '#ef4444',
-                          width: 8,
-                          height: 8,
-                          right: -24,
-                          top: '50%',
-                          transform: 'translateY(-50%)'
-                        }}
-                        isConnectable={isConnectable}
-                      />
+                  <div className="bg-black/10 rounded p-2 border border-white/20 relative">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                      <span>Failure: {craftAction.failureState || 'Not set'}</span>
                     </div>
-                  )}
+                    <Handle
+                      id="failure"
+                      type="source"
+                      position={Position.Right}
+                      style={{
+                        background: '#ef4444',
+                        width: 8,
+                        height: 8,
+                        right: -24,
+                        top: '50%',
+                        transform: 'translateY(-50%)'
+                      }}
+                      isConnectable={isConnectable}
+                    />
+                  </div>
 
-                  {craftAction.missingMaterialsState && (
-                    <div className="bg-black/10 rounded p-2 border border-white/20 relative">
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 rounded-full bg-amber-500 mr-2"></div>
-                        <span>Missing Materials: {craftAction.missingMaterialsState}</span>
-                      </div>
-                      <Handle
-                        id="missing"
-                        type="source"
-                        position={Position.Right}
-                        style={{
-                          background: '#f59e0b',
-                          width: 8,
-                          height: 8,
-                          right: -24,
-                          top: '50%',
-                          transform: 'translateY(-50%)'
-                        }}
-                        isConnectable={isConnectable}
-                      />
+                  <div className="bg-black/10 rounded p-2 border border-white/20 relative">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full bg-amber-500 mr-2"></div>
+                      <span>Missing Materials: {craftAction.missingMaterialsState || 'Not set'}</span>
                     </div>
-                  )}
+                    <Handle
+                      id="missing"
+                      type="source"
+                      position={Position.Right}
+                      style={{
+                        background: '#f59e0b',
+                        width: 8,
+                        height: 8,
+                        right: -24,
+                        top: '50%',
+                        transform: 'translateY(-50%)'
+                      }}
+                      isConnectable={isConnectable}
+                    />
+                  </div>
                 </div>
               </div>
           )}
@@ -256,22 +248,20 @@ const CustomNode = ({data, isConnectable, onNodeEdit, ...props}: CustomNodeProps
                       <div key={index} className="bg-black/10 rounded p-2 border border-white/20 relative">
                         {choice.text}
                         {/* Source handle for this choice */}
-                        {choice.nextState && (
-                          <Handle
-                            id={`choice-${index}`}
-                            type="source"
-                            position={Position.Right}
-                            style={{
-                              background: '#555',
-                              width: 8,
-                              height: 8,
-                              right: -24,
-                              top: '50%',
-                              transform: 'translateY(-50%)'
-                            }}
-                            isConnectable={isConnectable}
-                          />
-                        )}
+                        <Handle
+                          id={`choice-${index}`}
+                          type="source"
+                          position={Position.Right}
+                          style={{
+                            background: '#555',
+                            width: 8,
+                            height: 8,
+                            right: -24,
+                            top: '50%',
+                            transform: 'translateY(-50%)'
+                          }}
+                          isConnectable={isConnectable}
+                        />
                       </div>
                   ))}
                 </div>

@@ -6,7 +6,7 @@ import {NPC, fetchNPCs, deleteAllShops, updateShop, Commodity} from "@/lib/npcs"
 import { tenantHeaders } from "@/lib/headers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, RefreshCw, Upload, Trash2, ShoppingBag, Plus } from "lucide-react";
+import { MoreHorizontal, RefreshCw, Upload, Trash2, ShoppingBag, Plus, MessageCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -208,7 +208,7 @@ export default function Page() {
                                 </DropdownMenu>
                             </CardHeader>
                             <CardContent className="pb-2">
-                                <div className="text-sm">
+                                <div className="text-sm flex space-x-2">
                                     {npc.hasShop ? (
                                         <Button 
                                             variant="default" 
@@ -230,6 +230,27 @@ export default function Page() {
                                             title="Shop Inactive"
                                         >
                                             <ShoppingBag className="h-4 w-4" />
+                                        </Button>
+                                    )}
+
+                                    {npc.hasConversation ? (
+                                        <Button 
+                                            variant="default" 
+                                            size="sm"
+                                            className="cursor-pointer"
+                                            title="Conversation Available"
+                                        >
+                                            <MessageCircle className="h-4 w-4" />
+                                        </Button>
+                                    ) : (
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            className="cursor-not-allowed opacity-50"
+                                            disabled
+                                            title="No Conversation"
+                                        >
+                                            <MessageCircle className="h-4 w-4" />
                                         </Button>
                                     )}
                                 </div>

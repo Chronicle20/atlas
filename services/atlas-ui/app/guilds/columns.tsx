@@ -4,7 +4,7 @@ import {ColumnDef} from "@tanstack/react-table"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
 import {MoreHorizontal} from "lucide-react";
-import {Tenant} from "@/lib/tenants";
+import {TenantConfig} from "@/lib/tenants";
 import {Guild} from "@/lib/guilds";
 import {Character} from "@/lib/characters";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
@@ -12,7 +12,7 @@ import {Badge} from "@/components/ui/badge";
 import Link from "next/link";
 
 interface ColumnProps {
-    tenant: Tenant | null;
+    tenant: TenantConfig | null;
     characterMap: Map<string, Character>;
 }
 

@@ -10,7 +10,7 @@ import {useTenant} from "@/context/tenant-context";
 import {Plus, X} from "lucide-react"
 import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import {CharacterTemplate} from "@/lib/templates";
-import {updateTenant} from "@/lib/tenants";
+import {updateTenantConfiguration, TenantConfig} from "@/lib/tenants";
 import {toast} from "sonner";
 
 interface FormValues {
@@ -19,27 +19,13 @@ interface FormValues {
 
 export function TemplatesForm() {
     const {id} = useParams(); // Get tenants ID from URL
-    const {tenants} = useTenant()
-    let tenant = tenants.find((t) => t.id === id);
+    const {fetchTenantConfiguration} = useTenant();
+    const [tenant, setTenant] = useState<TenantConfig | null>(null);
+    const [loading, setLoading] = useState(true);
 
     const form = useForm<FormValues>({
         defaultValues: {
-            templates: tenant?.attributes.characters.templates.map(template => ({
-                jobIndex: template.jobIndex || 0,
-                subJobIndex: template.subJobIndex || 0,
-                gender: template.gender || 0,
-                mapId: template.mapId || 0,
-                faces: template.faces || [],
-                hairs: template.hairs || [],
-                hairColors: template.hairColors || [],
-                skinColors: template.skinColors || [],
-                tops: template.tops || [],
-                bottoms: template.bottoms || [],
-                shoes: template.shoes || [],
-                weapons: template.weapons || [],
-                items: template.items || [],
-                skills: template.skills || [],
-            }))
+            templates: []
         }
     });
 
@@ -48,37 +34,76 @@ export function TemplatesForm() {
         name: "templates"
     });
 
+    // Fetch the full tenant configuration
     useEffect(() => {
-        form.reset({
-            templates: tenant?.attributes.characters.templates.map(template => ({
-                jobIndex: template.jobIndex || 0,
-                subJobIndex: template.subJobIndex || 0,
-                gender: template.gender || 0,
-                mapId: template.mapId || 0,
-                faces: template.faces || [],
-                hairs: template.hairs || [],
-                hairColors: template.hairColors || [],
-                skinColors: template.skinColors || [],
-                tops: template.tops || [],
-                bottoms: template.bottoms || [],
-                shoes: template.shoes || [],
-                weapons: template.weapons || [],
-                items: template.items || [],
-                skills: template.skills || [],
-            }))
-        });
-    }, [tenant, form.reset, form]);
+        const fetchTenant = async () => {
+            try {
+                setLoading(true);
+                if (id) {
+                    const tenantConfig = await fetchTenantConfiguration(id as string);
+                    setTenant(tenantConfig);
+
+                    // Update form with tenant data
+                    form.reset({
+                        templates: tenantConfig.attributes.characters.templates.map(template => ({
+                            jobIndex: template.jobIndex || 0,
+                            subJobIndex: template.subJobIndex || 0,
+                            gender: template.gender || 0,
+                            mapId: template.mapId || 0,
+                            faces: template.faces || [],
+                            hairs: template.hairs || [],
+                            hairColors: template.hairColors || [],
+                            skinColors: template.skinColors || [],
+                            tops: template.tops || [],
+                            bottoms: template.bottoms || [],
+                            shoes: template.shoes || [],
+                            weapons: template.weapons || [],
+                            items: template.items || [],
+                            skills: template.skills || [],
+                        }))
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching tenant configuration:", error);
+                toast.error("Failed to load tenant configuration");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTenant();
+    }, [id, fetchTenantConfiguration, form]);
 
     const onSubmit = async (data: FormValues) => {
-        tenant = await updateTenant(tenant, {
-            characters: {
-                templates: data.templates,
-            },
-        });
-        toast.success("Successfully saved tenant.");
-        form.reset({
-            templates: tenant?.attributes.characters.templates,
-        });
+        if (!tenant) return;
+
+        try {
+            const updatedTenant = await updateTenantConfiguration(tenant, {
+                characters: {
+                    templates: data.templates,
+                },
+            });
+
+            if (updatedTenant) {
+                setTenant(updatedTenant);
+                toast.success("Successfully saved tenant configuration.");
+
+                form.reset({
+                    templates: updatedTenant.attributes.characters.templates,
+                });
+            }
+        } catch (error) {
+            console.error("Error updating tenant configuration:", error);
+            toast.error("Failed to update tenant configuration");
+        }
+    }
+
+    if (loading) {
+        return <div className="flex justify-center items-center p-8">Loading tenant configuration...</div>;
+    }
+
+    if (!tenant) {
+        return <div className="flex justify-center items-center p-8">Tenant configuration not found</div>;
     }
 
     return (

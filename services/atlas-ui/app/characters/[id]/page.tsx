@@ -8,6 +8,7 @@ import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Character, fetchCharacter} from "@/lib/characters";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import {InventoryResponse, fetchInventory, getCompartmentTypeName, getAssetsForCompartment, deleteAsset, Compartment} from "@/lib/inventory";
+import {TenantConfig} from "@/lib/tenants";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import {
@@ -23,10 +24,11 @@ import {
 
 export default function CharacterDetailPage() {
     const {id} = useParams()
-    const {activeTenant} = useTenant()
+    const {activeTenant, fetchTenantConfiguration} = useTenant()
 
     const [character, setCharacter] = useState<Character | null>(null)
     const [inventory, setInventory] = useState<InventoryResponse | null>(null)
+    const [tenantConfig, setTenantConfig] = useState<TenantConfig | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [deletingAsset, setDeletingAsset] = useState<string | null>(null)
@@ -74,14 +76,19 @@ export default function CharacterDetailPage() {
             .then(setInventory)
             .catch((err) => console.error("Failed to fetch inventory:", err));
 
-        // Wait for both requests to complete
-        Promise.all([characterPromise, inventoryPromise])
+        // Fetch tenant configuration
+        const tenantConfigPromise = fetchTenantConfiguration(activeTenant.id)
+            .then(setTenantConfig)
+            .catch((err) => console.error("Failed to fetch tenant configuration:", err));
+
+        // Wait for all requests to complete
+        Promise.all([characterPromise, inventoryPromise, tenantConfigPromise])
             .finally(() => setLoading(false));
 
-    }, [activeTenant, id])
+    }, [activeTenant, id, fetchTenantConfiguration])
 
     if (loading) return <div className="p-4">Loading...</div>
-    if (error || !character) return <div className="p-4 text-red-500">Error: {error || "Character not found"}</div>
+    if (error || !character || !tenantConfig) return <div className="p-4 text-red-500">Error: {error || "Character or tenant configuration not found"}</div>
 
     // Get compartments from inventory data
     const compartments = inventory?.included.filter(
@@ -105,7 +112,7 @@ export default function CharacterDetailPage() {
                     </CardHeader>
                     <CardContent className="grid grid-cols-4 gap-2 text-sm text-muted-foreground">
                         <div>
-                            <strong>World:</strong> {activeTenant?.attributes.worlds[character.attributes.worldId].name}
+                            <strong>World:</strong> {tenantConfig.attributes.worlds[character.attributes.worldId].name}
                         </div>
                         <div><strong>Gender:</strong> {character.attributes.gender}</div>
                         <div><strong>Level:</strong> {character.attributes.level}</div>

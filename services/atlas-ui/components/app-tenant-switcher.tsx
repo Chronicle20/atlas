@@ -29,7 +29,7 @@ export function TenantSwitcher() {
                         >
                             <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">
-                  {activeTenant?.id}
+                  {activeTenant?.attributes.name || activeTenant?.id}
                 </span>
                                 <span
                                     className="truncate text-xs">{activeTenant?.attributes.region} - {activeTenant?.attributes.majorVersion}.{activeTenant?.attributes.minorVersion}</span>
@@ -52,7 +52,10 @@ export function TenantSwitcher() {
                                 onClick={() => setActiveTenant(tenant)}
                                 className="gap-2 p-2"
                             >
-                                {tenant.id}
+                                <div className="flex flex-col">
+                                    <span className="font-medium">{tenant.attributes.name || tenant.id}</span>
+                                    <span className="text-xs text-muted-foreground">{tenant.attributes.region} - {tenant.attributes.majorVersion}.{tenant.attributes.minorVersion}</span>
+                                </div>
                             </DropdownMenuItem>
                         ))}
                         <DropdownMenuSeparator/>

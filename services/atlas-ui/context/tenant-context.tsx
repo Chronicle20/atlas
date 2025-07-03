@@ -1,13 +1,14 @@
 "use client";
 
 import {createContext, ReactNode, useContext, useEffect, useState} from "react";
-import {fetchTenants, Tenant} from "@/lib/tenants";
+import {fetchTenants, Tenant, TenantConfig, fetchTenantConfiguration} from "@/lib/tenants";
 
 type TenantContextType = {
     tenants: Tenant[];
     activeTenant: Tenant | null;
     setActiveTenant: (tenant: Tenant) => void;
     refreshTenants: () => Promise<void>;
+    fetchTenantConfiguration: (tenantId: string) => Promise<TenantConfig>;
 };
 
 // Create Context
@@ -64,8 +65,19 @@ export function TenantProvider({children}: { children: ReactNode }) {
         }
     };
 
+    // Function to fetch a tenant configuration
+    const fetchTenantConfig = async (tenantId: string) => {
+        return await fetchTenantConfiguration(tenantId);
+    };
+
     return (
-        <TenantContext.Provider value={{tenants, activeTenant, setActiveTenant, refreshTenants}}>
+        <TenantContext.Provider value={{
+            tenants, 
+            activeTenant, 
+            setActiveTenant, 
+            refreshTenants,
+            fetchTenantConfiguration: fetchTenantConfig
+        }}>
             {children}
         </TenantContext.Provider>
     );

@@ -8,12 +8,14 @@ import {Guild, fetchGuilds} from "@/lib/guilds";
 import {getColumns} from "@/app/guilds/columns";
 import {Toaster} from "sonner";
 import {Character, fetchCharacters} from "@/lib/characters";
+import {TenantConfig} from "@/lib/tenants";
 
 
 export default function Page() {
-    const {activeTenant} = useTenant();
+    const {activeTenant, fetchTenantConfiguration} = useTenant();
     const [guilds, setGuilds] = useState<Guild[]>([]);
     const [characters, setCharacters] = useState<Character[]>([]);
+    const [tenantConfig, setTenantConfig] = useState<TenantConfig | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -25,10 +27,12 @@ export default function Page() {
         Promise.all([
             fetchGuilds(activeTenant),
             fetchCharacters(activeTenant),
+            fetchTenantConfiguration(activeTenant.id),
         ])
-            .then(([guildData, characterData]) => {
+            .then(([guildData, characterData, tenantConfigData]) => {
                 setGuilds(guildData);
                 setCharacters(characterData);
+                setTenantConfig(tenantConfigData);
             })
             .catch((err) => setError(err.message))
             .finally(() => setLoading(false));
@@ -43,7 +47,7 @@ export default function Page() {
 
     const characterMap = new Map(characters.map(c => [c.id, c]));
 
-    const columns = getColumns({ tenant: activeTenant, characterMap });
+    const columns = getColumns({ tenant: tenantConfig, characterMap });
 
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">

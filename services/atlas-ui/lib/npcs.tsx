@@ -1,5 +1,6 @@
 import {Tenant} from "@/app/tenants/columns";
 import {tenantHeaders} from "@/lib/headers";
+import {fetchConversations} from "@/lib/npc-conversations";
 
 export interface CommodityAttributes {
     templateId: number;
@@ -42,24 +43,66 @@ export interface Shop {
 export interface NPC {
     id: number;
     hasShop: boolean;
+    hasConversation: boolean;
 }
 
 export async function fetchNPCs(tenant: Tenant): Promise<NPC[]> {
+    // Fetch NPCs with shops
     const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-    const response = await fetch(rootUrl + "/api/shops", {
+    const shopResponse = await fetch(rootUrl + "/api/shops", {
         method: "GET",
         headers: tenantHeaders(tenant),
     });
-    if (!response.ok) {
-        throw new Error("Failed to fetch NPCs.");
+    if (!shopResponse.ok) {
+        throw new Error("Failed to fetch NPCs with shops.");
     }
-    const responseData = await response.json();
+    const shopResponseData = await shopResponse.json();
 
     // Extract NPCs from shops data
-    return responseData.data.map((shop: Shop) => ({
+    const npcsWithShops = shopResponseData.data.map((shop: Shop) => ({
         id: shop.attributes.npcId,
-        hasShop: true
+        hasShop: true,
+        hasConversation: false
     }));
+
+    // Fetch NPCs with conversations
+    try {
+        const conversations = await fetchConversations(tenant);
+
+        // Extract NPCs from conversations data
+        const npcsWithConversations = conversations.map(conversation => ({
+            id: conversation.attributes.npcId,
+            hasShop: false,
+            hasConversation: true
+        }));
+
+        // Combine NPCs from both sources, avoiding duplicates
+        const npcMap = new Map<number, NPC>();
+
+        // Add NPCs with shops
+        npcsWithShops.forEach((npc: NPC) => {
+            npcMap.set(npc.id, npc);
+        });
+
+        // Add or update NPCs with conversations
+        npcsWithConversations.forEach(npc => {
+            if (npcMap.has(npc.id)) {
+                // NPC already exists (has a shop), update to indicate it also has a conversation
+                const existingNpc = npcMap.get(npc.id)!;
+                existingNpc.hasConversation = true;
+            } else {
+                // New NPC (only has conversation)
+                npcMap.set(npc.id, npc);
+            }
+        });
+
+        // Convert map back to array
+        return Array.from(npcMap.values());
+    } catch (error) {
+        console.error("Failed to fetch NPCs with conversations:", error);
+        // If fetching conversations fails, return just the NPCs with shops
+        return npcsWithShops;
+    }
 }
 
 export interface ShopResponse {

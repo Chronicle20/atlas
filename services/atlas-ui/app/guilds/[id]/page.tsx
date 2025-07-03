@@ -11,12 +11,14 @@ import {useTenant} from "@/context/tenant-context";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {getJobNameById} from "@/lib/jobs";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
+import {TenantConfig} from "@/lib/tenants";
 
 export default function GuildDetailPage() {
     const {id} = useParams()
-    const {activeTenant} = useTenant()
+    const {activeTenant, fetchTenantConfiguration} = useTenant()
 
     const [guild, setGuild] = useState<Guild | null>(null)
+    const [tenantConfig, setTenantConfig] = useState<TenantConfig | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
@@ -24,14 +26,22 @@ export default function GuildDetailPage() {
         if (!activeTenant || !id) return
 
         setLoading(true)
-        fetchGuild(activeTenant, String(id))
-            .then(setGuild)
+
+        // Fetch both guild data and tenant configuration
+        Promise.all([
+            fetchGuild(activeTenant, String(id)),
+            fetchTenantConfiguration(activeTenant.id)
+        ])
+            .then(([guildData, tenantConfigData]) => {
+                setGuild(guildData)
+                setTenantConfig(tenantConfigData)
+            })
             .catch((err) => setError(err.message))
             .finally(() => setLoading(false))
-    }, [activeTenant, id])
+    }, [activeTenant, id, fetchTenantConfiguration])
 
     if (loading) return <div className="p-4">Loading...</div>
-    if (error || !guild) return <div className="p-4 text-red-500">Error: {error || "Guild not found"}</div>
+    if (error || !guild || !tenantConfig) return <div className="p-4 text-red-500">Error: {error || "Guild or tenant configuration not found"}</div>
 
     return (
         <div className="flex flex-col flex-1 space-y-6 p-10 pb-16 h-screen">
@@ -50,7 +60,7 @@ export default function GuildDetailPage() {
                             <strong>Leader:</strong>{" "}
                             {guild.attributes.members.find(m => m.characterId === guild.attributes.leaderId)?.name ?? "Unknown"}
                         </div>
-                        <div><strong>World:</strong> {activeTenant?.attributes.worlds[guild.attributes.worldId].name}
+                        <div><strong>World:</strong> {tenantConfig.attributes.worlds[guild.attributes.worldId].name}
                         </div>
                         <div><strong>Members:</strong> {guild.attributes.members.length}</div>
                         <div><strong>Capacity:</strong> {guild.attributes.capacity}</div>

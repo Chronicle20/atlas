@@ -20,8 +20,14 @@ export interface GenericActionOperation {
   params?: Record<string, never>;
 }
 
+export interface Condition {
+  type: string;
+  operator: string;
+  value: string;
+}
+
 export interface GenericActionOutcome {
-  condition: string;
+  conditions: Condition[];
   nextState: string;
 }
 

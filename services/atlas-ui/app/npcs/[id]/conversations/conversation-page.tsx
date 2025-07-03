@@ -19,7 +19,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {Button} from "@/components/ui/button";
-import {RefreshCw, ZoomIn, ZoomOut, Info} from "lucide-react";
+import {RefreshCw, ZoomIn, ZoomOut, Info, Edit} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -31,6 +31,13 @@ import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 import {Badge} from "@/components/ui/badge";
 import {Separator} from "@/components/ui/separator";
 import {toast} from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 // Node types and colors
 const NODE_TYPES = {
@@ -72,41 +79,22 @@ interface NodeData {
   operations?: string[];
   outcomes?: { nextState: string; conditions: string[] }[];
   choices?: { text: string; nextState: string | null }[];
-  outgoingEdgesCount?: number;
+  craftAction?: {
+    successState?: string;
+    failureState?: string;
+    missingMaterialsState?: string;
+  };
+  id: string; // Add id to NodeData
 }
 
 // Extend NodeProps to include style
 interface CustomNodeProps extends NodeProps {
   style?: React.CSSProperties;
+  onNodeEdit?: (nodeId: string) => void; // Add callback for node editing
 }
 
-const CustomNode = ({data, isConnectable, ...props}: CustomNodeProps) => {
-  const {label, type, text, operations, outcomes, choices, outgoingEdgesCount = 0} = data as NodeData;
-
-  // Create n+1 source handles for outgoing edges
-  const sourceHandles = [];
-  const handleCount = outgoingEdgesCount > 0 ? outgoingEdgesCount : 1;
-
-  for (let i = 0; i < handleCount; i++) {
-    // Calculate position along the right side of the node
-    const handlePosition = (i + 1) / (handleCount + 1);
-
-    sourceHandles.push(
-        <Handle
-            key={`source-${i}`}
-            id={`source-${i}`}
-            type="source"
-            position={Position.Right}
-            style={{
-              top: `${handlePosition * 100}%`,
-              background: '#555',
-              width: 8,
-              height: 8,
-            }}
-            isConnectable={isConnectable}
-        />
-    );
-  }
+const CustomNode = ({data, isConnectable, onNodeEdit, ...props}: CustomNodeProps) => {
+  const {label, type, text, operations, outcomes, choices, craftAction, id} = data as NodeData;
 
   return (
       <div style={props.style} className="custom-node">
@@ -119,7 +107,12 @@ const CustomNode = ({data, isConnectable, ...props}: CustomNodeProps) => {
         />
 
         <div className="p-2">
-          <div className="font-bold">{label}</div>
+          <div className="flex justify-between items-center">
+            <div className="font-bold">{label}</div>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onNodeEdit && onNodeEdit(id)}>
+              <Edit className="h-4 w-4" />
+            </Button>
+          </div>
           <div className="text-xs">{type}</div>
           {text && (
               <div className="text-xs mt-2 p-1 bg-black/10 rounded">
@@ -145,7 +138,7 @@ const CustomNode = ({data, isConnectable, ...props}: CustomNodeProps) => {
                 <div className="font-medium">Outcomes:</div>
                 <div className="space-y-2 mt-1">
                   {outcomes.map((outcome: { nextState: string; conditions: string[] }, index: number) => (
-                      <div key={index} className="bg-black/10 rounded p-2">
+                      <div key={index} className="bg-black/10 rounded p-2 relative">
                         {outcome.conditions.length > 0 ? (
                             <div>
                               {outcome.conditions.map((condition: string, condIndex: number) => (
@@ -155,8 +148,102 @@ const CustomNode = ({data, isConnectable, ...props}: CustomNodeProps) => {
                         ) : (
                             <div className="italic">No conditions (default outcome)</div>
                         )}
+                        {/* Source handle for this outcome */}
+                        {outcome.nextState && (
+                          <Handle
+                            id={`outcome-${index}`}
+                            type="source"
+                            position={Position.Right}
+                            style={{
+                              background: '#555',
+                              width: 8,
+                              height: 8,
+                              right: -24,
+                              top: '50%',
+                              transform: 'translateY(-50%)'
+                            }}
+                            isConnectable={isConnectable}
+                          />
+                        )}
                       </div>
                   ))}
+                </div>
+              </div>
+          )}
+
+          {/* CraftAction specific UI with handles */}
+          {type === 'craftAction' && craftAction && (
+              <div className="text-xs mt-2">
+                <div className="font-medium">Craft Action:</div>
+                <div className="space-y-2 mt-1">
+                  {craftAction.successState && (
+                    <div className="bg-black/10 rounded p-2 border border-white/20 relative">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                        <span>Success: {craftAction.successState}</span>
+                      </div>
+                      <Handle
+                        id="success"
+                        type="source"
+                        position={Position.Right}
+                        style={{
+                          background: '#22c55e',
+                          width: 8,
+                          height: 8,
+                          right: -24,
+                          top: '50%',
+                          transform: 'translateY(-50%)'
+                        }}
+                        isConnectable={isConnectable}
+                      />
+                    </div>
+                  )}
+
+                  {craftAction.failureState && (
+                    <div className="bg-black/10 rounded p-2 border border-white/20 relative">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                        <span>Failure: {craftAction.failureState}</span>
+                      </div>
+                      <Handle
+                        id="failure"
+                        type="source"
+                        position={Position.Right}
+                        style={{
+                          background: '#ef4444',
+                          width: 8,
+                          height: 8,
+                          right: -24,
+                          top: '50%',
+                          transform: 'translateY(-50%)'
+                        }}
+                        isConnectable={isConnectable}
+                      />
+                    </div>
+                  )}
+
+                  {craftAction.missingMaterialsState && (
+                    <div className="bg-black/10 rounded p-2 border border-white/20 relative">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-amber-500 mr-2"></div>
+                        <span>Missing Materials: {craftAction.missingMaterialsState}</span>
+                      </div>
+                      <Handle
+                        id="missing"
+                        type="source"
+                        position={Position.Right}
+                        style={{
+                          background: '#f59e0b',
+                          width: 8,
+                          height: 8,
+                          right: -24,
+                          top: '50%',
+                          transform: 'translateY(-50%)'
+                        }}
+                        isConnectable={isConnectable}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
           )}
@@ -166,17 +253,31 @@ const CustomNode = ({data, isConnectable, ...props}: CustomNodeProps) => {
                 <div className="font-medium">Choices:</div>
                 <div className="grid grid-cols-1 gap-2 mt-1">
                   {choices.map((choice: { text: string; nextState: string | null }, index: number) => (
-                      <div key={index} className="bg-black/10 rounded p-2 border border-white/20">
+                      <div key={index} className="bg-black/10 rounded p-2 border border-white/20 relative">
                         {choice.text}
+                        {/* Source handle for this choice */}
+                        {choice.nextState && (
+                          <Handle
+                            id={`choice-${index}`}
+                            type="source"
+                            position={Position.Right}
+                            style={{
+                              background: '#555',
+                              width: 8,
+                              height: 8,
+                              right: -24,
+                              top: '50%',
+                              transform: 'translateY(-50%)'
+                            }}
+                            isConnectable={isConnectable}
+                          />
+                        )}
                       </div>
                   ))}
                 </div>
               </div>
           )}
         </div>
-
-        {/* Source handles on the right side */}
-        {sourceHandles}
       </div>
   );
 };
@@ -259,6 +360,7 @@ const processConversationData = (conversation: Conversation) => {
     let operations: string[] = [];
     let outcomes: { nextState: string; conditions: string[]; }[] = [];
     let choices: { text: string; nextState: string | null; }[] = [];
+    let craftActionData = null;
 
     if (state.type === 'genericAction' && state.genericAction) {
       // Extract operation types and convert to pascal case with spaces
@@ -280,12 +382,25 @@ const processConversationData = (conversation: Conversation) => {
           };
         });
       }
+    } else if (state.type === 'dialogue' && state.dialogue?.choices) {
+      // Include choices for dialogue nodes
+      choices = state.dialogue.choices.map((choice: { text: string; nextState: string | null }) => ({
+        text: choice.text,
+        nextState: choice.nextState
+      }));
     } else if (state.type === 'listSelection' && state.listSelection?.choices) {
       // Include choices for listSelection nodes
       choices = state.listSelection.choices.map((choice: { text: string; nextState: string | null }) => ({
         text: choice.text,
         nextState: choice.nextState
       }));
+    } else if (state.type === 'craftAction' && state.craftAction) {
+      // Include craftAction data
+      craftActionData = {
+        successState: state.craftAction.successState,
+        failureState: state.craftAction.failureState,
+        missingMaterialsState: state.craftAction.missingMaterialsState
+      };
     }
 
     nodes.push({
@@ -298,7 +413,8 @@ const processConversationData = (conversation: Conversation) => {
         operations: operations,
         outcomes: outcomes,
         choices: choices,
-        outgoingEdgesCount: outgoingEdgesCount, // Store count for handle creation
+        craftAction: craftActionData,
+        id: state.id, // Add the node ID to the data
       },
       position: {x: 100 + (index % 3) * 200, y: 100 + Math.floor(index / 3) * 100},
       style: {
@@ -314,14 +430,11 @@ const processConversationData = (conversation: Conversation) => {
 
   // Create edges
   conversation.attributes.states.forEach(state => {
-    // Track the current edge index for this state to assign source handles
-    let currentEdgeIndex = 0;
-
     if (state.type === 'dialogue' && state.dialogue?.choices) {
       state.dialogue.choices.forEach((choice: { nextState: string | null }, index: number) => {
         if (choice.nextState) {
-          // Calculate the source handle ID based on the current edge index
-          const sourceHandleId = `source-${currentEdgeIndex}`;
+          // Use the choice-specific handle ID
+          const sourceHandleId = `choice-${index}`;
 
           edges.push({
             id: `${state.id}-to-${choice.nextState}-${index}`,
@@ -332,15 +445,13 @@ const processConversationData = (conversation: Conversation) => {
             animated: false,
             style: {stroke: '#64748b'},
           });
-
-          currentEdgeIndex++;
         }
       });
     } else if (state.type === 'genericAction' && state.genericAction?.outcomes) {
       state.genericAction.outcomes.forEach((outcome: { nextState: string | null; conditions: { type: string; operator: string; value: string }[] }, index: number) => {
         if (outcome.nextState) {
-          // Calculate the source handle ID based on the current edge index
-          const sourceHandleId = `source-${currentEdgeIndex}`;
+          // Use the outcome-specific handle ID
+          const sourceHandleId = `outcome-${index}`;
 
           edges.push({
             id: `${state.id}-to-${outcome.nextState}-${index}`,
@@ -351,66 +462,50 @@ const processConversationData = (conversation: Conversation) => {
             animated: false,
             style: {stroke: '#64748b'},
           });
-
-          currentEdgeIndex++;
         }
       });
     } else if (state.type === 'craftAction' && state.craftAction) {
+      // Use the specific handle IDs for craftAction outcomes
       if (state.craftAction.successState) {
-        // Calculate the source handle ID based on the current edge index
-        const sourceHandleId = `source-${currentEdgeIndex}`;
-
         edges.push({
           id: `${state.id}-to-${state.craftAction.successState}-success`,
           source: state.id,
           target: state.craftAction.successState,
-          sourceHandle: sourceHandleId,
+          sourceHandle: 'success',
           type: 'smoothstep',
           animated: false,
           style: {stroke: '#22c55e'},
         });
-
-        currentEdgeIndex++;
       }
 
       if (state.craftAction.failureState) {
-        // Calculate the source handle ID based on the current edge index
-        const sourceHandleId = `source-${currentEdgeIndex}`;
-
         edges.push({
           id: `${state.id}-to-${state.craftAction.failureState}-failure`,
           source: state.id,
           target: state.craftAction.failureState,
-          sourceHandle: sourceHandleId,
+          sourceHandle: 'failure',
           type: 'smoothstep',
           animated: false,
           style: {stroke: '#ef4444'},
         });
-
-        currentEdgeIndex++;
       }
 
       if (state.craftAction.missingMaterialsState) {
-        // Calculate the source handle ID based on the current edge index
-        const sourceHandleId = `source-${currentEdgeIndex}`;
-
         edges.push({
           id: `${state.id}-to-${state.craftAction.missingMaterialsState}-missing`,
           source: state.id,
           target: state.craftAction.missingMaterialsState,
-          sourceHandle: sourceHandleId,
+          sourceHandle: 'missing',
           type: 'smoothstep',
           animated: false,
           style: {stroke: '#f59e0b'},
         });
-
-        currentEdgeIndex++;
       }
     } else if (state.type === 'listSelection' && state.listSelection?.choices) {
       state.listSelection.choices.forEach((choice: { text: string; nextState: string | null }, index: number) => {
         if (choice.nextState) {
-          // Calculate the source handle ID based on the current edge index
-          const sourceHandleId = `source-${currentEdgeIndex}`;
+          // Use the choice-specific handle ID
+          const sourceHandleId = `choice-${index}`;
 
           edges.push({
             id: `${state.id}-to-${choice.nextState}-${index}`,
@@ -421,8 +516,6 @@ const processConversationData = (conversation: Conversation) => {
             animated: false,
             style: {stroke: '#64748b'},
           });
-
-          currentEdgeIndex++;
         }
       });
     }
@@ -436,15 +529,200 @@ export default function ConversationPage() {
   const params = useParams();
   const npcId = Number(params.id);
 
-  const [, setConversation] = useState<Conversation | null>(null);
+  const [conversation, setConversation] = useState<Conversation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [showLegend, setShowLegend] = useState(false);
 
-  // Define node types
-  const nodeTypes = useMemo(() => ({customNode: CustomNode}), []);
+  // State for node editing dialog
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const selectedNode = useMemo(() => {
+    if (!selectedNodeId) return null;
+    return nodes.find(node => node.id === selectedNodeId);
+  }, [selectedNodeId, nodes]);
+
+  // State from the conversation
+  const selectedNodeState = useMemo(() => {
+    if (!selectedNodeId || !conversation) return null;
+    return conversation.attributes.states.find(state => state.id === selectedNodeId);
+  }, [selectedNodeId, conversation]);
+
+  // State for editing node
+  const [editNodeId, setEditNodeId] = useState<string>('');
+  const [editNodeType, setEditNodeType] = useState<string>('');
+  const [editNodeText, setEditNodeText] = useState<string>('');
+  const [editNodeTitle, setEditNodeTitle] = useState<string>('');
+
+  // Handle node type change
+  const handleNodeTypeChange = useCallback((newType: string) => {
+    setEditNodeType(newType);
+
+    // Clear fields that are not relevant to the new node type
+    if (newType !== 'dialogue') {
+      setEditNodeText('');
+    }
+
+    if (newType !== 'listSelection') {
+      setEditNodeTitle('');
+    }
+  }, []);
+
+  // Handle save changes
+  const handleSaveChanges = useCallback(() => {
+    if (!conversation || !selectedNodeId) return;
+
+    // Create a copy of the conversation
+    const updatedConversation = { ...conversation };
+
+    // Find the node state in the conversation
+    const nodeIndex = updatedConversation.attributes.states.findIndex(state => state.id === selectedNodeId);
+
+    if (nodeIndex === -1) return;
+
+    // Get the current node state
+    const currentState = { ...updatedConversation.attributes.states[nodeIndex] };
+
+    // Check if the node ID has been changed
+    const isNodeIdChanged = currentState.id !== editNodeId;
+    const oldNodeId = currentState.id;
+
+    // Create updated state with new values
+    const updatedState: ConversationState = {
+      id: editNodeId,
+      type: editNodeType as "dialogue" | "genericAction" | "craftAction" | "listSelection",
+    };
+
+    // Add type-specific properties
+    if (updatedState.type === 'dialogue') {
+      updatedState.dialogue = {
+        ...(currentState.dialogue || { dialogueType: "sendOk", choices: [] }),
+        text: editNodeText,
+      };
+    } else if (updatedState.type === 'listSelection') {
+      updatedState.listSelection = {
+        ...(currentState.listSelection || { choices: [] }),
+        title: editNodeTitle,
+      };
+    } else if (updatedState.type === 'genericAction') {
+      updatedState.genericAction = currentState.genericAction || { operations: [], outcomes: [] };
+    } else if (updatedState.type === 'craftAction') {
+      updatedState.craftAction = currentState.craftAction || { 
+        recipeId: 0, 
+        quantity: 1, 
+        successState: '', 
+        failureState: '', 
+        missingMaterialsState: '' 
+      };
+    }
+
+    // Update the state in the conversation
+    updatedConversation.attributes.states[nodeIndex] = updatedState;
+
+    // If the node ID has been changed, update all references to it
+    if (isNodeIdChanged) {
+      // Update startState reference if needed
+      if (updatedConversation.attributes.startState === oldNodeId) {
+        updatedConversation.attributes.startState = editNodeId;
+      }
+
+      // Update references in all states
+      updatedConversation.attributes.states.forEach(state => {
+        // Update dialogue choices
+        if (state.type === 'dialogue' && state.dialogue?.choices) {
+          state.dialogue.choices.forEach(choice => {
+            if (choice.nextState === oldNodeId) {
+              choice.nextState = editNodeId;
+            }
+          });
+        }
+
+        // Update genericAction outcomes
+        if (state.type === 'genericAction' && state.genericAction?.outcomes) {
+          state.genericAction.outcomes.forEach(outcome => {
+            if (outcome.nextState === oldNodeId) {
+              outcome.nextState = editNodeId;
+            }
+          });
+        }
+
+        // Update craftAction state transitions
+        if (state.type === 'craftAction' && state.craftAction) {
+          if (state.craftAction.successState === oldNodeId) {
+            state.craftAction.successState = editNodeId;
+          }
+          if (state.craftAction.failureState === oldNodeId) {
+            state.craftAction.failureState = editNodeId;
+          }
+          if (state.craftAction.missingMaterialsState === oldNodeId) {
+            state.craftAction.missingMaterialsState = editNodeId;
+          }
+        }
+
+        // Update listSelection choices
+        if (state.type === 'listSelection' && state.listSelection?.choices) {
+          state.listSelection.choices.forEach(choice => {
+            if (choice.nextState === oldNodeId) {
+              choice.nextState = editNodeId;
+            }
+          });
+        }
+      });
+    }
+
+    // Update the conversation in state
+    setConversation(updatedConversation);
+
+    // Process the updated conversation to update nodes and edges
+    const { nodes: processedNodes, edges: processedEdges } = processConversationData(updatedConversation);
+    setNodes(processedNodes);
+    setEdges(processedEdges);
+
+    // Close the dialog
+    setIsDialogOpen(false);
+
+    // Show success message
+    toast.success("Node updated successfully");
+  }, [conversation, selectedNodeId, editNodeId, editNodeType, editNodeText, editNodeTitle, setNodes, setEdges]);
+
+  // Handle node edit
+  const handleNodeEdit = useCallback((nodeId: string) => {
+    setSelectedNodeId(nodeId);
+
+    // Find the node state in the conversation
+    const nodeState = conversation?.attributes.states.find(state => state.id === nodeId);
+
+    if (nodeState) {
+      // Initialize edit state with current values
+      setEditNodeId(nodeState.id);
+      setEditNodeType(nodeState.type);
+
+      // Set text for dialogue nodes
+      if (nodeState.type === 'dialogue' && nodeState.dialogue?.text) {
+        setEditNodeText(nodeState.dialogue.text);
+      } else {
+        setEditNodeText('');
+      }
+
+      // Set title for listSelection nodes
+      if (nodeState.type === 'listSelection' && nodeState.listSelection?.title) {
+        setEditNodeTitle(nodeState.listSelection.title);
+      } else {
+        setEditNodeTitle('');
+      }
+    }
+
+    setIsDialogOpen(true);
+  }, [conversation]);
+
+  // Define node types with the edit handler
+  const nodeTypes = useMemo(() => ({
+    customNode: (props: CustomNodeProps) => (
+      <CustomNode {...props} onNodeEdit={handleNodeEdit} />
+    )
+  }), [handleNodeEdit]);
 
   const reactFlowInstance = useReactFlow();
 
@@ -676,6 +954,194 @@ export default function ConversationPage() {
 
   return (
     <div className="flex flex-col space-y-6 p-10 pb-16 h-[calc(100vh-4rem)]">
+      {/* Node Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedNode ? `Edit Node: ${selectedNode.data.label}` : 'Node Details'}
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedNodeState && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold">Node ID</h3>
+                  <input 
+                    type="text" 
+                    value={editNodeId} 
+                    onChange={(e) => setEditNodeId(e.target.value)}
+                    className="w-full p-2 border rounded-md"
+                  />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Node Type</h3>
+                  <select 
+                    value={editNodeType} 
+                    onChange={(e) => handleNodeTypeChange(e.target.value)}
+                    className="w-full p-2 border rounded-md"
+                  >
+                    <option value="dialogue">dialogue</option>
+                    <option value="genericAction">genericAction</option>
+                    <option value="craftAction">craftAction</option>
+                    <option value="listSelection">listSelection</option>
+                  </select>
+                </div>
+              </div>
+
+              {editNodeType === 'dialogue' && (
+                <div>
+                  <h3 className="text-lg font-semibold">Dialogue</h3>
+                  <div className="border p-4 rounded-md">
+                    <p className="font-medium">Text:</p>
+                    <textarea 
+                      value={editNodeText} 
+                      onChange={(e) => setEditNodeText(e.target.value)}
+                      className="w-full p-2 border rounded-md min-h-[100px]"
+                    />
+
+                    {selectedNodeState.type === 'dialogue' && selectedNodeState.dialogue?.choices && selectedNodeState.dialogue.choices.length > 0 && (
+                      <div className="mt-4">
+                        <p className="font-medium">Choices:</p>
+                        <div className="space-y-2 mt-2">
+                          {selectedNodeState.dialogue.choices.map((choice, index) => (
+                            <div key={index} className="border p-2 rounded-md">
+                              <p><span className="font-medium">Text:</span> {choice.text}</p>
+                              <p><span className="font-medium">Next State:</span> {choice.nextState || 'None'}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {editNodeType === 'genericAction' && (
+                <div>
+                  <h3 className="text-lg font-semibold">Generic Action</h3>
+                  <div className="border p-4 rounded-md">
+                    {selectedNodeState.type === 'genericAction' && selectedNodeState.genericAction?.operations && selectedNodeState.genericAction.operations.length > 0 && (
+                      <div>
+                        <p className="font-medium">Operations:</p>
+                        <div className="space-y-2 mt-2">
+                          {selectedNodeState.genericAction.operations.map((op, index) => (
+                            <div key={index} className="border p-2 rounded-md">
+                              <p><span className="font-medium">Type:</span> {op.type}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedNodeState.type === 'genericAction' && selectedNodeState.genericAction?.outcomes && selectedNodeState.genericAction.outcomes.length > 0 && (
+                      <div className="mt-4">
+                        <p className="font-medium">Outcomes:</p>
+                        <div className="space-y-2 mt-2">
+                          {selectedNodeState.genericAction.outcomes.map((outcome, index) => (
+                            <div key={index} className="border p-2 rounded-md">
+                              <p><span className="font-medium">Next State:</span> {outcome.nextState}</p>
+                              {outcome.conditions && outcome.conditions.length > 0 && (
+                                <div>
+                                  <p className="font-medium mt-2">Conditions:</p>
+                                  <div className="space-y-1 mt-1">
+                                    {outcome.conditions.map((condition, condIndex) => (
+                                      <p key={condIndex}>{condition.type} {condition.operator} {condition.value}</p>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {editNodeType === 'craftAction' && (
+                <div>
+                  <h3 className="text-lg font-semibold">Craft Action</h3>
+                  <div className="border p-4 rounded-md">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="font-medium">Recipe ID:</p>
+                        <p>{selectedNodeState.type === 'craftAction' && selectedNodeState.craftAction?.recipeId}</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Quantity:</p>
+                        <p>{selectedNodeState.type === 'craftAction' && selectedNodeState.craftAction?.quantity}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 mt-4">
+                      {selectedNodeState.type === 'craftAction' && selectedNodeState.craftAction?.successState && (
+                        <div>
+                          <p className="font-medium">Success State:</p>
+                          <p>{selectedNodeState.craftAction.successState}</p>
+                        </div>
+                      )}
+
+                      {selectedNodeState.type === 'craftAction' && selectedNodeState.craftAction?.failureState && (
+                        <div>
+                          <p className="font-medium">Failure State:</p>
+                          <p>{selectedNodeState.craftAction.failureState}</p>
+                        </div>
+                      )}
+
+                      {selectedNodeState.type === 'craftAction' && selectedNodeState.craftAction?.missingMaterialsState && (
+                        <div>
+                          <p className="font-medium">Missing Materials State:</p>
+                          <p>{selectedNodeState.craftAction.missingMaterialsState}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {editNodeType === 'listSelection' && (
+                <div>
+                  <h3 className="text-lg font-semibold">List Selection</h3>
+                  <div className="border p-4 rounded-md">
+                    <div>
+                      <p className="font-medium">Title:</p>
+                      <input 
+                        type="text" 
+                        value={editNodeTitle} 
+                        onChange={(e) => setEditNodeTitle(e.target.value)}
+                        className="w-full p-2 border rounded-md"
+                      />
+                    </div>
+
+                    {selectedNodeState.type === 'listSelection' && selectedNodeState.listSelection?.choices && selectedNodeState.listSelection.choices.length > 0 && (
+                      <div className="mt-4">
+                        <p className="font-medium">Choices:</p>
+                        <div className="space-y-2 mt-2">
+                          {selectedNodeState.listSelection.choices.map((choice, index) => (
+                            <div key={index} className="border p-2 rounded-md">
+                              <p><span className="font-medium">Text:</span> {choice.text}</p>
+                              <p><span className="font-medium">Next State:</span> {choice.nextState || 'None'}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveChanges}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">NPC #{npcId} Conversation</h2>

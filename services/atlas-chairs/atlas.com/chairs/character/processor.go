@@ -2,48 +2,58 @@ package character
 
 import (
 	"context"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/sirupsen/logrus"
 )
 
-func InMapProvider(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
-	return func(worldId byte, channelId byte, mapId uint32) model.Provider[[]uint32] {
-		t := tenant.MustFromContext(ctx)
-		cids := getRegistry().GetInMap(MapKey{Tenant: t, WorldId: worldId, ChannelId: channelId, MapId: mapId})
-		return model.FixedProvider(cids)
+type Processor interface {
+	InMapProvider(field field.Model) model.Provider[[]uint32]
+	GetCharactersInMap(field field.Model) ([]uint32, error)
+	Enter(field field.Model, characterId uint32)
+	Exit(field field.Model, characterId uint32)
+	TransitionMap(oldField field.Model, newField field.Model, characterId uint32)
+	TransitionChannel(oldField field.Model, newField field.Model, characterId uint32)
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	t   tenant.Model
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+		t:   tenant.MustFromContext(ctx),
 	}
 }
 
-func GetCharactersInMap(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) ([]uint32, error) {
-	return func(worldId byte, channelId byte, mapId uint32) ([]uint32, error) {
-		return InMapProvider(ctx)(worldId, channelId, mapId)()
-	}
+func (p *ProcessorImpl) InMapProvider(field field.Model) model.Provider[[]uint32] {
+	cids := getRegistry().GetInMap(MapKey{Tenant: p.t, WorldId: field.WorldId(), ChannelId: field.ChannelId(), MapId: field.MapId()})
+	return model.FixedProvider(cids)
 }
 
-func Enter(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
-	return func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
-		t := tenant.MustFromContext(ctx)
-		getRegistry().AddCharacter(MapKey{Tenant: t, WorldId: worldId, ChannelId: channelId, MapId: mapId}, characterId)
-	}
+func (p *ProcessorImpl) GetCharactersInMap(field field.Model) ([]uint32, error) {
+	return p.InMapProvider(field)()
 }
 
-func Exit(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
-	return func(worldId byte, channelId byte, mapId uint32, characterId uint32) {
-		t := tenant.MustFromContext(ctx)
-		getRegistry().RemoveCharacter(MapKey{Tenant: t, WorldId: worldId, ChannelId: channelId, MapId: mapId}, characterId)
-	}
+func (p *ProcessorImpl) Enter(field field.Model, characterId uint32) {
+	getRegistry().AddCharacter(MapKey{Tenant: p.t, WorldId: field.WorldId(), ChannelId: field.ChannelId(), MapId: field.MapId()}, characterId)
 }
 
-func TransitionMap(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32, oldMapId uint32) {
-	return func(worldId byte, channelId byte, mapId uint32, characterId uint32, oldMapId uint32) {
-		Exit(ctx)(worldId, channelId, oldMapId, characterId)
-		Enter(ctx)(worldId, channelId, mapId, characterId)
-	}
+func (p *ProcessorImpl) Exit(field field.Model, characterId uint32) {
+	getRegistry().RemoveCharacter(MapKey{Tenant: p.t, WorldId: field.WorldId(), ChannelId: field.ChannelId(), MapId: field.MapId()}, characterId)
 }
 
-func TransitionChannel(ctx context.Context) func(worldId byte, channelId byte, oldChannelId byte, characterId uint32, mapId uint32) {
-	return func(worldId byte, channelId byte, oldChannelId byte, characterId uint32, mapId uint32) {
-		Exit(ctx)(worldId, oldChannelId, mapId, characterId)
-		Enter(ctx)(worldId, channelId, mapId, characterId)
-	}
+func (p *ProcessorImpl) TransitionMap(oldField field.Model, newField field.Model, characterId uint32) {
+	p.Exit(oldField, characterId)
+	p.Enter(newField, characterId)
+}
+
+func (p *ProcessorImpl) TransitionChannel(oldField field.Model, newField field.Model, characterId uint32) {
+	p.Exit(oldField, characterId)
+	p.Enter(newField, characterId)
 }

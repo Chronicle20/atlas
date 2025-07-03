@@ -9,6 +9,7 @@ import (
 	"atlas-chairs/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"os"
 )
 
 const serviceName = "atlas-chairs"
@@ -51,7 +52,14 @@ func main() {
 	chair.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), chair2.InitResource(GetServer()))
+	// Create the service with the router
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(chair2.InitResource(GetServer())).
+		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

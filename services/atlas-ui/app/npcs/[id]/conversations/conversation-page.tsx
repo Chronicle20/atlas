@@ -1,9 +1,15 @@
 "use client"
 
 import { useTenant } from "@/context/tenant-context";
-import { useEffect, useState, useCallback, useMemo, useRef, SetStateAction} from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, SetStateAction } from "react";
 import {useParams} from "next/navigation";
-import {Conversation, fetchNPCConversations, updateConversation} from "@/lib/npc-conversations";
+import {
+  Conversation,
+  ConversationState,
+  DialogueChoice,
+  fetchNPCConversations,
+  updateConversation
+} from "@/lib/npc-conversations";
 import ReactFlow, {
   Node,
   Edge,
@@ -20,6 +26,7 @@ import ReactFlow, {
   Connection,
   EdgeChange,
   OnEdgeUpdateFunc,
+
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {Button} from "@/components/ui/button";
@@ -282,6 +289,15 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
   );
 };
 
+// Define node types factory function outside the component
+const createNodeTypes = (onNodeEdit: (nodeId: string) => void, onNodeDelete: (nodeId: string) => void) => {
+  return {
+    customNode: (props: CustomNodeProps) => (
+      <CustomNode {...props} onNodeEdit={onNodeEdit} onNodeDelete={onNodeDelete} />
+    )
+  };
+};
+
 // Function to process conversation data into nodes and edges
 const processConversationData = (conversation: Conversation) => {
   const nodes: Node[] = [];
@@ -334,20 +350,6 @@ const processConversationData = (conversation: Conversation) => {
       nodeType = NODE_TYPES.TERMINAL;
     }
 
-    // Count outgoing edges for this state to determine number of handles
-    let outgoingEdgesCount = 0;
-    if (state.type === 'dialogue' && state.dialogue?.choices) {
-      outgoingEdgesCount = state.dialogue.choices.filter(choice => choice.nextState).length;
-    } else if (state.type === 'genericAction' && state.genericAction?.outcomes) {
-      outgoingEdgesCount = state.genericAction.outcomes.filter(outcome => outcome.nextState).length;
-    } else if (state.type === 'craftAction' && state.craftAction) {
-      if (state.craftAction.successState) outgoingEdgesCount++;
-      if (state.craftAction.failureState) outgoingEdgesCount++;
-      if (state.craftAction.missingMaterialsState) outgoingEdgesCount++;
-    } else if (state.type === 'listSelection' && state.listSelection?.choices) {
-      outgoingEdgesCount = state.listSelection.choices.filter(choice => choice.nextState).length;
-    }
-
     // Prepare text content based on node type
     let textContent = null;
     if (state.type === 'dialogue' && state.dialogue?.text) {
@@ -397,6 +399,10 @@ const processConversationData = (conversation: Conversation) => {
     } else if (state.type === 'craftAction' && state.craftAction) {
       // Include craftAction data
       craftActionData = {
+        itemId: state.craftAction.itemId,
+        materials: state.craftAction.materials,
+        quantities: state.craftAction.quantities,
+        mesoCost: state.craftAction.mesoCost,
         successState: state.craftAction.successState,
         failureState: state.craftAction.failureState,
         missingMaterialsState: state.craftAction.missingMaterialsState
@@ -537,7 +543,7 @@ export default function ConversationPage() {
   const [showLegend, setShowLegend] = useState(false);
 
   // Custom edge change handler to update conversation state when edges are removed
-  const handleEdgesChange = useCallback((changes) => {
+  const handleEdgesChange = useCallback((changes: EdgeChange[]) => {
     // First, apply the changes to the edges state using the default handler
     onEdgesChange(changes);
 
@@ -651,7 +657,7 @@ export default function ConversationPage() {
   const [conversationBackup, setConversationBackup] = useState<Conversation | null>(null);
 
   // Handle dialogue type change - defined first to avoid circular dependency
-  const handleDialogueTypeChange = useCallback((newDialogueType: "sendOk" | "sendYesNo" | "sendSimple" | "sendNext", nodeType?: string) => {
+  const handleDialogueTypeChange = useCallback((newDialogueType: "sendOk" | "sendYesNo" | "sendSimple" | "sendNext") => {
     setEditDialogueType(newDialogueType);
 
     // Create blank choices based on dialogue type
@@ -705,7 +711,7 @@ export default function ConversationPage() {
     // If changing to dialogue type, set up choices based on the current dialogue type
     if (newType === 'dialogue') {
       // Use the current dialogue type to set up choices
-      handleDialogueTypeChange(editDialogueType, newType);
+      handleDialogueTypeChange(editDialogueType);
     } else {
       // Clear edit choices if not dialogue
       setEditChoices([]);
@@ -760,9 +766,11 @@ export default function ConversationPage() {
     } else if (updatedState.type === 'genericAction') {
       updatedState.genericAction = currentState.genericAction || { operations: [], outcomes: [] };
     } else if (updatedState.type === 'craftAction') {
-      updatedState.craftAction = currentState.craftAction || { 
-        recipeId: 0, 
-        quantity: 1, 
+      updatedState.craftAction = currentState.craftAction || {
+        itemId: 0,
+        materials: [],
+        quantities: [],
+        mesoCost: 0,
         successState: '', 
         failureState: '', 
         missingMaterialsState: '' 
@@ -893,9 +901,11 @@ export default function ConversationPage() {
     } else if (newState.type === 'genericAction') {
       newState.genericAction = { operations: [], outcomes: [] };
     } else if (newState.type === 'craftAction') {
-      newState.craftAction = { 
-        recipeId: 0, 
-        quantity: 1, 
+      newState.craftAction = {
+        itemId: 0,
+        materials: [],
+        quantities: [],
+        mesoCost: 0,
         successState: '', 
         failureState: '', 
         missingMaterialsState: '' 
@@ -1070,17 +1080,16 @@ export default function ConversationPage() {
     toast.success("Node deleted successfully");
   }, [conversation, selectedNodeId, setNodes, setEdges]);
 
-  // Define node types with the edit and delete handlers
-  const nodeTypes = useMemo(() => ({
-    customNode: (props: CustomNodeProps) => (
-      <CustomNode {...props} onNodeEdit={handleNodeEdit} onNodeDelete={handleNodeDelete} />
-    )
-  }), [handleNodeEdit, handleNodeDelete]);
+  // Use the factory function to create nodeTypes with the edit and delete handlers
+  const nodeTypes = useMemo(
+    () => createNodeTypes(handleNodeEdit, handleNodeDelete),
+    [handleNodeEdit, handleNodeDelete]
+  );
 
   const reactFlowInstance = useReactFlow();
 
   // Function to check if a source handle already has a connection
-  const isHandleConnected = useCallback((sourceId: string, sourceHandle: string | null) => {
+  const isHandleConnected = useCallback((sourceId: string | null, sourceHandle: string | null) => {
     return edges.some(edge => 
       edge.source === sourceId && 
       (sourceHandle === null || edge.sourceHandle === sourceHandle)
@@ -1088,7 +1097,7 @@ export default function ConversationPage() {
   }, [edges]);
 
   // Handle new connections
-  const onConnect = useCallback((params: any) => {
+  const onConnect = useCallback((params: Connection) => {
     // Check if the source handle already has a connection
     if (isHandleConnected(params.source, params.sourceHandle)) {
       // If it does, don't create a new connection
@@ -1100,11 +1109,10 @@ export default function ConversationPage() {
     const targetNode = nodes.find(node => node.id === params.target);
 
     if (sourceNode && targetNode) {
-      const sourceNodeData = sourceNode.data;
       const sourceHandleId = params.sourceHandle;
 
       // Determine what type of connection this is based on the handle ID
-      let connectionInfo = {
+      const connectionInfo = {
         sourceStateId: sourceNode.id,
         targetStateId: targetNode.id,
         connectionType: '',
@@ -1229,7 +1237,9 @@ export default function ConversationPage() {
             if (choiceIndex >= 0 && choiceIndex < sourceState.dialogue.choices.length) {
               // Only update if this choice points to the old target node
               if (sourceState.dialogue.choices[choiceIndex].nextState === oldEdge.target) {
-                sourceState.dialogue.choices[choiceIndex].nextState = newConnection.target;
+                if (newConnection.target != null) {
+                  sourceState.dialogue.choices[choiceIndex].nextState = newConnection.target;
+                }
               }
             }
           } else if (sourceState.type === 'listSelection' && sourceState.listSelection?.choices) {
@@ -1237,7 +1247,9 @@ export default function ConversationPage() {
             if (choiceIndex >= 0 && choiceIndex < sourceState.listSelection.choices.length) {
               // Only update if this choice points to the old target node
               if (sourceState.listSelection.choices[choiceIndex].nextState === oldEdge.target) {
-                sourceState.listSelection.choices[choiceIndex].nextState = newConnection.target;
+                if (newConnection.target != null) {
+                  sourceState.listSelection.choices[choiceIndex].nextState = newConnection.target;
+                }
               }
             }
           }
@@ -1250,7 +1262,9 @@ export default function ConversationPage() {
             if (outcomeIndex >= 0 && outcomeIndex < sourceState.genericAction.outcomes.length) {
               // Only update if this outcome points to the old target node
               if (sourceState.genericAction.outcomes[outcomeIndex].nextState === oldEdge.target) {
-                sourceState.genericAction.outcomes[outcomeIndex].nextState = newConnection.target;
+                if (newConnection.target != null) {
+                  sourceState.genericAction.outcomes[outcomeIndex].nextState = newConnection.target;
+                }
               }
             }
           }
@@ -1258,11 +1272,17 @@ export default function ConversationPage() {
           // This is a craftAction connection
           if (sourceState.type === 'craftAction' && sourceState.craftAction) {
             if (sourceHandleId === 'success' && sourceState.craftAction.successState === oldEdge.target) {
-              sourceState.craftAction.successState = newConnection.target;
+              if (newConnection.target != null) {
+                sourceState.craftAction.successState = newConnection.target;
+              }
             } else if (sourceHandleId === 'failure' && sourceState.craftAction.failureState === oldEdge.target) {
-              sourceState.craftAction.failureState = newConnection.target;
+              if (newConnection.target != null) {
+                sourceState.craftAction.failureState = newConnection.target;
+              }
             } else if (sourceHandleId === 'missing' && sourceState.craftAction.missingMaterialsState === oldEdge.target) {
-              sourceState.craftAction.missingMaterialsState = newConnection.target;
+              if (newConnection.target != null) {
+                sourceState.craftAction.missingMaterialsState = newConnection.target;
+              }
             }
           }
         }
@@ -1275,7 +1295,7 @@ export default function ConversationPage() {
     return true;
   }, [conversation, setConversation, setEdges]);
 
-  const onEdgeUpdateEnd = useCallback((_, edge) => {
+  const onEdgeUpdateEnd = useCallback((event: MouseEvent | TouchEvent, edge: Edge) => {
     // If the edge update was not successful (i.e., the edge was dropped into free space),
     // remove the edge from the edges array
     if (!edgeUpdateSuccessful) {
@@ -1289,6 +1309,7 @@ export default function ConversationPage() {
       // This will also update the conversation data
       handleEdgesChange([edgeRemoveChange]);
     }
+    // Note: handleType parameter is required by ReactFlow but not used in this implementation
   }, [edgeUpdateSuccessful, handleEdgesChange]);
 
   // Helper function to update an edge
@@ -1708,17 +1729,6 @@ export default function ConversationPage() {
                 <div>
                   <h3 className="text-lg font-semibold">Craft Action</h3>
                   <div className="border p-4 rounded-md">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="font-medium">Recipe ID:</p>
-                        <p>{selectedNodeState.type === 'craftAction' && selectedNodeState.craftAction?.recipeId}</p>
-                      </div>
-                      <div>
-                        <p className="font-medium">Quantity:</p>
-                        <p>{selectedNodeState.type === 'craftAction' && selectedNodeState.craftAction?.quantity}</p>
-                      </div>
-                    </div>
-
                     <div className="grid grid-cols-3 gap-4 mt-4">
                       {selectedNodeState.type === 'craftAction' && selectedNodeState.craftAction?.successState && (
                         <div>

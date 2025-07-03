@@ -23,7 +23,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {Button} from "@/components/ui/button";
-import {RefreshCw, ZoomIn, ZoomOut, Info, Edit} from "lucide-react";
+import {RefreshCw, ZoomIn, ZoomOut, Info, Edit, Trash} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -95,9 +95,10 @@ interface NodeData {
 interface CustomNodeProps extends NodeProps {
   style?: React.CSSProperties;
   onNodeEdit?: (nodeId: string) => void; // Add callback for node editing
+  onNodeDelete?: (nodeId: string) => void; // Add callback for node deletion
 }
 
-const CustomNode = ({data, isConnectable, onNodeEdit, ...props}: CustomNodeProps) => {
+const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: CustomNodeProps) => {
   const {label, type, text, operations, outcomes, choices, craftAction, id} = data as NodeData;
 
   return (
@@ -113,9 +114,14 @@ const CustomNode = ({data, isConnectable, onNodeEdit, ...props}: CustomNodeProps
         <div className="p-2">
           <div className="flex justify-between items-center">
             <div className="font-bold">{label}</div>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onNodeEdit && onNodeEdit(id)}>
-              <Edit className="h-4 w-4" />
-            </Button>
+            <div className="flex">
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onNodeEdit && onNodeEdit(id)}>
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onNodeDelete && onNodeDelete(id)}>
+                <Trash className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           <div className="text-xs">{type}</div>
           {text && (
@@ -615,6 +621,7 @@ export default function ConversationPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const selectedNode = useMemo(() => {
     if (!selectedNodeId) return null;
@@ -970,12 +977,105 @@ export default function ConversationPage() {
     setIsDialogOpen(true);
   }, [conversation, handleDialogueTypeChange]);
 
-  // Define node types with the edit handler
+  // Handle node delete
+  const handleNodeDelete = useCallback((nodeId: string) => {
+    setSelectedNodeId(nodeId);
+    setIsDeleteDialogOpen(true);
+  }, []);
+
+  // Handle confirm delete
+  const handleConfirmDelete = useCallback(() => {
+    if (!conversation || !selectedNodeId) return;
+
+    // Create a copy of the conversation
+    const updatedConversation = { ...conversation };
+
+    // Find the node state index in the conversation
+    const nodeIndex = updatedConversation.attributes.states.findIndex(state => state.id === selectedNodeId);
+
+    if (nodeIndex === -1) return;
+
+    // Remove the node from the conversation
+    updatedConversation.attributes.states.splice(nodeIndex, 1);
+
+    // If the deleted node was the start state, update the start state
+    if (updatedConversation.attributes.startState === selectedNodeId) {
+      // If there are other states, set the first one as the start state
+      if (updatedConversation.attributes.states.length > 0) {
+        updatedConversation.attributes.startState = updatedConversation.attributes.states[0].id;
+      } else {
+        // If no states left, clear the start state
+        updatedConversation.attributes.startState = '';
+      }
+    }
+
+    // Clear any references to the deleted node in other states
+    updatedConversation.attributes.states.forEach(state => {
+      // Update dialogue choices
+      if (state.type === 'dialogue' && state.dialogue?.choices) {
+        state.dialogue.choices.forEach(choice => {
+          if (choice.nextState === selectedNodeId) {
+            choice.nextState = null;
+          }
+        });
+      }
+
+      // Update genericAction outcomes
+      if (state.type === 'genericAction' && state.genericAction?.outcomes) {
+        state.genericAction.outcomes.forEach(outcome => {
+          if (outcome.nextState === selectedNodeId) {
+            outcome.nextState = '';
+          }
+        });
+      }
+
+      // Update craftAction state transitions
+      if (state.type === 'craftAction' && state.craftAction) {
+        if (state.craftAction.successState === selectedNodeId) {
+          state.craftAction.successState = '';
+        }
+        if (state.craftAction.failureState === selectedNodeId) {
+          state.craftAction.failureState = '';
+        }
+        if (state.craftAction.missingMaterialsState === selectedNodeId) {
+          state.craftAction.missingMaterialsState = '';
+        }
+      }
+
+      // Update listSelection choices
+      if (state.type === 'listSelection' && state.listSelection?.choices) {
+        state.listSelection.choices.forEach(choice => {
+          if (choice.nextState === selectedNodeId) {
+            choice.nextState = null;
+          }
+        });
+      }
+    });
+
+    // Update the conversation in state
+    setConversation(updatedConversation);
+
+    // Process the updated conversation to update nodes and edges
+    const { nodes: processedNodes, edges: processedEdges } = processConversationData(updatedConversation);
+    setNodes(processedNodes);
+    setEdges(processedEdges);
+
+    // Close the dialog
+    setIsDeleteDialogOpen(false);
+
+    // Clear the selected node
+    setSelectedNodeId(null);
+
+    // Show success message
+    toast.success("Node deleted successfully");
+  }, [conversation, selectedNodeId, setNodes, setEdges]);
+
+  // Define node types with the edit and delete handlers
   const nodeTypes = useMemo(() => ({
     customNode: (props: CustomNodeProps) => (
-      <CustomNode {...props} onNodeEdit={handleNodeEdit} />
+      <CustomNode {...props} onNodeEdit={handleNodeEdit} onNodeDelete={handleNodeDelete} />
     )
-  }), [handleNodeEdit]);
+  }), [handleNodeEdit, handleNodeDelete]);
 
   const reactFlowInstance = useReactFlow();
 
@@ -1833,6 +1933,22 @@ export default function ConversationPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddNodeDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveNewNode}>Create Node</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Node</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Are you sure you want to delete this node? This action cannot be undone and will remove any connections to this node.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleConfirmDelete}>Yes, Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

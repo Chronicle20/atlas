@@ -4,14 +4,16 @@ import (
 	"atlas-saga-orchestrator/kafka/message/guild"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
-func RequestNameProvider(worldId byte, channelId byte, characterId uint32) model.Provider[[]kafka.Message] {
+func RequestNameProvider(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &guild.Command[guild.RequestNameBody]{
-		CharacterId: characterId,
-		Type:        guild.CommandTypeRequestName,
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		Type:          guild.CommandTypeRequestName,
 		Body: guild.RequestNameBody{
 			WorldId:   worldId,
 			ChannelId: channelId,
@@ -20,11 +22,12 @@ func RequestNameProvider(worldId byte, channelId byte, characterId uint32) model
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestEmblemProvider(worldId byte, channelId byte, characterId uint32) model.Provider[[]kafka.Message] {
+func RequestEmblemProvider(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &guild.Command[guild.RequestEmblemBody]{
-		CharacterId: characterId,
-		Type:        guild.CommandTypeRequestEmblem,
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		Type:          guild.CommandTypeRequestEmblem,
 		Body: guild.RequestEmblemBody{
 			WorldId:   worldId,
 			ChannelId: channelId,
@@ -33,11 +36,12 @@ func RequestEmblemProvider(worldId byte, channelId byte, characterId uint32) mod
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestDisbandProvider(worldId byte, channelId byte, characterId uint32) model.Provider[[]kafka.Message] {
+func RequestDisbandProvider(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &guild.Command[guild.RequestDisbandBody]{
-		CharacterId: characterId,
-		Type:        guild.CommandTypeRequestDisband,
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		Type:          guild.CommandTypeRequestDisband,
 		Body: guild.RequestDisbandBody{
 			WorldId:   worldId,
 			ChannelId: channelId,
@@ -46,11 +50,12 @@ func RequestDisbandProvider(worldId byte, channelId byte, characterId uint32) mo
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestCapacityIncreaseProvider(worldId byte, channelId byte, characterId uint32) model.Provider[[]kafka.Message] {
+func RequestCapacityIncreaseProvider(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &guild.Command[guild.RequestCapacityIncreaseBody]{
-		CharacterId: characterId,
-		Type:        guild.CommandTypeRequestCapacityIncrease,
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		Type:          guild.CommandTypeRequestCapacityIncrease,
 		Body: guild.RequestCapacityIncreaseBody{
 			WorldId:   worldId,
 			ChannelId: channelId,

@@ -29,20 +29,20 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 func (p *ProcessorImpl) RequestName(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) error {
 	p.l.Debugf("Requesting character [%d] input guild name for creation.", characterId)
-	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestNameProvider(worldId, channelId, characterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestNameProvider(transactionId, worldId, channelId, characterId))
 }
 
 func (p *ProcessorImpl) RequestEmblem(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) error {
 	p.l.Debugf("Requesting character [%d] input new guild emblem.", characterId)
-	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestEmblemProvider(worldId, channelId, characterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestEmblemProvider(transactionId, worldId, channelId, characterId))
 }
 
 func (p *ProcessorImpl) RequestDisband(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to disband guild.", characterId)
-	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestDisbandProvider(worldId, channelId, characterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestDisbandProvider(transactionId, worldId, channelId, characterId))
 }
 
 func (p *ProcessorImpl) RequestCapacityIncrease(transactionId uuid.UUID, worldId byte, channelId byte, characterId uint32) error {
 	p.l.Debugf("Character [%d] attempting to increase guild capacity.", characterId)
-	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestCapacityIncreaseProvider(worldId, channelId, characterId))
+	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestCapacityIncreaseProvider(transactionId, worldId, channelId, characterId))
 }

@@ -4,6 +4,7 @@ import (
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/guild"
+	"atlas-saga-orchestrator/invite"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/validation"
@@ -30,27 +31,28 @@ type Processor interface {
 
 // ProcessorImpl is the implementation of the Processor interface
 type ProcessorImpl struct {
-	l      logrus.FieldLogger
-	ctx    context.Context
-	t      tenant.Model
-	charP  character.Processor
-	compP  compartment.Processor
-	skillP skill.Processor
-	validP validation.Processor
-	guildP guild.Processor
+	l       logrus.FieldLogger
+	ctx     context.Context
+	t       tenant.Model
+	charP   character.Processor
+	compP   compartment.Processor
+	skillP  skill.Processor
+	validP  validation.Processor
+	guildP  guild.Processor
+	inviteP invite.Processor
 }
 
 // NewProcessor creates a new saga processor
 func NewProcessor(logger logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
 	return &ProcessorImpl{
-		l:      logger,
-		ctx:    ctx,
-		t:      tenant.MustFromContext(ctx),
-		charP:  character.NewProcessor(logger, ctx),
-		compP:  compartment.NewProcessor(logger, ctx),
-		skillP: skill.NewProcessor(logger, ctx),
-		validP: validation.NewProcessor(logger, ctx),
-		guildP: guild.NewProcessor(logger, ctx),
+		l:       logger,
+		ctx:     ctx,
+		charP:   character.NewProcessor(logger, ctx),
+		compP:   compartment.NewProcessor(logger, ctx),
+		skillP:  skill.NewProcessor(logger, ctx),
+		validP:  validation.NewProcessor(logger, ctx),
+		guildP:  guild.NewProcessor(logger, ctx),
+		inviteP: invite.NewProcessor(logger, ctx),
 	}
 }
 
@@ -220,6 +222,7 @@ var actionHandlers = map[Action]ActionHandler{
 	RequestGuildEmblem:           handleRequestGuildEmblem,
 	RequestGuildDisband:          handleRequestGuildDisband,
 	RequestGuildCapacityIncrease: handleRequestGuildCapacityIncrease,
+	CreateInvite:                 handleCreateInvite,
 }
 
 func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
@@ -572,6 +575,24 @@ func handleRequestGuildCapacityIncrease(p *ProcessorImpl, s Saga, st Step[any]) 
 	err := p.guildP.RequestCapacityIncrease(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
 	if err != nil {
 		p.logActionError(s, st, err, "Unable to request guild capacity increase.")
+		return err
+	}
+
+	return nil
+}
+
+// handleCreateInvite handles the CreateInvite action
+func handleCreateInvite(p *ProcessorImpl, s Saga, st Step[any]) error {
+	// Extract the payload
+	payload, ok := st.Payload.(CreateInvitePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Call the invite processor
+	err := p.inviteP.Create(s.TransactionId, payload.InviteType, payload.OriginatorId, payload.WorldId, payload.ReferenceId, payload.TargetId)
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to create invitation.")
 		return err
 	}
 

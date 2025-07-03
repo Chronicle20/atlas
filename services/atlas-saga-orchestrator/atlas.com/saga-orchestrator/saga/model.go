@@ -110,6 +110,7 @@ const (
 	RequestGuildEmblem         Action = "request_guild_emblem"
 	RequestGuildDisband        Action = "request_guild_disband"
 	RequestGuildCapacityIncrease Action = "request_guild_capacity_increase"
+	CreateInvite               Action = "create_invite"
 )
 
 // Step represents a single step within a saga.
@@ -240,6 +241,15 @@ type RequestGuildCapacityIncreasePayload struct {
 	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
 }
 
+// CreateInvitePayload represents the payload required to create an invitation.
+type CreateInvitePayload struct {
+	InviteType   string `json:"inviteType"`   // Type of invitation (e.g., "GUILD", "PARTY", "BUDDY")
+	OriginatorId uint32 `json:"originatorId"` // ID of the character sending the invitation
+	TargetId     uint32 `json:"targetId"`     // ID of the character receiving the invitation
+	ReferenceId  uint32 `json:"referenceId"`  // ID of the entity being invited to (e.g., guild ID, party ID)
+	WorldId      byte   `json:"worldId"`      // WorldId associated with the action
+}
+
 type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
@@ -319,6 +329,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case UpdateSkill:
 		var payload UpdateSkillPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case CreateInvite:
+		var payload CreateInvitePayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

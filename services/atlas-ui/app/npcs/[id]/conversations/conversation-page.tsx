@@ -189,11 +189,9 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, onEdgeRemove
                                   e.stopPropagation();
                                   // Create a change object to remove the edge
                                   const edgeId = `${id}-to-${outcome.nextState}-${index}`;
-                                  const edgeRemoveChange = {
-                                    id: edgeId,
-                                    type: 'remove' as const,
-                                  };
-                                  onEdgeRemove && onEdgeRemove(edgeId);
+                                  if (onEdgeRemove) {
+                                    onEdgeRemove(edgeId);
+                                  }
                                 }}
                               >
                                 <X className="h-3 w-3" />
@@ -313,11 +311,9 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, onEdgeRemove
                                   e.stopPropagation();
                                   // Create a change object to remove the edge
                                   const edgeId = `${id}-to-${choice.nextState}-${index}`;
-                                  const edgeRemoveChange = {
-                                    id: edgeId,
-                                    type: 'remove' as const,
-                                  };
-                                  onEdgeRemove && onEdgeRemove(edgeId);
+                                  if (onEdgeRemove) {
+                                    onEdgeRemove(edgeId);
+                                  }
                                 }}
                               >
                                 <X className="h-3 w-3" />
@@ -720,7 +716,7 @@ export default function ConversationPage() {
   const [editDialogueType, setEditDialogueType] = useState<"sendOk" | "sendYesNo" | "sendSimple" | "sendNext">("sendOk");
 
   // State for tracking edge updates
-  const [edgeUpdateSuccessful, setEdgeUpdateSuccessful] = useState(false);
+  const [, setEdgeUpdateSuccessful] = useState(false);
 
   // State for temporary edit choices
   const [editChoices, setEditChoices] = useState<DialogueChoice[]>([]);
@@ -1461,13 +1457,6 @@ export default function ConversationPage() {
     return true;
   }, [conversation, setConversation, setEdges]);
 
-  const onEdgeUpdateEnd = useCallback((event: MouseEvent | TouchEvent, edge: Edge) => {
-    // "Delete Edge on Drop" functionality has been removed
-    // Edges can now only be removed using the clear button
-
-    // Note: handleType parameter is required by ReactFlow but not used in this implementation
-  }, []);
-
   // Helper function to update an edge
   const updateEdge = (oldEdge: Edge, newConnection: Connection, edges: Edge[]) => {
     // Remove the old edge
@@ -2043,7 +2032,6 @@ export default function ConversationPage() {
           onConnect={onConnect}
           onEdgeUpdate={onEdgeUpdate}
           onEdgeUpdateStart={onEdgeUpdateStart}
-          onEdgeUpdateEnd={onEdgeUpdateEnd}
           nodeTypes={nodeTypes}
           fitView
           proOptions={{ hideAttribution: true }}

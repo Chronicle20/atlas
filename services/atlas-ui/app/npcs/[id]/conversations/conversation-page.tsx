@@ -1,9 +1,9 @@
 "use client"
 
 import { useTenant } from "@/context/tenant-context";
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { useParams } from "next/navigation";
-import { Conversation, fetchNPCConversations } from "@/lib/npc-conversations";
+import { useEffect, useState, useCallback, useMemo, useRef, SetStateAction} from "react";
+import {useParams} from "next/navigation";
+import {Conversation, fetchNPCConversations} from "@/lib/npc-conversations";
 import ReactFlow, {
   Node,
   Edge,
@@ -18,8 +18,8 @@ import ReactFlow, {
   NodeProps,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Button } from "@/components/ui/button";
-import { RefreshCw, ZoomIn, ZoomOut, Info } from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {RefreshCw, ZoomIn, ZoomOut, Info} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -27,10 +27,10 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
+import {Badge} from "@/components/ui/badge";
+import {Separator} from "@/components/ui/separator";
+import {toast} from "sonner";
 
 // Node types and colors
 const NODE_TYPES = {
@@ -49,9 +49,9 @@ const camelToPascalWithSpaces = (str: string): string => {
 
   // Capitalize each word
   const pascalCase = withSpaces
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
 
   // Then add spaces before capital letters (for camelCase parts)
   return pascalCase.replace(/([A-Z])/g, ' $1').trim();
@@ -64,8 +64,24 @@ const NODE_COLORS = {
 };
 
 // Custom node component with multiple source handles
-const CustomNode = ({ data, isConnectable, ...props }: NodeProps) => {
-  const { label, type, text, operations, outcomes, choices, outgoingEdgesCount = 0 } = data;
+// Define types for the node data
+interface NodeData {
+  label: string;
+  type: string;
+  text?: string;
+  operations?: string[];
+  outcomes?: { nextState: string; conditions: string[] }[];
+  choices?: { text: string; nextState: string | null }[];
+  outgoingEdgesCount?: number;
+}
+
+// Extend NodeProps to include style
+interface CustomNodeProps extends NodeProps {
+  style?: React.CSSProperties;
+}
+
+const CustomNode = ({data, isConnectable, ...props}: CustomNodeProps) => {
+  const {label, type, text, operations, outcomes, choices, outgoingEdgesCount = 0} = data as NodeData;
 
   // Create n+1 source handles for outgoing edges
   const sourceHandles = [];
@@ -76,92 +92,92 @@ const CustomNode = ({ data, isConnectable, ...props }: NodeProps) => {
     const handlePosition = (i + 1) / (handleCount + 1);
 
     sourceHandles.push(
-      <Handle
-        key={`source-${i}`}
-        id={`source-${i}`}
-        type="source"
-        position={Position.Right}
-        style={{
-          top: `${handlePosition * 100}%`,
-          background: '#555',
-          width: 8,
-          height: 8,
-        }}
-        isConnectable={isConnectable}
-      />
+        <Handle
+            key={`source-${i}`}
+            id={`source-${i}`}
+            type="source"
+            position={Position.Right}
+            style={{
+              top: `${handlePosition * 100}%`,
+              background: '#555',
+              width: 8,
+              height: 8,
+            }}
+            isConnectable={isConnectable}
+        />
     );
   }
 
   return (
-    <div style={props.style} className="custom-node">
-      {/* Target handle on the left side */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        style={{ background: '#555', width: 8, height: 8 }}
-        isConnectable={isConnectable}
-      />
+      <div style={props.style} className="custom-node">
+        {/* Target handle on the left side */}
+        <Handle
+            type="target"
+            position={Position.Left}
+            style={{background: '#555', width: 8, height: 8}}
+            isConnectable={isConnectable}
+        />
 
-      <div className="p-2">
-        <div className="font-bold">{label}</div>
-        <div className="text-xs">{type}</div>
-        {text && (
-          <div className="text-xs mt-2 p-1 bg-black/10 rounded">
-            {text}
-          </div>
-        )}
+        <div className="p-2">
+          <div className="font-bold">{label}</div>
+          <div className="text-xs">{type}</div>
+          {text && (
+              <div className="text-xs mt-2 p-1 bg-black/10 rounded">
+                {text}
+              </div>
+          )}
 
-        {operations && operations.length > 0 && (
-          <div className="text-xs mt-2">
-            <div className="font-medium">Operations:</div>
-            <div className="grid grid-cols-1 gap-2 mt-1">
-              {operations.map((op, index) => (
-                <div key={index} className="bg-black/10 rounded p-2 border border-white/20">
-                  {op}
+          {operations && operations.length > 0 && (
+              <div className="text-xs mt-2">
+                <div className="font-medium">Operations:</div>
+                <div className="grid grid-cols-1 gap-2 mt-1">
+                  {operations.map((op: string, index: number) => (
+                      <div key={index} className="bg-black/10 rounded p-2 border border-white/20">
+                        {op}
+                      </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
+          )}
 
-        {outcomes && outcomes.length > 0 && (
-          <div className="text-xs mt-2">
-            <div className="font-medium">Outcomes:</div>
-            <div className="space-y-2 mt-1">
-              {outcomes.map((outcome, index) => (
-                <div key={index} className="bg-black/10 rounded p-2">
-                  {outcome.conditions.length > 0 ? (
-                    <div>
-                      {outcome.conditions.map((condition, condIndex) => (
-                        <div key={condIndex}>{condition}</div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="italic">No conditions (default outcome)</div>
-                  )}
+          {outcomes && outcomes.length > 0 && (
+              <div className="text-xs mt-2">
+                <div className="font-medium">Outcomes:</div>
+                <div className="space-y-2 mt-1">
+                  {outcomes.map((outcome: { nextState: string; conditions: string[] }, index: number) => (
+                      <div key={index} className="bg-black/10 rounded p-2">
+                        {outcome.conditions.length > 0 ? (
+                            <div>
+                              {outcome.conditions.map((condition: string, condIndex: number) => (
+                                  <div key={condIndex}>{condition}</div>
+                              ))}
+                            </div>
+                        ) : (
+                            <div className="italic">No conditions (default outcome)</div>
+                        )}
+                      </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
+          )}
 
-        {choices && choices.length > 0 && (
-          <div className="text-xs mt-2">
-            <div className="font-medium">Choices:</div>
-            <div className="grid grid-cols-1 gap-2 mt-1">
-              {choices.map((choice, index) => (
-                <div key={index} className="bg-black/10 rounded p-2 border border-white/20">
-                  {choice.text}
+          {choices && choices.length > 0 && (
+              <div className="text-xs mt-2">
+                <div className="font-medium">Choices:</div>
+                <div className="grid grid-cols-1 gap-2 mt-1">
+                  {choices.map((choice: { text: string; nextState: string | null }, index: number) => (
+                      <div key={index} className="bg-black/10 rounded p-2 border border-white/20">
+                        {choice.text}
+                      </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
+          )}
+        </div>
+
+        {/* Source handles on the right side */}
+        {sourceHandles}
       </div>
-
-      {/* Source handles on the right side */}
-      {sourceHandles}
-    </div>
   );
 };
 
@@ -171,7 +187,7 @@ const processConversationData = (conversation: Conversation) => {
   const edges: Edge[] = [];
 
   if (!conversation.attributes.states || conversation.attributes.states.length === 0) {
-    return { nodes, edges };
+    return {nodes, edges};
   }
 
   // Track terminal states (states with no outgoing transitions)
@@ -211,7 +227,7 @@ const processConversationData = (conversation: Conversation) => {
     // Start state
     if (state.id === conversation.attributes.startState) {
       nodeType = NODE_TYPES.START;
-    } 
+    }
     // Terminal state (no outgoing transitions)
     else if (!statesWithOutgoingTransitions.has(state.id)) {
       nodeType = NODE_TYPES.TERMINAL;
@@ -240,33 +256,33 @@ const processConversationData = (conversation: Conversation) => {
     }
 
     // Prepare operations and outcomes for genericAction nodes
-    let operations = [];
-    let outcomes = [];
-    let choices = [];
+    let operations: string[] = [];
+    let outcomes: { nextState: string; conditions: string[]; }[] = [];
+    let choices: { text: string; nextState: string | null; }[] = [];
 
     if (state.type === 'genericAction' && state.genericAction) {
       // Extract operation types and convert to pascal case with spaces
       if (state.genericAction.operations && state.genericAction.operations.length > 0) {
-        operations = state.genericAction.operations.map(op => 
-          camelToPascalWithSpaces(op.type)
+        operations = state.genericAction.operations.map((op: { type: string }) =>
+            camelToPascalWithSpaces(op.type)
         );
       }
 
       // Process outcomes with their conditions
       if (state.genericAction.outcomes && state.genericAction.outcomes.length > 0) {
-        outcomes = state.genericAction.outcomes.map(outcome => {
+        outcomes = state.genericAction.outcomes.map((outcome: { nextState: string; conditions: { type: string; operator: string; value: string }[] }) => {
           // Create an object with the nextState and a formatted conditions array
           return {
             nextState: outcome.nextState,
-            conditions: outcome.conditions.map(condition => 
-              `${camelToPascalWithSpaces(condition.type)} ${condition.operator} ${condition.value}`
+            conditions: outcome.conditions.map((condition: { type: string; operator: string; value: string }) =>
+                `${camelToPascalWithSpaces(condition.type)} ${condition.operator} ${condition.value}`
             )
           };
         });
       }
     } else if (state.type === 'listSelection' && state.listSelection?.choices) {
       // Include choices for listSelection nodes
-      choices = state.listSelection.choices.map(choice => ({
+      choices = state.listSelection.choices.map((choice: { text: string; nextState: string | null }) => ({
         text: choice.text,
         nextState: choice.nextState
       }));
@@ -275,7 +291,7 @@ const processConversationData = (conversation: Conversation) => {
     nodes.push({
       id: state.id,
       type: 'customNode', // Use our custom node type
-      data: { 
+      data: {
         label: camelToPascalWithSpaces(state.id),
         type: state.type,
         text: textContent,
@@ -284,7 +300,7 @@ const processConversationData = (conversation: Conversation) => {
         choices: choices,
         outgoingEdgesCount: outgoingEdgesCount, // Store count for handle creation
       },
-      position: { x: 100 + (index % 3) * 200, y: 100 + Math.floor(index / 3) * 100 },
+      position: {x: 100 + (index % 3) * 200, y: 100 + Math.floor(index / 3) * 100},
       style: {
         background: NODE_COLORS[nodeType],
         color: '#ffffff',
@@ -302,7 +318,7 @@ const processConversationData = (conversation: Conversation) => {
     let currentEdgeIndex = 0;
 
     if (state.type === 'dialogue' && state.dialogue?.choices) {
-      state.dialogue.choices.forEach((choice, index) => {
+      state.dialogue.choices.forEach((choice: { nextState: string | null }, index: number) => {
         if (choice.nextState) {
           // Calculate the source handle ID based on the current edge index
           const sourceHandleId = `source-${currentEdgeIndex}`;
@@ -314,17 +330,15 @@ const processConversationData = (conversation: Conversation) => {
             sourceHandle: sourceHandleId,
             type: 'smoothstep',
             animated: false,
-            style: { stroke: '#64748b' },
+            style: {stroke: '#64748b'},
           });
 
           currentEdgeIndex++;
         }
       });
     } else if (state.type === 'genericAction' && state.genericAction?.outcomes) {
-      state.genericAction.outcomes.forEach((outcome, index) => {
+      state.genericAction.outcomes.forEach((outcome: { nextState: string | null; conditions: { type: string; operator: string; value: string }[] }, index: number) => {
         if (outcome.nextState) {
-          // Create a simplified condition summary
-          const conditionSummary = `Outcome ${index + 1}`;
           // Calculate the source handle ID based on the current edge index
           const sourceHandleId = `source-${currentEdgeIndex}`;
 
@@ -335,7 +349,7 @@ const processConversationData = (conversation: Conversation) => {
             sourceHandle: sourceHandleId,
             type: 'smoothstep',
             animated: false,
-            style: { stroke: '#64748b' },
+            style: {stroke: '#64748b'},
           });
 
           currentEdgeIndex++;
@@ -353,7 +367,7 @@ const processConversationData = (conversation: Conversation) => {
           sourceHandle: sourceHandleId,
           type: 'smoothstep',
           animated: false,
-          style: { stroke: '#22c55e' },
+          style: {stroke: '#22c55e'},
         });
 
         currentEdgeIndex++;
@@ -370,7 +384,7 @@ const processConversationData = (conversation: Conversation) => {
           sourceHandle: sourceHandleId,
           type: 'smoothstep',
           animated: false,
-          style: { stroke: '#ef4444' },
+          style: {stroke: '#ef4444'},
         });
 
         currentEdgeIndex++;
@@ -387,13 +401,13 @@ const processConversationData = (conversation: Conversation) => {
           sourceHandle: sourceHandleId,
           type: 'smoothstep',
           animated: false,
-          style: { stroke: '#f59e0b' },
+          style: {stroke: '#f59e0b'},
         });
 
         currentEdgeIndex++;
       }
     } else if (state.type === 'listSelection' && state.listSelection?.choices) {
-      state.listSelection.choices.forEach((choice, index) => {
+      state.listSelection.choices.forEach((choice: { text: string; nextState: string | null }, index: number) => {
         if (choice.nextState) {
           // Calculate the source handle ID based on the current edge index
           const sourceHandleId = `source-${currentEdgeIndex}`;
@@ -405,7 +419,7 @@ const processConversationData = (conversation: Conversation) => {
             sourceHandle: sourceHandleId,
             type: 'smoothstep',
             animated: false,
-            style: { stroke: '#64748b' },
+            style: {stroke: '#64748b'},
           });
 
           currentEdgeIndex++;
@@ -414,11 +428,11 @@ const processConversationData = (conversation: Conversation) => {
     }
   });
 
-  return { nodes, edges };
+  return {nodes, edges};
 };
 
 export default function ConversationPage() {
-  const { activeTenant } = useTenant();
+  const {activeTenant} = useTenant();
   const params = useParams();
   const npcId = Number(params.id);
 
@@ -430,7 +444,7 @@ export default function ConversationPage() {
   const [showLegend, setShowLegend] = useState(false);
 
   // Define node types
-  const nodeTypes = useMemo(() => ({ customNode: CustomNode }), []);
+  const nodeTypes = useMemo(() => ({customNode: CustomNode}), []);
 
   const reactFlowInstance = useReactFlow();
 
@@ -454,7 +468,7 @@ export default function ConversationPage() {
       setConversation(conversationData);
 
       // Process conversation data into nodes and edges
-      const { nodes: processedNodes, edges: processedEdges } = processConversationData(conversationData);
+      const {nodes: processedNodes, edges: processedEdges} = processConversationData(conversationData);
       setNodes(processedNodes);
       setEdges(processedEdges);
     } catch (err) {
@@ -476,8 +490,8 @@ export default function ConversationPage() {
 
     // Create a horizontal tree layout
     // First, find the start node and build a tree structure
-    const startNodeId = nodes.find(node => 
-      node.style?.background === NODE_COLORS[NODE_TYPES.START]
+    const startNodeId = nodes.find(node =>
+        node.style?.background === NODE_COLORS[NODE_TYPES.START]
     )?.id;
 
     if (!startNodeId) {
@@ -509,7 +523,7 @@ export default function ConversationPage() {
       // Get all outgoing edges from this node
       const outgoingEdges = nodeOutgoingEdges.get(currentNodeId) || [];
 
-      outgoingEdges.forEach(edge => {
+      outgoingEdges.forEach((edge: { target: string; source: string; id: string }) => {
         const targetNodeId = edge.target;
 
         if (!visited.has(targetNodeId)) {
@@ -569,7 +583,7 @@ export default function ConversationPage() {
     });
 
     // Position nodes with proper vertical spacing
-    const nodePositions = [];
+    const nodePositions: SetStateAction<Node[]> = [];
 
     // Process each level
     for (let level = 0; level <= Math.max(...Array.from(nodeLevels.values())); level++) {

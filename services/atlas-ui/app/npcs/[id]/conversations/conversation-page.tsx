@@ -614,6 +614,7 @@ export default function ConversationPage() {
   // State for node editing dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [isAddNodeDialogOpen, setIsAddNodeDialogOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const selectedNode = useMemo(() => {
     if (!selectedNodeId) return null;
@@ -631,11 +632,57 @@ export default function ConversationPage() {
   const [editNodeType, setEditNodeType] = useState<string>('');
   const [editNodeText, setEditNodeText] = useState<string>('');
   const [editNodeTitle, setEditNodeTitle] = useState<string>('');
+  const [editDialogueType, setEditDialogueType] = useState<"sendOk" | "sendYesNo" | "sendSimple" | "sendNext">("sendOk");
 
   // State for tracking edge updates
   const [edgeUpdateSuccessful, setEdgeUpdateSuccessful] = useState(false);
 
-  // Handle node type change
+  // State for temporary edit choices
+  const [editChoices, setEditChoices] = useState<DialogueChoice[]>([]);
+
+  // State for backup of conversation before editing
+  const [conversationBackup, setConversationBackup] = useState<Conversation | null>(null);
+
+  // Handle dialogue type change - defined first to avoid circular dependency
+  const handleDialogueTypeChange = useCallback((newDialogueType: "sendOk" | "sendYesNo" | "sendSimple" | "sendNext", nodeType?: string) => {
+    setEditDialogueType(newDialogueType);
+
+    // Create blank choices based on dialogue type
+    let blankChoices: DialogueChoice[] = [];
+
+    switch (newDialogueType) {
+      case "sendOk":
+        blankChoices = [
+          { text: "Ok", nextState: null },
+          { text: "Exit", nextState: null }
+        ];
+        break;
+      case "sendYesNo":
+        blankChoices = [
+          { text: "Yes", nextState: null },
+          { text: "No", nextState: null },
+          { text: "Exit", nextState: null }
+        ];
+        break;
+      case "sendSimple":
+        blankChoices = [
+          { text: "Ok", nextState: null },
+          { text: "Exit", nextState: null }
+        ];
+        break;
+      case "sendNext":
+        blankChoices = [
+          { text: "Next", nextState: null },
+          { text: "Exit", nextState: null }
+        ];
+        break;
+    }
+
+    // Update the edit choices state
+    setEditChoices(blankChoices);
+  }, []);
+
+  // Handle node type change - defined after handleDialogueTypeChange to avoid circular dependency
   const handleNodeTypeChange = useCallback((newType: string) => {
     setEditNodeType(newType);
 
@@ -647,7 +694,16 @@ export default function ConversationPage() {
     if (newType !== 'listSelection') {
       setEditNodeTitle('');
     }
-  }, []);
+
+    // If changing to dialogue type, set up choices based on the current dialogue type
+    if (newType === 'dialogue') {
+      // Use the current dialogue type to set up choices
+      handleDialogueTypeChange(editDialogueType, newType);
+    } else {
+      // Clear edit choices if not dialogue
+      setEditChoices([]);
+    }
+  }, [editDialogueType, handleDialogueTypeChange]);
 
   // Handle save changes
   const handleSaveChanges = useCallback(() => {
@@ -677,13 +733,22 @@ export default function ConversationPage() {
     // Add type-specific properties
     if (updatedState.type === 'dialogue') {
       updatedState.dialogue = {
-        ...(currentState.dialogue || { dialogueType: "sendOk", choices: [] }),
+        ...(currentState.dialogue || { choices: [] }),
+        dialogueType: editDialogueType,
         text: editNodeText,
+        choices: editChoices.length > 0 ? editChoices : (currentState.dialogue?.choices || [])
       };
     } else if (updatedState.type === 'listSelection') {
+      // Ensure there's always an Exit choice
+      let choices = currentState.listSelection?.choices || [];
+      if (!choices.some(choice => choice.text === "Exit")) {
+        choices = [...choices, { text: "Exit", nextState: null }];
+      }
+
       updatedState.listSelection = {
         ...(currentState.listSelection || { choices: [] }),
         title: editNodeTitle,
+        choices: choices
       };
     } else if (updatedState.type === 'genericAction') {
       updatedState.genericAction = currentState.genericAction || { operations: [], outcomes: [] };
@@ -762,13 +827,108 @@ export default function ConversationPage() {
     // Close the dialog
     setIsDialogOpen(false);
 
+    // Clear the backup
+    setConversationBackup(null);
+
     // Show success message
     toast.success("Node updated successfully");
   }, [conversation, selectedNodeId, editNodeId, editNodeType, editNodeText, editNodeTitle, setNodes, setEdges]);
 
+  // Handle adding a new node
+  const handleAddNode = useCallback(() => {
+    // Initialize with default values for a new node
+    setSelectedNodeId(null);
+    setEditNodeId(`state_${Date.now()}`); // Generate a unique ID
+    setEditNodeType('dialogue'); // Default type
+    setEditNodeText(''); // Empty text
+    setEditNodeTitle(''); // Empty title
+    setEditDialogueType('sendOk'); // Default dialogue type
+
+    // Initialize with default choices based on dialogue type
+    handleDialogueTypeChange('sendOk');
+
+    // Create a backup of the conversation state
+    if (conversation) {
+      setConversationBackup(JSON.parse(JSON.stringify(conversation)));
+    }
+
+    // Open the add node dialog
+    setIsAddNodeDialogOpen(true);
+  }, [conversation, handleDialogueTypeChange]);
+
+  // Handle saving a new node
+  const handleSaveNewNode = useCallback(() => {
+    if (!conversation) return;
+
+    // Create a copy of the conversation
+    const updatedConversation = { ...conversation };
+
+    // Create a new state object
+    const newState: ConversationState = {
+      id: editNodeId,
+      type: editNodeType as "dialogue" | "genericAction" | "craftAction" | "listSelection",
+    };
+
+    // Add type-specific properties
+    if (newState.type === 'dialogue') {
+      newState.dialogue = {
+        dialogueType: editDialogueType,
+        text: editNodeText,
+        choices: editChoices
+      };
+    } else if (newState.type === 'listSelection') {
+      newState.listSelection = {
+        title: editNodeTitle,
+        choices: [
+          { text: "Exit", nextState: null }
+        ]
+      };
+    } else if (newState.type === 'genericAction') {
+      newState.genericAction = { operations: [], outcomes: [] };
+    } else if (newState.type === 'craftAction') {
+      newState.craftAction = { 
+        recipeId: 0, 
+        quantity: 1, 
+        successState: '', 
+        failureState: '', 
+        missingMaterialsState: '' 
+      };
+    }
+
+    // Add the new state to the conversation
+    updatedConversation.attributes.states.push(newState);
+
+    // If this is the first state, set it as the start state
+    if (updatedConversation.attributes.states.length === 1) {
+      updatedConversation.attributes.startState = newState.id;
+    }
+
+    // Update the conversation in state
+    setConversation(updatedConversation);
+
+    // Process the updated conversation to update nodes and edges
+    const { nodes: processedNodes, edges: processedEdges } = processConversationData(updatedConversation);
+    setNodes(processedNodes);
+    setEdges(processedEdges);
+
+    // Close the dialog
+    setIsAddNodeDialogOpen(false);
+
+    // Clear the backup
+    setConversationBackup(null);
+
+    // Show success message
+    toast.success("Node added successfully");
+  }, [conversation, editNodeId, editNodeType, editNodeText, editNodeTitle, setNodes, setEdges]);
+
   // Handle node edit
   const handleNodeEdit = useCallback((nodeId: string) => {
     setSelectedNodeId(nodeId);
+
+    // Create a backup of the conversation state
+    if (conversation) {
+      setConversationBackup(JSON.parse(JSON.stringify(conversation)));
+    }
 
     // Find the node state in the conversation
     const nodeState = conversation?.attributes.states.find(state => state.id === nodeId);
@@ -779,10 +939,24 @@ export default function ConversationPage() {
       setEditNodeType(nodeState.type);
 
       // Set text for dialogue nodes
-      if (nodeState.type === 'dialogue' && nodeState.dialogue?.text) {
-        setEditNodeText(nodeState.dialogue.text);
+      if (nodeState.type === 'dialogue' && nodeState.dialogue) {
+        setEditNodeText(nodeState.dialogue.text || '');
+        // Set dialogueType for dialogue nodes
+        if (nodeState.dialogue?.dialogueType) {
+          setEditDialogueType(nodeState.dialogue.dialogueType);
+        } else {
+          setEditDialogueType("sendOk");
+        }
+        // Set choices for dialogue nodes
+        if (nodeState.dialogue?.choices) {
+          setEditChoices(nodeState.dialogue.choices);
+        } else {
+          // Create default choices based on dialogue type
+          handleDialogueTypeChange(nodeState.dialogue?.dialogueType || "sendOk");
+        }
       } else {
         setEditNodeText('');
+        setEditChoices([]);
       }
 
       // Set title for listSelection nodes
@@ -794,7 +968,7 @@ export default function ConversationPage() {
     }
 
     setIsDialogOpen(true);
-  }, [conversation]);
+  }, [conversation, handleDialogueTypeChange]);
 
   // Define node types with the edit handler
   const nodeTypes = useMemo(() => ({
@@ -1294,7 +1468,26 @@ export default function ConversationPage() {
       </Dialog>
 
       {/* Node Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog 
+        open={isDialogOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            // Dialog is being closed without saving, restore the backup
+            if (conversationBackup) {
+              setConversation(conversationBackup);
+              // Process the restored conversation to update nodes and edges
+              const { nodes: processedNodes, edges: processedEdges } = processConversationData(conversationBackup);
+              setNodes(processedNodes);
+              setEdges(processedEdges);
+              // Clear the backup
+              setConversationBackup(null);
+            }
+            setIsDialogOpen(false);
+          } else {
+            setIsDialogOpen(true);
+          }
+        }}
+      >
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -1333,6 +1526,19 @@ export default function ConversationPage() {
                 <div>
                   <h3 className="text-lg font-semibold">Dialogue</h3>
                   <div className="border p-4 rounded-md">
+                    <div className="mb-4">
+                      <p className="font-medium">Dialogue Type:</p>
+                      <select 
+                        value={editDialogueType} 
+                        onChange={(e) => handleDialogueTypeChange(e.target.value as "sendOk" | "sendYesNo" | "sendSimple" | "sendNext")}
+                        className="w-full p-2 border rounded-md"
+                      >
+                        <option value="sendOk">sendOk</option>
+                        <option value="sendYesNo">sendYesNo</option>
+                        <option value="sendSimple">sendSimple</option>
+                        <option value="sendNext">sendNext</option>
+                      </select>
+                    </div>
                     <p className="font-medium">Text:</p>
                     <textarea 
                       value={editNodeText} 
@@ -1340,11 +1546,10 @@ export default function ConversationPage() {
                       className="w-full p-2 border rounded-md min-h-[100px]"
                     />
 
-                    {selectedNodeState.type === 'dialogue' && selectedNodeState.dialogue?.choices && selectedNodeState.dialogue.choices.length > 0 && (
-                      <div className="mt-4">
+                    <div className="mt-4">
                         <p className="font-medium">Choices:</p>
                         <div className="space-y-2 mt-2">
-                          {selectedNodeState.dialogue.choices.map((choice, index) => (
+                          {editChoices.map((choice, index) => (
                             <div key={index} className="border p-2 rounded-md">
                               <p><span className="font-medium">Text:</span> {choice.text}</p>
                               <p><span className="font-medium">Next State:</span> {choice.nextState || 'None'}</p>
@@ -1352,7 +1557,6 @@ export default function ConversationPage() {
                           ))}
                         </div>
                       </div>
-                    )}
                   </div>
                 </div>
               )}
@@ -1481,6 +1685,158 @@ export default function ConversationPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Add Node Dialog */}
+      <Dialog 
+        open={isAddNodeDialogOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            // Dialog is being closed without saving, restore the backup
+            if (conversationBackup) {
+              setConversation(conversationBackup);
+              // Process the restored conversation to update nodes and edges
+              const { nodes: processedNodes, edges: processedEdges } = processConversationData(conversationBackup);
+              setNodes(processedNodes);
+              setEdges(processedEdges);
+              // Clear the backup
+              setConversationBackup(null);
+            }
+            setIsAddNodeDialogOpen(false);
+          } else {
+            setIsAddNodeDialogOpen(true);
+          }
+        }}
+      >
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Node</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <h3 className="text-lg font-semibold">Node ID</h3>
+                <input 
+                  type="text" 
+                  value={editNodeId} 
+                  onChange={(e) => setEditNodeId(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Node Type</h3>
+                <select 
+                  value={editNodeType} 
+                  onChange={(e) => handleNodeTypeChange(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="dialogue">dialogue</option>
+                  <option value="genericAction">genericAction</option>
+                  <option value="craftAction">craftAction</option>
+                  <option value="listSelection">listSelection</option>
+                </select>
+              </div>
+            </div>
+
+            {editNodeType === 'dialogue' && (
+              <div>
+                <h3 className="text-lg font-semibold">Dialogue</h3>
+                <div className="border p-4 rounded-md">
+                  <div className="mb-4">
+                    <p className="font-medium">Dialogue Type:</p>
+                    <select 
+                      value={editDialogueType} 
+                      onChange={(e) => handleDialogueTypeChange(e.target.value as "sendOk" | "sendYesNo" | "sendSimple" | "sendNext")}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      <option value="sendOk">sendOk</option>
+                      <option value="sendYesNo">sendYesNo</option>
+                      <option value="sendSimple">sendSimple</option>
+                      <option value="sendNext">sendNext</option>
+                    </select>
+                  </div>
+                  <p className="font-medium">Text:</p>
+                  <textarea 
+                    value={editNodeText} 
+                    onChange={(e) => setEditNodeText(e.target.value)}
+                    className="w-full p-2 border rounded-md min-h-[100px]"
+                    placeholder="Enter dialogue text here..."
+                  />
+
+                  {/* Display choices that will be created */}
+                  <div className="mt-4">
+                    <p className="font-medium">Choices:</p>
+                    <div className="space-y-2 mt-2">
+                      {editChoices.map((choice, index) => (
+                        <div key={index} className="border p-2 rounded-md">
+                          <p><span className="font-medium">Text:</span> {choice.text}</p>
+                          <p><span className="font-medium">Next State:</span> {choice.nextState || 'None'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {editNodeType === 'listSelection' && (
+              <div>
+                <h3 className="text-lg font-semibold">List Selection</h3>
+                <div className="border p-4 rounded-md">
+                  <div>
+                    <p className="font-medium">Title:</p>
+                    <input 
+                      type="text" 
+                      value={editNodeTitle} 
+                      onChange={(e) => setEditNodeTitle(e.target.value)}
+                      className="w-full p-2 border rounded-md"
+                      placeholder="Enter list selection title here..."
+                    />
+                  </div>
+
+                  {/* Display choices that will be created */}
+                  <div className="mt-4">
+                    <p className="font-medium">Choices:</p>
+                    <div className="space-y-2 mt-2">
+                      <div className="border p-2 rounded-md">
+                        <p><span className="font-medium">Text:</span> Exit</p>
+                        <p><span className="font-medium">Next State:</span> None</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {editNodeType === 'genericAction' && (
+              <div>
+                <h3 className="text-lg font-semibold">Generic Action</h3>
+                <div className="border p-4 rounded-md">
+                  <p className="text-sm text-muted-foreground">
+                    You can add operations and outcomes after creating the node.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {editNodeType === 'craftAction' && (
+              <div>
+                <h3 className="text-lg font-semibold">Craft Action</h3>
+                <div className="border p-4 rounded-md">
+                  <p className="text-sm text-muted-foreground">
+                    You can configure recipe ID, quantity, and state transitions after creating the node.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddNodeDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveNewNode}>Create Node</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">NPC #{npcId} Conversation</h2>
@@ -1570,6 +1926,10 @@ export default function ConversationPage() {
             </Button>
             <Button variant="default" size="sm" onClick={handleReorganize}>
               Reorganize
+            </Button>
+            <Separator className="my-1" />
+            <Button variant="default" size="sm" onClick={handleAddNode}>
+              Add Node
             </Button>
           </Panel>
         </ReactFlow>

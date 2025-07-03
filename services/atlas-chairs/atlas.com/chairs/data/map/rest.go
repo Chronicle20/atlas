@@ -1,4 +1,4 @@
-package data
+package _map
 
 import (
 	"github.com/jtumidanski/api2go/jsonapi"

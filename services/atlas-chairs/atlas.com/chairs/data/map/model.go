@@ -1,4 +1,4 @@
-package data
+package _map
 
 type Model struct {
 	seats uint32

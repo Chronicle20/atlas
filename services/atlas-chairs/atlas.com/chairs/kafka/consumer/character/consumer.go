@@ -4,7 +4,9 @@ import (
 	"atlas-chairs/chair"
 	"atlas-chairs/character"
 	consumer2 "atlas-chairs/kafka/consumer"
+	character2 "atlas-chairs/kafka/message/character"
 	"context"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -16,7 +18,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("character_status")(EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("character_status")(character2.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -24,7 +26,7 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) {
 		var t string
-		t, _ = topic.EnvProvider(l)(EnvEventTopicCharacterStatus)()
+		t, _ = topic.EnvProvider(l)(character2.EnvEventTopicCharacterStatus)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogin)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChanged)))
@@ -32,33 +34,39 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	}
 }
 
-func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventLoginBody]) {
-	if e.Type == EventCharacterStatusTypeLogin {
+func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventLoginBody]) {
+	if e.Type == character2.EventCharacterStatusTypeLogin {
 		l.Debugf("Character [%d] has logged in. worldId [%d] channelId [%d] mapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
-		character.Enter(ctx)(e.WorldId, e.Body.ChannelId, e.Body.MapId, e.CharacterId)
+		f := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.MapId).Build()
+		character.NewProcessor(l, ctx).Enter(f, e.CharacterId)
 	}
 }
 
-func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventLogoutBody]) {
-	if e.Type == EventCharacterStatusTypeLogout {
+func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventLogoutBody]) {
+	if e.Type == character2.EventCharacterStatusTypeLogout {
 		l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
-		character.Exit(ctx)(e.WorldId, e.Body.ChannelId, e.Body.MapId, e.CharacterId)
-		_ = chair.Clear(l)(ctx)(e.WorldId, e.Body.ChannelId, e.CharacterId, e.Body.MapId)
+		f := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.MapId).Build()
+		character.NewProcessor(l, ctx).Exit(f, e.CharacterId)
+		_ = chair.NewProcessor(l, ctx).Clear(f, e.CharacterId)
 	}
 }
 
-func handleStatusEventMapChanged(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventMapChangedBody]) {
-	if e.Type == EventCharacterStatusTypeMapChanged {
+func handleStatusEventMapChanged(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventMapChangedBody]) {
+	if e.Type == character2.EventCharacterStatusTypeMapChanged {
 		l.Debugf("Character [%d] has changed maps. worldId [%d] channelId [%d] oldMapId [%d] newMapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldMapId, e.Body.TargetMapId)
-		character.TransitionMap(ctx)(e.WorldId, e.Body.ChannelId, e.Body.TargetMapId, e.CharacterId, e.Body.OldMapId)
-		_ = chair.Clear(l)(ctx)(e.WorldId, e.Body.ChannelId, e.CharacterId, e.Body.OldMapId)
+		of := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.OldMapId).Build()
+		nf := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.TargetMapId).Build()
+		character.NewProcessor(l, ctx).TransitionMap(of, nf, e.CharacterId)
+		_ = chair.NewProcessor(l, ctx).Clear(of, e.CharacterId)
 	}
 }
 
-func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, e statusEvent[changeChannelEventLoginBody]) {
-	if e.Type == EventCharacterStatusTypeChannelChanged {
+func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.ChangeChannelEventLoginBody]) {
+	if e.Type == character2.EventCharacterStatusTypeChannelChanged {
 		l.Debugf("Character [%d] has changed channels. worldId [%d] channelId [%d] oldChannelId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldChannelId)
-		character.TransitionChannel(ctx)(e.WorldId, e.Body.ChannelId, e.Body.OldChannelId, e.CharacterId, e.Body.MapId)
-		_ = chair.Clear(l)(ctx)(e.WorldId, e.Body.ChannelId, e.CharacterId, e.Body.MapId)
+		of := field.NewBuilder(e.WorldId, e.Body.OldChannelId, e.Body.MapId).Build()
+		nf := field.NewBuilder(e.WorldId, e.Body.ChannelId, e.Body.MapId).Build()
+		character.NewProcessor(l, ctx).TransitionChannel(of, nf, e.CharacterId)
+		_ = chair.NewProcessor(l, ctx).Clear(nf, e.CharacterId)
 	}
 }

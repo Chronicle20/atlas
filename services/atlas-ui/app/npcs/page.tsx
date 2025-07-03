@@ -238,9 +238,12 @@ export default function Page() {
                                             variant="default" 
                                             size="sm"
                                             className="cursor-pointer"
+                                            asChild
                                             title="Conversation Available"
                                         >
-                                            <MessageCircle className="h-4 w-4" />
+                                            <Link href={`/npcs/${npc.id}/conversations`}>
+                                                <MessageCircle className="h-4 w-4" />
+                                            </Link>
                                         </Button>
                                     ) : (
                                         <Button 

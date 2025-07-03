@@ -72,9 +72,90 @@ GET /api/worlds/{worldId}/channels/{channelId}/maps/{mapId}/chairs
 
 ## Environment Variables
 
-- `JAEGER_HOST` - Jaeger [host]:[port] for distributed tracing
+- `JAEGER_HOST_PORT` - Jaeger [host]:[port] for distributed tracing
 - `LOG_LEVEL` - Logging level (Panic / Fatal / Error / Warn / Info / Debug / Trace)
-- `BASE_SERVICE_URL` - Base URL for the service [scheme]://[host]:[port]/api/
+- `REST_PORT` - Port for the REST server
 - `COMMAND_TOPIC_CHAIR` - Kafka topic for chair commands
 - `EVENT_TOPIC_CHAIR_STATUS` - Kafka topic for chair status events
 - `EVENT_TOPIC_CHARACTER_STATUS` - Kafka topic for character status events
+
+## Kafka Commands and Events
+
+### Chair Commands
+- `USE` - Command to use a chair
+  ```json
+  {
+    "worldId": 0,
+    "channelId": 0,
+    "mapId": 100000000,
+    "type": "USE",
+    "body": {
+      "characterId": 123,
+      "chairType": "FIXED",
+      "chairId": 456
+    }
+  }
+  ```
+- `CANCEL` - Command to cancel sitting on a chair
+  ```json
+  {
+    "worldId": 0,
+    "channelId": 0,
+    "mapId": 100000000,
+    "type": "CANCEL",
+    "body": {
+      "characterId": 123
+    }
+  }
+  ```
+
+### Chair Events
+- `USED` - Event indicating a character is now sitting on a chair
+  ```json
+  {
+    "worldId": 0,
+    "channelId": 0,
+    "mapId": 100000000,
+    "chairType": "FIXED",
+    "chairId": 456,
+    "type": "USED",
+    "body": {
+      "characterId": 123
+    }
+  }
+  ```
+- `CANCELLED` - Event indicating a character has stopped sitting on a chair
+  ```json
+  {
+    "worldId": 0,
+    "channelId": 0,
+    "mapId": 100000000,
+    "chairType": "FIXED",
+    "chairId": 456,
+    "type": "CANCELLED",
+    "body": {
+      "characterId": 123
+    }
+  }
+  ```
+- `ERROR` - Event indicating an error occurred with a chair operation
+  ```json
+  {
+    "worldId": 0,
+    "channelId": 0,
+    "mapId": 100000000,
+    "chairType": "FIXED",
+    "chairId": 456,
+    "type": "ERROR",
+    "body": {
+      "characterId": 123,
+      "type": "ALREADY_SITING"
+    }
+  }
+  ```
+
+### Character Events (Consumed)
+- `LOGIN` - Event indicating a character has logged in
+- `LOGOUT` - Event indicating a character has logged out
+- `CHANNEL_CHANGED` - Event indicating a character has changed channels
+- `MAP_CHANGED` - Event indicating a character has changed maps

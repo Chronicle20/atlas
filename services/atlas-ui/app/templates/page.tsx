@@ -4,7 +4,7 @@ import {DataTable} from "@/components/data-table";
 import {getColumns} from "@/app/templates/columns";
 import {useEffect, useState} from "react";
 import {fetchTemplates, Template, deleteTemplate, cloneTemplate, createTemplate} from "@/lib/templates";
-import {createTenant, createTenantFromTemplate} from "@/lib/tenants";
+import {createTenantConfiguration, createTenantFromTemplate} from "@/lib/tenants";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -182,8 +182,8 @@ export default function Page() {
             // Create tenant attributes from template
             const tenantAttributes = createTenantFromTemplate(templateForTenant);
 
-            // Create the new tenant
-            const newTenant = await createTenant(tenantAttributes);
+            // Create the new tenant configuration
+            const newTenant = await createTenantConfiguration(tenantAttributes);
 
             // Show success message
             toast.success("Tenant created successfully");

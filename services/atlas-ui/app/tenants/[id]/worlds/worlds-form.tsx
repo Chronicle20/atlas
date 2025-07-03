@@ -1,6 +1,6 @@
 "use client"
 
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 import {useFieldArray, useForm} from "react-hook-form";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
@@ -8,13 +8,14 @@ import {Button} from "@/components/ui/button";
 import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import {X} from "lucide-react";
-import {updateTenant} from "@/lib/tenants";
+import {updateTenantConfiguration, TenantConfig} from "@/lib/tenants";
 import {toast} from "sonner";
 
 export function WorldsForm() {
     const {id} = useParams(); // Get tenants ID from URL
-    const {tenants} = useTenant()
-    let tenant = tenants.find((t) => t.id === id);
+    const {fetchTenantConfiguration} = useTenant();
+    const [tenant, setTenant] = useState<TenantConfig | null>(null);
+    const [loading, setLoading] = useState(true);
 
     interface FormValues {
         worlds: {
@@ -28,13 +29,7 @@ export function WorldsForm() {
 
     const form = useForm<FormValues>({
         defaultValues: {
-            worlds: tenant?.attributes.worlds.map(world => ({
-                name: world.name || "",
-                flag: world.flag || "",
-                eventMessage: world.eventMessage || "",
-                serverMessage: world.serverMessage || "",
-                whyAmIRecommended: world.whyAmIRecommended || "",
-            }))
+            worlds: []
         }
     });
 
@@ -43,27 +38,65 @@ export function WorldsForm() {
         name: "worlds"
     });
 
-    // Reset form values when `worlds` data changes
+    // Fetch the full tenant configuration
     useEffect(() => {
-        form.reset({
-            worlds: tenant?.attributes.worlds.map(world => ({
-                name: world.name || "",
-                flag: world.flag || "",
-                eventMessage: world.eventMessage || "",
-                serverMessage: world.serverMessage || "",
-                whyAmIRecommended: world.whyAmIRecommended || "",
-            }))
-        });
-    }, [tenant, form.reset, form]);
+        const fetchTenant = async () => {
+            try {
+                setLoading(true);
+                if (id) {
+                    const tenantConfig = await fetchTenantConfiguration(id as string);
+                    setTenant(tenantConfig);
+
+                    // Update form with tenant data
+                    form.reset({
+                        worlds: tenantConfig.attributes.worlds.map(world => ({
+                            name: world.name || "",
+                            flag: world.flag || "",
+                            eventMessage: world.eventMessage || "",
+                            serverMessage: world.serverMessage || "",
+                            whyAmIRecommended: world.whyAmIRecommended || "",
+                        }))
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching tenant configuration:", error);
+                toast.error("Failed to load tenant configuration");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTenant();
+    }, [id, fetchTenantConfiguration, form]);
 
     const onSubmit = async (data: FormValues) => {
-        tenant = await updateTenant(tenant, {
-            worlds: data.worlds,
-        });
-        toast.success("Successfully saved tenant.");
-        form.reset({
-            worlds: tenant?.attributes.worlds,
-        });
+        if (!tenant) return;
+
+        try {
+            const updatedTenant = await updateTenantConfiguration(tenant, {
+                worlds: data.worlds,
+            });
+
+            if (updatedTenant) {
+                setTenant(updatedTenant);
+                toast.success("Successfully saved tenant configuration.");
+
+                form.reset({
+                    worlds: updatedTenant.attributes.worlds,
+                });
+            }
+        } catch (error) {
+            console.error("Error updating tenant configuration:", error);
+            toast.error("Failed to update tenant configuration");
+        }
+    }
+
+    if (loading) {
+        return <div className="flex justify-center items-center p-8">Loading tenant configuration...</div>;
+    }
+
+    if (!tenant) {
+        return <div className="flex justify-center items-center p-8">Tenant configuration not found</div>;
     }
 
     return (

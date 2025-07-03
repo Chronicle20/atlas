@@ -1,6 +1,6 @@
 "use client"
 
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 import {useFieldArray, useForm} from "react-hook-form";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
@@ -9,13 +9,14 @@ import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import {X} from "lucide-react";
 import {OptionsField} from "@/components/unknown-options";
-import {updateTenant} from "@/lib/tenants";
+import {updateTenantConfiguration, TenantConfig} from "@/lib/tenants";
 import {toast} from "sonner";
 
 export function WritersForm() {
     const {id} = useParams(); // Get tenants ID from URL
-    const {tenants} = useTenant()
-    let tenant = tenants.find((t) => t.id === id);
+    const {fetchTenantConfiguration} = useTenant();
+    const [tenant, setTenant] = useState<TenantConfig | null>(null);
+    const [loading, setLoading] = useState(true);
 
     interface FormValues {
         writers: {
@@ -27,11 +28,7 @@ export function WritersForm() {
 
     const form = useForm<FormValues>({
         defaultValues: {
-            writers: tenant?.attributes.socket.writers.map(writer => ({
-                opCode: writer.opCode || "",
-                writer: writer.writer || "",
-                options: writer.options,
-            }))
+            writers: []
         }
     });
 
@@ -40,32 +37,70 @@ export function WritersForm() {
         name: "writers"
     });
 
-    // Reset form values when `writers` data changes
+    // Fetch the full tenant configuration
     useEffect(() => {
-        form.reset({
-            writers: tenant?.attributes.socket.writers.map(writer => ({
-                opCode: writer.opCode || "",
-                writer: writer.writer || "",
-                options: writer.options,
-            }))
-        });
-    }, [tenant, form.reset, form]);
+        const fetchTenant = async () => {
+            try {
+                setLoading(true);
+                if (id) {
+                    const tenantConfig = await fetchTenantConfiguration(id as string);
+                    setTenant(tenantConfig);
+
+                    // Update form with tenant data
+                    form.reset({
+                        writers: tenantConfig.attributes.socket.writers.map(writer => ({
+                            opCode: writer.opCode || "",
+                            writer: writer.writer || "",
+                            options: writer.options,
+                        }))
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching tenant configuration:", error);
+                toast.error("Failed to load tenant configuration");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTenant();
+    }, [id, fetchTenantConfiguration, form]);
 
     const onSubmit = async (data: FormValues) => {
-        tenant = await updateTenant(tenant, {
-            socket: {
-                handlers: tenant?.attributes.socket.handlers || [],
-                writers: data.writers,
-            },
-        });
-        toast.success("Successfully saved tenant.");
-        form.reset({
-            writers: tenant?.attributes.socket.writers.map(writer => ({
-                opCode: writer.opCode || "",
-                writer: writer.writer || "",
-                options: writer.options,
-            }))
-        });
+        if (!tenant) return;
+
+        try {
+            const updatedTenant = await updateTenantConfiguration(tenant, {
+                socket: {
+                    handlers: tenant.attributes.socket.handlers || [],
+                    writers: data.writers,
+                },
+            });
+
+            if (updatedTenant) {
+                setTenant(updatedTenant);
+                toast.success("Successfully saved tenant configuration.");
+
+                form.reset({
+                    writers: updatedTenant.attributes.socket.writers.map(writer => ({
+                        opCode: writer.opCode || "",
+                        writer: writer.writer || "",
+                        options: writer.options,
+                    }))
+                });
+            }
+        } catch (error) {
+            console.error("Error updating tenant configuration:", error);
+            toast.error("Failed to update tenant configuration");
+        }
+    }
+
+    if (loading) {
+        return <div className="flex justify-center items-center p-8">Loading tenant configuration...</div>;
+    }
+
+    if (!tenant) {
+        return <div className="flex justify-center items-center p-8">Tenant configuration not found</div>;
     }
 
     return (

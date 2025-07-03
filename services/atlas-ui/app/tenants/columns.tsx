@@ -14,6 +14,7 @@ import Link from "next/link";
 export type Tenant = {
     id: string
     attributes: {
+        name: string
         region: string
         majorVersion: number
         minorVersion: number
@@ -28,6 +29,10 @@ export const getColumns = ({ onDelete }: ColumnProps): ColumnDef<Tenant>[] => [
     {
         accessorKey: "id",
         header: "Id",
+    },
+    {
+        accessorKey: "attributes.name",
+        header: "Name",
     },
     {
         accessorKey: "attributes.region",

@@ -9,8 +9,8 @@ import {z} from "zod"
 import {useParams} from "next/navigation";
 import {useTenant} from "@/context/tenant-context";
 import {Switch} from "@/components/ui/switch";
-import {useEffect} from "react";
-import {updateTenant} from "@/lib/tenants";
+import {useEffect, useState} from "react";
+import {updateTenantConfiguration, TenantConfig} from "@/lib/tenants";
 import {toast} from "sonner";
 
 const propertiesFormSchema = z.object({
@@ -31,8 +31,9 @@ type PropertiesFormValues = z.infer<typeof propertiesFormSchema>
 
 export function PropertiesForm() {
     const {id} = useParams(); // Get tenants ID from URL
-    const {tenants} = useTenant()
-    let tenant = tenants.find((t) => t.id === id);
+    const {fetchTenantConfiguration} = useTenant()
+    const [tenant, setTenant] = useState<TenantConfig | null>(null);
+    const [loading, setLoading] = useState(true);
 
     const form = useForm<PropertiesFormValues>({
         resolver: zodResolver(propertiesFormSchema),
@@ -45,31 +46,68 @@ export function PropertiesForm() {
         mode: "onChange",
     })
 
+    // Fetch the full tenant configuration
     useEffect(() => {
-        if (tenant) {
-            form.reset({
-                region: tenant?.attributes.region,
-                major: tenant?.attributes.majorVersion,
-                minor: tenant?.attributes.minorVersion,
-                usesPin: tenant?.attributes.usesPin,
-            });
-        }
-    }, [tenant, form.reset, form]);
+        const fetchTenant = async () => {
+            try {
+                setLoading(true);
+                if (id) {
+                    const tenantConfig = await fetchTenantConfiguration(id as string);
+                    setTenant(tenantConfig);
+
+                    // Update form with tenant data
+                    form.reset({
+                        region: tenantConfig.attributes.region,
+                        major: tenantConfig.attributes.majorVersion,
+                        minor: tenantConfig.attributes.minorVersion,
+                        usesPin: tenantConfig.attributes.usesPin,
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching tenant configuration:", error);
+                toast.error("Failed to load tenant configuration");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTenant();
+    }, [id, fetchTenantConfiguration, form]);
 
     const onSubmit = async (data: PropertiesFormValues) => {
-        tenant = await updateTenant(tenant, {
-            region: data.region,
-            majorVersion: data.major,
-            minorVersion: data.minor,
-            usesPin: data.usesPin,
-        });
-        toast.success("Successfully saved tenant.");
-        form.reset({
-            region: tenant?.attributes.region,
-            major: tenant?.attributes.majorVersion,
-            minor: tenant?.attributes.minorVersion,
-            usesPin: tenant?.attributes.usesPin,
-        });
+        if (!tenant) return;
+
+        try {
+            const updatedTenant = await updateTenantConfiguration(tenant, {
+                region: data.region,
+                majorVersion: data.major,
+                minorVersion: data.minor,
+                usesPin: data.usesPin,
+            });
+
+            if (updatedTenant) {
+                setTenant(updatedTenant);
+                toast.success("Successfully saved tenant configuration.");
+
+                form.reset({
+                    region: updatedTenant.attributes.region,
+                    major: updatedTenant.attributes.majorVersion,
+                    minor: updatedTenant.attributes.minorVersion,
+                    usesPin: updatedTenant.attributes.usesPin,
+                });
+            }
+        } catch (error) {
+            console.error("Error updating tenant configuration:", error);
+            toast.error("Failed to update tenant configuration");
+        }
+    }
+
+    if (loading) {
+        return <div className="flex justify-center items-center p-8">Loading tenant configuration...</div>;
+    }
+
+    if (!tenant) {
+        return <div className="flex justify-center items-center p-8">Tenant configuration not found</div>;
     }
 
     return (
@@ -82,7 +120,7 @@ export function PropertiesForm() {
                         <FormItem>
                             <FormLabel>Region</FormLabel>
                             <FormControl>
-                                <Input placeholder={tenant?.attributes.region} {...field} />
+                                <Input placeholder={tenant.attributes.region} {...field} />
                             </FormControl>
                             <FormDescription>
                                 The MapleStory region.
@@ -98,7 +136,7 @@ export function PropertiesForm() {
                         <FormItem>
                             <FormLabel>Major Version</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder={String(tenant?.attributes.majorVersion)} {...field} />
+                                <Input type="number" placeholder={String(tenant.attributes.majorVersion)} {...field} />
                             </FormControl>
                             <FormDescription>
                                 The MapleStory major version.
@@ -114,7 +152,7 @@ export function PropertiesForm() {
                         <FormItem>
                             <FormLabel>Minor Version</FormLabel>
                             <FormControl>
-                                <Input type="number" placeholder={String(tenant?.attributes.minorVersion)} {...field} />
+                                <Input type="number" placeholder={String(tenant.attributes.minorVersion)} {...field} />
                             </FormControl>
                             <FormDescription>
                                 The MapleStory minor version.

@@ -1,7 +1,7 @@
 "use client"
 
 import {ColumnDef} from "@tanstack/react-table"
-import {Tenant} from "@/lib/tenants";
+import {Tenant, TenantConfig} from "@/lib/tenants";
 import {getJobNameById} from "@/lib/jobs";
 import {Badge} from "@/components/ui/badge";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
@@ -15,12 +15,13 @@ import Link from "next/link";
 
 interface ColumnProps {
     tenant: Tenant | null;
+    tenantConfig: TenantConfig | null;
     accountMap: Map<string, Account>;
 }
 
 export const hiddenColumns = ["id", "attributes.gm"];
 
-export const getColumns = ({tenant, accountMap}: ColumnProps): ColumnDef<Character>[] => {
+export const getColumns = ({tenant, tenantConfig, accountMap}: ColumnProps): ColumnDef<Character>[] => {
     return [
         {
             accessorKey: "id",
@@ -48,7 +49,7 @@ export const getColumns = ({tenant, accountMap}: ColumnProps): ColumnDef<Charact
                 const num = Number(value);
                 let name = String(value);
                 if (!isNaN(num)) {
-                    name = tenant?.attributes.worlds[num].name || String(value)
+                    name = tenantConfig?.attributes.worlds[num].name || String(value)
                 }
                 return (
                     <TooltipProvider>

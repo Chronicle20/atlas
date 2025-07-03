@@ -1,5 +1,9 @@
 package invite
 
+import (
+	"github.com/google/uuid"
+)
+
 const (
 	EnvCommandTopic         = "COMMAND_TOPIC_INVITE"
 	CommandInviteTypeCreate = "CREATE"
@@ -21,48 +25,50 @@ const (
 	InviteTypeAlliance     = "ALLIANCE"
 )
 
-type commandEvent[E any] struct {
-	WorldId    byte   `json:"worldId"`
-	InviteType string `json:"inviteType"`
-	Type       string `json:"type"`
-	Body       E      `json:"body"`
+type CommandEvent[E any] struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       byte      `json:"worldId"`
+	InviteType    string    `json:"inviteType"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
-type createCommandBody struct {
+type CreateCommandBody struct {
 	OriginatorId uint32 `json:"originatorId"`
 	TargetId     uint32 `json:"targetId"`
 	ReferenceId  uint32 `json:"referenceId"`
 }
 
-type acceptCommandBody struct {
+type AcceptCommandBody struct {
 	TargetId    uint32 `json:"targetId"`
 	ReferenceId uint32 `json:"referenceId"`
 }
 
-type rejectCommandBody struct {
+type RejectCommandBody struct {
 	TargetId     uint32 `json:"targetId"`
 	OriginatorId uint32 `json:"originatorId"`
 }
 
-type statusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	InviteType  string `json:"inviteType"`
-	ReferenceId uint32 `json:"referenceId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+type StatusEvent[E any] struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       byte      `json:"worldId"`
+	InviteType    string    `json:"inviteType"`
+	ReferenceId   uint32    `json:"referenceId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
-type createdEventBody struct {
+type CreatedEventBody struct {
 	OriginatorId uint32 `json:"originatorId"`
 	TargetId     uint32 `json:"targetId"`
 }
 
-type acceptedEventBody struct {
+type AcceptedEventBody struct {
 	OriginatorId uint32 `json:"originatorId"`
 	TargetId     uint32 `json:"targetId"`
 }
 
-type rejectedEventBody struct {
+type RejectedEventBody struct {
 	OriginatorId uint32 `json:"originatorId"`
 	TargetId     uint32 `json:"targetId"`
 }

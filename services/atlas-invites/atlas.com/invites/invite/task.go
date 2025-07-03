@@ -1,9 +1,11 @@
 package invite
 
 import (
+	invite2 "atlas-invites/kafka/message/invite"
 	"atlas-invites/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"time"
@@ -43,7 +45,8 @@ func (t *Timeout) Run() {
 		}
 
 		ctx := tenant.WithContext(context.Background(), i.Tenant())
-		err = producer.ProviderImpl(t.l)(ctx)(EnvEventStatusTopic)(rejectedStatusEventProvider(i.ReferenceId(), i.WorldId(), i.Type(), i.OriginatorId(), i.TargetId()))
+		transactionId := uuid.New()
+		err = producer.ProviderImpl(t.l)(ctx)(invite2.EnvEventStatusTopic)(rejectedStatusEventProvider(i.ReferenceId(), i.WorldId(), i.Type(), i.OriginatorId(), i.TargetId(), transactionId))
 		if err != nil {
 			t.l.WithError(err).Errorf("Unable to produce rejection event for [%d] denying [%d] [%s] due to timeout.", i.TargetId(), i.OriginatorId(), i.Type())
 		}

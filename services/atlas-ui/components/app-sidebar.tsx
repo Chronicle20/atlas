@@ -17,7 +17,9 @@ import {
 import {Cog, MonitorCog} from "lucide-react";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import Link from "next/link";
+import Image from "next/image";
 import {TenantSwitcher} from "@/components/app-tenant-switcher";
+import logoImage from "@/app/logo.png";
 
 // Menu items.
 const items = [
@@ -66,8 +68,14 @@ export function AppSidebar() {
         <Sidebar>
             <SidebarHeader>
                 <Link key="/" href="/">
-                <div className="h-[200px] flex items-center justify-center">
-                    LOGO
+                <div className="h-[210px] flex items-center justify-center">
+                    <Image 
+                        src={logoImage} 
+                        alt="Logo" 
+                        width={210}
+                        height={210}
+                        priority
+                    />
                 </div>
                 </Link>
                 <TenantSwitcher />

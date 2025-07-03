@@ -20,8 +20,14 @@ export interface GenericActionOperation {
   params?: Record<string, never>;
 }
 
+export interface Condition {
+  type: string;
+  operator: string;
+  value: string;
+}
+
 export interface GenericActionOutcome {
-  condition: string;
+  conditions: Condition[];
   nextState: string;
 }
 
@@ -110,7 +116,7 @@ export async function createConversation(tenant: Tenant, conversationAttributes:
     headers: tenantHeaders(tenant),
     body: JSON.stringify({
       data: {
-        type: "npc-conversations",
+        type: "conversations",
         attributes: conversationAttributes
       }
     }),
@@ -129,7 +135,7 @@ export async function updateConversation(tenant: Tenant, conversationId: string,
     headers: tenantHeaders(tenant),
     body: JSON.stringify({
       data: {
-        type: "npc-conversations",
+        type: "conversations",
         id: conversationId,
         attributes: conversationAttributes
       }
@@ -151,4 +157,18 @@ export async function deleteConversation(tenant: Tenant, conversationId: string)
   if (!response.ok) {
     throw new Error("Failed to delete NPC conversation.");
   }
+}
+
+export async function fetchNPCConversations(tenant: Tenant, npcId: number): Promise<Conversation | null> {
+  const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+  const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/conversations", {
+    method: "GET",
+    headers: tenantHeaders(tenant),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch NPC conversations.");
+  }
+  const responseData: ConversationsResponse = await response.json();
+  // Return the first conversation if one exists, otherwise return null
+  return responseData.data.length > 0 ? responseData.data[0] : null;
 }

@@ -60,9 +60,34 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(referenceId uint32) func
 				return func(originatorId uint32) func(targetId uint32) func(transactionId uuid.UUID) (Model, error) {
 					return func(targetId uint32) func(transactionId uuid.UUID) (Model, error) {
 						return func(transactionId uuid.UUID) (Model, error) {
+							p.l.WithFields(logrus.Fields{
+								"referenceId":  referenceId,
+								"worldId":      worldId,
+								"inviteType":   inviteType,
+								"originatorId": originatorId,
+								"targetId":     targetId,
+								"transaction":  transactionId.String(),
+							}).Debug("Creating invite")
+
 							i := GetRegistry().Create(p.t, originatorId, worldId, targetId, inviteType, referenceId)
+
+							p.l.WithFields(logrus.Fields{
+								"inviteId":     i.Id(),
+								"referenceId":  i.ReferenceId(),
+								"worldId":      i.WorldId(),
+								"inviteType":   i.Type(),
+								"originatorId": i.OriginatorId(),
+								"targetId":     i.TargetId(),
+								"transaction":  transactionId.String(),
+							}).Info("Invite created successfully")
+
 							err := mb.Put(invite2.EnvEventStatusTopic, createdStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId(), transactionId))
 							if err != nil {
+								p.l.WithError(err).WithFields(logrus.Fields{
+									"inviteId":     i.Id(),
+									"referenceId":  i.ReferenceId(),
+									"transaction":  transactionId.String(),
+								}).Error("Failed to put created event in message buffer")
 								return Model{}, err
 							}
 							return i, nil
@@ -92,20 +117,63 @@ func (p *ProcessorImpl) Accept(mb *message.Buffer) func(referenceId uint32) func
 			return func(inviteType string) func(actorId uint32) func(transactionId uuid.UUID) (Model, error) {
 				return func(actorId uint32) func(transactionId uuid.UUID) (Model, error) {
 					return func(transactionId uuid.UUID) (Model, error) {
+						p.l.WithFields(logrus.Fields{
+							"referenceId": referenceId,
+							"worldId":     worldId,
+							"inviteType":  inviteType,
+							"actorId":     actorId,
+							"transaction": transactionId.String(),
+						}).Debug("Accepting invite")
+
 						i, err := GetRegistry().GetByReference(p.t, actorId, inviteType, referenceId)
 						if err != nil {
-							p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
+							p.l.WithError(err).WithFields(logrus.Fields{
+								"referenceId": referenceId,
+								"inviteType":  inviteType,
+								"actorId":     actorId,
+								"transaction": transactionId.String(),
+							}).Error("Unable to locate invite being acted upon")
 							return Model{}, err
 						}
+
+						p.l.WithFields(logrus.Fields{
+							"inviteId":     i.Id(),
+							"referenceId":  i.ReferenceId(),
+							"inviteType":   i.Type(),
+							"originatorId": i.OriginatorId(),
+							"targetId":     i.TargetId(),
+							"transaction":  transactionId.String(),
+						}).Debug("Found invite to accept")
 
 						err = GetRegistry().Delete(p.t, actorId, inviteType, i.OriginatorId())
 						if err != nil {
-							p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
+							p.l.WithError(err).WithFields(logrus.Fields{
+								"inviteId":     i.Id(),
+								"referenceId":  i.ReferenceId(),
+								"inviteType":   i.Type(),
+								"originatorId": i.OriginatorId(),
+								"actorId":      actorId,
+								"transaction":  transactionId.String(),
+							}).Error("Unable to delete invite being accepted")
 							return Model{}, err
 						}
 
+						p.l.WithFields(logrus.Fields{
+							"inviteId":     i.Id(),
+							"referenceId":  i.ReferenceId(),
+							"inviteType":   i.Type(),
+							"originatorId": i.OriginatorId(),
+							"targetId":     i.TargetId(),
+							"transaction":  transactionId.String(),
+						}).Info("Invite accepted successfully")
+
 						err = mb.Put(invite2.EnvEventStatusTopic, acceptedStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId(), transactionId))
 						if err != nil {
+							p.l.WithError(err).WithFields(logrus.Fields{
+								"inviteId":     i.Id(),
+								"referenceId":  i.ReferenceId(),
+								"transaction":  transactionId.String(),
+							}).Error("Failed to put accepted event in message buffer")
 							return Model{}, err
 						}
 						return i, nil
@@ -134,20 +202,63 @@ func (p *ProcessorImpl) Reject(mb *message.Buffer) func(originatorId uint32) fun
 			return func(inviteType string) func(actorId uint32) func(transactionId uuid.UUID) (Model, error) {
 				return func(actorId uint32) func(transactionId uuid.UUID) (Model, error) {
 					return func(transactionId uuid.UUID) (Model, error) {
+						p.l.WithFields(logrus.Fields{
+							"originatorId": originatorId,
+							"worldId":      worldId,
+							"inviteType":   inviteType,
+							"actorId":      actorId,
+							"transaction":  transactionId.String(),
+						}).Debug("Rejecting invite")
+
 						i, err := GetRegistry().GetByOriginator(p.t, actorId, inviteType, originatorId)
 						if err != nil {
-							p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
+							p.l.WithError(err).WithFields(logrus.Fields{
+								"originatorId": originatorId,
+								"inviteType":   inviteType,
+								"actorId":      actorId,
+								"transaction":  transactionId.String(),
+							}).Error("Unable to locate invite being acted upon")
 							return Model{}, err
 						}
+
+						p.l.WithFields(logrus.Fields{
+							"inviteId":     i.Id(),
+							"referenceId":  i.ReferenceId(),
+							"inviteType":   i.Type(),
+							"originatorId": i.OriginatorId(),
+							"targetId":     i.TargetId(),
+							"transaction":  transactionId.String(),
+						}).Debug("Found invite to reject")
 
 						err = GetRegistry().Delete(p.t, actorId, inviteType, originatorId)
 						if err != nil {
-							p.l.WithError(err).Errorf("Unable to locate invite being acted upon.")
+							p.l.WithError(err).WithFields(logrus.Fields{
+								"inviteId":     i.Id(),
+								"referenceId":  i.ReferenceId(),
+								"inviteType":   i.Type(),
+								"originatorId": i.OriginatorId(),
+								"actorId":      actorId,
+								"transaction":  transactionId.String(),
+							}).Error("Unable to delete invite being rejected")
 							return Model{}, err
 						}
 
+						p.l.WithFields(logrus.Fields{
+							"inviteId":     i.Id(),
+							"referenceId":  i.ReferenceId(),
+							"inviteType":   i.Type(),
+							"originatorId": i.OriginatorId(),
+							"targetId":     i.TargetId(),
+							"transaction":  transactionId.String(),
+						}).Info("Invite rejected successfully")
+
 						err = mb.Put(invite2.EnvEventStatusTopic, rejectedStatusEventProvider(i.ReferenceId(), worldId, inviteType, i.OriginatorId(), i.TargetId(), transactionId))
 						if err != nil {
+							p.l.WithError(err).WithFields(logrus.Fields{
+								"inviteId":     i.Id(),
+								"referenceId":  i.ReferenceId(),
+								"transaction":  transactionId.String(),
+							}).Error("Failed to put rejected event in message buffer")
 							return Model{}, err
 						}
 						return i, nil

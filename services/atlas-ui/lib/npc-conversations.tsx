@@ -152,3 +152,17 @@ export async function deleteConversation(tenant: Tenant, conversationId: string)
     throw new Error("Failed to delete NPC conversation.");
   }
 }
+
+export async function fetchNPCConversations(tenant: Tenant, npcId: number): Promise<Conversation | null> {
+  const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+  const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/conversations", {
+    method: "GET",
+    headers: tenantHeaders(tenant),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch NPC conversations.");
+  }
+  const responseData: ConversationsResponse = await response.json();
+  // Return the first conversation if one exists, otherwise return null
+  return responseData.data.length > 0 ? responseData.data[0] : null;
+}

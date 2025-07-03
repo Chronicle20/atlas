@@ -1637,15 +1637,34 @@ export default function ConversationPage() {
       }
     }
 
-    // Add any nodes that weren't visited in our traversal at the end
+    // Calculate the average position of the connected nodes to use as a reference point
+    let avgX = 0;
+    let maxLevel = 0;
+
+    if (nodePositions.length > 0) {
+      // Calculate the average X position of all positioned nodes
+      avgX = nodePositions.reduce((sum, node) => sum + node.position.x, 0) / nodePositions.length;
+
+      // Find the maximum level to place disconnected nodes after it
+      maxLevel = Math.max(...Array.from(nodeLevels.values()));
+    }
+
+    // Position for disconnected nodes - place them at the next level after the max level
+    const disconnectedX = maxLevel > 0 ? (maxLevel + 1) * horizontalSpacing + 100 : avgX + horizontalSpacing;
+    let disconnectedY = 100; // Starting Y position for disconnected nodes
+
+    // Add any nodes that weren't visited in our traversal
     nodes.forEach(node => {
       if (!nodePositions.some(n => n.id === node.id)) {
-        // Use the estimated height for this node, or a default of 250 (increased from 150)
+        // Use the estimated height for this node, or a default of 250
         const nodeHeight = nodeHeights.get(node.id) || 250;
         nodePositions.push({
           ...node,
-          position: { x: 100, y: 100 + nodePositions.length * (nodeHeight + verticalSpacing) }
+          position: { x: disconnectedX, y: disconnectedY }
         });
+
+        // Update Y position for the next disconnected node
+        disconnectedY += nodeHeight + verticalSpacing;
       }
     });
 

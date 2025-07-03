@@ -16,6 +16,7 @@ import ReactFlow, {
   Handle,
   Position,
   NodeProps,
+  addEdge,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {Button} from "@/components/ui/button";
@@ -716,6 +717,73 @@ export default function ConversationPage() {
 
   const reactFlowInstance = useReactFlow();
 
+  // Function to check if a source handle already has a connection
+  const isHandleConnected = useCallback((sourceId: string, sourceHandle: string | null) => {
+    return edges.some(edge => 
+      edge.source === sourceId && 
+      (sourceHandle === null || edge.sourceHandle === sourceHandle)
+    );
+  }, [edges]);
+
+  // Handle new connections
+  const onConnect = useCallback((params: any) => {
+    // Check if the source handle already has a connection
+    if (isHandleConnected(params.source, params.sourceHandle)) {
+      // If it does, don't create a new connection
+      return;
+    }
+
+    // Find source and target nodes to log information
+    const sourceNode = nodes.find(node => node.id === params.source);
+    const targetNode = nodes.find(node => node.id === params.target);
+
+    if (sourceNode && targetNode) {
+      const sourceNodeData = sourceNode.data;
+      const sourceHandleId = params.sourceHandle;
+
+      // Determine what type of connection this is based on the handle ID
+      let connectionInfo = {
+        sourceStateId: sourceNode.id,
+        targetStateId: targetNode.id,
+        connectionType: '',
+        itemLabel: ''
+      };
+
+      if (sourceHandleId?.startsWith('choice-')) {
+        // This is a choice connection
+        const choiceIndex = parseInt(sourceHandleId.split('-')[1]);
+        const choice = sourceNodeData.choices?.[choiceIndex];
+
+        connectionInfo.connectionType = 'choice';
+        connectionInfo.itemLabel = choice?.text || 'Unknown choice';
+      } else if (sourceHandleId?.startsWith('outcome-')) {
+        // This is an outcome connection
+        const outcomeIndex = parseInt(sourceHandleId.split('-')[1]);
+        const outcome = sourceNodeData.outcomes?.[outcomeIndex];
+
+        connectionInfo.connectionType = 'outcome';
+        connectionInfo.itemLabel = outcome?.conditions?.length > 0 ? 
+          `Outcome with ${outcome.conditions.length} condition(s)` : 
+          'Default outcome';
+      } else if (['success', 'failure', 'missing'].includes(sourceHandleId || '')) {
+        // This is a craftAction connection
+        connectionInfo.connectionType = 'craftAction';
+        connectionInfo.itemLabel = sourceHandleId || '';
+      }
+
+      // Log the connection information
+      console.log('New connection created:', connectionInfo);
+    }
+
+    // Create the new connection
+    setEdges(eds => addEdge({
+      ...params,
+      type: 'smoothstep',
+      animated: false,
+      style: { stroke: '#64748b' },
+    }, eds));
+  }, [isHandleConnected, setEdges, nodes]);
+
   const fetchConversationData = useCallback(async () => {
     if (!activeTenant) return;
 
@@ -1195,6 +1263,7 @@ export default function ConversationPage() {
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
           nodeTypes={nodeTypes}
           fitView
           proOptions={{ hideAttribution: true }}

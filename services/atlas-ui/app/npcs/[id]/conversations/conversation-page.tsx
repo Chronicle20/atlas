@@ -30,7 +30,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {Button} from "@/components/ui/button";
-import {RefreshCw, ZoomIn, ZoomOut, Info, Edit, Trash} from "lucide-react";
+import {RefreshCw, ZoomIn, ZoomOut, Info, Edit, Trash, MessageSquare, Cog, Hammer, List} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -118,9 +118,15 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
             isConnectable={isConnectable}
         />
 
-        <div className="p-2">
+        <div>
           <div className="flex justify-between items-center">
-            <div className="font-bold">{label}</div>
+            <div className="flex items-center">
+              {type === 'dialogue' && <MessageSquare className="h-4 w-4 mr-1" />}
+              {type === 'genericAction' && <Cog className="h-4 w-4 mr-1" />}
+              {type === 'craftAction' && <Hammer className="h-4 w-4 mr-1" />}
+              {type === 'listSelection' && <List className="h-4 w-4 mr-1" />}
+              <div className="font-bold">{label}</div>
+            </div>
             <div className="flex">
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onNodeEdit && onNodeEdit(id)}>
                 <Edit className="h-4 w-4" />
@@ -130,7 +136,6 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
               </Button>
             </div>
           </div>
-          <div className="text-xs">{type}</div>
           {text && (
               <div className="text-xs mt-2 p-1 bg-black/10 rounded">
                 {text}
@@ -174,7 +179,7 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
                             background: '#555',
                             width: 8,
                             height: 8,
-                            right: -24,
+                            right: -14,
                             top: '50%',
                             transform: 'translateY(-50%)'
                           }}
@@ -204,7 +209,7 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
                         background: '#22c55e',
                         width: 8,
                         height: 8,
-                        right: -24,
+                        right: -14,
                         top: '50%',
                         transform: 'translateY(-50%)'
                       }}
@@ -225,7 +230,7 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
                         background: '#ef4444',
                         width: 8,
                         height: 8,
-                        right: -24,
+                        right: -14,
                         top: '50%',
                         transform: 'translateY(-50%)'
                       }}
@@ -246,7 +251,7 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
                         background: '#f59e0b',
                         width: 8,
                         height: 8,
-                        right: -24,
+                        right: -14,
                         top: '50%',
                         transform: 'translateY(-50%)'
                       }}
@@ -273,7 +278,7 @@ const CustomNode = ({data, isConnectable, onNodeEdit, onNodeDelete, ...props}: C
                             background: '#555',
                             width: 8,
                             height: 8,
-                            right: -24,
+                            right: -14,
                             top: '50%',
                             transform: 'translateY(-50%)'
                           }}
@@ -1596,10 +1601,6 @@ export default function ConversationPage() {
             // Dialog is being closed without saving, restore the backup
             if (conversationBackup) {
               setConversation(conversationBackup);
-              // Process the restored conversation to update nodes and edges
-              const { nodes: processedNodes, edges: processedEdges } = processConversationData(conversationBackup);
-              setNodes(processedNodes);
-              setEdges(processedEdges);
               // Clear the backup
               setConversationBackup(null);
             }
@@ -1803,10 +1804,6 @@ export default function ConversationPage() {
             // Dialog is being closed without saving, restore the backup
             if (conversationBackup) {
               setConversation(conversationBackup);
-              // Process the restored conversation to update nodes and edges
-              const { nodes: processedNodes, edges: processedEdges } = processConversationData(conversationBackup);
-              setNodes(processedNodes);
-              setEdges(processedEdges);
               // Clear the backup
               setConversationBackup(null);
             }

@@ -17,6 +17,9 @@ import ReactFlow, {
   Position,
   NodeProps,
   addEdge,
+  Connection,
+  EdgeChange,
+  OnEdgeUpdateFunc,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {Button} from "@/components/ui/button";
@@ -629,6 +632,9 @@ export default function ConversationPage() {
   const [editNodeText, setEditNodeText] = useState<string>('');
   const [editNodeTitle, setEditNodeTitle] = useState<string>('');
 
+  // State for tracking edge updates
+  const [edgeUpdateSuccessful, setEdgeUpdateSuccessful] = useState(false);
+
   // Handle node type change
   const handleNodeTypeChange = useCallback((newType: string) => {
     setEditNodeType(newType);
@@ -912,6 +918,122 @@ export default function ConversationPage() {
       style: { stroke: '#64748b' },
     }, eds));
   }, [isHandleConnected, setEdges, nodes, conversation, setConversation]);
+
+  // Edge update handlers for drag-and-drop deletion
+  const onEdgeUpdateStart = useCallback(() => {
+    // Reset the edge update successful flag when starting to drag an edge
+    setEdgeUpdateSuccessful(false);
+  }, []);
+
+  const onEdgeUpdate = useCallback<OnEdgeUpdateFunc>((oldEdge, newConnection) => {
+    // Mark the update as successful if we have a valid connection
+    setEdgeUpdateSuccessful(true);
+
+    // Update the edges with the new connection
+    setEdges((els) => updateEdge(oldEdge, newConnection, els));
+
+    // Update the conversation data with the new connection
+    if (conversation) {
+      // Create a copy of the conversation to modify
+      const updatedConversation = { ...conversation };
+
+      // Find the source state in the conversation data
+      const sourceState = updatedConversation.attributes.states.find(
+        state => state.id === oldEdge.source
+      );
+
+      if (sourceState) {
+        const sourceHandleId = oldEdge.sourceHandle;
+
+        // Update the appropriate connection in the conversation data
+        if (sourceHandleId?.startsWith('choice-')) {
+          // This is a choice connection
+          const choiceIndex = parseInt(sourceHandleId.split('-')[1]);
+
+          if (sourceState.type === 'dialogue' && sourceState.dialogue?.choices) {
+            // Update the nextState for this choice
+            if (choiceIndex >= 0 && choiceIndex < sourceState.dialogue.choices.length) {
+              // Only update if this choice points to the old target node
+              if (sourceState.dialogue.choices[choiceIndex].nextState === oldEdge.target) {
+                sourceState.dialogue.choices[choiceIndex].nextState = newConnection.target;
+              }
+            }
+          } else if (sourceState.type === 'listSelection' && sourceState.listSelection?.choices) {
+            // Update the nextState for this choice in listSelection
+            if (choiceIndex >= 0 && choiceIndex < sourceState.listSelection.choices.length) {
+              // Only update if this choice points to the old target node
+              if (sourceState.listSelection.choices[choiceIndex].nextState === oldEdge.target) {
+                sourceState.listSelection.choices[choiceIndex].nextState = newConnection.target;
+              }
+            }
+          }
+        } else if (sourceHandleId?.startsWith('outcome-')) {
+          // This is an outcome connection
+          const outcomeIndex = parseInt(sourceHandleId.split('-')[1]);
+
+          if (sourceState.type === 'genericAction' && sourceState.genericAction?.outcomes) {
+            // Update the nextState for this outcome
+            if (outcomeIndex >= 0 && outcomeIndex < sourceState.genericAction.outcomes.length) {
+              // Only update if this outcome points to the old target node
+              if (sourceState.genericAction.outcomes[outcomeIndex].nextState === oldEdge.target) {
+                sourceState.genericAction.outcomes[outcomeIndex].nextState = newConnection.target;
+              }
+            }
+          }
+        } else if (sourceHandleId === 'success' || sourceHandleId === 'failure' || sourceHandleId === 'missing') {
+          // This is a craftAction connection
+          if (sourceState.type === 'craftAction' && sourceState.craftAction) {
+            if (sourceHandleId === 'success' && sourceState.craftAction.successState === oldEdge.target) {
+              sourceState.craftAction.successState = newConnection.target;
+            } else if (sourceHandleId === 'failure' && sourceState.craftAction.failureState === oldEdge.target) {
+              sourceState.craftAction.failureState = newConnection.target;
+            } else if (sourceHandleId === 'missing' && sourceState.craftAction.missingMaterialsState === oldEdge.target) {
+              sourceState.craftAction.missingMaterialsState = newConnection.target;
+            }
+          }
+        }
+
+        // Update the conversation state
+        setConversation(updatedConversation);
+      }
+    }
+
+    return true;
+  }, [conversation, setConversation, setEdges]);
+
+  const onEdgeUpdateEnd = useCallback((_, edge) => {
+    // If the edge update was not successful (i.e., the edge was dropped into free space),
+    // remove the edge from the edges array
+    if (!edgeUpdateSuccessful) {
+      // Create a change object to remove the edge
+      const edgeRemoveChange: EdgeChange = {
+        id: edge.id,
+        type: 'remove',
+      };
+
+      // Use the existing handleEdgesChange function to remove the edge
+      // This will also update the conversation data
+      handleEdgesChange([edgeRemoveChange]);
+    }
+  }, [edgeUpdateSuccessful, handleEdgesChange]);
+
+  // Helper function to update an edge
+  const updateEdge = (oldEdge: Edge, newConnection: Connection, edges: Edge[]) => {
+    // Remove the old edge
+    const updatedEdges = edges.filter((e) => e.id !== oldEdge.id);
+
+    // Add the new edge with the same id and style
+    const newEdge = {
+      ...oldEdge,
+      id: oldEdge.id,
+      source: newConnection.source || oldEdge.source,
+      target: newConnection.target || oldEdge.target,
+      sourceHandle: newConnection.sourceHandle || oldEdge.sourceHandle,
+      targetHandle: newConnection.targetHandle || oldEdge.targetHandle,
+    };
+
+    return [...updatedEdges, newEdge];
+  };
 
   const fetchConversationData = useCallback(async () => {
     if (!activeTenant) return;
@@ -1426,6 +1548,9 @@ export default function ConversationPage() {
           onNodesChange={onNodesChange}
           onEdgesChange={handleEdgesChange}
           onConnect={onConnect}
+          onEdgeUpdate={onEdgeUpdate}
+          onEdgeUpdateStart={onEdgeUpdateStart}
+          onEdgeUpdateEnd={onEdgeUpdateEnd}
           nodeTypes={nodeTypes}
           fitView
           proOptions={{ hideAttribution: true }}

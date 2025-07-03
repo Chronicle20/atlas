@@ -116,7 +116,7 @@ export async function createConversation(tenant: Tenant, conversationAttributes:
     headers: tenantHeaders(tenant),
     body: JSON.stringify({
       data: {
-        type: "npc-conversations",
+        type: "conversations",
         attributes: conversationAttributes
       }
     }),
@@ -135,7 +135,7 @@ export async function updateConversation(tenant: Tenant, conversationId: string,
     headers: tenantHeaders(tenant),
     body: JSON.stringify({
       data: {
-        type: "npc-conversations",
+        type: "conversations",
         id: conversationId,
         attributes: conversationAttributes
       }

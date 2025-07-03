@@ -3,7 +3,7 @@
 import { useTenant } from "@/context/tenant-context";
 import { useEffect, useState, useCallback, useMemo, useRef, SetStateAction} from "react";
 import {useParams} from "next/navigation";
-import {Conversation, fetchNPCConversations} from "@/lib/npc-conversations";
+import {Conversation, fetchNPCConversations, updateConversation} from "@/lib/npc-conversations";
 import ReactFlow, {
   Node,
   Edge,
@@ -527,8 +527,90 @@ export default function ConversationPage() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [showLegend, setShowLegend] = useState(false);
 
+  // Custom edge change handler to update conversation state when edges are removed
+  const handleEdgesChange = useCallback((changes) => {
+    // First, apply the changes to the edges state using the default handler
+    onEdgesChange(changes);
+
+    // Check if any of the changes are of type 'remove'
+    const removedEdges = changes.filter(change => change.type === 'remove');
+
+    if (removedEdges.length > 0 && conversation) {
+      // Create a copy of the conversation to modify
+      const updatedConversation = { ...conversation };
+
+      // For each removed edge, find the corresponding connection in the conversation state and update it
+      removedEdges.forEach(removedEdge => {
+        const edgeId = removedEdge.id;
+        const edge = edges.find(e => e.id === edgeId);
+
+        if (edge) {
+          const { source: sourceId, target: targetId, sourceHandle } = edge;
+
+          // Find the source state in the conversation data
+          const sourceState = updatedConversation.attributes.states.find(
+            state => state.id === sourceId
+          );
+
+          if (sourceState) {
+            if (sourceHandle?.startsWith('choice-')) {
+              // This is a choice connection
+              const choiceIndex = parseInt(sourceHandle.split('-')[1]);
+
+              if (sourceState.type === 'dialogue' && sourceState.dialogue?.choices) {
+                // Update the nextState for this choice
+                if (choiceIndex >= 0 && choiceIndex < sourceState.dialogue.choices.length) {
+                  // Only update if this choice points to the target node
+                  if (sourceState.dialogue.choices[choiceIndex].nextState === targetId) {
+                    sourceState.dialogue.choices[choiceIndex].nextState = null;
+                  }
+                }
+              } else if (sourceState.type === 'listSelection' && sourceState.listSelection?.choices) {
+                // Update the nextState for this choice in listSelection
+                if (choiceIndex >= 0 && choiceIndex < sourceState.listSelection.choices.length) {
+                  // Only update if this choice points to the target node
+                  if (sourceState.listSelection.choices[choiceIndex].nextState === targetId) {
+                    sourceState.listSelection.choices[choiceIndex].nextState = null;
+                  }
+                }
+              }
+            } else if (sourceHandle?.startsWith('outcome-')) {
+              // This is an outcome connection
+              const outcomeIndex = parseInt(sourceHandle.split('-')[1]);
+
+              if (sourceState.type === 'genericAction' && sourceState.genericAction?.outcomes) {
+                // Update the nextState for this outcome
+                if (outcomeIndex >= 0 && outcomeIndex < sourceState.genericAction.outcomes.length) {
+                  // Only update if this outcome points to the target node
+                  if (sourceState.genericAction.outcomes[outcomeIndex].nextState === targetId) {
+                    sourceState.genericAction.outcomes[outcomeIndex].nextState = '';
+                  }
+                }
+              }
+            } else if (sourceHandle === 'success' || sourceHandle === 'failure' || sourceHandle === 'missing') {
+              // This is a craftAction connection
+              if (sourceState.type === 'craftAction' && sourceState.craftAction) {
+                if (sourceHandle === 'success' && sourceState.craftAction.successState === targetId) {
+                  sourceState.craftAction.successState = '';
+                } else if (sourceHandle === 'failure' && sourceState.craftAction.failureState === targetId) {
+                  sourceState.craftAction.failureState = '';
+                } else if (sourceHandle === 'missing' && sourceState.craftAction.missingMaterialsState === targetId) {
+                  sourceState.craftAction.missingMaterialsState = '';
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // Update the conversation state
+      setConversation(updatedConversation);
+    }
+  }, [onEdgesChange, edges, conversation, setConversation]);
+
   // State for node editing dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const selectedNode = useMemo(() => {
     if (!selectedNodeId) return null;
@@ -749,26 +831,73 @@ export default function ConversationPage() {
         itemLabel: ''
       };
 
-      if (sourceHandleId?.startsWith('choice-')) {
-        // This is a choice connection
-        const choiceIndex = parseInt(sourceHandleId.split('-')[1]);
-        const choice = sourceNodeData.choices?.[choiceIndex];
+      // Update the conversation state based on the connection type
+      if (conversation) {
+        // Create a copy of the conversation to modify
+        const updatedConversation = { ...conversation };
 
-        connectionInfo.connectionType = 'choice';
-        connectionInfo.itemLabel = choice?.text || 'Unknown choice';
-      } else if (sourceHandleId?.startsWith('outcome-')) {
-        // This is an outcome connection
-        const outcomeIndex = parseInt(sourceHandleId.split('-')[1]);
-        const outcome = sourceNodeData.outcomes?.[outcomeIndex];
+        // Find the source state in the conversation data
+        const sourceState = updatedConversation.attributes.states.find(
+          state => state.id === sourceNode.id
+        );
 
-        connectionInfo.connectionType = 'outcome';
-        connectionInfo.itemLabel = outcome?.conditions?.length > 0 ? 
-          `Outcome with ${outcome.conditions.length} condition(s)` : 
-          'Default outcome';
-      } else if (['success', 'failure', 'missing'].includes(sourceHandleId || '')) {
-        // This is a craftAction connection
-        connectionInfo.connectionType = 'craftAction';
-        connectionInfo.itemLabel = sourceHandleId || '';
+        if (sourceState) {
+          if (sourceHandleId?.startsWith('choice-')) {
+            // This is a choice connection
+            const choiceIndex = parseInt(sourceHandleId.split('-')[1]);
+
+            if (sourceState.type === 'dialogue' && sourceState.dialogue?.choices) {
+              // Update the nextState for this choice
+              if (choiceIndex >= 0 && choiceIndex < sourceState.dialogue.choices.length) {
+                sourceState.dialogue.choices[choiceIndex].nextState = targetNode.id;
+
+                connectionInfo.connectionType = 'choice';
+                connectionInfo.itemLabel = sourceState.dialogue.choices[choiceIndex].text || 'Unknown choice';
+              }
+            } else if (sourceState.type === 'listSelection' && sourceState.listSelection?.choices) {
+              // Update the nextState for this choice in listSelection
+              if (choiceIndex >= 0 && choiceIndex < sourceState.listSelection.choices.length) {
+                sourceState.listSelection.choices[choiceIndex].nextState = targetNode.id;
+
+                connectionInfo.connectionType = 'choice';
+                connectionInfo.itemLabel = sourceState.listSelection.choices[choiceIndex].text || 'Unknown choice';
+              }
+            }
+          } else if (sourceHandleId?.startsWith('outcome-')) {
+            // This is an outcome connection
+            const outcomeIndex = parseInt(sourceHandleId.split('-')[1]);
+
+            if (sourceState.type === 'genericAction' && sourceState.genericAction?.outcomes) {
+              // Update the nextState for this outcome
+              if (outcomeIndex >= 0 && outcomeIndex < sourceState.genericAction.outcomes.length) {
+                sourceState.genericAction.outcomes[outcomeIndex].nextState = targetNode.id;
+
+                connectionInfo.connectionType = 'outcome';
+                const conditions = sourceState.genericAction.outcomes[outcomeIndex].conditions;
+                connectionInfo.itemLabel = conditions.length > 0 ? 
+                  `Outcome with ${conditions.length} condition(s)` : 
+                  'Default outcome';
+              }
+            }
+          } else if (sourceHandleId === 'success' || sourceHandleId === 'failure' || sourceHandleId === 'missing') {
+            // This is a craftAction connection
+            if (sourceState.type === 'craftAction' && sourceState.craftAction) {
+              if (sourceHandleId === 'success') {
+                sourceState.craftAction.successState = targetNode.id;
+              } else if (sourceHandleId === 'failure') {
+                sourceState.craftAction.failureState = targetNode.id;
+              } else if (sourceHandleId === 'missing') {
+                sourceState.craftAction.missingMaterialsState = targetNode.id;
+              }
+
+              connectionInfo.connectionType = 'craftAction';
+              connectionInfo.itemLabel = sourceHandleId;
+            }
+          }
+
+          // Update the conversation state
+          setConversation(updatedConversation);
+        }
       }
 
       // Log the connection information
@@ -782,7 +911,7 @@ export default function ConversationPage() {
       animated: false,
       style: { stroke: '#64748b' },
     }, eds));
-  }, [isHandleConnected, setEdges, nodes]);
+  }, [isHandleConnected, setEdges, nodes, conversation, setConversation]);
 
   const fetchConversationData = useCallback(async () => {
     if (!activeTenant) return;
@@ -989,6 +1118,20 @@ export default function ConversationPage() {
     reactFlowInstance.fitView({ padding: 0.2 });
   };
 
+  // Handle saving the conversation to the database
+  const handleSaveConversation = useCallback(async () => {
+    if (!activeTenant || !conversation) return;
+
+    try {
+      // Save the current conversation state to the database
+      await updateConversation(activeTenant, conversation.id, conversation.attributes);
+      toast.success("Conversation saved successfully");
+      setIsSaveDialogOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save conversation");
+    }
+  }, [activeTenant, conversation]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] p-10">
@@ -1012,6 +1155,22 @@ export default function ConversationPage() {
 
   return (
     <div className="flex flex-col space-y-6 p-10 pb-16 h-[calc(100vh-4rem)]">
+      {/* Save Confirmation Dialog */}
+      <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Save Conversation</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Are you sure you want to save the current conversation? This will update the conversation in the database.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSaveDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveConversation}>Yes, Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Node Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
@@ -1213,6 +1372,9 @@ export default function ConversationPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
+          <Button variant="default" size="sm" onClick={() => setIsSaveDialogOpen(true)}>
+            Save
+          </Button>
         </div>
       </div>
 
@@ -1262,7 +1424,7 @@ export default function ConversationPage() {
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
+          onEdgesChange={handleEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
           fitView

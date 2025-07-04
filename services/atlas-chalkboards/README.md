@@ -14,10 +14,20 @@ A RESTful microservice that provides chalkboard functionality for the Mushroom g
 
 ## Environment Variables
 
-- `JAEGER_HOST` - Jaeger [host]:[port] for distributed tracing
-- `LOG_LEVEL` - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
+### Required
+- `REST_PORT` - Port for the REST API server
+- `BOOTSTRAP_SERVERS` - Comma-separated list of Kafka broker addresses
+- `JAEGER_HOST_PORT` - Jaeger host:port for distributed tracing (e.g., "jaeger:6831")
 
-## API
+### Kafka Topics
+- `COMMAND_TOPIC_CHALKBOARD` - Topic for chalkboard commands
+- `EVENT_TOPIC_CHALKBOARD_STATUS` - Topic for chalkboard status events
+- `EVENT_TOPIC_CHARACTER_STATUS` - Topic for character status events
+
+### Optional
+- `LOG_LEVEL` - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace (default: Info)
+
+## REST API
 
 ### Header Requirements
 

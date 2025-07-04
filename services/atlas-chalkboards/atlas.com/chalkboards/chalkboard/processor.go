@@ -6,13 +6,14 @@ import (
 	"context"
 	"errors"
 	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
 	GetById(characterId uint32) (Model, error)
-	Clear(field field.Model, characterId uint32) error
-	Set(field field.Model, characterId uint32, message string) error
+	Clear(transactionId uuid.UUID, field field.Model, characterId uint32) error
+	Set(transactionId uuid.UUID, field field.Model, characterId uint32, message string) error
 }
 
 type ProcessorImpl struct {
@@ -38,19 +39,19 @@ func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
 	}, nil
 }
 
-func (p *ProcessorImpl) Clear(field field.Model, characterId uint32) error {
+func (p *ProcessorImpl) Clear(transactionId uuid.UUID, field field.Model, characterId uint32) error {
 	existed := getRegistry().Clear(characterId)
 	if existed {
 		p.l.Debugf("Clearing chalkboard for [%d].", characterId)
-		return producer.ProviderImpl(p.l)(p.ctx)(chalkboard2.EnvEventTopicStatus)(clearStatusEventProvider(field, characterId))
+		return producer.ProviderImpl(p.l)(p.ctx)(chalkboard2.EnvEventTopicStatus)(clearStatusEventProvider(transactionId, field, characterId))
 	}
 	return nil
 }
 
-func (p *ProcessorImpl) Set(field field.Model, characterId uint32, message string) error {
+func (p *ProcessorImpl) Set(transactionId uuid.UUID, field field.Model, characterId uint32, message string) error {
 	// TODO ensure they are in a place that this can be set.
 	// TODO ensure they are alive.
 	p.l.Debugf("Setting chalkboard to [%s] for [%d].", message, characterId)
 	getRegistry().Set(characterId, message)
-	return producer.ProviderImpl(p.l)(p.ctx)(chalkboard2.EnvEventTopicStatus)(setStatusEventProvider(field, characterId, message))
+	return producer.ProviderImpl(p.l)(p.ctx)(chalkboard2.EnvEventTopicStatus)(setStatusEventProvider(transactionId, field, characterId, message))
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -50,7 +51,7 @@ func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e charac
 		l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d].", e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
 		f := field.NewBuilder(world.Id(e.WorldId), channel.Id(e.Body.ChannelId), _map.Id(e.Body.MapId)).Build()
 		character.NewProcessor(l, ctx).Exit(f, e.CharacterId)
-		_ = chalkboard.NewProcessor(l, ctx).Clear(f, e.CharacterId)
+		_ = chalkboard.NewProcessor(l, ctx).Clear(uuid.New(), f, e.CharacterId)
 	}
 }
 
@@ -60,7 +61,7 @@ func handleStatusEventMapChanged(l logrus.FieldLogger, ctx context.Context, e ch
 		of := field.NewBuilder(world.Id(e.WorldId), channel.Id(e.Body.ChannelId), _map.Id(e.Body.OldMapId)).Build()
 		nf := field.NewBuilder(world.Id(e.WorldId), channel.Id(e.Body.ChannelId), _map.Id(e.Body.TargetMapId)).Build()
 		character.NewProcessor(l, ctx).TransitionMap(of, nf, e.CharacterId)
-		_ = chalkboard.NewProcessor(l, ctx).Clear(of, e.CharacterId)
+		_ = chalkboard.NewProcessor(l, ctx).Clear(uuid.New(), of, e.CharacterId)
 	}
 }
 
@@ -70,6 +71,6 @@ func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, 
 		of := field.NewBuilder(world.Id(e.WorldId), channel.Id(e.Body.OldChannelId), _map.Id(e.Body.MapId)).Build()
 		nf := field.NewBuilder(world.Id(e.WorldId), channel.Id(e.Body.ChannelId), _map.Id(e.Body.MapId)).Build()
 		character.NewProcessor(l, ctx).TransitionChannel(of, nf, e.CharacterId)
-		_ = chalkboard.NewProcessor(l, ctx).Clear(of, e.CharacterId)
+		_ = chalkboard.NewProcessor(l, ctx).Clear(uuid.New(), of, e.CharacterId)
 	}
 }

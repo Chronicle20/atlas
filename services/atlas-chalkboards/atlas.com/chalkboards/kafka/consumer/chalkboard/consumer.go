@@ -36,7 +36,7 @@ func handleSetCommand(l logrus.FieldLogger, ctx context.Context, c chalkboard2.C
 		return
 	}
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).Build()
-	_ = chalkboard.NewProcessor(l, ctx).Set(f, c.CharacterId, c.Body.Message)
+	_ = chalkboard.NewProcessor(l, ctx).Set(c.TransactionId, f, c.CharacterId, c.Body.Message)
 }
 
 func handleClearCommand(l logrus.FieldLogger, ctx context.Context, c chalkboard2.Command[chalkboard2.ClearCommandBody]) {
@@ -44,5 +44,5 @@ func handleClearCommand(l logrus.FieldLogger, ctx context.Context, c chalkboard2
 		return
 	}
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).Build()
-	_ = chalkboard.NewProcessor(l, ctx).Clear(f, c.CharacterId)
+	_ = chalkboard.NewProcessor(l, ctx).Clear(c.TransactionId, f, c.CharacterId)
 }

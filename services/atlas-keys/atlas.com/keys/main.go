@@ -10,6 +10,7 @@ import (
 	"atlas-keys/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"os"
 )
 
 const serviceName = "atlas-keys"
@@ -52,7 +53,14 @@ func main() {
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
 	character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), character.InitResource(GetServer())(db))
+	// CreateRoute and run server
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		AddRouteInitializer(character.InitResource(GetServer())(db)).
+		SetPort(os.Getenv("REST_PORT")).
+		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

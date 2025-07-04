@@ -5,6 +5,7 @@ import (
 	"atlas-keys/rest"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -28,7 +29,6 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("/{characterId}/keys/{keyId}", rest.RegisterInputHandler[key.RestModel](l)(si)(SetKey, handleSetKey(db))).Methods(http.MethodPatch)
 		}
 	}
-
 }
 
 func handleSetKey(db *gorm.DB) rest.InputHandler[key.RestModel] {
@@ -36,7 +36,8 @@ func handleSetKey(db *gorm.DB) rest.InputHandler[key.RestModel] {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return rest.ParseKeyId(d.Logger(), func(keyId int32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					err := key.ChangeKey(d.Logger())(d.Context())(db)(characterId, keyId, i.Type, i.Action)
+					processor := key.NewProcessor(d.Logger(), d.Context(), db)
+					err := processor.ChangeKeyAndEmit(uuid.New(), characterId, keyId, i.Type, i.Action)
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						return
@@ -52,7 +53,8 @@ func handleDeleteKeyMap(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				err := key.Reset(d.Logger())(d.Context())(db)(characterId)
+				processor := key.NewProcessor(d.Logger(), d.Context(), db)
+				err := processor.ResetAndEmit(uuid.New(), characterId)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return
@@ -67,7 +69,8 @@ func handleGetKeyMap(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				ks, err := key.GetByCharacterId(d.Logger())(d.Context())(db)(characterId)
+				processor := key.NewProcessor(d.Logger(), d.Context(), db)
+				ks, err := processor.GetByCharacterId(characterId)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return

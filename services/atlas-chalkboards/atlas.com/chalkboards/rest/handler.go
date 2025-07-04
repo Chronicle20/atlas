@@ -2,6 +2,9 @@ package rest
 
 import (
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -83,7 +86,7 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 	}
 }
 
-type ChannelIdHandler func(channelId byte) http.HandlerFunc
+type ChannelIdHandler func(channelId channel.Id) http.HandlerFunc
 
 func ParseChannelId(l logrus.FieldLogger, next ChannelIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -93,11 +96,11 @@ func ParseChannelId(l logrus.FieldLogger, next ChannelIdHandler) http.HandlerFun
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		next(byte(channelId))(w, r)
+		next(channel.Id(channelId))(w, r)
 	}
 }
 
-type WorldIdHandler func(worldId byte) http.HandlerFunc
+type WorldIdHandler func(worldId world.Id) http.HandlerFunc
 
 func ParseWorldId(l logrus.FieldLogger, next WorldIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -108,11 +111,11 @@ func ParseWorldId(l logrus.FieldLogger, next WorldIdHandler) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		next(byte(worldId))(w, r)
+		next(world.Id(worldId))(w, r)
 	}
 }
 
-type MapIdHandler func(mapId uint32) http.HandlerFunc
+type MapIdHandler func(mapId _map.Id) http.HandlerFunc
 
 func ParseMapId(l logrus.FieldLogger, next MapIdHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +126,7 @@ func ParseMapId(l logrus.FieldLogger, next MapIdHandler) http.HandlerFunc {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		next(uint32(mapId))(w, r)
+		next(_map.Id(mapId))(w, r)
 	}
 }
 

@@ -3,21 +3,26 @@ Mushroom game keys Service
 
 ## Overview
 
-A RESTful resource which provides keys services.
+A RESTful resource which provides key binding services for characters. This service manages the key mappings for character controls.
 
-## Environment
+## Environment Variables
 
-- JAEGER_HOST - Jaeger [host]:[port]
-- LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
-- DB_USER - Postgres user name
-- DB_PASSWORD - Postgres user password
-- DB_HOST - Postgres Database host
-- DB_PORT - Postgres Database port
-- DB_NAME - Postgres Database name
-- BOOTSTRAP_SERVERS - Kafka [host]:[port]
-- EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for transmitting character status events
+### Database Configuration
+- `DB_USER` - Postgres user name
+- `DB_PASSWORD` - Postgres user password
+- `DB_HOST` - Postgres Database host
+- `DB_PORT` - Postgres Database port
+- `DB_NAME` - Postgres Database name
 
-## API
+### Kafka Configuration
+- `BOOTSTRAP_SERVERS` - Kafka [host]:[port]
+- `EVENT_TOPIC_CHARACTER_STATUS` - Kafka Topic for transmitting character status events
+
+### Observability
+- `JAEGER_HOST` - Jaeger [host]:[port]
+- `LOG_LEVEL` - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
+
+## REST API
 
 ### Header
 
@@ -30,16 +35,67 @@ MAJOR_VERSION:83
 MINOR_VERSION:1
 ```
 
-### Requests
+### Endpoints
 
 #### [GET] Get Keys
 
-```/api/characters/{characterId}/keys```
+```
+GET /api/characters/{characterId}/keys
+```
+
+Retrieves all key bindings for a character.
+
+**Response**: JSON:API formatted list of key bindings
 
 #### [DELETE] Reset Keys
 
-```/api/characters/{characterId}/keys```
+```
+DELETE /api/characters/{characterId}/keys
+```
 
-#### [PATCH] Update Keys
+Resets all key bindings for a character to default values.
 
-```/api/characters/{characterId}/keys/{keyId}```
+**Response**: 200 OK on success
+
+#### [PATCH] Update Key
+
+```
+PATCH /api/characters/{characterId}/keys/{keyId}
+```
+
+Updates a specific key binding for a character.
+
+**Request Body**:
+```json
+{
+  "type": 4,
+  "action": 10
+}
+```
+
+**Response**: 200 OK on success
+
+## Kafka Message API
+
+### Consumed Events
+
+#### Character Status Events
+
+**Topic**: Defined by `EVENT_TOPIC_CHARACTER_STATUS` environment variable
+
+**Event Structure**:
+```json
+{
+  "transactionId": "uuid-string",
+  "characterId": 123,
+  "type": "CREATED|DELETED",
+  "worldId": 0,
+  "body": {
+    "name": "Example field for CREATED events"
+  }
+}
+```
+
+**Handled Event Types**:
+- `CREATED`: Creates default key bindings for a new character
+- `DELETED`: Deletes all key bindings for a deleted character

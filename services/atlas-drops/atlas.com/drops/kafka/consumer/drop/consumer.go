@@ -46,7 +46,8 @@ func handleSpawn(l logrus.FieldLogger, ctx context.Context, c command[spawnComma
 		SetOwner(c.Body.OwnerId, c.Body.OwnerPartyId).
 		SetDropper(c.Body.DropperId, c.Body.DropperX, c.Body.DropperY).
 		SetPlayerDrop(c.Body.PlayerDrop)
-	_ = drop.Spawn(l)(ctx)(mb)
+	p := drop.NewProcessor(l, ctx)
+	_, _ = p.SpawnAndEmit(mb)
 }
 
 func handleSpawnFromCharacter(l logrus.FieldLogger, ctx context.Context, c command[spawnFromCharacterCommandBody]) {
@@ -63,26 +64,30 @@ func handleSpawnFromCharacter(l logrus.FieldLogger, ctx context.Context, c comma
 		SetOwner(c.Body.OwnerId, c.Body.OwnerPartyId).
 		SetDropper(c.Body.DropperId, c.Body.DropperX, c.Body.DropperY).
 		SetPlayerDrop(c.Body.PlayerDrop)
-	_ = drop.SpawnForCharacter(l)(ctx)(mb)
+	p := drop.NewProcessor(l, ctx)
+	_, _ = p.SpawnForCharacterAndEmit(mb)
 }
 
 func handleRequestReservation(l logrus.FieldLogger, ctx context.Context, c command[requestReservationCommandBody]) {
 	if c.Type != CommandTypeRequestReservation {
 		return
 	}
-	_ = drop.Reserve(l)(ctx)(c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId, c.Body.PetSlot)
+	p := drop.NewProcessor(l, ctx)
+	_, _ = p.ReserveAndEmit(c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId, c.Body.PetSlot)
 }
 
 func handleCancelReservation(l logrus.FieldLogger, ctx context.Context, c command[cancelReservationCommandBody]) {
 	if c.Type != CommandTypeCancelReservation {
 		return
 	}
-	_ = drop.CancelReservation(l)(ctx)(c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId)
+	p := drop.NewProcessor(l, ctx)
+	_ = p.CancelReservationAndEmit(c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId)
 }
 
 func handleRequestPickUp(l logrus.FieldLogger, ctx context.Context, c command[requestPickUpCommandBody]) {
 	if c.Type != CommandTypeRequestPickUp {
 		return
 	}
-	_ = drop.Gather(l)(ctx)(c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId)
+	p := drop.NewProcessor(l, ctx)
+	_, _ = p.GatherAndEmit(c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId)
 }

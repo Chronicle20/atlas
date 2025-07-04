@@ -24,7 +24,8 @@ func handleGetDropsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http
 		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
 			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
-					ds, err := drop.GetForMap(d.Logger())(d.Context())(worldId, channelId, mapId)
+					p := drop.NewProcessor(d.Logger(), d.Context())
+					ds, err := p.GetForMap(worldId, channelId, mapId)
 					if err != nil {
 						w.WriteHeader(http.StatusNotFound)
 						return

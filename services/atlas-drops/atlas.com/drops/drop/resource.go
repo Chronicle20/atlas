@@ -21,7 +21,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetDropById(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseDropId(d.Logger(), func(dropId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			dr, err := GetById(d.Logger())(d.Context())(dropId)
+			dr, err := NewProcessor(d.Logger(), d.Context()).GetById(dropId)
 			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return

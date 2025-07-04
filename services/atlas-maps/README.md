@@ -4,18 +4,23 @@ Mushroom game maps Service
 
 ## Overview
 
-A RESTful resource which provides maps services.
+A RESTful resource which provides maps services, including character tracking, monster spawning, and reactor management.
 
-## Environment
+## Environment Variables
 
-- JAEGER_HOST - Jaeger [host]:[port]
+### General Configuration
+- JAEGER_HOST - Jaeger [host]:[port] for distributed tracing
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
 - BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
+
+### Kafka Topics
 - EVENT_TOPIC_CHARACTER_STATUS - Kafka Topic for transmitting character status events
 - EVENT_TOPIC_MAP_STATUS - Kafka Topic for transmitting map status events
+- EVENT_TOPIC_CASH_SHOP_STATUS - Kafka Topic for transmitting cash shop status events
+- COMMAND_TOPIC_REACTOR - Kafka Topic for transmitting reactor commands
 
-## API
+## REST API
 
 ### Header
 
@@ -28,6 +33,36 @@ MAJOR_VERSION:83
 MINOR_VERSION:1
 ```
 
+### Endpoints
+
+#### Map Characters
+- `GET /{worldId}/channels/{channelId}/maps/{mapId}/characters` - Get all characters in a specific map
+
 ### Requests
 
-Requests are documented via Bruno collection.
+Detailed API documentation is available via Bruno collection.
+
+## Kafka Message API
+
+### Character Status Events
+Messages published to `EVENT_TOPIC_CHARACTER_STATUS` with the following types:
+- `LOGIN` - Character logged in
+- `LOGOUT` - Character logged out
+- `CHANNEL_CHANGED` - Character changed channels
+- `MAP_CHANGED` - Character changed maps
+
+### Map Status Events
+Messages published to `EVENT_TOPIC_MAP_STATUS` with the following types:
+- `CHARACTER_ENTER` - Character entered a map
+- `CHARACTER_EXIT` - Character exited a map
+
+### Cash Shop Status Events
+Messages published to `EVENT_TOPIC_CASH_SHOP_STATUS` with the following types:
+- `CHARACTER_ENTER` - Character entered the cash shop
+- `CHARACTER_EXIT` - Character exited the cash shop
+
+### Reactor Commands
+Messages published to `COMMAND_TOPIC_REACTOR` with the following types:
+- `CREATE` - Create a reactor
+
+All Kafka messages include a transaction ID (UUID) to track message flow through the system.

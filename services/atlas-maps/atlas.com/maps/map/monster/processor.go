@@ -4,61 +4,110 @@ import (
 	"atlas-maps/map/character"
 	"atlas-maps/monster"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"math"
 	"math/rand"
 	"time"
 )
 
-func Spawn(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32) {
-		return func(worldId byte, channelId byte, mapId uint32) {
-			t := tenant.MustFromContext(ctx)
-			l.Debugf("Executing spawn mechanism for Tenant [%s] World [%d] Channel [%d] Map [%d].", t.String(), worldId, channelId, mapId)
+type Processor interface {
+	SpawnPointProvider(mapId uint32) model.Provider[[]SpawnPoint]
+	SpawnableSpawnPointProvider(mapId uint32) model.Provider[[]SpawnPoint]
+	GetSpawnPoints(mapId uint32) ([]SpawnPoint, error)
+	GetSpawnableSpawnPoints(mapId uint32) ([]SpawnPoint, error)
+	SpawnMonsters(transactionId uuid.UUID) func(worldId world.Id) func(channelId channel.Id) func(mapId _map.Id) error
+}
 
-			cs, err := character.GetCharactersInMap(ctx)(worldId, channelId, mapId)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve characters in map. Aborting spawning for world [%d] channel [%d] map [%d].", worldId, channelId, mapId)
-				return
-			}
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	t   tenant.Model
+}
 
-			c := len(cs)
-			if c < 0 {
-				return
-			}
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+		t:   tenant.MustFromContext(ctx),
+	}
+}
 
-			ableSps, err := SpawnableSpawnPointProvider(l)(ctx)(mapId)()
-			if err != nil {
-				return
-			}
+func (p *ProcessorImpl) SpawnPointProvider(mapId uint32) model.Provider[[]SpawnPoint] {
+	return requests.SliceProvider[RestModel, SpawnPoint](p.l, p.ctx)(requestSpawnPoints(mapId), Extract, model.Filters[SpawnPoint]())
+}
 
-			monstersInMap, err := monster.CountInMap(l)(ctx)(worldId, channelId, mapId)
-			if err != nil {
-				l.WithError(err).Warnf("Assuming no monsters in map.")
-			}
+func (p *ProcessorImpl) SpawnableSpawnPointProvider(mapId uint32) model.Provider[[]SpawnPoint] {
+	return model.FilteredProvider(p.SpawnPointProvider(mapId), model.Filters(p.Spawnable))
+}
 
-			monstersMax := getMonsterMax(c, len(ableSps))
+func (p *ProcessorImpl) GetSpawnPoints(mapId uint32) ([]SpawnPoint, error) {
+	return p.SpawnPointProvider(mapId)()
+}
 
-			toSpawn := monstersMax - monstersInMap
-			if toSpawn <= 0 {
-				return
-			}
+func (p *ProcessorImpl) GetSpawnableSpawnPoints(mapId uint32) ([]SpawnPoint, error) {
+	return p.SpawnableSpawnPointProvider(mapId)()
+}
 
-			ableSps = shuffle(ableSps)
-			for i := 0; i < toSpawn; i++ {
-				sp := ableSps[i]
-				go func() {
-					monster.CreateMonster(l)(ctx)(worldId, channelId, mapId, sp.Template, sp.X, sp.Y, sp.Fh, sp.Team)
-				}()
+func (p *ProcessorImpl) Spawnable(point SpawnPoint) bool {
+	return point.MobTime >= 0
+}
+
+func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID) func(worldId world.Id) func(channelId channel.Id) func(mapId _map.Id) error {
+	return func(worldId world.Id) func(channelId channel.Id) func(mapId _map.Id) error {
+		return func(channelId channel.Id) func(mapId _map.Id) error {
+			return func(mapId _map.Id) error {
+				p.l.Debugf("Executing spawn mechanism for Tenant [%s] World [%d] Channel [%d] Map [%d].", p.t.String(), worldId, channelId, mapId)
+
+				cp := character.NewProcessor(p.l, p.ctx)
+				cs, err := cp.GetCharactersInMap(transactionId, worldId, channelId, mapId)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to retrieve characters in map. Aborting spawning for world [%d] channel [%d] map [%d].", worldId, channelId, mapId)
+					return err
+				}
+
+				c := len(cs)
+				if c < 0 {
+					return nil
+				}
+
+				ableSps, err := p.GetSpawnableSpawnPoints(uint32(mapId))
+				if err != nil {
+					return err
+				}
+
+				monstersInMap, err := monster.NewProcessor(p.l, p.ctx).CountInMap(transactionId, worldId, channelId, mapId)
+				if err != nil {
+					p.l.WithError(err).Warnf("Assuming no monsters in map.")
+				}
+
+				monstersMax := p.getMonsterMax(c, len(ableSps))
+
+				toSpawn := monstersMax - monstersInMap
+				if toSpawn <= 0 {
+					return nil
+				}
+
+				ableSps = p.shuffle(ableSps)
+				for i := 0; i < toSpawn && i < len(ableSps); i++ {
+					sp := ableSps[i]
+					go func(sp SpawnPoint) {
+						monster.NewProcessor(p.l, p.ctx).CreateMonster(transactionId, worldId, channelId, mapId, sp.Template, sp.X, sp.Y, sp.Fh, sp.Team)
+					}(sp)
+				}
+				return nil
 			}
 		}
 	}
 }
 
-func shuffle(vals []SpawnPoint) []SpawnPoint {
+func (p *ProcessorImpl) shuffle(vals []SpawnPoint) []SpawnPoint {
 	r := rand.New(rand.NewSource(time.Now().Unix()))
 	ret := make([]SpawnPoint, len(vals))
 	perm := r.Perm(len(vals))
@@ -68,27 +117,7 @@ func shuffle(vals []SpawnPoint) []SpawnPoint {
 	return ret
 }
 
-func getMonsterMax(characterCount int, spawnPointCount int) int {
+func (p *ProcessorImpl) getMonsterMax(characterCount int, spawnPointCount int) int {
 	spawnRate := 0.70 + (0.05 * math.Min(6, float64(characterCount)))
 	return int(math.Ceil(spawnRate * float64(spawnPointCount)))
-}
-
-func SpawnableSpawnPointProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId uint32) model.Provider[[]SpawnPoint] {
-	return func(ctx context.Context) func(mapId uint32) model.Provider[[]SpawnPoint] {
-		return func(mapId uint32) model.Provider[[]SpawnPoint] {
-			return model.FilteredProvider(SpawnPointProvider(l)(ctx)(mapId), model.Filters(Spawnable))
-		}
-	}
-}
-
-func Spawnable(point SpawnPoint) bool {
-	return point.MobTime >= 0
-}
-
-func SpawnPointProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId uint32) model.Provider[[]SpawnPoint] {
-	return func(ctx context.Context) func(mapId uint32) model.Provider[[]SpawnPoint] {
-		return func(mapId uint32) model.Provider[[]SpawnPoint] {
-			return requests.SliceProvider[RestModel, SpawnPoint](l, ctx)(requestSpawnPoints(mapId), Extract, model.Filters[SpawnPoint]())
-		}
-	}
 }

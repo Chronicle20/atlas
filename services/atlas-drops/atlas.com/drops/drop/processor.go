@@ -3,6 +3,7 @@ package drop
 import (
 	"atlas-drops/equipment"
 	"atlas-drops/kafka/message"
+	"atlas-drops/kafka/message/drop"
 	"atlas-drops/kafka/producer"
 	"context"
 	"github.com/Chronicle20/atlas-constants/inventory"
@@ -64,11 +65,10 @@ type ProcessorImpl struct {
 
 // NewProcessor creates a new drop processor
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
-	t := tenant.MustFromContext(ctx)
 	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
-		t:   t,
+		t:   tenant.MustFromContext(ctx),
 	}
 }
 
@@ -86,7 +86,7 @@ func (p *ProcessorImpl) Spawn(msgBuf *message.Buffer) func(mb *ModelBuilder) (Mo
 			mb.SetEquipmentId(e.Id())
 		}
 		m := GetRegistry().CreateDrop(mb)
-		_ = msgBuf.Put(EnvEventTopicDropStatus, createdEventStatusProvider(m))
+		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, createdEventStatusProvider(m))
 		return m, nil
 	}
 }
@@ -107,7 +107,7 @@ func (p *ProcessorImpl) SpawnAndEmit(mb *ModelBuilder) (Model, error) {
 func (p *ProcessorImpl) SpawnForCharacter(msgBuf *message.Buffer) func(mb *ModelBuilder) (Model, error) {
 	return func(mb *ModelBuilder) (Model, error) {
 		m := GetRegistry().CreateDrop(mb)
-		_ = msgBuf.Put(EnvEventTopicDropStatus, createdEventStatusProvider(m))
+		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, createdEventStatusProvider(m))
 		return m, nil
 	}
 }
@@ -130,10 +130,10 @@ func (p *ProcessorImpl) Reserve(msgBuf *message.Buffer) func(worldId byte, chann
 		d, err := GetRegistry().ReserveDrop(dropId, characterId, petSlot)
 		if err == nil {
 			p.l.Debugf("Reserving [%d] for [%d].", dropId, characterId)
-			_ = msgBuf.Put(EnvEventTopicDropStatus, reservedEventStatusProvider(worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso()))
+			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservedEventStatusProvider(worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso()))
 		} else {
 			p.l.Debugf("Failed reserving [%d] for [%d].", dropId, characterId)
-			_ = msgBuf.Put(EnvEventTopicDropStatus, reservationFailureEventStatusProvider(worldId, channelId, mapId, dropId, characterId))
+			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(worldId, channelId, mapId, dropId, characterId))
 		}
 		return d, err
 	}
@@ -155,7 +155,7 @@ func (p *ProcessorImpl) ReserveAndEmit(worldId byte, channelId byte, mapId uint3
 func (p *ProcessorImpl) CancelReservation(msgBuf *message.Buffer) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
 	return func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
 		GetRegistry().CancelDropReservation(dropId, characterId)
-		_ = msgBuf.Put(EnvEventTopicDropStatus, reservationFailureEventStatusProvider(worldId, channelId, mapId, dropId, characterId))
+		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(worldId, channelId, mapId, dropId, characterId))
 		return nil
 	}
 }
@@ -175,7 +175,7 @@ func (p *ProcessorImpl) Gather(msgBuf *message.Buffer) func(worldId byte, channe
 		d, err := GetRegistry().RemoveDrop(dropId)
 		if d.Id() == 0 || err == nil {
 			p.l.Debugf("Gathering [%d] for [%d].", dropId, characterId)
-			_ = msgBuf.Put(EnvEventTopicDropStatus, pickedUpEventStatusProvider(worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso(), d.PetSlot()))
+			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, pickedUpEventStatusProvider(worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso(), d.PetSlot()))
 		}
 		return d, err
 	}
@@ -210,7 +210,7 @@ func (p *ProcessorImpl) Expire(msgBuf *message.Buffer) model.Operator[Model] {
 			}
 		}
 
-		_ = msgBuf.Put(EnvEventTopicDropStatus, expiredEventStatusProvider(m.WorldId(), m.ChannelId(), m.MapId(), m.Id()))
+		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, expiredEventStatusProvider(m.WorldId(), m.ChannelId(), m.MapId(), m.Id()))
 		return nil
 	}
 }

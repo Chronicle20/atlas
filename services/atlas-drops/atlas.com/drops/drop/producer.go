@@ -1,6 +1,7 @@
 package drop
 
 import (
+	messageDropKafka "atlas-drops/kafka/message/drop"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
@@ -8,13 +9,13 @@ import (
 
 func createdEventStatusProvider(drop Model) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(drop.Id()))
-	value := &statusEvent[createdStatusEventBody]{
+	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventCreatedBody]{
 		WorldId:   drop.WorldId(),
 		ChannelId: drop.ChannelId(),
 		MapId:     drop.MapId(),
 		DropId:    drop.Id(),
-		Type:      StatusEventTypeCreated,
-		Body: createdStatusEventBody{
+		Type:      messageDropKafka.StatusEventTypeCreated,
+		Body: messageDropKafka.StatusEventCreatedBody{
 			ItemId:          drop.ItemId(),
 			Quantity:        drop.Quantity(),
 			Meso:            drop.Meso(),
@@ -35,26 +36,26 @@ func createdEventStatusProvider(drop Model) model.Provider[[]kafka.Message] {
 
 func expiredEventStatusProvider(worldId byte, channelId byte, mapId uint32, dropId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))
-	value := &statusEvent[expiredStatusEventBody]{
+	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventExpiredBody]{
 		WorldId:   worldId,
 		ChannelId: channelId,
 		MapId:     mapId,
 		DropId:    dropId,
-		Type:      StatusEventTypeExpired,
-		Body:      expiredStatusEventBody{},
+		Type:      messageDropKafka.StatusEventTypeExpired,
+		Body:      messageDropKafka.StatusEventExpiredBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
 func pickedUpEventStatusProvider(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32, itemId uint32, equipmentId uint32, quantity uint32, meso uint32, petSlot int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))
-	value := &statusEvent[pickedUpStatusEventBody]{
+	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventPickedUpBody]{
 		WorldId:   worldId,
 		ChannelId: channelId,
 		MapId:     mapId,
 		DropId:    dropId,
-		Type:      StatusEventTypePickedUp,
-		Body: pickedUpStatusEventBody{
+		Type:      messageDropKafka.StatusEventTypePickedUp,
+		Body: messageDropKafka.StatusEventPickedUpBody{
 			CharacterId: characterId,
 			ItemId:      itemId,
 			EquipmentId: equipmentId,
@@ -68,13 +69,13 @@ func pickedUpEventStatusProvider(worldId byte, channelId byte, mapId uint32, dro
 
 func reservedEventStatusProvider(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32, itemId uint32, equipmentId uint32, quantity uint32, meso uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))
-	value := &statusEvent[reservedStatusEventBody]{
+	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventReservedBody]{
 		WorldId:   worldId,
 		ChannelId: channelId,
 		MapId:     mapId,
 		DropId:    dropId,
-		Type:      StatusEventTypeReserved,
-		Body: reservedStatusEventBody{
+		Type:      messageDropKafka.StatusEventTypeReserved,
+		Body: messageDropKafka.StatusEventReservedBody{
 			CharacterId: characterId,
 			ItemId:      itemId,
 			EquipmentId: equipmentId,
@@ -87,13 +88,13 @@ func reservedEventStatusProvider(worldId byte, channelId byte, mapId uint32, dro
 
 func reservationFailureEventStatusProvider(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))
-	value := &statusEvent[reservationFailureStatusEventBody]{
+	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventReservationFailureBody]{
 		WorldId:   worldId,
 		ChannelId: channelId,
 		MapId:     mapId,
 		DropId:    dropId,
-		Type:      StatusEventTypeReservationFailure,
-		Body: reservationFailureStatusEventBody{
+		Type:      messageDropKafka.StatusEventTypeReservationFailure,
+		Body: messageDropKafka.StatusEventReservationFailureBody{
 			CharacterId: characterId,
 		},
 	}

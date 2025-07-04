@@ -34,7 +34,9 @@ func handleGetDropById(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 				return
 			}
 
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
 }

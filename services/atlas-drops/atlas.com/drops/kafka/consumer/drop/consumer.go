@@ -74,7 +74,7 @@ func handleRequestReservation(l logrus.FieldLogger, ctx context.Context, c messa
 		return
 	}
 	p := drop.NewProcessor(l, ctx)
-	_, _ = p.ReserveAndEmit(c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId, c.Body.PetSlot)
+	_, _ = p.ReserveAndEmit(c.TransactionId, c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId, c.Body.PetSlot)
 }
 
 func handleCancelReservation(l logrus.FieldLogger, ctx context.Context, c messageDropKafka.Command[messageDropKafka.CommandCancelReservationBody]) {
@@ -82,7 +82,7 @@ func handleCancelReservation(l logrus.FieldLogger, ctx context.Context, c messag
 		return
 	}
 	p := drop.NewProcessor(l, ctx)
-	_ = p.CancelReservationAndEmit(c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId)
+	_ = p.CancelReservationAndEmit(c.TransactionId, c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId)
 }
 
 func handleRequestPickUp(l logrus.FieldLogger, ctx context.Context, c messageDropKafka.Command[messageDropKafka.CommandRequestPickUpBody]) {
@@ -90,5 +90,5 @@ func handleRequestPickUp(l logrus.FieldLogger, ctx context.Context, c messageDro
 		return
 	}
 	p := drop.NewProcessor(l, ctx)
-	_, _ = p.GatherAndEmit(c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId)
+	_, _ = p.GatherAndEmit(c.TransactionId, c.WorldId, c.ChannelId, c.MapId, c.Body.DropId, c.Body.CharacterId)
 }

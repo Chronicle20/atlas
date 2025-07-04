@@ -1,6 +1,12 @@
 package drop
 
-import "time"
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+	"time"
+)
 
 // Event topic and type constants
 const (
@@ -24,21 +30,23 @@ const (
 
 // StatusEvent is the generic event structure for drop status events
 type StatusEvent[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	DropId    uint32 `json:"dropId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	TransactionId uuid.UUID  `json:"transactionId"`
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	MapId         _map.Id    `json:"mapId"`
+	DropId        uint32     `json:"dropId"`
+	Type          string     `json:"type"`
+	Body          E          `json:"body"`
 }
 
 // Command is the generic command structure for drop commands
 type Command[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	TransactionId uuid.UUID  `json:"transactionId"`
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	MapId         _map.Id    `json:"mapId"`
+	Type          string     `json:"type"`
+	Body          E          `json:"body"`
 }
 
 // StatusEventCreatedBody is the body for CREATED status events

@@ -6,10 +6,14 @@ import (
 	"atlas-drops/kafka/message/drop"
 	"atlas-drops/kafka/producer"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,19 +30,19 @@ type Processor interface {
 	SpawnForCharacterAndEmit(mb *ModelBuilder) (Model, error)
 
 	// Reserve reserves a drop for a character
-	Reserve(mb *message.Buffer) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32, petSlot int8) (Model, error)
+	Reserve(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32, petSlot int8) (Model, error)
 	// ReserveAndEmit reserves a drop for a character and emits a Kafka message
-	ReserveAndEmit(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32, petSlot int8) (Model, error)
+	ReserveAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32, petSlot int8) (Model, error)
 
 	// CancelReservation cancels a drop reservation
-	CancelReservation(mb *message.Buffer) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error
+	CancelReservation(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32) error
 	// CancelReservationAndEmit cancels a drop reservation and emits a Kafka message
-	CancelReservationAndEmit(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error
+	CancelReservationAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32) error
 
 	// Gather gathers a drop
-	Gather(mb *message.Buffer) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) (Model, error)
+	Gather(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32) (Model, error)
 	// GatherAndEmit gathers a drop and emits a Kafka message
-	GatherAndEmit(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) (Model, error)
+	GatherAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32) (Model, error)
 
 	// Expire expires a drop
 	Expire(mb *message.Buffer) model.Operator[Model]
@@ -48,12 +52,12 @@ type Processor interface {
 	// GetById gets a drop by ID
 	GetById(dropId uint32) (Model, error)
 	// GetForMap gets all drops for a map
-	GetForMap(worldId byte, channelId byte, mapId uint32) ([]Model, error)
+	GetForMap(worldId world.Id, channelId channel.Id, mapId _map.Id) ([]Model, error)
 
 	// ByIdProvider provides a drop by ID
 	ByIdProvider(dropId uint32) model.Provider[Model]
 	// ForMapProvider provides all drops for a map
-	ForMapProvider(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model]
+	ForMapProvider(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Provider[[]Model]
 }
 
 // ProcessorImpl implements the Processor interface
@@ -125,69 +129,69 @@ func (p *ProcessorImpl) SpawnForCharacterAndEmit(mb *ModelBuilder) (Model, error
 }
 
 // Reserve reserves a drop for a character
-func (p *ProcessorImpl) Reserve(msgBuf *message.Buffer) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32, petSlot int8) (Model, error) {
-	return func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32, petSlot int8) (Model, error) {
+func (p *ProcessorImpl) Reserve(msgBuf *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32, petSlot int8) (Model, error) {
+	return func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32, petSlot int8) (Model, error) {
 		d, err := GetRegistry().ReserveDrop(dropId, characterId, petSlot)
 		if err == nil {
 			p.l.Debugf("Reserving [%d] for [%d].", dropId, characterId)
-			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservedEventStatusProvider(worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso()))
+			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservedEventStatusProvider(transactionId, worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso()))
 		} else {
 			p.l.Debugf("Failed reserving [%d] for [%d].", dropId, characterId)
-			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(worldId, channelId, mapId, dropId, characterId))
+			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(transactionId, worldId, channelId, mapId, dropId, characterId))
 		}
 		return d, err
 	}
 }
 
 // ReserveAndEmit reserves a drop for a character and emits a Kafka message
-func (p *ProcessorImpl) ReserveAndEmit(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32, petSlot int8) (Model, error) {
+func (p *ProcessorImpl) ReserveAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32, petSlot int8) (Model, error) {
 	producerProvider := producer.ProviderImpl(p.l)(p.ctx)
 	var result Model
 	var err error
 	err = message.Emit(producerProvider)(func(mb *message.Buffer) error {
-		result, err = p.Reserve(mb)(worldId, channelId, mapId, dropId, characterId, petSlot)
+		result, err = p.Reserve(mb)(transactionId, worldId, channelId, mapId, dropId, characterId, petSlot)
 		return err
 	})
 	return result, err
 }
 
 // CancelReservation cancels a drop reservation
-func (p *ProcessorImpl) CancelReservation(msgBuf *message.Buffer) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
-	return func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
+func (p *ProcessorImpl) CancelReservation(msgBuf *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32) error {
+	return func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32) error {
 		GetRegistry().CancelDropReservation(dropId, characterId)
-		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(worldId, channelId, mapId, dropId, characterId))
+		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(transactionId, worldId, channelId, mapId, dropId, characterId))
 		return nil
 	}
 }
 
 // CancelReservationAndEmit cancels a drop reservation and emits a Kafka message
-func (p *ProcessorImpl) CancelReservationAndEmit(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) error {
+func (p *ProcessorImpl) CancelReservationAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32) error {
 	producerProvider := producer.ProviderImpl(p.l)(p.ctx)
 	err := message.Emit(producerProvider)(func(mb *message.Buffer) error {
-		return p.CancelReservation(mb)(worldId, channelId, mapId, dropId, characterId)
+		return p.CancelReservation(mb)(transactionId, worldId, channelId, mapId, dropId, characterId)
 	})
 	return err
 }
 
 // Gather gathers a drop
-func (p *ProcessorImpl) Gather(msgBuf *message.Buffer) func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) (Model, error) {
-	return func(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) (Model, error) {
+func (p *ProcessorImpl) Gather(msgBuf *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32) (Model, error) {
+	return func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32) (Model, error) {
 		d, err := GetRegistry().RemoveDrop(dropId)
 		if d.Id() == 0 || err == nil {
 			p.l.Debugf("Gathering [%d] for [%d].", dropId, characterId)
-			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, pickedUpEventStatusProvider(worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso(), d.PetSlot()))
+			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, pickedUpEventStatusProvider(transactionId, worldId, channelId, mapId, dropId, characterId, d.ItemId(), d.EquipmentId(), d.Quantity(), d.Meso(), d.PetSlot()))
 		}
 		return d, err
 	}
 }
 
 // GatherAndEmit gathers a drop and emits a Kafka message
-func (p *ProcessorImpl) GatherAndEmit(worldId byte, channelId byte, mapId uint32, dropId uint32, characterId uint32) (Model, error) {
+func (p *ProcessorImpl) GatherAndEmit(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, dropId uint32, characterId uint32) (Model, error) {
 	producerProvider := producer.ProviderImpl(p.l)(p.ctx)
 	var result Model
 	var err error
 	err = message.Emit(producerProvider)(func(mb *message.Buffer) error {
-		result, err = p.Gather(mb)(worldId, channelId, mapId, dropId, characterId)
+		result, err = p.Gather(mb)(transactionId, worldId, channelId, mapId, dropId, characterId)
 		return err
 	})
 	return result, err
@@ -210,7 +214,7 @@ func (p *ProcessorImpl) Expire(msgBuf *message.Buffer) model.Operator[Model] {
 			}
 		}
 
-		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, expiredEventStatusProvider(m.WorldId(), m.ChannelId(), m.MapId(), m.Id()))
+		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, expiredEventStatusProvider(m.TransactionId(), m.WorldId(), m.ChannelId(), m.MapId(), m.Id()))
 		return nil
 	}
 }
@@ -229,7 +233,7 @@ func (p *ProcessorImpl) GetById(dropId uint32) (Model, error) {
 }
 
 // GetForMap gets all drops for a map
-func (p *ProcessorImpl) GetForMap(worldId byte, channelId byte, mapId uint32) ([]Model, error) {
+func (p *ProcessorImpl) GetForMap(worldId world.Id, channelId channel.Id, mapId _map.Id) ([]Model, error) {
 	return model.SliceMap[Model, Model](func(m Model) (Model, error) { return m, nil })(p.ForMapProvider(worldId, channelId, mapId))(model.ParallelMap())()
 }
 
@@ -241,7 +245,7 @@ func (p *ProcessorImpl) ByIdProvider(dropId uint32) model.Provider[Model] {
 }
 
 // ForMapProvider provides all drops for a map
-func (p *ProcessorImpl) ForMapProvider(worldId byte, channelId byte, mapId uint32) model.Provider[[]Model] {
+func (p *ProcessorImpl) ForMapProvider(worldId world.Id, channelId channel.Id, mapId _map.Id) model.Provider[[]Model] {
 	return func() ([]Model, error) {
 		return GetRegistry().GetDropsForMap(p.t, worldId, channelId, mapId)
 	}

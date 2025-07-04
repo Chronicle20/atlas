@@ -3,6 +3,9 @@ package _map
 import (
 	"atlas-drops/drop"
 	"atlas-drops/rest"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
@@ -20,9 +23,9 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 }
 
 func handleGetDropsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseWorldId(d.Logger(), func(worldId byte) http.HandlerFunc {
-		return rest.ParseChannelId(d.Logger(), func(channelId byte) http.HandlerFunc {
-			return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
+			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					p := drop.NewProcessor(d.Logger(), d.Context())
 					ds, err := p.GetForMap(worldId, channelId, mapId)
@@ -38,7 +41,9 @@ func handleGetDropsInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http
 						return
 					}
 
-					server.Marshal[[]drop.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+					query := r.URL.Query()
+					queryParams := jsonapi.ParseQueryFields(&query)
+					server.MarshalResponse[[]drop.RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 				}
 			})
 		})

@@ -1,30 +1,33 @@
 package drop
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"strconv"
 	"time"
 )
 
 type RestModel struct {
-	Id            uint32    `json:"-"`
-	WorldId       byte      `json:"worldId"`
-	ChannelId     byte      `json:"channelId"`
-	MapId         uint32    `json:"mapId"`
-	ItemId        uint32    `json:"itemId"`
-	EquipmentId   uint32    `json:"equipmentId"`
-	Quantity      uint32    `json:"quantity"`
-	Meso          uint32    `json:"meso"`
-	Type          byte      `json:"type"`
-	X             int16     `json:"x"`
-	Y             int16     `json:"y"`
-	OwnerId       uint32    `json:"ownerId"`
-	OwnerPartyId  uint32    `json:"ownerPartyId"`
-	DropTime      time.Time `json:"dropTime"`
-	DropperId     uint32    `json:"dropperId"`
-	DropperX      int16     `json:"dropperX"`
-	DropperY      int16     `json:"dropperY"`
-	CharacterDrop bool      `json:"characterDrop"`
-	Mod           byte      `json:"mod"`
+	Id            uint32     `json:"-"`
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	MapId         _map.Id    `json:"mapId"`
+	ItemId        uint32     `json:"itemId"`
+	EquipmentId   uint32     `json:"equipmentId"`
+	Quantity      uint32     `json:"quantity"`
+	Meso          uint32     `json:"meso"`
+	Type          byte       `json:"type"`
+	X             int16      `json:"x"`
+	Y             int16      `json:"y"`
+	OwnerId       uint32     `json:"ownerId"`
+	OwnerPartyId  uint32     `json:"ownerPartyId"`
+	DropTime      time.Time  `json:"dropTime"`
+	DropperId     uint32     `json:"dropperId"`
+	DropperX      int16      `json:"dropperX"`
+	DropperY      int16      `json:"dropperY"`
+	CharacterDrop bool       `json:"characterDrop"`
+	Mod           byte       `json:"mod"`
 }
 
 func (r RestModel) GetName() string {

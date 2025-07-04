@@ -64,7 +64,15 @@ func main() {
 	drop2.InitConsumers(l)(cmf)(consumerGroupId)
 	drop2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), drop.InitResource(GetServer()), _map.InitResource(GetServer()))
+	// CreateRoute and run server
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		AddRouteInitializer(drop.InitResource(GetServer())).
+		AddRouteInitializer(_map.InitResource(GetServer())).
+		SetPort(os.Getenv("REST_PORT")).
+		Run()
 
 	tt, err := config.FindTask(drop.ExpirationTaskName)
 	if err != nil {
@@ -76,7 +84,8 @@ func main() {
 		sctx, span := otel.GetTracerProvider().Tracer("atlas-drops").Start(context.Background(), "teardown")
 		_ = model.ForEachSlice(drop.AllProvider, func(m drop.Model) error {
 			tctx := tenant.WithContext(sctx, m.Tenant())
-			return drop.Expire(l)(tctx)(m)
+			p := drop.NewProcessor(l, tctx)
+			return p.ExpireAndEmit(m)
 		})
 		span.End()
 	})

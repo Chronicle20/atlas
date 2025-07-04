@@ -42,7 +42,7 @@ func (t *ExpirationTask) Run() {
 		if d.Status() == StatusAvailable {
 			if d.DropTime().Add(expire).Before(time.Now()) {
 				tctx := tenant.WithContext(sctx, d.Tenant())
-				_ = Expire(t.l)(tctx)(d)
+				_ = NewProcessor(t.l, tctx).ExpireAndEmit(d)
 			}
 		}
 	}

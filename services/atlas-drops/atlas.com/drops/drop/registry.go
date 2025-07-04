@@ -2,6 +2,9 @@ package drop
 
 import (
 	"errors"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"sync"
@@ -41,9 +44,9 @@ func GetRegistry() *dropRegistry {
 
 type mapKey struct {
 	tenantId  uuid.UUID
-	worldId   byte
-	channelId byte
-	mapId     uint32
+	worldId   world.Id
+	channelId channel.Id
+	mapId     _map.Id
 }
 
 func getNextUniqueId() uint32 {
@@ -216,7 +219,7 @@ func (d *dropRegistry) GetDrop(dropId uint32) (Model, error) {
 	return drop, nil
 }
 
-func (d *dropRegistry) GetDropsForMap(tenant tenant.Model, worldId byte, channelId byte, mapId uint32) ([]Model, error) {
+func (d *dropRegistry) GetDropsForMap(tenant tenant.Model, worldId world.Id, channelId channel.Id, mapId _map.Id) ([]Model, error) {
 	mk := mapKey{
 		tenantId:  tenant.Id(),
 		worldId:   worldId,

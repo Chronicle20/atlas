@@ -2,6 +2,7 @@ package messenger
 
 import (
 	consumer2 "atlas-messengers/kafka/consumer"
+	messageMessenger "atlas-messengers/kafka/message/messenger"
 	"atlas-messengers/messenger"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -15,7 +16,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("messenger_command")(EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("messenger_command")(messageMessenger.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -23,7 +24,7 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) {
 		var t string
-		t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
+		t, _ = topic.EnvProvider(l)(messageMessenger.EnvCommandTopic)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreate)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleJoin)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLeave)))
@@ -31,8 +32,8 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	}
 }
 
-func handleCreate(l logrus.FieldLogger, ctx context.Context, c commandEvent[createCommandBody]) {
-	if c.Type != CommandMessengerCreate {
+func handleCreate(l logrus.FieldLogger, ctx context.Context, c messageMessenger.CommandEvent[messageMessenger.CreateCommandBody]) {
+	if c.Type != messageMessenger.CommandMessengerCreate {
 		return
 	}
 	_, err := messenger.Create(l)(ctx)(c.ActorId)
@@ -41,8 +42,8 @@ func handleCreate(l logrus.FieldLogger, ctx context.Context, c commandEvent[crea
 	}
 }
 
-func handleJoin(l logrus.FieldLogger, ctx context.Context, c commandEvent[joinCommandBody]) {
-	if c.Type != CommandMessengerJoin {
+func handleJoin(l logrus.FieldLogger, ctx context.Context, c messageMessenger.CommandEvent[messageMessenger.JoinCommandBody]) {
+	if c.Type != messageMessenger.CommandMessengerJoin {
 		return
 	}
 	_, err := messenger.Join(l)(ctx)(c.Body.MessengerId, c.ActorId)
@@ -51,8 +52,8 @@ func handleJoin(l logrus.FieldLogger, ctx context.Context, c commandEvent[joinCo
 	}
 }
 
-func handleLeave(l logrus.FieldLogger, ctx context.Context, c commandEvent[leaveCommandBody]) {
-	if c.Type != CommandMessengerLeave {
+func handleLeave(l logrus.FieldLogger, ctx context.Context, c messageMessenger.CommandEvent[messageMessenger.LeaveCommandBody]) {
+	if c.Type != messageMessenger.CommandMessengerLeave {
 		return
 	}
 
@@ -63,8 +64,8 @@ func handleLeave(l logrus.FieldLogger, ctx context.Context, c commandEvent[leave
 	}
 }
 
-func handleRequestInvite(l logrus.FieldLogger, ctx context.Context, c commandEvent[requestInviteBody]) {
-	if c.Type != CommandMessengerRequestInvite {
+func handleRequestInvite(l logrus.FieldLogger, ctx context.Context, c messageMessenger.CommandEvent[messageMessenger.RequestInviteBody]) {
+	if c.Type != messageMessenger.CommandMessengerRequestInvite {
 		return
 	}
 	err := messenger.RequestInvite(l)(ctx)(c.ActorId, c.Body.CharacterId)

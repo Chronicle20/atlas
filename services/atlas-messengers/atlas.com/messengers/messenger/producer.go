@@ -1,6 +1,7 @@
 package messenger
 
 import (
+	"atlas-messengers/kafka/message/messenger"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
@@ -8,20 +9,20 @@ import (
 
 func createCommandProvider(leaderId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(leaderId))
-	value := &commandEvent[createCommandBody]{
+	value := &messenger.CommandEvent[messenger.CreateCommandBody]{
 		ActorId: leaderId,
-		Type:    CommandMessengerCreate,
-		Body:    createCommandBody{},
+		Type:    messenger.CommandMessengerCreate,
+		Body:    messenger.CreateCommandBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
 func joinCommandProvider(messengerId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &commandEvent[joinCommandBody]{
+	value := &messenger.CommandEvent[messenger.JoinCommandBody]{
 		ActorId: characterId,
-		Type:    CommandMessengerJoin,
-		Body: joinCommandBody{
+		Type:    messenger.CommandMessengerJoin,
+		Body: messenger.JoinCommandBody{
 			MessengerId: messengerId,
 		},
 	}
@@ -30,10 +31,10 @@ func joinCommandProvider(messengerId uint32, characterId uint32) model.Provider[
 
 func leaveCommandProvider(messengerId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := &commandEvent[leaveCommandBody]{
+	value := &messenger.CommandEvent[messenger.LeaveCommandBody]{
 		ActorId: characterId,
-		Type:    CommandMessengerLeave,
-		Body: leaveCommandBody{
+		Type:    messenger.CommandMessengerLeave,
+		Body: messenger.LeaveCommandBody{
 			MessengerId: messengerId,
 		},
 	}
@@ -42,24 +43,24 @@ func leaveCommandProvider(messengerId uint32, characterId uint32) model.Provider
 
 func createdEventProvider(actorId uint32, messengerId uint32, worldId byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
-	value := &statusEvent[createdEventBody]{
+	value := &messenger.StatusEvent[messenger.CreatedEventBody]{
 		ActorId:     actorId,
 		MessengerId: messengerId,
 		WorldId:     worldId,
-		Type:        EventMessengerStatusTypeCreated,
-		Body:        createdEventBody{},
+		Type:        messenger.EventMessengerStatusTypeCreated,
+		Body:        messenger.CreatedEventBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
 func joinedEventProvider(actorId uint32, messengerId uint32, worldId byte, slot byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
-	value := &statusEvent[joinedEventBody]{
+	value := &messenger.StatusEvent[messenger.JoinedEventBody]{
 		ActorId:     actorId,
 		MessengerId: messengerId,
 		WorldId:     worldId,
-		Type:        EventMessengerStatusTypeJoined,
-		Body: joinedEventBody{
+		Type:        messenger.EventMessengerStatusTypeJoined,
+		Body: messenger.JoinedEventBody{
 			Slot: slot,
 		},
 	}
@@ -68,12 +69,12 @@ func joinedEventProvider(actorId uint32, messengerId uint32, worldId byte, slot 
 
 func leftEventProvider(actorId uint32, messengerId uint32, worldId byte, slot byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
-	value := &statusEvent[leftEventBody]{
+	value := &messenger.StatusEvent[messenger.LeftEventBody]{
 		ActorId:     actorId,
 		MessengerId: messengerId,
 		WorldId:     worldId,
-		Type:        EventMessengerStatusTypeLeft,
-		Body: leftEventBody{
+		Type:        messenger.EventMessengerStatusTypeLeft,
+		Body: messenger.LeftEventBody{
 			Slot: slot,
 		},
 	}
@@ -82,12 +83,12 @@ func leftEventProvider(actorId uint32, messengerId uint32, worldId byte, slot by
 
 func errorEventProvider(actorId uint32, messengerId uint32, worldId byte, errorType string, characterName string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
-	value := &statusEvent[errorEventBody]{
+	value := &messenger.StatusEvent[messenger.ErrorEventBody]{
 		ActorId:     actorId,
 		MessengerId: messengerId,
 		WorldId:     worldId,
-		Type:        EventMessengerStatusTypeError,
-		Body: errorEventBody{
+		Type:        messenger.EventMessengerStatusTypeError,
+		Body: messenger.ErrorEventBody{
 			Type:          errorType,
 			CharacterName: characterName,
 		},

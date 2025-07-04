@@ -31,28 +31,28 @@ const (
 	EventMessengerStatusErrorTypeCannotFindCharacter    = "UNABLE_TO_FIND_THE_CHARACTER"
 )
 
-type commandEvent[E any] struct {
+type CommandEvent[E any] struct {
 	ActorId uint32 `json:"actorId"`
 	Type    string `json:"type"`
 	Body    E      `json:"body"`
 }
 
-type createCommandBody struct {
+type CreateCommandBody struct {
 }
 
-type joinCommandBody struct {
+type JoinCommandBody struct {
 	MessengerId uint32 `json:"messengerId"`
 }
 
-type leaveCommandBody struct {
+type LeaveCommandBody struct {
 	MessengerId uint32 `json:"messengerId"`
 }
 
-type requestInviteBody struct {
+type RequestInviteBody struct {
 	CharacterId uint32 `json:"characterId"`
 }
 
-type statusEvent[E any] struct {
+type StatusEvent[E any] struct {
 	ActorId     uint32 `json:"actorId"`
 	WorldId     byte   `json:"worldId"`
 	MessengerId uint32 `json:"messengerId"`
@@ -60,18 +60,18 @@ type statusEvent[E any] struct {
 	Body        E      `json:"body"`
 }
 
-type createdEventBody struct {
+type CreatedEventBody struct {
 }
 
-type joinedEventBody struct {
+type JoinedEventBody struct {
 	Slot byte `json:"slot"`
 }
 
-type leftEventBody struct {
+type LeftEventBody struct {
 	Slot byte `json:"slot"`
 }
 
-type errorEventBody struct {
+type ErrorEventBody struct {
 	Type          string `json:"type"`
 	CharacterName string `json:"characterName"`
 }

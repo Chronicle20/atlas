@@ -1,6 +1,7 @@
 package invite
 
 import (
+	"atlas-messengers/kafka/message/invite"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
@@ -8,11 +9,11 @@ import (
 
 func createInviteCommandProvider(actorId uint32, messengerId uint32, worldId byte, targetId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
-	value := &commandEvent[createCommandBody]{
+	value := &invite.CommandEvent[invite.CreateCommandBody]{
 		WorldId:    worldId,
-		InviteType: InviteTypeMessenger,
-		Type:       CommandInviteTypeCreate,
-		Body: createCommandBody{
+		InviteType: invite.InviteTypeMessenger,
+		Type:       invite.CommandInviteTypeCreate,
+		Body: invite.CreateCommandBody{
 			OriginatorId: actorId,
 			TargetId:     targetId,
 			ReferenceId:  messengerId,

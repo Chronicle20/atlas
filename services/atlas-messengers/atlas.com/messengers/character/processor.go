@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-messengers/kafka/message/character"
 	"atlas-messengers/kafka/producer"
 	"context"
 	"errors"
@@ -30,7 +31,7 @@ func Login(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, ch
 			c = GetRegistry().Update(t, c.Id(), Model.Login, fn)
 
 			if c.MessengerId() != 0 {
-				err = producer.ProviderImpl(l)(ctx)(EnvEventMemberStatusTopic)(loginEventProvider(c.MessengerId(), c.WorldId(), characterId))
+				err = producer.ProviderImpl(l)(ctx)(character.EnvEventMemberStatusTopic)(loginEventProvider(c.MessengerId(), c.WorldId(), characterId))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce the messenger [%d] member [%d] logged in.", c.MessengerId(), c.Id())
 					return err
@@ -56,7 +57,7 @@ func Logout(l logrus.FieldLogger) func(ctx context.Context) func(characterId uin
 			c = GetRegistry().Update(t, c.Id(), Model.Logout)
 
 			if c.MessengerId() != 0 {
-				err = producer.ProviderImpl(l)(ctx)(EnvEventMemberStatusTopic)(logoutEventProvider(c.MessengerId(), c.WorldId(), characterId))
+				err = producer.ProviderImpl(l)(ctx)(character.EnvEventMemberStatusTopic)(logoutEventProvider(c.MessengerId(), c.WorldId(), characterId))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce the messenger [%d] member [%d] logged out.", c.MessengerId(), c.Id())
 					return err

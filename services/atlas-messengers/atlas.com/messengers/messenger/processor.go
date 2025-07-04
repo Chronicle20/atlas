@@ -3,6 +3,7 @@ package messenger
 import (
 	"atlas-messengers/character"
 	"atlas-messengers/invite"
+	"atlas-messengers/kafka/message/messenger"
 	"atlas-messengers/kafka/producer"
 	"context"
 	"errors"
@@ -72,7 +73,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(characterId uin
 			c, err := character.GetById(l)(ctx)(characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Error getting character [%d].", characterId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, 0, c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger create error to [%d].", characterId)
 				}
@@ -81,7 +82,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(characterId uin
 
 			if c.MessengerId() != 0 {
 				l.Errorf("Character [%d] already in messenger. Cannot create another one.", characterId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, 0, c.WorldId(), EventMessengerStatusErrorTypeAlreadyJoined1, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorTypeAlreadyJoined1, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger create error to [%d].", characterId)
 				}
@@ -92,10 +93,10 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(characterId uin
 
 			l.Debugf("Created messenger [%d] for character [%d].", p.Id(), characterId)
 
-			err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(createdEventProvider(characterId, p.Id(), c.WorldId()))
+			err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(createdEventProvider(characterId, p.Id(), c.WorldId()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce the messenger [%d] was created.", characterId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, 0, c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", p.Id())
 				}
@@ -105,7 +106,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(characterId uin
 			err = character.JoinMessenger(l)(ctx)(characterId, p.Id())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to have character [%d] join messenger [%d]", characterId, p.Id())
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, 0, c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", p.Id())
 				}
@@ -124,7 +125,7 @@ func Join(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint3
 			c, err := character.GetById(l)(ctx)(characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Error getting character [%d].", characterId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", messengerId)
 				}
@@ -133,7 +134,7 @@ func Join(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint3
 
 			if c.MessengerId() != 0 {
 				l.Errorf("Character [%d] already in messenger. Cannot create another one.", characterId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, c.MessengerId(), c.WorldId(), EventMessengerStatusErrorTypeAlreadyJoined2, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, c.MessengerId(), c.WorldId(), messenger.EventMessengerStatusErrorTypeAlreadyJoined2, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", messengerId)
 				}
@@ -143,7 +144,7 @@ func Join(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint3
 			p, err := GetRegistry().Get(t, messengerId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve messenger [%d].", messengerId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", messengerId)
 				}
@@ -152,7 +153,7 @@ func Join(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint3
 
 			if len(p.Members()) >= 3 {
 				l.Errorf("Messenger [%d] already at capacity.", messengerId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), EventMessengerStatusErrorTypeAtCapacity, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), messenger.EventMessengerStatusErrorTypeAtCapacity, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", messengerId)
 				}
@@ -163,7 +164,7 @@ func Join(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint3
 			p, err = GetRegistry().Update(t, messengerId, fn)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to join messenger [%d].", messengerId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", messengerId)
 				}
@@ -176,7 +177,7 @@ func Join(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint3
 				if err != nil {
 					l.WithError(err).Errorf("Unable to clean up messenger [%d], when failing to add member [%d].", messengerId, characterId)
 				}
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", messengerId)
 				}
@@ -185,10 +186,10 @@ func Join(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint3
 
 			l.Debugf("Character [%d] joined messenger [%d].", characterId, messengerId)
 			mm, _ := p.FindMember(characterId)
-			err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(joinedEventProvider(characterId, p.Id(), c.WorldId(), mm.Slot()))
+			err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(joinedEventProvider(characterId, p.Id(), c.WorldId(), mm.Slot()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce the messenger [%d] was created.", messengerId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", messengerId)
 				}
@@ -207,7 +208,7 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint
 			c, err := character.GetById(l)(ctx)(characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Error getting character [%d].", characterId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", messengerId)
 				}
@@ -216,7 +217,7 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint
 
 			if c.MessengerId() != messengerId {
 				l.Errorf("Character [%d] not in messenger.", characterId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", messengerId)
 				}
@@ -226,7 +227,7 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint
 			p, err := GetRegistry().Get(t, messengerId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve messenger [%d].", messengerId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", messengerId)
 				}
@@ -237,7 +238,7 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint
 			p, err = GetRegistry().Update(t, messengerId, func(m Model) Model { return Model.RemoveMember(m, characterId) })
 			if err != nil {
 				l.WithError(err).Errorf("Unable to leave messenger [%d].", messengerId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", messengerId)
 				}
@@ -250,7 +251,7 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint
 				if err != nil {
 					l.WithError(err).Errorf("Unable to clean up messenger [%d], when failing to remove member [%d].", messengerId, characterId)
 				}
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", characterId)
 				}
@@ -263,10 +264,10 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(messengerId uint
 			}
 
 			l.Debugf("Character [%d] left messenger [%d].", characterId, messengerId)
-			err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(leftEventProvider(characterId, messengerId, c.WorldId(), mm.Slot()))
+			err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(leftEventProvider(characterId, messengerId, c.WorldId(), mm.Slot()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce the messenger [%d] was left.", messengerId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(characterId, messengerId, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", messengerId)
 				}
@@ -287,7 +288,7 @@ func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(actorId 
 			a, err := character.GetById(l)(ctx)(actorId)
 			if err != nil {
 				l.WithError(err).Errorf("Error getting character [%d].", actorId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, 0, a.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(actorId, 0, a.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", 0)
 				}
@@ -297,7 +298,7 @@ func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(actorId 
 			c, err := character.GetById(l)(ctx)(characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Error getting character [%d].", characterId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, a.MessengerId(), c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(actorId, a.MessengerId(), c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", a.MessengerId())
 				}
@@ -305,7 +306,7 @@ func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(actorId 
 			}
 
 			if c.MessengerId() != 0 {
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, c.MessengerId(), c.WorldId(), EventMessengerStatusErrorTypeAlreadyJoined2, c.Name()))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(actorId, c.MessengerId(), c.WorldId(), messenger.EventMessengerStatusErrorTypeAlreadyJoined2, c.Name()))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", a.MessengerId())
 				}
@@ -328,7 +329,7 @@ func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(actorId 
 
 			if len(p.Members()) >= 3 {
 				l.Errorf("Messenger [%d] already at capacity.", p.Id())
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, p.Id(), c.WorldId(), EventMessengerStatusErrorTypeAtCapacity, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(actorId, p.Id(), c.WorldId(), messenger.EventMessengerStatusErrorTypeAtCapacity, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", p.Id())
 				}
@@ -338,7 +339,7 @@ func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(actorId 
 			err = invite.Create(l)(ctx)(actorId, a.WorldId(), p.Id(), characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce messenger [%d] invite.", p.Id())
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, a.MessengerId(), c.WorldId(), EventMessengerStatusErrorUnexpected, ""))
+				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(actorId, a.MessengerId(), c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", a.MessengerId())
 				}

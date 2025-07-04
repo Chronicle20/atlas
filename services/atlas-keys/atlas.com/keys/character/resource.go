@@ -37,7 +37,7 @@ func handleSetKey(db *gorm.DB) rest.InputHandler[key.RestModel] {
 			return rest.ParseKeyId(d.Logger(), func(keyId int32) http.HandlerFunc {
 				return func(w http.ResponseWriter, r *http.Request) {
 					processor := key.NewProcessor(d.Logger(), d.Context(), db)
-					err := processor.ChangeKeyAndEmit(uuid.New(), characterId, keyId, i.Type, i.Action)
+					err := processor.ChangeKey(uuid.New(), characterId, keyId, i.Type, i.Action)
 					if err != nil {
 						w.WriteHeader(http.StatusInternalServerError)
 						return
@@ -54,7 +54,7 @@ func handleDeleteKeyMap(db *gorm.DB) rest.GetHandler {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				processor := key.NewProcessor(d.Logger(), d.Context(), db)
-				err := processor.ResetAndEmit(uuid.New(), characterId)
+				err := processor.Reset(uuid.New(), characterId)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return

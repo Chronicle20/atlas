@@ -40,7 +40,7 @@ func handleStatusEventCreated(db *gorm.DB) func(l logrus.FieldLogger, ctx contex
 		}
 
 		processor := key.NewProcessor(l, ctx, db)
-		err := processor.CreateDefaultAndEmit(e.TransactionId, e.CharacterId)
+		err := processor.CreateDefault(e.TransactionId, e.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to create default keymapping for character [%d].", e.CharacterId)
 		}
@@ -54,7 +54,7 @@ func handleStatusEventDeleted(db *gorm.DB) message.Handler[characterMsg.StatusEv
 		}
 
 		processor := key.NewProcessor(l, ctx, db)
-		err := processor.DeleteAndEmit(e.TransactionId, e.CharacterId)
+		err := processor.Delete(e.TransactionId, e.CharacterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to delete for character [%d].", e.CharacterId)
 		}

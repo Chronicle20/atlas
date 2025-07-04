@@ -3,6 +3,7 @@ package expression
 import (
 	"atlas-expressions/expression"
 	consumer2 "atlas-expressions/kafka/consumer"
+	expressionMsg "atlas-expressions/kafka/message/expression"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -15,7 +16,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("expression_command")(EnvExpressionCommand)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("expression_command")(expressionMsg.EnvExpressionCommand)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -23,11 +24,12 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
 	return func(rf func(topic string, handler handler.Handler) (string, error)) {
 		var t string
-		t, _ = topic.EnvProvider(l)(EnvExpressionCommand)()
+		t, _ = topic.EnvProvider(l)(expressionMsg.EnvExpressionCommand)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeCommand)))
 	}
 }
 
-func handleChangeCommand(l logrus.FieldLogger, ctx context.Context, c expressionCommand) {
-	_ = expression.Change(l)(ctx)(c.CharacterId, c.WorldId, c.ChannelId, c.MapId, c.Expression)
+func handleChangeCommand(l logrus.FieldLogger, ctx context.Context, c expressionMsg.Command) {
+	processor := expression.NewProcessor(l, ctx)
+	_, _ = processor.ChangeAndEmit(c.TransactionId, c.CharacterId, c.WorldId, c.ChannelId, c.MapId, c.Expression)
 }

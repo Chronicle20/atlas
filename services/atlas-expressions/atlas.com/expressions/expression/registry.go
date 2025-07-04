@@ -1,6 +1,9 @@
 package expression
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"sync"
 	"time"
@@ -24,7 +27,7 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) add(t tenant.Model, characterId uint32, worldId byte, channelId byte, mapId uint32, expression uint32) Model {
+func (r *Registry) add(t tenant.Model, characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id, expression uint32) Model {
 	r.lock.Lock()
 	if _, ok := r.expressionReg[t]; !ok {
 		r.expressionReg[t] = make(map[uint32]Model)

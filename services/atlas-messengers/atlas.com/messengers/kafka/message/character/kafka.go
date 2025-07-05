@@ -1,5 +1,11 @@
 package character
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
+	_map "github.com/Chronicle20/atlas-constants/map"
+)
+
 const (
 	EnvEventMemberStatusTopic            = "EVENT_TOPIC_MESSENGER_MEMBER_STATUS"
 	EventMessengerMemberStatusTypeLogin  = "LOGIN"
@@ -13,11 +19,11 @@ const (
 )
 
 type MemberStatusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	MessengerId uint32 `json:"messengerId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id `json:"worldId"`
+	MessengerId uint32   `json:"messengerId"`
+	CharacterId uint32   `json:"characterId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 type MemberLoginEventBody struct {
@@ -27,31 +33,31 @@ type MemberLogoutEventBody struct {
 }
 
 type StatusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id `json:"worldId"`
+	CharacterId uint32   `json:"characterId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 type StatusEventLoginBody struct {
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
 }
 
 type StatusEventLogoutBody struct {
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
 }
 
 type StatusEventChannelChangedBody struct {
-	ChannelId    byte   `json:"channelId"`
-	OldChannelId byte   `json:"oldChannelId"`
-	MapId        uint32 `json:"mapId"`
+	ChannelId    channel.Id `json:"channelId"`
+	OldChannelId channel.Id `json:"oldChannelId"`
+	MapId        _map.Id    `json:"mapId"`
 }
 
 type StatusEventMapChangedBody struct {
-	ChannelId      byte   `json:"channelId"`
-	OldMapId       uint32 `json:"oldMapId"`
-	TargetMapId    uint32 `json:"targetMapId"`
-	TargetPortalId uint32 `json:"targetPortalId"`
+	ChannelId      channel.Id `json:"channelId"`
+	OldMapId       _map.Id    `json:"oldMapId"`
+	TargetMapId    _map.Id    `json:"targetMapId"`
+	TargetPortalId uint32     `json:"targetPortalId"`
 }

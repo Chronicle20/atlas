@@ -1,6 +1,9 @@
 package character
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/google/uuid"
 )
 
@@ -8,8 +11,8 @@ type Model struct {
 	tenantId    uuid.UUID
 	id          uint32
 	name        string
-	worldId     byte
-	channelId   byte
+	worldId     world.Id
+	channelId   channel.Id
 	messengerId uint32
 	online      bool
 }
@@ -38,7 +41,7 @@ func (m Model) JoinMessenger(messengerId uint32) Model {
 	}
 }
 
-func (m Model) ChangeChannel(channelId byte) Model {
+func (m Model) ChangeChannel(channelId channel.Id) Model {
 	return Model{
 		tenantId:    m.tenantId,
 		id:          m.id,
@@ -82,11 +85,11 @@ func (m Model) Name() string {
 	return m.name
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
-func (m Model) ChannelId() byte {
+func (m Model) ChannelId() channel.Id {
 	return m.channelId
 }
 
@@ -100,8 +103,8 @@ func (m Model) MessengerId() uint32 {
 
 type ForeignModel struct {
 	id      uint32
-	worldId byte
-	mapId   uint32
+	worldId world.Id
+	mapId   _map.Id
 	name    string
 	level   byte
 	jobId   uint16
@@ -120,11 +123,11 @@ func (m ForeignModel) JobId() uint16 {
 	return m.jobId
 }
 
-func (m ForeignModel) WorldId() byte {
+func (m ForeignModel) WorldId() world.Id {
 	return m.worldId
 }
 
-func (m ForeignModel) MapId() uint32 {
+func (m ForeignModel) MapId() _map.Id {
 	return m.mapId
 }
 

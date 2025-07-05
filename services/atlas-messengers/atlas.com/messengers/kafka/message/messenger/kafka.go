@@ -1,5 +1,9 @@
 package messenger
 
+import (
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 const (
 	EnvCommandTopic               = "COMMAND_TOPIC_MESSENGER"
 	CommandMessengerCreate        = "CREATE"
@@ -53,11 +57,11 @@ type RequestInviteBody struct {
 }
 
 type StatusEvent[E any] struct {
-	ActorId     uint32 `json:"actorId"`
-	WorldId     byte   `json:"worldId"`
-	MessengerId uint32 `json:"messengerId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	ActorId     uint32   `json:"actorId"`
+	WorldId     world.Id `json:"worldId"`
+	MessengerId uint32   `json:"messengerId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 type CreatedEventBody struct {

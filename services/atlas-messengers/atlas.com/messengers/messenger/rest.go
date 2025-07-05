@@ -3,6 +3,8 @@ package messenger
 import (
 	"atlas-messengers/character"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"strconv"
@@ -70,8 +72,8 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 			r.Members = append(r.Members, MemberRestModel{
 				Id:        uint32(id),
 				Name:      "",
-				WorldId:   0,
-				ChannelId: 0,
+				WorldId:   world.Id(0),
+				ChannelId: channel.Id(0),
 				Slot:      0,
 				Online:    false,
 			})
@@ -81,12 +83,12 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 }
 
 type MemberRestModel struct {
-	Id        uint32 `json:"-"`
-	Name      string `json:"name"`
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	Online    bool   `json:"online"`
-	Slot      byte   `json:"slot"`
+	Id        uint32     `json:"-"`
+	Name      string     `json:"name"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	Online    bool       `json:"online"`
+	Slot      byte       `json:"slot"`
 }
 
 func (r MemberRestModel) GetName() string {

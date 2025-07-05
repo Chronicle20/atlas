@@ -2,6 +2,7 @@ package messenger
 
 import (
 	"atlas-messengers/kafka/message/messenger"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
@@ -41,7 +42,7 @@ func leaveCommandProvider(messengerId uint32, characterId uint32) model.Provider
 	return producer.SingleMessageProvider(key, value)
 }
 
-func createdEventProvider(actorId uint32, messengerId uint32, worldId byte) model.Provider[[]kafka.Message] {
+func createdEventProvider(actorId uint32, messengerId uint32, worldId world.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
 	value := &messenger.StatusEvent[messenger.CreatedEventBody]{
 		ActorId:     actorId,
@@ -53,7 +54,7 @@ func createdEventProvider(actorId uint32, messengerId uint32, worldId byte) mode
 	return producer.SingleMessageProvider(key, value)
 }
 
-func joinedEventProvider(actorId uint32, messengerId uint32, worldId byte, slot byte) model.Provider[[]kafka.Message] {
+func joinedEventProvider(actorId uint32, messengerId uint32, worldId world.Id, slot byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
 	value := &messenger.StatusEvent[messenger.JoinedEventBody]{
 		ActorId:     actorId,
@@ -67,7 +68,7 @@ func joinedEventProvider(actorId uint32, messengerId uint32, worldId byte, slot 
 	return producer.SingleMessageProvider(key, value)
 }
 
-func leftEventProvider(actorId uint32, messengerId uint32, worldId byte, slot byte) model.Provider[[]kafka.Message] {
+func leftEventProvider(actorId uint32, messengerId uint32, worldId world.Id, slot byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
 	value := &messenger.StatusEvent[messenger.LeftEventBody]{
 		ActorId:     actorId,
@@ -81,7 +82,7 @@ func leftEventProvider(actorId uint32, messengerId uint32, worldId byte, slot by
 	return producer.SingleMessageProvider(key, value)
 }
 
-func errorEventProvider(actorId uint32, messengerId uint32, worldId byte, errorType string, characterName string) model.Provider[[]kafka.Message] {
+func errorEventProvider(actorId uint32, messengerId uint32, worldId world.Id, errorType string, characterName string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
 	value := &messenger.StatusEvent[messenger.ErrorEventBody]{
 		ActorId:     actorId,

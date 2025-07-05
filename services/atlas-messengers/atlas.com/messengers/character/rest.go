@@ -1,6 +1,8 @@
 package character
 
 import (
+	"github.com/Chronicle20/atlas-constants/world"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
 )
@@ -95,8 +97,8 @@ func (r *ForeignRestModel) SetReferencedStructs(references map[string]map[string
 func ExtractForeign(rm ForeignRestModel) (ForeignModel, error) {
 	return ForeignModel{
 		id:      rm.Id,
-		worldId: rm.WorldId,
-		mapId:   rm.MapId,
+		worldId: world.Id(rm.WorldId),
+		mapId:   _map.Id(rm.MapId),
 		name:    rm.Name,
 		level:   rm.Level,
 		jobId:   rm.JobId,

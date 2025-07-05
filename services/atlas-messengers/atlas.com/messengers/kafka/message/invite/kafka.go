@@ -1,5 +1,9 @@
 package invite
 
+import (
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 const (
 	EnvCommandTopic         = "COMMAND_TOPIC_INVITE"
 	CommandInviteTypeCreate = "CREATE"
@@ -11,10 +15,10 @@ const (
 )
 
 type CommandEvent[E any] struct {
-	WorldId    byte   `json:"worldId"`
-	InviteType string `json:"inviteType"`
-	Type       string `json:"type"`
-	Body       E      `json:"body"`
+	WorldId    world.Id `json:"worldId"`
+	InviteType string   `json:"inviteType"`
+	Type       string   `json:"type"`
+	Body       E        `json:"body"`
 }
 
 type CreateCommandBody struct {
@@ -24,11 +28,11 @@ type CreateCommandBody struct {
 }
 
 type StatusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	InviteType  string `json:"inviteType"`
-	ReferenceId uint32 `json:"referenceId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id `json:"worldId"`
+	InviteType  string   `json:"inviteType"`
+	ReferenceId uint32   `json:"referenceId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 type AcceptedEventBody struct {

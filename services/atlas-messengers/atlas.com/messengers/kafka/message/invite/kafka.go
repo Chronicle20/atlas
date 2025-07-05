@@ -2,6 +2,7 @@ package invite
 
 import (
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 const (
@@ -15,10 +16,11 @@ const (
 )
 
 type CommandEvent[E any] struct {
-	WorldId    world.Id `json:"worldId"`
-	InviteType string   `json:"inviteType"`
-	Type       string   `json:"type"`
-	Body       E        `json:"body"`
+	TransactionID uuid.UUID `json:"transactionId"`
+	WorldId       world.Id  `json:"worldId"`
+	InviteType    string    `json:"inviteType"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type CreateCommandBody struct {
@@ -28,11 +30,12 @@ type CreateCommandBody struct {
 }
 
 type StatusEvent[E any] struct {
-	WorldId     world.Id `json:"worldId"`
-	InviteType  string   `json:"inviteType"`
-	ReferenceId uint32   `json:"referenceId"`
-	Type        string   `json:"type"`
-	Body        E        `json:"body"`
+	TransactionID uuid.UUID `json:"transactionId"`
+	WorldId       world.Id  `json:"worldId"`
+	InviteType    string    `json:"inviteType"`
+	ReferenceId   uint32    `json:"referenceId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type AcceptedEventBody struct {

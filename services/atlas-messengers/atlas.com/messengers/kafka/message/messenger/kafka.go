@@ -2,6 +2,7 @@ package messenger
 
 import (
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 const (
@@ -36,9 +37,10 @@ const (
 )
 
 type CommandEvent[E any] struct {
-	ActorId uint32 `json:"actorId"`
-	Type    string `json:"type"`
-	Body    E      `json:"body"`
+	TransactionID uuid.UUID `json:"transactionId"`
+	ActorId       uint32    `json:"actorId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type CreateCommandBody struct {
@@ -57,11 +59,12 @@ type RequestInviteBody struct {
 }
 
 type StatusEvent[E any] struct {
-	ActorId     uint32   `json:"actorId"`
-	WorldId     world.Id `json:"worldId"`
-	MessengerId uint32   `json:"messengerId"`
-	Type        string   `json:"type"`
-	Body        E        `json:"body"`
+	TransactionID uuid.UUID `json:"transactionId"`
+	ActorId       uint32    `json:"actorId"`
+	WorldId       world.Id  `json:"worldId"`
+	MessengerId   uint32    `json:"messengerId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type CreatedEventBody struct {

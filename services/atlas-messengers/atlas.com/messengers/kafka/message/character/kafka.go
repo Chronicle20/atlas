@@ -4,6 +4,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/google/uuid"
 )
 
 const (
@@ -19,11 +20,12 @@ const (
 )
 
 type MemberStatusEvent[E any] struct {
-	WorldId     world.Id `json:"worldId"`
-	MessengerId uint32   `json:"messengerId"`
-	CharacterId uint32   `json:"characterId"`
-	Type        string   `json:"type"`
-	Body        E        `json:"body"`
+	TransactionID uuid.UUID `json:"transactionId"`
+	WorldId       world.Id  `json:"worldId"`
+	MessengerId   uint32    `json:"messengerId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type MemberLoginEventBody struct {
@@ -33,10 +35,11 @@ type MemberLogoutEventBody struct {
 }
 
 type StatusEvent[E any] struct {
-	WorldId     world.Id `json:"worldId"`
-	CharacterId uint32   `json:"characterId"`
-	Type        string   `json:"type"`
-	Body        E        `json:"body"`
+	TransactionID uuid.UUID `json:"transactionId"`
+	WorldId       world.Id  `json:"worldId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 type StatusEventLoginBody struct {

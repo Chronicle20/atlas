@@ -5,24 +5,27 @@ import (
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
-func createCommandProvider(leaderId uint32) model.Provider[[]kafka.Message] {
+func createCommandProvider(transactionID uuid.UUID, leaderId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(leaderId))
 	value := &messenger.CommandEvent[messenger.CreateCommandBody]{
-		ActorId: leaderId,
-		Type:    messenger.CommandMessengerCreate,
-		Body:    messenger.CreateCommandBody{},
+		TransactionID: transactionID,
+		ActorId:       leaderId,
+		Type:          messenger.CommandMessengerCreate,
+		Body:          messenger.CreateCommandBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func joinCommandProvider(messengerId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+func joinCommandProvider(transactionID uuid.UUID, messengerId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &messenger.CommandEvent[messenger.JoinCommandBody]{
-		ActorId: characterId,
-		Type:    messenger.CommandMessengerJoin,
+		TransactionID: transactionID,
+		ActorId:       characterId,
+		Type:          messenger.CommandMessengerJoin,
 		Body: messenger.JoinCommandBody{
 			MessengerId: messengerId,
 		},
@@ -30,11 +33,12 @@ func joinCommandProvider(messengerId uint32, characterId uint32) model.Provider[
 	return producer.SingleMessageProvider(key, value)
 }
 
-func leaveCommandProvider(messengerId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+func leaveCommandProvider(transactionID uuid.UUID, messengerId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &messenger.CommandEvent[messenger.LeaveCommandBody]{
-		ActorId: characterId,
-		Type:    messenger.CommandMessengerLeave,
+		TransactionID: transactionID,
+		ActorId:       characterId,
+		Type:          messenger.CommandMessengerLeave,
 		Body: messenger.LeaveCommandBody{
 			MessengerId: messengerId,
 		},
@@ -42,25 +46,27 @@ func leaveCommandProvider(messengerId uint32, characterId uint32) model.Provider
 	return producer.SingleMessageProvider(key, value)
 }
 
-func createdEventProvider(actorId uint32, messengerId uint32, worldId world.Id) model.Provider[[]kafka.Message] {
+func createdEventProvider(transactionID uuid.UUID, actorId uint32, messengerId uint32, worldId world.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
 	value := &messenger.StatusEvent[messenger.CreatedEventBody]{
-		ActorId:     actorId,
-		MessengerId: messengerId,
-		WorldId:     worldId,
-		Type:        messenger.EventMessengerStatusTypeCreated,
-		Body:        messenger.CreatedEventBody{},
+		TransactionID: transactionID,
+		ActorId:       actorId,
+		MessengerId:   messengerId,
+		WorldId:       worldId,
+		Type:          messenger.EventMessengerStatusTypeCreated,
+		Body:          messenger.CreatedEventBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func joinedEventProvider(actorId uint32, messengerId uint32, worldId world.Id, slot byte) model.Provider[[]kafka.Message] {
+func joinedEventProvider(transactionID uuid.UUID, actorId uint32, messengerId uint32, worldId world.Id, slot byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
 	value := &messenger.StatusEvent[messenger.JoinedEventBody]{
-		ActorId:     actorId,
-		MessengerId: messengerId,
-		WorldId:     worldId,
-		Type:        messenger.EventMessengerStatusTypeJoined,
+		TransactionID: transactionID,
+		ActorId:       actorId,
+		MessengerId:   messengerId,
+		WorldId:       worldId,
+		Type:          messenger.EventMessengerStatusTypeJoined,
 		Body: messenger.JoinedEventBody{
 			Slot: slot,
 		},
@@ -68,13 +74,14 @@ func joinedEventProvider(actorId uint32, messengerId uint32, worldId world.Id, s
 	return producer.SingleMessageProvider(key, value)
 }
 
-func leftEventProvider(actorId uint32, messengerId uint32, worldId world.Id, slot byte) model.Provider[[]kafka.Message] {
+func leftEventProvider(transactionID uuid.UUID, actorId uint32, messengerId uint32, worldId world.Id, slot byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
 	value := &messenger.StatusEvent[messenger.LeftEventBody]{
-		ActorId:     actorId,
-		MessengerId: messengerId,
-		WorldId:     worldId,
-		Type:        messenger.EventMessengerStatusTypeLeft,
+		TransactionID: transactionID,
+		ActorId:       actorId,
+		MessengerId:   messengerId,
+		WorldId:       worldId,
+		Type:          messenger.EventMessengerStatusTypeLeft,
 		Body: messenger.LeftEventBody{
 			Slot: slot,
 		},
@@ -82,13 +89,14 @@ func leftEventProvider(actorId uint32, messengerId uint32, worldId world.Id, slo
 	return producer.SingleMessageProvider(key, value)
 }
 
-func errorEventProvider(actorId uint32, messengerId uint32, worldId world.Id, errorType string, characterName string) model.Provider[[]kafka.Message] {
+func errorEventProvider(transactionID uuid.UUID, actorId uint32, messengerId uint32, worldId world.Id, errorType string, characterName string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
 	value := &messenger.StatusEvent[messenger.ErrorEventBody]{
-		ActorId:     actorId,
-		MessengerId: messengerId,
-		WorldId:     worldId,
-		Type:        messenger.EventMessengerStatusTypeError,
+		TransactionID: transactionID,
+		ActorId:       actorId,
+		MessengerId:   messengerId,
+		WorldId:       worldId,
+		Type:          messenger.EventMessengerStatusTypeError,
 		Body: messenger.ErrorEventBody{
 			Type:          errorType,
 			CharacterName: characterName,

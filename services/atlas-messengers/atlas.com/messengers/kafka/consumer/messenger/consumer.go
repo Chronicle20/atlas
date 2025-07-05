@@ -36,7 +36,7 @@ func handleCreate(l logrus.FieldLogger, ctx context.Context, c messageMessenger.
 	if c.Type != messageMessenger.CommandMessengerCreate {
 		return
 	}
-	_, err := messenger.Create(l)(ctx)(c.ActorId)
+	_, err := messenger.Create(l)(ctx)(c.TransactionID, c.ActorId)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to create messenger for leader [%d].", c.ActorId)
 	}
@@ -46,7 +46,7 @@ func handleJoin(l logrus.FieldLogger, ctx context.Context, c messageMessenger.Co
 	if c.Type != messageMessenger.CommandMessengerJoin {
 		return
 	}
-	_, err := messenger.Join(l)(ctx)(c.Body.MessengerId, c.ActorId)
+	_, err := messenger.Join(l)(ctx)(c.TransactionID, c.Body.MessengerId, c.ActorId)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to join messenger [%d].", c.ActorId, c.Body.MessengerId)
 	}
@@ -57,7 +57,7 @@ func handleLeave(l logrus.FieldLogger, ctx context.Context, c messageMessenger.C
 		return
 	}
 
-	_, err := messenger.Leave(l)(ctx)(c.Body.MessengerId, c.ActorId)
+	_, err := messenger.Leave(l)(ctx)(c.TransactionID, c.Body.MessengerId, c.ActorId)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to leave messenger [%d].", c.Body.MessengerId)
 		return
@@ -68,7 +68,7 @@ func handleRequestInvite(l logrus.FieldLogger, ctx context.Context, c messageMes
 	if c.Type != messageMessenger.CommandMessengerRequestInvite {
 		return
 	}
-	err := messenger.RequestInvite(l)(ctx)(c.ActorId, c.Body.CharacterId)
+	err := messenger.RequestInvite(l)(ctx)(c.TransactionID, c.ActorId, c.Body.CharacterId)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to invite [%d] to messenger.", c.Body.CharacterId)
 	}

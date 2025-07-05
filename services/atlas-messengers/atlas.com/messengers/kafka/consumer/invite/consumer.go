@@ -37,7 +37,7 @@ func handleAcceptedStatusEvent(l logrus.FieldLogger, ctx context.Context, e mess
 		return
 	}
 
-	_, err := messenger.Join(l)(ctx)(e.ReferenceId, e.Body.TargetId)
+	_, err := messenger.Join(l)(ctx)(e.TransactionID, e.ReferenceId, e.Body.TargetId)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to join messenger [%d].", e.Body.TargetId, e.ReferenceId)
 	}

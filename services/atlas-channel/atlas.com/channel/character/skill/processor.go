@@ -12,28 +12,36 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+// Processor interface defines the operations for skill processing
+type Processor interface {
+	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
+	GetByCharacterId(characterId uint32) ([]Model, error)
+	ApplyCooldown(m _map.Model, skillId skill.Id, cooldown uint32) model.Operator[uint32]
+}
+
+// ProcessorImpl implements the Processor interface
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
+func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())
 }
 
-func (p *Processor) GetByCharacterId(characterId uint32) ([]Model, error) {
+func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return p.ByCharacterIdProvider(characterId)()
 }
 
-func (p *Processor) ApplyCooldown(m _map.Model, skillId skill.Id, cooldown uint32) model.Operator[uint32] {
+func (p *ProcessorImpl) ApplyCooldown(m _map.Model, skillId skill.Id, cooldown uint32) model.Operator[uint32] {
 	return func(characterId uint32) error {
 		return producer.ProviderImpl(p.l)(p.ctx)(skill2.EnvCommandTopic)(skill3.SetCooldownCommandProvider(characterId, uint32(skillId), cooldown))
 	}

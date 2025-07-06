@@ -8,13 +8,27 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+// Processor interface defines the operations for message processing
+type Processor interface {
+	GeneralChat(m _map.Model, actorId uint32, message string, balloonOnly bool) error
+	BuddyChat(m _map.Model, actorId uint32, message string, recipients []uint32) error
+	PartyChat(m _map.Model, actorId uint32, message string, recipients []uint32) error
+	GuildChat(m _map.Model, actorId uint32, message string, recipients []uint32) error
+	AllianceChat(m _map.Model, actorId uint32, message string, recipients []uint32) error
+	MultiChat(m _map.Model, actorId uint32, message string, chatType string, recipients []uint32) error
+	WhisperChat(m _map.Model, actorId uint32, message string, recipientName string) error
+	MessengerChat(m _map.Model, actorId uint32, message string, recipients []uint32) error
+	PetChat(m _map.Model, petId uint64, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error
+}
+
+// ProcessorImpl implements the Processor interface
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
@@ -37,38 +51,38 @@ func MultiChatTypeStrToInd(chatType string) byte {
 	return 99
 }
 
-func (p *Processor) GeneralChat(m _map.Model, actorId uint32, message string, balloonOnly bool) error {
+func (p *ProcessorImpl) GeneralChat(m _map.Model, actorId uint32, message string, balloonOnly bool) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(message2.EnvCommandTopicChat)(GeneralChatCommandProvider(m, actorId, message, balloonOnly))
 }
 
-func (p *Processor) BuddyChat(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+func (p *ProcessorImpl) BuddyChat(m _map.Model, actorId uint32, message string, recipients []uint32) error {
 	return p.MultiChat(m, actorId, message, message2.ChatTypeBuddy, recipients)
 }
 
-func (p *Processor) PartyChat(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+func (p *ProcessorImpl) PartyChat(m _map.Model, actorId uint32, message string, recipients []uint32) error {
 	return p.MultiChat(m, actorId, message, message2.ChatTypeParty, recipients)
 }
 
-func (p *Processor) GuildChat(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+func (p *ProcessorImpl) GuildChat(m _map.Model, actorId uint32, message string, recipients []uint32) error {
 	return p.MultiChat(m, actorId, message, message2.ChatTypeGuild, recipients)
 }
 
-func (p *Processor) AllianceChat(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+func (p *ProcessorImpl) AllianceChat(m _map.Model, actorId uint32, message string, recipients []uint32) error {
 	return p.MultiChat(m, actorId, message, message2.ChatTypeAlliance, recipients)
 }
 
-func (p *Processor) MultiChat(m _map.Model, actorId uint32, message string, chatType string, recipients []uint32) error {
+func (p *ProcessorImpl) MultiChat(m _map.Model, actorId uint32, message string, chatType string, recipients []uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(message2.EnvCommandTopicChat)(MultiChatCommandProvider(m, actorId, message, chatType, recipients))
 }
 
-func (p *Processor) WhisperChat(m _map.Model, actorId uint32, message string, recipientName string) error {
+func (p *ProcessorImpl) WhisperChat(m _map.Model, actorId uint32, message string, recipientName string) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(message2.EnvCommandTopicChat)(WhisperChatCommandProvider(m, actorId, message, recipientName))
 }
 
-func (p *Processor) MessengerChat(m _map.Model, actorId uint32, message string, recipients []uint32) error {
+func (p *ProcessorImpl) MessengerChat(m _map.Model, actorId uint32, message string, recipients []uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(message2.EnvCommandTopicChat)(MessengerChatCommandProvider(m, actorId, message, recipients))
 }
 
-func (p *Processor) PetChat(m _map.Model, petId uint64, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error {
+func (p *ProcessorImpl) PetChat(m _map.Model, petId uint64, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(message2.EnvCommandTopicChat)(PetChatCommandProvider(m, petId, message, ownerId, petSlot, nType, nAction, balloon))
 }

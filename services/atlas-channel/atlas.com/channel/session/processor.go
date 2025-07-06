@@ -23,7 +23,7 @@ type Processor struct {
 	ctx context.Context
 	t   tenant.Model
 	kp  producer.Provider
-	sp  *session.Processor
+	sp  session.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {

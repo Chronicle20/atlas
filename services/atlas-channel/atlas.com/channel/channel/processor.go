@@ -9,20 +9,28 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+// Processor interface defines the operations for channel processing
+type Processor interface {
+	Register(worldId world.Id, channelId channel.Id, ipAddress string, port int) error
+	ByIdModelProvider(worldId world.Id, channelId channel.Id) model.Provider[Model]
+	GetById(worldId world.Id, channelId channel.Id) (Model, error)
+}
+
+// ProcessorImpl implements the Processor interface
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) Register(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
+func (p *ProcessorImpl) Register(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
 	return registerChannel(p.l)(p.ctx)(NewBuilder().
 		SetWorldId(byte(worldId)).
 		SetChannelId(byte(channelId)).
@@ -33,10 +41,10 @@ func (p *Processor) Register(worldId world.Id, channelId channel.Id, ipAddress s
 		Build())
 }
 
-func (p *Processor) ByIdModelProvider(worldId world.Id, channelId channel.Id) model.Provider[Model] {
+func (p *ProcessorImpl) ByIdModelProvider(worldId world.Id, channelId channel.Id) model.Provider[Model] {
 	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestChannel(worldId, channelId), Extract)
 }
 
-func (p *Processor) GetById(worldId world.Id, channelId channel.Id) (Model, error) {
+func (p *ProcessorImpl) GetById(worldId world.Id, channelId channel.Id) (Model, error) {
 	return p.ByIdModelProvider(worldId, channelId)()
 }

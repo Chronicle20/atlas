@@ -17,14 +17,32 @@ import (
 	"sort"
 )
 
-type Processor struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	ip  *inventory.Processor
+// Processor interface defines the operations for character processing
+type Processor interface {
+	GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error)
+	PetModelDecorator(m Model) Model
+	InventoryDecorator(m Model) Model
+	SkillModelDecorator(m Model) Model
+	GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model[any]]
+	GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model[any]]
+	ByNameProvider(name string) model.Provider[[]Model]
+	GetByName(name string) (Model, error)
+	RequestDistributeAp(m _map.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error
+	RequestDropMeso(m _map.Model, characterId uint32, amount uint32) error
+	ChangeHP(m _map.Model, characterId uint32, amount int16) error
+	ChangeMP(m _map.Model, characterId uint32, amount int16) error
+	RequestDistributeSp(m _map.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+// ProcessorImpl implements the Processor interface
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+	ip  inventory.Processor
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		ip:  inventory.NewProcessor(l, ctx),
@@ -32,7 +50,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
-func (p *Processor) GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
+func (p *ProcessorImpl) GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
 		mp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)
 		return model.Map(model.Decorate(decorators))(mp)()
@@ -40,7 +58,7 @@ func (p *Processor) GetById(decorators ...model.Decorator[Model]) func(character
 }
 
 // deprecated
-func (p *Processor) PetModelDecorator(m Model) Model {
+func (p *ProcessorImpl) PetModelDecorator(m Model) Model {
 	ms, err := pet.NewProcessor(p.l, p.ctx).GetByOwner(m.Id())
 	if err != nil {
 		return m
@@ -54,7 +72,7 @@ func (p *Processor) PetModelDecorator(m Model) Model {
 	return m.SetPets(ms)
 }
 
-func (p *Processor) InventoryDecorator(m Model) Model {
+func (p *ProcessorImpl) InventoryDecorator(m Model) Model {
 	i, err := p.ip.GetByCharacterId(m.Id())
 	if err != nil {
 		return m
@@ -62,7 +80,7 @@ func (p *Processor) InventoryDecorator(m Model) Model {
 	return m.SetInventory(i)
 }
 
-func (p *Processor) SkillModelDecorator(m Model) Model {
+func (p *ProcessorImpl) SkillModelDecorator(m Model) Model {
 	ms, err := skill.NewProcessor(p.l, p.ctx).GetByCharacterId(m.Id())
 	if err != nil {
 		return m
@@ -70,7 +88,7 @@ func (p *Processor) SkillModelDecorator(m Model) Model {
 	return m.SetSkills(ms)
 }
 
-func (p *Processor) GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model[any]] {
+func (p *ProcessorImpl) GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model[any]] {
 	// TODO this needs to be more performant
 	c, err := p.GetById(p.InventoryDecorator)(characterId)
 	if err != nil {
@@ -84,7 +102,7 @@ func (p *Processor) GetEquipableInSlot(characterId uint32, slot int16) model.Pro
 	return model.ErrorProvider[asset.Model[any]](errors.New("equipable not found"))
 }
 
-func (p *Processor) GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model[any]] {
+func (p *ProcessorImpl) GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model[any]] {
 	// TODO this needs to be more performant
 	c, err := p.GetById(p.InventoryDecorator)(characterId)
 	if err != nil {
@@ -100,11 +118,11 @@ func (p *Processor) GetItemInSlot(characterId uint32, inventoryType inventory2.T
 	return model.ErrorProvider[asset.Model[any]](errors.New("item not found"))
 }
 
-func (p *Processor) ByNameProvider(name string) model.Provider[[]Model] {
+func (p *ProcessorImpl) ByNameProvider(name string) model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByName(name), Extract, model.Filters[Model]())
 }
 
-func (p *Processor) GetByName(name string) (Model, error) {
+func (p *ProcessorImpl) GetByName(name string) (Model, error) {
 	return model.FirstProvider(p.ByNameProvider(name), model.Filters[Model]())()
 }
 
@@ -113,7 +131,7 @@ type DistributePacket struct {
 	Value uint32
 }
 
-func (p *Processor) RequestDistributeAp(m _map.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
+func (p *ProcessorImpl) RequestDistributeAp(m _map.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error {
 	var distributions = make([]character2.DistributePair, 0)
 	for _, d := range distributes {
 		a, err := abilityFromFlag(d.Flag)
@@ -148,18 +166,18 @@ func abilityFromFlag(flag uint32) (string, error) {
 	return "", errors.New("invalid flag")
 }
 
-func (p *Processor) RequestDropMeso(m _map.Model, characterId uint32, amount uint32) error {
+func (p *ProcessorImpl) RequestDropMeso(m _map.Model, characterId uint32, amount uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestDropMesoCommandProvider(m, characterId, amount))
 }
 
-func (p *Processor) ChangeHP(m _map.Model, characterId uint32, amount int16) error {
+func (p *ProcessorImpl) ChangeHP(m _map.Model, characterId uint32, amount int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(ChangeHPCommandProvider(m, characterId, amount))
 }
 
-func (p *Processor) ChangeMP(m _map.Model, characterId uint32, amount int16) error {
+func (p *ProcessorImpl) ChangeMP(m _map.Model, characterId uint32, amount int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(ChangeMPCommandProvider(m, characterId, amount))
 }
 
-func (p *Processor) RequestDistributeSp(m _map.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
+func (p *ProcessorImpl) RequestDistributeSp(m _map.Model, characterId uint32, updateTime uint32, skillId uint32, amount int8) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvCommandTopic)(RequestDistributeSpCommandProvider(m, characterId, skillId, amount))
 }

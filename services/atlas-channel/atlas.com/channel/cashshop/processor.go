@@ -14,24 +14,39 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+// Processor interface defines the operations for cashshop processing
+type Processor interface {
+	Enter(characterId uint32, m _map.Model) error
+	Exit(characterId uint32, m _map.Model) error
+	RequestInventoryIncreasePurchaseByType(characterId uint32, isPoints bool, currency uint32, inventoryType byte) error
+	RequestInventoryIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error
+	RequestStorageIncreasePurchase(characterId uint32, isPoints bool, currency uint32) error
+	RequestStorageIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error
+	RequestCharacterSlotIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error
+	RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error
+	MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, slot int16) error
+	MoveToCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte) error
+}
+
+// ProcessorImpl implements the Processor interface
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) Enter(characterId uint32, m _map.Model) error {
+func (p *ProcessorImpl) Enter(characterId uint32, m _map.Model) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(CharacterEnterCashShopStatusEventProvider(characterId, m))
 }
 
-func (p *Processor) Exit(characterId uint32, m _map.Model) error {
+func (p *ProcessorImpl) Exit(characterId uint32, m _map.Model) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(CharacterExitCashShopStatusEventProvider(characterId, m))
 }
 
@@ -50,37 +65,37 @@ func GetPointType(arg bool) PointType {
 	return PointTypeCredit
 }
 
-func (p *Processor) RequestInventoryIncreasePurchaseByType(characterId uint32, isPoints bool, currency uint32, inventoryType byte) error {
+func (p *ProcessorImpl) RequestInventoryIncreasePurchaseByType(characterId uint32, isPoints bool, currency uint32, inventoryType byte) error {
 	p.l.Debugf("Character [%d] purchasing inventory [%d] expansion using currency [%d].", characterId, inventoryType, currency)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestInventoryIncreaseByTypeCommandProvider(characterId, currency, inventoryType))
 }
 
-func (p *Processor) RequestInventoryIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
+func (p *ProcessorImpl) RequestInventoryIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
 	p.l.Debugf("Character [%d] purchasing inventory expansion via item [%d] using currency [%d]", characterId, serialNumber, currency)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestInventoryIncreaseByItemCommandProvider(characterId, currency, serialNumber))
 }
 
-func (p *Processor) RequestStorageIncreasePurchase(characterId uint32, isPoints bool, currency uint32) error {
+func (p *ProcessorImpl) RequestStorageIncreasePurchase(characterId uint32, isPoints bool, currency uint32) error {
 	p.l.Debugf("Character [%d] purchasing storage expansion using currency [%d].", characterId, currency)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestStorageIncreaseCommandProvider(characterId, currency))
 }
 
-func (p *Processor) RequestStorageIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
+func (p *ProcessorImpl) RequestStorageIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
 	p.l.Debugf("Character [%d] purchasing storage expansion via item [%d] using currency [%d]", characterId, serialNumber, currency)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestStorageIncreaseByItemCommandProvider(characterId, currency, serialNumber))
 }
 
-func (p *Processor) RequestCharacterSlotIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
+func (p *ProcessorImpl) RequestCharacterSlotIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error {
 	p.l.Debugf("Character [%d] purchasing character slot expansion via item [%d] using currency [%d]", characterId, serialNumber, currency)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestCharacterSlotIncreaseByItemCommandProvider(characterId, currency, serialNumber))
 }
 
-func (p *Processor) RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error {
+func (p *ProcessorImpl) RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error {
 	p.l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d]", characterId, serialNumber, currency, zero)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency))
 }
 
-func (p *Processor) MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, slot int16) error {
+func (p *ProcessorImpl) MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, slot int16) error {
 	p.l.Infof("Character [%d] moving [%d] to inventory [%d] to slot [%d].", characterId, serialNumber, inventoryType, slot)
 	cp := compartment2.NewProcessor(p.l, p.ctx)
 
@@ -115,7 +130,7 @@ func (p *Processor) MoveFromCashInventory(accountId uint32, characterId uint32, 
 	return cp.Transfer(accountId, characterId, foundAsset.Item().Id(), cscm.Id(), byte(cscm.Type()), "CASH_SHOP", ccm.Id(), byte(ccm.Type()), "CHARACTER", foundAsset.Item().Id())
 }
 
-func (p *Processor) MoveToCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte) error {
+func (p *ProcessorImpl) MoveToCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte) error {
 	p.l.Infof("Character [%d] moving [%d] from inventory [%d] to cash inventory.", characterId, serialNumber, inventoryType)
 	cp := compartment2.NewProcessor(p.l, p.ctx)
 

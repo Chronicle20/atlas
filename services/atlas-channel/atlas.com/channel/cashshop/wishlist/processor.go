@@ -7,28 +7,36 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Processor struct {
+// Processor interface defines the operations for wishlist processing
+type Processor interface {
+	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
+	GetByCharacterId(characterId uint32) ([]Model, error)
+	SetForCharacter(characterId uint32, serialNumbers []uint32) ([]Model, error)
+}
+
+// ProcessorImpl implements the Processor interface
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
-	p := &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 	}
 	return p
 }
 
-func (p *Processor) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
+func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
 	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract, model.Filters[Model]())
 }
 
-func (p *Processor) GetByCharacterId(characterId uint32) ([]Model, error) {
+func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return p.ByCharacterIdProvider(characterId)()
 }
 
-func (p *Processor) SetForCharacter(characterId uint32, serialNumbers []uint32) ([]Model, error) {
+func (p *ProcessorImpl) SetForCharacter(characterId uint32, serialNumbers []uint32) ([]Model, error) {
 	p.l.Debugf("Setting wishlist for character [%d].", characterId)
 	results := make([]Model, 0)
 	err := clearForCharacterId(characterId)(p.l, p.ctx)

@@ -81,6 +81,70 @@ func GetByCharacter(ctx context.Context) func(characterId uint32) (Model, error)
 	}
 }
 
+func ValidateMembership(ctx context.Context) func(partyId uint32, characterId uint32) error {
+	return func(partyId uint32, characterId uint32) error {
+		party, err := GetById(ctx)(partyId)
+		if err != nil {
+			return err
+		}
+		
+		if !IsMember(party, characterId) {
+			return ErrNotIn
+		}
+		
+		return nil
+	}
+}
+
+func IsMember(party Model, characterId uint32) bool {
+	for _, memberId := range party.Members() {
+		if memberId == characterId {
+			return true
+		}
+	}
+	return false
+}
+
+func IsLeader(party Model, characterId uint32) bool {
+	return party.LeaderId() == characterId
+}
+
+func CanRemoveMember(party Model, characterId uint32) error {
+	if !IsMember(party, characterId) {
+		return ErrNotIn
+	}
+	
+	// Leader can only be removed if there are other members to elect as new leader
+	if IsLeader(party, characterId) && len(party.Members()) <= 1 {
+		return errors.New("cannot remove leader from single-member party")
+	}
+	
+	return nil
+}
+
+func ValidatePartyIntegrity(party Model) error {
+	// Check if party has members
+	if len(party.Members()) == 0 {
+		return errors.New("party has no members")
+	}
+	
+	// Check if leader is a member
+	if !IsMember(party, party.LeaderId()) {
+		return errors.New("leader is not a member of the party")
+	}
+	
+	// Check for duplicate members
+	memberSet := make(map[uint32]bool)
+	for _, memberId := range party.Members() {
+		if memberSet[memberId] {
+			return errors.New("duplicate member found in party")
+		}
+		memberSet[memberId] = true
+	}
+	
+	return nil
+}
+
 func Create(l logrus.FieldLogger) func(ctx context.Context) func(leaderId uint32) (Model, error) {
 	return func(ctx context.Context) func(leaderId uint32) (Model, error) {
 		return func(leaderId uint32) (Model, error) {

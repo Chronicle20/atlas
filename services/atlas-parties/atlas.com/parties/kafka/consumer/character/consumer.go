@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-parties/character"
 	consumer2 "atlas-parties/kafka/consumer"
+	"atlas-parties/party"
 	"context"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -83,7 +84,28 @@ func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, event S
 		WithField("characterId", event.CharacterId).
 		Debugf("Processing character deletion event for character [%d].", event.CharacterId)
 	
-	err := character.Delete(l)(ctx)(event.CharacterId)
+	// First, validate if character is in a party and log the party information
+	p, err := party.GetByCharacter(ctx)(event.CharacterId)
+	if err == nil {
+		l.WithField("transactionId", event.TransactionId).
+			WithField("partyId", p.Id()).
+			WithField("isLeader", party.IsLeader(p, event.CharacterId)).
+			WithField("partyMemberCount", len(p.Members())).
+			Debugf("Character [%d] found in party [%d] before deletion.", event.CharacterId, p.Id())
+		
+		// Validate party integrity before deletion
+		if err := party.ValidatePartyIntegrity(p); err != nil {
+			l.WithError(err).
+				WithField("transactionId", event.TransactionId).
+				WithField("partyId", p.Id()).
+				Warnf("Party [%d] integrity validation failed before character deletion.", p.Id())
+		}
+	} else {
+		l.WithField("transactionId", event.TransactionId).
+			Debugf("Character [%d] not found in any party before deletion.", event.CharacterId)
+	}
+	
+	err = character.Delete(l)(ctx)(event.CharacterId)
 	if err != nil {
 		l.WithError(err).
 			WithField("transactionId", event.TransactionId).

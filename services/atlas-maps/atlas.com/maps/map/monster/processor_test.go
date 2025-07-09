@@ -2,6 +2,10 @@ package monster
 
 import (
 	"atlas-maps/map/character"
+	"fmt"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"sync"
 	"testing"
 	"time"
@@ -187,9 +191,9 @@ func TestSpawnPointCooldownMechanism(t *testing.T) {
 	mutexes := make(map[character.MapKey]*sync.RWMutex)
 	
 	mapKey := character.MapKey{
-		WorldId:   1,
-		ChannelId: 1,
-		MapId:     100000000,
+		WorldId:   world.Id(1),
+		ChannelId: channel.Id(1),
+		MapId:     _map.Id(100000000),
 	}
 	
 	// Initialize spawn points
@@ -237,9 +241,9 @@ func TestThreadSafety(t *testing.T) {
 	mutexes := make(map[character.MapKey]*sync.RWMutex)
 	
 	mapKey := character.MapKey{
-		WorldId:   1,
-		ChannelId: 1,
-		MapId:     100000000,
+		WorldId:   world.Id(1),
+		ChannelId: channel.Id(1),
+		MapId:     _map.Id(100000000),
 	}
 	
 	// Initialize spawn points
@@ -300,6 +304,300 @@ func TestThreadSafety(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Error("Test timed out - possible deadlock")
 	}
+}
+
+func TestConcurrentSpawningAcrossMultipleMaps(t *testing.T) {
+	// Test concurrent spawning across multiple maps to ensure proper isolation
+	processor := &ProcessorImpl{
+		spawnPointRegistry: make(map[character.MapKey][]*CooldownSpawnPoint),
+		spawnPointMu:       make(map[character.MapKey]*sync.RWMutex),
+	}
+	
+	// Create multiple map keys for different maps
+	mapKeys := []character.MapKey{
+		{WorldId: world.Id(1), ChannelId: channel.Id(1), MapId: _map.Id(100000000)},
+		{WorldId: world.Id(1), ChannelId: channel.Id(1), MapId: _map.Id(100000001)},
+		{WorldId: world.Id(1), ChannelId: channel.Id(2), MapId: _map.Id(100000000)},
+		{WorldId: world.Id(2), ChannelId: channel.Id(1), MapId: _map.Id(100000000)},
+		{WorldId: world.Id(1), ChannelId: channel.Id(1), MapId: _map.Id(100000002)},
+	}
+	
+	now := time.Now()
+	
+	// Initialize registry for each map
+	for i, mapKey := range mapKeys {
+		processor.spawnPointRegistry[mapKey] = []*CooldownSpawnPoint{
+			{SpawnPoint: SpawnPoint{Id: uint32(i*10 + 1)}, NextSpawnAt: now},
+			{SpawnPoint: SpawnPoint{Id: uint32(i*10 + 2)}, NextSpawnAt: now},
+			{SpawnPoint: SpawnPoint{Id: uint32(i*10 + 3)}, NextSpawnAt: now},
+		}
+		processor.spawnPointMu[mapKey] = &sync.RWMutex{}
+	}
+	
+	// Track operations for verification
+	var operationCount sync.Map
+	var wg sync.WaitGroup
+	
+	// Simulate concurrent spawning operations on different maps
+	for _, mapKey := range mapKeys {
+		for i := 0; i < 10; i++ {
+			wg.Add(1)
+			go func(mk character.MapKey, iteration int) {
+				defer wg.Done()
+				
+				mutex := processor.spawnPointMu[mk]
+				spawnPoints := processor.spawnPointRegistry[mk]
+				
+				// Simulate spawn operation
+				mutex.RLock()
+				var eligibleIndices []int
+				for idx, sp := range spawnPoints {
+					if sp.NextSpawnAt.Before(time.Now()) || sp.NextSpawnAt.Equal(sp.NextSpawnAt) {
+						eligibleIndices = append(eligibleIndices, idx)
+					}
+				}
+				mutex.RUnlock()
+				
+				// Update cooldown if spawn points are available
+				if len(eligibleIndices) > 0 {
+					selectedIdx := eligibleIndices[iteration%len(eligibleIndices)]
+					mutex.Lock()
+					spawnPoints[selectedIdx].NextSpawnAt = time.Now().Add(5 * time.Second)
+					mutex.Unlock()
+					
+					// Track operation
+					key := mapKeyToString(mk)
+					if count, ok := operationCount.Load(key); ok {
+						operationCount.Store(key, count.(int)+1)
+					} else {
+						operationCount.Store(key, 1)
+					}
+				}
+			}(mapKey, i)
+		}
+	}
+	
+	// Wait for all operations to complete
+	done := make(chan bool)
+	go func() {
+		wg.Wait()
+		done <- true
+	}()
+	
+	select {
+	case <-done:
+		// Success - no deadlock
+	case <-time.After(10 * time.Second):
+		t.Error("Test timed out - possible deadlock in concurrent spawning")
+	}
+	
+	// Verify that operations were performed on all maps
+	operationCount.Range(func(key, value interface{}) bool {
+		if value.(int) == 0 {
+			t.Errorf("No operations performed on map %s", key.(string))
+		}
+		return true
+	})
+	
+	// Verify registry isolation - each map should have its own registry
+	for _, mapKey := range mapKeys {
+		if _, exists := processor.spawnPointRegistry[mapKey]; !exists {
+			t.Errorf("Registry for map %s should exist", mapKeyToString(mapKey))
+		}
+		if _, exists := processor.spawnPointMu[mapKey]; !exists {
+			t.Errorf("Mutex for map %s should exist", mapKeyToString(mapKey))
+		}
+	}
+	
+	// Verify that different maps have different registry entries
+	registryCount := len(processor.spawnPointRegistry)
+	if registryCount != len(mapKeys) {
+		t.Errorf("Expected %d registry entries, got %d", len(mapKeys), registryCount)
+	}
+	
+	mutexCount := len(processor.spawnPointMu)
+	if mutexCount != len(mapKeys) {
+		t.Errorf("Expected %d mutex entries, got %d", len(mapKeys), mutexCount)
+	}
+}
+
+func TestMapKeyIsolation(t *testing.T) {
+	// Test that different MapKeys maintain separate registries
+	processor := &ProcessorImpl{
+		spawnPointRegistry: make(map[character.MapKey][]*CooldownSpawnPoint),
+		spawnPointMu:       make(map[character.MapKey]*sync.RWMutex),
+	}
+	
+	// Create different map keys
+	mapKey1 := character.MapKey{WorldId: world.Id(1), ChannelId: channel.Id(1), MapId: _map.Id(100000000)}
+	mapKey2 := character.MapKey{WorldId: world.Id(1), ChannelId: channel.Id(1), MapId: _map.Id(100000001)}
+	mapKey3 := character.MapKey{WorldId: world.Id(1), ChannelId: channel.Id(2), MapId: _map.Id(100000000)}
+	mapKey4 := character.MapKey{WorldId: world.Id(2), ChannelId: channel.Id(1), MapId: _map.Id(100000000)}
+	
+	now := time.Now()
+	
+	// Initialize registries with different spawn points
+	processor.spawnPointRegistry[mapKey1] = []*CooldownSpawnPoint{
+		{SpawnPoint: SpawnPoint{Id: 1}, NextSpawnAt: now},
+	}
+	processor.spawnPointMu[mapKey1] = &sync.RWMutex{}
+	
+	processor.spawnPointRegistry[mapKey2] = []*CooldownSpawnPoint{
+		{SpawnPoint: SpawnPoint{Id: 2}, NextSpawnAt: now},
+		{SpawnPoint: SpawnPoint{Id: 3}, NextSpawnAt: now},
+	}
+	processor.spawnPointMu[mapKey2] = &sync.RWMutex{}
+	
+	processor.spawnPointRegistry[mapKey3] = []*CooldownSpawnPoint{
+		{SpawnPoint: SpawnPoint{Id: 4}, NextSpawnAt: now},
+		{SpawnPoint: SpawnPoint{Id: 5}, NextSpawnAt: now},
+		{SpawnPoint: SpawnPoint{Id: 6}, NextSpawnAt: now},
+	}
+	processor.spawnPointMu[mapKey3] = &sync.RWMutex{}
+	
+	processor.spawnPointRegistry[mapKey4] = []*CooldownSpawnPoint{
+		{SpawnPoint: SpawnPoint{Id: 7}, NextSpawnAt: now},
+		{SpawnPoint: SpawnPoint{Id: 8}, NextSpawnAt: now},
+		{SpawnPoint: SpawnPoint{Id: 9}, NextSpawnAt: now},
+		{SpawnPoint: SpawnPoint{Id: 10}, NextSpawnAt: now},
+	}
+	processor.spawnPointMu[mapKey4] = &sync.RWMutex{}
+	
+	// Verify that each map has the correct number of spawn points
+	if len(processor.spawnPointRegistry[mapKey1]) != 1 {
+		t.Errorf("MapKey1 should have 1 spawn point, got %d", len(processor.spawnPointRegistry[mapKey1]))
+	}
+	
+	if len(processor.spawnPointRegistry[mapKey2]) != 2 {
+		t.Errorf("MapKey2 should have 2 spawn points, got %d", len(processor.spawnPointRegistry[mapKey2]))
+	}
+	
+	if len(processor.spawnPointRegistry[mapKey3]) != 3 {
+		t.Errorf("MapKey3 should have 3 spawn points, got %d", len(processor.spawnPointRegistry[mapKey3]))
+	}
+	
+	if len(processor.spawnPointRegistry[mapKey4]) != 4 {
+		t.Errorf("MapKey4 should have 4 spawn points, got %d", len(processor.spawnPointRegistry[mapKey4]))
+	}
+	
+	// Verify that spawn points are isolated (different IDs)
+	if processor.spawnPointRegistry[mapKey1][0].SpawnPoint.Id != 1 {
+		t.Errorf("MapKey1 spawn point should have ID 1, got %d", processor.spawnPointRegistry[mapKey1][0].SpawnPoint.Id)
+	}
+	
+	if processor.spawnPointRegistry[mapKey2][0].SpawnPoint.Id != 2 {
+		t.Errorf("MapKey2 first spawn point should have ID 2, got %d", processor.spawnPointRegistry[mapKey2][0].SpawnPoint.Id)
+	}
+	
+	// Verify that modifying one map doesn't affect others
+	processor.spawnPointMu[mapKey1].Lock()
+	processor.spawnPointRegistry[mapKey1][0].NextSpawnAt = now.Add(10 * time.Second)
+	processor.spawnPointMu[mapKey1].Unlock()
+	
+	// Check that other maps are unaffected
+	if processor.spawnPointRegistry[mapKey2][0].NextSpawnAt.After(now.Add(time.Second)) {
+		t.Error("MapKey2 spawn points should not be affected by MapKey1 modifications")
+	}
+	
+	if processor.spawnPointRegistry[mapKey3][0].NextSpawnAt.After(now.Add(time.Second)) {
+		t.Error("MapKey3 spawn points should not be affected by MapKey1 modifications")
+	}
+	
+	if processor.spawnPointRegistry[mapKey4][0].NextSpawnAt.After(now.Add(time.Second)) {
+		t.Error("MapKey4 spawn points should not be affected by MapKey1 modifications")
+	}
+}
+
+func TestMultiMapConcurrentAccess(t *testing.T) {
+	// Test that concurrent access to different maps doesn't interfere
+	processor := &ProcessorImpl{
+		spawnPointRegistry: make(map[character.MapKey][]*CooldownSpawnPoint),
+		spawnPointMu:       make(map[character.MapKey]*sync.RWMutex),
+	}
+	
+	// Create multiple maps
+	numMaps := 5
+	mapKeys := make([]character.MapKey, numMaps)
+	for i := 0; i < numMaps; i++ {
+		mapKeys[i] = character.MapKey{
+			WorldId:   world.Id(1),
+			ChannelId: channel.Id(1),
+			MapId:     _map.Id(100000000 + i),
+		}
+	}
+	
+	now := time.Now()
+	
+	// Initialize all maps
+	for i, mapKey := range mapKeys {
+		processor.spawnPointRegistry[mapKey] = []*CooldownSpawnPoint{
+			{SpawnPoint: SpawnPoint{Id: uint32(i*10 + 1)}, NextSpawnAt: now},
+			{SpawnPoint: SpawnPoint{Id: uint32(i*10 + 2)}, NextSpawnAt: now},
+		}
+		processor.spawnPointMu[mapKey] = &sync.RWMutex{}
+	}
+	
+	var wg sync.WaitGroup
+	const iterations = 50
+	
+	// Start concurrent operations on each map
+	for mapIndex, mapKey := range mapKeys {
+		wg.Add(1)
+		go func(mk character.MapKey, index int) {
+			defer wg.Done()
+			
+			for i := 0; i < iterations; i++ {
+				mutex := processor.spawnPointMu[mk]
+				spawnPoints := processor.spawnPointRegistry[mk]
+				
+				// Read operations (multiple concurrent readers)
+				mutex.RLock()
+				count := len(spawnPoints)
+				if count > 0 {
+					_ = spawnPoints[0].NextSpawnAt
+				}
+				mutex.RUnlock()
+				
+				// Write operations (exclusive writers)
+				if i%5 == 0 {
+					mutex.Lock()
+					if len(spawnPoints) > 0 {
+						spawnPoints[0].NextSpawnAt = time.Now().Add(5 * time.Second)
+					}
+					mutex.Unlock()
+				}
+				
+				// Small delay to increase chance of contention
+				time.Sleep(time.Microsecond)
+			}
+		}(mapKey, mapIndex)
+	}
+	
+	// Wait for all operations
+	done := make(chan bool)
+	go func() {
+		wg.Wait()
+		done <- true
+	}()
+	
+	select {
+	case <-done:
+		// Success - no deadlock
+	case <-time.After(10 * time.Second):
+		t.Error("Test timed out - possible deadlock in multi-map concurrent access")
+	}
+	
+	// Verify all maps are still intact
+	for _, mapKey := range mapKeys {
+		if len(processor.spawnPointRegistry[mapKey]) != 2 {
+			t.Errorf("Map %s should have 2 spawn points after concurrent access", mapKeyToString(mapKey))
+		}
+	}
+}
+
+// Helper function to convert MapKey to string for testing
+func mapKeyToString(mk character.MapKey) string {
+	return fmt.Sprintf("W%d-C%d-M%d", mk.WorldId, mk.ChannelId, mk.MapId)
 }
 
 // Helper function to compare slices

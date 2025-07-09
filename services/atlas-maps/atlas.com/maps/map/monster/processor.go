@@ -1,3 +1,24 @@
+// Package monster implements spawn point management with cooldown tracking.
+//
+// Spawn Point Cooldown Mechanism:
+// This package provides a spawn point registry system that prevents over-spawning
+// by enforcing cooldown periods on individual spawn points. The key features include:
+//
+// - In-memory registry scoped by MapKey (tenant/world/channel/map)
+// - 5-second cooldown enforcement per spawn point
+// - Lazy initialization from REST provider
+// - Thread-safe concurrent access with per-map mutexes
+// - Maintains existing spawn rate calculations
+//
+// Architecture:
+// - CooldownSpawnPoint: Extends SpawnPoint with NextSpawnAt timestamp
+// - ProcessorImpl: Maintains registry and implements spawn logic
+// - Thread safety: Per-map RWMutex for concurrent access
+// - Multi-tenant: Separate registries per MapKey
+//
+// Usage:
+// The system is transparent to existing code - SpawnMonsters() method
+// maintains the same interface while adding cooldown enforcement internally.
 package monster
 
 import (
@@ -26,12 +47,33 @@ type Processor interface {
 	SpawnMonsters(transactionId uuid.UUID) func(worldId world.Id) func(channelId channel.Id) func(mapId _map.Id) error
 }
 
+// ProcessorImpl implements the Processor interface with spawn point cooldown functionality.
+// 
+// Spawn Point Cooldown Mechanism:
+// The ProcessorImpl maintains an in-memory registry of spawn points per map instance,
+// where each spawn point tracks its cooldown state to prevent over-spawning.
+//
+// Key Features:
+// - Per-map spawn point registry scoped by MapKey (tenant/world/channel/map)
+// - 5-second cooldown enforcement after each spawn
+// - Thread-safe concurrent access with per-map RWMutex
+// - Lazy initialization from REST provider on first access
+// - Maintains existing spawn rate calculations and character-based logic
 type ProcessorImpl struct {
-	l                  logrus.FieldLogger
-	ctx                context.Context
-	t                  tenant.Model
+	l   logrus.FieldLogger
+	ctx context.Context
+	t   tenant.Model
+	
+	// spawnPointRegistry maintains the in-memory spawn point registry with cooldown tracking.
+	// Key: MapKey (tenant/world/channel/map combination)
+	// Value: Array of CooldownSpawnPoint instances for that map
+	// This registry is lazily initialized when first accessed for each map.
 	spawnPointRegistry map[character.MapKey][]*CooldownSpawnPoint
-	spawnPointMu       map[character.MapKey]*sync.RWMutex
+	
+	// spawnPointMu provides thread-safe access to the spawn point registry.
+	// Each MapKey has its own RWMutex to allow concurrent access across different maps
+	// while maintaining safety within each map's spawn point operations.
+	spawnPointMu map[character.MapKey]*sync.RWMutex
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
@@ -64,6 +106,25 @@ func (p *ProcessorImpl) Spawnable(point SpawnPoint) bool {
 	return point.MobTime >= 0
 }
 
+// SpawnMonsters implements the core spawn logic with cooldown enforcement.
+// This method uses the spawn point registry to track cooldowns and prevent over-spawning.
+//
+// Cooldown Mechanism Implementation:
+// 1. Create MapKey for registry scope (tenant/world/channel/map)
+// 2. Initialize or retrieve spawn points registry for this map
+// 3. Filter spawn points by cooldown eligibility (NextSpawnAt.Before(now))
+// 4. Calculate spawn requirements based on character count and monster limits
+// 5. Randomly select from eligible spawn points
+// 6. Update cooldown (NextSpawnAt = now + 5 seconds) before spawning
+// 7. Spawn monsters asynchronously and log activity
+//
+// Thread Safety:
+// - Uses per-map RWMutex for safe concurrent access
+// - RLock for reading spawn points during filtering
+// - Lock for updating cooldowns after spawning
+// - Supports concurrent spawning across different maps
+//
+// The method maintains existing spawn rate calculations while adding cooldown enforcement.
 func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID) func(worldId world.Id) func(channelId channel.Id) func(mapId _map.Id) error {
 	return func(worldId world.Id) func(channelId channel.Id) func(mapId _map.Id) error {
 		return func(channelId channel.Id) func(mapId _map.Id) error {
@@ -187,6 +248,18 @@ func (p *ProcessorImpl) getMonsterMax(characterCount int, spawnPointCount int) i
 	return int(math.Ceil(spawnRate * float64(spawnPointCount)))
 }
 
+// initializeRegistryForMap performs lazy initialization of the spawn point registry for a specific map.
+// This method is called on first access to ensure the registry is populated with spawn points
+// from the REST provider and properly configured with cooldown tracking.
+//
+// Process:
+// 1. Check if registry already exists for this MapKey (avoid duplicate initialization)
+// 2. Fetch spawn points from the existing SpawnableSpawnPointProvider
+// 3. Convert each SpawnPoint to CooldownSpawnPoint with NextSpawnAt = time.Now()
+// 4. Initialize the registry entry and per-map mutex for thread safety
+// 5. Log the initialization for debugging purposes
+//
+// The method is thread-safe and idempotent - multiple calls will not cause issues.
 func (p *ProcessorImpl) initializeRegistryForMap(mapKey character.MapKey) error {
 	// Check if already initialized
 	if _, exists := p.spawnPointRegistry[mapKey]; exists {
@@ -219,6 +292,25 @@ func (p *ProcessorImpl) initializeRegistryForMap(mapKey character.MapKey) error 
 	return nil
 }
 
+// getOrInitializeSpawnPoints is a helper function that ensures the spawn point registry
+// is initialized for the given MapKey and returns the spawn points and mutex for safe access.
+//
+// This function combines initialization and access in a single operation:
+// 1. Calls initializeRegistryForMap to ensure registry exists (lazy initialization)
+// 2. Retrieves the spawn points array for the map
+// 3. Retrieves the associated mutex for thread-safe operations
+//
+// Returns:
+// - []*CooldownSpawnPoint: Array of spawn points with cooldown tracking
+// - *sync.RWMutex: Mutex for thread-safe access to the spawn points
+// - error: Any error that occurred during initialization
+//
+// Usage pattern:
+//   spawnPoints, mutex, err := p.getOrInitializeSpawnPoints(mapKey)
+//   if err != nil { handle error }
+//   mutex.RLock() // or mutex.Lock() for writes
+//   // access spawnPoints safely
+//   mutex.RUnlock() // or mutex.Unlock() for writes
 func (p *ProcessorImpl) getOrInitializeSpawnPoints(mapKey character.MapKey) ([]*CooldownSpawnPoint, *sync.RWMutex, error) {
 	// Initialize if needed
 	if err := p.initializeRegistryForMap(mapKey); err != nil {

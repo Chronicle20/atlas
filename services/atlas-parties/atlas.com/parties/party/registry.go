@@ -3,7 +3,14 @@ package party
 import (
 	"github.com/Chronicle20/atlas-tenant"
 	"sync"
+	"time"
 )
+
+type CacheEntry struct {
+	PartyId     uint32
+	LastAccess  time.Time
+	AccessCount uint32
+}
 
 type Registry struct {
 	lock          sync.Mutex
@@ -14,6 +21,11 @@ type Registry struct {
 	
 	// Efficient character-to-party mapping for fast lookups
 	characterToParty map[tenant.Model]map[uint32]uint32
+	
+	// Cache for frequently accessed character-party mappings
+	characterPartyCache map[tenant.Model]map[uint32]*CacheEntry
+	cacheHitCount       map[tenant.Model]uint64
+	cacheMissCount      map[tenant.Model]uint64
 }
 
 var registry *Registry
@@ -26,6 +38,9 @@ func GetRegistry() *Registry {
 		registry.partyReg = make(map[tenant.Model]map[uint32]Model)
 		registry.tenantLock = make(map[tenant.Model]*sync.RWMutex)
 		registry.characterToParty = make(map[tenant.Model]map[uint32]uint32)
+		registry.characterPartyCache = make(map[tenant.Model]map[uint32]*CacheEntry)
+		registry.cacheHitCount = make(map[tenant.Model]uint64)
+		registry.cacheMissCount = make(map[tenant.Model]uint64)
 	})
 	return registry
 }
@@ -48,6 +63,9 @@ func (r *Registry) Create(t tenant.Model, leaderId uint32) Model {
 		partyReg = make(map[uint32]Model)
 		tenantLock = &sync.RWMutex{}
 		charToParty = make(map[uint32]uint32)
+		r.characterPartyCache[t] = make(map[uint32]*CacheEntry)
+		r.cacheHitCount[t] = 0
+		r.cacheMissCount[t] = 0
 	}
 	r.tenantPartyId[t] = partyId
 	r.partyReg[t] = partyReg
@@ -66,6 +84,12 @@ func (r *Registry) Create(t tenant.Model, leaderId uint32) Model {
 	tenantLock.Lock()
 	partyReg[partyId] = m
 	charToParty[leaderId] = partyId
+	// Update cache for new party leader
+	r.characterPartyCache[t][leaderId] = &CacheEntry{
+		PartyId:     partyId,
+		LastAccess:  time.Now(),
+		AccessCount: 1,
+	}
 	tenantLock.Unlock()
 	return m
 }
@@ -79,6 +103,9 @@ func (r *Registry) GetAll(t tenant.Model) []Model {
 		r.partyReg[t] = make(map[uint32]Model)
 		r.tenantLock[t] = tl
 		r.characterToParty[t] = make(map[uint32]uint32)
+		r.characterPartyCache[t] = make(map[uint32]*CacheEntry)
+		r.cacheHitCount[t] = 0
+		r.cacheMissCount[t] = 0
 		r.lock.Unlock()
 	}
 
@@ -100,6 +127,9 @@ func (r *Registry) Get(t tenant.Model, partyId uint32) (Model, error) {
 		r.partyReg[t] = make(map[uint32]Model)
 		r.tenantLock[t] = tl
 		r.characterToParty[t] = make(map[uint32]uint32)
+		r.characterPartyCache[t] = make(map[uint32]*CacheEntry)
+		r.cacheHitCount[t] = 0
+		r.cacheMissCount[t] = 0
 		r.lock.Unlock()
 	}
 
@@ -140,6 +170,7 @@ func (r *Registry) Remove(t tenant.Model, partyId uint32) {
 	if party, ok := r.partyReg[t][partyId]; ok {
 		for _, memberId := range party.members {
 			delete(r.characterToParty[t], memberId)
+			delete(r.characterPartyCache[t], memberId)
 		}
 	}
 	
@@ -163,6 +194,7 @@ func (r *Registry) updateCharacterToPartyMapping(t tenant.Model, oldModel, newMo
 	for memberId := range oldMembers {
 		if !newMembers[memberId] {
 			delete(r.characterToParty[t], memberId)
+			delete(r.characterPartyCache[t], memberId)
 		}
 	}
 	
@@ -170,11 +202,16 @@ func (r *Registry) updateCharacterToPartyMapping(t tenant.Model, oldModel, newMo
 	for memberId := range newMembers {
 		if !oldMembers[memberId] {
 			r.characterToParty[t][memberId] = newModel.id
+			r.characterPartyCache[t][memberId] = &CacheEntry{
+				PartyId:     newModel.id,
+				LastAccess:  time.Now(),
+				AccessCount: 1,
+			}
 		}
 	}
 }
 
-// Efficient character-to-party lookup using O(1) mapping
+// Efficient character-to-party lookup using O(1) mapping with caching
 func (r *Registry) GetPartyByCharacter(t tenant.Model, characterId uint32) (Model, error) {
 	var tl *sync.RWMutex
 	var ok bool
@@ -184,17 +221,92 @@ func (r *Registry) GetPartyByCharacter(t tenant.Model, characterId uint32) (Mode
 		r.partyReg[t] = make(map[uint32]Model)
 		r.tenantLock[t] = tl
 		r.characterToParty[t] = make(map[uint32]uint32)
+		r.characterPartyCache[t] = make(map[uint32]*CacheEntry)
+		r.cacheHitCount[t] = 0
+		r.cacheMissCount[t] = 0
 		r.lock.Unlock()
 	}
 
 	tl.RLock()
 	defer tl.RUnlock()
 	
+	// Check cache first
+	if cacheEntry, ok := r.characterPartyCache[t][characterId]; ok {
+		if party, ok := r.partyReg[t][cacheEntry.PartyId]; ok {
+			// Update cache statistics
+			cacheEntry.LastAccess = time.Now()
+			cacheEntry.AccessCount++
+			r.cacheHitCount[t]++
+			return party, nil
+		}
+		// Cache entry is stale, remove it
+		delete(r.characterPartyCache[t], characterId)
+	}
+	
+	// Cache miss - check main mapping
 	if partyId, ok := r.characterToParty[t][characterId]; ok {
 		if party, ok := r.partyReg[t][partyId]; ok {
+			// Update cache
+			r.characterPartyCache[t][characterId] = &CacheEntry{
+				PartyId:     partyId,
+				LastAccess:  time.Now(),
+				AccessCount: 1,
+			}
+			r.cacheMissCount[t]++
 			return party, nil
 		}
 	}
 	
+	r.cacheMissCount[t]++
 	return Model{}, ErrNotFound
+}
+
+// Cache management methods
+func (r *Registry) GetCacheStats(t tenant.Model) (hits, misses uint64, hitRate float64) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	
+	hits = r.cacheHitCount[t]
+	misses = r.cacheMissCount[t]
+	total := hits + misses
+	if total > 0 {
+		hitRate = float64(hits) / float64(total)
+	}
+	return hits, misses, hitRate
+}
+
+func (r *Registry) ClearCache(t tenant.Model) {
+	if tl, ok := r.tenantLock[t]; ok {
+		tl.Lock()
+		defer tl.Unlock()
+		r.characterPartyCache[t] = make(map[uint32]*CacheEntry)
+		r.lock.Lock()
+		r.cacheHitCount[t] = 0
+		r.cacheMissCount[t] = 0
+		r.lock.Unlock()
+	}
+}
+
+func (r *Registry) GetCacheSize(t tenant.Model) int {
+	if tl, ok := r.tenantLock[t]; ok {
+		tl.RLock()
+		defer tl.RUnlock()
+		return len(r.characterPartyCache[t])
+	}
+	return 0
+}
+
+// Clean up stale cache entries (entries older than 5 minutes with low access count)
+func (r *Registry) CleanupStaleCache(t tenant.Model) {
+	if tl, ok := r.tenantLock[t]; ok {
+		tl.Lock()
+		defer tl.Unlock()
+		
+		cutoff := time.Now().Add(-5 * time.Minute)
+		for characterId, entry := range r.characterPartyCache[t] {
+			if entry.LastAccess.Before(cutoff) && entry.AccessCount < 3 {
+				delete(r.characterPartyCache[t], characterId)
+			}
+		}
+	}
 }

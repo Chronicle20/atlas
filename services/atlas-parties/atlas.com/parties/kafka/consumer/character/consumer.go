@@ -113,9 +113,15 @@ func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, event S
 			WithField("characterId", event.CharacterId).
 			Errorf("Unable to process deletion for character [%d].", event.CharacterId)
 	} else {
+		// Log cache statistics for monitoring
+		hits, misses, hitRate := party.GetCacheStats(ctx)
 		l.WithField("transactionId", event.TransactionId).
 			WithField("worldId", event.WorldId).
 			WithField("characterId", event.CharacterId).
+			WithField("cacheHits", hits).
+			WithField("cacheMisses", misses).
+			WithField("cacheHitRate", hitRate).
+			WithField("cacheSize", party.GetCacheSize(ctx)).
 			Infof("Successfully processed character deletion for character [%d].", event.CharacterId)
 	}
 }

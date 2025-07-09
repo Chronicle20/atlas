@@ -105,6 +105,27 @@ func IsCharacterInParty(ctx context.Context) func(characterId uint32) bool {
 	}
 }
 
+// Cache management functions
+func GetCacheStats(ctx context.Context) (hits, misses uint64, hitRate float64) {
+	t := tenant.MustFromContext(ctx)
+	return GetRegistry().GetCacheStats(t)
+}
+
+func ClearCache(ctx context.Context) {
+	t := tenant.MustFromContext(ctx)
+	GetRegistry().ClearCache(t)
+}
+
+func GetCacheSize(ctx context.Context) int {
+	t := tenant.MustFromContext(ctx)
+	return GetRegistry().GetCacheSize(t)
+}
+
+func CleanupStaleCache(ctx context.Context) {
+	t := tenant.MustFromContext(ctx)
+	GetRegistry().CleanupStaleCache(t)
+}
+
 func ValidateMembership(ctx context.Context) func(partyId uint32, characterId uint32) error {
 	return func(partyId uint32, characterId uint32) error {
 		party, err := GetById(ctx)(partyId)

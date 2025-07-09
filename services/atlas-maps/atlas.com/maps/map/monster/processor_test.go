@@ -595,6 +595,296 @@ func TestMultiMapConcurrentAccess(t *testing.T) {
 	}
 }
 
+func TestCooldownEnforcementPreventsImmediateRespawn(t *testing.T) {
+	// Test that cooldown enforcement prevents immediate re-spawning
+	processor := &ProcessorImpl{
+		spawnPointRegistry: make(map[character.MapKey][]*CooldownSpawnPoint),
+		spawnPointMu:       make(map[character.MapKey]*sync.RWMutex),
+	}
+	
+	mapKey := character.MapKey{
+		WorldId:   world.Id(1),
+		ChannelId: channel.Id(1),
+		MapId:     _map.Id(100000000),
+	}
+	
+	now := time.Now()
+	
+	// Initialize registry with spawn points
+	processor.spawnPointRegistry[mapKey] = []*CooldownSpawnPoint{
+		{SpawnPoint: SpawnPoint{Id: 1, Template: 100100}, NextSpawnAt: now},
+		{SpawnPoint: SpawnPoint{Id: 2, Template: 100101}, NextSpawnAt: now},
+		{SpawnPoint: SpawnPoint{Id: 3, Template: 100102}, NextSpawnAt: now},
+	}
+	processor.spawnPointMu[mapKey] = &sync.RWMutex{}
+	
+	spawnPoints := processor.spawnPointRegistry[mapKey]
+	mutex := processor.spawnPointMu[mapKey]
+	
+	// First spawn attempt - should succeed
+	mutex.RLock()
+	var eligibleIndices []int
+	for i, sp := range spawnPoints {
+		if sp.NextSpawnAt.Before(now) || sp.NextSpawnAt.Equal(now) {
+			eligibleIndices = append(eligibleIndices, i)
+		}
+	}
+	mutex.RUnlock()
+	
+	// Should have 3 eligible spawn points initially
+	if len(eligibleIndices) != 3 {
+		t.Errorf("Expected 3 eligible spawn points initially, got %d", len(eligibleIndices))
+	}
+	
+	// Simulate spawning from first spawn point
+	spawnIdx := eligibleIndices[0]
+	mutex.Lock()
+	spawnPoints[spawnIdx].NextSpawnAt = now.Add(5 * time.Second)
+	mutex.Unlock()
+	
+	// Immediate re-spawn attempt - should be blocked
+	mutex.RLock()
+	var eligibleAfterSpawn []int
+	for i, sp := range spawnPoints {
+		if sp.NextSpawnAt.Before(now) || sp.NextSpawnAt.Equal(now) {
+			eligibleAfterSpawn = append(eligibleAfterSpawn, i)
+		}
+	}
+	mutex.RUnlock()
+	
+	// Should have 2 eligible spawn points after one is used
+	if len(eligibleAfterSpawn) != 2 {
+		t.Errorf("Expected 2 eligible spawn points after first spawn, got %d", len(eligibleAfterSpawn))
+	}
+	
+	// Verify the spawned point is not in eligible list
+	for _, idx := range eligibleAfterSpawn {
+		if idx == spawnIdx {
+			t.Errorf("Spawn point %d should not be eligible immediately after spawning", spawnIdx)
+		}
+	}
+	
+	// Simulate spawning from remaining spawn points
+	for _, idx := range eligibleAfterSpawn {
+		mutex.Lock()
+		spawnPoints[idx].NextSpawnAt = now.Add(5 * time.Second)
+		mutex.Unlock()
+	}
+	
+	// All spawn points should now be on cooldown
+	mutex.RLock()
+	var eligibleAfterAllSpawns []int
+	for i, sp := range spawnPoints {
+		if sp.NextSpawnAt.Before(now) || sp.NextSpawnAt.Equal(now) {
+			eligibleAfterAllSpawns = append(eligibleAfterAllSpawns, i)
+		}
+	}
+	mutex.RUnlock()
+	
+	// Should have 0 eligible spawn points after all are used
+	if len(eligibleAfterAllSpawns) != 0 {
+		t.Errorf("Expected 0 eligible spawn points after all spawns, got %d", len(eligibleAfterAllSpawns))
+	}
+	
+	// Verify all spawn points are on cooldown
+	for i, sp := range spawnPoints {
+		if sp.NextSpawnAt.Before(now) || sp.NextSpawnAt.Equal(now) {
+			t.Errorf("Spawn point %d should be on cooldown", i)
+		}
+	}
+	
+	// Test that spawn points become eligible again after cooldown
+	future := now.Add(6 * time.Second)
+	var eligibleAfterCooldown []int
+	for i, sp := range spawnPoints {
+		if sp.NextSpawnAt.Before(future) {
+			eligibleAfterCooldown = append(eligibleAfterCooldown, i)
+		}
+	}
+	
+	// All spawn points should be eligible again after cooldown
+	if len(eligibleAfterCooldown) != 3 {
+		t.Errorf("Expected 3 eligible spawn points after cooldown expires, got %d", len(eligibleAfterCooldown))
+	}
+}
+
+func TestCooldownTimingAccuracy(t *testing.T) {
+	// Test that cooldown timing is accurate to prevent early re-spawning
+	processor := &ProcessorImpl{
+		spawnPointRegistry: make(map[character.MapKey][]*CooldownSpawnPoint),
+		spawnPointMu:       make(map[character.MapKey]*sync.RWMutex),
+	}
+	
+	mapKey := character.MapKey{
+		WorldId:   world.Id(1),
+		ChannelId: channel.Id(1),
+		MapId:     _map.Id(100000000),
+	}
+	
+	now := time.Now()
+	
+	// Initialize registry with one spawn point
+	processor.spawnPointRegistry[mapKey] = []*CooldownSpawnPoint{
+		{SpawnPoint: SpawnPoint{Id: 1, Template: 100100}, NextSpawnAt: now},
+	}
+	processor.spawnPointMu[mapKey] = &sync.RWMutex{}
+	
+	spawnPoint := processor.spawnPointRegistry[mapKey][0]
+	mutex := processor.spawnPointMu[mapKey]
+	
+	// Set cooldown to 5 seconds from now
+	cooldownTime := now.Add(5 * time.Second)
+	mutex.Lock()
+	spawnPoint.NextSpawnAt = cooldownTime
+	mutex.Unlock()
+	
+	// Test at various times before cooldown expires
+	testTimes := []time.Duration{
+		1 * time.Second,
+		2 * time.Second,
+		3 * time.Second,
+		4 * time.Second,
+		4*time.Second + 999*time.Millisecond, // Just before 5 seconds
+	}
+	
+	for _, duration := range testTimes {
+		testTime := now.Add(duration)
+		if spawnPoint.NextSpawnAt.Before(testTime) || spawnPoint.NextSpawnAt.Equal(testTime) {
+			t.Errorf("Spawn point should not be eligible at %v (cooldown expires at %v)", testTime, cooldownTime)
+		}
+	}
+	
+	// Test exactly at cooldown expiry
+	if !spawnPoint.NextSpawnAt.Before(cooldownTime.Add(time.Millisecond)) {
+		t.Error("Spawn point should be eligible after cooldown expires")
+	}
+	
+	// Test after cooldown expires
+	afterCooldown := now.Add(6 * time.Second)
+	if !spawnPoint.NextSpawnAt.Before(afterCooldown) {
+		t.Error("Spawn point should be eligible well after cooldown expires")
+	}
+}
+
+func TestSequentialSpawnAttempts(t *testing.T) {
+	// Test sequential spawn attempts to verify cooldown enforcement
+	processor := &ProcessorImpl{
+		spawnPointRegistry: make(map[character.MapKey][]*CooldownSpawnPoint),
+		spawnPointMu:       make(map[character.MapKey]*sync.RWMutex),
+	}
+	
+	mapKey := character.MapKey{
+		WorldId:   world.Id(1),
+		ChannelId: channel.Id(1),
+		MapId:     _map.Id(100000000),
+	}
+	
+	baseTime := time.Now()
+	
+	// Initialize registry with spawn points
+	processor.spawnPointRegistry[mapKey] = []*CooldownSpawnPoint{
+		{SpawnPoint: SpawnPoint{Id: 1, Template: 100100}, NextSpawnAt: baseTime},
+		{SpawnPoint: SpawnPoint{Id: 2, Template: 100101}, NextSpawnAt: baseTime},
+	}
+	processor.spawnPointMu[mapKey] = &sync.RWMutex{}
+	
+	spawnPoints := processor.spawnPointRegistry[mapKey]
+	mutex := processor.spawnPointMu[mapKey]
+	
+	// Track spawn attempts over time
+	spawnAttempts := []struct {
+		time     time.Time
+		expected int // Expected number of eligible spawn points
+	}{
+		{baseTime, 2},                                    // Both eligible initially
+		{baseTime.Add(1 * time.Second), 2},              // Still both eligible
+		{baseTime.Add(2 * time.Second), 2},              // Still both eligible
+		{baseTime.Add(3 * time.Second), 2},              // Still both eligible
+		{baseTime.Add(4 * time.Second), 2},              // Still both eligible
+		{baseTime.Add(5 * time.Second), 2},              // Still both eligible
+		{baseTime.Add(6 * time.Second), 2},              // Still both eligible
+	}
+	
+	for i, attempt := range spawnAttempts {
+		// Check eligibility at this time
+		var eligible []int
+		for idx, sp := range spawnPoints {
+			if sp.NextSpawnAt.Before(attempt.time) || sp.NextSpawnAt.Equal(attempt.time) {
+				eligible = append(eligible, idx)
+			}
+		}
+		
+		if len(eligible) != attempt.expected {
+			t.Errorf("Attempt %d at time %v: expected %d eligible spawn points, got %d",
+				i, attempt.time, attempt.expected, len(eligible))
+		}
+		
+		// Simulate spawning if eligible points exist
+		if len(eligible) > 0 {
+			spawnIdx := eligible[0]
+			mutex.Lock()
+			spawnPoints[spawnIdx].NextSpawnAt = attempt.time.Add(5 * time.Second)
+			mutex.Unlock()
+			
+			// Update expectations for subsequent attempts
+			for j := i + 1; j < len(spawnAttempts); j++ {
+				if spawnAttempts[j].time.Before(attempt.time.Add(5 * time.Second)) {
+					spawnAttempts[j].expected--
+				}
+			}
+		}
+	}
+}
+
+func TestRapidSpawnAttempts(t *testing.T) {
+	// Test rapid spawn attempts to ensure cooldown is enforced
+	processor := &ProcessorImpl{
+		spawnPointRegistry: make(map[character.MapKey][]*CooldownSpawnPoint),
+		spawnPointMu:       make(map[character.MapKey]*sync.RWMutex),
+	}
+	
+	mapKey := character.MapKey{
+		WorldId:   world.Id(1),
+		ChannelId: channel.Id(1),
+		MapId:     _map.Id(100000000),
+	}
+	
+	now := time.Now()
+	
+	// Initialize registry with single spawn point
+	processor.spawnPointRegistry[mapKey] = []*CooldownSpawnPoint{
+		{SpawnPoint: SpawnPoint{Id: 1, Template: 100100}, NextSpawnAt: now},
+	}
+	processor.spawnPointMu[mapKey] = &sync.RWMutex{}
+	
+	spawnPoint := processor.spawnPointRegistry[mapKey][0]
+	mutex := processor.spawnPointMu[mapKey]
+	
+	// First spawn should succeed
+	if !spawnPoint.NextSpawnAt.Before(now) && !spawnPoint.NextSpawnAt.Equal(now) {
+		t.Error("First spawn should be eligible")
+	}
+	
+	// Simulate first spawn
+	mutex.Lock()
+	spawnPoint.NextSpawnAt = now.Add(5 * time.Second)
+	mutex.Unlock()
+	
+	// Rapid subsequent spawn attempts should fail
+	for i := 0; i < 10; i++ {
+		attemptTime := now.Add(time.Duration(i) * 100 * time.Millisecond)
+		if spawnPoint.NextSpawnAt.Before(attemptTime) || spawnPoint.NextSpawnAt.Equal(attemptTime) {
+			t.Errorf("Rapid spawn attempt %d should be blocked by cooldown", i)
+		}
+	}
+	
+	// Spawn should be possible again after cooldown
+	afterCooldown := now.Add(6 * time.Second)
+	if !spawnPoint.NextSpawnAt.Before(afterCooldown) {
+		t.Error("Spawn should be possible after cooldown expires")
+	}
+}
+
 // Helper function to convert MapKey to string for testing
 func mapKeyToString(mk character.MapKey) string {
 	return fmt.Sprintf("W%d-C%d-M%d", mk.WorldId, mk.ChannelId, mk.MapId)

@@ -1,6 +1,8 @@
 package monster
 
-import "strconv"
+import (
+	"strconv"
+)
 
 type RestModel struct {
 	Id       uint32 `json:"-"`

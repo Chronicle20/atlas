@@ -168,24 +168,125 @@ func RemoveCharacterFromParty(l logrus.FieldLogger) func(ctx context.Context) fu
 				// Note: No need to emit events for character deletion as the character is being deleted
 				return Model{}, nil
 			} else if isLeader {
-				// Character was the leader, elect a new leader
-				newParty := updatedParty.ElectLeader()
-				updatedParty, err = GetRegistry().Update(t, partyId, func(m Model) Model { 
-					return newParty 
-				})
+				// Character was the leader, elect a new leader with enhanced handling
+				newLeaderId, err := electNewLeader(l, ctx, updatedParty, characterId)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to elect new leader for party [%d] after removing character [%d].", partyId, characterId)
 					return Model{}, err
 				}
 				
-				l.Debugf("Character [%d] was leader of party [%d], elected new leader [%d].", 
-					characterId, partyId, updatedParty.LeaderId())
+				// Update party with new leader
+				updatedParty, err = GetRegistry().Update(t, partyId, func(m Model) Model { 
+					return Model.SetLeader(m, newLeaderId) 
+				})
+				if err != nil {
+					l.WithError(err).Errorf("Unable to set new leader [%d] for party [%d] after removing character [%d].", newLeaderId, partyId, characterId)
+					return Model{}, err
+				}
+				
+				l.Infof("Character [%d] was leader of party [%d], elected new leader [%d] due to character deletion.", 
+					characterId, partyId, newLeaderId)
+				
+				// Emit leader change event for remaining party members
+				err = emitLeaderChangeEvent(l, ctx, updatedParty, characterId, newLeaderId)
+				if err != nil {
+					l.WithError(err).Warnf("Unable to emit leader change event for party [%d].", partyId)
+					// Don't return error as the leader change was successful
+				}
 			}
 			
 			l.Debugf("Successfully removed character [%d] from party [%d].", characterId, partyId)
 			return updatedParty, nil
 		}
 	}
+}
+
+// electNewLeader selects a new leader for the party using enhanced logic
+func electNewLeader(l logrus.FieldLogger, ctx context.Context, party Model, deletedCharacterId uint32) (uint32, error) {
+	members := party.Members()
+	if len(members) == 0 {
+		return 0, errors.New("no members available for leader election")
+	}
+	
+	// Find the best candidate for leadership
+	// Priority: 1. Online members, 2. Highest level, 3. Longest party member (first in list)
+	var bestCandidate uint32
+	var bestCandidateLevel byte = 0
+	var bestCandidateOnline bool = false
+	
+	for _, memberId := range members {
+		if memberId == deletedCharacterId {
+			continue // Skip the deleted character
+		}
+		
+		// Get character info to make informed decision
+		char, err := character.GetById(l)(ctx)(memberId)
+		if err != nil {
+			l.WithError(err).Warnf("Unable to get character [%d] info for leader election, skipping.", memberId)
+			// If we can't get character info, still consider them as a fallback
+			if bestCandidate == 0 {
+				bestCandidate = memberId
+			}
+			continue
+		}
+		
+		isOnline := char.Online()
+		level := char.Level()
+		
+		// If this is the first candidate, set as best
+		if bestCandidate == 0 {
+			bestCandidate = memberId
+			bestCandidateLevel = level
+			bestCandidateOnline = isOnline
+			continue
+		}
+		
+		// Prefer online members over offline ones
+		if isOnline && !bestCandidateOnline {
+			bestCandidate = memberId
+			bestCandidateLevel = level
+			bestCandidateOnline = isOnline
+		} else if isOnline == bestCandidateOnline {
+			// If online status is the same, prefer higher level
+			if level > bestCandidateLevel {
+				bestCandidate = memberId
+				bestCandidateLevel = level
+				bestCandidateOnline = isOnline
+			}
+		}
+	}
+	
+	if bestCandidate == 0 {
+		return 0, errors.New("no suitable candidate found for leader election")
+	}
+	
+	l.Debugf("Elected character [%d] as new leader (level: %d, online: %t) for party [%d].", 
+		bestCandidate, bestCandidateLevel, bestCandidateOnline, party.Id())
+	
+	return bestCandidate, nil
+}
+
+// emitLeaderChangeEvent emits a leader change event for character deletion scenarios
+func emitLeaderChangeEvent(l logrus.FieldLogger, ctx context.Context, party Model, oldLeaderId, newLeaderId uint32) error {
+	// Get the new leader's character info for world context
+	newLeader, err := character.GetById(l)(ctx)(newLeaderId)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to get new leader [%d] character info for event emission.", newLeaderId)
+		return err
+	}
+	
+	// Emit the leader change event
+	// Use the old leader ID as the actor since they initiated the change (through deletion)
+	err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(changeLeaderEventProvider(oldLeaderId, party.Id(), newLeader.WorldId(), newLeaderId))
+	if err != nil {
+		l.WithError(err).Errorf("Unable to emit leader change event for party [%d].", party.Id())
+		return err
+	}
+	
+	l.Debugf("Emitted leader change event for party [%d]: old leader [%d] -> new leader [%d].", 
+		party.Id(), oldLeaderId, newLeaderId)
+	
+	return nil
 }
 
 func ValidateMembership(ctx context.Context) func(partyId uint32, characterId uint32) error {

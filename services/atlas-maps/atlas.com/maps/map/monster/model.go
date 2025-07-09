@@ -1,5 +1,7 @@
 package monster
 
+import "time"
+
 type SpawnPoint struct {
 	Id       uint32
 	Template uint32
@@ -12,4 +14,9 @@ type SpawnPoint struct {
 	Rx1      int16
 	X        int16
 	Y        int16
+}
+
+type CooldownSpawnPoint struct {
+	SpawnPoint
+	NextSpawnAt time.Time
 }

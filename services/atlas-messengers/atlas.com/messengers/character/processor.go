@@ -1,18 +1,23 @@
 package character
 
 import (
+	"atlas-messengers/kafka/message/character"
 	"atlas-messengers/kafka/producer"
 	"context"
 	"errors"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
-func Login(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
-	return func(ctx context.Context) func(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
-		return func(worldId byte, channelId byte, mapId uint32, characterId uint32) error {
+func Login(l logrus.FieldLogger) func(ctx context.Context) func(transactionID uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, characterId uint32) error {
+	return func(ctx context.Context) func(transactionID uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, characterId uint32) error {
+		return func(transactionID uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, characterId uint32) error {
 			t := tenant.MustFromContext(ctx)
 			c, err := GetById(l)(ctx)(characterId)
 			if err != nil {
@@ -30,7 +35,7 @@ func Login(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, ch
 			c = GetRegistry().Update(t, c.Id(), Model.Login, fn)
 
 			if c.MessengerId() != 0 {
-				err = producer.ProviderImpl(l)(ctx)(EnvEventMemberStatusTopic)(loginEventProvider(c.MessengerId(), c.WorldId(), characterId))
+				err = producer.ProviderImpl(l)(ctx)(character.EnvEventMemberStatusTopic)(loginEventProvider(transactionID, c.MessengerId(), c.WorldId(), characterId))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce the messenger [%d] member [%d] logged in.", c.MessengerId(), c.Id())
 					return err
@@ -42,9 +47,9 @@ func Login(l logrus.FieldLogger) func(ctx context.Context) func(worldId byte, ch
 	}
 }
 
-func Logout(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) error {
-	return func(ctx context.Context) func(characterId uint32) error {
-		return func(characterId uint32) error {
+func Logout(l logrus.FieldLogger) func(ctx context.Context) func(transactionID uuid.UUID, characterId uint32) error {
+	return func(ctx context.Context) func(transactionID uuid.UUID, characterId uint32) error {
+		return func(transactionID uuid.UUID, characterId uint32) error {
 			t := tenant.MustFromContext(ctx)
 			c, err := GetById(l)(ctx)(characterId)
 			if err != nil {
@@ -56,7 +61,7 @@ func Logout(l logrus.FieldLogger) func(ctx context.Context) func(characterId uin
 			c = GetRegistry().Update(t, c.Id(), Model.Logout)
 
 			if c.MessengerId() != 0 {
-				err = producer.ProviderImpl(l)(ctx)(EnvEventMemberStatusTopic)(logoutEventProvider(c.MessengerId(), c.WorldId(), characterId))
+				err = producer.ProviderImpl(l)(ctx)(character.EnvEventMemberStatusTopic)(logoutEventProvider(transactionID, c.MessengerId(), c.WorldId(), characterId))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce the messenger [%d] member [%d] logged out.", c.MessengerId(), c.Id())
 					return err
@@ -68,9 +73,9 @@ func Logout(l logrus.FieldLogger) func(ctx context.Context) func(characterId uin
 	}
 }
 
-func ChannelChange(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, channelId byte) error {
-	return func(ctx context.Context) func(characterId uint32, channelId byte) error {
-		return func(characterId uint32, channelId byte) error {
+func ChannelChange(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, channelId channel.Id) error {
+	return func(ctx context.Context) func(characterId uint32, channelId channel.Id) error {
+		return func(characterId uint32, channelId channel.Id) error {
 			t := tenant.MustFromContext(ctx)
 			c, err := GetById(l)(ctx)(characterId)
 			if err != nil {
@@ -86,9 +91,9 @@ func ChannelChange(l logrus.FieldLogger) func(ctx context.Context) func(characte
 	}
 }
 
-func JoinMessenger(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32, messengerId uint32) error {
-	return func(ctx context.Context) func(characterId uint32, messengerId uint32) error {
-		return func(characterId uint32, messengerId uint32) error {
+func JoinMessenger(l logrus.FieldLogger) func(ctx context.Context) func(transactionID uuid.UUID, characterId uint32, messengerId uint32) error {
+	return func(ctx context.Context) func(transactionID uuid.UUID, characterId uint32, messengerId uint32) error {
+		return func(transactionID uuid.UUID, characterId uint32, messengerId uint32) error {
 			t := tenant.MustFromContext(ctx)
 			c, err := GetById(l)(ctx)(characterId)
 			if err != nil {
@@ -104,9 +109,9 @@ func JoinMessenger(l logrus.FieldLogger) func(ctx context.Context) func(characte
 	}
 }
 
-func LeaveMessenger(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) error {
-	return func(ctx context.Context) func(characterId uint32) error {
-		return func(characterId uint32) error {
+func LeaveMessenger(l logrus.FieldLogger) func(ctx context.Context) func(transactionID uuid.UUID, characterId uint32) error {
+	return func(ctx context.Context) func(transactionID uuid.UUID, characterId uint32) error {
+		return func(transactionID uuid.UUID, characterId uint32) error {
 			t := tenant.MustFromContext(ctx)
 			c, err := GetRegistry().Get(t, characterId)
 			if err != nil {
@@ -132,7 +137,7 @@ func byIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(character
 					if ferr != nil {
 						return Model{}, err
 					}
-					c = GetRegistry().Create(t, fm.WorldId(), 0, characterId, fm.Name())
+					c = GetRegistry().Create(t, fm.WorldId(), channel.Id(0), characterId, fm.Name())
 				}
 				return c, nil
 			}

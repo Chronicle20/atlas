@@ -1,31 +1,36 @@
 package character
 
 import (
+	"atlas-messengers/kafka/message/character"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
-func loginEventProvider(messengerId uint32, worldId byte, characterId uint32) model.Provider[[]kafka.Message] {
+func loginEventProvider(transactionID uuid.UUID, messengerId uint32, worldId world.Id, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
-	value := &memberStatusEvent[memberLoginEventBody]{
-		MessengerId:     messengerId,
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        EventMessengerMemberStatusTypeLogin,
-		Body:        memberLoginEventBody{},
+	value := &character.MemberStatusEvent[character.MemberLoginEventBody]{
+		TransactionID: transactionID,
+		MessengerId:   messengerId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          character.EventMessengerMemberStatusTypeLogin,
+		Body:          character.MemberLoginEventBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func logoutEventProvider(messengerId uint32, worldId byte, characterId uint32) model.Provider[[]kafka.Message] {
+func logoutEventProvider(transactionID uuid.UUID, messengerId uint32, worldId world.Id, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(messengerId))
-	value := &memberStatusEvent[memberLogoutEventBody]{
-		MessengerId:     messengerId,
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        EventMessengerMemberStatusTypeLogout,
-		Body:        memberLogoutEventBody{},
+	value := &character.MemberStatusEvent[character.MemberLogoutEventBody]{
+		TransactionID: transactionID,
+		MessengerId:   messengerId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          character.EventMessengerMemberStatusTypeLogout,
+		Body:          character.MemberLogoutEventBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

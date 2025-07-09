@@ -10,6 +10,7 @@ import (
 	"atlas-messengers/tracing"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"os"
 )
 
 const serviceName = "atlas-messengers"
@@ -54,7 +55,14 @@ func main() {
 	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	invite.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
-	server.CreateService(l, tdm.Context(), tdm.WaitGroup(), GetServer().GetPrefix(), messenger.InitResource(GetServer()))
+	// CreateRoute and run server
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath(GetServer().GetPrefix()).
+		AddRouteInitializer(messenger.InitResource(GetServer())).
+		SetPort(os.Getenv("REST_PORT")).
+		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

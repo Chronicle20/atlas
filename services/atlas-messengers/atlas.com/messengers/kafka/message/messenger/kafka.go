@@ -1,5 +1,10 @@
 package messenger
 
+import (
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
+)
+
 const (
 	EnvCommandTopic               = "COMMAND_TOPIC_MESSENGER"
 	CommandMessengerCreate        = "CREATE"
@@ -31,47 +36,49 @@ const (
 	EventMessengerStatusErrorTypeCannotFindCharacter    = "UNABLE_TO_FIND_THE_CHARACTER"
 )
 
-type commandEvent[E any] struct {
-	ActorId uint32 `json:"actorId"`
-	Type    string `json:"type"`
-	Body    E      `json:"body"`
+type CommandEvent[E any] struct {
+	TransactionID uuid.UUID `json:"transactionId"`
+	ActorId       uint32    `json:"actorId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
-type createCommandBody struct {
+type CreateCommandBody struct {
 }
 
-type joinCommandBody struct {
+type JoinCommandBody struct {
 	MessengerId uint32 `json:"messengerId"`
 }
 
-type leaveCommandBody struct {
+type LeaveCommandBody struct {
 	MessengerId uint32 `json:"messengerId"`
 }
 
-type requestInviteBody struct {
+type RequestInviteBody struct {
 	CharacterId uint32 `json:"characterId"`
 }
 
-type statusEvent[E any] struct {
-	ActorId     uint32 `json:"actorId"`
-	WorldId     byte   `json:"worldId"`
-	MessengerId uint32 `json:"messengerId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+type StatusEvent[E any] struct {
+	TransactionID uuid.UUID `json:"transactionId"`
+	ActorId       uint32    `json:"actorId"`
+	WorldId       world.Id  `json:"worldId"`
+	MessengerId   uint32    `json:"messengerId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
-type createdEventBody struct {
+type CreatedEventBody struct {
 }
 
-type joinedEventBody struct {
+type JoinedEventBody struct {
 	Slot byte `json:"slot"`
 }
 
-type leftEventBody struct {
+type LeftEventBody struct {
 	Slot byte `json:"slot"`
 }
 
-type errorEventBody struct {
+type ErrorEventBody struct {
 	Type          string `json:"type"`
 	CharacterName string `json:"characterName"`
 }

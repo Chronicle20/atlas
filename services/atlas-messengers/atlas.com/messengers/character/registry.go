@@ -2,6 +2,8 @@ package character
 
 import (
 	"errors"
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"sync"
 )
@@ -26,7 +28,7 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) Create(t tenant.Model, worldId byte, channelId byte, id uint32, name string) Model {
+func (r *Registry) Create(t tenant.Model, worldId world.Id, channelId channel.Id, id uint32, name string) Model {
 	r.lock.Lock()
 
 	var cm map[uint32]Model

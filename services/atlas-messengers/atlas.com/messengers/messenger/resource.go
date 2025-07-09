@@ -1,10 +1,12 @@
 package messenger
 
 import (
+	"atlas-messengers/kafka/message/messenger"
 	"atlas-messengers/kafka/producer"
 	"atlas-messengers/rest"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -102,7 +104,7 @@ func handleCreateMessengerMember(d *rest.HandlerDependency, _ *rest.HandlerConte
 	return rest.ParseMessengerId(d.Logger(), func(messengerId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			ep := producer.ProviderImpl(d.Logger())(d.Context())
-			err := ep(EnvCommandTopic)(joinCommandProvider(messengerId, i.Id))
+			err := ep(messenger.EnvCommandTopic)(joinCommandProvider(uuid.New(), messengerId, i.Id))
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -149,7 +151,7 @@ func handleRemoveMessengerMember(d *rest.HandlerDependency, c *rest.HandlerConte
 		return rest.ParseMemberId(d.Logger(), func(memberId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				ep := producer.ProviderImpl(d.Logger())(d.Context())
-				err := ep(EnvCommandTopic)(leaveCommandProvider(messengerId, memberId))
+				err := ep(messenger.EnvCommandTopic)(leaveCommandProvider(uuid.New(), messengerId, memberId))
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return

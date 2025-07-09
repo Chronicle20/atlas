@@ -161,11 +161,27 @@ func RemoveCharacterFromParty(l logrus.FieldLogger) func(ctx context.Context) fu
 			
 			// Handle party state after member removal
 			if len(updatedParty.Members()) == 0 {
+				// Get character info for event emission before disbanding
+				char, charErr := character.GetById(l)(ctx)(characterId)
+				if charErr != nil {
+					l.WithError(charErr).Warnf("Unable to get character [%d] info for disband event emission.", characterId)
+				}
+				
+				// Emit disband event before removing party
+				if charErr == nil {
+					err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(disbandEventProvider(characterId, partyId, char.WorldId(), party.Members()))
+					if err != nil {
+						l.WithError(err).Warnf("Unable to emit disband event for party [%d].", partyId)
+						// Don't return error as the disbanding will still proceed
+					} else {
+						l.Debugf("Emitted disband event for party [%d] due to character [%d] deletion.", partyId, characterId)
+					}
+				}
+				
 				// Party is empty, disband it
 				GetRegistry().Remove(t, partyId)
 				l.Debugf("Party [%d] disbanded after removing character [%d] (last member).", partyId, characterId)
 				
-				// Note: No need to emit events for character deletion as the character is being deleted
 				return Model{}, nil
 			} else if isLeader {
 				// Character was the leader, elect a new leader with enhanced handling
@@ -192,6 +208,20 @@ func RemoveCharacterFromParty(l logrus.FieldLogger) func(ctx context.Context) fu
 				if err != nil {
 					l.WithError(err).Warnf("Unable to emit leader change event for party [%d].", partyId)
 					// Don't return error as the leader change was successful
+				}
+			} else {
+				// Character was not the leader, just emit a left event
+				char, charErr := character.GetById(l)(ctx)(characterId)
+				if charErr != nil {
+					l.WithError(charErr).Warnf("Unable to get character [%d] info for left event emission.", characterId)
+				} else {
+					err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(leftEventProvider(characterId, partyId, char.WorldId()))
+					if err != nil {
+						l.WithError(err).Warnf("Unable to emit left event for character [%d] from party [%d].", characterId, partyId)
+						// Don't return error as the removal was successful
+					} else {
+						l.Debugf("Emitted left event for character [%d] from party [%d] due to deletion.", characterId, partyId)
+					}
 				}
 			}
 			

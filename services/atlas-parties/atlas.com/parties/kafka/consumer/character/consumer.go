@@ -5,12 +5,14 @@ import (
 	consumer2 "atlas-parties/kafka/consumer"
 	"atlas-parties/party"
 	"context"
+	"errors"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -75,7 +77,19 @@ func handleMapChangedStatusEventLogout(l logrus.FieldLogger, ctx context.Context
 }
 
 func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, event StatusEvent[StatusEventDeletedBody]) {
+	// Early validation: check event type
 	if event.Type != StatusEventTypeDeleted {
+		return
+	}
+	
+	// Comprehensive validation for malformed events
+	if err := validateStatusEventDeleted(l, event); err != nil {
+		l.WithError(err).
+			WithField("eventType", event.Type).
+			WithField("characterId", event.CharacterId).
+			WithField("worldId", event.WorldId).
+			WithField("transactionId", event.TransactionId).
+			Errorf("Malformed character deletion event received, skipping processing.")
 		return
 	}
 	
@@ -105,42 +119,115 @@ func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, event S
 			Debugf("Character [%d] not found in any party before deletion.", event.CharacterId)
 	}
 	
-	// Remove character from party using the new removal logic
-	removedParty, err := party.RemoveCharacterFromParty(l)(ctx)(event.CharacterId)
-	if err != nil {
-		l.WithError(err).
-			WithField("transactionId", event.TransactionId).
-			WithField("worldId", event.WorldId).
-			WithField("characterId", event.CharacterId).
-			Errorf("Unable to remove character [%d] from party during deletion.", event.CharacterId)
-	} else {
-		if removedParty.Id() != 0 {
-			l.WithField("transactionId", event.TransactionId).
-				WithField("partyId", removedParty.Id()).
-				WithField("remainingMembers", len(removedParty.Members())).
-				WithField("newLeader", removedParty.LeaderId()).
-				Debugf("Character [%d] successfully removed from party [%d].", event.CharacterId, removedParty.Id())
+	// Remove character from party using the new removal logic with panic recovery
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				l.WithField("transactionId", event.TransactionId).
+					WithField("worldId", event.WorldId).
+					WithField("characterId", event.CharacterId).
+					WithField("panic", r).
+					Errorf("Panic occurred during character [%d] removal from party, recovered gracefully.", event.CharacterId)
+			}
+		}()
+		
+		removedParty, err := party.RemoveCharacterFromParty(l)(ctx)(event.CharacterId)
+		if err != nil {
+			l.WithError(err).
+				WithField("transactionId", event.TransactionId).
+				WithField("worldId", event.WorldId).
+				WithField("characterId", event.CharacterId).
+				Errorf("Unable to remove character [%d] from party during deletion.", event.CharacterId)
+		} else {
+			if removedParty.Id() != 0 {
+				l.WithField("transactionId", event.TransactionId).
+					WithField("partyId", removedParty.Id()).
+					WithField("remainingMembers", len(removedParty.Members())).
+					WithField("newLeader", removedParty.LeaderId()).
+					Debugf("Character [%d] successfully removed from party [%d].", event.CharacterId, removedParty.Id())
+			}
 		}
+	}()
+	
+	// Also process character deletion from character registry with panic recovery
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				l.WithField("transactionId", event.TransactionId).
+					WithField("worldId", event.WorldId).
+					WithField("characterId", event.CharacterId).
+					WithField("panic", r).
+					Errorf("Panic occurred during character [%d] deletion from registry, recovered gracefully.", event.CharacterId)
+			}
+		}()
+		
+		err := character.Delete(l)(ctx)(event.CharacterId)
+		if err != nil {
+			l.WithError(err).
+				WithField("transactionId", event.TransactionId).
+				WithField("worldId", event.WorldId).
+				WithField("characterId", event.CharacterId).
+				Errorf("Unable to process character deletion for character [%d].", event.CharacterId)
+		} else {
+			// Log cache statistics for monitoring
+			hits, misses, hitRate := party.GetCacheStats(ctx)
+			l.WithField("transactionId", event.TransactionId).
+				WithField("worldId", event.WorldId).
+				WithField("characterId", event.CharacterId).
+				WithField("cacheHits", hits).
+				WithField("cacheMisses", misses).
+				WithField("cacheHitRate", hitRate).
+				WithField("cacheSize", party.GetCacheSize(ctx)).
+				Infof("Successfully processed character deletion for character [%d].", event.CharacterId)
+		}
+	}()
+}
+
+// validateStatusEventDeleted performs comprehensive validation of character deletion events
+func validateStatusEventDeleted(l logrus.FieldLogger, event StatusEvent[StatusEventDeletedBody]) error {
+	var validationErrors []string
+	
+	// Validate character ID - must be positive and within reasonable bounds
+	if event.CharacterId == 0 {
+		validationErrors = append(validationErrors, "invalid character ID: cannot be zero")
+	} else if event.CharacterId > 4294967295 { // max uint32
+		validationErrors = append(validationErrors, "invalid character ID: exceeds maximum value")
 	}
 	
-	// Also process character deletion from character registry
-	err = character.Delete(l)(ctx)(event.CharacterId)
-	if err != nil {
-		l.WithError(err).
-			WithField("transactionId", event.TransactionId).
-			WithField("worldId", event.WorldId).
-			WithField("characterId", event.CharacterId).
-			Errorf("Unable to process character deletion for character [%d].", event.CharacterId)
-	} else {
-		// Log cache statistics for monitoring
-		hits, misses, hitRate := party.GetCacheStats(ctx)
-		l.WithField("transactionId", event.TransactionId).
-			WithField("worldId", event.WorldId).
-			WithField("characterId", event.CharacterId).
-			WithField("cacheHits", hits).
-			WithField("cacheMisses", misses).
-			WithField("cacheHitRate", hitRate).
-			WithField("cacheSize", party.GetCacheSize(ctx)).
-			Infof("Successfully processed character deletion for character [%d].", event.CharacterId)
+	// Validate transaction ID - must not be empty for audit trails
+	if event.TransactionId == uuid.Nil {
+		l.Warnf("Character deletion event for character [%d] missing transaction ID, processing anyway.", event.CharacterId)
+		// Don't add to validationErrors as this is not critical, just log warning
 	}
+	
+	// Validate world ID - must be positive and within reasonable bounds
+	if event.WorldId == 0 {
+		validationErrors = append(validationErrors, "invalid world ID: cannot be zero")
+	} else if event.WorldId > 255 { // reasonable world ID limit for byte type
+		validationErrors = append(validationErrors, "invalid world ID: exceeds maximum value")
+	}
+	
+	// Validate event type consistency (double-check)
+	if event.Type != StatusEventTypeDeleted {
+		validationErrors = append(validationErrors, "event type mismatch: expected DELETED type")
+	}
+	
+	// Check for empty event type string
+	if event.Type == "" {
+		validationErrors = append(validationErrors, "event type cannot be empty")
+	}
+	
+	// If we have validation errors, combine them and return
+	if len(validationErrors) > 0 {
+		l.WithField("validationErrors", validationErrors).
+			WithField("characterId", event.CharacterId).
+			WithField("worldId", event.WorldId).
+			WithField("transactionId", event.TransactionId).
+			Warnf("Character deletion event failed validation with %d errors.", len(validationErrors))
+		
+		return errors.New("event validation failed: " + validationErrors[0]) // Return first error
+	}
+	
+	// All validations passed
+	return nil
 }

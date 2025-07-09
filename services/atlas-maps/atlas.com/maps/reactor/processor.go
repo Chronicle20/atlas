@@ -1,11 +1,12 @@
 package reactor
 
 import (
+	reactor2 "atlas-maps/data/map/reactor"
 	"atlas-maps/kafka/message"
 	reactorKafka "atlas-maps/kafka/message/reactor"
 	"atlas-maps/kafka/producer"
-	"atlas-maps/map/reactor"
 	"context"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -44,8 +45,8 @@ func (p *ProcessorImpl) GetInMap(transactionId uuid.UUID, worldId world.Id, chan
 	return p.InMapModelProvider(transactionId, worldId, channelId, mapId)()
 }
 
-func (p *ProcessorImpl) doesNotExist(existing []Model) model.Filter[reactor.Model] {
-	return func(reference reactor.Model) bool {
+func (p *ProcessorImpl) doesNotExist(existing []Model) model.Filter[reactor2.Model] {
+	return func(reference reactor2.Model) bool {
 		for _, er := range existing {
 			if er.Classification() == reference.Classification() && er.X() == reference.X() && er.Y() == reference.Y() {
 				return false
@@ -62,8 +63,8 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(transactionId uuid.UUID, 
 			return err
 		}
 
-		rp := reactor.NewProcessor(p.l, p.ctx).InMapProvider(mapId)
-		np := model.FilteredProvider(rp, model.Filters[reactor.Model](p.doesNotExist(existing)))
+		rp := reactor2.NewProcessor(p.l, p.ctx).InMapProvider(mapId)
+		np := model.FilteredProvider(rp, model.Filters[reactor2.Model](p.doesNotExist(existing)))
 		return model.ForEachSlice(np, p.issueCreate(mb)(transactionId, worldId, channelId, mapId), model.ParallelExecute())
 	}
 }
@@ -74,9 +75,9 @@ func (p *ProcessorImpl) SpawnAndEmit(transactionId uuid.UUID, worldId world.Id, 
 	})
 }
 
-func (p *ProcessorImpl) issueCreate(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) model.Operator[reactor.Model] {
-	return func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) model.Operator[reactor.Model] {
-		return func(r reactor.Model) error {
+func (p *ProcessorImpl) issueCreate(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) model.Operator[reactor2.Model] {
+	return func(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) model.Operator[reactor2.Model] {
+		return func(r reactor2.Model) error {
 			return mb.Put(reactorKafka.EnvCommandTopic, createCommandProvider(transactionId, worldId, channelId, mapId, r.Classification(), r.Name(), 0, r.X(), r.Y(), r.Delay(), r.Direction()))
 		}
 	}

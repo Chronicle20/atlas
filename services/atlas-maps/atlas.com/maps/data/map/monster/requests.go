@@ -3,6 +3,7 @@ package monster
 import (
 	"atlas-maps/rest"
 	"fmt"
+
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 

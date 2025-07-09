@@ -6,6 +6,8 @@ import (
 	"atlas-parties/party"
 	"context"
 	"errors"
+	"sync"
+	"time"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -15,6 +17,75 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
+
+// Idempotency tracking for character deletion events
+type processedEvent struct {
+	transactionId uuid.UUID
+	characterId   uint32
+	processedAt   time.Time
+}
+
+type idempotencyTracker struct {
+	mu                sync.RWMutex
+	processedEvents   map[uuid.UUID]*processedEvent
+	lastCleanup       time.Time
+	cleanupInterval   time.Duration
+	eventTTL          time.Duration
+}
+
+var deletionIdempotencyTracker = &idempotencyTracker{
+	processedEvents: make(map[uuid.UUID]*processedEvent),
+	lastCleanup:     time.Now(),
+	cleanupInterval: 5 * time.Minute,  // Clean up every 5 minutes
+	eventTTL:        30 * time.Minute, // Keep events for 30 minutes
+}
+
+// isEventProcessed checks if a deletion event has already been processed
+func (it *idempotencyTracker) isEventProcessed(transactionId uuid.UUID, characterId uint32) bool {
+	it.mu.RLock()
+	defer it.mu.RUnlock()
+	
+	if event, exists := it.processedEvents[transactionId]; exists {
+		// Double-check character ID for additional safety
+		return event.characterId == characterId
+	}
+	return false
+}
+
+// markEventProcessed records that a deletion event has been processed
+func (it *idempotencyTracker) markEventProcessed(transactionId uuid.UUID, characterId uint32) {
+	it.mu.Lock()
+	defer it.mu.Unlock()
+	
+	it.processedEvents[transactionId] = &processedEvent{
+		transactionId: transactionId,
+		characterId:   characterId,
+		processedAt:   time.Now(),
+	}
+	
+	// Trigger cleanup if needed
+	if time.Since(it.lastCleanup) >= it.cleanupInterval {
+		it.cleanupExpiredEventsLocked()
+		it.lastCleanup = time.Now()
+	}
+}
+
+// cleanupExpiredEventsLocked removes old processed events (caller must hold write lock)
+func (it *idempotencyTracker) cleanupExpiredEventsLocked() {
+	cutoff := time.Now().Add(-it.eventTTL)
+	for transactionId, event := range it.processedEvents {
+		if event.processedAt.Before(cutoff) {
+			delete(it.processedEvents, transactionId)
+		}
+	}
+}
+
+// getProcessedEventCount returns the number of events currently tracked
+func (it *idempotencyTracker) getProcessedEventCount() int {
+	it.mu.RLock()
+	defer it.mu.RUnlock()
+	return len(it.processedEvents)
+}
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -90,6 +161,16 @@ func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, event S
 			WithField("worldId", event.WorldId).
 			WithField("transactionId", event.TransactionId).
 			Errorf("Malformed character deletion event received, skipping processing.")
+		return
+	}
+	
+	// Idempotency check: prevent processing duplicate events
+	if deletionIdempotencyTracker.isEventProcessed(event.TransactionId, event.CharacterId) {
+		l.WithField("transactionId", event.TransactionId).
+			WithField("worldId", event.WorldId).
+			WithField("characterId", event.CharacterId).
+			WithField("trackedEvents", deletionIdempotencyTracker.getProcessedEventCount()).
+			Infof("Character deletion event for character [%d] already processed, skipping duplicate.", event.CharacterId)
 		return
 	}
 	
@@ -181,6 +262,14 @@ func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, event S
 				Infof("Successfully processed character deletion for character [%d].", event.CharacterId)
 		}
 	}()
+	
+	// Mark event as processed for idempotency (regardless of success/failure)
+	// This prevents reprocessing the same deletion event multiple times
+	deletionIdempotencyTracker.markEventProcessed(event.TransactionId, event.CharacterId)
+	l.WithField("transactionId", event.TransactionId).
+		WithField("characterId", event.CharacterId).
+		WithField("trackedEvents", deletionIdempotencyTracker.getProcessedEventCount()).
+		Debugf("Marked character deletion event as processed for idempotency tracking.")
 }
 
 // validateStatusEventDeleted performs comprehensive validation of character deletion events

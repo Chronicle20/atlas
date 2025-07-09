@@ -61,23 +61,47 @@ func GetById(ctx context.Context) func(partyId uint32) (Model, error) {
 
 func GetByCharacter(ctx context.Context) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
-		parties, err := GetSlice(ctx)(MemberFilter(characterId))
-		if err != nil {
-			return Model{}, err
+		t := tenant.MustFromContext(ctx)
+		return GetRegistry().GetPartyByCharacter(t, characterId)
+	}
+}
+
+// Efficient provider for character-to-party lookup
+func byCharacterProvider(ctx context.Context) func(characterId uint32) model.Provider[Model] {
+	return func(characterId uint32) model.Provider[Model] {
+		return func() (Model, error) {
+			t := tenant.MustFromContext(ctx)
+			return GetRegistry().GetPartyByCharacter(t, characterId)
+		}
+	}
+}
+
+// Efficient batch character-to-party lookup
+func GetPartiesByCharacters(ctx context.Context) func(characterIds []uint32) ([]Model, error) {
+	return func(characterIds []uint32) ([]Model, error) {
+		t := tenant.MustFromContext(ctx)
+		parties := make([]Model, 0, len(characterIds))
+		seen := make(map[uint32]bool)
+		
+		for _, characterId := range characterIds {
+			if party, err := GetRegistry().GetPartyByCharacter(t, characterId); err == nil {
+				if !seen[party.Id()] {
+					parties = append(parties, party)
+					seen[party.Id()] = true
+				}
+			}
 		}
 		
-		if len(parties) == 0 {
-			return Model{}, ErrNotFound
-		}
-		
-		if len(parties) > 1 {
-			// This should not happen in normal operation, but handle it gracefully
-			// Log a warning and return the first party found
-			// In a real system, you might want to add structured logging here
-			return parties[0], nil
-		}
-		
-		return parties[0], nil
+		return parties, nil
+	}
+}
+
+// Check if character is in any party (efficient O(1) lookup)
+func IsCharacterInParty(ctx context.Context) func(characterId uint32) bool {
+	return func(characterId uint32) bool {
+		t := tenant.MustFromContext(ctx)
+		_, err := GetRegistry().GetPartyByCharacter(t, characterId)
+		return err == nil
 	}
 }
 

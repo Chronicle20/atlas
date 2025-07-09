@@ -213,24 +213,38 @@ func RemoveCharacterFromPartyWithTransaction(l logrus.FieldLogger, transactionId
 				// Get character info for event emission before disbanding
 				char, charErr := character.GetById(l)(ctx)(characterId)
 				if charErr != nil {
-					emptyPartyLogger.WithError(charErr).Warnf("Unable to get character [%d] info for disband event emission.", characterId)
+					emptyPartyLogger.WithError(charErr).Warnf("Unable to get character [%d] info for disband event emission, using fallback world ID.", characterId)
 				}
 				
 				// Create event logger with character world context if available
 				eventEmissionLogger := emptyPartyLogger
+				var worldId byte = 1 // Default fallback world ID
 				if charErr == nil {
-					eventEmissionLogger = withCharacterContext(emptyPartyLogger, characterId, char.WorldId())
+					worldId = char.WorldId()
+					eventEmissionLogger = withCharacterContext(emptyPartyLogger, characterId, worldId)
+				} else {
+					// For non-existent characters, try to infer world ID from party members
+					if len(party.Members()) > 0 {
+						for _, memberId := range party.Members() {
+							if memberId != characterId {
+								if memberChar, memberErr := character.GetById(l)(ctx)(memberId); memberErr == nil {
+									worldId = memberChar.WorldId()
+									emptyPartyLogger.WithField("inferredFromMember", memberId).Debugf("Inferred world ID [%d] from remaining party member for disband event.", worldId)
+									break
+								}
+							}
+						}
+					}
+					eventEmissionLogger = withCharacterContext(emptyPartyLogger, characterId, worldId)
 				}
 				
-				// Emit disband event before removing party
-				if charErr == nil {
-					err = producer.ProviderImpl(eventEmissionLogger)(ctx)(EnvEventStatusTopic)(disbandEventProvider(characterId, partyId, char.WorldId(), party.Members()))
-					if err != nil {
-						emptyPartyLogger.WithError(err).Warnf("Unable to emit disband event for party [%d].", partyId)
-						// Don't return error as the disbanding will still proceed
-					} else {
-						emptyPartyLogger.Debugf("Emitted disband event for party [%d] due to character [%d] deletion.", partyId, characterId)
-					}
+				// Emit disband event before removing party (always emit, even for non-existent characters)
+				err = producer.ProviderImpl(eventEmissionLogger)(ctx)(EnvEventStatusTopic)(disbandEventProvider(characterId, partyId, worldId, party.Members()))
+				if err != nil {
+					eventEmissionLogger.WithError(err).Warnf("Unable to emit disband event for party [%d].", partyId)
+					// Don't return error as the disbanding will still proceed
+				} else {
+					eventEmissionLogger.Infof("Emitted disband event for party [%d] due to character [%d] deletion (world ID: %d).", partyId, characterId, worldId)
 				}
 				
 				// Party is empty, disband it
@@ -275,18 +289,34 @@ func RemoveCharacterFromPartyWithTransaction(l logrus.FieldLogger, transactionId
 				
 				// Character was not the leader, just emit a left event
 				char, charErr := character.GetById(l)(ctx)(characterId)
+				var worldId byte = 1 // Default fallback world ID
+				var leftEventLogger *logrus.Entry
+				
 				if charErr != nil {
-					memberLogger.WithError(charErr).Warnf("Unable to get character [%d] info for left event emission.", characterId)
-				} else {
-					leftEventLogger := withCharacterContext(memberLogger, characterId, char.WorldId())
-					
-					err = producer.ProviderImpl(leftEventLogger)(ctx)(EnvEventStatusTopic)(leftEventProvider(characterId, partyId, char.WorldId()))
-					if err != nil {
-						memberLogger.WithError(err).Warnf("Unable to emit left event for character [%d] from party [%d].", characterId, partyId)
-						// Don't return error as the removal was successful
-					} else {
-						memberLogger.Debugf("Emitted left event for character [%d] from party [%d] due to deletion.", characterId, partyId)
+					memberLogger.WithError(charErr).Warnf("Unable to get character [%d] info for left event emission, using fallback world ID.", characterId)
+					// For non-existent characters, try to infer world ID from party members
+					if len(updatedParty.Members()) > 0 {
+						for _, memberId := range updatedParty.Members() {
+							if memberChar, memberErr := character.GetById(l)(ctx)(memberId); memberErr == nil {
+								worldId = memberChar.WorldId()
+								memberLogger.WithField("inferredFromMember", memberId).Debugf("Inferred world ID [%d] from party member for left event.", worldId)
+								break
+							}
+						}
 					}
+					leftEventLogger = withCharacterContext(memberLogger, characterId, worldId)
+				} else {
+					worldId = char.WorldId()
+					leftEventLogger = withCharacterContext(memberLogger, characterId, worldId)
+				}
+				
+				// Always emit left event, even for non-existent characters
+				err = producer.ProviderImpl(leftEventLogger)(ctx)(EnvEventStatusTopic)(leftEventProvider(characterId, partyId, worldId))
+				if err != nil {
+					leftEventLogger.WithError(err).Warnf("Unable to emit left event for character [%d] from party [%d].", characterId, partyId)
+					// Don't return error as the removal was successful
+				} else {
+					leftEventLogger.Infof("Emitted left event for character [%d] from party [%d] due to deletion (world ID: %d).", characterId, partyId, worldId)
 				}
 			}
 			
@@ -337,11 +367,47 @@ func electNewLeaderInternal(l logrus.FieldLogger, ctx context.Context, party Mod
 		// Get character info to make informed decision
 		char, err := character.GetById(l)(ctx)(memberId)
 		if err != nil {
-			candidateLogger.WithError(err).Warnf("Unable to get character [%d] info for leader election, skipping.", memberId)
-			// If we can't get character info, still consider them as a fallback
+			candidateLogger.WithError(err).Warnf("Unable to get character [%d] info for leader election, using fallback values.", memberId)
+			
+			// For non-existent characters, use fallback values but still participate in election
+			// This ensures we don't skip potentially valid party members due to temporary character service issues
+			isOnline := false // Conservative assumption for non-existent characters
+			level := byte(1)  // Minimum level assumption
+			
+			candidateLogger = candidateLogger.WithField("isOnline", isOnline).
+				WithField("level", level).
+				WithField("fallbackValues", true)
+			candidateLogger.Debugf("Evaluating non-existent character [%d] for leadership with fallback values: online=%t, level=%d.", memberId, isOnline, level)
+			
+			// If this is the first candidate, set as best
 			if bestCandidate == 0 {
 				bestCandidate = memberId
-				candidateLogger.Debugf("Character [%d] set as fallback candidate due to missing info.", memberId)
+				bestCandidateLevel = level
+				bestCandidateOnline = isOnline
+				candidateLogger.Debugf("Character [%d] set as initial best candidate with fallback values.", memberId)
+				continue
+			}
+			
+			// Apply same election logic with fallback values
+			var selectedAsBest bool = false
+			var reason string
+			
+			// Since isOnline is false for non-existent characters, they'll only be selected if current best is also offline
+			if isOnline == bestCandidateOnline {
+				// If online status is the same, prefer higher level
+				if level > bestCandidateLevel {
+					bestCandidate = memberId
+					bestCandidateLevel = level
+					bestCandidateOnline = isOnline
+					selectedAsBest = true
+					reason = "higher level (fallback)"
+				}
+			}
+			
+			if selectedAsBest {
+				candidateLogger.WithField("reason", reason).Debugf("Non-existent character [%d] selected as new best candidate.", memberId)
+			} else {
+				candidateLogger.Debugf("Non-existent character [%d] not selected as best candidate.", memberId)
 			}
 			continue
 		}
@@ -424,25 +490,42 @@ func emitLeaderChangeEventInternal(l logrus.FieldLogger, ctx context.Context, pa
 	
 	// Get the new leader's character info for world context
 	newLeader, err := character.GetById(l)(ctx)(newLeaderId)
+	var worldId byte = 1 // Default fallback world ID
+	var eventLogger *logrus.Entry
+	
 	if err != nil {
-		l.WithError(err).Errorf("Unable to get new leader [%d] character info for event emission.", newLeaderId)
-		return err
+		l.WithError(err).Warnf("Unable to get new leader [%d] character info for event emission, using fallback world ID.", newLeaderId)
+		
+		// For non-existent new leaders, try to infer world ID from party members
+		if len(party.Members()) > 0 {
+			for _, memberId := range party.Members() {
+				if memberId != newLeaderId {
+					if memberChar, memberErr := character.GetById(l)(ctx)(memberId); memberErr == nil {
+						worldId = memberChar.WorldId()
+						l.WithField("inferredFromMember", memberId).Debugf("Inferred world ID [%d] from party member for leader change event.", worldId)
+						break
+					}
+				}
+			}
+		}
+		eventLogger = withCharacterContext(l, newLeaderId, worldId)
+	} else {
+		worldId = newLeader.WorldId()
+		eventLogger = withCharacterContext(l, newLeaderId, worldId)
 	}
 	
-	// Add character context to logger
-	eventLogger := withCharacterContext(l, newLeaderId, newLeader.WorldId())
-	eventLogger.Debugf("Retrieved new leader [%d] info, emitting leader change event.", newLeaderId)
+	eventLogger.Debugf("Emitting leader change event for new leader [%d] (world ID: %d).", newLeaderId, worldId)
 	
-	// Emit the leader change event
+	// Emit the leader change event (always emit, even for non-existent characters)
 	// Use the old leader ID as the actor since they initiated the change (through deletion)
-	err = producer.ProviderImpl(eventLogger)(ctx)(EnvEventStatusTopic)(changeLeaderEventProvider(oldLeaderId, party.Id(), newLeader.WorldId(), newLeaderId))
+	err = producer.ProviderImpl(eventLogger)(ctx)(EnvEventStatusTopic)(changeLeaderEventProvider(oldLeaderId, party.Id(), worldId, newLeaderId))
 	if err != nil {
 		eventLogger.WithError(err).Errorf("Unable to emit leader change event for party [%d].", party.Id())
 		return err
 	}
 	
-	eventLogger.Infof("Successfully emitted leader change event for party [%d]: old leader [%d] -> new leader [%d].", 
-		party.Id(), oldLeaderId, newLeaderId)
+	eventLogger.Infof("Successfully emitted leader change event for party [%d]: old leader [%d] -> new leader [%d] (world ID: %d).", 
+		party.Id(), oldLeaderId, newLeaderId, worldId)
 	
 	return nil
 }

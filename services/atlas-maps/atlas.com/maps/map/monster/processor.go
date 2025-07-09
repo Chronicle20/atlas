@@ -172,3 +172,16 @@ func (p *ProcessorImpl) initializeRegistryForMap(mapKey character.MapKey) error 
 
 	return nil
 }
+
+func (p *ProcessorImpl) getOrInitializeSpawnPoints(mapKey character.MapKey) ([]*CooldownSpawnPoint, *sync.RWMutex, error) {
+	// Initialize if needed
+	if err := p.initializeRegistryForMap(mapKey); err != nil {
+		return nil, nil, err
+	}
+
+	// Get the spawn points and mutex
+	spawnPoints := p.spawnPointRegistry[mapKey]
+	mutex := p.spawnPointMu[mapKey]
+
+	return spawnPoints, mutex, nil
+}

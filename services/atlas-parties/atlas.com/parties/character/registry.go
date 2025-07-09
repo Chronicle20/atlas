@@ -91,3 +91,21 @@ func (r *Registry) Update(t tenant.Model, id uint32, updaters ...func(m Model) M
 	r.characterReg[t][id] = m
 	return m
 }
+
+func (r *Registry) Delete(t tenant.Model, id uint32) error {
+	var tl *sync.RWMutex
+	var ok bool
+	if tl, ok = r.tenantLock[t]; !ok {
+		return ErrNotFound
+	}
+
+	tl.Lock()
+	defer tl.Unlock()
+	
+	if _, ok := r.characterReg[t][id]; !ok {
+		return ErrNotFound
+	}
+	
+	delete(r.characterReg[t], id)
+	return nil
+}

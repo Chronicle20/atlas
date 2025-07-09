@@ -29,6 +29,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMapChangedStatusEventLogout)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeleted)))
 	}
 }
 
@@ -69,5 +70,30 @@ func handleMapChangedStatusEventLogout(l logrus.FieldLogger, ctx context.Context
 	err := character.MapChange(l)(ctx)(event.CharacterId, uint32(event.Body.TargetMapId))
 	if err != nil {
 		l.WithError(err).Errorf("Unable to process map changed for character [%d].", event.CharacterId)
+	}
+}
+
+func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, event StatusEvent[StatusEventDeletedBody]) {
+	if event.Type != StatusEventTypeDeleted {
+		return
+	}
+	
+	l.WithField("transactionId", event.TransactionId).
+		WithField("worldId", event.WorldId).
+		WithField("characterId", event.CharacterId).
+		Debugf("Processing character deletion event for character [%d].", event.CharacterId)
+	
+	err := character.Delete(l)(ctx)(event.CharacterId)
+	if err != nil {
+		l.WithError(err).
+			WithField("transactionId", event.TransactionId).
+			WithField("worldId", event.WorldId).
+			WithField("characterId", event.CharacterId).
+			Errorf("Unable to process deletion for character [%d].", event.CharacterId)
+	} else {
+		l.WithField("transactionId", event.TransactionId).
+			WithField("worldId", event.WorldId).
+			WithField("characterId", event.CharacterId).
+			Infof("Successfully processed character deletion for character [%d].", event.CharacterId)
 	}
 }

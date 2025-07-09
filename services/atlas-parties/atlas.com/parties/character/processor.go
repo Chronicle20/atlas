@@ -157,6 +157,37 @@ func LeaveParty(l logrus.FieldLogger) func(ctx context.Context) func(characterId
 	}
 }
 
+func Delete(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) error {
+	return func(ctx context.Context) func(characterId uint32) error {
+		return func(characterId uint32) error {
+			t := tenant.MustFromContext(ctx)
+			c, err := GetRegistry().Get(t, characterId)
+			if err != nil {
+				l.Warnf("Character [%d] not found in registry, may have already been deleted.", characterId)
+				return nil
+			}
+
+			if c.PartyId() != 0 {
+				l.Debugf("Character [%d] was in party [%d], leaving party before deletion.", characterId, c.PartyId())
+				err = LeaveParty(l)(ctx)(characterId)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to remove character [%d] from party [%d] before deletion.", characterId, c.PartyId())
+					return err
+				}
+			}
+
+			l.Debugf("Removing character [%d] from registry.", characterId)
+			err = GetRegistry().Delete(t, characterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to delete character [%d] from registry.", characterId)
+				return err
+			}
+
+			return nil
+		}
+	}
+}
+
 func byIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) model.Provider[Model] {
 	return func(ctx context.Context) func(characterId uint32) model.Provider[Model] {
 		return func(characterId uint32) model.Provider[Model] {

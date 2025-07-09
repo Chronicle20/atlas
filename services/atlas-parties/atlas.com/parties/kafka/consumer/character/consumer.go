@@ -212,7 +212,7 @@ func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, event S
 			}
 		}()
 		
-		removedParty, err := party.RemoveCharacterFromParty(l)(ctx)(event.CharacterId)
+		removedParty, err := party.RemoveCharacterFromPartyWithTransaction(l, event.TransactionId)(ctx)(event.CharacterId)
 		if err != nil {
 			l.WithError(err).
 				WithField("transactionId", event.TransactionId).

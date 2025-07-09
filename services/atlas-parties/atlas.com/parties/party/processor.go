@@ -59,6 +59,28 @@ func GetById(ctx context.Context) func(partyId uint32) (Model, error) {
 	}
 }
 
+func GetByCharacter(ctx context.Context) func(characterId uint32) (Model, error) {
+	return func(characterId uint32) (Model, error) {
+		parties, err := GetSlice(ctx)(MemberFilter(characterId))
+		if err != nil {
+			return Model{}, err
+		}
+		
+		if len(parties) == 0 {
+			return Model{}, ErrNotFound
+		}
+		
+		if len(parties) > 1 {
+			// This should not happen in normal operation, but handle it gracefully
+			// Log a warning and return the first party found
+			// In a real system, you might want to add structured logging here
+			return parties[0], nil
+		}
+		
+		return parties[0], nil
+	}
+}
+
 func Create(l logrus.FieldLogger) func(ctx context.Context) func(leaderId uint32) (Model, error) {
 	return func(ctx context.Context) func(leaderId uint32) (Model, error) {
 		return func(leaderId uint32) (Model, error) {

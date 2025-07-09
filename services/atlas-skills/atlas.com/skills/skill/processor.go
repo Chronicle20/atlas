@@ -40,9 +40,6 @@ type Processor interface {
 	// SetCooldownAndEmit applies a cooldown to a skill and emits a status event
 	SetCooldownAndEmit(characterId uint32, skillId uint32, cooldown uint32) (Model, error)
 
-	// ExpireCooldowns expires all cooldowns that have passed their expiration time
-	ExpireCooldowns()
-
 	// ClearAll clears all cooldowns for a character
 	ClearAll(characterId uint32) error
 
@@ -52,7 +49,7 @@ type Processor interface {
 	CooldownDecorator(characterId uint32) model.Decorator[Model]
 
 	RequestCreate(characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) error
-	
+
 	RequestUpdate(characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) error
 }
 
@@ -231,11 +228,12 @@ func (p *ProcessorImpl) SetCooldownAndEmit(characterId uint32, skillId uint32, c
 }
 
 // ExpireCooldowns expires all cooldowns that have passed their expiration time
-func (p *ProcessorImpl) ExpireCooldowns() {
+func ExpireCooldowns(l logrus.FieldLogger, ctx context.Context) {
 	for _, s := range GetRegistry().GetAll() {
 		if s.CooldownExpiresAt().Before(time.Now()) {
+			tctx := tenant.WithContext(ctx, s.Tenant())
 			_ = GetRegistry().Clear(s.Tenant(), s.CharacterId(), s.SkillId())
-			_ = producer.ProviderImpl(p.l)(tenant.WithContext(p.ctx, s.Tenant()))(skill2.EnvStatusEventTopic)(statusEventCooldownExpiredProvider(s.CharacterId(), s.SkillId()))
+			_ = producer.ProviderImpl(l)(tctx)(skill2.EnvStatusEventTopic)(statusEventCooldownExpiredProvider(s.CharacterId(), s.SkillId()))
 		}
 	}
 }

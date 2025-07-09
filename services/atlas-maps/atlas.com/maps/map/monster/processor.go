@@ -14,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"math"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -26,16 +27,20 @@ type Processor interface {
 }
 
 type ProcessorImpl struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	t   tenant.Model
+	l                  logrus.FieldLogger
+	ctx                context.Context
+	t                  tenant.Model
+	spawnPointRegistry map[character.MapKey][]*CooldownSpawnPoint
+	spawnPointMu       map[character.MapKey]*sync.RWMutex
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{
-		l:   l,
-		ctx: ctx,
-		t:   tenant.MustFromContext(ctx),
+		l:                  l,
+		ctx:                ctx,
+		t:                  tenant.MustFromContext(ctx),
+		spawnPointRegistry: make(map[character.MapKey][]*CooldownSpawnPoint),
+		spawnPointMu:       make(map[character.MapKey]*sync.RWMutex),
 	}
 }
 

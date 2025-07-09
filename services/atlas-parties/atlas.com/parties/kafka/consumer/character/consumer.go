@@ -4,6 +4,7 @@ import (
 	"atlas-parties/character"
 	consumer2 "atlas-parties/kafka/consumer"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -31,18 +32,18 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	}
 }
 
-func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventLoginBody]) {
-	if event.Type != EventCharacterStatusTypeLogin {
+func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, event StatusEvent[StatusEventLoginBody]) {
+	if event.Type != StatusEventTypeLogin {
 		return
 	}
-	err := character.Login(l)(ctx)(event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
+	err := character.Login(l)(ctx)(byte(event.WorldId), byte(event.Body.ChannelId), uint32(event.Body.MapId), event.CharacterId)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to process login for character [%d].", event.CharacterId)
 	}
 }
 
-func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventLogoutBody]) {
-	if event.Type != EventCharacterStatusTypeLogout {
+func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event StatusEvent[StatusEventLogoutBody]) {
+	if event.Type != StatusEventTypeLogout {
 		return
 	}
 	err := character.Logout(l)(ctx)(event.CharacterId)
@@ -51,21 +52,21 @@ func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event st
 	}
 }
 
-func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventChannelChangedBody]) {
-	if e.Type != EventCharacterStatusTypeChannelChanged {
+func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, e StatusEvent[ChangeChannelEventLoginBody]) {
+	if e.Type != StatusEventTypeChannelChanged {
 		return
 	}
-	err := character.ChannelChange(l)(ctx)(e.CharacterId, e.Body.ChannelId)
+	err := character.ChannelChange(l)(ctx)(e.CharacterId, byte(e.Body.ChannelId))
 	if err != nil {
 		l.WithError(err).Errorf("Unable to process channel changed for character [%d].", e.CharacterId)
 	}
 }
 
-func handleMapChangedStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventMapChangedBody]) {
-	if event.Type != EventCharacterStatusTypeMapChanged {
+func handleMapChangedStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event StatusEvent[StatusEventMapChangedBody]) {
+	if event.Type != StatusEventTypeMapChanged {
 		return
 	}
-	err := character.MapChange(l)(ctx)(event.CharacterId, event.Body.TargetMapId)
+	err := character.MapChange(l)(ctx)(event.CharacterId, uint32(event.Body.TargetMapId))
 	if err != nil {
 		l.WithError(err).Errorf("Unable to process map changed for character [%d].", event.CharacterId)
 	}

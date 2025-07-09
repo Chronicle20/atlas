@@ -105,13 +105,32 @@ func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, event S
 			Debugf("Character [%d] not found in any party before deletion.", event.CharacterId)
 	}
 	
+	// Remove character from party using the new removal logic
+	removedParty, err := party.RemoveCharacterFromParty(l)(ctx)(event.CharacterId)
+	if err != nil {
+		l.WithError(err).
+			WithField("transactionId", event.TransactionId).
+			WithField("worldId", event.WorldId).
+			WithField("characterId", event.CharacterId).
+			Errorf("Unable to remove character [%d] from party during deletion.", event.CharacterId)
+	} else {
+		if removedParty.Id() != 0 {
+			l.WithField("transactionId", event.TransactionId).
+				WithField("partyId", removedParty.Id()).
+				WithField("remainingMembers", len(removedParty.Members())).
+				WithField("newLeader", removedParty.LeaderId()).
+				Debugf("Character [%d] successfully removed from party [%d].", event.CharacterId, removedParty.Id())
+		}
+	}
+	
+	// Also process character deletion from character registry
 	err = character.Delete(l)(ctx)(event.CharacterId)
 	if err != nil {
 		l.WithError(err).
 			WithField("transactionId", event.TransactionId).
 			WithField("worldId", event.WorldId).
 			WithField("characterId", event.CharacterId).
-			Errorf("Unable to process deletion for character [%d].", event.CharacterId)
+			Errorf("Unable to process character deletion for character [%d].", event.CharacterId)
 	} else {
 		// Log cache statistics for monitoring
 		hits, misses, hitRate := party.GetCacheStats(ctx)

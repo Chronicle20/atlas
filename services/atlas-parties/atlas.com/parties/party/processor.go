@@ -126,6 +126,68 @@ func CleanupStaleCache(ctx context.Context) {
 	GetRegistry().CleanupStaleCache(t)
 }
 
+// RemoveCharacterFromParty removes a character from any party they belong to
+// This is used for character deletion events and other cleanup scenarios
+func RemoveCharacterFromParty(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) (Model, error) {
+	return func(ctx context.Context) func(characterId uint32) (Model, error) {
+		return func(characterId uint32) (Model, error) {
+			t := tenant.MustFromContext(ctx)
+			
+			// Find the party containing the character
+			party, err := GetByCharacter(ctx)(characterId)
+			if err != nil {
+				if err == ErrNotFound {
+					l.Debugf("Character [%d] not found in any party, nothing to remove.", characterId)
+					return Model{}, nil
+				}
+				l.WithError(err).Errorf("Error finding party for character [%d].", characterId)
+				return Model{}, err
+			}
+			
+			partyId := party.Id()
+			l.Debugf("Character [%d] found in party [%d], removing from party.", characterId, partyId)
+			
+			// Check if character is the leader
+			isLeader := party.LeaderId() == characterId
+			
+			// Remove the character from the party
+			updatedParty, err := GetRegistry().Update(t, partyId, func(m Model) Model { 
+				return Model.RemoveMember(m, characterId) 
+			})
+			if err != nil {
+				l.WithError(err).Errorf("Unable to remove character [%d] from party [%d].", characterId, partyId)
+				return Model{}, err
+			}
+			
+			// Handle party state after member removal
+			if len(updatedParty.Members()) == 0 {
+				// Party is empty, disband it
+				GetRegistry().Remove(t, partyId)
+				l.Debugf("Party [%d] disbanded after removing character [%d] (last member).", partyId, characterId)
+				
+				// Note: No need to emit events for character deletion as the character is being deleted
+				return Model{}, nil
+			} else if isLeader {
+				// Character was the leader, elect a new leader
+				newParty := updatedParty.ElectLeader()
+				updatedParty, err = GetRegistry().Update(t, partyId, func(m Model) Model { 
+					return newParty 
+				})
+				if err != nil {
+					l.WithError(err).Errorf("Unable to elect new leader for party [%d] after removing character [%d].", partyId, characterId)
+					return Model{}, err
+				}
+				
+				l.Debugf("Character [%d] was leader of party [%d], elected new leader [%d].", 
+					characterId, partyId, updatedParty.LeaderId())
+			}
+			
+			l.Debugf("Successfully removed character [%d] from party [%d].", characterId, partyId)
+			return updatedParty, nil
+		}
+	}
+}
+
 func ValidateMembership(ctx context.Context) func(partyId uint32, characterId uint32) error {
 	return func(partyId uint32, characterId uint32) error {
 		party, err := GetById(ctx)(partyId)

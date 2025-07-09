@@ -70,6 +70,20 @@ func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID) func(worldId worl
 			return func(mapId _map.Id) error {
 				p.l.Debugf("Executing spawn mechanism for Tenant [%s] World [%d] Channel [%d] Map [%d].", p.t.String(), worldId, channelId, mapId)
 
+				// Create MapKey for registry access
+				mapKey := character.MapKey{
+					Tenant:    p.t,
+					WorldId:   worldId,
+					ChannelId: channelId,
+					MapId:     mapId,
+				}
+
+				// Initialize registry for this map if needed (lazy initialization)
+				if err := p.initializeRegistryForMap(mapKey); err != nil {
+					p.l.WithError(err).Errorf("Failed to initialize spawn point registry for world [%d] channel [%d] map [%d].", worldId, channelId, mapId)
+					return err
+				}
+
 				cp := character.NewProcessor(p.l, p.ctx)
 				cs, err := cp.GetCharactersInMap(transactionId, worldId, channelId, mapId)
 				if err != nil {
@@ -125,4 +139,36 @@ func (p *ProcessorImpl) shuffle(vals []SpawnPoint) []SpawnPoint {
 func (p *ProcessorImpl) getMonsterMax(characterCount int, spawnPointCount int) int {
 	spawnRate := 0.70 + (0.05 * math.Min(6, float64(characterCount)))
 	return int(math.Ceil(spawnRate * float64(spawnPointCount)))
+}
+
+func (p *ProcessorImpl) initializeRegistryForMap(mapKey character.MapKey) error {
+	// Check if already initialized
+	if _, exists := p.spawnPointRegistry[mapKey]; exists {
+		return nil
+	}
+
+	// Get spawn points from the provider
+	spawnPoints, err := p.GetSpawnableSpawnPoints(uint32(mapKey.MapId))
+	if err != nil {
+		return err
+	}
+
+	// Convert to CooldownSpawnPoint with initial NextSpawnAt
+	now := time.Now()
+	cooldownSpawnPoints := make([]*CooldownSpawnPoint, len(spawnPoints))
+	for i, sp := range spawnPoints {
+		cooldownSpawnPoints[i] = &CooldownSpawnPoint{
+			SpawnPoint:  sp,
+			NextSpawnAt: now,
+		}
+	}
+
+	// Initialize registry entry and mutex
+	p.spawnPointRegistry[mapKey] = cooldownSpawnPoints
+	p.spawnPointMu[mapKey] = &sync.RWMutex{}
+
+	p.l.Debugf("Initialized spawn point registry for map key: Tenant [%s] World [%d] Channel [%d] Map [%d] with %d spawn points",
+		mapKey.Tenant.String(), mapKey.WorldId, mapKey.ChannelId, mapKey.MapId, len(cooldownSpawnPoints))
+
+	return nil
 }

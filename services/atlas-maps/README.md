@@ -19,6 +19,7 @@ A RESTful resource which provides maps services, including character tracking, m
 ### General Configuration
 - JAEGER_HOST - Jaeger [host]:[port] for distributed tracing
 - LOG_LEVEL - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
+- REST_PORT - [port] of the REST interface
 - BOOTSTRAP_SERVERS - Kafka [host]:[port]
 - BASE_SERVICE_URL - [scheme]://[host]:[port]/api/
 

@@ -69,8 +69,8 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 			r.Members = append(r.Members, MemberRestModel{
 				Id:        uint32(id),
 				Name:      "",
-				WorldId:   0,
-				ChannelId: 0,
+				WorldId:   world.Id(0),
+				ChannelId: channel.Id(0),
 				Online:    false,
 				Slot:      0,
 			})
@@ -121,8 +121,8 @@ func ExtractMember(rm MemberRestModel) (MemberModel, error) {
 	return MemberModel{
 		id:        rm.Id,
 		name:      rm.Name,
-		worldId:   world.Id(rm.WorldId),
-		channelId: channel.Id(rm.ChannelId),
+		worldId:   rm.WorldId,
+		channelId: rm.ChannelId,
 		online:    rm.Online,
 		slot:      rm.Slot,
 	}, nil
@@ -131,8 +131,8 @@ func ExtractMember(rm MemberRestModel) (MemberModel, error) {
 type MemberRestModel struct {
 	Id        uint32 `json:"-"`
 	Name      string `json:"name"`
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
 	Online    bool   `json:"online"`
 	Slot      byte   `json:"slot"`
 }

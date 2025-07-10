@@ -11,9 +11,9 @@ import (
 func GeneralChatCommandProvider(m _map.Model, actorId uint32, message string, balloonOnly bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
 	value := message2.Command[message2.GeneralChatBody]{
-		WorldId:   byte(m.WorldId()),
-		ChannelId: byte(m.ChannelId()),
-		MapId:     uint32(m.MapId()),
+		WorldId:   m.WorldId(),
+		ChannelId: m.ChannelId(),
+		MapId:     m.MapId(),
 		ActorId:   actorId,
 		Message:   message,
 		Type:      message2.ChatTypeGeneral,
@@ -25,9 +25,9 @@ func GeneralChatCommandProvider(m _map.Model, actorId uint32, message string, ba
 func MultiChatCommandProvider(m _map.Model, actorId uint32, message string, chatType string, recipients []uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
 	value := message2.Command[message2.MultiChatBody]{
-		WorldId:   byte(m.WorldId()),
-		ChannelId: byte(m.ChannelId()),
-		MapId:     uint32(m.MapId()),
+		WorldId:   m.WorldId(),
+		ChannelId: m.ChannelId(),
+		MapId:     m.MapId(),
 		ActorId:   actorId,
 		Message:   message,
 		Type:      chatType,
@@ -39,9 +39,9 @@ func MultiChatCommandProvider(m _map.Model, actorId uint32, message string, chat
 func WhisperChatCommandProvider(m _map.Model, actorId uint32, message string, recipientName string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
 	value := message2.Command[message2.WhisperChatEventBody]{
-		WorldId:   byte(m.WorldId()),
-		ChannelId: byte(m.ChannelId()),
-		MapId:     uint32(m.MapId()),
+		WorldId:   m.WorldId(),
+		ChannelId: m.ChannelId(),
+		MapId:     m.MapId(),
 		ActorId:   actorId,
 		Message:   message,
 		Type:      message2.ChatTypeWhisper,
@@ -53,9 +53,9 @@ func WhisperChatCommandProvider(m _map.Model, actorId uint32, message string, re
 func MessengerChatCommandProvider(m _map.Model, actorId uint32, message string, recipients []uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
 	value := message2.Command[message2.MessengerChatBody]{
-		WorldId:   byte(m.WorldId()),
-		ChannelId: byte(m.ChannelId()),
-		MapId:     uint32(m.MapId()),
+		WorldId:   m.WorldId(),
+		ChannelId: m.ChannelId(),
+		MapId:     m.MapId(),
 		ActorId:   actorId,
 		Message:   message,
 		Type:      message2.ChatTypeMessenger,
@@ -67,9 +67,9 @@ func MessengerChatCommandProvider(m _map.Model, actorId uint32, message string, 
 func PetChatCommandProvider(m _map.Model, petId uint64, message string, ownerId uint32, petSlot int8, nType byte, nAction byte, balloon bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(petId))
 	value := message2.Command[message2.PetChatBody]{
-		WorldId:   byte(m.WorldId()),
-		ChannelId: byte(m.ChannelId()),
-		MapId:     uint32(m.MapId()),
+		WorldId:   m.WorldId(),
+		ChannelId: m.ChannelId(),
+		MapId:     m.MapId(),
 		ActorId:   uint32(petId),
 		Message:   message,
 		Type:      message2.ChatTypePet,

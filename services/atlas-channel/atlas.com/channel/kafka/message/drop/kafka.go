@@ -1,6 +1,12 @@
 package drop
 
-import "time"
+import (
+	"time"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+)
 
 const (
 	EnvCommandTopic               = "COMMAND_TOPIC_DROP"
@@ -8,11 +14,11 @@ const (
 )
 
 type Command[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Type      string     `json:"type"`
+	Body      E          `json:"body"`
 }
 
 type RequestReservationCommandBody struct {
@@ -31,12 +37,12 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	DropId    uint32 `json:"dropId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	DropId    uint32     `json:"dropId"`
+	Type      string     `json:"type"`
+	Body      E          `json:"body"`
 }
 
 type CreatedStatusEventBody struct {

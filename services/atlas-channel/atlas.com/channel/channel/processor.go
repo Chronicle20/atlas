@@ -32,8 +32,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 func (p *ProcessorImpl) Register(worldId world.Id, channelId channel.Id, ipAddress string, port int) error {
 	return registerChannel(p.l)(p.ctx)(NewBuilder().
-		SetWorldId(byte(worldId)).
-		SetChannelId(byte(channelId)).
+		SetWorldId(worldId).
+		SetChannelId(channelId).
 		SetIpAddress(ipAddress).
 		SetPort(port).
 		SetCurrentCapacity(0).

@@ -4,6 +4,7 @@ import (
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/marriage"
 	"atlas-query-aggregator/quest"
+	"fmt"
 	"github.com/Chronicle20/atlas-model/model"
 )
 
@@ -144,21 +145,21 @@ func (p *ContextBuilderProvider) GetValidationContext(characterId uint32) model.
 		// Get quest data if available
 		if p.questProvider != nil {
 			questsMap, err := p.questProvider(characterId)()
-			if err == nil {
-				for _, questModel := range questsMap {
-					builder.AddQuest(questModel)
-				}
+			if err != nil {
+				return ValidationContext{}, fmt.Errorf("failed to get quest data: %w", err)
 			}
-			// Note: We don't fail if quest data is unavailable, just use empty quest map
+			for _, questModel := range questsMap {
+				builder.AddQuest(questModel)
+			}
 		}
 
 		// Get marriage data if available
 		if p.marriageProvider != nil {
 			marriageModel, err := p.marriageProvider(characterId)()
-			if err == nil {
-				builder.SetMarriage(marriageModel)
+			if err != nil {
+				return ValidationContext{}, fmt.Errorf("failed to get marriage data: %w", err)
 			}
-			// Note: We don't fail if marriage data is unavailable, just use default
+			builder.SetMarriage(marriageModel)
 		}
 
 		return builder.Build(), nil

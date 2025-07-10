@@ -220,7 +220,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					}()
 					go func() {
 						var w world.Model
-						w, err = world.NewProcessor(l, ctx).GetById(byte(s.WorldId()))
+						w, err = world.NewProcessor(l, ctx).GetById(s.WorldId())
 						if err != nil {
 							return
 						}

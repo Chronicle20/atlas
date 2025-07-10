@@ -1,5 +1,9 @@
 package invite
 
+import (
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 const (
 	InviteTypeBuddy        = "BUDDY"
 	InviteTypeFamily       = "FAMILY"
@@ -18,10 +22,10 @@ const (
 )
 
 type Command[E any] struct {
-	WorldId    byte   `json:"worldId"`
-	InviteType string `json:"inviteType"`
-	Type       string `json:"type"`
-	Body       E      `json:"body"`
+	WorldId    world.Id `json:"worldId"`
+	InviteType string   `json:"inviteType"`
+	Type       string   `json:"type"`
+	Body       E        `json:"body"`
 }
 
 type AcceptCommandBody struct {
@@ -42,11 +46,11 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	InviteType  string `json:"inviteType"`
-	ReferenceId uint32 `json:"referenceId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id `json:"worldId"`
+	InviteType  string   `json:"inviteType"`
+	ReferenceId uint32   `json:"referenceId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 type CreatedEventBody struct {

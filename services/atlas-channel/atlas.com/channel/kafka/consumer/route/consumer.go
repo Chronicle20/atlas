@@ -52,12 +52,12 @@ func handleStatusEventArrived(sc server.Model, wp writer.Producer) message.Handl
 		}
 
 		t := tenant.MustFromContext(ctx)
-		mapId := e.Body.MapId
+		mapId := _map2.Id(e.Body.MapId)
 
 		l.Debugf("Transport route [%s] has arrived at map [%d].", e.RouteId, mapId)
 
 		// Broadcast to all characters in the map
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(mapId)), 
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(mapId), 
 			session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l, t)(writer.TransportStateEnter1, false)))
 
 		if err != nil {
@@ -74,12 +74,12 @@ func handleStatusEventDeparted(sc server.Model, wp writer.Producer) message.Hand
 		}
 
 		t := tenant.MustFromContext(ctx)
-		mapId := e.Body.MapId
+		mapId := _map2.Id(e.Body.MapId)
 
 		l.Debugf("Transport route [%s] has departed from map [%d].", e.RouteId, mapId)
 
 		// Broadcast to all characters in the map
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(_map2.Id(mapId)), 
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Map(mapId), 
 			session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l, t)(writer.TransportStateMove1, false)))
 
 		if err != nil {

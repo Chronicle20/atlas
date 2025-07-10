@@ -38,6 +38,9 @@ type RestModel struct {
 	X                  int16  `json:"x"`
 	Y                  int16  `json:"y"`
 	Stance             byte   `json:"stance"`
+	Reborns            uint32 `json:"reborns"`
+	DojoPoints         uint32 `json:"dojoPoints"`
+	VanquisherKills    uint32 `json:"vanquisherKills"`
 }
 
 func (r RestModel) GetName() string {
@@ -112,6 +115,9 @@ func Extract(m RestModel) (Model, error) {
 		sp:                 m.Sp,
 		mapId:              m.MapId,
 		gm:                 m.Gm,
+		reborns:            m.Reborns,
+		dojoPoints:         m.DojoPoints,
+		vanquisherKills:    m.VanquisherKills,
 		x:                  m.X,
 		y:                  m.Y,
 		stance:             m.Stance,

@@ -56,6 +56,10 @@ func (m Model) Gm() bool {
 	return m.gm == 1
 }
 
+func (m Model) GmLevel() int {
+	return m.gm
+}
+
 func (m Model) Rank() uint32 {
 	return 0
 }

@@ -15,9 +15,9 @@ func StartConversationCommandProvider(m _map.Model, npcId uint32, characterId ui
 		CharacterId: characterId,
 		Type:        npc2.CommandTypeStartConversation,
 		Body: npc2.StartConversationCommandBody{
-			WorldId:   byte(m.WorldId()),
-			ChannelId: byte(m.ChannelId()),
-			MapId:     uint32(m.MapId()),
+			WorldId:   m.WorldId(),
+			ChannelId: m.ChannelId(),
+			MapId:     m.MapId(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

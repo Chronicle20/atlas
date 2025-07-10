@@ -20,8 +20,8 @@ func ApplyCommandProvider(m _map.Model, characterId uint32, fromId uint32, sourc
 
 	key := producer.CreateKey(int(characterId))
 	value := &buff.Command[buff.ApplyCommandBody]{
-		WorldId:     byte(m.WorldId()),
-		ChannelId:   byte(m.ChannelId()),
+		WorldId:     m.WorldId(),
+		ChannelId:   m.ChannelId(),
 		CharacterId: characterId,
 		Type:        buff.CommandTypeApply,
 		Body: buff.ApplyCommandBody{
@@ -37,8 +37,8 @@ func ApplyCommandProvider(m _map.Model, characterId uint32, fromId uint32, sourc
 func CancelCommandProvider(m _map.Model, characterId uint32, sourceId int32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &buff.Command[buff.CancelCommandBody]{
-		WorldId:     byte(m.WorldId()),
-		ChannelId:   byte(m.ChannelId()),
+		WorldId:     m.WorldId(),
+		ChannelId:   m.ChannelId(),
 		CharacterId: characterId,
 		Type:        buff.CommandTypeCancel,
 		Body: buff.CancelCommandBody{

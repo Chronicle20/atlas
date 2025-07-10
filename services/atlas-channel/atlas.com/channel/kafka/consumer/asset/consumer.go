@@ -680,7 +680,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 
 						for _, mm := range m.Members() {
 							_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.WorldId(), s.ChannelId())(mm.Id(), func(os session.Model) error {
-								return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationUpdateBody(ctx)(um.Slot(), c, byte(s.ChannelId())))(os)
+								return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationUpdateBody(ctx)(um.Slot(), c, s.ChannelId()))(os)
 							})
 						}
 						errChannels <- err

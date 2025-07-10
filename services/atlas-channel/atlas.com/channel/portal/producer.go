@@ -11,9 +11,9 @@ import (
 func EnterCommandProvider(m _map.Model, portalId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(portalId))
 	value := portal2.Command[portal2.EnterBody]{
-		WorldId:   byte(m.WorldId()),
-		ChannelId: byte(m.ChannelId()),
-		MapId:     uint32(m.MapId()),
+		WorldId:   m.WorldId(),
+		ChannelId: m.ChannelId(),
+		MapId:     m.MapId(),
 		PortalId:  portalId,
 		Type:      portal2.CommandTypeEnter,
 		Body: portal2.EnterBody{

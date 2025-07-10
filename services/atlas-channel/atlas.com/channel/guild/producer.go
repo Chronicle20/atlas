@@ -14,9 +14,9 @@ func RequestCreateProvider(m _map.Model, characterId uint32, name string) model.
 		CharacterId: characterId,
 		Type:        guild2.CommandTypeRequestCreate,
 		Body: guild2.RequestCreateBody{
-			WorldId:   byte(m.WorldId()),
-			ChannelId: byte(m.ChannelId()),
-			MapId:     uint32(m.MapId()),
+			WorldId:   m.WorldId(),
+			ChannelId: m.ChannelId(),
+			MapId:     m.MapId(),
 			Name:      name,
 		},
 	}

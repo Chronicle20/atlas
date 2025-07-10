@@ -16,7 +16,6 @@ import (
 	"atlas-channel/socket/writer"
 	"atlas-channel/world"
 	"context"
-	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -147,7 +146,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					s = sp.SetAccountId(s.SessionId(), c.AccountId())
 					s = sp.SetCharacterId(s.SessionId(), c.Id())
 					s = sp.SetGm(s.SessionId(), c.Gm())
-					s = sp.SetMapId(s.SessionId(), _map.Id(c.MapId()))
+					s = sp.SetMapId(s.SessionId(), c.MapId())
 
 					sp.SessionCreated(s)
 
@@ -220,7 +219,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					}()
 					go func() {
 						var w world.Model
-						w, err = world.NewProcessor(l, ctx).GetById(byte(s.WorldId()))
+						w, err = world.NewProcessor(l, ctx).GetById(s.WorldId())
 						if err != nil {
 							return
 						}

@@ -2,6 +2,7 @@ package world
 
 import (
 	"atlas-channel/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 )
 
 type State byte
@@ -19,7 +20,7 @@ const (
 )
 
 type Model struct {
-	id                 byte
+	id                 world.Id
 	name               string
 	state              State
 	message            string
@@ -29,7 +30,7 @@ type Model struct {
 	channels           []channel.Model
 }
 
-func (m Model) Id() byte {
+func (m Model) Id() world.Id {
 	return m.id
 }
 
@@ -67,7 +68,7 @@ func (m Model) Channels() []channel.Model {
 
 // Builder is used to construct a Model instance
 type Builder struct {
-	id                 byte
+	id                 world.Id
 	name               string
 	state              State
 	message            string
@@ -83,7 +84,7 @@ func NewBuilder() *Builder {
 }
 
 // SetId sets the id field
-func (b *Builder) SetId(id byte) *Builder {
+func (b *Builder) SetId(id world.Id) *Builder {
 	b.id = id
 	return b
 }

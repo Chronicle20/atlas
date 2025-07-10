@@ -1,5 +1,11 @@
 package chair
 
+import (
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+)
+
 const (
 	TypeFixed    = "FIXED"
 	TypePortable = "PORTABLE"
@@ -12,9 +18,9 @@ const (
 )
 
 type Command[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
 	Type      string `json:"type"`
 	Body      E      `json:"body"`
 }
@@ -39,9 +45,9 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
 	ChairType string `json:"chairType"`
 	ChairId   uint32 `json:"chairId"`
 	Type      string `json:"type"`

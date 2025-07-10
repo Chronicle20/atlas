@@ -25,5 +25,5 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) GetById(mapId _map.Id) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestMap(uint32(mapId)), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestMap(mapId), Extract)()
 }

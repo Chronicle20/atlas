@@ -3,6 +3,7 @@ package writer
 import (
 	"atlas-channel/character"
 	"context"
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 )
@@ -21,15 +22,15 @@ const (
 	MessengerOperationModeUpdate         = MessengerOperationMode(7)
 )
 
-func MessengerOperationAddBody(ctx context.Context) func(position byte, c character.Model, channelId byte) BodyProducer {
+func MessengerOperationAddBody(ctx context.Context) func(position byte, c character.Model, channelId channel.Id) BodyProducer {
 	t := tenant.MustFromContext(ctx)
-	return func(position byte, c character.Model, channelId byte) BodyProducer {
+	return func(position byte, c character.Model, channelId channel.Id) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(byte(MessengerOperationModeAdd))
 			w.WriteByte(position)
 			WriteCharacterLook(t)(w, c, true)
 			w.WriteAsciiString(c.Name())
-			w.WriteByte(channelId)
+			w.WriteByte(byte(channelId))
 			w.WriteByte(0x00)
 			return w.Bytes()
 		}
@@ -89,15 +90,15 @@ func MessengerOperationChatBody(message string) BodyProducer {
 	}
 }
 
-func MessengerOperationUpdateBody(ctx context.Context) func(position byte, c character.Model, channelId byte) BodyProducer {
+func MessengerOperationUpdateBody(ctx context.Context) func(position byte, c character.Model, channelId channel.Id) BodyProducer {
 	t := tenant.MustFromContext(ctx)
-	return func(position byte, c character.Model, channelId byte) BodyProducer {
+	return func(position byte, c character.Model, channelId channel.Id) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(byte(MessengerOperationModeUpdate))
 			w.WriteByte(position)
 			WriteCharacterLook(t)(w, c, true)
 			w.WriteAsciiString(c.Name())
-			w.WriteByte(channelId)
+			w.WriteByte(byte(channelId))
 			w.WriteByte(0x00)
 			return w.Bytes()
 		}

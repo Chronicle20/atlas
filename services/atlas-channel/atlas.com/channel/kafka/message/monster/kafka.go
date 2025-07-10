@@ -1,16 +1,22 @@
 package monster
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 const (
 	EnvCommandTopic   = "COMMAND_TOPIC_MONSTER"
 	CommandTypeDamage = "DAMAGE"
 )
 
 type Command[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MonsterId uint32 `json:"monsterId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MonsterId uint32     `json:"monsterId"`
+	Type      string     `json:"type"`
+	Body      E          `json:"body"`
 }
 
 type DamageCommandBody struct {
@@ -30,13 +36,13 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	UniqueId  uint32 `json:"uniqueId"`
-	MonsterId uint32 `json:"monsterId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	UniqueId  uint32     `json:"uniqueId"`
+	MonsterId uint32     `json:"monsterId"`
+	Type      string     `json:"type"`
+	Body      E          `json:"body"`
 }
 
 type StatusEventCreatedBody struct {

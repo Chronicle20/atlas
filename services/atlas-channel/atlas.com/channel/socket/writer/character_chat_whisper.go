@@ -2,6 +2,8 @@ package writer
 
 import (
 	"atlas-channel/character"
+	"github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-socket/response"
 )
 
@@ -37,12 +39,12 @@ func CharacterChatWhisperFindResultInCashShopBody(mode WhisperMode, targetName s
 	}
 }
 
-func CharacterChatWhisperFindResultInMapBody(mode WhisperMode, target character.Model, mapId uint32) BodyProducer {
+func CharacterChatWhisperFindResultInMapBody(mode WhisperMode, target character.Model, mapId _map.Id) BodyProducer {
 	return func(w *response.Writer, options map[string]interface{}) []byte {
 		w.WriteByte(byte(mode))
 		w.WriteAsciiString(target.Name())
 		w.WriteByte(byte(WhisperFindResultModeMap))
-		w.WriteInt(mapId)
+		w.WriteInt(uint32(mapId))
 		if mode == WhisperModeFindResult {
 			w.WriteInt32(int32(target.X()))
 			w.WriteInt32(int32(target.Y()))
@@ -51,7 +53,7 @@ func CharacterChatWhisperFindResultInMapBody(mode WhisperMode, target character.
 	}
 }
 
-func CharacterChatWhisperFindResultInOtherChannelBody(mode WhisperMode, targetName string, channelId byte) BodyProducer {
+func CharacterChatWhisperFindResultInOtherChannelBody(mode WhisperMode, targetName string, channelId channel.Id) BodyProducer {
 	return func(w *response.Writer, options map[string]interface{}) []byte {
 		w.WriteByte(byte(mode))
 		w.WriteAsciiString(targetName)
@@ -89,11 +91,11 @@ func CharacterChatWhisperSendFailureResultBody(targetName string, success bool) 
 	}
 }
 
-func CharacterChatWhisperReceiptBody(from character.Model, channelId byte, message string) BodyProducer {
+func CharacterChatWhisperReceiptBody(from character.Model, channelId channel.Id, message string) BodyProducer {
 	return func(w *response.Writer, options map[string]interface{}) []byte {
 		w.WriteByte(byte(WhisperModeReceive))
 		w.WriteAsciiString(from.Name())
-		w.WriteByte(channelId)
+		w.WriteByte(byte(channelId))
 		w.WriteBool(from.Gm())
 		w.WriteAsciiString(message)
 		return w.Bytes()

@@ -1,5 +1,11 @@
 package character
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 const (
 	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
 	CommandRequestDistributeAp = "REQUEST_DISTRIBUTE_AP"
@@ -17,10 +23,10 @@ const (
 )
 
 type Command[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id `json:"worldId"`
+	CharacterId uint32   `json:"characterId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 type DistributePair struct {
@@ -38,19 +44,19 @@ type RequestDistributeSpCommandBody struct {
 }
 
 type RequestDropMesoCommandBody struct {
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	Amount    uint32 `json:"amount"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Amount    uint32     `json:"amount"`
 }
 
 type ChangeHPCommandBody struct {
-	ChannelId byte  `json:"channelId"`
-	Amount    int16 `json:"amount"`
+	ChannelId channel.Id `json:"channelId"`
+	Amount    int16      `json:"amount"`
 }
 
 type ChangeMPCommandBody struct {
-	ChannelId byte  `json:"channelId"`
-	Amount    int16 `json:"amount"`
+	ChannelId channel.Id `json:"channelId"`
+	Amount    int16      `json:"amount"`
 }
 
 const (
@@ -82,27 +88,27 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	WorldId     byte   `json:"worldId"`
-	Body        E      `json:"body"`
+	CharacterId uint32   `json:"characterId"`
+	Type        string   `json:"type"`
+	WorldId     world.Id `json:"worldId"`
+	Body        E        `json:"body"`
 }
 
 type StatusEventStatChangedBody struct {
-	ChannelId       byte     `json:"channelId"`
-	ExclRequestSent bool     `json:"exclRequestSent"`
-	Updates         []string `json:"updates"`
+	ChannelId       channel.Id `json:"channelId"`
+	ExclRequestSent bool       `json:"exclRequestSent"`
+	Updates         []string   `json:"updates"`
 }
 
 type StatusEventMapChangedBody struct {
-	ChannelId      byte   `json:"channelId"`
-	OldMapId       uint32 `json:"oldMapId"`
-	TargetMapId    uint32 `json:"targetMapId"`
-	TargetPortalId uint32 `json:"targetPortalId"`
+	ChannelId      channel.Id `json:"channelId"`
+	OldMapId       _map.Id    `json:"oldMapId"`
+	TargetMapId    _map.Id    `json:"targetMapId"`
+	TargetPortalId uint32     `json:"targetPortalId"`
 }
 
 type ExperienceChangedStatusEventBody struct {
-	ChannelId     byte                      `json:"channelId"`
+	ChannelId     channel.Id                `json:"channelId"`
 	Current       uint32                    `json:"current"`
 	Distributions []ExperienceDistributions `json:"distributions"`
 }
@@ -114,9 +120,9 @@ type ExperienceDistributions struct {
 }
 
 type LevelChangedStatusEventBody struct {
-	ChannelId byte `json:"channelId"`
-	Amount    byte `json:"amount"`
-	Current   byte `json:"current"`
+	ChannelId channel.Id `json:"channelId"`
+	Amount    byte       `json:"amount"`
+	Current   byte       `json:"current"`
 }
 
 type FameChangedStatusEventBody struct {

@@ -121,8 +121,8 @@ func ExtractMember(rm MemberRestModel) (MemberModel, error) {
 	return MemberModel{
 		id:        rm.Id,
 		name:      rm.Name,
-		worldId:   world.Id(rm.WorldId),
-		channelId: channel.Id(rm.ChannelId),
+		worldId:   rm.WorldId,
+		channelId: rm.ChannelId,
 		online:    rm.Online,
 		slot:      rm.Slot,
 	}, nil
@@ -131,8 +131,8 @@ func ExtractMember(rm MemberRestModel) (MemberModel, error) {
 type MemberRestModel struct {
 	Id        uint32 `json:"-"`
 	Name      string `json:"name"`
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
 	Online    bool   `json:"online"`
 	Slot      byte   `json:"slot"`
 }

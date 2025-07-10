@@ -4,6 +4,7 @@ import (
 	"atlas-query-aggregator/asset"
 	"atlas-query-aggregator/compartment"
 	"atlas-query-aggregator/equipment"
+	"atlas-query-aggregator/guild"
 	"atlas-query-aggregator/inventory"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/job"
@@ -50,6 +51,7 @@ type Model struct {
 	meso               uint32
 	equipment          equipment.Model
 	inventory          inventory.Model
+	guild              guild.Model
 }
 
 func (m Model) Gm() bool {
@@ -264,6 +266,10 @@ func (m Model) VanquisherKills() uint32 {
 	return m.vanquisherKills
 }
 
+func (m Model) Guild() guild.Model {
+	return m.guild
+}
+
 func (m Model) SetInventory(i inventory.Model) Model {
 	eq := equipment.NewModel()
 	ec := compartment.NewBuilder(i.Equipable().Id(), m.Id(), i.Equipable().Type(), i.Equipable().Capacity())
@@ -362,6 +368,7 @@ func Clone(m Model) *ModelBuilder {
 		meso:               m.meso,
 		equipment:          m.equipment,
 		inventory:          m.inventory,
+		guild:              m.guild,
 	}
 }
 
@@ -402,6 +409,7 @@ type ModelBuilder struct {
 	meso               uint32
 	equipment          equipment.Model
 	inventory          inventory.Model
+	guild              guild.Model
 }
 
 func NewModelBuilder() *ModelBuilder {
@@ -444,6 +452,7 @@ func (b *ModelBuilder) SetDojoPoints(v uint32) *ModelBuilder         { b.dojoPoi
 func (b *ModelBuilder) SetVanquisherKills(v uint32) *ModelBuilder    { b.vanquisherKills = v; return b }
 func (b *ModelBuilder) SetEquipment(v equipment.Model) *ModelBuilder { b.equipment = v; return b }
 func (b *ModelBuilder) SetInventory(v inventory.Model) *ModelBuilder { b.inventory = v; return b }
+func (b *ModelBuilder) SetGuild(v guild.Model) *ModelBuilder         { b.guild = v; return b }
 
 func (b *ModelBuilder) Build() Model {
 	return Model{
@@ -483,5 +492,6 @@ func (b *ModelBuilder) Build() Model {
 		meso:               b.meso,
 		equipment:          b.equipment,
 		inventory:          b.inventory,
+		guild:              b.guild,
 	}
 }

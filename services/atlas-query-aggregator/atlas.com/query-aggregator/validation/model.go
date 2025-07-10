@@ -308,12 +308,10 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 		actualValue = character.GmLevel()
 		description = fmt.Sprintf("GM Level %s %d", c.operator, c.value)
 	case GuildIdCondition:
-		// TODO: Implement guild ID validation when guild model is available
-		actualValue = 0 // Placeholder - character.Guild().Id()
+		actualValue = int(character.Guild().Id())
 		description = fmt.Sprintf("Guild ID %s %d", c.operator, c.value)
 	case GuildRankCondition:
-		// TODO: Implement guild rank validation when guild model is available
-		actualValue = 0 // Placeholder - character.Guild().Rank()
+		actualValue = int(character.Guild().Rank())
 		description = fmt.Sprintf("Guild Rank %s %d", c.operator, c.value)
 	case QuestStatusCondition:
 		// TODO: Implement quest status validation when quest integration is available
@@ -453,13 +451,11 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 		description = fmt.Sprintf("Unclaimed Marriage Gifts %s %d", c.operator, c.value)
 		
 	case GuildIdCondition:
-		// TODO: Implement guild ID validation when guild model is available in character
-		actualValue = 0 // Placeholder - character.Guild().Id()
+		actualValue = int(character.Guild().Id())
 		description = fmt.Sprintf("Guild ID %s %d", c.operator, c.value)
 		
 	case GuildRankCondition:
-		// TODO: Implement guild rank validation when guild model is available in character
-		actualValue = 0 // Placeholder - character.Guild().Rank()
+		actualValue = int(character.Guild().Rank())
 		description = fmt.Sprintf("Guild Rank %s %d", c.operator, c.value)
 		
 	default:

@@ -2,6 +2,7 @@ package validation
 
 import (
 	"atlas-query-aggregator/character"
+	"atlas-query-aggregator/quest"
 	"fmt"
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
@@ -373,6 +374,97 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 			Value:       c.value,
 			ActualValue: 0,
 		}
+	}
+
+	// Compare the actual value with the expected value based on the operator
+	switch c.operator {
+	case Equals:
+		passed = actualValue == c.value
+	case GreaterThan:
+		passed = actualValue > c.value
+	case LessThan:
+		passed = actualValue < c.value
+	case GreaterEqual:
+		passed = actualValue >= c.value
+	case LessEqual:
+		passed = actualValue <= c.value
+	}
+
+	return ConditionResult{
+		Passed:      passed,
+		Description: description,
+		Type:        c.conditionType,
+		Operator:    c.operator,
+		Value:       c.value,
+		ItemId:      itemId,
+		ActualValue: actualValue,
+	}
+}
+
+// EvaluateWithContext evaluates the condition using a validation context
+// This method supports additional validation types like quest status, marriage gifts, etc.
+func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
+	var actualValue int
+	var passed bool
+	var description string
+	var itemId uint32
+
+	character := ctx.Character()
+
+	// Handle context-specific conditions first
+	switch c.conditionType {
+	case QuestStatusCondition:
+		questModel, exists := ctx.Quest(c.referenceId)
+		if !exists {
+			return ConditionResult{
+				Passed:      false,
+				Description: fmt.Sprintf("Quest %d not found", c.referenceId),
+				Type:        c.conditionType,
+				Operator:    c.operator,
+				Value:       c.value,
+				ActualValue: int(quest.UNDEFINED),
+			}
+		}
+		actualValue = int(questModel.Status())
+		description = fmt.Sprintf("Quest %d Status %s %d", c.referenceId, c.operator, c.value)
+		
+	case QuestProgressCondition:
+		questModel, exists := ctx.Quest(c.referenceId)
+		if !exists {
+			return ConditionResult{
+				Passed:      false,
+				Description: fmt.Sprintf("Quest %d not found", c.referenceId),
+				Type:        c.conditionType,
+				Operator:    c.operator,
+				Value:       c.value,
+				ActualValue: 0,
+			}
+		}
+		actualValue = questModel.Progress(c.step)
+		description = fmt.Sprintf("Quest %d Progress (step: %s) %s %d", c.referenceId, c.step, c.operator, c.value)
+		
+	case UnclaimedMarriageGiftsCondition:
+		marriageModel := ctx.Marriage()
+		if marriageModel.HasUnclaimedGifts() {
+			actualValue = 1
+		} else {
+			actualValue = 0
+		}
+		description = fmt.Sprintf("Unclaimed Marriage Gifts %s %d", c.operator, c.value)
+		
+	case GuildIdCondition:
+		// TODO: Implement guild ID validation when guild model is available in character
+		actualValue = 0 // Placeholder - character.Guild().Id()
+		description = fmt.Sprintf("Guild ID %s %d", c.operator, c.value)
+		
+	case GuildRankCondition:
+		// TODO: Implement guild rank validation when guild model is available in character
+		actualValue = 0 // Placeholder - character.Guild().Rank()
+		description = fmt.Sprintf("Guild Rank %s %d", c.operator, c.value)
+		
+	default:
+		// For non-context-specific conditions, delegate to the original Evaluate method
+		return c.Evaluate(character)
 	}
 
 	// Compare the actual value with the expected value based on the operator

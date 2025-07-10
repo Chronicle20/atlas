@@ -1,5 +1,11 @@
 package _map
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 const (
 	EnvEventTopicMapStatus                = "EVENT_TOPIC_MAP_STATUS"
 	EventTopicMapStatusTypeCharacterEnter = "CHARACTER_ENTER"
@@ -7,11 +13,11 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Type      string     `json:"type"`
+	Body      E          `json:"body"`
 }
 
 type CharacterEnter struct {

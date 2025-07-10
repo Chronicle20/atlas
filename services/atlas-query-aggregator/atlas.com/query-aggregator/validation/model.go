@@ -314,17 +314,35 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 		actualValue = int(character.Guild().Rank())
 		description = fmt.Sprintf("Guild Rank %s %d", c.operator, c.value)
 	case QuestStatusCondition:
-		// TODO: Implement quest status validation when quest integration is available
-		actualValue = 0 // Placeholder - will need quest service integration
-		description = fmt.Sprintf("Quest %d Status %s %d", c.referenceId, c.operator, c.value)
+		// Quest status validation requires context - return error state
+		return ConditionResult{
+			Passed:      false,
+			Description: fmt.Sprintf("Quest %d Status validation requires ValidationContext", c.referenceId),
+			Type:        c.conditionType,
+			Operator:    c.operator,
+			Value:       c.value,
+			ActualValue: int(quest.UNDEFINED),
+		}
 	case QuestProgressCondition:
-		// TODO: Implement quest progress validation when quest integration is available
-		actualValue = 0 // Placeholder - will need quest service integration
-		description = fmt.Sprintf("Quest %d Progress (step: %s) %s %d", c.referenceId, c.step, c.operator, c.value)
+		// Quest progress validation requires context - return error state  
+		return ConditionResult{
+			Passed:      false,
+			Description: fmt.Sprintf("Quest %d Progress validation (step: %s) requires ValidationContext", c.referenceId, c.step),
+			Type:        c.conditionType,
+			Operator:    c.operator,
+			Value:       c.value,
+			ActualValue: 0,
+		}
 	case UnclaimedMarriageGiftsCondition:
-		// TODO: Implement marriage gifts validation when marriage integration is available
-		actualValue = 0 // Placeholder - will need marriage service integration
-		description = fmt.Sprintf("Unclaimed Marriage Gifts %s %d", c.operator, c.value)
+		// Marriage gifts validation requires context - return error state
+		return ConditionResult{
+			Passed:      false,
+			Description: fmt.Sprintf("Unclaimed Marriage Gifts validation requires ValidationContext"),
+			Type:        c.conditionType,
+			Operator:    c.operator,
+			Value:       c.value,
+			ActualValue: 0,
+		}
 	case StrengthCondition:
 		actualValue = int(character.Strength())
 		description = fmt.Sprintf("Strength %s %d", c.operator, c.value)

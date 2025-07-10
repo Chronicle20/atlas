@@ -679,6 +679,40 @@ func TestCondition_Evaluate(t *testing.T) {
 			wantPassed:   false,
 			wantContains: "Luck < 10",
 		},
+		// Test new condition types that require context
+		{
+			name: "Quest Status - requires context",
+			condition: Condition{
+				conditionType: QuestStatusCondition,
+				operator:      Equals,
+				value:         1,
+				referenceId:   1001,
+			},
+			wantPassed:   false,
+			wantContains: "Quest 1001 Status validation requires ValidationContext",
+		},
+		{
+			name: "Quest Progress - requires context",
+			condition: Condition{
+				conditionType: QuestProgressCondition,
+				operator:      Equals,
+				value:         1,
+				referenceId:   1001,
+				step:          "step1",
+			},
+			wantPassed:   false,
+			wantContains: "Quest 1001 Progress validation (step: step1) requires ValidationContext",
+		},
+		{
+			name: "Marriage Gifts - requires context",
+			condition: Condition{
+				conditionType: UnclaimedMarriageGiftsCondition,
+				operator:      Equals,
+				value:         1,
+			},
+			wantPassed:   false,
+			wantContains: "Unclaimed Marriage Gifts validation requires ValidationContext",
+		},
 	}
 
 	for _, tt := range tests {

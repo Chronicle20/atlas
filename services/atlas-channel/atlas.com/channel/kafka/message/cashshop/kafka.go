@@ -2,6 +2,9 @@ package cashshop
 
 import (
 	"github.com/google/uuid"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
 )
 
 const (
@@ -68,7 +71,7 @@ const (
 
 // TODO multiple services have different impl of this
 type StatusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
+	WorldId     world.Id `json:"worldId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
@@ -87,8 +90,8 @@ type ErrorEventBody struct {
 
 type CharacterMovementBody struct {
 	CharacterId uint32 `json:"characterId"`
-	ChannelId   byte   `json:"channelId"`
-	MapId       uint32 `json:"mapId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id `json:"mapId"`
 }
 
 type PurchaseEventBody struct {

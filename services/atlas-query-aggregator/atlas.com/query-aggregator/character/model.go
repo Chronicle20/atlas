@@ -140,6 +140,10 @@ func (m Model) MaxMp() uint16 {
 	return m.maxMp
 }
 
+func (m Model) HpMpUsed() int {
+	return m.hpMpUsed
+}
+
 func (m Model) Ap() uint16 {
 	return m.ap
 }

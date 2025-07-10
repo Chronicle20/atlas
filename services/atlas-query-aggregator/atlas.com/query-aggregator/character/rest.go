@@ -4,6 +4,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
+	"strings"
 )
 
 type RestModel struct {
@@ -84,6 +85,54 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 
 func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
 	return nil
+}
+
+func Transform(m Model) (RestModel, error) {
+	spStr := strings.Join(func() []string {
+		sps := m.Sp()
+		result := make([]string, len(sps))
+		for i, sp := range sps {
+			result[i] = strconv.FormatUint(uint64(sp), 10)
+		}
+		return result
+	}(), ",")
+
+	return RestModel{
+		Id:                 m.Id(),
+		AccountId:          m.AccountId(),
+		WorldId:            byte(m.WorldId()),
+		Name:               m.Name(),
+		Level:              m.Level(),
+		Experience:         m.Experience(),
+		GachaponExperience: m.GachaponExperience(),
+		Strength:           m.Strength(),
+		Dexterity:          m.Dexterity(),
+		Intelligence:       m.Intelligence(),
+		Luck:               m.Luck(),
+		Hp:                 m.Hp(),
+		MaxHp:              m.MaxHp(),
+		Mp:                 m.Mp(),
+		MaxMp:              m.MaxMp(),
+		Meso:               m.Meso(),
+		HpMpUsed:           m.HpMpUsed(),
+		JobId:              m.JobId(),
+		SkinColor:          m.SkinColor(),
+		Gender:             m.Gender(),
+		Fame:               m.Fame(),
+		Hair:               m.Hair(),
+		Face:               m.Face(),
+		Ap:                 m.Ap(),
+		Sp:                 spStr,
+		MapId:              m.MapId(),
+		SpawnPoint:         uint32(m.SpawnPoint()),
+		Gm:                 m.GmLevel(),
+		X:                  m.X(),
+		Y:                  m.Y(),
+		Stance:             m.Stance(),
+		Reborns:            m.Reborns(),
+		DojoPoints:         m.DojoPoints(),
+		VanquisherKills:    m.VanquisherKills(),
+	}, nil
 }
 
 func Extract(m RestModel) (Model, error) {

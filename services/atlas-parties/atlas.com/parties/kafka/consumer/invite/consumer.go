@@ -37,7 +37,7 @@ func handleAcceptedStatusEvent(l logrus.FieldLogger, ctx context.Context, e stat
 		return
 	}
 
-	_, err := party.NewProcessor(l, ctx).Join(e.ReferenceId, e.Body.TargetId)
+	_, err := party.NewProcessor(l, ctx).JoinAndEmit(e.ReferenceId, e.Body.TargetId)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to join party [%d].", e.Body.TargetId, e.ReferenceId)
 	}

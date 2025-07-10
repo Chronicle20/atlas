@@ -187,7 +187,7 @@ func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, e Statu
 		WithField("partyMemberCount", len(p.Members())).
 		Debugf("Character [%d] found in party [%d] before deletion.", e.CharacterId, p.Id())
 
-	p, err = pp.Leave(p.Id(), e.CharacterId)
+	p, err = pp.LeaveAndEmit(p.Id(), e.CharacterId)
 	if err != nil {
 		l.WithError(err).
 			WithField("transactionId", e.TransactionId).

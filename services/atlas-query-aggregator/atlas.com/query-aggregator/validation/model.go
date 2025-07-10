@@ -21,6 +21,12 @@ const (
 	RebornsCondition       ConditionType = "reborns"
 	DojoPointsCondition    ConditionType = "dojoPoints"
 	VanquisherKillsCondition ConditionType = "vanquisherKills"
+	GmLevelCondition       ConditionType = "gmLevel"
+	GuildIdCondition       ConditionType = "guildId"
+	GuildRankCondition     ConditionType = "guildRank"
+	QuestStatusCondition   ConditionType = "questStatus"
+	QuestProgressCondition ConditionType = "questProgress"
+	UnclaimedMarriageGiftsCondition ConditionType = "hasUnclaimedMarriageGifts"
 	StrengthCondition      ConditionType = "strength"
 	DexterityCondition     ConditionType = "dexterity"
 	IntelligenceCondition  ConditionType = "intelligence"
@@ -86,7 +92,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -230,6 +236,29 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 	case VanquisherKillsCondition:
 		actualValue = int(character.VanquisherKills())
 		description = fmt.Sprintf("Vanquisher Kills %s %d", c.operator, c.value)
+	case GmLevelCondition:
+		actualValue = character.GmLevel()
+		description = fmt.Sprintf("GM Level %s %d", c.operator, c.value)
+	case GuildIdCondition:
+		// TODO: Implement guild ID validation when guild model is available
+		actualValue = 0 // Placeholder - character.Guild().Id()
+		description = fmt.Sprintf("Guild ID %s %d", c.operator, c.value)
+	case GuildRankCondition:
+		// TODO: Implement guild rank validation when guild model is available
+		actualValue = 0 // Placeholder - character.Guild().Rank()
+		description = fmt.Sprintf("Guild Rank %s %d", c.operator, c.value)
+	case QuestStatusCondition:
+		// TODO: Implement quest status validation when quest integration is available
+		actualValue = 0 // Placeholder - will need quest service integration
+		description = fmt.Sprintf("Quest Status %s %d", c.operator, c.value)
+	case QuestProgressCondition:
+		// TODO: Implement quest progress validation when quest integration is available
+		actualValue = 0 // Placeholder - will need quest service integration
+		description = fmt.Sprintf("Quest Progress %s %d", c.operator, c.value)
+	case UnclaimedMarriageGiftsCondition:
+		// TODO: Implement marriage gifts validation when marriage integration is available
+		actualValue = 0 // Placeholder - will need marriage service integration
+		description = fmt.Sprintf("Unclaimed Marriage Gifts %s %d", c.operator, c.value)
 	case StrengthCondition:
 		actualValue = int(character.Strength())
 		description = fmt.Sprintf("Strength %s %d", c.operator, c.value)

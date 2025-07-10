@@ -16,14 +16,14 @@ const ChannelChangeHandle = "ChannelChangeHandle"
 
 func ChannelChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		channelId := r.ReadByte()
+		channelId := channel2.Id(r.ReadByte())
 		updateTime := r.ReadUint32()
 		l.Debugf("Character [%d] attempting to change to channel [%d]. update_time [%d].", s.CharacterId(), channelId, updateTime)
 
 		// TODO verify alive
 		// TODO verify not in mini dungeon
 
-		c, err := channel.NewProcessor(l, ctx).GetById(s.WorldId(), channel2.Id(channelId))
+		c, err := channel.NewProcessor(l, ctx).GetById(s.WorldId(), channelId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")
 			// TODO send server notice.

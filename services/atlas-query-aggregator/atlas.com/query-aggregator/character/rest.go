@@ -163,6 +163,7 @@ func Extract(m RestModel) (Model, error) {
 		ap:                 m.Ap,
 		sp:                 m.Sp,
 		mapId:              m.MapId,
+		spawnPoint:         m.SpawnPoint,
 		gm:                 m.Gm,
 		reborns:            m.Reborns,
 		dojoPoints:         m.DojoPoints,

@@ -138,3 +138,24 @@ func (b *ModelBuilder) Build() Model {
 		progress: b.progress,
 	}
 }
+
+// RestModel represents the REST representation of a quest
+type RestModel struct {
+	Id       uint32         `json:"id"`
+	Status   string         `json:"status"`
+	Progress map[string]int `json:"progress"`
+}
+
+// Extract transforms a RestModel into a domain Model
+func Extract(r RestModel) (Model, error) {
+	builder := NewModelBuilder().
+		SetId(r.Id).
+		SetStatus(FromString(r.Status))
+	
+	// Set progress for each step
+	for step, value := range r.Progress {
+		builder = builder.SetProgress(step, value)
+	}
+	
+	return builder.Build(), nil
+}

@@ -36,8 +36,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		ctx:                ctx,
 		characterProcessor: character.NewProcessor(l, ctx),
 		inventoryProcessor: inventory.NewProcessor(l, ctx),
-		questProcessor:     quest.NewProcessor(),
-		marriageProcessor:  marriage.NewProcessor(),
+		questProcessor:     quest.NewProcessor(l, ctx),
+		marriageProcessor:  marriage.NewProcessor(l, ctx),
 	}
 }
 

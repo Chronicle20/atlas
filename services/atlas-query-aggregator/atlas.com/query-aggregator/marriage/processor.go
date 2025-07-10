@@ -1,7 +1,10 @@
 package marriage
 
 import (
+	"context"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/sirupsen/logrus"
 )
 
 // Processor defines the interface for marriage gift processing
@@ -13,43 +16,53 @@ type Processor interface {
 
 // processor implements the Processor interface
 type processor struct {
-	// TODO: Add external service client dependencies here
-	// Example: marriageService MarriageServiceClient
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
 // NewProcessor creates a new marriage processor
-func NewProcessor() Processor {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &processor{
-		// TODO: Initialize external service clients
+		l:   l,
+		ctx: ctx,
 	}
 }
 
 // GetMarriageGifts returns the marriage gift data for a character
 func (p *processor) GetMarriageGifts(characterId uint32) model.Provider[Model] {
 	return func() (Model, error) {
-		// TODO: Implement external service call to fetch marriage gift data
-		// This would typically involve calling a marriage service API
-		// For now, returning a basic model as placeholder
-		return NewModel(characterId, false), nil
+		marriageProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
+		marriage, err := marriageProvider()
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to get marriage gifts for character %d", characterId)
+			return NewModel(characterId, false), err
+		}
+		return marriage, nil
 	}
 }
 
 // HasUnclaimedGifts returns whether the character has unclaimed marriage gifts
 func (p *processor) HasUnclaimedGifts(characterId uint32) model.Provider[bool] {
 	return func() (bool, error) {
-		// TODO: Implement external service call to check for unclaimed gifts
-		// This would typically involve calling a marriage service API
-		// For now, returning false as placeholder
-		return false, nil
+		marriageProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
+		marriage, err := marriageProvider()
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to check unclaimed gifts for character %d", characterId)
+			return false, err
+		}
+		return marriage.HasUnclaimedGifts(), nil
 	}
 }
 
 // GetUnclaimedGiftCount returns the number of unclaimed gifts for a character
 func (p *processor) GetUnclaimedGiftCount(characterId uint32) model.Provider[int] {
 	return func() (int, error) {
-		// TODO: Implement external service call to get unclaimed gift count
-		// This would typically involve calling a marriage service API
-		// For now, returning 0 as placeholder
-		return 0, nil
+		marriageProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
+		marriage, err := marriageProvider()
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to get unclaimed gift count for character %d", characterId)
+			return 0, err
+		}
+		return marriage.UnclaimedGiftCount(), nil
 	}
 }

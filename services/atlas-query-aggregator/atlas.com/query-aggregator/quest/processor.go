@@ -1,7 +1,10 @@
 package quest
 
 import (
+	"context"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/sirupsen/logrus"
 )
 
 // Processor defines the interface for quest data processing
@@ -13,43 +16,53 @@ type Processor interface {
 
 // processor implements the Processor interface
 type processor struct {
-	// TODO: Add external service client dependencies here
-	// Example: questService QuestServiceClient
+	l   logrus.FieldLogger
+	ctx context.Context
 }
 
 // NewProcessor creates a new quest processor
-func NewProcessor() Processor {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &processor{
-		// TODO: Initialize external service clients
+		l:   l,
+		ctx: ctx,
 	}
 }
 
 // GetQuestStatus returns the status of a quest for a character
 func (p *processor) GetQuestStatus(characterId uint32, questId uint32) model.Provider[QuestStatus] {
 	return func() (QuestStatus, error) {
-		// TODO: Implement external service call to fetch quest status
-		// This would typically involve calling a quest service API
-		// For now, returning UNDEFINED as placeholder
-		return UNDEFINED, nil
+		questProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId, questId), Extract)
+		quest, err := questProvider()
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to get quest status for character %d, quest %d", characterId, questId)
+			return UNDEFINED, err
+		}
+		return quest.Status(), nil
 	}
 }
 
 // GetQuestProgress returns the progress of a quest step for a character
 func (p *processor) GetQuestProgress(characterId uint32, questId uint32, step string) model.Provider[int] {
 	return func() (int, error) {
-		// TODO: Implement external service call to fetch quest progress
-		// This would typically involve calling a quest service API
-		// For now, returning 0 as placeholder
-		return 0, nil
+		questProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId, questId), Extract)
+		quest, err := questProvider()
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to get quest progress for character %d, quest %d, step %s", characterId, questId, step)
+			return 0, err
+		}
+		return quest.Progress(step), nil
 	}
 }
 
 // GetQuest returns the complete quest model for a character
 func (p *processor) GetQuest(characterId uint32, questId uint32) model.Provider[Model] {
 	return func() (Model, error) {
-		// TODO: Implement external service call to fetch complete quest data
-		// This would typically involve calling a quest service API
-		// For now, returning a basic model as placeholder
-		return NewModel(questId, UNDEFINED), nil
+		questProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId, questId), Extract)
+		quest, err := questProvider()
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to get quest data for character %d, quest %d", characterId, questId)
+			return NewModel(questId, UNDEFINED), err
+		}
+		return quest, nil
 	}
 }

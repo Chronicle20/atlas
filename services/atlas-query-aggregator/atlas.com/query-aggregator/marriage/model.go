@@ -109,3 +109,21 @@ func (b *ModelBuilder) Build() Model {
 		lastGiftClaimedTime: b.lastGiftClaimedTime,
 	}
 }
+
+// RestModel represents the REST representation of marriage gift data
+type RestModel struct {
+	CharacterId         uint32 `json:"characterId"`
+	HasUnclaimedGifts   bool   `json:"hasUnclaimedGifts"`
+	UnclaimedGiftCount  int    `json:"unclaimedGiftCount"`
+	LastGiftClaimedTime int64  `json:"lastGiftClaimedTime"`
+}
+
+// Extract transforms a RestModel into a domain Model
+func Extract(r RestModel) (Model, error) {
+	return NewModelBuilder().
+		SetCharacterId(r.CharacterId).
+		SetHasUnclaimedGifts(r.HasUnclaimedGifts).
+		SetUnclaimedGiftCount(r.UnclaimedGiftCount).
+		SetLastGiftClaimedTime(r.LastGiftClaimedTime).
+		Build(), nil
+}

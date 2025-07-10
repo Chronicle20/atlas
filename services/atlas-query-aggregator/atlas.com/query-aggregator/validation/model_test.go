@@ -30,6 +30,10 @@ func TestCondition_Evaluate(t *testing.T) {
 		SetMapId(2000).
 		SetFame(50).
 		SetGender(0). // 0 = male
+		SetLevel(25).
+		SetReborns(3).
+		SetDojoPoints(1500).
+		SetVanquisherKills(7).
 		SetInventory(inventoryModel).
 		Build()
 
@@ -342,6 +346,170 @@ func TestCondition_Evaluate(t *testing.T) {
 			},
 			wantPassed:   true,
 			wantContains: "Gender < 1",
+		},
+		// Level condition tests
+		{
+			name: "Level equals - pass",
+			condition: Condition{
+				conditionType: LevelCondition,
+				operator:      Equals,
+				value:         25,
+			},
+			wantPassed:   true,
+			wantContains: "Level = 25",
+		},
+		{
+			name: "Level equals - fail",
+			condition: Condition{
+				conditionType: LevelCondition,
+				operator:      Equals,
+				value:         30,
+			},
+			wantPassed:   false,
+			wantContains: "Level = 30",
+		},
+		{
+			name: "Level greater than - pass",
+			condition: Condition{
+				conditionType: LevelCondition,
+				operator:      GreaterThan,
+				value:         20,
+			},
+			wantPassed:   true,
+			wantContains: "Level > 20",
+		},
+		{
+			name: "Level greater than - fail",
+			condition: Condition{
+				conditionType: LevelCondition,
+				operator:      GreaterThan,
+				value:         30,
+			},
+			wantPassed:   false,
+			wantContains: "Level > 30",
+		},
+		// Reborns condition tests
+		{
+			name: "Reborns equals - pass",
+			condition: Condition{
+				conditionType: RebornsCondition,
+				operator:      Equals,
+				value:         3,
+			},
+			wantPassed:   true,
+			wantContains: "Reborns = 3",
+		},
+		{
+			name: "Reborns equals - fail",
+			condition: Condition{
+				conditionType: RebornsCondition,
+				operator:      Equals,
+				value:         5,
+			},
+			wantPassed:   false,
+			wantContains: "Reborns = 5",
+		},
+		{
+			name: "Reborns greater than or equal - pass",
+			condition: Condition{
+				conditionType: RebornsCondition,
+				operator:      GreaterEqual,
+				value:         2,
+			},
+			wantPassed:   true,
+			wantContains: "Reborns >= 2",
+		},
+		{
+			name: "Reborns greater than or equal - fail",
+			condition: Condition{
+				conditionType: RebornsCondition,
+				operator:      GreaterEqual,
+				value:         5,
+			},
+			wantPassed:   false,
+			wantContains: "Reborns >= 5",
+		},
+		// Dojo Points condition tests
+		{
+			name: "Dojo Points equals - pass",
+			condition: Condition{
+				conditionType: DojoPointsCondition,
+				operator:      Equals,
+				value:         1500,
+			},
+			wantPassed:   true,
+			wantContains: "Dojo Points = 1500",
+		},
+		{
+			name: "Dojo Points equals - fail",
+			condition: Condition{
+				conditionType: DojoPointsCondition,
+				operator:      Equals,
+				value:         2000,
+			},
+			wantPassed:   false,
+			wantContains: "Dojo Points = 2000",
+		},
+		{
+			name: "Dojo Points greater than - pass",
+			condition: Condition{
+				conditionType: DojoPointsCondition,
+				operator:      GreaterThan,
+				value:         1000,
+			},
+			wantPassed:   true,
+			wantContains: "Dojo Points > 1000",
+		},
+		{
+			name: "Dojo Points greater than - fail",
+			condition: Condition{
+				conditionType: DojoPointsCondition,
+				operator:      GreaterThan,
+				value:         2000,
+			},
+			wantPassed:   false,
+			wantContains: "Dojo Points > 2000",
+		},
+		// Vanquisher Kills condition tests
+		{
+			name: "Vanquisher Kills equals - pass",
+			condition: Condition{
+				conditionType: VanquisherKillsCondition,
+				operator:      Equals,
+				value:         7,
+			},
+			wantPassed:   true,
+			wantContains: "Vanquisher Kills = 7",
+		},
+		{
+			name: "Vanquisher Kills equals - fail",
+			condition: Condition{
+				conditionType: VanquisherKillsCondition,
+				operator:      Equals,
+				value:         10,
+			},
+			wantPassed:   false,
+			wantContains: "Vanquisher Kills = 10",
+		},
+		{
+			name: "Vanquisher Kills less than - pass",
+			condition: Condition{
+				conditionType: VanquisherKillsCondition,
+				operator:      LessThan,
+				value:         10,
+			},
+			wantPassed:   true,
+			wantContains: "Vanquisher Kills < 10",
+		},
+		{
+			name: "Vanquisher Kills less than - fail",
+			condition: Condition{
+				conditionType: VanquisherKillsCondition,
+				operator:      LessThan,
+				value:         5,
+			},
+			wantPassed:   false,
+			wantContains: "Vanquisher Kills < 5",
 		},
 	}
 

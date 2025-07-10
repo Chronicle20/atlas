@@ -11,12 +11,16 @@ import (
 type ConditionType string
 
 const (
-	JobCondition    ConditionType = "jobId"
-	MesoCondition   ConditionType = "meso"
-	MapCondition    ConditionType = "mapId"
-	FameCondition   ConditionType = "fame"
-	ItemCondition   ConditionType = "item"
-	GenderCondition ConditionType = "gender"
+	JobCondition           ConditionType = "jobId"
+	MesoCondition          ConditionType = "meso"
+	MapCondition           ConditionType = "mapId"
+	FameCondition          ConditionType = "fame"
+	ItemCondition          ConditionType = "item"
+	GenderCondition        ConditionType = "gender"
+	LevelCondition         ConditionType = "level"
+	RebornsCondition       ConditionType = "reborns"
+	DojoPointsCondition    ConditionType = "dojoPoints"
+	VanquisherKillsCondition ConditionType = "vanquisherKills"
 )
 
 // Operator represents the comparison operator in a condition
@@ -78,7 +82,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -210,6 +214,18 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 	case GenderCondition:
 		actualValue = int(character.Gender())
 		description = fmt.Sprintf("Gender %s %d", c.operator, c.value)
+	case LevelCondition:
+		actualValue = int(character.Level())
+		description = fmt.Sprintf("Level %s %d", c.operator, c.value)
+	case RebornsCondition:
+		actualValue = int(character.Reborns())
+		description = fmt.Sprintf("Reborns %s %d", c.operator, c.value)
+	case DojoPointsCondition:
+		actualValue = int(character.DojoPoints())
+		description = fmt.Sprintf("Dojo Points %s %d", c.operator, c.value)
+	case VanquisherKillsCondition:
+		actualValue = int(character.VanquisherKills())
+		description = fmt.Sprintf("Vanquisher Kills %s %d", c.operator, c.value)
 	case ItemCondition:
 		// For item conditions, we need to check the inventory
 		itemQuantity := 0

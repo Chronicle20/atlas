@@ -12,8 +12,8 @@ import (
 func RequestItemConsumeCommandProvider(worldId world.Id, channelId channel.Id, characterId uint32, source int16, itemId uint32, quantity int16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &consumable.Command[consumable.RequestItemConsumeBody]{
-		WorldId:     byte(worldId),
-		ChannelId:   byte(channelId),
+		WorldId:     worldId,
+		ChannelId:   channelId,
 		CharacterId: characterId,
 		Type:        consumable.CommandRequestItemConsume,
 		Body: consumable.RequestItemConsumeBody{
@@ -28,8 +28,8 @@ func RequestItemConsumeCommandProvider(worldId world.Id, channelId channel.Id, c
 func RequestScrollCommandProvider(worldId world.Id, channelId channel.Id, characterId uint32, scrollSlot int16, equipScroll int16, whiteScroll bool, legendarySpirit bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &consumable.Command[consumable.RequestScrollBody]{
-		WorldId:     byte(worldId),
-		ChannelId:   byte(channelId),
+		WorldId:     worldId,
+		ChannelId:   channelId,
 		CharacterId: characterId,
 		Type:        consumable.CommandRequestScroll,
 		Body: consumable.RequestScrollBody{

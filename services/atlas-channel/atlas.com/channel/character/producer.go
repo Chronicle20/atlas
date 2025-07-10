@@ -12,7 +12,7 @@ func RequestDistributeApCommandProvider(m _map.Model, characterId uint32, distri
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.RequestDistributeApCommandBody]{
 		CharacterId: characterId,
-		WorldId:     byte(m.WorldId()),
+		WorldId:     m.WorldId(),
 		Type:        character.CommandRequestDistributeAp,
 		Body: character.RequestDistributeApCommandBody{
 			Distributions: distributions,
@@ -25,7 +25,7 @@ func RequestDistributeSpCommandProvider(m _map.Model, characterId uint32, skillI
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.RequestDistributeSpCommandBody]{
 		CharacterId: characterId,
-		WorldId:     byte(m.WorldId()),
+		WorldId:     m.WorldId(),
 		Type:        character.CommandRequestDistributeSp,
 		Body: character.RequestDistributeSpCommandBody{
 			SkillId: skillId,
@@ -39,11 +39,11 @@ func RequestDropMesoCommandProvider(m _map.Model, characterId uint32, amount uin
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.RequestDropMesoCommandBody]{
 		CharacterId: characterId,
-		WorldId:     byte(m.WorldId()),
+		WorldId:     m.WorldId(),
 		Type:        character.CommandRequestDropMeso,
 		Body: character.RequestDropMesoCommandBody{
-			ChannelId: byte(m.ChannelId()),
-			MapId:     uint32(m.MapId()),
+			ChannelId: m.ChannelId(),
+			MapId:     m.MapId(),
 			Amount:    amount,
 		},
 	}
@@ -54,10 +54,10 @@ func ChangeHPCommandProvider(m _map.Model, characterId uint32, amount int16) mod
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.ChangeHPCommandBody]{
 		CharacterId: characterId,
-		WorldId:     byte(m.WorldId()),
+		WorldId:     m.WorldId(),
 		Type:        character.CommandChangeHP,
 		Body: character.ChangeHPCommandBody{
-			ChannelId: byte(m.ChannelId()),
+			ChannelId: m.ChannelId(),
 			Amount:    amount,
 		},
 	}
@@ -68,10 +68,10 @@ func ChangeMPCommandProvider(m _map.Model, characterId uint32, amount int16) mod
 	key := producer.CreateKey(int(characterId))
 	value := &character.Command[character.ChangeMPCommandBody]{
 		CharacterId: characterId,
-		WorldId:     byte(m.WorldId()),
+		WorldId:     m.WorldId(),
 		Type:        character.CommandChangeMP,
 		Body: character.ChangeMPCommandBody{
-			ChannelId: byte(m.ChannelId()),
+			ChannelId: m.ChannelId(),
 			Amount:    amount,
 		},
 	}

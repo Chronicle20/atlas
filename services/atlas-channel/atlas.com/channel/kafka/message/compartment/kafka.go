@@ -1,6 +1,9 @@
 package compartment
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"time"
 )
@@ -44,13 +47,13 @@ type MoveCommandBody struct {
 }
 
 type DropCommandBody struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	Source    int16  `json:"source"`
-	Quantity  int16  `json:"quantity"`
-	X         int16  `json:"x"`
-	Y         int16  `json:"y"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Source    int16      `json:"source"`
+	Quantity  int16      `json:"quantity"`
+	X         int16      `json:"x"`
+	Y         int16      `json:"y"`
 }
 
 type RequestReserveCommandBody struct {

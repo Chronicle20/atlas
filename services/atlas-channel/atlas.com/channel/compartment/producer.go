@@ -59,9 +59,9 @@ func DropAssetCommandProvider(m _map.Model, characterId uint32, inventoryType in
 		InventoryType: byte(inventoryType),
 		Type:          compartment.CommandDrop,
 		Body: compartment.DropCommandBody{
-			WorldId:   byte(m.WorldId()),
-			ChannelId: byte(m.ChannelId()),
-			MapId:     uint32(m.MapId()),
+			WorldId:   m.WorldId(),
+			ChannelId: m.ChannelId(),
+			MapId:     m.MapId(),
 			Source:    source,
 			Quantity:  quantity,
 			X:         x,

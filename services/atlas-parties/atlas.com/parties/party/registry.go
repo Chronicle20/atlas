@@ -3,6 +3,7 @@ package party
 import (
 	"github.com/Chronicle20/atlas-tenant"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -24,8 +25,8 @@ type Registry struct {
 	
 	// Cache for frequently accessed character-party mappings
 	characterPartyCache map[tenant.Model]map[uint32]*CacheEntry
-	cacheHitCount       map[tenant.Model]uint64
-	cacheMissCount      map[tenant.Model]uint64
+	cacheHitCount       map[tenant.Model]*uint64
+	cacheMissCount      map[tenant.Model]*uint64
 }
 
 var registry *Registry
@@ -39,8 +40,8 @@ func GetRegistry() *Registry {
 		registry.tenantLock = make(map[tenant.Model]*sync.RWMutex)
 		registry.characterToParty = make(map[tenant.Model]map[uint32]uint32)
 		registry.characterPartyCache = make(map[tenant.Model]map[uint32]*CacheEntry)
-		registry.cacheHitCount = make(map[tenant.Model]uint64)
-		registry.cacheMissCount = make(map[tenant.Model]uint64)
+		registry.cacheHitCount = make(map[tenant.Model]*uint64)
+		registry.cacheMissCount = make(map[tenant.Model]*uint64)
 	})
 	return registry
 }
@@ -64,8 +65,10 @@ func (r *Registry) Create(t tenant.Model, leaderId uint32) Model {
 		tenantLock = &sync.RWMutex{}
 		charToParty = make(map[uint32]uint32)
 		r.characterPartyCache[t] = make(map[uint32]*CacheEntry)
-		r.cacheHitCount[t] = 0
-		r.cacheMissCount[t] = 0
+		hitCount := uint64(0)
+		missCount := uint64(0)
+		r.cacheHitCount[t] = &hitCount
+		r.cacheMissCount[t] = &missCount
 	}
 	r.tenantPartyId[t] = partyId
 	r.partyReg[t] = partyReg
@@ -104,8 +107,10 @@ func (r *Registry) GetAll(t tenant.Model) []Model {
 		r.tenantLock[t] = tl
 		r.characterToParty[t] = make(map[uint32]uint32)
 		r.characterPartyCache[t] = make(map[uint32]*CacheEntry)
-		r.cacheHitCount[t] = 0
-		r.cacheMissCount[t] = 0
+		hitCount := uint64(0)
+		missCount := uint64(0)
+		r.cacheHitCount[t] = &hitCount
+		r.cacheMissCount[t] = &missCount
 		r.lock.Unlock()
 	}
 
@@ -128,8 +133,10 @@ func (r *Registry) Get(t tenant.Model, partyId uint32) (Model, error) {
 		r.tenantLock[t] = tl
 		r.characterToParty[t] = make(map[uint32]uint32)
 		r.characterPartyCache[t] = make(map[uint32]*CacheEntry)
-		r.cacheHitCount[t] = 0
-		r.cacheMissCount[t] = 0
+		hitCount := uint64(0)
+		missCount := uint64(0)
+		r.cacheHitCount[t] = &hitCount
+		r.cacheMissCount[t] = &missCount
 		r.lock.Unlock()
 	}
 
@@ -222,42 +229,69 @@ func (r *Registry) GetPartyByCharacter(t tenant.Model, characterId uint32) (Mode
 		r.tenantLock[t] = tl
 		r.characterToParty[t] = make(map[uint32]uint32)
 		r.characterPartyCache[t] = make(map[uint32]*CacheEntry)
-		r.cacheHitCount[t] = 0
-		r.cacheMissCount[t] = 0
+		hitCount := uint64(0)
+		missCount := uint64(0)
+		r.cacheHitCount[t] = &hitCount
+		r.cacheMissCount[t] = &missCount
 		r.lock.Unlock()
 	}
 
+	// First, try a read lock for cache hit scenario
 	tl.RLock()
-	defer tl.RUnlock()
-	
 	// Check cache first
 	if cacheEntry, ok := r.characterPartyCache[t][characterId]; ok {
-		if party, ok := r.partyReg[t][cacheEntry.PartyId]; ok {
-			// Update cache statistics
-			cacheEntry.LastAccess = time.Now()
-			cacheEntry.AccessCount++
-			r.cacheHitCount[t]++
-			return party, nil
+		if _, ok := r.partyReg[t][cacheEntry.PartyId]; ok {
+			// Upgrade to write lock for cache entry updates
+			tl.RUnlock()
+			tl.Lock()
+			// Re-check after acquiring write lock (double-checked locking pattern)
+			if cacheEntry, ok := r.characterPartyCache[t][characterId]; ok {
+				if party, ok := r.partyReg[t][cacheEntry.PartyId]; ok {
+					// Update cache statistics safely
+					cacheEntry.LastAccess = time.Now()
+					cacheEntry.AccessCount++
+					atomic.AddUint64(r.cacheHitCount[t], 1)
+					tl.Unlock()
+					return party, nil
+				}
+			}
+			tl.Unlock()
+			// Fall through to full lookup
+		} else {
+			// Cache entry is stale, upgrade to write lock to remove it
+			tl.RUnlock()
+			tl.Lock()
+			// Re-check and remove stale entry
+			if cacheEntry, ok := r.characterPartyCache[t][characterId]; ok {
+				if _, ok := r.partyReg[t][cacheEntry.PartyId]; !ok {
+					delete(r.characterPartyCache[t], characterId)
+				}
+			}
+			// Continue with lookup under write lock
 		}
-		// Cache entry is stale, remove it
-		delete(r.characterPartyCache[t], characterId)
+	} else {
+		// Cache miss - upgrade to write lock for cache updates
+		tl.RUnlock()
+		tl.Lock()
 	}
 	
-	// Cache miss - check main mapping
+	defer tl.Unlock()
+	
+	// Cache miss - check main mapping (under write lock now)
 	if partyId, ok := r.characterToParty[t][characterId]; ok {
 		if party, ok := r.partyReg[t][partyId]; ok {
-			// Update cache
+			// Update cache safely under write lock
 			r.characterPartyCache[t][characterId] = &CacheEntry{
 				PartyId:     partyId,
 				LastAccess:  time.Now(),
 				AccessCount: 1,
 			}
-			r.cacheMissCount[t]++
+			atomic.AddUint64(r.cacheMissCount[t], 1)
 			return party, nil
 		}
 	}
 	
-	r.cacheMissCount[t]++
+	atomic.AddUint64(r.cacheMissCount[t], 1)
 	return Model{}, ErrNotFound
 }
 
@@ -266,8 +300,12 @@ func (r *Registry) GetCacheStats(t tenant.Model) (hits, misses uint64, hitRate f
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	
-	hits = r.cacheHitCount[t]
-	misses = r.cacheMissCount[t]
+	if hitPtr, ok := r.cacheHitCount[t]; ok {
+		hits = atomic.LoadUint64(hitPtr)
+	}
+	if missPtr, ok := r.cacheMissCount[t]; ok {
+		misses = atomic.LoadUint64(missPtr)
+	}
 	total := hits + misses
 	if total > 0 {
 		hitRate = float64(hits) / float64(total)
@@ -281,8 +319,12 @@ func (r *Registry) ClearCache(t tenant.Model) {
 		defer tl.Unlock()
 		r.characterPartyCache[t] = make(map[uint32]*CacheEntry)
 		r.lock.Lock()
-		r.cacheHitCount[t] = 0
-		r.cacheMissCount[t] = 0
+		if hitPtr, ok := r.cacheHitCount[t]; ok {
+			atomic.StoreUint64(hitPtr, 0)
+		}
+		if missPtr, ok := r.cacheMissCount[t]; ok {
+			atomic.StoreUint64(missPtr, 0)
+		}
 		r.lock.Unlock()
 	}
 }

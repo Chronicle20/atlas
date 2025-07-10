@@ -22,8 +22,8 @@ func setupTestEnvironment() (tenant.Model, context.Context, *logrus.Logger, *tes
 	registry.partyReg = make(map[tenant.Model]map[uint32]Model)
 	registry.characterToParty = make(map[tenant.Model]map[uint32]uint32)
 	registry.characterPartyCache = make(map[tenant.Model]map[uint32]*CacheEntry)
-	registry.cacheHitCount = make(map[tenant.Model]uint64)
-	registry.cacheMissCount = make(map[tenant.Model]uint64)
+	registry.cacheHitCount = make(map[tenant.Model]*uint64)
+	registry.cacheMissCount = make(map[tenant.Model]*uint64)
 	registry.tenantPartyId = make(map[tenant.Model]uint32)
 
 	// Use test logger to capture logs

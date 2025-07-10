@@ -20,8 +20,8 @@ func TestGetByCharacter(t *testing.T) {
 	registry.partyReg = make(map[tenant.Model]map[uint32]Model)
 	registry.characterToParty = make(map[tenant.Model]map[uint32]uint32)
 	registry.characterPartyCache = make(map[tenant.Model]map[uint32]*CacheEntry)
-	registry.cacheHitCount = make(map[tenant.Model]uint64)
-	registry.cacheMissCount = make(map[tenant.Model]uint64)
+	registry.cacheHitCount = make(map[tenant.Model]*uint64)
+	registry.cacheMissCount = make(map[tenant.Model]*uint64)
 	registry.tenantPartyId = make(map[tenant.Model]uint32)
 
 	t.Run("GetPartyByExistingCharacter", func(t *testing.T) {
@@ -61,8 +61,8 @@ func TestGetByCharacter(t *testing.T) {
 		registry.partyReg = make(map[tenant.Model]map[uint32]Model)
 		registry.characterToParty = make(map[tenant.Model]map[uint32]uint32)
 		registry.characterPartyCache = make(map[tenant.Model]map[uint32]*CacheEntry)
-		registry.cacheHitCount = make(map[tenant.Model]uint64)
-		registry.cacheMissCount = make(map[tenant.Model]uint64)
+		registry.cacheHitCount = make(map[tenant.Model]*uint64)
+		registry.cacheMissCount = make(map[tenant.Model]*uint64)
 		registry.tenantPartyId = make(map[tenant.Model]uint32)
 
 		// Create multiple parties with different characters
@@ -95,8 +95,8 @@ func TestGetPartiesByCharacters(t *testing.T) {
 	registry.partyReg = make(map[tenant.Model]map[uint32]Model)
 	registry.characterToParty = make(map[tenant.Model]map[uint32]uint32)
 	registry.characterPartyCache = make(map[tenant.Model]map[uint32]*CacheEntry)
-	registry.cacheHitCount = make(map[tenant.Model]uint64)
-	registry.cacheMissCount = make(map[tenant.Model]uint64)
+	registry.cacheHitCount = make(map[tenant.Model]*uint64)
+	registry.cacheMissCount = make(map[tenant.Model]*uint64)
 	registry.tenantPartyId = make(map[tenant.Model]uint32)
 
 	t.Run("BatchLookupMultipleCharacters", func(t *testing.T) {
@@ -137,8 +137,8 @@ func TestGetPartiesByCharacters(t *testing.T) {
 		registry.partyReg = make(map[tenant.Model]map[uint32]Model)
 		registry.characterToParty = make(map[tenant.Model]map[uint32]uint32)
 		registry.characterPartyCache = make(map[tenant.Model]map[uint32]*CacheEntry)
-		registry.cacheHitCount = make(map[tenant.Model]uint64)
-		registry.cacheMissCount = make(map[tenant.Model]uint64)
+		registry.cacheHitCount = make(map[tenant.Model]*uint64)
+		registry.cacheMissCount = make(map[tenant.Model]*uint64)
 		registry.tenantPartyId = make(map[tenant.Model]uint32)
 
 		// Create one party with multiple members
@@ -164,8 +164,8 @@ func TestGetPartiesByCharacters(t *testing.T) {
 		registry.partyReg = make(map[tenant.Model]map[uint32]Model)
 		registry.characterToParty = make(map[tenant.Model]map[uint32]uint32)
 		registry.characterPartyCache = make(map[tenant.Model]map[uint32]*CacheEntry)
-		registry.cacheHitCount = make(map[tenant.Model]uint64)
-		registry.cacheMissCount = make(map[tenant.Model]uint64)
+		registry.cacheHitCount = make(map[tenant.Model]*uint64)
+		registry.cacheMissCount = make(map[tenant.Model]*uint64)
 		registry.tenantPartyId = make(map[tenant.Model]uint32)
 
 		// Create one party
@@ -207,8 +207,8 @@ func TestIsCharacterInParty(t *testing.T) {
 	registry.partyReg = make(map[tenant.Model]map[uint32]Model)
 	registry.characterToParty = make(map[tenant.Model]map[uint32]uint32)
 	registry.characterPartyCache = make(map[tenant.Model]map[uint32]*CacheEntry)
-	registry.cacheHitCount = make(map[tenant.Model]uint64)
-	registry.cacheMissCount = make(map[tenant.Model]uint64)
+	registry.cacheHitCount = make(map[tenant.Model]*uint64)
+	registry.cacheMissCount = make(map[tenant.Model]*uint64)
 	registry.tenantPartyId = make(map[tenant.Model]uint32)
 
 	t.Run("CharacterInParty", func(t *testing.T) {
@@ -238,8 +238,8 @@ func TestIsCharacterInParty(t *testing.T) {
 		registry.partyReg = make(map[tenant.Model]map[uint32]Model)
 		registry.characterToParty = make(map[tenant.Model]map[uint32]uint32)
 		registry.characterPartyCache = make(map[tenant.Model]map[uint32]*CacheEntry)
-		registry.cacheHitCount = make(map[tenant.Model]uint64)
-		registry.cacheMissCount = make(map[tenant.Model]uint64)
+		registry.cacheHitCount = make(map[tenant.Model]*uint64)
+		registry.cacheMissCount = make(map[tenant.Model]*uint64)
 		registry.tenantPartyId = make(map[tenant.Model]uint32)
 
 		// Create multiple parties
@@ -267,8 +267,8 @@ func TestByCharacterProvider(t *testing.T) {
 	registry.partyReg = make(map[tenant.Model]map[uint32]Model)
 	registry.characterToParty = make(map[tenant.Model]map[uint32]uint32)
 	registry.characterPartyCache = make(map[tenant.Model]map[uint32]*CacheEntry)
-	registry.cacheHitCount = make(map[tenant.Model]uint64)
-	registry.cacheMissCount = make(map[tenant.Model]uint64)
+	registry.cacheHitCount = make(map[tenant.Model]*uint64)
+	registry.cacheMissCount = make(map[tenant.Model]*uint64)
 	registry.tenantPartyId = make(map[tenant.Model]uint32)
 
 	t.Run("ProviderReturnsCorrectParty", func(t *testing.T) {
@@ -323,8 +323,8 @@ func TestCacheManagementFunctions(t *testing.T) {
 	registry.partyReg = make(map[tenant.Model]map[uint32]Model)
 	registry.characterToParty = make(map[tenant.Model]map[uint32]uint32)
 	registry.characterPartyCache = make(map[tenant.Model]map[uint32]*CacheEntry)
-	registry.cacheHitCount = make(map[tenant.Model]uint64)
-	registry.cacheMissCount = make(map[tenant.Model]uint64)
+	registry.cacheHitCount = make(map[tenant.Model]*uint64)
+	registry.cacheMissCount = make(map[tenant.Model]*uint64)
 	registry.tenantPartyId = make(map[tenant.Model]uint32)
 	ClearCache(ctx) // Clear any existing cache
 
@@ -409,8 +409,8 @@ func TestConcurrentLookups(t *testing.T) {
 	registry.partyReg = make(map[tenant.Model]map[uint32]Model)
 	registry.characterToParty = make(map[tenant.Model]map[uint32]uint32)
 	registry.characterPartyCache = make(map[tenant.Model]map[uint32]*CacheEntry)
-	registry.cacheHitCount = make(map[tenant.Model]uint64)
-	registry.cacheMissCount = make(map[tenant.Model]uint64)
+	registry.cacheHitCount = make(map[tenant.Model]*uint64)
+	registry.cacheMissCount = make(map[tenant.Model]*uint64)
 	registry.tenantPartyId = make(map[tenant.Model]uint32)
 
 	t.Run("ConcurrentCharacterLookups", func(t *testing.T) {

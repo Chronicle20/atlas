@@ -280,6 +280,257 @@ Validates a set of conditions against a character's state.
 }
 ```
 
+## NPC Conversation Validation Examples
+
+The following examples demonstrate how to use the validation API for common NPC conversation scenarios, corresponding to typical `cm` scripting functions used in MapleStory server development.
+
+### Job Advancement NPC
+
+Validate if a character meets requirements for job advancement:
+
+```json
+{
+  "data": {
+    "id": "job-advancement-check",
+    "type": "validations",
+    "attributes": {
+      "conditions": [
+        {
+          "type": "level",
+          "operator": ">=",
+          "value": 30
+        },
+        {
+          "type": "jobId",
+          "operator": "=",
+          "value": 100
+        },
+        {
+          "type": "questStatus",
+          "operator": "=",
+          "value": 3,
+          "referenceId": 1002
+        }
+      ]
+    }
+  }
+}
+```
+
+### Guild Master NPC
+
+Check if player can access guild-specific content:
+
+```json
+{
+  "data": {
+    "id": "guild-master-check",
+    "type": "validations",
+    "attributes": {
+      "conditions": [
+        {
+          "type": "guildId",
+          "operator": "=",
+          "value": 12345
+        },
+        {
+          "type": "guildRank",
+          "operator": "<=",
+          "value": 2
+        },
+        {
+          "type": "level",
+          "operator": ">=",
+          "value": 50
+        }
+      ]
+    }
+  }
+}
+```
+
+### Wedding NPC
+
+Validate marriage-related interactions:
+
+```json
+{
+  "data": {
+    "id": "wedding-npc-check",
+    "type": "validations",
+    "attributes": {
+      "conditions": [
+        {
+          "type": "hasUnclaimedMarriageGifts",
+          "operator": "=",
+          "value": 1
+        },
+        {
+          "type": "meso",
+          "operator": ">=",
+          "value": 100000
+        }
+      ]
+    }
+  }
+}
+```
+
+### Dojo Master NPC
+
+Check Mu Lung Dojo related requirements:
+
+```json
+{
+  "data": {
+    "id": "dojo-master-check",
+    "type": "validations",
+    "attributes": {
+      "conditions": [
+        {
+          "type": "dojoPoints",
+          "operator": ">=",
+          "value": 1000
+        },
+        {
+          "type": "level",
+          "operator": ">=",
+          "value": 25
+        },
+        {
+          "type": "reborns",
+          "operator": ">=",
+          "value": 1
+        }
+      ]
+    }
+  }
+}
+```
+
+### GM Event NPC
+
+Validate GM privileges and event participation:
+
+```json
+{
+  "data": {
+    "id": "gm-event-check",
+    "type": "validations",
+    "attributes": {
+      "conditions": [
+        {
+          "type": "gmLevel",
+          "operator": ">=",
+          "value": 1
+        },
+        {
+          "type": "vanquisherKills",
+          "operator": ">=",
+          "value": 10
+        }
+      ]
+    }
+  }
+}
+```
+
+### Quest Progress NPC
+
+Check specific quest progress for multi-step quests:
+
+```json
+{
+  "data": {
+    "id": "quest-progress-check",
+    "type": "validations",
+    "attributes": {
+      "conditions": [
+        {
+          "type": "questProgress",
+          "operator": ">=",
+          "value": 5,
+          "referenceId": 1001,
+          "step": "mobsKilled"
+        },
+        {
+          "type": "questStatus",
+          "operator": "=",
+          "value": 2,
+          "referenceId": 1001
+        }
+      ]
+    }
+  }
+}
+```
+
+### Complex Multi-Condition NPC
+
+Example of a high-level NPC that requires multiple conditions (e.g., End Game Boss NPC):
+
+```json
+{
+  "data": {
+    "id": "endgame-boss-check",
+    "type": "validations",
+    "attributes": {
+      "conditions": [
+        {
+          "type": "level",
+          "operator": ">=",
+          "value": 200
+        },
+        {
+          "type": "reborns",
+          "operator": ">=",
+          "value": 3
+        },
+        {
+          "type": "strength",
+          "operator": ">=",
+          "value": 500
+        },
+        {
+          "type": "questStatus",
+          "operator": "=",
+          "value": 3,
+          "referenceId": 2001
+        },
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 1,
+          "referenceId": 4001000
+        },
+        {
+          "type": "vanquisherKills",
+          "operator": ">=",
+          "value": 100
+        }
+      ]
+    }
+  }
+}
+```
+
+### Corresponding cm Scripting Functions
+
+These validation conditions correspond to common `cm` functions used in NPC scripts:
+
+| Validation Type | cm Function Equivalent |
+|----------------|------------------------|
+| `level` | `cm.getLevel()` |
+| `reborns` | `cm.getReborns()` |
+| `dojoPoints` | `cm.getDojoPoints()` |
+| `vanquisherKills` | `cm.getVanquisherKills()` |
+| `gmLevel` | `cm.gmLevel()` |
+| `questStatus` | `cm.getQuestStatus(questId)` |
+| `questProgress` | `cm.getQuestProgress(questId, step)` |
+| `hasUnclaimedMarriageGifts` | `cm.getUnclaimedMarriageGifts()` |
+| `guildId` | `cm.getGuild()?.getId()` |
+| `guildRank` | `cm.getGuild()?.getRank()` |
+
 **Error Responses:**
 - 400 Bad Request: Invalid condition format or unsupported condition type
 - 500 Internal Server Error: Failed to retrieve character data or other server errors

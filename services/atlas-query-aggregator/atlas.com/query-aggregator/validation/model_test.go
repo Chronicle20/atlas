@@ -6,6 +6,8 @@ import (
 	"atlas-query-aggregator/compartment"
 	"atlas-query-aggregator/guild"
 	"atlas-query-aggregator/inventory"
+	"atlas-query-aggregator/marriage"
+	"atlas-query-aggregator/quest"
 	inventory_type "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/google/uuid"
 	"testing"
@@ -894,6 +896,518 @@ func TestValidationResult(t *testing.T) {
 
 		if len(result.Details()) != 3 {
 			t.Errorf("After multiple AddConditionResult calls details length = %v, want 3", len(result.Details()))
+		}
+	})
+}
+
+func TestCondition_EvaluateWithContext(t *testing.T) {
+	// Create test inventory with items
+	compartmentId := uuid.New()
+	consumableCompartment := createTestCompartment(compartmentId, 123, inventory_type.TypeValueUse, 100)
+
+	// Create inventory model
+	inventoryModel := inventory.NewBuilder(123).
+		SetConsumable(consumableCompartment).
+		Build()
+
+	// Create a test character
+	character := character.NewModelBuilder().
+		SetId(123).
+		SetJobId(100).
+		SetMeso(10000).
+		SetMapId(2000).
+		SetFame(50).
+		SetGender(0).
+		SetLevel(25).
+		SetReborns(3).
+		SetDojoPoints(1500).
+		SetVanquisherKills(7).
+		SetInventory(inventoryModel).
+		Build()
+
+	// Create test quest models
+	questStarted := quest.NewModelBuilder().
+		SetId(1001).
+		SetStatus(quest.STARTED).
+		SetProgress("step1", 5).
+		SetProgress("step2", 10).
+		Build()
+
+	questCompleted := quest.NewModelBuilder().
+		SetId(1002).
+		SetStatus(quest.COMPLETED).
+		SetProgress("final", 100).
+		Build()
+
+	// Create test marriage model with unclaimed gifts
+	marriageWithGifts := marriage.NewModelBuilder().
+		SetCharacterId(123).
+		SetHasUnclaimedGifts(true).
+		SetUnclaimedGiftCount(3).
+		Build()
+
+	// Create test marriage model without gifts
+	marriageNoGifts := marriage.NewModelBuilder().
+		SetCharacterId(123).
+		SetHasUnclaimedGifts(false).
+		SetUnclaimedGiftCount(0).
+		Build()
+
+	// Create validation context with quest and marriage data
+	contextWithData := NewValidationContextBuilder(character).
+		AddQuest(questStarted).
+		AddQuest(questCompleted).
+		SetMarriage(marriageWithGifts).
+		Build()
+
+	// Create validation context without marriage gifts
+	contextNoGifts := NewValidationContextBuilder(character).
+		AddQuest(questStarted).
+		AddQuest(questCompleted).
+		SetMarriage(marriageNoGifts).
+		Build()
+
+	tests := []struct {
+		name         string
+		condition    Condition
+		context      ValidationContext
+		wantPassed   bool
+		wantContains string
+	}{
+		// Quest Status condition tests
+		{
+			name: "Quest Status STARTED - pass",
+			condition: Condition{
+				conditionType: QuestStatusCondition,
+				operator:      Equals,
+				value:         int(quest.STARTED),
+				referenceId:   1001,
+			},
+			context:      contextWithData,
+			wantPassed:   true,
+			wantContains: "Quest 1001 Status = 2",
+		},
+		{
+			name: "Quest Status STARTED - fail",
+			condition: Condition{
+				conditionType: QuestStatusCondition,
+				operator:      Equals,
+				value:         int(quest.COMPLETED),
+				referenceId:   1001,
+			},
+			context:      contextWithData,
+			wantPassed:   false,
+			wantContains: "Quest 1001 Status = 3",
+		},
+		{
+			name: "Quest Status COMPLETED - pass",
+			condition: Condition{
+				conditionType: QuestStatusCondition,
+				operator:      Equals,
+				value:         int(quest.COMPLETED),
+				referenceId:   1002,
+			},
+			context:      contextWithData,
+			wantPassed:   true,
+			wantContains: "Quest 1002 Status = 3",
+		},
+		{
+			name: "Quest Status - quest not found",
+			condition: Condition{
+				conditionType: QuestStatusCondition,
+				operator:      Equals,
+				value:         int(quest.STARTED),
+				referenceId:   9999,
+			},
+			context:      contextWithData,
+			wantPassed:   false,
+			wantContains: "Quest 9999 not found",
+		},
+		// Quest Progress condition tests
+		{
+			name: "Quest Progress step1 - pass",
+			condition: Condition{
+				conditionType: QuestProgressCondition,
+				operator:      Equals,
+				value:         5,
+				referenceId:   1001,
+				step:          "step1",
+			},
+			context:      contextWithData,
+			wantPassed:   true,
+			wantContains: "Quest 1001 Progress (step: step1) = 5",
+		},
+		{
+			name: "Quest Progress step1 - fail",
+			condition: Condition{
+				conditionType: QuestProgressCondition,
+				operator:      Equals,
+				value:         10,
+				referenceId:   1001,
+				step:          "step1",
+			},
+			context:      contextWithData,
+			wantPassed:   false,
+			wantContains: "Quest 1001 Progress (step: step1) = 10",
+		},
+		{
+			name: "Quest Progress step2 greater than - pass",
+			condition: Condition{
+				conditionType: QuestProgressCondition,
+				operator:      GreaterThan,
+				value:         5,
+				referenceId:   1001,
+				step:          "step2",
+			},
+			context:      contextWithData,
+			wantPassed:   true,
+			wantContains: "Quest 1001 Progress (step: step2) > 5",
+		},
+		{
+			name: "Quest Progress step2 greater than - fail",
+			condition: Condition{
+				conditionType: QuestProgressCondition,
+				operator:      GreaterThan,
+				value:         15,
+				referenceId:   1001,
+				step:          "step2",
+			},
+			context:      contextWithData,
+			wantPassed:   false,
+			wantContains: "Quest 1001 Progress (step: step2) > 15",
+		},
+		{
+			name: "Quest Progress nonexistent step - returns 0",
+			condition: Condition{
+				conditionType: QuestProgressCondition,
+				operator:      Equals,
+				value:         0,
+				referenceId:   1001,
+				step:          "nonexistent",
+			},
+			context:      contextWithData,
+			wantPassed:   true,
+			wantContains: "Quest 1001 Progress (step: nonexistent) = 0",
+		},
+		{
+			name: "Quest Progress - quest not found",
+			condition: Condition{
+				conditionType: QuestProgressCondition,
+				operator:      Equals,
+				value:         5,
+				referenceId:   9999,
+				step:          "step1",
+			},
+			context:      contextWithData,
+			wantPassed:   false,
+			wantContains: "Quest 9999 not found",
+		},
+		// Marriage gifts condition tests
+		{
+			name: "Marriage Gifts - has gifts (1)",
+			condition: Condition{
+				conditionType: UnclaimedMarriageGiftsCondition,
+				operator:      Equals,
+				value:         1,
+			},
+			context:      contextWithData,
+			wantPassed:   true,
+			wantContains: "Unclaimed Marriage Gifts = 1",
+		},
+		{
+			name: "Marriage Gifts - has gifts (0)",
+			condition: Condition{
+				conditionType: UnclaimedMarriageGiftsCondition,
+				operator:      Equals,
+				value:         0,
+			},
+			context:      contextWithData,
+			wantPassed:   false,
+			wantContains: "Unclaimed Marriage Gifts = 0",
+		},
+		{
+			name: "Marriage Gifts - no gifts (0)",
+			condition: Condition{
+				conditionType: UnclaimedMarriageGiftsCondition,
+				operator:      Equals,
+				value:         0,
+			},
+			context:      contextNoGifts,
+			wantPassed:   true,
+			wantContains: "Unclaimed Marriage Gifts = 0",
+		},
+		{
+			name: "Marriage Gifts - no gifts (1)",
+			condition: Condition{
+				conditionType: UnclaimedMarriageGiftsCondition,
+				operator:      Equals,
+				value:         1,
+			},
+			context:      contextNoGifts,
+			wantPassed:   false,
+			wantContains: "Unclaimed Marriage Gifts = 1",
+		},
+		// Test that existing conditions still work with context
+		{
+			name: "Level condition with context - pass",
+			condition: Condition{
+				conditionType: LevelCondition,
+				operator:      Equals,
+				value:         25,
+			},
+			context:      contextWithData,
+			wantPassed:   true,
+			wantContains: "Level = 25",
+		},
+		{
+			name: "Item condition with context - pass",
+			condition: Condition{
+				conditionType: ItemCondition,
+				operator:      Equals,
+				value:         10,
+				referenceId:   2000001,
+			},
+			context:      contextWithData,
+			wantPassed:   true,
+			wantContains: "Item 2000001 quantity = 10",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.condition.EvaluateWithContext(tt.context)
+
+			if result.Passed != tt.wantPassed {
+				t.Errorf("Condition.EvaluateWithContext() passed = %v, want %v", result.Passed, tt.wantPassed)
+			}
+
+			if result.Description != tt.wantContains {
+				t.Errorf("Condition.EvaluateWithContext() description = %v, want %v", result.Description, tt.wantContains)
+			}
+		})
+	}
+}
+
+func TestValidationContext(t *testing.T) {
+	// Create test character
+	character := character.NewModelBuilder().
+		SetId(123).
+		SetLevel(25).
+		Build()
+
+	// Create test quest models
+	quest1 := quest.NewModelBuilder().
+		SetId(1001).
+		SetStatus(quest.STARTED).
+		SetProgress("step1", 5).
+		Build()
+
+	quest2 := quest.NewModelBuilder().
+		SetId(1002).
+		SetStatus(quest.COMPLETED).
+		Build()
+
+	// Create test marriage model
+	marriage := marriage.NewModelBuilder().
+		SetCharacterId(123).
+		SetHasUnclaimedGifts(true).
+		Build()
+
+	t.Run("NewValidationContext", func(t *testing.T) {
+		ctx := NewValidationContext(character)
+
+		if ctx.Character().Id() != 123 {
+			t.Errorf("NewValidationContext() character ID = %v, want 123", ctx.Character().Id())
+		}
+
+		if ctx.Marriage().CharacterId() != 123 {
+			t.Errorf("NewValidationContext() marriage character ID = %v, want 123", ctx.Marriage().CharacterId())
+		}
+
+		if ctx.Marriage().HasUnclaimedGifts() {
+			t.Errorf("NewValidationContext() marriage has gifts = %v, want false", ctx.Marriage().HasUnclaimedGifts())
+		}
+
+		// Test that quest doesn't exist
+		_, exists := ctx.Quest(1001)
+		if exists {
+			t.Errorf("NewValidationContext() quest 1001 exists = %v, want false", exists)
+		}
+	})
+
+	t.Run("WithQuest", func(t *testing.T) {
+		ctx := NewValidationContext(character)
+		ctx = ctx.WithQuest(quest1)
+
+		questModel, exists := ctx.Quest(1001)
+		if !exists {
+			t.Errorf("WithQuest() quest 1001 exists = %v, want true", exists)
+		}
+
+		if questModel.Id() != 1001 {
+			t.Errorf("WithQuest() quest ID = %v, want 1001", questModel.Id())
+		}
+
+		if questModel.Status() != quest.STARTED {
+			t.Errorf("WithQuest() quest status = %v, want STARTED", questModel.Status())
+		}
+
+		// Test that other quest doesn't exist
+		_, exists = ctx.Quest(1002)
+		if exists {
+			t.Errorf("WithQuest() quest 1002 exists = %v, want false", exists)
+		}
+	})
+
+	t.Run("WithMarriage", func(t *testing.T) {
+		ctx := NewValidationContext(character)
+		ctx = ctx.WithMarriage(marriage)
+
+		if ctx.Marriage().CharacterId() != 123 {
+			t.Errorf("WithMarriage() marriage character ID = %v, want 123", ctx.Marriage().CharacterId())
+		}
+
+		if !ctx.Marriage().HasUnclaimedGifts() {
+			t.Errorf("WithMarriage() marriage has gifts = %v, want true", ctx.Marriage().HasUnclaimedGifts())
+		}
+	})
+
+	t.Run("Multiple quests", func(t *testing.T) {
+		ctx := NewValidationContext(character)
+		ctx = ctx.WithQuest(quest1)
+		ctx = ctx.WithQuest(quest2)
+
+		// Test both quests exist
+		questModel1, exists1 := ctx.Quest(1001)
+		if !exists1 {
+			t.Errorf("Multiple quests - quest 1001 exists = %v, want true", exists1)
+		}
+
+		questModel2, exists2 := ctx.Quest(1002)
+		if !exists2 {
+			t.Errorf("Multiple quests - quest 1002 exists = %v, want true", exists2)
+		}
+
+		if questModel1.Status() != quest.STARTED {
+			t.Errorf("Multiple quests - quest 1001 status = %v, want STARTED", questModel1.Status())
+		}
+
+		if questModel2.Status() != quest.COMPLETED {
+			t.Errorf("Multiple quests - quest 1002 status = %v, want COMPLETED", questModel2.Status())
+		}
+	})
+}
+
+func TestValidationContextBuilder(t *testing.T) {
+	// Create test character
+	character := character.NewModelBuilder().
+		SetId(123).
+		SetLevel(25).
+		Build()
+
+	// Create test quest models
+	quest1 := quest.NewModelBuilder().
+		SetId(1001).
+		SetStatus(quest.STARTED).
+		SetProgress("step1", 5).
+		Build()
+
+	quest2 := quest.NewModelBuilder().
+		SetId(1002).
+		SetStatus(quest.COMPLETED).
+		Build()
+
+	// Create test marriage model
+	marriage := marriage.NewModelBuilder().
+		SetCharacterId(123).
+		SetHasUnclaimedGifts(true).
+		SetUnclaimedGiftCount(2).
+		Build()
+
+	t.Run("NewValidationContextBuilder", func(t *testing.T) {
+		builder := NewValidationContextBuilder(character)
+		ctx := builder.Build()
+
+		if ctx.Character().Id() != 123 {
+			t.Errorf("NewValidationContextBuilder() character ID = %v, want 123", ctx.Character().Id())
+		}
+
+		if ctx.Marriage().CharacterId() != 123 {
+			t.Errorf("NewValidationContextBuilder() marriage character ID = %v, want 123", ctx.Marriage().CharacterId())
+		}
+
+		if ctx.Marriage().HasUnclaimedGifts() {
+			t.Errorf("NewValidationContextBuilder() marriage has gifts = %v, want false", ctx.Marriage().HasUnclaimedGifts())
+		}
+	})
+
+	t.Run("AddQuest", func(t *testing.T) {
+		builder := NewValidationContextBuilder(character)
+		builder.AddQuest(quest1)
+		ctx := builder.Build()
+
+		questModel, exists := ctx.Quest(1001)
+		if !exists {
+			t.Errorf("AddQuest() quest 1001 exists = %v, want true", exists)
+		}
+
+		if questModel.Status() != quest.STARTED {
+			t.Errorf("AddQuest() quest status = %v, want STARTED", questModel.Status())
+		}
+	})
+
+	t.Run("SetMarriage", func(t *testing.T) {
+		builder := NewValidationContextBuilder(character)
+		builder.SetMarriage(marriage)
+		ctx := builder.Build()
+
+		if !ctx.Marriage().HasUnclaimedGifts() {
+			t.Errorf("SetMarriage() marriage has gifts = %v, want true", ctx.Marriage().HasUnclaimedGifts())
+		}
+
+		if ctx.Marriage().UnclaimedGiftCount() != 2 {
+			t.Errorf("SetMarriage() marriage gift count = %v, want 2", ctx.Marriage().UnclaimedGiftCount())
+		}
+	})
+
+	t.Run("Builder fluent interface", func(t *testing.T) {
+		ctx := NewValidationContextBuilder(character).
+			AddQuest(quest1).
+			AddQuest(quest2).
+			SetMarriage(marriage).
+			Build()
+
+		// Test character
+		if ctx.Character().Id() != 123 {
+			t.Errorf("Builder fluent interface - character ID = %v, want 123", ctx.Character().Id())
+		}
+
+		// Test quests
+		questModel1, exists1 := ctx.Quest(1001)
+		if !exists1 {
+			t.Errorf("Builder fluent interface - quest 1001 exists = %v, want true", exists1)
+		}
+
+		questModel2, exists2 := ctx.Quest(1002)
+		if !exists2 {
+			t.Errorf("Builder fluent interface - quest 1002 exists = %v, want true", exists2)
+		}
+
+		if questModel1.Status() != quest.STARTED {
+			t.Errorf("Builder fluent interface - quest 1001 status = %v, want STARTED", questModel1.Status())
+		}
+
+		if questModel2.Status() != quest.COMPLETED {
+			t.Errorf("Builder fluent interface - quest 1002 status = %v, want COMPLETED", questModel2.Status())
+		}
+
+		// Test marriage
+		if !ctx.Marriage().HasUnclaimedGifts() {
+			t.Errorf("Builder fluent interface - marriage has gifts = %v, want true", ctx.Marriage().HasUnclaimedGifts())
+		}
+
+		if ctx.Marriage().UnclaimedGiftCount() != 2 {
+			t.Errorf("Builder fluent interface - marriage gift count = %v, want 2", ctx.Marriage().UnclaimedGiftCount())
 		}
 	})
 }

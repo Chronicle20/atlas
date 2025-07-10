@@ -803,14 +803,37 @@ func Expel(l logrus.FieldLogger) func(ctx context.Context) func(actorId uint32, 
 			}
 
 			l.Debugf("Character [%d] expelled from party [%d].", characterId, partyId)
-			err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(expelEventProvider(actorId, p.Id(), c.WorldId(), characterId))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to announce the party [%d] was left.", partyId)
-				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+			
+			// Check if party is empty after expulsion and disband if necessary
+			if len(p.Members()) == 0 {
+				emptyPartyLogger := l.WithField("operation", "disband_empty_party_after_expel")
+				emptyPartyLogger.Debugf("Party [%d] is empty after expelling character [%d], disbanding party.", partyId, characterId)
+				
+				// Emit disband event before removing party
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(disbandEventProvider(actorId, p.Id(), c.WorldId(), []uint32{}))
 				if err != nil {
-					l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+					emptyPartyLogger.WithError(err).Warnf("Unable to emit disband event for party [%d].", partyId)
+					// Don't return error as the disbanding will still proceed
+				} else {
+					emptyPartyLogger.Infof("Emitted disband event for party [%d] due to last member [%d] expulsion.", partyId, characterId)
 				}
-				return Model{}, err
+				
+				// Party is empty, disband it
+				GetRegistry().Remove(t, partyId)
+				emptyPartyLogger.Infof("Party [%d] disbanded after expelling last member [%d].", partyId, characterId)
+				
+				return Model{}, nil
+			} else {
+				// Party still has members, emit expel event normally
+				err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(expelEventProvider(actorId, p.Id(), c.WorldId(), characterId))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce the party [%d] was left.", partyId)
+					err = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
+					if err != nil {
+						l.WithError(err).Errorf("Unable to announce party [%d] error.", partyId)
+					}
+					return Model{}, err
+				}
 			}
 
 			return p, nil

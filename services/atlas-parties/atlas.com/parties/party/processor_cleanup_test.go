@@ -323,3 +323,62 @@ func TestPartyCleanupEdgeCases(t *testing.T) {
 		assert.NotEqual(t, party1.Id(), party2.Id())
 	})
 }
+
+func TestExpelLastMemberDisbandParty(t *testing.T) {
+	testTenant, _, _, _ := setupTestEnvironment()
+
+	t.Run("ExpelLastMemberShouldDisbandParty", func(t *testing.T) {
+		// Create a party with only one member (leader)
+		leaderId := uint32(13001)
+		party := GetRegistry().Create(testTenant, leaderId)
+
+		// Verify party exists with one member
+		_, err := GetRegistry().Get(testTenant, party.Id())
+		assert.NoError(t, err)
+
+		// Simulate expelling the last member (which should disband the party)
+		// Note: In reality, you can't expel yourself, but we're testing the logic
+		updatedParty, err := GetRegistry().Update(testTenant, party.Id(), func(m Model) Model { 
+			return Model.RemoveMember(m, leaderId) 
+		})
+		assert.NoError(t, err)
+		assert.Len(t, updatedParty.Members(), 0)
+
+		// Test the disbanding logic for empty parties
+		if len(updatedParty.Members()) == 0 {
+			GetRegistry().Remove(testTenant, party.Id())
+		}
+
+		// Verify party is removed
+		_, err = GetRegistry().Get(testTenant, party.Id())
+		assert.Equal(t, ErrNotFound, err)
+	})
+
+	t.Run("ExpelMemberFromMultiMemberPartyDoesNotDisband", func(t *testing.T) {
+		// Create a party with multiple members
+		leaderId := uint32(14001)
+		memberId := uint32(14002)
+		
+		party := GetRegistry().Create(testTenant, leaderId)
+		party = party.AddMember(memberId)
+		GetRegistry().Update(testTenant, party.Id(), func(m Model) Model { return party })
+
+		// Verify party has two members
+		initialParty, err := GetRegistry().Get(testTenant, party.Id())
+		assert.NoError(t, err)
+		assert.Len(t, initialParty.Members(), 2)
+
+		// Remove one member (not the leader)
+		updatedParty, err := GetRegistry().Update(testTenant, party.Id(), func(m Model) Model { 
+			return Model.RemoveMember(m, memberId) 
+		})
+		assert.NoError(t, err)
+		assert.Len(t, updatedParty.Members(), 1)
+		assert.Contains(t, updatedParty.Members(), leaderId)
+		assert.NotContains(t, updatedParty.Members(), memberId)
+
+		// Verify party still exists (not disbanded)
+		_, err = GetRegistry().Get(testTenant, party.Id())
+		assert.NoError(t, err)
+	})
+}

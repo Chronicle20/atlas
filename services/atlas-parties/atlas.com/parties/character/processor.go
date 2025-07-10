@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/Chronicle20/atlas-tenant"
@@ -18,8 +19,8 @@ type Processor interface {
 	LogoutAndEmit(characterId uint32) error
 	Logout(mb *message.Buffer) func(characterId uint32) error
 	ChannelChange(characterId uint32, channelId byte) error
-	LevelChange(worldId byte, channelId byte, characterId uint32) error
-	JobChange(worldId byte, channelId byte, characterId uint32) error
+	LevelChange(worldId byte, channelId byte, characterId uint32, level byte) error
+	JobChange(worldId byte, channelId byte, characterId uint32, jobId job.Id) error
 	MapChange(characterId uint32, mapId uint32) error
 	JoinParty(characterId uint32, partyId uint32) error
 	LeaveParty(characterId uint32) error
@@ -123,13 +124,29 @@ func (p *ProcessorImpl) ChannelChange(characterId uint32, channelId byte) error 
 	return nil
 }
 
-func (p *ProcessorImpl) LevelChange(worldId byte, channelId byte, characterId uint32) error {
-	// TODO
+func (p *ProcessorImpl) LevelChange(worldId byte, channelId byte, characterId uint32, level byte) error {
+	c, err := p.GetById(characterId)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to locate character [%d] in registry for level change.", characterId)
+		return err
+	}
+	
+	p.l.Debugf("Updating character [%d] level from [%d] to [%d] in registry.", characterId, c.Level(), level)
+	fn := func(m Model) Model { return Model.ChangeLevel(m, level) }
+	c = GetRegistry().Update(p.t, c.Id(), fn)
 	return nil
 }
 
-func (p *ProcessorImpl) JobChange(worldId byte, channelId byte, characterId uint32) error {
-	// TODO
+func (p *ProcessorImpl) JobChange(worldId byte, channelId byte, characterId uint32, jobId job.Id) error {
+	c, err := p.GetById(characterId)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to locate character [%d] in registry for job change.", characterId)
+		return err
+	}
+	
+	p.l.Debugf("Updating character [%d] job from [%d] to [%d] in registry.", characterId, c.JobId(), jobId)
+	fn := func(m Model) Model { return Model.ChangeJob(m, jobId) }
+	c = GetRegistry().Update(p.t, c.Id(), fn)
 	return nil
 }
 

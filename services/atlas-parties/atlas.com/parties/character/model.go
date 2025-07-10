@@ -115,6 +115,38 @@ func (m Model) Login() Model {
 	}
 }
 
+func (m Model) ChangeLevel(level byte) Model {
+	return Model{
+		tenantId:  m.tenantId,
+		id:        m.id,
+		name:      m.name,
+		level:     level,
+		jobId:     m.jobId,
+		worldId:   m.worldId,
+		channelId: m.channelId,
+		mapId:     m.mapId,
+		partyId:   m.partyId,
+		online:    m.online,
+		gm:        m.gm,
+	}
+}
+
+func (m Model) ChangeJob(jobId job.Id) Model {
+	return Model{
+		tenantId:  m.tenantId,
+		id:        m.id,
+		name:      m.name,
+		level:     m.level,
+		jobId:     jobId,
+		worldId:   m.worldId,
+		channelId: m.channelId,
+		mapId:     m.mapId,
+		partyId:   m.partyId,
+		online:    m.online,
+		gm:        m.gm,
+	}
+}
+
 func (m Model) Id() uint32 {
 	return m.id
 }

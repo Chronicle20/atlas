@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -10,7 +11,7 @@ type Buddy struct {
 	FriendId    uint32
 	FriendName  string
 	Flag        byte
-	ChannelId   int8
+	ChannelId   channel.Id
 	FriendGroup string
 }
 

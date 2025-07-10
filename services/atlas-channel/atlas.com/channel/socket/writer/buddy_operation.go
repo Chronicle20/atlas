@@ -3,6 +3,7 @@ package writer
 import (
 	"atlas-channel/buddylist/buddy"
 	"atlas-channel/socket/model"
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -35,7 +36,7 @@ func BuddyInviteBody(l logrus.FieldLogger, t tenant.Model) func(actorId uint32, 
 				FriendId:    actorId,
 				FriendName:  originatorName,
 				Flag:        0,
-				ChannelId:   0,
+				ChannelId:   channel.Id(0),
 				FriendGroup: "Default Group",
 			}
 			b.Encode(l, t, options)(w)
@@ -55,7 +56,7 @@ func BuddyListUpdateBody(l logrus.FieldLogger, t tenant.Model) func(buddies []bu
 					FriendId:    b.CharacterId(),
 					FriendName:  b.Name(),
 					Flag:        0,
-					ChannelId:   b.ChannelId(),
+					ChannelId:   channel.Id(b.ChannelId()),
 					FriendGroup: b.Group(),
 				}
 				m.Encode(l, t, options)(w)
@@ -81,7 +82,7 @@ func BuddyUpdateBody(l logrus.FieldLogger, t tenant.Model) func(characterId uint
 				FriendId:    characterId,
 				FriendName:  characterName,
 				Flag:        0,
-				ChannelId:   channelId,
+				ChannelId:   channel.Id(channelId),
 				FriendGroup: group,
 			}
 			m.Encode(l, t, options)(w)

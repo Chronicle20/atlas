@@ -2,6 +2,7 @@ package character
 
 import (
 	"github.com/Chronicle20/atlas-constants/world"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
 )
@@ -9,7 +10,7 @@ import (
 type RestModel struct {
 	Id                 uint32 `json:"-"`
 	AccountId          uint32 `json:"accountId"`
-	WorldId            byte   `json:"worldId"`
+	WorldId            world.Id `json:"worldId"`
 	Name               string `json:"name"`
 	Level              byte   `json:"level"`
 	Experience         uint32 `json:"experience"`
@@ -32,7 +33,7 @@ type RestModel struct {
 	Face               uint32 `json:"face"`
 	Ap                 uint16 `json:"ap"`
 	Sp                 string `json:"sp"`
-	MapId              uint32 `json:"mapId"`
+	MapId              _map.Id `json:"mapId"`
 	SpawnPoint         uint32 `json:"spawnPoint"`
 	Gm                 int    `json:"gm"`
 	X                  int16  `json:"x"`
@@ -87,7 +88,7 @@ func Extract(m RestModel) (Model, error) {
 	return Model{
 		id:                 m.Id,
 		accountId:          m.AccountId,
-		worldId:            world.Id(m.WorldId),
+		worldId:            m.WorldId,
 		name:               m.Name,
 		level:              m.Level,
 		experience:         m.Experience,

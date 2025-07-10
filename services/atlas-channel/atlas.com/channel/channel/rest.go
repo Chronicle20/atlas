@@ -1,14 +1,16 @@
 package channel
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"time"
 )
 
 type RestModel struct {
 	Id              uuid.UUID `json:"-"`
-	WorldId         byte      `json:"worldId"`
-	ChannelId       byte      `json:"channelId"`
+	WorldId         world.Id   `json:"worldId"`
+	ChannelId       channel.Id `json:"channelId"`
 	IpAddress       string    `json:"ipAddress"`
 	Port            int       `json:"port"`
 	CurrentCapacity int       `json:"currentCapacity"`

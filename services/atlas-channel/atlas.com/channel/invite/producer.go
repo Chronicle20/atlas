@@ -11,7 +11,7 @@ import (
 func AcceptInviteCommandProvider(actorId uint32, worldId world.Id, inviteType string, referenceId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
 	value := &invite2.Command[invite2.AcceptCommandBody]{
-		WorldId:    byte(worldId),
+		WorldId:    worldId,
 		InviteType: inviteType,
 		Type:       invite2.CommandInviteTypeAccept,
 		Body: invite2.AcceptCommandBody{
@@ -25,7 +25,7 @@ func AcceptInviteCommandProvider(actorId uint32, worldId world.Id, inviteType st
 func RejectInviteCommandProvider(actorId uint32, worldId world.Id, inviteType string, originatorId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
 	value := &invite2.Command[invite2.RejectCommandBody]{
-		WorldId:    byte(worldId),
+		WorldId:    worldId,
 		InviteType: inviteType,
 		Type:       invite2.CommandInviteTypeReject,
 		Body: invite2.RejectCommandBody{

@@ -1,5 +1,11 @@
 package npc
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 const (
 	EnvCommandTopic                 = "COMMAND_TOPIC_NPC"
 	CommandTypeStartConversation    = "START_CONVERSATION"
@@ -15,9 +21,9 @@ type Command[E any] struct {
 }
 
 type StartConversationCommandBody struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
 }
 
 type ContinueConversationCommandBody struct {

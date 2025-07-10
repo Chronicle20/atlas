@@ -12,9 +12,9 @@ func SetCommandProvider(characterId uint32, m _map.Model, expression uint32) mod
 	key := producer.CreateKey(int(characterId))
 	value := &expression2.Command{
 		CharacterId: characterId,
-		WorldId:     byte(m.WorldId()),
-		ChannelId:   byte(m.ChannelId()),
-		MapId:       uint32(m.MapId()),
+		WorldId:     m.WorldId(),
+		ChannelId:   m.ChannelId(),
+		MapId:       m.MapId(),
 		Expression:  expression,
 	}
 	return producer.SingleMessageProvider(key, value)

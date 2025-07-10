@@ -1,5 +1,10 @@
 package consumable
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_CONSUMABLE"
 
@@ -8,11 +13,11 @@ const (
 )
 
 type Command[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	CharacterId uint32     `json:"characterId"`
+	Type        string     `json:"type"`
+	Body        E          `json:"body"`
 }
 
 type RequestItemConsumeBody struct {

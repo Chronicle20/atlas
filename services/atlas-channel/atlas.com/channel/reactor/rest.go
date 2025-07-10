@@ -1,12 +1,17 @@
 package reactor
 
-import "strconv"
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"strconv"
+)
 
 type RestModel struct {
 	Id             uint32 `json:"-"`
-	WorldId        byte   `json:"worldId"`
-	ChannelId      byte   `json:"channelId"`
-	MapId          uint32 `json:"mapId"`
+	WorldId        world.Id   `json:"worldId"`
+	ChannelId      channel.Id `json:"channelId"`
+	MapId          _map.Id    `json:"mapId"`
 	Classification uint32 `json:"classification"`
 	Name           string `json:"name"`
 	State          int8   `json:"state"`

@@ -1,6 +1,10 @@
 package buff
 
-import "time"
+import (
+	"time"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-constants/channel"
+)
 
 const (
 	EnvCommandTopic   = "COMMAND_TOPIC_CHARACTER_BUFF"
@@ -9,8 +13,8 @@ const (
 )
 
 type Command[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
@@ -39,7 +43,7 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
+	WorldId     world.Id `json:"worldId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`

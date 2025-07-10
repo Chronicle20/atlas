@@ -3,6 +3,7 @@ package world
 import (
 	"atlas-channel/channel"
 	"github.com/Chronicle20/atlas-model/model"
+	worldConstants "github.com/Chronicle20/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
 )
@@ -113,7 +114,7 @@ func Extract(r RestModel) (Model, error) {
 	}
 
 	return NewBuilder().
-		SetId(byte(id)).
+		SetId(worldConstants.Id(id)).
 		SetName(r.Name).
 		SetState(State(r.State)).
 		SetMessage(r.Message).

@@ -11,9 +11,9 @@ import (
 func SetCommandProvider(m _map.Model, characterId uint32, message string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &chalkboard2.Command[chalkboard2.SetCommandBody]{
-		WorldId:     byte(m.WorldId()),
-		ChannelId:   byte(m.ChannelId()),
-		MapId:       uint32(m.MapId()),
+		WorldId:     m.WorldId(),
+		ChannelId:   m.ChannelId(),
+		MapId:       m.MapId(),
 		CharacterId: characterId,
 		Type:        chalkboard2.CommandChalkboardSet,
 		Body: chalkboard2.SetCommandBody{
@@ -26,9 +26,9 @@ func SetCommandProvider(m _map.Model, characterId uint32, message string) model.
 func ClearCommandProvider(m _map.Model, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &chalkboard2.Command[chalkboard2.ClearCommandBody]{
-		WorldId:     byte(m.WorldId()),
-		ChannelId:   byte(m.ChannelId()),
-		MapId:       uint32(m.MapId()),
+		WorldId:     m.WorldId(),
+		ChannelId:   m.ChannelId(),
+		MapId:       m.MapId(),
 		CharacterId: characterId,
 		Type:        chalkboard2.CommandChalkboardClear,
 		Body:        chalkboard2.ClearCommandBody{},

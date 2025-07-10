@@ -1,14 +1,17 @@
 package reactor
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"time"
 )
 
 type Model struct {
 	id             uint32
-	worldId        byte
-	channelId      byte
-	mapId          uint32
+	worldId        world.Id
+	channelId      channel.Id
+	mapId          _map.Id
 	classification uint32
 	name           string
 	state          int8
@@ -24,15 +27,15 @@ func (m Model) Id() uint32 {
 	return m.id
 }
 
-func (m Model) WorldId() byte {
+func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
-func (m Model) ChannelId() byte {
+func (m Model) ChannelId() channel.Id {
 	return m.channelId
 }
 
-func (m Model) MapId() uint32 {
+func (m Model) MapId() _map.Id {
 	return m.mapId
 }
 
@@ -74,9 +77,9 @@ func (m Model) UpdateTime() time.Time {
 
 type ModelBuilder struct {
 	id             uint32
-	worldId        byte
-	channelId      byte
-	mapId          uint32
+	worldId        world.Id
+	channelId      channel.Id
+	mapId          _map.Id
 	classification uint32
 	name           string
 	state          int8
@@ -88,7 +91,7 @@ type ModelBuilder struct {
 	updateTime     time.Time
 }
 
-func NewModelBuilder(worldId byte, channelId byte, mapId uint32, classification uint32, name string) *ModelBuilder {
+func NewModelBuilder(worldId world.Id, channelId channel.Id, mapId _map.Id, classification uint32, name string) *ModelBuilder {
 	return &ModelBuilder{
 		worldId:        worldId,
 		channelId:      channelId,

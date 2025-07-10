@@ -128,9 +128,9 @@ func ExtractMember(rm MemberRestModel) (MemberModel, error) {
 		name:      rm.Name,
 		level:     rm.Level,
 		jobId:     rm.JobId,
-		worldId:   world.Id(rm.WorldId),
-		channelId: channel.Id(rm.ChannelId),
-		mapId:     _map.Id(rm.MapId),
+		worldId:   rm.WorldId,
+		channelId: rm.ChannelId,
+		mapId:     rm.MapId,
 		online:    rm.Online,
 	}, nil
 }
@@ -140,9 +140,9 @@ type MemberRestModel struct {
 	Name      string `json:"name"`
 	Level     byte   `json:"level"`
 	JobId     uint16 `json:"jobId"`
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
 	Online    bool   `json:"online"`
 }
 

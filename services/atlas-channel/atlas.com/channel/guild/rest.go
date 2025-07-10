@@ -3,6 +3,7 @@ package guild
 import (
 	"atlas-channel/guild/member"
 	"atlas-channel/guild/title"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"strconv"
 )
@@ -51,7 +52,7 @@ func Extract(rm RestModel) (Model, error) {
 	}
 	return Model{
 		id:                  rm.Id,
-		worldId:             rm.WorldId,
+		worldId:             world.Id(rm.WorldId),
 		name:                rm.Name,
 		notice:              rm.Notice,
 		points:              rm.Points,

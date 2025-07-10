@@ -12,9 +12,9 @@ func CommandProducer(m _map.Model, objectId uint64, observerId uint32, x int16, 
 	key := producer.CreateKey(int(objectId))
 
 	value := &movement.Command[any]{
-		WorldId:    byte(m.WorldId()),
-		ChannelId:  byte(m.ChannelId()),
-		MapId:      uint32(m.MapId()),
+		WorldId:    m.WorldId(),
+		ChannelId:  m.ChannelId(),
+		MapId:      m.MapId(),
 		ObjectId:   objectId,
 		ObserverId: observerId,
 		X:          x,

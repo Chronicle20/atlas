@@ -1,6 +1,8 @@
 package _map
 
-import "strconv"
+import (
+	"strconv"
+)
 
 type RestModel struct {
 	Id string `json:"-"`

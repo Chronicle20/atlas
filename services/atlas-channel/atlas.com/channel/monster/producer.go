@@ -11,8 +11,8 @@ import (
 func DamageCommandProvider(m _map.Model, monsterId uint32, characterId uint32, damage uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(monsterId))
 	value := &monster2.Command[monster2.DamageCommandBody]{
-		WorldId:   byte(m.WorldId()),
-		ChannelId: byte(m.ChannelId()),
+		WorldId:   m.WorldId(),
+		ChannelId: m.ChannelId(),
 		MonsterId: monsterId,
 		Type:      monster2.CommandTypeDamage,
 		Body: monster2.DamageCommandBody{

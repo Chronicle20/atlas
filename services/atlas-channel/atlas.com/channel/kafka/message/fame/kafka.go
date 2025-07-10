@@ -1,22 +1,28 @@
 package fame
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 const (
 	EnvCommandTopic          = "COMMAND_TOPIC_FAME"
 	CommandTypeRequestChange = "REQUEST_CHANGE"
 )
 
 type Command[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id `json:"worldId"`
+	CharacterId uint32   `json:"characterId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 type RequestChangeCommandBody struct {
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	TargetId  uint32 `json:"targetId"`
-	Amount    int8   `json:"amount"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	TargetId  uint32     `json:"targetId"`
+	Amount    int8       `json:"amount"`
 }
 
 const (
@@ -30,13 +36,13 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     world.Id `json:"worldId"`
+	CharacterId uint32   `json:"characterId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
 }
 
 type StatusEventErrorBody struct {
-	ChannelId byte   `json:"channelId"`
-	Error     string `json:"error"`
+	ChannelId channel.Id `json:"channelId"`
+	Error     string     `json:"error"`
 }

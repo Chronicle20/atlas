@@ -1,0 +1,203 @@
+# Feature Requirement Document: Party Character Deletion Handler
+
+## Overview
+Implement automatic party cleanup when a character is deleted from the game service. The party service should listen for character deletion events and automatically remove the deleted character from any party they belong to, triggering necessary party management operations.
+
+## Background
+The party service maintains in-memory party structures that track members, leaders, and party metadata. When characters are deleted from the game, they need to be automatically removed from their parties to maintain data consistency and prevent orphaned references.
+
+## Current System Context
+
+### Party Model
+- **Structure**: `Model` struct with `tenantId`, `id`, `leaderId`, and `members` fields
+- **Operations**: Support for adding/removing members, leader election, and leader assignment
+- **State**: Maintained in-memory within the party service
+
+### Kafka Event System
+- **Topic**: `EVENT_TOPIC_CHARACTER_STATUS` (from `EnvEventTopicCharacterStatus`)
+- **Event Type**: `DELETED` (from `StatusEventTypeDeleted`)
+- **Event Structure**: `StatusEvent[StatusEventDeletedBody]` with character and world identification
+
+## Feature Requirements
+
+### Functional Requirements
+
+#### FR-1: Character Deletion Event Handling
+- **Description**: The party service MUST listen to character deletion events from the Kafka topic `EVENT_TOPIC_CHARACTER_STATUS`
+- **Event Filter**: Process events where `Type == "DELETED"`
+- **Input**: `StatusEvent[StatusEventDeletedBody]` containing:
+  - `CharacterId`: ID of the deleted character
+  - `WorldId`: World context for the deletion
+  - `TransactionId`: For event tracing
+
+#### FR-2: Party Membership Removal
+- **Description**: When a character deletion event is received, the service MUST remove the character from any party they belong to
+- **Process**:
+  1. Identify if the deleted character is a member of any party
+  2. If found, remove the character using the existing `RemoveMember(memberId uint32)` method
+  3. Update the in-memory party state
+
+#### FR-3: Automatic Party Management
+- **Description**: After removing a deleted character, the service MUST handle resulting party state changes
+- **Scenarios**:
+  - **Leader Deletion**: If the deleted character was the party leader, trigger leader election using `ElectLeader()`
+  - **Empty Party**: If removing the character results in an empty party, disband the party
+  - **Member Notification**: Notify remaining party members of the membership change
+
+#### FR-4: Error Handling and Resilience
+- **Description**: The feature MUST handle edge cases and errors gracefully
+- **Requirements**:
+  - Handle events for characters not in any party (no-op)
+  - Handle malformed or invalid deletion events
+  - Log appropriate messages for debugging and monitoring
+  - Ensure event processing failures don't block other party operations
+
+### Non-Functional Requirements
+
+#### NFR-1: Performance
+- Event processing MUST not block other party service operations
+- Character lookup and removal operations SHOULD complete within 100ms
+
+#### NFR-2: Reliability
+- Event processing MUST be idempotent (handling duplicate deletion events safely)
+- Failed event processing SHOULD be logged but not crash the service
+
+#### NFR-3: Observability
+- MUST log character deletion event processing for audit trails
+- SHOULD emit metrics for monitoring party membership changes
+
+## Technical Implementation Notes
+
+### Event Consumer Setup
+- Subscribe to the Kafka topic defined by `EnvEventTopicCharacterStatus`
+- Filter for events with `Type == StatusEventTypeDeleted`
+- Deserialize into `StatusEvent[StatusEventDeletedBody]` structure
+
+### Party Lookup Strategy
+Since the current `Model` struct doesn't include direct character-to-party mapping, consider:
+- Maintaining an in-memory index of character ID to party ID mappings
+- Iterating through all parties to find membership (acceptable for smaller party counts)
+- Adding a lookup service if party scale requires optimization
+
+### Integration Points
+- **Existing Methods**: Leverage `RemoveMember()` and `ElectLeader()` methods
+- **Event Publishing**: May need to publish party change events to notify other services
+- **Logging**: Use structured logging with `TransactionId` for request tracing
+
+## Acceptance Criteria
+
+### AC-1: Event Processing
+- ✅ Service successfully consumes character deletion events from Kafka
+- ✅ Service processes only `DELETED` event types
+- ✅ Service handles events for characters not in parties without errors
+
+### AC-2: Party Cleanup
+- ✅ Deleted characters are removed from their party membership
+- ✅ If deleted character was leader, a new leader is automatically elected
+- ✅ Empty parties are properly disbanded and cleaned up
+
+### AC-3: Error Handling
+- ✅ Invalid or malformed events are logged and skipped
+- ✅ Duplicate deletion events are handled idempotently
+- ✅ Service remains operational after processing failures
+
+## Dependencies
+- Kafka consumer library integration
+- Access to character deletion event topic
+- Existing party service infrastructure
+
+## Testing Strategy
+- **Unit Tests**: Test event processing logic and party cleanup operations
+- **Integration Tests**: Test end-to-end event consumption and party state updates
+- **Edge Case Tests**: Test scenarios with invalid events, non-existent characters, and empty parties
+
+---
+
+# Implementation Plan
+
+## Phase 1: Event Consumer Setup
+1. Add character deletion event handler to existing character consumer
+2. Implement event filtering and deserialization
+3. Add basic logging and error handling
+
+## Phase 2: Party Lookup Implementation
+1. Implement character-to-party lookup functionality
+2. Add party membership validation
+3. Integrate with existing party registry
+
+## Phase 3: Party Cleanup Logic
+1. Implement character removal from parties
+2. Handle leader election for deleted leaders
+3. Implement party disbanding for empty parties
+4. Add appropriate event emission
+
+## Phase 4: Testing and Validation
+1. Unit tests for all new functionality
+2. Integration tests with Kafka consumer
+3. Edge case testing and error handling validation
+4. Performance testing and optimization
+
+## Task Checklist
+
+### Event Consumer Implementation
+- [x] Add `handleStatusEventDeleted` function to `kafka/consumer/character/consumer.go`
+- [x] Register deletion event handler in `InitHandlers` function
+- [x] Add event type validation for `StatusEventTypeDeleted`
+- [x] Implement basic error handling and logging
+
+### Party Lookup Service
+- [x] Create character-to-party lookup function in `party/processor.go`
+- [x] Add party membership validation logic
+- [x] Implement efficient party search using existing registry
+- [x] Add caching for frequently accessed character-party mappings
+
+### Party Cleanup Operations
+- [x] Implement character removal logic using existing `RemoveMember` method
+- [x] Add leader election handling for deleted leaders using `ElectLeader`
+- [x] Implement party disbanding logic for empty parties
+- [x] Add event emission for party state changes
+
+### Error Handling & Resilience
+- [x] Add comprehensive error handling for malformed events
+- [x] Implement idempotent processing for duplicate events
+- [x] Add structured logging with transaction IDs
+- [x] Ensure graceful handling of non-existent characters
+
+### Testing Implementation
+- [x] Unit tests for deletion event handler
+- [ ] Unit tests for party lookup functionality
+- [ ] Unit tests for party cleanup operations
+- [ ] Integration tests with Kafka consumer
+- [ ] Edge case tests for error scenarios
+
+### Documentation and Monitoring
+- [ ] Add code documentation for new functions
+- [ ] Add monitoring metrics for deletion events processed
+- [ ] Add logging for audit trails
+- [ ] Update README.md with new functionality details
+
+## Files to be Modified/Created
+
+### Modified Files
+1. `kafka/consumer/character/consumer.go` - Add deletion event handler
+2. `party/processor.go` - Add character-to-party lookup and cleanup logic
+3. `party/producer.go` - Add event providers for party state changes (if needed)
+
+### Potential New Files
+1. `party/deletion_handler.go` - Centralized deletion handling logic (if complex)
+2. `party/lookup_service.go` - Character-to-party mapping service (if needed)
+
+## Branch Name
+`feature/character-deletion-handling`
+
+## Execution Order
+1. Phase 1: Event Consumer Setup (Critical Path)
+2. Phase 2: Party Lookup Implementation (Critical Path)
+3. Phase 3: Party Cleanup Logic (Critical Path)
+4. Phase 4: Testing and Validation (Parallel with Phase 3)
+
+## Risk Mitigation
+- Implement comprehensive logging for debugging
+- Add feature flags for gradual rollout
+- Ensure backward compatibility with existing party operations
+- Add monitoring and alerting for processing failures

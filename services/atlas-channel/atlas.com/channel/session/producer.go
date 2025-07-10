@@ -16,8 +16,8 @@ func StatusEventProvider(sessionId uuid.UUID, accountId uint32, characterId uint
 		SessionId:   sessionId,
 		AccountId:   accountId,
 		CharacterId: characterId,
-		WorldId:     byte(worldId),
-		ChannelId:   byte(channelId),
+		WorldId:     worldId,
+		ChannelId:   channelId,
 		Issuer:      session2.EventSessionStatusIssuerChannel,
 		Type:        eventType,
 	}

@@ -1,5 +1,9 @@
 package buddylist
 
+import (
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 const (
 	EnvCommandTopic          = "COMMAND_TOPIC_BUDDY_LIST"
 	CommandTypeRequestAdd    = "REQUEST_ADD"
@@ -7,7 +11,7 @@ const (
 )
 
 type Command[E any] struct {
-	WorldId     byte   `json:"worldId"`
+	WorldId     world.Id `json:"worldId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
@@ -40,7 +44,7 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
+	WorldId     world.Id `json:"worldId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`

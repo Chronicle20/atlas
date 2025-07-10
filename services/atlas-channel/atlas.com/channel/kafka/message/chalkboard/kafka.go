@@ -1,5 +1,11 @@
 package chalkboard
 
+import (
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+)
+
 const (
 	EnvCommandTopic        = "COMMAND_TOPIC_CHALKBOARD"
 	CommandChalkboardSet   = "SET"
@@ -7,9 +13,9 @@ const (
 )
 
 type Command[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	MapId       uint32 `json:"mapId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id    `json:"mapId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`
@@ -29,9 +35,9 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId     byte   `json:"worldId"`
-	ChannelId   byte   `json:"channelId"`
-	MapId       uint32 `json:"mapId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id    `json:"mapId"`
 	CharacterId uint32 `json:"characterId"`
 	Type        string `json:"type"`
 	Body        E      `json:"body"`

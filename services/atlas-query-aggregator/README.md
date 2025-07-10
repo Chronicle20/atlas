@@ -38,10 +38,107 @@ A RESTful service that provides composite character state validation in the Atla
 
 ### External Service Dependencies
 
-- **Character Service**: Provides character state data including level, stats, guild information, and other character attributes
-- **Quest Service**: Provides quest status and progress information for quest-based validations
-- **Marriage Service**: Provides marriage gift information for marriage-related validations
-- **Inventory Service**: Provides item quantity information for inventory-based validations
+The atlas-query-aggregator service requires connectivity to multiple external Atlas microservices to provide comprehensive character validation capabilities. Each service provides specific data domains required for validation conditions.
+
+#### Character Service (`CHARACTERS` environment variable)
+**Base URL**: Configured via `requests.RootUrl("CHARACTERS")`  
+**Endpoint**: `GET /characters/{characterId}`  
+**Purpose**: Primary source for character-specific data and attributes  
+
+**Data Fields Provided**:
+- **Basic Attributes**: `id`, `name`, `accountId`, `worldId`, `level`, `jobId`
+- **Stats**: `strength`, `dexterity`, `intelligence`, `luck`, `hp`, `maxHp`, `mp`, `maxMp`, `ap`, `sp`, `experience`
+- **Character State**: `mapId`, `x`, `y`, `stance`, `meso`, `fame`, `gender`, `skinColor`, `face`, `hair`
+- **Special Fields**: `gm` (GM level), `reborns`, `dojoPoints`, `vanquisherKills`
+- **Guild Information**: Embedded guild data including `guild.id` and `guild.rank`
+
+**Integration Notes**:
+- Character data is fetched via REST API using JSON:API format
+- Guild information is embedded within character response
+- GM level validation uses the `gm` field for privilege checks
+- All numeric character attributes support comparison operators (`=`, `>`, `<`, `>=`, `<=`)
+
+#### Inventory Service (`INVENTORY` environment variable)
+**Base URL**: Configured via `requests.RootUrl("INVENTORY")`  
+**Endpoint**: `GET /characters/{characterId}/inventory`  
+**Purpose**: Provides item quantity and equipment data for inventory-based validations  
+
+**Data Fields Provided**:
+- **Item Quantities**: Template ID to quantity mapping for all character items
+- **Equipment Data**: Currently equipped items with slot positions
+- **Compartment Data**: Organized inventory compartments (equipable, consumable, setup, etc., cash)
+
+**Integration Notes**:
+- Inventory data is lazily loaded via the `InventoryDecorator` when item validations are required
+- Supports item quantity checks using `referenceId` parameter to specify template ID
+- Equipment and cash equipment are processed separately for proper slot mapping
+- Integration occurs through the character processor's `SetInventory()` method
+
+#### Quest Service (*Future Implementation*)
+**Status**: Service interface defined, external integration pending  
+**Purpose**: Provides quest status and progress tracking for quest-based validations  
+
+**Planned Data Fields**:
+- **Quest Status**: `UNDEFINED`, `NOT_STARTED`, `STARTED`, `COMPLETED` (enum values 0-3)
+- **Quest Progress**: Numeric progress values for specific quest steps
+- **Quest Metadata**: Quest ID, character assignment, completion timestamps
+
+**Integration Design**:
+- `GetQuestStatus(characterId, questId)` returns quest completion state
+- `GetQuestProgress(characterId, questId, step)` returns progress for specific quest steps
+- Uses `referenceId` parameter for quest ID specification
+- Supports both status equality checks and progress comparisons
+
+**Current Implementation**: Placeholder methods return default values (`UNDEFINED` status, `0` progress)
+
+#### Marriage Service (*Future Implementation*)
+**Status**: Service interface defined, external integration pending  
+**Purpose**: Provides marriage-related data for relationship and gift validations  
+
+**Planned Data Fields**:
+- **Gift Status**: Boolean indicator for unclaimed marriage gifts
+- **Gift Count**: Numeric count of unclaimed gifts
+- **Marriage State**: Character relationship status and partner information
+
+**Integration Design**:
+- `HasUnclaimedGifts(characterId)` returns boolean gift availability
+- `GetUnclaimedGiftCount(characterId)` returns numeric gift count
+- Supports boolean equality operations for gift presence validation
+
+**Current Implementation**: Placeholder methods return default values (`false` for gift presence)
+
+#### Service Configuration
+
+All external services are configured through environment variables that specify base URLs:
+
+```bash
+# Character service base URL
+CHARACTERS_HOST=https://atlas-character-service.example.com
+
+# Inventory service base URL  
+INVENTORY_HOST=https://atlas-inventory-service.example.com
+
+# Quest service base URL (future)
+QUEST_HOST=https://atlas-quest-service.example.com
+
+# Marriage service base URL (future)
+MARRIAGE_HOST=https://atlas-marriage-service.example.com
+```
+
+#### Service Health and Error Handling
+
+- **Circuit Breaker**: Services should implement circuit breaker patterns for resilience
+- **Timeout Configuration**: HTTP timeouts should be configured appropriately for each service
+- **Graceful Degradation**: Validation should handle service unavailability gracefully
+- **Caching Strategy**: Consider caching frequently accessed character data to reduce service load
+- **Retry Logic**: Implement exponential backoff for transient service failures
+
+#### Authentication and Security
+
+- **Service-to-Service Authentication**: Implement mutual TLS or service mesh authentication
+- **API Keys**: Use appropriate API key headers for service authentication
+- **Rate Limiting**: Respect service rate limits and implement backoff strategies
+- **Data Privacy**: Ensure character data is handled according to privacy requirements
 
 ## API
 

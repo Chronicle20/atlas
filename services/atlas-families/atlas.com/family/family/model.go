@@ -180,6 +180,7 @@ var (
 	ErrTooManyJuniors     = errors.New("cannot have more than 2 juniors")
 	ErrSelfReference      = errors.New("cannot reference self as senior or junior")
 	ErrDuplicateJunior    = errors.New("duplicate junior ID")
+	ErrInvalidDailyRep    = errors.New("daily rep cannot exceed 5000")
 )
 
 // Pure functions for business logic validation

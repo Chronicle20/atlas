@@ -308,9 +308,29 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 		actualValue = character.GmLevel()
 		description = fmt.Sprintf("GM Level %s %d", c.operator, c.value)
 	case GuildIdCondition:
+		if !character.Guild().IsMember() {
+			return ConditionResult{
+				Passed:      false,
+				Description: fmt.Sprintf("Guild ID %s %d (character not in guild)", c.operator, c.value),
+				Type:        c.conditionType,
+				Operator:    c.operator,
+				Value:       c.value,
+				ActualValue: 0,
+			}
+		}
 		actualValue = int(character.Guild().Id())
 		description = fmt.Sprintf("Guild ID %s %d", c.operator, c.value)
 	case GuildRankCondition:
+		if !character.Guild().IsMember() {
+			return ConditionResult{
+				Passed:      false,
+				Description: fmt.Sprintf("Guild Rank %s %d (character not in guild)", c.operator, c.value),
+				Type:        c.conditionType,
+				Operator:    c.operator,
+				Value:       c.value,
+				ActualValue: 0,
+			}
+		}
 		actualValue = int(character.Guild().Rank())
 		description = fmt.Sprintf("Guild Rank %s %d", c.operator, c.value)
 	case QuestStatusCondition:
@@ -469,10 +489,30 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 		description = fmt.Sprintf("Unclaimed Marriage Gifts %s %d", c.operator, c.value)
 		
 	case GuildIdCondition:
+		if !character.Guild().IsMember() {
+			return ConditionResult{
+				Passed:      false,
+				Description: fmt.Sprintf("Guild ID %s %d (character not in guild)", c.operator, c.value),
+				Type:        c.conditionType,
+				Operator:    c.operator,
+				Value:       c.value,
+				ActualValue: 0,
+			}
+		}
 		actualValue = int(character.Guild().Id())
 		description = fmt.Sprintf("Guild ID %s %d", c.operator, c.value)
 		
 	case GuildRankCondition:
+		if !character.Guild().IsMember() {
+			return ConditionResult{
+				Passed:      false,
+				Description: fmt.Sprintf("Guild Rank %s %d (character not in guild)", c.operator, c.value),
+				Type:        c.conditionType,
+				Operator:    c.operator,
+				Value:       c.value,
+				ActualValue: 0,
+			}
+		}
 		actualValue = int(character.Guild().Rank())
 		description = fmt.Sprintf("Guild Rank %s %d", c.operator, c.value)
 		

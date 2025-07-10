@@ -4,6 +4,7 @@ import (
 	"atlas-query-aggregator/asset"
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/compartment"
+	"atlas-query-aggregator/guild"
 	"atlas-query-aggregator/inventory"
 	inventory_type "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/google/uuid"
@@ -679,6 +680,27 @@ func TestCondition_Evaluate(t *testing.T) {
 			wantPassed:   false,
 			wantContains: "Luck < 10",
 		},
+		// Guild condition tests - character not in guild
+		{
+			name: "Guild ID - character not in guild",
+			condition: Condition{
+				conditionType: GuildIdCondition,
+				operator:      Equals,
+				value:         1001,
+			},
+			wantPassed:   false,
+			wantContains: "Guild ID = 1001 (character not in guild)",
+		},
+		{
+			name: "Guild Rank - character not in guild",
+			condition: Condition{
+				conditionType: GuildRankCondition,
+				operator:      Equals,
+				value:         1,
+			},
+			wantPassed:   false,
+			wantContains: "Guild Rank = 1 (character not in guild)",
+		},
 		// Test new condition types that require context
 		{
 			name: "Quest Status - requires context",
@@ -874,4 +896,107 @@ func TestValidationResult(t *testing.T) {
 			t.Errorf("After multiple AddConditionResult calls details length = %v, want 3", len(result.Details()))
 		}
 	})
+}
+
+func TestCondition_Evaluate_WithGuild(t *testing.T) {
+	// Create test inventory with items
+	compartmentId := uuid.New()
+	consumableCompartment := createTestCompartment(compartmentId, 123, inventory_type.TypeValueUse, 100)
+
+	// Create inventory model
+	inventoryModel := inventory.NewBuilder(123).
+		SetConsumable(consumableCompartment).
+		Build()
+
+	// Create a guild for the character
+	guildModel := guild.NewModel(1001, "TestGuild", 3)
+
+	// Create a test character with guild
+	character := character.NewModelBuilder().
+		SetId(123).
+		SetInventory(inventoryModel).
+		SetGuild(guildModel).
+		Build()
+
+	tests := []struct {
+		name         string
+		condition    Condition
+		wantPassed   bool
+		wantContains string
+	}{
+		{
+			name: "Guild ID - pass",
+			condition: Condition{
+				conditionType: GuildIdCondition,
+				operator:      Equals,
+				value:         1001,
+			},
+			wantPassed:   true,
+			wantContains: "Guild ID = 1001",
+		},
+		{
+			name: "Guild ID - fail",
+			condition: Condition{
+				conditionType: GuildIdCondition,
+				operator:      Equals,
+				value:         2001,
+			},
+			wantPassed:   false,
+			wantContains: "Guild ID = 2001",
+		},
+		{
+			name: "Guild Rank - pass",
+			condition: Condition{
+				conditionType: GuildRankCondition,
+				operator:      Equals,
+				value:         3,
+			},
+			wantPassed:   true,
+			wantContains: "Guild Rank = 3",
+		},
+		{
+			name: "Guild Rank - fail",
+			condition: Condition{
+				conditionType: GuildRankCondition,
+				operator:      Equals,
+				value:         1,
+			},
+			wantPassed:   false,
+			wantContains: "Guild Rank = 1",
+		},
+		{
+			name: "Guild Rank greater than - pass",
+			condition: Condition{
+				conditionType: GuildRankCondition,
+				operator:      GreaterThan,
+				value:         2,
+			},
+			wantPassed:   true,
+			wantContains: "Guild Rank > 2",
+		},
+		{
+			name: "Guild Rank greater than - fail",
+			condition: Condition{
+				conditionType: GuildRankCondition,
+				operator:      GreaterThan,
+				value:         5,
+			},
+			wantPassed:   false,
+			wantContains: "Guild Rank > 5",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.condition.Evaluate(character)
+
+			if result.Passed != tt.wantPassed {
+				t.Errorf("Condition.Evaluate() passed = %v, want %v", result.Passed, tt.wantPassed)
+			}
+
+			if result.Description != tt.wantContains {
+				t.Errorf("Condition.Evaluate() description = %v, want %v", result.Description, tt.wantContains)
+			}
+		})
+	}
 }

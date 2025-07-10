@@ -3,12 +3,13 @@ package guild
 import (
 	"atlas-channel/guild/member"
 	"atlas-channel/guild/title"
+	"github.com/Chronicle20/atlas-constants/world"
 	"sort"
 )
 
 type Model struct {
 	id                  uint32
-	worldId             byte
+	worldId             world.Id
 	name                string
 	notice              string
 	points              uint32
@@ -24,6 +25,10 @@ type Model struct {
 
 func (m Model) Id() uint32 {
 	return m.id
+}
+
+func (m Model) WorldId() world.Id {
+	return m.worldId
 }
 
 func (m Model) Name() string {

@@ -174,8 +174,8 @@ func TestConditionBuilder(t *testing.T) {
 				t.Errorf("ConditionBuilder.Build() value = %v, want %v", condition.value, tt.wantValue)
 			}
 
-			if tt.wantType == ItemCondition && condition.itemId != tt.wantItemId {
-				t.Errorf("ConditionBuilder.Build() itemId = %v, want %v", condition.itemId, tt.wantItemId)
+			if tt.wantType == ItemCondition && condition.referenceId != tt.wantItemId {
+				t.Errorf("ConditionBuilder.Build() itemId = %v, want %v", condition.referenceId, tt.wantItemId)
 			}
 		})
 	}

@@ -46,10 +46,12 @@ const (
 
 // ConditionInput represents the structured input for creating a condition
 type ConditionInput struct {
-	Type     string `json:"type"`             // e.g., "jobId", "meso", "item"
-	Operator string `json:"operator"`         // e.g., "=", ">=", "<"
-	Value    int    `json:"value"`            // Value or quantity
-	ItemId   uint32 `json:"itemId,omitempty"` // Only for item checks
+	Type        string `json:"type"`                  // e.g., "jobId", "meso", "item"
+	Operator    string `json:"operator"`              // e.g., "=", ">=", "<"
+	Value       int    `json:"value"`                 // Value or quantity
+	ReferenceId uint32 `json:"referenceId,omitempty"` // For quest validation, item checks, etc.
+	Step        string `json:"step,omitempty"`        // For quest progress validation
+	ItemId      uint32 `json:"itemId,omitempty"`      // Deprecated: use ReferenceId instead
 }
 
 // ConditionResult represents the result of a condition evaluation
@@ -68,7 +70,8 @@ type Condition struct {
 	conditionType ConditionType
 	operator      Operator
 	value         int
-	itemId        uint32 // Used for item conditions
+	referenceId   uint32 // Used for quest validation, item conditions, etc.
+	step          string // Used for quest progress validation
 }
 
 // ConditionBuilder is used to safely construct Condition objects
@@ -76,7 +79,8 @@ type ConditionBuilder struct {
 	conditionType ConditionType
 	operator      Operator
 	value         int
-	itemId        *uint32
+	referenceId   *uint32
+	step          string
 	err           error
 }
 
@@ -125,13 +129,33 @@ func (b *ConditionBuilder) SetValue(value int) *ConditionBuilder {
 	return b
 }
 
-// SetItemId sets the item ID (only for item conditions)
+// SetReferenceId sets the reference ID (for quest validation, item conditions, etc.)
+func (b *ConditionBuilder) SetReferenceId(referenceId uint32) *ConditionBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	b.referenceId = &referenceId
+	return b
+}
+
+// SetStep sets the step for quest progress validation
+func (b *ConditionBuilder) SetStep(step string) *ConditionBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	b.step = step
+	return b
+}
+
+// SetItemId sets the item ID (deprecated: use SetReferenceId instead)
 func (b *ConditionBuilder) SetItemId(itemId uint32) *ConditionBuilder {
 	if b.err != nil {
 		return b
 	}
 
-	b.itemId = &itemId
+	b.referenceId = &itemId
 	return b
 }
 
@@ -141,10 +165,35 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 	b.SetOperator(input.Operator)
 	b.SetValue(input.Value)
 
-	if input.ItemId != 0 {
-		b.SetItemId(input.ItemId)
-	} else if ConditionType(input.Type) == ItemCondition {
-		b.err = fmt.Errorf("itemId is required for item conditions")
+	// Handle ReferenceId (preferred) or ItemId (deprecated)
+	if input.ReferenceId != 0 {
+		b.SetReferenceId(input.ReferenceId)
+	} else if input.ItemId != 0 {
+		b.SetReferenceId(input.ItemId) // Migrate ItemId to ReferenceId
+	}
+
+	// Set step for quest progress validation
+	if input.Step != "" {
+		b.SetStep(input.Step)
+	}
+
+	// Validate required fields for specific condition types
+	switch ConditionType(input.Type) {
+	case ItemCondition:
+		if input.ReferenceId == 0 && input.ItemId == 0 {
+			b.err = fmt.Errorf("referenceId is required for item conditions")
+		}
+	case QuestStatusCondition:
+		if input.ReferenceId == 0 {
+			b.err = fmt.Errorf("referenceId is required for quest conditions")
+		}
+	case QuestProgressCondition:
+		if input.ReferenceId == 0 {
+			b.err = fmt.Errorf("referenceId is required for quest conditions")
+		}
+		if input.Step == "" {
+			b.err = fmt.Errorf("step is required for quest progress conditions")
+		}
 	}
 
 	return b
@@ -168,10 +217,27 @@ func (b *ConditionBuilder) Validate() *ConditionBuilder {
 		return b
 	}
 
-	// Check if itemId is set for item conditions
-	if b.conditionType == ItemCondition && b.itemId == nil {
-		b.err = fmt.Errorf("itemId is required for item conditions")
-		return b
+	// Check if referenceId is set for conditions that require it
+	switch b.conditionType {
+	case ItemCondition:
+		if b.referenceId == nil {
+			b.err = fmt.Errorf("referenceId is required for item conditions")
+			return b
+		}
+	case QuestStatusCondition:
+		if b.referenceId == nil {
+			b.err = fmt.Errorf("referenceId is required for quest conditions")
+			return b
+		}
+	case QuestProgressCondition:
+		if b.referenceId == nil {
+			b.err = fmt.Errorf("referenceId is required for quest conditions")
+			return b
+		}
+		if b.step == "" {
+			b.err = fmt.Errorf("step is required for quest progress conditions")
+			return b
+		}
 	}
 
 	return b
@@ -189,10 +255,11 @@ func (b *ConditionBuilder) Build() (Condition, error) {
 		conditionType: b.conditionType,
 		operator:      b.operator,
 		value:         b.value,
+		step:          b.step,
 	}
 
-	if b.itemId != nil {
-		condition.itemId = *b.itemId
+	if b.referenceId != nil {
+		condition.referenceId = *b.referenceId
 	}
 
 	return condition, nil
@@ -250,11 +317,11 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 	case QuestStatusCondition:
 		// TODO: Implement quest status validation when quest integration is available
 		actualValue = 0 // Placeholder - will need quest service integration
-		description = fmt.Sprintf("Quest Status %s %d", c.operator, c.value)
+		description = fmt.Sprintf("Quest %d Status %s %d", c.referenceId, c.operator, c.value)
 	case QuestProgressCondition:
 		// TODO: Implement quest progress validation when quest integration is available
 		actualValue = 0 // Placeholder - will need quest service integration
-		description = fmt.Sprintf("Quest Progress %s %d", c.operator, c.value)
+		description = fmt.Sprintf("Quest %d Progress (step: %s) %s %d", c.referenceId, c.step, c.operator, c.value)
 	case UnclaimedMarriageGiftsCondition:
 		// TODO: Implement marriage gifts validation when marriage integration is available
 		actualValue = 0 // Placeholder - will need marriage service integration
@@ -274,29 +341,29 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 	case ItemCondition:
 		// For item conditions, we need to check the inventory
 		itemQuantity := 0
-		it, ok := inventory2.TypeFromItemId(item.Id(c.itemId))
+		it, ok := inventory2.TypeFromItemId(item.Id(c.referenceId))
 		if !ok {
 			return ConditionResult{
 				Passed:      false,
-				Description: fmt.Sprintf("Invalid item ID: %d", c.itemId),
+				Description: fmt.Sprintf("Invalid item ID: %d", c.referenceId),
 				Type:        c.conditionType,
 				Operator:    c.operator,
 				Value:       c.value,
-				ItemId:      c.itemId,
+				ItemId:      c.referenceId,
 				ActualValue: 0,
 			}
 		}
 
 		compartment := character.Inventory().CompartmentByType(it)
 		for _, a := range compartment.Assets() {
-			if a.TemplateId() == c.itemId {
+			if a.TemplateId() == c.referenceId {
 				itemQuantity += int(a.Quantity())
 			}
 		}
 
 		actualValue = itemQuantity
-		itemId = c.itemId
-		description = fmt.Sprintf("Item %d quantity %s %d", c.itemId, c.operator, c.value)
+		itemId = c.referenceId
+		description = fmt.Sprintf("Item %d quantity %s %d", c.referenceId, c.operator, c.value)
 	default:
 		return ConditionResult{
 			Passed:      false,

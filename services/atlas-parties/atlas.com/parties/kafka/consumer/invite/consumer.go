@@ -4,6 +4,7 @@ import (
 	consumer2 "atlas-parties/kafka/consumer"
 	"atlas-parties/party"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -36,7 +37,7 @@ func handleAcceptedStatusEvent(l logrus.FieldLogger, ctx context.Context, e stat
 		return
 	}
 
-	_, err := party.Join(l)(ctx)(e.ReferenceId, e.Body.TargetId)
+	_, err := party.NewProcessor(l, ctx).Join(e.ReferenceId, e.Body.TargetId)
 	if err != nil {
 		l.WithError(err).Errorf("Character [%d] unable to join party [%d].", e.Body.TargetId, e.ReferenceId)
 	}

@@ -1,9 +1,10 @@
 package party
 
 import (
+	"testing"
+
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
-	"testing"
 )
 
 func TestSunnyDayCreate(t *testing.T) {

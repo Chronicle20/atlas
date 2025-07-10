@@ -5,87 +5,14 @@ import (
 	consumer2 "atlas-parties/kafka/consumer"
 	"atlas-parties/party"
 	"context"
-	"errors"
-	"sync"
-	"time"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
-
-// Idempotency tracking for character deletion events
-type processedEvent struct {
-	transactionId uuid.UUID
-	characterId   uint32
-	processedAt   time.Time
-}
-
-type idempotencyTracker struct {
-	mu                sync.RWMutex
-	processedEvents   map[uuid.UUID]*processedEvent
-	lastCleanup       time.Time
-	cleanupInterval   time.Duration
-	eventTTL          time.Duration
-}
-
-var deletionIdempotencyTracker = &idempotencyTracker{
-	processedEvents: make(map[uuid.UUID]*processedEvent),
-	lastCleanup:     time.Now(),
-	cleanupInterval: 5 * time.Minute,  // Clean up every 5 minutes
-	eventTTL:        30 * time.Minute, // Keep events for 30 minutes
-}
-
-// isEventProcessed checks if a deletion event has already been processed
-func (it *idempotencyTracker) isEventProcessed(transactionId uuid.UUID, characterId uint32) bool {
-	it.mu.RLock()
-	defer it.mu.RUnlock()
-	
-	if event, exists := it.processedEvents[transactionId]; exists {
-		// Double-check character ID for additional safety
-		return event.characterId == characterId
-	}
-	return false
-}
-
-// markEventProcessed records that a deletion event has been processed
-func (it *idempotencyTracker) markEventProcessed(transactionId uuid.UUID, characterId uint32) {
-	it.mu.Lock()
-	defer it.mu.Unlock()
-	
-	it.processedEvents[transactionId] = &processedEvent{
-		transactionId: transactionId,
-		characterId:   characterId,
-		processedAt:   time.Now(),
-	}
-	
-	// Trigger cleanup if needed
-	if time.Since(it.lastCleanup) >= it.cleanupInterval {
-		it.cleanupExpiredEventsLocked()
-		it.lastCleanup = time.Now()
-	}
-}
-
-// cleanupExpiredEventsLocked removes old processed events (caller must hold write lock)
-func (it *idempotencyTracker) cleanupExpiredEventsLocked() {
-	cutoff := time.Now().Add(-it.eventTTL)
-	for transactionId, event := range it.processedEvents {
-		if event.processedAt.Before(cutoff) {
-			delete(it.processedEvents, transactionId)
-		}
-	}
-}
-
-// getProcessedEventCount returns the number of events currently tracked
-func (it *idempotencyTracker) getProcessedEventCount() int {
-	it.mu.RLock()
-	defer it.mu.RUnlock()
-	return len(it.processedEvents)
-}
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -107,102 +34,73 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	}
 }
 
-func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, event StatusEvent[StatusEventLoginBody]) {
-	if event.Type != StatusEventTypeLogin {
+func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, e StatusEvent[StatusEventLoginBody]) {
+	if e.Type != StatusEventTypeLogin {
 		return
 	}
-	
-	// Enhanced error handling with structured logging
-	defer func() {
-		if r := recover(); r != nil {
-			l.WithField("characterId", event.CharacterId).
-				WithField("worldId", event.WorldId).
-				WithField("transactionId", event.TransactionId).
-				WithField("panic", r).
-				Errorf("Panic occurred during login processing for character [%d], recovered gracefully.", event.CharacterId)
-		}
-	}()
-	
-	l.WithField("characterId", event.CharacterId).
-		WithField("worldId", event.WorldId).
-		WithField("transactionId", event.TransactionId).
-		WithField("channelId", event.Body.ChannelId).
-		WithField("mapId", event.Body.MapId).
-		Debugf("Processing login event for character [%d].", event.CharacterId)
-	
-	err := character.Login(l)(ctx)(byte(event.WorldId), byte(event.Body.ChannelId), uint32(event.Body.MapId), event.CharacterId)
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("channelId", e.Body.ChannelId).
+		WithField("mapId", e.Body.MapId).
+		Debugf("Processing login event for character [%d].", e.CharacterId)
+
+	err := character.NewProcessor(l, ctx).LoginAndEmit(byte(e.WorldId), byte(e.Body.ChannelId), uint32(e.Body.MapId), e.CharacterId)
 	if err != nil {
 		l.WithError(err).
-			WithField("characterId", event.CharacterId).
-			WithField("worldId", event.WorldId).
-			WithField("transactionId", event.TransactionId).
-			WithField("channelId", event.Body.ChannelId).
-			WithField("mapId", event.Body.MapId).
-			Errorf("Unable to process login for character [%d].", event.CharacterId)
-	} else {
-		l.WithField("characterId", event.CharacterId).
-			WithField("worldId", event.WorldId).
-			WithField("transactionId", event.TransactionId).
-			Debugf("Successfully processed login for character [%d].", event.CharacterId)
+			WithField("characterId", e.CharacterId).
+			WithField("worldId", e.WorldId).
+			WithField("transactionId", e.TransactionId).
+			WithField("channelId", e.Body.ChannelId).
+			WithField("mapId", e.Body.MapId).
+			Errorf("Unable to process login for character [%d].", e.CharacterId)
+		return
 	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		Debugf("Successfully processed login for character [%d].", e.CharacterId)
+
 }
 
-func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event StatusEvent[StatusEventLogoutBody]) {
-	if event.Type != StatusEventTypeLogout {
+func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e StatusEvent[StatusEventLogoutBody]) {
+	if e.Type != StatusEventTypeLogout {
 		return
 	}
-	
-	// Enhanced error handling with structured logging
-	defer func() {
-		if r := recover(); r != nil {
-			l.WithField("characterId", event.CharacterId).
-				WithField("worldId", event.WorldId).
-				WithField("transactionId", event.TransactionId).
-				WithField("panic", r).
-				Errorf("Panic occurred during logout processing for character [%d], recovered gracefully.", event.CharacterId)
-		}
-	}()
-	
-	l.WithField("characterId", event.CharacterId).
-		WithField("worldId", event.WorldId).
-		WithField("transactionId", event.TransactionId).
-		WithField("channelId", event.Body.ChannelId).
-		WithField("mapId", event.Body.MapId).
-		Debugf("Processing logout event for character [%d].", event.CharacterId)
-	
-	err := character.Logout(l)(ctx)(event.CharacterId)
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("channelId", e.Body.ChannelId).
+		WithField("mapId", e.Body.MapId).
+		Debugf("Processing logout event for character [%d].", e.CharacterId)
+
+	err := character.NewProcessor(l, ctx).LogoutAndEmit(e.CharacterId)
 	if err != nil {
 		l.WithError(err).
-			WithField("characterId", event.CharacterId).
-			WithField("worldId", event.WorldId).
-			WithField("transactionId", event.TransactionId).
-			WithField("channelId", event.Body.ChannelId).
-			WithField("mapId", event.Body.MapId).
-			Errorf("Unable to process logout for character [%d].", event.CharacterId)
-	} else {
-		l.WithField("characterId", event.CharacterId).
-			WithField("worldId", event.WorldId).
-			WithField("transactionId", event.TransactionId).
-			Debugf("Successfully processed logout for character [%d].", event.CharacterId)
+			WithField("characterId", e.CharacterId).
+			WithField("worldId", e.WorldId).
+			WithField("transactionId", e.TransactionId).
+			WithField("channelId", e.Body.ChannelId).
+			WithField("mapId", e.Body.MapId).
+			Errorf("Unable to process logout for character [%d].", e.CharacterId)
+		return
 	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		Debugf("Successfully processed logout for character [%d].", e.CharacterId)
+
 }
 
 func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, e StatusEvent[ChangeChannelEventLoginBody]) {
 	if e.Type != StatusEventTypeChannelChanged {
 		return
 	}
-	
-	// Enhanced error handling with structured logging
-	defer func() {
-		if r := recover(); r != nil {
-			l.WithField("characterId", e.CharacterId).
-				WithField("worldId", e.WorldId).
-				WithField("transactionId", e.TransactionId).
-				WithField("panic", r).
-				Errorf("Panic occurred during channel change processing for character [%d], recovered gracefully.", e.CharacterId)
-		}
-	}()
-	
+
 	l.WithField("characterId", e.CharacterId).
 		WithField("worldId", e.WorldId).
 		WithField("transactionId", e.TransactionId).
@@ -210,8 +108,8 @@ func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, 
 		WithField("oldChannelId", e.Body.OldChannelId).
 		WithField("mapId", e.Body.MapId).
 		Debugf("Processing channel change event for character [%d].", e.CharacterId)
-	
-	err := character.ChannelChange(l)(ctx)(e.CharacterId, byte(e.Body.ChannelId))
+
+	err := character.NewProcessor(l, ctx).ChannelChange(e.CharacterId, byte(e.Body.ChannelId))
 	if err != nil {
 		l.WithError(err).
 			WithField("characterId", e.CharacterId).
@@ -220,229 +118,104 @@ func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, 
 			WithField("newChannelId", e.Body.ChannelId).
 			WithField("oldChannelId", e.Body.OldChannelId).
 			Errorf("Unable to process channel changed for character [%d].", e.CharacterId)
-	} else {
-		l.WithField("characterId", e.CharacterId).
-			WithField("worldId", e.WorldId).
-			WithField("transactionId", e.TransactionId).
-			WithField("newChannelId", e.Body.ChannelId).
-			Debugf("Successfully processed channel change for character [%d].", e.CharacterId)
-	}
-}
-
-func handleMapChangedStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event StatusEvent[StatusEventMapChangedBody]) {
-	if event.Type != StatusEventTypeMapChanged {
 		return
 	}
-	
-	// Enhanced error handling with structured logging
-	defer func() {
-		if r := recover(); r != nil {
-			l.WithField("characterId", event.CharacterId).
-				WithField("worldId", event.WorldId).
-				WithField("transactionId", event.TransactionId).
-				WithField("panic", r).
-				Errorf("Panic occurred during map change processing for character [%d], recovered gracefully.", event.CharacterId)
-		}
-	}()
-	
-	l.WithField("characterId", event.CharacterId).
-		WithField("worldId", event.WorldId).
-		WithField("transactionId", event.TransactionId).
-		WithField("oldMapId", event.Body.OldMapId).
-		WithField("targetMapId", event.Body.TargetMapId).
-		WithField("targetPortalId", event.Body.TargetPortalId).
-		WithField("channelId", event.Body.ChannelId).
-		Debugf("Processing map change event for character [%d].", event.CharacterId)
-	
-	err := character.MapChange(l)(ctx)(event.CharacterId, uint32(event.Body.TargetMapId))
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("newChannelId", e.Body.ChannelId).
+		Debugf("Successfully processed channel change for character [%d].", e.CharacterId)
+}
+
+func handleMapChangedStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e StatusEvent[StatusEventMapChangedBody]) {
+	if e.Type != StatusEventTypeMapChanged {
+		return
+	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("oldMapId", e.Body.OldMapId).
+		WithField("targetMapId", e.Body.TargetMapId).
+		WithField("targetPortalId", e.Body.TargetPortalId).
+		WithField("channelId", e.Body.ChannelId).
+		Debugf("Processing map change event for character [%d].", e.CharacterId)
+
+	err := character.NewProcessor(l, ctx).MapChange(e.CharacterId, uint32(e.Body.TargetMapId))
 	if err != nil {
 		l.WithError(err).
-			WithField("characterId", event.CharacterId).
-			WithField("worldId", event.WorldId).
-			WithField("transactionId", event.TransactionId).
-			WithField("oldMapId", event.Body.OldMapId).
-			WithField("targetMapId", event.Body.TargetMapId).
-			WithField("targetPortalId", event.Body.TargetPortalId).
-			Errorf("Unable to process map changed for character [%d].", event.CharacterId)
-	} else {
-		l.WithField("characterId", event.CharacterId).
-			WithField("worldId", event.WorldId).
-			WithField("transactionId", event.TransactionId).
-			WithField("targetMapId", event.Body.TargetMapId).
-			Debugf("Successfully processed map change for character [%d].", event.CharacterId)
+			WithField("characterId", e.CharacterId).
+			WithField("worldId", e.WorldId).
+			WithField("transactionId", e.TransactionId).
+			WithField("oldMapId", e.Body.OldMapId).
+			WithField("targetMapId", e.Body.TargetMapId).
+			WithField("targetPortalId", e.Body.TargetPortalId).
+			Errorf("Unable to process map changed for character [%d].", e.CharacterId)
+		return
 	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("targetMapId", e.Body.TargetMapId).
+		Debugf("Successfully processed map change for character [%d].", e.CharacterId)
 }
 
-func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, event StatusEvent[StatusEventDeletedBody]) {
+func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, e StatusEvent[StatusEventDeletedBody]) {
 	// Early validation: check event type
-	if event.Type != StatusEventTypeDeleted {
+	if e.Type != StatusEventTypeDeleted {
 		return
 	}
-	
-	// Comprehensive validation for malformed events
-	if err := validateStatusEventDeleted(l, event); err != nil {
-		l.WithError(err).
-			WithField("eventType", event.Type).
-			WithField("characterId", event.CharacterId).
-			WithField("worldId", event.WorldId).
-			WithField("transactionId", event.TransactionId).
-			Errorf("Malformed character deletion event received, skipping processing.")
-		return
-	}
-	
-	// Idempotency check: prevent processing duplicate events
-	if deletionIdempotencyTracker.isEventProcessed(event.TransactionId, event.CharacterId) {
-		l.WithField("transactionId", event.TransactionId).
-			WithField("worldId", event.WorldId).
-			WithField("characterId", event.CharacterId).
-			WithField("trackedEvents", deletionIdempotencyTracker.getProcessedEventCount()).
-			Infof("Character deletion event for character [%d] already processed, skipping duplicate.", event.CharacterId)
-		return
-	}
-	
-	l.WithField("transactionId", event.TransactionId).
-		WithField("worldId", event.WorldId).
-		WithField("characterId", event.CharacterId).
-		Debugf("Processing character deletion event for character [%d].", event.CharacterId)
-	
-	// First, validate if character is in a party and log the party information
-	p, err := party.GetByCharacter(ctx)(event.CharacterId)
-	if err == nil {
-		l.WithField("transactionId", event.TransactionId).
-			WithField("partyId", p.Id()).
-			WithField("isLeader", party.IsLeader(p, event.CharacterId)).
-			WithField("partyMemberCount", len(p.Members())).
-			Debugf("Character [%d] found in party [%d] before deletion.", event.CharacterId, p.Id())
-		
-		// Validate party integrity before deletion
-		if err := party.ValidatePartyIntegrity(p); err != nil {
-			l.WithError(err).
-				WithField("transactionId", event.TransactionId).
-				WithField("partyId", p.Id()).
-				Warnf("Party [%d] integrity validation failed before character deletion.", p.Id())
-		}
-	} else {
-		l.WithField("transactionId", event.TransactionId).
-			Debugf("Character [%d] not found in any party before deletion.", event.CharacterId)
-	}
-	
-	// Remove character from party using the new removal logic with panic recovery
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				l.WithField("transactionId", event.TransactionId).
-					WithField("worldId", event.WorldId).
-					WithField("characterId", event.CharacterId).
-					WithField("panic", r).
-					Errorf("Panic occurred during character [%d] removal from party, recovered gracefully.", event.CharacterId)
-			}
-		}()
-		
-		removedParty, err := party.RemoveCharacterFromPartyWithTransaction(l, event.TransactionId)(ctx)(event.CharacterId)
-		if err != nil {
-			l.WithError(err).
-				WithField("transactionId", event.TransactionId).
-				WithField("worldId", event.WorldId).
-				WithField("characterId", event.CharacterId).
-				Errorf("Unable to remove character [%d] from party during deletion.", event.CharacterId)
-		} else {
-			if removedParty.Id() != 0 {
-				l.WithField("transactionId", event.TransactionId).
-					WithField("partyId", removedParty.Id()).
-					WithField("remainingMembers", len(removedParty.Members())).
-					WithField("newLeader", removedParty.LeaderId()).
-					Debugf("Character [%d] successfully removed from party [%d].", event.CharacterId, removedParty.Id())
-			}
-		}
-	}()
-	
-	// Also process character deletion from character registry with panic recovery
-	func() {
-		defer func() {
-			if r := recover(); r != nil {
-				l.WithField("transactionId", event.TransactionId).
-					WithField("worldId", event.WorldId).
-					WithField("characterId", event.CharacterId).
-					WithField("panic", r).
-					Errorf("Panic occurred during character [%d] deletion from registry, recovered gracefully.", event.CharacterId)
-			}
-		}()
-		
-		err := character.Delete(l)(ctx)(event.CharacterId)
-		if err != nil {
-			l.WithError(err).
-				WithField("transactionId", event.TransactionId).
-				WithField("worldId", event.WorldId).
-				WithField("characterId", event.CharacterId).
-				Errorf("Unable to process character deletion for character [%d].", event.CharacterId)
-		} else {
-			// Log cache statistics for monitoring
-			hits, misses, hitRate := party.GetCacheStats(ctx)
-			l.WithField("transactionId", event.TransactionId).
-				WithField("worldId", event.WorldId).
-				WithField("characterId", event.CharacterId).
-				WithField("cacheHits", hits).
-				WithField("cacheMisses", misses).
-				WithField("cacheHitRate", hitRate).
-				WithField("cacheSize", party.GetCacheSize(ctx)).
-				Infof("Successfully processed character deletion for character [%d].", event.CharacterId)
-		}
-	}()
-	
-	// Mark event as processed for idempotency (regardless of success/failure)
-	// This prevents reprocessing the same deletion event multiple times
-	deletionIdempotencyTracker.markEventProcessed(event.TransactionId, event.CharacterId)
-	l.WithField("transactionId", event.TransactionId).
-		WithField("characterId", event.CharacterId).
-		WithField("trackedEvents", deletionIdempotencyTracker.getProcessedEventCount()).
-		Debugf("Marked character deletion event as processed for idempotency tracking.")
-}
 
-// validateStatusEventDeleted performs comprehensive validation of character deletion events
-func validateStatusEventDeleted(l logrus.FieldLogger, event StatusEvent[StatusEventDeletedBody]) error {
-	var validationErrors []string
-	
-	// Validate character ID - must be positive and within reasonable bounds
-	if event.CharacterId == 0 {
-		validationErrors = append(validationErrors, "invalid character ID: cannot be zero")
-	} else if event.CharacterId > 4294967295 { // max uint32
-		validationErrors = append(validationErrors, "invalid character ID: exceeds maximum value")
+	l.WithField("transactionId", e.TransactionId).
+		WithField("worldId", e.WorldId).
+		WithField("characterId", e.CharacterId).
+		Debugf("Processing character deletion event for character [%d].", e.CharacterId)
+
+	// First, validate if character is in a party and log the party information
+	pp := party.NewProcessor(l, ctx)
+	p, err := pp.GetByCharacter(e.CharacterId)
+	if err != nil {
+		l.WithField("transactionId", e.TransactionId).
+			Debugf("Character [%d] not found in any party before deletion.", e.CharacterId)
 	}
-	
-	// Validate transaction ID - must not be empty for audit trails
-	if event.TransactionId == uuid.Nil {
-		l.Warnf("Character deletion event for character [%d] missing transaction ID, processing anyway.", event.CharacterId)
-		// Don't add to validationErrors as this is not critical, just log warning
+
+	l.WithField("transactionId", e.TransactionId).
+		WithField("partyId", p.Id()).
+		WithField("isLeader", p.LeaderId() == e.CharacterId).
+		WithField("partyMemberCount", len(p.Members())).
+		Debugf("Character [%d] found in party [%d] before deletion.", e.CharacterId, p.Id())
+
+	p, err = pp.Leave(p.Id(), e.CharacterId)
+	if err != nil {
+		l.WithError(err).
+			WithField("transactionId", e.TransactionId).
+			WithField("worldId", e.WorldId).
+			WithField("characterId", e.CharacterId).
+			Errorf("Unable to remove character [%d] from party during deletion.", e.CharacterId)
+	} else {
+		if p.Id() != 0 {
+			l.WithField("transactionId", e.TransactionId).
+				WithField("partyId", p.Id()).
+				WithField("remainingMembers", len(p.Members())).
+				WithField("newLeader", p.LeaderId()).
+				Debugf("Character [%d] successfully removed from party [%d].", e.CharacterId, p.Id())
+		}
 	}
-	
-	// Validate world ID - must be positive and within reasonable bounds
-	if event.WorldId == 0 {
-		validationErrors = append(validationErrors, "invalid world ID: cannot be zero")
-	} else if event.WorldId > 255 { // reasonable world ID limit for byte type
-		validationErrors = append(validationErrors, "invalid world ID: exceeds maximum value")
+
+	err = character.NewProcessor(l, ctx).Delete(e.CharacterId)
+	if err != nil {
+		l.WithError(err).
+			WithField("transactionId", e.TransactionId).
+			WithField("worldId", e.WorldId).
+			WithField("characterId", e.CharacterId).
+			Errorf("Unable to process character deletion for character [%d].", e.CharacterId)
+	} else {
+		// Log cache statistics for monitoring
+		l.WithField("transactionId", e.TransactionId).
+			WithField("worldId", e.WorldId).
+			WithField("characterId", e.CharacterId).
+			Infof("Successfully processed character deletion for character [%d].", e.CharacterId)
 	}
-	
-	// Validate event type consistency (double-check)
-	if event.Type != StatusEventTypeDeleted {
-		validationErrors = append(validationErrors, "event type mismatch: expected DELETED type")
-	}
-	
-	// Check for empty event type string
-	if event.Type == "" {
-		validationErrors = append(validationErrors, "event type cannot be empty")
-	}
-	
-	// If we have validation errors, combine them and return
-	if len(validationErrors) > 0 {
-		l.WithField("validationErrors", validationErrors).
-			WithField("characterId", event.CharacterId).
-			WithField("worldId", event.WorldId).
-			WithField("transactionId", event.TransactionId).
-			Warnf("Character deletion event failed validation with %d errors.", len(validationErrors))
-		
-		return errors.New("event validation failed: " + validationErrors[0]) // Return first error
-	}
-	
-	// All validations passed
-	return nil
 }

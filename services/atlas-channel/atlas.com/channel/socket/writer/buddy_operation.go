@@ -36,7 +36,7 @@ func BuddyInviteBody(l logrus.FieldLogger, t tenant.Model) func(actorId uint32, 
 				FriendId:    actorId,
 				FriendName:  originatorName,
 				Flag:        0,
-				ChannelId:   channel.Id(0),
+				ChannelId:   0,
 				FriendGroup: "Default Group",
 			}
 			b.Encode(l, t, options)(w)

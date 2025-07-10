@@ -73,9 +73,9 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 				Name:      "",
 				Level:     0,
 				JobId:     0,
-				WorldId:   world.Id(0),
-				ChannelId: channel.Id(0),
-				MapId:     _map.Id(0),
+				WorldId:   0,
+				ChannelId: 0,
+				MapId:     0,
 				Online:    false,
 			})
 		}

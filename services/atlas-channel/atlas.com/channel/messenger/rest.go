@@ -69,8 +69,8 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 			r.Members = append(r.Members, MemberRestModel{
 				Id:        uint32(id),
 				Name:      "",
-				WorldId:   world.Id(0),
-				ChannelId: channel.Id(0),
+				WorldId:   0,
+				ChannelId: 0,
 				Online:    false,
 				Slot:      0,
 			})

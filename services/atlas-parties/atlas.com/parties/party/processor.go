@@ -572,6 +572,16 @@ func CanRemoveMember(party Model, characterId uint32) error {
 }
 
 func ValidatePartyIntegrity(party Model) error {
+	// Check if party ID is valid
+	if party.Id() == 0 {
+		return errors.New("invalid party ID: cannot be zero")
+	}
+	
+	// Check if leader ID is valid
+	if party.LeaderId() == 0 {
+		return errors.New("invalid leader ID: cannot be zero")
+	}
+	
 	// Check if party has members
 	if len(party.Members()) == 0 {
 		return errors.New("party has no members")
@@ -579,14 +589,17 @@ func ValidatePartyIntegrity(party Model) error {
 	
 	// Check if leader is a member
 	if !IsMember(party, party.LeaderId()) {
-		return errors.New("leader is not a member of the party")
+		return errors.New("leader is not in party members")
 	}
 	
-	// Check for duplicate members
+	// Check for duplicate members and invalid member IDs
 	memberSet := make(map[uint32]bool)
 	for _, memberId := range party.Members() {
+		if memberId == 0 {
+			return errors.New("invalid member ID: cannot be zero")
+		}
 		if memberSet[memberId] {
-			return errors.New("duplicate member found in party")
+			return errors.New("duplicate member found")
 		}
 		memberSet[memberId] = true
 	}

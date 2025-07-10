@@ -55,7 +55,7 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -283,7 +283,7 @@ func handleStatusEventFameChanged(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -337,7 +337,7 @@ func handleStatusEventMesoChanged(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
-		if !sc.IsWorld(tenant.MustFromContext(ctx), world.Id(e.WorldId)) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 

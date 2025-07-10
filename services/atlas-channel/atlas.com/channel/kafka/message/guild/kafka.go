@@ -1,5 +1,11 @@
 package guild
 
+import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+)
+
 const (
 	EnvCommandTopic              = "COMMAND_TOPIC_GUILD"
 	CommandTypeRequestName       = "REQUEST_NAME"
@@ -21,20 +27,20 @@ type Command[E any] struct {
 }
 
 type RequestNameBody struct {
-	WorldId   byte `json:"worldId"`
-	ChannelId byte `json:"channelId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
 }
 
 type RequestEmblemBody struct {
-	WorldId   byte `json:"worldId"`
-	ChannelId byte `json:"channelId"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
 }
 
 type RequestCreateBody struct {
-	WorldId   byte   `json:"worldId"`
-	ChannelId byte   `json:"channelId"`
-	MapId     uint32 `json:"mapId"`
-	Name      string `json:"name"`
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Name      string     `json:"name"`
 }
 
 type CreationAgreementBody struct {
@@ -92,10 +98,10 @@ const (
 )
 
 type StatusEvent[E any] struct {
-	WorldId byte   `json:"worldId"`
-	GuildId uint32 `json:"guildId"`
-	Type    string `json:"type"`
-	Body    E      `json:"body"`
+	WorldId world.Id `json:"worldId"`
+	GuildId uint32   `json:"guildId"`
+	Type    string   `json:"type"`
+	Body    E        `json:"body"`
 }
 
 type StatusEventCreatedBody struct {

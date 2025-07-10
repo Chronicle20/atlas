@@ -11,7 +11,7 @@ import (
 func RequestAddBuddyCommandProvider(characterId uint32, worldId world.Id, targetId uint32, group string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &buddylist.Command[buddylist.RequestAddBuddyCommandBody]{
-		WorldId:     byte(worldId),
+		WorldId:     worldId,
 		CharacterId: characterId,
 		Type:        buddylist.CommandTypeRequestAdd,
 		Body: buddylist.RequestAddBuddyCommandBody{
@@ -25,7 +25,7 @@ func RequestAddBuddyCommandProvider(characterId uint32, worldId world.Id, target
 func RequestDeleteBuddyCommandProvider(characterId uint32, worldId world.Id, targetId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &buddylist.Command[buddylist.RequestDeleteBuddyCommandBody]{
-		WorldId:     byte(worldId),
+		WorldId:     worldId,
 		CharacterId: characterId,
 		Type:        buddylist.CommandTypeRequestDelete,
 		Body: buddylist.RequestDeleteBuddyCommandBody{

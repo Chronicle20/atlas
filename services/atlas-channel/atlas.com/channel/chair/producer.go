@@ -11,9 +11,9 @@ import (
 func UseCommandProvider(m _map.Model, chairType string, chairId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &chair.Command[chair.UseChairCommandBody]{
-		WorldId:   byte(m.WorldId()),
-		ChannelId: byte(m.ChannelId()),
-		MapId:     uint32(m.MapId()),
+		WorldId:   m.WorldId(),
+		ChannelId: m.ChannelId(),
+		MapId:     m.MapId(),
 		Type:      chair.CommandUseChair,
 		Body: chair.UseChairCommandBody{
 			CharacterId: characterId,
@@ -27,9 +27,9 @@ func UseCommandProvider(m _map.Model, chairType string, chairId uint32, characte
 func CancelCommandProvider(m _map.Model, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &chair.Command[chair.CancelChairCommandBody]{
-		WorldId:   byte(m.WorldId()),
-		ChannelId: byte(m.ChannelId()),
-		MapId:     uint32(m.MapId()),
+		WorldId:   m.WorldId(),
+		ChannelId: m.ChannelId(),
+		MapId:     m.MapId(),
 		Type:      chair.CommandCancelChair,
 		Body: chair.CancelChairCommandBody{
 			CharacterId: characterId,

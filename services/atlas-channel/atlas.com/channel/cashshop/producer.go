@@ -11,12 +11,12 @@ import (
 func CharacterEnterCashShopStatusEventProvider(actorId uint32, m _map.Model) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
 	value := &cashshop.StatusEvent[cashshop.CharacterMovementBody]{
-		WorldId: byte(m.WorldId()),
+		WorldId: m.WorldId(),
 		Type:    cashshop.EventCashShopStatusTypeCharacterEnter,
 		Body: cashshop.CharacterMovementBody{
 			CharacterId: actorId,
-			ChannelId:   byte(m.ChannelId()),
-			MapId:       uint32(m.MapId()),
+			ChannelId:   m.ChannelId(),
+			MapId:       m.MapId(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -25,12 +25,12 @@ func CharacterEnterCashShopStatusEventProvider(actorId uint32, m _map.Model) mod
 func CharacterExitCashShopStatusEventProvider(actorId uint32, m _map.Model) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(actorId))
 	value := &cashshop.StatusEvent[cashshop.CharacterMovementBody]{
-		WorldId: byte(m.WorldId()),
+		WorldId: m.WorldId(),
 		Type:    cashshop.EventCashShopStatusTypeCharacterExit,
 		Body: cashshop.CharacterMovementBody{
 			CharacterId: actorId,
-			ChannelId:   byte(m.ChannelId()),
-			MapId:       uint32(m.MapId()),
+			ChannelId:   m.ChannelId(),
+			MapId:       m.MapId(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

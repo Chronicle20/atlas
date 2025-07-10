@@ -11,9 +11,9 @@ import (
 func RequestReservationCommandProvider(m _map.Model, dropId uint32, characterId uint32, characterX int16, characterY int16, petSlot int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))
 	value := &drop2.Command[drop2.RequestReservationCommandBody]{
-		WorldId:   byte(m.WorldId()),
-		ChannelId: byte(m.ChannelId()),
-		MapId:     uint32(m.MapId()),
+		WorldId:   m.WorldId(),
+		ChannelId: m.ChannelId(),
+		MapId:     m.MapId(),
 		Type:      drop2.CommandTypeRequestReservation,
 		Body: drop2.RequestReservationCommandBody{
 			DropId:      dropId,

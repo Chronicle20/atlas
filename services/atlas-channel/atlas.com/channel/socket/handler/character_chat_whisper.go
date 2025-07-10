@@ -77,7 +77,7 @@ func produceFindResultBody(l logrus.FieldLogger) func(ctx context.Context) func(
 
 					_, err = session.NewProcessor(l, ctx).GetByCharacterId(s.WorldId(), s.ChannelId())(tc.Id())
 					if err == nil {
-						return af(writer.CharacterChatWhisperFindResultInMapBody(resultMode, tc, tc.MapId()))(s)
+						return af(writer.CharacterChatWhisperFindResultInMapBody(resultMode, tc, uint32(tc.MapId())))(s)
 					}
 
 					// TODO find a way to look up remote channel.

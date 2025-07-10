@@ -1,7 +1,6 @@
 package _map
 
 import (
-	_map "github.com/Chronicle20/atlas-constants/map"
 	"strconv"
 )
 
@@ -22,10 +21,10 @@ func (r *RestModel) SetID(idStr string) error {
 	return nil
 }
 
-func Extract(m RestModel) (_map.Id, error) {
+func Extract(m RestModel) (uint32, error) {
 	id, err := strconv.ParseUint(m.Id, 10, 32)
 	if err != nil {
 		return 0, err
 	}
-	return _map.Id(id), nil
+	return uint32(id), nil
 }

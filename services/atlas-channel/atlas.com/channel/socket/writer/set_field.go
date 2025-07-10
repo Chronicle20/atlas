@@ -694,7 +694,7 @@ func WriteCharacterStatistics(tenant tenant.Model) func(w *response.Writer, char
 		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 			w.WriteInt(character.GachaponExperience())
 		}
-		w.WriteInt(character.MapId())
+		w.WriteInt(uint32(character.MapId()))
 		w.WriteByte(character.SpawnPoint())
 
 		if tenant.Region() == "GMS" {

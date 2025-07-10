@@ -144,7 +144,7 @@ func handleWhisperChat(sc server.Model, wp writer.Producer) message.Handler[mess
 			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.ActorId, e.Body.Recipient)
 		}
 
-		bp = writer.CharacterChatWhisperReceiptBody(c, byte(e.ChannelId), e.Message)
+		bp = writer.CharacterChatWhisperReceiptBody(c, e.ChannelId, e.Message)
 		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(e.Body.Recipient, session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(bp))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.ActorId, e.Body.Recipient)

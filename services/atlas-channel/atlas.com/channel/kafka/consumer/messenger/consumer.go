@@ -126,7 +126,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 				if m.Id() == e.ActorId {
 					continue
 				}
-				bp := session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationAddBody(ctx)(e.Body.Slot, tc, byte(mm.ChannelId())))
+				bp := session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationAddBody(ctx)(e.Body.Slot, tc, mm.ChannelId()))
 				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.WorldId(), sc.ChannelId())(m.Id(), bp)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] has joined messenger [%d].", tc.Id(), p.Id())
@@ -150,7 +150,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 						continue
 					}
 
-					err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationAddBody(ctx)(m.Slot(), mc, byte(m.ChannelId())))(s)
+					err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationAddBody(ctx)(m.Slot(), mc, m.ChannelId()))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to announce character [%d] has joined messenger [%d].", tc.Id(), p.Id())
 					}

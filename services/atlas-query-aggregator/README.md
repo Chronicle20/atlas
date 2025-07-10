@@ -125,6 +125,209 @@ QUEST_HOST=https://atlas-quest-service.example.com
 MARRIAGE_HOST=https://atlas-marriage-service.example.com
 ```
 
+#### Complete Configuration Example
+
+Here's a comprehensive example of all configuration options for deploying atlas-query-aggregator:
+
+```bash
+# Core Service Configuration
+REST_PORT=8080
+LOG_LEVEL=Info
+
+# Tracing Configuration
+JAEGER_HOST=jaeger.example.com:14268
+
+# Kafka Configuration
+BOOTSTRAP_SERVERS=kafka1.example.com:9092,kafka2.example.com:9092,kafka3.example.com:9092
+
+# External Service Dependencies
+CHARACTERS_HOST=https://atlas-character-service.example.com
+INVENTORY_HOST=https://atlas-inventory-service.example.com
+QUEST_HOST=https://atlas-quest-service.example.com
+MARRIAGE_HOST=https://atlas-marriage-service.example.com
+
+# Tenant Configuration (Required for all requests)
+TENANT_ID=083839c6-c47c-42a6-9585-76492795d123
+REGION=GMS
+MAJOR_VERSION=83
+MINOR_VERSION=1
+
+# HTTP Client Configuration
+HTTP_CLIENT_TIMEOUT=30s
+HTTP_CLIENT_MAX_IDLE_CONNS=100
+HTTP_CLIENT_MAX_IDLE_CONNS_PER_HOST=10
+
+# Database Configuration (if applicable)
+DB_HOST=postgres.example.com
+DB_PORT=5432
+DB_NAME=atlas_query_aggregator
+DB_USER=atlas_service
+DB_PASSWORD=secure_password
+DB_SSL_MODE=require
+
+# Security Configuration
+API_KEY=your-api-key-here
+SERVICE_MESH_ENABLED=true
+MUTUAL_TLS_ENABLED=true
+
+# Performance Tuning
+CACHE_TTL=300s
+CIRCUIT_BREAKER_ENABLED=true
+CIRCUIT_BREAKER_TIMEOUT=5s
+CIRCUIT_BREAKER_MAX_REQUESTS=100
+CIRCUIT_BREAKER_INTERVAL=60s
+CIRCUIT_BREAKER_RATIO=0.6
+
+# Validation Configuration
+VALIDATION_TIMEOUT=10s
+MAX_CONDITIONS_PER_REQUEST=50
+ENABLE_QUEST_VALIDATION=true
+ENABLE_MARRIAGE_VALIDATION=true
+```
+
+#### Docker Compose Example
+
+```yaml
+version: '3.8'
+services:
+  atlas-query-aggregator:
+    image: atlas-query-aggregator:latest
+    ports:
+      - "8080:8080"
+    environment:
+      # Core Configuration
+      REST_PORT: 8080
+      LOG_LEVEL: Info
+      
+      # Tracing
+      JAEGER_HOST: jaeger:14268
+      
+      # Kafka
+      BOOTSTRAP_SERVERS: kafka:9092
+      
+      # External Services
+      CHARACTERS_HOST: http://atlas-character-service:8080
+      INVENTORY_HOST: http://atlas-inventory-service:8080
+      QUEST_HOST: http://atlas-quest-service:8080
+      MARRIAGE_HOST: http://atlas-marriage-service:8080
+      
+      # Tenant Headers
+      TENANT_ID: 083839c6-c47c-42a6-9585-76492795d123
+      REGION: GMS
+      MAJOR_VERSION: 83
+      MINOR_VERSION: 1
+      
+      # Performance
+      HTTP_CLIENT_TIMEOUT: 30s
+      CACHE_TTL: 300s
+      CIRCUIT_BREAKER_ENABLED: true
+      
+    depends_on:
+      - kafka
+      - atlas-character-service
+      - atlas-inventory-service
+    networks:
+      - atlas-network
+    
+  # Supporting services would be defined here
+  # kafka, atlas-character-service, etc.
+
+networks:
+  atlas-network:
+    driver: bridge
+```
+
+#### Kubernetes Deployment Example
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-query-aggregator
+  namespace: atlas-system
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: atlas-query-aggregator
+  template:
+    metadata:
+      labels:
+        app: atlas-query-aggregator
+    spec:
+      containers:
+      - name: atlas-query-aggregator
+        image: atlas-query-aggregator:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: REST_PORT
+          value: "8080"
+        - name: LOG_LEVEL
+          value: "Info"
+        - name: JAEGER_HOST
+          value: "jaeger.atlas-system.svc.cluster.local:14268"
+        - name: BOOTSTRAP_SERVERS
+          value: "kafka.atlas-system.svc.cluster.local:9092"
+        - name: CHARACTERS_HOST
+          value: "http://atlas-character-service.atlas-system.svc.cluster.local:8080"
+        - name: INVENTORY_HOST
+          value: "http://atlas-inventory-service.atlas-system.svc.cluster.local:8080"
+        - name: TENANT_ID
+          valueFrom:
+            secretKeyRef:
+              name: atlas-config
+              key: tenant-id
+        - name: REGION
+          valueFrom:
+            configMapKeyRef:
+              name: atlas-config
+              key: region
+        - name: MAJOR_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: atlas-config
+              key: major-version
+        - name: MINOR_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: atlas-config
+              key: minor-version
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-query-aggregator-service
+  namespace: atlas-system
+spec:
+  selector:
+    app: atlas-query-aggregator
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP
+```
+
 #### Service Health and Error Handling
 
 - **Circuit Breaker**: Services should implement circuit breaker patterns for resilience

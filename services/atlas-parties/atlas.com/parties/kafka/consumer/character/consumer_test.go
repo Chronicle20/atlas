@@ -514,3 +514,118 @@ func TestHandleStatusEventDeletedEventTypes(t *testing.T) {
 		})
 	}
 }
+
+func TestEnhancedErrorHandlingForAllEventHandlers(t *testing.T) {
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+	testTenant, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), testTenant)
+
+	t.Run("LoginEventHandlerErrorHandling", func(t *testing.T) {
+		loginEvent := StatusEvent[StatusEventLoginBody]{
+			TransactionId: uuid.New(),
+			WorldId:       1,
+			CharacterId:   12345,
+			Type:          StatusEventTypeLogin,
+			Body: StatusEventLoginBody{
+				ChannelId: 1,
+				MapId:     100000000,
+			},
+		}
+
+		// Should not panic and handle gracefully
+		require.NotPanics(t, func() {
+			handleStatusEventLogin(logger, ctx, loginEvent)
+		})
+	})
+
+	t.Run("LogoutEventHandlerErrorHandling", func(t *testing.T) {
+		logoutEvent := StatusEvent[StatusEventLogoutBody]{
+			TransactionId: uuid.New(),
+			WorldId:       1,
+			CharacterId:   12345,
+			Type:          StatusEventTypeLogout,
+			Body: StatusEventLogoutBody{
+				ChannelId: 1,
+				MapId:     100000000,
+			},
+		}
+
+		// Should not panic and handle gracefully
+		require.NotPanics(t, func() {
+			handleStatusEventLogout(logger, ctx, logoutEvent)
+		})
+	})
+
+	t.Run("ChannelChangedEventHandlerErrorHandling", func(t *testing.T) {
+		channelEvent := StatusEvent[ChangeChannelEventLoginBody]{
+			TransactionId: uuid.New(),
+			WorldId:       1,
+			CharacterId:   12345,
+			Type:          StatusEventTypeChannelChanged,
+			Body: ChangeChannelEventLoginBody{
+				ChannelId:    2,
+				OldChannelId: 1,
+				MapId:        100000000,
+			},
+		}
+
+		// Should not panic and handle gracefully
+		require.NotPanics(t, func() {
+			handleStatusEventChannelChanged(logger, ctx, channelEvent)
+		})
+	})
+
+	t.Run("MapChangedEventHandlerErrorHandling", func(t *testing.T) {
+		mapEvent := StatusEvent[StatusEventMapChangedBody]{
+			TransactionId: uuid.New(),
+			WorldId:       1,
+			CharacterId:   12345,
+			Type:          StatusEventTypeMapChanged,
+			Body: StatusEventMapChangedBody{
+				ChannelId:      1,
+				OldMapId:       100000000,
+				TargetMapId:    100000001,
+				TargetPortalId: 0,
+			},
+		}
+
+		// Should not panic and handle gracefully
+		require.NotPanics(t, func() {
+			handleMapChangedStatusEventLogout(logger, ctx, mapEvent)
+		})
+	})
+
+	t.Run("AllHandlersIgnoreWrongEventTypes", func(t *testing.T) {
+		wrongTypeEvent := StatusEvent[StatusEventLoginBody]{
+			TransactionId: uuid.New(),
+			WorldId:       1,
+			CharacterId:   12345,
+			Type:          "WRONG_TYPE",
+			Body: StatusEventLoginBody{
+				ChannelId: 1,
+				MapId:     100000000,
+			},
+		}
+
+		// All handlers should ignore events with wrong types and not panic
+		require.NotPanics(t, func() {
+			handleStatusEventLogin(logger, ctx, wrongTypeEvent)
+		})
+
+		wrongLogoutEvent := StatusEvent[StatusEventLogoutBody]{
+			TransactionId: uuid.New(),
+			WorldId:       1,
+			CharacterId:   12345,
+			Type:          "WRONG_TYPE",
+			Body: StatusEventLogoutBody{
+				ChannelId: 1,
+				MapId:     100000000,
+			},
+		}
+
+		require.NotPanics(t, func() {
+			handleStatusEventLogout(logger, ctx, wrongLogoutEvent)
+		})
+	})
+}

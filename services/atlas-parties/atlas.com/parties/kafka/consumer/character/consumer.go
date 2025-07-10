@@ -111,9 +111,39 @@ func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, event Sta
 	if event.Type != StatusEventTypeLogin {
 		return
 	}
+	
+	// Enhanced error handling with structured logging
+	defer func() {
+		if r := recover(); r != nil {
+			l.WithField("characterId", event.CharacterId).
+				WithField("worldId", event.WorldId).
+				WithField("transactionId", event.TransactionId).
+				WithField("panic", r).
+				Errorf("Panic occurred during login processing for character [%d], recovered gracefully.", event.CharacterId)
+		}
+	}()
+	
+	l.WithField("characterId", event.CharacterId).
+		WithField("worldId", event.WorldId).
+		WithField("transactionId", event.TransactionId).
+		WithField("channelId", event.Body.ChannelId).
+		WithField("mapId", event.Body.MapId).
+		Debugf("Processing login event for character [%d].", event.CharacterId)
+	
 	err := character.Login(l)(ctx)(byte(event.WorldId), byte(event.Body.ChannelId), uint32(event.Body.MapId), event.CharacterId)
 	if err != nil {
-		l.WithError(err).Errorf("Unable to process login for character [%d].", event.CharacterId)
+		l.WithError(err).
+			WithField("characterId", event.CharacterId).
+			WithField("worldId", event.WorldId).
+			WithField("transactionId", event.TransactionId).
+			WithField("channelId", event.Body.ChannelId).
+			WithField("mapId", event.Body.MapId).
+			Errorf("Unable to process login for character [%d].", event.CharacterId)
+	} else {
+		l.WithField("characterId", event.CharacterId).
+			WithField("worldId", event.WorldId).
+			WithField("transactionId", event.TransactionId).
+			Debugf("Successfully processed login for character [%d].", event.CharacterId)
 	}
 }
 
@@ -121,9 +151,39 @@ func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event St
 	if event.Type != StatusEventTypeLogout {
 		return
 	}
+	
+	// Enhanced error handling with structured logging
+	defer func() {
+		if r := recover(); r != nil {
+			l.WithField("characterId", event.CharacterId).
+				WithField("worldId", event.WorldId).
+				WithField("transactionId", event.TransactionId).
+				WithField("panic", r).
+				Errorf("Panic occurred during logout processing for character [%d], recovered gracefully.", event.CharacterId)
+		}
+	}()
+	
+	l.WithField("characterId", event.CharacterId).
+		WithField("worldId", event.WorldId).
+		WithField("transactionId", event.TransactionId).
+		WithField("channelId", event.Body.ChannelId).
+		WithField("mapId", event.Body.MapId).
+		Debugf("Processing logout event for character [%d].", event.CharacterId)
+	
 	err := character.Logout(l)(ctx)(event.CharacterId)
 	if err != nil {
-		l.WithError(err).Errorf("Unable to process logout for character [%d].", event.CharacterId)
+		l.WithError(err).
+			WithField("characterId", event.CharacterId).
+			WithField("worldId", event.WorldId).
+			WithField("transactionId", event.TransactionId).
+			WithField("channelId", event.Body.ChannelId).
+			WithField("mapId", event.Body.MapId).
+			Errorf("Unable to process logout for character [%d].", event.CharacterId)
+	} else {
+		l.WithField("characterId", event.CharacterId).
+			WithField("worldId", event.WorldId).
+			WithField("transactionId", event.TransactionId).
+			Debugf("Successfully processed logout for character [%d].", event.CharacterId)
 	}
 }
 
@@ -131,9 +191,41 @@ func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, 
 	if e.Type != StatusEventTypeChannelChanged {
 		return
 	}
+	
+	// Enhanced error handling with structured logging
+	defer func() {
+		if r := recover(); r != nil {
+			l.WithField("characterId", e.CharacterId).
+				WithField("worldId", e.WorldId).
+				WithField("transactionId", e.TransactionId).
+				WithField("panic", r).
+				Errorf("Panic occurred during channel change processing for character [%d], recovered gracefully.", e.CharacterId)
+		}
+	}()
+	
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("newChannelId", e.Body.ChannelId).
+		WithField("oldChannelId", e.Body.OldChannelId).
+		WithField("mapId", e.Body.MapId).
+		Debugf("Processing channel change event for character [%d].", e.CharacterId)
+	
 	err := character.ChannelChange(l)(ctx)(e.CharacterId, byte(e.Body.ChannelId))
 	if err != nil {
-		l.WithError(err).Errorf("Unable to process channel changed for character [%d].", e.CharacterId)
+		l.WithError(err).
+			WithField("characterId", e.CharacterId).
+			WithField("worldId", e.WorldId).
+			WithField("transactionId", e.TransactionId).
+			WithField("newChannelId", e.Body.ChannelId).
+			WithField("oldChannelId", e.Body.OldChannelId).
+			Errorf("Unable to process channel changed for character [%d].", e.CharacterId)
+	} else {
+		l.WithField("characterId", e.CharacterId).
+			WithField("worldId", e.WorldId).
+			WithField("transactionId", e.TransactionId).
+			WithField("newChannelId", e.Body.ChannelId).
+			Debugf("Successfully processed channel change for character [%d].", e.CharacterId)
 	}
 }
 
@@ -141,9 +233,43 @@ func handleMapChangedStatusEventLogout(l logrus.FieldLogger, ctx context.Context
 	if event.Type != StatusEventTypeMapChanged {
 		return
 	}
+	
+	// Enhanced error handling with structured logging
+	defer func() {
+		if r := recover(); r != nil {
+			l.WithField("characterId", event.CharacterId).
+				WithField("worldId", event.WorldId).
+				WithField("transactionId", event.TransactionId).
+				WithField("panic", r).
+				Errorf("Panic occurred during map change processing for character [%d], recovered gracefully.", event.CharacterId)
+		}
+	}()
+	
+	l.WithField("characterId", event.CharacterId).
+		WithField("worldId", event.WorldId).
+		WithField("transactionId", event.TransactionId).
+		WithField("oldMapId", event.Body.OldMapId).
+		WithField("targetMapId", event.Body.TargetMapId).
+		WithField("targetPortalId", event.Body.TargetPortalId).
+		WithField("channelId", event.Body.ChannelId).
+		Debugf("Processing map change event for character [%d].", event.CharacterId)
+	
 	err := character.MapChange(l)(ctx)(event.CharacterId, uint32(event.Body.TargetMapId))
 	if err != nil {
-		l.WithError(err).Errorf("Unable to process map changed for character [%d].", event.CharacterId)
+		l.WithError(err).
+			WithField("characterId", event.CharacterId).
+			WithField("worldId", event.WorldId).
+			WithField("transactionId", event.TransactionId).
+			WithField("oldMapId", event.Body.OldMapId).
+			WithField("targetMapId", event.Body.TargetMapId).
+			WithField("targetPortalId", event.Body.TargetPortalId).
+			Errorf("Unable to process map changed for character [%d].", event.CharacterId)
+	} else {
+		l.WithField("characterId", event.CharacterId).
+			WithField("worldId", event.WorldId).
+			WithField("transactionId", event.TransactionId).
+			WithField("targetMapId", event.Body.TargetMapId).
+			Debugf("Successfully processed map change for character [%d].", event.CharacterId)
 	}
 }
 

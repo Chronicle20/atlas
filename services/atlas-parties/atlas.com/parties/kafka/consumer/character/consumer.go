@@ -3,7 +3,9 @@ package character
 import (
 	"atlas-parties/character"
 	consumer2 "atlas-parties/kafka/consumer"
+	"atlas-parties/party"
 	"context"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -28,45 +30,192 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMapChangedStatusEventLogout)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeleted)))
 	}
 }
 
-func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventLoginBody]) {
-	if event.Type != EventCharacterStatusTypeLogin {
+func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, e StatusEvent[StatusEventLoginBody]) {
+	if e.Type != StatusEventTypeLogin {
 		return
 	}
-	err := character.Login(l)(ctx)(event.WorldId, event.Body.ChannelId, event.Body.MapId, event.CharacterId)
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("channelId", e.Body.ChannelId).
+		WithField("mapId", e.Body.MapId).
+		Debugf("Processing login event for character [%d].", e.CharacterId)
+
+	err := character.NewProcessor(l, ctx).LoginAndEmit(byte(e.WorldId), byte(e.Body.ChannelId), uint32(e.Body.MapId), e.CharacterId)
 	if err != nil {
-		l.WithError(err).Errorf("Unable to process login for character [%d].", event.CharacterId)
+		l.WithError(err).
+			WithField("characterId", e.CharacterId).
+			WithField("worldId", e.WorldId).
+			WithField("transactionId", e.TransactionId).
+			WithField("channelId", e.Body.ChannelId).
+			WithField("mapId", e.Body.MapId).
+			Errorf("Unable to process login for character [%d].", e.CharacterId)
+		return
 	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		Debugf("Successfully processed login for character [%d].", e.CharacterId)
+
 }
 
-func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventLogoutBody]) {
-	if event.Type != EventCharacterStatusTypeLogout {
+func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e StatusEvent[StatusEventLogoutBody]) {
+	if e.Type != StatusEventTypeLogout {
 		return
 	}
-	err := character.Logout(l)(ctx)(event.CharacterId)
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("channelId", e.Body.ChannelId).
+		WithField("mapId", e.Body.MapId).
+		Debugf("Processing logout event for character [%d].", e.CharacterId)
+
+	err := character.NewProcessor(l, ctx).LogoutAndEmit(e.CharacterId)
 	if err != nil {
-		l.WithError(err).Errorf("Unable to process logout for character [%d].", event.CharacterId)
+		l.WithError(err).
+			WithField("characterId", e.CharacterId).
+			WithField("worldId", e.WorldId).
+			WithField("transactionId", e.TransactionId).
+			WithField("channelId", e.Body.ChannelId).
+			WithField("mapId", e.Body.MapId).
+			Errorf("Unable to process logout for character [%d].", e.CharacterId)
+		return
 	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		Debugf("Successfully processed logout for character [%d].", e.CharacterId)
+
 }
 
-func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, e statusEvent[statusEventChannelChangedBody]) {
-	if e.Type != EventCharacterStatusTypeChannelChanged {
+func handleStatusEventChannelChanged(l logrus.FieldLogger, ctx context.Context, e StatusEvent[ChangeChannelEventLoginBody]) {
+	if e.Type != StatusEventTypeChannelChanged {
 		return
 	}
-	err := character.ChannelChange(l)(ctx)(e.CharacterId, e.Body.ChannelId)
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("newChannelId", e.Body.ChannelId).
+		WithField("oldChannelId", e.Body.OldChannelId).
+		WithField("mapId", e.Body.MapId).
+		Debugf("Processing channel change event for character [%d].", e.CharacterId)
+
+	err := character.NewProcessor(l, ctx).ChannelChange(e.CharacterId, byte(e.Body.ChannelId))
 	if err != nil {
-		l.WithError(err).Errorf("Unable to process channel changed for character [%d].", e.CharacterId)
+		l.WithError(err).
+			WithField("characterId", e.CharacterId).
+			WithField("worldId", e.WorldId).
+			WithField("transactionId", e.TransactionId).
+			WithField("newChannelId", e.Body.ChannelId).
+			WithField("oldChannelId", e.Body.OldChannelId).
+			Errorf("Unable to process channel changed for character [%d].", e.CharacterId)
+		return
 	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("newChannelId", e.Body.ChannelId).
+		Debugf("Successfully processed channel change for character [%d].", e.CharacterId)
 }
 
-func handleMapChangedStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event statusEvent[statusEventMapChangedBody]) {
-	if event.Type != EventCharacterStatusTypeMapChanged {
+func handleMapChangedStatusEventLogout(l logrus.FieldLogger, ctx context.Context, e StatusEvent[StatusEventMapChangedBody]) {
+	if e.Type != StatusEventTypeMapChanged {
 		return
 	}
-	err := character.MapChange(l)(ctx)(event.CharacterId, event.Body.TargetMapId)
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("oldMapId", e.Body.OldMapId).
+		WithField("targetMapId", e.Body.TargetMapId).
+		WithField("targetPortalId", e.Body.TargetPortalId).
+		WithField("channelId", e.Body.ChannelId).
+		Debugf("Processing map change event for character [%d].", e.CharacterId)
+
+	err := character.NewProcessor(l, ctx).MapChange(e.CharacterId, uint32(e.Body.TargetMapId))
 	if err != nil {
-		l.WithError(err).Errorf("Unable to process map changed for character [%d].", event.CharacterId)
+		l.WithError(err).
+			WithField("characterId", e.CharacterId).
+			WithField("worldId", e.WorldId).
+			WithField("transactionId", e.TransactionId).
+			WithField("oldMapId", e.Body.OldMapId).
+			WithField("targetMapId", e.Body.TargetMapId).
+			WithField("targetPortalId", e.Body.TargetPortalId).
+			Errorf("Unable to process map changed for character [%d].", e.CharacterId)
+		return
+	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("targetMapId", e.Body.TargetMapId).
+		Debugf("Successfully processed map change for character [%d].", e.CharacterId)
+}
+
+func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, e StatusEvent[StatusEventDeletedBody]) {
+	// Early validation: check event type
+	if e.Type != StatusEventTypeDeleted {
+		return
+	}
+
+	l.WithField("transactionId", e.TransactionId).
+		WithField("worldId", e.WorldId).
+		WithField("characterId", e.CharacterId).
+		Debugf("Processing character deletion event for character [%d].", e.CharacterId)
+
+	// First, validate if character is in a party and log the party information
+	pp := party.NewProcessor(l, ctx)
+	p, err := pp.GetByCharacter(e.CharacterId)
+	if err != nil {
+		l.WithField("transactionId", e.TransactionId).
+			Debugf("Character [%d] not found in any party before deletion.", e.CharacterId)
+	}
+
+	l.WithField("transactionId", e.TransactionId).
+		WithField("partyId", p.Id()).
+		WithField("isLeader", p.LeaderId() == e.CharacterId).
+		WithField("partyMemberCount", len(p.Members())).
+		Debugf("Character [%d] found in party [%d] before deletion.", e.CharacterId, p.Id())
+
+	p, err = pp.LeaveAndEmit(p.Id(), e.CharacterId)
+	if err != nil {
+		l.WithError(err).
+			WithField("transactionId", e.TransactionId).
+			WithField("worldId", e.WorldId).
+			WithField("characterId", e.CharacterId).
+			Errorf("Unable to remove character [%d] from party during deletion.", e.CharacterId)
+	} else {
+		if p.Id() != 0 {
+			l.WithField("transactionId", e.TransactionId).
+				WithField("partyId", p.Id()).
+				WithField("remainingMembers", len(p.Members())).
+				WithField("newLeader", p.LeaderId()).
+				Debugf("Character [%d] successfully removed from party [%d].", e.CharacterId, p.Id())
+		}
+	}
+
+	err = character.NewProcessor(l, ctx).Delete(e.CharacterId)
+	if err != nil {
+		l.WithError(err).
+			WithField("transactionId", e.TransactionId).
+			WithField("worldId", e.WorldId).
+			WithField("characterId", e.CharacterId).
+			Errorf("Unable to process character deletion for character [%d].", e.CharacterId)
+	} else {
+		// Log cache statistics for monitoring
+		l.WithField("transactionId", e.TransactionId).
+			WithField("worldId", e.WorldId).
+			WithField("characterId", e.CharacterId).
+			Infof("Successfully processed character deletion for character [%d].", e.CharacterId)
 	}
 }

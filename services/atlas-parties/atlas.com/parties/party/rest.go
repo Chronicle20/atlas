@@ -3,9 +3,11 @@ package party
 import (
 	"atlas-parties/character"
 	"context"
+	"strconv"
+
+	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"strconv"
 )
 
 type RestModel struct {
@@ -87,7 +89,7 @@ type MemberRestModel struct {
 	Id        uint32 `json:"-"`
 	Name      string `json:"name"`
 	Level     byte   `json:"level"`
-	JobId     uint16 `json:"jobId"`
+	JobId     job.Id `json:"jobId"`
 	WorldId   byte   `json:"worldId"`
 	ChannelId byte   `json:"channelId"`
 	MapId     uint32 `json:"mapId"`
@@ -137,7 +139,7 @@ func Transform(l logrus.FieldLogger) func(ctx context.Context) func(m Model) (Re
 func TransformMember(l logrus.FieldLogger) func(ctx context.Context) func(memberId uint32) (MemberRestModel, error) {
 	return func(ctx context.Context) func(memberId uint32) (MemberRestModel, error) {
 		return func(memberId uint32) (MemberRestModel, error) {
-			c, err := character.GetById(l)(ctx)(memberId)
+			c, err := character.NewProcessor(l, ctx).GetById(memberId)
 			if err != nil {
 				return MemberRestModel{}, err
 			}

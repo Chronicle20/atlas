@@ -3,13 +3,14 @@ package party
 import (
 	"atlas-parties/kafka/producer"
 	"atlas-parties/rest"
+	"net/http"
+	"strconv"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
-	"net/http"
-	"strconv"
 )
 
 const (
@@ -53,7 +54,7 @@ func handleGetParties(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 			filters = append(filters, MemberFilter(uint32(memberId)))
 		}
 
-		ps, err := GetSlice(d.Context())(filters...)
+		ps, err := NewProcessor(d.Logger(), d.Context()).GetSlice(filters...)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -91,7 +92,7 @@ func handleCreateParty(d *rest.HandlerDependency, _ *rest.HandlerContext, i Rest
 func handleGetParty(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParsePartyId(d.Logger(), func(partyId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			p, err := GetById(d.Context())(partyId)
+			p, err := NewProcessor(d.Logger(), d.Context()).GetById(partyId)
 			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
@@ -112,7 +113,7 @@ func handleGetParty(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 func handleUpdateParty(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
 	return rest.ParsePartyId(d.Logger(), func(partyId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			p, err := GetById(d.Context())(partyId)
+			p, err := NewProcessor(d.Logger(), d.Context()).GetById(partyId)
 			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
@@ -134,7 +135,7 @@ func handleUpdateParty(d *rest.HandlerDependency, c *rest.HandlerContext, i Rest
 func handleGetPartyMembers(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParsePartyId(d.Logger(), func(partyId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			p, err := GetById(d.Context())(partyId)
+			p, err := NewProcessor(d.Logger(), d.Context()).GetById(partyId)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -171,7 +172,7 @@ func handleGetPartyMember(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 	return rest.ParsePartyId(d.Logger(), func(partyId uint32) http.HandlerFunc {
 		return rest.ParseMemberId(d.Logger(), func(memberId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				p, err := GetById(d.Context())(partyId)
+				p, err := NewProcessor(d.Logger(), d.Context()).GetById(partyId)
 				if err != nil {
 					w.WriteHeader(http.StatusInternalServerError)
 					return

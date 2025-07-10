@@ -2,8 +2,10 @@ package character
 
 import (
 	"errors"
-	"github.com/Chronicle20/atlas-tenant"
 	"sync"
+
+	"github.com/Chronicle20/atlas-constants/job"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 var ErrNotFound = errors.New("not found")
@@ -26,7 +28,7 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) Create(t tenant.Model, worldId byte, channelId byte, mapId uint32, id uint32, name string, level byte, jobId uint16, gm int) Model {
+func (r *Registry) Create(t tenant.Model, worldId byte, channelId byte, mapId uint32, id uint32, name string, level byte, jobId job.Id, gm int) Model {
 	r.lock.Lock()
 
 	var cm map[uint32]Model
@@ -90,4 +92,22 @@ func (r *Registry) Update(t tenant.Model, id uint32, updaters ...func(m Model) M
 	}
 	r.characterReg[t][id] = m
 	return m
+}
+
+func (r *Registry) Delete(t tenant.Model, id uint32) error {
+	var tl *sync.RWMutex
+	var ok bool
+	if tl, ok = r.tenantLock[t]; !ok {
+		return ErrNotFound
+	}
+
+	tl.Lock()
+	defer tl.Unlock()
+
+	if _, ok := r.characterReg[t][id]; !ok {
+		return ErrNotFound
+	}
+
+	delete(r.characterReg[t], id)
+	return nil
 }

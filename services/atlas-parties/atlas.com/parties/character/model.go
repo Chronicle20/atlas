@@ -1,7 +1,7 @@
 package character
 
 import (
-	"atlas-parties/job"
+	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/google/uuid"
 )
 
@@ -10,7 +10,7 @@ type Model struct {
 	id        uint32
 	name      string
 	level     byte
-	jobId     uint16
+	jobId     job.Id
 	worldId   byte
 	channelId byte
 	mapId     uint32
@@ -115,6 +115,38 @@ func (m Model) Login() Model {
 	}
 }
 
+func (m Model) ChangeLevel(level byte) Model {
+	return Model{
+		tenantId:  m.tenantId,
+		id:        m.id,
+		name:      m.name,
+		level:     level,
+		jobId:     m.jobId,
+		worldId:   m.worldId,
+		channelId: m.channelId,
+		mapId:     m.mapId,
+		partyId:   m.partyId,
+		online:    m.online,
+		gm:        m.gm,
+	}
+}
+
+func (m Model) ChangeJob(jobId job.Id) Model {
+	return Model{
+		tenantId:  m.tenantId,
+		id:        m.id,
+		name:      m.name,
+		level:     m.level,
+		jobId:     jobId,
+		worldId:   m.worldId,
+		channelId: m.channelId,
+		mapId:     m.mapId,
+		partyId:   m.partyId,
+		online:    m.online,
+		gm:        m.gm,
+	}
+}
+
 func (m Model) Id() uint32 {
 	return m.id
 }
@@ -127,7 +159,7 @@ func (m Model) Level() byte {
 	return m.level
 }
 
-func (m Model) JobId() uint16 {
+func (m Model) JobId() job.Id {
 	return m.jobId
 }
 
@@ -151,10 +183,6 @@ func (m Model) PartyId() uint32 {
 	return m.partyId
 }
 
-func (m Model) IsBeginner() bool {
-	return m.jobId == job.Beginner || m.jobId == job.Noblesse || m.jobId == job.Legend
-}
-
 func (m Model) GM() int {
 	return m.gm
 }
@@ -165,7 +193,7 @@ type ForeignModel struct {
 	mapId   uint32
 	name    string
 	level   byte
-	jobId   uint16
+	jobId   job.Id
 	gm      int
 }
 
@@ -177,7 +205,7 @@ func (m ForeignModel) Level() byte {
 	return m.level
 }
 
-func (m ForeignModel) JobId() uint16 {
+func (m ForeignModel) JobId() job.Id {
 	return m.jobId
 }
 

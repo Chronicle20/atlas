@@ -1,8 +1,10 @@
 package character
 
 import (
-	"github.com/jtumidanski/api2go/jsonapi"
 	"strconv"
+
+	"github.com/Chronicle20/atlas-constants/job"
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 type ForeignRestModel struct {
@@ -23,7 +25,7 @@ type ForeignRestModel struct {
 	MaxMp              uint16 `json:"maxMp"`
 	Meso               uint32 `json:"meso"`
 	HpMpUsed           int    `json:"hpMpUsed"`
-	JobId              uint16 `json:"jobId"`
+	JobId              job.Id `json:"jobId"`
 	SkinColor          byte   `json:"skinColor"`
 	Gender             byte   `json:"gender"`
 	Fame               int16  `json:"fame"`

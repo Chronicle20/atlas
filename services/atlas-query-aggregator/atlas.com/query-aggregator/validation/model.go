@@ -21,6 +21,10 @@ const (
 	RebornsCondition       ConditionType = "reborns"
 	DojoPointsCondition    ConditionType = "dojoPoints"
 	VanquisherKillsCondition ConditionType = "vanquisherKills"
+	StrengthCondition      ConditionType = "strength"
+	DexterityCondition     ConditionType = "dexterity"
+	IntelligenceCondition  ConditionType = "intelligence"
+	LuckCondition          ConditionType = "luck"
 )
 
 // Operator represents the comparison operator in a condition
@@ -82,7 +86,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -226,6 +230,18 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 	case VanquisherKillsCondition:
 		actualValue = int(character.VanquisherKills())
 		description = fmt.Sprintf("Vanquisher Kills %s %d", c.operator, c.value)
+	case StrengthCondition:
+		actualValue = int(character.Strength())
+		description = fmt.Sprintf("Strength %s %d", c.operator, c.value)
+	case DexterityCondition:
+		actualValue = int(character.Dexterity())
+		description = fmt.Sprintf("Dexterity %s %d", c.operator, c.value)
+	case IntelligenceCondition:
+		actualValue = int(character.Intelligence())
+		description = fmt.Sprintf("Intelligence %s %d", c.operator, c.value)
+	case LuckCondition:
+		actualValue = int(character.Luck())
+		description = fmt.Sprintf("Luck %s %d", c.operator, c.value)
 	case ItemCondition:
 		// For item conditions, we need to check the inventory
 		itemQuantity := 0

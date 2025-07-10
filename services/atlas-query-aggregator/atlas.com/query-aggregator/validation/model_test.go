@@ -34,6 +34,10 @@ func TestCondition_Evaluate(t *testing.T) {
 		SetReborns(3).
 		SetDojoPoints(1500).
 		SetVanquisherKills(7).
+		SetStrength(50).
+		SetDexterity(35).
+		SetIntelligence(20).
+		SetLuck(15).
 		SetInventory(inventoryModel).
 		Build()
 
@@ -510,6 +514,170 @@ func TestCondition_Evaluate(t *testing.T) {
 			},
 			wantPassed:   false,
 			wantContains: "Vanquisher Kills < 5",
+		},
+		// Strength condition tests
+		{
+			name: "Strength equals - pass",
+			condition: Condition{
+				conditionType: StrengthCondition,
+				operator:      Equals,
+				value:         50,
+			},
+			wantPassed:   true,
+			wantContains: "Strength = 50",
+		},
+		{
+			name: "Strength equals - fail",
+			condition: Condition{
+				conditionType: StrengthCondition,
+				operator:      Equals,
+				value:         60,
+			},
+			wantPassed:   false,
+			wantContains: "Strength = 60",
+		},
+		{
+			name: "Strength greater than - pass",
+			condition: Condition{
+				conditionType: StrengthCondition,
+				operator:      GreaterThan,
+				value:         40,
+			},
+			wantPassed:   true,
+			wantContains: "Strength > 40",
+		},
+		{
+			name: "Strength greater than - fail",
+			condition: Condition{
+				conditionType: StrengthCondition,
+				operator:      GreaterThan,
+				value:         60,
+			},
+			wantPassed:   false,
+			wantContains: "Strength > 60",
+		},
+		// Dexterity condition tests
+		{
+			name: "Dexterity equals - pass",
+			condition: Condition{
+				conditionType: DexterityCondition,
+				operator:      Equals,
+				value:         35,
+			},
+			wantPassed:   true,
+			wantContains: "Dexterity = 35",
+		},
+		{
+			name: "Dexterity equals - fail",
+			condition: Condition{
+				conditionType: DexterityCondition,
+				operator:      Equals,
+				value:         45,
+			},
+			wantPassed:   false,
+			wantContains: "Dexterity = 45",
+		},
+		{
+			name: "Dexterity less than or equal - pass",
+			condition: Condition{
+				conditionType: DexterityCondition,
+				operator:      LessEqual,
+				value:         35,
+			},
+			wantPassed:   true,
+			wantContains: "Dexterity <= 35",
+		},
+		{
+			name: "Dexterity less than or equal - fail",
+			condition: Condition{
+				conditionType: DexterityCondition,
+				operator:      LessEqual,
+				value:         30,
+			},
+			wantPassed:   false,
+			wantContains: "Dexterity <= 30",
+		},
+		// Intelligence condition tests
+		{
+			name: "Intelligence equals - pass",
+			condition: Condition{
+				conditionType: IntelligenceCondition,
+				operator:      Equals,
+				value:         20,
+			},
+			wantPassed:   true,
+			wantContains: "Intelligence = 20",
+		},
+		{
+			name: "Intelligence equals - fail",
+			condition: Condition{
+				conditionType: IntelligenceCondition,
+				operator:      Equals,
+				value:         30,
+			},
+			wantPassed:   false,
+			wantContains: "Intelligence = 30",
+		},
+		{
+			name: "Intelligence greater than or equal - pass",
+			condition: Condition{
+				conditionType: IntelligenceCondition,
+				operator:      GreaterEqual,
+				value:         15,
+			},
+			wantPassed:   true,
+			wantContains: "Intelligence >= 15",
+		},
+		{
+			name: "Intelligence greater than or equal - fail",
+			condition: Condition{
+				conditionType: IntelligenceCondition,
+				operator:      GreaterEqual,
+				value:         25,
+			},
+			wantPassed:   false,
+			wantContains: "Intelligence >= 25",
+		},
+		// Luck condition tests
+		{
+			name: "Luck equals - pass",
+			condition: Condition{
+				conditionType: LuckCondition,
+				operator:      Equals,
+				value:         15,
+			},
+			wantPassed:   true,
+			wantContains: "Luck = 15",
+		},
+		{
+			name: "Luck equals - fail",
+			condition: Condition{
+				conditionType: LuckCondition,
+				operator:      Equals,
+				value:         25,
+			},
+			wantPassed:   false,
+			wantContains: "Luck = 25",
+		},
+		{
+			name: "Luck less than - pass",
+			condition: Condition{
+				conditionType: LuckCondition,
+				operator:      LessThan,
+				value:         20,
+			},
+			wantPassed:   true,
+			wantContains: "Luck < 20",
+		},
+		{
+			name: "Luck less than - fail",
+			condition: Condition{
+				conditionType: LuckCondition,
+				operator:      LessThan,
+				value:         10,
+			},
+			wantPassed:   false,
+			wantContains: "Luck < 10",
 		},
 	}
 

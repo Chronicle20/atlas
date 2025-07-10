@@ -10,6 +10,7 @@ import (
 	"atlas-query-aggregator/quest"
 	inventory_type "github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/google/uuid"
+	"strings"
 	"testing"
 	"time"
 )
@@ -1513,4 +1514,406 @@ func TestCondition_Evaluate_WithGuild(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestCondition_ErrorHandling tests error scenarios for missing/invalid data
+func TestCondition_ErrorHandling(t *testing.T) {
+	// Create minimal test character for error cases
+	character := character.NewModelBuilder().
+		SetId(123).
+		SetLevel(25).
+		SetJobId(100).
+		Build()
+
+	tests := []struct {
+		name         string
+		condition    Condition
+		wantPassed   bool
+		wantContains string
+		wantError    bool
+	}{
+		// Test unsupported condition type
+		{
+			name: "Unsupported condition type",
+			condition: Condition{
+				conditionType: ConditionType("unsupported"),
+				operator:      Equals,
+				value:         100,
+			},
+			wantPassed:   false,
+			wantContains: "Unsupported condition type: unsupported",
+			wantError:    true,
+		},
+		// Test invalid item ID
+		{
+			name: "Invalid item ID",
+			condition: Condition{
+				conditionType: ItemCondition,
+				operator:      Equals,
+				value:         10,
+				referenceId:   99999999, // Invalid item ID
+			},
+			wantPassed:   false,
+			wantContains: "Invalid item ID: 99999999",
+			wantError:    true,
+		},
+		// Test character not in guild for guild ID condition
+		{
+			name: "Character not in guild - Guild ID condition",
+			condition: Condition{
+				conditionType: GuildIdCondition,
+				operator:      Equals,
+				value:         1001,
+			},
+			wantPassed:   false,
+			wantContains: "Guild ID = 1001 (character not in guild)",
+			wantError:    true,
+		},
+		// Test character not in guild for guild rank condition
+		{
+			name: "Character not in guild - Guild Rank condition",
+			condition: Condition{
+				conditionType: GuildRankCondition,
+				operator:      Equals,
+				value:         3,
+			},
+			wantPassed:   false,
+			wantContains: "Guild Rank = 3 (character not in guild)",
+			wantError:    true,
+		},
+		// Test quest conditions without context
+		{
+			name: "Quest Status without context",
+			condition: Condition{
+				conditionType: QuestStatusCondition,
+				operator:      Equals,
+				value:         int(quest.STARTED),
+				referenceId:   1001,
+			},
+			wantPassed:   false,
+			wantContains: "Quest 1001 Status validation requires ValidationContext",
+			wantError:    true,
+		},
+		{
+			name: "Quest Progress without context",
+			condition: Condition{
+				conditionType: QuestProgressCondition,
+				operator:      Equals,
+				value:         5,
+				referenceId:   1001,
+				step:          "step1",
+			},
+			wantPassed:   false,
+			wantContains: "Quest 1001 Progress validation (step: step1) requires ValidationContext",
+			wantError:    true,
+		},
+		// Test marriage condition without context
+		{
+			name: "Marriage Gifts without context",
+			condition: Condition{
+				conditionType: UnclaimedMarriageGiftsCondition,
+				operator:      Equals,
+				value:         1,
+			},
+			wantPassed:   false,
+			wantContains: "Unclaimed Marriage Gifts validation requires ValidationContext",
+			wantError:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.condition.Evaluate(character)
+
+			if result.Passed != tt.wantPassed {
+				t.Errorf("Condition.Evaluate() passed = %v, want %v", result.Passed, tt.wantPassed)
+			}
+
+			if result.Description != tt.wantContains {
+				t.Errorf("Condition.Evaluate() description = %v, want %v", result.Description, tt.wantContains)
+			}
+
+			// For error cases, verify that the condition correctly identified the error
+			if tt.wantError && result.Passed {
+				t.Errorf("Expected error condition to fail, but it passed")
+			}
+		})
+	}
+}
+
+// TestConditionBuilder_ErrorHandling tests error scenarios for condition builder
+func TestConditionBuilder_ErrorHandling(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       ConditionInput
+		wantError   bool
+		errorContains string
+	}{
+		// Test invalid condition type
+		{
+			name: "Invalid condition type",
+			input: ConditionInput{
+				Type:     "invalidType",
+				Operator: "=",
+				Value:    100,
+			},
+			wantError:     true,
+			errorContains: "unsupported condition type",
+		},
+		// Test invalid operator
+		{
+			name: "Invalid operator",
+			input: ConditionInput{
+				Type:     "level",
+				Operator: "!=",
+				Value:    25,
+			},
+			wantError:     true,
+			errorContains: "unsupported operator",
+		},
+		// Test item condition without referenceId
+		{
+			name: "Item condition without referenceId",
+			input: ConditionInput{
+				Type:     "item",
+				Operator: "=",
+				Value:    10,
+				// Missing ReferenceId
+			},
+			wantError:     true,
+			errorContains: "referenceId is required for item conditions",
+		},
+		// Test quest status condition without referenceId
+		{
+			name: "Quest status condition without referenceId",
+			input: ConditionInput{
+				Type:     "questStatus",
+				Operator: "=",
+				Value:    int(quest.STARTED),
+				// Missing ReferenceId
+			},
+			wantError:     true,
+			errorContains: "referenceId is required for quest conditions",
+		},
+		// Test quest progress condition without referenceId
+		{
+			name: "Quest progress condition without referenceId",
+			input: ConditionInput{
+				Type:     "questProgress",
+				Operator: "=",
+				Value:    5,
+				Step:     "step1",
+				// Missing ReferenceId
+			},
+			wantError:     true,
+			errorContains: "referenceId is required for quest conditions",
+		},
+		// Test quest progress condition without step
+		{
+			name: "Quest progress condition without step",
+			input: ConditionInput{
+				Type:        "questProgress",
+				Operator:    "=",
+				Value:       5,
+				ReferenceId: 1001,
+				// Missing Step
+			},
+			wantError:     true,
+			errorContains: "step is required for quest progress conditions",
+		},
+		// Test empty condition type
+		{
+			name: "Empty condition type",
+			input: ConditionInput{
+				Type:     "",
+				Operator: "=",
+				Value:    100,
+			},
+			wantError:     true,
+			errorContains: "unsupported condition type",
+		},
+		// Test empty operator
+		{
+			name: "Empty operator",
+			input: ConditionInput{
+				Type:     "level",
+				Operator: "",
+				Value:    25,
+			},
+			wantError:     true,
+			errorContains: "unsupported operator",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			builder := NewConditionBuilder()
+			_, err := builder.FromInput(tt.input).Build()
+
+			if tt.wantError {
+				if err == nil {
+					t.Errorf("Expected error, got nil")
+					return
+				}
+				if !strings.Contains(err.Error(), tt.errorContains) {
+					t.Errorf("Expected error containing '%s', got '%v'", tt.errorContains, err)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+// TestConditionWithContext_ErrorHandling tests error scenarios with validation context
+func TestConditionWithContext_ErrorHandling(t *testing.T) {
+	// Create minimal test character
+	character := character.NewModelBuilder().
+		SetId(123).
+		SetLevel(25).
+		Build()
+
+	// Create empty validation context (no quests, no marriage data)
+	emptyContext := NewValidationContext(character)
+
+	tests := []struct {
+		name         string
+		condition    Condition
+		context      ValidationContext
+		wantPassed   bool
+		wantContains string
+		wantError    bool
+	}{
+		// Test quest not found
+		{
+			name: "Quest Status - quest not found",
+			condition: Condition{
+				conditionType: QuestStatusCondition,
+				operator:      Equals,
+				value:         int(quest.STARTED),
+				referenceId:   9999,
+			},
+			context:      emptyContext,
+			wantPassed:   false,
+			wantContains: "Quest 9999 not found",
+			wantError:    true,
+		},
+		{
+			name: "Quest Progress - quest not found",
+			condition: Condition{
+				conditionType: QuestProgressCondition,
+				operator:      Equals,
+				value:         5,
+				referenceId:   9999,
+				step:          "step1",
+			},
+			context:      emptyContext,
+			wantPassed:   false,
+			wantContains: "Quest 9999 not found",
+			wantError:    true,
+		},
+		// Test zero reference ID scenarios
+		{
+			name: "Quest Status - zero reference ID",
+			condition: Condition{
+				conditionType: QuestStatusCondition,
+				operator:      Equals,
+				value:         int(quest.STARTED),
+				referenceId:   0,
+			},
+			context:      emptyContext,
+			wantPassed:   false,
+			wantContains: "Quest 0 not found",
+			wantError:    true,
+		},
+		{
+			name: "Item condition - zero reference ID",
+			condition: Condition{
+				conditionType: ItemCondition,
+				operator:      Equals,
+				value:         10,
+				referenceId:   0,
+			},
+			context:      emptyContext,
+			wantPassed:   false,
+			wantContains: "Invalid item ID: 0",
+			wantError:    true,
+		},
+		// Test boundary conditions
+		{
+			name: "Quest Progress - empty step",
+			condition: Condition{
+				conditionType: QuestProgressCondition,
+				operator:      Equals,
+				value:         5,
+				referenceId:   1001,
+				step:          "", // Empty step
+			},
+			context:      emptyContext,
+			wantPassed:   false,
+			wantContains: "Quest 1001 not found",
+			wantError:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.condition.EvaluateWithContext(tt.context)
+
+			if result.Passed != tt.wantPassed {
+				t.Errorf("Condition.EvaluateWithContext() passed = %v, want %v", result.Passed, tt.wantPassed)
+			}
+
+			if result.Description != tt.wantContains {
+				t.Errorf("Condition.EvaluateWithContext() description = %v, want %v", result.Description, tt.wantContains)
+			}
+
+			// For error cases, verify that the condition correctly identified the error
+			if tt.wantError && result.Passed {
+				t.Errorf("Expected error condition to fail, but it passed")
+			}
+		})
+	}
+}
+
+// TestValidationContext_ErrorHandling tests error scenarios with validation context creation
+func TestValidationContext_ErrorHandling(t *testing.T) {
+	// Create minimal test character
+	character := character.NewModelBuilder().
+		SetId(123).
+		SetLevel(25).
+		Build()
+
+	t.Run("Empty validation context", func(t *testing.T) {
+		ctx := NewValidationContext(character)
+
+		// Test quest retrieval from empty context
+		_, exists := ctx.Quest(1001)
+		if exists {
+			t.Errorf("Expected quest 1001 to not exist in empty context")
+		}
+
+		// Test that marriage data is properly initialized
+		if ctx.Marriage().CharacterId() != 123 {
+			t.Errorf("Expected marriage character ID to be 123, got %d", ctx.Marriage().CharacterId())
+		}
+
+		if ctx.Marriage().HasUnclaimedGifts() {
+			t.Errorf("Expected empty marriage context to have no unclaimed gifts")
+		}
+	})
+
+	t.Run("Validation context with nil quest", func(t *testing.T) {
+		ctx := NewValidationContext(character)
+
+		// Test that requesting a non-existent quest returns appropriate values
+		for i := uint32(0); i < 10; i++ {
+			_, exists := ctx.Quest(i)
+			if exists {
+				t.Errorf("Expected quest %d to not exist in empty context", i)
+			}
+		}
+	})
 }

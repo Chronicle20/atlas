@@ -9,9 +9,9 @@ import (
 
 type RestModel struct {
 	Id                 string        `json:"-"`
-	WorldId            byte          `json:"worldId"`
-	ChannelId          byte          `json:"channelId"`
-	MapId              uint32        `json:"mapId"`
+	WorldId            world.Id      `json:"worldId"`
+	ChannelId          channel.Id    `json:"channelId"`
+	MapId              _map.Id       `json:"mapId"`
 	MonsterId          uint32        `json:"monsterId"`
 	ControlCharacterId uint32        `json:"controlCharacterId"`
 	X                  int16         `json:"x"`
@@ -52,9 +52,9 @@ func Extract(m RestModel) (Model, error) {
 
 	return Model{
 		uniqueId:           uint32(id),
-		worldId:            world.Id(m.WorldId),
-		channelId:          channel.Id(m.ChannelId),
-		mapId:              _map.Id(m.MapId),
+		worldId:            m.WorldId,
+		channelId:          m.ChannelId,
+		mapId:              m.MapId,
 		maxHp:              m.MaxHp,
 		hp:                 m.Hp,
 		mp:                 m.Mp,

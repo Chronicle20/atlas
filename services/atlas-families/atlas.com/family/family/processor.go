@@ -59,16 +59,11 @@ func (p *ProcessorImpl) AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seni
 			}
 
 			// Get senior member
-			var seniorEntity Entity
-			if err := db.Where("character_id = ?", seniorId).First(&seniorEntity).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
+			seniorModel, err := GetByCharacterIdProvider(seniorId)(db)()
+			if err != nil {
+				if errors.Is(err, ErrMemberNotFound) {
 					return FamilyMember{}, ErrSeniorNotFound
 				}
-				return FamilyMember{}, err
-			}
-
-			seniorModel, err := Make(seniorEntity)
-			if err != nil {
 				return FamilyMember{}, err
 			}
 
@@ -78,16 +73,11 @@ func (p *ProcessorImpl) AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seni
 			}
 
 			// Get junior member
-			var juniorEntity Entity
-			if err := db.Where("character_id = ?", juniorId).First(&juniorEntity).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
+			juniorModel, err := GetByCharacterIdProvider(juniorId)(db)()
+			if err != nil {
+				if errors.Is(err, ErrMemberNotFound) {
 					return FamilyMember{}, ErrJuniorNotFound
 				}
-				return FamilyMember{}, err
-			}
-
-			juniorModel, err := Make(juniorEntity)
-			if err != nil {
 				return FamilyMember{}, err
 			}
 
@@ -118,8 +108,7 @@ func (p *ProcessorImpl) AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seni
 					return err
 				}
 
-				seniorEntity = ToEntity(updatedSenior)
-				if err := tx.Save(&seniorEntity).Error; err != nil {
+				if _, err := UpdateProvider(updatedSenior)(tx)(); err != nil {
 					return err
 				}
 
@@ -132,8 +121,7 @@ func (p *ProcessorImpl) AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seni
 					return err
 				}
 
-				juniorEntity = ToEntity(updatedJunior)
-				if err := tx.Save(&juniorEntity).Error; err != nil {
+				if _, err := UpdateProvider(updatedJunior)(tx)(); err != nil {
 					return err
 				}
 
@@ -156,15 +144,7 @@ func (p *ProcessorImpl) RemoveMember(db *gorm.DB, log logrus.FieldLogger) func(c
 			}).Info("Removing member from family")
 
 			// Get the member to remove
-			var memberEntity Entity
-			if err := db.Where("character_id = ?", characterId).First(&memberEntity).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return []FamilyMember{}, ErrMemberNotFound
-				}
-				return []FamilyMember{}, err
-			}
-
-			memberModel, err := Make(memberEntity)
+			memberModel, err := GetByCharacterIdProvider(characterId)(db)()
 			if err != nil {
 				return []FamilyMember{}, err
 			}
@@ -173,54 +153,44 @@ func (p *ProcessorImpl) RemoveMember(db *gorm.DB, log logrus.FieldLogger) func(c
 			err = db.Transaction(func(tx *gorm.DB) error {
 				// If member has a senior, remove from senior's junior list
 				if memberModel.HasSenior() {
-					var seniorEntity Entity
-					if err := tx.Where("character_id = ?", *memberModel.SeniorId()).First(&seniorEntity).Error; err == nil {
-						seniorModel, err := Make(seniorEntity)
-						if err == nil {
-							updatedSenior, err := seniorModel.Builder().
-								RemoveJunior(characterId).
+					if seniorModel, err := GetByCharacterIdProvider(*memberModel.SeniorId())(tx)(); err == nil {
+						updatedSenior, err := seniorModel.Builder().
+							RemoveJunior(characterId).
+							Touch().
+							Build()
+						if err != nil {
+							return err
+						}
+
+						if _, err := UpdateProvider(updatedSenior)(tx)(); err != nil {
+							return err
+						}
+						updatedMembers = append(updatedMembers, updatedSenior)
+					}
+				}
+
+				// If member has juniors, remove their senior reference
+				if memberModel.HasJuniors() {
+					for _, juniorId := range memberModel.JuniorIds() {
+						if juniorModel, err := GetByCharacterIdProvider(juniorId)(tx)(); err == nil {
+							updatedJunior, err := juniorModel.Builder().
+								ClearSeniorId().
 								Touch().
 								Build()
 							if err != nil {
 								return err
 							}
 
-							seniorEntity = ToEntity(updatedSenior)
-							if err := tx.Save(&seniorEntity).Error; err != nil {
+							if _, err := UpdateProvider(updatedJunior)(tx)(); err != nil {
 								return err
 							}
-							updatedMembers = append(updatedMembers, updatedSenior)
-						}
-					}
-				}
-
-				// If member has juniors, remove their senior reference
-				if memberModel.HasJuniors() {
-					var juniorEntities []Entity
-					if err := tx.Where("character_id IN ?", memberModel.JuniorIds()).Find(&juniorEntities).Error; err == nil {
-						for _, juniorEntity := range juniorEntities {
-							juniorModel, err := Make(juniorEntity)
-							if err == nil {
-								updatedJunior, err := juniorModel.Builder().
-									ClearSeniorId().
-									Touch().
-									Build()
-								if err != nil {
-									return err
-								}
-
-								juniorEntity = ToEntity(updatedJunior)
-								if err := tx.Save(&juniorEntity).Error; err != nil {
-									return err
-								}
-								updatedMembers = append(updatedMembers, updatedJunior)
-							}
+							updatedMembers = append(updatedMembers, updatedJunior)
 						}
 					}
 				}
 
 				// Remove the member
-				if err := tx.Delete(&memberEntity).Error; err != nil {
+				if _, err := DeleteProvider(characterId)(tx)(); err != nil {
 					return err
 				}
 
@@ -242,15 +212,7 @@ func (p *ProcessorImpl) BreakLink(db *gorm.DB, log logrus.FieldLogger) func(char
 			}).Info("Breaking family link")
 
 			// Get the member
-			var memberEntity Entity
-			if err := db.Where("character_id = ?", characterId).First(&memberEntity).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return []FamilyMember{}, ErrMemberNotFound
-				}
-				return []FamilyMember{}, err
-			}
-
-			memberModel, err := Make(memberEntity)
+			memberModel, err := GetByCharacterIdProvider(characterId)(db)()
 			if err != nil {
 				return []FamilyMember{}, err
 			}
@@ -293,8 +255,7 @@ func (p *ProcessorImpl) BreakLink(db *gorm.DB, log logrus.FieldLogger) func(char
 						return err
 					}
 
-					memberEntity = ToEntity(updatedMember)
-					if err := tx.Save(&memberEntity).Error; err != nil {
+					if _, err := UpdateProvider(updatedMember)(tx)(); err != nil {
 						return err
 					}
 					updatedMembers = append(updatedMembers, updatedMember)
@@ -302,25 +263,20 @@ func (p *ProcessorImpl) BreakLink(db *gorm.DB, log logrus.FieldLogger) func(char
 
 				// If member has juniors, clear their senior reference
 				if memberModel.HasJuniors() {
-					var juniorEntities []Entity
-					if err := tx.Where("character_id IN ?", memberModel.JuniorIds()).Find(&juniorEntities).Error; err == nil {
-						for _, juniorEntity := range juniorEntities {
-							juniorModel, err := Make(juniorEntity)
-							if err == nil {
-								updatedJunior, err := juniorModel.Builder().
-									ClearSeniorId().
-									Touch().
-									Build()
-								if err != nil {
-									return err
-								}
-
-								juniorEntity = ToEntity(updatedJunior)
-								if err := tx.Save(&juniorEntity).Error; err != nil {
-									return err
-								}
-								updatedMembers = append(updatedMembers, updatedJunior)
+					for _, juniorId := range memberModel.JuniorIds() {
+						if juniorModel, err := GetByCharacterIdProvider(juniorId)(tx)(); err == nil {
+							updatedJunior, err := juniorModel.Builder().
+								ClearSeniorId().
+								Touch().
+								Build()
+							if err != nil {
+								return err
 							}
+
+							if _, err := UpdateProvider(updatedJunior)(tx)(); err != nil {
+								return err
+							}
+							updatedMembers = append(updatedMembers, updatedJunior)
 						}
 					}
 
@@ -333,8 +289,7 @@ func (p *ProcessorImpl) BreakLink(db *gorm.DB, log logrus.FieldLogger) func(char
 						return err
 					}
 
-					memberEntity = ToEntity(updatedMember)
-					if err := tx.Save(&memberEntity).Error; err != nil {
+					if _, err := UpdateProvider(updatedMember)(tx)(); err != nil {
 						return err
 					}
 
@@ -369,15 +324,7 @@ func (p *ProcessorImpl) AwardRep(db *gorm.DB, log logrus.FieldLogger) func(chara
 			}).Info("Awarding reputation")
 
 			// Get the member
-			var memberEntity Entity
-			if err := db.Where("character_id = ?", characterId).First(&memberEntity).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return FamilyMember{}, ErrMemberNotFound
-				}
-				return FamilyMember{}, err
-			}
-
-			memberModel, err := Make(memberEntity)
+			memberModel, err := GetByCharacterIdProvider(characterId)(db)()
 			if err != nil {
 				return FamilyMember{}, err
 			}
@@ -397,8 +344,7 @@ func (p *ProcessorImpl) AwardRep(db *gorm.DB, log logrus.FieldLogger) func(chara
 				return FamilyMember{}, err
 			}
 
-			memberEntity = ToEntity(updatedMember)
-			if err := db.Save(&memberEntity).Error; err != nil {
+			if _, err := UpdateProvider(updatedMember)(db)(); err != nil {
 				return FamilyMember{}, err
 			}
 
@@ -418,15 +364,7 @@ func (p *ProcessorImpl) DeductRep(db *gorm.DB, log logrus.FieldLogger) func(char
 			}).Info("Deducting reputation")
 
 			// Get the member
-			var memberEntity Entity
-			if err := db.Where("character_id = ?", characterId).First(&memberEntity).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return FamilyMember{}, ErrMemberNotFound
-				}
-				return FamilyMember{}, err
-			}
-
-			memberModel, err := Make(memberEntity)
+			memberModel, err := GetByCharacterIdProvider(characterId)(db)()
 			if err != nil {
 				return FamilyMember{}, err
 			}
@@ -445,8 +383,7 @@ func (p *ProcessorImpl) DeductRep(db *gorm.DB, log logrus.FieldLogger) func(char
 				return FamilyMember{}, err
 			}
 
-			memberEntity = ToEntity(updatedMember)
-			if err := db.Save(&memberEntity).Error; err != nil {
+			if _, err := UpdateProvider(updatedMember)(db)(); err != nil {
 				return FamilyMember{}, err
 			}
 
@@ -489,15 +426,7 @@ func (p *ProcessorImpl) UpdateLocation(db *gorm.DB, log logrus.FieldLogger) func
 			}).Info("Updating member location")
 
 			// Get the member
-			var memberEntity Entity
-			if err := db.Where("character_id = ?", characterId).First(&memberEntity).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return FamilyMember{}, ErrMemberNotFound
-				}
-				return FamilyMember{}, err
-			}
-
-			memberModel, err := Make(memberEntity)
+			memberModel, err := GetByCharacterIdProvider(characterId)(db)()
 			if err != nil {
 				return FamilyMember{}, err
 			}
@@ -513,8 +442,7 @@ func (p *ProcessorImpl) UpdateLocation(db *gorm.DB, log logrus.FieldLogger) func
 				return FamilyMember{}, err
 			}
 
-			memberEntity = ToEntity(updatedMember)
-			if err := db.Save(&memberEntity).Error; err != nil {
+			if _, err := UpdateProvider(updatedMember)(db)(); err != nil {
 				return FamilyMember{}, err
 			}
 
@@ -538,15 +466,7 @@ func (p *ProcessorImpl) UpdateLevel(db *gorm.DB, log logrus.FieldLogger) func(ch
 			}
 
 			// Get the member
-			var memberEntity Entity
-			if err := db.Where("character_id = ?", characterId).First(&memberEntity).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return FamilyMember{}, ErrMemberNotFound
-				}
-				return FamilyMember{}, err
-			}
-
-			memberModel, err := Make(memberEntity)
+			memberModel, err := GetByCharacterIdProvider(characterId)(db)()
 			if err != nil {
 				return FamilyMember{}, err
 			}
@@ -560,8 +480,7 @@ func (p *ProcessorImpl) UpdateLevel(db *gorm.DB, log logrus.FieldLogger) func(ch
 				return FamilyMember{}, err
 			}
 
-			memberEntity = ToEntity(updatedMember)
-			if err := db.Save(&memberEntity).Error; err != nil {
+			if _, err := UpdateProvider(updatedMember)(db)(); err != nil {
 				return FamilyMember{}, err
 			}
 

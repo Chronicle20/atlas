@@ -6,6 +6,8 @@ import (
 
 // Command represents a generic command wrapper for family operations
 type Command[E any] struct {
+	TransactionId string `json:"transactionId"`
+	TenantId      string `json:"tenantId"`
 	WorldId       byte   `json:"worldId"`
 	CharacterId   uint32 `json:"characterId"`
 	Type          string `json:"type"`
@@ -24,7 +26,11 @@ type Event[E any] struct {
 
 // AddJuniorCommandBody represents the body for adding a junior to a family
 type AddJuniorCommandBody struct {
-	JuniorId uint32 `json:"juniorId"`
+	JuniorId    uint32 `json:"juniorId"`
+	SeniorLevel uint16 `json:"seniorLevel"`
+	SeniorWorld byte   `json:"seniorWorld"`
+	JuniorLevel uint16 `json:"juniorLevel"`
+	JuniorWorld byte   `json:"juniorWorld"`
 }
 
 // RemoveMemberCommandBody represents the body for removing a member from a family
@@ -181,6 +187,7 @@ const (
 	CommandTypeAddJunior                   = "ADD_JUNIOR"
 	CommandTypeRemoveMember                = "REMOVE_MEMBER"
 	CommandTypeBreakLink                   = "BREAK_LINK"
+	CommandTypeDeductRep                   = "DEDUCT_REP"
 	CommandTypeRedeemRep                   = "REDEEM_REP"
 	CommandTypeRegisterKillActivity        = "REGISTER_KILL_ACTIVITY"
 	CommandTypeRegisterExpeditionActivity  = "REGISTER_EXPEDITION_ACTIVITY"
@@ -205,23 +212,31 @@ const (
 // Helper functions for creating typed commands and events
 
 // NewAddJuniorCommand creates a new AddJunior command
-func NewAddJuniorCommand(worldId byte, characterId uint32, juniorId uint32) Command[AddJuniorCommandBody] {
+func NewAddJuniorCommand(transactionId string, tenantId string, worldId byte, characterId uint32, juniorId uint32, seniorLevel uint16, seniorWorld byte, juniorLevel uint16, juniorWorld byte) Command[AddJuniorCommandBody] {
 	return Command[AddJuniorCommandBody]{
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        CommandTypeAddJunior,
+		TransactionId: transactionId,
+		TenantId:      tenantId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          CommandTypeAddJunior,
 		Body: AddJuniorCommandBody{
-			JuniorId: juniorId,
+			JuniorId:    juniorId,
+			SeniorLevel: seniorLevel,
+			SeniorWorld: seniorWorld,
+			JuniorLevel: juniorLevel,
+			JuniorWorld: juniorWorld,
 		},
 	}
 }
 
 // NewRemoveMemberCommand creates a new RemoveMember command
-func NewRemoveMemberCommand(worldId byte, characterId uint32, targetId uint32, reason string) Command[RemoveMemberCommandBody] {
+func NewRemoveMemberCommand(transactionId string, tenantId string, worldId byte, characterId uint32, targetId uint32, reason string) Command[RemoveMemberCommandBody] {
 	return Command[RemoveMemberCommandBody]{
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        CommandTypeRemoveMember,
+		TransactionId: transactionId,
+		TenantId:      tenantId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          CommandTypeRemoveMember,
 		Body: RemoveMemberCommandBody{
 			TargetId: targetId,
 			Reason:   reason,
@@ -230,11 +245,13 @@ func NewRemoveMemberCommand(worldId byte, characterId uint32, targetId uint32, r
 }
 
 // NewBreakLinkCommand creates a new BreakLink command
-func NewBreakLinkCommand(worldId byte, characterId uint32, reason string) Command[BreakLinkCommandBody] {
+func NewBreakLinkCommand(transactionId string, tenantId string, worldId byte, characterId uint32, reason string) Command[BreakLinkCommandBody] {
 	return Command[BreakLinkCommandBody]{
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        CommandTypeBreakLink,
+		TransactionId: transactionId,
+		TenantId:      tenantId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          CommandTypeBreakLink,
 		Body: BreakLinkCommandBody{
 			Reason: reason,
 		},
@@ -242,11 +259,13 @@ func NewBreakLinkCommand(worldId byte, characterId uint32, reason string) Comman
 }
 
 // NewDeductRepCommand creates a new DeductRep command
-func NewDeductRepCommand(worldId byte, characterId uint32, amount uint32, reason string) Command[DeductRepCommandBody] {
+func NewDeductRepCommand(transactionId string, tenantId string, worldId byte, characterId uint32, amount uint32, reason string) Command[DeductRepCommandBody] {
 	return Command[DeductRepCommandBody]{
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        CommandTypeRedeemRep,
+		TransactionId: transactionId,
+		TenantId:      tenantId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          CommandTypeDeductRep,
 		Body: DeductRepCommandBody{
 			Amount: amount,
 			Reason: reason,
@@ -255,11 +274,13 @@ func NewDeductRepCommand(worldId byte, characterId uint32, amount uint32, reason
 }
 
 // NewRegisterKillActivityCommand creates a new RegisterKillActivity command
-func NewRegisterKillActivityCommand(worldId byte, characterId uint32, killCount uint32) Command[RegisterKillActivityCommandBody] {
+func NewRegisterKillActivityCommand(transactionId string, tenantId string, worldId byte, characterId uint32, killCount uint32) Command[RegisterKillActivityCommandBody] {
 	return Command[RegisterKillActivityCommandBody]{
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        CommandTypeRegisterKillActivity,
+		TransactionId: transactionId,
+		TenantId:      tenantId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          CommandTypeRegisterKillActivity,
 		Body: RegisterKillActivityCommandBody{
 			KillCount: killCount,
 			Timestamp: time.Now(),
@@ -268,11 +289,13 @@ func NewRegisterKillActivityCommand(worldId byte, characterId uint32, killCount 
 }
 
 // NewRegisterExpeditionActivityCommand creates a new RegisterExpeditionActivity command
-func NewRegisterExpeditionActivityCommand(worldId byte, characterId uint32, coinReward uint32) Command[RegisterExpeditionActivityCommandBody] {
+func NewRegisterExpeditionActivityCommand(transactionId string, tenantId string, worldId byte, characterId uint32, coinReward uint32) Command[RegisterExpeditionActivityCommandBody] {
 	return Command[RegisterExpeditionActivityCommandBody]{
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        CommandTypeRegisterExpeditionActivity,
+		TransactionId: transactionId,
+		TenantId:      tenantId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          CommandTypeRegisterExpeditionActivity,
 		Body: RegisterExpeditionActivityCommandBody{
 			CoinReward: coinReward,
 			Timestamp:  time.Now(),

@@ -154,43 +154,43 @@ func TeleportUsedEventProvider(worldId byte, characterId uint32, targetId uint32
 // Command Providers
 
 // AddJuniorCommandProvider creates a Kafka message provider for add junior commands
-func AddJuniorCommandProvider(worldId byte, characterId uint32, juniorId uint32) model.Provider[[]kafka.Message] {
+func AddJuniorCommandProvider(transactionId string, tenantId string, worldId byte, characterId uint32, juniorId uint32, seniorLevel uint16, seniorWorld byte, juniorLevel uint16, juniorWorld byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := family.NewAddJuniorCommand(worldId, characterId, juniorId)
+	value := family.NewAddJuniorCommand(transactionId, tenantId, worldId, characterId, juniorId, seniorLevel, seniorWorld, juniorLevel, juniorWorld)
 	return producer.SingleMessageProvider(key, value)
 }
 
 // RemoveMemberCommandProvider creates a Kafka message provider for remove member commands
-func RemoveMemberCommandProvider(worldId byte, characterId uint32, targetId uint32, reason string) model.Provider[[]kafka.Message] {
+func RemoveMemberCommandProvider(transactionId string, tenantId string, worldId byte, characterId uint32, targetId uint32, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := family.NewRemoveMemberCommand(worldId, characterId, targetId, reason)
+	value := family.NewRemoveMemberCommand(transactionId, tenantId, worldId, characterId, targetId, reason)
 	return producer.SingleMessageProvider(key, value)
 }
 
 // BreakLinkCommandProvider creates a Kafka message provider for break link commands
-func BreakLinkCommandProvider(worldId byte, characterId uint32, reason string) model.Provider[[]kafka.Message] {
+func BreakLinkCommandProvider(transactionId string, tenantId string, worldId byte, characterId uint32, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := family.NewBreakLinkCommand(worldId, characterId, reason)
+	value := family.NewBreakLinkCommand(transactionId, tenantId, worldId, characterId, reason)
 	return producer.SingleMessageProvider(key, value)
 }
 
 // DeductRepCommandProvider creates a Kafka message provider for deduct reputation commands
-func DeductRepCommandProvider(worldId byte, characterId uint32, amount uint32, reason string) model.Provider[[]kafka.Message] {
+func DeductRepCommandProvider(transactionId string, tenantId string, worldId byte, characterId uint32, amount uint32, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := family.NewDeductRepCommand(worldId, characterId, amount, reason)
+	value := family.NewDeductRepCommand(transactionId, tenantId, worldId, characterId, amount, reason)
 	return producer.SingleMessageProvider(key, value)
 }
 
 // RegisterKillActivityCommandProvider creates a Kafka message provider for register kill activity commands
-func RegisterKillActivityCommandProvider(worldId byte, characterId uint32, killCount uint32) model.Provider[[]kafka.Message] {
+func RegisterKillActivityCommandProvider(transactionId string, tenantId string, worldId byte, characterId uint32, killCount uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := family.NewRegisterKillActivityCommand(worldId, characterId, killCount)
+	value := family.NewRegisterKillActivityCommand(transactionId, tenantId, worldId, characterId, killCount)
 	return producer.SingleMessageProvider(key, value)
 }
 
 // RegisterExpeditionActivityCommandProvider creates a Kafka message provider for register expedition activity commands
-func RegisterExpeditionActivityCommandProvider(worldId byte, characterId uint32, coinReward uint32) model.Provider[[]kafka.Message] {
+func RegisterExpeditionActivityCommandProvider(transactionId string, tenantId string, worldId byte, characterId uint32, coinReward uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := family.NewRegisterExpeditionActivityCommand(worldId, characterId, coinReward)
+	value := family.NewRegisterExpeditionActivityCommand(transactionId, tenantId, worldId, characterId, coinReward)
 	return producer.SingleMessageProvider(key, value)
 }

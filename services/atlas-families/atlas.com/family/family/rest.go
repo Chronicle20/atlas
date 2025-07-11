@@ -183,6 +183,20 @@ func TransformTree(characterId uint32, members []FamilyMember) (RestFamilyTree, 
 	}, nil
 }
 
+// TransformFamilyTree is an alias for TransformTree to match resource expectations
+func TransformFamilyTree(members []FamilyMember) (RestFamilyTree, error) {
+	if len(members) == 0 {
+		return RestFamilyTree{
+			ID:      "0",
+			Type:    "familyTrees",
+			Members: []RestFamilyMember{},
+		}, nil
+	}
+	
+	// Use the first member's character ID as the tree ID
+	return TransformTree(members[0].CharacterId(), members)
+}
+
 // TransformReputation converts a domain FamilyMember to REST reputation
 func TransformReputation(fm FamilyMember) (RestReputation, error) {
 	const dailyRepLimit = 5000
@@ -215,26 +229,50 @@ func TransformLocation(fm FamilyMember, channel *byte, mapId uint32, online bool
 	}, nil
 }
 
+// Request structures for JSON:API format
+
 // AddJuniorRequest represents the request body for adding a junior
 type AddJuniorRequest struct {
-	JuniorId uint32 `json:"juniorId" validate:"required"`
+	Data struct {
+		Type       string `json:"type"`
+		Attributes struct {
+			JuniorId uint32 `json:"juniorId" validate:"required"`
+		} `json:"attributes"`
+	} `json:"data"`
 }
 
 // BreakLinkRequest represents the request body for breaking a family link
 type BreakLinkRequest struct {
-	Reason string `json:"reason,omitempty"`
+	Data struct {
+		Type       string `json:"type"`
+		Attributes struct {
+			Reason string `json:"reason,omitempty"`
+		} `json:"attributes"`
+	} `json:"data"`
 }
 
 // DeductRepRequest represents the request body for deducting reputation
 type DeductRepRequest struct {
-	Amount uint32 `json:"amount" validate:"required,min=1"`
-	Reason string `json:"reason" validate:"required"`
+	Data struct {
+		Type       string `json:"type"`
+		Attributes struct {
+			CharacterId uint32 `json:"characterId" validate:"required"`
+			Amount      uint32 `json:"amount" validate:"required,min=1"`
+			Reason      string `json:"reason" validate:"required"`
+		} `json:"attributes"`
+	} `json:"data"`
 }
 
-// RegisterActivityRequest represents the request body for registering activity
-type RegisterActivityRequest struct {
-	ActivityType string `json:"activityType" validate:"required,oneof=mob_kill expedition"`
-	Value        uint32 `json:"value" validate:"required,min=1"`
+// ActivityRequest represents the request body for registering activity
+type ActivityRequest struct {
+	Data struct {
+		Type       string `json:"type"`
+		Attributes struct {
+			CharacterId  uint32 `json:"characterId" validate:"required"`
+			ActivityType string `json:"activityType" validate:"required,oneof=mob_kill expedition"`
+			Amount       uint32 `json:"amount" validate:"required,min=1"`
+		} `json:"attributes"`
+	} `json:"data"`
 }
 
 // Note: These REST models are compatible with JSON:API standards but don't implement

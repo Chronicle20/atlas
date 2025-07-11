@@ -19,17 +19,36 @@ type Processor interface {
 	ResetDailyRep(db *gorm.DB, log logrus.FieldLogger) func() model.Provider[int64]
 	UpdateWorld(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, world byte) model.Provider[FamilyMember]
 	UpdateLevel(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, level uint16) model.Provider[FamilyMember]
+	
+	// AndEmit variants for Kafka message emission
+	AddJuniorAndEmit(db *gorm.DB, log logrus.FieldLogger) func(transactionId string, seniorId uint32, juniorId uint32) model.Provider[FamilyMember]
+	RemoveMemberAndEmit(db *gorm.DB, log logrus.FieldLogger) func(transactionId string, characterId uint32, reason string) model.Provider[[]FamilyMember]
+	BreakLinkAndEmit(db *gorm.DB, log logrus.FieldLogger) func(transactionId string, characterId uint32, reason string) model.Provider[[]FamilyMember]
+	AwardRepAndEmit(db *gorm.DB, log logrus.FieldLogger) func(transactionId string, characterId uint32, amount uint32, source string) model.Provider[FamilyMember]
+	DeductRepAndEmit(db *gorm.DB, log logrus.FieldLogger) func(transactionId string, characterId uint32, amount uint32, reason string) model.Provider[FamilyMember]
 }
 
 // ProcessorImpl implements the Processor interface  
 type ProcessorImpl struct{
 	administrator Administrator
+	producer     EventProducer
+}
+
+// EventProducer interface for emitting family events
+type EventProducer interface {
+	EmitLinkCreated(transactionId string, characterId uint32, seniorId uint32, juniorId uint32) error
+	EmitLinkBroken(transactionId string, characterId uint32, seniorId uint32, juniorId uint32, reason string) error
+	EmitRepGained(transactionId string, characterId uint32, repGained uint32, dailyRep uint32, source string) error
+	EmitRepRedeemed(transactionId string, characterId uint32, repRedeemed uint32, reason string) error
+	EmitRepError(transactionId string, characterId uint32, errorCode string, errorMessage string, amount uint32) error
+	EmitLinkError(transactionId string, characterId uint32, seniorId uint32, juniorId uint32, errorCode string, errorMessage string) error
 }
 
 // NewProcessor creates a new processor instance
-func NewProcessor(administrator Administrator) Processor {
+func NewProcessor(administrator Administrator, producer EventProducer) Processor {
 	return &ProcessorImpl{
 		administrator: administrator,
+		producer:     producer,
 	}
 }
 
@@ -488,6 +507,148 @@ func (p *ProcessorImpl) UpdateLevel(db *gorm.DB, log logrus.FieldLogger) func(ch
 			}
 
 			return updatedMember, nil
+		}
+	}
+}
+
+// AndEmit variants - combine business logic with event emission
+
+// AddJuniorAndEmit adds a junior and emits appropriate events
+func (p *ProcessorImpl) AddJuniorAndEmit(db *gorm.DB, log logrus.FieldLogger) func(transactionId string, seniorId uint32, juniorId uint32) model.Provider[FamilyMember] {
+	return func(transactionId string, seniorId uint32, juniorId uint32) model.Provider[FamilyMember] {
+		return func() (FamilyMember, error) {
+			// Execute business logic
+			result, err := p.AddJunior(db, log)(seniorId, juniorId)()
+			if err != nil {
+				// Emit error event
+				if emitErr := p.producer.EmitLinkError(transactionId, seniorId, seniorId, juniorId, "ADD_JUNIOR_FAILED", err.Error()); emitErr != nil {
+					log.WithError(emitErr).Error("Failed to emit link error event")
+				}
+				return FamilyMember{}, err
+			}
+			
+			// Emit success event
+			if emitErr := p.producer.EmitLinkCreated(transactionId, seniorId, seniorId, juniorId); emitErr != nil {
+				log.WithError(emitErr).Error("Failed to emit link created event")
+			}
+			
+			return result, nil
+		}
+	}
+}
+
+// RemoveMemberAndEmit removes a member and emits appropriate events
+func (p *ProcessorImpl) RemoveMemberAndEmit(db *gorm.DB, log logrus.FieldLogger) func(transactionId string, characterId uint32, reason string) model.Provider[[]FamilyMember] {
+	return func(transactionId string, characterId uint32, reason string) model.Provider[[]FamilyMember] {
+		return func() ([]FamilyMember, error) {
+			// Get member info before removal for event emission
+			memberModel, err := GetByCharacterIdProvider(characterId)(db)()
+			if err != nil {
+				return []FamilyMember{}, err
+			}
+			
+			// Execute business logic
+			result, err := p.RemoveMember(db, log)(characterId, reason)()
+			if err != nil {
+				return []FamilyMember{}, err
+			}
+			
+			// Emit link broken events for all affected relationships
+			if memberModel.HasSenior() {
+				if emitErr := p.producer.EmitLinkBroken(transactionId, characterId, *memberModel.SeniorId(), characterId, reason); emitErr != nil {
+					log.WithError(emitErr).Error("Failed to emit link broken event for senior")
+				}
+			}
+			
+			for _, juniorId := range memberModel.JuniorIds() {
+				if emitErr := p.producer.EmitLinkBroken(transactionId, characterId, characterId, juniorId, reason); emitErr != nil {
+					log.WithError(emitErr).Error("Failed to emit link broken event for junior")
+				}
+			}
+			
+			return result, nil
+		}
+	}
+}
+
+// BreakLinkAndEmit breaks a link and emits appropriate events
+func (p *ProcessorImpl) BreakLinkAndEmit(db *gorm.DB, log logrus.FieldLogger) func(transactionId string, characterId uint32, reason string) model.Provider[[]FamilyMember] {
+	return func(transactionId string, characterId uint32, reason string) model.Provider[[]FamilyMember] {
+		return func() ([]FamilyMember, error) {
+			// Get member info before breaking links for event emission
+			memberModel, err := GetByCharacterIdProvider(characterId)(db)()
+			if err != nil {
+				return []FamilyMember{}, err
+			}
+			
+			// Execute business logic
+			result, err := p.BreakLink(db, log)(characterId, reason)()
+			if err != nil {
+				return []FamilyMember{}, err
+			}
+			
+			// Emit link broken events for all affected relationships
+			if memberModel.HasSenior() {
+				if emitErr := p.producer.EmitLinkBroken(transactionId, characterId, *memberModel.SeniorId(), characterId, reason); emitErr != nil {
+					log.WithError(emitErr).Error("Failed to emit link broken event for senior")
+				}
+			}
+			
+			for _, juniorId := range memberModel.JuniorIds() {
+				if emitErr := p.producer.EmitLinkBroken(transactionId, characterId, characterId, juniorId, reason); emitErr != nil {
+					log.WithError(emitErr).Error("Failed to emit link broken event for junior")
+				}
+			}
+			
+			return result, nil
+		}
+	}
+}
+
+// AwardRepAndEmit awards reputation and emits appropriate events
+func (p *ProcessorImpl) AwardRepAndEmit(db *gorm.DB, log logrus.FieldLogger) func(transactionId string, characterId uint32, amount uint32, source string) model.Provider[FamilyMember] {
+	return func(transactionId string, characterId uint32, amount uint32, source string) model.Provider[FamilyMember] {
+		return func() (FamilyMember, error) {
+			// Execute business logic
+			result, err := p.AwardRep(db, log)(characterId, amount, source)()
+			if err != nil {
+				// Emit error event
+				if emitErr := p.producer.EmitRepError(transactionId, characterId, "AWARD_REP_FAILED", err.Error(), amount); emitErr != nil {
+					log.WithError(emitErr).Error("Failed to emit rep error event")
+				}
+				return FamilyMember{}, err
+			}
+			
+			// Emit success event
+			if emitErr := p.producer.EmitRepGained(transactionId, characterId, amount, result.DailyRep(), source); emitErr != nil {
+				log.WithError(emitErr).Error("Failed to emit rep gained event")
+			}
+			
+			return result, nil
+		}
+	}
+}
+
+// DeductRepAndEmit deducts reputation and emits appropriate events
+func (p *ProcessorImpl) DeductRepAndEmit(db *gorm.DB, log logrus.FieldLogger) func(transactionId string, characterId uint32, amount uint32, reason string) model.Provider[FamilyMember] {
+	return func(transactionId string, characterId uint32, amount uint32, reason string) model.Provider[FamilyMember] {
+		return func() (FamilyMember, error) {
+			// Execute business logic
+			result, err := p.DeductRep(db, log)(characterId, amount, reason)()
+			if err != nil {
+				// Emit error event
+				if emitErr := p.producer.EmitRepError(transactionId, characterId, "DEDUCT_REP_FAILED", err.Error(), amount); emitErr != nil {
+					log.WithError(emitErr).Error("Failed to emit rep error event")
+				}
+				return FamilyMember{}, err
+			}
+			
+			// Emit success event
+			if emitErr := p.producer.EmitRepRedeemed(transactionId, characterId, amount, reason); emitErr != nil {
+				log.WithError(emitErr).Error("Failed to emit rep redeemed event")
+			}
+			
+			return result, nil
 		}
 	}
 }

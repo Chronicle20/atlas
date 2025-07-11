@@ -21,12 +21,16 @@ type Processor interface {
 	UpdateLevel(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, level uint16) model.Provider[FamilyMember]
 }
 
-// ProcessorImpl implements the Processor interface
-type ProcessorImpl struct{}
+// ProcessorImpl implements the Processor interface  
+type ProcessorImpl struct{
+	administrator Administrator
+}
 
 // NewProcessor creates a new processor instance
-func NewProcessor() Processor {
-	return &ProcessorImpl{}
+func NewProcessor(administrator Administrator) Processor {
+	return &ProcessorImpl{
+		administrator: administrator,
+	}
 }
 
 // Business logic errors
@@ -108,9 +112,11 @@ func (p *ProcessorImpl) AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seni
 					return err
 				}
 
-				if _, err := UpdateProvider(updatedSenior)(tx)(); err != nil {
+				// Save updated senior via administrator
+				if _, err := p.administrator.SaveMember(tx, log)(updatedSenior)(); err != nil {
 					return err
 				}
+				result = updatedSenior
 
 				// Update junior - set senior
 				updatedJunior, err := juniorModel.Builder().
@@ -121,7 +127,8 @@ func (p *ProcessorImpl) AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seni
 					return err
 				}
 
-				if _, err := UpdateProvider(updatedJunior)(tx)(); err != nil {
+				// Save updated junior via administrator
+				if _, err := p.administrator.SaveMember(tx, log)(updatedJunior)(); err != nil {
 					return err
 				}
 
@@ -162,7 +169,7 @@ func (p *ProcessorImpl) RemoveMember(db *gorm.DB, log logrus.FieldLogger) func(c
 							return err
 						}
 
-						if _, err := UpdateProvider(updatedSenior)(tx)(); err != nil {
+						if _, err := p.administrator.SaveMember(tx, log)(updatedSenior)(); err != nil {
 							return err
 						}
 						updatedMembers = append(updatedMembers, updatedSenior)
@@ -181,7 +188,7 @@ func (p *ProcessorImpl) RemoveMember(db *gorm.DB, log logrus.FieldLogger) func(c
 								return err
 							}
 
-							if _, err := UpdateProvider(updatedJunior)(tx)(); err != nil {
+							if _, err := p.administrator.SaveMember(tx, log)(updatedJunior)(); err != nil {
 								return err
 							}
 							updatedMembers = append(updatedMembers, updatedJunior)
@@ -190,7 +197,7 @@ func (p *ProcessorImpl) RemoveMember(db *gorm.DB, log logrus.FieldLogger) func(c
 				}
 
 				// Remove the member
-				if _, err := DeleteProvider(characterId)(tx)(); err != nil {
+				if _, err := p.administrator.DeleteMember(tx, log)(characterId)(); err != nil {
 					return err
 				}
 
@@ -255,7 +262,7 @@ func (p *ProcessorImpl) BreakLink(db *gorm.DB, log logrus.FieldLogger) func(char
 						return err
 					}
 
-					if _, err := UpdateProvider(updatedMember)(tx)(); err != nil {
+					if _, err := p.administrator.SaveMember(tx, log)(updatedMember)(); err != nil {
 						return err
 					}
 					updatedMembers = append(updatedMembers, updatedMember)
@@ -273,7 +280,7 @@ func (p *ProcessorImpl) BreakLink(db *gorm.DB, log logrus.FieldLogger) func(char
 								return err
 							}
 
-							if _, err := UpdateProvider(updatedJunior)(tx)(); err != nil {
+							if _, err := p.administrator.SaveMember(tx, log)(updatedJunior)(); err != nil {
 								return err
 							}
 							updatedMembers = append(updatedMembers, updatedJunior)
@@ -289,7 +296,7 @@ func (p *ProcessorImpl) BreakLink(db *gorm.DB, log logrus.FieldLogger) func(char
 						return err
 					}
 
-					if _, err := UpdateProvider(updatedMember)(tx)(); err != nil {
+					if _, err := p.administrator.SaveMember(tx, log)(updatedMember)(); err != nil {
 						return err
 					}
 
@@ -344,7 +351,7 @@ func (p *ProcessorImpl) AwardRep(db *gorm.DB, log logrus.FieldLogger) func(chara
 				return FamilyMember{}, err
 			}
 
-			if _, err := UpdateProvider(updatedMember)(db)(); err != nil {
+			if _, err := p.administrator.SaveMember(db, log)(updatedMember)(); err != nil {
 				return FamilyMember{}, err
 			}
 
@@ -383,7 +390,7 @@ func (p *ProcessorImpl) DeductRep(db *gorm.DB, log logrus.FieldLogger) func(char
 				return FamilyMember{}, err
 			}
 
-			if _, err := UpdateProvider(updatedMember)(db)(); err != nil {
+			if _, err := p.administrator.SaveMember(db, log)(updatedMember)(); err != nil {
 				return FamilyMember{}, err
 			}
 
@@ -442,7 +449,7 @@ func (p *ProcessorImpl) UpdateLocation(db *gorm.DB, log logrus.FieldLogger) func
 				return FamilyMember{}, err
 			}
 
-			if _, err := UpdateProvider(updatedMember)(db)(); err != nil {
+			if _, err := p.administrator.SaveMember(db, log)(updatedMember)(); err != nil {
 				return FamilyMember{}, err
 			}
 
@@ -480,7 +487,7 @@ func (p *ProcessorImpl) UpdateLevel(db *gorm.DB, log logrus.FieldLogger) func(ch
 				return FamilyMember{}, err
 			}
 
-			if _, err := UpdateProvider(updatedMember)(db)(); err != nil {
+			if _, err := p.administrator.SaveMember(db, log)(updatedMember)(); err != nil {
 				return FamilyMember{}, err
 			}
 

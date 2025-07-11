@@ -12,6 +12,7 @@ import (
 
 // Administrator interface defines high-level data coordination operations
 type Administrator interface {
+	// High-level coordination operations
 	CreateMember(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID, level uint16, world byte, channel byte, mapId uint32) model.Provider[FamilyMember]
 	AddJuniorWithValidation(db *gorm.DB, log logrus.FieldLogger) func(seniorId uint32, juniorId uint32, tenantId uuid.UUID, juniorLevel uint16, juniorWorld byte, juniorChannel byte, juniorMapId uint32) model.Provider[[]FamilyMember]
 	RemoveMemberCascade(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, reason string) model.Provider[[]FamilyMember]
@@ -20,18 +21,18 @@ type Administrator interface {
 	ProcessRepActivity(db *gorm.DB, log logrus.FieldLogger) func(juniorId uint32, activityType string, value uint32) model.Provider[FamilyMember]
 	BatchResetDailyRep(db *gorm.DB, log logrus.FieldLogger) func() model.Provider[BatchResetResult]
 	EnsureMemberExists(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID, level uint16, world byte, channel byte, mapId uint32) model.Provider[FamilyMember]
+
+	// Database persistence operations
+	SaveMember(db *gorm.DB, log logrus.FieldLogger) func(member FamilyMember) model.Provider[FamilyMember]
+	DeleteMember(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32) model.Provider[bool]
 }
 
 // AdministratorImpl implements the Administrator interface
-type AdministratorImpl struct {
-	processor Processor
-}
+type AdministratorImpl struct{}
 
 // NewAdministrator creates a new administrator instance
-func NewAdministrator(processor Processor) Administrator {
-	return &AdministratorImpl{
-		processor: processor,
-	}
+func NewAdministrator() Administrator {
+	return &AdministratorImpl{}
 }
 
 // BatchResetResult represents the result of a batch daily rep reset operation
@@ -42,12 +43,12 @@ type BatchResetResult struct {
 
 // Administrator-specific errors
 var (
-	ErrMemberAlreadyExists   = errors.New("family member already exists")
-	ErrCannotCreateMember    = errors.New("cannot create family member")
-	ErrTransactionFailed     = errors.New("transaction failed")
-	ErrInvalidActivityType   = errors.New("invalid activity type")
-	ErrJuniorMustExist       = errors.New("junior must exist before creating family link")
-	ErrSeniorMustExist       = errors.New("senior must exist before creating family link")
+	ErrMemberAlreadyExists = errors.New("family member already exists")
+	ErrCannotCreateMember  = errors.New("cannot create family member")
+	ErrTransactionFailed   = errors.New("transaction failed")
+	ErrInvalidActivityType = errors.New("invalid activity type")
+	ErrJuniorMustExist     = errors.New("junior must exist before creating family link")
+	ErrSeniorMustExist     = errors.New("senior must exist before creating family link")
 )
 
 // CreateMember creates a new family member with proper validation
@@ -79,7 +80,7 @@ func (a *AdministratorImpl) CreateMember(db *gorm.DB, log logrus.FieldLogger) fu
 			}
 
 			// Save to database
-			return CreateProvider(member)(db)()
+			return a.SaveMember(db, log)(member)()
 		}
 	}
 }
@@ -131,15 +132,45 @@ func (a *AdministratorImpl) AddJuniorWithValidation(db *gorm.DB, log logrus.Fiel
 					if err != nil {
 						return err
 					}
-					
-					if _, err := UpdateProvider(updatedJunior)(tx)(); err != nil {
+
+					if _, err := a.SaveMember(tx, log)(updatedJunior)(); err != nil {
 						return err
 					}
 				}
 
-				// Add junior using processor
-				_, err = a.processor.AddJunior(tx, log)(seniorId, juniorId)()
+				// Update senior to add junior
+				senior, err := GetByCharacterIdProvider(seniorId)(tx)()
 				if err != nil {
+					return err
+				}
+
+				updatedSenior, err := senior.Builder().
+					AddJunior(juniorId).
+					Touch().
+					Build()
+				if err != nil {
+					return err
+				}
+
+				if _, err := a.SaveMember(tx, log)(updatedSenior)(); err != nil {
+					return err
+				}
+
+				// Update junior to set senior
+				junior, err := GetByCharacterIdProvider(juniorId)(tx)()
+				if err != nil {
+					return err
+				}
+
+				updatedJuniorWithSenior, err := junior.Builder().
+					SetSeniorId(seniorId).
+					Touch().
+					Build()
+				if err != nil {
+					return err
+				}
+
+				if _, err := a.SaveMember(tx, log)(updatedJuniorWithSenior)(); err != nil {
 					return err
 				}
 
@@ -174,8 +205,61 @@ func (a *AdministratorImpl) RemoveMemberCascade(db *gorm.DB, log logrus.FieldLog
 				"reason":      reason,
 			}).Info("Removing member with cascade operations")
 
-			// Use processor to handle removal logic
-			return a.processor.RemoveMember(db, log)(characterId, reason)()
+			// Get the member to remove
+			member, err := GetByCharacterIdProvider(characterId)(db)()
+			if err != nil {
+				return []FamilyMember{}, err
+			}
+
+			var updatedMembers []FamilyMember
+			err = db.Transaction(func(tx *gorm.DB) error {
+				// If member has a senior, remove from senior's junior list
+				if member.HasSenior() {
+					if senior, err := GetByCharacterIdProvider(*member.SeniorId())(tx)(); err == nil {
+						updatedSenior, err := senior.Builder().
+							RemoveJunior(characterId).
+							Touch().
+							Build()
+						if err != nil {
+							return err
+						}
+
+						if _, err := a.SaveMember(tx, log)(updatedSenior)(); err != nil {
+							return err
+						}
+						updatedMembers = append(updatedMembers, updatedSenior)
+					}
+				}
+
+				// If member has juniors, remove their senior reference
+				if member.HasJuniors() {
+					for _, juniorId := range member.JuniorIds() {
+						if junior, err := GetByCharacterIdProvider(juniorId)(tx)(); err == nil {
+							updatedJunior, err := junior.Builder().
+								ClearSeniorId().
+								Touch().
+								Build()
+							if err != nil {
+								return err
+							}
+
+							if _, err := a.SaveMember(tx, log)(updatedJunior)(); err != nil {
+								return err
+							}
+							updatedMembers = append(updatedMembers, updatedJunior)
+						}
+					}
+				}
+
+				// Remove the member
+				if _, err := a.DeleteMember(tx, log)(characterId)(); err != nil {
+					return err
+				}
+
+				return nil
+			})
+
+			return updatedMembers, err
 		}
 	}
 }
@@ -200,7 +284,7 @@ func (a *AdministratorImpl) DissolveSubtree(db *gorm.DB, log logrus.FieldLogger)
 			// If senior has juniors, remove them first
 			if senior.HasJuniors() {
 				for _, juniorId := range senior.JuniorIds() {
-					updatedMembers, err := a.processor.RemoveMember(db, log)(juniorId, reason)()
+					updatedMembers, err := a.RemoveMemberCascade(db, log)(juniorId, reason)()
 					if err != nil {
 						return []FamilyMember{}, err
 					}
@@ -209,7 +293,7 @@ func (a *AdministratorImpl) DissolveSubtree(db *gorm.DB, log logrus.FieldLogger)
 			}
 
 			// Remove the senior
-			seniorUpdated, err := a.processor.RemoveMember(db, log)(seniorId, reason)()
+			seniorUpdated, err := a.RemoveMemberCascade(db, log)(seniorId, reason)()
 			if err != nil {
 				return []FamilyMember{}, err
 			}
@@ -254,15 +338,24 @@ func (a *AdministratorImpl) AwardRepToSenior(db *gorm.DB, log logrus.FieldLogger
 			if junior.Level() > senior.Level() {
 				finalAmount = amount / 2
 				log.WithFields(logrus.Fields{
-					"juniorLevel": junior.Level(),
-					"seniorLevel": senior.Level(),
+					"juniorLevel":    junior.Level(),
+					"seniorLevel":    senior.Level(),
 					"originalAmount": amount,
-					"finalAmount": finalAmount,
+					"finalAmount":    finalAmount,
 				}).Info("Junior outlevels senior, halving reputation award")
 			}
 
-			// Award reputation using processor
-			return a.processor.AwardRep(db, log)(seniorId, finalAmount, source)()
+			// Award reputation to senior
+			updatedSenior, err := senior.Builder().
+				AddRep(finalAmount).
+				AddDailyRep(finalAmount).
+				Touch().
+				Build()
+			if err != nil {
+				return FamilyMember{}, err
+			}
+
+			return a.SaveMember(db, log)(updatedSenior)()
 		}
 	}
 }
@@ -311,11 +404,18 @@ func (a *AdministratorImpl) BatchResetDailyRep(db *gorm.DB, log logrus.FieldLogg
 
 			resetTime := time.Now()
 
-			// Use processor to reset daily rep
-			affectedCount, err := a.processor.ResetDailyRep(db, log)()()
-			if err != nil {
-				return BatchResetResult{}, err
+			// Reset daily rep for all members
+			result := db.Model(&Entity{}).
+				Where("daily_rep > 0").
+				Updates(map[string]interface{}{
+					"daily_rep":  0,
+					"updated_at": time.Now(),
+				})
+
+			if result.Error != nil {
+				return BatchResetResult{}, result.Error
 			}
+			affectedCount := result.RowsAffected
 
 			return BatchResetResult{
 				AffectedCount: affectedCount,
@@ -370,10 +470,49 @@ func (a *AdministratorImpl) EnsureMemberExists(db *gorm.DB, log logrus.FieldLogg
 				if err != nil {
 					return FamilyMember{}, err
 				}
-				return UpdateProvider(updatedMember)(db)()
+				return a.SaveMember(db, log)(updatedMember)()
 			}
 
 			return member, nil
+		}
+	}
+}
+
+// SaveMember saves a family member to the database (create or update)
+func (a *AdministratorImpl) SaveMember(db *gorm.DB, log logrus.FieldLogger) func(member FamilyMember) model.Provider[FamilyMember] {
+	return func(member FamilyMember) model.Provider[FamilyMember] {
+		return func() (FamilyMember, error) {
+			log.WithFields(logrus.Fields{
+				"characterId": member.CharacterId(),
+				"id":          member.Id(),
+			}).Debug("Saving family member to database")
+
+			entity := ToEntity(member)
+
+			// Use Save which handles both create and update
+			if err := db.Save(&entity).Error; err != nil {
+				return FamilyMember{}, err
+			}
+
+			return Make(entity)
+		}
+	}
+}
+
+// DeleteMember deletes a family member from the database
+func (a *AdministratorImpl) DeleteMember(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32) model.Provider[bool] {
+	return func(characterId uint32) model.Provider[bool] {
+		return func() (bool, error) {
+			log.WithFields(logrus.Fields{
+				"characterId": characterId,
+			}).Debug("Deleting family member from database")
+
+			result := db.Where("character_id = ?", characterId).Delete(&Entity{})
+			if result.Error != nil {
+				return false, result.Error
+			}
+
+			return result.RowsAffected > 0, nil
 		}
 	}
 }

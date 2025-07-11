@@ -86,6 +86,11 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 
 			// Validate input
 			if seniorId == juniorId {
+				if buf != nil {
+					if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "SELF_REFERENCE", ErrSelfReference.Error())); putErr != nil {
+						p.log.WithError(putErr).Error("Failed to add link error event to buffer")
+					}
+				}
 				return FamilyMember{}, ErrSelfReference
 			}
 
@@ -93,6 +98,11 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 			seniorModel, err := GetByCharacterIdProvider(seniorId)(p.db)()
 			if err != nil {
 				if errors.Is(err, ErrMemberNotFound) {
+					if buf != nil {
+						if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "SENIOR_NOT_FOUND", ErrSeniorNotFound.Error())); putErr != nil {
+							p.log.WithError(putErr).Error("Failed to add link error event to buffer")
+						}
+					}
 					return FamilyMember{}, ErrSeniorNotFound
 				}
 				return FamilyMember{}, err
@@ -100,6 +110,11 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 
 			// Check if senior can add more juniors
 			if !seniorModel.CanAddJunior() {
+				if buf != nil {
+					if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "TOO_MANY_JUNIORS", ErrSeniorHasTooManyJuniors.Error())); putErr != nil {
+						p.log.WithError(putErr).Error("Failed to add link error event to buffer")
+					}
+				}
 				return FamilyMember{}, ErrSeniorHasTooManyJuniors
 			}
 
@@ -107,6 +122,11 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 			juniorModel, err := GetByCharacterIdProvider(juniorId)(p.db)()
 			if err != nil {
 				if errors.Is(err, ErrMemberNotFound) {
+					if buf != nil {
+						if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "JUNIOR_NOT_FOUND", ErrJuniorNotFound.Error())); putErr != nil {
+							p.log.WithError(putErr).Error("Failed to add link error event to buffer")
+						}
+					}
 					return FamilyMember{}, ErrJuniorNotFound
 				}
 				return FamilyMember{}, err
@@ -114,16 +134,31 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 
 			// Check if junior already has a senior
 			if juniorModel.HasSenior() {
+				if buf != nil {
+					if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "JUNIOR_ALREADY_LINKED", ErrJuniorAlreadyLinked.Error())); putErr != nil {
+						p.log.WithError(putErr).Error("Failed to add link error event to buffer")
+					}
+				}
 				return FamilyMember{}, ErrJuniorAlreadyLinked
 			}
 
 			// Validate level difference
 			if !seniorModel.ValidateLevelDifference(juniorModel.Level()) {
+				if buf != nil {
+					if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "LEVEL_DIFFERENCE_TOO_LARGE", ErrLevelDifferenceTooLarge.Error())); putErr != nil {
+						p.log.WithError(putErr).Error("Failed to add link error event to buffer")
+					}
+				}
 				return FamilyMember{}, ErrLevelDifferenceTooLarge
 			}
 
 			// Validate same world
 			if !seniorModel.IsSameWorld(juniorModel.World()) {
+				if buf != nil {
+					if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "NOT_ON_SAME_MAP", ErrNotOnSameMap.Error())); putErr != nil {
+						p.log.WithError(putErr).Error("Failed to add link error event to buffer")
+					}
+				}
 				return FamilyMember{}, ErrNotOnSameMap
 			}
 
@@ -163,7 +198,24 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 				return nil
 			})
 			
-			return result, err
+			if err != nil {
+				// Add error event to buffer if provided
+				if buf != nil {
+					if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "ADD_JUNIOR_FAILED", err.Error())); putErr != nil {
+						p.log.WithError(putErr).Error("Failed to add link error event to buffer")
+					}
+				}
+				return FamilyMember{}, err
+			}
+			
+			// Add success event to buffer if provided
+			if buf != nil {
+				if putErr := buf.Put("FAMILY_STATUS", p.eventProducer.LinkCreatedEventProvider("", seniorId, seniorId, juniorId)); putErr != nil {
+					p.log.WithError(putErr).Error("Failed to add link created event to buffer")
+				}
+			}
+			
+			return result, nil
 		}
 	}
 }
@@ -336,7 +388,26 @@ func (p *ProcessorImpl) BreakLink(buf *message.Buffer) func(characterId uint32, 
 			return nil
 		})
 		
-		return updatedMembers, err
+		if err != nil {
+			return []FamilyMember{}, err
+		}
+		
+		// Add link broken events to buffer for all affected relationships
+		if buf != nil {
+			if memberModel.HasSenior() {
+				if putErr := buf.Put("FAMILY_STATUS", p.eventProducer.LinkBrokenEventProvider("", characterId, *memberModel.SeniorId(), characterId, reason)); putErr != nil {
+					p.log.WithError(putErr).Error("Failed to add link broken event to buffer for senior")
+				}
+			}
+			
+			for _, juniorId := range memberModel.JuniorIds() {
+				if putErr := buf.Put("FAMILY_STATUS", p.eventProducer.LinkBrokenEventProvider("", characterId, characterId, juniorId, reason)); putErr != nil {
+					p.log.WithError(putErr).Error("Failed to add link broken event to buffer for junior")
+				}
+			}
+		}
+		
+		return updatedMembers, nil
 		}
 	}
 }
@@ -359,6 +430,12 @@ func (p *ProcessorImpl) AwardRep(buf *message.Buffer) func(characterId uint32, a
 
 		// Check if member can receive more rep today
 		if !memberModel.CanReceiveRep(amount) {
+			// Add error event to buffer if provided
+			if buf != nil {
+				if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.RepErrorEventProvider("", characterId, "AWARD_REP_FAILED", ErrRepCapExceeded.Error(), amount)); putErr != nil {
+					p.log.WithError(putErr).Error("Failed to add rep error event to buffer")
+				}
+			}
 			return FamilyMember{}, ErrRepCapExceeded
 		}
 
@@ -374,6 +451,13 @@ func (p *ProcessorImpl) AwardRep(buf *message.Buffer) func(characterId uint32, a
 
 		if _, err := p.administrator.SaveMember(p.db, p.log)(updatedMember)(); err != nil {
 			return FamilyMember{}, err
+		}
+
+		// Add success event to buffer if provided
+		if buf != nil {
+			if putErr := buf.Put("FAMILY_REPUTATION", p.eventProducer.RepGainedEventProvider("", characterId, amount, updatedMember.DailyRep(), source)); putErr != nil {
+				p.log.WithError(putErr).Error("Failed to add rep gained event to buffer")
+			}
 		}
 
 		return updatedMember, nil
@@ -399,6 +483,12 @@ func (p *ProcessorImpl) DeductRep(buf *message.Buffer) func(characterId uint32, 
 
 		// Check if member has enough rep
 		if memberModel.Rep() < amount {
+			// Add error event to buffer if provided
+			if buf != nil {
+				if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.RepErrorEventProvider("", characterId, "DEDUCT_REP_FAILED", ErrInsufficientRep.Error(), amount)); putErr != nil {
+					p.log.WithError(putErr).Error("Failed to add rep error event to buffer")
+				}
+			}
 			return FamilyMember{}, ErrInsufficientRep
 		}
 
@@ -413,6 +503,13 @@ func (p *ProcessorImpl) DeductRep(buf *message.Buffer) func(characterId uint32, 
 
 		if _, err := p.administrator.SaveMember(p.db, p.log)(updatedMember)(); err != nil {
 			return FamilyMember{}, err
+		}
+
+		// Add success event to buffer if provided
+		if buf != nil {
+			if putErr := buf.Put("FAMILY_REPUTATION", p.eventProducer.RepRedeemedEventProvider("", characterId, amount, reason)); putErr != nil {
+				p.log.WithError(putErr).Error("Failed to add rep redeemed event to buffer")
+			}
 		}
 
 		return updatedMember, nil
@@ -511,155 +608,60 @@ func (p *ProcessorImpl) UpdateLevel(buf *message.Buffer) func(characterId uint32
 
 // AddJuniorAndEmit adds a junior and emits appropriate events
 func (p *ProcessorImpl) AddJuniorAndEmit(transactionId string, seniorId uint32, juniorId uint32) model.Provider[FamilyMember] {
-	emitFunc := message.EmitWithResult[FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) (FamilyMember, error) {
-		return func(struct{}) (FamilyMember, error) {
-			// Execute business logic with message buffer
-			result, err := p.AddJunior(buf)(seniorId, juniorId)()
-			if err != nil {
-				// Add error event to buffer
-				if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider(transactionId, seniorId, seniorId, juniorId, "ADD_JUNIOR_FAILED", err.Error())); putErr != nil {
-					p.log.WithError(putErr).Error("Failed to add link error event to buffer")
-				}
-				return FamilyMember{}, err
-			}
-			
-			// Add success event to buffer
-			if putErr := buf.Put("FAMILY_STATUS", p.eventProducer.LinkCreatedEventProvider(transactionId, seniorId, seniorId, juniorId)); putErr != nil {
-				p.log.WithError(putErr).Error("Failed to add link created event to buffer")
-			}
-			
-			return result, nil
-		}
-	})
 	return func() (FamilyMember, error) {
-		return emitFunc(struct{}{})
+		return message.EmitWithResult[FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) (FamilyMember, error) {
+			return func(struct{}) (FamilyMember, error) {
+				// Use base function which handles event emission
+				return p.AddJunior(buf)(seniorId, juniorId)()
+			}
+		})(struct{}{})
 	}
 }
 
 // RemoveMemberAndEmit removes a member and emits appropriate events
 func (p *ProcessorImpl) RemoveMemberAndEmit(transactionId string, characterId uint32, reason string) model.Provider[[]FamilyMember] {
-	emitFunc := message.EmitWithResult[[]FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) ([]FamilyMember, error) {
-		return func(struct{}) ([]FamilyMember, error) {
-			// Get member info before removal for event emission
-			memberModel, err := GetByCharacterIdProvider(characterId)(p.db)()
-			if err != nil {
-				return []FamilyMember{}, err
-			}
-			
-			// Execute business logic with message buffer
-			result, err := p.RemoveMember(buf)(characterId, reason)()
-			if err != nil {
-				return []FamilyMember{}, err
-			}
-			
-			// Add link broken events to buffer for all affected relationships
-			if memberModel.HasSenior() {
-				if putErr := buf.Put("FAMILY_STATUS", p.eventProducer.LinkBrokenEventProvider(transactionId, characterId, *memberModel.SeniorId(), characterId, reason)); putErr != nil {
-					p.log.WithError(putErr).Error("Failed to add link broken event to buffer for senior")
-				}
-			}
-			
-			for _, juniorId := range memberModel.JuniorIds() {
-				if putErr := buf.Put("FAMILY_STATUS", p.eventProducer.LinkBrokenEventProvider(transactionId, characterId, characterId, juniorId, reason)); putErr != nil {
-					p.log.WithError(putErr).Error("Failed to add link broken event to buffer for junior")
-				}
-			}
-			
-			return result, nil
-		}
-	})
 	return func() ([]FamilyMember, error) {
-		return emitFunc(struct{}{})
+		return message.EmitWithResult[[]FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) ([]FamilyMember, error) {
+			return func(struct{}) ([]FamilyMember, error) {
+				// Use base function which handles event emission
+				return p.RemoveMember(buf)(characterId, reason)()
+			}
+		})(struct{}{})
 	}
 }
 
 // BreakLinkAndEmit breaks a link and emits appropriate events
 func (p *ProcessorImpl) BreakLinkAndEmit(transactionId string, characterId uint32, reason string) model.Provider[[]FamilyMember] {
-	emitFunc := message.EmitWithResult[[]FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) ([]FamilyMember, error) {
-		return func(struct{}) ([]FamilyMember, error) {
-			// Get member info before breaking links for event emission
-			memberModel, err := GetByCharacterIdProvider(characterId)(p.db)()
-			if err != nil {
-				return []FamilyMember{}, err
-			}
-			
-			// Execute business logic with message buffer
-			result, err := p.BreakLink(buf)(characterId, reason)()
-			if err != nil {
-				return []FamilyMember{}, err
-			}
-			
-			// Add link broken events to buffer for all affected relationships
-			if memberModel.HasSenior() {
-				if putErr := buf.Put("FAMILY_STATUS", p.eventProducer.LinkBrokenEventProvider(transactionId, characterId, *memberModel.SeniorId(), characterId, reason)); putErr != nil {
-					p.log.WithError(putErr).Error("Failed to add link broken event to buffer for senior")
-				}
-			}
-			
-			for _, juniorId := range memberModel.JuniorIds() {
-				if putErr := buf.Put("FAMILY_STATUS", p.eventProducer.LinkBrokenEventProvider(transactionId, characterId, characterId, juniorId, reason)); putErr != nil {
-					p.log.WithError(putErr).Error("Failed to add link broken event to buffer for junior")
-				}
-			}
-			
-			return result, nil
-		}
-	})
 	return func() ([]FamilyMember, error) {
-		return emitFunc(struct{}{})
+		return message.EmitWithResult[[]FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) ([]FamilyMember, error) {
+			return func(struct{}) ([]FamilyMember, error) {
+				// Use base function which handles event emission
+				return p.BreakLink(buf)(characterId, reason)()
+			}
+		})(struct{}{})
 	}
 }
 
 // AwardRepAndEmit awards reputation and emits appropriate events
 func (p *ProcessorImpl) AwardRepAndEmit(transactionId string, characterId uint32, amount uint32, source string) model.Provider[FamilyMember] {
-	emitFunc := message.EmitWithResult[FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) (FamilyMember, error) {
-		return func(struct{}) (FamilyMember, error) {
-			// Execute business logic with message buffer
-			result, err := p.AwardRep(buf)(characterId, amount, source)()
-			if err != nil {
-				// Add error event to buffer
-				if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.RepErrorEventProvider(transactionId, characterId, "AWARD_REP_FAILED", err.Error(), amount)); putErr != nil {
-					p.log.WithError(putErr).Error("Failed to add rep error event to buffer")
-				}
-				return FamilyMember{}, err
-			}
-			
-			// Add success event to buffer
-			if putErr := buf.Put("FAMILY_REPUTATION", p.eventProducer.RepGainedEventProvider(transactionId, characterId, amount, result.DailyRep(), source)); putErr != nil {
-				p.log.WithError(putErr).Error("Failed to add rep gained event to buffer")
-			}
-			
-			return result, nil
-		}
-	})
 	return func() (FamilyMember, error) {
-		return emitFunc(struct{}{})
+		return message.EmitWithResult[FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) (FamilyMember, error) {
+			return func(struct{}) (FamilyMember, error) {
+				// Use base function which handles event emission
+				return p.AwardRep(buf)(characterId, amount, source)()
+			}
+		})(struct{}{})
 	}
 }
 
 // DeductRepAndEmit deducts reputation and emits appropriate events
 func (p *ProcessorImpl) DeductRepAndEmit(transactionId string, characterId uint32, amount uint32, reason string) model.Provider[FamilyMember] {
-	emitFunc := message.EmitWithResult[FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) (FamilyMember, error) {
-		return func(struct{}) (FamilyMember, error) {
-			// Execute business logic with message buffer
-			result, err := p.DeductRep(buf)(characterId, amount, reason)()
-			if err != nil {
-				// Add error event to buffer
-				if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.RepErrorEventProvider(transactionId, characterId, "DEDUCT_REP_FAILED", err.Error(), amount)); putErr != nil {
-					p.log.WithError(putErr).Error("Failed to add rep error event to buffer")
-				}
-				return FamilyMember{}, err
-			}
-			
-			// Add success event to buffer
-			if putErr := buf.Put("FAMILY_REPUTATION", p.eventProducer.RepRedeemedEventProvider(transactionId, characterId, amount, reason)); putErr != nil {
-				p.log.WithError(putErr).Error("Failed to add rep redeemed event to buffer")
-			}
-			
-			return result, nil
-		}
-	})
 	return func() (FamilyMember, error) {
-		return emitFunc(struct{}{})
+		return message.EmitWithResult[FamilyMember, struct{}](p.producer)(func(buf *message.Buffer) func(struct{}) (FamilyMember, error) {
+			return func(struct{}) (FamilyMember, error) {
+				// Use base function which handles event emission
+				return p.DeductRep(buf)(characterId, amount, reason)()
+			}
+		})(struct{}{})
 	}
 }

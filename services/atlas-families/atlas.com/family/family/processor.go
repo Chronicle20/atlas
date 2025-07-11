@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -108,19 +107,20 @@ func (p *ProcessorImpl) AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seni
 			}
 
 			// Begin transaction
-			return db.Transaction(func(tx *gorm.DB) (FamilyMember, error) {
+			var result FamilyMember
+			err = db.Transaction(func(tx *gorm.DB) error {
 				// Update senior - add junior
 				updatedSenior, err := seniorModel.Builder().
 					AddJunior(juniorId).
 					Touch().
 					Build()
 				if err != nil {
-					return FamilyMember{}, err
+					return err
 				}
 
 				seniorEntity = ToEntity(updatedSenior)
 				if err := tx.Save(&seniorEntity).Error; err != nil {
-					return FamilyMember{}, err
+					return err
 				}
 
 				// Update junior - set senior
@@ -129,16 +129,19 @@ func (p *ProcessorImpl) AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seni
 					Touch().
 					Build()
 				if err != nil {
-					return FamilyMember{}, err
+					return err
 				}
 
 				juniorEntity = ToEntity(updatedJunior)
 				if err := tx.Save(&juniorEntity).Error; err != nil {
-					return FamilyMember{}, err
+					return err
 				}
 
-				return updatedSenior, nil
+				result = updatedSenior
+				return nil
 			})
+			
+			return result, err
 		}
 	}
 }
@@ -166,23 +169,25 @@ func (p *ProcessorImpl) RemoveMember(db *gorm.DB, log logrus.FieldLogger) func(c
 				return []FamilyMember{}, err
 			}
 
-			return db.Transaction(func(tx *gorm.DB) ([]FamilyMember, error) {
-				var updatedMembers []FamilyMember
-
+			var updatedMembers []FamilyMember
+			err = db.Transaction(func(tx *gorm.DB) error {
 				// If member has a senior, remove from senior's junior list
 				if memberModel.HasSenior() {
 					var seniorEntity Entity
 					if err := tx.Where("character_id = ?", *memberModel.SeniorId()).First(&seniorEntity).Error; err == nil {
 						seniorModel, err := Make(seniorEntity)
 						if err == nil {
-							updatedSenior := seniorModel.Builder().
+							updatedSenior, err := seniorModel.Builder().
 								RemoveJunior(characterId).
 								Touch().
 								Build()
+							if err != nil {
+								return err
+							}
 
 							seniorEntity = ToEntity(updatedSenior)
 							if err := tx.Save(&seniorEntity).Error; err != nil {
-								return []FamilyMember{}, err
+								return err
 							}
 							updatedMembers = append(updatedMembers, updatedSenior)
 						}
@@ -196,14 +201,17 @@ func (p *ProcessorImpl) RemoveMember(db *gorm.DB, log logrus.FieldLogger) func(c
 						for _, juniorEntity := range juniorEntities {
 							juniorModel, err := Make(juniorEntity)
 							if err == nil {
-								updatedJunior := juniorModel.Builder().
+								updatedJunior, err := juniorModel.Builder().
 									ClearSeniorId().
 									Touch().
 									Build()
+								if err != nil {
+									return err
+								}
 
 								juniorEntity = ToEntity(updatedJunior)
 								if err := tx.Save(&juniorEntity).Error; err != nil {
-									return []FamilyMember{}, err
+									return err
 								}
 								updatedMembers = append(updatedMembers, updatedJunior)
 							}
@@ -213,11 +221,13 @@ func (p *ProcessorImpl) RemoveMember(db *gorm.DB, log logrus.FieldLogger) func(c
 
 				// Remove the member
 				if err := tx.Delete(&memberEntity).Error; err != nil {
-					return []FamilyMember{}, err
+					return err
 				}
 
-				return updatedMembers, nil
+				return nil
 			})
+			
+			return updatedMembers, err
 		}
 	}
 }
@@ -250,37 +260,42 @@ func (p *ProcessorImpl) BreakLink(db *gorm.DB, log logrus.FieldLogger) func(char
 				return []FamilyMember{}, ErrNoLinkToBreak
 			}
 
-			return db.Transaction(func(tx *gorm.DB) ([]FamilyMember, error) {
-				var updatedMembers []FamilyMember
-
+			var updatedMembers []FamilyMember
+			err = db.Transaction(func(tx *gorm.DB) error {
 				// If member has a senior, remove from senior's junior list
 				if memberModel.HasSenior() {
 					var seniorEntity Entity
 					if err := tx.Where("character_id = ?", *memberModel.SeniorId()).First(&seniorEntity).Error; err == nil {
 						seniorModel, err := Make(seniorEntity)
 						if err == nil {
-							updatedSenior := seniorModel.Builder().
+							updatedSenior, err := seniorModel.Builder().
 								RemoveJunior(characterId).
 								Touch().
 								Build()
+							if err != nil {
+								return err
+							}
 
 							seniorEntity = ToEntity(updatedSenior)
 							if err := tx.Save(&seniorEntity).Error; err != nil {
-								return []FamilyMember{}, err
+								return err
 							}
 							updatedMembers = append(updatedMembers, updatedSenior)
 						}
 					}
 
 					// Clear member's senior reference
-					updatedMember := memberModel.Builder().
+					updatedMember, err := memberModel.Builder().
 						ClearSeniorId().
 						Touch().
 						Build()
+					if err != nil {
+						return err
+					}
 
 					memberEntity = ToEntity(updatedMember)
 					if err := tx.Save(&memberEntity).Error; err != nil {
-						return []FamilyMember{}, err
+						return err
 					}
 					updatedMembers = append(updatedMembers, updatedMember)
 				}
@@ -292,14 +307,17 @@ func (p *ProcessorImpl) BreakLink(db *gorm.DB, log logrus.FieldLogger) func(char
 						for _, juniorEntity := range juniorEntities {
 							juniorModel, err := Make(juniorEntity)
 							if err == nil {
-								updatedJunior := juniorModel.Builder().
+								updatedJunior, err := juniorModel.Builder().
 									ClearSeniorId().
 									Touch().
 									Build()
+								if err != nil {
+									return err
+								}
 
 								juniorEntity = ToEntity(updatedJunior)
 								if err := tx.Save(&juniorEntity).Error; err != nil {
-									return []FamilyMember{}, err
+									return err
 								}
 								updatedMembers = append(updatedMembers, updatedJunior)
 							}
@@ -307,14 +325,17 @@ func (p *ProcessorImpl) BreakLink(db *gorm.DB, log logrus.FieldLogger) func(char
 					}
 
 					// Clear member's junior list
-					updatedMember := memberModel.Builder().
+					updatedMember, err := memberModel.Builder().
 						SetJuniorIds([]uint32{}).
 						Touch().
 						Build()
+					if err != nil {
+						return err
+					}
 
 					memberEntity = ToEntity(updatedMember)
 					if err := tx.Save(&memberEntity).Error; err != nil {
-						return []FamilyMember{}, err
+						return err
 					}
 
 					// Update the member in the result
@@ -329,8 +350,10 @@ func (p *ProcessorImpl) BreakLink(db *gorm.DB, log logrus.FieldLogger) func(char
 					}
 				}
 
-				return updatedMembers, nil
+				return nil
 			})
+			
+			return updatedMembers, err
 		}
 	}
 }
@@ -365,11 +388,14 @@ func (p *ProcessorImpl) AwardRep(db *gorm.DB, log logrus.FieldLogger) func(chara
 			}
 
 			// Update member with new rep
-			updatedMember := memberModel.Builder().
+			updatedMember, err := memberModel.Builder().
 				AddRep(amount).
 				AddDailyRep(amount).
 				Touch().
 				Build()
+			if err != nil {
+				return FamilyMember{}, err
+			}
 
 			memberEntity = ToEntity(updatedMember)
 			if err := db.Save(&memberEntity).Error; err != nil {
@@ -411,10 +437,13 @@ func (p *ProcessorImpl) DeductRep(db *gorm.DB, log logrus.FieldLogger) func(char
 			}
 
 			// Update member with deducted rep
-			updatedMember := memberModel.Builder().
+			updatedMember, err := memberModel.Builder().
 				SubtractRep(amount).
 				Touch().
 				Build()
+			if err != nil {
+				return FamilyMember{}, err
+			}
 
 			memberEntity = ToEntity(updatedMember)
 			if err := db.Save(&memberEntity).Error; err != nil {
@@ -474,12 +503,15 @@ func (p *ProcessorImpl) UpdateLocation(db *gorm.DB, log logrus.FieldLogger) func
 			}
 
 			// Update member location
-			updatedMember := memberModel.Builder().
+			updatedMember, err := memberModel.Builder().
 				SetWorld(world).
 				SetChannel(channel).
 				SetMapId(mapId).
 				Touch().
 				Build()
+			if err != nil {
+				return FamilyMember{}, err
+			}
 
 			memberEntity = ToEntity(updatedMember)
 			if err := db.Save(&memberEntity).Error; err != nil {
@@ -520,10 +552,13 @@ func (p *ProcessorImpl) UpdateLevel(db *gorm.DB, log logrus.FieldLogger) func(ch
 			}
 
 			// Update member level
-			updatedMember := memberModel.Builder().
+			updatedMember, err := memberModel.Builder().
 				SetLevel(level).
 				Touch().
 				Build()
+			if err != nil {
+				return FamilyMember{}, err
+			}
 
 			memberEntity = ToEntity(updatedMember)
 			if err := db.Save(&memberEntity).Error; err != nil {

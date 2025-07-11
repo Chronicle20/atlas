@@ -1,7 +1,6 @@
 package family
 
 import (
-	"atlas-family/database"
 	"errors"
 	"time"
 

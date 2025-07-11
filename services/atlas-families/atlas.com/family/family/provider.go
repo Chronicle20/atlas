@@ -48,7 +48,7 @@ func GetByTenantIdProvider(tenantId uuid.UUID) database.EntityProvider[[]FamilyM
 			if err := db.Where("tenant_id = ?", tenantId).Find(&entities).Error; err != nil {
 				return []FamilyMember{}, err
 			}
-			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())
+			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())()
 		}
 	}
 }
@@ -61,7 +61,7 @@ func GetBySeniorIdProvider(seniorId uint32) database.EntityProvider[[]FamilyMemb
 			if err := db.Where("senior_id = ?", seniorId).Find(&entities).Error; err != nil {
 				return []FamilyMember{}, err
 			}
-			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())
+			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())()
 		}
 	}
 }
@@ -135,7 +135,7 @@ func GetByWorldAndMapProvider(world byte, mapId uint32) database.EntityProvider[
 			if err := db.Where("world = ? AND map_id = ?", world, mapId).Find(&entities).Error; err != nil {
 				return []FamilyMember{}, err
 			}
-			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())
+			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())()
 		}
 	}
 }
@@ -148,7 +148,7 @@ func GetActiveMembersProvider() database.EntityProvider[[]FamilyMember] {
 			if err := db.Where("daily_rep > 0").Find(&entities).Error; err != nil {
 				return []FamilyMember{}, err
 			}
-			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())
+			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())()
 		}
 	}
 }
@@ -161,7 +161,7 @@ func GetMembersNeedingResetProvider() database.EntityProvider[[]FamilyMember] {
 			if err := db.Where("daily_rep > 0").Find(&entities).Error; err != nil {
 				return []FamilyMember{}, err
 			}
-			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())
+			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())()
 		}
 	}
 }

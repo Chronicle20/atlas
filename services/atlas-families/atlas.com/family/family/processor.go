@@ -261,25 +261,21 @@ func (p *ProcessorImpl) BreakLink(buf *message.Buffer) func(characterId uint32, 
 		err = p.db.Transaction(func(tx *gorm.DB) error {
 			// If member has a senior, remove from senior's junior list
 			if memberModel.HasSenior() {
-				var seniorEntity Entity
-				if err := tx.Where("character_id = ?", *memberModel.SeniorId()).First(&seniorEntity).Error; err == nil {
-					seniorModel, err := Make(seniorEntity)
-					if err == nil {
-						updatedSenior, err := seniorModel.Builder().
-							RemoveJunior(characterId).
-							Touch().
-							Build()
-						if err != nil {
-							return err
-						}
-
-						seniorEntity = ToEntity(updatedSenior)
-						if err := tx.Save(&seniorEntity).Error; err != nil {
-							return err
-						}
-						updatedMembers = append(updatedMembers, updatedSenior)
+				if seniorModel, err := GetByCharacterIdProvider(*memberModel.SeniorId())(tx)(); err == nil {
+					updatedSenior, err := seniorModel.Builder().
+						RemoveJunior(characterId).
+						Touch().
+						Build()
+					if err != nil {
+						return err
 					}
+
+					if _, err := p.administrator.SaveMember(tx, p.log)(updatedSenior)(); err != nil {
+						return err
+					}
+					updatedMembers = append(updatedMembers, updatedSenior)
 				}
+			}
 
 				// Clear member's senior reference
 				updatedMember, err := memberModel.Builder().
@@ -433,18 +429,12 @@ func (p *ProcessorImpl) ResetDailyRep(buf *message.Buffer) func() model.Provider
 		return func() (int64, error) {
 		p.log.Info("Resetting daily reputation for all members")
 
-		result := p.db.Model(&Entity{}).
-			Where("daily_rep > 0").
-			Updates(map[string]interface{}{
-				"daily_rep":  0,
-				"updated_at": time.Now(),
-			})
-
-		if result.Error != nil {
-			return 0, result.Error
+		result, err := p.administrator.BatchResetDailyRep(p.db, p.log)()
+		if err != nil {
+			return 0, err
 		}
 
-		return result.RowsAffected, nil
+		return result.AffectedCount, nil
 		}
 	}
 }

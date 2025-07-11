@@ -84,17 +84,15 @@ func (a *AdministratorImpl) CreateMember(db *gorm.DB, log logrus.FieldLogger) fu
 }
 
 // AddJuniorWithValidation adds a junior with full validation and member creation if needed
-func (a *AdministratorImpl) AddJuniorWithValidation(db *gorm.DB, log logrus.FieldLogger) func(seniorId uint32, juniorId uint32, tenantId uuid.UUID, juniorLevel uint16, juniorWorld byte, juniorChannel byte, juniorMapId uint32) model.Provider[[]FamilyMember] {
-	return func(seniorId uint32, juniorId uint32, tenantId uuid.UUID, juniorLevel uint16, juniorWorld byte, juniorChannel byte, juniorMapId uint32) model.Provider[[]FamilyMember] {
+func (a *AdministratorImpl) AddJuniorWithValidation(db *gorm.DB, log logrus.FieldLogger) func(seniorId uint32, juniorId uint32, tenantId uuid.UUID, juniorLevel uint16, juniorWorld byte) model.Provider[[]FamilyMember] {
+	return func(seniorId uint32, juniorId uint32, tenantId uuid.UUID, juniorLevel uint16, juniorWorld byte) model.Provider[[]FamilyMember] {
 		return func() ([]FamilyMember, error) {
 			log.WithFields(logrus.Fields{
-				"seniorId":      seniorId,
-				"juniorId":      juniorId,
-				"tenantId":      tenantId,
-				"juniorLevel":   juniorLevel,
-				"juniorWorld":   juniorWorld,
-				"juniorChannel": juniorChannel,
-				"juniorMapId":   juniorMapId,
+				"seniorId":    seniorId,
+				"juniorId":    juniorId,
+				"tenantId":    tenantId,
+				"juniorLevel": juniorLevel,
+				"juniorWorld": juniorWorld,
 			}).Info("Adding junior with validation")
 
 			err := db.Transaction(func(tx *gorm.DB) error {
@@ -109,7 +107,7 @@ func (a *AdministratorImpl) AddJuniorWithValidation(db *gorm.DB, log logrus.Fiel
 				if err != nil {
 					if errors.Is(err, ErrMemberNotFound) {
 						// Create junior member
-						junior, err = a.CreateMember(tx, log)(juniorId, tenantId, juniorLevel, juniorWorld, juniorChannel, juniorMapId)()
+						junior, err = a.CreateMember(tx, log)(juniorId, tenantId, juniorLevel, juniorWorld)()
 						if err != nil {
 							return err
 						}
@@ -153,7 +151,7 @@ func (a *AdministratorImpl) AddJuniorWithValidation(db *gorm.DB, log logrus.Fiel
 				}
 
 				// Update junior to set senior
-				junior, err := GetByCharacterIdProvider(juniorId)(tx)()
+				junior, err = GetByCharacterIdProvider(juniorId)(tx)()
 				if err != nil {
 					return err
 				}
@@ -422,8 +420,8 @@ func (a *AdministratorImpl) BatchResetDailyRep(db *gorm.DB, log logrus.FieldLogg
 }
 
 // EnsureMemberExists ensures a family member exists, creating if necessary
-func (a *AdministratorImpl) EnsureMemberExists(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID, level uint16, world byte, channel byte, mapId uint32) model.Provider[FamilyMember] {
-	return func(characterId uint32, tenantId uuid.UUID, level uint16, world byte, channel byte, mapId uint32) model.Provider[FamilyMember] {
+func (a *AdministratorImpl) EnsureMemberExists(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID, level uint16, world byte) model.Provider[FamilyMember] {
+	return func(characterId uint32, tenantId uuid.UUID, level uint16, world byte) model.Provider[FamilyMember] {
 		return func() (FamilyMember, error) {
 			log.WithFields(logrus.Fields{
 				"characterId": characterId,
@@ -435,7 +433,7 @@ func (a *AdministratorImpl) EnsureMemberExists(db *gorm.DB, log logrus.FieldLogg
 			if err != nil {
 				if errors.Is(err, ErrMemberNotFound) {
 					// Create new member
-					return a.CreateMember(db, log)(characterId, tenantId, level, world, channel, mapId)()
+					return a.CreateMember(db, log)(characterId, tenantId, level, world)()
 				}
 				return FamilyMember{}, err
 			}
@@ -450,14 +448,6 @@ func (a *AdministratorImpl) EnsureMemberExists(db *gorm.DB, log logrus.FieldLogg
 			}
 			if member.World() != world {
 				builder = builder.SetWorld(world)
-				needsUpdate = true
-			}
-			if member.Channel() != channel {
-				builder = builder.SetChannel(channel)
-				needsUpdate = true
-			}
-			if member.MapId() != mapId {
-				builder = builder.SetMapId(mapId)
 				needsUpdate = true
 			}
 

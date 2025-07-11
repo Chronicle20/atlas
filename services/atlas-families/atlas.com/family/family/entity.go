@@ -18,8 +18,6 @@ type Entity struct {
 	DailyRep    uint32    `gorm:"default:0" json:"dailyRep"`
 	Level       uint16    `gorm:"not null" json:"level"`
 	World       byte      `gorm:"not null" json:"world"`
-	Channel     byte      `gorm:"not null" json:"channel"`
-	MapId       uint32    `gorm:"not null" json:"mapId"`
 	CreatedAt   time.Time `gorm:"not null" json:"createdAt"`
 	UpdatedAt   time.Time `gorm:"not null" json:"updatedAt"`
 }
@@ -44,8 +42,8 @@ func Migration(db *gorm.DB) error {
 		CREATE INDEX IF NOT EXISTS idx_family_members_senior_id 
 		ON family_members(senior_id) WHERE senior_id IS NOT NULL;
 		
-		CREATE INDEX IF NOT EXISTS idx_family_members_world_map 
-		ON family_members(world, map_id);
+		CREATE INDEX IF NOT EXISTS idx_family_members_world 
+		ON family_members(world);
 		
 		CREATE INDEX IF NOT EXISTS idx_family_members_updated_at 
 		ON family_members(updated_at);
@@ -124,8 +122,6 @@ func Make(entity Entity) (FamilyMember, error) {
 		dailyRep:    entity.DailyRep,
 		level:       entity.Level,
 		world:       entity.World,
-		channel:     entity.Channel,
-		mapId:       entity.MapId,
 		createdAt:   entity.CreatedAt,
 		updatedAt:   entity.UpdatedAt,
 	}, nil
@@ -147,8 +143,6 @@ func ToEntity(fm FamilyMember) Entity {
 		DailyRep:    fm.dailyRep,
 		Level:       fm.level,
 		World:       fm.world,
-		Channel:     fm.channel,
-		MapId:       fm.mapId,
 		CreatedAt:   fm.createdAt,
 		UpdatedAt:   fm.updatedAt,
 	}

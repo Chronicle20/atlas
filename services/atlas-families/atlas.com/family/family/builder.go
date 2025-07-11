@@ -7,14 +7,12 @@ import (
 )
 
 // NewBuilder creates a new builder with required parameters
-func NewBuilder(characterId uint32, tenantId uuid.UUID, level uint16, world byte, channel byte, mapId uint32) *Builder {
+func NewBuilder(characterId uint32, tenantId uuid.UUID, level uint16, world byte) *Builder {
 	return &Builder{
 		characterId: characterId,
 		tenantId:    tenantId,
 		level:       level,
 		world:       world,
-		channel:     channel,
-		mapId:       mapId,
 		juniorIds:   []uint32{},
 		createdAt:   time.Now(),
 		updatedAt:   time.Now(),
@@ -104,15 +102,6 @@ func (b *Builder) SetWorld(world byte) *Builder {
 	return b
 }
 
-func (b *Builder) SetChannel(channel byte) *Builder {
-	b.channel = channel
-	return b
-}
-
-func (b *Builder) SetMapId(mapId uint32) *Builder {
-	b.mapId = mapId
-	return b
-}
 
 func (b *Builder) SetCreatedAt(createdAt time.Time) *Builder {
 	b.createdAt = createdAt
@@ -171,8 +160,6 @@ func (b *Builder) Build() (FamilyMember, error) {
 		dailyRep:    b.dailyRep,
 		level:       b.level,
 		world:       b.world,
-		channel:     b.channel,
-		mapId:       b.mapId,
 		createdAt:   b.createdAt,
 		updatedAt:   b.updatedAt,
 	}, nil

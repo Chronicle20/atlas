@@ -17,7 +17,7 @@ type Processor interface {
 	AwardRep(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, amount uint32, source string) model.Provider[FamilyMember]
 	DeductRep(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, amount uint32, reason string) model.Provider[FamilyMember]
 	ResetDailyRep(db *gorm.DB, log logrus.FieldLogger) func() model.Provider[int64]
-	UpdateLocation(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, world byte, channel byte, mapId uint32) model.Provider[FamilyMember]
+	UpdateWorld(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, world byte) model.Provider[FamilyMember]
 	UpdateLevel(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, level uint16) model.Provider[FamilyMember]
 }
 
@@ -95,8 +95,8 @@ func (p *ProcessorImpl) AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seni
 				return FamilyMember{}, ErrLevelDifferenceTooLarge
 			}
 
-			// Validate same location
-			if !seniorModel.IsSameLocation(juniorModel.World(), juniorModel.MapId()) {
+			// Validate same world
+			if !seniorModel.IsSameWorld(juniorModel.World()) {
 				return FamilyMember{}, ErrNotOnSameMap
 			}
 
@@ -421,16 +421,14 @@ func (p *ProcessorImpl) ResetDailyRep(db *gorm.DB, log logrus.FieldLogger) func(
 	}
 }
 
-// UpdateLocation updates a member's location information
-func (p *ProcessorImpl) UpdateLocation(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, world byte, channel byte, mapId uint32) model.Provider[FamilyMember] {
-	return func(characterId uint32, world byte, channel byte, mapId uint32) model.Provider[FamilyMember] {
+// UpdateWorld updates a member's world information
+func (p *ProcessorImpl) UpdateWorld(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, world byte) model.Provider[FamilyMember] {
+	return func(characterId uint32, world byte) model.Provider[FamilyMember] {
 		return func() (FamilyMember, error) {
 			log.WithFields(logrus.Fields{
 				"characterId": characterId,
 				"world":       world,
-				"channel":     channel,
-				"mapId":       mapId,
-			}).Info("Updating member location")
+			}).Info("Updating member world")
 
 			// Get the member
 			memberModel, err := GetByCharacterIdProvider(characterId)(db)()
@@ -438,11 +436,9 @@ func (p *ProcessorImpl) UpdateLocation(db *gorm.DB, log logrus.FieldLogger) func
 				return FamilyMember{}, err
 			}
 
-			// Update member location
+			// Update member world
 			updatedMember, err := memberModel.Builder().
 				SetWorld(world).
-				SetChannel(channel).
-				SetMapId(mapId).
 				Touch().
 				Build()
 			if err != nil {

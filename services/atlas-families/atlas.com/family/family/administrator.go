@@ -13,14 +13,14 @@ import (
 // Administrator interface defines high-level data coordination operations
 type Administrator interface {
 	// High-level coordination operations
-	CreateMember(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID, level uint16, world byte, channel byte, mapId uint32) model.Provider[FamilyMember]
-	AddJuniorWithValidation(db *gorm.DB, log logrus.FieldLogger) func(seniorId uint32, juniorId uint32, tenantId uuid.UUID, juniorLevel uint16, juniorWorld byte, juniorChannel byte, juniorMapId uint32) model.Provider[[]FamilyMember]
+	CreateMember(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID, level uint16, world byte) model.Provider[FamilyMember]
+	AddJuniorWithValidation(db *gorm.DB, log logrus.FieldLogger) func(seniorId uint32, juniorId uint32, tenantId uuid.UUID, juniorLevel uint16, juniorWorld byte) model.Provider[[]FamilyMember]
 	RemoveMemberCascade(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, reason string) model.Provider[[]FamilyMember]
 	DissolveSubtree(db *gorm.DB, log logrus.FieldLogger) func(seniorId uint32, reason string) model.Provider[[]FamilyMember]
 	AwardRepToSenior(db *gorm.DB, log logrus.FieldLogger) func(juniorId uint32, amount uint32, source string) model.Provider[FamilyMember]
 	ProcessRepActivity(db *gorm.DB, log logrus.FieldLogger) func(juniorId uint32, activityType string, value uint32) model.Provider[FamilyMember]
 	BatchResetDailyRep(db *gorm.DB, log logrus.FieldLogger) func() model.Provider[BatchResetResult]
-	EnsureMemberExists(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID, level uint16, world byte, channel byte, mapId uint32) model.Provider[FamilyMember]
+	EnsureMemberExists(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID, level uint16, world byte) model.Provider[FamilyMember]
 
 	// Database persistence operations
 	SaveMember(db *gorm.DB, log logrus.FieldLogger) func(member FamilyMember) model.Provider[FamilyMember]
@@ -52,16 +52,14 @@ var (
 )
 
 // CreateMember creates a new family member with proper validation
-func (a *AdministratorImpl) CreateMember(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID, level uint16, world byte, channel byte, mapId uint32) model.Provider[FamilyMember] {
-	return func(characterId uint32, tenantId uuid.UUID, level uint16, world byte, channel byte, mapId uint32) model.Provider[FamilyMember] {
+func (a *AdministratorImpl) CreateMember(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID, level uint16, world byte) model.Provider[FamilyMember] {
+	return func(characterId uint32, tenantId uuid.UUID, level uint16, world byte) model.Provider[FamilyMember] {
 		return func() (FamilyMember, error) {
 			log.WithFields(logrus.Fields{
 				"characterId": characterId,
 				"tenantId":    tenantId,
 				"level":       level,
 				"world":       world,
-				"channel":     channel,
-				"mapId":       mapId,
 			}).Info("Creating new family member")
 
 			// Check if member already exists
@@ -74,7 +72,7 @@ func (a *AdministratorImpl) CreateMember(db *gorm.DB, log logrus.FieldLogger) fu
 			}
 
 			// Create new member using builder
-			member, err := NewBuilder(characterId, tenantId, level, world, channel, mapId).Build()
+			member, err := NewBuilder(characterId, tenantId, level, world).Build()
 			if err != nil {
 				return FamilyMember{}, err
 			}
@@ -121,12 +119,10 @@ func (a *AdministratorImpl) AddJuniorWithValidation(db *gorm.DB, log logrus.Fiel
 				}
 
 				// Update junior's location to match provided data
-				if junior.Level() != juniorLevel || junior.World() != juniorWorld || junior.Channel() != juniorChannel || junior.MapId() != juniorMapId {
+				if junior.Level() != juniorLevel || junior.World() != juniorWorld {
 					updatedJunior, err := junior.Builder().
 						SetLevel(juniorLevel).
 						SetWorld(juniorWorld).
-						SetChannel(juniorChannel).
-						SetMapId(juniorMapId).
 						Touch().
 						Build()
 					if err != nil {

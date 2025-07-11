@@ -127,12 +127,12 @@ func GetFamilyTreeProvider(characterId uint32) database.EntityProvider[[]FamilyM
 	}
 }
 
-// GetByWorldAndMapProvider returns a provider for finding family members on a specific world and map
-func GetByWorldAndMapProvider(world byte, mapId uint32) database.EntityProvider[[]FamilyMember] {
+// GetByWorldProvider returns a provider for finding family members on a specific world
+func GetByWorldProvider(world byte) database.EntityProvider[[]FamilyMember] {
 	return func(db *gorm.DB) model.Provider[[]FamilyMember] {
 		return func() ([]FamilyMember, error) {
 			var entities []Entity
-			if err := db.Where("world = ? AND map_id = ?", world, mapId).Find(&entities).Error; err != nil {
+			if err := db.Where("world = ?", world).Find(&entities).Error; err != nil {
 				return []FamilyMember{}, err
 			}
 			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())()

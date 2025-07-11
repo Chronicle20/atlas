@@ -18,8 +18,6 @@ type FamilyMember struct {
 	dailyRep    uint32
 	level       uint16
 	world       byte
-	channel     byte
-	mapId       uint32
 	createdAt   time.Time
 	updatedAt   time.Time
 }
@@ -64,13 +62,6 @@ func (fm FamilyMember) World() byte {
 	return fm.world
 }
 
-func (fm FamilyMember) Channel() byte {
-	return fm.channel
-}
-
-func (fm FamilyMember) MapId() uint32 {
-	return fm.mapId
-}
 
 func (fm FamilyMember) CreatedAt() time.Time {
 	return fm.createdAt
@@ -121,9 +112,9 @@ func (fm FamilyMember) ValidateLevelDifference(otherLevel uint16) bool {
 	return diff <= 20
 }
 
-// IsSameLocation returns true if the member is on the same world and map
-func (fm FamilyMember) IsSameLocation(world byte, mapId uint32) bool {
-	return fm.world == world && fm.mapId == mapId
+// IsSameWorld returns true if the member is on the same world
+func (fm FamilyMember) IsSameWorld(world byte) bool {
+	return fm.world == world
 }
 
 // IsRepCapReached returns true if daily rep limit is reached
@@ -147,8 +138,6 @@ type Builder struct {
 	dailyRep    uint32
 	level       uint16
 	world       byte
-	channel     byte
-	mapId       uint32
 	createdAt   time.Time
 	updatedAt   time.Time
 }
@@ -165,8 +154,6 @@ func (fm FamilyMember) Builder() *Builder {
 		dailyRep:    fm.dailyRep,
 		level:       fm.level,
 		world:       fm.world,
-		channel:     fm.channel,
-		mapId:       fm.mapId,
 		createdAt:   fm.createdAt,
 		updatedAt:   fm.updatedAt,
 	}

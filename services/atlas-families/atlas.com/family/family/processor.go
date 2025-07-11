@@ -12,14 +12,14 @@ import (
 
 // Processor interface defines the core business logic operations
 type Processor interface {
-	AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seniorId uint32, juniorId uint32) model.Operator[FamilyMember]
-	RemoveMember(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, reason string) model.Operator[[]FamilyMember]
-	BreakLink(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, reason string) model.Operator[[]FamilyMember]
-	AwardRep(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, amount uint32, source string) model.Operator[FamilyMember]
-	DeductRep(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, amount uint32, reason string) model.Operator[FamilyMember]
-	ResetDailyRep(db *gorm.DB, log logrus.FieldLogger) func() model.Operator[int64]
-	UpdateLocation(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, world byte, channel byte, mapId uint32) model.Operator[FamilyMember]
-	UpdateLevel(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, level uint16) model.Operator[FamilyMember]
+	AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seniorId uint32, juniorId uint32) model.Provider[FamilyMember]
+	RemoveMember(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, reason string) model.Provider[[]FamilyMember]
+	BreakLink(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, reason string) model.Provider[[]FamilyMember]
+	AwardRep(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, amount uint32, source string) model.Provider[FamilyMember]
+	DeductRep(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, amount uint32, reason string) model.Provider[FamilyMember]
+	ResetDailyRep(db *gorm.DB, log logrus.FieldLogger) func() model.Provider[int64]
+	UpdateLocation(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, world byte, channel byte, mapId uint32) model.Provider[FamilyMember]
+	UpdateLevel(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, level uint16) model.Provider[FamilyMember]
 }
 
 // ProcessorImpl implements the Processor interface
@@ -46,8 +46,8 @@ var (
 )
 
 // AddJunior adds a junior to a senior's family
-func (p *ProcessorImpl) AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seniorId uint32, juniorId uint32) model.Operator[FamilyMember] {
-	return func(seniorId uint32, juniorId uint32) model.Operator[FamilyMember] {
+func (p *ProcessorImpl) AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seniorId uint32, juniorId uint32) model.Provider[FamilyMember] {
+	return func(seniorId uint32, juniorId uint32) model.Provider[FamilyMember] {
 		return func() (FamilyMember, error) {
 			log.WithFields(logrus.Fields{
 				"seniorId": seniorId,
@@ -110,10 +110,13 @@ func (p *ProcessorImpl) AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seni
 			// Begin transaction
 			return db.Transaction(func(tx *gorm.DB) (FamilyMember, error) {
 				// Update senior - add junior
-				updatedSenior := seniorModel.Builder().
+				updatedSenior, err := seniorModel.Builder().
 					AddJunior(juniorId).
 					Touch().
 					Build()
+				if err != nil {
+					return FamilyMember{}, err
+				}
 
 				seniorEntity = ToEntity(updatedSenior)
 				if err := tx.Save(&seniorEntity).Error; err != nil {
@@ -121,10 +124,13 @@ func (p *ProcessorImpl) AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seni
 				}
 
 				// Update junior - set senior
-				updatedJunior := juniorModel.Builder().
+				updatedJunior, err := juniorModel.Builder().
 					SetSeniorId(seniorId).
 					Touch().
 					Build()
+				if err != nil {
+					return FamilyMember{}, err
+				}
 
 				juniorEntity = ToEntity(updatedJunior)
 				if err := tx.Save(&juniorEntity).Error; err != nil {
@@ -138,8 +144,8 @@ func (p *ProcessorImpl) AddJunior(db *gorm.DB, log logrus.FieldLogger) func(seni
 }
 
 // RemoveMember removes a member from the family and handles cascade operations
-func (p *ProcessorImpl) RemoveMember(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, reason string) model.Operator[[]FamilyMember] {
-	return func(characterId uint32, reason string) model.Operator[[]FamilyMember] {
+func (p *ProcessorImpl) RemoveMember(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, reason string) model.Provider[[]FamilyMember] {
+	return func(characterId uint32, reason string) model.Provider[[]FamilyMember] {
 		return func() ([]FamilyMember, error) {
 			log.WithFields(logrus.Fields{
 				"characterId": characterId,
@@ -217,8 +223,8 @@ func (p *ProcessorImpl) RemoveMember(db *gorm.DB, log logrus.FieldLogger) func(c
 }
 
 // BreakLink breaks the family link for a character
-func (p *ProcessorImpl) BreakLink(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, reason string) model.Operator[[]FamilyMember] {
-	return func(characterId uint32, reason string) model.Operator[[]FamilyMember] {
+func (p *ProcessorImpl) BreakLink(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, reason string) model.Provider[[]FamilyMember] {
+	return func(characterId uint32, reason string) model.Provider[[]FamilyMember] {
 		return func() ([]FamilyMember, error) {
 			log.WithFields(logrus.Fields{
 				"characterId": characterId,
@@ -330,8 +336,8 @@ func (p *ProcessorImpl) BreakLink(db *gorm.DB, log logrus.FieldLogger) func(char
 }
 
 // AwardRep awards reputation to a character
-func (p *ProcessorImpl) AwardRep(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, amount uint32, source string) model.Operator[FamilyMember] {
-	return func(characterId uint32, amount uint32, source string) model.Operator[FamilyMember] {
+func (p *ProcessorImpl) AwardRep(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, amount uint32, source string) model.Provider[FamilyMember] {
+	return func(characterId uint32, amount uint32, source string) model.Provider[FamilyMember] {
 		return func() (FamilyMember, error) {
 			log.WithFields(logrus.Fields{
 				"characterId": characterId,
@@ -376,8 +382,8 @@ func (p *ProcessorImpl) AwardRep(db *gorm.DB, log logrus.FieldLogger) func(chara
 }
 
 // DeductRep deducts reputation from a character
-func (p *ProcessorImpl) DeductRep(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, amount uint32, reason string) model.Operator[FamilyMember] {
-	return func(characterId uint32, amount uint32, reason string) model.Operator[FamilyMember] {
+func (p *ProcessorImpl) DeductRep(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, amount uint32, reason string) model.Provider[FamilyMember] {
+	return func(characterId uint32, amount uint32, reason string) model.Provider[FamilyMember] {
 		return func() (FamilyMember, error) {
 			log.WithFields(logrus.Fields{
 				"characterId": characterId,
@@ -421,8 +427,8 @@ func (p *ProcessorImpl) DeductRep(db *gorm.DB, log logrus.FieldLogger) func(char
 }
 
 // ResetDailyRep resets daily reputation for all members
-func (p *ProcessorImpl) ResetDailyRep(db *gorm.DB, log logrus.FieldLogger) func() model.Operator[int64] {
-	return func() model.Operator[int64] {
+func (p *ProcessorImpl) ResetDailyRep(db *gorm.DB, log logrus.FieldLogger) func() model.Provider[int64] {
+	return func() model.Provider[int64] {
 		return func() (int64, error) {
 			log.Info("Resetting daily reputation for all members")
 
@@ -443,8 +449,8 @@ func (p *ProcessorImpl) ResetDailyRep(db *gorm.DB, log logrus.FieldLogger) func(
 }
 
 // UpdateLocation updates a member's location information
-func (p *ProcessorImpl) UpdateLocation(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, world byte, channel byte, mapId uint32) model.Operator[FamilyMember] {
-	return func(characterId uint32, world byte, channel byte, mapId uint32) model.Operator[FamilyMember] {
+func (p *ProcessorImpl) UpdateLocation(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, world byte, channel byte, mapId uint32) model.Provider[FamilyMember] {
+	return func(characterId uint32, world byte, channel byte, mapId uint32) model.Provider[FamilyMember] {
 		return func() (FamilyMember, error) {
 			log.WithFields(logrus.Fields{
 				"characterId": characterId,
@@ -486,8 +492,8 @@ func (p *ProcessorImpl) UpdateLocation(db *gorm.DB, log logrus.FieldLogger) func
 }
 
 // UpdateLevel updates a member's level
-func (p *ProcessorImpl) UpdateLevel(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, level uint16) model.Operator[FamilyMember] {
-	return func(characterId uint32, level uint16) model.Operator[FamilyMember] {
+func (p *ProcessorImpl) UpdateLevel(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, level uint16) model.Provider[FamilyMember] {
+	return func(characterId uint32, level uint16) model.Provider[FamilyMember] {
 		return func() (FamilyMember, error) {
 			log.WithFields(logrus.Fields{
 				"characterId": characterId,

@@ -6,7 +6,7 @@ import (
 
 // Command represents a generic command wrapper for family operations
 type Command[E any] struct {
-	TransactionId string `json:"transactionId"`
+	WorldId       byte   `json:"worldId"`
 	CharacterId   uint32 `json:"characterId"`
 	Type          string `json:"type"`
 	Body          E      `json:"body"`
@@ -14,7 +14,7 @@ type Command[E any] struct {
 
 // Event represents a generic event wrapper for family operations
 type Event[E any] struct {
-	TransactionId string `json:"transactionId"`
+	WorldId       byte   `json:"worldId"`
 	CharacterId   uint32 `json:"characterId"`
 	Type          string `json:"type"`
 	Body          E      `json:"body"`
@@ -160,6 +160,22 @@ type LinkErrorEventBody struct {
 	Timestamp    time.Time `json:"timestamp"`
 }
 
+// Environment Variable Topic Constants
+const (
+	EnvCommandTopic       = "COMMAND_TOPIC_FAMILY"
+	EnvEventTopic         = "EVENT_TOPIC_FAMILY"
+	EnvEventTopicStatus   = "EVENT_TOPIC_FAMILY_STATUS"
+	EnvEventTopicErrors   = "EVENT_TOPIC_FAMILY_ERRORS"
+	EnvEventTopicRep      = "EVENT_TOPIC_FAMILY_REPUTATION"
+)
+
+// Topic Name Constants for Message Buffer
+const (
+	TopicFamilyStatus     = "FAMILY_STATUS"
+	TopicFamilyErrors     = "FAMILY_ERRORS"
+	TopicFamilyReputation = "FAMILY_REPUTATION"
+)
+
 // Command Type Constants
 const (
 	CommandTypeAddJunior                   = "ADD_JUNIOR"
@@ -189,11 +205,11 @@ const (
 // Helper functions for creating typed commands and events
 
 // NewAddJuniorCommand creates a new AddJunior command
-func NewAddJuniorCommand(transactionId string, characterId uint32, juniorId uint32) Command[AddJuniorCommandBody] {
+func NewAddJuniorCommand(worldId byte, characterId uint32, juniorId uint32) Command[AddJuniorCommandBody] {
 	return Command[AddJuniorCommandBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		Type:          CommandTypeAddJunior,
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        CommandTypeAddJunior,
 		Body: AddJuniorCommandBody{
 			JuniorId: juniorId,
 		},
@@ -201,11 +217,11 @@ func NewAddJuniorCommand(transactionId string, characterId uint32, juniorId uint
 }
 
 // NewRemoveMemberCommand creates a new RemoveMember command
-func NewRemoveMemberCommand(transactionId string, characterId uint32, targetId uint32, reason string) Command[RemoveMemberCommandBody] {
+func NewRemoveMemberCommand(worldId byte, characterId uint32, targetId uint32, reason string) Command[RemoveMemberCommandBody] {
 	return Command[RemoveMemberCommandBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		Type:          CommandTypeRemoveMember,
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        CommandTypeRemoveMember,
 		Body: RemoveMemberCommandBody{
 			TargetId: targetId,
 			Reason:   reason,
@@ -214,11 +230,11 @@ func NewRemoveMemberCommand(transactionId string, characterId uint32, targetId u
 }
 
 // NewBreakLinkCommand creates a new BreakLink command
-func NewBreakLinkCommand(transactionId string, characterId uint32, reason string) Command[BreakLinkCommandBody] {
+func NewBreakLinkCommand(worldId byte, characterId uint32, reason string) Command[BreakLinkCommandBody] {
 	return Command[BreakLinkCommandBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		Type:          CommandTypeBreakLink,
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        CommandTypeBreakLink,
 		Body: BreakLinkCommandBody{
 			Reason: reason,
 		},
@@ -226,11 +242,11 @@ func NewBreakLinkCommand(transactionId string, characterId uint32, reason string
 }
 
 // NewDeductRepCommand creates a new DeductRep command
-func NewDeductRepCommand(transactionId string, characterId uint32, amount uint32, reason string) Command[DeductRepCommandBody] {
+func NewDeductRepCommand(worldId byte, characterId uint32, amount uint32, reason string) Command[DeductRepCommandBody] {
 	return Command[DeductRepCommandBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		Type:          CommandTypeRedeemRep,
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        CommandTypeRedeemRep,
 		Body: DeductRepCommandBody{
 			Amount: amount,
 			Reason: reason,
@@ -239,11 +255,11 @@ func NewDeductRepCommand(transactionId string, characterId uint32, amount uint32
 }
 
 // NewRegisterKillActivityCommand creates a new RegisterKillActivity command
-func NewRegisterKillActivityCommand(transactionId string, characterId uint32, killCount uint32) Command[RegisterKillActivityCommandBody] {
+func NewRegisterKillActivityCommand(worldId byte, characterId uint32, killCount uint32) Command[RegisterKillActivityCommandBody] {
 	return Command[RegisterKillActivityCommandBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		Type:          CommandTypeRegisterKillActivity,
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        CommandTypeRegisterKillActivity,
 		Body: RegisterKillActivityCommandBody{
 			KillCount: killCount,
 			Timestamp: time.Now(),
@@ -252,11 +268,11 @@ func NewRegisterKillActivityCommand(transactionId string, characterId uint32, ki
 }
 
 // NewRegisterExpeditionActivityCommand creates a new RegisterExpeditionActivity command
-func NewRegisterExpeditionActivityCommand(transactionId string, characterId uint32, coinReward uint32) Command[RegisterExpeditionActivityCommandBody] {
+func NewRegisterExpeditionActivityCommand(worldId byte, characterId uint32, coinReward uint32) Command[RegisterExpeditionActivityCommandBody] {
 	return Command[RegisterExpeditionActivityCommandBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		Type:          CommandTypeRegisterExpeditionActivity,
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        CommandTypeRegisterExpeditionActivity,
 		Body: RegisterExpeditionActivityCommandBody{
 			CoinReward: coinReward,
 			Timestamp:  time.Now(),
@@ -265,11 +281,11 @@ func NewRegisterExpeditionActivityCommand(transactionId string, characterId uint
 }
 
 // NewLinkCreatedEvent creates a new LinkCreated event
-func NewLinkCreatedEvent(transactionId string, characterId uint32, seniorId uint32, juniorId uint32) Event[LinkCreatedEventBody] {
+func NewLinkCreatedEvent(worldId byte, characterId uint32, seniorId uint32, juniorId uint32) Event[LinkCreatedEventBody] {
 	return Event[LinkCreatedEventBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		Type:          EventTypeLinkCreated,
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        EventTypeLinkCreated,
 		Body: LinkCreatedEventBody{
 			SeniorId:  seniorId,
 			JuniorId:  juniorId,
@@ -279,11 +295,11 @@ func NewLinkCreatedEvent(transactionId string, characterId uint32, seniorId uint
 }
 
 // NewLinkBrokenEvent creates a new LinkBroken event
-func NewLinkBrokenEvent(transactionId string, characterId uint32, seniorId uint32, juniorId uint32, reason string) Event[LinkBrokenEventBody] {
+func NewLinkBrokenEvent(worldId byte, characterId uint32, seniorId uint32, juniorId uint32, reason string) Event[LinkBrokenEventBody] {
 	return Event[LinkBrokenEventBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		Type:          EventTypeLinkBroken,
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        EventTypeLinkBroken,
 		Body: LinkBrokenEventBody{
 			SeniorId:  seniorId,
 			JuniorId:  juniorId,
@@ -294,11 +310,11 @@ func NewLinkBrokenEvent(transactionId string, characterId uint32, seniorId uint3
 }
 
 // NewRepGainedEvent creates a new RepGained event
-func NewRepGainedEvent(transactionId string, characterId uint32, repGained uint32, dailyRep uint32, source string) Event[RepGainedEventBody] {
+func NewRepGainedEvent(worldId byte, characterId uint32, repGained uint32, dailyRep uint32, source string) Event[RepGainedEventBody] {
 	return Event[RepGainedEventBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		Type:          EventTypeRepGained,
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        EventTypeRepGained,
 		Body: RepGainedEventBody{
 			RepGained: repGained,
 			DailyRep:  dailyRep,
@@ -309,11 +325,11 @@ func NewRepGainedEvent(transactionId string, characterId uint32, repGained uint3
 }
 
 // NewRepRedeemedEvent creates a new RepRedeemed event
-func NewRepRedeemedEvent(transactionId string, characterId uint32, repRedeemed uint32, reason string) Event[RepRedeemedEventBody] {
+func NewRepRedeemedEvent(worldId byte, characterId uint32, repRedeemed uint32, reason string) Event[RepRedeemedEventBody] {
 	return Event[RepRedeemedEventBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		Type:          EventTypeRepRedeemed,
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        EventTypeRepRedeemed,
 		Body: RepRedeemedEventBody{
 			RepRedeemed: repRedeemed,
 			Reason:      reason,
@@ -323,11 +339,11 @@ func NewRepRedeemedEvent(transactionId string, characterId uint32, repRedeemed u
 }
 
 // NewRepErrorEvent creates a new RepError event
-func NewRepErrorEvent(transactionId string, characterId uint32, errorCode string, errorMessage string, amount uint32) Event[RepErrorEventBody] {
+func NewRepErrorEvent(worldId byte, characterId uint32, errorCode string, errorMessage string, amount uint32) Event[RepErrorEventBody] {
 	return Event[RepErrorEventBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		Type:          EventTypeRepError,
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        EventTypeRepError,
 		Body: RepErrorEventBody{
 			ErrorCode:    errorCode,
 			ErrorMessage: errorMessage,
@@ -338,11 +354,11 @@ func NewRepErrorEvent(transactionId string, characterId uint32, errorCode string
 }
 
 // NewLinkErrorEvent creates a new LinkError event
-func NewLinkErrorEvent(transactionId string, characterId uint32, seniorId uint32, juniorId uint32, errorCode string, errorMessage string) Event[LinkErrorEventBody] {
+func NewLinkErrorEvent(worldId byte, characterId uint32, seniorId uint32, juniorId uint32, errorCode string, errorMessage string) Event[LinkErrorEventBody] {
 	return Event[LinkErrorEventBody]{
-		TransactionId: transactionId,
-		CharacterId:   characterId,
-		Type:          EventTypeLinkError,
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        EventTypeLinkError,
 		Body: LinkErrorEventBody{
 			SeniorId:     seniorId,
 			JuniorId:     juniorId,

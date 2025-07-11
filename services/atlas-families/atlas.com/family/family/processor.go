@@ -4,9 +4,9 @@ import (
 	"errors"
 
 	"atlas-family/kafka/message"
+	familymsg "atlas-family/kafka/message/family"
 	"atlas-family/kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -36,27 +36,15 @@ type ProcessorImpl struct{
 	log          logrus.FieldLogger
 	administrator Administrator
 	producer     producer.Provider
-	eventProducer EventProducer
-}
-
-// EventProducer interface for creating event message providers
-type EventProducer interface {
-	LinkCreatedEventProvider(transactionId string, characterId uint32, seniorId uint32, juniorId uint32) model.Provider[[]kafka.Message]
-	LinkBrokenEventProvider(transactionId string, characterId uint32, seniorId uint32, juniorId uint32, reason string) model.Provider[[]kafka.Message]
-	RepGainedEventProvider(transactionId string, characterId uint32, repGained uint32, dailyRep uint32, source string) model.Provider[[]kafka.Message]
-	RepRedeemedEventProvider(transactionId string, characterId uint32, repRedeemed uint32, reason string) model.Provider[[]kafka.Message]
-	RepErrorEventProvider(transactionId string, characterId uint32, errorCode string, errorMessage string, amount uint32) model.Provider[[]kafka.Message]
-	LinkErrorEventProvider(transactionId string, characterId uint32, seniorId uint32, juniorId uint32, errorCode string, errorMessage string) model.Provider[[]kafka.Message]
 }
 
 // NewProcessor creates a new processor instance
-func NewProcessor(db *gorm.DB, log logrus.FieldLogger, administrator Administrator, producer producer.Provider, eventProducer EventProducer) Processor {
+func NewProcessor(db *gorm.DB, log logrus.FieldLogger, administrator Administrator, producer producer.Provider) Processor {
 	return &ProcessorImpl{
 		db:           db,
 		log:          log,
 		administrator: administrator,
 		producer:     producer,
-		eventProducer: eventProducer,
 	}
 }
 
@@ -87,7 +75,7 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 			// Validate input
 			if seniorId == juniorId {
 				if buf != nil {
-					if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "SELF_REFERENCE", ErrSelfReference.Error())); putErr != nil {
+					if putErr := buf.Put(familymsg.TopicFamilyErrors, LinkErrorEventProvider(0, seniorId, seniorId, juniorId, "SELF_REFERENCE", ErrSelfReference.Error())); putErr != nil {
 						p.log.WithError(putErr).Error("Failed to add link error event to buffer")
 					}
 				}
@@ -99,7 +87,7 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 			if err != nil {
 				if errors.Is(err, ErrMemberNotFound) {
 					if buf != nil {
-						if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "SENIOR_NOT_FOUND", ErrSeniorNotFound.Error())); putErr != nil {
+						if putErr := buf.Put(familymsg.TopicFamilyErrors, LinkErrorEventProvider(0, seniorId, seniorId, juniorId, "SENIOR_NOT_FOUND", ErrSeniorNotFound.Error())); putErr != nil {
 							p.log.WithError(putErr).Error("Failed to add link error event to buffer")
 						}
 					}
@@ -111,7 +99,7 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 			// Check if senior can add more juniors
 			if !seniorModel.CanAddJunior() {
 				if buf != nil {
-					if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "TOO_MANY_JUNIORS", ErrSeniorHasTooManyJuniors.Error())); putErr != nil {
+					if putErr := buf.Put(familymsg.TopicFamilyErrors, LinkErrorEventProvider(seniorModel.World(), seniorId, seniorId, juniorId, "TOO_MANY_JUNIORS", ErrSeniorHasTooManyJuniors.Error())); putErr != nil {
 						p.log.WithError(putErr).Error("Failed to add link error event to buffer")
 					}
 				}
@@ -123,7 +111,7 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 			if err != nil {
 				if errors.Is(err, ErrMemberNotFound) {
 					if buf != nil {
-						if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "JUNIOR_NOT_FOUND", ErrJuniorNotFound.Error())); putErr != nil {
+						if putErr := buf.Put(familymsg.TopicFamilyErrors, LinkErrorEventProvider(seniorModel.World(), seniorId, seniorId, juniorId, "JUNIOR_NOT_FOUND", ErrJuniorNotFound.Error())); putErr != nil {
 							p.log.WithError(putErr).Error("Failed to add link error event to buffer")
 						}
 					}
@@ -135,7 +123,7 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 			// Check if junior already has a senior
 			if juniorModel.HasSenior() {
 				if buf != nil {
-					if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "JUNIOR_ALREADY_LINKED", ErrJuniorAlreadyLinked.Error())); putErr != nil {
+					if putErr := buf.Put(familymsg.TopicFamilyErrors, LinkErrorEventProvider(seniorModel.World(), seniorId, seniorId, juniorId, "JUNIOR_ALREADY_LINKED", ErrJuniorAlreadyLinked.Error())); putErr != nil {
 						p.log.WithError(putErr).Error("Failed to add link error event to buffer")
 					}
 				}
@@ -145,7 +133,7 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 			// Validate level difference
 			if !seniorModel.ValidateLevelDifference(juniorModel.Level()) {
 				if buf != nil {
-					if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "LEVEL_DIFFERENCE_TOO_LARGE", ErrLevelDifferenceTooLarge.Error())); putErr != nil {
+					if putErr := buf.Put(familymsg.TopicFamilyErrors, LinkErrorEventProvider(seniorModel.World(), seniorId, seniorId, juniorId, "LEVEL_DIFFERENCE_TOO_LARGE", ErrLevelDifferenceTooLarge.Error())); putErr != nil {
 						p.log.WithError(putErr).Error("Failed to add link error event to buffer")
 					}
 				}
@@ -155,7 +143,7 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 			// Validate same world
 			if !seniorModel.IsSameWorld(juniorModel.World()) {
 				if buf != nil {
-					if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "NOT_ON_SAME_MAP", ErrNotOnSameMap.Error())); putErr != nil {
+					if putErr := buf.Put(familymsg.TopicFamilyErrors, LinkErrorEventProvider(seniorModel.World(), seniorId, seniorId, juniorId, "NOT_ON_SAME_MAP", ErrNotOnSameMap.Error())); putErr != nil {
 						p.log.WithError(putErr).Error("Failed to add link error event to buffer")
 					}
 				}
@@ -201,7 +189,7 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 			if err != nil {
 				// Add error event to buffer if provided
 				if buf != nil {
-					if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.LinkErrorEventProvider("", seniorId, seniorId, juniorId, "ADD_JUNIOR_FAILED", err.Error())); putErr != nil {
+					if putErr := buf.Put(familymsg.TopicFamilyErrors, LinkErrorEventProvider(seniorModel.World(), seniorId, seniorId, juniorId, "ADD_JUNIOR_FAILED", err.Error())); putErr != nil {
 						p.log.WithError(putErr).Error("Failed to add link error event to buffer")
 					}
 				}
@@ -210,7 +198,7 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(seniorId uint32, jun
 			
 			// Add success event to buffer if provided
 			if buf != nil {
-				if putErr := buf.Put("FAMILY_STATUS", p.eventProducer.LinkCreatedEventProvider("", seniorId, seniorId, juniorId)); putErr != nil {
+				if putErr := buf.Put(familymsg.TopicFamilyStatus, LinkCreatedEventProvider(result.World(), seniorId, seniorId, juniorId)); putErr != nil {
 					p.log.WithError(putErr).Error("Failed to add link created event to buffer")
 				}
 			}
@@ -395,13 +383,13 @@ func (p *ProcessorImpl) BreakLink(buf *message.Buffer) func(characterId uint32, 
 		// Add link broken events to buffer for all affected relationships
 		if buf != nil {
 			if memberModel.HasSenior() {
-				if putErr := buf.Put("FAMILY_STATUS", p.eventProducer.LinkBrokenEventProvider("", characterId, *memberModel.SeniorId(), characterId, reason)); putErr != nil {
+				if putErr := buf.Put(familymsg.TopicFamilyStatus, LinkBrokenEventProvider(memberModel.World(), characterId, *memberModel.SeniorId(), characterId, reason)); putErr != nil {
 					p.log.WithError(putErr).Error("Failed to add link broken event to buffer for senior")
 				}
 			}
 			
 			for _, juniorId := range memberModel.JuniorIds() {
-				if putErr := buf.Put("FAMILY_STATUS", p.eventProducer.LinkBrokenEventProvider("", characterId, characterId, juniorId, reason)); putErr != nil {
+				if putErr := buf.Put(familymsg.TopicFamilyStatus, LinkBrokenEventProvider(memberModel.World(), characterId, characterId, juniorId, reason)); putErr != nil {
 					p.log.WithError(putErr).Error("Failed to add link broken event to buffer for junior")
 				}
 			}
@@ -432,7 +420,7 @@ func (p *ProcessorImpl) AwardRep(buf *message.Buffer) func(characterId uint32, a
 		if !memberModel.CanReceiveRep(amount) {
 			// Add error event to buffer if provided
 			if buf != nil {
-				if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.RepErrorEventProvider("", characterId, "AWARD_REP_FAILED", ErrRepCapExceeded.Error(), amount)); putErr != nil {
+				if putErr := buf.Put(familymsg.TopicFamilyErrors, RepErrorEventProvider(memberModel.World(), characterId, "AWARD_REP_FAILED", ErrRepCapExceeded.Error(), amount)); putErr != nil {
 					p.log.WithError(putErr).Error("Failed to add rep error event to buffer")
 				}
 			}
@@ -455,7 +443,7 @@ func (p *ProcessorImpl) AwardRep(buf *message.Buffer) func(characterId uint32, a
 
 		// Add success event to buffer if provided
 		if buf != nil {
-			if putErr := buf.Put("FAMILY_REPUTATION", p.eventProducer.RepGainedEventProvider("", characterId, amount, updatedMember.DailyRep(), source)); putErr != nil {
+			if putErr := buf.Put(familymsg.TopicFamilyReputation, RepGainedEventProvider(updatedMember.World(), characterId, amount, updatedMember.DailyRep(), source)); putErr != nil {
 				p.log.WithError(putErr).Error("Failed to add rep gained event to buffer")
 			}
 		}
@@ -485,7 +473,7 @@ func (p *ProcessorImpl) DeductRep(buf *message.Buffer) func(characterId uint32, 
 		if memberModel.Rep() < amount {
 			// Add error event to buffer if provided
 			if buf != nil {
-				if putErr := buf.Put("FAMILY_ERRORS", p.eventProducer.RepErrorEventProvider("", characterId, "DEDUCT_REP_FAILED", ErrInsufficientRep.Error(), amount)); putErr != nil {
+				if putErr := buf.Put(familymsg.TopicFamilyErrors, RepErrorEventProvider(memberModel.World(), characterId, "DEDUCT_REP_FAILED", ErrInsufficientRep.Error(), amount)); putErr != nil {
 					p.log.WithError(putErr).Error("Failed to add rep error event to buffer")
 				}
 			}
@@ -507,7 +495,7 @@ func (p *ProcessorImpl) DeductRep(buf *message.Buffer) func(characterId uint32, 
 
 		// Add success event to buffer if provided
 		if buf != nil {
-			if putErr := buf.Put("FAMILY_REPUTATION", p.eventProducer.RepRedeemedEventProvider("", characterId, amount, reason)); putErr != nil {
+			if putErr := buf.Put(familymsg.TopicFamilyReputation, RepRedeemedEventProvider(updatedMember.World(), characterId, amount, reason)); putErr != nil {
 				p.log.WithError(putErr).Error("Failed to add rep redeemed event to buffer")
 			}
 		}

@@ -2,7 +2,6 @@ package family
 
 import (
 	"errors"
-	"time"
 
 	"atlas-family/kafka/message"
 	"atlas-family/kafka/producer"
@@ -275,8 +274,6 @@ func (p *ProcessorImpl) BreakLink(buf *message.Buffer) func(characterId uint32, 
 					}
 					updatedMembers = append(updatedMembers, updatedSenior)
 				}
-			}
-
 				// Clear member's senior reference
 				updatedMember, err := memberModel.Builder().
 					ClearSeniorId().
@@ -429,7 +426,7 @@ func (p *ProcessorImpl) ResetDailyRep(buf *message.Buffer) func() model.Provider
 		return func() (int64, error) {
 		p.log.Info("Resetting daily reputation for all members")
 
-		result, err := p.administrator.BatchResetDailyRep(p.db, p.log)()
+		result, err := p.administrator.BatchResetDailyRep(p.db, p.log)()()
 		if err != nil {
 			return 0, err
 		}

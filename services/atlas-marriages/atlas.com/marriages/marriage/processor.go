@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"atlas-marriages/character"
+	"atlas-marriages/kafka/message"
+	"atlas-marriages/kafka/message/marriage"
+	"atlas-marriages/kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -69,12 +72,9 @@ type ProcessorImpl struct {
 	log                logrus.FieldLogger
 	ctx                context.Context
 	db                 *gorm.DB
-	producer           ProducerFunction
+	producer           producer.Provider
 	characterProcessor character.Processor
 }
-
-// ProducerFunction type for Kafka message production
-type ProducerFunction func(token string) model.Provider[[]byte]
 
 // NewProcessor creates a new processor instance
 func NewProcessor(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -82,7 +82,7 @@ func NewProcessor(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proc
 		log:                log,
 		ctx:                ctx,
 		db:                 db,
-		producer:           nil, // Will be implemented when Kafka producer is added
+		producer:           producer.ProviderImpl(log)(ctx),
 		characterProcessor: character.NewProcessor(log, ctx, db),
 	}
 }
@@ -159,18 +159,32 @@ func (p *ProcessorImpl) Propose(proposerId, targetId uint32) model.Provider[Prop
 	}
 }
 
-// ProposeAndEmit creates a proposal and emits events (placeholder for future Kafka integration)
+// ProposeAndEmit creates a proposal and emits events
 func (p *ProcessorImpl) ProposeAndEmit(transactionId uuid.UUID, proposerId, targetId uint32) (Proposal, error) {
 	proposal, err := p.Propose(proposerId, targetId)()
 	if err != nil {
 		return Proposal{}, err
 	}
 
-	// TODO: Emit ProposalCreated event when Kafka producer is implemented
+	// Emit ProposalCreated event
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		eventProvider := ProposalCreatedEventProvider(
+			proposal.Id(),
+			proposerId,
+			targetId,
+			proposal.ProposedAt(),
+			proposal.ExpiresAt(),
+		)
+		return buf.Put(marriage.EnvEventTopicStatus, eventProvider)
+	})
+	if err != nil {
+		return Proposal{}, err
+	}
+
 	p.log.WithFields(logrus.Fields{
 		"transactionId": transactionId,
 		"proposalId":    proposal.Id(),
-	}).Debug("Would emit ProposalCreated event")
+	}).Debug("ProposalCreated event emitted")
 
 	return proposal, nil
 }
@@ -403,11 +417,26 @@ func (p *ProcessorImpl) ScheduleCeremonyAndEmit(transactionId uuid.UUID, marriag
 		return Ceremony{}, err
 	}
 
-	// TODO: Emit CeremonyScheduled event when Kafka producer is implemented
+	// Emit CeremonyScheduled event
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		eventProvider := CeremonyScheduledEventProvider(
+			ceremony.Id(),
+			marriageId,
+			ceremony.CharacterId1(),
+			ceremony.CharacterId2(),
+			scheduledAt,
+			invitees,
+		)
+		return buf.Put(marriage.EnvEventTopicStatus, eventProvider)
+	})
+	if err != nil {
+		return Ceremony{}, err
+	}
+
 	p.log.WithFields(logrus.Fields{
 		"transactionId": transactionId,
 		"ceremonyId":    ceremony.Id(),
-	}).Debug("Would emit CeremonyScheduled event")
+	}).Debug("CeremonyScheduled event emitted")
 
 	return ceremony, nil
 }
@@ -467,11 +496,29 @@ func (p *ProcessorImpl) StartCeremonyAndEmit(transactionId uuid.UUID, ceremonyId
 		return Ceremony{}, err
 	}
 
-	// TODO: Emit CeremonyStarted event when Kafka producer is implemented
+	// Emit CeremonyStarted event
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		startedAt := time.Now()
+		if ceremony.StartedAt() != nil {
+			startedAt = *ceremony.StartedAt()
+		}
+		eventProvider := CeremonyStartedEventProvider(
+			ceremony.Id(),
+			ceremony.MarriageId(),
+			ceremony.CharacterId1(),
+			ceremony.CharacterId2(),
+			startedAt,
+		)
+		return buf.Put(marriage.EnvEventTopicStatus, eventProvider)
+	})
+	if err != nil {
+		return Ceremony{}, err
+	}
+
 	p.log.WithFields(logrus.Fields{
 		"transactionId": transactionId,
 		"ceremonyId":    ceremonyId,
-	}).Debug("Would emit CeremonyStarted event")
+	}).Debug("CeremonyStarted event emitted")
 
 	return ceremony, nil
 }
@@ -531,11 +578,29 @@ func (p *ProcessorImpl) CompleteCeremonyAndEmit(transactionId uuid.UUID, ceremon
 		return Ceremony{}, err
 	}
 
-	// TODO: Emit CeremonyCompleted event when Kafka producer is implemented
+	// Emit CeremonyCompleted event
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		completedAt := time.Now()
+		if ceremony.CompletedAt() != nil {
+			completedAt = *ceremony.CompletedAt()
+		}
+		eventProvider := CeremonyCompletedEventProvider(
+			ceremony.Id(),
+			ceremony.MarriageId(),
+			ceremony.CharacterId1(),
+			ceremony.CharacterId2(),
+			completedAt,
+		)
+		return buf.Put(marriage.EnvEventTopicStatus, eventProvider)
+	})
+	if err != nil {
+		return Ceremony{}, err
+	}
+
 	p.log.WithFields(logrus.Fields{
 		"transactionId": transactionId,
 		"ceremonyId":    ceremonyId,
-	}).Debug("Would emit CeremonyCompleted event")
+	}).Debug("CeremonyCompleted event emitted")
 
 	return ceremony, nil
 }
@@ -595,11 +660,31 @@ func (p *ProcessorImpl) CancelCeremonyAndEmit(transactionId uuid.UUID, ceremonyI
 		return Ceremony{}, err
 	}
 
-	// TODO: Emit CeremonyCancelled event when Kafka producer is implemented
+	// Emit CeremonyCancelled event
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		cancelledAt := time.Now()
+		if ceremony.CancelledAt() != nil {
+			cancelledAt = *ceremony.CancelledAt()
+		}
+		eventProvider := CeremonyCancelledEventProvider(
+			ceremony.Id(),
+			ceremony.MarriageId(),
+			ceremony.CharacterId1(),
+			ceremony.CharacterId2(),
+			cancelledAt,
+			0, // TODO: Track cancelled by character ID when needed
+			"ceremony_cancelled", // TODO: Track cancel reason when needed
+		)
+		return buf.Put(marriage.EnvEventTopicStatus, eventProvider)
+	})
+	if err != nil {
+		return Ceremony{}, err
+	}
+
 	p.log.WithFields(logrus.Fields{
 		"transactionId": transactionId,
 		"ceremonyId":    ceremonyId,
-	}).Debug("Would emit CeremonyCancelled event")
+	}).Debug("CeremonyCancelled event emitted")
 
 	return ceremony, nil
 }
@@ -659,11 +744,30 @@ func (p *ProcessorImpl) PostponeCeremonyAndEmit(transactionId uuid.UUID, ceremon
 		return Ceremony{}, err
 	}
 
-	// TODO: Emit CeremonyPostponed event when Kafka producer is implemented
+	// Emit CeremonyPostponed event
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		postponedAt := time.Now()
+		if ceremony.PostponedAt() != nil {
+			postponedAt = *ceremony.PostponedAt()
+		}
+		eventProvider := CeremonyPostponedEventProvider(
+			ceremony.Id(),
+			ceremony.MarriageId(),
+			ceremony.CharacterId1(),
+			ceremony.CharacterId2(),
+			postponedAt,
+			"ceremony_postponed", // TODO: Track postpone reason when needed
+		)
+		return buf.Put(marriage.EnvEventTopicStatus, eventProvider)
+	})
+	if err != nil {
+		return Ceremony{}, err
+	}
+
 	p.log.WithFields(logrus.Fields{
 		"transactionId": transactionId,
 		"ceremonyId":    ceremonyId,
-	}).Debug("Would emit CeremonyPostponed event")
+	}).Debug("CeremonyPostponed event emitted")
 
 	return ceremony, nil
 }
@@ -726,11 +830,28 @@ func (p *ProcessorImpl) RescheduleCeremonyAndEmit(transactionId uuid.UUID, cerem
 		return Ceremony{}, err
 	}
 
-	// TODO: Emit CeremonyRescheduled event when Kafka producer is implemented
+	// Emit CeremonyRescheduled event
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		rescheduledAt := time.Now()
+		eventProvider := CeremonyRescheduledEventProvider(
+			ceremony.Id(),
+			ceremony.MarriageId(),
+			ceremony.CharacterId1(),
+			ceremony.CharacterId2(),
+			rescheduledAt,
+			newScheduledAt,
+			0, // TODO: Track rescheduled by character ID when needed
+		)
+		return buf.Put(marriage.EnvEventTopicStatus, eventProvider)
+	})
+	if err != nil {
+		return Ceremony{}, err
+	}
+
 	p.log.WithFields(logrus.Fields{
 		"transactionId": transactionId,
 		"ceremonyId":    ceremonyId,
-	}).Debug("Would emit CeremonyRescheduled event")
+	}).Debug("CeremonyRescheduled event emitted")
 
 	return ceremony, nil
 }
@@ -796,12 +917,13 @@ func (p *ProcessorImpl) AddInviteeAndEmit(transactionId uuid.UUID, ceremonyId ui
 		return Ceremony{}, err
 	}
 
-	// TODO: Emit InviteeAdded event when Kafka producer is implemented
+	// TODO: Emit InviteeAdded event when specific invitee events are defined
+	// For now, we could emit a generic ceremony updated event
 	p.log.WithFields(logrus.Fields{
 		"transactionId": transactionId,
 		"ceremonyId":    ceremonyId,
 		"characterId":   characterId,
-	}).Debug("Would emit InviteeAdded event")
+	}).Debug("Invitee added - would emit InviteeAdded event")
 
 	return ceremony, nil
 }
@@ -867,12 +989,13 @@ func (p *ProcessorImpl) RemoveInviteeAndEmit(transactionId uuid.UUID, ceremonyId
 		return Ceremony{}, err
 	}
 
-	// TODO: Emit InviteeRemoved event when Kafka producer is implemented
+	// TODO: Emit InviteeRemoved event when specific invitee events are defined
+	// For now, we could emit a generic ceremony updated event
 	p.log.WithFields(logrus.Fields{
 		"transactionId": transactionId,
 		"ceremonyId":    ceremonyId,
 		"characterId":   characterId,
-	}).Debug("Would emit InviteeRemoved event")
+	}).Debug("Invitee removed - would emit InviteeRemoved event")
 
 	return ceremony, nil
 }

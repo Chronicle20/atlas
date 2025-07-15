@@ -207,19 +207,9 @@ go test ./family/... -v
 
 ### REST Endpoints
 
-The service provides JSON:API compliant endpoints for family management:
+The service provides JSON:API compliant endpoints for family management. All endpoints follow the JSON:API specification and require specific headers for authentication and transaction tracking.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/families/{characterId}/juniors` | Add junior to family |
-| DELETE | `/api/families/links/{characterId}` | Break family link |
-| GET | `/api/families/tree/{characterId}` | Get family tree |
-| POST | `/api/families/reputation/activities` | Process reputation activity |
-| POST | `/api/families/reputation/redeem` | Redeem reputation |
-| GET | `/api/families/reputation/{characterId}` | Get reputation |
-| GET | `/api/families/location/{characterId}` | Get member location |
-
-### Required Headers
+#### Required Headers
 
 All requests require the following headers:
 ```
@@ -229,12 +219,458 @@ X-Transaction-Id: {transaction-id}
 X-World-Id: {world-id}
 ```
 
-### Authentication
+#### Authentication
 
 The service integrates with the Atlas authentication system through:
 - Multi-tenant headers for request isolation
 - Transaction ID tracking for idempotency
 - Audit trail for all operations
+
+---
+
+### 1. Add Junior to Family
+
+Add a junior member to a senior's family.
+
+**Endpoint:** `POST /api/families/{characterId}/juniors`
+
+**Path Parameters:**
+- `characterId` (uint32): The senior character's ID
+
+**Request Body:**
+```json
+{
+  "data": {
+    "type": "familyMembers",
+    "attributes": {
+      "juniorId": 12345
+    }
+  }
+}
+```
+
+**Success Response (201 Created):**
+```json
+{
+  "data": {
+    "id": "67890",
+    "type": "familyMembers",
+    "characterId": 67890,
+    "tenantId": "550e8400-e29b-41d4-a716-446655440000",
+    "seniorId": null,
+    "juniorIds": [12345],
+    "rep": 150,
+    "dailyRep": 25,
+    "level": 45,
+    "world": 1,
+    "createdAt": "2025-01-15T10:30:00Z",
+    "updatedAt": "2025-01-15T14:22:00Z"
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid character ID, missing junior ID, or self-reference
+- `404 Not Found`: Senior or junior character not found
+- `409 Conflict`: Senior has too many juniors, junior already linked, level difference too large, or not on same map
+
+**Example cURL:**
+```bash
+curl -X POST "https://api.atlas.com/api/families/67890/juniors" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000" \
+  -H "X-Transaction-Id: tx-12345-add-junior" \
+  -H "X-World-Id: 1" \
+  -d '{
+    "data": {
+      "type": "familyMembers",
+      "attributes": {
+        "juniorId": 12345
+      }
+    }
+  }'
+```
+
+---
+
+### 2. Break Family Link
+
+Break a family link for a character (either as senior or junior).
+
+**Endpoint:** `DELETE /api/families/links/{characterId}`
+
+**Path Parameters:**
+- `characterId` (uint32): The character's ID whose link to break
+
+**Query Parameters:**
+- `reason` (string, optional): Reason for breaking the link
+
+**Success Response (200 OK):**
+```json
+{
+  "data": [
+    {
+      "id": "67890",
+      "type": "familyMembers",
+      "characterId": 67890,
+      "tenantId": "550e8400-e29b-41d4-a716-446655440000",
+      "seniorId": null,
+      "juniorIds": [],
+      "rep": 150,
+      "dailyRep": 25,
+      "level": 45,
+      "world": 1,
+      "createdAt": "2025-01-15T10:30:00Z",
+      "updatedAt": "2025-01-15T14:25:00Z"
+    }
+  ]
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid character ID or missing transaction ID
+- `404 Not Found`: Character not found
+- `409 Conflict`: No link to break
+
+**Example cURL:**
+```bash
+curl -X DELETE "https://api.atlas.com/api/families/links/67890?reason=Player%20requested" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000" \
+  -H "X-Transaction-Id: tx-12345-break-link" \
+  -H "X-World-Id: 1"
+```
+
+---
+
+### 3. Get Family Tree
+
+Retrieve the complete family tree for a character.
+
+**Endpoint:** `GET /api/families/tree/{characterId}`
+
+**Path Parameters:**
+- `characterId` (uint32): The character's ID to get the tree for
+
+**Success Response (200 OK):**
+```json
+{
+  "data": {
+    "id": "67890",
+    "type": "familyTrees",
+    "members": [
+      {
+        "id": "54321",
+        "type": "familyMembers",
+        "characterId": 54321,
+        "tenantId": "550e8400-e29b-41d4-a716-446655440000",
+        "seniorId": null,
+        "juniorIds": [67890],
+        "rep": 500,
+        "dailyRep": 100,
+        "level": 60,
+        "world": 1,
+        "createdAt": "2025-01-10T09:00:00Z",
+        "updatedAt": "2025-01-15T14:20:00Z"
+      },
+      {
+        "id": "67890",
+        "type": "familyMembers",
+        "characterId": 67890,
+        "tenantId": "550e8400-e29b-41d4-a716-446655440000",
+        "seniorId": 54321,
+        "juniorIds": [12345],
+        "rep": 150,
+        "dailyRep": 25,
+        "level": 45,
+        "world": 1,
+        "createdAt": "2025-01-15T10:30:00Z",
+        "updatedAt": "2025-01-15T14:22:00Z"
+      },
+      {
+        "id": "12345",
+        "type": "familyMembers",
+        "characterId": 12345,
+        "tenantId": "550e8400-e29b-41d4-a716-446655440000",
+        "seniorId": 67890,
+        "juniorIds": [],
+        "rep": 0,
+        "dailyRep": 0,
+        "level": 25,
+        "world": 1,
+        "createdAt": "2025-01-15T14:22:00Z",
+        "updatedAt": "2025-01-15T14:22:00Z"
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid character ID
+- `404 Not Found`: Character not found
+
+**Example cURL:**
+```bash
+curl -X GET "https://api.atlas.com/api/families/tree/67890" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000" \
+  -H "X-Transaction-Id: tx-12345-get-tree" \
+  -H "X-World-Id: 1"
+```
+
+---
+
+### 4. Process Reputation Activity
+
+Process reputation-generating activities (mob kills, expeditions).
+
+**Endpoint:** `POST /api/families/reputation/activities`
+
+**Request Body:**
+```json
+{
+  "data": {
+    "type": "activities",
+    "attributes": {
+      "characterId": 12345,
+      "activityType": "mob_kill",
+      "amount": 10
+    }
+  }
+}
+```
+
+**Activity Types:**
+- `mob_kill`: Awards 2 Rep per 5 kills to the character's senior
+- `expedition`: Awards coin amount × 10 Rep to the character's senior
+
+**Success Response (200 OK):**
+```json
+{
+  "data": {
+    "id": "67890",
+    "type": "familyMembers",
+    "characterId": 67890,
+    "tenantId": "550e8400-e29b-41d4-a716-446655440000",
+    "seniorId": 54321,
+    "juniorIds": [12345],
+    "rep": 154,
+    "dailyRep": 29,
+    "level": 45,
+    "world": 1,
+    "createdAt": "2025-01-15T10:30:00Z",
+    "updatedAt": "2025-01-15T14:30:00Z"
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid character ID, missing activity type, or invalid amount
+- `404 Not Found`: Character not found
+- `409 Conflict`: Daily reputation cap exceeded
+
+**Example cURL:**
+```bash
+curl -X POST "https://api.atlas.com/api/families/reputation/activities" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000" \
+  -H "X-Transaction-Id: tx-12345-activity" \
+  -H "X-World-Id: 1" \
+  -d '{
+    "data": {
+      "type": "activities",
+      "attributes": {
+        "characterId": 12345,
+        "activityType": "mob_kill",
+        "amount": 10
+      }
+    }
+  }'
+```
+
+---
+
+### 5. Redeem Reputation
+
+Redeem reputation for buffs or teleportation.
+
+**Endpoint:** `POST /api/families/reputation/redeem`
+
+**Request Body:**
+```json
+{
+  "data": {
+    "type": "redemption",
+    "attributes": {
+      "characterId": 67890,
+      "amount": 50,
+      "reason": "2x EXP buff for 1 hour"
+    }
+  }
+}
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "data": {
+    "id": "67890",
+    "type": "familyMembers",
+    "characterId": 67890,
+    "tenantId": "550e8400-e29b-41d4-a716-446655440000",
+    "seniorId": 54321,
+    "juniorIds": [12345],
+    "rep": 100,
+    "dailyRep": 29,
+    "level": 45,
+    "world": 1,
+    "createdAt": "2025-01-15T10:30:00Z",
+    "updatedAt": "2025-01-15T14:35:00Z"
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid character ID, missing amount, or missing reason
+- `404 Not Found`: Character not found
+- `409 Conflict`: Insufficient reputation
+
+**Example cURL:**
+```bash
+curl -X POST "https://api.atlas.com/api/families/reputation/redeem" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000" \
+  -H "X-Transaction-Id: tx-12345-redeem" \
+  -H "X-World-Id: 1" \
+  -d '{
+    "data": {
+      "type": "redemption",
+      "attributes": {
+        "characterId": 67890,
+        "amount": 50,
+        "reason": "2x EXP buff for 1 hour"
+      }
+    }
+  }'
+```
+
+---
+
+### 6. Get Reputation Info
+
+Get current reputation information for a character.
+
+**Endpoint:** `GET /api/families/reputation/{characterId}`
+
+**Path Parameters:**
+- `characterId` (uint32): The character's ID
+
+**Success Response (200 OK):**
+```json
+{
+  "data": {
+    "id": "67890",
+    "type": "reputation",
+    "characterId": 67890,
+    "availableRep": 100,
+    "dailyRep": 29,
+    "dailyRepLimit": 5000,
+    "remainingDailyRep": 4971
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid character ID
+- `404 Not Found`: Character not found
+
+**Example cURL:**
+```bash
+curl -X GET "https://api.atlas.com/api/families/reputation/67890" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000" \
+  -H "X-Transaction-Id: tx-12345-get-rep" \
+  -H "X-World-Id: 1"
+```
+
+---
+
+### 7. Get Member Location
+
+Get the current location and online status of a family member.
+
+**Endpoint:** `GET /api/families/location/{characterId}`
+
+**Path Parameters:**
+- `characterId` (uint32): The character's ID
+
+**Success Response (200 OK):**
+```json
+{
+  "data": {
+    "id": "67890",
+    "type": "locations",
+    "characterId": 67890,
+    "world": 1,
+    "channel": 3,
+    "map": 100000001,
+    "online": true
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Invalid character ID
+- `404 Not Found`: Character not found
+
+**Example cURL:**
+```bash
+curl -X GET "https://api.atlas.com/api/families/location/67890" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000" \
+  -H "X-Transaction-Id: tx-12345-get-location" \
+  -H "X-World-Id: 1"
+```
+
+---
+
+### Error Response Format
+
+All error responses follow the JSON:API error format:
+
+```json
+{
+  "error": {
+    "status": 400,
+    "title": "Bad Request",
+    "detail": "Junior ID is required"
+  }
+}
+```
+
+### Common HTTP Status Codes
+
+- `200 OK`: Request successful
+- `201 Created`: Resource created successfully
+- `400 Bad Request`: Invalid request format or missing required fields
+- `404 Not Found`: Resource not found
+- `409 Conflict`: Business rule violation or constraint failure
+- `500 Internal Server Error`: Server error
+
+### Rate Limiting
+
+The API implements rate limiting to prevent abuse:
+- 100 requests per minute per IP address
+- 500 requests per minute per tenant
+- Burst limit of 20 requests per second
+
+Rate limit headers are included in all responses:
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1641024000
+```
 
 ## Development
 

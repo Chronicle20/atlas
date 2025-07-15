@@ -259,6 +259,44 @@ func CeremonyRescheduledEventProvider(ceremonyId uint32, marriageId uint32, char
 
 // Error Event Producers
 
+// InviteeAddedEventProvider creates a provider for invitee added events
+func InviteeAddedEventProvider(ceremonyId uint32, marriageId uint32, characterId1 uint32, characterId2 uint32, inviteeId uint32, addedAt time.Time, addedBy uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId1))
+	value := &marriage.Event[marriage.InviteeAddedBody]{
+		CharacterId: characterId1,
+		Type:        marriage.EventInviteeAdded,
+		Body: marriage.InviteeAddedBody{
+			CeremonyId:   ceremonyId,
+			MarriageId:   marriageId,
+			CharacterId1: characterId1,
+			CharacterId2: characterId2,
+			InviteeId:    inviteeId,
+			AddedAt:      addedAt,
+			AddedBy:      addedBy,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// InviteeRemovedEventProvider creates a provider for invitee removed events
+func InviteeRemovedEventProvider(ceremonyId uint32, marriageId uint32, characterId1 uint32, characterId2 uint32, inviteeId uint32, removedAt time.Time, removedBy uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId1))
+	value := &marriage.Event[marriage.InviteeRemovedBody]{
+		CharacterId: characterId1,
+		Type:        marriage.EventInviteeRemoved,
+		Body: marriage.InviteeRemovedBody{
+			CeremonyId:   ceremonyId,
+			MarriageId:   marriageId,
+			CharacterId1: characterId1,
+			CharacterId2: characterId2,
+			InviteeId:    inviteeId,
+			RemovedAt:    removedAt,
+			RemovedBy:    removedBy,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 // MarriageErrorEventProvider creates a provider for marriage error events
 func MarriageErrorEventProvider(characterId uint32, errorType string, errorCode string, message string, context string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))

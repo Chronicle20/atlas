@@ -57,6 +57,8 @@ const (
 	EventCeremonyPostponed = "CEREMONY_POSTPONED"
 	EventCeremonyCancelled = "CEREMONY_CANCELLED"
 	EventCeremonyRescheduled = "CEREMONY_RESCHEDULED"
+	EventInviteeAdded      = "INVITEE_ADDED"
+	EventInviteeRemoved    = "INVITEE_REMOVED"
 
 	// Error events
 	EventMarriageError = "MARRIAGE_ERROR"
@@ -284,6 +286,28 @@ type CeremonyRescheduledBody struct {
 	RescheduledAt   time.Time `json:"rescheduledAt"`
 	NewScheduledAt  time.Time `json:"newScheduledAt"`
 	RescheduledBy   uint32    `json:"rescheduledBy"`
+}
+
+// InviteeAddedBody represents the body of an invitee added event
+type InviteeAddedBody struct {
+	CeremonyId   uint32    `json:"ceremonyId"`
+	MarriageId   uint32    `json:"marriageId"`
+	CharacterId1 uint32    `json:"characterId1"`
+	CharacterId2 uint32    `json:"characterId2"`
+	InviteeId    uint32    `json:"inviteeId"`
+	AddedAt      time.Time `json:"addedAt"`
+	AddedBy      uint32    `json:"addedBy"`
+}
+
+// InviteeRemovedBody represents the body of an invitee removed event
+type InviteeRemovedBody struct {
+	CeremonyId   uint32    `json:"ceremonyId"`
+	MarriageId   uint32    `json:"marriageId"`
+	CharacterId1 uint32    `json:"characterId1"`
+	CharacterId2 uint32    `json:"characterId2"`
+	InviteeId    uint32    `json:"inviteeId"`
+	RemovedAt    time.Time `json:"removedAt"`
+	RemovedBy    uint32    `json:"removedBy"`
 }
 
 // MarriageErrorBody represents the body of a marriage error event

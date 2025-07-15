@@ -1204,15 +1204,21 @@ func (p *ProcessorImpl) AddInviteeAndEmit(transactionId uuid.UUID, ceremonyId ui
 		return Ceremony{}, err
 	}
 
-	// TODO: Emit InviteeAdded event when specific invitee events are defined
-	// For now, we could emit a generic ceremony updated event
-	p.log.WithFields(logrus.Fields{
-		"transactionId": transactionId,
-		"ceremonyId":    ceremonyId,
-		"characterId":   characterId,
-	}).Debug("Invitee added - would emit InviteeAdded event")
-
-	return ceremony, nil
+	// Emit InviteeAdded event
+	return ceremony, message.Emit(p.producer)(func(mb *message.Buffer) error {
+		now := time.Now()
+		inviteeAddedProvider := InviteeAddedEventProvider(
+			ceremony.Id(),
+			ceremony.MarriageId(),
+			ceremony.CharacterId1(),
+			ceremony.CharacterId2(),
+			characterId,
+			now,
+			0, // TODO: Track added by character ID when available
+		)
+		
+		return mb.Put(marriageMsg.EnvEventTopicStatus, inviteeAddedProvider)
+	})
 }
 
 // RemoveInvitee removes an invitee from a ceremony
@@ -1276,15 +1282,21 @@ func (p *ProcessorImpl) RemoveInviteeAndEmit(transactionId uuid.UUID, ceremonyId
 		return Ceremony{}, err
 	}
 
-	// TODO: Emit InviteeRemoved event when specific invitee events are defined
-	// For now, we could emit a generic ceremony updated event
-	p.log.WithFields(logrus.Fields{
-		"transactionId": transactionId,
-		"ceremonyId":    ceremonyId,
-		"characterId":   characterId,
-	}).Debug("Invitee removed - would emit InviteeRemoved event")
-
-	return ceremony, nil
+	// Emit InviteeRemoved event
+	return ceremony, message.Emit(p.producer)(func(mb *message.Buffer) error {
+		now := time.Now()
+		inviteeRemovedProvider := InviteeRemovedEventProvider(
+			ceremony.Id(),
+			ceremony.MarriageId(),
+			ceremony.CharacterId1(),
+			ceremony.CharacterId2(),
+			characterId,
+			now,
+			0, // TODO: Track removed by character ID when available
+		)
+		
+		return mb.Put(marriageMsg.EnvEventTopicStatus, inviteeRemovedProvider)
+	})
 }
 
 // GetCeremonyById retrieves a ceremony by its ID

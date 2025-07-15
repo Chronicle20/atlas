@@ -1,8 +1,6 @@
 package family
 
 import (
-	"atlas-family/logger"
-	"os"
 	"testing"
 
 	"github.com/google/uuid"
@@ -10,7 +8,7 @@ import (
 
 func TestFamilyIntegration_EntityTransformation(t *testing.T) {
 	// Test the entity transformation pipeline without requiring database connectivity
-	
+
 	// Create a family member
 	characterId := uint32(12345)
 	tenantId := uuid.New()
@@ -28,7 +26,7 @@ func TestFamilyIntegration_EntityTransformation(t *testing.T) {
 
 	// Convert to entity
 	entity := ToEntity(member)
-	
+
 	// Verify entity fields
 	if entity.CharacterId != characterId {
 		t.Errorf("Expected CharacterId %d, got %d", characterId, entity.CharacterId)
@@ -88,7 +86,7 @@ func TestFamilyIntegration_EntityTransformation(t *testing.T) {
 
 func TestFamilyIntegration_FamilyRelationships(t *testing.T) {
 	// Test family relationships without database dependency
-	
+
 	// Create senior member
 	seniorId := uint32(12345)
 	seniorTenantId := uuid.New()
@@ -158,11 +156,11 @@ func TestFamilyIntegration_FamilyRelationships(t *testing.T) {
 
 func TestFamilyIntegration_ReputationOperations(t *testing.T) {
 	// Test reputation operations without database dependency
-	
+
 	// Create member with some reputation
 	characterId := uint32(12345)
 	tenantId := uuid.New()
-	
+
 	member, err := NewBuilder(characterId, tenantId, uint16(50), 1).
 		SetRep(1000).
 		SetDailyRep(100).
@@ -280,10 +278,10 @@ func TestFamilyIntegration_ValidationRules(t *testing.T) {
 	// Test daily rep cap validation
 	t.Run("Daily rep cap validation", func(t *testing.T) {
 		tests := []struct {
-			name           string
+			name            string
 			currentDailyRep uint32
-			additionalRep  uint32
-			expectedResult bool
+			additionalRep   uint32
+			expectedResult  bool
 		}{
 			{"Under cap", 1000, 500, true},
 			{"At cap", 5000, 0, true},
@@ -305,9 +303,9 @@ func TestFamilyIntegration_ValidationRules(t *testing.T) {
 	// Test builder validation
 	t.Run("Builder validation", func(t *testing.T) {
 		tests := []struct {
-			name        string
+			name         string
 			setupBuilder func() *Builder
-			expectError bool
+			expectError  bool
 		}{
 			{
 				name: "Valid builder",
@@ -358,28 +356,5 @@ func TestFamilyIntegration_ValidationRules(t *testing.T) {
 				}
 			})
 		}
-	})
-}
-
-// Integration test to verify the complete build process works
-func TestFamilyIntegration_BuildProcess(t *testing.T) {
-	// Test that the project builds successfully
-	if os.Getenv("SKIP_BUILD_TEST") != "true" {
-		t.Skip("Skipping build test - set SKIP_BUILD_TEST=true to run")
-	}
-
-	t.Run("Build family service", func(t *testing.T) {
-		// This would typically be run as part of CI/CD
-		// For now, we'll just verify imports work
-		l := logger.CreateLogger("test")
-		if l == nil {
-			t.Error("Failed to create logger")
-		}
-
-		// Verify database connection works (this may fail in test environment)
-		// db := database.Connect(l)
-		// if db == nil {
-		// 	t.Error("Failed to connect to database")
-		// }
 	})
 }

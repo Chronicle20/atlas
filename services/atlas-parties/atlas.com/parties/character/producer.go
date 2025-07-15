@@ -29,3 +29,19 @@ func logoutEventProvider(partyId uint32, worldId byte, characterId uint32) model
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func levelChangedEventProvider(partyId uint32, worldId byte, characterId uint32, oldLevel byte, newLevel byte, name string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(partyId))
+	value := &memberStatusEvent[memberLevelChangedEventBody]{
+		PartyId:     partyId,
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        EventPartyMemberStatusTypeLevelChanged,
+		Body: memberLevelChangedEventBody{
+			OldLevel: oldLevel,
+			NewLevel: newLevel,
+			Name:     name,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

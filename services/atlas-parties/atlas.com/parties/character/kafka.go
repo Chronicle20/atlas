@@ -1,9 +1,10 @@
 package character
 
 const (
-	EnvEventMemberStatusTopic        = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
-	EventPartyMemberStatusTypeLogin  = "LOGIN"
-	EventPartyMemberStatusTypeLogout = "LOGOUT"
+	EnvEventMemberStatusTopic             = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
+	EventPartyMemberStatusTypeLogin       = "LOGIN"
+	EventPartyMemberStatusTypeLogout      = "LOGOUT"
+	EventPartyMemberStatusTypeLevelChanged = "LEVEL_CHANGED"
 )
 
 type memberStatusEvent[E any] struct {
@@ -18,4 +19,10 @@ type memberLoginEventBody struct {
 }
 
 type memberLogoutEventBody struct {
+}
+
+type memberLevelChangedEventBody struct {
+	OldLevel byte   `json:"oldLevel"`
+	NewLevel byte   `json:"newLevel"`
+	Name     string `json:"name"`
 }

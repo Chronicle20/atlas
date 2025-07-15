@@ -235,7 +235,7 @@ func handleStatusEventLevelChanged(l logrus.FieldLogger, ctx context.Context, e 
 		WithField("levelAmount", e.Body.Amount).
 		Debugf("Processing level changed event for character [%d].", e.CharacterId)
 
-	err := character.NewProcessor(l, ctx).LevelChange(byte(e.WorldId), byte(e.Body.ChannelId), e.CharacterId, e.Body.Current)
+	err := character.NewProcessor(l, ctx).LevelChangeAndEmit(e.CharacterId, e.Body.Current)
 	if err != nil {
 		l.WithError(err).
 			WithField("characterId", e.CharacterId).

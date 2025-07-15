@@ -228,3 +228,22 @@ func ValidateSeniorId(characterId uint32, seniorId *uint32) error {
 	}
 	return nil
 }
+
+// ValidateLevelDifference validates the level difference between senior and junior (package-level)
+func ValidateLevelDifference(seniorLevel uint16, juniorLevel uint16) bool {
+	diff := int(seniorLevel) - int(juniorLevel)
+	if diff < 0 {
+		diff = -diff
+	}
+	return diff <= 20
+}
+
+// ValidateLocation validates that senior and junior are on the same world and map
+func ValidateLocation(seniorWorld byte, seniorMap uint32, juniorWorld byte, juniorMap uint32) bool {
+	return seniorWorld == juniorWorld && seniorMap == juniorMap
+}
+
+// ValidateDailyRepCap validates that adding additional rep doesn't exceed the daily cap
+func ValidateDailyRepCap(currentDailyRep uint32, additionalRep uint32) bool {
+	return currentDailyRep+additionalRep <= 5000
+}

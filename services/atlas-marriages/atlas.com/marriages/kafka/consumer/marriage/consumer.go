@@ -383,7 +383,7 @@ func handleCancelCeremony(l logrus.FieldLogger, ctx context.Context, processor m
 		transactionId := uuid.New()
 		
 		// Process the ceremony cancellation
-		ceremony, err := processor.CancelCeremonyAndEmit(transactionId, cmd.Body.CeremonyId)
+		ceremony, err := processor.CancelCeremonyAndEmit(transactionId, cmd.Body.CeremonyId, cmd.CharacterId, "ceremony_cancelled")
 		if err != nil {
 			l.WithError(err).WithField("ceremonyId", cmd.Body.CeremonyId).Error("Failed to cancel ceremony")
 			
@@ -423,7 +423,7 @@ func handlePostponeCeremony(l logrus.FieldLogger, ctx context.Context, processor
 		transactionId := uuid.New()
 		
 		// Process the ceremony postponement
-		ceremony, err := processor.PostponeCeremonyAndEmit(transactionId, cmd.Body.CeremonyId)
+		ceremony, err := processor.PostponeCeremonyAndEmit(transactionId, cmd.Body.CeremonyId, "ceremony_postponed")
 		if err != nil {
 			l.WithError(err).WithField("ceremonyId", cmd.Body.CeremonyId).Error("Failed to postpone ceremony")
 			
@@ -464,7 +464,7 @@ func handleRescheduleCeremony(l logrus.FieldLogger, ctx context.Context, process
 		transactionId := uuid.New()
 		
 		// Process the ceremony rescheduling
-		ceremony, err := processor.RescheduleCeremonyAndEmit(transactionId, cmd.Body.CeremonyId, cmd.Body.ScheduledAt)
+		ceremony, err := processor.RescheduleCeremonyAndEmit(transactionId, cmd.Body.CeremonyId, cmd.Body.ScheduledAt, cmd.CharacterId)
 		if err != nil {
 			l.WithError(err).WithFields(logrus.Fields{
 				"ceremonyId":  cmd.Body.CeremonyId,
@@ -508,7 +508,7 @@ func handleAddInvitee(l logrus.FieldLogger, ctx context.Context, processor marri
 		transactionId := uuid.New()
 		
 		// Process adding the invitee
-		ceremony, err := processor.AddInviteeAndEmit(transactionId, cmd.Body.CeremonyId, cmd.Body.CharacterId)
+		ceremony, err := processor.AddInviteeAndEmit(transactionId, cmd.Body.CeremonyId, cmd.Body.CharacterId, cmd.CharacterId)
 		if err != nil {
 			l.WithError(err).WithFields(logrus.Fields{
 				"ceremonyId": cmd.Body.CeremonyId,
@@ -555,7 +555,7 @@ func handleRemoveInvitee(l logrus.FieldLogger, ctx context.Context, processor ma
 		transactionId := uuid.New()
 		
 		// Process removing the invitee
-		ceremony, err := processor.RemoveInviteeAndEmit(transactionId, cmd.Body.CeremonyId, cmd.Body.CharacterId)
+		ceremony, err := processor.RemoveInviteeAndEmit(transactionId, cmd.Body.CeremonyId, cmd.Body.CharacterId, cmd.CharacterId)
 		if err != nil {
 			l.WithError(err).WithFields(logrus.Fields{
 				"ceremonyId": cmd.Body.CeremonyId,

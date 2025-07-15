@@ -58,17 +58,17 @@ type Processor interface {
 	CompleteCeremony(ceremonyId uint32) model.Provider[Ceremony]
 	CompleteCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32) (Ceremony, error)
 	CancelCeremony(ceremonyId uint32) model.Provider[Ceremony]
-	CancelCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32) (Ceremony, error)
+	CancelCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32, cancelledBy uint32, reason string) (Ceremony, error)
 	PostponeCeremony(ceremonyId uint32) model.Provider[Ceremony]
-	PostponeCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32) (Ceremony, error)
+	PostponeCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32, reason string) (Ceremony, error)
 	RescheduleCeremony(ceremonyId uint32, newScheduledAt time.Time) model.Provider[Ceremony]
-	RescheduleCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32, newScheduledAt time.Time) (Ceremony, error)
+	RescheduleCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32, newScheduledAt time.Time, rescheduledBy uint32) (Ceremony, error)
 
 	// Ceremony invitee management
 	AddInvitee(ceremonyId uint32, characterId uint32) model.Provider[Ceremony]
-	AddInviteeAndEmit(transactionId uuid.UUID, ceremonyId uint32, characterId uint32) (Ceremony, error)
+	AddInviteeAndEmit(transactionId uuid.UUID, ceremonyId uint32, characterId uint32, addedBy uint32) (Ceremony, error)
 	RemoveInvitee(ceremonyId uint32, characterId uint32) model.Provider[Ceremony]
-	RemoveInviteeAndEmit(transactionId uuid.UUID, ceremonyId uint32, characterId uint32) (Ceremony, error)
+	RemoveInviteeAndEmit(transactionId uuid.UUID, ceremonyId uint32, characterId uint32, removedBy uint32) (Ceremony, error)
 	
 	// Ceremony state management
 	AdvanceCeremonyState(ceremonyId uint32, nextState string) model.Provider[Ceremony]
@@ -941,7 +941,7 @@ func (p *ProcessorImpl) CancelCeremony(ceremonyId uint32) model.Provider[Ceremon
 }
 
 // CancelCeremonyAndEmit cancels a ceremony and emits events
-func (p *ProcessorImpl) CancelCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32) (Ceremony, error) {
+func (p *ProcessorImpl) CancelCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32, cancelledBy uint32, reason string) (Ceremony, error) {
 	ceremony, err := p.CancelCeremony(ceremonyId)()
 	if err != nil {
 		return Ceremony{}, err
@@ -959,8 +959,8 @@ func (p *ProcessorImpl) CancelCeremonyAndEmit(transactionId uuid.UUID, ceremonyI
 			ceremony.CharacterId1(),
 			ceremony.CharacterId2(),
 			cancelledAt,
-			0, // TODO: Track cancelled by character ID when needed
-			"ceremony_cancelled", // TODO: Track cancel reason when needed
+			cancelledBy,
+			reason,
 		)
 		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
 	})
@@ -1025,7 +1025,7 @@ func (p *ProcessorImpl) PostponeCeremony(ceremonyId uint32) model.Provider[Cerem
 }
 
 // PostponeCeremonyAndEmit postpones a ceremony and emits events
-func (p *ProcessorImpl) PostponeCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32) (Ceremony, error) {
+func (p *ProcessorImpl) PostponeCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32, reason string) (Ceremony, error) {
 	ceremony, err := p.PostponeCeremony(ceremonyId)()
 	if err != nil {
 		return Ceremony{}, err
@@ -1043,7 +1043,7 @@ func (p *ProcessorImpl) PostponeCeremonyAndEmit(transactionId uuid.UUID, ceremon
 			ceremony.CharacterId1(),
 			ceremony.CharacterId2(),
 			postponedAt,
-			"ceremony_postponed", // TODO: Track postpone reason when needed
+			reason,
 		)
 		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
 	})
@@ -1111,7 +1111,7 @@ func (p *ProcessorImpl) RescheduleCeremony(ceremonyId uint32, newScheduledAt tim
 }
 
 // RescheduleCeremonyAndEmit reschedules a ceremony and emits events
-func (p *ProcessorImpl) RescheduleCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32, newScheduledAt time.Time) (Ceremony, error) {
+func (p *ProcessorImpl) RescheduleCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32, newScheduledAt time.Time, rescheduledBy uint32) (Ceremony, error) {
 	ceremony, err := p.RescheduleCeremony(ceremonyId, newScheduledAt)()
 	if err != nil {
 		return Ceremony{}, err
@@ -1127,7 +1127,7 @@ func (p *ProcessorImpl) RescheduleCeremonyAndEmit(transactionId uuid.UUID, cerem
 			ceremony.CharacterId2(),
 			rescheduledAt,
 			newScheduledAt,
-			0, // TODO: Track rescheduled by character ID when needed
+			rescheduledBy,
 		)
 		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
 	})
@@ -1198,7 +1198,7 @@ func (p *ProcessorImpl) AddInvitee(ceremonyId uint32, characterId uint32) model.
 }
 
 // AddInviteeAndEmit adds an invitee and emits events
-func (p *ProcessorImpl) AddInviteeAndEmit(transactionId uuid.UUID, ceremonyId uint32, characterId uint32) (Ceremony, error) {
+func (p *ProcessorImpl) AddInviteeAndEmit(transactionId uuid.UUID, ceremonyId uint32, characterId uint32, addedBy uint32) (Ceremony, error) {
 	ceremony, err := p.AddInvitee(ceremonyId, characterId)()
 	if err != nil {
 		return Ceremony{}, err
@@ -1214,7 +1214,7 @@ func (p *ProcessorImpl) AddInviteeAndEmit(transactionId uuid.UUID, ceremonyId ui
 			ceremony.CharacterId2(),
 			characterId,
 			now,
-			0, // TODO: Track added by character ID when available
+			addedBy,
 		)
 		
 		return mb.Put(marriageMsg.EnvEventTopicStatus, inviteeAddedProvider)
@@ -1276,7 +1276,7 @@ func (p *ProcessorImpl) RemoveInvitee(ceremonyId uint32, characterId uint32) mod
 }
 
 // RemoveInviteeAndEmit removes an invitee and emits events
-func (p *ProcessorImpl) RemoveInviteeAndEmit(transactionId uuid.UUID, ceremonyId uint32, characterId uint32) (Ceremony, error) {
+func (p *ProcessorImpl) RemoveInviteeAndEmit(transactionId uuid.UUID, ceremonyId uint32, characterId uint32, removedBy uint32) (Ceremony, error) {
 	ceremony, err := p.RemoveInvitee(ceremonyId, characterId)()
 	if err != nil {
 		return Ceremony{}, err
@@ -1292,7 +1292,7 @@ func (p *ProcessorImpl) RemoveInviteeAndEmit(transactionId uuid.UUID, ceremonyId
 			ceremony.CharacterId2(),
 			characterId,
 			now,
-			0, // TODO: Track removed by character ID when available
+			removedBy,
 		)
 		
 		return mb.Put(marriageMsg.EnvEventTopicStatus, inviteeRemovedProvider)
@@ -1555,8 +1555,8 @@ func (p *ProcessorImpl) AdvanceCeremonyStateAndEmit(transactionId uuid.UUID, cer
 				ceremony.CharacterId1(),
 				ceremony.CharacterId2(),
 				cancelledAt,
-				0, // TODO: Track cancelled by character ID when needed
-				"ceremony_cancelled", // TODO: Track cancel reason when needed
+				0, // No specific character ID for state transitions
+				"ceremony_cancelled", // Default reason for state transitions
 			)
 			return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
 		case "postponed":
@@ -1570,7 +1570,7 @@ func (p *ProcessorImpl) AdvanceCeremonyStateAndEmit(transactionId uuid.UUID, cer
 				ceremony.CharacterId1(),
 				ceremony.CharacterId2(),
 				postponedAt,
-				"ceremony_postponed", // TODO: Track postpone reason when needed
+				"ceremony_postponed", // Default reason for state transitions
 			)
 			return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
 		default:

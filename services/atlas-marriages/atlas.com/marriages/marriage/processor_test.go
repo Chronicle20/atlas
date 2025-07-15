@@ -85,7 +85,7 @@ func setupTestData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	now := time.Now()
 	engaged := now
 	married := now
-	
+
 	// Create an active marriage for character 100
 	activeMarriage := Entity{
 		ID:           1,
@@ -107,18 +107,18 @@ func setupTestData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	recentProposalTime := now.Add(-2 * time.Hour)
 	recentCooldownUntil := now.Add(22 * time.Hour)
 	recentProposal := ProposalEntity{
-		ID:           1,
-		ProposerId:   200,
-		TargetId:     201,
-		Status:       ProposalStatusRejected,
-		ProposedAt:   recentProposalTime, // 2 hours ago (within 4-hour global cooldown)
-		RespondedAt:  &recentProposalTime,
-		ExpiresAt:    recentProposalTime.Add(ProposalExpiryDuration),
+		ID:             1,
+		ProposerId:     200,
+		TargetId:       201,
+		Status:         ProposalStatusRejected,
+		ProposedAt:     recentProposalTime, // 2 hours ago (within 4-hour global cooldown)
+		RespondedAt:    &recentProposalTime,
+		ExpiresAt:      recentProposalTime.Add(ProposalExpiryDuration),
 		RejectionCount: 1,
-		CooldownUntil: &recentCooldownUntil, // Must have cooldown for rejected proposals
-		TenantId:     tenantId,
-		CreatedAt:    recentProposalTime,
-		UpdatedAt:    recentProposalTime,
+		CooldownUntil:  &recentCooldownUntil, // Must have cooldown for rejected proposals
+		TenantId:       tenantId,
+		CreatedAt:      recentProposalTime,
+		UpdatedAt:      recentProposalTime,
 	}
 	if err := db.Create(&recentProposal).Error; err != nil {
 		t.Fatalf("Failed to create test proposal: %v", err)
@@ -128,18 +128,18 @@ func setupTestData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	rejectedProposalTime := now.Add(-12 * time.Hour)
 	cooldownUntil := now.Add(12 * time.Hour)
 	rejectedProposal := ProposalEntity{
-		ID:           2,
-		ProposerId:   300,
-		TargetId:     301,
-		Status:       ProposalStatusRejected,
-		ProposedAt:   rejectedProposalTime, // 12 hours ago
-		RespondedAt:  &rejectedProposalTime,
-		ExpiresAt:    rejectedProposalTime.Add(ProposalExpiryDuration),
+		ID:             2,
+		ProposerId:     300,
+		TargetId:       301,
+		Status:         ProposalStatusRejected,
+		ProposedAt:     rejectedProposalTime, // 12 hours ago
+		RespondedAt:    &rejectedProposalTime,
+		ExpiresAt:      rejectedProposalTime.Add(ProposalExpiryDuration),
 		RejectionCount: 1,
-		CooldownUntil: &cooldownUntil, // 12 hours from now (within cooldown)
-		TenantId:     tenantId,
-		CreatedAt:    rejectedProposalTime,
-		UpdatedAt:    rejectedProposalTime,
+		CooldownUntil:  &cooldownUntil, // 12 hours from now (within cooldown)
+		TenantId:       tenantId,
+		CreatedAt:      rejectedProposalTime,
+		UpdatedAt:      rejectedProposalTime,
 	}
 	if err := db.Create(&rejectedProposal).Error; err != nil {
 		t.Fatalf("Failed to create test rejected proposal: %v", err)
@@ -148,16 +148,16 @@ func setupTestData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	// Create an expired proposal for per-target cooldown testing
 	expiredProposalTime := now.Add(-26 * time.Hour)
 	expiredProposal := ProposalEntity{
-		ID:           3,
-		ProposerId:   400,
-		TargetId:     401,
-		Status:       ProposalStatusExpired,
-		ProposedAt:   expiredProposalTime, // 26 hours ago
-		ExpiresAt:    expiredProposalTime.Add(ProposalExpiryDuration), // Expired 2 hours ago
+		ID:             3,
+		ProposerId:     400,
+		TargetId:       401,
+		Status:         ProposalStatusExpired,
+		ProposedAt:     expiredProposalTime,                             // 26 hours ago
+		ExpiresAt:      expiredProposalTime.Add(ProposalExpiryDuration), // Expired 2 hours ago
 		RejectionCount: 0,
-		TenantId:     tenantId,
-		CreatedAt:    expiredProposalTime,
-		UpdatedAt:    now.Add(-2 * time.Hour), // Updated when expired
+		TenantId:       tenantId,
+		CreatedAt:      expiredProposalTime,
+		UpdatedAt:      now.Add(-2 * time.Hour), // Updated when expired
 	}
 	if err := db.Create(&expiredProposal).Error; err != nil {
 		t.Fatalf("Failed to create test expired proposal: %v", err)
@@ -166,16 +166,16 @@ func setupTestData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	// Create a pending proposal for active proposal testing
 	pendingProposalTime := now.Add(-1 * time.Hour)
 	pendingProposal := ProposalEntity{
-		ID:           4,
-		ProposerId:   500,
-		TargetId:     501,
-		Status:       ProposalStatusPending,
-		ProposedAt:   pendingProposalTime, // 1 hour ago
-		ExpiresAt:    pendingProposalTime.Add(ProposalExpiryDuration), // Expires in 23 hours
+		ID:             4,
+		ProposerId:     500,
+		TargetId:       501,
+		Status:         ProposalStatusPending,
+		ProposedAt:     pendingProposalTime,                             // 1 hour ago
+		ExpiresAt:      pendingProposalTime.Add(ProposalExpiryDuration), // Expires in 23 hours
 		RejectionCount: 0,
-		TenantId:     tenantId,
-		CreatedAt:    pendingProposalTime,
-		UpdatedAt:    pendingProposalTime,
+		TenantId:       tenantId,
+		CreatedAt:      pendingProposalTime,
+		UpdatedAt:      pendingProposalTime,
 	}
 	if err := db.Create(&pendingProposal).Error; err != nil {
 		t.Fatalf("Failed to create test pending proposal: %v", err)
@@ -190,13 +190,13 @@ func TestProcessor_CheckEligibility(t *testing.T) {
 
 	// Create mock character processor
 	mockCharacterProcessor := NewMockCharacterProcessor()
-	
-	// Add test characters with different levels
-	mockCharacterProcessor.AddCharacter(1, "EligibleCharacter", 15)    // Level 15 (above requirement)
-	mockCharacterProcessor.AddCharacter(2, "IneligibleCharacter", 5)   // Level 5 (below requirement)
-	mockCharacterProcessor.AddCharacter(3, "ExactlyEligible", 10)      // Level 10 (exactly at requirement)
 
-	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
+	// Add test characters with different levels
+	mockCharacterProcessor.AddCharacter(1, "EligibleCharacter", 15)  // Level 15 (above requirement)
+	mockCharacterProcessor.AddCharacter(2, "IneligibleCharacter", 5) // Level 5 (below requirement)
+	mockCharacterProcessor.AddCharacter(3, "ExactlyEligible", 10)    // Level 10 (exactly at requirement)
+
+	processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
 
 	tests := []struct {
 		name        string
@@ -233,7 +233,7 @@ func TestProcessor_CheckEligibility(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			eligible, err := processor.CheckEligibility(tt.characterId)()
-			
+
 			if tt.characterId == 999 {
 				// Expect error for non-existent character
 				if err == nil {
@@ -241,11 +241,11 @@ func TestProcessor_CheckEligibility(t *testing.T) {
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
-			
+
 			if eligible != tt.expected {
 				t.Errorf("Expected eligibility %v, got %v for %s", tt.expected, eligible, tt.description)
 			}
@@ -262,14 +262,14 @@ func TestProcessor_CheckProposalEligibility(t *testing.T) {
 
 	// Create mock character processor with eligible characters
 	mockCharacterProcessor := NewMockCharacterProcessor()
-	mockCharacterProcessor.AddCharacter(1, "Character1", 15)    // Eligible
-	mockCharacterProcessor.AddCharacter(2, "Character2", 15)    // Eligible
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)     // Eligible
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)     // Eligible
 	mockCharacterProcessor.AddCharacter(100, "Character100", 15) // Eligible (married)
 	mockCharacterProcessor.AddCharacter(101, "Character101", 15) // Eligible (married)
 	mockCharacterProcessor.AddCharacter(500, "Character500", 15) // Eligible (has proposal)
 	mockCharacterProcessor.AddCharacter(501, "Character501", 15) // Eligible (has proposal)
 
-	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
+	processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
 
 	tests := []struct {
 		name        string
@@ -487,12 +487,12 @@ func TestProcessor_GetActiveProposal(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
-			
+
 			found := proposal != nil
 			if found != tt.expectFound {
 				t.Errorf("Expected active proposal found %v, got %v for %s", tt.expectFound, found, tt.description)
 			}
-			
+
 			if found {
 				if proposal.ProposerId() != tt.proposerId {
 					t.Errorf("Expected proposer ID %d, got %d", tt.proposerId, proposal.ProposerId())
@@ -518,34 +518,34 @@ func TestProcessor_GetPendingProposalsByCharacter(t *testing.T) {
 	processor := NewProcessor(log, ctx, db)
 
 	tests := []struct {
-		name         string
-		characterId  uint32
+		name          string
+		characterId   uint32
 		expectedCount int
-		description  string
+		description   string
 	}{
 		{
-			name:         "no pending proposals",
-			characterId:  1,
+			name:          "no pending proposals",
+			characterId:   1,
 			expectedCount: 0,
-			description:  "Character with no pending proposals",
+			description:   "Character with no pending proposals",
 		},
 		{
-			name:         "has pending proposal as proposer",
-			characterId:  500, // This character has pending proposal to 501
+			name:          "has pending proposal as proposer",
+			characterId:   500, // This character has pending proposal to 501
 			expectedCount: 1,
-			description:  "Character with pending proposal as proposer",
+			description:   "Character with pending proposal as proposer",
 		},
 		{
-			name:         "has pending proposal as target",
-			characterId:  501, // This character has pending proposal from 500
+			name:          "has pending proposal as target",
+			characterId:   501, // This character has pending proposal from 500
 			expectedCount: 1,
-			description:  "Character with pending proposal as target",
+			description:   "Character with pending proposal as target",
 		},
 		{
-			name:         "has only non-pending proposals",
-			characterId:  200, // This character has rejected proposal
+			name:          "has only non-pending proposals",
+			characterId:   200, // This character has rejected proposal
 			expectedCount: 0,
-			description:  "Character with only non-pending proposals",
+			description:   "Character with only non-pending proposals",
 		},
 	}
 
@@ -555,11 +555,11 @@ func TestProcessor_GetPendingProposalsByCharacter(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
-			
+
 			if len(proposals) != tt.expectedCount {
 				t.Errorf("Expected %d pending proposals, got %d for %s", tt.expectedCount, len(proposals), tt.description)
 			}
-			
+
 			// Verify all returned proposals are actually pending
 			for _, proposal := range proposals {
 				if !proposal.IsPending() {
@@ -583,32 +583,32 @@ func TestProcessor_GetProposalHistory(t *testing.T) {
 	processor := NewProcessor(log, ctx, db)
 
 	tests := []struct {
-		name         string
-		proposerId   uint32
-		targetId     uint32
+		name          string
+		proposerId    uint32
+		targetId      uint32
 		expectedCount int
-		description  string
+		description   string
 	}{
 		{
-			name:         "no proposal history",
-			proposerId:   1,
-			targetId:     2,
+			name:          "no proposal history",
+			proposerId:    1,
+			targetId:      2,
 			expectedCount: 0,
-			description:  "Characters with no proposal history",
+			description:   "Characters with no proposal history",
 		},
 		{
-			name:         "has proposal history",
-			proposerId:   200, // This character has proposal to 201
-			targetId:     201,
+			name:          "has proposal history",
+			proposerId:    200, // This character has proposal to 201
+			targetId:      201,
 			expectedCount: 1,
-			description:  "Characters with proposal history",
+			description:   "Characters with proposal history",
 		},
 		{
-			name:         "multiple proposal history",
-			proposerId:   500, // This character has proposal to 501
-			targetId:     501,
+			name:          "multiple proposal history",
+			proposerId:    500, // This character has proposal to 501
+			targetId:      501,
 			expectedCount: 1,
-			description:  "Characters with multiple proposal history",
+			description:   "Characters with multiple proposal history",
 		},
 	}
 
@@ -618,11 +618,11 @@ func TestProcessor_GetProposalHistory(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
-			
+
 			if len(history) != tt.expectedCount {
 				t.Errorf("Expected %d proposal history entries, got %d for %s", tt.expectedCount, len(history), tt.description)
 			}
-			
+
 			// Verify all returned proposals have correct proposer and target
 			for _, proposal := range history {
 				if proposal.ProposerId() != tt.proposerId {
@@ -650,7 +650,7 @@ func TestProcessor_Propose_Success(t *testing.T) {
 	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
 	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
 
-	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
+	processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
 
 	proposerId := uint32(1)
 	targetId := uint32(2)
@@ -715,7 +715,7 @@ func TestProcessor_Propose_EligibilityFailures(t *testing.T) {
 	mockCharacterProcessor.AddCharacter(500, "Character500", 15) // Has active proposal
 	mockCharacterProcessor.AddCharacter(501, "Character501", 15) // Target of active proposal
 
-	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
+	processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
 
 	tests := []struct {
 		name        string
@@ -788,7 +788,7 @@ func TestProcessor_ProposeAndEmit(t *testing.T) {
 	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
 	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
 
-	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
+	processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
 
 	proposerId := uint32(1)
 	targetId := uint32(2)
@@ -824,7 +824,7 @@ func TestProcessor_EligibilityConstants(t *testing.T) {
 	if EligibilityRequirement != 10 {
 		t.Errorf("Expected eligibility requirement to be 10, got %d", EligibilityRequirement)
 	}
-	
+
 	// Test that the level requirement is actually enforced
 	db := setupTestDB(t)
 	tenantId := uuid.New()
@@ -833,13 +833,13 @@ func TestProcessor_EligibilityConstants(t *testing.T) {
 
 	// Create mock character processor
 	mockCharacterProcessor := NewMockCharacterProcessor()
-	
-	// Add characters at various levels around the requirement
-	mockCharacterProcessor.AddCharacter(1, "BelowRequirement", byte(EligibilityRequirement-1))  // Level 9
-	mockCharacterProcessor.AddCharacter(2, "AtRequirement", byte(EligibilityRequirement))       // Level 10
-	mockCharacterProcessor.AddCharacter(3, "AboveRequirement", byte(EligibilityRequirement+1))  // Level 11
 
-	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
+	// Add characters at various levels around the requirement
+	mockCharacterProcessor.AddCharacter(1, "BelowRequirement", byte(EligibilityRequirement-1)) // Level 9
+	mockCharacterProcessor.AddCharacter(2, "AtRequirement", byte(EligibilityRequirement))      // Level 10
+	mockCharacterProcessor.AddCharacter(3, "AboveRequirement", byte(EligibilityRequirement+1)) // Level 11
+
+	processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
 
 	// Test character below requirement
 	eligible, err := processor.CheckEligibility(1)()
@@ -873,34 +873,44 @@ func TestProcessor_ContextTenantExtraction(t *testing.T) {
 	db := setupTestDB(t)
 	tenantId := uuid.New()
 	log := logrus.New()
-	
+
 	// Create mock character processor with eligible characters
 	mockCharacterProcessor := NewMockCharacterProcessor()
 	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
 	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
-	
+
 	// Test with context that has tenant
 	ctx := setupTestContext(tenantId)
-	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
-	
+	processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
+
 	// This should work without error
 	_, err := processor.CheckEligibility(1)()
 	if err != nil {
 		t.Fatalf("Unexpected error with valid tenant context: %v", err)
 	}
-	
+
 	// Test with context that doesn't have tenant - this should panic
+	// We need to use the WithCharacterProcessor method since NewProcessor itself
+	// tries to create a character processor with tenant context
 	emptyCtx := context.Background()
-	processorWithoutTenant := NewProcessorWithCharacterProcessor(log, emptyCtx, db, mockCharacterProcessor)
 	
-	// This should panic when trying to extract tenant
+	// This should panic when trying to extract tenant during CheckProposalEligibility
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("Expected panic when tenant is not in context")
 		}
 	}()
-	
-	_, _ = processorWithoutTenant.CheckProposalEligibility(1, 2)()
+
+	// Create a new processor with empty context to test the panic
+	processorWithEmptyCtx := &ProcessorImpl{
+		log:                log,
+		ctx:                emptyCtx,
+		db:                 db,
+		producer:           nil,
+		characterProcessor: mockCharacterProcessor,
+	}
+
+	_, _ = processorWithEmptyCtx.CheckProposalEligibility(1, 2)()
 }
 
 func TestProcessor_ErrorHandling(t *testing.T) {
@@ -909,12 +919,12 @@ func TestProcessor_ErrorHandling(t *testing.T) {
 	ctx := setupTestContext(tenantId)
 	log := logrus.New()
 
-	// Create mock character processor 
+	// Create mock character processor
 	mockCharacterProcessor := NewMockCharacterProcessor()
 	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
 	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
 
-	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
+	processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
 
 	// Test with invalid database connection - close the database
 	sqlDB, err := db.DB()
@@ -1006,14 +1016,14 @@ func TestProcessor_ConcurrentAccess(t *testing.T) {
 
 	// Start two goroutines that try to create proposals simultaneously
 	go func() {
-		processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
+		processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
 		_, err := processor.Propose(1, 2)()
 		errors <- err
 		done <- true
 	}()
 
 	go func() {
-		processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
+		processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
 		_, err := processor.Propose(3, 4)()
 		errors <- err
 		done <- true
@@ -1040,11 +1050,11 @@ func TestProcessor_LevelRequirementEnforcement(t *testing.T) {
 
 	// Create mock character processor with characters at different levels
 	mockCharacterProcessor := NewMockCharacterProcessor()
-	mockCharacterProcessor.AddCharacter(1, "LowLevelChar", 5)   // Level 5 - below requirement
-	mockCharacterProcessor.AddCharacter(2, "HighLevelChar", 15) // Level 15 - above requirement
+	mockCharacterProcessor.AddCharacter(1, "LowLevelChar", 5)    // Level 5 - below requirement
+	mockCharacterProcessor.AddCharacter(2, "HighLevelChar", 15)  // Level 15 - above requirement
 	mockCharacterProcessor.AddCharacter(3, "ExactLevelChar", 10) // Level 10 - exactly at requirement
 
-	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
+	processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
 
 	// Test 1: Low level proposer should be rejected
 	t.Run("low level proposer rejected", func(t *testing.T) {
@@ -1086,7 +1096,7 @@ func TestProcessor_LevelRequirementEnforcement(t *testing.T) {
 	t.Run("exact level requirement succeeds", func(t *testing.T) {
 		// Add another character at exact level for this test
 		mockCharacterProcessor.AddCharacter(4, "AnotherExactLevel", 10)
-		
+
 		proposal, err := processor.Propose(3, 4)() // Level 10 proposes to level 10
 		if err != nil {
 			t.Errorf("Expected success for characters at exact level requirement, got error: %v", err)

@@ -17,18 +17,20 @@ const EligibilityRequirement = 10
 
 // Processor interface defines the proposal processing operations
 type Processor interface {
+	WithCharacterProcessor(characterProcessor character.Processor) Processor
+
 	// Proposal operations
 	Propose(proposerId, targetId uint32) model.Provider[Proposal]
 	ProposeAndEmit(transactionId uuid.UUID, proposerId, targetId uint32) (Proposal, error)
-	
+
 	// Eligibility checks
 	CheckEligibility(characterId uint32) model.Provider[bool]
 	CheckProposalEligibility(proposerId, targetId uint32) model.Provider[bool]
-	
+
 	// Cooldown operations
 	CheckGlobalCooldown(proposerId uint32) model.Provider[bool]
 	CheckPerTargetCooldown(proposerId, targetId uint32) model.Provider[bool]
-	
+
 	// Proposal queries
 	GetActiveProposal(proposerId, targetId uint32) model.Provider[*Proposal]
 	GetPendingProposalsByCharacter(characterId uint32) model.Provider[[]Proposal]
@@ -37,10 +39,10 @@ type Processor interface {
 
 // ProcessorImpl implements the Processor interface
 type ProcessorImpl struct {
-	log               logrus.FieldLogger
-	ctx               context.Context
-	db                *gorm.DB
-	producer          ProducerFunction
+	log                logrus.FieldLogger
+	ctx                context.Context
+	db                 *gorm.DB
+	producer           ProducerFunction
 	characterProcessor character.Processor
 }
 
@@ -50,21 +52,21 @@ type ProducerFunction func(token string) model.Provider[[]byte]
 // NewProcessor creates a new processor instance
 func NewProcessor(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	return &ProcessorImpl{
-		log:               log,
-		ctx:               ctx,
-		db:                db,
-		producer:          nil, // Will be implemented when Kafka producer is added
+		log:                log,
+		ctx:                ctx,
+		db:                 db,
+		producer:           nil, // Will be implemented when Kafka producer is added
 		characterProcessor: character.NewProcessor(log, ctx, db),
 	}
 }
 
-// NewProcessorWithCharacterProcessor creates a new processor instance with a custom character processor for testing
-func NewProcessorWithCharacterProcessor(log logrus.FieldLogger, ctx context.Context, db *gorm.DB, characterProcessor character.Processor) Processor {
+// WithCharacterProcessor creates a new processor instance with a custom character processor for testing
+func (p *ProcessorImpl) WithCharacterProcessor(characterProcessor character.Processor) Processor {
 	return &ProcessorImpl{
-		log:               log,
-		ctx:               ctx,
-		db:                db,
-		producer:          nil, // Will be implemented when Kafka producer is added
+		log:                p.log,
+		ctx:                p.ctx,
+		db:                 p.db,
+		producer:           p.producer,
 		characterProcessor: characterProcessor,
 	}
 }
@@ -150,14 +152,14 @@ func (p *ProcessorImpl) ProposeAndEmit(transactionId uuid.UUID, proposerId, targ
 func (p *ProcessorImpl) CheckEligibility(characterId uint32) model.Provider[bool] {
 	return func() (bool, error) {
 		p.log.WithField("characterId", characterId).Debug("Checking character eligibility")
-		
+
 		// Get character information using character processor
 		char, err := p.characterProcessor.GetById(characterId)
 		if err != nil {
 			p.log.WithError(err).WithField("characterId", characterId).Error("Failed to retrieve character")
 			return false, err
 		}
-		
+
 		// Check if character meets minimum level requirement
 		if char.Level() < byte(EligibilityRequirement) {
 			p.log.WithFields(logrus.Fields{
@@ -167,7 +169,7 @@ func (p *ProcessorImpl) CheckEligibility(characterId uint32) model.Provider[bool
 			}).Debug("Character level too low for marriage")
 			return false, nil
 		}
-		
+
 		return true, nil
 	}
 }
@@ -233,7 +235,7 @@ func (p *ProcessorImpl) CheckProposalEligibility(proposerId, targetId uint32) mo
 func (p *ProcessorImpl) CheckGlobalCooldown(proposerId uint32) model.Provider[bool] {
 	return func() (bool, error) {
 		t := tenant.MustFromContext(p.ctx)
-		
+
 		cooldownProvider := CheckGlobalCooldownProvider(p.db, p.log)(proposerId, t.Id())
 		return cooldownProvider()
 	}
@@ -243,7 +245,7 @@ func (p *ProcessorImpl) CheckGlobalCooldown(proposerId uint32) model.Provider[bo
 func (p *ProcessorImpl) CheckPerTargetCooldown(proposerId, targetId uint32) model.Provider[bool] {
 	return func() (bool, error) {
 		t := tenant.MustFromContext(p.ctx)
-		
+
 		cooldownProvider := CheckPerTargetCooldownProvider(p.db, p.log)(proposerId, targetId, t.Id())
 		return cooldownProvider()
 	}
@@ -253,7 +255,7 @@ func (p *ProcessorImpl) CheckPerTargetCooldown(proposerId, targetId uint32) mode
 func (p *ProcessorImpl) GetActiveProposal(proposerId, targetId uint32) model.Provider[*Proposal] {
 	return func() (*Proposal, error) {
 		t := tenant.MustFromContext(p.ctx)
-		
+
 		proposalProvider := GetActiveProposalProvider(p.db, p.log)(proposerId, targetId, t.Id())
 		return proposalProvider()
 	}
@@ -263,7 +265,7 @@ func (p *ProcessorImpl) GetActiveProposal(proposerId, targetId uint32) model.Pro
 func (p *ProcessorImpl) GetPendingProposalsByCharacter(characterId uint32) model.Provider[[]Proposal] {
 	return func() ([]Proposal, error) {
 		t := tenant.MustFromContext(p.ctx)
-		
+
 		proposalsProvider := GetPendingProposalsByCharacterProvider(p.db, p.log)(characterId, t.Id())
 		return proposalsProvider()
 	}
@@ -273,7 +275,7 @@ func (p *ProcessorImpl) GetPendingProposalsByCharacter(characterId uint32) model
 func (p *ProcessorImpl) GetProposalHistory(proposerId, targetId uint32) model.Provider[[]Proposal] {
 	return func() ([]Proposal, error) {
 		t := tenant.MustFromContext(p.ctx)
-		
+
 		historyProvider := GetProposalHistoryProvider(p.db, p.log)(proposerId, targetId, t.Id())
 		return historyProvider()
 	}

@@ -26,18 +26,15 @@ func LookupBrokers() []string {
 }
 
 func Start(l logrus.FieldLogger, config Config, processor interface{}) {
-	// This is a placeholder for the actual consumer start logic
-	// In a real implementation, this would start the Kafka consumer
-	// and process messages using the provided processor
+	// Start the Kafka consumer using the atlas-kafka manager pattern
 	l.WithField("config", config).Info("Starting Kafka consumer")
 	
-	// Create a consumer instance and start consuming
-	c := consumer.New(config)
+	// Get the consumer manager instance  
+	manager := consumer.GetManager()
 	
-	// Start the consumer in a background goroutine
-	go func() {
-		if err := c.Start(context.Background()); err != nil {
-			l.WithError(err).Error("Failed to start Kafka consumer")
-		}
-	}()
+	// Add the consumer to the manager
+	// This will start the consumer in a background goroutine
+	manager.AddConsumer(l, context.Background(), nil)(config)
+	
+	l.Info("Kafka consumer started successfully")
 }

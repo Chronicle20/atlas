@@ -8,7 +8,7 @@ import (
 	"atlas-family/kafka/consumer"
 	"atlas-family/kafka/message"
 	familymsg "atlas-family/kafka/message/family"
-	"github.com/Chronicle20/atlas-kafka/consumer/kafka"
+	atlaskafka "github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -34,7 +34,7 @@ func NewFamilyConsumer(db *gorm.DB, log logrus.FieldLogger, processor family.Pro
 }
 
 // Config returns the consumer configuration for family commands
-func (fc *FamilyConsumer) Config(l logrus.FieldLogger) func(name string) func(token string) func(groupId string) kafka.Config {
+func (fc *FamilyConsumer) Config(l logrus.FieldLogger) func(name string) func(token string) func(groupId string) atlaskafka.Config {
 	return consumer.NewConfig(l)
 }
 

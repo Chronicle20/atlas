@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"atlas-family/database"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"

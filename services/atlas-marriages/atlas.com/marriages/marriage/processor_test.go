@@ -1031,3 +1031,68 @@ func TestProcessor_ConcurrentAccess(t *testing.T) {
 		t.Errorf("Both concurrent proposals failed: %v, %v", err1, err2)
 	}
 }
+
+func TestProcessor_LevelRequirementEnforcement(t *testing.T) {
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+	log := logrus.New()
+
+	// Create mock character processor with characters at different levels
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "LowLevelChar", 5)   // Level 5 - below requirement
+	mockCharacterProcessor.AddCharacter(2, "HighLevelChar", 15) // Level 15 - above requirement
+	mockCharacterProcessor.AddCharacter(3, "ExactLevelChar", 10) // Level 10 - exactly at requirement
+
+	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
+
+	// Test 1: Low level proposer should be rejected
+	t.Run("low level proposer rejected", func(t *testing.T) {
+		_, err := processor.Propose(1, 2)() // Level 5 proposes to level 15
+		if err == nil {
+			t.Error("Expected error for low level proposer")
+		}
+		if !contains(err.Error(), "eligibility check failed") {
+			t.Errorf("Expected eligibility check failure, got: %v", err)
+		}
+	})
+
+	// Test 2: High level proposer with low level target should be rejected
+	t.Run("low level target rejected", func(t *testing.T) {
+		_, err := processor.Propose(2, 1)() // Level 15 proposes to level 5
+		if err == nil {
+			t.Error("Expected error for low level target")
+		}
+		if !contains(err.Error(), "eligibility check failed") {
+			t.Errorf("Expected eligibility check failure, got: %v", err)
+		}
+	})
+
+	// Test 3: Both high level should succeed
+	t.Run("both eligible characters succeed", func(t *testing.T) {
+		proposal, err := processor.Propose(2, 3)() // Level 15 proposes to level 10
+		if err != nil {
+			t.Errorf("Expected success for both eligible characters, got error: %v", err)
+		}
+		if proposal.ProposerId() != 2 {
+			t.Errorf("Expected proposer ID 2, got %d", proposal.ProposerId())
+		}
+		if proposal.TargetId() != 3 {
+			t.Errorf("Expected target ID 3, got %d", proposal.TargetId())
+		}
+	})
+
+	// Test 4: Exact level requirement should succeed
+	t.Run("exact level requirement succeeds", func(t *testing.T) {
+		// Add another character at exact level for this test
+		mockCharacterProcessor.AddCharacter(4, "AnotherExactLevel", 10)
+		
+		proposal, err := processor.Propose(3, 4)() // Level 10 proposes to level 10
+		if err != nil {
+			t.Errorf("Expected success for characters at exact level requirement, got error: %v", err)
+		}
+		if !proposal.IsPending() {
+			t.Error("Expected proposal to be pending")
+		}
+	})
+}

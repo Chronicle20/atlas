@@ -6,12 +6,14 @@ import (
 	"strconv"
 	"strings"
 
+	"atlas-family/database"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 // RegisterRoutes registers all family-related REST endpoints
-func RegisterRoutes(router *mux.Router, l logrus.FieldLogger, processor Processor, administrator Administrator) {
+func RegisterRoutes(router *mux.Router, l logrus.FieldLogger, db *gorm.DB, processor Processor, administrator Administrator) {
 	// Family management endpoints
 	router.HandleFunc("/families/{characterId}/juniors", addJuniorHandler(l, processor)).Methods(http.MethodPost)
 	router.HandleFunc("/families/links/{characterId}", breakLinkHandler(l, processor)).Methods(http.MethodDelete)
@@ -20,10 +22,10 @@ func RegisterRoutes(router *mux.Router, l logrus.FieldLogger, processor Processo
 	// Reputation endpoints
 	router.HandleFunc("/families/reputation/activities", processActivityHandler(l, administrator)).Methods(http.MethodPost)
 	router.HandleFunc("/families/reputation/redeem", redeemRepHandler(l, processor)).Methods(http.MethodPost)
-	router.HandleFunc("/families/reputation/{characterId}", getRepHandler(l, administrator)).Methods(http.MethodGet)
+	router.HandleFunc("/families/reputation/{characterId}", getRepHandler(l, db)).Methods(http.MethodGet)
 	
 	// Location endpoint
-	router.HandleFunc("/families/location/{characterId}", getLocationHandler(l, administrator)).Methods(http.MethodGet)
+	router.HandleFunc("/families/location/{characterId}", getLocationHandler(l, db)).Methods(http.MethodGet)
 }
 
 // addJuniorHandler handles POST /families/{characterId}/juniors
@@ -314,7 +316,7 @@ func redeemRepHandler(l logrus.FieldLogger, processor Processor) http.HandlerFun
 }
 
 // getRepHandler handles GET /families/reputation/{characterId}
-func getRepHandler(l logrus.FieldLogger, administrator Administrator) http.HandlerFunc {
+func getRepHandler(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		characterIdStr := vars["characterId"]
@@ -326,7 +328,7 @@ func getRepHandler(l logrus.FieldLogger, administrator Administrator) http.Handl
 		}
 
 		// Get family member
-		member, err := GetByCharacterIdProvider(uint32(characterId))(nil)()
+		member, err := GetByCharacterIdProvider(uint32(characterId))(db)()
 		if err != nil {
 			l.WithError(err).Error("Failed to get family member reputation")
 			
@@ -351,7 +353,7 @@ func getRepHandler(l logrus.FieldLogger, administrator Administrator) http.Handl
 }
 
 // getLocationHandler handles GET /families/location/{characterId}
-func getLocationHandler(l logrus.FieldLogger, administrator Administrator) http.HandlerFunc {
+func getLocationHandler(l logrus.FieldLogger, db *gorm.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		characterIdStr := vars["characterId"]
@@ -363,7 +365,7 @@ func getLocationHandler(l logrus.FieldLogger, administrator Administrator) http.
 		}
 
 		// Get family member location
-		member, err := GetByCharacterIdProvider(uint32(characterId))(nil)()
+		member, err := GetByCharacterIdProvider(uint32(characterId))(db)()
 		if err != nil {
 			l.WithError(err).Error("Failed to get family member location")
 			
@@ -376,11 +378,17 @@ func getLocationHandler(l logrus.FieldLogger, administrator Administrator) http.
 		}
 
 		// Create location response
-		locationModel := RestLocation{
-			CharacterId: member.CharacterId(),
-			World:       member.World(),
-			// Note: Channel and Map are transient and handled by other services
-			// This endpoint primarily returns the world information stored in family service
+		// TODO: In a real implementation, this would query the character service 
+		// for current location and online status. For now, we'll use defaults.
+		var channel *byte = nil
+		mapId := uint32(100000001) // Default map ID
+		online := true // Default to online
+		
+		locationModel, err := TransformLocation(member, channel, mapId, online)
+		if err != nil {
+			l.WithError(err).Error("Failed to transform location")
+			writeErrorResponse(w, http.StatusInternalServerError, "Internal server error")
+			return
 		}
 
 		writeResponse(w, http.StatusOK, locationModel)

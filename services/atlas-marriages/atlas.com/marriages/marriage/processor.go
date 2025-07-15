@@ -7,7 +7,7 @@ import (
 
 	"atlas-marriages/character"
 	"atlas-marriages/kafka/message"
-	"atlas-marriages/kafka/message/marriage"
+	marriageMsg "atlas-marriages/kafka/message/marriage"
 	"atlas-marriages/kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -26,6 +26,16 @@ type Processor interface {
 	// Proposal operations
 	Propose(proposerId, targetId uint32) model.Provider[Proposal]
 	ProposeAndEmit(transactionId uuid.UUID, proposerId, targetId uint32) (Proposal, error)
+	AcceptProposal(proposalId uint32) model.Provider[Marriage]
+	AcceptProposalAndEmit(transactionId uuid.UUID, proposalId uint32) (Marriage, error)
+	DeclineProposal(proposalId uint32) model.Provider[Proposal]
+	DeclineProposalAndEmit(transactionId uuid.UUID, proposalId uint32) (Proposal, error)
+	CancelProposal(proposalId uint32) model.Provider[Proposal]
+	CancelProposalAndEmit(transactionId uuid.UUID, proposalId uint32) (Proposal, error)
+	
+	// Marriage operations
+	Divorce(marriageId uint32, initiatedBy uint32) model.Provider[Marriage]
+	DivorceAndEmit(transactionId uuid.UUID, marriageId uint32, initiatedBy uint32) (Marriage, error)
 
 	// Eligibility checks
 	CheckEligibility(characterId uint32) model.Provider[bool]
@@ -59,6 +69,10 @@ type Processor interface {
 	AddInviteeAndEmit(transactionId uuid.UUID, ceremonyId uint32, characterId uint32) (Ceremony, error)
 	RemoveInvitee(ceremonyId uint32, characterId uint32) model.Provider[Ceremony]
 	RemoveInviteeAndEmit(transactionId uuid.UUID, ceremonyId uint32, characterId uint32) (Ceremony, error)
+	
+	// Ceremony state management
+	AdvanceCeremonyState(ceremonyId uint32, nextState string) model.Provider[Ceremony]
+	AdvanceCeremonyStateAndEmit(transactionId uuid.UUID, ceremonyId uint32, nextState string) (Ceremony, error)
 
 	// Ceremony queries
 	GetCeremonyById(ceremonyId uint32) model.Provider[*Ceremony]
@@ -175,7 +189,7 @@ func (p *ProcessorImpl) ProposeAndEmit(transactionId uuid.UUID, proposerId, targ
 			proposal.ProposedAt(),
 			proposal.ExpiresAt(),
 		)
-		return buf.Put(marriage.EnvEventTopicStatus, eventProvider)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
 	})
 	if err != nil {
 		return Proposal{}, err
@@ -186,6 +200,279 @@ func (p *ProcessorImpl) ProposeAndEmit(transactionId uuid.UUID, proposerId, targ
 		"proposalId":    proposal.Id(),
 	}).Debug("ProposalCreated event emitted")
 
+	return proposal, nil
+}
+
+// AcceptProposal accepts a proposal and creates a marriage
+func (p *ProcessorImpl) AcceptProposal(proposalId uint32) model.Provider[Marriage] {
+	return func() (Marriage, error) {
+		p.log.WithField("proposalId", proposalId).Debug("Accepting proposal")
+		
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+		
+		// Get the proposal
+		proposalProvider := GetProposalByIdProvider(p.db, p.log)(proposalId, t.Id())
+		proposal, err := proposalProvider()
+		if err != nil {
+			return Marriage{}, err
+		}
+		
+		// Check if proposal can be accepted
+		if !proposal.CanRespond() {
+			return Marriage{}, errors.New("proposal cannot be accepted")
+		}
+		
+		// Accept the proposal
+		acceptedProposal, err := proposal.Accept()
+		if err != nil {
+			return Marriage{}, err
+		}
+		
+		// Update the proposal in the database
+		updateProposalProvider := UpdateProposal(p.db, p.log)(acceptedProposal)
+		_, err = updateProposalProvider()
+		if err != nil {
+			return Marriage{}, err
+		}
+		
+		// Create the marriage
+		marriageProvider := CreateMarriage(p.db, p.log)(proposal.ProposerId(), proposal.TargetId(), t.Id())
+		marriageEntity, err := marriageProvider()
+		if err != nil {
+			return Marriage{}, err
+		}
+		
+		// Transform entity to domain model
+		marriage, err := Make(marriageEntity)
+		if err != nil {
+			return Marriage{}, err
+		}
+		
+		// Accept the marriage to set it to engaged status
+		engagedMarriage, err := marriage.Accept()
+		if err != nil {
+			return Marriage{}, err
+		}
+		
+		// Update the marriage in the database
+		updateMarriageProvider := UpdateMarriage(p.db, p.log)(engagedMarriage)
+		updatedEntity, err := updateMarriageProvider()
+		if err != nil {
+			return Marriage{}, err
+		}
+		
+		// Transform entity to domain model
+		result, err := Make(updatedEntity)
+		if err != nil {
+			return Marriage{}, err
+		}
+		
+		p.log.WithFields(logrus.Fields{
+			"proposalId": proposalId,
+			"marriageId": result.Id(),
+		}).Info("Proposal accepted and marriage created")
+		
+		return result, nil
+	}
+}
+
+// AcceptProposalAndEmit accepts a proposal and emits events
+func (p *ProcessorImpl) AcceptProposalAndEmit(transactionId uuid.UUID, proposalId uint32) (Marriage, error) {
+	marriage, err := p.AcceptProposal(proposalId)()
+	if err != nil {
+		return Marriage{}, err
+	}
+	
+	// Emit ProposalAccepted event
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		acceptedAt := time.Now()
+		eventProvider := ProposalAcceptedEventProvider(
+			proposalId,
+			marriage.CharacterId1(),
+			marriage.CharacterId2(),
+			acceptedAt,
+		)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
+	})
+	if err != nil {
+		return Marriage{}, err
+	}
+	
+	// Emit MarriageCreated event
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		marriedAt := time.Now()
+		if marriage.EngagedAt() != nil {
+			marriedAt = *marriage.EngagedAt()
+		}
+		eventProvider := MarriageCreatedEventProvider(
+			marriage.Id(),
+			marriage.CharacterId1(),
+			marriage.CharacterId2(),
+			marriedAt,
+		)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
+	})
+	if err != nil {
+		return Marriage{}, err
+	}
+	
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"proposalId":    proposalId,
+		"marriageId":    marriage.Id(),
+	}).Debug("ProposalAccepted and MarriageCreated events emitted")
+	
+	return marriage, nil
+}
+
+// DeclineProposal declines a proposal and updates cooldown
+func (p *ProcessorImpl) DeclineProposal(proposalId uint32) model.Provider[Proposal] {
+	return func() (Proposal, error) {
+		p.log.WithField("proposalId", proposalId).Debug("Declining proposal")
+		
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+		
+		// Get the proposal
+		proposalProvider := GetProposalByIdProvider(p.db, p.log)(proposalId, t.Id())
+		proposal, err := proposalProvider()
+		if err != nil {
+			return Proposal{}, err
+		}
+		
+		// Check if proposal can be declined
+		if !proposal.CanRespond() {
+			return Proposal{}, errors.New("proposal cannot be declined")
+		}
+		
+		// Decline the proposal
+		declinedProposal, err := proposal.Reject()
+		if err != nil {
+			return Proposal{}, err
+		}
+		
+		// Update the proposal in the database
+		updateProposalProvider := UpdateProposal(p.db, p.log)(declinedProposal)
+		_, err = updateProposalProvider()
+		if err != nil {
+			return Proposal{}, err
+		}
+		
+		p.log.WithFields(logrus.Fields{
+			"proposalId":     proposalId,
+			"rejectionCount": declinedProposal.RejectionCount(),
+		}).Info("Proposal declined")
+		
+		return declinedProposal, nil
+	}
+}
+
+// DeclineProposalAndEmit declines a proposal and emits events
+func (p *ProcessorImpl) DeclineProposalAndEmit(transactionId uuid.UUID, proposalId uint32) (Proposal, error) {
+	proposal, err := p.DeclineProposal(proposalId)()
+	if err != nil {
+		return Proposal{}, err
+	}
+	
+	// Emit ProposalDeclined event
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		declinedAt := time.Now()
+		if proposal.RespondedAt() != nil {
+			declinedAt = *proposal.RespondedAt()
+		}
+		cooldownUntil := time.Now()
+		if proposal.CooldownUntil() != nil {
+			cooldownUntil = *proposal.CooldownUntil()
+		}
+		eventProvider := ProposalDeclinedEventProvider(
+			proposalId,
+			proposal.ProposerId(),
+			proposal.TargetId(),
+			declinedAt,
+			proposal.RejectionCount(),
+			cooldownUntil,
+		)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
+	})
+	if err != nil {
+		return Proposal{}, err
+	}
+	
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"proposalId":    proposalId,
+	}).Debug("ProposalDeclined event emitted")
+	
+	return proposal, nil
+}
+
+// CancelProposal cancels a proposal by the proposer
+func (p *ProcessorImpl) CancelProposal(proposalId uint32) model.Provider[Proposal] {
+	return func() (Proposal, error) {
+		p.log.WithField("proposalId", proposalId).Debug("Cancelling proposal")
+		
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+		
+		// Get the proposal
+		proposalProvider := GetProposalByIdProvider(p.db, p.log)(proposalId, t.Id())
+		proposal, err := proposalProvider()
+		if err != nil {
+			return Proposal{}, err
+		}
+		
+		// Check if proposal can be cancelled
+		if !proposal.CanCancel() {
+			return Proposal{}, errors.New("proposal cannot be cancelled")
+		}
+		
+		// Cancel the proposal
+		cancelledProposal, err := proposal.Cancel()
+		if err != nil {
+			return Proposal{}, err
+		}
+		
+		// Update the proposal in the database
+		updateProposalProvider := UpdateProposal(p.db, p.log)(cancelledProposal)
+		_, err = updateProposalProvider()
+		if err != nil {
+			return Proposal{}, err
+		}
+		
+		p.log.WithField("proposalId", proposalId).Info("Proposal cancelled")
+		
+		return cancelledProposal, nil
+	}
+}
+
+// CancelProposalAndEmit cancels a proposal and emits events
+func (p *ProcessorImpl) CancelProposalAndEmit(transactionId uuid.UUID, proposalId uint32) (Proposal, error) {
+	proposal, err := p.CancelProposal(proposalId)()
+	if err != nil {
+		return Proposal{}, err
+	}
+	
+	// Emit ProposalCancelled event
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		cancelledAt := time.Now()
+		eventProvider := ProposalCancelledEventProvider(
+			proposalId,
+			proposal.ProposerId(),
+			proposal.TargetId(),
+			cancelledAt,
+		)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
+	})
+	if err != nil {
+		return Proposal{}, err
+	}
+	
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"proposalId":    proposalId,
+	}).Debug("ProposalCancelled event emitted")
+	
 	return proposal, nil
 }
 
@@ -427,7 +714,7 @@ func (p *ProcessorImpl) ScheduleCeremonyAndEmit(transactionId uuid.UUID, marriag
 			scheduledAt,
 			invitees,
 		)
-		return buf.Put(marriage.EnvEventTopicStatus, eventProvider)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
 	})
 	if err != nil {
 		return Ceremony{}, err
@@ -509,7 +796,7 @@ func (p *ProcessorImpl) StartCeremonyAndEmit(transactionId uuid.UUID, ceremonyId
 			ceremony.CharacterId2(),
 			startedAt,
 		)
-		return buf.Put(marriage.EnvEventTopicStatus, eventProvider)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
 	})
 	if err != nil {
 		return Ceremony{}, err
@@ -591,7 +878,7 @@ func (p *ProcessorImpl) CompleteCeremonyAndEmit(transactionId uuid.UUID, ceremon
 			ceremony.CharacterId2(),
 			completedAt,
 		)
-		return buf.Put(marriage.EnvEventTopicStatus, eventProvider)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
 	})
 	if err != nil {
 		return Ceremony{}, err
@@ -675,7 +962,7 @@ func (p *ProcessorImpl) CancelCeremonyAndEmit(transactionId uuid.UUID, ceremonyI
 			0, // TODO: Track cancelled by character ID when needed
 			"ceremony_cancelled", // TODO: Track cancel reason when needed
 		)
-		return buf.Put(marriage.EnvEventTopicStatus, eventProvider)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
 	})
 	if err != nil {
 		return Ceremony{}, err
@@ -758,7 +1045,7 @@ func (p *ProcessorImpl) PostponeCeremonyAndEmit(transactionId uuid.UUID, ceremon
 			postponedAt,
 			"ceremony_postponed", // TODO: Track postpone reason when needed
 		)
-		return buf.Put(marriage.EnvEventTopicStatus, eventProvider)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
 	})
 	if err != nil {
 		return Ceremony{}, err
@@ -842,7 +1129,7 @@ func (p *ProcessorImpl) RescheduleCeremonyAndEmit(transactionId uuid.UUID, cerem
 			newScheduledAt,
 			0, // TODO: Track rescheduled by character ID when needed
 		)
-		return buf.Put(marriage.EnvEventTopicStatus, eventProvider)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
 	})
 	if err != nil {
 		return Ceremony{}, err
@@ -1038,4 +1325,256 @@ func (p *ProcessorImpl) GetActiveCeremonies() model.Provider[[]Ceremony] {
 		ceremoniesProvider := GetActiveCeremoniesProvider(p.db, p.log)(t.Id())
 		return ceremoniesProvider()
 	}
+}
+
+// Divorce divorces a marriage
+func (p *ProcessorImpl) Divorce(marriageId uint32, initiatedBy uint32) model.Provider[Marriage] {
+	return func() (Marriage, error) {
+		p.log.WithFields(logrus.Fields{
+			"marriageId":  marriageId,
+			"initiatedBy": initiatedBy,
+		}).Debug("Processing divorce")
+		
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+		
+		// Get the marriage
+		marriageProvider := GetMarriageByIdProvider(p.db, p.log)(marriageId, t.Id())
+		marriage, err := marriageProvider()
+		if err != nil {
+			return Marriage{}, err
+		}
+		if marriage == nil {
+			return Marriage{}, errors.New("marriage not found")
+		}
+		
+		// Check if marriage can be divorced
+		if !marriage.CanDivorce() {
+			return Marriage{}, errors.New("marriage cannot be divorced")
+		}
+		
+		// Verify that the initiatedBy character is one of the partners
+		if !marriage.IsPartner(initiatedBy) {
+			return Marriage{}, errors.New("only married partners can initiate divorce")
+		}
+		
+		// Divorce the marriage
+		divorcedMarriage, err := marriage.Divorce()
+		if err != nil {
+			return Marriage{}, err
+		}
+		
+		// Update the marriage in the database
+		updateMarriageProvider := UpdateMarriage(p.db, p.log)(divorcedMarriage)
+		updatedEntity, err := updateMarriageProvider()
+		if err != nil {
+			return Marriage{}, err
+		}
+		
+		// Transform entity to domain model
+		result, err := Make(updatedEntity)
+		if err != nil {
+			return Marriage{}, err
+		}
+		
+		p.log.WithFields(logrus.Fields{
+			"marriageId":  marriageId,
+			"initiatedBy": initiatedBy,
+		}).Info("Marriage divorced successfully")
+		
+		return result, nil
+	}
+}
+
+// DivorceAndEmit divorces a marriage and emits events
+func (p *ProcessorImpl) DivorceAndEmit(transactionId uuid.UUID, marriageId uint32, initiatedBy uint32) (Marriage, error) {
+	marriage, err := p.Divorce(marriageId, initiatedBy)()
+	if err != nil {
+		return Marriage{}, err
+	}
+	
+	// Emit MarriageDivorced event
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		divorcedAt := time.Now()
+		if marriage.DivorcedAt() != nil {
+			divorcedAt = *marriage.DivorcedAt()
+		}
+		eventProvider := MarriageDivorcedEventProvider(
+			marriageId,
+			marriage.CharacterId1(),
+			marriage.CharacterId2(),
+			divorcedAt,
+			initiatedBy,
+		)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
+	})
+	if err != nil {
+		return Marriage{}, err
+	}
+	
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"marriageId":    marriageId,
+		"initiatedBy":   initiatedBy,
+	}).Debug("MarriageDivorced event emitted")
+	
+	return marriage, nil
+}
+
+// AdvanceCeremonyState advances a ceremony to the next state
+func (p *ProcessorImpl) AdvanceCeremonyState(ceremonyId uint32, nextState string) model.Provider[Ceremony] {
+	return func() (Ceremony, error) {
+		p.log.WithFields(logrus.Fields{
+			"ceremonyId": ceremonyId,
+			"nextState":  nextState,
+		}).Debug("Advancing ceremony state")
+		
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+		
+		// Get ceremony
+		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremony, err := ceremonyProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+		if ceremony == nil {
+			return Ceremony{}, errors.New("ceremony not found")
+		}
+		
+		// Apply state transition based on nextState
+		var updatedCeremony Ceremony
+		switch nextState {
+		case "active":
+			if !ceremony.CanStart() {
+				return Ceremony{}, errors.New("ceremony cannot be started")
+			}
+			updatedCeremony, err = ceremony.Start()
+		case "completed":
+			if !ceremony.CanComplete() {
+				return Ceremony{}, errors.New("ceremony cannot be completed")
+			}
+			updatedCeremony, err = ceremony.Complete()
+		case "cancelled":
+			if !ceremony.CanCancel() {
+				return Ceremony{}, errors.New("ceremony cannot be cancelled")
+			}
+			updatedCeremony, err = ceremony.Cancel()
+		case "postponed":
+			if !ceremony.CanPostpone() {
+				return Ceremony{}, errors.New("ceremony cannot be postponed")
+			}
+			updatedCeremony, err = ceremony.Postpone()
+		default:
+			return Ceremony{}, errors.New("invalid ceremony state: " + nextState)
+		}
+		
+		if err != nil {
+			return Ceremony{}, err
+		}
+		
+		// Update ceremony in database
+		updateProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entity, err := updateProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+		
+		// Transform entity to domain model
+		result, err := MakeCeremony(entity)
+		if err != nil {
+			return Ceremony{}, err
+		}
+		
+		p.log.WithFields(logrus.Fields{
+			"ceremonyId": ceremonyId,
+			"fromState":  ceremony.Status().String(),
+			"toState":    result.Status().String(),
+		}).Info("Ceremony state advanced successfully")
+		
+		return result, nil
+	}
+}
+
+// AdvanceCeremonyStateAndEmit advances a ceremony state and emits appropriate events
+func (p *ProcessorImpl) AdvanceCeremonyStateAndEmit(transactionId uuid.UUID, ceremonyId uint32, nextState string) (Ceremony, error) {
+	ceremony, err := p.AdvanceCeremonyState(ceremonyId, nextState)()
+	if err != nil {
+		return Ceremony{}, err
+	}
+	
+	// Emit appropriate event based on the new state
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		switch nextState {
+		case "active":
+			startedAt := time.Now()
+			if ceremony.StartedAt() != nil {
+				startedAt = *ceremony.StartedAt()
+			}
+			eventProvider := CeremonyStartedEventProvider(
+				ceremony.Id(),
+				ceremony.MarriageId(),
+				ceremony.CharacterId1(),
+				ceremony.CharacterId2(),
+				startedAt,
+			)
+			return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
+		case "completed":
+			completedAt := time.Now()
+			if ceremony.CompletedAt() != nil {
+				completedAt = *ceremony.CompletedAt()
+			}
+			eventProvider := CeremonyCompletedEventProvider(
+				ceremony.Id(),
+				ceremony.MarriageId(),
+				ceremony.CharacterId1(),
+				ceremony.CharacterId2(),
+				completedAt,
+			)
+			return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
+		case "cancelled":
+			cancelledAt := time.Now()
+			if ceremony.CancelledAt() != nil {
+				cancelledAt = *ceremony.CancelledAt()
+			}
+			eventProvider := CeremonyCancelledEventProvider(
+				ceremony.Id(),
+				ceremony.MarriageId(),
+				ceremony.CharacterId1(),
+				ceremony.CharacterId2(),
+				cancelledAt,
+				0, // TODO: Track cancelled by character ID when needed
+				"ceremony_cancelled", // TODO: Track cancel reason when needed
+			)
+			return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
+		case "postponed":
+			postponedAt := time.Now()
+			if ceremony.PostponedAt() != nil {
+				postponedAt = *ceremony.PostponedAt()
+			}
+			eventProvider := CeremonyPostponedEventProvider(
+				ceremony.Id(),
+				ceremony.MarriageId(),
+				ceremony.CharacterId1(),
+				ceremony.CharacterId2(),
+				postponedAt,
+				"ceremony_postponed", // TODO: Track postpone reason when needed
+			)
+			return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
+		default:
+			// No event to emit for unknown states
+			return nil
+		}
+	})
+	if err != nil {
+		return Ceremony{}, err
+	}
+	
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"ceremonyId":    ceremonyId,
+		"nextState":     nextState,
+	}).Debug("Ceremony state advanced and event emitted")
+	
+	return ceremony, nil
 }

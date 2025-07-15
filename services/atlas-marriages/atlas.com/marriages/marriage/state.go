@@ -75,3 +75,84 @@ func (s MarriageState) ValidTransitions() []MarriageState {
 		return []MarriageState{}
 	}
 }
+
+// CeremonyState represents the lifecycle state of a ceremony
+type CeremonyState uint8
+
+const (
+	// CeremonyStateScheduled represents a ceremony that has been scheduled but not yet started
+	CeremonyStateScheduled CeremonyState = iota
+	// CeremonyStateActive represents a ceremony that is currently in progress
+	CeremonyStateActive
+	// CeremonyStateCompleted represents a ceremony that has been successfully completed
+	CeremonyStateCompleted
+	// CeremonyStateCancelled represents a ceremony that has been cancelled
+	CeremonyStateCancelled
+	// CeremonyStatePostponed represents a ceremony that has been postponed due to disconnection
+	CeremonyStatePostponed
+)
+
+// String returns the string representation of CeremonyState
+func (s CeremonyState) String() string {
+	switch s {
+	case CeremonyStateScheduled:
+		return "scheduled"
+	case CeremonyStateActive:
+		return "active"
+	case CeremonyStateCompleted:
+		return "completed"
+	case CeremonyStateCancelled:
+		return "cancelled"
+	case CeremonyStatePostponed:
+		return "postponed"
+	default:
+		return "unknown"
+	}
+}
+
+// IsActive returns true if the ceremony state represents an active ceremony
+func (s CeremonyState) IsActive() bool {
+	return s == CeremonyStateActive
+}
+
+// IsTerminated returns true if the ceremony state represents a terminated ceremony
+func (s CeremonyState) IsTerminated() bool {
+	return s == CeremonyStateCompleted || s == CeremonyStateCancelled
+}
+
+// IsInProgress returns true if the ceremony is either scheduled or active
+func (s CeremonyState) IsInProgress() bool {
+	return s == CeremonyStateScheduled || s == CeremonyStateActive
+}
+
+// CanTransitionTo returns true if the ceremony can transition to the target state
+func (s CeremonyState) CanTransitionTo(target CeremonyState) bool {
+	switch s {
+	case CeremonyStateScheduled:
+		return target == CeremonyStateActive || target == CeremonyStateCancelled
+	case CeremonyStateActive:
+		return target == CeremonyStateCompleted || target == CeremonyStateCancelled || target == CeremonyStatePostponed
+	case CeremonyStatePostponed:
+		return target == CeremonyStateScheduled || target == CeremonyStateActive || target == CeremonyStateCancelled
+	case CeremonyStateCompleted, CeremonyStateCancelled:
+		return false // Terminal states
+	default:
+		return false
+	}
+}
+
+// ValidTransitions returns all valid transition states from the current state
+func (s CeremonyState) ValidTransitions() []CeremonyState {
+	switch s {
+	case CeremonyStateScheduled:
+		return []CeremonyState{CeremonyStateActive, CeremonyStateCancelled}
+	case CeremonyStateActive:
+		return []CeremonyState{CeremonyStateCompleted, CeremonyStateCancelled, CeremonyStatePostponed}
+	case CeremonyStatePostponed:
+		return []CeremonyState{CeremonyStateScheduled, CeremonyStateActive, CeremonyStateCancelled}
+	case CeremonyStateCompleted, CeremonyStateCancelled:
+		return []CeremonyState{} // Terminal states
+	default:
+		return []CeremonyState{}
+	}
+}

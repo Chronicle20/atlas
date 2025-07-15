@@ -343,3 +343,234 @@ func (b *ProposalBuilder) validateProposalStateTransitions() error {
 	
 	return nil
 }
+
+// CeremonyBuilder provides fluent construction of Ceremony models
+type CeremonyBuilder struct {
+	id           uint32
+	marriageId   uint32
+	characterId1 uint32
+	characterId2 uint32
+	status       CeremonyStatus
+	scheduledAt  time.Time
+	startedAt    *time.Time
+	completedAt  *time.Time
+	cancelledAt  *time.Time
+	postponedAt  *time.Time
+	invitees     []uint32
+	tenantId     uuid.UUID
+	createdAt    time.Time
+	updatedAt    time.Time
+}
+
+// NewCeremonyBuilder creates a new builder with required parameters
+func NewCeremonyBuilder(marriageId, characterId1, characterId2 uint32, scheduledAt time.Time, tenantId uuid.UUID) *CeremonyBuilder {
+	now := time.Now()
+	return &CeremonyBuilder{
+		marriageId:   marriageId,
+		characterId1: characterId1,
+		characterId2: characterId2,
+		status:       CeremonyStatusScheduled,
+		scheduledAt:  scheduledAt,
+		invitees:     make([]uint32, 0),
+		tenantId:     tenantId,
+		createdAt:    now,
+		updatedAt:    now,
+	}
+}
+
+// SetId sets the ceremony ID
+func (b *CeremonyBuilder) SetId(id uint32) *CeremonyBuilder {
+	b.id = id
+	return b
+}
+
+// SetMarriageId sets the marriage ID
+func (b *CeremonyBuilder) SetMarriageId(marriageId uint32) *CeremonyBuilder {
+	b.marriageId = marriageId
+	return b
+}
+
+// SetStatus sets the ceremony status
+func (b *CeremonyBuilder) SetStatus(status CeremonyStatus) *CeremonyBuilder {
+	b.status = status
+	return b
+}
+
+// SetScheduledAt sets the scheduled timestamp
+func (b *CeremonyBuilder) SetScheduledAt(scheduledAt time.Time) *CeremonyBuilder {
+	b.scheduledAt = scheduledAt
+	return b
+}
+
+// SetStartedAt sets the started timestamp
+func (b *CeremonyBuilder) SetStartedAt(startedAt *time.Time) *CeremonyBuilder {
+	b.startedAt = startedAt
+	return b
+}
+
+// SetCompletedAt sets the completed timestamp
+func (b *CeremonyBuilder) SetCompletedAt(completedAt *time.Time) *CeremonyBuilder {
+	b.completedAt = completedAt
+	return b
+}
+
+// SetCancelledAt sets the cancelled timestamp
+func (b *CeremonyBuilder) SetCancelledAt(cancelledAt *time.Time) *CeremonyBuilder {
+	b.cancelledAt = cancelledAt
+	return b
+}
+
+// SetPostponedAt sets the postponed timestamp
+func (b *CeremonyBuilder) SetPostponedAt(postponedAt *time.Time) *CeremonyBuilder {
+	b.postponedAt = postponedAt
+	return b
+}
+
+// SetInvitees sets the invitees list
+func (b *CeremonyBuilder) SetInvitees(invitees []uint32) *CeremonyBuilder {
+	// Copy the slice to maintain immutability
+	b.invitees = make([]uint32, len(invitees))
+	copy(b.invitees, invitees)
+	return b
+}
+
+// SetCreatedAt sets the creation timestamp
+func (b *CeremonyBuilder) SetCreatedAt(createdAt time.Time) *CeremonyBuilder {
+	b.createdAt = createdAt
+	return b
+}
+
+// SetUpdatedAt sets the last update timestamp
+func (b *CeremonyBuilder) SetUpdatedAt(updatedAt time.Time) *CeremonyBuilder {
+	b.updatedAt = updatedAt
+	return b
+}
+
+// Build validates and constructs the final Ceremony model
+func (b *CeremonyBuilder) Build() (Ceremony, error) {
+	if b.marriageId == 0 {
+		return Ceremony{}, errors.New("marriage ID is required")
+	}
+	
+	if b.characterId1 == 0 {
+		return Ceremony{}, errors.New("character ID 1 is required")
+	}
+	
+	if b.characterId2 == 0 {
+		return Ceremony{}, errors.New("character ID 2 is required")
+	}
+	
+	if b.characterId1 == b.characterId2 {
+		return Ceremony{}, errors.New("character cannot have ceremony with themselves")
+	}
+	
+	if b.tenantId == uuid.Nil {
+		return Ceremony{}, errors.New("tenant ID is required")
+	}
+	
+	if len(b.invitees) > MaxInvitees {
+		return Ceremony{}, errors.New("too many invitees")
+	}
+	
+	// Validate that invitees don't include the partners themselves
+	for _, invitee := range b.invitees {
+		if invitee == b.characterId1 || invitee == b.characterId2 {
+			return Ceremony{}, errors.New("partners cannot be invitees")
+		}
+	}
+	
+	// Check for duplicate invitees
+	inviteeMap := make(map[uint32]bool)
+	for _, invitee := range b.invitees {
+		if inviteeMap[invitee] {
+			return Ceremony{}, errors.New("duplicate invitee")
+		}
+		inviteeMap[invitee] = true
+	}
+	
+	// Validate state transitions
+	if err := b.validateCeremonyStateTransitions(); err != nil {
+		return Ceremony{}, err
+	}
+	
+	// Copy invitees to maintain immutability
+	invitees := make([]uint32, len(b.invitees))
+	copy(invitees, b.invitees)
+	
+	return Ceremony{
+		id:           b.id,
+		marriageId:   b.marriageId,
+		characterId1: b.characterId1,
+		characterId2: b.characterId2,
+		status:       b.status,
+		scheduledAt:  b.scheduledAt,
+		startedAt:    b.startedAt,
+		completedAt:  b.completedAt,
+		cancelledAt:  b.cancelledAt,
+		postponedAt:  b.postponedAt,
+		invitees:     invitees,
+		tenantId:     b.tenantId,
+		createdAt:    b.createdAt,
+		updatedAt:    b.updatedAt,
+	}, nil
+}
+
+// validateCeremonyStateTransitions validates the consistency of ceremony state transitions
+func (b *CeremonyBuilder) validateCeremonyStateTransitions() error {
+	switch b.status {
+	case CeremonyStatusScheduled:
+		if b.startedAt != nil {
+			return errors.New("scheduled ceremony cannot have started timestamp")
+		}
+		if b.completedAt != nil {
+			return errors.New("scheduled ceremony cannot have completed timestamp")
+		}
+		if b.cancelledAt != nil {
+			return errors.New("scheduled ceremony cannot have cancelled timestamp")
+		}
+		if b.postponedAt != nil {
+			return errors.New("scheduled ceremony cannot have postponed timestamp")
+		}
+	case CeremonyStatusActive:
+		if b.startedAt == nil {
+			return errors.New("active ceremony must have started timestamp")
+		}
+		if b.completedAt != nil {
+			return errors.New("active ceremony cannot have completed timestamp")
+		}
+		if b.cancelledAt != nil {
+			return errors.New("active ceremony cannot have cancelled timestamp")
+		}
+	case CeremonyStatusCompleted:
+		if b.startedAt == nil {
+			return errors.New("completed ceremony must have started timestamp")
+		}
+		if b.completedAt == nil {
+			return errors.New("completed ceremony must have completed timestamp")
+		}
+		if b.cancelledAt != nil {
+			return errors.New("completed ceremony cannot have cancelled timestamp")
+		}
+	case CeremonyStatusCancelled:
+		if b.cancelledAt == nil {
+			return errors.New("cancelled ceremony must have cancelled timestamp")
+		}
+		if b.completedAt != nil {
+			return errors.New("cancelled ceremony cannot have completed timestamp")
+		}
+	case CeremonyStatusPostponed:
+		if b.postponedAt == nil {
+			return errors.New("postponed ceremony must have postponed timestamp")
+		}
+		if b.completedAt != nil {
+			return errors.New("postponed ceremony cannot have completed timestamp")
+		}
+		if b.cancelledAt != nil {
+			return errors.New("postponed ceremony cannot have cancelled timestamp")
+		}
+	default:
+		return errors.New("invalid ceremony status")
+	}
+	
+	return nil
+}

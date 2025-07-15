@@ -39,14 +39,11 @@ func (fc *FamilyConsumer) Config(l logrus.FieldLogger) func(name string) func(to
 }
 
 // InitConsumers initializes the family command consumers
-func InitConsumers(l logrus.FieldLogger, db *gorm.DB, processor family.Processor, admin family.Administrator) func(func(config kafka.Config, decorators ...model.Decorator[kafka.Config])) func(consumerGroupId string) {
-	return func(rf func(config kafka.Config, decorators ...model.Decorator[kafka.Config])) func(consumerGroupId string) {
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...func(consumer.Config) consumer.Config)) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...func(consumer.Config) consumer.Config)) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			consumer := NewFamilyConsumer(db, l, processor, admin)
-			
 			// Configure consumer for family commands
-			rf(consumer.Config(l)("family_commands")(familymsg.EnvCommandTopic)(consumerGroupId),
-				kafka.SetHeaderParsers(kafka.SpanHeaderParser, kafka.TenantHeaderParser))
+			rf(consumer.NewConfig(l)("family_commands")(familymsg.EnvCommandTopic)(consumerGroupId))
 		}
 	}
 }

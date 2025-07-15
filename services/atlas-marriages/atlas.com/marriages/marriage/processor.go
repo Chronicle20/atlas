@@ -3,7 +3,6 @@ package marriage
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -94,35 +93,26 @@ func (p *ProcessorImpl) Propose(proposerId, targetId uint32) model.Provider[Prop
 		// Get tenant from context
 		t := tenant.MustFromContext(p.ctx)
 
-		// Create new proposal
-		proposal, err := NewProposalBuilder(proposerId, targetId, t.Id()).Build()
+		// Create proposal using administrator
+		entityProvider := CreateProposal(p.db, p.log)(proposerId, targetId, t.Id())
+		entity, err := entityProvider()
 		if err != nil {
 			return Proposal{}, err
 		}
 
-		// Save to database
-		entity := proposal.ToProposalEntity()
-		if err := p.db.Create(&entity).Error; err != nil {
-			return Proposal{}, err
-		}
-
-		// Update proposal with generated ID
-		savedProposal, err := NewProposalBuilder(proposerId, targetId, t.Id()).
-			SetId(entity.ID).
-			SetCreatedAt(entity.CreatedAt).
-			SetUpdatedAt(entity.UpdatedAt).
-			Build()
+		// Transform entity to domain model
+		proposal, err := MakeProposal(entity)
 		if err != nil {
 			return Proposal{}, err
 		}
 
 		p.log.WithFields(logrus.Fields{
-			"proposalId": savedProposal.Id(),
+			"proposalId": proposal.Id(),
 			"proposerId": proposerId,
 			"targetId":   targetId,
 		}).Info("Marriage proposal created successfully")
 
-		return savedProposal, nil
+		return proposal, nil
 	}
 }
 
@@ -155,6 +145,9 @@ func (p *ProcessorImpl) CheckEligibility(characterId uint32) model.Provider[bool
 // CheckProposalEligibility performs comprehensive eligibility checks for a proposal
 func (p *ProcessorImpl) CheckProposalEligibility(proposerId, targetId uint32) model.Provider[bool] {
 	return func() (bool, error) {
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+
 		// Check basic character eligibility
 		proposerEligible, err := p.CheckEligibility(proposerId)()
 		if err != nil {
@@ -173,7 +166,8 @@ func (p *ProcessorImpl) CheckProposalEligibility(proposerId, targetId uint32) mo
 		}
 
 		// Check if proposer is already married or engaged
-		proposerMarriage, err := p.getActiveMarriage(proposerId)
+		proposerMarriageProvider := GetActiveMarriageByCharacterProvider(p.db, p.log)(proposerId, t.Id())
+		proposerMarriage, err := proposerMarriageProvider()
 		if err != nil {
 			return false, err
 		}
@@ -182,7 +176,8 @@ func (p *ProcessorImpl) CheckProposalEligibility(proposerId, targetId uint32) mo
 		}
 
 		// Check if target is already married or engaged
-		targetMarriage, err := p.getActiveMarriage(targetId)
+		targetMarriageProvider := GetActiveMarriageByCharacterProvider(p.db, p.log)(targetId, t.Id())
+		targetMarriage, err := targetMarriageProvider()
 		if err != nil {
 			return false, err
 		}
@@ -190,8 +185,9 @@ func (p *ProcessorImpl) CheckProposalEligibility(proposerId, targetId uint32) mo
 			return false, nil
 		}
 
-		// Check if target already has a pending proposal
-		existingProposal, err := p.GetActiveProposal(proposerId, targetId)()
+		// Check if there's already a pending proposal between these characters
+		existingProposalProvider := GetActiveProposalProvider(p.db, p.log)(proposerId, targetId, t.Id())
+		existingProposal, err := existingProposalProvider()
 		if err != nil {
 			return false, err
 		}
@@ -208,21 +204,8 @@ func (p *ProcessorImpl) CheckGlobalCooldown(proposerId uint32) model.Provider[bo
 	return func() (bool, error) {
 		t := tenant.MustFromContext(p.ctx)
 		
-		var lastProposal ProposalEntity
-		err := p.db.Where("proposer_id = ? AND tenant_id = ?", proposerId, t.Id()).
-			Order("created_at DESC").
-			First(&lastProposal).Error
-		
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return true, nil // No previous proposals, cooldown doesn't apply
-			}
-			return false, err
-		}
-
-		// Check if global cooldown period has passed
-		cooldownEnd := lastProposal.CreatedAt.Add(GlobalCooldownDuration)
-		return time.Now().After(cooldownEnd), nil
+		cooldownProvider := CheckGlobalCooldownProvider(p.db, p.log)(proposerId, t.Id())
+		return cooldownProvider()
 	}
 }
 
@@ -231,30 +214,8 @@ func (p *ProcessorImpl) CheckPerTargetCooldown(proposerId, targetId uint32) mode
 	return func() (bool, error) {
 		t := tenant.MustFromContext(p.ctx)
 		
-		var lastProposal ProposalEntity
-		err := p.db.Where("proposer_id = ? AND target_id = ? AND tenant_id = ?", proposerId, targetId, t.Id()).
-			Order("created_at DESC").
-			First(&lastProposal).Error
-		
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return true, nil // No previous proposals to this target
-			}
-			return false, err
-		}
-
-		// If last proposal was rejected, check cooldown
-		if lastProposal.Status == ProposalStatusRejected && lastProposal.CooldownUntil != nil {
-			return time.Now().After(*lastProposal.CooldownUntil), nil
-		}
-
-		// If last proposal expired, apply initial cooldown
-		if lastProposal.Status == ProposalStatusExpired {
-			cooldownEnd := lastProposal.UpdatedAt.Add(InitialPerTargetCooldown)
-			return time.Now().After(cooldownEnd), nil
-		}
-
-		return true, nil
+		cooldownProvider := CheckPerTargetCooldownProvider(p.db, p.log)(proposerId, targetId, t.Id())
+		return cooldownProvider()
 	}
 }
 
@@ -263,29 +224,8 @@ func (p *ProcessorImpl) GetActiveProposal(proposerId, targetId uint32) model.Pro
 	return func() (*Proposal, error) {
 		t := tenant.MustFromContext(p.ctx)
 		
-		var entity ProposalEntity
-		err := p.db.Where("proposer_id = ? AND target_id = ? AND tenant_id = ? AND status = ?", 
-			proposerId, targetId, t.Id(), ProposalStatusPending).
-			First(&entity).Error
-		
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, nil
-			}
-			return nil, err
-		}
-
-		proposal, err := MakeProposal(entity)
-		if err != nil {
-			return nil, err
-		}
-
-		// Check if proposal has expired
-		if proposal.IsExpired() {
-			return nil, nil
-		}
-
-		return &proposal, nil
+		proposalProvider := GetActiveProposalProvider(p.db, p.log)(proposerId, targetId, t.Id())
+		return proposalProvider()
 	}
 }
 
@@ -294,30 +234,8 @@ func (p *ProcessorImpl) GetPendingProposalsByCharacter(characterId uint32) model
 	return func() ([]Proposal, error) {
 		t := tenant.MustFromContext(p.ctx)
 		
-		var entities []ProposalEntity
-		err := p.db.Where("(proposer_id = ? OR target_id = ?) AND tenant_id = ? AND status = ?", 
-			characterId, characterId, t.Id(), ProposalStatusPending).
-			Order("created_at DESC").
-			Find(&entities).Error
-		
-		if err != nil {
-			return nil, err
-		}
-
-		proposals := make([]Proposal, 0, len(entities))
-		for _, entity := range entities {
-			proposal, err := MakeProposal(entity)
-			if err != nil {
-				return nil, err
-			}
-			
-			// Only include non-expired proposals
-			if !proposal.IsExpired() {
-				proposals = append(proposals, proposal)
-			}
-		}
-
-		return proposals, nil
+		proposalsProvider := GetPendingProposalsByCharacterProvider(p.db, p.log)(characterId, t.Id())
+		return proposalsProvider()
 	}
 }
 
@@ -326,51 +244,9 @@ func (p *ProcessorImpl) GetProposalHistory(proposerId, targetId uint32) model.Pr
 	return func() ([]Proposal, error) {
 		t := tenant.MustFromContext(p.ctx)
 		
-		var entities []ProposalEntity
-		err := p.db.Where("proposer_id = ? AND target_id = ? AND tenant_id = ?", 
-			proposerId, targetId, t.Id()).
-			Order("created_at DESC").
-			Find(&entities).Error
-		
-		if err != nil {
-			return nil, err
-		}
-
-		proposals := make([]Proposal, 0, len(entities))
-		for _, entity := range entities {
-			proposal, err := MakeProposal(entity)
-			if err != nil {
-				return nil, err
-			}
-			proposals = append(proposals, proposal)
-		}
-
-		return proposals, nil
+		historyProvider := GetProposalHistoryProvider(p.db, p.log)(proposerId, targetId, t.Id())
+		return historyProvider()
 	}
-}
-
-// getActiveMarriage is a helper function to check if a character has an active marriage
-func (p *ProcessorImpl) getActiveMarriage(characterId uint32) (*Marriage, error) {
-	t := tenant.MustFromContext(p.ctx)
-	
-	var entity Entity
-	err := p.db.Where("(character_id1 = ? OR character_id2 = ?) AND tenant_id = ? AND status IN (?)", 
-		characterId, characterId, t.Id(), []MarriageStatus{StatusProposed, StatusEngaged, StatusMarried}).
-		First(&entity).Error
-	
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	marriage, err := Make(entity)
-	if err != nil {
-		return nil, err
-	}
-
-	return &marriage, nil
 }
 
 // EligibilityError represents specific eligibility validation errors

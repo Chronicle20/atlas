@@ -2,12 +2,14 @@ package main
 
 import (
 	"atlas-marriages/database"
+	"atlas-marriages/kafka/consumer/marriage"
 	"atlas-marriages/logger"
-	"atlas-marriages/marriage"
+	marriageService "atlas-marriages/marriage"
 	"atlas-marriages/service"
 	"atlas-marriages/tracing"
 	"os"
 
+	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -44,8 +46,13 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(marriage.Migration))
-	_ = db // TODO: Will be used when adding route initializers
+	db := database.Connect(l, database.SetMigrations(marriageService.Migration))
+	
+	// Initialize Kafka consumers
+	consumerManager := consumer.GetManager()
+	marriage.InitConsumers(l, tdm.Context(), db)(
+		consumerManager.AddConsumer(l, tdm.Context(), tdm.WaitGroup()),
+	)("marriage-service")
 
 	server.New(l).
 		WithContext(tdm.Context()).

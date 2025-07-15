@@ -1,54 +1,30 @@
 package scheduler
 
 import (
+	"atlas-family/kafka/producer"
 	"context"
-	"fmt"
 	"os"
 	"strconv"
 	"time"
 
-	"atlas-family/database"
 	"atlas-family/family"
 	"atlas-family/kafka/message"
-	familymsg "atlas-family/kafka/message/family"
-	"atlas-family/kafka/producer"
+
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 // ReputationResetJob handles the daily reputation reset scheduling
 type ReputationResetJob struct {
-	log          logrus.FieldLogger
-	administrator family.Administrator
-	producer     producer.Provider
-	resetHour    int
-	resetMinute  int
-	timezone     *time.Location
+	log         logrus.FieldLogger
+	db          *gorm.DB
+	resetHour   int
+	resetMinute int
+	timezone    *time.Location
 }
 
-// ReputationResetJobConfig contains configuration for the reputation reset job
-type ReputationResetJobConfig struct {
-	Log          logrus.FieldLogger
-	Administrator family.Administrator
-	Producer     producer.Provider
-	ResetHour    int
-	ResetMinute  int
-	Timezone     *time.Location
-}
-
-// NewReputationResetJob creates a new reputation reset job
-func NewReputationResetJob(config ReputationResetJobConfig) *ReputationResetJob {
-	return &ReputationResetJob{
-		log:          config.Log,
-		administrator: config.Administrator,
-		producer:     config.Producer,
-		resetHour:    config.ResetHour,
-		resetMinute:  config.ResetMinute,
-		timezone:     config.Timezone,
-	}
-}
-
-// NewReputationResetJobFromEnv creates a new reputation reset job from environment variables
-func NewReputationResetJobFromEnv(log logrus.FieldLogger, administrator family.Administrator, producer producer.Provider) *ReputationResetJob {
+// NewReputationResetJob creates a new reputation reset job from environment variables
+func NewReputationResetJob(log logrus.FieldLogger, db *gorm.DB) *ReputationResetJob {
 	// Default to midnight UTC
 	resetHour := 0
 	resetMinute := 0
@@ -75,14 +51,13 @@ func NewReputationResetJobFromEnv(log logrus.FieldLogger, administrator family.A
 		}
 	}
 
-	return NewReputationResetJob(ReputationResetJobConfig{
-		Log:          log,
-		Administrator: administrator,
-		Producer:     producer,
-		ResetHour:    resetHour,
-		ResetMinute:  resetMinute,
-		Timezone:     timezone,
-	})
+	return &ReputationResetJob{
+		log:         log,
+		db:          db,
+		resetHour:   resetHour,
+		resetMinute: resetMinute,
+		timezone:    timezone,
+	}
 }
 
 // Start begins the reputation reset job scheduler
@@ -95,7 +70,7 @@ func (j *ReputationResetJob) Start(ctx context.Context) error {
 
 	// Start the scheduling goroutine
 	go j.scheduleResetJob(ctx)
-	
+
 	return nil
 }
 
@@ -109,14 +84,14 @@ func (j *ReputationResetJob) scheduleResetJob(ctx context.Context) {
 		default:
 			// Calculate next reset time
 			nextReset := j.calculateNextResetTime()
-			
+
 			j.log.WithFields(logrus.Fields{
 				"nextReset": nextReset.Format(time.RFC3339),
 			}).Info("Next reputation reset scheduled")
-			
+
 			// Sleep until the next reset time
 			sleepDuration := time.Until(nextReset)
-			
+
 			select {
 			case <-ctx.Done():
 				j.log.Info("Reputation reset job scheduler stopped")
@@ -134,81 +109,44 @@ func (j *ReputationResetJob) scheduleResetJob(ctx context.Context) {
 // calculateNextResetTime calculates the next time the reset job should run
 func (j *ReputationResetJob) calculateNextResetTime() time.Time {
 	now := time.Now().In(j.timezone)
-	
+
 	// Calculate today's reset time
 	todayReset := time.Date(now.Year(), now.Month(), now.Day(), j.resetHour, j.resetMinute, 0, 0, j.timezone)
-	
+
 	// If today's reset time has already passed, schedule for tomorrow
 	if now.After(todayReset) {
 		return todayReset.Add(24 * time.Hour)
 	}
-	
+
 	return todayReset
 }
 
 // executeResetJob performs the actual reputation reset operation
 func (j *ReputationResetJob) executeResetJob(ctx context.Context) error {
 	j.log.Info("Starting daily reputation reset job")
-	
+
 	startTime := time.Now()
-	
-	// Create database connection
-	db := database.Connect(j.log)
-	if db == nil {
-		return fmt.Errorf("failed to connect to database")
-	}
-	
-	// Get SQL database instance for connection management
-	sqlDB, err := db.DB()
-	if err != nil {
-		return fmt.Errorf("failed to get SQL database instance: %w", err)
-	}
-	defer sqlDB.Close()
-	
+
 	// Execute the reset operation using the administrator
-	result, err := j.administrator.BatchResetDailyRep(db, j.log)()()
+	var result family.BatchResetResult
+	err := message.Emit(producer.ProviderImpl(j.log)(ctx))(func(buf *message.Buffer) error {
+		var err error
+		result, err = family.NewProcessor(j.log, ctx, j.db).ResetDailyRep(buf)()
+		return err
+	})
 	if err != nil {
-		// Emit error event
-		j.emitResetErrorEvent(ctx, err)
-		return fmt.Errorf("failed to reset daily reputation: %w", err)
+		return err
 	}
-	
+
 	duration := time.Since(startTime)
-	
+
 	j.log.WithFields(logrus.Fields{
 		"affectedMembers": result.AffectedCount,
 		"duration":        duration.String(),
 		"resetTime":       result.ResetTime.Format(time.RFC3339),
 	}).Info("Daily reputation reset completed successfully")
-	
-	// Emit success event for audit trail
-	j.emitResetSuccessEvent(ctx, result, duration)
-	
+
 	return nil
-}
-
-// emitResetSuccessEvent emits an event for successful reputation reset
-func (j *ReputationResetJob) emitResetSuccessEvent(ctx context.Context, result family.BatchResetResult, duration time.Duration) {
-	err := message.Emit(j.producer)(func(buf *message.Buffer) error {
-		// Emit a global reputation reset event
-		return buf.Put(familymsg.TopicFamilyReputation, family.RepResetEventProvider(0, 0, uint32(result.AffectedCount)))
-	})
-	
-	if err != nil {
-		j.log.WithError(err).Error("Failed to emit reputation reset success event")
-	}
-}
-
-// emitResetErrorEvent emits an event for failed reputation reset
-func (j *ReputationResetJob) emitResetErrorEvent(ctx context.Context, resetErr error) {
-	err := message.Emit(j.producer)(func(buf *message.Buffer) error {
-		// Emit a global reputation reset error event
-		return buf.Put(familymsg.TopicFamilyErrors, family.RepErrorEventProvider(0, 0, "RESET_FAILED", resetErr.Error(), 0))
-	})
-	
-	if err != nil {
-		j.log.WithError(err).Error("Failed to emit reputation reset error event")
-	}
 }
 
 // Stop gracefully stops the reputation reset job

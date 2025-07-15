@@ -214,9 +214,10 @@ The service provides JSON:API compliant endpoints for family management. All end
 All requests require the following headers:
 ```
 Content-Type: application/json
-X-Tenant-Id: {tenant-id}
-X-Transaction-Id: {transaction-id}
-X-World-Id: {world-id}
+TENANT_ID:083839c6-c47c-42a6-9585-76492795d123
+REGION:GMS
+MAJOR_VERSION:83
+MINOR_VERSION:1
 ```
 
 #### Authentication
@@ -256,7 +257,6 @@ Add a junior member to a senior's family.
     "id": "67890",
     "type": "familyMembers",
     "characterId": 67890,
-    "tenantId": "550e8400-e29b-41d4-a716-446655440000",
     "seniorId": null,
     "juniorIds": [12345],
     "rep": 150,
@@ -278,9 +278,6 @@ Add a junior member to a senior's family.
 ```bash
 curl -X POST "https://api.atlas.com/api/families/67890/juniors" \
   -H "Content-Type: application/json" \
-  -H "X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000" \
-  -H "X-Transaction-Id: tx-12345-add-junior" \
-  -H "X-World-Id: 1" \
   -d '{
     "data": {
       "type": "familyMembers",
@@ -313,7 +310,6 @@ Break a family link for a character (either as senior or junior).
       "id": "67890",
       "type": "familyMembers",
       "characterId": 67890,
-      "tenantId": "550e8400-e29b-41d4-a716-446655440000",
       "seniorId": null,
       "juniorIds": [],
       "rep": 150,
@@ -336,9 +332,6 @@ Break a family link for a character (either as senior or junior).
 ```bash
 curl -X DELETE "https://api.atlas.com/api/families/links/67890?reason=Player%20requested" \
   -H "Content-Type: application/json" \
-  -H "X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000" \
-  -H "X-Transaction-Id: tx-12345-break-link" \
-  -H "X-World-Id: 1"
 ```
 
 ---
@@ -363,7 +356,6 @@ Retrieve the complete family tree for a character.
         "id": "54321",
         "type": "familyMembers",
         "characterId": 54321,
-        "tenantId": "550e8400-e29b-41d4-a716-446655440000",
         "seniorId": null,
         "juniorIds": [67890],
         "rep": 500,
@@ -377,7 +369,6 @@ Retrieve the complete family tree for a character.
         "id": "67890",
         "type": "familyMembers",
         "characterId": 67890,
-        "tenantId": "550e8400-e29b-41d4-a716-446655440000",
         "seniorId": 54321,
         "juniorIds": [12345],
         "rep": 150,
@@ -391,7 +382,6 @@ Retrieve the complete family tree for a character.
         "id": "12345",
         "type": "familyMembers",
         "characterId": 12345,
-        "tenantId": "550e8400-e29b-41d4-a716-446655440000",
         "seniorId": 67890,
         "juniorIds": [],
         "rep": 0,
@@ -413,224 +403,7 @@ Retrieve the complete family tree for a character.
 **Example cURL:**
 ```bash
 curl -X GET "https://api.atlas.com/api/families/tree/67890" \
-  -H "Content-Type: application/json" \
-  -H "X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000" \
-  -H "X-Transaction-Id: tx-12345-get-tree" \
-  -H "X-World-Id: 1"
-```
-
----
-
-### 4. Process Reputation Activity
-
-Process reputation-generating activities (mob kills, expeditions).
-
-**Endpoint:** `POST /api/families/reputation/activities`
-
-**Request Body:**
-```json
-{
-  "data": {
-    "type": "activities",
-    "attributes": {
-      "characterId": 12345,
-      "activityType": "mob_kill",
-      "amount": 10
-    }
-  }
-}
-```
-
-**Activity Types:**
-- `mob_kill`: Awards 2 Rep per 5 kills to the character's senior
-- `expedition`: Awards coin amount × 10 Rep to the character's senior
-
-**Success Response (200 OK):**
-```json
-{
-  "data": {
-    "id": "67890",
-    "type": "familyMembers",
-    "characterId": 67890,
-    "tenantId": "550e8400-e29b-41d4-a716-446655440000",
-    "seniorId": 54321,
-    "juniorIds": [12345],
-    "rep": 154,
-    "dailyRep": 29,
-    "level": 45,
-    "world": 1,
-    "createdAt": "2025-01-15T10:30:00Z",
-    "updatedAt": "2025-01-15T14:30:00Z"
-  }
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Invalid character ID, missing activity type, or invalid amount
-- `404 Not Found`: Character not found
-- `409 Conflict`: Daily reputation cap exceeded
-
-**Example cURL:**
-```bash
-curl -X POST "https://api.atlas.com/api/families/reputation/activities" \
-  -H "Content-Type: application/json" \
-  -H "X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000" \
-  -H "X-Transaction-Id: tx-12345-activity" \
-  -H "X-World-Id: 1" \
-  -d '{
-    "data": {
-      "type": "activities",
-      "attributes": {
-        "characterId": 12345,
-        "activityType": "mob_kill",
-        "amount": 10
-      }
-    }
-  }'
-```
-
----
-
-### 5. Redeem Reputation
-
-Redeem reputation for buffs or teleportation.
-
-**Endpoint:** `POST /api/families/reputation/redeem`
-
-**Request Body:**
-```json
-{
-  "data": {
-    "type": "redemption",
-    "attributes": {
-      "characterId": 67890,
-      "amount": 50,
-      "reason": "2x EXP buff for 1 hour"
-    }
-  }
-}
-```
-
-**Success Response (200 OK):**
-```json
-{
-  "data": {
-    "id": "67890",
-    "type": "familyMembers",
-    "characterId": 67890,
-    "tenantId": "550e8400-e29b-41d4-a716-446655440000",
-    "seniorId": 54321,
-    "juniorIds": [12345],
-    "rep": 100,
-    "dailyRep": 29,
-    "level": 45,
-    "world": 1,
-    "createdAt": "2025-01-15T10:30:00Z",
-    "updatedAt": "2025-01-15T14:35:00Z"
-  }
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Invalid character ID, missing amount, or missing reason
-- `404 Not Found`: Character not found
-- `409 Conflict`: Insufficient reputation
-
-**Example cURL:**
-```bash
-curl -X POST "https://api.atlas.com/api/families/reputation/redeem" \
-  -H "Content-Type: application/json" \
-  -H "X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000" \
-  -H "X-Transaction-Id: tx-12345-redeem" \
-  -H "X-World-Id: 1" \
-  -d '{
-    "data": {
-      "type": "redemption",
-      "attributes": {
-        "characterId": 67890,
-        "amount": 50,
-        "reason": "2x EXP buff for 1 hour"
-      }
-    }
-  }'
-```
-
----
-
-### 6. Get Reputation Info
-
-Get current reputation information for a character.
-
-**Endpoint:** `GET /api/families/reputation/{characterId}`
-
-**Path Parameters:**
-- `characterId` (uint32): The character's ID
-
-**Success Response (200 OK):**
-```json
-{
-  "data": {
-    "id": "67890",
-    "type": "reputation",
-    "characterId": 67890,
-    "availableRep": 100,
-    "dailyRep": 29,
-    "dailyRepLimit": 5000,
-    "remainingDailyRep": 4971
-  }
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Invalid character ID
-- `404 Not Found`: Character not found
-
-**Example cURL:**
-```bash
-curl -X GET "https://api.atlas.com/api/families/reputation/67890" \
-  -H "Content-Type: application/json" \
-  -H "X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000" \
-  -H "X-Transaction-Id: tx-12345-get-rep" \
-  -H "X-World-Id: 1"
-```
-
----
-
-### 7. Get Member Location
-
-Get the current location and online status of a family member.
-
-**Endpoint:** `GET /api/families/location/{characterId}`
-
-**Path Parameters:**
-- `characterId` (uint32): The character's ID
-
-**Success Response (200 OK):**
-```json
-{
-  "data": {
-    "id": "67890",
-    "type": "locations",
-    "characterId": 67890,
-    "world": 1,
-    "channel": 3,
-    "map": 100000001,
-    "online": true
-  }
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Invalid character ID
-- `404 Not Found`: Character not found
-
-**Example cURL:**
-```bash
-curl -X GET "https://api.atlas.com/api/families/location/67890" \
-  -H "Content-Type: application/json" \
-  -H "X-Tenant-Id: 550e8400-e29b-41d4-a716-446655440000" \
-  -H "X-Transaction-Id: tx-12345-get-location" \
-  -H "X-World-Id: 1"
+  -H "Content-Type: application/json" 
 ```
 
 ---
@@ -658,20 +431,6 @@ All error responses follow the JSON:API error format:
 - `409 Conflict`: Business rule violation or constraint failure
 - `500 Internal Server Error`: Server error
 
-### Rate Limiting
-
-The API implements rate limiting to prevent abuse:
-- 100 requests per minute per IP address
-- 500 requests per minute per tenant
-- Burst limit of 20 requests per second
-
-Rate limit headers are included in all responses:
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1641024000
-```
-
 ## Kafka Integration
 
 ### Topics and Message Formats
@@ -697,7 +456,6 @@ All Kafka messages use generic wrappers for type safety:
 ```go
 type Command[E any] struct {
     TransactionId string `json:"transactionId"`
-    TenantId      string `json:"tenantId"`
     WorldId       byte   `json:"worldId"`
     CharacterId   uint32 `json:"characterId"`
     Type          string `json:"type"`
@@ -740,7 +498,6 @@ These are commands that the Family Service consumes from other services:
 ```json
 {
     "transactionId": "tx-add-junior-12345",
-    "tenantId": "550e8400-e29b-41d4-a716-446655440000",
     "worldId": 1,
     "characterId": 67890,
     "type": "ADD_JUNIOR",
@@ -777,6 +534,18 @@ These are commands that the Family Service consumes from other services:
 }
 ```
 
+#### 4. AWARD_REP
+**Purpose**: Award reputation 
+**Command Type**: `AWARD_REP`
+
+**Body Structure:**
+```json
+{
+    "amount": 100,
+    "source": "expedition"
+}
+```
+
 #### 4. DEDUCT_REP
 **Purpose**: Deduct reputation for buff/teleport usage  
 **Command Type**: `DEDUCT_REP`
@@ -788,34 +557,6 @@ These are commands that the Family Service consumes from other services:
     "reason": "2x EXP buff for 1 hour"
 }
 ```
-
-#### 5. REGISTER_KILL_ACTIVITY
-**Purpose**: Register mob kill activity for reputation  
-**Command Type**: `REGISTER_KILL_ACTIVITY`
-
-**Body Structure:**
-```json
-{
-    "killCount": 10,
-    "timestamp": "2025-01-15T14:30:00Z"
-}
-```
-
-**Reputation Calculation**: 2 Rep per 5 kills awarded to the character's senior
-
-#### 6. REGISTER_EXPEDITION_ACTIVITY
-**Purpose**: Register expedition activity for reputation  
-**Command Type**: `REGISTER_EXPEDITION_ACTIVITY`
-
-**Body Structure:**
-```json
-{
-    "coinReward": 5000,
-    "timestamp": "2025-01-15T14:30:00Z"
-}
-```
-
-**Reputation Calculation**: Coin reward × 10 Rep awarded to the character's senior
 
 ---
 
@@ -952,37 +693,6 @@ These are events that the Family Service produces for other services:
 }
 ```
 
-#### Buff Events (EVENT_TOPIC_FAMILY_BUFFS)
-
-##### 1. BUFF_REDEEMED
-**Purpose**: Notify when a buff is redeemed with reputation  
-**Event Type**: `BUFF_REDEEMED`
-
-**Body Structure:**
-```json
-{
-    "buffType": "2x_exp",
-    "repCost": 100,
-    "duration": 3600,
-    "timestamp": "2025-01-15T14:30:00Z"
-}
-```
-
-##### 2. TELEPORT_USED
-**Purpose**: Notify when teleport is used with reputation  
-**Event Type**: `TELEPORT_USED`
-
-**Body Structure:**
-```json
-{
-    "targetId": 12345,
-    "repCost": 50,
-    "world": 1,
-    "map": 100000001,
-    "timestamp": "2025-01-15T14:30:00Z"
-}
-```
-
 ---
 
 ### Message Partitioning
@@ -995,8 +705,7 @@ Messages are partitioned by `characterId` to ensure:
 ### Consumer Groups
 
 The service uses the following consumer groups:
-- `family-command-processor`: Processes commands from other services
-- `family-activity-processor`: Processes activity-based reputation events
+- `family-command`: Processes commands from other services
 
 ### Producer Configuration
 
@@ -1087,48 +796,6 @@ Distributed tracing through Jaeger:
 - Kafka message processing
 - Scheduler execution traces
 
-## Troubleshooting
-
-### Common Issues
-
-1. **Database Connection Failures**
-   - Verify database credentials and connectivity
-   - Check database schema existence
-   - Validate migration completion
-
-2. **Kafka Connectivity Issues**
-   - Verify broker addresses and ports
-   - Check topic existence and permissions
-   - Validate consumer group configurations
-
-3. **Scheduler Not Running**
-   - Check timezone configuration
-   - Verify database connectivity
-   - Review scheduler logs for errors
-
-4. **Transaction Failures**
-   - Ensure unique transaction IDs
-   - Check for concurrent operations
-   - Review business rule validations
-
-### Performance Optimization
-
-- **Database Indexing**: Ensure proper indexes on characterId, tenantId, and seniorId
-- **Connection Pooling**: Configure appropriate database connection limits
-- **Kafka Partitioning**: Use characterId for message partitioning
-- **Batch Operations**: Utilize batch reputation reset for performance
-
-## License
-
-This project is part of the Atlas game server ecosystem. See the main Atlas repository for licensing information.
-
-## Support
-
-For issues and questions:
-- Create issues in the GitHub repository
-- Check the Atlas documentation
-- Contact the Atlas development team
-
 ## Database Schema
 
 ### Table: `family_members`
@@ -1168,64 +835,6 @@ CREATE TABLE family_members (
 | `world` | `SMALLINT` | NOT NULL | Game world/server identifier |
 | `created_at` | `TIMESTAMP` | NOT NULL | Record creation timestamp |
 | `updated_at` | `TIMESTAMP` | NOT NULL | Last modification timestamp |
-
-#### Indexes
-
-Performance-optimized indexes for common query patterns:
-
-```sql
--- Composite index for tenant-specific character lookups
-CREATE INDEX idx_family_members_tenant_character 
-ON family_members(tenant_id, character_id);
-
--- Index for senior-based queries (partial index excluding nulls)
-CREATE INDEX idx_family_members_senior_id 
-ON family_members(senior_id) WHERE senior_id IS NOT NULL;
-
--- Index for world-based queries
-CREATE INDEX idx_family_members_world 
-ON family_members(world);
-
--- Index for temporal queries and daily reset operations
-CREATE INDEX idx_family_members_updated_at 
-ON family_members(updated_at);
-```
-
-#### Database Constraints
-
-Business rule enforcement at the database level:
-
-```sql
--- Ensure maximum 2 juniors per senior
-ALTER TABLE family_members 
-ADD CONSTRAINT check_junior_count 
-CHECK (array_length(junior_ids, 1) IS NULL OR array_length(junior_ids, 1) <= 2);
-
--- Ensure reputation is non-negative
-ALTER TABLE family_members 
-ADD CONSTRAINT check_rep_non_negative 
-CHECK (rep >= 0);
-
--- Ensure daily reputation is non-negative
-ALTER TABLE family_members 
-ADD CONSTRAINT check_daily_rep_non_negative 
-CHECK (daily_rep >= 0);
-
--- Enforce daily reputation limit (5000 per day)
-ALTER TABLE family_members 
-ADD CONSTRAINT check_daily_rep_limit 
-CHECK (daily_rep <= 5000);
-
--- Ensure level is positive
-ALTER TABLE family_members 
-ADD CONSTRAINT check_level_positive 
-CHECK (level > 0);
-
--- Prevent self-referential senior relationships
-ALTER TABLE family_members 
-ADD CONSTRAINT check_no_self_senior 
-CHECK (senior_id != character_id);
-```
 
 ### Relationships
 
@@ -1275,113 +884,3 @@ The family system implements a tree-like hierarchy using self-referential relati
 - **Same World**: Senior and junior must be in the same world for initial linking
 - **No Cycles**: Circular relationships are prevented by business logic
 - **Cascade Operations**: Removing a senior dissolves all junior relationships
-
-### Query Patterns
-
-#### Common Queries
-
-1. **Get Family Member by Character ID**
-```sql
-SELECT * FROM family_members 
-WHERE tenant_id = ? AND character_id = ?;
-```
-
-2. **Get All Juniors of a Senior**
-```sql
-SELECT * FROM family_members 
-WHERE tenant_id = ? AND senior_id = ?;
-```
-
-3. **Get Complete Family Tree**
-```sql
--- Recursive CTE to get entire family tree
-WITH RECURSIVE family_tree AS (
-    -- Base case: start with the target character
-    SELECT * FROM family_members 
-    WHERE tenant_id = ? AND character_id = ?
-    
-    UNION ALL
-    
-    -- Recursive case: find all related members
-    SELECT fm.* FROM family_members fm
-    JOIN family_tree ft ON (
-        fm.senior_id = ft.character_id OR 
-        ft.senior_id = fm.character_id OR
-        fm.character_id = ANY(ft.junior_ids) OR
-        ft.character_id = ANY(fm.junior_ids)
-    )
-    WHERE fm.tenant_id = ?
-)
-SELECT DISTINCT * FROM family_tree;
-```
-
-4. **Get Members for Daily Reset**
-```sql
-SELECT character_id, daily_rep FROM family_members 
-WHERE tenant_id = ? AND daily_rep > 0;
-```
-
-5. **Get Members by World**
-```sql
-SELECT * FROM family_members 
-WHERE tenant_id = ? AND world = ?;
-```
-
-#### Performance Considerations
-
-- **Indexing**: All common queries use indexed fields for optimal performance
-- **Partitioning**: Consider partitioning by `tenant_id` for large-scale deployments
-- **Array Operations**: PostgreSQL array operations on `junior_ids` are optimized with GIN indexes if needed
-- **Batch Operations**: Daily reset operations use batch updates for efficiency
-
-### Data Integrity
-
-#### Referential Integrity
-
-- **Foreign Key Simulation**: `senior_id` references `character_id` but not enforced as FK to avoid circular dependencies
-- **Application-Level Validation**: Business rules enforced in the service layer
-- **Cascade Handling**: Removal operations handled by service logic, not database cascades
-
-#### Consistency Guarantees
-
-- **Transaction Isolation**: All family operations use database transactions
-- **Idempotent Operations**: Transaction IDs ensure operations can be safely retried
-- **Atomic Updates**: Complex operations (like dissolving subtrees) use transactions
-
-#### Audit Trail
-
-- **Timestamps**: `created_at` and `updated_at` track record lifecycle
-- **Event Emission**: All changes emit Kafka events for external audit systems
-- **Transaction Tracking**: All operations include transaction IDs for traceability
-
-### Migration Strategy
-
-#### Initial Schema Creation
-
-The schema is automatically created on service startup through GORM migrations:
-
-```go
-// Migration creates the family_members table with proper indexes and constraints
-func Migration(db *gorm.DB) error {
-    err := db.AutoMigrate(&Entity{})
-    if err != nil {
-        return err
-    }
-    
-    // Add indexes and constraints...
-    return nil
-}
-```
-
-#### Schema Evolution
-
-Future schema changes should:
-1. Be backward-compatible where possible
-2. Use database migrations for structural changes
-3. Maintain index performance
-4. Consider tenant data isolation
-5. Test with production-like data volumes
-
----
-
-**Atlas Family Service** - Enabling collaborative gameplay through hierarchical family relationships.

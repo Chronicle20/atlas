@@ -2,24 +2,25 @@ package family
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Command represents a generic command wrapper for family operations
 type Command[E any] struct {
-	TransactionId string `json:"transactionId"`
-	TenantId      string `json:"tenantId"`
-	WorldId       byte   `json:"worldId"`
-	CharacterId   uint32 `json:"characterId"`
-	Type          string `json:"type"`
-	Body          E      `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       byte      `json:"worldId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
 }
 
 // Event represents a generic event wrapper for family operations
 type Event[E any] struct {
-	WorldId       byte   `json:"worldId"`
-	CharacterId   uint32 `json:"characterId"`
-	Type          string `json:"type"`
-	Body          E      `json:"body"`
+	WorldId     byte   `json:"worldId"`
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
 }
 
 // Command Body Types
@@ -28,9 +29,7 @@ type Event[E any] struct {
 type AddJuniorCommandBody struct {
 	JuniorId    uint32 `json:"juniorId"`
 	SeniorLevel uint16 `json:"seniorLevel"`
-	SeniorWorld byte   `json:"seniorWorld"`
 	JuniorLevel uint16 `json:"juniorLevel"`
-	JuniorWorld byte   `json:"juniorWorld"`
 }
 
 // RemoveMemberCommandBody represents the body for removing a member from a family
@@ -88,10 +87,10 @@ type LinkBrokenEventBody struct {
 
 // TreeDissolvedEventBody represents the body for tree dissolved events
 type TreeDissolvedEventBody struct {
-	SeniorId       uint32    `json:"seniorId"`
-	AffectedIds    []uint32  `json:"affectedIds"`
-	Reason         string    `json:"reason"`
-	Timestamp      time.Time `json:"timestamp"`
+	SeniorId    uint32    `json:"seniorId"`
+	AffectedIds []uint32  `json:"affectedIds"`
+	Reason      string    `json:"reason"`
+	Timestamp   time.Time `json:"timestamp"`
 }
 
 // RepGainedEventBody represents the body for reputation gained events
@@ -132,19 +131,19 @@ type RepResetEventBody struct {
 
 // BuffRedeemedEventBody represents the body for buff redeemed events
 type BuffRedeemedEventBody struct {
-	BuffType      string    `json:"buffType"`
-	RepCost       uint32    `json:"repCost"`
-	Duration      uint32    `json:"duration"`
-	Timestamp     time.Time `json:"timestamp"`
+	BuffType  string    `json:"buffType"`
+	RepCost   uint32    `json:"repCost"`
+	Duration  uint32    `json:"duration"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // TeleportUsedEventBody represents the body for teleport used events
 type TeleportUsedEventBody struct {
-	TargetId   uint32    `json:"targetId"`
-	RepCost    uint32    `json:"repCost"`
-	World      byte      `json:"world"`
-	Map        uint32    `json:"map"`
-	Timestamp  time.Time `json:"timestamp"`
+	TargetId  uint32    `json:"targetId"`
+	RepCost   uint32    `json:"repCost"`
+	World     byte      `json:"world"`
+	Map       uint32    `json:"map"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // Error Event Body Types
@@ -168,72 +167,56 @@ type LinkErrorEventBody struct {
 
 // Environment Variable Topic Constants
 const (
-	EnvCommandTopic       = "COMMAND_TOPIC_FAMILY"
-	EnvEventTopic         = "EVENT_TOPIC_FAMILY"
-	EnvEventTopicStatus   = "EVENT_TOPIC_FAMILY_STATUS"
-	EnvEventTopicErrors   = "EVENT_TOPIC_FAMILY_ERRORS"
-	EnvEventTopicRep      = "EVENT_TOPIC_FAMILY_REPUTATION"
-)
-
-// Topic Name Constants for Message Buffer
-const (
-	TopicFamilyStatus     = "FAMILY_STATUS"
-	TopicFamilyErrors     = "FAMILY_ERRORS"
-	TopicFamilyReputation = "FAMILY_REPUTATION"
+	EnvCommandTopic     = "COMMAND_TOPIC_FAMILY"
+	EnvEventTopicStatus = "EVENT_TOPIC_FAMILY_STATUS"
+	EnvEventTopicErrors = "EVENT_TOPIC_FAMILY_ERRORS"
+	EnvEventTopicRep    = "EVENT_TOPIC_FAMILY_REPUTATION"
 )
 
 // Command Type Constants
 const (
-	CommandTypeAddJunior                   = "ADD_JUNIOR"
-	CommandTypeRemoveMember                = "REMOVE_MEMBER"
-	CommandTypeBreakLink                   = "BREAK_LINK"
-	CommandTypeDeductRep                   = "DEDUCT_REP"
-	CommandTypeRedeemRep                   = "REDEEM_REP"
-	CommandTypeRegisterKillActivity        = "REGISTER_KILL_ACTIVITY"
-	CommandTypeRegisterExpeditionActivity  = "REGISTER_EXPEDITION_ACTIVITY"
+	CommandTypeAddJunior    = "ADD_JUNIOR"
+	CommandTypeRemoveMember = "REMOVE_MEMBER"
+	CommandTypeBreakLink    = "BREAK_LINK"
+	CommandTypeAwardRep     = "AWARD_REP"
+	CommandTypeDeductRep    = "DEDUCT_REP"
 )
 
 // Event Type Constants
 const (
-	EventTypeLinkCreated        = "LINK_CREATED"
-	EventTypeLinkBroken         = "LINK_BROKEN"
-	EventTypeTreeDissolved      = "TREE_DISSOLVED"
-	EventTypeRepGained          = "REP_GAINED"
-	EventTypeRepRedeemed        = "REP_REDEEMED"
-	EventTypeRepPenalized       = "REP_PENALIZED"
-	EventTypeRepCapped          = "REP_CAPPED"
-	EventTypeRepReset           = "REP_RESET"
-	EventTypeBuffRedeemed       = "BUFF_REDEEMED"
-	EventTypeTeleportUsed       = "TELEPORT_USED"
-	EventTypeRepError           = "REP_ERROR"
-	EventTypeLinkError          = "LINK_ERROR"
+	EventTypeLinkCreated   = "LINK_CREATED"
+	EventTypeLinkBroken    = "LINK_BROKEN"
+	EventTypeTreeDissolved = "TREE_DISSOLVED"
+	EventTypeRepGained     = "REP_GAINED"
+	EventTypeRepRedeemed   = "REP_REDEEMED"
+	EventTypeRepPenalized  = "REP_PENALIZED"
+	EventTypeRepCapped     = "REP_CAPPED"
+	EventTypeRepReset      = "REP_RESET"
+	EventTypeRepError      = "REP_ERROR"
+	EventTypeLinkError     = "LINK_ERROR"
 )
 
 // Helper functions for creating typed commands and events
 
 // NewAddJuniorCommand creates a new AddJunior command
-func NewAddJuniorCommand(transactionId string, tenantId string, worldId byte, characterId uint32, juniorId uint32, seniorLevel uint16, seniorWorld byte, juniorLevel uint16, juniorWorld byte) Command[AddJuniorCommandBody] {
+func NewAddJuniorCommand(transactionId uuid.UUID, worldId byte, characterId uint32, juniorId uint32, seniorLevel uint16, juniorLevel uint16) Command[AddJuniorCommandBody] {
 	return Command[AddJuniorCommandBody]{
 		TransactionId: transactionId,
-		TenantId:      tenantId,
 		WorldId:       worldId,
 		CharacterId:   characterId,
 		Type:          CommandTypeAddJunior,
 		Body: AddJuniorCommandBody{
 			JuniorId:    juniorId,
 			SeniorLevel: seniorLevel,
-			SeniorWorld: seniorWorld,
 			JuniorLevel: juniorLevel,
-			JuniorWorld: juniorWorld,
 		},
 	}
 }
 
 // NewRemoveMemberCommand creates a new RemoveMember command
-func NewRemoveMemberCommand(transactionId string, tenantId string, worldId byte, characterId uint32, targetId uint32, reason string) Command[RemoveMemberCommandBody] {
+func NewRemoveMemberCommand(transactionId uuid.UUID, worldId byte, characterId uint32, targetId uint32, reason string) Command[RemoveMemberCommandBody] {
 	return Command[RemoveMemberCommandBody]{
 		TransactionId: transactionId,
-		TenantId:      tenantId,
 		WorldId:       worldId,
 		CharacterId:   characterId,
 		Type:          CommandTypeRemoveMember,
@@ -245,10 +228,9 @@ func NewRemoveMemberCommand(transactionId string, tenantId string, worldId byte,
 }
 
 // NewBreakLinkCommand creates a new BreakLink command
-func NewBreakLinkCommand(transactionId string, tenantId string, worldId byte, characterId uint32, reason string) Command[BreakLinkCommandBody] {
+func NewBreakLinkCommand(transactionId uuid.UUID, worldId byte, characterId uint32, reason string) Command[BreakLinkCommandBody] {
 	return Command[BreakLinkCommandBody]{
 		TransactionId: transactionId,
-		TenantId:      tenantId,
 		WorldId:       worldId,
 		CharacterId:   characterId,
 		Type:          CommandTypeBreakLink,
@@ -259,46 +241,15 @@ func NewBreakLinkCommand(transactionId string, tenantId string, worldId byte, ch
 }
 
 // NewDeductRepCommand creates a new DeductRep command
-func NewDeductRepCommand(transactionId string, tenantId string, worldId byte, characterId uint32, amount uint32, reason string) Command[DeductRepCommandBody] {
+func NewDeductRepCommand(transactionId uuid.UUID, worldId byte, characterId uint32, amount uint32, reason string) Command[DeductRepCommandBody] {
 	return Command[DeductRepCommandBody]{
 		TransactionId: transactionId,
-		TenantId:      tenantId,
 		WorldId:       worldId,
 		CharacterId:   characterId,
 		Type:          CommandTypeDeductRep,
 		Body: DeductRepCommandBody{
 			Amount: amount,
 			Reason: reason,
-		},
-	}
-}
-
-// NewRegisterKillActivityCommand creates a new RegisterKillActivity command
-func NewRegisterKillActivityCommand(transactionId string, tenantId string, worldId byte, characterId uint32, killCount uint32) Command[RegisterKillActivityCommandBody] {
-	return Command[RegisterKillActivityCommandBody]{
-		TransactionId: transactionId,
-		TenantId:      tenantId,
-		WorldId:       worldId,
-		CharacterId:   characterId,
-		Type:          CommandTypeRegisterKillActivity,
-		Body: RegisterKillActivityCommandBody{
-			KillCount: killCount,
-			Timestamp: time.Now(),
-		},
-	}
-}
-
-// NewRegisterExpeditionActivityCommand creates a new RegisterExpeditionActivity command
-func NewRegisterExpeditionActivityCommand(transactionId string, tenantId string, worldId byte, characterId uint32, coinReward uint32) Command[RegisterExpeditionActivityCommandBody] {
-	return Command[RegisterExpeditionActivityCommandBody]{
-		TransactionId: transactionId,
-		TenantId:      tenantId,
-		WorldId:       worldId,
-		CharacterId:   characterId,
-		Type:          CommandTypeRegisterExpeditionActivity,
-		Body: RegisterExpeditionActivityCommandBody{
-			CoinReward: coinReward,
-			Timestamp:  time.Now(),
 		},
 	}
 }

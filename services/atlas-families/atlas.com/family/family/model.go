@@ -9,9 +9,9 @@ import (
 
 // FamilyMember represents an immutable family member with private fields
 type FamilyMember struct {
+	tenantId    uuid.UUID
 	id          uint32
 	characterId uint32
-	tenantId    uuid.UUID
 	seniorId    *uint32
 	juniorIds   []uint32
 	rep         uint32
@@ -61,7 +61,6 @@ func (fm FamilyMember) Level() uint16 {
 func (fm FamilyMember) World() byte {
 	return fm.world
 }
-
 
 func (fm FamilyMember) CreatedAt() time.Time {
 	return fm.createdAt
@@ -201,14 +200,14 @@ func ValidateJuniorIds(characterId uint32, juniorIds []uint32) error {
 	if len(juniorIds) > 2 {
 		return ErrTooManyJuniors
 	}
-	
+
 	// Check for self-reference
 	for _, juniorId := range juniorIds {
 		if juniorId == characterId {
 			return ErrSelfReference
 		}
 	}
-	
+
 	// Check for duplicates
 	seen := make(map[uint32]bool)
 	for _, juniorId := range juniorIds {
@@ -217,7 +216,7 @@ func ValidateJuniorIds(characterId uint32, juniorIds []uint32) error {
 		}
 		seen[juniorId] = true
 	}
-	
+
 	return nil
 }
 

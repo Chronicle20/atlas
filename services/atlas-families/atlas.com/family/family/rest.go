@@ -50,48 +50,6 @@ func (r RestFamilyTree) GetType() string {
 	return "familyTrees"
 }
 
-// RestReputation represents reputation information in REST format
-type RestReputation struct {
-	ID               string `json:"id"`
-	Type             string `json:"type"`
-	CharacterId      uint32 `json:"characterId"`
-	AvailableRep     uint32 `json:"availableRep"`
-	DailyRep         uint32 `json:"dailyRep"`
-	DailyRepLimit    uint32 `json:"dailyRepLimit"`
-	RemainingDailyRep uint32 `json:"remainingDailyRep"`
-}
-
-// GetID returns the ID for JSON:API compatibility
-func (r RestReputation) GetID() string {
-	return r.ID
-}
-
-// GetType returns the type for JSON:API compatibility
-func (r RestReputation) GetType() string {
-	return "reputation"
-}
-
-// RestLocation represents family member location in REST format
-type RestLocation struct {
-	ID          string `json:"id"`
-	Type        string `json:"type"`
-	CharacterId uint32 `json:"characterId"`
-	World       byte   `json:"world"`
-	Channel     *byte  `json:"channel,omitempty"`
-	Map         uint32 `json:"map"`
-	Online      bool   `json:"online"`
-}
-
-// GetID returns the ID for JSON:API compatibility
-func (r RestLocation) GetID() string {
-	return r.ID
-}
-
-// GetType returns the type for JSON:API compatibility
-func (r RestLocation) GetType() string {
-	return "locations"
-}
-
 // Transform converts a domain FamilyMember to REST representation
 func Transform(fm FamilyMember) (RestFamilyMember, error) {
 	// Copy junior IDs to avoid shared references
@@ -167,7 +125,7 @@ func Extract(r RestFamilyMember) (FamilyMember, error) {
 // TransformTree converts a slice of domain FamilyMembers to REST family tree
 func TransformTree(characterId uint32, members []FamilyMember) (RestFamilyTree, error) {
 	restMembers := make([]RestFamilyMember, 0, len(members))
-	
+
 	for _, member := range members {
 		restMember, err := Transform(member)
 		if err != nil {
@@ -192,53 +150,19 @@ func TransformFamilyTree(members []FamilyMember) (RestFamilyTree, error) {
 			Members: []RestFamilyMember{},
 		}, nil
 	}
-	
+
 	// Use the first member's character ID as the tree ID
 	return TransformTree(members[0].CharacterId(), members)
-}
-
-// TransformReputation converts a domain FamilyMember to REST reputation
-func TransformReputation(fm FamilyMember) (RestReputation, error) {
-	const dailyRepLimit = 5000
-	remainingDailyRep := dailyRepLimit - fm.DailyRep()
-	if remainingDailyRep < 0 {
-		remainingDailyRep = 0
-	}
-
-	return RestReputation{
-		ID:                strconv.FormatUint(uint64(fm.CharacterId()), 10),
-		Type:              "reputation",
-		CharacterId:       fm.CharacterId(),
-		AvailableRep:      fm.Rep(),
-		DailyRep:          fm.DailyRep(),
-		DailyRepLimit:     dailyRepLimit,
-		RemainingDailyRep: remainingDailyRep,
-	}, nil
-}
-
-// TransformLocation converts a domain FamilyMember to REST location
-func TransformLocation(fm FamilyMember, channel *byte, mapId uint32, online bool) (RestLocation, error) {
-	return RestLocation{
-		ID:          strconv.FormatUint(uint64(fm.CharacterId()), 10),
-		Type:        "locations",
-		CharacterId: fm.CharacterId(),
-		World:       fm.World(),
-		Channel:     channel,
-		Map:         mapId,
-		Online:      online,
-	}, nil
 }
 
 // Request structures for JSON:API format
 
 // AddJuniorRequest represents the request body for adding a junior
 type AddJuniorRequest struct {
-	Data struct {
-		Type       string `json:"type"`
-		Attributes struct {
-			JuniorId uint32 `json:"juniorId" validate:"required"`
-		} `json:"attributes"`
-	} `json:"data"`
+	WorldId     byte   `json:"worldId" validate:"required"`
+	SeniorLevel uint16 `json:"seniorLevel" validate:"required"`
+	JuniorId    uint32 `json:"juniorId" validate:"required"`
+	JuniorLevel uint16 `json:"juniorLevel" validate:"required"`
 }
 
 // BreakLinkRequest represents the request body for breaking a family link

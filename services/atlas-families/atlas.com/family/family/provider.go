@@ -3,166 +3,105 @@ package family
 import (
 	"atlas-family/database"
 	"errors"
+
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 // GetByCharacterIdProvider returns a provider for finding a family member by character ID
-func GetByCharacterIdProvider(characterId uint32) database.EntityProvider[FamilyMember] {
-	return func(db *gorm.DB) model.Provider[FamilyMember] {
-		return func() (FamilyMember, error) {
-			var entity Entity
-			if err := db.Where("character_id = ?", characterId).First(&entity).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return FamilyMember{}, ErrMemberNotFound
-				}
-				return FamilyMember{}, err
+func GetByCharacterIdProvider(characterId uint32) database.EntityProvider[Entity] {
+	return func(db *gorm.DB) model.Provider[Entity] {
+		var entity Entity
+		if err := db.Where("character_id = ?", characterId).First(&entity).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return model.ErrorProvider[Entity](ErrMemberNotFound)
 			}
-			return Make(entity)
+			return model.ErrorProvider[Entity](err)
 		}
+		return model.FixedProvider(entity)
 	}
 }
 
 // GetByIdProvider returns a provider for finding a family member by ID
-func GetByIdProvider(id uint32) database.EntityProvider[FamilyMember] {
-	return func(db *gorm.DB) model.Provider[FamilyMember] {
-		return func() (FamilyMember, error) {
-			var entity Entity
-			if err := db.Where("id = ?", id).First(&entity).Error; err != nil {
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return FamilyMember{}, ErrMemberNotFound
-				}
-				return FamilyMember{}, err
+func GetByIdProvider(id uint32) database.EntityProvider[Entity] {
+	return func(db *gorm.DB) model.Provider[Entity] {
+		var entity Entity
+		if err := db.Where("id = ?", id).First(&entity).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return model.ErrorProvider[Entity](ErrMemberNotFound)
 			}
-			return Make(entity)
+			return model.ErrorProvider[Entity](err)
 		}
-	}
-}
-
-// GetByTenantIdProvider returns a provider for finding all family members by tenant ID
-func GetByTenantIdProvider(tenantId uuid.UUID) database.EntityProvider[[]FamilyMember] {
-	return func(db *gorm.DB) model.Provider[[]FamilyMember] {
-		return func() ([]FamilyMember, error) {
-			var entities []Entity
-			if err := db.Where("tenant_id = ?", tenantId).Find(&entities).Error; err != nil {
-				return []FamilyMember{}, err
-			}
-			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())()
-		}
+		return model.FixedProvider(entity)
 	}
 }
 
 // GetBySeniorIdProvider returns a provider for finding all juniors of a senior
-func GetBySeniorIdProvider(seniorId uint32) database.EntityProvider[[]FamilyMember] {
-	return func(db *gorm.DB) model.Provider[[]FamilyMember] {
-		return func() ([]FamilyMember, error) {
-			var entities []Entity
-			if err := db.Where("senior_id = ?", seniorId).Find(&entities).Error; err != nil {
-				return []FamilyMember{}, err
-			}
-			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())()
+func GetBySeniorIdProvider(seniorId uint32) database.EntityProvider[[]Entity] {
+	return func(db *gorm.DB) model.Provider[[]Entity] {
+		var entities []Entity
+		if err := db.Where("senior_id = ?", seniorId).Find(&entities).Error; err != nil {
+			return model.ErrorProvider[[]Entity](err)
 		}
+		return model.FixedProvider(entities)
 	}
 }
 
 // GetFamilyTreeProvider returns a provider for getting a complete family tree starting from a character
-func GetFamilyTreeProvider(characterId uint32) database.EntityProvider[[]FamilyMember] {
-	return func(db *gorm.DB) model.Provider[[]FamilyMember] {
-		return func() ([]FamilyMember, error) {
-			// Get the starting member
-			member, err := GetByCharacterIdProvider(characterId)(db)()
-			if err != nil {
-				return []FamilyMember{}, err
-			}
+func GetFamilyTreeProvider(characterId uint32) database.EntityProvider[[]Entity] {
+	return func(db *gorm.DB) model.Provider[[]Entity] {
+		// Get the starting member
+		member, err := GetByCharacterIdProvider(characterId)(db)()
+		if err != nil {
+			return model.ErrorProvider[[]Entity](err)
+		}
 
-			var familyMembers []FamilyMember
-			familyMembers = append(familyMembers, member)
+		var familyMembers []Entity
+		familyMembers = append(familyMembers, member)
 
-			// Get all family members related to this character
-			// This includes: senior, juniors, and siblings (other juniors of the same senior)
-			relatedIds := make(map[uint32]bool)
-			relatedIds[characterId] = true
+		// Get all family members related to this character
+		// This includes: senior, juniors, and siblings (other juniors of the same senior)
+		relatedIds := make(map[uint32]bool)
+		relatedIds[characterId] = true
 
-			// Add senior if exists
-			if member.HasSenior() {
-				seniorId := *member.SeniorId()
-				if !relatedIds[seniorId] {
-					senior, err := GetByCharacterIdProvider(seniorId)(db)()
-					if err == nil {
-						familyMembers = append(familyMembers, senior)
-						relatedIds[seniorId] = true
-					}
-				}
-			}
-
-			// Add juniors if exist
-			if member.HasJuniors() {
-				juniors, err := GetBySeniorIdProvider(characterId)(db)()
+		// Add senior if exists
+		if member.SeniorId != nil {
+			seniorId := *member.SeniorId
+			if !relatedIds[seniorId] {
+				senior, err := GetByCharacterIdProvider(seniorId)(db)()
 				if err == nil {
-					for _, junior := range juniors {
-						if !relatedIds[junior.CharacterId()] {
-							familyMembers = append(familyMembers, junior)
-							relatedIds[junior.CharacterId()] = true
-						}
+					familyMembers = append(familyMembers, senior)
+					relatedIds[seniorId] = true
+				}
+			}
+		}
+
+		// Add juniors if exist
+		if len(member.JuniorIds) > 0 {
+			juniors, err := GetBySeniorIdProvider(characterId)(db)()
+			if err == nil {
+				for _, junior := range juniors {
+					if !relatedIds[junior.CharacterId] {
+						familyMembers = append(familyMembers, junior)
+						relatedIds[junior.CharacterId] = true
 					}
 				}
 			}
+		}
 
-			// Add siblings (other juniors of the same senior)
-			if member.HasSenior() {
-				siblings, err := GetBySeniorIdProvider(*member.SeniorId())(db)()
-				if err == nil {
-					for _, sibling := range siblings {
-						if !relatedIds[sibling.CharacterId()] {
-							familyMembers = append(familyMembers, sibling)
-							relatedIds[sibling.CharacterId()] = true
-						}
+		// Add siblings (other juniors of the same senior)
+		if member.SeniorId != nil {
+			siblings, err := GetBySeniorIdProvider(*member.SeniorId)(db)()
+			if err == nil {
+				for _, sibling := range siblings {
+					if !relatedIds[sibling.CharacterId] {
+						familyMembers = append(familyMembers, sibling)
+						relatedIds[sibling.CharacterId] = true
 					}
 				}
 			}
-
-			return familyMembers, nil
 		}
-	}
-}
-
-// GetByWorldProvider returns a provider for finding family members on a specific world
-func GetByWorldProvider(world byte) database.EntityProvider[[]FamilyMember] {
-	return func(db *gorm.DB) model.Provider[[]FamilyMember] {
-		return func() ([]FamilyMember, error) {
-			var entities []Entity
-			if err := db.Where("world = ?", world).Find(&entities).Error; err != nil {
-				return []FamilyMember{}, err
-			}
-			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())()
-		}
-	}
-}
-
-// GetActiveMembers returns a provider for finding all family members with recent activity
-func GetActiveMembersProvider() database.EntityProvider[[]FamilyMember] {
-	return func(db *gorm.DB) model.Provider[[]FamilyMember] {
-		return func() ([]FamilyMember, error) {
-			var entities []Entity
-			if err := db.Where("daily_rep > 0").Find(&entities).Error; err != nil {
-				return []FamilyMember{}, err
-			}
-			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())()
-		}
-	}
-}
-
-// GetMembersNeedingResetProvider returns a provider for finding members that need daily rep reset
-func GetMembersNeedingResetProvider() database.EntityProvider[[]FamilyMember] {
-	return func(db *gorm.DB) model.Provider[[]FamilyMember] {
-		return func() ([]FamilyMember, error) {
-			var entities []Entity
-			if err := db.Where("daily_rep > 0").Find(&entities).Error; err != nil {
-				return []FamilyMember{}, err
-			}
-			return model.SliceMap(Make)(model.FixedProvider(entities))(model.ParallelMap())()
-		}
+		return model.FixedProvider(familyMembers)
 	}
 }
 
@@ -178,4 +117,3 @@ func ExistsProvider(characterId uint32) database.EntityProvider[bool] {
 		}
 	}
 }
-

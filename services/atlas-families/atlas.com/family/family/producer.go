@@ -2,10 +2,12 @@ package family
 
 import (
 	"time"
-	
+
 	"atlas-family/kafka/message/family"
+
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -116,81 +118,32 @@ func RepPenalizedEventProvider(worldId byte, characterId uint32, repLost uint32,
 	return producer.SingleMessageProvider(key, value)
 }
 
-// BuffRedeemedEventProvider creates a Kafka message provider for buff redeemed events
-func BuffRedeemedEventProvider(worldId byte, characterId uint32, buffType string, repCost uint32, duration uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &family.Event[family.BuffRedeemedEventBody]{
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        family.EventTypeBuffRedeemed,
-		Body: family.BuffRedeemedEventBody{
-			BuffType:  buffType,
-			RepCost:   repCost,
-			Duration:  duration,
-			Timestamp: time.Now(),
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
-// TeleportUsedEventProvider creates a Kafka message provider for teleport used events
-func TeleportUsedEventProvider(worldId byte, characterId uint32, targetId uint32, repCost uint32, world byte, mapId uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := &family.Event[family.TeleportUsedEventBody]{
-		WorldId:     worldId,
-		CharacterId: characterId,
-		Type:        family.EventTypeTeleportUsed,
-		Body: family.TeleportUsedEventBody{
-			TargetId:  targetId,
-			RepCost:   repCost,
-			World:     world,
-			Map:       mapId,
-			Timestamp: time.Now(),
-		},
-	}
-	return producer.SingleMessageProvider(key, value)
-}
-
 // Command Providers
 
 // AddJuniorCommandProvider creates a Kafka message provider for add junior commands
-func AddJuniorCommandProvider(transactionId string, tenantId string, worldId byte, characterId uint32, juniorId uint32, seniorLevel uint16, seniorWorld byte, juniorLevel uint16, juniorWorld byte) model.Provider[[]kafka.Message] {
+func AddJuniorCommandProvider(transactionId uuid.UUID, worldId byte, characterId uint32, juniorId uint32, seniorLevel uint16, juniorLevel uint16) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := family.NewAddJuniorCommand(transactionId, tenantId, worldId, characterId, juniorId, seniorLevel, seniorWorld, juniorLevel, juniorWorld)
+	value := family.NewAddJuniorCommand(transactionId, worldId, characterId, juniorId, seniorLevel, juniorLevel)
 	return producer.SingleMessageProvider(key, value)
 }
 
 // RemoveMemberCommandProvider creates a Kafka message provider for remove member commands
-func RemoveMemberCommandProvider(transactionId string, tenantId string, worldId byte, characterId uint32, targetId uint32, reason string) model.Provider[[]kafka.Message] {
+func RemoveMemberCommandProvider(transactionId uuid.UUID, worldId byte, characterId uint32, targetId uint32, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := family.NewRemoveMemberCommand(transactionId, tenantId, worldId, characterId, targetId, reason)
+	value := family.NewRemoveMemberCommand(transactionId, worldId, characterId, targetId, reason)
 	return producer.SingleMessageProvider(key, value)
 }
 
 // BreakLinkCommandProvider creates a Kafka message provider for break link commands
-func BreakLinkCommandProvider(transactionId string, tenantId string, worldId byte, characterId uint32, reason string) model.Provider[[]kafka.Message] {
+func BreakLinkCommandProvider(transactionId uuid.UUID, worldId byte, characterId uint32, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := family.NewBreakLinkCommand(transactionId, tenantId, worldId, characterId, reason)
+	value := family.NewBreakLinkCommand(transactionId, worldId, characterId, reason)
 	return producer.SingleMessageProvider(key, value)
 }
 
 // DeductRepCommandProvider creates a Kafka message provider for deduct reputation commands
-func DeductRepCommandProvider(transactionId string, tenantId string, worldId byte, characterId uint32, amount uint32, reason string) model.Provider[[]kafka.Message] {
+func DeductRepCommandProvider(transactionId uuid.UUID, worldId byte, characterId uint32, amount uint32, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
-	value := family.NewDeductRepCommand(transactionId, tenantId, worldId, characterId, amount, reason)
-	return producer.SingleMessageProvider(key, value)
-}
-
-// RegisterKillActivityCommandProvider creates a Kafka message provider for register kill activity commands
-func RegisterKillActivityCommandProvider(transactionId string, tenantId string, worldId byte, characterId uint32, killCount uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := family.NewRegisterKillActivityCommand(transactionId, tenantId, worldId, characterId, killCount)
-	return producer.SingleMessageProvider(key, value)
-}
-
-// RegisterExpeditionActivityCommandProvider creates a Kafka message provider for register expedition activity commands
-func RegisterExpeditionActivityCommandProvider(transactionId string, tenantId string, worldId byte, characterId uint32, coinReward uint32) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(characterId))
-	value := family.NewRegisterExpeditionActivityCommand(transactionId, tenantId, worldId, characterId, coinReward)
+	value := family.NewDeductRepCommand(transactionId, worldId, characterId, amount, reason)
 	return producer.SingleMessageProvider(key, value)
 }

@@ -31,6 +31,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMapChangedStatusEventLogout)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeleted)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLevelChanged)))
 	}
 }
 
@@ -218,4 +219,36 @@ func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, e Statu
 			WithField("characterId", e.CharacterId).
 			Infof("Successfully processed character deletion for character [%d].", e.CharacterId)
 	}
+}
+
+func handleStatusEventLevelChanged(l logrus.FieldLogger, ctx context.Context, e StatusEvent[LevelChangedStatusEventBody]) {
+	if e.Type != StatusEventTypeLevelChanged {
+		return
+	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("channelId", e.Body.ChannelId).
+		WithField("currentLevel", e.Body.Current).
+		WithField("levelAmount", e.Body.Amount).
+		Debugf("Processing level changed event for character [%d].", e.CharacterId)
+
+	err := character.NewProcessor(l, ctx).LevelChange(byte(e.WorldId), byte(e.Body.ChannelId), e.CharacterId, e.Body.Current)
+	if err != nil {
+		l.WithError(err).
+			WithField("characterId", e.CharacterId).
+			WithField("worldId", e.WorldId).
+			WithField("transactionId", e.TransactionId).
+			WithField("channelId", e.Body.ChannelId).
+			WithField("currentLevel", e.Body.Current).
+			Errorf("Unable to process level change for character [%d].", e.CharacterId)
+		return
+	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("currentLevel", e.Body.Current).
+		Debugf("Successfully processed level change for character [%d].", e.CharacterId)
 }

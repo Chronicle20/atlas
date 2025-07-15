@@ -742,6 +742,7 @@ func (c Ceremony) Reschedule(newScheduledAt time.Time) (Ceremony, error) {
 	return c.Builder().
 		SetStatus(CeremonyStatusScheduled).
 		SetScheduledAt(newScheduledAt).
+		SetStartedAt(nil).
 		SetPostponedAt(nil).
 		SetUpdatedAt(now).
 		Build()

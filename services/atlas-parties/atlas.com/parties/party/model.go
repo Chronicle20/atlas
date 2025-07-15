@@ -57,6 +57,10 @@ func (m Model) RemoveMember(memberId uint32) Model {
 	}
 }
 
+func (m Model) TenantId() uuid.UUID {
+	return m.tenantId
+}
+
 func (m Model) Id() uint32 {
 	return m.id
 }

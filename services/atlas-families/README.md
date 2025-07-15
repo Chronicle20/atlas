@@ -1129,6 +1129,259 @@ For issues and questions:
 - Check the Atlas documentation
 - Contact the Atlas development team
 
+## Database Schema
+
+### Table: `family_members`
+
+The core table that stores all family member information and relationships.
+
+#### Schema Definition
+
+```sql
+CREATE TABLE family_members (
+    id SERIAL PRIMARY KEY,
+    character_id INTEGER NOT NULL UNIQUE,
+    tenant_id UUID NOT NULL,
+    senior_id INTEGER,
+    junior_ids INTEGER[],
+    rep INTEGER DEFAULT 0,
+    daily_rep INTEGER DEFAULT 0,
+    level SMALLINT NOT NULL,
+    world SMALLINT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Field Descriptions
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `id` | `SERIAL` | PRIMARY KEY | Auto-incrementing unique identifier |
+| `character_id` | `INTEGER` | NOT NULL, UNIQUE | Game character ID (unique across all family members) |
+| `tenant_id` | `UUID` | NOT NULL | Multi-tenant identifier for data isolation |
+| `senior_id` | `INTEGER` | NULL, FOREIGN KEY | Reference to senior's character_id (null for root members) |
+| `junior_ids` | `INTEGER[]` | NULL | Array of junior character IDs (max 2 elements) |
+| `rep` | `INTEGER` | DEFAULT 0, >= 0 | Total accumulated reputation points |
+| `daily_rep` | `INTEGER` | DEFAULT 0, >= 0, <= 5000 | Daily reputation gained (resets daily) |
+| `level` | `SMALLINT` | NOT NULL, > 0 | Character level for link validation |
+| `world` | `SMALLINT` | NOT NULL | Game world/server identifier |
+| `created_at` | `TIMESTAMP` | NOT NULL | Record creation timestamp |
+| `updated_at` | `TIMESTAMP` | NOT NULL | Last modification timestamp |
+
+#### Indexes
+
+Performance-optimized indexes for common query patterns:
+
+```sql
+-- Composite index for tenant-specific character lookups
+CREATE INDEX idx_family_members_tenant_character 
+ON family_members(tenant_id, character_id);
+
+-- Index for senior-based queries (partial index excluding nulls)
+CREATE INDEX idx_family_members_senior_id 
+ON family_members(senior_id) WHERE senior_id IS NOT NULL;
+
+-- Index for world-based queries
+CREATE INDEX idx_family_members_world 
+ON family_members(world);
+
+-- Index for temporal queries and daily reset operations
+CREATE INDEX idx_family_members_updated_at 
+ON family_members(updated_at);
+```
+
+#### Database Constraints
+
+Business rule enforcement at the database level:
+
+```sql
+-- Ensure maximum 2 juniors per senior
+ALTER TABLE family_members 
+ADD CONSTRAINT check_junior_count 
+CHECK (array_length(junior_ids, 1) IS NULL OR array_length(junior_ids, 1) <= 2);
+
+-- Ensure reputation is non-negative
+ALTER TABLE family_members 
+ADD CONSTRAINT check_rep_non_negative 
+CHECK (rep >= 0);
+
+-- Ensure daily reputation is non-negative
+ALTER TABLE family_members 
+ADD CONSTRAINT check_daily_rep_non_negative 
+CHECK (daily_rep >= 0);
+
+-- Enforce daily reputation limit (5000 per day)
+ALTER TABLE family_members 
+ADD CONSTRAINT check_daily_rep_limit 
+CHECK (daily_rep <= 5000);
+
+-- Ensure level is positive
+ALTER TABLE family_members 
+ADD CONSTRAINT check_level_positive 
+CHECK (level > 0);
+
+-- Prevent self-referential senior relationships
+ALTER TABLE family_members 
+ADD CONSTRAINT check_no_self_senior 
+CHECK (senior_id != character_id);
+```
+
+### Relationships
+
+#### Hierarchical Structure
+
+The family system implements a tree-like hierarchy using self-referential relationships:
+
+```
+┌─────────────────┐
+│   Root Member   │ <- senior_id: NULL
+│   (No Senior)   │
+└─────────────────┘
+         │
+         ├─────────────────┐
+         │                 │
+┌─────────────────┐ ┌─────────────────┐
+│   Junior #1     │ │   Junior #2     │ <- senior_id: Root's character_id
+│                 │ │                 │
+└─────────────────┘ └─────────────────┘
+         │
+         ├─────────────────┐
+         │                 │
+┌─────────────────┐ ┌─────────────────┐
+│ Junior #1's     │ │ Junior #1's     │ <- senior_id: Junior #1's character_id
+│ Junior #1       │ │ Junior #2       │
+└─────────────────┘ └─────────────────┘
+```
+
+#### Relationship Types
+
+1. **Senior-Junior Relationship**
+   - Each member can have at most 1 senior (`senior_id`)
+   - Each member can have at most 2 juniors (`junior_ids[]`)
+   - Relationship is bidirectional but stored in both directions
+
+2. **Root Members**
+   - Members with `senior_id = NULL` are root members
+   - Root members can still have juniors
+
+3. **Leaf Members**
+   - Members with empty `junior_ids[]` are leaf members
+   - Leaf members can still have a senior
+
+#### Relationship Constraints
+
+- **Level Difference**: Maximum 20 levels between senior and junior
+- **Same World**: Senior and junior must be in the same world for initial linking
+- **No Cycles**: Circular relationships are prevented by business logic
+- **Cascade Operations**: Removing a senior dissolves all junior relationships
+
+### Query Patterns
+
+#### Common Queries
+
+1. **Get Family Member by Character ID**
+```sql
+SELECT * FROM family_members 
+WHERE tenant_id = ? AND character_id = ?;
+```
+
+2. **Get All Juniors of a Senior**
+```sql
+SELECT * FROM family_members 
+WHERE tenant_id = ? AND senior_id = ?;
+```
+
+3. **Get Complete Family Tree**
+```sql
+-- Recursive CTE to get entire family tree
+WITH RECURSIVE family_tree AS (
+    -- Base case: start with the target character
+    SELECT * FROM family_members 
+    WHERE tenant_id = ? AND character_id = ?
+    
+    UNION ALL
+    
+    -- Recursive case: find all related members
+    SELECT fm.* FROM family_members fm
+    JOIN family_tree ft ON (
+        fm.senior_id = ft.character_id OR 
+        ft.senior_id = fm.character_id OR
+        fm.character_id = ANY(ft.junior_ids) OR
+        ft.character_id = ANY(fm.junior_ids)
+    )
+    WHERE fm.tenant_id = ?
+)
+SELECT DISTINCT * FROM family_tree;
+```
+
+4. **Get Members for Daily Reset**
+```sql
+SELECT character_id, daily_rep FROM family_members 
+WHERE tenant_id = ? AND daily_rep > 0;
+```
+
+5. **Get Members by World**
+```sql
+SELECT * FROM family_members 
+WHERE tenant_id = ? AND world = ?;
+```
+
+#### Performance Considerations
+
+- **Indexing**: All common queries use indexed fields for optimal performance
+- **Partitioning**: Consider partitioning by `tenant_id` for large-scale deployments
+- **Array Operations**: PostgreSQL array operations on `junior_ids` are optimized with GIN indexes if needed
+- **Batch Operations**: Daily reset operations use batch updates for efficiency
+
+### Data Integrity
+
+#### Referential Integrity
+
+- **Foreign Key Simulation**: `senior_id` references `character_id` but not enforced as FK to avoid circular dependencies
+- **Application-Level Validation**: Business rules enforced in the service layer
+- **Cascade Handling**: Removal operations handled by service logic, not database cascades
+
+#### Consistency Guarantees
+
+- **Transaction Isolation**: All family operations use database transactions
+- **Idempotent Operations**: Transaction IDs ensure operations can be safely retried
+- **Atomic Updates**: Complex operations (like dissolving subtrees) use transactions
+
+#### Audit Trail
+
+- **Timestamps**: `created_at` and `updated_at` track record lifecycle
+- **Event Emission**: All changes emit Kafka events for external audit systems
+- **Transaction Tracking**: All operations include transaction IDs for traceability
+
+### Migration Strategy
+
+#### Initial Schema Creation
+
+The schema is automatically created on service startup through GORM migrations:
+
+```go
+// Migration creates the family_members table with proper indexes and constraints
+func Migration(db *gorm.DB) error {
+    err := db.AutoMigrate(&Entity{})
+    if err != nil {
+        return err
+    }
+    
+    // Add indexes and constraints...
+    return nil
+}
+```
+
+#### Schema Evolution
+
+Future schema changes should:
+1. Be backward-compatible where possible
+2. Use database migrations for structural changes
+3. Maintain index performance
+4. Consider tenant data isolation
+5. Test with production-like data volumes
+
 ---
 
 **Atlas Family Service** - Enabling collaborative gameplay through hierarchical family relationships.

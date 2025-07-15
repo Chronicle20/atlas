@@ -1,5 +1,9 @@
 package character
 
+import (
+	"github.com/Chronicle20/atlas-constants/job"
+)
+
 const (
 	EnvEventMemberStatusTopic             = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
 	EventPartyMemberStatusTypeLogin       = "LOGIN"
@@ -29,7 +33,7 @@ type memberLevelChangedEventBody struct {
 }
 
 type memberJobChangedEventBody struct {
-	OldJobId uint16 `json:"oldJobId"`
-	NewJobId uint16 `json:"newJobId"`
+	OldJobId job.Id `json:"oldJobId"`
+	NewJobId job.Id `json:"newJobId"`
 	Name     string `json:"name"`
 }

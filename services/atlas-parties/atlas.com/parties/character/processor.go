@@ -179,7 +179,7 @@ func (p *ProcessorImpl) JobChange(mb *message.Buffer) func(characterId uint32, j
 		
 		// If character is in a party, emit party member job changed event
 		if c.PartyId() != 0 {
-			err = mb.Put(EnvEventMemberStatusTopic, jobChangedEventProvider(c.PartyId(), c.WorldId(), characterId, uint16(oldJobId), uint16(jobId), c.Name()))
+			err = mb.Put(EnvEventMemberStatusTopic, jobChangedEventProvider(c.PartyId(), c.WorldId(), characterId, oldJobId, jobId, c.Name()))
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to announce the party [%d] member [%d] job changed.", c.PartyId(), c.Id())
 				return err

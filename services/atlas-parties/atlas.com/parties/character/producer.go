@@ -1,6 +1,7 @@
 package character
 
 import (
+	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
@@ -46,7 +47,7 @@ func levelChangedEventProvider(partyId uint32, worldId byte, characterId uint32,
 	return producer.SingleMessageProvider(key, value)
 }
 
-func jobChangedEventProvider(partyId uint32, worldId byte, characterId uint32, oldJobId uint16, newJobId uint16, name string) model.Provider[[]kafka.Message] {
+func jobChangedEventProvider(partyId uint32, worldId byte, characterId uint32, oldJobId job.Id, newJobId job.Id, name string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &memberStatusEvent[memberJobChangedEventBody]{
 		PartyId:     partyId,

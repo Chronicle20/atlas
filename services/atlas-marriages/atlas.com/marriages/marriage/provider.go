@@ -236,9 +236,9 @@ func GetActiveMarriageByCharacterProvider(db *gorm.DB, log logrus.FieldLogger) f
 }
 
 // GetMarriageByIdProvider retrieves a marriage by ID
-func GetMarriageByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(marriageId uint32, tenantId uuid.UUID) model.Provider[Marriage] {
-	return func(marriageId uint32, tenantId uuid.UUID) model.Provider[Marriage] {
-		return func() (Marriage, error) {
+func GetMarriageByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(marriageId uint32, tenantId uuid.UUID) model.Provider[*Marriage] {
+	return func(marriageId uint32, tenantId uuid.UUID) model.Provider[*Marriage] {
+		return func() (*Marriage, error) {
 			log.WithFields(logrus.Fields{
 				"marriageId": marriageId,
 				"tenantId":   tenantId,
@@ -248,12 +248,17 @@ func GetMarriageByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(marriageI
 			err := db.Where("id = ? AND tenant_id = ?", marriageId, tenantId).First(&entity).Error
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return Marriage{}, errors.New("marriage not found")
+					return nil, nil
 				}
-				return Marriage{}, err
+				return nil, err
 			}
 
-			return Make(entity)
+			marriage, err := Make(entity)
+			if err != nil {
+				return nil, err
+			}
+
+			return &marriage, nil
 		}
 	}
 }
@@ -292,9 +297,9 @@ func GetMarriageHistoryByCharacterProvider(db *gorm.DB, log logrus.FieldLogger) 
 }
 
 // GetCeremonyByIdProvider retrieves a ceremony by ID
-func GetCeremonyByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(ceremonyId uint32, tenantId uuid.UUID) model.Provider[Ceremony] {
-	return func(ceremonyId uint32, tenantId uuid.UUID) model.Provider[Ceremony] {
-		return func() (Ceremony, error) {
+func GetCeremonyByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(ceremonyId uint32, tenantId uuid.UUID) model.Provider[*Ceremony] {
+	return func(ceremonyId uint32, tenantId uuid.UUID) model.Provider[*Ceremony] {
+		return func() (*Ceremony, error) {
 			log.WithFields(logrus.Fields{
 				"ceremonyId": ceremonyId,
 				"tenantId":   tenantId,
@@ -304,12 +309,17 @@ func GetCeremonyByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(ceremonyI
 			err := db.Where("id = ? AND tenant_id = ?", ceremonyId, tenantId).First(&entity).Error
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return Ceremony{}, errors.New("ceremony not found")
+					return nil, nil
 				}
-				return Ceremony{}, err
+				return nil, err
 			}
 
-			return MakeCeremony(entity)
+			ceremony, err := MakeCeremony(entity)
+			if err != nil {
+				return nil, err
+			}
+
+			return &ceremony, nil
 		}
 	}
 }
@@ -400,6 +410,69 @@ func CheckPerTargetCooldownProvider(db *gorm.DB, log logrus.FieldLogger) func(pr
 			}
 
 			return true, nil
+		}
+	}
+}
+
+// GetCeremonyByMarriageProvider is an alias for GetCeremonyByMarriageIdProvider
+func GetCeremonyByMarriageProvider(db *gorm.DB, log logrus.FieldLogger) func(marriageId uint32, tenantId uuid.UUID) model.Provider[*Ceremony] {
+	return GetCeremonyByMarriageIdProvider(db, log)
+}
+
+// GetUpcomingCeremoniesProvider retrieves all upcoming ceremonies
+func GetUpcomingCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) func(tenantId uuid.UUID) model.Provider[[]Ceremony] {
+	return func(tenantId uuid.UUID) model.Provider[[]Ceremony] {
+		return func() ([]Ceremony, error) {
+			log.WithField("tenantId", tenantId).Debug("Retrieving upcoming ceremonies")
+
+			var entities []CeremonyEntity
+			err := db.Where("tenant_id = ? AND status = ?", tenantId, CeremonyStatusScheduled).
+				Order("scheduled_at ASC").
+				Find(&entities).Error
+
+			if err != nil {
+				return nil, err
+			}
+
+			ceremonies := make([]Ceremony, 0, len(entities))
+			for _, entity := range entities {
+				ceremony, err := MakeCeremony(entity)
+				if err != nil {
+					return nil, err
+				}
+				ceremonies = append(ceremonies, ceremony)
+			}
+
+			return ceremonies, nil
+		}
+	}
+}
+
+// GetActiveCeremoniesProvider retrieves all active ceremonies
+func GetActiveCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) func(tenantId uuid.UUID) model.Provider[[]Ceremony] {
+	return func(tenantId uuid.UUID) model.Provider[[]Ceremony] {
+		return func() ([]Ceremony, error) {
+			log.WithField("tenantId", tenantId).Debug("Retrieving active ceremonies")
+
+			var entities []CeremonyEntity
+			err := db.Where("tenant_id = ? AND status = ?", tenantId, CeremonyStatusActive).
+				Order("started_at ASC").
+				Find(&entities).Error
+
+			if err != nil {
+				return nil, err
+			}
+
+			ceremonies := make([]Ceremony, 0, len(entities))
+			for _, entity := range entities {
+				ceremony, err := MakeCeremony(entity)
+				if err != nil {
+					return nil, err
+				}
+				ceremonies = append(ceremonies, ceremony)
+			}
+
+			return ceremonies, nil
 		}
 	}
 }

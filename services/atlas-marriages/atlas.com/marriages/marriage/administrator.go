@@ -106,19 +106,21 @@ func UpdateMarriage(db *gorm.DB, log logrus.FieldLogger) func(marriage Marriage)
 }
 
 // CreateCeremony creates a new ceremony in the database
-func CreateCeremony(db *gorm.DB, log logrus.FieldLogger) func(marriageId, characterId1, characterId2 uint32, tenantId uuid.UUID) model.Provider[CeremonyEntity] {
-	return func(marriageId, characterId1, characterId2 uint32, tenantId uuid.UUID) model.Provider[CeremonyEntity] {
+func CreateCeremony(db *gorm.DB, log logrus.FieldLogger) func(marriageId, characterId1, characterId2 uint32, scheduledAt time.Time, invitees []uint32, tenantId uuid.UUID) model.Provider[CeremonyEntity] {
+	return func(marriageId, characterId1, characterId2 uint32, scheduledAt time.Time, invitees []uint32, tenantId uuid.UUID) model.Provider[CeremonyEntity] {
 		return func() (CeremonyEntity, error) {
 			log.WithFields(logrus.Fields{
 				"marriageId":   marriageId,
 				"characterId1": characterId1,
 				"characterId2": characterId2,
+				"scheduledAt":  scheduledAt,
+				"invitees":     len(invitees),
 				"tenantId":     tenantId,
 			}).Debug("Creating ceremony entity")
 
 			// Create new ceremony entity
 			now := time.Now()
-			inviteesJSON, err := inviteesToJSON([]uint32{})
+			inviteesJSON, err := inviteesToJSON(invitees)
 			if err != nil {
 				return CeremonyEntity{}, err
 			}
@@ -128,7 +130,7 @@ func CreateCeremony(db *gorm.DB, log logrus.FieldLogger) func(marriageId, charac
 				CharacterId1: characterId1,
 				CharacterId2: characterId2,
 				Status:       CeremonyStatusScheduled,
-				ScheduledAt:  now,
+				ScheduledAt:  scheduledAt,
 				Invitees:     inviteesJSON,
 				TenantId:     tenantId,
 				CreatedAt:    now,
@@ -145,16 +147,12 @@ func CreateCeremony(db *gorm.DB, log logrus.FieldLogger) func(marriageId, charac
 }
 
 // UpdateCeremony updates an existing ceremony in the database
-func UpdateCeremony(db *gorm.DB, log logrus.FieldLogger) func(ceremony Ceremony) model.Provider[CeremonyEntity] {
-	return func(ceremony Ceremony) model.Provider[CeremonyEntity] {
+func UpdateCeremony(db *gorm.DB, log logrus.FieldLogger) func(ceremonyId uint32, entity CeremonyEntity, tenantId uuid.UUID) model.Provider[CeremonyEntity] {
+	return func(ceremonyId uint32, entity CeremonyEntity, tenantId uuid.UUID) model.Provider[CeremonyEntity] {
 		return func() (CeremonyEntity, error) {
-			log.WithField("ceremonyId", ceremony.Id()).Debug("Updating ceremony entity")
+			log.WithField("ceremonyId", ceremonyId).Debug("Updating ceremony entity")
 
-			entity, err := ceremony.ToCeremonyEntity()
-			if err != nil {
-				return CeremonyEntity{}, err
-			}
-
+			entity.UpdatedAt = time.Now()
 			if err := db.Save(&entity).Error; err != nil {
 				return CeremonyEntity{}, err
 			}

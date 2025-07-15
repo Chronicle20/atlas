@@ -890,27 +890,17 @@ func TestProcessor_ContextTenantExtraction(t *testing.T) {
 	}
 
 	// Test with context that doesn't have tenant - this should panic
-	// We need to use the WithCharacterProcessor method since NewProcessor itself
-	// tries to create a character processor with tenant context
 	emptyCtx := context.Background()
-	
-	// This should panic when trying to extract tenant during CheckProposalEligibility
+	processorWithoutTenant := NewProcessor(log, emptyCtx, db).WithCharacterProcessor(mockCharacterProcessor)
+
+	// This should panic when trying to extract tenant
 	defer func() {
 		if r := recover(); r == nil {
 			t.Error("Expected panic when tenant is not in context")
 		}
 	}()
 
-	// Create a new processor with empty context to test the panic
-	processorWithEmptyCtx := &ProcessorImpl{
-		log:                log,
-		ctx:                emptyCtx,
-		db:                 db,
-		producer:           nil,
-		characterProcessor: mockCharacterProcessor,
-	}
-
-	_, _ = processorWithEmptyCtx.CheckProposalEligibility(1, 2)()
+	_, _ = processorWithoutTenant.CheckProposalEligibility(1, 2)()
 }
 
 func TestProcessor_ErrorHandling(t *testing.T) {

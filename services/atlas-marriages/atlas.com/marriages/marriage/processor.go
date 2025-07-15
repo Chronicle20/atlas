@@ -3,6 +3,7 @@ package marriage
 import (
 	"context"
 	"errors"
+	"time"
 
 	"atlas-marriages/character"
 	"github.com/Chronicle20/atlas-model/model"
@@ -15,7 +16,7 @@ import (
 // EligibilityRequirement represents minimum level requirement for marriage
 const EligibilityRequirement = 10
 
-// Processor interface defines the proposal processing operations
+// Processor interface defines the proposal and ceremony processing operations
 type Processor interface {
 	WithCharacterProcessor(characterProcessor character.Processor) Processor
 
@@ -35,6 +36,32 @@ type Processor interface {
 	GetActiveProposal(proposerId, targetId uint32) model.Provider[*Proposal]
 	GetPendingProposalsByCharacter(characterId uint32) model.Provider[[]Proposal]
 	GetProposalHistory(proposerId, targetId uint32) model.Provider[[]Proposal]
+
+	// Ceremony operations
+	ScheduleCeremony(marriageId uint32, scheduledAt time.Time, invitees []uint32) model.Provider[Ceremony]
+	ScheduleCeremonyAndEmit(transactionId uuid.UUID, marriageId uint32, scheduledAt time.Time, invitees []uint32) (Ceremony, error)
+	StartCeremony(ceremonyId uint32) model.Provider[Ceremony]
+	StartCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32) (Ceremony, error)
+	CompleteCeremony(ceremonyId uint32) model.Provider[Ceremony]
+	CompleteCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32) (Ceremony, error)
+	CancelCeremony(ceremonyId uint32) model.Provider[Ceremony]
+	CancelCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32) (Ceremony, error)
+	PostponeCeremony(ceremonyId uint32) model.Provider[Ceremony]
+	PostponeCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32) (Ceremony, error)
+	RescheduleCeremony(ceremonyId uint32, newScheduledAt time.Time) model.Provider[Ceremony]
+	RescheduleCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32, newScheduledAt time.Time) (Ceremony, error)
+
+	// Ceremony invitee management
+	AddInvitee(ceremonyId uint32, characterId uint32) model.Provider[Ceremony]
+	AddInviteeAndEmit(transactionId uuid.UUID, ceremonyId uint32, characterId uint32) (Ceremony, error)
+	RemoveInvitee(ceremonyId uint32, characterId uint32) model.Provider[Ceremony]
+	RemoveInviteeAndEmit(transactionId uuid.UUID, ceremonyId uint32, characterId uint32) (Ceremony, error)
+
+	// Ceremony queries
+	GetCeremonyById(ceremonyId uint32) model.Provider[*Ceremony]
+	GetCeremonyByMarriage(marriageId uint32) model.Provider[*Ceremony]
+	GetUpcomingCeremonies() model.Provider[[]Ceremony]
+	GetActiveCeremonies() model.Provider[[]Ceremony]
 }
 
 // ProcessorImpl implements the Processor interface
@@ -314,3 +341,578 @@ var (
 		Message: "proposer is in cooldown period for this target",
 	}
 )
+
+// Ceremony-related processor methods
+
+// ScheduleCeremony creates a new ceremony for an engaged marriage
+func (p *ProcessorImpl) ScheduleCeremony(marriageId uint32, scheduledAt time.Time, invitees []uint32) model.Provider[Ceremony] {
+	return func() (Ceremony, error) {
+		p.log.WithFields(logrus.Fields{
+			"marriageId":  marriageId,
+			"scheduledAt": scheduledAt,
+			"invitees":    len(invitees),
+		}).Debug("Scheduling ceremony")
+
+		// Validate invitees limit
+		if len(invitees) > MaxInvitees {
+			return Ceremony{}, errors.New("too many invitees, maximum is 15")
+		}
+
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+
+		// Verify marriage exists and is engaged
+		marriageProvider := GetMarriageByIdProvider(p.db, p.log)(marriageId, t.Id())
+		marriage, err := marriageProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+		if marriage == nil {
+			return Ceremony{}, errors.New("marriage not found")
+		}
+		if marriage.Status() != StatusEngaged {
+			return Ceremony{}, errors.New("marriage must be engaged to schedule ceremony")
+		}
+
+		// Create ceremony using administrator
+		entityProvider := CreateCeremony(p.db, p.log)(marriageId, marriage.CharacterId1(), marriage.CharacterId2(), scheduledAt, invitees, t.Id())
+		entity, err := entityProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Transform entity to domain model
+		ceremony, err := MakeCeremony(entity)
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		p.log.WithFields(logrus.Fields{
+			"ceremonyId": ceremony.Id(),
+			"marriageId": marriageId,
+		}).Info("Ceremony scheduled successfully")
+
+		return ceremony, nil
+	}
+}
+
+// ScheduleCeremonyAndEmit schedules a ceremony and emits events
+func (p *ProcessorImpl) ScheduleCeremonyAndEmit(transactionId uuid.UUID, marriageId uint32, scheduledAt time.Time, invitees []uint32) (Ceremony, error) {
+	ceremony, err := p.ScheduleCeremony(marriageId, scheduledAt, invitees)()
+	if err != nil {
+		return Ceremony{}, err
+	}
+
+	// TODO: Emit CeremonyScheduled event when Kafka producer is implemented
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"ceremonyId":    ceremony.Id(),
+	}).Debug("Would emit CeremonyScheduled event")
+
+	return ceremony, nil
+}
+
+// StartCeremony transitions a ceremony to active state
+func (p *ProcessorImpl) StartCeremony(ceremonyId uint32) model.Provider[Ceremony] {
+	return func() (Ceremony, error) {
+		p.log.WithField("ceremonyId", ceremonyId).Debug("Starting ceremony")
+
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+
+		// Get ceremony
+		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremony, err := ceremonyProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+		if ceremony == nil {
+			return Ceremony{}, errors.New("ceremony not found")
+		}
+
+		// Validate state transition
+		if !ceremony.CanStart() {
+			return Ceremony{}, errors.New("ceremony cannot be started in current state")
+		}
+
+		// Start ceremony
+		updatedCeremony, err := ceremony.Start()
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Update ceremony using administrator
+		entityProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entity, err := entityProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Transform entity to domain model
+		result, err := MakeCeremony(entity)
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		p.log.WithField("ceremonyId", ceremonyId).Info("Ceremony started successfully")
+
+		return result, nil
+	}
+}
+
+// StartCeremonyAndEmit starts a ceremony and emits events
+func (p *ProcessorImpl) StartCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32) (Ceremony, error) {
+	ceremony, err := p.StartCeremony(ceremonyId)()
+	if err != nil {
+		return Ceremony{}, err
+	}
+
+	// TODO: Emit CeremonyStarted event when Kafka producer is implemented
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"ceremonyId":    ceremonyId,
+	}).Debug("Would emit CeremonyStarted event")
+
+	return ceremony, nil
+}
+
+// CompleteCeremony transitions a ceremony to completed state
+func (p *ProcessorImpl) CompleteCeremony(ceremonyId uint32) model.Provider[Ceremony] {
+	return func() (Ceremony, error) {
+		p.log.WithField("ceremonyId", ceremonyId).Debug("Completing ceremony")
+
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+
+		// Get ceremony
+		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremony, err := ceremonyProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+		if ceremony == nil {
+			return Ceremony{}, errors.New("ceremony not found")
+		}
+
+		// Validate state transition
+		if !ceremony.CanComplete() {
+			return Ceremony{}, errors.New("ceremony cannot be completed in current state")
+		}
+
+		// Complete ceremony
+		updatedCeremony, err := ceremony.Complete()
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Update ceremony using administrator
+		entityProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entity, err := entityProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Transform entity to domain model
+		result, err := MakeCeremony(entity)
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		p.log.WithField("ceremonyId", ceremonyId).Info("Ceremony completed successfully")
+
+		return result, nil
+	}
+}
+
+// CompleteCeremonyAndEmit completes a ceremony and emits events
+func (p *ProcessorImpl) CompleteCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32) (Ceremony, error) {
+	ceremony, err := p.CompleteCeremony(ceremonyId)()
+	if err != nil {
+		return Ceremony{}, err
+	}
+
+	// TODO: Emit CeremonyCompleted event when Kafka producer is implemented
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"ceremonyId":    ceremonyId,
+	}).Debug("Would emit CeremonyCompleted event")
+
+	return ceremony, nil
+}
+
+// CancelCeremony transitions a ceremony to cancelled state
+func (p *ProcessorImpl) CancelCeremony(ceremonyId uint32) model.Provider[Ceremony] {
+	return func() (Ceremony, error) {
+		p.log.WithField("ceremonyId", ceremonyId).Debug("Cancelling ceremony")
+
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+
+		// Get ceremony
+		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremony, err := ceremonyProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+		if ceremony == nil {
+			return Ceremony{}, errors.New("ceremony not found")
+		}
+
+		// Validate state transition
+		if !ceremony.CanCancel() {
+			return Ceremony{}, errors.New("ceremony cannot be cancelled in current state")
+		}
+
+		// Cancel ceremony
+		updatedCeremony, err := ceremony.Cancel()
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Update ceremony using administrator
+		entityProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entity, err := entityProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Transform entity to domain model
+		result, err := MakeCeremony(entity)
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		p.log.WithField("ceremonyId", ceremonyId).Info("Ceremony cancelled successfully")
+
+		return result, nil
+	}
+}
+
+// CancelCeremonyAndEmit cancels a ceremony and emits events
+func (p *ProcessorImpl) CancelCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32) (Ceremony, error) {
+	ceremony, err := p.CancelCeremony(ceremonyId)()
+	if err != nil {
+		return Ceremony{}, err
+	}
+
+	// TODO: Emit CeremonyCancelled event when Kafka producer is implemented
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"ceremonyId":    ceremonyId,
+	}).Debug("Would emit CeremonyCancelled event")
+
+	return ceremony, nil
+}
+
+// PostponeCeremony transitions a ceremony to postponed state
+func (p *ProcessorImpl) PostponeCeremony(ceremonyId uint32) model.Provider[Ceremony] {
+	return func() (Ceremony, error) {
+		p.log.WithField("ceremonyId", ceremonyId).Debug("Postponing ceremony")
+
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+
+		// Get ceremony
+		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremony, err := ceremonyProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+		if ceremony == nil {
+			return Ceremony{}, errors.New("ceremony not found")
+		}
+
+		// Validate state transition
+		if !ceremony.CanPostpone() {
+			return Ceremony{}, errors.New("ceremony cannot be postponed in current state")
+		}
+
+		// Postpone ceremony
+		updatedCeremony, err := ceremony.Postpone()
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Update ceremony using administrator
+		entityProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entity, err := entityProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Transform entity to domain model
+		result, err := MakeCeremony(entity)
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		p.log.WithField("ceremonyId", ceremonyId).Info("Ceremony postponed successfully")
+
+		return result, nil
+	}
+}
+
+// PostponeCeremonyAndEmit postpones a ceremony and emits events
+func (p *ProcessorImpl) PostponeCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32) (Ceremony, error) {
+	ceremony, err := p.PostponeCeremony(ceremonyId)()
+	if err != nil {
+		return Ceremony{}, err
+	}
+
+	// TODO: Emit CeremonyPostponed event when Kafka producer is implemented
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"ceremonyId":    ceremonyId,
+	}).Debug("Would emit CeremonyPostponed event")
+
+	return ceremony, nil
+}
+
+// RescheduleCeremony reschedules a ceremony to a new time
+func (p *ProcessorImpl) RescheduleCeremony(ceremonyId uint32, newScheduledAt time.Time) model.Provider[Ceremony] {
+	return func() (Ceremony, error) {
+		p.log.WithFields(logrus.Fields{
+			"ceremonyId":      ceremonyId,
+			"newScheduledAt": newScheduledAt,
+		}).Debug("Rescheduling ceremony")
+
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+
+		// Get ceremony
+		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremony, err := ceremonyProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+		if ceremony == nil {
+			return Ceremony{}, errors.New("ceremony not found")
+		}
+
+		// Validate state transition
+		if !ceremony.CanReschedule() {
+			return Ceremony{}, errors.New("ceremony cannot be rescheduled in current state")
+		}
+
+		// Reschedule ceremony
+		updatedCeremony, err := ceremony.Reschedule(newScheduledAt)
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Update ceremony using administrator
+		entityProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entity, err := entityProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Transform entity to domain model
+		result, err := MakeCeremony(entity)
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		p.log.WithField("ceremonyId", ceremonyId).Info("Ceremony rescheduled successfully")
+
+		return result, nil
+	}
+}
+
+// RescheduleCeremonyAndEmit reschedules a ceremony and emits events
+func (p *ProcessorImpl) RescheduleCeremonyAndEmit(transactionId uuid.UUID, ceremonyId uint32, newScheduledAt time.Time) (Ceremony, error) {
+	ceremony, err := p.RescheduleCeremony(ceremonyId, newScheduledAt)()
+	if err != nil {
+		return Ceremony{}, err
+	}
+
+	// TODO: Emit CeremonyRescheduled event when Kafka producer is implemented
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"ceremonyId":    ceremonyId,
+	}).Debug("Would emit CeremonyRescheduled event")
+
+	return ceremony, nil
+}
+
+// AddInvitee adds an invitee to a ceremony
+func (p *ProcessorImpl) AddInvitee(ceremonyId uint32, characterId uint32) model.Provider[Ceremony] {
+	return func() (Ceremony, error) {
+		p.log.WithFields(logrus.Fields{
+			"ceremonyId":  ceremonyId,
+			"characterId": characterId,
+		}).Debug("Adding invitee to ceremony")
+
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+
+		// Get ceremony
+		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremony, err := ceremonyProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+		if ceremony == nil {
+			return Ceremony{}, errors.New("ceremony not found")
+		}
+
+		// Validate invitee addition
+		if !ceremony.CanAddInvitee(characterId) {
+			return Ceremony{}, errors.New("invitee cannot be added to ceremony")
+		}
+
+		// Add invitee
+		updatedCeremony, err := ceremony.AddInvitee(characterId)
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Update ceremony using administrator
+		entityProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entity, err := entityProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Transform entity to domain model
+		result, err := MakeCeremony(entity)
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		p.log.WithFields(logrus.Fields{
+			"ceremonyId":  ceremonyId,
+			"characterId": characterId,
+		}).Info("Invitee added to ceremony successfully")
+
+		return result, nil
+	}
+}
+
+// AddInviteeAndEmit adds an invitee and emits events
+func (p *ProcessorImpl) AddInviteeAndEmit(transactionId uuid.UUID, ceremonyId uint32, characterId uint32) (Ceremony, error) {
+	ceremony, err := p.AddInvitee(ceremonyId, characterId)()
+	if err != nil {
+		return Ceremony{}, err
+	}
+
+	// TODO: Emit InviteeAdded event when Kafka producer is implemented
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"ceremonyId":    ceremonyId,
+		"characterId":   characterId,
+	}).Debug("Would emit InviteeAdded event")
+
+	return ceremony, nil
+}
+
+// RemoveInvitee removes an invitee from a ceremony
+func (p *ProcessorImpl) RemoveInvitee(ceremonyId uint32, characterId uint32) model.Provider[Ceremony] {
+	return func() (Ceremony, error) {
+		p.log.WithFields(logrus.Fields{
+			"ceremonyId":  ceremonyId,
+			"characterId": characterId,
+		}).Debug("Removing invitee from ceremony")
+
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+
+		// Get ceremony
+		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremony, err := ceremonyProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+		if ceremony == nil {
+			return Ceremony{}, errors.New("ceremony not found")
+		}
+
+		// Validate invitee removal
+		if !ceremony.CanRemoveInvitee(characterId) {
+			return Ceremony{}, errors.New("invitee cannot be removed from ceremony")
+		}
+
+		// Remove invitee
+		updatedCeremony, err := ceremony.RemoveInvitee(characterId)
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Update ceremony using administrator
+		entityProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entity, err := entityProvider()
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		// Transform entity to domain model
+		result, err := MakeCeremony(entity)
+		if err != nil {
+			return Ceremony{}, err
+		}
+
+		p.log.WithFields(logrus.Fields{
+			"ceremonyId":  ceremonyId,
+			"characterId": characterId,
+		}).Info("Invitee removed from ceremony successfully")
+
+		return result, nil
+	}
+}
+
+// RemoveInviteeAndEmit removes an invitee and emits events
+func (p *ProcessorImpl) RemoveInviteeAndEmit(transactionId uuid.UUID, ceremonyId uint32, characterId uint32) (Ceremony, error) {
+	ceremony, err := p.RemoveInvitee(ceremonyId, characterId)()
+	if err != nil {
+		return Ceremony{}, err
+	}
+
+	// TODO: Emit InviteeRemoved event when Kafka producer is implemented
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"ceremonyId":    ceremonyId,
+		"characterId":   characterId,
+	}).Debug("Would emit InviteeRemoved event")
+
+	return ceremony, nil
+}
+
+// GetCeremonyById retrieves a ceremony by its ID
+func (p *ProcessorImpl) GetCeremonyById(ceremonyId uint32) model.Provider[*Ceremony] {
+	return func() (*Ceremony, error) {
+		t := tenant.MustFromContext(p.ctx)
+
+		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		return ceremonyProvider()
+	}
+}
+
+// GetCeremonyByMarriage retrieves a ceremony by its associated marriage ID
+func (p *ProcessorImpl) GetCeremonyByMarriage(marriageId uint32) model.Provider[*Ceremony] {
+	return func() (*Ceremony, error) {
+		t := tenant.MustFromContext(p.ctx)
+
+		ceremonyProvider := GetCeremonyByMarriageProvider(p.db, p.log)(marriageId, t.Id())
+		return ceremonyProvider()
+	}
+}
+
+// GetUpcomingCeremonies retrieves all upcoming ceremonies
+func (p *ProcessorImpl) GetUpcomingCeremonies() model.Provider[[]Ceremony] {
+	return func() ([]Ceremony, error) {
+		t := tenant.MustFromContext(p.ctx)
+
+		ceremoniesProvider := GetUpcomingCeremoniesProvider(p.db, p.log)(t.Id())
+		return ceremoniesProvider()
+	}
+}
+
+// GetActiveCeremonies retrieves all active ceremonies
+func (p *ProcessorImpl) GetActiveCeremonies() model.Provider[[]Ceremony] {
+	return func() ([]Ceremony, error) {
+		t := tenant.MustFromContext(p.ctx)
+
+		ceremoniesProvider := GetActiveCeremoniesProvider(p.db, p.log)(t.Id())
+		return ceremoniesProvider()
+	}
+}

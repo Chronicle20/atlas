@@ -808,3 +808,10 @@ func (c Ceremony) Builder() *CeremonyBuilder {
 		updatedAt:    c.updatedAt,
 	}
 }
+
+// ToEntity converts the ceremony domain model to an entity for persistence
+func (c Ceremony) ToEntity() CeremonyEntity {
+	// Call the existing ToCeremonyEntity method which handles proper serialization
+	entity, _ := c.ToCeremonyEntity()
+	return entity
+}

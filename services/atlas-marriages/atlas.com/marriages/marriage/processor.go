@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"atlas-marriages/character"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -36,10 +37,11 @@ type Processor interface {
 
 // ProcessorImpl implements the Processor interface
 type ProcessorImpl struct {
-	log      logrus.FieldLogger
-	ctx      context.Context
-	db       *gorm.DB
-	producer ProducerFunction
+	log               logrus.FieldLogger
+	ctx               context.Context
+	db                *gorm.DB
+	producer          ProducerFunction
+	characterProcessor character.Processor
 }
 
 // ProducerFunction type for Kafka message production
@@ -48,10 +50,22 @@ type ProducerFunction func(token string) model.Provider[[]byte]
 // NewProcessor creates a new processor instance
 func NewProcessor(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	return &ProcessorImpl{
-		log:      log,
-		ctx:      ctx,
-		db:       db,
-		producer: nil, // Will be implemented when Kafka producer is added
+		log:               log,
+		ctx:               ctx,
+		db:                db,
+		producer:          nil, // Will be implemented when Kafka producer is added
+		characterProcessor: character.NewProcessor(log, ctx, db),
+	}
+}
+
+// NewProcessorWithCharacterProcessor creates a new processor instance with a custom character processor for testing
+func NewProcessorWithCharacterProcessor(log logrus.FieldLogger, ctx context.Context, db *gorm.DB, characterProcessor character.Processor) Processor {
+	return &ProcessorImpl{
+		log:               log,
+		ctx:               ctx,
+		db:                db,
+		producer:          nil, // Will be implemented when Kafka producer is added
+		characterProcessor: characterProcessor,
 	}
 }
 
@@ -135,9 +149,25 @@ func (p *ProcessorImpl) ProposeAndEmit(transactionId uuid.UUID, proposerId, targ
 // CheckEligibility checks if a character meets the minimum level requirement
 func (p *ProcessorImpl) CheckEligibility(characterId uint32) model.Provider[bool] {
 	return func() (bool, error) {
-		// TODO: In a real implementation, this would query the character service
-		// For now, we'll assume all characters are eligible (level 10+)
 		p.log.WithField("characterId", characterId).Debug("Checking character eligibility")
+		
+		// Get character information using character processor
+		char, err := p.characterProcessor.GetById(characterId)
+		if err != nil {
+			p.log.WithError(err).WithField("characterId", characterId).Error("Failed to retrieve character")
+			return false, err
+		}
+		
+		// Check if character meets minimum level requirement
+		if char.Level() < byte(EligibilityRequirement) {
+			p.log.WithFields(logrus.Fields{
+				"characterId": characterId,
+				"level":       char.Level(),
+				"required":    EligibilityRequirement,
+			}).Debug("Character level too low for marriage")
+			return false, nil
+		}
+		
 		return true, nil
 	}
 }

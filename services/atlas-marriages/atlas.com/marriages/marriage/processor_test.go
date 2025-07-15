@@ -2,9 +2,12 @@ package marriage
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
+	"atlas-marriages/character"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -46,6 +49,34 @@ func setupTestContext(tenantId uuid.UUID) context.Context {
 		panic(err)
 	}
 	return tenant.WithContext(ctx, tenantModel)
+}
+
+// MockCharacterProcessor provides a mock implementation for testing
+type MockCharacterProcessor struct {
+	characters map[uint32]character.Model
+}
+
+func NewMockCharacterProcessor() *MockCharacterProcessor {
+	return &MockCharacterProcessor{
+		characters: make(map[uint32]character.Model),
+	}
+}
+
+func (m *MockCharacterProcessor) AddCharacter(id uint32, name string, level byte) {
+	m.characters[id] = character.NewModel(id, name, level)
+}
+
+func (m *MockCharacterProcessor) GetById(characterId uint32) (character.Model, error) {
+	if char, exists := m.characters[characterId]; exists {
+		return char, nil
+	}
+	return character.Model{}, errors.New("character not found")
+}
+
+func (m *MockCharacterProcessor) ByIdProvider(characterId uint32) model.Provider[character.Model] {
+	return func() (character.Model, error) {
+		return m.GetById(characterId)
+	}
 }
 
 // setupTestData creates test data in the database
@@ -157,15 +188,68 @@ func TestProcessor_CheckEligibility(t *testing.T) {
 	ctx := setupTestContext(tenantId)
 	log := logrus.New()
 
-	processor := NewProcessor(log, ctx, db)
+	// Create mock character processor
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	
+	// Add test characters with different levels
+	mockCharacterProcessor.AddCharacter(1, "EligibleCharacter", 15)    // Level 15 (above requirement)
+	mockCharacterProcessor.AddCharacter(2, "IneligibleCharacter", 5)   // Level 5 (below requirement)
+	mockCharacterProcessor.AddCharacter(3, "ExactlyEligible", 10)      // Level 10 (exactly at requirement)
 
-	// Test basic eligibility check
-	eligible, err := processor.CheckEligibility(1)()
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
+	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
+
+	tests := []struct {
+		name        string
+		characterId uint32
+		expected    bool
+		description string
+	}{
+		{
+			name:        "character above level requirement",
+			characterId: 1,
+			expected:    true,
+			description: "Character with level 15 should be eligible",
+		},
+		{
+			name:        "character below level requirement",
+			characterId: 2,
+			expected:    false,
+			description: "Character with level 5 should not be eligible",
+		},
+		{
+			name:        "character exactly at level requirement",
+			characterId: 3,
+			expected:    true,
+			description: "Character with level 10 should be eligible",
+		},
+		{
+			name:        "character not found",
+			characterId: 999,
+			expected:    false,
+			description: "Non-existent character should cause error",
+		},
 	}
-	if !eligible {
-		t.Error("Expected character to be eligible")
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			eligible, err := processor.CheckEligibility(tt.characterId)()
+			
+			if tt.characterId == 999 {
+				// Expect error for non-existent character
+				if err == nil {
+					t.Error("Expected error for non-existent character")
+				}
+				return
+			}
+			
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+			
+			if eligible != tt.expected {
+				t.Errorf("Expected eligibility %v, got %v for %s", tt.expected, eligible, tt.description)
+			}
+		})
 	}
 }
 
@@ -176,7 +260,16 @@ func TestProcessor_CheckProposalEligibility(t *testing.T) {
 	log := logrus.New()
 	setupTestData(t, db, tenantId)
 
-	processor := NewProcessor(log, ctx, db)
+	// Create mock character processor with eligible characters
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)    // Eligible
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)    // Eligible
+	mockCharacterProcessor.AddCharacter(100, "Character100", 15) // Eligible (married)
+	mockCharacterProcessor.AddCharacter(101, "Character101", 15) // Eligible (married)
+	mockCharacterProcessor.AddCharacter(500, "Character500", 15) // Eligible (has proposal)
+	mockCharacterProcessor.AddCharacter(501, "Character501", 15) // Eligible (has proposal)
+
+	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
 
 	tests := []struct {
 		name        string
@@ -552,7 +645,12 @@ func TestProcessor_Propose_Success(t *testing.T) {
 	ctx := setupTestContext(tenantId)
 	log := logrus.New()
 
-	processor := NewProcessor(log, ctx, db)
+	// Create mock character processor with eligible characters
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+
+	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
 
 	proposerId := uint32(1)
 	targetId := uint32(2)
@@ -605,7 +703,19 @@ func TestProcessor_Propose_EligibilityFailures(t *testing.T) {
 	log := logrus.New()
 	setupTestData(t, db, tenantId)
 
-	processor := NewProcessor(log, ctx, db)
+	// Create mock character processor with eligible characters
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+	mockCharacterProcessor.AddCharacter(100, "Character100", 15) // Already married
+	mockCharacterProcessor.AddCharacter(101, "Character101", 15) // Already married
+	mockCharacterProcessor.AddCharacter(200, "Character200", 15) // In global cooldown
+	mockCharacterProcessor.AddCharacter(300, "Character300", 15) // In per-target cooldown
+	mockCharacterProcessor.AddCharacter(301, "Character301", 15) // Target of cooldown
+	mockCharacterProcessor.AddCharacter(500, "Character500", 15) // Has active proposal
+	mockCharacterProcessor.AddCharacter(501, "Character501", 15) // Target of active proposal
+
+	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
 
 	tests := []struct {
 		name        string
@@ -673,7 +783,12 @@ func TestProcessor_ProposeAndEmit(t *testing.T) {
 	ctx := setupTestContext(tenantId)
 	log := logrus.New()
 
-	processor := NewProcessor(log, ctx, db)
+	// Create mock character processor with eligible characters
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+
+	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
 
 	proposerId := uint32(1)
 	targetId := uint32(2)
@@ -709,6 +824,49 @@ func TestProcessor_EligibilityConstants(t *testing.T) {
 	if EligibilityRequirement != 10 {
 		t.Errorf("Expected eligibility requirement to be 10, got %d", EligibilityRequirement)
 	}
+	
+	// Test that the level requirement is actually enforced
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+	log := logrus.New()
+
+	// Create mock character processor
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	
+	// Add characters at various levels around the requirement
+	mockCharacterProcessor.AddCharacter(1, "BelowRequirement", byte(EligibilityRequirement-1))  // Level 9
+	mockCharacterProcessor.AddCharacter(2, "AtRequirement", byte(EligibilityRequirement))       // Level 10
+	mockCharacterProcessor.AddCharacter(3, "AboveRequirement", byte(EligibilityRequirement+1))  // Level 11
+
+	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
+
+	// Test character below requirement
+	eligible, err := processor.CheckEligibility(1)()
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if eligible {
+		t.Errorf("Character with level %d should not be eligible (requirement: %d)", EligibilityRequirement-1, EligibilityRequirement)
+	}
+
+	// Test character at requirement
+	eligible, err = processor.CheckEligibility(2)()
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if !eligible {
+		t.Errorf("Character with level %d should be eligible (requirement: %d)", EligibilityRequirement, EligibilityRequirement)
+	}
+
+	// Test character above requirement
+	eligible, err = processor.CheckEligibility(3)()
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if !eligible {
+		t.Errorf("Character with level %d should be eligible (requirement: %d)", EligibilityRequirement+1, EligibilityRequirement)
+	}
 }
 
 func TestProcessor_ContextTenantExtraction(t *testing.T) {
@@ -716,9 +874,14 @@ func TestProcessor_ContextTenantExtraction(t *testing.T) {
 	tenantId := uuid.New()
 	log := logrus.New()
 	
+	// Create mock character processor with eligible characters
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+	
 	// Test with context that has tenant
 	ctx := setupTestContext(tenantId)
-	processor := NewProcessor(log, ctx, db)
+	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
 	
 	// This should work without error
 	_, err := processor.CheckEligibility(1)()
@@ -728,7 +891,7 @@ func TestProcessor_ContextTenantExtraction(t *testing.T) {
 	
 	// Test with context that doesn't have tenant - this should panic
 	emptyCtx := context.Background()
-	processorWithoutTenant := NewProcessor(log, emptyCtx, db)
+	processorWithoutTenant := NewProcessorWithCharacterProcessor(log, emptyCtx, db, mockCharacterProcessor)
 	
 	// This should panic when trying to extract tenant
 	defer func() {
@@ -746,7 +909,12 @@ func TestProcessor_ErrorHandling(t *testing.T) {
 	ctx := setupTestContext(tenantId)
 	log := logrus.New()
 
-	processor := NewProcessor(log, ctx, db)
+	// Create mock character processor 
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+
+	processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
 
 	// Test with invalid database connection - close the database
 	sqlDB, err := db.DB()
@@ -825,20 +993,27 @@ func TestProcessor_ConcurrentAccess(t *testing.T) {
 	ctx := setupTestContext(tenantId)
 	log := logrus.New()
 
+	// Create mock character processor with eligible characters
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+	mockCharacterProcessor.AddCharacter(3, "Character3", 15)
+	mockCharacterProcessor.AddCharacter(4, "Character4", 15)
+
 	// Test concurrent access to the same processor instance
 	done := make(chan bool, 2)
 	errors := make(chan error, 2)
 
 	// Start two goroutines that try to create proposals simultaneously
 	go func() {
-		processor := NewProcessor(log, ctx, db)
+		processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
 		_, err := processor.Propose(1, 2)()
 		errors <- err
 		done <- true
 	}()
 
 	go func() {
-		processor := NewProcessor(log, ctx, db)
+		processor := NewProcessorWithCharacterProcessor(log, ctx, db, mockCharacterProcessor)
 		_, err := processor.Propose(3, 4)()
 		errors <- err
 		done <- true

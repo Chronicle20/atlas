@@ -672,6 +672,350 @@ X-RateLimit-Remaining: 95
 X-RateLimit-Reset: 1641024000
 ```
 
+## Kafka Integration
+
+### Topics and Message Formats
+
+The Atlas Family Service uses Kafka for event-driven communication with other services. All messages follow a consistent generic structure with type-safe message bodies.
+
+#### Topic Configuration
+
+Topics are configured via environment variables:
+
+| Topic Variable | Default Topic Name | Purpose |
+|----------------|-------------------|---------|
+| `COMMAND_TOPIC_FAMILY` | `family-commands` | Commands from other services |
+| `EVENT_TOPIC_FAMILY_STATUS` | `family-status-events` | Family relationship events |
+| `EVENT_TOPIC_FAMILY_REPUTATION` | `family-reputation-events` | Reputation change events |
+| `EVENT_TOPIC_FAMILY_ERRORS` | `family-error-events` | Error events |
+
+#### Message Structure
+
+All Kafka messages use generic wrappers for type safety:
+
+**Command Structure:**
+```go
+type Command[E any] struct {
+    TransactionId string `json:"transactionId"`
+    TenantId      string `json:"tenantId"`
+    WorldId       byte   `json:"worldId"`
+    CharacterId   uint32 `json:"characterId"`
+    Type          string `json:"type"`
+    Body          E      `json:"body"`
+}
+```
+
+**Event Structure:**
+```go
+type Event[E any] struct {
+    WorldId     byte   `json:"worldId"`
+    CharacterId uint32 `json:"characterId"`
+    Type        string `json:"type"`
+    Body        E      `json:"body"`
+}
+```
+
+---
+
+### Commands (Consumed)
+
+These are commands that the Family Service consumes from other services:
+
+#### 1. ADD_JUNIOR
+**Purpose**: Add a junior to a senior's family  
+**Command Type**: `ADD_JUNIOR`
+
+**Body Structure:**
+```json
+{
+    "juniorId": 12345,
+    "seniorLevel": 50,
+    "seniorWorld": 1,
+    "juniorLevel": 30,
+    "juniorWorld": 1
+}
+```
+
+**Example Message:**
+```json
+{
+    "transactionId": "tx-add-junior-12345",
+    "tenantId": "550e8400-e29b-41d4-a716-446655440000",
+    "worldId": 1,
+    "characterId": 67890,
+    "type": "ADD_JUNIOR",
+    "body": {
+        "juniorId": 12345,
+        "seniorLevel": 50,
+        "seniorWorld": 1,
+        "juniorLevel": 30,
+        "juniorWorld": 1
+    }
+}
+```
+
+#### 2. REMOVE_MEMBER
+**Purpose**: Remove a member from the family  
+**Command Type**: `REMOVE_MEMBER`
+
+**Body Structure:**
+```json
+{
+    "targetId": 12345,
+    "reason": "Inactive player"
+}
+```
+
+#### 3. BREAK_LINK
+**Purpose**: Break a family link  
+**Command Type**: `BREAK_LINK`
+
+**Body Structure:**
+```json
+{
+    "reason": "Player requested"
+}
+```
+
+#### 4. DEDUCT_REP
+**Purpose**: Deduct reputation for buff/teleport usage  
+**Command Type**: `DEDUCT_REP`
+
+**Body Structure:**
+```json
+{
+    "amount": 100,
+    "reason": "2x EXP buff for 1 hour"
+}
+```
+
+#### 5. REGISTER_KILL_ACTIVITY
+**Purpose**: Register mob kill activity for reputation  
+**Command Type**: `REGISTER_KILL_ACTIVITY`
+
+**Body Structure:**
+```json
+{
+    "killCount": 10,
+    "timestamp": "2025-01-15T14:30:00Z"
+}
+```
+
+**Reputation Calculation**: 2 Rep per 5 kills awarded to the character's senior
+
+#### 6. REGISTER_EXPEDITION_ACTIVITY
+**Purpose**: Register expedition activity for reputation  
+**Command Type**: `REGISTER_EXPEDITION_ACTIVITY`
+
+**Body Structure:**
+```json
+{
+    "coinReward": 5000,
+    "timestamp": "2025-01-15T14:30:00Z"
+}
+```
+
+**Reputation Calculation**: Coin reward × 10 Rep awarded to the character's senior
+
+---
+
+### Events (Produced)
+
+These are events that the Family Service produces for other services:
+
+#### Status Events (EVENT_TOPIC_FAMILY_STATUS)
+
+##### 1. LINK_CREATED
+**Purpose**: Notify when a family link is created  
+**Event Type**: `LINK_CREATED`
+
+**Body Structure:**
+```json
+{
+    "seniorId": 67890,
+    "juniorId": 12345,
+    "timestamp": "2025-01-15T14:30:00Z"
+}
+```
+
+##### 2. LINK_BROKEN
+**Purpose**: Notify when a family link is broken  
+**Event Type**: `LINK_BROKEN`
+
+**Body Structure:**
+```json
+{
+    "seniorId": 67890,
+    "juniorId": 12345,
+    "reason": "Player requested",
+    "timestamp": "2025-01-15T14:30:00Z"
+}
+```
+
+##### 3. TREE_DISSOLVED
+**Purpose**: Notify when an entire family tree is dissolved  
+**Event Type**: `TREE_DISSOLVED`
+
+**Body Structure:**
+```json
+{
+    "seniorId": 67890,
+    "affectedIds": [12345, 54321],
+    "reason": "Senior removed",
+    "timestamp": "2025-01-15T14:30:00Z"
+}
+```
+
+#### Reputation Events (EVENT_TOPIC_FAMILY_REPUTATION)
+
+##### 1. REP_GAINED
+**Purpose**: Notify when reputation is gained  
+**Event Type**: `REP_GAINED`
+
+**Body Structure:**
+```json
+{
+    "repGained": 4,
+    "dailyRep": 104,
+    "source": "mob_kill",
+    "timestamp": "2025-01-15T14:30:00Z"
+}
+```
+
+##### 2. REP_REDEEMED
+**Purpose**: Notify when reputation is redeemed  
+**Event Type**: `REP_REDEEMED`
+
+**Body Structure:**
+```json
+{
+    "repRedeemed": 100,
+    "reason": "2x EXP buff for 1 hour",
+    "timestamp": "2025-01-15T14:30:00Z"
+}
+```
+
+##### 3. REP_CAPPED
+**Purpose**: Notify when daily reputation cap is reached  
+**Event Type**: `REP_CAPPED`
+
+**Body Structure:**
+```json
+{
+    "attemptedAmount": 10,
+    "dailyRep": 5000,
+    "source": "mob_kill",
+    "timestamp": "2025-01-15T14:30:00Z"
+}
+```
+
+##### 4. REP_RESET
+**Purpose**: Notify when daily reputation is reset  
+**Event Type**: `REP_RESET`
+
+**Body Structure:**
+```json
+{
+    "previousDailyRep": 2500,
+    "timestamp": "2025-01-16T00:00:00Z"
+}
+```
+
+#### Error Events (EVENT_TOPIC_FAMILY_ERRORS)
+
+##### 1. REP_ERROR
+**Purpose**: Notify about reputation operation errors  
+**Event Type**: `REP_ERROR`
+
+**Body Structure:**
+```json
+{
+    "errorCode": "INSUFFICIENT_REP",
+    "errorMessage": "Character has insufficient reputation",
+    "amount": 100,
+    "timestamp": "2025-01-15T14:30:00Z"
+}
+```
+
+##### 2. LINK_ERROR
+**Purpose**: Notify about family link operation errors  
+**Event Type**: `LINK_ERROR`
+
+**Body Structure:**
+```json
+{
+    "seniorId": 67890,
+    "juniorId": 12345,
+    "errorCode": "LEVEL_DIFFERENCE_TOO_LARGE",
+    "errorMessage": "Level difference exceeds maximum allowed",
+    "timestamp": "2025-01-15T14:30:00Z"
+}
+```
+
+#### Buff Events (EVENT_TOPIC_FAMILY_BUFFS)
+
+##### 1. BUFF_REDEEMED
+**Purpose**: Notify when a buff is redeemed with reputation  
+**Event Type**: `BUFF_REDEEMED`
+
+**Body Structure:**
+```json
+{
+    "buffType": "2x_exp",
+    "repCost": 100,
+    "duration": 3600,
+    "timestamp": "2025-01-15T14:30:00Z"
+}
+```
+
+##### 2. TELEPORT_USED
+**Purpose**: Notify when teleport is used with reputation  
+**Event Type**: `TELEPORT_USED`
+
+**Body Structure:**
+```json
+{
+    "targetId": 12345,
+    "repCost": 50,
+    "world": 1,
+    "map": 100000001,
+    "timestamp": "2025-01-15T14:30:00Z"
+}
+```
+
+---
+
+### Message Partitioning
+
+Messages are partitioned by `characterId` to ensure:
+- Ordered processing of operations for each character
+- Balanced load distribution across Kafka partitions
+- Consistent routing for family-related operations
+
+### Consumer Groups
+
+The service uses the following consumer groups:
+- `family-command-processor`: Processes commands from other services
+- `family-activity-processor`: Processes activity-based reputation events
+
+### Producer Configuration
+
+Events are produced with:
+- **Idempotency**: All operations use transactionId for deduplication
+- **Ordering**: Per-character ordering maintained through partitioning
+- **Reliability**: At-least-once delivery with proper error handling
+- **Headers**: Span tracing and tenant context included
+
+### Error Handling
+
+The service implements comprehensive error handling:
+- **Validation Errors**: Sent to error topic with detailed error codes
+- **Business Rule Violations**: Logged and sent as error events
+- **System Errors**: Logged for monitoring and alerting
+- **Dead Letter Queue**: Failed messages sent to DLQ for manual inspection
+
+---
+
 ## Development
 
 ### Architecture Guidelines

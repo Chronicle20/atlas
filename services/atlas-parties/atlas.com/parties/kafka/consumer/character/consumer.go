@@ -32,6 +32,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMapChangedStatusEventLogout)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeleted)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLevelChanged)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventJobChanged)))
 	}
 }
 
@@ -251,4 +252,35 @@ func handleStatusEventLevelChanged(l logrus.FieldLogger, ctx context.Context, e 
 		WithField("transactionId", e.TransactionId).
 		WithField("currentLevel", e.Body.Current).
 		Debugf("Successfully processed level change for character [%d].", e.CharacterId)
+}
+
+func handleStatusEventJobChanged(l logrus.FieldLogger, ctx context.Context, e StatusEvent[JobChangedStatusEventBody]) {
+	if e.Type != StatusEventTypeJobChanged {
+		return
+	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("channelId", e.Body.ChannelId).
+		WithField("jobId", e.Body.JobId).
+		Debugf("Processing job changed event for character [%d].", e.CharacterId)
+
+	err := character.NewProcessor(l, ctx).JobChange(byte(e.WorldId), byte(e.Body.ChannelId), e.CharacterId, e.Body.JobId)
+	if err != nil {
+		l.WithError(err).
+			WithField("characterId", e.CharacterId).
+			WithField("worldId", e.WorldId).
+			WithField("transactionId", e.TransactionId).
+			WithField("channelId", e.Body.ChannelId).
+			WithField("jobId", e.Body.JobId).
+			Errorf("Unable to process job change for character [%d].", e.CharacterId)
+		return
+	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("jobId", e.Body.JobId).
+		Debugf("Successfully processed job change for character [%d].", e.CharacterId)
 }

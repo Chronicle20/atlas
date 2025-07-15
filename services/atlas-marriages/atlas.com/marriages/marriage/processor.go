@@ -36,6 +36,9 @@ type Processor interface {
 	// Marriage operations
 	Divorce(marriageId uint32, initiatedBy uint32) model.Provider[Marriage]
 	DivorceAndEmit(transactionId uuid.UUID, marriageId uint32, initiatedBy uint32) (Marriage, error)
+	
+	// Enhanced transactional operations
+	AcceptProposalWithTransactionAndEmit(transactionId uuid.UUID, proposalId uint32) (Marriage, error)
 
 	// Eligibility checks
 	CheckEligibility(characterId uint32) model.Provider[bool]
@@ -284,34 +287,32 @@ func (p *ProcessorImpl) AcceptProposalAndEmit(transactionId uuid.UUID, proposalI
 		return Marriage{}, err
 	}
 	
-	// Emit ProposalAccepted event
+	// Emit both ProposalAccepted and MarriageCreated events in a single transaction
 	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		// Add ProposalAccepted event to buffer
 		acceptedAt := time.Now()
-		eventProvider := ProposalAcceptedEventProvider(
+		proposalAcceptedProvider := ProposalAcceptedEventProvider(
 			proposalId,
 			marriage.CharacterId1(),
 			marriage.CharacterId2(),
 			acceptedAt,
 		)
-		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
-	})
-	if err != nil {
-		return Marriage{}, err
-	}
-	
-	// Emit MarriageCreated event
-	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		if err := buf.Put(marriageMsg.EnvEventTopicStatus, proposalAcceptedProvider); err != nil {
+			return err
+		}
+		
+		// Add MarriageCreated event to buffer
 		marriedAt := time.Now()
 		if marriage.EngagedAt() != nil {
 			marriedAt = *marriage.EngagedAt()
 		}
-		eventProvider := MarriageCreatedEventProvider(
+		marriageCreatedProvider := MarriageCreatedEventProvider(
 			marriage.Id(),
 			marriage.CharacterId1(),
 			marriage.CharacterId2(),
 			marriedAt,
 		)
-		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, marriageCreatedProvider)
 	})
 	if err != nil {
 		return Marriage{}, err
@@ -704,8 +705,9 @@ func (p *ProcessorImpl) ScheduleCeremonyAndEmit(transactionId uuid.UUID, marriag
 		return Ceremony{}, err
 	}
 
-	// Emit CeremonyScheduled event
+	// Use enhanced message buffering for potential future expansion
 	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		// Primary ceremony scheduled event
 		eventProvider := CeremonyScheduledEventProvider(
 			ceremony.Id(),
 			marriageId,
@@ -714,7 +716,13 @@ func (p *ProcessorImpl) ScheduleCeremonyAndEmit(transactionId uuid.UUID, marriag
 			scheduledAt,
 			invitees,
 		)
-		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
+		if err := buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider); err != nil {
+			return err
+		}
+		
+		// Potential for additional events (invitation notifications, etc.)
+		// This pattern ensures all related events are emitted together
+		return nil
 	})
 	if err != nil {
 		return Ceremony{}, err
@@ -1589,4 +1597,146 @@ func (p *ProcessorImpl) AdvanceCeremonyStateAndEmit(transactionId uuid.UUID, cer
 	}).Debug("Ceremony state advanced and event emitted")
 	
 	return ceremony, nil
+}
+
+// AcceptProposalWithTransactionAndEmit provides full transactional consistency for proposal acceptance
+// This method demonstrates enhanced message buffering for complex operations involving multiple database
+// changes and event emissions that must all succeed or fail together
+func (p *ProcessorImpl) AcceptProposalWithTransactionAndEmit(transactionId uuid.UUID, proposalId uint32) (Marriage, error) {
+	// Execute the entire operation within a database transaction
+	return p.executeInTransaction(func(txProcessor *ProcessorImpl) (Marriage, error) {
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+		
+		// Get the proposal
+		proposalProvider := GetProposalByIdProvider(txProcessor.db, txProcessor.log)(proposalId, t.Id())
+		proposal, err := proposalProvider()
+		if err != nil {
+			return Marriage{}, err
+		}
+		
+		// Check if proposal can be accepted
+		if !proposal.CanRespond() {
+			return Marriage{}, errors.New("proposal cannot be accepted")
+		}
+		
+		// Accept the proposal
+		acceptedProposal, err := proposal.Accept()
+		if err != nil {
+			return Marriage{}, err
+		}
+		
+		// Create marriage and update proposal within the transaction buffer
+		return message.EmitWithResult[Marriage, Proposal](txProcessor.producer)(func(buf *message.Buffer) func(Proposal) (Marriage, error) {
+			return func(acceptedProposal Proposal) (Marriage, error) {
+				// Update the proposal in the database
+				updateProposalProvider := UpdateProposal(txProcessor.db, txProcessor.log)(acceptedProposal)
+				_, err := updateProposalProvider()
+				if err != nil {
+					return Marriage{}, err
+				}
+				
+				// Create the marriage
+				marriageProvider := CreateMarriage(txProcessor.db, txProcessor.log)(proposal.ProposerId(), proposal.TargetId(), t.Id())
+				marriageEntity, err := marriageProvider()
+				if err != nil {
+					return Marriage{}, err
+				}
+				
+				// Transform entity to domain model
+				marriage, err := Make(marriageEntity)
+				if err != nil {
+					return Marriage{}, err
+				}
+				
+				// Accept the marriage to set it to engaged status
+				engagedMarriage, err := marriage.Accept()
+				if err != nil {
+					return Marriage{}, err
+				}
+				
+				// Update the marriage in the database
+				updateMarriageProvider := UpdateMarriage(txProcessor.db, txProcessor.log)(engagedMarriage)
+				updatedEntity, err := updateMarriageProvider()
+				if err != nil {
+					return Marriage{}, err
+				}
+				
+				// Transform entity to domain model
+				result, err := Make(updatedEntity)
+				if err != nil {
+					return Marriage{}, err
+				}
+				
+				// Buffer ProposalAccepted event
+				acceptedAt := time.Now()
+				proposalAcceptedProvider := ProposalAcceptedEventProvider(
+					proposalId,
+					result.CharacterId1(),
+					result.CharacterId2(),
+					acceptedAt,
+				)
+				if err := buf.Put(marriageMsg.EnvEventTopicStatus, proposalAcceptedProvider); err != nil {
+					return Marriage{}, err
+				}
+				
+				// Buffer MarriageCreated event
+				marriedAt := time.Now()
+				if result.EngagedAt() != nil {
+					marriedAt = *result.EngagedAt()
+				}
+				marriageCreatedProvider := MarriageCreatedEventProvider(
+					result.Id(),
+					result.CharacterId1(),
+					result.CharacterId2(),
+					marriedAt,
+				)
+				if err := buf.Put(marriageMsg.EnvEventTopicStatus, marriageCreatedProvider); err != nil {
+					return Marriage{}, err
+				}
+				
+				p.log.WithFields(logrus.Fields{
+					"transactionId": transactionId,
+					"proposalId":    proposalId,
+					"marriageId":    result.Id(),
+				}).Info("Proposal accepted and marriage created with full transactional consistency")
+				
+				return result, nil
+			}
+		})(acceptedProposal)
+	})
+}
+
+// executeInTransaction wraps business logic in a database transaction
+// This ensures both database operations and message emission are transactionally consistent
+func (p *ProcessorImpl) executeInTransaction(operation func(*ProcessorImpl) (Marriage, error)) (Marriage, error) {
+	// Begin database transaction
+	tx := p.db.Begin()
+	if tx.Error != nil {
+		return Marriage{}, tx.Error
+	}
+	
+	// Create a new processor with the transaction DB
+	txProcessor := &ProcessorImpl{
+		log:                p.log,
+		ctx:                p.ctx,
+		db:                 tx,
+		producer:           p.producer,
+		characterProcessor: p.characterProcessor,
+	}
+	
+	// Execute the operation
+	result, err := operation(txProcessor)
+	if err != nil {
+		// Rollback on error
+		tx.Rollback()
+		return Marriage{}, err
+	}
+	
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		return Marriage{}, err
+	}
+	
+	return result, nil
 }

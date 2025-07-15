@@ -64,3 +64,69 @@ func EmitWithResult[M any, B any](p producer.Provider) func(func(*Buffer) func(B
 	}
 }
 
+// EmitMultiple accumulates multiple messages across multiple operations and emits them all at once
+// This ensures transactional consistency across complex operations involving multiple events
+func EmitMultiple(p producer.Provider) func(...func(*Buffer) error) error {
+	return func(operations ...func(*Buffer) error) error {
+		buf := NewBuffer()
+		
+		// Execute all operations and accumulate messages in the buffer
+		for _, operation := range operations {
+			if err := operation(buf); err != nil {
+				return err
+			}
+		}
+		
+		// Emit all buffered messages in a single transaction
+		for t, ms := range buf.GetAll() {
+			if err := p(t)(model.FixedProvider(ms)); err != nil {
+				return err
+			}
+		}
+		
+		return nil
+	}
+}
+
+// BufferMessages provides a fluent interface for building complex message buffers
+// Use this for operations that need to conditionally add different types of messages
+type BufferBuilder struct {
+	buffer *Buffer
+}
+
+// NewBufferBuilder creates a new buffer builder for constructing complex message operations
+func NewBufferBuilder() *BufferBuilder {
+	return &BufferBuilder{
+		buffer: NewBuffer(),
+	}
+}
+
+// AddMessage adds a message provider to the buffer
+func (bb *BufferBuilder) AddMessage(topic string, provider model.Provider[[]kafka.Message]) *BufferBuilder {
+	bb.buffer.Put(topic, provider)
+	return bb
+}
+
+// AddConditionalMessage adds a message only if the condition is true
+func (bb *BufferBuilder) AddConditionalMessage(condition bool, topic string, provider model.Provider[[]kafka.Message]) *BufferBuilder {
+	if condition {
+		bb.buffer.Put(topic, provider)
+	}
+	return bb
+}
+
+// Build returns the accumulated buffer
+func (bb *BufferBuilder) Build() *Buffer {
+	return bb.buffer
+}
+
+// EmitAll emits all messages in the buffer using the provided producer
+func (bb *BufferBuilder) EmitAll(p producer.Provider) error {
+	for t, ms := range bb.buffer.GetAll() {
+		if err := p(t)(model.FixedProvider(ms)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+

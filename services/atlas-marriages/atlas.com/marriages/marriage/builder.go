@@ -181,3 +181,165 @@ func (b *Builder) validateStateTransitions() error {
 	
 	return nil
 }
+
+// ProposalBuilder provides fluent construction of Proposal models
+type ProposalBuilder struct {
+	id             uint32
+	proposerId     uint32
+	targetId       uint32
+	status         ProposalStatus
+	proposedAt     time.Time
+	respondedAt    *time.Time
+	expiresAt      time.Time
+	rejectionCount uint32
+	cooldownUntil  *time.Time
+	tenantId       uuid.UUID
+	createdAt      time.Time
+	updatedAt      time.Time
+}
+
+// NewProposalBuilder creates a new builder with required parameters
+func NewProposalBuilder(proposerId, targetId uint32, tenantId uuid.UUID) *ProposalBuilder {
+	now := time.Now()
+	return &ProposalBuilder{
+		proposerId:     proposerId,
+		targetId:       targetId,
+		status:         ProposalStatusPending,
+		proposedAt:     now,
+		expiresAt:      now.Add(ProposalExpiryDuration),
+		rejectionCount: 0,
+		tenantId:       tenantId,
+		createdAt:      now,
+		updatedAt:      now,
+	}
+}
+
+// SetId sets the proposal ID
+func (b *ProposalBuilder) SetId(id uint32) *ProposalBuilder {
+	b.id = id
+	return b
+}
+
+// SetStatus sets the proposal status
+func (b *ProposalBuilder) SetStatus(status ProposalStatus) *ProposalBuilder {
+	b.status = status
+	return b
+}
+
+// SetProposedAt sets the proposal timestamp
+func (b *ProposalBuilder) SetProposedAt(proposedAt time.Time) *ProposalBuilder {
+	b.proposedAt = proposedAt
+	return b
+}
+
+// SetRespondedAt sets the response timestamp
+func (b *ProposalBuilder) SetRespondedAt(respondedAt *time.Time) *ProposalBuilder {
+	b.respondedAt = respondedAt
+	return b
+}
+
+// SetExpiresAt sets the expiry timestamp
+func (b *ProposalBuilder) SetExpiresAt(expiresAt time.Time) *ProposalBuilder {
+	b.expiresAt = expiresAt
+	return b
+}
+
+// SetRejectionCount sets the rejection count
+func (b *ProposalBuilder) SetRejectionCount(rejectionCount uint32) *ProposalBuilder {
+	b.rejectionCount = rejectionCount
+	return b
+}
+
+// SetCooldownUntil sets the cooldown timestamp
+func (b *ProposalBuilder) SetCooldownUntil(cooldownUntil *time.Time) *ProposalBuilder {
+	b.cooldownUntil = cooldownUntil
+	return b
+}
+
+// SetCreatedAt sets the creation timestamp
+func (b *ProposalBuilder) SetCreatedAt(createdAt time.Time) *ProposalBuilder {
+	b.createdAt = createdAt
+	return b
+}
+
+// SetUpdatedAt sets the last update timestamp
+func (b *ProposalBuilder) SetUpdatedAt(updatedAt time.Time) *ProposalBuilder {
+	b.updatedAt = updatedAt
+	return b
+}
+
+// Build validates and constructs the final Proposal model
+func (b *ProposalBuilder) Build() (Proposal, error) {
+	if b.proposerId == 0 {
+		return Proposal{}, errors.New("proposer ID is required")
+	}
+	
+	if b.targetId == 0 {
+		return Proposal{}, errors.New("target ID is required")
+	}
+	
+	if b.proposerId == b.targetId {
+		return Proposal{}, errors.New("character cannot propose to themselves")
+	}
+	
+	if b.tenantId == uuid.Nil {
+		return Proposal{}, errors.New("tenant ID is required")
+	}
+	
+	if b.expiresAt.Before(b.proposedAt) {
+		return Proposal{}, errors.New("expiry time cannot be before proposal time")
+	}
+	
+	// Validate state transitions
+	if err := b.validateProposalStateTransitions(); err != nil {
+		return Proposal{}, err
+	}
+	
+	return Proposal{
+		id:             b.id,
+		proposerId:     b.proposerId,
+		targetId:       b.targetId,
+		status:         b.status,
+		proposedAt:     b.proposedAt,
+		respondedAt:    b.respondedAt,
+		expiresAt:      b.expiresAt,
+		rejectionCount: b.rejectionCount,
+		cooldownUntil:  b.cooldownUntil,
+		tenantId:       b.tenantId,
+		createdAt:      b.createdAt,
+		updatedAt:      b.updatedAt,
+	}, nil
+}
+
+// validateProposalStateTransitions validates the consistency of proposal state transitions
+func (b *ProposalBuilder) validateProposalStateTransitions() error {
+	switch b.status {
+	case ProposalStatusPending:
+		if b.respondedAt != nil {
+			return errors.New("pending proposal cannot have response timestamp")
+		}
+	case ProposalStatusAccepted:
+		if b.respondedAt == nil {
+			return errors.New("accepted proposal must have response timestamp")
+		}
+	case ProposalStatusRejected:
+		if b.respondedAt == nil {
+			return errors.New("rejected proposal must have response timestamp")
+		}
+		if b.cooldownUntil == nil {
+			return errors.New("rejected proposal must have cooldown timestamp")
+		}
+	case ProposalStatusExpired:
+		if b.respondedAt != nil {
+			return errors.New("expired proposal cannot have response timestamp")
+		}
+	case ProposalStatusCancelled:
+		if b.respondedAt != nil {
+			return errors.New("cancelled proposal cannot have response timestamp")
+		}
+	default:
+		return errors.New("invalid proposal status")
+	}
+	
+	return nil
+}

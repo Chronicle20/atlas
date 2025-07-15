@@ -19,7 +19,7 @@ func RegisterRoutes(router *mux.Router, l logrus.FieldLogger, db *gorm.DB, proce
 	router.HandleFunc("/families/tree/{characterId}", getFamilyTreeHandler(l, administrator)).Methods(http.MethodGet)
 	
 	// Reputation endpoints
-	router.HandleFunc("/families/reputation/activities", processActivityHandler(l, administrator)).Methods(http.MethodPost)
+	router.HandleFunc("/families/reputation/activities", processActivityHandler(l, db, administrator)).Methods(http.MethodPost)
 	router.HandleFunc("/families/reputation/redeem", redeemRepHandler(l, processor)).Methods(http.MethodPost)
 	router.HandleFunc("/families/reputation/{characterId}", getRepHandler(l, db)).Methods(http.MethodGet)
 	
@@ -190,7 +190,7 @@ func getFamilyTreeHandler(l logrus.FieldLogger, administrator Administrator) htt
 }
 
 // processActivityHandler handles POST /families/reputation/activities
-func processActivityHandler(l logrus.FieldLogger, administrator Administrator) http.HandlerFunc {
+func processActivityHandler(l logrus.FieldLogger, db *gorm.DB, administrator Administrator) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req ActivityRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -217,7 +217,7 @@ func processActivityHandler(l logrus.FieldLogger, administrator Administrator) h
 		}
 
 		// Process the activity
-		result, err := administrator.ProcessRepActivity(
+		result, err := administrator.ProcessRepActivity(db, l)(
 			transactionId,
 			req.Data.Attributes.CharacterId,
 			req.Data.Attributes.ActivityType,

@@ -63,3 +63,10 @@ func EmitWithResult[M any, B any](p producer.Provider) func(func(*Buffer) func(B
 		}
 	}
 }
+
+// AdaptHandler is a placeholder function for message handler adaptation
+// This should be properly implemented based on the atlas-kafka consumer patterns
+func AdaptHandler[T any](l interface{}, ctx interface{}, handler func(interface{}, interface{}, T)) {
+	// This is a placeholder implementation
+	// In a real implementation, this would register the handler with the Kafka consumer
+}

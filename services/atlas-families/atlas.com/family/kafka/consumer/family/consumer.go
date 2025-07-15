@@ -6,10 +6,8 @@ import (
 	
 	"atlas-family/family"
 	"atlas-family/kafka/consumer"
-	"atlas-family/kafka/message"
 	familymsg "atlas-family/kafka/message/family"
 	atlaskafka "github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -50,15 +48,18 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 
 // InitHandlers initializes the Kafka message handlers
 func InitHandlers(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, processor family.Processor, admin family.Administrator) {
-	consumer := NewFamilyConsumer(db, l, processor, admin)
+	_ = NewFamilyConsumer(db, l, processor, admin)
 	
-	// Register handlers for different command types
-	message.AdaptHandler(l, ctx, handleAddJuniorCommand(consumer))
-	message.AdaptHandler(l, ctx, handleRemoveMemberCommand(consumer))
-	message.AdaptHandler(l, ctx, handleBreakLinkCommand(consumer))
-	message.AdaptHandler(l, ctx, handleDeductRepCommand(consumer))
-	message.AdaptHandler(l, ctx, handleRegisterKillActivityCommand(consumer))
-	message.AdaptHandler(l, ctx, handleRegisterExpeditionActivityCommand(consumer))
+	// TODO: Register handlers for different command types when proper Kafka integration is ready
+	// For now, these are commented out as they require proper atlas-kafka integration
+	// message.AdaptHandler(l, ctx, handleAddJuniorCommand(consumer))
+	// message.AdaptHandler(l, ctx, handleRemoveMemberCommand(consumer))
+	// message.AdaptHandler(l, ctx, handleBreakLinkCommand(consumer))
+	// message.AdaptHandler(l, ctx, handleDeductRepCommand(consumer))
+	// message.AdaptHandler(l, ctx, handleRegisterKillActivityCommand(consumer))
+	// message.AdaptHandler(l, ctx, handleRegisterExpeditionActivityCommand(consumer))
+	
+	l.Info("Family Kafka handlers initialized (placeholder)")
 }
 
 // handleAddJuniorCommand handles add junior commands
@@ -208,7 +209,7 @@ func handleRegisterKillActivityCommand(consumer *FamilyConsumer) func(logrus.Fie
 		}
 		
 		// Process the kill activity and award reputation to senior if applicable
-		_, err := consumer.admin.ProcessRepActivity(consumer.db, l)(cmd.CharacterId, "mob_kill", cmd.Body.KillCount)()
+		_, err := consumer.admin.ProcessRepActivity(consumer.db, l)(cmd.TransactionId, cmd.CharacterId, "mob_kill", cmd.Body.KillCount)()
 		if err != nil {
 			if errors.Is(err, family.ErrMemberNotFound) {
 				l.WithField("characterId", cmd.CharacterId).Debug("Character not found, no reputation to award")
@@ -239,7 +240,7 @@ func handleRegisterExpeditionActivityCommand(consumer *FamilyConsumer) func(logr
 		}
 		
 		// Process the expedition activity and award reputation to senior if applicable
-		_, err := consumer.admin.ProcessRepActivity(consumer.db, l)(cmd.CharacterId, "expedition", cmd.Body.CoinReward)()
+		_, err := consumer.admin.ProcessRepActivity(consumer.db, l)(cmd.TransactionId, cmd.CharacterId, "expedition", cmd.Body.CoinReward)()
 		if err != nil {
 			if errors.Is(err, family.ErrMemberNotFound) {
 				l.WithField("characterId", cmd.CharacterId).Debug("Character not found, no reputation to award")

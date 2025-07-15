@@ -21,7 +21,8 @@ type Processor interface {
 	ChannelChange(characterId uint32, channelId byte) error
 	LevelChangeAndEmit(characterId uint32, level byte) error
 	LevelChange(mb *message.Buffer) func(characterId uint32, level byte) error
-	JobChange(worldId byte, channelId byte, characterId uint32, jobId job.Id) error
+	JobChangeAndEmit(characterId uint32, jobId job.Id) error
+	JobChange(mb *message.Buffer) func(characterId uint32, jobId job.Id) error
 	MapChange(characterId uint32, mapId uint32) error
 	JoinParty(characterId uint32, partyId uint32) error
 	LeaveParty(characterId uint32) error
@@ -157,17 +158,36 @@ func (p *ProcessorImpl) LevelChange(mb *message.Buffer) func(characterId uint32,
 	}
 }
 
-func (p *ProcessorImpl) JobChange(worldId byte, channelId byte, characterId uint32, jobId job.Id) error {
-	c, err := p.GetById(characterId)
-	if err != nil {
-		p.l.WithError(err).Warnf("Unable to locate character [%d] in registry for job change.", characterId)
-		return err
+func (p *ProcessorImpl) JobChangeAndEmit(characterId uint32, jobId job.Id) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.JobChange(buf)(characterId, jobId)
+	})
+}
+
+func (p *ProcessorImpl) JobChange(mb *message.Buffer) func(characterId uint32, jobId job.Id) error {
+	return func(characterId uint32, jobId job.Id) error {
+		c, err := p.GetById(characterId)
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to locate character [%d] in registry for job change.", characterId)
+			return err
+		}
+		
+		oldJobId := c.JobId()
+		p.l.Debugf("Updating character [%d] job from [%d] to [%d] in registry.", characterId, oldJobId, jobId)
+		fn := func(m Model) Model { return Model.ChangeJob(m, jobId) }
+		c = GetRegistry().Update(p.t, c.Id(), fn)
+		
+		// If character is in a party, emit party member job changed event
+		if c.PartyId() != 0 {
+			err = mb.Put(EnvEventMemberStatusTopic, jobChangedEventProvider(c.PartyId(), c.WorldId(), characterId, uint16(oldJobId), uint16(jobId), c.Name()))
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to announce the party [%d] member [%d] job changed.", c.PartyId(), c.Id())
+				return err
+			}
+		}
+		
+		return nil
 	}
-	
-	p.l.Debugf("Updating character [%d] job from [%d] to [%d] in registry.", characterId, c.JobId(), jobId)
-	fn := func(m Model) Model { return Model.ChangeJob(m, jobId) }
-	c = GetRegistry().Update(p.t, c.Id(), fn)
-	return nil
 }
 
 func (p *ProcessorImpl) MapChange(characterId uint32, mapId uint32) error {

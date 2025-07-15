@@ -45,3 +45,19 @@ func levelChangedEventProvider(partyId uint32, worldId byte, characterId uint32,
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func jobChangedEventProvider(partyId uint32, worldId byte, characterId uint32, oldJobId uint16, newJobId uint16, name string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(partyId))
+	value := &memberStatusEvent[memberJobChangedEventBody]{
+		PartyId:     partyId,
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        EventPartyMemberStatusTypeJobChanged,
+		Body: memberJobChangedEventBody{
+			OldJobId: oldJobId,
+			NewJobId: newJobId,
+			Name:     name,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

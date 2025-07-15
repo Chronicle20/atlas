@@ -266,7 +266,7 @@ func handleStatusEventJobChanged(l logrus.FieldLogger, ctx context.Context, e St
 		WithField("jobId", e.Body.JobId).
 		Debugf("Processing job changed event for character [%d].", e.CharacterId)
 
-	err := character.NewProcessor(l, ctx).JobChange(byte(e.WorldId), byte(e.Body.ChannelId), e.CharacterId, e.Body.JobId)
+	err := character.NewProcessor(l, ctx).JobChangeAndEmit(e.CharacterId, e.Body.JobId)
 	if err != nil {
 		l.WithError(err).
 			WithField("characterId", e.CharacterId).

@@ -5,6 +5,7 @@ const (
 	EventPartyMemberStatusTypeLogin       = "LOGIN"
 	EventPartyMemberStatusTypeLogout      = "LOGOUT"
 	EventPartyMemberStatusTypeLevelChanged = "LEVEL_CHANGED"
+	EventPartyMemberStatusTypeJobChanged  = "JOB_CHANGED"
 )
 
 type memberStatusEvent[E any] struct {
@@ -24,5 +25,11 @@ type memberLogoutEventBody struct {
 type memberLevelChangedEventBody struct {
 	OldLevel byte   `json:"oldLevel"`
 	NewLevel byte   `json:"newLevel"`
+	Name     string `json:"name"`
+}
+
+type memberJobChangedEventBody struct {
+	OldJobId uint16 `json:"oldJobId"`
+	NewJobId uint16 `json:"newJobId"`
 	Name     string `json:"name"`
 }

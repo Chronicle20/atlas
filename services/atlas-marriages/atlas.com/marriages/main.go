@@ -1,7 +1,9 @@
 package main
 
 import (
+	"atlas-marriages/database"
 	"atlas-marriages/logger"
+	"atlas-marriages/marriage"
 	"atlas-marriages/service"
 	"atlas-marriages/tracing"
 	"os"
@@ -41,6 +43,9 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
+
+	db := database.Connect(l, database.SetMigrations(marriage.Migration))
+	_ = db // TODO: Will be used when adding route initializers
 
 	server.New(l).
 		WithContext(tdm.Context()).

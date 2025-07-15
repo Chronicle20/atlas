@@ -363,14 +363,14 @@ type CeremonyBuilder struct {
 }
 
 // NewCeremonyBuilder creates a new builder with required parameters
-func NewCeremonyBuilder(marriageId, characterId1, characterId2 uint32, scheduledAt time.Time, tenantId uuid.UUID) *CeremonyBuilder {
+func NewCeremonyBuilder(marriageId, characterId1, characterId2 uint32, tenantId uuid.UUID) *CeremonyBuilder {
 	now := time.Now()
 	return &CeremonyBuilder{
 		marriageId:   marriageId,
 		characterId1: characterId1,
 		characterId2: characterId2,
 		status:       CeremonyStatusScheduled,
-		scheduledAt:  scheduledAt,
+		scheduledAt:  now,
 		invitees:     make([]uint32, 0),
 		tenantId:     tenantId,
 		createdAt:    now,

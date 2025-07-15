@@ -1,6 +1,7 @@
 package marriage
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -27,12 +28,15 @@ func (Entity) TableName() string {
 	return "marriages"
 }
 
-// Migration performs the database migration for the marriage entity and proposal entity
+// Migration performs the database migration for the marriage entity, proposal entity, and ceremony entity
 func Migration(db *gorm.DB) error {
 	if err := db.AutoMigrate(&Entity{}); err != nil {
 		return err
 	}
-	return db.AutoMigrate(&ProposalEntity{})
+	if err := db.AutoMigrate(&ProposalEntity{}); err != nil {
+		return err
+	}
+	return db.AutoMigrate(&CeremonyEntity{})
 }
 
 // Make transforms a marriage entity to a domain model
@@ -123,4 +127,103 @@ func (p Proposal) ToProposalEntity() ProposalEntity {
 		CreatedAt:      p.createdAt,
 		UpdatedAt:      p.updatedAt,
 	}
+}
+
+// CeremonyEntity represents the GORM-compatible database representation of a ceremony
+type CeremonyEntity struct {
+	ID           uint32         `gorm:"primaryKey;autoIncrement"`
+	MarriageId   uint32         `gorm:"index;not null"`
+	CharacterId1 uint32         `gorm:"index;not null"`
+	CharacterId2 uint32         `gorm:"index;not null"`
+	Status       CeremonyStatus `gorm:"index;not null"`
+	ScheduledAt  time.Time      `gorm:"not null"`
+	StartedAt    *time.Time     `gorm:"index"`
+	CompletedAt  *time.Time     `gorm:"index"`
+	CancelledAt  *time.Time     `gorm:"index"`
+	PostponedAt  *time.Time     `gorm:"index"`
+	Invitees     string         `gorm:"type:text"` // JSON array of uint32s
+	TenantId     uuid.UUID      `gorm:"type:uuid;index;not null"`
+	CreatedAt    time.Time      `gorm:"not null"`
+	UpdatedAt    time.Time      `gorm:"not null"`
+}
+
+// TableName returns the table name for the ceremony entity
+func (CeremonyEntity) TableName() string {
+	return "ceremonies"
+}
+
+// MakeCeremony transforms a ceremony entity to a domain model
+func MakeCeremony(entity CeremonyEntity) (Ceremony, error) {
+	// Parse invitees from JSON string
+	invitees, err := parseInvitees(entity.Invitees)
+	if err != nil {
+		return Ceremony{}, err
+	}
+
+	return NewCeremonyBuilder(entity.MarriageId, entity.CharacterId1, entity.CharacterId2, entity.TenantId).
+		SetId(entity.ID).
+		SetStatus(entity.Status).
+		SetScheduledAt(entity.ScheduledAt).
+		SetStartedAt(entity.StartedAt).
+		SetCompletedAt(entity.CompletedAt).
+		SetCancelledAt(entity.CancelledAt).
+		SetPostponedAt(entity.PostponedAt).
+		SetInvitees(invitees).
+		SetCreatedAt(entity.CreatedAt).
+		SetUpdatedAt(entity.UpdatedAt).
+		Build()
+}
+
+// ToCeremonyEntity converts a ceremony domain model to a database entity
+func (c Ceremony) ToCeremonyEntity() (CeremonyEntity, error) {
+	// Convert invitees to JSON string
+	inviteesJSON, err := inviteesToJSON(c.invitees)
+	if err != nil {
+		return CeremonyEntity{}, err
+	}
+
+	return CeremonyEntity{
+		ID:           c.id,
+		MarriageId:   c.marriageId,
+		CharacterId1: c.characterId1,
+		CharacterId2: c.characterId2,
+		Status:       c.status,
+		ScheduledAt:  c.scheduledAt,
+		StartedAt:    c.startedAt,
+		CompletedAt:  c.completedAt,
+		CancelledAt:  c.cancelledAt,
+		PostponedAt:  c.postponedAt,
+		Invitees:     inviteesJSON,
+		TenantId:     c.tenantId,
+		CreatedAt:    c.createdAt,
+		UpdatedAt:    c.updatedAt,
+	}, nil
+}
+
+// parseInvitees converts a JSON string to a slice of uint32s
+func parseInvitees(inviteesJSON string) ([]uint32, error) {
+	if inviteesJSON == "" {
+		return []uint32{}, nil
+	}
+	
+	var invitees []uint32
+	if err := json.Unmarshal([]byte(inviteesJSON), &invitees); err != nil {
+		return nil, err
+	}
+	
+	return invitees, nil
+}
+
+// inviteesToJSON converts a slice of uint32s to a JSON string
+func inviteesToJSON(invitees []uint32) (string, error) {
+	if len(invitees) == 0 {
+		return "[]", nil
+	}
+	
+	data, err := json.Marshal(invitees)
+	if err != nil {
+		return "", err
+	}
+	
+	return string(data), nil
 }

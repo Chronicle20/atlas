@@ -93,6 +93,49 @@ func (s *Saga) FindFailedStepIndex() int {
 	return -1
 }
 
+// ValidateStepOrdering ensures that the saga steps are in a valid order
+// Returns true if the ordering is valid, false otherwise
+func (s *Saga) ValidateStepOrdering() bool {
+	// Check that all completed steps come before all pending steps
+	foundPending := false
+	for i := 0; i < len(s.Steps); i++ {
+		if s.Steps[i].Status == Pending {
+			foundPending = true
+		} else if s.Steps[i].Status == Completed && foundPending {
+			// Found a completed step after a pending step - invalid ordering
+			return false
+		}
+	}
+	return true
+}
+
+// GetStepCount returns the total number of steps in the saga
+func (s *Saga) GetStepCount() int {
+	return len(s.Steps)
+}
+
+// GetCompletedStepCount returns the number of completed steps in the saga
+func (s *Saga) GetCompletedStepCount() int {
+	count := 0
+	for _, step := range s.Steps {
+		if step.Status == Completed {
+			count++
+		}
+	}
+	return count
+}
+
+// GetPendingStepCount returns the number of pending steps in the saga
+func (s *Saga) GetPendingStepCount() int {
+	count := 0
+	for _, step := range s.Steps {
+		if step.Status == Pending {
+			count++
+		}
+	}
+	return count
+}
+
 type Status string
 
 const (

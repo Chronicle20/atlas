@@ -78,7 +78,8 @@ func handleCompartmentCreatedEvent(l logrus.FieldLogger, ctx context.Context, e 
 			return
 		}
 
-		// Generate a unique step ID for the auto-equip step
+		// Generate a unique step ID for the auto-equip step with proper timestamp format
+		// Format: auto_equip_step_<timestamp> where timestamp is Unix nanoseconds
 		autoEquipStepId := fmt.Sprintf("auto_equip_step_%d", time.Now().UnixNano())
 		
 		// Create the EquipAsset step
@@ -101,14 +102,15 @@ func handleCompartmentCreatedEvent(l logrus.FieldLogger, ctx context.Context, e 
 			UpdatedAt: time.Now(),
 		}
 
-		// Add the equip step to the saga
+		// Add the equip step to the saga with proper error handling
 		err = sagaProcessor.AddStep(e.TransactionId, equipStep)
 		if err != nil {
 			l.WithFields(logrus.Fields{
-				"transaction_id": e.TransactionId.String(),
-				"character_id":   e.CharacterId,
-				"error":          err.Error(),
-			}).Error("Failed to add equip step to saga.")
+				"transaction_id":     e.TransactionId.String(),
+				"character_id":       e.CharacterId,
+				"auto_equip_step_id": autoEquipStepId,
+				"error":              err.Error(),
+			}).Error("Failed to add equip step to saga - marking saga step as failed.")
 			_ = sagaProcessor.StepCompleted(e.TransactionId, false)
 			return
 		}
@@ -118,7 +120,9 @@ func handleCompartmentCreatedEvent(l logrus.FieldLogger, ctx context.Context, e 
 			"character_id":        e.CharacterId,
 			"auto_equip_step_id":  autoEquipStepId,
 			"inventory_type":      e.Body.Type,
-		}).Info("Successfully added auto-equip step for CreateAndEquipAsset action.")
+			"source_slot":         equipPayload.Source,
+			"destination_slot":    equipPayload.Destination,
+		}).Info("Successfully added auto-equip step for CreateAndEquipAsset action with proper ordering.")
 	}
 
 	// Complete the current step (either regular creation or CreateAndEquipAsset)

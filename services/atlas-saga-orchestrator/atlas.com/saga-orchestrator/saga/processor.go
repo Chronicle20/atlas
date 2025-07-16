@@ -16,6 +16,7 @@ import (
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"time"
 )
 
 // Processor is the interface for saga processing
@@ -208,7 +209,7 @@ func (p *ProcessorImpl) MarkEarliestPendingStep(transactionId uuid.UUID, status 
 	return nil
 }
 
-// AddStep adds a new step to the saga at the specified position
+// AddStep adds a new step to the saga with proper ordering and transaction management
 func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 	s, err := p.GetById(transactionId)
 	if err != nil {
@@ -217,6 +218,16 @@ func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("Unable to locate saga for adding step.")
 		return err
+	}
+
+	// Validate that the saga is in a valid state for adding steps
+	if s.Failing() {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"tenant_id":      p.t.Id().String(),
+		}).Debug("Cannot add step to a failing saga.")
+		return errors.New("cannot add step to a failing saga")
 	}
 
 	// Find the index of the current step (earliest pending step)
@@ -230,22 +241,58 @@ func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 		return errors.New("no pending steps found")
 	}
 
-	// Insert the new step right after the current step
+	// Validate step ID uniqueness within the saga
+	for _, existingStep := range s.Steps {
+		if existingStep.StepId == step.StepId {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_id":        step.StepId,
+				"tenant_id":      p.t.Id().String(),
+			}).Debug("Step ID already exists in saga.")
+			return fmt.Errorf("step ID '%s' already exists in saga", step.StepId)
+		}
+	}
+
+	// Insert the new step right after the current step to maintain proper ordering
 	insertIndex := currentStepIndex + 1
+	
+	// Ensure the step has proper timestamps
+	if step.CreatedAt.IsZero() {
+		step.CreatedAt = time.Now()
+	}
+	if step.UpdatedAt.IsZero() {
+		step.UpdatedAt = time.Now()
+	}
 	
 	// Expand the slice and insert the new step
 	s.Steps = append(s.Steps[:insertIndex], append([]Step[any]{step}, s.Steps[insertIndex:]...)...)
 
-	// Update the saga in the cache
+	// Validate that the step ordering is still valid after insertion
+	if !s.ValidateStepOrdering() {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_id":        step.StepId,
+			"tenant_id":      p.t.Id().String(),
+		}).Error("Step ordering validation failed after insertion.")
+		return errors.New("step ordering validation failed")
+	}
+
+	// Update the saga in the cache atomically
 	GetCache().Put(p.t.Id(), s)
 
 	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        step.StepId,
-		"action":         step.Action,
-		"tenant_id":      p.t.Id().String(),
-	}).Debug("Added new step to saga.")
+		"transaction_id":     s.TransactionId.String(),
+		"saga_type":          s.SagaType,
+		"step_id":            step.StepId,
+		"action":             step.Action,
+		"insert_index":       insertIndex,
+		"total_steps":        len(s.Steps),
+		"completed_steps":    s.GetCompletedStepCount(),
+		"pending_steps":      s.GetPendingStepCount(),
+		"tenant_id":          p.t.Id().String(),
+	}).Debug("Added new step to saga with proper ordering.")
 
 	return nil
 }

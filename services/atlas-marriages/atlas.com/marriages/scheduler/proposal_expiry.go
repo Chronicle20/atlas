@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"atlas-marriages/marriage"
+	"atlas-marriages/retry"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -105,39 +106,60 @@ func (s *ProposalExpiryScheduler) processExpiredProposals() {
 func (s *ProposalExpiryScheduler) getTenantsWithProposals() ([]uuid.UUID, error) {
 	var tenantIds []uuid.UUID
 	
-	err := s.db.Model(&marriage.ProposalEntity{}).
-		Where("status = ?", marriage.ProposalStatusPending).
-		Distinct("tenant_id").
-		Pluck("tenant_id", &tenantIds).Error
+	retryConfig := retry.DefaultRetryConfig().
+		WithLogger(s.log.WithField("operation", "get-tenants-with-proposals")).
+		WithContext(s.ctx).
+		WithMaxRetries(2).
+		WithInitialDelay(500 * time.Millisecond)
+	
+	err := retry.ExecuteWithRetry(retryConfig, func() error {
+		return s.db.Model(&marriage.ProposalEntity{}).
+			Where("status = ?", marriage.ProposalStatusPending).
+			Distinct("tenant_id").
+			Pluck("tenant_id", &tenantIds).Error
+	})
 	
 	return tenantIds, err
 }
 
 // processExpiredProposalsForTenant processes expired proposals for a specific tenant
 func (s *ProposalExpiryScheduler) processExpiredProposalsForTenant(tenantId uuid.UUID) {
-	// Create a tenant model
-	tenantModel, err := tenant.Create(tenantId, "background-scheduler", 1, 0)
+	retryConfig := retry.DefaultRetryConfig().
+		WithLogger(s.log.WithFields(logrus.Fields{
+			"operation": "process-expired-proposals",
+			"tenantId":  tenantId,
+		})).
+		WithContext(s.ctx).
+		WithMaxRetries(3).
+		WithInitialDelay(1 * time.Second).
+		WithMaxDelay(10 * time.Second)
+	
+	err := retry.ExecuteWithRetry(retryConfig, func() error {
+		// Create a tenant model
+		tenantModel, err := tenant.Create(tenantId, "background-scheduler", 1, 0)
+		if err != nil {
+			s.log.WithFields(logrus.Fields{
+				"tenantId": tenantId,
+				"error":    err,
+			}).Error("Failed to create tenant model")
+			return err
+		}
+		
+		// Create a context with tenant information
+		tenantCtx := tenant.WithContext(s.ctx, tenantModel)
+		
+		// Create a processor with tenant context
+		processor := marriage.NewProcessor(s.log, tenantCtx, s.db)
+		
+		// Process expired proposals for this tenant
+		return processor.ProcessExpiredProposals()
+	})
+	
 	if err != nil {
 		s.log.WithFields(logrus.Fields{
 			"tenantId": tenantId,
 			"error":    err,
-		}).Error("Failed to create tenant model")
-		return
-	}
-	
-	// Create a context with tenant information
-	tenantCtx := tenant.WithContext(s.ctx, tenantModel)
-	
-	// Create a processor with tenant context
-	processor := marriage.NewProcessor(s.log, tenantCtx, s.db)
-	
-	// Process expired proposals for this tenant
-	err = processor.ProcessExpiredProposals()
-	if err != nil {
-		s.log.WithFields(logrus.Fields{
-			"tenantId": tenantId,
-			"error":    err,
-		}).Error("Failed to process expired proposals for tenant")
+		}).Error("Failed to process expired proposals for tenant after retries")
 		return
 	}
 	

@@ -1700,3 +1700,225 @@ func TestHandleUnequipAsset(t *testing.T) {
 		})
 	}
 }
+
+// TestHandleCreateAndEquipAsset tests the handleCreateAndEquipAsset function
+func TestHandleCreateAndEquipAsset(t *testing.T) {
+	tests := []struct {
+		name          string
+		payload       CreateAndEquipAssetPayload
+		mockError     error
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "Success case - valid create and equip payload",
+			payload: CreateAndEquipAssetPayload{
+				CharacterId: 12345,
+				Item: ItemPayload{
+					TemplateId: 1302000,
+					Quantity:   1,
+				},
+			},
+			mockError:   nil,
+			expectError: false,
+		},
+		{
+			name: "Success case - multiple quantity item",
+			payload: CreateAndEquipAssetPayload{
+				CharacterId: 54321,
+				Item: ItemPayload{
+					TemplateId: 2000001,
+					Quantity:   5,
+				},
+			},
+			mockError:   nil,
+			expectError: false,
+		},
+		{
+			name: "Error case - compartment service failure",
+			payload: CreateAndEquipAssetPayload{
+				CharacterId: 12345,
+				Item: ItemPayload{
+					TemplateId: 1302000,
+					Quantity:   1,
+				},
+			},
+			mockError:     errors.New("compartment service unavailable"),
+			expectError:   true,
+			errorContains: "compartment service unavailable",
+		},
+		{
+			name: "Error case - invalid template id",
+			payload: CreateAndEquipAssetPayload{
+				CharacterId: 12345,
+				Item: ItemPayload{
+					TemplateId: 0,
+					Quantity:   1,
+				},
+			},
+			mockError:     errors.New("invalid template id"),
+			expectError:   true,
+			errorContains: "invalid template id",
+		},
+		{
+			name: "Error case - character not found",
+			payload: CreateAndEquipAssetPayload{
+				CharacterId: 99999,
+				Item: ItemPayload{
+					TemplateId: 1302000,
+					Quantity:   1,
+				},
+			},
+			mockError:     errors.New("character not found"),
+			expectError:   true,
+			errorContains: "character not found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup
+			charP := &mock.ProcessorMock{}
+			compP := &mock2.ProcessorMock{}
+			validP := &mock3.ProcessorMock{}
+
+			processor, _ := setupTestProcessor(charP, compP, validP)
+
+			// Configure mock - the function should convert saga payload to compartment payload
+			compP.RequestCreateAndEquipAssetFunc = func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error {
+				// Verify the payload was converted correctly
+				assert.Equal(t, tt.payload.CharacterId, payload.CharacterId)
+				assert.Equal(t, tt.payload.Item.TemplateId, payload.Item.TemplateId)
+				assert.Equal(t, tt.payload.Item.Quantity, payload.Item.Quantity)
+				return tt.mockError
+			}
+
+			// Create test saga and step
+			transactionId := uuid.New()
+			saga := Saga{
+				TransactionId: transactionId,
+				SagaType:      InventoryTransaction,
+				InitiatedBy:   "test",
+			}
+
+			step := Step[any]{
+				StepId:    "create-and-equip-step",
+				Status:    Pending,
+				Action:    CreateAndEquipAsset,
+				Payload:   tt.payload,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+
+			// Execute
+			err := handleCreateAndEquipAsset(processor, saga, step)
+
+			// Verify
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+
+			// Verify that RequestCreateAndEquipAsset was called with correct transaction ID
+			if compP.RequestCreateAndEquipAssetFunc != nil {
+				// The function should have been called with the saga's transaction ID
+				assert.Equal(t, transactionId, saga.TransactionId)
+			}
+		})
+	}
+}
+
+// TestHandleCreateAndEquipAsset_InvalidPayload tests error handling for invalid payload types
+func TestHandleCreateAndEquipAsset_InvalidPayload(t *testing.T) {
+	// Setup
+	charP := &mock.ProcessorMock{}
+	compP := &mock2.ProcessorMock{}
+	validP := &mock3.ProcessorMock{}
+
+	processor, _ := setupTestProcessor(charP, compP, validP)
+
+	// Create test saga and step with invalid payload
+	transactionId := uuid.New()
+	saga := Saga{
+		TransactionId: transactionId,
+		SagaType:      InventoryTransaction,
+		InitiatedBy:   "test",
+	}
+
+	step := Step[any]{
+		StepId:    "create-and-equip-step",
+		Status:    Pending,
+		Action:    CreateAndEquipAsset,
+		Payload:   "invalid-payload-type", // Wrong type
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	// Execute
+	err := handleCreateAndEquipAsset(processor, saga, step)
+
+	// Verify
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
+
+	// Verify that RequestCreateAndEquipAsset was never called
+	assert.Nil(t, compP.RequestCreateAndEquipAssetFunc)
+}
+
+// TestHandleCreateAndEquipAsset_PayloadConversion tests the conversion from saga payload to compartment payload
+func TestHandleCreateAndEquipAsset_PayloadConversion(t *testing.T) {
+	// Setup
+	charP := &mock.ProcessorMock{}
+	compP := &mock2.ProcessorMock{}
+	validP := &mock3.ProcessorMock{}
+
+	processor, _ := setupTestProcessor(charP, compP, validP)
+
+	// Test payload
+	sagaPayload := CreateAndEquipAssetPayload{
+		CharacterId: 12345,
+		Item: ItemPayload{
+			TemplateId: 1302000,
+			Quantity:   1,
+		},
+	}
+
+	// Configure mock to capture the converted payload
+	var capturedPayload compartment.CreateAndEquipAssetPayload
+	compP.RequestCreateAndEquipAssetFunc = func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error {
+		capturedPayload = payload
+		return nil
+	}
+
+	// Create test saga and step
+	transactionId := uuid.New()
+	saga := Saga{
+		TransactionId: transactionId,
+		SagaType:      InventoryTransaction,
+		InitiatedBy:   "test",
+	}
+
+	step := Step[any]{
+		StepId:    "create-and-equip-step",
+		Status:    Pending,
+		Action:    CreateAndEquipAsset,
+		Payload:   sagaPayload,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	// Execute
+	err := handleCreateAndEquipAsset(processor, saga, step)
+
+	// Verify
+	assert.NoError(t, err)
+
+	// Verify the payload conversion was correct
+	assert.Equal(t, sagaPayload.CharacterId, capturedPayload.CharacterId)
+	assert.Equal(t, sagaPayload.Item.TemplateId, capturedPayload.Item.TemplateId)
+	assert.Equal(t, sagaPayload.Item.Quantity, capturedPayload.Item.Quantity)
+}

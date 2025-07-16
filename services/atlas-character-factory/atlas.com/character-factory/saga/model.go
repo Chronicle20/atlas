@@ -301,6 +301,14 @@ type CharacterCreatePayload struct {
 	Weapon    uint32 `json:"weapon"`    // Weapon of the character
 }
 
+// CreateAndEquipAssetPayload represents the payload required to create and equip an asset to a character.
+type CreateAndEquipAssetPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item to create and equip
+	Source      int16  `json:"source"`      // Source inventory slot (always 1 for creation)
+	Destination int16  `json:"destination"` // Destination equipped slot (always 0 for creation)
+}
+
 type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
@@ -404,6 +412,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case CreateCharacter:
 		var payload CharacterCreatePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case CreateAndEquipAsset:
+		var payload CreateAndEquipAssetPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

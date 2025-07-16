@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-marriages/database"
+	"atlas-marriages/kafka/consumer/character"
 	"atlas-marriages/kafka/consumer/marriage"
 	"atlas-marriages/logger"
 	marriageService "atlas-marriages/marriage"
@@ -66,6 +67,10 @@ func main() {
 	// Initialize Kafka consumers
 	consumerManager := consumer.GetManager()
 	marriage.InitConsumers(l, tdm.Context(), db)(
+		consumerManager.AddConsumer(l, tdm.Context(), tdm.WaitGroup()),
+	)("marriage-service")
+	
+	character.InitConsumers(l, tdm.Context(), db)(
 		consumerManager.AddConsumer(l, tdm.Context(), tdm.WaitGroup()),
 	)("marriage-service")
 

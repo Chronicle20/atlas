@@ -23,9 +23,6 @@ const (
 
 	// Marriage commands
 	CommandMarriageDivorce = "DIVORCE"
-	
-	// Character deletion commands
-	CommandCharacterDeleted = "CHARACTER_DELETED"
 
 	// Ceremony commands
 	CommandCeremonySchedule         = "SCHEDULE_CEREMONY"
@@ -108,11 +105,6 @@ type DivorceBody struct {
 	MarriageId uint32 `json:"marriageId"`
 }
 
-// CharacterDeletedBody represents the body of a character deletion command
-type CharacterDeletedBody struct {
-	DeletedCharacterId uint32 `json:"deletedCharacterId"`
-	Reason             string `json:"reason"`
-}
 
 // ScheduleCeremonyBody represents the body of a ceremony scheduling command
 type ScheduleCeremonyBody struct {

@@ -102,6 +102,8 @@ const (
 	WarpToRandomPortal         Action = "warp_to_random_portal"
 	WarpToPortal               Action = "warp_to_portal"
 	DestroyAsset               Action = "destroy_asset"
+	EquipAsset                 Action = "equip_asset"
+	UnequipAsset               Action = "unequip_asset"
 	ChangeJob                  Action = "change_job"
 	CreateSkill                Action = "create_skill"
 	UpdateSkill                Action = "update_skill"
@@ -179,6 +181,22 @@ type DestroyAssetPayload struct {
 	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
 	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item to destroy
 	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy
+}
+
+// EquipAssetPayload represents the payload required to equip an asset from one inventory slot to an equipped slot.
+type EquipAssetPayload struct {
+	CharacterId   uint32 `json:"characterId"`   // CharacterId associated with the action
+	InventoryType uint32 `json:"inventoryType"` // Type of inventory (e.g., equipment, consumables)
+	Source        int16  `json:"source"`        // Source inventory slot (standard inventory slot)
+	Destination   int16  `json:"destination"`   // Destination equipped slot (negative values for equipped slots)
+}
+
+// UnequipAssetPayload represents the payload required to unequip an asset from an equipped slot back to a standard inventory slot.
+type UnequipAssetPayload struct {
+	CharacterId   uint32 `json:"characterId"`   // CharacterId associated with the action
+	InventoryType uint32 `json:"inventoryType"` // Type of inventory (e.g., equipment, consumables)
+	Source        int16  `json:"source"`        // Source equipped slot (negative values for equipped slots)
+	Destination   int16  `json:"destination"`   // Destination inventory slot (standard inventory slot)
 }
 
 // ChangeJobPayload represents the payload required to change a character's job.
@@ -311,6 +329,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case DestroyAsset:
 		var payload DestroyAssetPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case EquipAsset:
+		var payload EquipAssetPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case UnequipAsset:
+		var payload UnequipAssetPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

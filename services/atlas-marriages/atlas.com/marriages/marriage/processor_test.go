@@ -1965,3 +1965,265 @@ func TestProcessor_CharacterDeletion(t *testing.T) {
 	})
 }
 
+// AndEmit Function Tests
+
+func TestProcessor_AcceptProposalAndEmit(t *testing.T) {
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+	log := logrus.New()
+	
+	// Create mock character processor
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+	
+	// Create mock producer
+	mockProducer := NewMockProducer()
+	
+	processor := NewProcessor(log, ctx, db).
+		WithCharacterProcessor(mockCharacterProcessor).
+		WithProducer(mockProducer.Provider)
+	
+	// First create a proposal
+	proposal, err := processor.Propose(1, 2)()
+	if err != nil {
+		t.Fatalf("Failed to create proposal: %v", err)
+	}
+	
+	// Accept the proposal with emission
+	marriage, err := processor.AcceptProposalAndEmit(uuid.New(), proposal.Id())
+	if err != nil {
+		t.Fatalf("Failed to accept proposal and emit: %v", err)
+	}
+	
+	if marriage.Status() != StatusEngaged {
+		t.Errorf("Expected marriage status to be %v, got %v", StatusEngaged, marriage.Status())
+	}
+	
+	// Verify messages were produced
+	if len(mockProducer.messagesProduced) == 0 {
+		t.Error("Expected messages to be produced")
+	}
+}
+
+func TestProcessor_DeclineProposalAndEmit(t *testing.T) {
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+	log := logrus.New()
+	
+	// Create mock character processor
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+	
+	// Create mock producer
+	mockProducer := NewMockProducer()
+	
+	processor := NewProcessor(log, ctx, db).
+		WithCharacterProcessor(mockCharacterProcessor).
+		WithProducer(mockProducer.Provider)
+	
+	// First create a proposal
+	proposal, err := processor.Propose(1, 2)()
+	if err != nil {
+		t.Fatalf("Failed to create proposal: %v", err)
+	}
+	
+	// Decline the proposal with emission
+	declined, err := processor.DeclineProposalAndEmit(uuid.New(), proposal.Id())
+	if err != nil {
+		t.Fatalf("Failed to decline proposal and emit: %v", err)
+	}
+	
+	if declined.Status() != ProposalStatusRejected {
+		t.Errorf("Expected proposal status to be %v, got %v", ProposalStatusRejected, declined.Status())
+	}
+	
+	// Verify messages were produced
+	if len(mockProducer.messagesProduced) == 0 {
+		t.Error("Expected messages to be produced")
+	}
+}
+
+func TestProcessor_CancelProposalAndEmit(t *testing.T) {
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+	log := logrus.New()
+	
+	// Create mock character processor
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+	
+	// Create mock producer
+	mockProducer := NewMockProducer()
+	
+	processor := NewProcessor(log, ctx, db).
+		WithCharacterProcessor(mockCharacterProcessor).
+		WithProducer(mockProducer.Provider)
+	
+	// First create a proposal
+	proposal, err := processor.Propose(1, 2)()
+	if err != nil {
+		t.Fatalf("Failed to create proposal: %v", err)
+	}
+	
+	// Cancel the proposal with emission
+	cancelled, err := processor.CancelProposalAndEmit(uuid.New(), proposal.Id())
+	if err != nil {
+		t.Fatalf("Failed to cancel proposal and emit: %v", err)
+	}
+	
+	if cancelled.Status() != ProposalStatusCancelled {
+		t.Errorf("Expected proposal status to be %v, got %v", ProposalStatusCancelled, cancelled.Status())
+	}
+	
+	// Verify messages were produced
+	if len(mockProducer.messagesProduced) == 0 {
+		t.Error("Expected messages to be produced")
+	}
+}
+
+func TestProcessor_DivorceAndEmit(t *testing.T) {
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+	log := logrus.New()
+	
+	// Create mock character processor
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+	
+	// Create mock producer
+	mockProducer := NewMockProducer()
+	
+	processor := NewProcessor(log, ctx, db).
+		WithCharacterProcessor(mockCharacterProcessor).
+		WithProducer(mockProducer.Provider)
+	
+	// Create marriage
+	proposal, err := processor.Propose(1, 2)()
+	if err != nil {
+		t.Fatalf("Failed to create proposal: %v", err)
+	}
+	
+	accepted, err := processor.AcceptProposal(proposal.Id())()
+	if err != nil {
+		t.Fatalf("Failed to accept proposal: %v", err)
+	}
+	
+	marriageEntity := accepted.ToEntity()
+	marriageEntity.Status = StatusMarried
+	marriageEntity.MarriedAt = &time.Time{}
+	now := time.Now()
+	marriageEntity.MarriedAt = &now
+	db.Save(&marriageEntity)
+	
+	// Divorce with emission
+	divorced, err := processor.DivorceAndEmit(uuid.New(), accepted.Id(), 1)
+	if err != nil {
+		t.Fatalf("Failed to divorce and emit: %v", err)
+	}
+	
+	if divorced.Status() != StatusDivorced {
+		t.Errorf("Expected marriage status to be %v, got %v", StatusDivorced, divorced.Status())
+	}
+	
+	// Verify messages were produced
+	if len(mockProducer.messagesProduced) == 0 {
+		t.Error("Expected messages to be produced")
+	}
+}
+
+func TestProcessor_HandleCharacterDeletionAndEmit(t *testing.T) {
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+	log := logrus.New()
+	
+	// Create mock character processor
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+	
+	// Create mock producer
+	mockProducer := NewMockProducer()
+	
+	processor := NewProcessor(log, ctx, db).
+		WithCharacterProcessor(mockCharacterProcessor).
+		WithProducer(mockProducer.Provider)
+	
+	// Create marriage
+	proposal, err := processor.Propose(1, 2)()
+	if err != nil {
+		t.Fatalf("Failed to create proposal: %v", err)
+	}
+	
+	accepted, err := processor.AcceptProposal(proposal.Id())()
+	if err != nil {
+		t.Fatalf("Failed to accept proposal: %v", err)
+	}
+	
+	marriageEntity := accepted.ToEntity()
+	marriageEntity.Status = StatusMarried
+	marriageEntity.MarriedAt = &time.Time{}
+	now := time.Now()
+	marriageEntity.MarriedAt = &now
+	db.Save(&marriageEntity)
+	
+	// Handle character deletion with emission
+	err = processor.HandleCharacterDeletionAndEmit(uuid.New(), 1)
+	if err != nil {
+		t.Fatalf("Failed to handle character deletion and emit: %v", err)
+	}
+	
+	// Verify messages were produced
+	if len(mockProducer.messagesProduced) == 0 {
+		t.Error("Expected messages to be produced")
+	}
+}
+
+func TestProcessor_ExpireProposalAndEmit(t *testing.T) {
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+	log := logrus.New()
+	
+	// Create mock character processor
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+	
+	// Create mock producer
+	mockProducer := NewMockProducer()
+	
+	processor := NewProcessor(log, ctx, db).
+		WithCharacterProcessor(mockCharacterProcessor).
+		WithProducer(mockProducer.Provider)
+	
+	// Create a proposal
+	proposal, err := processor.Propose(1, 2)()
+	if err != nil {
+		t.Fatalf("Failed to create proposal: %v", err)
+	}
+	
+	// Expire the proposal with emission
+	expired, err := processor.ExpireProposalAndEmit(uuid.New(), proposal.Id())
+	if err != nil {
+		t.Fatalf("Failed to expire proposal and emit: %v", err)
+	}
+	
+	if expired.Status() != ProposalStatusExpired {
+		t.Errorf("Expected proposal status to be %v, got %v", ProposalStatusExpired, expired.Status())
+	}
+	
+	// Verify messages were produced
+	if len(mockProducer.messagesProduced) == 0 {
+		t.Error("Expected messages to be produced")
+	}
+}
+

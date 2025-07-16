@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -59,16 +60,44 @@ func TestHandlerContext_ServerInformation(t *testing.T) {
 }
 
 type TestRequest struct {
-	Data TestData `json:"data"`
-}
-
-type TestData struct {
-	Type       string         `json:"type"`
-	Attributes TestAttributes `json:"attributes"`
-}
-
-type TestAttributes struct {
+	Id   uint32 `json:"-"`
 	Name string `json:"name"`
+}
+
+// Implement UnmarshalIdentifier interface
+func (t *TestRequest) SetID(id string) error {
+	// For testing purposes, we'll parse the ID but not use it
+	return nil
+}
+
+// Implement GetName interface for type matching
+func (t *TestRequest) GetName() string {
+	return "testRequests"
+}
+
+// Implement required JSON:API interfaces
+func (t TestRequest) GetReferences() []jsonapi.Reference {
+	return []jsonapi.Reference{}
+}
+
+func (t TestRequest) GetReferencedIDs() []jsonapi.ReferenceID {
+	return []jsonapi.ReferenceID{}
+}
+
+func (t TestRequest) GetReferencedStructs() []jsonapi.MarshalIdentifier {
+	return []jsonapi.MarshalIdentifier{}
+}
+
+func (t *TestRequest) SetToOneReferenceID(name, ID string) error {
+	return nil
+}
+
+func (t *TestRequest) SetToManyReferenceIDs(name string, IDs []string) error {
+	return nil
+}
+
+func (t *TestRequest) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+	return nil
 }
 
 func TestParseInput_Success(t *testing.T) {
@@ -94,7 +123,7 @@ func TestParseInput_Success(t *testing.T) {
 		}
 	}
 	
-	jsonBody := `{"data": {"type": "test", "attributes": {"name": "test name"}}}`
+	jsonBody := `{"data": {"type": "testRequests", "id": "1", "attributes": {"name": "test name"}}}`
 	req := httptest.NewRequest(http.MethodPost, "/test", strings.NewReader(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	
@@ -107,8 +136,8 @@ func TestParseInput_Success(t *testing.T) {
 		t.Errorf("Expected status 200, got %d", w.Code)
 	}
 	
-	if receivedModel.Data.Attributes.Name != "test name" {
-		t.Errorf("Expected name 'test name', got '%s'", receivedModel.Data.Attributes.Name)
+	if receivedModel.Name != "test name" {
+		t.Errorf("Expected name 'test name', got '%s'", receivedModel.Name)
 	}
 }
 

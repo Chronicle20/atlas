@@ -29,6 +29,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		var t string
 		t, _ = topic.EnvProvider(l)(compartment.EnvEventTopicStatus)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentCreatedEvent)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentCreationFailedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentDeletedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentEquippedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentUnequippedEvent)))
@@ -73,7 +74,20 @@ func handleCompartmentCreatedEvent(l logrus.FieldLogger, ctx context.Context, e 
 			l.WithFields(logrus.Fields{
 				"transaction_id": e.TransactionId.String(),
 				"character_id":   e.CharacterId,
-			}).Error("Invalid payload for CreateAndEquipAsset step.")
+				"step_id":        currentStep.StepId,
+			}).Error("Invalid payload for CreateAndEquipAsset step - expected CreateAndEquipAssetPayload.")
+			_ = sagaProcessor.StepCompleted(e.TransactionId, false)
+			return
+		}
+
+		// Validate that the created character matches the expected character
+		if createPayload.CharacterId != e.CharacterId {
+			l.WithFields(logrus.Fields{
+				"transaction_id":        e.TransactionId.String(),
+				"expected_character_id": createPayload.CharacterId,
+				"actual_character_id":   e.CharacterId,
+				"step_id":               currentStep.StepId,
+			}).Error("Character ID mismatch in CreateAndEquipAsset creation event.")
 			_ = sagaProcessor.StepCompleted(e.TransactionId, false)
 			return
 		}
@@ -109,8 +123,9 @@ func handleCompartmentCreatedEvent(l logrus.FieldLogger, ctx context.Context, e 
 				"transaction_id":     e.TransactionId.String(),
 				"character_id":       e.CharacterId,
 				"auto_equip_step_id": autoEquipStepId,
+				"step_id":            currentStep.StepId,
 				"error":              err.Error(),
-			}).Error("Failed to add equip step to saga - marking saga step as failed.")
+			}).Error("Failed to add equip step to saga for CreateAndEquipAsset - marking saga step as failed.")
 			_ = sagaProcessor.StepCompleted(e.TransactionId, false)
 			return
 		}
@@ -122,11 +137,29 @@ func handleCompartmentCreatedEvent(l logrus.FieldLogger, ctx context.Context, e 
 			"inventory_type":      e.Body.Type,
 			"source_slot":         equipPayload.Source,
 			"destination_slot":    equipPayload.Destination,
+			"original_step_id":    currentStep.StepId,
 		}).Info("Successfully added auto-equip step for CreateAndEquipAsset action with proper ordering.")
 	}
 
 	// Complete the current step (either regular creation or CreateAndEquipAsset)
 	_ = sagaProcessor.StepCompleted(e.TransactionId, true)
+}
+
+func handleCompartmentCreationFailedEvent(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.CreationFailedStatusEventBody]) {
+	if e.Type != compartment.StatusEventTypeCreationFailed {
+		return
+	}
+
+	l.WithFields(logrus.Fields{
+		"transaction_id": e.TransactionId.String(),
+		"character_id":   e.CharacterId,
+		"error_code":     e.Body.ErrorCode,
+		"error_message":  e.Body.Message,
+	}).Error("Asset creation failed, marking saga step as failed")
+
+	// Mark the saga step as failed
+	sagaProcessor := saga.NewProcessor(l, ctx)
+	_ = sagaProcessor.StepCompleted(e.TransactionId, false)
 }
 
 func handleCompartmentDeletedEvent(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.DeletedStatusEventBody]) {
@@ -154,10 +187,52 @@ func handleCompartmentErrorEvent(l logrus.FieldLogger, ctx context.Context, e co
 	if e.Type != compartment.StatusEventTypeError {
 		return
 	}
-	l.WithFields(logrus.Fields{
-		"transaction_id": e.TransactionId.String(),
-		"error_code":     e.Body.ErrorCode,
-		"character_id":   e.CharacterId,
-	}).Error("Compartment operation failed")
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, false)
+	
+	sagaProcessor := saga.NewProcessor(l, ctx)
+	
+	// Try to get the saga to provide more context about the error
+	s, err := sagaProcessor.GetById(e.TransactionId)
+	if err != nil {
+		l.WithFields(logrus.Fields{
+			"transaction_id": e.TransactionId.String(),
+			"error_code":     e.Body.ErrorCode,
+			"character_id":   e.CharacterId,
+		}).Error("Compartment operation failed - unable to retrieve saga context")
+		_ = sagaProcessor.StepCompleted(e.TransactionId, false)
+		return
+	}
+
+	// Get the current step to check if it's related to CreateAndEquipAsset
+	currentStep, ok := s.GetCurrentStep()
+	if !ok {
+		l.WithFields(logrus.Fields{
+			"transaction_id": e.TransactionId.String(),
+			"error_code":     e.Body.ErrorCode,
+			"character_id":   e.CharacterId,
+		}).Error("Compartment operation failed - no current step found")
+		_ = sagaProcessor.StepCompleted(e.TransactionId, false)
+		return
+	}
+
+	// Provide specific error handling for CreateAndEquipAsset failures
+	if currentStep.Action == saga.CreateAndEquipAsset {
+		l.WithFields(logrus.Fields{
+			"transaction_id": e.TransactionId.String(),
+			"error_code":     e.Body.ErrorCode,
+			"character_id":   e.CharacterId,
+			"step_id":        currentStep.StepId,
+			"saga_type":      s.SagaType,
+		}).Error("CreateAndEquipAsset operation failed - asset creation or equipping failed")
+	} else {
+		l.WithFields(logrus.Fields{
+			"transaction_id": e.TransactionId.String(),
+			"error_code":     e.Body.ErrorCode,
+			"character_id":   e.CharacterId,
+			"step_id":        currentStep.StepId,
+			"step_action":    currentStep.Action,
+			"saga_type":      s.SagaType,
+		}).Error("Compartment operation failed")
+	}
+
+	_ = sagaProcessor.StepCompleted(e.TransactionId, false)
 }

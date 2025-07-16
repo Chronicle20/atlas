@@ -130,6 +130,7 @@ const (
 	StatusEventTypeReleased             = "RELEASED"
 	StatusEventTypeEquipped             = "EQUIPPED"
 	StatusEventTypeUnequipped           = "UNEQUIPPED"
+	StatusEventTypeCreationFailed       = "CREATION_FAILED"
 	StatusEventTypeError                = "ERROR"
 
 	AcceptCommandFailed  = "ACCEPT_COMMAND_FAILED"
@@ -147,6 +148,11 @@ type StatusEvent[E any] struct {
 type CreatedStatusEventBody struct {
 	Type     byte   `json:"type"`
 	Capacity uint32 `json:"capacity"`
+}
+
+type CreationFailedStatusEventBody struct {
+	ErrorCode string `json:"errorCode"`
+	Message   string `json:"message"`
 }
 
 type DeletedStatusEventBody struct {

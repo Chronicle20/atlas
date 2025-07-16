@@ -163,6 +163,11 @@ func (p *ProcessorImpl) MarkFurthestCompletedStepFailed(transactionId uuid.UUID)
 	return nil
 }
 
+// MarkEarliestPendingStepCompleted marks the earliest pending step as completed
+func (p *ProcessorImpl) MarkEarliestPendingStepCompleted(transactionId uuid.UUID) error {
+	return p.MarkEarliestPendingStep(transactionId, Completed)
+}
+
 // MarkEarliestPendingStep marks the earliest pending step
 func (p *ProcessorImpl) MarkEarliestPendingStep(transactionId uuid.UUID, status Status) error {
 	s, err := p.GetById(transactionId)

@@ -14,6 +14,8 @@ import (
 type Processor interface {
 	RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error
 	RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error
+	RequestEquipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
+	RequestUnequipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 }
 
 type ProcessorImpl struct {
@@ -51,4 +53,12 @@ func (p *ProcessorImpl) RequestDestroyItem(transactionId uuid.UUID, characterId 
 	slot := int16(-1)
 
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestDestroyAssetCommandProvider(transactionId, characterId, inventoryType, slot, quantity))
+}
+
+func (p *ProcessorImpl) RequestEquipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestEquipAssetCommandProvider(transactionId, characterId, inventoryType, source, destination))
+}
+
+func (p *ProcessorImpl) RequestUnequipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestUnequipAssetCommandProvider(transactionId, characterId, inventoryType, source, destination))
 }

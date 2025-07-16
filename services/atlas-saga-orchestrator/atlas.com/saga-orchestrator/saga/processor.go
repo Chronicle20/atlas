@@ -225,6 +225,7 @@ var actionHandlers = map[Action]ActionHandler{
 	RequestGuildDisband:          handleRequestGuildDisband,
 	RequestGuildCapacityIncrease: handleRequestGuildCapacityIncrease,
 	CreateInvite:                 handleCreateInvite,
+	CreateCharacter:              handleCreateCharacter,
 }
 
 func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
@@ -755,6 +756,24 @@ func handleCreateInvite(p *ProcessorImpl, s Saga, st Step[any]) error {
 	err := p.inviteP.Create(s.TransactionId, payload.InviteType, payload.OriginatorId, payload.WorldId, payload.ReferenceId, payload.TargetId)
 	if err != nil {
 		p.logActionError(s, st, err, "Unable to create invitation.")
+		return err
+	}
+
+	return nil
+}
+
+// handleCreateCharacter handles the CreateCharacter action
+func handleCreateCharacter(p *ProcessorImpl, s Saga, st Step[any]) error {
+	// Extract the payload
+	payload, ok := st.Payload.(CharacterCreatePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Call the character processor
+	err := p.charP.RequestCreateCharacter(s.TransactionId, payload.AccountId, payload.Name, payload.WorldId, payload.ChannelId, payload.JobId, payload.Face, payload.Hair, payload.HairColor, payload.Skin, payload.Top, payload.Bottom, payload.Shoes, payload.Weapon)
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to create character.")
 		return err
 	}
 

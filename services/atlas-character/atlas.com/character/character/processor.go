@@ -195,6 +195,10 @@ func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, input Model) (Mod
 	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
 		var err error
 		output, err = p.Create(buf)(transactionId, input)
+		if err != nil {
+			// Emit creation failed event on error
+			_ = buf.Put(character2.EnvEventTopicCharacterStatus, creationFailedEventProvider(transactionId, input.WorldId(), input.Name(), err.Error()))
+		}
 		return err
 	})
 	return output, err

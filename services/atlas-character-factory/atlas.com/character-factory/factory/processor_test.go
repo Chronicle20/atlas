@@ -577,6 +577,44 @@ func TestValidationFunctions(t *testing.T) {
 		testFunc func(t *testing.T)
 	}{
 		{
+			name: "validName",
+			testFunc: func(t *testing.T) {
+				// Valid names
+				if !validName("Test") {
+					t.Error("Expected 'Test' to be valid")
+				}
+				if !validName("Player123") {
+					t.Error("Expected 'Player123' to be valid")
+				}
+				if !validName("User_Name") {
+					t.Error("Expected 'User_Name' to be valid")
+				}
+				if !validName("Test-Name") {
+					t.Error("Expected 'Test-Name' to be valid")
+				}
+				if !validName("MaxLengthOK") {
+					t.Error("Expected 'MaxLengthOK' to be valid")
+				}
+				
+				// Invalid names
+				if validName("") {
+					t.Error("Expected empty string to be invalid")
+				}
+				if validName("ThisNameIsTooLong") {
+					t.Error("Expected 'ThisNameIsTooLong' (16 chars) to be invalid")
+				}
+				if validName("Test@Name") {
+					t.Error("Expected 'Test@Name' (contains @) to be invalid")
+				}
+				if validName("Test Name") {
+					t.Error("Expected 'Test Name' (contains space) to be invalid")
+				}
+				if validName("Test!") {
+					t.Error("Expected 'Test!' (contains !) to be invalid")
+				}
+			},
+		},
+		{
 			name: "validGender",
 			testFunc: func(t *testing.T) {
 				if !validGender(0) {

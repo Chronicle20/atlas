@@ -41,6 +41,8 @@ func categorizeError(err error) int {
 	
 	// Validation errors (user input problems)
 	validationErrors := []string{
+		"character name must be between 1 and 12 characters and contain only valid characters",
+		"gender must be 0 or 1",
 		"must provide valid job index",
 		"chosen face is not valid for job",
 		"chosen hair is not valid for job", 

@@ -16,7 +16,10 @@ import (
 func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel) (string, error) {
 	return func(ctx context.Context) func(input RestModel) (string, error) {
 		return func(input RestModel) (string, error) {
-			// TODO validate name again.
+			// Validate character name
+			if !validName(input.Name) {
+				return "", errors.New("character name must be between 1 and 12 characters and contain only valid characters")
+			}
 
 			if !validGender(input.Gender) {
 				return "", errors.New("gender must be 0 or 1")
@@ -241,4 +244,22 @@ func validJob(jobIndex uint32, subJobIndex uint32) bool {
 
 func validGender(gender byte) bool {
 	return gender == 0 || gender == 1
+}
+
+func validName(name string) bool {
+	if len(name) < 1 || len(name) > 12 {
+		return false
+	}
+	
+	// Check for valid characters (alphanumeric and common symbols)
+	for _, char := range name {
+		if !((char >= 'a' && char <= 'z') || 
+			 (char >= 'A' && char <= 'Z') || 
+			 (char >= '0' && char <= '9') || 
+			 char == '_' || char == '-') {
+			return false
+		}
+	}
+	
+	return true
 }

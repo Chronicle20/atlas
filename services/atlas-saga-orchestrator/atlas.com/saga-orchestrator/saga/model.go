@@ -126,6 +126,7 @@ const (
 	RequestGuildCapacityIncrease Action = "request_guild_capacity_increase"
 	CreateInvite               Action = "create_invite"
 	CreateCharacter            Action = "create_character"
+	CreateAndEquipAsset        Action = "create_and_equip_asset"
 )
 
 // Step represents a single step within a saga.
@@ -301,6 +302,12 @@ type CharacterCreatePayload struct {
 	MapId     uint32 `json:"mapId"`     // Starting map ID for the character
 }
 
+// CreateAndEquipAssetPayload represents the payload required to create and equip an asset.
+type CreateAndEquipAssetPayload struct {
+	CharacterId uint32      `json:"characterId"` // CharacterId associated with the action
+	Item        ItemPayload `json:"item"`        // Item to create and equip
+}
+
 type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
@@ -404,6 +411,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case CreateCharacter:
 		var payload CharacterCreatePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case CreateAndEquipAsset:
+		var payload CreateAndEquipAssetPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

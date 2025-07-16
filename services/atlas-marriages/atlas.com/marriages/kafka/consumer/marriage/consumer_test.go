@@ -7,9 +7,11 @@ import (
 
 	marriageMsg "atlas-marriages/kafka/message/marriage"
 	marriageService "atlas-marriages/marriage"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -94,16 +96,16 @@ func (m *MockProcessor) AdvanceCeremonyStateAndEmit(transactionId uuid.UUID, cer
 
 func TestNewConfig(t *testing.T) {
 	logger, _ := test.NewNullLogger()
-	
+
 	configFunc := NewConfig(logger)
 	assert.NotNil(t, configFunc)
-	
+
 	nameFunc := configFunc("test-name")
 	assert.NotNil(t, nameFunc)
-	
+
 	tokenFunc := nameFunc("test-token")
 	assert.NotNil(t, tokenFunc)
-	
+
 	config := tokenFunc("test-group")
 	assert.NotNil(t, config)
 }
@@ -116,17 +118,16 @@ func TestInitHandlers(t *testing.T) {
 
 func TestInitConsumers(t *testing.T) {
 	logger, _ := test.NewNullLogger()
-	ctx := context.Background()
-	
-	initFunc := InitConsumers(logger, ctx, &gorm.DB{})
+
+	initFunc := InitConsumers(logger)
 	assert.NotNil(t, initFunc)
-	
+
 	// Test that it returns a function that expects consumer setup
 	consumerSetupFunc := initFunc(func(config consumer.Config, decorators ...model.Decorator[consumer.Config]) {
 		// Mock consumer setup function
 	})
 	assert.NotNil(t, consumerSetupFunc)
-	
+
 	// Test that the consumer setup function works
 	consumerSetupFunc("test-group")
 	// No assertion needed, just verifying it doesn't panic
@@ -136,12 +137,15 @@ func TestHandlePropose(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	mockProcessor := new(MockProcessor)
+	processorProducer := func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) marriageService.Processor {
+		return mockProcessor
+	}
 
 	// Create a mock proposal
 	proposal, _ := marriageService.NewProposalBuilder(1, 2, uuid.New()).Build()
 	mockProcessor.On("ProposeAndEmit", mock.AnythingOfType("uuid.UUID"), uint32(1), uint32(2)).Return(proposal, nil)
 
-	handler := handlePropose(logger, ctx, mockProcessor)
+	handler := handlePropose(processorProducer, nil)
 	assert.NotNil(t, handler)
 
 	// Test successful proposal
@@ -161,12 +165,15 @@ func TestHandleAccept(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	mockProcessor := new(MockProcessor)
+	processorProducer := func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) marriageService.Processor {
+		return mockProcessor
+	}
 
 	// Create a mock marriage
 	marriage, _ := marriageService.NewBuilder(1, 2, uuid.New()).Build()
 	mockProcessor.On("AcceptProposalAndEmit", mock.AnythingOfType("uuid.UUID"), uint32(1)).Return(marriage, nil)
 
-	handler := handleAccept(logger, ctx, mockProcessor)
+	handler := handleAccept(processorProducer, nil)
 	assert.NotNil(t, handler)
 
 	// Test successful acceptance
@@ -186,12 +193,15 @@ func TestHandleDecline(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	mockProcessor := new(MockProcessor)
+	processorProducer := func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) marriageService.Processor {
+		return mockProcessor
+	}
 
 	// Create a mock declined proposal
 	proposal, _ := marriageService.NewProposalBuilder(1, 2, uuid.New()).Build()
 	mockProcessor.On("DeclineProposalAndEmit", mock.AnythingOfType("uuid.UUID"), uint32(1)).Return(proposal, nil)
 
-	handler := handleDecline(logger, ctx, mockProcessor)
+	handler := handleDecline(processorProducer, nil)
 	assert.NotNil(t, handler)
 
 	// Test successful decline
@@ -211,12 +221,15 @@ func TestHandleCancel(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	mockProcessor := new(MockProcessor)
+	processorProducer := func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) marriageService.Processor {
+		return mockProcessor
+	}
 
 	// Create a mock cancelled proposal
 	proposal, _ := marriageService.NewProposalBuilder(1, 2, uuid.New()).Build()
 	mockProcessor.On("CancelProposalAndEmit", mock.AnythingOfType("uuid.UUID"), uint32(1)).Return(proposal, nil)
 
-	handler := handleCancel(logger, ctx, mockProcessor)
+	handler := handleCancel(processorProducer, nil)
 	assert.NotNil(t, handler)
 
 	// Test successful cancel
@@ -236,15 +249,18 @@ func TestHandleScheduleCeremony(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	mockProcessor := new(MockProcessor)
+	processorProducer := func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) marriageService.Processor {
+		return mockProcessor
+	}
 
 	// Create a mock ceremony
 	ceremony, _ := marriageService.NewCeremonyBuilder(1, 1, 2, uuid.New()).Build()
 	scheduledAt := time.Now().Add(24 * time.Hour)
 	invitees := []uint32{3, 4}
-	
+
 	mockProcessor.On("ScheduleCeremonyAndEmit", mock.AnythingOfType("uuid.UUID"), uint32(1), scheduledAt, invitees).Return(ceremony, nil)
 
-	handler := handleScheduleCeremony(logger, ctx, mockProcessor)
+	handler := handleScheduleCeremony(processorProducer, nil)
 	assert.NotNil(t, handler)
 
 	// Test successful ceremony scheduling
@@ -266,12 +282,15 @@ func TestHandleStartCeremony(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	mockProcessor := new(MockProcessor)
+	processorProducer := func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) marriageService.Processor {
+		return mockProcessor
+	}
 
 	// Create a mock ceremony
 	ceremony, _ := marriageService.NewCeremonyBuilder(1, 1, 2, uuid.New()).Build()
 	mockProcessor.On("StartCeremonyAndEmit", mock.AnythingOfType("uuid.UUID"), uint32(1)).Return(ceremony, nil)
 
-	handler := handleStartCeremony(logger, ctx, mockProcessor)
+	handler := handleStartCeremony(processorProducer, nil)
 	assert.NotNil(t, handler)
 
 	// Test successful ceremony start
@@ -291,12 +310,15 @@ func TestHandleCompleteCeremony(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	mockProcessor := new(MockProcessor)
+	processorProducer := func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) marriageService.Processor {
+		return mockProcessor
+	}
 
 	// Create a mock ceremony
 	ceremony, _ := marriageService.NewCeremonyBuilder(1, 1, 2, uuid.New()).Build()
 	mockProcessor.On("CompleteCeremonyAndEmit", mock.AnythingOfType("uuid.UUID"), uint32(1)).Return(ceremony, nil)
 
-	handler := handleCompleteCeremony(logger, ctx, mockProcessor)
+	handler := handleCompleteCeremony(processorProducer, nil)
 	assert.NotNil(t, handler)
 
 	// Test successful ceremony completion
@@ -316,12 +338,15 @@ func TestHandleCancelCeremony(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	mockProcessor := new(MockProcessor)
+	processorProducer := func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) marriageService.Processor {
+		return mockProcessor
+	}
 
 	// Create a mock ceremony
 	ceremony, _ := marriageService.NewCeremonyBuilder(1, 1, 2, uuid.New()).Build()
 	mockProcessor.On("CancelCeremonyAndEmit", mock.AnythingOfType("uuid.UUID"), uint32(1), uint32(1), "ceremony_cancelled").Return(ceremony, nil)
 
-	handler := handleCancelCeremony(logger, ctx, mockProcessor)
+	handler := handleCancelCeremony(processorProducer, nil)
 	assert.NotNil(t, handler)
 
 	// Test successful ceremony cancellation
@@ -341,12 +366,15 @@ func TestHandlePostponeCeremony(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	mockProcessor := new(MockProcessor)
+	processorProducer := func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) marriageService.Processor {
+		return mockProcessor
+	}
 
 	// Create a mock ceremony
 	ceremony, _ := marriageService.NewCeremonyBuilder(1, 1, 2, uuid.New()).Build()
 	mockProcessor.On("PostponeCeremonyAndEmit", mock.AnythingOfType("uuid.UUID"), uint32(1), "ceremony_postponed").Return(ceremony, nil)
 
-	handler := handlePostponeCeremony(logger, ctx, mockProcessor)
+	handler := handlePostponeCeremony(processorProducer, nil)
 	assert.NotNil(t, handler)
 
 	// Test successful ceremony postponement
@@ -366,13 +394,16 @@ func TestHandleRescheduleCeremony(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	mockProcessor := new(MockProcessor)
+	processorProducer := func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) marriageService.Processor {
+		return mockProcessor
+	}
 
 	// Create a mock ceremony
 	ceremony, _ := marriageService.NewCeremonyBuilder(1, 1, 2, uuid.New()).Build()
 	scheduledAt := time.Now().Add(48 * time.Hour)
 	mockProcessor.On("RescheduleCeremonyAndEmit", mock.AnythingOfType("uuid.UUID"), uint32(1), scheduledAt, uint32(1)).Return(ceremony, nil)
 
-	handler := handleRescheduleCeremony(logger, ctx, mockProcessor)
+	handler := handleRescheduleCeremony(processorProducer, nil)
 	assert.NotNil(t, handler)
 
 	// Test successful ceremony rescheduling
@@ -393,12 +424,15 @@ func TestHandleAddInvitee(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	mockProcessor := new(MockProcessor)
+	processorProducer := func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) marriageService.Processor {
+		return mockProcessor
+	}
 
 	// Create a mock ceremony
 	ceremony, _ := marriageService.NewCeremonyBuilder(1, 1, 2, uuid.New()).Build()
 	mockProcessor.On("AddInviteeAndEmit", mock.AnythingOfType("uuid.UUID"), uint32(1), uint32(3), uint32(1)).Return(ceremony, nil)
 
-	handler := handleAddInvitee(logger, ctx, mockProcessor)
+	handler := handleAddInvitee(processorProducer, nil)
 	assert.NotNil(t, handler)
 
 	// Test successful invitee addition
@@ -419,12 +453,15 @@ func TestHandleRemoveInvitee(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	mockProcessor := new(MockProcessor)
+	processorProducer := func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) marriageService.Processor {
+		return mockProcessor
+	}
 
 	// Create a mock ceremony
 	ceremony, _ := marriageService.NewCeremonyBuilder(1, 1, 2, uuid.New()).Build()
 	mockProcessor.On("RemoveInviteeAndEmit", mock.AnythingOfType("uuid.UUID"), uint32(1), uint32(3), uint32(1)).Return(ceremony, nil)
 
-	handler := handleRemoveInvitee(logger, ctx, mockProcessor)
+	handler := handleRemoveInvitee(processorProducer, nil)
 	assert.NotNil(t, handler)
 
 	// Test successful invitee removal
@@ -445,12 +482,15 @@ func TestHandleDivorce(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	mockProcessor := new(MockProcessor)
+	processorProducer := func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) marriageService.Processor {
+		return mockProcessor
+	}
 
 	// Create a mock marriage
 	marriage, _ := marriageService.NewBuilder(1, 2, uuid.New()).Build()
 	mockProcessor.On("DivorceAndEmit", mock.AnythingOfType("uuid.UUID"), uint32(1), uint32(1)).Return(marriage, nil)
 
-	handler := handleDivorce(logger, ctx, mockProcessor)
+	handler := handleDivorce(processorProducer, nil)
 	assert.NotNil(t, handler)
 
 	// Test successful divorce
@@ -470,12 +510,15 @@ func TestHandleAdvanceCeremonyState(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
 	mockProcessor := new(MockProcessor)
+	processorProducer := func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) marriageService.Processor {
+		return mockProcessor
+	}
 
 	// Create a mock ceremony
 	ceremony, _ := marriageService.NewCeremonyBuilder(1, 1, 2, uuid.New()).Build()
 	mockProcessor.On("AdvanceCeremonyStateAndEmit", mock.AnythingOfType("uuid.UUID"), uint32(1), "next_state").Return(ceremony, nil)
 
-	handler := handleAdvanceCeremonyState(logger, ctx, mockProcessor)
+	handler := handleAdvanceCeremonyState(processorProducer, nil)
 	assert.NotNil(t, handler)
 
 	// Test successful ceremony state advancement

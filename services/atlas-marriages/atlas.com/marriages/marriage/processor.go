@@ -91,6 +91,9 @@ type Processor interface {
 	ExpireProposal(proposalId uint32) model.Provider[Proposal]
 	ExpireProposalAndEmit(transactionId uuid.UUID, proposalId uint32) (Proposal, error)
 	ProcessExpiredProposals() error
+
+	// Ceremony timeout operations
+	ProcessCeremonyTimeouts() error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -1878,5 +1881,51 @@ func (p *ProcessorImpl) ProcessExpiredProposals() error {
 	}
 	
 	p.log.WithField("processedCount", len(expiredProposals)).Info("Completed processing expired proposals")
+	return nil
+}
+
+// ProcessCeremonyTimeouts processes all active ceremonies that may have timed out
+func (p *ProcessorImpl) ProcessCeremonyTimeouts() error {
+	p.log.Debug("Processing ceremony timeouts")
+	
+	// Get tenant from context
+	t := tenant.MustFromContext(p.ctx)
+	
+	// Get all ceremonies that may have timed out
+	timeoutCeremoniesProvider := GetTimeoutCeremoniesProvider(p.db, p.log)(t.Id())
+	timeoutCeremonies, err := timeoutCeremoniesProvider()
+	if err != nil {
+		p.log.WithError(err).Error("Failed to retrieve ceremonies that may have timed out")
+		return err
+	}
+	
+	if len(timeoutCeremonies) == 0 {
+		p.log.Debug("No ceremonies found that may have timed out")
+		return nil
+	}
+	
+	p.log.WithField("count", len(timeoutCeremonies)).Info("Processing ceremony timeouts")
+	
+	// Process each ceremony that may have timed out
+	for _, ceremony := range timeoutCeremonies {
+		transactionId := uuid.New()
+		_, err := p.PostponeCeremonyAndEmit(transactionId, ceremony.Id(), "timeout_disconnection")
+		if err != nil {
+			p.log.WithFields(logrus.Fields{
+				"ceremonyId": ceremony.Id(),
+				"error":      err,
+			}).Error("Failed to postpone ceremony due to timeout")
+			// Continue processing other ceremonies even if one fails
+			continue
+		}
+		
+		p.log.WithFields(logrus.Fields{
+			"ceremonyId":     ceremony.Id(),
+			"characterId1":   ceremony.CharacterId1(),
+			"characterId2":   ceremony.CharacterId2(),
+		}).Info("Successfully postponed ceremony due to timeout")
+	}
+	
+	p.log.WithField("processedCount", len(timeoutCeremonies)).Info("Completed processing ceremony timeouts")
 	return nil
 }

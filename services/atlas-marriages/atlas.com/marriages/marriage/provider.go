@@ -477,6 +477,42 @@ func GetActiveCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) func(tenan
 	}
 }
 
+// GetTimeoutCeremoniesProvider retrieves all active ceremonies that have been running longer than the disconnection timeout
+func GetTimeoutCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) func(tenantId uuid.UUID) model.Provider[[]Ceremony] {
+	return func(tenantId uuid.UUID) model.Provider[[]Ceremony] {
+		return func() ([]Ceremony, error) {
+			log.WithField("tenantId", tenantId).Debug("Retrieving ceremonies that may have timed out")
+
+			var entities []CeremonyEntity
+			timeoutThreshold := time.Now().Add(-DisconnectionTimeout)
+			err := db.Where("tenant_id = ? AND status = ? AND started_at < ?", 
+				tenantId, CeremonyStatusActive, timeoutThreshold).
+				Order("started_at ASC").
+				Find(&entities).Error
+
+			if err != nil {
+				return nil, err
+			}
+
+			ceremonies := make([]Ceremony, 0, len(entities))
+			for _, entity := range entities {
+				ceremony, err := MakeCeremony(entity)
+				if err != nil {
+					return nil, err
+				}
+				ceremonies = append(ceremonies, ceremony)
+			}
+
+			log.WithFields(logrus.Fields{
+				"tenantId": tenantId,
+				"count":    len(ceremonies),
+			}).Debug("Found ceremonies that may have timed out")
+
+			return ceremonies, nil
+		}
+	}
+}
+
 // GetExpiredProposalsProvider retrieves all proposals that have expired but not yet been marked as expired
 func GetExpiredProposalsProvider(db *gorm.DB, log logrus.FieldLogger) func(tenantId uuid.UUID) model.Provider[[]Proposal] {
 	return func(tenantId uuid.UUID) model.Provider[[]Proposal] {

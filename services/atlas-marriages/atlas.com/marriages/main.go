@@ -53,9 +53,14 @@ func main() {
 	proposalExpiryScheduler := scheduler.NewProposalExpiryScheduler(l, tdm.Context(), db)
 	proposalExpiryScheduler.Start()
 	
-	// Register scheduler teardown
+	// Initialize ceremony timeout scheduler
+	ceremonyTimeoutScheduler := scheduler.NewCeremonyTimeoutScheduler(l, tdm.Context(), db)
+	ceremonyTimeoutScheduler.Start()
+	
+	// Register scheduler teardowns
 	tdm.TeardownFunc(func() {
 		proposalExpiryScheduler.Stop()
+		ceremonyTimeoutScheduler.Stop()
 	})
 	
 	// Initialize Kafka consumers

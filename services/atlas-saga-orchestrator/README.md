@@ -201,3 +201,11 @@ The service consumes messages from the following Kafka topics:
   - Triggers a character command to create a new character
   - Completes when the StatusEventTypeCreated event is received with matching transaction ID
   - Fails when the StatusEventTypeCreationFailed or StatusEventTypeError event is received
+
+- `create_and_equip_asset` - Creates an asset and automatically equips it (compound operation)
+  - Payload: `{"characterId": 12345, "item": {"templateId": 1302000, "quantity": 1}}`
+  - Internally executes `award_asset` logic to create the item
+  - Upon receiving StatusEventTypeCreated, dynamically creates and executes an `equip_asset` step
+  - The auto-generated equip step uses ID format: `auto_equip_step_<timestamp>`
+  - Completes when both creation and equipping operations succeed
+  - Fails when either operation fails, triggering compensation logic

@@ -124,6 +124,7 @@ const (
 	RequestGuildDisband        Action = "request_guild_disband"
 	RequestGuildCapacityIncrease Action = "request_guild_capacity_increase"
 	CreateInvite               Action = "create_invite"
+	CreateCharacter            Action = "create_character"
 )
 
 // Step represents a single step within a saga.
@@ -279,6 +280,24 @@ type CreateInvitePayload struct {
 	WorldId      byte   `json:"worldId"`      // WorldId associated with the action
 }
 
+// CharacterCreatePayload represents the payload required to create a character.
+// Note: this does not include any character attributes, as those are determined by the character service.
+type CharacterCreatePayload struct {
+	AccountId uint32 `json:"accountId"` // AccountId associated with the action
+	Name      string `json:"name"`      // Name of the character to create
+	WorldId   byte   `json:"worldId"`   // WorldId associated with the action
+	ChannelId byte   `json:"channelId"` // ChannelId associated with the action
+	JobId     uint32 `json:"jobId"`     // JobId to create the character with
+	Face      uint32 `json:"face"`      // Face of the character
+	Hair      uint32 `json:"hair"`      // Hair of the character
+	HairColor uint32 `json:"hairColor"` // HairColor of the character
+	Skin      uint32 `json:"skin"`      // Skin of the character
+	Top       uint32 `json:"top"`       // Top of the character
+	Bottom    uint32 `json:"bottom"`    // Bottom of the character
+	Shoes     uint32 `json:"shoes"`     // Shoes of the character
+	Weapon    uint32 `json:"weapon"`    // Weapon of the character
+}
+
 type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
@@ -376,6 +395,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case CreateInvite:
 		var payload CreateInvitePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case CreateCharacter:
+		var payload CharacterCreatePayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

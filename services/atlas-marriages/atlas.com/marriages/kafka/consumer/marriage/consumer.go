@@ -8,9 +8,11 @@ import (
 	marriageMsg "atlas-marriages/kafka/message/marriage"
 	"atlas-marriages/kafka/producer"
 	marriageService "atlas-marriages/marriage"
+
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	kafka "github.com/Chronicle20/atlas-kafka/message"
+	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -23,52 +25,54 @@ func NewConfig(l logrus.FieldLogger) func(name string) func(token string) func(g
 }
 
 // InitHandlers initializes all marriage command handlers
-func InitHandlers(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) []handler.Handler {
-	marriageProcessor := marriageService.NewProcessor(l, ctx, db)
-	
-	return []handler.Handler{
-		// Proposal command handlers
-		kafka.AdaptHandler(kafka.PersistentConfig(handlePropose(l, ctx, marriageProcessor))),
-		kafka.AdaptHandler(kafka.PersistentConfig(handleAccept(l, ctx, marriageProcessor))),
-		kafka.AdaptHandler(kafka.PersistentConfig(handleDecline(l, ctx, marriageProcessor))),
-		kafka.AdaptHandler(kafka.PersistentConfig(handleCancel(l, ctx, marriageProcessor))),
-		
-		// Ceremony command handlers
-		kafka.AdaptHandler(kafka.PersistentConfig(handleScheduleCeremony(l, ctx, marriageProcessor))),
-		kafka.AdaptHandler(kafka.PersistentConfig(handleStartCeremony(l, ctx, marriageProcessor))),
-		kafka.AdaptHandler(kafka.PersistentConfig(handleCompleteCeremony(l, ctx, marriageProcessor))),
-		kafka.AdaptHandler(kafka.PersistentConfig(handleCancelCeremony(l, ctx, marriageProcessor))),
-		kafka.AdaptHandler(kafka.PersistentConfig(handlePostponeCeremony(l, ctx, marriageProcessor))),
-		kafka.AdaptHandler(kafka.PersistentConfig(handleRescheduleCeremony(l, ctx, marriageProcessor))),
-		
-		// Invitee command handlers
-		kafka.AdaptHandler(kafka.PersistentConfig(handleAddInvitee(l, ctx, marriageProcessor))),
-		kafka.AdaptHandler(kafka.PersistentConfig(handleRemoveInvitee(l, ctx, marriageProcessor))),
-		
-		// Divorce command handler
-		kafka.AdaptHandler(kafka.PersistentConfig(handleDivorce(l, ctx, marriageProcessor))),
-		
-		
-		// Advance ceremony state handler
-		kafka.AdaptHandler(kafka.PersistentConfig(handleAdvanceCeremonyState(l, ctx, marriageProcessor))),
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+			var t string
+			t, _ = topic.EnvProvider(l)(marriageMsg.EnvCommandTopic)()
+			// Proposal command handlers
+			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handlePropose(marriageService.NewProcessor, db))))
+			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleAccept(marriageService.NewProcessor, db))))
+			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleDecline(marriageService.NewProcessor, db))))
+			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleCancel(marriageService.NewProcessor, db))))
+
+			// Ceremony command handlers
+			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleScheduleCeremony(marriageService.NewProcessor, db))))
+			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleStartCeremony(marriageService.NewProcessor, db))))
+			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleCompleteCeremony(marriageService.NewProcessor, db))))
+			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleCancelCeremony(marriageService.NewProcessor, db))))
+			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handlePostponeCeremony(marriageService.NewProcessor, db))))
+			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleRescheduleCeremony(marriageService.NewProcessor, db))))
+
+			// Invitee command handlers
+			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleAddInvitee(marriageService.NewProcessor, db))))
+			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleRemoveInvitee(marriageService.NewProcessor, db))))
+
+			// Divorce command handler
+			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleDivorce(marriageService.NewProcessor, db))))
+
+			// Advance ceremony state handler
+			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleAdvanceCeremonyState(marriageService.NewProcessor, db))))
+		}
 	}
 }
 
 // handlePropose handles marriage proposal commands
-func handlePropose(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.ProposeBody]] {
+func handlePropose(pp marriageService.ProcessorProducer, db *gorm.DB) kafka.Handler[marriageMsg.Command[marriageMsg.ProposeBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.ProposeBody]) {
+		processor := pp(l, ctx, db)
 		l.WithFields(logrus.Fields{
-			"type":             cmd.Type,
-			"characterId":      cmd.CharacterId,
+			"type":              cmd.Type,
+			"characterId":       cmd.CharacterId,
 			"targetCharacterId": cmd.Body.TargetCharacterId,
 		}).Debug("Processing marriage proposal command")
-		
+
 		if cmd.Type != marriageMsg.CommandMarriagePropose {
 			return
 		}
-		
+
 		transactionId := uuid.New()
-		
+
 		// Process the proposal
 		proposal, err := processor.ProposeAndEmit(transactionId, cmd.CharacterId, cmd.Body.TargetCharacterId)
 		if err != nil {
@@ -76,7 +80,7 @@ func handlePropose(l logrus.FieldLogger, ctx context.Context, processor marriage
 				"proposerId": cmd.CharacterId,
 				"targetId":   cmd.Body.TargetCharacterId,
 			}).Error("Failed to process marriage proposal")
-			
+
 			// Emit error event
 			errorProvider := marriageService.MarriageErrorEventProvider(
 				cmd.CharacterId,
@@ -92,7 +96,7 @@ func handlePropose(l logrus.FieldLogger, ctx context.Context, processor marriage
 			}
 			return
 		}
-		
+
 		l.WithFields(logrus.Fields{
 			"proposalId": proposal.Id(),
 			"proposerId": cmd.CharacterId,
@@ -102,20 +106,21 @@ func handlePropose(l logrus.FieldLogger, ctx context.Context, processor marriage
 }
 
 // handleAccept handles proposal acceptance commands
-func handleAccept(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.AcceptBody]] {
+func handleAccept(pp marriageService.ProcessorProducer, db *gorm.DB) kafka.Handler[marriageMsg.Command[marriageMsg.AcceptBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.AcceptBody]) {
+		processor := pp(l, ctx, db)
 		l.WithFields(logrus.Fields{
-			"type":       cmd.Type,
+			"type":        cmd.Type,
 			"characterId": cmd.CharacterId,
-			"proposalId": cmd.Body.ProposalId,
+			"proposalId":  cmd.Body.ProposalId,
 		}).Debug("Processing proposal acceptance command")
-		
+
 		if cmd.Type != marriageMsg.CommandMarriageAccept {
 			return
 		}
-		
+
 		transactionId := uuid.New()
-		
+
 		// Process the proposal acceptance
 		marriage, err := processor.AcceptProposalAndEmit(transactionId, cmd.Body.ProposalId)
 		if err != nil {
@@ -123,7 +128,7 @@ func handleAccept(l logrus.FieldLogger, ctx context.Context, processor marriageS
 				"proposalId":  cmd.Body.ProposalId,
 				"characterId": cmd.CharacterId,
 			}).Error("Failed to process proposal acceptance")
-			
+
 			// Emit error event
 			errorProvider := marriageService.MarriageErrorEventProvider(
 				cmd.CharacterId,
@@ -139,7 +144,7 @@ func handleAccept(l logrus.FieldLogger, ctx context.Context, processor marriageS
 			}
 			return
 		}
-		
+
 		l.WithFields(logrus.Fields{
 			"proposalId":  cmd.Body.ProposalId,
 			"marriageId":  marriage.Id(),
@@ -149,20 +154,21 @@ func handleAccept(l logrus.FieldLogger, ctx context.Context, processor marriageS
 }
 
 // handleDecline handles proposal decline commands
-func handleDecline(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.DeclineBody]] {
+func handleDecline(pp marriageService.ProcessorProducer, db *gorm.DB) kafka.Handler[marriageMsg.Command[marriageMsg.DeclineBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.DeclineBody]) {
+		processor := pp(l, ctx, db)
 		l.WithFields(logrus.Fields{
-			"type":       cmd.Type,
+			"type":        cmd.Type,
 			"characterId": cmd.CharacterId,
-			"proposalId": cmd.Body.ProposalId,
+			"proposalId":  cmd.Body.ProposalId,
 		}).Debug("Processing proposal decline command")
-		
+
 		if cmd.Type != marriageMsg.CommandMarriageDecline {
 			return
 		}
-		
+
 		transactionId := uuid.New()
-		
+
 		// Process the proposal decline
 		_, err := processor.DeclineProposalAndEmit(transactionId, cmd.Body.ProposalId)
 		if err != nil {
@@ -170,7 +176,7 @@ func handleDecline(l logrus.FieldLogger, ctx context.Context, processor marriage
 				"proposalId":  cmd.Body.ProposalId,
 				"characterId": cmd.CharacterId,
 			}).Error("Failed to process proposal decline")
-			
+
 			// Emit error event
 			errorProvider := marriageService.MarriageErrorEventProvider(
 				cmd.CharacterId,
@@ -186,7 +192,7 @@ func handleDecline(l logrus.FieldLogger, ctx context.Context, processor marriage
 			}
 			return
 		}
-		
+
 		l.WithFields(logrus.Fields{
 			"proposalId":  cmd.Body.ProposalId,
 			"characterId": cmd.CharacterId,
@@ -195,20 +201,21 @@ func handleDecline(l logrus.FieldLogger, ctx context.Context, processor marriage
 }
 
 // handleCancel handles proposal cancellation commands
-func handleCancel(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.CancelBody]] {
+func handleCancel(pp marriageService.ProcessorProducer, db *gorm.DB) kafka.Handler[marriageMsg.Command[marriageMsg.CancelBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.CancelBody]) {
+		processor := pp(l, ctx, db)
 		l.WithFields(logrus.Fields{
-			"type":       cmd.Type,
+			"type":        cmd.Type,
 			"characterId": cmd.CharacterId,
-			"proposalId": cmd.Body.ProposalId,
+			"proposalId":  cmd.Body.ProposalId,
 		}).Debug("Processing proposal cancellation command")
-		
+
 		if cmd.Type != marriageMsg.CommandMarriageCancel {
 			return
 		}
-		
+
 		transactionId := uuid.New()
-		
+
 		// Process the proposal cancellation
 		_, err := processor.CancelProposalAndEmit(transactionId, cmd.Body.ProposalId)
 		if err != nil {
@@ -216,7 +223,7 @@ func handleCancel(l logrus.FieldLogger, ctx context.Context, processor marriageS
 				"proposalId":  cmd.Body.ProposalId,
 				"characterId": cmd.CharacterId,
 			}).Error("Failed to process proposal cancellation")
-			
+
 			// Emit error event
 			errorProvider := marriageService.MarriageErrorEventProvider(
 				cmd.CharacterId,
@@ -232,7 +239,7 @@ func handleCancel(l logrus.FieldLogger, ctx context.Context, processor marriageS
 			}
 			return
 		}
-		
+
 		l.WithFields(logrus.Fields{
 			"proposalId":  cmd.Body.ProposalId,
 			"characterId": cmd.CharacterId,
@@ -241,8 +248,9 @@ func handleCancel(l logrus.FieldLogger, ctx context.Context, processor marriageS
 }
 
 // handleScheduleCeremony handles ceremony scheduling commands
-func handleScheduleCeremony(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.ScheduleCeremonyBody]] {
+func handleScheduleCeremony(pp marriageService.ProcessorProducer, db *gorm.DB) kafka.Handler[marriageMsg.Command[marriageMsg.ScheduleCeremonyBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.ScheduleCeremonyBody]) {
+		processor := pp(l, ctx, db)
 		l.WithFields(logrus.Fields{
 			"type":        cmd.Type,
 			"characterId": cmd.CharacterId,
@@ -250,13 +258,13 @@ func handleScheduleCeremony(l logrus.FieldLogger, ctx context.Context, processor
 			"scheduledAt": cmd.Body.ScheduledAt,
 			"invitees":    len(cmd.Body.Invitees),
 		}).Debug("Processing ceremony scheduling command")
-		
+
 		if cmd.Type != marriageMsg.CommandCeremonySchedule {
 			return
 		}
-		
+
 		transactionId := uuid.New()
-		
+
 		// Process the ceremony scheduling
 		ceremony, err := processor.ScheduleCeremonyAndEmit(transactionId, cmd.Body.MarriageId, cmd.Body.ScheduledAt, cmd.Body.Invitees)
 		if err != nil {
@@ -264,7 +272,7 @@ func handleScheduleCeremony(l logrus.FieldLogger, ctx context.Context, processor
 				"marriageId":  cmd.Body.MarriageId,
 				"scheduledAt": cmd.Body.ScheduledAt,
 			}).Error("Failed to schedule ceremony")
-			
+
 			// Emit error event
 			errorProvider := marriageService.MarriageErrorEventProvider(
 				cmd.CharacterId,
@@ -280,7 +288,7 @@ func handleScheduleCeremony(l logrus.FieldLogger, ctx context.Context, processor
 			}
 			return
 		}
-		
+
 		l.WithFields(logrus.Fields{
 			"ceremonyId": ceremony.Id(),
 			"marriageId": cmd.Body.MarriageId,
@@ -289,25 +297,26 @@ func handleScheduleCeremony(l logrus.FieldLogger, ctx context.Context, processor
 }
 
 // handleStartCeremony handles ceremony start commands
-func handleStartCeremony(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.StartCeremonyBody]] {
+func handleStartCeremony(pp marriageService.ProcessorProducer, db *gorm.DB) kafka.Handler[marriageMsg.Command[marriageMsg.StartCeremonyBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.StartCeremonyBody]) {
+		processor := pp(l, ctx, db)
 		l.WithFields(logrus.Fields{
-			"type":       cmd.Type,
+			"type":        cmd.Type,
 			"characterId": cmd.CharacterId,
-			"ceremonyId": cmd.Body.CeremonyId,
+			"ceremonyId":  cmd.Body.CeremonyId,
 		}).Debug("Processing ceremony start command")
-		
+
 		if cmd.Type != marriageMsg.CommandCeremonyStart {
 			return
 		}
-		
+
 		transactionId := uuid.New()
-		
+
 		// Process the ceremony start
 		ceremony, err := processor.StartCeremonyAndEmit(transactionId, cmd.Body.CeremonyId)
 		if err != nil {
 			l.WithError(err).WithField("ceremonyId", cmd.Body.CeremonyId).Error("Failed to start ceremony")
-			
+
 			// Emit error event
 			errorProvider := marriageService.MarriageErrorEventProvider(
 				cmd.CharacterId,
@@ -323,31 +332,32 @@ func handleStartCeremony(l logrus.FieldLogger, ctx context.Context, processor ma
 			}
 			return
 		}
-		
+
 		l.WithField("ceremonyId", ceremony.Id()).Info("Ceremony started successfully")
 	}
 }
 
 // handleCompleteCeremony handles ceremony completion commands
-func handleCompleteCeremony(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.CompleteCeremonyBody]] {
+func handleCompleteCeremony(pp marriageService.ProcessorProducer, db *gorm.DB) kafka.Handler[marriageMsg.Command[marriageMsg.CompleteCeremonyBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.CompleteCeremonyBody]) {
+		processor := pp(l, ctx, db)
 		l.WithFields(logrus.Fields{
-			"type":       cmd.Type,
+			"type":        cmd.Type,
 			"characterId": cmd.CharacterId,
-			"ceremonyId": cmd.Body.CeremonyId,
+			"ceremonyId":  cmd.Body.CeremonyId,
 		}).Debug("Processing ceremony completion command")
-		
+
 		if cmd.Type != marriageMsg.CommandCeremonyComplete {
 			return
 		}
-		
+
 		transactionId := uuid.New()
-		
+
 		// Process the ceremony completion
 		ceremony, err := processor.CompleteCeremonyAndEmit(transactionId, cmd.Body.CeremonyId)
 		if err != nil {
 			l.WithError(err).WithField("ceremonyId", cmd.Body.CeremonyId).Error("Failed to complete ceremony")
-			
+
 			// Emit error event
 			errorProvider := marriageService.MarriageErrorEventProvider(
 				cmd.CharacterId,
@@ -363,31 +373,32 @@ func handleCompleteCeremony(l logrus.FieldLogger, ctx context.Context, processor
 			}
 			return
 		}
-		
+
 		l.WithField("ceremonyId", ceremony.Id()).Info("Ceremony completed successfully")
 	}
 }
 
 // handleCancelCeremony handles ceremony cancellation commands
-func handleCancelCeremony(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.CancelCeremonyBody]] {
+func handleCancelCeremony(pp marriageService.ProcessorProducer, db *gorm.DB) kafka.Handler[marriageMsg.Command[marriageMsg.CancelCeremonyBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.CancelCeremonyBody]) {
+		processor := pp(l, ctx, db)
 		l.WithFields(logrus.Fields{
-			"type":       cmd.Type,
+			"type":        cmd.Type,
 			"characterId": cmd.CharacterId,
-			"ceremonyId": cmd.Body.CeremonyId,
+			"ceremonyId":  cmd.Body.CeremonyId,
 		}).Debug("Processing ceremony cancellation command")
-		
+
 		if cmd.Type != marriageMsg.CommandCeremonyCancel {
 			return
 		}
-		
+
 		transactionId := uuid.New()
-		
+
 		// Process the ceremony cancellation
 		ceremony, err := processor.CancelCeremonyAndEmit(transactionId, cmd.Body.CeremonyId, cmd.CharacterId, "ceremony_cancelled")
 		if err != nil {
 			l.WithError(err).WithField("ceremonyId", cmd.Body.CeremonyId).Error("Failed to cancel ceremony")
-			
+
 			// Emit error event
 			errorProvider := marriageService.MarriageErrorEventProvider(
 				cmd.CharacterId,
@@ -403,31 +414,32 @@ func handleCancelCeremony(l logrus.FieldLogger, ctx context.Context, processor m
 			}
 			return
 		}
-		
+
 		l.WithField("ceremonyId", ceremony.Id()).Info("Ceremony cancelled successfully")
 	}
 }
 
 // handlePostponeCeremony handles ceremony postponement commands
-func handlePostponeCeremony(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.PostponeCeremonyBody]] {
+func handlePostponeCeremony(pp marriageService.ProcessorProducer, db *gorm.DB) kafka.Handler[marriageMsg.Command[marriageMsg.PostponeCeremonyBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.PostponeCeremonyBody]) {
+		processor := pp(l, ctx, db)
 		l.WithFields(logrus.Fields{
-			"type":       cmd.Type,
+			"type":        cmd.Type,
 			"characterId": cmd.CharacterId,
-			"ceremonyId": cmd.Body.CeremonyId,
+			"ceremonyId":  cmd.Body.CeremonyId,
 		}).Debug("Processing ceremony postponement command")
-		
+
 		if cmd.Type != marriageMsg.CommandCeremonyPostpone {
 			return
 		}
-		
+
 		transactionId := uuid.New()
-		
+
 		// Process the ceremony postponement
 		ceremony, err := processor.PostponeCeremonyAndEmit(transactionId, cmd.Body.CeremonyId, "ceremony_postponed")
 		if err != nil {
 			l.WithError(err).WithField("ceremonyId", cmd.Body.CeremonyId).Error("Failed to postpone ceremony")
-			
+
 			// Emit error event
 			errorProvider := marriageService.MarriageErrorEventProvider(
 				cmd.CharacterId,
@@ -443,27 +455,28 @@ func handlePostponeCeremony(l logrus.FieldLogger, ctx context.Context, processor
 			}
 			return
 		}
-		
+
 		l.WithField("ceremonyId", ceremony.Id()).Info("Ceremony postponed successfully")
 	}
 }
 
 // handleRescheduleCeremony handles ceremony rescheduling commands
-func handleRescheduleCeremony(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.RescheduleCeremonyBody]] {
+func handleRescheduleCeremony(pp marriageService.ProcessorProducer, db *gorm.DB) kafka.Handler[marriageMsg.Command[marriageMsg.RescheduleCeremonyBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.RescheduleCeremonyBody]) {
+		processor := pp(l, ctx, db)
 		l.WithFields(logrus.Fields{
 			"type":        cmd.Type,
 			"characterId": cmd.CharacterId,
 			"ceremonyId":  cmd.Body.CeremonyId,
 			"scheduledAt": cmd.Body.ScheduledAt,
 		}).Debug("Processing ceremony rescheduling command")
-		
+
 		if cmd.Type != marriageMsg.CommandCeremonyReschedule {
 			return
 		}
-		
+
 		transactionId := uuid.New()
-		
+
 		// Process the ceremony rescheduling
 		ceremony, err := processor.RescheduleCeremonyAndEmit(transactionId, cmd.Body.CeremonyId, cmd.Body.ScheduledAt, cmd.CharacterId)
 		if err != nil {
@@ -471,7 +484,7 @@ func handleRescheduleCeremony(l logrus.FieldLogger, ctx context.Context, process
 				"ceremonyId":  cmd.Body.CeremonyId,
 				"scheduledAt": cmd.Body.ScheduledAt,
 			}).Error("Failed to reschedule ceremony")
-			
+
 			// Emit error event
 			errorProvider := marriageService.MarriageErrorEventProvider(
 				cmd.CharacterId,
@@ -487,27 +500,28 @@ func handleRescheduleCeremony(l logrus.FieldLogger, ctx context.Context, process
 			}
 			return
 		}
-		
+
 		l.WithField("ceremonyId", ceremony.Id()).Info("Ceremony rescheduled successfully")
 	}
 }
 
 // handleAddInvitee handles add invitee commands
-func handleAddInvitee(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.AddInviteeBody]] {
+func handleAddInvitee(pp marriageService.ProcessorProducer, db *gorm.DB) kafka.Handler[marriageMsg.Command[marriageMsg.AddInviteeBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.AddInviteeBody]) {
+		processor := pp(l, ctx, db)
 		l.WithFields(logrus.Fields{
-			"type":       cmd.Type,
+			"type":        cmd.Type,
 			"characterId": cmd.CharacterId,
-			"ceremonyId": cmd.Body.CeremonyId,
-			"inviteeId":  cmd.Body.CharacterId,
+			"ceremonyId":  cmd.Body.CeremonyId,
+			"inviteeId":   cmd.Body.CharacterId,
 		}).Debug("Processing add invitee command")
-		
+
 		if cmd.Type != marriageMsg.CommandCeremonyAddInvitee {
 			return
 		}
-		
+
 		transactionId := uuid.New()
-		
+
 		// Process adding the invitee
 		ceremony, err := processor.AddInviteeAndEmit(transactionId, cmd.Body.CeremonyId, cmd.Body.CharacterId, cmd.CharacterId)
 		if err != nil {
@@ -515,7 +529,7 @@ func handleAddInvitee(l logrus.FieldLogger, ctx context.Context, processor marri
 				"ceremonyId": cmd.Body.CeremonyId,
 				"inviteeId":  cmd.Body.CharacterId,
 			}).Error("Failed to add invitee")
-			
+
 			// Emit error event
 			errorProvider := marriageService.MarriageErrorEventProvider(
 				cmd.CharacterId,
@@ -531,7 +545,7 @@ func handleAddInvitee(l logrus.FieldLogger, ctx context.Context, processor marri
 			}
 			return
 		}
-		
+
 		l.WithFields(logrus.Fields{
 			"ceremonyId": ceremony.Id(),
 			"inviteeId":  cmd.Body.CharacterId,
@@ -540,21 +554,22 @@ func handleAddInvitee(l logrus.FieldLogger, ctx context.Context, processor marri
 }
 
 // handleRemoveInvitee handles remove invitee commands
-func handleRemoveInvitee(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.RemoveInviteeBody]] {
+func handleRemoveInvitee(pp marriageService.ProcessorProducer, db *gorm.DB) kafka.Handler[marriageMsg.Command[marriageMsg.RemoveInviteeBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.RemoveInviteeBody]) {
+		processor := pp(l, ctx, db)
 		l.WithFields(logrus.Fields{
-			"type":       cmd.Type,
+			"type":        cmd.Type,
 			"characterId": cmd.CharacterId,
-			"ceremonyId": cmd.Body.CeremonyId,
-			"inviteeId":  cmd.Body.CharacterId,
+			"ceremonyId":  cmd.Body.CeremonyId,
+			"inviteeId":   cmd.Body.CharacterId,
 		}).Debug("Processing remove invitee command")
-		
+
 		if cmd.Type != marriageMsg.CommandCeremonyRemoveInvitee {
 			return
 		}
-		
+
 		transactionId := uuid.New()
-		
+
 		// Process removing the invitee
 		ceremony, err := processor.RemoveInviteeAndEmit(transactionId, cmd.Body.CeremonyId, cmd.Body.CharacterId, cmd.CharacterId)
 		if err != nil {
@@ -562,7 +577,7 @@ func handleRemoveInvitee(l logrus.FieldLogger, ctx context.Context, processor ma
 				"ceremonyId": cmd.Body.CeremonyId,
 				"inviteeId":  cmd.Body.CharacterId,
 			}).Error("Failed to remove invitee")
-			
+
 			// Emit error event
 			errorProvider := marriageService.MarriageErrorEventProvider(
 				cmd.CharacterId,
@@ -578,7 +593,7 @@ func handleRemoveInvitee(l logrus.FieldLogger, ctx context.Context, processor ma
 			}
 			return
 		}
-		
+
 		l.WithFields(logrus.Fields{
 			"ceremonyId": ceremony.Id(),
 			"inviteeId":  cmd.Body.CharacterId,
@@ -587,20 +602,21 @@ func handleRemoveInvitee(l logrus.FieldLogger, ctx context.Context, processor ma
 }
 
 // handleDivorce handles divorce commands
-func handleDivorce(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.DivorceBody]] {
+func handleDivorce(pp marriageService.ProcessorProducer, db *gorm.DB) kafka.Handler[marriageMsg.Command[marriageMsg.DivorceBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.DivorceBody]) {
+		processor := pp(l, ctx, db)
 		l.WithFields(logrus.Fields{
-			"type":       cmd.Type,
+			"type":        cmd.Type,
 			"characterId": cmd.CharacterId,
-			"marriageId": cmd.Body.MarriageId,
+			"marriageId":  cmd.Body.MarriageId,
 		}).Debug("Processing divorce command")
-		
+
 		if cmd.Type != marriageMsg.CommandMarriageDivorce {
 			return
 		}
-		
+
 		transactionId := uuid.New()
-		
+
 		// Process the divorce
 		marriage, err := processor.DivorceAndEmit(transactionId, cmd.Body.MarriageId, cmd.CharacterId)
 		if err != nil {
@@ -608,7 +624,7 @@ func handleDivorce(l logrus.FieldLogger, ctx context.Context, processor marriage
 				"marriageId":  cmd.Body.MarriageId,
 				"characterId": cmd.CharacterId,
 			}).Error("Failed to process divorce")
-			
+
 			// Emit error event
 			errorProvider := marriageService.MarriageErrorEventProvider(
 				cmd.CharacterId,
@@ -624,7 +640,7 @@ func handleDivorce(l logrus.FieldLogger, ctx context.Context, processor marriage
 			}
 			return
 		}
-		
+
 		l.WithFields(logrus.Fields{
 			"marriageId":  marriage.Id(),
 			"characterId": cmd.CharacterId,
@@ -632,23 +648,23 @@ func handleDivorce(l logrus.FieldLogger, ctx context.Context, processor marriage
 	}
 }
 
-
 // handleAdvanceCeremonyState handles ceremony state advancement commands
-func handleAdvanceCeremonyState(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.AdvanceCeremonyStateBody]] {
+func handleAdvanceCeremonyState(pp marriageService.ProcessorProducer, db *gorm.DB) kafka.Handler[marriageMsg.Command[marriageMsg.AdvanceCeremonyStateBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.AdvanceCeremonyStateBody]) {
+		processor := pp(l, ctx, db)
 		l.WithFields(logrus.Fields{
-			"type":       cmd.Type,
+			"type":        cmd.Type,
 			"characterId": cmd.CharacterId,
-			"ceremonyId": cmd.Body.CeremonyId,
-			"nextState":  cmd.Body.NextState,
+			"ceremonyId":  cmd.Body.CeremonyId,
+			"nextState":   cmd.Body.NextState,
 		}).Debug("Processing ceremony state advancement command")
-		
+
 		if cmd.Type != marriageMsg.CommandCeremonyAdvanceState {
 			return
 		}
-		
+
 		transactionId := uuid.New()
-		
+
 		// Process the ceremony state advancement
 		ceremony, err := processor.AdvanceCeremonyStateAndEmit(transactionId, cmd.Body.CeremonyId, cmd.Body.NextState)
 		if err != nil {
@@ -656,7 +672,7 @@ func handleAdvanceCeremonyState(l logrus.FieldLogger, ctx context.Context, proce
 				"ceremonyId": cmd.Body.CeremonyId,
 				"nextState":  cmd.Body.NextState,
 			}).Error("Failed to advance ceremony state")
-			
+
 			// Emit error event
 			errorProvider := marriageService.MarriageErrorEventProvider(
 				cmd.CharacterId,
@@ -672,7 +688,7 @@ func handleAdvanceCeremonyState(l logrus.FieldLogger, ctx context.Context, proce
 			}
 			return
 		}
-		
+
 		l.WithFields(logrus.Fields{
 			"ceremonyId": ceremony.Id(),
 			"nextState":  cmd.Body.NextState,
@@ -681,12 +697,12 @@ func handleAdvanceCeremonyState(l logrus.FieldLogger, ctx context.Context, proce
 }
 
 // InitConsumers initializes the marriage command consumers
-func InitConsumers(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
 			// Initialize consumer for marriage commands
 			config := NewConfig(l)("marriage_commands")(marriageMsg.EnvCommandTopic)(consumerGroupId)
-			
+
 			// Set up header parsers for tenant and span context
 			rf(config,
 				consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser),

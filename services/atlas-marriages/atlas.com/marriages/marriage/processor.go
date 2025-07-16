@@ -9,6 +9,7 @@ import (
 	"atlas-marriages/kafka/message"
 	marriageMsg "atlas-marriages/kafka/message/marriage"
 	"atlas-marriages/kafka/producer"
+
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -109,6 +110,8 @@ type ProcessorImpl struct {
 	producer           producer.Provider
 	characterProcessor character.Processor
 }
+
+type ProcessorProducer func(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor
 
 // NewProcessor creates a new processor instance
 func NewProcessor(log logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {

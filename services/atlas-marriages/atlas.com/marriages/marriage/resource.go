@@ -1,11 +1,10 @@
 package marriage
 
 import (
+	"atlas-marriages/rest"
 	"encoding/json"
 	"net/http"
-	"strconv"
 
-	"atlas-marriages/rest"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -38,113 +37,98 @@ func InitializeRoutes(db *gorm.DB) func(serverInfo jsonapi.ServerInformation) fu
 // getMarriageHandler returns the current marriage for a character
 func getMarriageHandler(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			characterIdStr := mux.Vars(r)["characterId"]
-			characterId, err := strconv.ParseUint(characterIdStr, 10, 32)
-			if err != nil {
-				writeErrorResponse(w, http.StatusBadRequest, "Invalid character ID")
-				return
-			}
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				marriage, err := processor.GetMarriageByCharacter(characterId)()
+				if err != nil {
+					writeErrorResponse(w, http.StatusInternalServerError, err.Error())
+					return
+				}
 
-			processor := NewProcessor(d.Logger(), d.Context(), db)
-			marriage, err := processor.GetMarriageByCharacter(uint32(characterId))()
-			if err != nil {
-				writeErrorResponse(w, http.StatusInternalServerError, err.Error())
-				return
-			}
+				// If no marriage found, return 404
+				if marriage == nil {
+					writeErrorResponse(w, http.StatusNotFound, "Character is not married")
+					return
+				}
 
-			// If no marriage found, return 404
-			if marriage == nil {
-				writeErrorResponse(w, http.StatusNotFound, "Character is not married")
-				return
-			}
+				// Transform to REST model with partner information
+				restMarriage, err := TransformMarriageWithPartner(*marriage, characterId)
+				if err != nil {
+					writeErrorResponse(w, http.StatusInternalServerError, "Failed to transform marriage data")
+					return
+				}
 
-			// Transform to REST model with partner information
-			restMarriage, err := TransformMarriageWithPartner(*marriage, uint32(characterId))
-			if err != nil {
-				writeErrorResponse(w, http.StatusInternalServerError, "Failed to transform marriage data")
-				return
-			}
-
-			// Get ceremony information if marriage is engaged or married
-			if marriage.Status() == StatusEngaged || marriage.Status() == StatusMarried {
-				ceremony, err := processor.GetCeremonyByMarriage(marriage.Id())()
-				if err == nil && ceremony != nil {
-					restMarriage, err = TransformMarriageComplete(*marriage, uint32(characterId), ceremony)
-					if err != nil {
-						d.Logger().WithError(err).Warn("Failed to include ceremony information")
+				// Get ceremony information if marriage is engaged or married
+				if marriage.Status() == StatusEngaged || marriage.Status() == StatusMarried {
+					ceremony, err := processor.GetCeremonyByMarriage(marriage.Id())()
+					if err == nil && ceremony != nil {
+						restMarriage, err = TransformMarriageComplete(*marriage, characterId, ceremony)
+						if err != nil {
+							d.Logger().WithError(err).Warn("Failed to include ceremony information")
+						}
 					}
 				}
-			}
 
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestMarriage](d.Logger())(w)(c.ServerInformation())(queryParams)(restMarriage)
-		}
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestMarriage](d.Logger())(w)(c.ServerInformation())(queryParams)(restMarriage)
+			}
+		})
 	}
 }
 
 // getMarriageHistoryHandler returns marriage history for a character
 func getMarriageHistoryHandler(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			characterIdStr := mux.Vars(r)["characterId"]
-			characterId, err := strconv.ParseUint(characterIdStr, 10, 32)
-			if err != nil {
-				writeErrorResponse(w, http.StatusBadRequest, "Invalid character ID")
-				return
-			}
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				marriages, err := processor.GetMarriageHistory(characterId)()
+				if err != nil {
+					writeErrorResponse(w, http.StatusInternalServerError, err.Error())
+					return
+				}
 
-			processor := NewProcessor(d.Logger(), d.Context(), db)
-			marriages, err := processor.GetMarriageHistory(uint32(characterId))()
-			if err != nil {
-				writeErrorResponse(w, http.StatusInternalServerError, err.Error())
-				return
-			}
+				// Transform marriages to REST models
+				restMarriages, err := TransformMarriages(marriages)
+				if err != nil {
+					writeErrorResponse(w, http.StatusInternalServerError, "Failed to transform marriage data")
+					return
+				}
 
-			// Transform marriages to REST models
-			restMarriages, err := TransformMarriages(marriages)
-			if err != nil {
-				writeErrorResponse(w, http.StatusInternalServerError, "Failed to transform marriage data")
-				return
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]RestMarriage](d.Logger())(w)(c.ServerInformation())(queryParams)(restMarriages)
 			}
-
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestMarriage](d.Logger())(w)(c.ServerInformation())(queryParams)(restMarriages)
-		}
+		})
 	}
 }
 
 // getProposalsHandler returns pending proposals for a character
 func getProposalsHandler(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			characterIdStr := mux.Vars(r)["characterId"]
-			characterId, err := strconv.ParseUint(characterIdStr, 10, 32)
-			if err != nil {
-				writeErrorResponse(w, http.StatusBadRequest, "Invalid character ID")
-				return
-			}
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				processor := NewProcessor(d.Logger(), d.Context(), db)
+				proposals, err := processor.GetPendingProposalsByCharacter(characterId)()
+				if err != nil {
+					writeErrorResponse(w, http.StatusInternalServerError, err.Error())
+					return
+				}
 
-			processor := NewProcessor(d.Logger(), d.Context(), db)
-			proposals, err := processor.GetPendingProposalsByCharacter(uint32(characterId))()
-			if err != nil {
-				writeErrorResponse(w, http.StatusInternalServerError, err.Error())
-				return
-			}
+				// Transform proposals to REST models
+				restProposals, err := TransformProposals(proposals)
+				if err != nil {
+					writeErrorResponse(w, http.StatusInternalServerError, "Failed to transform proposal data")
+					return
+				}
 
-			// Transform proposals to REST models
-			restProposals, err := TransformProposals(proposals)
-			if err != nil {
-				writeErrorResponse(w, http.StatusInternalServerError, "Failed to transform proposal data")
-				return
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]RestProposal](d.Logger())(w)(c.ServerInformation())(queryParams)(restProposals)
 			}
-
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]RestProposal](d.Logger())(w)(c.ServerInformation())(queryParams)(restProposals)
-		}
+		})
 	}
 }
 

@@ -16,6 +16,7 @@ import (
 )
 
 const serviceName = "atlas-marriages"
+const consumerGroupId = "Marriage Service"
 
 type Server struct {
 	baseUrl string
@@ -33,7 +34,7 @@ func (s Server) GetPrefix() string {
 func GetServer() Server {
 	return Server{
 		baseUrl: "",
-		prefix:  "/api/mas/",
+		prefix:  "/api/",
 	}
 }
 
@@ -49,30 +50,27 @@ func main() {
 	}
 
 	db := database.Connect(l, database.SetMigrations(marriageService.Migration))
-	
+
 	// Initialize proposal expiry scheduler
 	proposalExpiryScheduler := scheduler.NewProposalExpiryScheduler(l, tdm.Context(), db)
 	proposalExpiryScheduler.Start()
-	
+
 	// Initialize ceremony timeout scheduler
 	ceremonyTimeoutScheduler := scheduler.NewCeremonyTimeoutScheduler(l, tdm.Context(), db)
 	ceremonyTimeoutScheduler.Start()
-	
+
 	// Register scheduler teardowns
 	tdm.TeardownFunc(func() {
 		proposalExpiryScheduler.Stop()
 		ceremonyTimeoutScheduler.Stop()
 	})
-	
+
 	// Initialize Kafka consumers
-	consumerManager := consumer.GetManager()
-	marriage.InitConsumers(l, tdm.Context(), db)(
-		consumerManager.AddConsumer(l, tdm.Context(), tdm.WaitGroup()),
-	)("marriage-service")
-	
-	character.InitConsumers(l, tdm.Context(), db)(
-		consumerManager.AddConsumer(l, tdm.Context(), tdm.WaitGroup()),
-	)("marriage-service")
+	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
+	marriage.InitConsumers(l)(cmf)(consumerGroupId)
+	character.InitConsumers(l)(cmf)(consumerGroupId)
+	marriage.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
 
 	server.New(l).
 		WithContext(tdm.Context()).

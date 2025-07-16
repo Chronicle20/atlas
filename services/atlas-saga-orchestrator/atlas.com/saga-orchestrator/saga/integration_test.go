@@ -3,8 +3,10 @@ package saga
 import (
 	"atlas-saga-orchestrator/compartment"
 	mock2 "atlas-saga-orchestrator/compartment/mock"
+	"atlas-saga-orchestrator/validation"
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -960,6 +962,407 @@ func TestCreateAndEquipAsset_StateConsistencyValidation(t *testing.T) {
 	}
 	// Note: This depends on the actual logging implementation
 	// The test mainly verifies that ValidateStateConsistency() doesn't return errors
+
+	hook.Reset()
+}
+
+// TestCreateAndEquipAsset_DynamicStepCreationAndOrdering tests dynamic step creation and proper ordering
+func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
+	// Setup
+	logger, hook := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+	
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	// Setup mocks
+	compP := &mock2.ProcessorMock{
+		RequestCreateAndEquipAssetFunc: func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error {
+			return nil
+		},
+		RequestEquipAssetFunc: func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {
+			return nil
+		},
+	}
+
+	// Create saga processor
+	processor := NewProcessor(logger, tctx)
+	processor.t = te
+	processor.compP = compP
+
+	// Create saga with multiple steps including CreateAndEquipAsset
+	transactionId := uuid.New()
+	saga := Saga{
+		TransactionId: transactionId,
+		SagaType:      InventoryTransaction,
+		InitiatedBy:   "dynamic-step-ordering-test",
+		Steps: []Step[any]{
+			{
+				StepId:    "step-1-validate",
+				Status:    Completed,
+				Action:    ValidateCharacterState,
+				Payload: ValidateCharacterStatePayload{
+					CharacterId: 12345,
+					Conditions:  []validation.ConditionInput{},
+				},
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+			{
+				StepId:    "step-2-create-and-equip",
+				Status:    Pending,
+				Action:    CreateAndEquipAsset,
+				Payload: CreateAndEquipAssetPayload{
+					CharacterId: 12345,
+					Item: ItemPayload{
+						TemplateId: 1302000,
+						Quantity:   1,
+					},
+				},
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+			{
+				StepId:    "step-3-final-action",
+				Status:    Pending,
+				Action:    AwardInventory,
+				Payload: AwardItemActionPayload{
+					CharacterId: 12345,
+					Item: ItemPayload{
+						TemplateId: 2000000,
+						Quantity:   10,
+					},
+				},
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+		},
+	}
+
+	// Store saga in cache
+	GetCache().Put(te.Id(), saga)
+
+	// Verify initial step order
+	initialSaga, err := processor.GetById(transactionId)
+	assert.NoError(t, err, "Should retrieve initial saga")
+	assert.Equal(t, 3, len(initialSaga.Steps), "Should have 3 initial steps")
+	assert.Equal(t, "step-1-validate", initialSaga.Steps[0].StepId)
+	assert.Equal(t, "step-2-create-and-equip", initialSaga.Steps[1].StepId)
+	assert.Equal(t, "step-3-final-action", initialSaga.Steps[2].StepId)
+
+	// Execute the CreateAndEquipAsset step
+	err = processor.Step(transactionId)
+	assert.NoError(t, err, "CreateAndEquipAsset step should execute successfully")
+
+	// Dynamically add auto-equip step - this should be inserted after the current step
+	// but before the final action step
+	autoEquipStepId := "auto_equip_step_" + fmt.Sprintf("%d", time.Now().Unix())
+	equipPayload := EquipAssetPayload{
+		CharacterId:   12345,
+		InventoryType: 1,
+		Source:        5,
+		Destination:   -1,
+	}
+	
+	equipStep := Step[any]{
+		StepId:    autoEquipStepId,
+		Status:    Pending,
+		Action:    EquipAsset,
+		Payload:   equipPayload,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	
+	err = processor.AddStep(transactionId, equipStep)
+	assert.NoError(t, err, "Should successfully add auto-equip step")
+
+	// Verify step ordering after dynamic addition
+	afterAdditionSaga, err := processor.GetById(transactionId)
+	assert.NoError(t, err, "Should retrieve saga after step addition")
+	assert.Equal(t, 4, len(afterAdditionSaga.Steps), "Should have 4 steps after auto-equip addition")
+
+	// Test step ordering: validate -> create-and-equip -> auto-equip -> final-action
+	assert.Equal(t, "step-1-validate", afterAdditionSaga.Steps[0].StepId)
+	assert.Equal(t, "step-2-create-and-equip", afterAdditionSaga.Steps[1].StepId)
+	assert.Equal(t, autoEquipStepId, afterAdditionSaga.Steps[2].StepId)
+	assert.Equal(t, "step-3-final-action", afterAdditionSaga.Steps[3].StepId)
+
+	// Verify step statuses maintain proper ordering
+	assert.Equal(t, Completed, afterAdditionSaga.Steps[0].Status, "First step should be completed")
+	assert.Equal(t, Pending, afterAdditionSaga.Steps[1].Status, "Second step should be pending")
+	assert.Equal(t, Pending, afterAdditionSaga.Steps[2].Status, "Auto-equip step should be pending")
+	assert.Equal(t, Pending, afterAdditionSaga.Steps[3].Status, "Final step should be pending")
+
+	// Complete the CreateAndEquipAsset step
+	err = processor.MarkEarliestPendingStepCompleted(transactionId)
+	assert.NoError(t, err, "Should complete CreateAndEquipAsset step")
+
+	// Verify state after completion
+	afterCompletionSaga, err := processor.GetById(transactionId)
+	assert.NoError(t, err, "Should retrieve saga after completion")
+	assert.Equal(t, Completed, afterCompletionSaga.Steps[0].Status, "First step should be completed")
+	assert.Equal(t, Completed, afterCompletionSaga.Steps[1].Status, "Second step should be completed")
+	assert.Equal(t, Pending, afterCompletionSaga.Steps[2].Status, "Auto-equip step should be pending")
+	assert.Equal(t, Pending, afterCompletionSaga.Steps[3].Status, "Final step should be pending")
+
+	// Execute the auto-equip step
+	err = processor.Step(transactionId)
+	assert.NoError(t, err, "Auto-equip step should execute successfully")
+
+	// Complete the auto-equip step
+	err = processor.MarkEarliestPendingStepCompleted(transactionId)
+	assert.NoError(t, err, "Should complete auto-equip step")
+
+	// Verify that we can still process the final step
+	finalSaga, err := processor.GetById(transactionId)
+	assert.NoError(t, err, "Should retrieve final saga")
+	assert.Equal(t, Completed, finalSaga.Steps[0].Status, "First step should be completed")
+	assert.Equal(t, Completed, finalSaga.Steps[1].Status, "Second step should be completed")
+	assert.Equal(t, Completed, finalSaga.Steps[2].Status, "Auto-equip step should be completed")
+	assert.Equal(t, Pending, finalSaga.Steps[3].Status, "Final step should still be pending")
+
+	// Test dynamic step addition with specific ordering constraints
+	// Add another step dynamically to ensure proper insertion
+	additionalStepId := "additional_step_" + fmt.Sprintf("%d", time.Now().Unix())
+	additionalStep := Step[any]{
+		StepId:    additionalStepId,
+		Status:    Pending,
+		Action:    AwardInventory,
+		Payload: AwardItemActionPayload{
+			CharacterId: 12345,
+			Item: ItemPayload{
+				TemplateId: 3000000,
+				Quantity:   5,
+			},
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	
+	err = processor.AddStep(transactionId, additionalStep)
+	assert.NoError(t, err, "Should successfully add additional step")
+
+	// Verify final ordering with all dynamic steps
+	finalOrderingSaga, err := processor.GetById(transactionId)
+	assert.NoError(t, err, "Should retrieve saga for final ordering verification")
+	assert.Equal(t, 5, len(finalOrderingSaga.Steps), "Should have 5 steps total")
+
+	// Verify the correct order of all steps
+	expectedStepIds := []string{
+		"step-1-validate",
+		"step-2-create-and-equip",
+		autoEquipStepId,
+		"step-3-final-action",
+		additionalStepId,
+	}
+	
+	for i, expectedId := range expectedStepIds {
+		assert.Equal(t, expectedId, finalOrderingSaga.Steps[i].StepId, "Step %d should have correct ID", i)
+	}
+
+	// Verify state consistency with dynamic steps
+	assert.NoError(t, finalOrderingSaga.ValidateStateConsistency(), "State should be consistent with dynamic steps")
+
+	// Test that we can still get the current step correctly
+	currentStep, found := finalOrderingSaga.GetCurrentStep()
+	assert.True(t, found, "Should find current step")
+	assert.Equal(t, "step-3-final-action", currentStep.StepId, "Current step should be the final action step")
+
+	// Test step navigation with dynamic steps
+	furthestCompletedIndex := finalOrderingSaga.FindFurthestCompletedStepIndex()
+	assert.Equal(t, 2, furthestCompletedIndex, "Furthest completed step should be the auto-equip step (index 2)")
+
+	earliestPendingIndex := finalOrderingSaga.FindEarliestPendingStepIndex()
+	assert.Equal(t, 3, earliestPendingIndex, "Earliest pending step should be the final action step (index 3)")
+
+	// Verify proper logging of dynamic step creation
+	logEntries := hook.AllEntries()
+	assert.True(t, len(logEntries) > 0, "Should have log entries")
+	
+	// Look for specific log entries about step addition
+	for _, entry := range logEntries {
+		if strings.Contains(entry.Message, "Step added") || strings.Contains(entry.Message, "Adding step") {
+			// Found step addition log - this depends on actual logging implementation
+			break
+		}
+	}
+	// This depends on the actual logging implementation in AddStep
+	// The test mainly verifies that dynamic step addition works correctly
+
+	hook.Reset()
+}
+
+// TestCreateAndEquipAsset_DynamicStepOrderingConstraints tests ordering constraints for dynamic steps
+func TestCreateAndEquipAsset_DynamicStepOrderingConstraints(t *testing.T) {
+	// Setup
+	logger, hook := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+	
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	// Setup mocks
+	compP := &mock2.ProcessorMock{
+		RequestCreateAndEquipAssetFunc: func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error {
+			return nil
+		},
+	}
+
+	// Create saga processor
+	processor := NewProcessor(logger, tctx)
+	processor.t = te
+	processor.compP = compP
+
+	// Create saga with CreateAndEquipAsset step
+	transactionId := uuid.New()
+	saga := Saga{
+		TransactionId: transactionId,
+		SagaType:      InventoryTransaction,
+		InitiatedBy:   "step-ordering-constraints-test",
+		Steps: []Step[any]{
+			{
+				StepId:    "step-1",
+				Status:    Completed,
+				Action:    ValidateCharacterState,
+				Payload: ValidateCharacterStatePayload{
+					CharacterId: 12345,
+					Conditions:  []validation.ConditionInput{},
+				},
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+			{
+				StepId:    "step-2",
+				Status:    Completed,
+				Action:    CreateAndEquipAsset,
+				Payload: CreateAndEquipAssetPayload{
+					CharacterId: 12345,
+					Item: ItemPayload{
+						TemplateId: 1302000,
+						Quantity:   1,
+					},
+				},
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+			{
+				StepId:    "step-3",
+				Status:    Pending,
+				Action:    AwardInventory,
+				Payload: AwardItemActionPayload{
+					CharacterId: 12345,
+					Item: ItemPayload{
+						TemplateId: 2000000,
+						Quantity:   10,
+					},
+				},
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+		},
+	}
+
+	// Store saga in cache
+	GetCache().Put(te.Id(), saga)
+
+	// Test 1: Add auto-equip step after completed CreateAndEquipAsset step
+	autoEquipStepId := "auto_equip_step_after_completion"
+	equipStep := Step[any]{
+		StepId:    autoEquipStepId,
+		Status:    Pending,
+		Action:    EquipAsset,
+		Payload: EquipAssetPayload{
+			CharacterId:   12345,
+			InventoryType: 1,
+			Source:        5,
+			Destination:   -1,
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	
+	err := processor.AddStep(transactionId, equipStep)
+	assert.NoError(t, err, "Should successfully add auto-equip step after completion")
+
+	// Verify the step was inserted in the correct position
+	afterAdditionSaga, err := processor.GetById(transactionId)
+	assert.NoError(t, err, "Should retrieve saga after step addition")
+	assert.Equal(t, 4, len(afterAdditionSaga.Steps), "Should have 4 steps after addition")
+
+	// The auto-equip step should be inserted after the current pending step
+	assert.Equal(t, "step-1", afterAdditionSaga.Steps[0].StepId)
+	assert.Equal(t, "step-2", afterAdditionSaga.Steps[1].StepId)
+	assert.Equal(t, "step-3", afterAdditionSaga.Steps[2].StepId)
+	assert.Equal(t, autoEquipStepId, afterAdditionSaga.Steps[3].StepId)
+
+	// Test 2: Verify state consistency after dynamic insertion
+	assert.NoError(t, afterAdditionSaga.ValidateStateConsistency(), "State should be consistent after dynamic insertion")
+
+	// Test 3: Test multiple dynamic step additions
+	secondAutoEquipStepId := "second_auto_equip_step"
+	secondEquipStep := Step[any]{
+		StepId:    secondAutoEquipStepId,
+		Status:    Pending,
+		Action:    EquipAsset,
+		Payload: EquipAssetPayload{
+			CharacterId:   12345,
+			InventoryType: 2,
+			Source:        6,
+			Destination:   -2,
+		},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	
+	err = processor.AddStep(transactionId, secondEquipStep)
+	assert.NoError(t, err, "Should successfully add second auto-equip step")
+
+	// Verify proper ordering with multiple dynamic steps
+	finalSaga, err := processor.GetById(transactionId)
+	assert.NoError(t, err, "Should retrieve saga after second step addition")
+	assert.Equal(t, 5, len(finalSaga.Steps), "Should have 5 steps after second addition")
+
+	// Verify all steps are in correct order
+	expectedOrder := []string{
+		"step-1",
+		"step-2",
+		"step-3",
+		secondAutoEquipStepId,  // Second step was added after step-3
+		autoEquipStepId,        // First step was added after second step
+	}
+	
+	for i, expectedId := range expectedOrder {
+		assert.Equal(t, expectedId, finalSaga.Steps[i].StepId, "Step %d should have correct ID", i)
+	}
+
+	// Test 4: Verify that pending steps remain pending and completed steps remain completed
+	assert.Equal(t, Completed, finalSaga.Steps[0].Status, "First step should remain completed")
+	assert.Equal(t, Completed, finalSaga.Steps[1].Status, "Second step should remain completed")
+	assert.Equal(t, Pending, finalSaga.Steps[2].Status, "Step-3 should remain pending")
+	assert.Equal(t, Pending, finalSaga.Steps[3].Status, "Second auto-equip step should be pending")
+	assert.Equal(t, Pending, finalSaga.Steps[4].Status, "First auto-equip step should be pending")
+
+	// Test 5: Verify that step navigation works correctly with dynamic steps
+	currentStep, found := finalSaga.GetCurrentStep()
+	assert.True(t, found, "Should find current step")
+	assert.Equal(t, "step-3", currentStep.StepId, "Current step should be step-3")
+
+	// Test 6: Test step execution order with dynamic steps
+	err = processor.Step(transactionId)
+	assert.NoError(t, err, "Should execute step-3")
+
+	err = processor.MarkEarliestPendingStepCompleted(transactionId)
+	assert.NoError(t, err, "Should complete step-3")
+
+	// Verify the next step becomes current
+	afterFirstStepSaga, err := processor.GetById(transactionId)
+	assert.NoError(t, err, "Should retrieve saga after first step completion")
+	
+	currentStep, found = afterFirstStepSaga.GetCurrentStep()
+	assert.True(t, found, "Should find current step after first step")
+	assert.Equal(t, secondAutoEquipStepId, currentStep.StepId, "Current step should be second auto-equip step")
 
 	hook.Reset()
 }

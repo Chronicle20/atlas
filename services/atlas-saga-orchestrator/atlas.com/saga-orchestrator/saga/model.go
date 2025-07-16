@@ -75,10 +75,30 @@ func (s *Saga) FindEarliestPendingStepIndex() int {
 	return earliestPendingIndex
 }
 
-// SetStepStatus sets the status of a step at the given index
-func (s *Saga) SetStepStatus(index int, status Status) {
+// SetStepStatus sets the status of a step at the given index with validation
+func (s *Saga) SetStepStatus(index int, status Status) error {
+	if index < 0 || index >= len(s.Steps) {
+		return fmt.Errorf("invalid step index: %d", index)
+	}
+
+	// Validate the state transition
+	if err := s.ValidateStateTransition(index, status); err != nil {
+		return err
+	}
+
+	// Update the status and timestamp
+	s.Steps[index].Status = status
+	s.Steps[index].UpdatedAt = time.Now()
+
+	return nil
+}
+
+// SetStepStatusUnsafe sets the status of a step at the given index without validation
+// This should only be used for internal operations where validation is already performed
+func (s *Saga) SetStepStatusUnsafe(index int, status Status) {
 	if index >= 0 && index < len(s.Steps) {
 		s.Steps[index].Status = status
+		s.Steps[index].UpdatedAt = time.Now()
 	}
 }
 
@@ -109,9 +129,88 @@ func (s *Saga) ValidateStepOrdering() bool {
 	return true
 }
 
+// ValidateStateConsistency performs comprehensive state consistency validation
+func (s *Saga) ValidateStateConsistency() error {
+	// Check step ordering
+	if !s.ValidateStepOrdering() {
+		return fmt.Errorf("invalid step ordering detected")
+	}
+
+	// Check for duplicate step IDs
+	stepIds := make(map[string]bool)
+	for i, step := range s.Steps {
+		if stepIds[step.StepId] {
+			return fmt.Errorf("duplicate step ID '%s' found at index %d", step.StepId, i)
+		}
+		stepIds[step.StepId] = true
+	}
+
+	// Check for invalid status values
+	for i, step := range s.Steps {
+		if step.Status != Pending && step.Status != Completed && step.Status != Failed {
+			return fmt.Errorf("invalid status '%s' at step index %d", step.Status, i)
+		}
+	}
+
+	// Check for invalid action values
+	for i, step := range s.Steps {
+		if step.Action == "" {
+			return fmt.Errorf("empty action at step index %d", i)
+		}
+	}
+
+	// Check for consistency: if saga is failing, there should be exactly one failed step
+	if s.Failing() {
+		failedCount := 0
+		for _, step := range s.Steps {
+			if step.Status == Failed {
+				failedCount++
+			}
+		}
+		if failedCount != 1 {
+			return fmt.Errorf("saga is failing but has %d failed steps, expected exactly 1", failedCount)
+		}
+	}
+
+	return nil
+}
+
 // GetStepCount returns the total number of steps in the saga
 func (s *Saga) GetStepCount() int {
 	return len(s.Steps)
+}
+
+// ValidateStateTransition validates if a step status transition is valid
+func (s *Saga) ValidateStateTransition(stepIndex int, newStatus Status) error {
+	if stepIndex < 0 || stepIndex >= len(s.Steps) {
+		return fmt.Errorf("invalid step index: %d", stepIndex)
+	}
+
+	currentStep := s.Steps[stepIndex]
+	currentStatus := currentStep.Status
+
+	// Define valid state transitions
+	switch currentStatus {
+	case Pending:
+		// Pending can transition to Completed or Failed
+		if newStatus != Completed && newStatus != Failed {
+			return fmt.Errorf("invalid transition from %s to %s", currentStatus, newStatus)
+		}
+	case Completed:
+		// Completed can only transition to Failed (for compensation)
+		if newStatus != Failed {
+			return fmt.Errorf("invalid transition from %s to %s", currentStatus, newStatus)
+		}
+	case Failed:
+		// Failed can only transition to Pending (after compensation)
+		if newStatus != Pending {
+			return fmt.Errorf("invalid transition from %s to %s", currentStatus, newStatus)
+		}
+	default:
+		return fmt.Errorf("unknown status: %s", currentStatus)
+	}
+
+	return nil
 }
 
 // GetCompletedStepCount returns the number of completed steps in the saga

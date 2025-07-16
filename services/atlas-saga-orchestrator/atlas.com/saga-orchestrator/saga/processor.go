@@ -94,6 +94,16 @@ func (p *ProcessorImpl) Put(saga Saga) error {
 		"tenant_id":      p.t.Id().String(),
 	}).Debug("Inserting saga into cache")
 
+	// Validate state consistency before inserting
+	if err := saga.ValidateStateConsistency(); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": saga.TransactionId.String(),
+			"saga_type":      saga.SagaType,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("State consistency validation failed before inserting saga")
+		return err
+	}
+
 	GetCache().Put(p.t.Id(), saga)
 
 	p.l.WithFields(logrus.Fields{
@@ -103,6 +113,64 @@ func (p *ProcessorImpl) Put(saga Saga) error {
 	}).Debug("Saga inserted into cache")
 
 	return p.Step(saga.TransactionId)
+}
+
+// AtomicUpdateSaga performs an atomic update of saga state with consistency validation
+func (p *ProcessorImpl) AtomicUpdateSaga(transactionId uuid.UUID, updateFunc func(*Saga) error) error {
+	s, err := p.GetById(transactionId)
+	if err != nil {
+		return err
+	}
+
+	// Create a copy for safe modification
+	sagaCopy := s
+
+	// Apply the update function
+	if err := updateFunc(&sagaCopy); err != nil {
+		return err
+	}
+
+	// Validate state consistency after update
+	if err := sagaCopy.ValidateStateConsistency(); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("State consistency validation failed in atomic update")
+		return err
+	}
+
+	// Update the cache atomically
+	GetCache().Put(p.t.Id(), sagaCopy)
+
+	return nil
+}
+
+// SafeSetStepStatus safely updates step status with validation and logging
+func (p *ProcessorImpl) SafeSetStepStatus(s *Saga, stepIndex int, status Status, operation string) error {
+	if err := s.SetStepStatus(stepIndex, status); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_index":     stepIndex,
+			"status":         status,
+			"operation":      operation,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("Failed to set step status safely")
+		return err
+	}
+
+	// Validate state consistency after status change
+	if err := s.ValidateStateConsistency(); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"operation":      operation,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("State consistency validation failed after safe status update")
+		return err
+	}
+
+	return nil
 }
 
 func (p *ProcessorImpl) StepCompleted(transactionId uuid.UUID, success bool) error {
@@ -149,8 +217,26 @@ func (p *ProcessorImpl) MarkFurthestCompletedStepFailed(transactionId uuid.UUID)
 		return nil
 	}
 
-	// Mark the step as failed
-	s.SetStepStatus(furthestCompletedIndex, Failed)
+	// Mark the step as failed with validation
+	if err := s.SetStepStatus(furthestCompletedIndex, Failed); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_index":     furthestCompletedIndex,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("Failed to set step status to failed")
+		return err
+	}
+
+	// Validate state consistency before updating cache
+	if err := s.ValidateStateConsistency(); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("State consistency validation failed after marking step as failed")
+		return err
+	}
 
 	// Update the saga in the cache
 	GetCache().Put(p.t.Id(), s)
@@ -194,8 +280,27 @@ func (p *ProcessorImpl) MarkEarliestPendingStep(transactionId uuid.UUID, status 
 		return errors.New("no pending steps found")
 	}
 
-	// Mark the step
-	s.SetStepStatus(earliestPendingIndex, status)
+	// Mark the step with validation
+	if err := s.SetStepStatus(earliestPendingIndex, status); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_index":     earliestPendingIndex,
+			"status":         status,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("Failed to set step status")
+		return err
+	}
+
+	// Validate state consistency before updating cache
+	if err := s.ValidateStateConsistency(); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("State consistency validation failed after marking step")
+		return err
+	}
 
 	// Update the saga in the cache
 	GetCache().Put(p.t.Id(), s)
@@ -269,15 +374,15 @@ func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 	// Expand the slice and insert the new step
 	s.Steps = append(s.Steps[:insertIndex], append([]Step[any]{step}, s.Steps[insertIndex:]...)...)
 
-	// Validate that the step ordering is still valid after insertion
-	if !s.ValidateStepOrdering() {
+	// Validate comprehensive state consistency after insertion
+	if err := s.ValidateStateConsistency(); err != nil {
 		p.l.WithFields(logrus.Fields{
 			"transaction_id": s.TransactionId.String(),
 			"saga_type":      s.SagaType,
 			"step_id":        step.StepId,
 			"tenant_id":      p.t.Id().String(),
-		}).Error("Step ordering validation failed after insertion.")
-		return errors.New("step ordering validation failed")
+		}).WithError(err).Error("State consistency validation failed after step insertion")
+		return err
 	}
 
 	// Update the saga in the cache atomically
@@ -414,8 +519,27 @@ func (p *ProcessorImpl) compensateFailedStep(s Saga) error {
 			"action":         failedStep.Action,
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("No compensation logic available for action type.")
-		// Mark step as compensated (remove failed status)
-		s.SetStepStatus(failedStepIndex, Pending)
+		// Mark step as compensated (remove failed status) with validation
+		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_index":     failedStepIndex,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("Failed to mark step as compensated")
+			return err
+		}
+
+		// Validate state consistency before updating cache
+		if err := s.ValidateStateConsistency(); err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("State consistency validation failed after compensation")
+			return err
+		}
+
 		GetCache().Put(p.t.Id(), s)
 		return nil
 	}
@@ -455,7 +579,26 @@ func (p *ProcessorImpl) compensateEquipAsset(s Saga, failedStep Step[any]) error
 	// Mark the failed step as compensated by removing it from the saga
 	failedStepIndex := s.FindFailedStepIndex()
 	if failedStepIndex != -1 {
-		s.SetStepStatus(failedStepIndex, Pending)
+		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_index":     failedStepIndex,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("Failed to mark EquipAsset step as compensated")
+			return err
+		}
+
+		// Validate state consistency before updating cache
+		if err := s.ValidateStateConsistency(); err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("State consistency validation failed after EquipAsset compensation")
+			return err
+		}
+
 		GetCache().Put(p.t.Id(), s)
 	}
 
@@ -496,7 +639,26 @@ func (p *ProcessorImpl) compensateUnequipAsset(s Saga, failedStep Step[any]) err
 	// Mark the failed step as compensated by removing it from the saga
 	failedStepIndex := s.FindFailedStepIndex()
 	if failedStepIndex != -1 {
-		s.SetStepStatus(failedStepIndex, Pending)
+		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_index":     failedStepIndex,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("Failed to mark UnequipAsset step as compensated")
+			return err
+		}
+
+		// Validate state consistency before updating cache
+		if err := s.ValidateStateConsistency(); err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("State consistency validation failed after UnequipAsset compensation")
+			return err
+		}
+
 		GetCache().Put(p.t.Id(), s)
 	}
 
@@ -532,7 +694,26 @@ func (p *ProcessorImpl) compensateCreateCharacter(s Saga, failedStep Step[any]) 
 	// Mark the failed step as compensated by removing it from the saga
 	failedStepIndex := s.FindFailedStepIndex()
 	if failedStepIndex != -1 {
-		s.SetStepStatus(failedStepIndex, Pending)
+		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_index":     failedStepIndex,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("Failed to mark CreateCharacter step as compensated")
+			return err
+		}
+
+		// Validate state consistency before updating cache
+		if err := s.ValidateStateConsistency(); err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("State consistency validation failed after CreateCharacter compensation")
+			return err
+		}
+
 		GetCache().Put(p.t.Id(), s)
 	}
 
@@ -634,7 +815,26 @@ func (p *ProcessorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[an
 	// Mark the failed step as compensated
 	failedStepIndex := s.FindFailedStepIndex()
 	if failedStepIndex != -1 {
-		s.SetStepStatus(failedStepIndex, Pending)
+		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_index":     failedStepIndex,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("Failed to mark CreateAndEquipAsset step as compensated")
+			return err
+		}
+
+		// Validate state consistency before updating cache
+		if err := s.ValidateStateConsistency(); err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("State consistency validation failed after CreateAndEquipAsset compensation")
+			return err
+		}
+
 		GetCache().Put(p.t.Id(), s)
 	}
 

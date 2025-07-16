@@ -94,17 +94,23 @@ type Action string
 
 // Constants for different actions
 const (
-	AwardInventory         Action = "award_inventory"
-	AwardExperience        Action = "award_experience"
-	AwardLevel             Action = "award_level"
-	AwardMesos             Action = "award_mesos"
-	WarpToRandomPortal     Action = "warp_to_random_portal"
-	WarpToPortal           Action = "warp_to_portal"
-	DestroyAsset           Action = "destroy_asset"
-	ChangeJob              Action = "change_job"
-	CreateSkill            Action = "create_skill"
-	UpdateSkill            Action = "update_skill"
-	ValidateCharacterState Action = "validate_character_state"
+	AwardInventory             Action = "award_inventory" // Deprecated: Use AwardAsset instead
+	AwardAsset                 Action = "award_asset"     // Preferred over AwardInventory
+	AwardExperience            Action = "award_experience"
+	AwardLevel                 Action = "award_level"
+	AwardMesos                 Action = "award_mesos"
+	WarpToRandomPortal         Action = "warp_to_random_portal"
+	WarpToPortal               Action = "warp_to_portal"
+	DestroyAsset               Action = "destroy_asset"
+	ChangeJob                  Action = "change_job"
+	CreateSkill                Action = "create_skill"
+	UpdateSkill                Action = "update_skill"
+	ValidateCharacterState     Action = "validate_character_state"
+	RequestGuildName           Action = "request_guild_name"
+	RequestGuildEmblem         Action = "request_guild_emblem"
+	RequestGuildDisband        Action = "request_guild_disband"
+	RequestGuildCapacityIncrease Action = "request_guild_capacity_increase"
+	CreateInvite               Action = "create_invite"
 )
 
 // Step represents a single step within a saga.
@@ -207,6 +213,43 @@ type ValidateCharacterStatePayload struct {
 	Conditions  []validation.ConditionInput `json:"conditions"`  // Conditions to validate
 }
 
+// RequestGuildNamePayload represents the payload required to request a guild name.
+type RequestGuildNamePayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+}
+
+// RequestGuildEmblemPayload represents the payload required to request a guild emblem change.
+type RequestGuildEmblemPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+}
+
+// RequestGuildDisbandPayload represents the payload required to request a guild disband.
+type RequestGuildDisbandPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+}
+
+// RequestGuildCapacityIncreasePayload represents the payload required to request a guild capacity increase.
+type RequestGuildCapacityIncreasePayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	WorldId     byte   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   byte   `json:"channelId"`   // ChannelId associated with the action
+}
+
+// CreateInvitePayload represents the payload required to create an invitation.
+type CreateInvitePayload struct {
+	InviteType   string `json:"inviteType"`   // Type of invitation (e.g., "GUILD", "PARTY", "BUDDY")
+	OriginatorId uint32 `json:"originatorId"` // ID of the character sending the invitation
+	TargetId     uint32 `json:"targetId"`     // ID of the character receiving the invitation
+	ReferenceId  uint32 `json:"referenceId"`  // ID of the entity being invited to (e.g., guild ID, party ID)
+	WorldId      byte   `json:"worldId"`      // WorldId associated with the action
+}
+
 type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
@@ -230,7 +273,7 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 
 	// Now handle the Payload field based on the Action type (you can customize this)
 	switch s.Action {
-	case AwardInventory:
+	case AwardInventory, AwardAsset: // Handle both action types the same way
 		var payload AwardItemActionPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
@@ -286,6 +329,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case UpdateSkill:
 		var payload UpdateSkillPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case CreateInvite:
+		var payload CreateInvitePayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

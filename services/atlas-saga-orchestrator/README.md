@@ -19,6 +19,8 @@ This service acts as a central coordinator for complex operations that span mult
 - `LOG_LEVEL` - Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace
 - `REST_PORT` - Port for the REST API server
 - `COMMAND_TOPIC_SAGA` - Kafka topic for saga commands
+- `COMMAND_TOPIC_GUILD` - Kafka topic for guild commands
+- `EVENT_TOPIC_GUILD_STATUS` - Kafka topic for guild status events
 
 ## API
 
@@ -55,6 +57,7 @@ Returns a specific saga by its transaction ID.
 The service consumes messages from the following Kafka topics:
 
 - `COMMAND_TOPIC_SAGA` - Processes saga commands for orchestrating distributed transactions
+- `EVENT_TOPIC_GUILD_STATUS` - Processes guild status events for saga step completion
 
 ### Message Format
 
@@ -91,10 +94,16 @@ The service consumes messages from the following Kafka topics:
 - `inventory_transaction` - Manages inventory-related transactions
 - `quest_reward` - Handles quest reward distribution
 - `trade_transaction` - Manages player-to-player trading
+- `guild_management` - Manages guild-related operations
 
 ### Supported Actions
 
-- `award_inventory` - Awards items to a character's inventory
+- `award_asset` - Awards items to a character's inventory
+  - Payload: `{"characterId": 12345, "item": {"templateId": 2000, "quantity": 1}}`
+  - Triggers a compartment command to create the item
+  - Completes when the item is successfully added to the inventory
+
+- `award_inventory` - (Deprecated: Use `award_asset` instead) Awards items to a character's inventory
   - Payload: `{"characterId": 12345, "item": {"templateId": 2000, "quantity": 1}}`
   - Triggers a compartment command to create the item
   - Completes when the item is successfully added to the inventory
@@ -149,3 +158,23 @@ The service consumes messages from the following Kafka topics:
   - Makes a synchronous HTTP call to the query-aggregator service's validation endpoint
   - Completes when all conditions pass, fails if any condition fails
   - Supported condition types: "jobId", "meso", "mapId", "fame", "item" (requires additional "itemId" field)
+
+- `request_guild_name` - Initiates the guild name change dialog
+  - Payload: `{"characterId": 12345, "worldId": 0, "channelId": 0}`
+  - Triggers a guild command to request a name change
+  - Completes when the StatusEventTypeRequestAgreement event is received
+
+- `request_guild_emblem` - Initiates the guild emblem change dialog
+  - Payload: `{"characterId": 12345, "worldId": 0, "channelId": 0}`
+  - Triggers a guild command to request an emblem change
+  - Completes when the StatusEventTypeEmblemUpdated event is received
+
+- `request_guild_disband` - Requests a guild disband
+  - Payload: `{"characterId": 12345, "worldId": 0, "channelId": 0}`
+  - Triggers a guild command to request a disband
+  - Completes when the StatusEventTypeDisbanded event is received
+
+- `request_guild_capacity_increase` - Requests a guild capacity increase
+  - Payload: `{"characterId": 12345, "worldId": 0, "channelId": 0}`
+  - Triggers a guild command to request a capacity increase
+  - Completes when the StatusEventTypeCapacityUpdated event is received

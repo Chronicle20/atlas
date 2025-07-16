@@ -3,6 +3,8 @@ package saga
 import (
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
+	"atlas-saga-orchestrator/guild"
+	"atlas-saga-orchestrator/invite"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/validation"
@@ -29,25 +31,28 @@ type Processor interface {
 
 // ProcessorImpl is the implementation of the Processor interface
 type ProcessorImpl struct {
-	l      logrus.FieldLogger
-	ctx    context.Context
-	t      tenant.Model
-	charP  character.Processor
-	compP  compartment.Processor
-	skillP skill.Processor
-	validP validation.Processor
+	l       logrus.FieldLogger
+	ctx     context.Context
+	t       tenant.Model
+	charP   character.Processor
+	compP   compartment.Processor
+	skillP  skill.Processor
+	validP  validation.Processor
+	guildP  guild.Processor
+	inviteP invite.Processor
 }
 
 // NewProcessor creates a new saga processor
 func NewProcessor(logger logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
 	return &ProcessorImpl{
-		l:      logger,
-		ctx:    ctx,
-		t:      tenant.MustFromContext(ctx),
-		charP:  character.NewProcessor(logger, ctx),
-		compP:  compartment.NewProcessor(logger, ctx),
-		skillP: skill.NewProcessor(logger, ctx),
-		validP: validation.NewProcessor(logger, ctx),
+		l:       logger,
+		ctx:     ctx,
+		charP:   character.NewProcessor(logger, ctx),
+		compP:   compartment.NewProcessor(logger, ctx),
+		skillP:  skill.NewProcessor(logger, ctx),
+		validP:  validation.NewProcessor(logger, ctx),
+		guildP:  guild.NewProcessor(logger, ctx),
+		inviteP: invite.NewProcessor(logger, ctx),
 	}
 }
 
@@ -201,17 +206,23 @@ type ActionHandler func(p *ProcessorImpl, s Saga, st Step[any]) error
 
 // actionHandlers maps action types to their handler functions
 var actionHandlers = map[Action]ActionHandler{
-	AwardInventory:         handleAwardInventory,
-	WarpToRandomPortal:     handleWarpToRandomPortal,
-	WarpToPortal:           handleWarpToPortal,
-	AwardExperience:        handleAwardExperience,
-	AwardLevel:             handleAwardLevel,
-	AwardMesos:             handleAwardMesos,
-	DestroyAsset:           handleDestroyAsset,
-	ChangeJob:              handleChangeJob,
-	CreateSkill:            handleCreateSkill,
-	UpdateSkill:            handleUpdateSkill,
-	ValidateCharacterState: handleValidateCharacterState,
+	AwardInventory:               handleAwardAsset, // Deprecated: Use AwardAsset instead
+	AwardAsset:                   handleAwardAsset, // Preferred over AwardInventory
+	WarpToRandomPortal:           handleWarpToRandomPortal,
+	WarpToPortal:                 handleWarpToPortal,
+	AwardExperience:              handleAwardExperience,
+	AwardLevel:                   handleAwardLevel,
+	AwardMesos:                   handleAwardMesos,
+	DestroyAsset:                 handleDestroyAsset,
+	ChangeJob:                    handleChangeJob,
+	CreateSkill:                  handleCreateSkill,
+	UpdateSkill:                  handleUpdateSkill,
+	ValidateCharacterState:       handleValidateCharacterState,
+	RequestGuildName:             handleRequestGuildName,
+	RequestGuildEmblem:           handleRequestGuildEmblem,
+	RequestGuildDisband:          handleRequestGuildDisband,
+	RequestGuildCapacityIncrease: handleRequestGuildCapacityIncrease,
+	CreateInvite:                 handleCreateInvite,
 }
 
 func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
@@ -271,8 +282,8 @@ func (p *ProcessorImpl) logActionError(s Saga, st Step[any], err error, errorMsg
 	}).WithError(err).Error(errorMsg)
 }
 
-// handleAwardInventory handles the AwardInventory action
-func handleAwardInventory(p *ProcessorImpl, s Saga, st Step[any]) error {
+// handleAwardAsset handles the AwardAsset and AwardInventory actions
+func handleAwardAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(AwardItemActionPayload)
 	if !ok {
 		return errors.New("invalid payload")
@@ -281,11 +292,17 @@ func handleAwardInventory(p *ProcessorImpl, s Saga, st Step[any]) error {
 	err := p.compP.RequestCreateItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity)
 
 	if err != nil {
-		p.logActionError(s, st, err, "Unable to award item.")
+		p.logActionError(s, st, err, "Unable to award asset.")
 		return err
 	}
 
 	return nil
+}
+
+// handleAwardInventory is a wrapper for handleAwardAsset for backward compatibility
+// Deprecated: Use handleAwardAsset instead
+func handleAwardInventory(p *ProcessorImpl, s Saga, st Step[any]) error {
+	return handleAwardAsset(p, s, st)
 }
 
 // handleWarpToRandomPortal handles the WarpToRandomPortal action
@@ -489,6 +506,95 @@ func handleValidateCharacterState(p *ProcessorImpl, s Saga, st Step[any]) error 
 		return err
 	}
 
-	// If validation passed, return nil to indicate success
+	return nil
+}
+
+// handleRequestGuildName handles the RequestGuildName action
+func handleRequestGuildName(p *ProcessorImpl, s Saga, st Step[any]) error {
+	// Extract the payload
+	payload, ok := st.Payload.(RequestGuildNamePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Call the guild processor
+	err := p.guildP.RequestName(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to request guild name.")
+		return err
+	}
+
+	return nil
+}
+
+// handleRequestGuildEmblem handles the RequestGuildEmblem action
+func handleRequestGuildEmblem(p *ProcessorImpl, s Saga, st Step[any]) error {
+	// Extract the payload
+	payload, ok := st.Payload.(RequestGuildEmblemPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Call the guild processor
+	err := p.guildP.RequestEmblem(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to request guild emblem.")
+		return err
+	}
+
+	return nil
+}
+
+// handleRequestGuildDisband handles the RequestGuildDisband action
+func handleRequestGuildDisband(p *ProcessorImpl, s Saga, st Step[any]) error {
+	// Extract the payload
+	payload, ok := st.Payload.(RequestGuildDisbandPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Call the guild processor
+	err := p.guildP.RequestDisband(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to request guild disband.")
+		return err
+	}
+
+	return nil
+}
+
+// handleRequestGuildCapacityIncrease handles the RequestGuildCapacityIncrease action
+func handleRequestGuildCapacityIncrease(p *ProcessorImpl, s Saga, st Step[any]) error {
+	// Extract the payload
+	payload, ok := st.Payload.(RequestGuildCapacityIncreasePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Call the guild processor
+	err := p.guildP.RequestCapacityIncrease(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to request guild capacity increase.")
+		return err
+	}
+
+	return nil
+}
+
+// handleCreateInvite handles the CreateInvite action
+func handleCreateInvite(p *ProcessorImpl, s Saga, st Step[any]) error {
+	// Extract the payload
+	payload, ok := st.Payload.(CreateInvitePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Call the invite processor
+	err := p.inviteP.Create(s.TransactionId, payload.InviteType, payload.OriginatorId, payload.WorldId, payload.ReferenceId, payload.TargetId)
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to create invitation.")
+		return err
+	}
+
 	return nil
 }

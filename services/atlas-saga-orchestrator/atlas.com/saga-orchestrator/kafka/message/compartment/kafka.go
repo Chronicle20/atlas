@@ -128,6 +128,8 @@ const (
 	StatusEventTypeSortComplete         = "SORT_COMPLETE"
 	StatusEventTypeAccepted             = "ACCEPTED"
 	StatusEventTypeReleased             = "RELEASED"
+	StatusEventTypeEquipped             = "EQUIPPED"
+	StatusEventTypeUnequipped           = "UNEQUIPPED"
 	StatusEventTypeError                = "ERROR"
 
 	AcceptCommandFailed  = "ACCEPT_COMMAND_FAILED"
@@ -190,4 +192,14 @@ type ReleasedEventBody struct {
 type ErrorEventBody struct {
 	ErrorCode     string    `json:"errorCode"`
 	TransactionId uuid.UUID `json:"transactionId"`
+}
+
+type EquippedEventBody struct {
+	Source      int16 `json:"source"`
+	Destination int16 `json:"destination"`
+}
+
+type UnequippedEventBody struct {
+	Source      int16 `json:"source"`
+	Destination int16 `json:"destination"`
 }

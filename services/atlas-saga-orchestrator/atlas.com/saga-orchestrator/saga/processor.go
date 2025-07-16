@@ -16,6 +16,7 @@ import (
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"strings"
 	"time"
 )
 
@@ -403,6 +404,8 @@ func (p *ProcessorImpl) compensateFailedStep(s Saga) error {
 		return p.compensateUnequipAsset(s, failedStep)
 	case CreateCharacter:
 		return p.compensateCreateCharacter(s, failedStep)
+	case CreateAndEquipAsset:
+		return p.compensateCreateAndEquipAsset(s, failedStep)
 	default:
 		p.l.WithFields(logrus.Fields{
 			"transaction_id": s.TransactionId.String(),
@@ -527,6 +530,108 @@ func (p *ProcessorImpl) compensateCreateCharacter(s Saga, failedStep Step[any]) 
 	// This compensation step simply acknowledges the failure and allows the saga to continue.
 
 	// Mark the failed step as compensated by removing it from the saga
+	failedStepIndex := s.FindFailedStepIndex()
+	if failedStepIndex != -1 {
+		s.SetStepStatus(failedStepIndex, Pending)
+		GetCache().Put(p.t.Id(), s)
+	}
+
+	return nil
+}
+
+// compensateCreateAndEquipAsset handles compensation for a failed CreateAndEquipAsset operation
+// This compound action has two phases:
+// 1. Asset creation (handled by handleCreateAndEquipAsset)
+// 2. Dynamic equipment step creation (handled by compartment consumer)
+//
+// Compensation scenarios:
+// - Phase 1 failure: No compensation needed since nothing was created
+// - Phase 2 failure: Need to destroy the created asset since it was successfully created but failed to equip
+//
+// Note: This function is called when the CreateAndEquipAsset step itself fails,
+// not when the dynamically created EquipAsset step fails (that uses compensateEquipAsset)
+func (p *ProcessorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[any]) error {
+	// Extract the original payload
+	payload, ok := failedStep.Payload.(CreateAndEquipAssetPayload)
+	if !ok {
+		return fmt.Errorf("invalid payload for CreateAndEquipAsset compensation")
+	}
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId.String(),
+		"saga_type":      s.SagaType,
+		"step_id":        failedStep.StepId,
+		"character_id":   payload.CharacterId,
+		"template_id":    payload.Item.TemplateId,
+		"quantity":       payload.Item.Quantity,
+		"tenant_id":      p.t.Id().String(),
+	}).Info("Compensating failed CreateAndEquipAsset operation")
+
+	// For CreateAndEquipAsset, we need to determine if the asset was actually created
+	// If the failure happened during the asset creation phase, no compensation is needed
+	// If the failure happened during the equipment phase, we need to destroy the created asset
+	
+	// Check if there are any auto-generated equip steps in this saga
+	// If an auto-equip step exists, it means the asset was successfully created
+	// and the failure occurred during the equipment phase
+	autoEquipStepExists := false
+	for _, step := range s.Steps {
+		if step.Action == EquipAsset && strings.HasPrefix(step.StepId, "auto_equip_step_") {
+			autoEquipStepExists = true
+			break
+		}
+	}
+
+	if autoEquipStepExists {
+		// Asset was created but equipment failed - need to destroy the created asset
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_id":        failedStep.StepId,
+			"character_id":   payload.CharacterId,
+			"template_id":    payload.Item.TemplateId,
+			"quantity":       payload.Item.Quantity,
+			"tenant_id":      p.t.Id().String(),
+		}).Info("Auto-equip step found - destroying created asset for compensation")
+
+		// Destroy the created asset
+		err := p.compP.RequestDestroyItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity)
+		if err != nil {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_id":        failedStep.StepId,
+				"character_id":   payload.CharacterId,
+				"template_id":    payload.Item.TemplateId,
+				"quantity":       payload.Item.Quantity,
+				"tenant_id":      p.t.Id().String(),
+			}).WithError(err).Error("Failed to destroy created asset during CreateAndEquipAsset compensation")
+			return err
+		}
+
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_id":        failedStep.StepId,
+			"character_id":   payload.CharacterId,
+			"template_id":    payload.Item.TemplateId,
+			"quantity":       payload.Item.Quantity,
+			"tenant_id":      p.t.Id().String(),
+		}).Info("Successfully destroyed created asset during CreateAndEquipAsset compensation")
+	} else {
+		// No auto-equip step found - asset creation failed, no compensation needed
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_id":        failedStep.StepId,
+			"character_id":   payload.CharacterId,
+			"template_id":    payload.Item.TemplateId,
+			"quantity":       payload.Item.Quantity,
+			"tenant_id":      p.t.Id().String(),
+		}).Info("No auto-equip step found - asset creation failed, no compensation needed")
+	}
+
+	// Mark the failed step as compensated
 	failedStepIndex := s.FindFailedStepIndex()
 	if failedStepIndex != -1 {
 		s.SetStepStatus(failedStepIndex, Pending)

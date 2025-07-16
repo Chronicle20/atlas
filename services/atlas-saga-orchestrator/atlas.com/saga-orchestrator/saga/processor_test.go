@@ -966,3 +966,155 @@ func TestTransformExperienceDistributions(t *testing.T) {
 		assert.Equal(t, s.Attr1, target[i].Attr1)
 	}
 }
+
+// TestHandleEquipAsset tests the handleEquipAsset function
+func TestHandleEquipAsset(t *testing.T) {
+	tests := []struct {
+		name          string
+		payload       EquipAssetPayload
+		mockError     error
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "Success case",
+			payload: EquipAssetPayload{
+				CharacterId:   12345,
+				InventoryType: 1,
+				Source:        0,
+				Destination:   -1,
+			},
+			mockError:   nil,
+			expectError: false,
+		},
+		{
+			name: "Error case",
+			payload: EquipAssetPayload{
+				CharacterId:   12345,
+				InventoryType: 1,
+				Source:        0,
+				Destination:   -1,
+			},
+			mockError:     errors.New("compartment service error"),
+			expectError:   true,
+			errorContains: "compartment service error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup
+			mockCompP := &mock2.ProcessorMock{
+				RequestEquipAssetFunc: func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {
+					return tt.mockError
+				},
+			}
+			processor, _ := setupTestProcessor(nil, mockCompP)
+
+			saga := Saga{
+				TransactionId: uuid.New(),
+				SagaType:      InventoryTransaction,
+				InitiatedBy:   "test",
+				Steps:         []Step[any]{},
+			}
+
+			step := Step[any]{
+				StepId:    "test-step",
+				Status:    Pending,
+				Action:    EquipAsset,
+				Payload:   tt.payload,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+
+			// Execute
+			err := handleEquipAsset(processor, saga, step)
+
+			// Verify
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+// TestHandleUnequipAsset tests the handleUnequipAsset function
+func TestHandleUnequipAsset(t *testing.T) {
+	tests := []struct {
+		name          string
+		payload       UnequipAssetPayload
+		mockError     error
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name: "Success case",
+			payload: UnequipAssetPayload{
+				CharacterId:   12345,
+				InventoryType: 1,
+				Source:        -1,
+				Destination:   0,
+			},
+			mockError:   nil,
+			expectError: false,
+		},
+		{
+			name: "Error case",
+			payload: UnequipAssetPayload{
+				CharacterId:   12345,
+				InventoryType: 1,
+				Source:        -1,
+				Destination:   0,
+			},
+			mockError:     errors.New("compartment service error"),
+			expectError:   true,
+			errorContains: "compartment service error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup
+			mockCompP := &mock2.ProcessorMock{
+				RequestUnequipAssetFunc: func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {
+					return tt.mockError
+				},
+			}
+			processor, _ := setupTestProcessor(nil, mockCompP)
+
+			saga := Saga{
+				TransactionId: uuid.New(),
+				SagaType:      InventoryTransaction,
+				InitiatedBy:   "test",
+				Steps:         []Step[any]{},
+			}
+
+			step := Step[any]{
+				StepId:    "test-step",
+				Status:    Pending,
+				Action:    UnequipAsset,
+				Payload:   tt.payload,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+
+			// Execute
+			err := handleUnequipAsset(processor, saga, step)
+
+			// Verify
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

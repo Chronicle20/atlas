@@ -214,6 +214,8 @@ var actionHandlers = map[Action]ActionHandler{
 	AwardLevel:                   handleAwardLevel,
 	AwardMesos:                   handleAwardMesos,
 	DestroyAsset:                 handleDestroyAsset,
+	EquipAsset:                   handleEquipAsset,
+	UnequipAsset:                 handleUnequipAsset,
 	ChangeJob:                    handleChangeJob,
 	CreateSkill:                  handleCreateSkill,
 	UpdateSkill:                  handleUpdateSkill,
@@ -241,7 +243,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			"saga_type":      s.SagaType,
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("Reverting saga step.")
-		return nil
+		return p.compensateFailedStep(s)
 	}
 
 	st, ok := s.GetCurrentStep()
@@ -270,6 +272,132 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 
 	// Execute the handler
 	return handler(p, s, st)
+}
+
+// compensateFailedStep handles compensation for failed steps
+func (p *ProcessorImpl) compensateFailedStep(s Saga) error {
+	// Find the failed step
+	failedStepIndex := s.FindFailedStepIndex()
+	if failedStepIndex == -1 {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"tenant_id":      p.t.Id().String(),
+		}).Debug("No failed step found for compensation.")
+		return nil
+	}
+
+	failedStep := s.Steps[failedStepIndex]
+	
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId.String(),
+		"saga_type":      s.SagaType,
+		"step_id":        failedStep.StepId,
+		"action":         failedStep.Action,
+		"tenant_id":      p.t.Id().String(),
+	}).Debug("Compensating failed step.")
+
+	// Perform compensation based on the action type
+	switch failedStep.Action {
+	case EquipAsset:
+		return p.compensateEquipAsset(s, failedStep)
+	case UnequipAsset:
+		return p.compensateUnequipAsset(s, failedStep)
+	default:
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_id":        failedStep.StepId,
+			"action":         failedStep.Action,
+			"tenant_id":      p.t.Id().String(),
+		}).Debug("No compensation logic available for action type.")
+		// Mark step as compensated (remove failed status)
+		s.SetStepStatus(failedStepIndex, Pending)
+		GetCache().Put(p.t.Id(), s)
+		return nil
+	}
+}
+
+// compensateEquipAsset handles compensation for a failed EquipAsset operation
+// by performing the reverse operation (UnequipAsset)
+func (p *ProcessorImpl) compensateEquipAsset(s Saga, failedStep Step[any]) error {
+	// Extract the original payload
+	payload, ok := failedStep.Payload.(EquipAssetPayload)
+	if !ok {
+		return fmt.Errorf("invalid payload for EquipAsset compensation")
+	}
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId.String(),
+		"saga_type":      s.SagaType,
+		"step_id":        failedStep.StepId,
+		"character_id":   payload.CharacterId,
+		"source":         payload.Source,
+		"destination":    payload.Destination,
+		"tenant_id":      p.t.Id().String(),
+	}).Info("Compensating failed EquipAsset operation with UnequipAsset")
+
+	// Perform the reverse operation: unequip from destination back to source
+	err := p.compP.RequestUnequipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Destination, payload.Source)
+	if err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_id":        failedStep.StepId,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("Failed to compensate EquipAsset operation")
+		return err
+	}
+
+	// Mark the failed step as compensated by removing it from the saga
+	failedStepIndex := s.FindFailedStepIndex()
+	if failedStepIndex != -1 {
+		s.SetStepStatus(failedStepIndex, Pending)
+		GetCache().Put(p.t.Id(), s)
+	}
+
+	return nil
+}
+
+// compensateUnequipAsset handles compensation for a failed UnequipAsset operation
+// by performing the reverse operation (EquipAsset)
+func (p *ProcessorImpl) compensateUnequipAsset(s Saga, failedStep Step[any]) error {
+	// Extract the original payload
+	payload, ok := failedStep.Payload.(UnequipAssetPayload)
+	if !ok {
+		return fmt.Errorf("invalid payload for UnequipAsset compensation")
+	}
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId.String(),
+		"saga_type":      s.SagaType,
+		"step_id":        failedStep.StepId,
+		"character_id":   payload.CharacterId,
+		"source":         payload.Source,
+		"destination":    payload.Destination,
+		"tenant_id":      p.t.Id().String(),
+	}).Info("Compensating failed UnequipAsset operation with EquipAsset")
+
+	// Perform the reverse operation: equip from destination back to source
+	err := p.compP.RequestEquipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Destination, payload.Source)
+	if err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_id":        failedStep.StepId,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("Failed to compensate UnequipAsset operation")
+		return err
+	}
+
+	// Mark the failed step as compensated by removing it from the saga
+	failedStepIndex := s.FindFailedStepIndex()
+	if failedStepIndex != -1 {
+		s.SetStepStatus(failedStepIndex, Pending)
+		GetCache().Put(p.t.Id(), s)
+	}
+
+	return nil
 }
 
 // logActionError logs an error that occurred during action processing
@@ -412,6 +540,40 @@ func handleDestroyAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
 
 	if err != nil {
 		p.logActionError(s, st, err, "Unable to destroy asset.")
+		return err
+	}
+
+	return nil
+}
+
+// handleEquipAsset handles the EquipAsset action
+func handleEquipAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(EquipAssetPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := p.compP.RequestEquipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
+
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to equip asset.")
+		return err
+	}
+
+	return nil
+}
+
+// handleUnequipAsset handles the UnequipAsset action
+func handleUnequipAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(UnequipAssetPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := p.compP.RequestUnequipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
+
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to unequip asset.")
 		return err
 	}
 

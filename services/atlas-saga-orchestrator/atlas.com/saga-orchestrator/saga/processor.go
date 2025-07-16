@@ -47,6 +47,7 @@ func NewProcessor(logger logrus.FieldLogger, ctx context.Context) *ProcessorImpl
 	return &ProcessorImpl{
 		l:       logger,
 		ctx:     ctx,
+		t:       tenant.MustFromContext(ctx),
 		charP:   character.NewProcessor(logger, ctx),
 		compP:   compartment.NewProcessor(logger, ctx),
 		skillP:  skill.NewProcessor(logger, ctx),
@@ -226,6 +227,7 @@ var actionHandlers = map[Action]ActionHandler{
 	RequestGuildCapacityIncrease: handleRequestGuildCapacityIncrease,
 	CreateInvite:                 handleCreateInvite,
 	CreateCharacter:              handleCreateCharacter,
+	CreateAndEquipAsset:          handleCreateAndEquipAsset,
 }
 
 func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
@@ -814,6 +816,30 @@ func handleCreateCharacter(p *ProcessorImpl, s Saga, st Step[any]) error {
 		p.logActionError(s, st, err, "Unable to create character.")
 		return err
 	}
+
+	return nil
+}
+
+// handleCreateAndEquipAsset handles the CreateAndEquipAsset action
+// This is a compound action that first creates an asset (internally using award_asset semantics)
+// and then dynamically creates an equip_asset step when the creation succeeds
+func handleCreateAndEquipAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
+	// Extract the payload
+	payload, ok := st.Payload.(CreateAndEquipAssetPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Step 1: Internal award_asset - Create the item using the same logic as handleAwardAsset
+	err := p.compP.RequestCreateItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity)
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to create asset for create_and_equip_asset.")
+		return err
+	}
+
+	// Note: Step 2 (dynamic equip_asset step creation) will be handled by the compartment consumer
+	// when it receives the StatusEventTypeCreated event from the compartment service.
+	// The consumer will detect this is a CreateAndEquipAsset step and add the equip_asset step.
 
 	return nil
 }

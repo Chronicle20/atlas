@@ -172,3 +172,28 @@ func TestCreateAndEmitWithDuplicateName(t *testing.T) {
 		t.Fatal("Expected error for duplicate name, but got none")
 	}
 }
+
+func TestCreateAndEmitWithInvalidLevel(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	
+	// Test with invalid level - too low (0)
+	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("TestLevel0").SetLevel(0).SetExperience(0).Build()
+
+	processor := character.NewProcessor(testLogger(), tctx, testDatabase(t))
+	_, err := processor.CreateAndEmit(uuid.New(), input)
+	
+	// Should get an error due to invalid level
+	if err == nil {
+		t.Fatal("Expected error for invalid level 0, but got none")
+	}
+	
+	// Test with invalid level - too high (201)
+	input2 := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("TestLevel201").SetLevel(201).SetExperience(0).Build()
+
+	_, err2 := processor.CreateAndEmit(uuid.New(), input2)
+	
+	// Should get an error due to invalid level
+	if err2 == nil {
+		t.Fatal("Expected error for invalid level 201, but got none")
+	}
+}

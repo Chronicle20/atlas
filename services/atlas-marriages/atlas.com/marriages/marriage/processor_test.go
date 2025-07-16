@@ -1376,3 +1376,203 @@ func TestGetExpiredProposalsProvider(t *testing.T) {
 	})
 }
 
+// TestProcessor_Divorce tests the divorce functionality
+func TestProcessor_Divorce(t *testing.T) {
+	db := setupTestDB(t)
+	logger := logrus.New()
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+
+	// Create a mock character processor
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	
+	// Add test characters
+	mockCharacterProcessor.AddCharacter(1, "TestChar1", 20) // Level 20
+	mockCharacterProcessor.AddCharacter(2, "TestChar2", 25) // Level 25
+
+	processor := NewProcessor(logger, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
+
+	t.Run("Divorce Active Marriage", func(t *testing.T) {
+		// Create a married couple
+		marriageEntity := Entity{
+			ID:           1,
+			CharacterId1: 1,
+			CharacterId2: 2,
+			Status:       StatusMarried,
+			ProposedAt:   time.Now().Add(-2 * time.Hour),
+			EngagedAt:    &[]time.Time{time.Now().Add(-1 * time.Hour)}[0],
+			MarriedAt:    &[]time.Time{time.Now().Add(-30 * time.Minute)}[0],
+			TenantId:     tenantId,
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+		}
+		db.Create(&marriageEntity)
+
+		// Test divorce initiated by character 1 (without Kafka emission for testing)
+		divorcedMarriage, err := processor.Divorce(1, 1)()
+		if err != nil {
+			t.Fatalf("Failed to divorce marriage: %v", err)
+		}
+
+		// Verify marriage status
+		if divorcedMarriage.Status() != StatusDivorced {
+			t.Errorf("Expected marriage status to be %v, got %v", StatusDivorced, divorcedMarriage.Status())
+		}
+
+		// Verify divorce timestamp is set
+		if divorcedMarriage.DivorcedAt() == nil {
+			t.Error("Expected divorced at timestamp to be set")
+		}
+
+		// Verify database update
+		var updatedEntity Entity
+		db.First(&updatedEntity, 1)
+		if updatedEntity.Status != StatusDivorced {
+			t.Errorf("Expected database status to be %v, got %v", StatusDivorced, updatedEntity.Status)
+		}
+	})
+
+	t.Run("Divorce Non-Existent Marriage", func(t *testing.T) {
+		_, err := processor.Divorce(999, 1)()
+		if err == nil {
+			t.Error("Expected error when divorcing non-existent marriage")
+		}
+	})
+
+	t.Run("Divorce By Non-Partner", func(t *testing.T) {
+		// Create another marriage
+		marriageEntity := Entity{
+			ID:           2,
+			CharacterId1: 1,
+			CharacterId2: 2,
+			Status:       StatusMarried,
+			ProposedAt:   time.Now().Add(-2 * time.Hour),
+			EngagedAt:    &[]time.Time{time.Now().Add(-1 * time.Hour)}[0],
+			MarriedAt:    &[]time.Time{time.Now().Add(-30 * time.Minute)}[0],
+			TenantId:     tenantId,
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+		}
+		db.Create(&marriageEntity)
+
+		// Try to divorce by character 3 (not a partner)
+		_, err := processor.Divorce(2, 3)()
+		if err == nil {
+			t.Error("Expected error when non-partner tries to initiate divorce")
+		}
+	})
+
+	t.Run("Divorce Already Divorced Marriage", func(t *testing.T) {
+		// Create an already divorced marriage
+		marriageEntity := Entity{
+			ID:           3,
+			CharacterId1: 1,
+			CharacterId2: 2,
+			Status:       StatusDivorced,
+			ProposedAt:   time.Now().Add(-3 * time.Hour),
+			EngagedAt:    &[]time.Time{time.Now().Add(-2 * time.Hour)}[0],
+			MarriedAt:    &[]time.Time{time.Now().Add(-1 * time.Hour)}[0],
+			DivorcedAt:   &[]time.Time{time.Now().Add(-30 * time.Minute)}[0],
+			TenantId:     tenantId,
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+		}
+		db.Create(&marriageEntity)
+
+		// Try to divorce again
+		_, err := processor.Divorce(3, 1)()
+		if err == nil {
+			t.Error("Expected error when trying to divorce already divorced marriage")
+		}
+	})
+}
+
+// TestProcessor_CharacterDeletion tests the character deletion functionality
+func TestProcessor_CharacterDeletion(t *testing.T) {
+	db := setupTestDB(t)
+	logger := logrus.New()
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+
+	// Create a mock character processor
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	
+	// Add test characters
+	mockCharacterProcessor.AddCharacter(1, "TestChar1", 20) // Level 20
+	mockCharacterProcessor.AddCharacter(2, "TestChar2", 25) // Level 25
+
+	processor := NewProcessor(logger, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
+
+	t.Run("Handle Character Deletion With Active Marriage", func(t *testing.T) {
+		// Create a married couple
+		marriageEntity := Entity{
+			ID:           1,
+			CharacterId1: 1,
+			CharacterId2: 2,
+			Status:       StatusMarried,
+			ProposedAt:   time.Now().Add(-2 * time.Hour),
+			EngagedAt:    &[]time.Time{time.Now().Add(-1 * time.Hour)}[0],
+			MarriedAt:    &[]time.Time{time.Now().Add(-30 * time.Minute)}[0],
+			TenantId:     tenantId,
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+		}
+		db.Create(&marriageEntity)
+
+		// Handle character deletion (without Kafka emission for testing)
+		err := processor.HandleCharacterDeletion(1)
+		if err != nil {
+			t.Fatalf("Failed to handle character deletion: %v", err)
+		}
+
+		// Verify marriage is marked as divorced
+		var updatedEntity Entity
+		db.First(&updatedEntity, 1)
+		if updatedEntity.Status != StatusDivorced {
+			t.Errorf("Expected marriage status to be %v after character deletion, got %v", StatusDivorced, updatedEntity.Status)
+		}
+
+		// Verify divorced timestamp is set
+		if updatedEntity.DivorcedAt == nil {
+			t.Error("Expected divorced at timestamp to be set after character deletion")
+		}
+	})
+
+	t.Run("Handle Character Deletion With No Marriage", func(t *testing.T) {
+		// Handle deletion of character with no marriage
+		err := processor.HandleCharacterDeletion(3)
+		if err != nil {
+			t.Fatalf("Unexpected error when handling deletion of character with no marriage: %v", err)
+		}
+	})
+
+	t.Run("Handle Character Deletion With Engaged Marriage", func(t *testing.T) {
+		// Create an engaged couple
+		marriageEntity := Entity{
+			ID:           2,
+			CharacterId1: 1,
+			CharacterId2: 2,
+			Status:       StatusEngaged,
+			ProposedAt:   time.Now().Add(-2 * time.Hour),
+			EngagedAt:    &[]time.Time{time.Now().Add(-1 * time.Hour)}[0],
+			TenantId:     tenantId,
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+		}
+		db.Create(&marriageEntity)
+
+		// Handle character deletion
+		err := processor.HandleCharacterDeletion(2)
+		if err != nil {
+			t.Fatalf("Failed to handle character deletion for engaged couple: %v", err)
+		}
+
+		// Verify marriage is marked as divorced
+		var updatedEntity Entity
+		db.First(&updatedEntity, 2)
+		if updatedEntity.Status != StatusDivorced {
+			t.Errorf("Expected marriage status to be %v after character deletion, got %v", StatusDivorced, updatedEntity.Status)
+		}
+	})
+}
+

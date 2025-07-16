@@ -37,6 +37,10 @@ type Processor interface {
 	Divorce(marriageId uint32, initiatedBy uint32) model.Provider[Marriage]
 	DivorceAndEmit(transactionId uuid.UUID, marriageId uint32, initiatedBy uint32) (Marriage, error)
 	
+	// Character deletion handling
+	HandleCharacterDeletion(characterId uint32) error
+	HandleCharacterDeletionAndEmit(transactionId uuid.UUID, characterId uint32) error
+	
 	// Enhanced transactional operations
 	AcceptProposalWithTransactionAndEmit(transactionId uuid.UUID, proposalId uint32) (Marriage, error)
 
@@ -1927,5 +1931,146 @@ func (p *ProcessorImpl) ProcessCeremonyTimeouts() error {
 	}
 	
 	p.log.WithField("processedCount", len(timeoutCeremonies)).Info("Completed processing ceremony timeouts")
+	return nil
+}
+
+// HandleCharacterDeletion handles automatic divorce when a character is deleted
+func (p *ProcessorImpl) HandleCharacterDeletion(characterId uint32) error {
+	p.log.WithField("characterId", characterId).Debug("Processing character deletion for marriage cleanup")
+	
+	// Get tenant from context
+	t := tenant.MustFromContext(p.ctx)
+	
+	// Get any active marriage for this character
+	marriageProvider := GetActiveMarriageByCharacterProvider(p.db, p.log)(characterId, t.Id())
+	marriage, err := marriageProvider()
+	if err != nil {
+		p.log.WithError(err).WithField("characterId", characterId).Error("Failed to retrieve active marriage for character deletion")
+		return err
+	}
+	
+	// If no active marriage, nothing to do
+	if marriage == nil {
+		p.log.WithField("characterId", characterId).Debug("No active marriage found for deleted character")
+		return nil
+	}
+	
+	// Mark the marriage as deleted due to character deletion
+	now := time.Now()
+	builder := marriage.Builder().
+		SetStatus(StatusDivorced). // Use divorced status as there's no separate deleted status
+		SetDivorcedAt(&now).
+		SetUpdatedAt(now)
+		
+	// If marriage is not yet married (e.g., still engaged), set a married timestamp
+	// This is required by business rules for divorced status
+	if marriage.Status() == StatusEngaged && marriage.MarriedAt() == nil {
+		builder = builder.SetMarriedAt(&now) // Set to same time as divorce for deleted characters
+	}
+	
+	deletedMarriage, err := builder.Build()
+	
+	if err != nil {
+		p.log.WithError(err).WithField("characterId", characterId).Error("Failed to build deleted marriage")
+		return err
+	}
+	
+	// Update the marriage in the database
+	updateMarriageProvider := UpdateMarriage(p.db, p.log)(deletedMarriage)
+	_, err = updateMarriageProvider()
+	if err != nil {
+		p.log.WithError(err).WithFields(logrus.Fields{
+			"marriageId":  marriage.Id(),
+			"characterId": characterId,
+		}).Error("Failed to update marriage for character deletion")
+		return err
+	}
+	
+	p.log.WithFields(logrus.Fields{
+		"marriageId":  marriage.Id(),
+		"characterId": characterId,
+	}).Info("Marriage automatically ended due to character deletion")
+	
+	return nil
+}
+
+// HandleCharacterDeletionAndEmit handles character deletion and emits appropriate events
+func (p *ProcessorImpl) HandleCharacterDeletionAndEmit(transactionId uuid.UUID, characterId uint32) error {
+	p.log.WithFields(logrus.Fields{
+		"characterId":   characterId,
+		"transactionId": transactionId,
+	}).Debug("Processing character deletion with event emission")
+	
+	// Get tenant from context
+	t := tenant.MustFromContext(p.ctx)
+	
+	// Get any active marriage for this character
+	marriageProvider := GetActiveMarriageByCharacterProvider(p.db, p.log)(characterId, t.Id())
+	marriage, err := marriageProvider()
+	if err != nil {
+		p.log.WithError(err).WithField("characterId", characterId).Error("Failed to retrieve active marriage for character deletion")
+		return err
+	}
+	
+	// If no active marriage, nothing to do
+	if marriage == nil {
+		p.log.WithField("characterId", characterId).Debug("No active marriage found for deleted character")
+		return nil
+	}
+	
+	// Process the deletion with events
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		// Mark the marriage as deleted due to character deletion
+		now := time.Now()
+		builder := marriage.Builder().
+			SetStatus(StatusDivorced). // Use divorced status as there's no separate deleted status
+			SetDivorcedAt(&now).
+			SetUpdatedAt(now)
+			
+		// If marriage is not yet married (e.g., still engaged), set a married timestamp
+		// This is required by business rules for divorced status
+		if marriage.Status() == StatusEngaged && marriage.MarriedAt() == nil {
+			builder = builder.SetMarriedAt(&now) // Set to same time as divorce for deleted characters
+		}
+		
+		deletedMarriage, err := builder.Build()
+		
+		if err != nil {
+			return err
+		}
+		
+		// Update the marriage in the database
+		updateMarriageProvider := UpdateMarriage(p.db, p.log)(deletedMarriage)
+		_, err = updateMarriageProvider()
+		if err != nil {
+			return err
+		}
+		
+		// Emit MarriageDeleted event for character deletion
+		deletedAt := now
+		eventProvider := MarriageDeletedEventProvider(
+			marriage.Id(),
+			marriage.CharacterId1(),
+			marriage.CharacterId2(),
+			deletedAt,
+			characterId, // The deleted character initiated the deletion
+			"character_deleted",
+		)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
+	})
+	if err != nil {
+		p.log.WithError(err).WithFields(logrus.Fields{
+			"marriageId":  marriage.Id(),
+			"characterId": characterId,
+		}).Error("Failed to process character deletion")
+		return err
+	}
+	
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"marriageId":    marriage.Id(),
+		"characterId":   characterId,
+	}).Info("Character deletion processed successfully with events")
+	
 	return nil
 }

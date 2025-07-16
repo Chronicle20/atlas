@@ -48,6 +48,9 @@ func InitHandlers(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) []hand
 		// Divorce command handler
 		kafka.AdaptHandler(kafka.PersistentConfig(handleDivorce(l, ctx, marriageProcessor))),
 		
+		// Character deletion handler
+		kafka.AdaptHandler(kafka.PersistentConfig(handleCharacterDeleted(l, ctx, marriageProcessor))),
+		
 		// Advance ceremony state handler
 		kafka.AdaptHandler(kafka.PersistentConfig(handleAdvanceCeremonyState(l, ctx, marriageProcessor))),
 	}
@@ -628,6 +631,53 @@ func handleDivorce(l logrus.FieldLogger, ctx context.Context, processor marriage
 			"marriageId":  marriage.Id(),
 			"characterId": cmd.CharacterId,
 		}).Info("Divorce processed successfully")
+	}
+}
+
+// handleCharacterDeleted handles character deletion commands
+func handleCharacterDeleted(l logrus.FieldLogger, ctx context.Context, processor marriageService.Processor) kafka.Handler[marriageMsg.Command[marriageMsg.CharacterDeletedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, cmd marriageMsg.Command[marriageMsg.CharacterDeletedBody]) {
+		l.WithFields(logrus.Fields{
+			"type":               cmd.Type,
+			"characterId":        cmd.CharacterId,
+			"deletedCharacterId": cmd.Body.DeletedCharacterId,
+			"reason":             cmd.Body.Reason,
+		}).Debug("Processing character deletion command")
+		
+		if cmd.Type != marriageMsg.CommandCharacterDeleted {
+			return
+		}
+		
+		transactionId := uuid.New()
+		
+		// Process the character deletion
+		err := processor.HandleCharacterDeletionAndEmit(transactionId, cmd.Body.DeletedCharacterId)
+		if err != nil {
+			l.WithError(err).WithFields(logrus.Fields{
+				"deletedCharacterId": cmd.Body.DeletedCharacterId,
+				"reason":             cmd.Body.Reason,
+			}).Error("Failed to process character deletion")
+			
+			// Emit error event
+			errorProvider := marriageService.MarriageErrorEventProvider(
+				cmd.CharacterId,
+				"CHARACTER_DELETION_FAILED",
+				"CHARACTER_DELETION_ERROR",
+				err.Error(),
+				"character_deletion",
+			)
+			if emitErr := message.Emit(producer.ProviderImpl(l)(ctx))(func(buf *message.Buffer) error {
+				return buf.Put(marriageMsg.EnvEventTopicStatus, errorProvider)
+			}); emitErr != nil {
+				l.WithError(emitErr).Error("Failed to emit error event for character deletion failure")
+			}
+			return
+		}
+		
+		l.WithFields(logrus.Fields{
+			"deletedCharacterId": cmd.Body.DeletedCharacterId,
+			"reason":             cmd.Body.Reason,
+		}).Info("Character deletion processed successfully")
 	}
 }
 

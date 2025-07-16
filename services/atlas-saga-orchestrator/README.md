@@ -20,7 +20,9 @@ This service acts as a central coordinator for complex operations that span mult
 - `REST_PORT` - Port for the REST API server
 - `COMMAND_TOPIC_SAGA` - Kafka topic for saga commands
 - `COMMAND_TOPIC_GUILD` - Kafka topic for guild commands
+- `COMMAND_TOPIC_COMPARTMENT` - Kafka topic for compartment commands
 - `EVENT_TOPIC_GUILD_STATUS` - Kafka topic for guild status events
+- `EVENT_TOPIC_COMPARTMENT_STATUS` - Kafka topic for compartment status events
 
 ## API
 
@@ -58,6 +60,7 @@ The service consumes messages from the following Kafka topics:
 
 - `COMMAND_TOPIC_SAGA` - Processes saga commands for orchestrating distributed transactions
 - `EVENT_TOPIC_GUILD_STATUS` - Processes guild status events for saga step completion
+- `EVENT_TOPIC_COMPARTMENT_STATUS` - Processes compartment status events for saga step completion
 
 ### Message Format
 
@@ -137,6 +140,16 @@ The service consumes messages from the following Kafka topics:
   - Payload: `{"characterId": 12345, "templateId": 2000, "quantity": 5}`
   - Triggers a compartment command to destroy the item
   - Completes when the StatusEventTypeDeleted event is received
+
+- `equip_asset` - Equips an item from inventory to an equipment slot
+  - Payload: `{"characterId": 12345, "inventoryType": 1, "source": 1, "destination": -1}`
+  - Triggers a compartment command to equip the item
+  - Completes when the StatusEventTypeEquipped event is received
+
+- `unequip_asset` - Unequips an item from an equipment slot to inventory
+  - Payload: `{"characterId": 12345, "inventoryType": 1, "source": -1, "destination": 1}`
+  - Triggers a compartment command to unequip the item
+  - Completes when the StatusEventTypeUnequipped event is received
 
 - `change_job` - Changes a character's job
   - Payload: `{"characterId": 12345, "worldId": 0, "channelId": 0, "jobId": 100}`

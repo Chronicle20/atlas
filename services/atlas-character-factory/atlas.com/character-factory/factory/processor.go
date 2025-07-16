@@ -12,8 +12,10 @@ import (
 	"atlas-character-factory/kafka/message/seed"
 	"atlas-character-factory/kafka/producer"
 	seed2 "atlas-character-factory/kafka/producer/seed"
+	"atlas-character-factory/saga"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/async"
@@ -187,6 +189,85 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 		}
 
 	}
+}
+
+// buildCharacterCreationSaga constructs a character creation saga with all necessary steps
+func buildCharacterCreationSaga(transactionId uuid.UUID, input RestModel, template template.RestModel) saga.Saga {
+	builder := saga.NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(saga.CharacterCreation).
+		SetInitiatedBy(fmt.Sprintf("account_%d", input.AccountId))
+
+	// Step 1: Create character
+	createCharacterPayload := saga.CharacterCreatePayload{
+		AccountId: input.AccountId,
+		Name:      input.Name,
+		WorldId:   input.WorldId,
+		ChannelId: 0, // Default channel
+		JobId:     input.JobIndex,
+		Face:      input.Face,
+		Hair:      input.Hair,
+		HairColor: input.HairColor,
+		Skin:      uint32(input.SkinColor),
+		Top:       input.Top,
+		Bottom:    input.Bottom,
+		Shoes:     input.Shoes,
+		Weapon:    input.Weapon,
+	}
+
+	builder.AddStep("create", saga.Pending, saga.CreateCharacter, createCharacterPayload)
+
+	// Step 2: Award assets for template items
+	for i, templateId := range template.Items {
+		stepId := fmt.Sprintf("award_item_%d", i)
+		awardAssetPayload := saga.AwardItemActionPayload{
+			CharacterId: 0, // Will be set by orchestrator after character creation
+			Item: saga.ItemPayload{
+				TemplateId: templateId,
+				Quantity:   1,
+			},
+		}
+		builder.AddStep(stepId, saga.Pending, saga.AwardAsset, awardAssetPayload)
+	}
+
+	// Step 3: Create and equip assets for equipment (Top, Bottom, Shoes, Weapon)
+	equipment := []struct {
+		templateId uint32
+		name       string
+	}{
+		{input.Top, "top"},
+		{input.Bottom, "bottom"},
+		{input.Shoes, "shoes"},
+		{input.Weapon, "weapon"},
+	}
+
+	for _, eq := range equipment {
+		if eq.templateId != 0 { // Only add step if equipment is provided
+			stepId := fmt.Sprintf("equip_%s", eq.name)
+			createAndEquipPayload := saga.CreateAndEquipAssetPayload{
+				CharacterId: 0, // Will be set by orchestrator after character creation
+				TemplateId:  eq.templateId,
+				Source:      1, // Source is always 1 for creation
+				Destination: 0, // Destination is always 0 for creation
+			}
+			builder.AddStep(stepId, saga.Pending, saga.CreateAndEquipAsset, createAndEquipPayload)
+		}
+	}
+
+	// Step 4: Create skills for starter skills
+	for i, skillId := range template.Skills {
+		stepId := fmt.Sprintf("create_skill_%d", i)
+		createSkillPayload := saga.CreateSkillPayload{
+			CharacterId: 0, // Will be set by orchestrator after character creation
+			SkillId:     skillId,
+			Level:       1,       // Default level
+			MasterLevel: 0,       // Default master level
+			Expiration:  time.Time{}, // No expiration
+		}
+		builder.AddStep(stepId, saga.Pending, saga.CreateSkill, createSkillPayload)
+	}
+
+	return builder.Build()
 }
 
 func validWeapon(weapons []uint32, weapon uint32) bool {

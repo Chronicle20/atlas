@@ -27,6 +27,7 @@ type Processor interface {
 	Put(saga Saga) error
 	MarkFurthestCompletedStepFailed(transactionId uuid.UUID) error
 	MarkEarliestPendingStepCompleted(transactionId uuid.UUID) error
+	AddStep(transactionId uuid.UUID, step Step[any]) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -198,6 +199,48 @@ func (p *ProcessorImpl) MarkEarliestPendingStep(transactionId uuid.UUID, status 
 		"step_id":        s.Steps[earliestPendingIndex].StepId,
 		"tenant_id":      p.t.Id().String(),
 	}).Debugf("Marked earliest pending step as [%s].", status)
+
+	return nil
+}
+
+// AddStep adds a new step to the saga at the specified position
+func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
+	s, err := p.GetById(transactionId)
+	if err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"tenant_id":      p.t.Id().String(),
+		}).Debug("Unable to locate saga for adding step.")
+		return err
+	}
+
+	// Find the index of the current step (earliest pending step)
+	currentStepIndex := s.FindEarliestPendingStepIndex()
+	if currentStepIndex == -1 {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"tenant_id":      p.t.Id().String(),
+		}).Debug("No pending steps found to add step after.")
+		return errors.New("no pending steps found")
+	}
+
+	// Insert the new step right after the current step
+	insertIndex := currentStepIndex + 1
+	
+	// Expand the slice and insert the new step
+	s.Steps = append(s.Steps[:insertIndex], append([]Step[any]{step}, s.Steps[insertIndex:]...)...)
+
+	// Update the saga in the cache
+	GetCache().Put(p.t.Id(), s)
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId.String(),
+		"saga_type":      s.SagaType,
+		"step_id":        step.StepId,
+		"action":         step.Action,
+		"tenant_id":      p.t.Id().String(),
+	}).Debug("Added new step to saga.")
 
 	return nil
 }

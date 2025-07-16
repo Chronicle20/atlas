@@ -109,6 +109,9 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 }
 
 // buildCharacterCreationSaga constructs a character creation saga with all necessary steps
+// This function replaces the previous async orchestration logic with a saga-based approach.
+// The saga orchestrator will execute these steps sequentially, ensuring atomicity and fault tolerance.
+// Steps are constructed based on the validated template configuration for the character's job and gender.
 func buildCharacterCreationSaga(transactionId uuid.UUID, input RestModel, template template.RestModel) saga.Saga {
 	builder := saga.NewBuilder().
 		SetTransactionId(transactionId).

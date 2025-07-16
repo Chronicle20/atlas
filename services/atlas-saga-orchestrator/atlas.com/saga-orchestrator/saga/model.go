@@ -81,6 +81,17 @@ func (s *Saga) SetStepStatus(index int, status Status) {
 	}
 }
 
+// FindFailedStepIndex returns the index of the first failed step
+// Returns -1 if no failed step is found
+func (s *Saga) FindFailedStepIndex() int {
+	for i := 0; i < len(s.Steps); i++ {
+		if s.Steps[i].Status == Failed {
+			return i
+		}
+	}
+	return -1
+}
+
 type Status string
 
 const (

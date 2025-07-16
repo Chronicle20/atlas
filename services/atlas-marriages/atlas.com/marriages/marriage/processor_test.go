@@ -7,9 +7,11 @@ import (
 	"time"
 
 	"atlas-marriages/character"
+	kafkaProducer "github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -788,7 +790,15 @@ func TestProcessor_ProposeAndEmit(t *testing.T) {
 	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
 	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
 
-	processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
+	// Create mock producer
+	mockProducer := func(token string) kafkaProducer.MessageProducer {
+		return func(provider model.Provider[[]kafka.Message]) error {
+			// Mock producer that does nothing (for testing)
+			return nil
+		}
+	}
+
+	processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor).WithProducer(mockProducer)
 
 	proposerId := uint32(1)
 	targetId := uint32(2)
@@ -889,18 +899,20 @@ func TestProcessor_ContextTenantExtraction(t *testing.T) {
 		t.Fatalf("Unexpected error with valid tenant context: %v", err)
 	}
 
-	// Test with context that doesn't have tenant - this should panic
+	// Test with context that doesn't have tenant - this should panic during processor creation
 	emptyCtx := context.Background()
-	processorWithoutTenant := NewProcessor(log, emptyCtx, db).WithCharacterProcessor(mockCharacterProcessor)
-
-	// This should panic when trying to extract tenant
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("Expected panic when tenant is not in context")
-		}
+	
+	// This should panic when trying to create the processor (because character processor needs tenant context)
+	func() {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("Expected panic when tenant is not in context during processor creation")
+			}
+		}()
+		
+		// This will panic because NewProcessor -> character.NewProcessor -> tenant.MustFromContext
+		_ = NewProcessor(log, emptyCtx, db)
 	}()
-
-	_, _ = processorWithoutTenant.CheckProposalEligibility(1, 2)()
 }
 
 func TestProcessor_ErrorHandling(t *testing.T) {
@@ -930,7 +942,7 @@ func TestProcessor_ErrorHandling(t *testing.T) {
 	}
 }
 
-func TestProcessor_ProducerFunctionPlaceholder(t *testing.T) {
+func TestProcessor_ProducerFunctionDefault(t *testing.T) {
 	db := setupTestDB(t)
 	tenantId := uuid.New()
 	ctx := setupTestContext(tenantId)
@@ -938,9 +950,9 @@ func TestProcessor_ProducerFunctionPlaceholder(t *testing.T) {
 
 	processor := NewProcessor(log, ctx, db).(*ProcessorImpl)
 
-	// Test that producer function is nil (placeholder)
-	if processor.producer != nil {
-		t.Error("Expected producer function to be nil (placeholder)")
+	// Test that producer function is created by default
+	if processor.producer == nil {
+		t.Error("Expected producer function to be created by default")
 	}
 }
 

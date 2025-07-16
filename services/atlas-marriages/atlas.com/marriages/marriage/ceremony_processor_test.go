@@ -5,8 +5,11 @@ import (
 	"testing"
 	"time"
 
+	kafkaProducer "github.com/Chronicle20/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/sqlite"
@@ -33,12 +36,16 @@ func TestCeremonyStateTransitions(t *testing.T) {
 	assert.NoError(t, err)
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 	
-	// Create processor (without producer for simpler testing)
-	processor := &ProcessorImpl{
-		log: logger,
-		ctx: ctx,
-		db:  db,
+	// Create mock producer
+	mockProducer := func(token string) kafkaProducer.MessageProducer {
+		return func(provider model.Provider[[]kafka.Message]) error {
+			// Mock producer that does nothing (for testing)
+			return nil
+		}
 	}
+	
+	// Create processor with mock producer
+	processor := NewProcessor(logger, ctx, db).WithProducer(mockProducer)
 	
 	// Create a test marriage first
 	now := time.Now()
@@ -101,12 +108,16 @@ func TestCeremonyInviteeManagement(t *testing.T) {
 	assert.NoError(t, err)
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 	
-	// Create processor (without producer for simpler testing)
-	processor := &ProcessorImpl{
-		log: logger,
-		ctx: ctx,
-		db:  db,
+	// Create mock producer
+	mockProducer := func(token string) kafkaProducer.MessageProducer {
+		return func(provider model.Provider[[]kafka.Message]) error {
+			// Mock producer that does nothing (for testing)
+			return nil
+		}
 	}
+	
+	// Create processor with mock producer
+	processor := NewProcessor(logger, ctx, db).WithProducer(mockProducer)
 	
 	// Create a test marriage and ceremony
 	now := time.Now()
@@ -167,12 +178,16 @@ func TestCeremonyQueries(t *testing.T) {
 	assert.NoError(t, err)
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 	
-	// Create processor (without producer for simpler testing)
-	processor := &ProcessorImpl{
-		log: logger,
-		ctx: ctx,
-		db:  db,
+	// Create mock producer
+	mockProducer := func(token string) kafkaProducer.MessageProducer {
+		return func(provider model.Provider[[]kafka.Message]) error {
+			// Mock producer that does nothing (for testing)
+			return nil
+		}
 	}
+	
+	// Create processor with mock producer
+	processor := NewProcessor(logger, ctx, db).WithProducer(mockProducer)
 	
 	// Create test ceremonies
 	now := time.Now()
@@ -243,12 +258,16 @@ func TestCeremonyTimeoutScenarios(t *testing.T) {
 	assert.NoError(t, err)
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 	
-	// Create processor (without producer for simpler testing)
-	processor := &ProcessorImpl{
-		log: logger,
-		ctx: ctx,
-		db:  db,
+	// Create mock producer
+	mockProducer := func(token string) kafkaProducer.MessageProducer {
+		return func(provider model.Provider[[]kafka.Message]) error {
+			// Mock producer that does nothing (for testing)
+			return nil
+		}
 	}
+	
+	// Create processor with mock producer
+	processor := NewProcessor(logger, ctx, db).WithProducer(mockProducer)
 	
 	t.Run("TestCeremonyDisconnectionTimeout", func(t *testing.T) {
 		// Create test marriage
@@ -444,12 +463,16 @@ func TestProposalTimeoutScenarios(t *testing.T) {
 	assert.NoError(t, err)
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 	
-	// Create processor (without producer for simpler testing)
-	processor := &ProcessorImpl{
-		log: logger,
-		ctx: ctx,
-		db:  db,
+	// Create mock producer
+	mockProducer := func(token string) kafkaProducer.MessageProducer {
+		return func(provider model.Provider[[]kafka.Message]) error {
+			// Mock producer that does nothing (for testing)
+			return nil
+		}
 	}
+	
+	// Create processor with mock producer
+	processor := NewProcessor(logger, ctx, db).WithProducer(mockProducer)
 	
 	t.Run("TestProposalExpiry", func(t *testing.T) {
 		now := time.Now()

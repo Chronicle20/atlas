@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	"strings"
 	"time"
 )
 
@@ -216,13 +217,35 @@ func handleCompartmentErrorEvent(l logrus.FieldLogger, ctx context.Context, e co
 
 	// Provide specific error handling for CreateAndEquipAsset failures
 	if currentStep.Action == saga.CreateAndEquipAsset {
-		l.WithFields(logrus.Fields{
-			"transaction_id": e.TransactionId.String(),
-			"error_code":     e.Body.ErrorCode,
-			"character_id":   e.CharacterId,
-			"step_id":        currentStep.StepId,
-			"saga_type":      s.SagaType,
-		}).Error("CreateAndEquipAsset operation failed - asset creation or equipping failed")
+		// Check if an auto-equip step has been created - this indicates whether
+		// the error occurred during asset creation or during equipment
+		autoEquipStepExists := false
+		for _, step := range s.Steps {
+			if step.Action == saga.EquipAsset && strings.HasPrefix(step.StepId, "auto_equip_step_") {
+				autoEquipStepExists = true
+				break
+			}
+		}
+		
+		if autoEquipStepExists {
+			l.WithFields(logrus.Fields{
+				"transaction_id": e.TransactionId.String(),
+				"error_code":     e.Body.ErrorCode,
+				"character_id":   e.CharacterId,
+				"step_id":        currentStep.StepId,
+				"saga_type":      s.SagaType,
+				"failure_phase":  "equipment",
+			}).Error("CreateAndEquipAsset operation failed - asset was created but equipment failed")
+		} else {
+			l.WithFields(logrus.Fields{
+				"transaction_id": e.TransactionId.String(),
+				"error_code":     e.Body.ErrorCode,
+				"character_id":   e.CharacterId,
+				"step_id":        currentStep.StepId,
+				"saga_type":      s.SagaType,
+				"failure_phase":  "asset_creation",
+			}).Error("CreateAndEquipAsset operation failed - asset creation failed")
+		}
 	} else {
 		l.WithFields(logrus.Fields{
 			"transaction_id": e.TransactionId.String(),

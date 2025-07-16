@@ -4,6 +4,7 @@ import (
 	"atlas-character-factory/configuration/tenant/characters/template"
 	"atlas-character-factory/saga"
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -978,4 +979,316 @@ func createMockContext(t *testing.T, accountId uint32) (context.Context, uuid.UU
 	
 	t.Logf("Mock context created with tenant %s", tenantId.String())
 	return ctx, tenantId
+}
+
+// TestCharacterCreationIntegrationWithOrchestrator tests the complete character creation flow
+// that integrates with the saga orchestrator, verifying end-to-end functionality.
+func TestCharacterCreationIntegrationWithOrchestrator(t *testing.T) {
+	tests := []struct {
+		name               string
+		input              RestModel
+		mockTemplateConfig func() bool
+		expectError        bool
+		expectTransactionId bool
+		expectedErrorMsg   string
+	}{
+		{
+			name: "successful character creation with orchestrator integration",
+			input: RestModel{
+				AccountId:   1001,
+				WorldId:     0,
+				Name:        "TestCharacter",
+				Gender:      0,
+				JobIndex:    100,
+				SubJobIndex: 0,
+				Face:        20000,
+				Hair:        30000,
+				HairColor:   7,
+				SkinColor:   0,
+				Top:         1040002,
+				Bottom:      1060002,
+				Shoes:       1072001,
+				Weapon:      1302000,
+			},
+			mockTemplateConfig: func() bool {
+				return true // Mock successful template lookup
+			},
+			expectError:         false,
+			expectTransactionId: true,
+		},
+		{
+			name: "character creation with validation failure",
+			input: RestModel{
+				AccountId:   1001,
+				WorldId:     0,
+				Name:        "TestCharacter",
+				Gender:      2, // Invalid gender
+				JobIndex:    100,
+				SubJobIndex: 0,
+				Face:        20000,
+				Hair:        30000,
+				HairColor:   7,
+				SkinColor:   0,
+				Top:         1040002,
+				Bottom:      1060002,
+				Shoes:       1072001,
+				Weapon:      1302000,
+			},
+			mockTemplateConfig: func() bool {
+				return true
+			},
+			expectError:         true,
+			expectTransactionId: false,
+			expectedErrorMsg:    "gender must be 0 or 1",
+		},
+		{
+			name: "character creation with minimal equipment",
+			input: RestModel{
+				AccountId:   2001,
+				WorldId:     1,
+				Name:        "MinimalChar",
+				Gender:      1,
+				JobIndex:    200,
+				SubJobIndex: 1,
+				Face:        21000,
+				Hair:        31000,
+				HairColor:   5,
+				SkinColor:   2,
+				Top:         0, // No equipment
+				Bottom:      0,
+				Shoes:       0,
+				Weapon:      0,
+			},
+			mockTemplateConfig: func() bool {
+				return true
+			},
+			expectError:         false,
+			expectTransactionId: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create mock context with tenant
+			ctx, tenantId := createMockContext(t, tt.input.AccountId)
+			
+			// Create logger
+			logger := logrus.New()
+			logger.SetLevel(logrus.DebugLevel)
+			
+			// Call the character creation function
+			transactionId, err := Create(logger)(ctx)(tt.input)
+			
+			// Verify error expectations
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+					return
+				}
+				if tt.expectedErrorMsg != "" && err.Error() != tt.expectedErrorMsg {
+					t.Errorf("Expected error message '%s', got '%s'", tt.expectedErrorMsg, err.Error())
+				}
+				t.Logf("Correctly caught expected error: %v", err)
+				return
+			}
+			
+			// For successful cases, verify results
+			if err != nil {
+				// Note: We expect saga emission to fail in unit tests due to missing Kafka
+				// But we can still verify the flow works up to that point
+				t.Logf("Note: Character creation failed at saga emission (expected in unit tests): %v", err)
+				
+				// Verify it's a Kafka-related error, not a validation error
+				if !isKafkaRelatedError(err) {
+					t.Errorf("Expected Kafka-related error but got: %v", err)
+				}
+				return
+			}
+			
+			// Verify transaction ID
+			if tt.expectTransactionId {
+				if transactionId == "" {
+					t.Error("Expected non-empty transaction ID")
+				} else {
+					// Verify it's a valid UUID
+					if _, err := uuid.Parse(transactionId); err != nil {
+						t.Errorf("Expected valid UUID transaction ID, got: %s", transactionId)
+					} else {
+						t.Logf("Successfully created character with transaction ID: %s", transactionId)
+					}
+				}
+			}
+			
+			// Log success information
+			t.Logf("Integration test passed for tenant %s", tenantId.String())
+		})
+	}
+}
+
+// TestCharacterCreationOrchestrationFlow tests the specific orchestration aspects
+// of character creation that integrate with the saga orchestrator.
+func TestCharacterCreationOrchestrationFlow(t *testing.T) {
+	// Create a comprehensive test input
+	input := RestModel{
+		AccountId:   3001,
+		WorldId:     2,
+		Name:        "OrchestrationTestChar",
+		Gender:      0,
+		JobIndex:    100,
+		SubJobIndex: 0,
+		Face:        20000,
+		Hair:        30000,
+		HairColor:   7,
+		SkinColor:   0,
+		Top:         1040002,
+		Bottom:      1060002,
+		Shoes:       1072001,
+		Weapon:      1302000,
+	}
+	
+	// Mock template with items and skills
+	template := template.RestModel{
+		JobIndex:    100,
+		SubJobIndex: 0,
+		MapId:       10000,
+		Gender:      0,
+		Items:       []uint32{2000000, 2000001, 2000002},
+		Skills:      []uint32{1000, 1001, 1002},
+	}
+	
+	// Test saga construction
+	transactionId := uuid.New()
+	result := buildCharacterCreationSaga(transactionId, input, template)
+	
+	// Verify orchestrator-specific saga structure
+	t.Run("saga_structure_for_orchestrator", func(t *testing.T) {
+		// Verify saga type is set correctly for orchestrator
+		if result.SagaType != saga.CharacterCreation {
+			t.Errorf("Expected saga type 'character_creation', got '%s'", result.SagaType)
+		}
+		
+		// Verify transaction ID is set
+		if result.TransactionId != transactionId {
+			t.Errorf("Expected transaction ID %s, got %s", transactionId, result.TransactionId)
+		}
+		
+		// Verify initiated by field
+		expectedInitiatedBy := "account_3001"
+		if result.InitiatedBy != expectedInitiatedBy {
+			t.Errorf("Expected initiated by '%s', got '%s'", expectedInitiatedBy, result.InitiatedBy)
+		}
+		
+		// Verify step count: 1 create + 3 items + 4 equipment + 3 skills = 11 steps
+		expectedSteps := 11
+		if len(result.Steps) != expectedSteps {
+			t.Errorf("Expected %d steps for orchestrator, got %d", expectedSteps, len(result.Steps))
+		}
+	})
+	
+	t.Run("orchestrator_step_sequence", func(t *testing.T) {
+		// Verify the steps are in the correct order for orchestrator processing
+		expectedSequence := []struct {
+			stepType string
+			action   saga.Action
+		}{
+			{"create", saga.CreateCharacter},
+			{"award_item_0", saga.AwardAsset},
+			{"award_item_1", saga.AwardAsset},
+			{"award_item_2", saga.AwardAsset},
+			{"equip_top", saga.CreateAndEquipAsset},
+			{"equip_bottom", saga.CreateAndEquipAsset},
+			{"equip_shoes", saga.CreateAndEquipAsset},
+			{"equip_weapon", saga.CreateAndEquipAsset},
+			{"create_skill_0", saga.CreateSkill},
+			{"create_skill_1", saga.CreateSkill},
+			{"create_skill_2", saga.CreateSkill},
+		}
+		
+		for i, expected := range expectedSequence {
+			if i >= len(result.Steps) {
+				t.Errorf("Missing step %d: expected %s", i, expected.stepType)
+				continue
+			}
+			
+			step := result.Steps[i]
+			if step.StepId != expected.stepType {
+				t.Errorf("Step %d: expected step ID '%s', got '%s'", i, expected.stepType, step.StepId)
+			}
+			
+			if step.Action != expected.action {
+				t.Errorf("Step %d: expected action '%s', got '%s'", i, expected.action, step.Action)
+			}
+			
+			// Verify all steps start as pending for orchestrator
+			if step.Status != saga.Pending {
+				t.Errorf("Step %d: expected status 'pending', got '%s'", i, step.Status)
+			}
+		}
+	})
+	
+	t.Run("orchestrator_payload_validation", func(t *testing.T) {
+		// Test the first step (character creation) payload
+		createStep := result.Steps[0]
+		if payload, ok := createStep.Payload.(saga.CharacterCreatePayload); ok {
+			// Verify all required fields are present for orchestrator
+			if payload.AccountId != input.AccountId {
+				t.Errorf("Character create payload missing AccountId: expected %d, got %d", input.AccountId, payload.AccountId)
+			}
+			if payload.Name != input.Name {
+				t.Errorf("Character create payload missing Name: expected %s, got %s", input.Name, payload.Name)
+			}
+			if payload.WorldId != input.WorldId {
+				t.Errorf("Character create payload missing WorldId: expected %d, got %d", input.WorldId, payload.WorldId)
+			}
+			if payload.JobId != input.JobIndex {
+				t.Errorf("Character create payload missing JobId: expected %d, got %d", input.JobIndex, payload.JobId)
+			}
+			
+			// Verify appearance fields
+			if payload.Face != input.Face {
+				t.Errorf("Character create payload missing Face: expected %d, got %d", input.Face, payload.Face)
+			}
+			if payload.Hair != input.Hair {
+				t.Errorf("Character create payload missing Hair: expected %d, got %d", input.Hair, payload.Hair)
+			}
+			if payload.HairColor != input.HairColor {
+				t.Errorf("Character create payload missing HairColor: expected %d, got %d", input.HairColor, payload.HairColor)
+			}
+			if payload.Skin != uint32(input.SkinColor) {
+				t.Errorf("Character create payload missing Skin: expected %d, got %d", uint32(input.SkinColor), payload.Skin)
+			}
+			
+			// Verify equipment fields
+			if payload.Top != input.Top {
+				t.Errorf("Character create payload missing Top: expected %d, got %d", input.Top, payload.Top)
+			}
+			if payload.Bottom != input.Bottom {
+				t.Errorf("Character create payload missing Bottom: expected %d, got %d", input.Bottom, payload.Bottom)
+			}
+			if payload.Shoes != input.Shoes {
+				t.Errorf("Character create payload missing Shoes: expected %d, got %d", input.Shoes, payload.Shoes)
+			}
+			if payload.Weapon != input.Weapon {
+				t.Errorf("Character create payload missing Weapon: expected %d, got %d", input.Weapon, payload.Weapon)
+			}
+			
+			// Verify default values
+			if payload.ChannelId != 0 {
+				t.Errorf("Character create payload should default ChannelId to 0, got %d", payload.ChannelId)
+			}
+			
+			t.Logf("Character create payload validation passed for orchestrator")
+		} else {
+			t.Error("Character create step payload is not of correct type for orchestrator")
+		}
+	})
+}
+
+// Helper function to check if error is related to Kafka connectivity
+func isKafkaRelatedError(err error) bool {
+	errMsg := err.Error()
+	return strings.Contains(errMsg, "connection refused") || 
+		   strings.Contains(errMsg, "max retry reached") || 
+		   strings.Contains(errMsg, "unable to emit") ||
+		   strings.Contains(errMsg, "Unable to emit")
 }

@@ -214,6 +214,8 @@ var actionHandlers = map[Action]ActionHandler{
 	AwardLevel:                   handleAwardLevel,
 	AwardMesos:                   handleAwardMesos,
 	DestroyAsset:                 handleDestroyAsset,
+	EquipAsset:                   handleEquipAsset,
+	UnequipAsset:                 handleUnequipAsset,
 	ChangeJob:                    handleChangeJob,
 	CreateSkill:                  handleCreateSkill,
 	UpdateSkill:                  handleUpdateSkill,
@@ -412,6 +414,40 @@ func handleDestroyAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
 
 	if err != nil {
 		p.logActionError(s, st, err, "Unable to destroy asset.")
+		return err
+	}
+
+	return nil
+}
+
+// handleEquipAsset handles the EquipAsset action
+func handleEquipAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(EquipAssetPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := p.compP.RequestEquipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
+
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to equip asset.")
+		return err
+	}
+
+	return nil
+}
+
+// handleUnequipAsset handles the UnequipAsset action
+func handleUnequipAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
+	payload, ok := st.Payload.(UnequipAssetPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := p.compP.RequestUnequipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
+
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to unequip asset.")
 		return err
 	}
 

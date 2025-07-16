@@ -86,6 +86,11 @@ type Processor interface {
 	GetCeremonyByMarriage(marriageId uint32) model.Provider[*Ceremony]
 	GetUpcomingCeremonies() model.Provider[[]Ceremony]
 	GetActiveCeremonies() model.Provider[[]Ceremony]
+
+	// Proposal expiry operations
+	ExpireProposal(proposalId uint32) model.Provider[Proposal]
+	ExpireProposalAndEmit(transactionId uuid.UUID, proposalId uint32) (Proposal, error)
+	ProcessExpiredProposals() error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -1763,4 +1768,115 @@ func (p *ProcessorImpl) GetMarriageHistory(characterId uint32) model.Provider[[]
 		historyProvider := GetMarriageHistoryByCharacterProvider(p.db, p.log)(characterId, t.Id())
 		return historyProvider()
 	}
+}
+
+// ExpireProposal marks a proposal as expired
+func (p *ProcessorImpl) ExpireProposal(proposalId uint32) model.Provider[Proposal] {
+	return func() (Proposal, error) {
+		p.log.WithField("proposalId", proposalId).Debug("Expiring proposal")
+		
+		// Get tenant from context
+		t := tenant.MustFromContext(p.ctx)
+		
+		// Get the proposal
+		proposalProvider := GetProposalByIdProvider(p.db, p.log)(proposalId, t.Id())
+		proposal, err := proposalProvider()
+		if err != nil {
+			return Proposal{}, err
+		}
+		
+		// Check if proposal can be expired
+		if proposal.Status() != ProposalStatusPending {
+			return Proposal{}, errors.New("only pending proposals can be expired")
+		}
+		
+		// Expire the proposal
+		expiredProposal, err := proposal.Expire()
+		if err != nil {
+			return Proposal{}, err
+		}
+		
+		// Update the proposal in the database
+		updateProposalProvider := UpdateProposal(p.db, p.log)(expiredProposal)
+		_, err = updateProposalProvider()
+		if err != nil {
+			return Proposal{}, err
+		}
+		
+		p.log.WithField("proposalId", proposalId).Info("Proposal expired successfully")
+		
+		return expiredProposal, nil
+	}
+}
+
+// ExpireProposalAndEmit expires a proposal and emits events
+func (p *ProcessorImpl) ExpireProposalAndEmit(transactionId uuid.UUID, proposalId uint32) (Proposal, error) {
+	proposal, err := p.ExpireProposal(proposalId)()
+	if err != nil {
+		return Proposal{}, err
+	}
+	
+	// Emit ProposalExpired event
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		expiredAt := time.Now()
+		eventProvider := ProposalExpiredEventProvider(
+			proposalId,
+			proposal.ProposerId(),
+			proposal.TargetId(),
+			expiredAt,
+		)
+		return buf.Put(marriageMsg.EnvEventTopicStatus, eventProvider)
+	})
+	if err != nil {
+		return Proposal{}, err
+	}
+	
+	p.log.WithFields(logrus.Fields{
+		"transactionId": transactionId,
+		"proposalId":    proposalId,
+	}).Debug("ProposalExpired event emitted")
+	
+	return proposal, nil
+}
+
+// ProcessExpiredProposals processes all expired proposals for all tenants
+func (p *ProcessorImpl) ProcessExpiredProposals() error {
+	p.log.Debug("Processing expired proposals")
+	
+	// Get tenant from context
+	t := tenant.MustFromContext(p.ctx)
+	
+	// Get all expired proposals for this tenant
+	expiredProposalsProvider := GetExpiredProposalsProvider(p.db, p.log)(t.Id())
+	expiredProposals, err := expiredProposalsProvider()
+	if err != nil {
+		p.log.WithError(err).Error("Failed to retrieve expired proposals")
+		return err
+	}
+	
+	if len(expiredProposals) == 0 {
+		p.log.Debug("No expired proposals found")
+		return nil
+	}
+	
+	p.log.WithField("count", len(expiredProposals)).Info("Processing expired proposals")
+	
+	// Process each expired proposal
+	for _, proposal := range expiredProposals {
+		transactionId := uuid.New()
+		_, err := p.ExpireProposalAndEmit(transactionId, proposal.Id())
+		if err != nil {
+			p.log.WithFields(logrus.Fields{
+				"proposalId": proposal.Id(),
+				"error":      err,
+			}).Error("Failed to expire proposal")
+			// Continue processing other proposals even if one fails
+			continue
+		}
+		
+		p.log.WithField("proposalId", proposal.Id()).Debug("Successfully expired proposal")
+	}
+	
+	p.log.WithField("processedCount", len(expiredProposals)).Info("Completed processing expired proposals")
+	return nil
 }

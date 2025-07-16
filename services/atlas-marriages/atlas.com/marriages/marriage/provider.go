@@ -476,3 +476,39 @@ func GetActiveCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) func(tenan
 		}
 	}
 }
+
+// GetExpiredProposalsProvider retrieves all proposals that have expired but not yet been marked as expired
+func GetExpiredProposalsProvider(db *gorm.DB, log logrus.FieldLogger) func(tenantId uuid.UUID) model.Provider[[]Proposal] {
+	return func(tenantId uuid.UUID) model.Provider[[]Proposal] {
+		return func() ([]Proposal, error) {
+			log.WithField("tenantId", tenantId).Debug("Retrieving expired proposals")
+
+			var entities []ProposalEntity
+			now := time.Now()
+			err := db.Where("tenant_id = ? AND status = ? AND expires_at < ?", 
+				tenantId, ProposalStatusPending, now).
+				Order("expires_at ASC").
+				Find(&entities).Error
+
+			if err != nil {
+				return nil, err
+			}
+
+			proposals := make([]Proposal, 0, len(entities))
+			for _, entity := range entities {
+				proposal, err := MakeProposal(entity)
+				if err != nil {
+					return nil, err
+				}
+				proposals = append(proposals, proposal)
+			}
+
+			log.WithFields(logrus.Fields{
+				"tenantId": tenantId,
+				"count":    len(proposals),
+			}).Debug("Found expired proposals")
+
+			return proposals, nil
+		}
+	}
+}

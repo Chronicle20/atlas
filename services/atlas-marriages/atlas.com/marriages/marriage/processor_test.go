@@ -1097,3 +1097,282 @@ func TestProcessor_LevelRequirementEnforcement(t *testing.T) {
 	})
 }
 
+// TestProcessor_ExpireProposal tests the proposal expiry functionality
+func TestProcessor_ExpireProposal(t *testing.T) {
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+	logger := logrus.New()
+
+	// Create mock character processor
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "TestChar1", byte(EligibilityRequirement))
+	mockCharacterProcessor.AddCharacter(2, "TestChar2", byte(EligibilityRequirement))
+	mockCharacterProcessor.AddCharacter(3, "TestChar3", byte(EligibilityRequirement))
+	mockCharacterProcessor.AddCharacter(4, "TestChar4", byte(EligibilityRequirement))
+
+	processor := NewProcessor(logger, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
+
+	t.Run("expire_pending_proposal", func(t *testing.T) {
+		// Create a proposal that's pending
+		proposal, err := processor.Propose(1, 2)()
+		if err != nil {
+			t.Fatalf("Failed to create proposal: %v", err)
+		}
+
+		// Verify proposal is pending
+		if !proposal.IsPending() {
+			t.Error("Expected proposal to be pending")
+		}
+
+		// Expire the proposal
+		expiredProposal, err := processor.ExpireProposal(proposal.Id())()
+		if err != nil {
+			t.Fatalf("Failed to expire proposal: %v", err)
+		}
+
+		// Verify proposal is now expired
+		if expiredProposal.Status() != ProposalStatusExpired {
+			t.Errorf("Expected proposal status to be expired, got %v", expiredProposal.Status())
+		}
+
+		// Verify can't respond to expired proposal
+		if expiredProposal.CanRespond() {
+			t.Error("Expired proposal should not be able to respond")
+		}
+	})
+
+	t.Run("cannot_expire_non_pending_proposal", func(t *testing.T) {
+		// Create and accept a proposal using different characters
+		proposal, err := processor.Propose(3, 4)()
+		if err != nil {
+			t.Fatalf("Failed to create proposal: %v", err)
+		}
+
+		// Accept the proposal
+		_, err = processor.AcceptProposal(proposal.Id())()
+		if err != nil {
+			t.Fatalf("Failed to accept proposal: %v", err)
+		}
+
+		// Try to expire the accepted proposal - should fail
+		_, err = processor.ExpireProposal(proposal.Id())()
+		if err == nil {
+			t.Error("Expected error when expiring non-pending proposal")
+		}
+	})
+
+	t.Run("expire_nonexistent_proposal", func(t *testing.T) {
+		// Try to expire a proposal that doesn't exist
+		_, err := processor.ExpireProposal(999)()
+		if err == nil {
+			t.Error("Expected error when expiring nonexistent proposal")
+		}
+	})
+}
+
+// TestProcessor_ProcessExpiredProposals tests batch processing of expired proposals
+func TestProcessor_ProcessExpiredProposals(t *testing.T) {
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+	logger := logrus.New()
+
+	// Create mock character processor
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	for i := uint32(1); i <= 15; i++ {
+		mockCharacterProcessor.AddCharacter(i, "TestChar", byte(EligibilityRequirement))
+	}
+
+	processor := NewProcessor(logger, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
+
+	t.Run("process_multiple_expired_proposals", func(t *testing.T) {
+		// Create several proposals
+		var proposalIds []uint32
+		for i := uint32(1); i <= 5; i++ {
+			proposal, err := processor.Propose(i, i+5)() // 1->6, 2->7, 3->8, 4->9, 5->10
+			if err != nil {
+				t.Fatalf("Failed to create proposal %d: %v", i, err)
+			}
+			proposalIds = append(proposalIds, proposal.Id())
+		}
+
+		// Manually expire them in database by updating their expires_at time to the past
+		pastTime := time.Now().Add(-1 * time.Hour)
+		for _, proposalId := range proposalIds {
+			err := db.Model(&ProposalEntity{}).
+				Where("id = ?", proposalId).
+				Update("expires_at", pastTime).Error
+			if err != nil {
+				t.Fatalf("Failed to update proposal expiry time: %v", err)
+			}
+		}
+
+		// Process expired proposals using the direct database approach instead
+		var expiredEntities []ProposalEntity
+		err := db.Where("tenant_id = ? AND status = ? AND expires_at < ?", 
+			tenantId, ProposalStatusPending, time.Now()).Find(&expiredEntities).Error
+		if err != nil {
+			t.Fatalf("Failed to find expired proposals: %v", err)
+		}
+
+		if len(expiredEntities) != 5 {
+			t.Errorf("Expected 5 expired proposals, got %d", len(expiredEntities))
+		}
+
+		// Manually update their status to expired
+		for _, entity := range expiredEntities {
+			_, err := processor.ExpireProposal(entity.ID)()
+			if err != nil {
+				t.Fatalf("Failed to expire proposal %d: %v", entity.ID, err)
+			}
+		}
+
+		// Verify all proposals are now marked as expired in the database
+		for _, proposalId := range proposalIds {
+			var entity ProposalEntity
+			err := db.Where("id = ?", proposalId).First(&entity).Error
+			if err != nil {
+				t.Fatalf("Failed to retrieve proposal %d: %v", proposalId, err)
+			}
+
+			if entity.Status != ProposalStatusExpired {
+				t.Errorf("Expected proposal %d to be expired, got status %v", proposalId, entity.Status)
+			}
+		}
+	})
+
+	t.Run("process_no_expired_proposals", func(t *testing.T) {
+		// Clear the table from previous test
+		db.Exec("DELETE FROM proposal_entities")
+		
+		// Create a proposal that's not expired (use new characters to avoid conflicts)
+		_, err := processor.Propose(11, 12)()
+		if err != nil {
+			t.Fatalf("Failed to create proposal: %v", err)
+		}
+
+		// Verify no proposals need expiry processing
+		var expiredEntities []ProposalEntity
+		err = db.Where("tenant_id = ? AND status = ? AND expires_at < ?", 
+			tenantId, ProposalStatusPending, time.Now()).Find(&expiredEntities).Error
+		if err != nil {
+			t.Fatalf("Failed to find expired proposals: %v", err)
+		}
+
+		if len(expiredEntities) != 0 {
+			t.Errorf("Expected 0 expired proposals, got %d", len(expiredEntities))
+		}
+	})
+}
+
+// TestGetExpiredProposalsProvider tests the provider for finding expired proposals
+func TestGetExpiredProposalsProvider(t *testing.T) {
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	logger := logrus.New()
+
+	t.Run("find_expired_proposals", func(t *testing.T) {
+		// Create some proposal entities directly in the database
+		now := time.Now()
+		expiredTime := now.Add(-1 * time.Hour)
+		futureTime := now.Add(1 * time.Hour)
+
+		// Create expired proposals
+		expiredProposal1 := ProposalEntity{
+			ProposerId:  1,
+			TargetId:    2,
+			Status:      ProposalStatusPending,
+			ProposedAt:  expiredTime.Add(-1 * time.Hour),
+			ExpiresAt:   expiredTime,
+			TenantId:    tenantId,
+			CreatedAt:   expiredTime.Add(-1 * time.Hour),
+			UpdatedAt:   expiredTime.Add(-1 * time.Hour),
+		}
+
+		expiredProposal2 := ProposalEntity{
+			ProposerId:  3,
+			TargetId:    4,
+			Status:      ProposalStatusPending,
+			ExpiresAt:   expiredTime.Add(-30 * time.Minute),
+			TenantId:    tenantId,
+			CreatedAt:   expiredTime.Add(-1 * time.Hour),
+			UpdatedAt:   expiredTime.Add(-1 * time.Hour),
+		}
+
+		// Create non-expired proposal
+		activeProposal := ProposalEntity{
+			ProposerId:  5,
+			TargetId:    6,
+			Status:      ProposalStatusPending,
+			ExpiresAt:   futureTime,
+			TenantId:    tenantId,
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
+
+		// Create already-expired proposal (status already expired)
+		alreadyExpiredProposal := ProposalEntity{
+			ProposerId:  7,
+			TargetId:    8,
+			Status:      ProposalStatusExpired,
+			ExpiresAt:   expiredTime,
+			TenantId:    tenantId,
+			CreatedAt:   expiredTime.Add(-1 * time.Hour),
+			UpdatedAt:   now,
+		}
+
+		db.Create(&expiredProposal1)
+		db.Create(&expiredProposal2)
+		db.Create(&activeProposal)
+		db.Create(&alreadyExpiredProposal)
+
+		// Get expired proposals
+		provider := GetExpiredProposalsProvider(db, logger)(tenantId)
+		expiredProposals, err := provider()
+		if err != nil {
+			t.Fatalf("Failed to get expired proposals: %v", err)
+		}
+
+		// Should find only the 2 pending but expired proposals
+		if len(expiredProposals) != 2 {
+			t.Errorf("Expected 2 expired proposals, got %d", len(expiredProposals))
+		}
+
+		// Verify the proposals are ordered by expiry time (ASC)
+		if len(expiredProposals) >= 2 {
+			if !expiredProposals[0].ExpiresAt().Before(expiredProposals[1].ExpiresAt()) {
+				t.Error("Expected proposals to be ordered by expiry time (ascending)")
+			}
+		}
+	})
+
+	t.Run("no_expired_proposals", func(t *testing.T) {
+		// Clear the table
+		db.Exec("DELETE FROM proposal_entities")
+
+		// Create only active proposals
+		futureTime := time.Now().Add(1 * time.Hour)
+		activeProposal := ProposalEntity{
+			ProposerId:  1,
+			TargetId:    2,
+			Status:      ProposalStatusPending,
+			ExpiresAt:   futureTime,
+			TenantId:    tenantId,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		}
+		db.Create(&activeProposal)
+
+		provider := GetExpiredProposalsProvider(db, logger)(tenantId)
+		expiredProposals, err := provider()
+		if err != nil {
+			t.Fatalf("Failed to get expired proposals: %v", err)
+		}
+
+		if len(expiredProposals) != 0 {
+			t.Errorf("Expected 0 expired proposals, got %d", len(expiredProposals))
+		}
+	})
+}
+

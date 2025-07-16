@@ -5,6 +5,7 @@ import (
 	"atlas-marriages/kafka/consumer/marriage"
 	"atlas-marriages/logger"
 	marriageService "atlas-marriages/marriage"
+	"atlas-marriages/scheduler"
 	"atlas-marriages/service"
 	"atlas-marriages/tracing"
 	"os"
@@ -47,6 +48,15 @@ func main() {
 	}
 
 	db := database.Connect(l, database.SetMigrations(marriageService.Migration))
+	
+	// Initialize proposal expiry scheduler
+	proposalExpiryScheduler := scheduler.NewProposalExpiryScheduler(l, tdm.Context(), db)
+	proposalExpiryScheduler.Start()
+	
+	// Register scheduler teardown
+	tdm.TeardownFunc(func() {
+		proposalExpiryScheduler.Stop()
+	})
 	
 	// Initialize Kafka consumers
 	consumerManager := consumer.GetManager()

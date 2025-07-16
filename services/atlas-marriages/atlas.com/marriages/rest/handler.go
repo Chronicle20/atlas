@@ -2,11 +2,14 @@ package rest
 
 import (
 	"context"
-	"github.com/Chronicle20/atlas-rest/server"
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
+	"strconv"
+
+	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
 )
 
 type HandlerDependency struct {
@@ -78,5 +81,19 @@ func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInf
 				})
 			})
 		}
+	}
+}
+
+type CharacterIdHandler func(characterId uint32) http.HandlerFunc
+
+func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		characterId, err := strconv.Atoi(mux.Vars(r)["characterId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse characterId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint32(characterId))(w, r)
 	}
 }

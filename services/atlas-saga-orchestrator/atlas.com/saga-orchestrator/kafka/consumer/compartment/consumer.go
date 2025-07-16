@@ -79,7 +79,7 @@ func handleCompartmentCreatedEvent(l logrus.FieldLogger, ctx context.Context, e 
 		}
 
 		// Generate a unique step ID for the auto-equip step
-		autoEquipStepId := fmt.Sprintf("auto_equip_step_%d", time.Now().Unix())
+		autoEquipStepId := fmt.Sprintf("auto_equip_step_%d", time.Now().UnixNano())
 		
 		// Create the EquipAsset step
 		// Note: Using reasonable defaults for slot information since compartment event doesn't provide it

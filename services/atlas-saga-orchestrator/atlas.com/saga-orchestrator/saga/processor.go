@@ -831,7 +831,16 @@ func handleCreateAndEquipAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
 	}
 
 	// Step 1: Internal award_asset - Create the item using the same logic as handleAwardAsset
-	err := p.compP.RequestCreateItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity)
+	// Convert saga payload to compartment payload to avoid import cycle
+	compartmentPayload := compartment.CreateAndEquipAssetPayload{
+		CharacterId: payload.CharacterId,
+		Item: compartment.ItemPayload{
+			TemplateId: payload.Item.TemplateId,
+			Quantity:   payload.Item.Quantity,
+		},
+	}
+	
+	err := p.compP.RequestCreateAndEquipAsset(s.TransactionId, compartmentPayload)
 	if err != nil {
 		p.logActionError(s, st, err, "Unable to create asset for create_and_equip_asset.")
 		return err

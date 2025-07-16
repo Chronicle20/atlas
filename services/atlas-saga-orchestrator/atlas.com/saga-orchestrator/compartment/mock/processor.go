@@ -1,15 +1,17 @@
 package mock
 
 import (
+	"atlas-saga-orchestrator/compartment"
 	"github.com/google/uuid"
 )
 
 // ProcessorMock is a mock implementation of the compartment.Processor interface
 type ProcessorMock struct {
-	RequestCreateItemFunc   func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error
-	RequestDestroyItemFunc  func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error
-	RequestEquipAssetFunc   func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
-	RequestUnequipAssetFunc func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
+	RequestCreateItemFunc        func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error
+	RequestDestroyItemFunc       func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error
+	RequestEquipAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
+	RequestUnequipAssetFunc      func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
+	RequestCreateAndEquipAssetFunc func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error
 }
 
 // RequestCreateItem is a mock implementation of the compartment.Processor.RequestCreateItem method
@@ -40,6 +42,14 @@ func (m *ProcessorMock) RequestEquipAsset(transactionId uuid.UUID, characterId u
 func (m *ProcessorMock) RequestUnequipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {
 	if m.RequestUnequipAssetFunc != nil {
 		return m.RequestUnequipAssetFunc(transactionId, characterId, inventoryType, source, destination)
+	}
+	return nil
+}
+
+// RequestCreateAndEquipAsset is a mock implementation of the compartment.Processor.RequestCreateAndEquipAsset method
+func (m *ProcessorMock) RequestCreateAndEquipAsset(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error {
+	if m.RequestCreateAndEquipAssetFunc != nil {
+		return m.RequestCreateAndEquipAssetFunc(transactionId, payload)
 	}
 	return nil
 }

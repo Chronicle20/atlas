@@ -1,7 +1,9 @@
 package saga
 
 import (
+	"encoding/json"
 	"github.com/google/uuid"
+	"strings"
 	"testing"
 	"time"
 )
@@ -739,6 +741,327 @@ func TestSaga_ValidateStateConsistency(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateAndEquipAssetAction(t *testing.T) {
+	// Test that CreateAndEquipAsset action is defined and has correct string value
+	t.Run("Action constant value", func(t *testing.T) {
+		expected := "create_and_equip_asset"
+		actual := string(CreateAndEquipAsset)
+		if actual != expected {
+			t.Errorf("CreateAndEquipAsset action = %v, want %v", actual, expected)
+		}
+	})
+
+	t.Run("Action in action constants", func(t *testing.T) {
+		// Test that CreateAndEquipAsset is one of the defined actions
+		actions := []Action{
+			AwardInventory,
+			AwardAsset,
+			AwardExperience,
+			AwardLevel,
+			AwardMesos,
+			WarpToRandomPortal,
+			WarpToPortal,
+			DestroyAsset,
+			EquipAsset,
+			UnequipAsset,
+			ChangeJob,
+			CreateSkill,
+			UpdateSkill,
+			ValidateCharacterState,
+			RequestGuildName,
+			RequestGuildEmblem,
+			RequestGuildDisband,
+			RequestGuildCapacityIncrease,
+			CreateInvite,
+			CreateCharacter,
+			CreateAndEquipAsset,
+		}
+		
+		found := false
+		for _, action := range actions {
+			if action == CreateAndEquipAsset {
+				found = true
+				break
+			}
+		}
+		
+		if !found {
+			t.Errorf("CreateAndEquipAsset action not found in actions list")
+		}
+	})
+}
+
+func TestCreateAndEquipAssetPayload(t *testing.T) {
+	// Test CreateAndEquipAssetPayload struct construction and validation
+	t.Run("Valid payload construction", func(t *testing.T) {
+		payload := CreateAndEquipAssetPayload{
+			CharacterId: 12345,
+			Item: ItemPayload{
+				TemplateId: 1302000,
+				Quantity:   1,
+			},
+		}
+		
+		// Verify field values
+		if payload.CharacterId != 12345 {
+			t.Errorf("CharacterId = %v, want %v", payload.CharacterId, 12345)
+		}
+		
+		if payload.Item.TemplateId != 1302000 {
+			t.Errorf("Item.TemplateId = %v, want %v", payload.Item.TemplateId, 1302000)
+		}
+		
+		if payload.Item.Quantity != 1 {
+			t.Errorf("Item.Quantity = %v, want %v", payload.Item.Quantity, 1)
+		}
+	})
+
+	t.Run("Zero values", func(t *testing.T) {
+		payload := CreateAndEquipAssetPayload{}
+		
+		if payload.CharacterId != 0 {
+			t.Errorf("Zero CharacterId = %v, want %v", payload.CharacterId, 0)
+		}
+		
+		if payload.Item.TemplateId != 0 {
+			t.Errorf("Zero Item.TemplateId = %v, want %v", payload.Item.TemplateId, 0)
+		}
+		
+		if payload.Item.Quantity != 0 {
+			t.Errorf("Zero Item.Quantity = %v, want %v", payload.Item.Quantity, 0)
+		}
+	})
+
+	t.Run("Different item types", func(t *testing.T) {
+		testCases := []struct {
+			name       string
+			templateId uint32
+			quantity   uint32
+		}{
+			{"Equipment item", 1302000, 1},
+			{"Consumable item", 2000000, 100},
+			{"Etc item", 4000000, 50},
+		}
+		
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				payload := CreateAndEquipAssetPayload{
+					CharacterId: 99999,
+					Item: ItemPayload{
+						TemplateId: tc.templateId,
+						Quantity:   tc.quantity,
+					},
+				}
+				
+				if payload.Item.TemplateId != tc.templateId {
+					t.Errorf("Item.TemplateId = %v, want %v", payload.Item.TemplateId, tc.templateId)
+				}
+				
+				if payload.Item.Quantity != tc.quantity {
+					t.Errorf("Item.Quantity = %v, want %v", payload.Item.Quantity, tc.quantity)
+				}
+			})
+		}
+	})
+}
+
+func TestCreateAndEquipAssetStepSerialization(t *testing.T) {
+	// Test JSON marshaling and unmarshaling of CreateAndEquipAsset steps
+	t.Run("JSON marshaling", func(t *testing.T) {
+		payload := CreateAndEquipAssetPayload{
+			CharacterId: 12345,
+			Item: ItemPayload{
+				TemplateId: 1302000,
+				Quantity:   1,
+			},
+		}
+		
+		step := Step[CreateAndEquipAssetPayload]{
+			StepId:    "create_and_equip_1",
+			Status:    Pending,
+			Action:    CreateAndEquipAsset,
+			Payload:   payload,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		
+		// Marshal to JSON
+		jsonData, err := json.Marshal(step)
+		if err != nil {
+			t.Errorf("Failed to marshal step to JSON: %v", err)
+		}
+		
+		// Verify JSON contains expected fields
+		jsonStr := string(jsonData)
+		if !strings.Contains(jsonStr, "create_and_equip_asset") {
+			t.Errorf("JSON does not contain action type: %s", jsonStr)
+		}
+		
+		if !strings.Contains(jsonStr, "12345") {
+			t.Errorf("JSON does not contain characterId: %s", jsonStr)
+		}
+		
+		if !strings.Contains(jsonStr, "1302000") {
+			t.Errorf("JSON does not contain templateId: %s", jsonStr)
+		}
+	})
+
+	t.Run("JSON unmarshaling", func(t *testing.T) {
+		jsonData := `{
+			"stepId": "create_and_equip_1",
+			"status": "pending",
+			"action": "create_and_equip_asset",
+			"payload": {
+				"characterId": 12345,
+				"item": {
+					"templateId": 1302000,
+					"quantity": 1
+				}
+			},
+			"createdAt": "2023-01-01T00:00:00Z",
+			"updatedAt": "2023-01-01T00:00:00Z"
+		}`
+		
+		var step Step[any]
+		err := json.Unmarshal([]byte(jsonData), &step)
+		if err != nil {
+			t.Errorf("Failed to unmarshal JSON to step: %v", err)
+		}
+		
+		// Verify step fields
+		if step.StepId != "create_and_equip_1" {
+			t.Errorf("StepId = %v, want %v", step.StepId, "create_and_equip_1")
+		}
+		
+		if step.Status != Pending {
+			t.Errorf("Status = %v, want %v", step.Status, Pending)
+		}
+		
+		if step.Action != CreateAndEquipAsset {
+			t.Errorf("Action = %v, want %v", step.Action, CreateAndEquipAsset)
+		}
+		
+		// Verify payload by type assertion
+		payload, ok := step.Payload.(CreateAndEquipAssetPayload)
+		if !ok {
+			t.Errorf("Payload is not CreateAndEquipAssetPayload type")
+		}
+		
+		if payload.CharacterId != 12345 {
+			t.Errorf("Payload.CharacterId = %v, want %v", payload.CharacterId, 12345)
+		}
+		
+		if payload.Item.TemplateId != 1302000 {
+			t.Errorf("Payload.Item.TemplateId = %v, want %v", payload.Item.TemplateId, 1302000)
+		}
+		
+		if payload.Item.Quantity != 1 {
+			t.Errorf("Payload.Item.Quantity = %v, want %v", payload.Item.Quantity, 1)
+		}
+	})
+}
+
+func TestCreateAndEquipAssetStepBuilder(t *testing.T) {
+	// Test using builder pattern with CreateAndEquipAsset steps
+	t.Run("Builder with CreateAndEquipAsset step", func(t *testing.T) {
+		transactionId := uuid.New()
+		payload := CreateAndEquipAssetPayload{
+			CharacterId: 12345,
+			Item: ItemPayload{
+				TemplateId: 1302000,
+				Quantity:   1,
+			},
+		}
+		
+		saga := NewBuilder().
+			SetTransactionId(transactionId).
+			SetSagaType(InventoryTransaction).
+			SetInitiatedBy("test").
+			AddStep("create_and_equip_1", Pending, CreateAndEquipAsset, payload).
+			Build()
+		
+		// Verify saga properties
+		if saga.TransactionId != transactionId {
+			t.Errorf("TransactionId = %v, want %v", saga.TransactionId, transactionId)
+		}
+		
+		if saga.SagaType != InventoryTransaction {
+			t.Errorf("SagaType = %v, want %v", saga.SagaType, InventoryTransaction)
+		}
+		
+		if len(saga.Steps) != 1 {
+			t.Errorf("Steps length = %v, want %v", len(saga.Steps), 1)
+		}
+		
+		step := saga.Steps[0]
+		if step.StepId != "create_and_equip_1" {
+			t.Errorf("Step.StepId = %v, want %v", step.StepId, "create_and_equip_1")
+		}
+		
+		if step.Action != CreateAndEquipAsset {
+			t.Errorf("Step.Action = %v, want %v", step.Action, CreateAndEquipAsset)
+		}
+		
+		if step.Status != Pending {
+			t.Errorf("Step.Status = %v, want %v", step.Status, Pending)
+		}
+		
+		// Verify payload
+		stepPayload, ok := step.Payload.(CreateAndEquipAssetPayload)
+		if !ok {
+			t.Errorf("Step.Payload is not CreateAndEquipAssetPayload type")
+		}
+		
+		if stepPayload.CharacterId != 12345 {
+			t.Errorf("Step.Payload.CharacterId = %v, want %v", stepPayload.CharacterId, 12345)
+		}
+	})
+}
+
+func TestCreateAndEquipAssetPayloadValidation(t *testing.T) {
+	// Test edge cases and validation scenarios for CreateAndEquipAssetPayload
+	t.Run("Edge case values", func(t *testing.T) {
+		testCases := []struct {
+			name        string
+			characterId uint32
+			templateId  uint32
+			quantity    uint32
+			description string
+		}{
+			{"Max character ID", 4294967295, 1302000, 1, "Maximum uint32 character ID"},
+			{"Min character ID", 1, 1302000, 1, "Minimum character ID"},
+			{"Max template ID", 4294967295, 1302000, 1, "Maximum uint32 template ID"},
+			{"Min template ID", 1, 1302000, 1, "Minimum template ID"},
+			{"Max quantity", 4294967295, 1302000, 1, "Maximum uint32 quantity"},
+			{"Min quantity", 1, 1302000, 1, "Minimum quantity"},
+		}
+		
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				payload := CreateAndEquipAssetPayload{
+					CharacterId: tc.characterId,
+					Item: ItemPayload{
+						TemplateId: tc.templateId,
+						Quantity:   tc.quantity,
+					},
+				}
+				
+				if payload.CharacterId != tc.characterId {
+					t.Errorf("CharacterId = %v, want %v for %s", payload.CharacterId, tc.characterId, tc.description)
+				}
+				
+				if payload.Item.TemplateId != tc.templateId {
+					t.Errorf("Item.TemplateId = %v, want %v for %s", payload.Item.TemplateId, tc.templateId, tc.description)
+				}
+				
+				if payload.Item.Quantity != tc.quantity {
+					t.Errorf("Item.Quantity = %v, want %v for %s", payload.Item.Quantity, tc.quantity, tc.description)
+				}
+			})
+		}
+	})
 }
 
 func TestSaga_CreateAndEquipAssetStateConsistency(t *testing.T) {

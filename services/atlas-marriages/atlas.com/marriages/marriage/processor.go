@@ -77,6 +77,10 @@ type Processor interface {
 	AdvanceCeremonyState(ceremonyId uint32, nextState string) model.Provider[Ceremony]
 	AdvanceCeremonyStateAndEmit(transactionId uuid.UUID, ceremonyId uint32, nextState string) (Ceremony, error)
 
+	// Marriage queries
+	GetMarriageByCharacter(characterId uint32) model.Provider[*Marriage]
+	GetMarriageHistory(characterId uint32) model.Provider[[]Marriage]
+
 	// Ceremony queries
 	GetCeremonyById(ceremonyId uint32) model.Provider[*Ceremony]
 	GetCeremonyByMarriage(marriageId uint32) model.Provider[*Ceremony]
@@ -1739,4 +1743,24 @@ func (p *ProcessorImpl) executeInTransaction(operation func(*ProcessorImpl) (Mar
 	}
 	
 	return result, nil
+}
+
+// GetMarriageByCharacter retrieves the active marriage for a character
+func (p *ProcessorImpl) GetMarriageByCharacter(characterId uint32) model.Provider[*Marriage] {
+	return func() (*Marriage, error) {
+		t := tenant.MustFromContext(p.ctx)
+
+		marriageProvider := GetActiveMarriageByCharacterProvider(p.db, p.log)(characterId, t.Id())
+		return marriageProvider()
+	}
+}
+
+// GetMarriageHistory retrieves marriage history for a character
+func (p *ProcessorImpl) GetMarriageHistory(characterId uint32) model.Provider[[]Marriage] {
+	return func() ([]Marriage, error) {
+		t := tenant.MustFromContext(p.ctx)
+
+		historyProvider := GetMarriageHistoryByCharacterProvider(p.db, p.log)(characterId, t.Id())
+		return historyProvider()
+	}
 }

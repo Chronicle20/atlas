@@ -58,6 +58,7 @@ func main() {
 		WithContext(tdm.Context()).
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
+		AddRouteInitializer(marriageService.InitializeRoutes(db)(GetServer())).
 		SetPort(os.Getenv("REST_PORT")).
 		Run()
 

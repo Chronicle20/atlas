@@ -56,11 +56,13 @@ func setupTestContext(tenantId uuid.UUID) context.Context {
 // MockCharacterProcessor provides a mock implementation for testing
 type MockCharacterProcessor struct {
 	characters map[uint32]character.Model
+	errors     map[uint32]error // Simulate errors for specific character IDs
 }
 
 func NewMockCharacterProcessor() *MockCharacterProcessor {
 	return &MockCharacterProcessor{
 		characters: make(map[uint32]character.Model),
+		errors:     make(map[uint32]error),
 	}
 }
 
@@ -68,7 +70,14 @@ func (m *MockCharacterProcessor) AddCharacter(id uint32, name string, level byte
 	m.characters[id] = character.NewModel(id, name, level)
 }
 
+func (m *MockCharacterProcessor) AddCharacterError(id uint32, err error) {
+	m.errors[id] = err
+}
+
 func (m *MockCharacterProcessor) GetById(characterId uint32) (character.Model, error) {
+	if err, hasError := m.errors[characterId]; hasError {
+		return character.Model{}, err
+	}
 	if char, exists := m.characters[characterId]; exists {
 		return char, nil
 	}
@@ -79,6 +88,137 @@ func (m *MockCharacterProcessor) ByIdProvider(characterId uint32) model.Provider
 	return func() (character.Model, error) {
 		return m.GetById(characterId)
 	}
+}
+
+// MockProducer provides a mock implementation for Kafka producer testing
+type MockProducer struct {
+	messagesProduced []kafka.Message
+	shouldError      bool
+	errorMessage     string
+}
+
+func NewMockProducer() *MockProducer {
+	return &MockProducer{
+		messagesProduced: make([]kafka.Message, 0),
+		shouldError:      false,
+	}
+}
+
+func (m *MockProducer) SetError(shouldError bool, errorMessage string) {
+	m.shouldError = shouldError
+	m.errorMessage = errorMessage
+}
+
+func (m *MockProducer) GetProducedMessages() []kafka.Message {
+	return m.messagesProduced
+}
+
+func (m *MockProducer) ClearMessages() {
+	m.messagesProduced = make([]kafka.Message, 0)
+}
+
+func (m *MockProducer) Provider(token string) kafkaProducer.MessageProducer {
+	return func(provider model.Provider[[]kafka.Message]) error {
+		if m.shouldError {
+			return errors.New(m.errorMessage)
+		}
+
+		messages, err := provider()
+		if err != nil {
+			return err
+		}
+
+		m.messagesProduced = append(m.messagesProduced, messages...)
+		return nil
+	}
+}
+
+// MockDatabaseProcessor provides a mock for database operations
+type MockDatabaseProcessor struct {
+	proposals map[uint32]ProposalEntity
+	marriages map[uint32]Entity
+	errors    map[string]error
+	nextID    uint32
+}
+
+func NewMockDatabaseProcessor() *MockDatabaseProcessor {
+	return &MockDatabaseProcessor{
+		proposals: make(map[uint32]ProposalEntity),
+		marriages: make(map[uint32]Entity),
+		errors:    make(map[string]error),
+		nextID:    1,
+	}
+}
+
+func (m *MockDatabaseProcessor) AddError(operation string, err error) {
+	m.errors[operation] = err
+}
+
+func (m *MockDatabaseProcessor) CreateProposal(proposerId, targetId uint32, tenantId uuid.UUID) (ProposalEntity, error) {
+	if err, hasError := m.errors["CreateProposal"]; hasError {
+		return ProposalEntity{}, err
+	}
+
+	now := time.Now()
+	proposal := ProposalEntity{
+		ID:             m.nextID,
+		ProposerId:     proposerId,
+		TargetId:       targetId,
+		Status:         ProposalStatusPending,
+		ProposedAt:     now,
+		ExpiresAt:      now.Add(ProposalExpiryDuration),
+		RejectionCount: 0,
+		TenantId:       tenantId,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+
+	m.proposals[m.nextID] = proposal
+	m.nextID++
+	return proposal, nil
+}
+
+func (m *MockDatabaseProcessor) GetProposal(id uint32) (ProposalEntity, error) {
+	if err, hasError := m.errors["GetProposal"]; hasError {
+		return ProposalEntity{}, err
+	}
+
+	if proposal, exists := m.proposals[id]; exists {
+		return proposal, nil
+	}
+	return ProposalEntity{}, errors.New("proposal not found")
+}
+
+func (m *MockDatabaseProcessor) UpdateProposal(proposal ProposalEntity) error {
+	if err, hasError := m.errors["UpdateProposal"]; hasError {
+		return err
+	}
+
+	m.proposals[proposal.ID] = proposal
+	return nil
+}
+
+func (m *MockDatabaseProcessor) CreateMarriage(characterId1, characterId2 uint32, tenantId uuid.UUID) (Entity, error) {
+	if err, hasError := m.errors["CreateMarriage"]; hasError {
+		return Entity{}, err
+	}
+
+	now := time.Now()
+	marriage := Entity{
+		ID:           m.nextID,
+		CharacterId1: characterId1,
+		CharacterId2: characterId2,
+		Status:       StatusEngaged,
+		ProposedAt:   now,
+		EngagedAt:    &now,
+		TenantId:     tenantId,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}
+
+	m.marriages[m.nextID] = marriage
+	m.nextID++
+	return marriage, nil
 }
 
 // setupTestData creates test data in the database
@@ -1038,6 +1178,226 @@ func TestProcessor_ConcurrentAccess(t *testing.T) {
 	// The original concurrent test was causing database initialization race conditions
 }
 
+// TestProcessor_WithMockedProducer tests processor behavior with a mocked Kafka producer
+func TestProcessor_WithMockedProducer(t *testing.T) {
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+	log := logrus.New()
+
+	// Create mock character processor
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+	mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+
+	// Create mock producer that tracks messages
+	mockProducer := NewMockProducer()
+
+	processor := NewProcessor(log, ctx, db).
+		WithCharacterProcessor(mockCharacterProcessor).
+		WithProducer(mockProducer.Provider)
+
+	t.Run("successful proposal with message tracking", func(t *testing.T) {
+		transactionId := uuid.New()
+		
+		// Clear any previous messages
+		mockProducer.ClearMessages()
+
+		// Create proposal with emit
+		proposal, err := processor.ProposeAndEmit(transactionId, 1, 2)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+
+		// Verify proposal was created
+		if proposal.ProposerId() != 1 {
+			t.Errorf("Expected proposer ID 1, got %d", proposal.ProposerId())
+		}
+
+		// Verify Kafka message was produced
+		messages := mockProducer.GetProducedMessages()
+		if len(messages) == 0 {
+			t.Error("Expected at least one Kafka message to be produced")
+		}
+	})
+
+	t.Run("producer error handling", func(t *testing.T) {
+		// Setup producer to return an error
+		mockProducer.SetError(true, "kafka connection failed")
+
+		transactionId := uuid.New()
+
+		// Add different characters for this test
+		mockCharacterProcessor.AddCharacter(3, "Character3", 15)
+		mockCharacterProcessor.AddCharacter(4, "Character4", 15)
+
+		// Attempt to create proposal with emit - should fail
+		_, err := processor.ProposeAndEmit(transactionId, 3, 4)
+		if err == nil {
+			t.Error("Expected error when producer fails")
+		}
+		if !contains(err.Error(), "kafka connection failed") {
+			t.Errorf("Expected error to contain 'kafka connection failed', got: %v", err)
+		}
+
+		// Reset producer error state
+		mockProducer.SetError(false, "")
+	})
+}
+
+// TestProcessor_WithMockedCharacterService tests processor behavior with character service errors
+func TestProcessor_WithMockedCharacterService(t *testing.T) {
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+	log := logrus.New()
+
+	// Create mock character processor
+	mockCharacterProcessor := NewMockCharacterProcessor()
+	mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+	mockCharacterProcessor.AddCharacter(2, "Character2", 5)  // Below level requirement
+	
+	// Simulate service errors for specific characters
+	mockCharacterProcessor.AddCharacterError(999, errors.New("character service unavailable"))
+
+	processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
+
+	t.Run("character service error propagation", func(t *testing.T) {
+		// Test with character that has simulated service error
+		_, err := processor.CheckEligibility(999)()
+		if err == nil {
+			t.Error("Expected error from character service")
+		}
+		if !contains(err.Error(), "character service unavailable") {
+			t.Errorf("Expected specific error message, got: %v", err)
+		}
+	})
+
+	t.Run("character level validation through mock", func(t *testing.T) {
+		// Test with low-level character
+		eligible, err := processor.CheckEligibility(2)()
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if eligible {
+			t.Error("Character with level 5 should not be eligible (requirement: 10)")
+		}
+	})
+
+	t.Run("proposal with character service error", func(t *testing.T) {
+		// Attempt to propose with character that has service error
+		_, err := processor.Propose(999, 1)()
+		if err == nil {
+			t.Error("Expected error when character service fails")
+		}
+	})
+}
+
+// TestProcessor_MockDatabaseOperations tests various database operation scenarios
+func TestProcessor_MockDatabaseOperations(t *testing.T) {
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+	log := logrus.New()
+
+	// Test with specific database operation failures
+	t.Run("database connection failures", func(t *testing.T) {
+		// Close the database to simulate connection failure
+		sqlDB, err := db.DB()
+		if err != nil {
+			t.Fatalf("Failed to get SQL DB: %v", err)
+		}
+		originalDB := db
+		sqlDB.Close()
+
+		// Create mock character processor
+		mockCharacterProcessor := NewMockCharacterProcessor()
+		mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+		mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+
+		processor := NewProcessor(log, ctx, db).WithCharacterProcessor(mockCharacterProcessor)
+
+		// This should fail due to database being closed
+		_, err = processor.CheckProposalEligibility(1, 2)()
+		if err == nil {
+			t.Error("Expected error when database is unavailable")
+		}
+
+		// Reset database for other tests
+		db = originalDB
+	})
+}
+
+// TestProcessor_ErrorScenarios tests various error conditions with mocked dependencies
+func TestProcessor_ErrorScenarios(t *testing.T) {
+	db := setupTestDB(t)
+	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
+	log := logrus.New()
+
+	t.Run("combined dependency failures", func(t *testing.T) {
+		// Create character processor that fails for specific characters
+		mockCharacterProcessor := NewMockCharacterProcessor()
+		mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+		mockCharacterProcessor.AddCharacterError(2, errors.New("character lookup failed"))
+
+		// Create producer that fails
+		mockProducer := NewMockProducer()
+		mockProducer.SetError(true, "kafka broker unreachable")
+
+		processor := NewProcessor(log, ctx, db).
+			WithCharacterProcessor(mockCharacterProcessor).
+			WithProducer(mockProducer.Provider)
+
+		// Test cascading failures
+		_, err := processor.ProposeAndEmit(uuid.New(), 1, 2)
+		if err == nil {
+			t.Error("Expected error due to character lookup failure")
+		}
+	})
+
+	t.Run("partial failure recovery", func(t *testing.T) {
+		// Create character processor that works after fixing the error
+		mockCharacterProcessor := NewMockCharacterProcessor()
+		mockCharacterProcessor.AddCharacter(1, "Character1", 15)
+		mockCharacterProcessor.AddCharacter(2, "Character2", 15)
+
+		// Producer that initially fails but then recovers
+		mockProducer := NewMockProducer()
+		mockProducer.SetError(true, "temporary failure")
+
+		processor := NewProcessor(log, ctx, db).
+			WithCharacterProcessor(mockCharacterProcessor).
+			WithProducer(mockProducer.Provider)
+
+		// First attempt should fail
+		_, err := processor.ProposeAndEmit(uuid.New(), 1, 2)
+		if err == nil {
+			t.Error("Expected error due to producer failure")
+		}
+
+		// Fix the producer
+		mockProducer.SetError(false, "")
+		mockProducer.ClearMessages()
+
+		// Add different characters for second attempt
+		mockCharacterProcessor.AddCharacter(3, "Character3", 15)
+		mockCharacterProcessor.AddCharacter(4, "Character4", 15)
+
+		// Second attempt should succeed
+		_, err = processor.ProposeAndEmit(uuid.New(), 3, 4)
+		if err != nil {
+			t.Errorf("Expected success after fixing producer, got error: %v", err)
+		}
+
+		// Verify message was produced
+		messages := mockProducer.GetProducedMessages()
+		if len(messages) == 0 {
+			t.Error("Expected Kafka message to be produced after recovery")
+		}
+	})
+}
+
 func TestProcessor_LevelRequirementEnforcement(t *testing.T) {
 	db := setupTestDB(t)
 	tenantId := uuid.New()
@@ -1102,6 +1462,7 @@ func TestProcessor_LevelRequirementEnforcement(t *testing.T) {
 		}
 	})
 }
+
 
 // TestProcessor_ExpireProposal tests the proposal expiry functionality
 func TestProcessor_ExpireProposal(t *testing.T) {

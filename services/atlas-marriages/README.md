@@ -1,17 +1,37 @@
 # atlas-marriages
-Mushroom game marriages Service
+Atlas Marriage Service - Character Relationship Management
 
-## Overview
+## Service Overview
 
-The `atlas-marriages` service manages the complete lifecycle of character marriages within the game world. It handles proposals, engagement tracking, ceremony coordination, and historical data storage following Atlas microservice architecture patterns.
+The `atlas-marriages` service is a core domain service within the Atlas microservice ecosystem responsible for managing character relationships and marriage mechanics in the game world. It provides a comprehensive marriage system that handles the complete lifecycle from initial proposals through ceremony completion and eventual divorce.
+
+### Purpose
+
+This service enables players to form lasting relationships through a structured marriage system that includes:
+- **Proposal Management**: Secure proposal creation with cooldown enforcement and eligibility validation
+- **Engagement Tracking**: State management for accepted proposals awaiting ceremony
+- **Ceremony Orchestration**: Scheduling, invitee management, and real-time ceremony progression
+- **Marriage Maintenance**: Active marriage state tracking and unilateral divorce support
+- **Historical Records**: Complete audit trail of all relationship activities for analytics and support
+
+### Position in Atlas Ecosystem
+
+The Marriage Service integrates with multiple Atlas services:
+- **Character Service**: Validates character eligibility and level requirements
+- **Notification Service**: Delivers proposal and ceremony notifications
+- **Economy Service**: Coordinates divorce costs and ceremony expenses
+- **World Service**: Ensures characters are in the same tenant/world for relationships
+- **Analytics Service**: Provides relationship metrics and player behavior insights
 
 ### Key Features
 
-- **Marriage Lifecycle Management**: Proposals, engagements, ceremonies, and divorces
-- **Eligibility Validation**: Level requirements, relationship constraints, and cooldown management
-- **Ceremony Orchestration**: Scheduling, invitee management, and state transitions
-- **Event-Driven Architecture**: Kafka messaging for inter-service communication
+- **Marriage Lifecycle Management**: Full proposal-to-divorce workflow with proper state transitions
+- **Eligibility Validation**: Level requirements (10+), relationship constraints, and tenant matching
+- **Ceremony Orchestration**: Scheduling, invitee management (max 15), and disconnection handling
+- **Event-Driven Architecture**: Kafka messaging for real-time inter-service communication
+- **Cooldown Management**: Global (4h) and per-target (24h+) cooldowns with exponential backoff
 - **Historical Tracking**: Complete audit trail of all marriage-related activities
+- **Business Rules Enforcement**: Prevents concurrent relationships and validates state transitions
 
 ## Environment Variables
 

@@ -25,6 +25,7 @@ type ProcessorMock struct {
 	AwardMesosFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
 	ChangeJobAndEmitFunc       func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
 	ChangeJobFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
+	RequestCreateCharacterFunc func(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, gender byte, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32, mapId uint32) error
 }
 
 // WarpRandomAndEmit is a mock implementation of the character.Processor.WarpRandomAndEmit method
@@ -133,4 +134,12 @@ func (m *ProcessorMock) ChangeJob(mb *message.Buffer) func(transactionId uuid.UU
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error {
 		return nil
 	}
+}
+
+// RequestCreateCharacter is a mock implementation of the character.Processor.RequestCreateCharacter method
+func (m *ProcessorMock) RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, gender byte, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32, mapId uint32) error {
+	if m.RequestCreateCharacterFunc != nil {
+		return m.RequestCreateCharacterFunc(transactionId, accountId, name, worldId, channelId, jobId, gender, face, hair, hairColor, skin, top, bottom, shoes, weapon, mapId)
+	}
+	return nil
 }

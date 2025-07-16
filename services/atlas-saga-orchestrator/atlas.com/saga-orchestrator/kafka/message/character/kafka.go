@@ -8,8 +8,11 @@ import (
 	"github.com/google/uuid"
 )
 
-const (
+
+
+	const (
 	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
+	CommandCreateCharacter     = "CREATE_CHARACTER"
 	CommandChangeMap           = "CHANGE_MAP"
 	CommandChangeJob           = "CHANGE_JOB"
 	CommandAwardExperience     = "AWARD_EXPERIENCE"
@@ -21,12 +24,14 @@ const (
 	CommandRequestDistributeSp = "REQUEST_DISTRIBUTE_SP"
 	CommandChangeHP            = "CHANGE_HP"
 	CommandChangeMP            = "CHANGE_MP"
+)
 
+const (
 	ExperienceDistributionTypeWhite        = "WHITE"
 	ExperienceDistributionTypeYellow       = "YELLOW"
 	ExperienceDistributionTypeChat         = "CHAT"
 	ExperienceDistributionTypeMonsterBook  = "MONSTER_BOOK"
-	ExperienceDistributionTypeMonsterEvent = "MONSTER_EVENT"
+	ExperienceDistributionTypeMonsterEvent = "MONDEVENTSTER_"
 	ExperienceDistributionTypePlayTime     = "PLAY_TIME"
 	ExperienceDistributionTypeWedding      = "WEDDING"
 	ExperienceDistributionTypeSpiritWeek   = "SPIRIT_WEEK"
@@ -45,6 +50,8 @@ type Command[E any] struct {
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`
 }
+
+
 
 type ChangeMapBody struct {
 	ChannelId channel.Id `json:"channelId"`
@@ -115,6 +122,23 @@ type ChangeMPBody struct {
 	Amount    int16      `json:"amount"`
 }
 
+type CreateCharacterCommandBody struct {
+	AccountId   uint32   `json:"accountId"`
+	WorldId     world.Id `json:"worldId"`
+	Name        string   `json:"name"`
+	JobId       job.Id   `json:"jobId"`
+	Gender      byte     `json:"gender"`
+	Face        uint32   `json:"face"`
+	Hair        uint32   `json:"hair"`
+	HairColor   uint32   `json:"hairColor"`
+	SkinColor   byte     `json:"skinColor"`
+	Top         uint32   `json:"top"`
+	Bottom      uint32   `json:"bottom"`
+	Shoes       uint32   `json:"shoes"`
+	Weapon      uint32   `json:"weapon"`
+	MapId       _map.Id  `json:"mapId"`
+}
+
 const (
 	EnvEventTopicCharacterStatus     = "EVENT_TOPIC_CHARACTER_STATUS"
 	StatusEventTypeCreated           = "CREATED"
@@ -129,6 +153,7 @@ const (
 	StatusEventTypeFameChanged       = "FAME_CHANGED"
 	StatusEventTypeStatChanged       = "STAT_CHANGED"
 	StatusEventTypeDeleted           = "DELETED"
+	StatusEventTypeCreationFailed    = "CREATION_FAILED"
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
@@ -144,6 +169,11 @@ type StatusEvent[E any] struct {
 
 type StatusEventCreatedBody struct {
 	Name string `json:"name"`
+}
+
+type StatusEventCreationFailedBody struct {
+	Name    string `json:"name"`
+	Message string `json:"message"`
 }
 
 type StatusEventLoginBody struct {
@@ -214,4 +244,20 @@ type StatusEventStatChangedBody struct {
 	ChannelId       channel.Id `json:"channelId"`
 	ExclRequestSent bool       `json:"exclRequestSent"`
 	Updates         []string   `json:"updates"`
+}
+
+const (
+	EnvCommandTopicMovement = "COMMAND_TOPIC_CHARACTER_MOVEMENT"
+)
+
+type MovementCommand struct {
+	TransactionId uuid.UUID  `json:"transactionId"`
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	MapId         _map.Id    `json:"mapId"`
+	ObjectId      uint64     `json:"objectId"`
+	ObserverId    uint32     `json:"observerId"`
+	X             int16      `json:"x"`
+	Y             int16      `json:"y"`
+	Stance        byte       `json:"stance"`
 }

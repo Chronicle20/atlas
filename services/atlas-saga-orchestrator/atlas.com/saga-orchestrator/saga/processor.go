@@ -225,6 +225,7 @@ var actionHandlers = map[Action]ActionHandler{
 	RequestGuildDisband:          handleRequestGuildDisband,
 	RequestGuildCapacityIncrease: handleRequestGuildCapacityIncrease,
 	CreateInvite:                 handleCreateInvite,
+	CreateCharacter:              handleCreateCharacter,
 }
 
 func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
@@ -303,6 +304,8 @@ func (p *ProcessorImpl) compensateFailedStep(s Saga) error {
 		return p.compensateEquipAsset(s, failedStep)
 	case UnequipAsset:
 		return p.compensateUnequipAsset(s, failedStep)
+	case CreateCharacter:
+		return p.compensateCreateCharacter(s, failedStep)
 	default:
 		p.l.WithFields(logrus.Fields{
 			"transaction_id": s.TransactionId.String(),
@@ -389,6 +392,42 @@ func (p *ProcessorImpl) compensateUnequipAsset(s Saga, failedStep Step[any]) err
 		}).WithError(err).Error("Failed to compensate UnequipAsset operation")
 		return err
 	}
+
+	// Mark the failed step as compensated by removing it from the saga
+	failedStepIndex := s.FindFailedStepIndex()
+	if failedStepIndex != -1 {
+		s.SetStepStatus(failedStepIndex, Pending)
+		GetCache().Put(p.t.Id(), s)
+	}
+
+	return nil
+}
+
+// compensateCreateCharacter handles compensation for a failed CreateCharacter operation
+// Note: Character creation failures typically do not require compensation as the character
+// creation process is atomic. If partial creation occurred, the character service should
+// handle cleanup. This function exists for completeness and future extensibility.
+func (p *ProcessorImpl) compensateCreateCharacter(s Saga, failedStep Step[any]) error {
+	// Extract the original payload
+	payload, ok := failedStep.Payload.(CharacterCreatePayload)
+	if !ok {
+		return fmt.Errorf("invalid payload for CreateCharacter compensation")
+	}
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId.String(),
+		"saga_type":      s.SagaType,
+		"step_id":        failedStep.StepId,
+		"account_id":     payload.AccountId,
+		"character_name": payload.Name,
+		"world_id":       payload.WorldId,
+		"tenant_id":      p.t.Id().String(),
+	}).Info("Compensating failed CreateCharacter operation - no rollback action available")
+
+	// Note: Currently there is no character deletion command available
+	// in the character service, so we cannot perform actual rollback.
+	// The character service should handle cleanup of failed character creation internally.
+	// This compensation step simply acknowledges the failure and allows the saga to continue.
 
 	// Mark the failed step as compensated by removing it from the saga
 	failedStepIndex := s.FindFailedStepIndex()
@@ -755,6 +794,24 @@ func handleCreateInvite(p *ProcessorImpl, s Saga, st Step[any]) error {
 	err := p.inviteP.Create(s.TransactionId, payload.InviteType, payload.OriginatorId, payload.WorldId, payload.ReferenceId, payload.TargetId)
 	if err != nil {
 		p.logActionError(s, st, err, "Unable to create invitation.")
+		return err
+	}
+
+	return nil
+}
+
+// handleCreateCharacter handles the CreateCharacter action
+func handleCreateCharacter(p *ProcessorImpl, s Saga, st Step[any]) error {
+	// Extract the payload
+	payload, ok := st.Payload.(CharacterCreatePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	// Call the character processor
+	err := p.charP.RequestCreateCharacter(s.TransactionId, payload.AccountId, payload.Name, payload.WorldId, payload.ChannelId, payload.JobId, payload.Gender, payload.Face, payload.Hair, payload.HairColor, payload.Skin, payload.Top, payload.Bottom, payload.Shoes, payload.Weapon, payload.MapId)
+	if err != nil {
+		p.logActionError(s, st, err, "Unable to create character.")
 		return err
 	}
 

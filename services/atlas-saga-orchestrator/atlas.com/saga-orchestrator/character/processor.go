@@ -29,6 +29,7 @@ type Processor interface {
 	AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
 	ChangeJobAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
 	ChangeJob(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
+	RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, gender byte, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32, mapId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -123,4 +124,10 @@ func (p *ProcessorImpl) ChangeJob(mb *message.Buffer) func(transactionId uuid.UU
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error {
 		return mb.Put(character2.EnvCommandTopic, ChangeJobProvider(transactionId, worldId, characterId, channelId, jobId))
 	}
+}
+
+func (p *ProcessorImpl) RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, gender byte, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32, mapId uint32) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return mb.Put(character2.EnvCommandTopic, RequestCreateCharacterProvider(transactionId, accountId, name, worldId, channelId, jobId, gender, face, hair, hairColor, skin, top, bottom, shoes, weapon, mapId))
+	})
 }

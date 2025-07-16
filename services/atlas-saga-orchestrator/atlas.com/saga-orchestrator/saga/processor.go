@@ -809,7 +809,7 @@ func handleCreateCharacter(p *ProcessorImpl, s Saga, st Step[any]) error {
 	}
 
 	// Call the character processor
-	err := p.charP.RequestCreateCharacter(s.TransactionId, payload.AccountId, payload.Name, payload.WorldId, payload.ChannelId, payload.JobId, payload.Face, payload.Hair, payload.HairColor, payload.Skin, payload.Top, payload.Bottom, payload.Shoes, payload.Weapon)
+	err := p.charP.RequestCreateCharacter(s.TransactionId, payload.AccountId, payload.Name, payload.WorldId, payload.ChannelId, payload.JobId, payload.Gender, payload.Face, payload.Hair, payload.HairColor, payload.Skin, payload.Top, payload.Bottom, payload.Shoes, payload.Weapon, payload.MapId)
 	if err != nil {
 		p.logActionError(s, st, err, "Unable to create character.")
 		return err

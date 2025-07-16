@@ -962,6 +962,7 @@ func TestHandleCreateCharacter(t *testing.T) {
 				WorldId:   0,
 				ChannelId: 0,
 				JobId:     0,
+				Gender:    0,
 				Face:      20000,
 				Hair:      30000,
 				HairColor: 0,
@@ -970,6 +971,7 @@ func TestHandleCreateCharacter(t *testing.T) {
 				Bottom:    1060002,
 				Shoes:     1072001,
 				Weapon:    1302000,
+				MapId:     100000000,
 			},
 			mockError:   nil,
 			expectError: false,
@@ -982,6 +984,7 @@ func TestHandleCreateCharacter(t *testing.T) {
 				WorldId:   0,
 				ChannelId: 0,
 				JobId:     0,
+				Gender:    0,
 				Face:      20000,
 				Hair:      30000,
 				HairColor: 0,
@@ -990,6 +993,7 @@ func TestHandleCreateCharacter(t *testing.T) {
 				Bottom:    1060002,
 				Shoes:     1072001,
 				Weapon:    1302000,
+				MapId:     100000000,
 			},
 			mockError:     errors.New("character service unavailable"),
 			expectError:   true,
@@ -1003,6 +1007,7 @@ func TestHandleCreateCharacter(t *testing.T) {
 				WorldId:   0,
 				ChannelId: 0,
 				JobId:     0,
+				Gender:    0,
 				Face:      20000,
 				Hair:      30000,
 				HairColor: 0,
@@ -1011,6 +1016,7 @@ func TestHandleCreateCharacter(t *testing.T) {
 				Bottom:    1060002,
 				Shoes:     1072001,
 				Weapon:    1302000,
+				MapId:     100000000,
 			},
 			mockError:     errors.New("character name already exists"),
 			expectError:   true,
@@ -1028,13 +1034,14 @@ func TestHandleCreateCharacter(t *testing.T) {
 			processor, _ := setupTestProcessor(charP, compP, validP)
 
 			// Configure mock
-			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32) error {
+			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, gender byte, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32, mapId uint32) error {
 				// Verify parameters
 				assert.Equal(t, tt.payload.AccountId, accountId)
 				assert.Equal(t, tt.payload.Name, name)
 				assert.Equal(t, tt.payload.WorldId, worldId)
 				assert.Equal(t, tt.payload.ChannelId, channelId)
 				assert.Equal(t, tt.payload.JobId, jobId)
+				assert.Equal(t, tt.payload.Gender, gender)
 				assert.Equal(t, tt.payload.Face, face)
 				assert.Equal(t, tt.payload.Hair, hair)
 				assert.Equal(t, tt.payload.HairColor, hairColor)
@@ -1043,6 +1050,7 @@ func TestHandleCreateCharacter(t *testing.T) {
 				assert.Equal(t, tt.payload.Bottom, bottom)
 				assert.Equal(t, tt.payload.Shoes, shoes)
 				assert.Equal(t, tt.payload.Weapon, weapon)
+				assert.Equal(t, tt.payload.MapId, mapId)
 
 				return tt.mockError
 			}
@@ -1118,7 +1126,7 @@ func TestCharacterCreationSagaIntegration(t *testing.T) {
 			processor, hook := setupTestProcessor(charP, compP, validP)
 
 			// Configure mocks
-			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32) error {
+			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, gender byte, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32, mapId uint32) error {
 				return tt.characterCreationResult
 			}
 
@@ -1139,6 +1147,7 @@ func TestCharacterCreationSagaIntegration(t *testing.T) {
 							WorldId:   0,
 							ChannelId: 0,
 							JobId:     0,
+							Gender:    0,
 							Face:      20000,
 							Hair:      30000,
 							HairColor: 0,
@@ -1147,6 +1156,7 @@ func TestCharacterCreationSagaIntegration(t *testing.T) {
 							Bottom:    1060002,
 							Shoes:     1072001,
 							Weapon:    1302000,
+							MapId:     100000000,
 						},
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
@@ -1313,7 +1323,7 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 			processor, _ := setupTestProcessor(charP, compP, validP)
 
 			// Configure mocks to fail at specific step
-			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32) error {
+			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, gender byte, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32, mapId uint32) error {
 				if tt.failureAtStep == 0 {
 					return errors.New("character creation failed")
 				}
@@ -1348,6 +1358,7 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 						WorldId:   0,
 						ChannelId: 0,
 						JobId:     0,
+						Gender:    0,
 						Face:      20000,
 						Hair:      30000,
 						HairColor: 0,
@@ -1356,6 +1367,7 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 						Bottom:    1060002,
 						Shoes:     1072001,
 						Weapon:    1302000,
+						MapId:     100000000,
 					}
 				case AwardLevel:
 					payload = AwardLevelPayload{
@@ -1442,6 +1454,7 @@ func TestCompensateCreateCharacter(t *testing.T) {
 				WorldId:   0,
 				ChannelId: 0,
 				JobId:     0,
+				Gender:    0,
 				Face:      20000,
 				Hair:      30000,
 				HairColor: 0,
@@ -1450,6 +1463,7 @@ func TestCompensateCreateCharacter(t *testing.T) {
 				Bottom:    1060002,
 				Shoes:     1072001,
 				Weapon:    1302000,
+				MapId:     100000000,
 			},
 			expectError: false,
 		},

@@ -289,6 +289,7 @@ type CharacterCreatePayload struct {
 	WorldId   byte   `json:"worldId"`   // WorldId associated with the action
 	ChannelId byte   `json:"channelId"` // ChannelId associated with the action
 	JobId     uint32 `json:"jobId"`     // JobId to create the character with
+	Gender    byte   `json:"gender"`    // Gender of the character
 	Face      uint32 `json:"face"`      // Face of the character
 	Hair      uint32 `json:"hair"`      // Hair of the character
 	HairColor uint32 `json:"hairColor"` // HairColor of the character
@@ -297,6 +298,7 @@ type CharacterCreatePayload struct {
 	Bottom    uint32 `json:"bottom"`    // Bottom of the character
 	Shoes     uint32 `json:"shoes"`     // Shoes of the character
 	Weapon    uint32 `json:"weapon"`    // Weapon of the character
+	MapId     uint32 `json:"mapId"`     // Starting map ID for the character
 }
 
 type ExperienceDistributions struct {

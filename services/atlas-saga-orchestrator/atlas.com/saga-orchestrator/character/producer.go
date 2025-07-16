@@ -90,7 +90,7 @@ func ChangeJobProvider(transactionId uuid.UUID, worldId world.Id, characterId ui
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32) model.Provider[[]kafka.Message] {
+func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, gender byte, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32, mapId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &character2.Command[character2.CreateCharacterCommandBody]{
 		TransactionId: transactionId,
@@ -102,7 +102,7 @@ func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, n
 			WorldId:   world.Id(worldId),
 			Name:      name,
 			JobId:     job.Id(jobId),
-			Gender:    0, // Default gender or extract from payload if needed
+			Gender:    gender,
 			Face:      face,
 			Hair:      hair,
 			HairColor: hairColor,
@@ -111,7 +111,7 @@ func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, n
 			Bottom:    bottom,
 			Shoes:     shoes,
 			Weapon:    weapon,
-			MapId:     _map.Id(100000000), // Default starting map
+			MapId:     _map.Id(mapId),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

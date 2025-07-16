@@ -1,29 +1,15 @@
 package factory
 
 import (
-	asset2 "atlas-character-factory/asset"
-	"atlas-character-factory/character"
-	compartment2 "atlas-character-factory/compartment"
 	"atlas-character-factory/configuration"
 	"atlas-character-factory/configuration/tenant/characters/template"
-	"atlas-character-factory/kafka/consumer/asset"
-	character2 "atlas-character-factory/kafka/consumer/character"
-	"atlas-character-factory/kafka/consumer/compartment"
-	"atlas-character-factory/kafka/message/seed"
-	"atlas-character-factory/kafka/producer"
-	seed2 "atlas-character-factory/kafka/producer/seed"
 	"atlas-character-factory/saga"
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/item"
-	"github.com/Chronicle20/atlas-model/async"
-	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"sync"
 	"time"
 )
 
@@ -100,91 +86,22 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 				return errors.New("chosen weapon is not valid for job")
 			}
 
-			asyncCreate := func(actx context.Context, rchan chan uint32, echan chan error) {
-				character2.AwaitCreated(l)(input.Name)(actx, rchan, echan)
-				_, err = character.Create(l)(actx)(input.AccountId, input.WorldId, input.Name, input.Gender, template.MapId, input.JobIndex, input.SubJobIndex, input.Face, input.Hair, input.HairColor, input.SkinColor)
-				if err != nil {
-					l.WithError(err).Errorf("Unable to create character from seed.")
-					echan <- err
-				}
-			}
+			// Generate transaction ID for saga
+			transactionId := uuid.New()
+			l.Debugf("Beginning saga-based character creation for account [%d] in world [%d] with transaction [%s].", input.AccountId, input.WorldId, transactionId.String())
 
-			l.Debugf("Beginning character creation for account [%d] in world [%d].", input.AccountId, input.WorldId)
+			// Build the character creation saga
+			characterSaga := buildCharacterCreationSaga(transactionId, input, template)
 
-			cid, err := async.Await[uint32](model.FixedProvider[async.Provider[uint32]](asyncCreate), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
+			// Emit the saga to the orchestrator
+			sagaProcessor := saga.NewProcessor(l, ctx)
+			err = sagaProcessor.Create(characterSaga)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to create character [%s].", input.Name)
+				l.WithError(err).Errorf("Unable to emit character creation saga for character [%s].", input.Name)
 				return err
 			}
-			l.Debugf("Character [%d] created.", cid)
 
-			// prepare assets for creation.
-			assetMap := make(map[inventory.Type][]uint32)
-			for _, aid := range template.Items {
-				it, ok := inventory.TypeFromItemId(item.Id(aid))
-				if !ok {
-					continue
-				}
-				var as []uint32
-				if as, ok = assetMap[it]; !ok {
-					as = make([]uint32, 0)
-				}
-				assetMap[it] = append(as, aid)
-			}
-
-			wg := sync.WaitGroup{}
-			var invErr error
-			for _, it := range inventory.Types {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-
-					ap := compartment.AwaitCreated(l)(cid, it, assetMap[it])
-					compartmentId, eqpErr := async.Await[uuid.UUID](model.FixedProvider(ap), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
-					if eqpErr != nil {
-						invErr = eqpErr
-					}
-
-					l.Debugf("Compartment [%s] of type [%d] created for character [%d].", compartmentId.String(), it, cid)
-					if it == inventory.TypeValueEquip {
-						l.Debugf("Creating equipment for character [%d]. Starting item processing.", cid)
-						equipment := []uint32{input.Top, input.Bottom, input.Shoes, input.Weapon}
-						for _, aid := range equipment {
-							var a asset2.Model
-							a, err = async.Await[asset2.Model](model.FixedProvider(asset.AwaitCreated(l)(cid, compartmentId, aid, it)), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
-							if err != nil {
-								invErr = eqpErr
-							}
-							asyncEquip := func(actx context.Context, rchan chan uint32, echan chan error) {
-								asset.AwaitSlotUpdate(l)(cid, compartmentId, a.Id())(actx, rchan, echan)
-								err = compartment2.NewProcessor(l, actx).EquipAsset(cid, it, a.Slot(), 0)
-								if err != nil {
-									l.WithError(err).Errorf("Unable to equip asset [%d] character for character [%d].", a.Id(), cid)
-									echan <- err
-								}
-							}
-							_, err = async.Await[uint32](model.FixedProvider[async.Provider[uint32]](asyncEquip), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
-							if err != nil {
-								invErr = eqpErr
-							}
-						}
-					}
-					l.Debugf("Processing assets destined for compartment [%s] for character [%d].", compartmentId.String(), cid)
-					for _, aid := range assetMap[it] {
-						_, err = async.Await[asset2.Model](model.FixedProvider(asset.AwaitCreated(l)(cid, compartmentId, aid, it)), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
-						if err != nil {
-							invErr = eqpErr
-						}
-					}
-				}()
-			}
-
-			wg.Wait()
-			if invErr != nil {
-				return invErr
-			}
-
-			_ = producer.ProviderImpl(l)(ctx)(seed.EnvEventTopicStatus)(seed2.CreatedEventStatusProvider(input.AccountId, cid))
+			l.Debugf("Character creation saga [%s] emitted successfully for character [%s].", transactionId.String(), input.Name)
 			return nil
 		}
 

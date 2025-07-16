@@ -7,11 +7,9 @@ import (
 	"time"
 
 	"atlas-marriages/character"
-	"atlas-marriages/kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

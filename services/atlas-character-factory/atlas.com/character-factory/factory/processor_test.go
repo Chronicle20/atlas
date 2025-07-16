@@ -565,3 +565,208 @@ func TestBuildCharacterCreationSaga_Timestamps(t *testing.T) {
 		}
 	}
 }
+
+// TestValidationFunctions tests that the validation functions still work correctly
+func TestValidationFunctions(t *testing.T) {
+	tests := []struct {
+		name     string
+		testFunc func(t *testing.T)
+	}{
+		{
+			name: "validGender",
+			testFunc: func(t *testing.T) {
+				if !validGender(0) {
+					t.Error("Expected gender 0 to be valid")
+				}
+				if !validGender(1) {
+					t.Error("Expected gender 1 to be valid")
+				}
+				if validGender(2) {
+					t.Error("Expected gender 2 to be invalid")
+				}
+				if validGender(255) {
+					t.Error("Expected gender 255 to be invalid")
+				}
+			},
+		},
+		{
+			name: "validJob",
+			testFunc: func(t *testing.T) {
+				// Current implementation always returns true
+				if !validJob(100, 0) {
+					t.Error("Expected job (100, 0) to be valid")
+				}
+				if !validJob(200, 1) {
+					t.Error("Expected job (200, 1) to be valid")
+				}
+				if !validJob(0, 0) {
+					t.Error("Expected job (0, 0) to be valid")
+				}
+			},
+		},
+		{
+			name: "validOption",
+			testFunc: func(t *testing.T) {
+				options := []uint32{100, 200, 300}
+				
+				// Zero should always be valid
+				if !validOption(options, 0) {
+					t.Error("Expected 0 to be valid for any option list")
+				}
+				
+				// Valid options should be valid
+				if !validOption(options, 100) {
+					t.Error("Expected 100 to be valid")
+				}
+				if !validOption(options, 200) {
+					t.Error("Expected 200 to be valid")
+				}
+				if !validOption(options, 300) {
+					t.Error("Expected 300 to be valid")
+				}
+				
+				// Invalid options should be invalid
+				if validOption(options, 400) {
+					t.Error("Expected 400 to be invalid")
+				}
+				if validOption(options, 50) {
+					t.Error("Expected 50 to be invalid")
+				}
+			},
+		},
+		{
+			name: "validFace",
+			testFunc: func(t *testing.T) {
+				faces := []uint32{20000, 20001, 20002}
+				
+				if !validFace(faces, 0) {
+					t.Error("Expected 0 to be valid face")
+				}
+				if !validFace(faces, 20000) {
+					t.Error("Expected 20000 to be valid face")
+				}
+				if validFace(faces, 20003) {
+					t.Error("Expected 20003 to be invalid face")
+				}
+			},
+		},
+		{
+			name: "validHair",
+			testFunc: func(t *testing.T) {
+				hairs := []uint32{30000, 30001, 30002}
+				
+				if !validHair(hairs, 0) {
+					t.Error("Expected 0 to be valid hair")
+				}
+				if !validHair(hairs, 30000) {
+					t.Error("Expected 30000 to be valid hair")
+				}
+				if validHair(hairs, 30003) {
+					t.Error("Expected 30003 to be invalid hair")
+				}
+			},
+		},
+		{
+			name: "validHairColor",
+			testFunc: func(t *testing.T) {
+				hairColors := []uint32{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+				
+				if !validHairColor(hairColors, 0) {
+					t.Error("Expected 0 to be valid hair color")
+				}
+				if !validHairColor(hairColors, 5) {
+					t.Error("Expected 5 to be valid hair color")
+				}
+				if validHairColor(hairColors, 10) {
+					t.Error("Expected 10 to be invalid hair color")
+				}
+			},
+		},
+		{
+			name: "validSkinColor",
+			testFunc: func(t *testing.T) {
+				skinColors := []uint32{0, 1, 2, 3, 4}
+				
+				if !validSkinColor(skinColors, 0) {
+					t.Error("Expected 0 to be valid skin color")
+				}
+				if !validSkinColor(skinColors, 3) {
+					t.Error("Expected 3 to be valid skin color")
+				}
+				if validSkinColor(skinColors, 5) {
+					t.Error("Expected 5 to be invalid skin color")
+				}
+			},
+		},
+		{
+			name: "validTop",
+			testFunc: func(t *testing.T) {
+				tops := []uint32{1040000, 1040001, 1040002}
+				
+				if !validTop(tops, 0) {
+					t.Error("Expected 0 to be valid top")
+				}
+				if !validTop(tops, 1040000) {
+					t.Error("Expected 1040000 to be valid top")
+				}
+				if validTop(tops, 1040003) {
+					t.Error("Expected 1040003 to be invalid top")
+				}
+			},
+		},
+		{
+			name: "validBottom",
+			testFunc: func(t *testing.T) {
+				bottoms := []uint32{1060000, 1060001, 1060002}
+				
+				if !validBottom(bottoms, 0) {
+					t.Error("Expected 0 to be valid bottom")
+				}
+				if !validBottom(bottoms, 1060000) {
+					t.Error("Expected 1060000 to be valid bottom")
+				}
+				if validBottom(bottoms, 1060003) {
+					t.Error("Expected 1060003 to be invalid bottom")
+				}
+			},
+		},
+		{
+			name: "validShoes",
+			testFunc: func(t *testing.T) {
+				shoes := []uint32{1072000, 1072001, 1072002}
+				
+				if !validShoes(shoes, 0) {
+					t.Error("Expected 0 to be valid shoes")
+				}
+				if !validShoes(shoes, 1072000) {
+					t.Error("Expected 1072000 to be valid shoes")
+				}
+				if validShoes(shoes, 1072003) {
+					t.Error("Expected 1072003 to be invalid shoes")
+				}
+			},
+		},
+		{
+			name: "validWeapon",
+			testFunc: func(t *testing.T) {
+				weapons := []uint32{1302000, 1302001, 1302002}
+				
+				if !validWeapon(weapons, 0) {
+					t.Error("Expected 0 to be valid weapon")
+				}
+				if !validWeapon(weapons, 1302000) {
+					t.Error("Expected 1302000 to be valid weapon")
+				}
+				if validWeapon(weapons, 1302003) {
+					t.Error("Expected 1302003 to be invalid weapon")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.testFunc(t)
+		})
+	}
+}

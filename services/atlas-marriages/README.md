@@ -20,6 +20,371 @@ The `atlas-marriages` service manages the complete lifecycle of character marria
 - `COMMAND_TOPIC_MARRIAGE` - Kafka topic for marriage commands
 - `EVENT_TOPIC_MARRIAGE_STATUS` - Kafka topic for marriage events
 
+## Deployment and Configuration Guide
+
+### Prerequisites
+
+Before deploying the atlas-marriages service, ensure you have the following dependencies available:
+
+- **PostgreSQL Database**: Primary data store for marriage, proposal, and ceremony data
+- **Apache Kafka**: Message broker for event-driven communication
+- **Jaeger**: Distributed tracing system for observability
+- **Docker**: Container runtime for deployment
+
+### Environment Configuration
+
+The service requires the following environment variables to be configured:
+
+#### Core Configuration
+```bash
+# Service Configuration
+LOG_LEVEL=Info
+REST_PORT=8080
+
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=atlas_marriages
+DB_USER=atlas_user
+DB_PASSWORD=atlas_password
+DB_SSL_MODE=disable
+
+# Kafka Configuration
+KAFKA_BROKERS=localhost:9092
+COMMAND_TOPIC_MARRIAGE=command.marriage
+EVENT_TOPIC_MARRIAGE_STATUS=event.marriage.status
+
+# Tracing Configuration
+JAEGER_HOST=localhost:14268
+JAEGER_SERVICE_NAME=atlas-marriages
+```
+
+#### Multi-Tenant Configuration
+```bash
+# Tenant Context (injected by infrastructure)
+TENANT_ID=083839c6-c47c-42a6-9585-76492795d123
+REGION=GMS
+MAJOR_VERSION=83
+MINOR_VERSION=1
+```
+
+### Database Setup
+
+1. **Create Database Schema**:
+```sql
+CREATE DATABASE atlas_marriages;
+CREATE USER atlas_user WITH ENCRYPTED PASSWORD 'atlas_password';
+GRANT ALL PRIVILEGES ON DATABASE atlas_marriages TO atlas_user;
+```
+
+2. **Migration**: The service automatically runs database migrations on startup. The following tables will be created:
+   - `marriages` - Stores marriage records and states
+   - `proposals` - Tracks proposal history and cooldowns
+   - `ceremonies` - Manages ceremony scheduling and states
+   - `invitees` - Stores ceremony invitee information
+
+### Kafka Topic Configuration
+
+Create the required Kafka topics with appropriate partitioning:
+
+```bash
+# Command topic (for receiving marriage commands)
+kafka-topics --create --topic command.marriage --partitions 12 --replication-factor 3
+
+# Event topic (for publishing marriage events)
+kafka-topics --create --topic event.marriage.status --partitions 12 --replication-factor 3
+```
+
+### Docker Deployment
+
+#### Using Docker Compose
+
+Create a `docker-compose.yml` file:
+
+```yaml
+version: '3.8'
+
+services:
+  atlas-marriages:
+    image: atlas-marriages:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - LOG_LEVEL=Info
+      - REST_PORT=8080
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=atlas_marriages
+      - DB_USER=atlas_user
+      - DB_PASSWORD=atlas_password
+      - DB_SSL_MODE=disable
+      - KAFKA_BROKERS=kafka:9092
+      - COMMAND_TOPIC_MARRIAGE=command.marriage
+      - EVENT_TOPIC_MARRIAGE_STATUS=event.marriage.status
+      - JAEGER_HOST=jaeger:14268
+      - JAEGER_SERVICE_NAME=atlas-marriages
+    depends_on:
+      - postgres
+      - kafka
+      - jaeger
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=atlas_marriages
+      - POSTGRES_USER=atlas_user
+      - POSTGRES_PASSWORD=atlas_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    depends_on:
+      - zookeeper
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+volumes:
+  postgres_data:
+```
+
+#### Building the Docker Image
+
+```bash
+# Build the production image
+docker build -t atlas-marriages:latest .
+
+# Or build the debug image for development
+docker build -f Dockerfile.debug -t atlas-marriages:debug .
+```
+
+### Kubernetes Deployment
+
+#### ConfigMap for Environment Variables
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-marriages-config
+data:
+  LOG_LEVEL: "Info"
+  REST_PORT: "8080"
+  DB_HOST: "postgres-service"
+  DB_PORT: "5432"
+  DB_NAME: "atlas_marriages"
+  DB_SSL_MODE: "disable"
+  KAFKA_BROKERS: "kafka-service:9092"
+  COMMAND_TOPIC_MARRIAGE: "command.marriage"
+  EVENT_TOPIC_MARRIAGE_STATUS: "event.marriage.status"
+  JAEGER_HOST: "jaeger-service:14268"
+  JAEGER_SERVICE_NAME: "atlas-marriages"
+```
+
+#### Deployment Manifest
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-marriages
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: atlas-marriages
+  template:
+    metadata:
+      labels:
+        app: atlas-marriages
+    spec:
+      containers:
+      - name: atlas-marriages
+        image: atlas-marriages:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-marriages-config
+        - secretRef:
+            name: atlas-marriages-secrets
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-marriages-service
+spec:
+  selector:
+    app: atlas-marriages
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP
+```
+
+#### Secret for Sensitive Data
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: atlas-marriages-secrets
+type: Opaque
+data:
+  DB_USER: YXRsYXNfdXNlcg==  # base64 encoded
+  DB_PASSWORD: YXRsYXNfcGFzc3dvcmQ=  # base64 encoded
+```
+
+### Health Checks
+
+The service exposes health check endpoints:
+
+- **Liveness**: `GET /health` - Returns 200 if service is alive
+- **Readiness**: `GET /ready` - Returns 200 if service is ready to accept requests
+
+### Monitoring and Observability
+
+#### Metrics
+
+The service exposes metrics in Prometheus format at `/metrics`:
+
+- `marriage_proposals_total` - Counter of total proposals created
+- `marriage_ceremonies_total` - Counter of total ceremonies completed
+- `marriage_divorces_total` - Counter of total divorces processed
+- `proposal_cooldowns_active` - Gauge of active proposal cooldowns
+- `ceremony_timeouts_total` - Counter of ceremony timeouts
+
+#### Logging
+
+Structured logging is configured via the `LOG_LEVEL` environment variable:
+
+- `Panic` - Only panic messages
+- `Fatal` - Fatal errors that cause service termination
+- `Error` - Error conditions
+- `Warn` - Warning messages
+- `Info` - General information (recommended for production)
+- `Debug` - Debug information
+- `Trace` - Detailed tracing information
+
+#### Distributed Tracing
+
+The service integrates with Jaeger for distributed tracing:
+
+- Configure `JAEGER_HOST` to point to your Jaeger collector
+- Set `JAEGER_SERVICE_NAME` to identify the service in traces
+- All incoming requests and outgoing Kafka messages are traced
+
+### Scaling Considerations
+
+#### Horizontal Scaling
+
+- The service is stateless and can be scaled horizontally
+- Use multiple replicas behind a load balancer
+- Ensure database connection pooling is configured appropriately
+
+#### Database Scaling
+
+- Use read replicas for read-heavy workloads
+- Consider partitioning large tables by tenant or time
+- Monitor database connection pool usage
+
+#### Kafka Scaling
+
+- Increase topic partitions for higher throughput
+- Use appropriate consumer group sizing
+- Monitor consumer lag and processing times
+
+### Security
+
+#### Database Security
+
+- Use SSL/TLS for database connections in production
+- Implement database connection encryption
+- Use secrets management for database credentials
+
+#### Network Security
+
+- Deploy behind a reverse proxy or API gateway
+- Use TLS for all HTTP communications
+- Implement proper firewall rules
+
+#### Authentication and Authorization
+
+- The service relies on tenant context from headers
+- Implement proper authentication at the API gateway level
+- Use RBAC for service-to-service communication
+
+### Troubleshooting
+
+#### Common Issues
+
+1. **Database Connection Errors**
+   - Check database connectivity and credentials
+   - Verify database is running and accessible
+   - Check connection pool settings
+
+2. **Kafka Connection Issues**
+   - Verify Kafka broker accessibility
+   - Check topic existence and permissions
+   - Monitor consumer group lag
+
+3. **High Memory Usage**
+   - Check for memory leaks in application logs
+   - Monitor garbage collection metrics
+   - Adjust resource limits if needed
+
+4. **Slow Response Times**
+   - Check database query performance
+   - Monitor Kafka producer/consumer performance
+   - Verify adequate resource allocation
+
+#### Debugging
+
+Enable debug logging for troubleshooting:
+
+```bash
+LOG_LEVEL=Debug
+```
+
+Check service logs for detailed information about:
+- Database operations
+- Kafka message processing
+- HTTP request handling
+- Business logic execution
+
 ## API Documentation
 
 ### Headers

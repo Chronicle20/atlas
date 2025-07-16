@@ -149,6 +149,7 @@ const (
 	StatusEventTypeFameChanged       = "FAME_CHANGED"
 	StatusEventTypeStatChanged       = "STAT_CHANGED"
 	StatusEventTypeDeleted           = "DELETED"
+	StatusEventTypeCreationFailed    = "CREATION_FAILED"
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
@@ -164,6 +165,11 @@ type StatusEvent[E any] struct {
 
 type StatusEventCreatedBody struct {
 	Name string `json:"name"`
+}
+
+type StatusEventCreationFailedBody struct {
+	Name    string `json:"name"`
+	Message string `json:"message"`
 }
 
 type StatusEventLoginBody struct {

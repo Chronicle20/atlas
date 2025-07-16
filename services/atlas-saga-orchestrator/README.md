@@ -21,8 +21,10 @@ This service acts as a central coordinator for complex operations that span mult
 - `COMMAND_TOPIC_SAGA` - Kafka topic for saga commands
 - `COMMAND_TOPIC_GUILD` - Kafka topic for guild commands
 - `COMMAND_TOPIC_COMPARTMENT` - Kafka topic for compartment commands
+- `COMMAND_TOPIC_CHARACTER` - Kafka topic for character commands
 - `EVENT_TOPIC_GUILD_STATUS` - Kafka topic for guild status events
 - `EVENT_TOPIC_COMPARTMENT_STATUS` - Kafka topic for compartment status events
+- `EVENT_TOPIC_CHARACTER_STATUS` - Kafka topic for character status events
 
 ## API
 
@@ -61,6 +63,7 @@ The service consumes messages from the following Kafka topics:
 - `COMMAND_TOPIC_SAGA` - Processes saga commands for orchestrating distributed transactions
 - `EVENT_TOPIC_GUILD_STATUS` - Processes guild status events for saga step completion
 - `EVENT_TOPIC_COMPARTMENT_STATUS` - Processes compartment status events for saga step completion
+- `EVENT_TOPIC_CHARACTER_STATUS` - Processes character status events for saga step completion
 
 ### Message Format
 
@@ -69,7 +72,7 @@ The service consumes messages from the following Kafka topics:
 ```json
 {
   "transaction_id": "uuid-string",
-  "saga_type": "inventory_transaction|quest_reward|trade_transaction",
+  "saga_type": "inventory_transaction|quest_reward|trade_transaction|character_creation",
   "initiated_by": "string",
   "steps": [
     {
@@ -98,6 +101,7 @@ The service consumes messages from the following Kafka topics:
 - `quest_reward` - Handles quest reward distribution
 - `trade_transaction` - Manages player-to-player trading
 - `guild_management` - Manages guild-related operations
+- `character_creation` - Manages character creation workflows
 
 ### Supported Actions
 
@@ -191,3 +195,9 @@ The service consumes messages from the following Kafka topics:
   - Payload: `{"characterId": 12345, "worldId": 0, "channelId": 0}`
   - Triggers a guild command to request a capacity increase
   - Completes when the StatusEventTypeCapacityUpdated event is received
+
+- `create_character` - Creates a new character
+  - Payload: `{"accountId": 12345, "name": "NewCharacter", "worldId": 1, "channelId": 0, "jobId": 0, "face": 20000, "hair": 30000, "hairColor": 0, "skin": 0, "top": 1040002, "bottom": 1060002, "shoes": 1072001, "weapon": 1302000}`
+  - Triggers a character command to create a new character
+  - Completes when the StatusEventTypeCreated event is received with matching transaction ID
+  - Fails when the StatusEventTypeCreationFailed or StatusEventTypeError event is received

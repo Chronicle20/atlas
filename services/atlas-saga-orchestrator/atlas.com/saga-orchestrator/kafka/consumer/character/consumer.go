@@ -31,6 +31,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterLevelChangedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterMesoChangedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterJobChangedEvent)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterCreatedEvent)))
 	}
 }
 
@@ -66,5 +67,20 @@ func handleCharacterJobChangedEvent(l logrus.FieldLogger, ctx context.Context, e
 	if e.Type != character2.StatusEventTypeJobChanged {
 		return
 	}
+	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+}
+
+func handleCharacterCreatedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventCreatedBody]) {
+	if e.Type != character2.StatusEventTypeCreated {
+		return
+	}
+	
+	l.WithFields(logrus.Fields{
+		"transaction_id": e.TransactionId.String(),
+		"character_id":   e.CharacterId,
+		"character_name": e.Body.Name,
+		"world_id":       e.WorldId,
+	}).Debug("Character created successfully, marking saga step as completed")
+	
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
 }

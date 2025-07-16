@@ -222,6 +222,21 @@ func fameChangedStatusEventProvider(transactionId uuid.UUID, characterId uint32,
 	return producer.SingleMessageProvider(key, value)
 }
 
+func creationFailedEventProvider(transactionId uuid.UUID, worldId world.Id, name string, message string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(0) // Use 0 as key since no character ID exists on creation failure
+	value := &character2.StatusEvent[character2.StatusEventCreationFailedBody]{
+		TransactionId: transactionId,
+		CharacterId:   0, // No character ID on creation failure
+		WorldId:       worldId,
+		Type:          character2.StatusEventTypeCreationFailed,
+		Body: character2.StatusEventCreationFailedBody{
+			Name:    name,
+			Message: message,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func statChangedProvider(transactionId uuid.UUID, channel channel.Model, characterId uint32, updates []string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.StatusEvent[character2.StatusEventStatChangedBody]{

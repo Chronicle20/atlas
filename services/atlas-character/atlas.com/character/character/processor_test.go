@@ -112,3 +112,88 @@ func TestGetByIdWithNonZeroCharacter(t *testing.T) {
 		t.Fatalf("Character name should be NonZeroTest, was %s", retrieved.Name())
 	}
 }
+
+func TestCreateAndEmitWithInvalidName(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	
+	// Test with invalid name - too short
+	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("Ab").SetLevel(1).SetExperience(0).Build()
+
+	processor := character.NewProcessor(testLogger(), tctx, testDatabase(t))
+	_, err := processor.CreateAndEmit(uuid.New(), input)
+	
+	// Should get an error due to invalid name
+	if err == nil {
+		t.Fatal("Expected error for invalid name, but got none")
+	}
+	
+	// Test with invalid name - contains invalid characters
+	input2 := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("Test@Name!").SetLevel(1).SetExperience(0).Build()
+
+	_, err2 := processor.CreateAndEmit(uuid.New(), input2)
+	
+	// Should get an error due to invalid name
+	if err2 == nil {
+		t.Fatal("Expected error for invalid name with special characters, but got none")
+	}
+	
+	// Test with invalid name - too long
+	input3 := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("ThisNameIsTooLong").SetLevel(1).SetExperience(0).Build()
+
+	_, err3 := processor.CreateAndEmit(uuid.New(), input3)
+	
+	// Should get an error due to invalid name
+	if err3 == nil {
+		t.Fatal("Expected error for invalid name that's too long, but got none")
+	}
+}
+
+func TestCreateAndEmitWithDuplicateName(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	db := testDatabase(t)
+	
+	// Create a character first using the same pattern as working tests
+	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("TestDupe").SetLevel(1).SetExperience(0).Build()
+
+	processor := character.NewProcessor(testLogger(), tctx, db)
+	_, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	
+	if err != nil {
+		t.Fatalf("Failed to create first character: %v", err)
+	}
+	
+	// Try to create another character with the same name using CreateAndEmit
+	input2 := character.NewModelBuilder().SetAccountId(2000).SetWorldId(0).SetName("TestDupe").SetLevel(1).SetExperience(0).Build()
+
+	_, err2 := processor.CreateAndEmit(uuid.New(), input2)
+	
+	// Should get an error due to duplicate name
+	if err2 == nil {
+		t.Fatal("Expected error for duplicate name, but got none")
+	}
+}
+
+func TestCreateAndEmitWithInvalidLevel(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	
+	// Test with invalid level - too low (0)
+	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("TestLevel0").SetLevel(0).SetExperience(0).Build()
+
+	processor := character.NewProcessor(testLogger(), tctx, testDatabase(t))
+	_, err := processor.CreateAndEmit(uuid.New(), input)
+	
+	// Should get an error due to invalid level
+	if err == nil {
+		t.Fatal("Expected error for invalid level 0, but got none")
+	}
+	
+	// Test with invalid level - too high (201)
+	input2 := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("TestLevel201").SetLevel(201).SetExperience(0).Build()
+
+	_, err2 := processor.CreateAndEmit(uuid.New(), input2)
+	
+	// Should get an error due to invalid level
+	if err2 == nil {
+		t.Fatal("Expected error for invalid level 201, but got none")
+	}
+}

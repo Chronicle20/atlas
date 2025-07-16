@@ -10,6 +10,7 @@ import (
 
 const (
 	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
+	CommandCreateCharacter     = "CREATE_CHARACTER"
 	CommandChangeMap           = "CHANGE_MAP"
 	CommandChangeJob           = "CHANGE_JOB"
 	CommandAwardExperience     = "AWARD_EXPERIENCE"
@@ -44,6 +45,25 @@ type Command[E any] struct {
 	CharacterId   uint32    `json:"characterId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`
+}
+
+type CreateCharacterCommandBody struct {
+	AccountId    uint32  `json:"accountId"`
+	WorldId      world.Id `json:"worldId"`
+	Name         string  `json:"name"`
+	Level        byte    `json:"level"`
+	Strength     uint16  `json:"strength"`
+	Dexterity    uint16  `json:"dexterity"`
+	Intelligence uint16  `json:"intelligence"`
+	Luck         uint16  `json:"luck"`
+	MaxHp        uint16  `json:"maxHp"`
+	MaxMp        uint16  `json:"maxMp"`
+	JobId        job.Id  `json:"jobId"`
+	Gender       byte    `json:"gender"`
+	Hair         uint32  `json:"hair"`
+	Face         uint32  `json:"face"`
+	SkinColor    byte    `json:"skinColor"`
+	MapId        _map.Id `json:"mapId"`
 }
 
 type ChangeMapBody struct {
@@ -129,6 +149,7 @@ const (
 	StatusEventTypeFameChanged       = "FAME_CHANGED"
 	StatusEventTypeStatChanged       = "STAT_CHANGED"
 	StatusEventTypeDeleted           = "DELETED"
+	StatusEventTypeCreationFailed    = "CREATION_FAILED"
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
@@ -144,6 +165,11 @@ type StatusEvent[E any] struct {
 
 type StatusEventCreatedBody struct {
 	Name string `json:"name"`
+}
+
+type StatusEventCreationFailedBody struct {
+	Name    string `json:"name"`
+	Message string `json:"message"`
 }
 
 type StatusEventLoginBody struct {

@@ -31,6 +31,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 		return func(rf func(topic string, handler handler.Handler) (string, error)) {
 			var t string
 			t, _ = topic.EnvProvider(l)(character2.EnvCommandTopic)()
+			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateCharacter(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMap(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeJob(db))))
 			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardExperience(db))))
@@ -209,6 +210,35 @@ func handleJobChangedStatusEvent(db *gorm.DB) message.Handler[character2.StatusE
 		}
 		cha := channel.NewModel(e.WorldId, e.Body.ChannelId)
 		_ = character.NewProcessor(l, ctx, db).ProcessJobChangeAndEmit(e.TransactionId, cha, e.CharacterId, e.Body.JobId)
+	}
+}
+
+func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[character2.CreateCharacterCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.CreateCharacterCommandBody]) {
+		if c.Type != character2.CommandCreateCharacter {
+			return
+		}
+
+		model := character.NewModelBuilder().
+			SetAccountId(c.Body.AccountId).
+			SetWorldId(c.Body.WorldId).
+			SetName(c.Body.Name).
+			SetLevel(c.Body.Level).
+			SetStrength(c.Body.Strength).
+			SetDexterity(c.Body.Dexterity).
+			SetIntelligence(c.Body.Intelligence).
+			SetLuck(c.Body.Luck).
+			SetMaxHp(c.Body.MaxHp).SetHp(c.Body.MaxHp).
+			SetMaxMp(c.Body.MaxMp).SetMp(c.Body.MaxMp).
+			SetJobId(c.Body.JobId).
+			SetGender(c.Body.Gender).
+			SetHair(c.Body.Hair).
+			SetFace(c.Body.Face).
+			SetSkinColor(c.Body.SkinColor).
+			SetMapId(c.Body.MapId).
+			Build()
+
+		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model)
 	}
 }
 

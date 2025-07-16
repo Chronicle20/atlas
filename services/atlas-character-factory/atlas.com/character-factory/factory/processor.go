@@ -13,24 +13,24 @@ import (
 	"time"
 )
 
-func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel) error {
-	return func(ctx context.Context) func(input RestModel) error {
-		return func(input RestModel) error {
+func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel) (string, error) {
+	return func(ctx context.Context) func(input RestModel) (string, error) {
+		return func(input RestModel) (string, error) {
 			// TODO validate name again.
 
 			if !validGender(input.Gender) {
-				return errors.New("gender must be 0 or 1")
+				return "", errors.New("gender must be 0 or 1")
 			}
 
 			if !validJob(input.JobIndex, input.SubJobIndex) {
-				return errors.New("must provide valid job index")
+				return "", errors.New("must provide valid job index")
 			}
 
 			t := tenant.MustFromContext(ctx)
 			tc, err := configuration.GetTenantConfig(t.Id())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to find template validation configuration")
-				return err
+				return "", err
 			}
 
 			var found = false
@@ -43,47 +43,47 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 			}
 			if !found {
 				l.WithError(err).Errorf("Unable to find template validation configuration")
-				return err
+				return "", err
 			}
 
 			if !validFace(template.Faces, input.Face) {
 				l.Errorf("Chosen face [%d] is not valid for job [%d].", input.Face, input.JobIndex)
-				return errors.New("chosen face is not valid for job")
+				return "", errors.New("chosen face is not valid for job")
 			}
 
 			if !validHair(template.Hairs, input.Hair) {
 				l.Errorf("Chosen hair [%d] is not valid for job [%d].", input.Hair, input.JobIndex)
-				return errors.New("chosen hair is not valid for job")
+				return "", errors.New("chosen hair is not valid for job")
 			}
 
 			if !validHairColor(template.HairColors, input.HairColor) {
 				l.Errorf("Chosen hair color [%d] is not valid for job [%d].", input.HairColor, input.JobIndex)
-				return errors.New("chosen hair color is not valid for job")
+				return "", errors.New("chosen hair color is not valid for job")
 			}
 
 			if !validSkinColor(template.SkinColors, uint32(input.SkinColor)) {
 				l.Errorf("Chosen skin color [%d] is not valid for job [%d]", input.SkinColor, input.JobIndex)
-				return errors.New("chosen skin color is not valid for job")
+				return "", errors.New("chosen skin color is not valid for job")
 			}
 
 			if !validTop(template.Tops, input.Top) {
 				l.Errorf("Chosen top [%d] is not valid for job [%d]", input.Top, input.JobIndex)
-				return errors.New("chosen top is not valid for job")
+				return "", errors.New("chosen top is not valid for job")
 			}
 
 			if !validBottom(template.Bottoms, input.Bottom) {
 				l.Errorf("Chosen bottom [%d] is not valid for job [%d]", input.Bottom, input.JobIndex)
-				return errors.New("chosen bottom is not valid for job")
+				return "", errors.New("chosen bottom is not valid for job")
 			}
 
 			if !validShoes(template.Shoes, input.Shoes) {
 				l.Errorf("Chosen shoes [%d] is not valid for job [%d]", input.Shoes, input.JobIndex)
-				return errors.New("chosen shoes is not valid for job")
+				return "", errors.New("chosen shoes is not valid for job")
 			}
 
 			if !validWeapon(template.Weapons, input.Weapon) {
 				l.Errorf("Chosen weapon [%d] is not valid for job [%d]", input.Weapon, input.JobIndex)
-				return errors.New("chosen weapon is not valid for job")
+				return "", errors.New("chosen weapon is not valid for job")
 			}
 
 			// Generate transaction ID for saga
@@ -98,11 +98,11 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 			err = sagaProcessor.Create(characterSaga)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to emit character creation saga for character [%s].", input.Name)
-				return err
+				return "", err
 			}
 
 			l.Debugf("Character creation saga [%s] emitted successfully for character [%s].", transactionId.String(), input.Name)
-			return nil
+			return transactionId.String(), nil
 		}
 
 	}

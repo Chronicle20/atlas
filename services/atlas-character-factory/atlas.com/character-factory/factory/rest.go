@@ -36,3 +36,21 @@ func (r *RestModel) SetID(strId string) error {
 	r.Id = uint32(id)
 	return nil
 }
+
+// CreateCharacterResponse represents the response for character creation requests
+type CreateCharacterResponse struct {
+	TransactionId string `json:"transactionId"`
+}
+
+func (r CreateCharacterResponse) GetName() string {
+	return "characters"
+}
+
+func (r CreateCharacterResponse) GetID() string {
+	return r.TransactionId
+}
+
+func (r *CreateCharacterResponse) SetID(strId string) error {
+	r.TransactionId = strId
+	return nil
+}

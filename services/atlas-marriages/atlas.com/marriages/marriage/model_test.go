@@ -1,6 +1,7 @@
 package marriage
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -1190,11 +1191,370 @@ func TestCeremony_BusinessLogic(t *testing.T) {
 	}
 }
 
+func TestMarriage_LevelRequirementBusinessRule(t *testing.T) {
+	// Test that level requirement constant matches specification (level 10+)
+	if EligibilityRequirement != 10 {
+		t.Errorf("Business rule violation: Eligibility requirement should be 10, got %d", EligibilityRequirement)
+	}
+	
+	// This validates the core business rule from specification:
+	// "Characters must be level 10 or higher to marry"
+}
+
+func TestProposal_CooldownBusinessRules(t *testing.T) {
+	// Test that cooldown constants match specification requirements
+	tests := []struct {
+		name     string
+		constant time.Duration
+		expected time.Duration
+		rule     string
+	}{
+		{
+			name:     "global cooldown duration",
+			constant: GlobalCooldownDuration,
+			expected: 4 * time.Hour,
+			rule:     "4 hours between any two proposals by the same character",
+		},
+		{
+			name:     "proposal expiry duration",
+			constant: ProposalExpiryDuration,
+			expected: 24 * time.Hour,
+			rule:     "Proposal must be accepted within 24 hours, or it expires",
+		},
+		{
+			name:     "initial per-target cooldown",
+			constant: InitialPerTargetCooldown,
+			expected: 24 * time.Hour,
+			rule:     "Starts at 24 hours after rejection or expiry, doubles on each successive rejection",
+		},
+	}
+	
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.constant != tt.expected {
+				t.Errorf("Business rule violation for %s: Expected %v, got %v. Rule: %s", 
+					tt.name, tt.expected, tt.constant, tt.rule)
+			}
+		})
+	}
+}
+
+func TestCeremony_BusinessRuleConstants(t *testing.T) {
+	// Test that ceremony constants match specification requirements
+	tests := []struct {
+		name     string
+		constant interface{}
+		expected interface{}
+		rule     string
+	}{
+		{
+			name:     "max invitees",
+			constant: MaxInvitees,
+			expected: 15,
+			rule:     "Up to 15 invitees may be included",
+		},
+		{
+			name:     "disconnection timeout",
+			constant: DisconnectionTimeout,
+			expected: 5 * time.Minute,
+			rule:     "Ceremony is postponed if offline > 5 minutes",
+		},
+		{
+			name:     "ceremony duration unlimited",
+			constant: CeremonyDurationUnlimited,
+			expected: true,
+			rule:     "Default duration is unlimited (instance-based)",
+		},
+	}
+	
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.constant != tt.expected {
+				t.Errorf("Business rule violation for %s: Expected %v, got %v. Rule: %s", 
+					tt.name, tt.expected, tt.constant, tt.rule)
+			}
+		})
+	}
+}
+
+func TestProposal_ExponentialBackoffBusinessRule(t *testing.T) {
+	// Test the exponential backoff business rule from specification
+	tenantId := uuid.New()
+	proposerId := uint32(1)
+	targetId := uint32(2)
+	
+	// Test exponential backoff: 24h, 48h, 96h, 192h, etc.
+	tests := []struct {
+		rejectionCount uint32
+		expectedHours  int
+	}{
+		{0, 24},   // Initial: 24 hours
+		{1, 48},   // After 1 rejection: 48 hours  
+		{2, 96},   // After 2 rejections: 96 hours
+		{3, 192},  // After 3 rejections: 192 hours
+		{4, 384},  // After 4 rejections: 384 hours
+	}
+	
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("rejection_count_%d", tt.rejectionCount), func(t *testing.T) {
+			proposal, err := NewProposalBuilder(proposerId, targetId, tenantId).
+				SetRejectionCount(tt.rejectionCount).
+				Build()
+			if err != nil {
+				t.Fatalf("Failed to create proposal: %v", err)
+			}
+			
+			actualCooldown := proposal.CalculateNextCooldown()
+			expectedCooldown := time.Duration(tt.expectedHours) * time.Hour
+			
+			if actualCooldown != expectedCooldown {
+				t.Errorf("Business rule violation: Expected cooldown %v after %d rejections, got %v", 
+					expectedCooldown, tt.rejectionCount, actualCooldown)
+			}
+		})
+	}
+}
+
+func TestMarriage_OneRelationshipBusinessRule(t *testing.T) {
+	// Test the business rule: "A character may be in only one relationship at a time"
+	tenantId := uuid.New()
+	characterId1 := uint32(1)
+	characterId2 := uint32(2)
+	characterId3 := uint32(3)
+	
+	// Create first marriage
+	marriage1, err := NewBuilder(characterId1, characterId2, tenantId).Build()
+	if err != nil {
+		t.Fatalf("Failed to create first marriage: %v", err)
+	}
+	
+	// Test that same characters cannot be in multiple relationships
+	validationTests := []struct {
+		name         string
+		char1        uint32
+		char2        uint32
+		expectValid  bool
+		description  string
+	}{
+		{
+			name:        "character1_in_second_relationship",
+			char1:       characterId1, // Already in marriage1
+			char2:       characterId3,
+			expectValid: false, // This would be validated at processor level
+			description: "Character 1 cannot be in second relationship",
+		},
+		{
+			name:        "character2_in_second_relationship",
+			char1:       characterId3,
+			char2:       characterId2, // Already in marriage1
+			expectValid: false, // This would be validated at processor level
+			description: "Character 2 cannot be in second relationship",
+		},
+		{
+			name:        "completely_new_characters",
+			char1:       characterId3,
+			char2:       uint32(4),
+			expectValid: true,
+			description: "New characters can start relationship",
+		},
+	}
+	
+	for _, tt := range validationTests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Model level doesn't enforce this rule (it's enforced at processor level)
+			// But we can verify the model can identify partners correctly
+			if marriage1.IsPartner(tt.char1) || marriage1.IsPartner(tt.char2) {
+				// At least one character is already in a relationship
+				if tt.expectValid {
+					t.Errorf("%s: Expected valid relationship but character already partnered", tt.description)
+				}
+			} else {
+				// Neither character is in existing relationship
+				if !tt.expectValid {
+					t.Errorf("%s: Expected invalid relationship but neither character is partnered", tt.description)
+				}
+			}
+		})
+	}
+}
+
+func TestCeremony_InviteeBusinessRules(t *testing.T) {
+	// Test business rules related to ceremony invitees
+	tenantId := uuid.New()
+	marriageId := uint32(1)
+	characterId1 := uint32(1)
+	characterId2 := uint32(2)
+	
+	ceremony, err := NewCeremonyBuilder(marriageId, characterId1, characterId2, tenantId).Build()
+	if err != nil {
+		t.Fatalf("Failed to create ceremony: %v", err)
+	}
+	
+	t.Run("max_invitees_business_rule", func(t *testing.T) {
+		// Test the rule: "Up to 15 invitees may be included"
+		currentCeremony := ceremony
+		
+		// Add exactly 15 invitees (should succeed)
+		for i := 0; i < MaxInvitees; i++ {
+			inviteeId := uint32(i + 10) // Start from 10 to avoid conflicts
+			if !currentCeremony.CanAddInvitee(inviteeId) {
+				t.Errorf("Should be able to add invitee %d (within limit of %d)", i+1, MaxInvitees)
+			}
+			
+			currentCeremony, err = currentCeremony.AddInvitee(inviteeId)
+			if err != nil {
+				t.Fatalf("Failed to add invitee %d: %v", i+1, err)
+			}
+		}
+		
+		// Verify exactly at limit
+		if currentCeremony.InviteeCount() != MaxInvitees {
+			t.Errorf("Expected exactly %d invitees, got %d", MaxInvitees, currentCeremony.InviteeCount())
+		}
+		
+		// Try to add 16th invitee (should fail per business rule)
+		if currentCeremony.CanAddInvitee(uint32(100)) {
+			t.Error("Business rule violation: Should not be able to add 16th invitee (limit is 15)")
+		}
+	})
+	
+	t.Run("partners_cannot_be_invitees", func(t *testing.T) {
+		// Test the implicit rule: partners cannot be invitees
+		if ceremony.CanAddInvitee(characterId1) {
+			t.Error("Business rule violation: Partner 1 should not be addable as invitee")
+		}
+		
+		if ceremony.CanAddInvitee(characterId2) {
+			t.Error("Business rule violation: Partner 2 should not be addable as invitee")
+		}
+	})
+	
+	t.Run("duplicate_invitees_not_allowed", func(t *testing.T) {
+		// Test the implicit rule: no duplicate invitees
+		inviteeId := uint32(50)
+		
+		ceremonywithInvitee, err := ceremony.AddInvitee(inviteeId)
+		if err != nil {
+			t.Fatalf("Failed to add invitee: %v", err)
+		}
+		
+		if ceremonywithInvitee.CanAddInvitee(inviteeId) {
+			t.Error("Business rule violation: Should not be able to add duplicate invitee")
+		}
+	})
+}
+
+func TestCeremony_StateTransitionBusinessRules(t *testing.T) {
+	// Test business rules for ceremony state transitions from specification
+	tenantId := uuid.New()
+	marriageId := uint32(1)
+	characterId1 := uint32(1)
+	characterId2 := uint32(2)
+	
+	ceremony, err := NewCeremonyBuilder(marriageId, characterId1, characterId2, tenantId).Build()
+	if err != nil {
+		t.Fatalf("Failed to create ceremony: %v", err)
+	}
+	
+	t.Run("ceremony_lifecycle_states", func(t *testing.T) {
+		// Test the state transition rule: Scheduled → Active → Completed | Cancelled | Postponed
+		
+		// Initial state should be Scheduled
+		if !ceremony.IsScheduled() {
+			t.Error("Business rule violation: New ceremony should be in Scheduled state")
+		}
+		
+		// Should be able to start from Scheduled
+		if !ceremony.CanStart() {
+			t.Error("Business rule violation: Scheduled ceremony should be startable")
+		}
+		
+		// Start ceremony
+		activeCeremony, err := ceremony.Start()
+		if err != nil {
+			t.Fatalf("Failed to start ceremony: %v", err)
+		}
+		
+		// Should be active
+		if !activeCeremony.IsActive() {
+			t.Error("Business rule violation: Started ceremony should be Active")
+		}
+		
+		// Should be able to complete from Active
+		if !activeCeremony.CanComplete() {
+			t.Error("Business rule violation: Active ceremony should be completable")
+		}
+		
+		// Should be able to postpone from Active
+		if !activeCeremony.CanPostpone() {
+			t.Error("Business rule violation: Active ceremony should be postponable")
+		}
+		
+		// Should be able to cancel from Active
+		if !activeCeremony.CanCancel() {
+			t.Error("Business rule violation: Active ceremony should be cancellable")
+		}
+	})
+	
+	t.Run("postponed_ceremony_restart", func(t *testing.T) {
+		// Test rule: "Must be restarted after rejoining"
+		activeCeremony, err := ceremony.Start()
+		if err != nil {
+			t.Fatalf("Failed to start ceremony: %v", err)
+		}
+		
+		// Postpone ceremony
+		postponedCeremony, err := activeCeremony.Postpone()
+		if err != nil {
+			t.Fatalf("Failed to postpone ceremony: %v", err)
+		}
+		
+		// Should be able to restart (can start from postponed)
+		if !postponedCeremony.CanStart() {
+			t.Error("Business rule violation: Postponed ceremony should be restartable")
+		}
+		
+		// Should be able to reschedule
+		if !postponedCeremony.CanReschedule() {
+			t.Error("Business rule violation: Postponed ceremony should be reschedulable")
+		}
+	})
+	
+	t.Run("completed_ceremony_terminal", func(t *testing.T) {
+		// Test rule: Completed ceremonies are terminal
+		activeCeremony, err := ceremony.Start()
+		if err != nil {
+			t.Fatalf("Failed to start ceremony: %v", err)
+		}
+		
+		completedCeremony, err := activeCeremony.Complete()
+		if err != nil {
+			t.Fatalf("Failed to complete ceremony: %v", err)
+		}
+		
+		// Should be finished (terminal state)
+		if !completedCeremony.IsFinished() {
+			t.Error("Business rule violation: Completed ceremony should be in terminal state")
+		}
+		
+		// Should not be able to perform any further actions
+		if completedCeremony.CanStart() {
+			t.Error("Business rule violation: Completed ceremony should not be startable")
+		}
+		if completedCeremony.CanComplete() {
+			t.Error("Business rule violation: Completed ceremony should not be completable again")
+		}
+		if completedCeremony.CanPostpone() {
+			t.Error("Business rule violation: Completed ceremony should not be postponable")
+		}
+	})
+}
+
 // Helper function to check if a string contains a substring
 func contains(s, substr string) bool {
 	for i := 0; i <= len(s)-len(substr); i++ {
 		if s[i:i+len(substr)] == substr {
-			return true
+				return true
 		}
 	}
 	return false

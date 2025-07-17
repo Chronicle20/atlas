@@ -199,6 +199,9 @@ func TestCreateAndEquipAssetIntegration(t *testing.T) {
 
 // TestCreateAndEquipAssetKafkaEventFlow tests the Kafka event flow for CreateAndEquipAsset
 func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
+	// Reset cache to ensure test isolation
+	ResetCache()
+	
 	tests := []struct {
 		name                   string
 		initialSagaPayload     CreateAndEquipAssetPayload
@@ -265,6 +268,9 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Reset cache to ensure test isolation
+			ResetCache()
+			
 			// Setup test environment
 			logger, hook := test.NewNullLogger()
 			logger.SetLevel(logrus.DebugLevel)
@@ -310,56 +316,56 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 			// Store saga in cache
 			GetCache().Put(te.Id(), saga)
 
-			// Phase 1: Execute initial CreateAndEquipAsset step
-			err := processor.Step(saga.TransactionId)
-
+			// Phase 1: Execute the initial CreateAndEquipAsset step
+			err := processor.Step(transactionId)
 			if tt.simulateCreatedEvent {
 				assert.NoError(t, err, "Initial step should succeed")
 			} else {
 				assert.Error(t, err, "Initial step should fail")
 			}
 
-			// Phase 2: Simulate Kafka events
-			if tt.simulateCreatedEvent {
-				// Simulate CREATED event - this would be handled by compartment consumer
-				// In real flow, this would trigger saga.StepCompleted(transactionId, true)
-				// and potentially add an auto-equip step
-
-				// For this test, we'll simulate the behavior
-				err = processor.StepCompleted(transactionId, true)
-				assert.NoError(t, err, "StepCompleted should succeed")
-
-				// Simulate auto-equip step addition (normally done by asset consumer)
-				if tt.expectedAutoEquipStep {
-					equipStep := Step[any]{
-						StepId: "auto_equip_step_test",
-						Status: Pending,
-						Action: EquipAsset,
-						Payload: EquipAssetPayload{
-							CharacterId:   tt.initialSagaPayload.CharacterId,
-							InventoryType: 1,
-							Source:        5,
-							Destination:   -1,
-						},
-						CreatedAt: time.Now(),
-						UpdatedAt: time.Now(),
-					}
-
-					err = processor.AddStepAfterCurrent(transactionId, equipStep)
-					assert.NoError(t, err, "Adding auto-equip step should succeed")
+			// Phase 2: Add auto-equip step if needed (before the first step is completed)
+			if tt.simulateCreatedEvent && tt.expectedAutoEquipStep {
+				equipStep := Step[any]{
+					StepId: "auto_equip_step_test",
+					Status: Pending,
+					Action: EquipAsset,
+					Payload: EquipAssetPayload{
+						CharacterId:   tt.initialSagaPayload.CharacterId,
+						InventoryType: 1,
+						Source:        5,
+						Destination:   -1,
+					},
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
 				}
+
+				err = processor.AddStep(transactionId, equipStep)
+				assert.NoError(t, err, "Adding auto-equip step should succeed")
 			}
 
+			// Phase 3: Complete the first step
+			if tt.simulateCreatedEvent {
+				err = processor.MarkEarliestPendingStepCompleted(transactionId)
+				assert.NoError(t, err, "Should complete CreateAndEquipAsset step")
+			}
+
+			// Phase 4: Execute the second step if it exists
 			if tt.simulateEquippedEvent {
-				// Simulate EQUIPPED event
-				err = processor.StepCompleted(transactionId, true)
-				assert.NoError(t, err, "Equipment step completion should succeed")
+				err = processor.Step(transactionId)
+				assert.NoError(t, err, "Equipment step should execute")
 			}
 
-			if tt.simulateErrorEvent {
-				// Simulate ERROR event
-				err = processor.StepCompleted(transactionId, false)
-				assert.NoError(t, err, "Error step completion should succeed")
+			// Phase 5: Complete the second step
+			if tt.simulateEquippedEvent {
+				err = processor.MarkEarliestPendingStepCompleted(transactionId)
+				assert.NoError(t, err, "Should complete equipment step")
+			}
+
+			// Phase 6: Handle error scenarios
+			if tt.simulateErrorEvent && !tt.simulateEquippedEvent {
+				err = processor.MarkEarliestPendingStep(transactionId, Failed)
+				assert.NoError(t, err, "Should mark step as failed")
 			}
 
 			// Verify final saga state

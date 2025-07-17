@@ -8,15 +8,12 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func CompletedStatusEventProvider(sagaId uuid.UUID, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(sagaId.ID()))
+func CompletedStatusEventProvider(transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(transactionId.ID()))
 	value := &saga.StatusEvent[saga.StatusEventCompletedBody]{
-		SagaId:        sagaId,
-		Type:          saga.StatusEventTypeCompleted,
 		TransactionId: transactionId,
-		Body: saga.StatusEventCompletedBody{
-			TransactionId: transactionId,
-		},
+		Type:          saga.StatusEventTypeCompleted,
+		Body:          saga.StatusEventCompletedBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

@@ -463,7 +463,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 		GetCache().Remove(p.t.Id(), s.TransactionId)
 
 		// Emit saga completion event
-		err := producer.ProviderImpl(p.l)(p.ctx)(saga.EnvStatusEventTopic)(CompletedStatusEventProvider(s.TransactionId, s.TransactionId))
+		err := producer.ProviderImpl(p.l)(p.ctx)(saga.EnvStatusEventTopic)(CompletedStatusEventProvider(s.TransactionId))
 		if err != nil {
 			p.l.WithError(err).WithFields(logrus.Fields{
 				"transaction_id": s.TransactionId.String(),

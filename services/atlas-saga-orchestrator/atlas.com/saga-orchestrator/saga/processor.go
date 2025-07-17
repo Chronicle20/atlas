@@ -461,7 +461,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("No steps remaining to progress.")
 		GetCache().Remove(p.t.Id(), s.TransactionId)
-		
+
 		// Emit saga completion event
 		err := producer.ProviderImpl(p.l)(p.ctx)(saga.EnvStatusEventTopic)(CompletedStatusEventProvider(s.TransactionId, s.TransactionId))
 		if err != nil {
@@ -471,7 +471,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 				"tenant_id":      p.t.Id().String(),
 			}).Error("Failed to emit saga completion event.")
 		}
-		
+
 		return nil
 	}
 
@@ -1224,7 +1224,7 @@ func handleCreateCharacter(p *ProcessorImpl, s Saga, st Step[any]) error {
 	}
 
 	// Call the character processor
-	err := p.charP.RequestCreateCharacter(s.TransactionId, payload.AccountId, payload.Name, payload.WorldId, payload.ChannelId, payload.JobId, payload.Gender, payload.Face, payload.Hair, payload.HairColor, payload.Skin, payload.Top, payload.Bottom, payload.Shoes, payload.Weapon, payload.MapId)
+	err := p.charP.RequestCreateCharacter(s.TransactionId, payload.AccountId, payload.WorldId, payload.Name, payload.Level, payload.Strength, payload.Dexterity, payload.Intelligence, payload.Luck, payload.Hp, payload.Mp, payload.JobId, payload.Gender, payload.Face, payload.Hair, payload.Skin, payload.MapId)
 	if err != nil {
 		p.logActionError(s, st, err, "Unable to create character.")
 		return err

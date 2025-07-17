@@ -90,7 +90,7 @@ func ChangeJobProvider(transactionId uuid.UUID, worldId world.Id, characterId ui
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, gender byte, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32, mapId uint32) model.Provider[[]kafka.Message] {
+func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &character2.Command[character2.CreateCharacterCommandBody]{
 		TransactionId: transactionId,
@@ -98,20 +98,22 @@ func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, n
 		CharacterId:   0, // Character ID is not known yet for creation
 		Type:          character2.CommandCreateCharacter,
 		Body: character2.CreateCharacterCommandBody{
-			AccountId: accountId,
-			WorldId:   world.Id(worldId),
-			Name:      name,
-			JobId:     job.Id(jobId),
-			Gender:    gender,
-			Face:      face,
-			Hair:      hair,
-			HairColor: hairColor,
-			SkinColor: byte(skin),
-			Top:       top,
-			Bottom:    bottom,
-			Shoes:     shoes,
-			Weapon:    weapon,
-			MapId:     _map.Id(mapId),
+			AccountId:    accountId,
+			WorldId:      world.Id(worldId),
+			Name:         name,
+			Level:        level,
+			Strength:     strength,
+			Dexterity:    dexterity,
+			Intelligence: intelligence,
+			Luck:         luck,
+			MaxHp:        hp,
+			MaxMp:        mp,
+			JobId:        jobId,
+			Gender:       gender,
+			Hair:         hair,
+			Face:         face,
+			SkinColor:    skin,
+			MapId:        mapId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

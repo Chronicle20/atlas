@@ -8,9 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-
-
-	const (
+const (
 	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
 	CommandCreateCharacter     = "CREATE_CHARACTER"
 	CommandChangeMap           = "CHANGE_MAP"
@@ -50,8 +48,6 @@ type Command[E any] struct {
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`
 }
-
-
 
 type ChangeMapBody struct {
 	ChannelId channel.Id `json:"channelId"`
@@ -123,20 +119,22 @@ type ChangeMPBody struct {
 }
 
 type CreateCharacterCommandBody struct {
-	AccountId   uint32   `json:"accountId"`
-	WorldId     world.Id `json:"worldId"`
-	Name        string   `json:"name"`
-	JobId       job.Id   `json:"jobId"`
-	Gender      byte     `json:"gender"`
-	Face        uint32   `json:"face"`
-	Hair        uint32   `json:"hair"`
-	HairColor   uint32   `json:"hairColor"`
-	SkinColor   byte     `json:"skinColor"`
-	Top         uint32   `json:"top"`
-	Bottom      uint32   `json:"bottom"`
-	Shoes       uint32   `json:"shoes"`
-	Weapon      uint32   `json:"weapon"`
-	MapId       _map.Id  `json:"mapId"`
+	AccountId    uint32   `json:"accountId"`
+	WorldId      world.Id `json:"worldId"`
+	Name         string   `json:"name"`
+	Level        byte     `json:"level"`
+	Strength     uint16   `json:"strength"`
+	Dexterity    uint16   `json:"dexterity"`
+	Intelligence uint16   `json:"intelligence"`
+	Luck         uint16   `json:"luck"`
+	MaxHp        uint16   `json:"maxHp"`
+	MaxMp        uint16   `json:"maxMp"`
+	JobId        job.Id   `json:"jobId"`
+	Gender       byte     `json:"gender"`
+	Hair         uint32   `json:"hair"`
+	Face         uint32   `json:"face"`
+	SkinColor    byte     `json:"skinColor"`
+	MapId        _map.Id  `json:"mapId"`
 }
 
 const (

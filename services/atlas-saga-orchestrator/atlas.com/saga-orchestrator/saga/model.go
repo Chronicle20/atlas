@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"time"
@@ -248,27 +249,27 @@ type Action string
 
 // Constants for different actions
 const (
-	AwardInventory             Action = "award_inventory" // Deprecated: Use AwardAsset instead
-	AwardAsset                 Action = "award_asset"     // Preferred over AwardInventory
-	AwardExperience            Action = "award_experience"
-	AwardLevel                 Action = "award_level"
-	AwardMesos                 Action = "award_mesos"
-	WarpToRandomPortal         Action = "warp_to_random_portal"
-	WarpToPortal               Action = "warp_to_portal"
-	DestroyAsset               Action = "destroy_asset"
-	EquipAsset                 Action = "equip_asset"
-	UnequipAsset               Action = "unequip_asset"
-	ChangeJob                  Action = "change_job"
-	CreateSkill                Action = "create_skill"
-	UpdateSkill                Action = "update_skill"
-	ValidateCharacterState     Action = "validate_character_state"
-	RequestGuildName           Action = "request_guild_name"
-	RequestGuildEmblem         Action = "request_guild_emblem"
-	RequestGuildDisband        Action = "request_guild_disband"
+	AwardInventory               Action = "award_inventory" // Deprecated: Use AwardAsset instead
+	AwardAsset                   Action = "award_asset"     // Preferred over AwardInventory
+	AwardExperience              Action = "award_experience"
+	AwardLevel                   Action = "award_level"
+	AwardMesos                   Action = "award_mesos"
+	WarpToRandomPortal           Action = "warp_to_random_portal"
+	WarpToPortal                 Action = "warp_to_portal"
+	DestroyAsset                 Action = "destroy_asset"
+	EquipAsset                   Action = "equip_asset"
+	UnequipAsset                 Action = "unequip_asset"
+	ChangeJob                    Action = "change_job"
+	CreateSkill                  Action = "create_skill"
+	UpdateSkill                  Action = "update_skill"
+	ValidateCharacterState       Action = "validate_character_state"
+	RequestGuildName             Action = "request_guild_name"
+	RequestGuildEmblem           Action = "request_guild_emblem"
+	RequestGuildDisband          Action = "request_guild_disband"
 	RequestGuildCapacityIncrease Action = "request_guild_capacity_increase"
-	CreateInvite               Action = "create_invite"
-	CreateCharacter            Action = "create_character"
-	CreateAndEquipAsset        Action = "create_and_equip_asset"
+	CreateInvite                 Action = "create_invite"
+	CreateCharacter              Action = "create_character"
+	CreateAndEquipAsset          Action = "create_and_equip_asset"
 )
 
 // Step represents a single step within a saga.
@@ -316,20 +317,20 @@ type AwardExperiencePayload struct {
 
 // AwardLevelPayload represents the payload required to award levels to a character.
 type AwardLevelPayload struct {
-	CharacterId uint32      `json:"characterId"` // CharacterId associated with the action
-	WorldId     world.Id    `json:"worldId"`     // WorldId associated with the action
-	ChannelId   channel.Id  `json:"channelId"`   // ChannelId associated with the action
-	Amount      byte        `json:"amount"`      // Number of levels to award
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Amount      byte       `json:"amount"`      // Number of levels to award
 }
 
 // AwardMesosPayload represents the payload required to award mesos to a character.
 type AwardMesosPayload struct {
-	CharacterId uint32      `json:"characterId"` // CharacterId associated with the action
-	WorldId     world.Id    `json:"worldId"`     // WorldId associated with the action
-	ChannelId   channel.Id  `json:"channelId"`   // ChannelId associated with the action
-	ActorId     uint32      `json:"actorId"`     // ActorId identifies who is giving/taking the mesos
-	ActorType   string      `json:"actorType"`   // ActorType identifies the type of actor (e.g., "SYSTEM", "NPC", "CHARACTER")
-	Amount      int32       `json:"amount"`      // Amount of mesos to award (can be negative for deduction)
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	ActorId     uint32     `json:"actorId"`     // ActorId identifies who is giving/taking the mesos
+	ActorType   string     `json:"actorType"`   // ActorType identifies the type of actor (e.g., "SYSTEM", "NPC", "CHARACTER")
+	Amount      int32      `json:"amount"`      // Amount of mesos to award (can be negative for deduction)
 }
 
 // DestroyAssetPayload represents the payload required to destroy an asset in a compartment.
@@ -357,33 +358,33 @@ type UnequipAssetPayload struct {
 
 // ChangeJobPayload represents the payload required to change a character's job.
 type ChangeJobPayload struct {
-	CharacterId uint32      `json:"characterId"` // CharacterId associated with the action
-	WorldId     world.Id    `json:"worldId"`     // WorldId associated with the action
-	ChannelId   channel.Id  `json:"channelId"`   // ChannelId associated with the action
-	JobId       job.Id      `json:"jobId"`       // JobId to change to
+	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	JobId       job.Id     `json:"jobId"`       // JobId to change to
 }
 
 // CreateSkillPayload represents the payload required to create a skill for a character.
 type CreateSkillPayload struct {
-	CharacterId  uint32    `json:"characterId"`  // CharacterId associated with the action
-	SkillId      uint32    `json:"skillId"`      // SkillId to create
-	Level        byte      `json:"level"`        // Skill level
-	MasterLevel  byte      `json:"masterLevel"`  // Skill master level
-	Expiration   time.Time `json:"expiration"`   // Skill expiration time
+	CharacterId uint32    `json:"characterId"` // CharacterId associated with the action
+	SkillId     uint32    `json:"skillId"`     // SkillId to create
+	Level       byte      `json:"level"`       // Skill level
+	MasterLevel byte      `json:"masterLevel"` // Skill master level
+	Expiration  time.Time `json:"expiration"`  // Skill expiration time
 }
 
 // UpdateSkillPayload represents the payload required to update a skill for a character.
 type UpdateSkillPayload struct {
-	CharacterId  uint32    `json:"characterId"`  // CharacterId associated with the action
-	SkillId      uint32    `json:"skillId"`      // SkillId to update
-	Level        byte      `json:"level"`        // New skill level
-	MasterLevel  byte      `json:"masterLevel"`  // New skill master level
-	Expiration   time.Time `json:"expiration"`   // New skill expiration time
+	CharacterId uint32    `json:"characterId"` // CharacterId associated with the action
+	SkillId     uint32    `json:"skillId"`     // SkillId to update
+	Level       byte      `json:"level"`       // New skill level
+	MasterLevel byte      `json:"masterLevel"` // New skill master level
+	Expiration  time.Time `json:"expiration"`  // New skill expiration time
 }
 
 // ValidateCharacterStatePayload represents the payload required to validate a character's state.
 type ValidateCharacterStatePayload struct {
-	CharacterId uint32                  `json:"characterId"` // CharacterId associated with the action
+	CharacterId uint32                      `json:"characterId"` // CharacterId associated with the action
 	Conditions  []validation.ConditionInput `json:"conditions"`  // Conditions to validate
 }
 
@@ -427,21 +428,26 @@ type CreateInvitePayload struct {
 // CharacterCreatePayload represents the payload required to create a character.
 // Note: this does not include any character attributes, as those are determined by the character service.
 type CharacterCreatePayload struct {
-	AccountId uint32 `json:"accountId"` // AccountId associated with the action
-	Name      string `json:"name"`      // Name of the character to create
-	WorldId   byte   `json:"worldId"`   // WorldId associated with the action
-	ChannelId byte   `json:"channelId"` // ChannelId associated with the action
-	JobId     uint32 `json:"jobId"`     // JobId to create the character with
-	Gender    byte   `json:"gender"`    // Gender of the character
-	Face      uint32 `json:"face"`      // Face of the character
-	Hair      uint32 `json:"hair"`      // Hair of the character
-	HairColor uint32 `json:"hairColor"` // HairColor of the character
-	Skin      uint32 `json:"skin"`      // Skin of the character
-	Top       uint32 `json:"top"`       // Top of the character
-	Bottom    uint32 `json:"bottom"`    // Bottom of the character
-	Shoes     uint32 `json:"shoes"`     // Shoes of the character
-	Weapon    uint32 `json:"weapon"`    // Weapon of the character
-	MapId     uint32 `json:"mapId"`     // Starting map ID for the character
+	AccountId    uint32  `json:"accountId"` // AccountId associated with the action
+	WorldId      byte    `json:"worldId"`   // WorldId associated with the action
+	Name         string  `json:"name"`      // Name of the character to create
+	Gender       byte    `json:"gender"`
+	Level        byte    `json:"level"`
+	Strength     uint16  `json:"strength"`
+	Dexterity    uint16  `json:"dexterity"`
+	Intelligence uint16  `json:"intelligence"`
+	Luck         uint16  `json:"luck"`
+	JobId        job.Id  `json:"jobId"` // JobId to create the character with
+	Hp           uint16  `json:"hp"`
+	Mp           uint16  `json:"mp"`
+	Face         uint32  `json:"face"`   // Face of the character
+	Hair         uint32  `json:"hair"`   // Hair of the character
+	Skin         byte    `json:"skin"`   // Skin of the character
+	Top          uint32  `json:"top"`    // Top of the character
+	Bottom       uint32  `json:"bottom"` // Bottom of the character
+	Shoes        uint32  `json:"shoes"`  // Shoes of the character
+	Weapon       uint32  `json:"weapon"` // Weapon of the character
+	MapId        _map.Id `json:"mapId"`  // Starting map ID for the character
 }
 
 // CreateAndEquipAssetPayload represents the payload required to create and equip an asset.

@@ -5,7 +5,6 @@ import (
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
-	character2 "atlas-saga-orchestrator/kafka/message/character"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"atlas-saga-orchestrator/kafka/producer"
 	"atlas-saga-orchestrator/skill"
@@ -13,10 +12,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -39,37 +36,7 @@ type Processor interface {
 	StepCompleted(transactionId uuid.UUID, success bool) error
 	AddStep(transactionId uuid.UUID, step Step[any]) error
 	PrependStep(transactionId uuid.UUID, step Step[any]) error
-	GetHandler(action Action) (ActionHandler, bool)
 	Step(transactionId uuid.UUID) error
-
-	compensateFailedStep(s Saga) error
-	compensateEquipAsset(s Saga, failedStep Step[any]) error
-	compensateUnequipAsset(s Saga, failedStep Step[any]) error
-	compensateCreateCharacter(s Saga, failedStep Step[any]) error
-	compensateCreateAndEquipAsset(s Saga, failedStep Step[any]) error
-
-	logActionError(s Saga, st Step[any], err error, errorMsg string)
-	handleAwardAsset(s Saga, st Step[any]) error
-	handleAwardInventory(s Saga, st Step[any]) error
-	handleWarpToRandomPortal(s Saga, st Step[any]) error
-	handleWarpToPortal(s Saga, st Step[any]) error
-	handleAwardExperience(s Saga, st Step[any]) error
-	handleAwardLevel(s Saga, st Step[any]) error
-	handleAwardMesos(s Saga, st Step[any]) error
-	handleDestroyAsset(s Saga, st Step[any]) error
-	handleEquipAsset(s Saga, st Step[any]) error
-	handleUnequipAsset(s Saga, st Step[any]) error
-	handleChangeJob(s Saga, st Step[any]) error
-	handleCreateSkill(s Saga, st Step[any]) error
-	handleUpdateSkill(s Saga, st Step[any]) error
-	handleValidateCharacterState(s Saga, st Step[any]) error
-	handleRequestGuildName(s Saga, st Step[any]) error
-	handleRequestGuildEmblem(s Saga, st Step[any]) error
-	handleRequestGuildDisband(s Saga, st Step[any]) error
-	handleRequestGuildCapacityIncrease(s Saga, st Step[any]) error
-	handleCreateInvite(s Saga, st Step[any]) error
-	handleCreateCharacter(s Saga, st Step[any]) error
-	handleCreateAndEquipAsset(s Saga, st Step[any]) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -77,6 +44,8 @@ type ProcessorImpl struct {
 	l       logrus.FieldLogger
 	ctx     context.Context
 	t       tenant.Model
+	comp    Compensator
+	handle  Handler
 	charP   character.Processor
 	compP   compartment.Processor
 	skillP  skill.Processor
@@ -87,10 +56,13 @@ type ProcessorImpl struct {
 
 // NewProcessor creates a new saga processor
 func NewProcessor(logger logrus.FieldLogger, ctx context.Context) Processor {
+
 	return &ProcessorImpl{
 		l:       logger,
 		ctx:     ctx,
 		t:       tenant.MustFromContext(ctx),
+		comp:    NewCompensator(logger, ctx),
+		handle:  NewHandler(logger, ctx),
 		charP:   character.NewProcessor(logger, ctx),
 		compP:   compartment.NewProcessor(logger, ctx),
 		skillP:  skill.NewProcessor(logger, ctx),
@@ -105,6 +77,8 @@ func (p *ProcessorImpl) WithCharacterProcessor(charP character.Processor) Proces
 		l:       p.l,
 		ctx:     p.ctx,
 		t:       p.t,
+		comp:    p.comp.WithCharacterProcessor(charP),
+		handle:  p.handle.WithCharacterProcessor(charP),
 		charP:   charP,
 		compP:   p.compP,
 		skillP:  p.skillP,
@@ -119,9 +93,27 @@ func (p *ProcessorImpl) WithCompartmentProcessor(compP compartment.Processor) Pr
 		l:       p.l,
 		ctx:     p.ctx,
 		t:       p.t,
+		comp:    p.comp.WithCompartmentProcessor(compP),
+		handle:  p.handle.WithCompartmentProcessor(compP),
 		charP:   p.charP,
 		compP:   compP,
 		skillP:  p.skillP,
+		validP:  p.validP,
+		guildP:  p.guildP,
+		inviteP: p.inviteP,
+	}
+}
+
+func (p *ProcessorImpl) WithSkillProcessor(skillP skill.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		comp:    p.comp.WithSkillProcessor(skillP),
+		handle:  p.handle.WithSkillProcessor(skillP),
+		charP:   p.charP,
+		compP:   p.compP,
+		skillP:  skillP,
 		validP:  p.validP,
 		guildP:  p.guildP,
 		inviteP: p.inviteP,
@@ -133,12 +125,46 @@ func (p *ProcessorImpl) WithValidationProcessor(validP validation.Processor) Pro
 		l:       p.l,
 		ctx:     p.ctx,
 		t:       p.t,
+		comp:    p.comp.WithValidationProcessor(validP),
+		handle:  p.handle.WithValidationProcessor(validP),
 		charP:   p.charP,
 		compP:   p.compP,
 		skillP:  p.skillP,
 		validP:  validP,
 		guildP:  p.guildP,
 		inviteP: p.inviteP,
+	}
+}
+
+func (p *ProcessorImpl) WithGuildProcessor(guildP guild.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		comp:    p.comp.WithGuildProcessor(guildP),
+		handle:  p.handle.WithGuildProcessor(guildP),
+		charP:   p.charP,
+		compP:   p.compP,
+		skillP:  p.skillP,
+		validP:  p.validP,
+		guildP:  guildP,
+		inviteP: p.inviteP,
+	}
+}
+
+func (p *ProcessorImpl) WithInviteProcessor(inviteP invite.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		comp:    p.comp.WithInviteProcessor(inviteP),
+		handle:  p.handle.WithInviteProcessor(inviteP),
+		charP:   p.charP,
+		compP:   p.compP,
+		skillP:  p.skillP,
+		validP:  p.validP,
+		guildP:  p.guildP,
+		inviteP: inviteP,
 	}
 }
 
@@ -559,58 +585,6 @@ func (p *ProcessorImpl) PrependStep(transactionId uuid.UUID, step Step[any]) err
 	return nil
 }
 
-// ActionHandler is a function type for handling different saga action types
-type ActionHandler func(s Saga, st Step[any]) error
-
-func (p *ProcessorImpl) GetHandler(action Action) (ActionHandler, bool) {
-	switch action {
-	case AwardInventory:
-		return p.handleAwardInventory, true
-	case AwardAsset:
-		return p.handleAwardAsset, true
-	case WarpToRandomPortal:
-		return p.handleWarpToRandomPortal, true
-	case WarpToPortal:
-		return p.handleWarpToPortal, true
-	case AwardExperience:
-		return p.handleAwardExperience, true
-	case AwardLevel:
-		return p.handleAwardLevel, true
-	case AwardMesos:
-		return p.handleAwardMesos, true
-	case DestroyAsset:
-		return p.handleDestroyAsset, true
-	case EquipAsset:
-		return p.handleEquipAsset, true
-	case UnequipAsset:
-		return p.handleUnequipAsset, true
-	case ChangeJob:
-		return p.handleChangeJob, true
-	case CreateSkill:
-		return p.handleCreateSkill, true
-	case UpdateSkill:
-		return p.handleUpdateSkill, true
-	case ValidateCharacterState:
-		return p.handleValidateCharacterState, true
-	case RequestGuildName:
-		return p.handleRequestGuildName, true
-	case RequestGuildEmblem:
-		return p.handleRequestGuildEmblem, true
-	case RequestGuildDisband:
-		return p.handleRequestGuildDisband, true
-	case RequestGuildCapacityIncrease:
-		return p.handleRequestGuildCapacityIncrease, true
-	case CreateInvite:
-		return p.handleCreateInvite, true
-	case CreateCharacter:
-		return p.handleCreateCharacter, true
-	case CreateAndEquipAsset:
-		return p.handleCreateAndEquipAsset, true
-
-	}
-	return nil, false
-}
-
 func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 	s, err := p.GetById(transactionId)
 	if err != nil {
@@ -627,7 +601,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			"saga_type":      s.SagaType,
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("Reverting saga step.")
-		return p.compensateFailedStep(s)
+		return p.comp.CompensateFailedStep(s)
 	}
 
 	st, ok := s.GetCurrentStep()
@@ -659,786 +633,11 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 	}).Debugf("Progressing saga step [%s].", st.StepId)
 
 	// Get the handler for this action type
-	handler, exists := p.GetHandler(st.Action)
+	handler, exists := p.handle.GetHandler(st.Action)
 	if !exists {
 		return fmt.Errorf("unknown action type: %s", st.Action)
 	}
 
 	// Execute the handler
 	return handler(s, st)
-}
-
-// compensateFailedStep handles compensation for failed steps
-func (p *ProcessorImpl) compensateFailedStep(s Saga) error {
-	// Find the failed step
-	failedStepIndex := s.FindFailedStepIndex()
-	if failedStepIndex == -1 {
-		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"tenant_id":      p.t.Id().String(),
-		}).Debug("No failed step found for compensation.")
-		return nil
-	}
-
-	failedStep := s.Steps[failedStepIndex]
-
-	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
-		"action":         failedStep.Action,
-		"tenant_id":      p.t.Id().String(),
-	}).Debug("Compensating failed step.")
-
-	// Perform compensation based on the action type
-	switch failedStep.Action {
-	case EquipAsset:
-		return p.compensateEquipAsset(s, failedStep)
-	case UnequipAsset:
-		return p.compensateUnequipAsset(s, failedStep)
-	case CreateCharacter:
-		return p.compensateCreateCharacter(s, failedStep)
-	case CreateAndEquipAsset:
-		return p.compensateCreateAndEquipAsset(s, failedStep)
-	default:
-		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
-			"action":         failedStep.Action,
-			"tenant_id":      p.t.Id().String(),
-		}).Debug("No compensation logic available for action type.")
-		// Mark step as compensated (remove failed status) with validation
-		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_index":     failedStepIndex,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("Failed to mark step as compensated")
-			return err
-		}
-
-		// Validate state consistency before updating cache
-		if err := s.ValidateStateConsistency(); err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("State consistency validation failed after compensation")
-			return err
-		}
-
-		GetCache().Put(p.t.Id(), s)
-		return nil
-	}
-}
-
-// compensateEquipAsset handles compensation for a failed EquipAsset operation
-// by performing the reverse operation (UnequipAsset)
-func (p *ProcessorImpl) compensateEquipAsset(s Saga, failedStep Step[any]) error {
-	// Extract the original payload
-	payload, ok := failedStep.Payload.(EquipAssetPayload)
-	if !ok {
-		return fmt.Errorf("invalid payload for EquipAsset compensation")
-	}
-
-	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
-		"character_id":   payload.CharacterId,
-		"source":         payload.Source,
-		"destination":    payload.Destination,
-		"tenant_id":      p.t.Id().String(),
-	}).Info("Compensating failed EquipAsset operation with UnequipAsset")
-
-	// Perform the reverse operation: unequip from destination back to source
-	err := p.compP.RequestUnequipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Destination, payload.Source)
-	if err != nil {
-		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
-			"tenant_id":      p.t.Id().String(),
-		}).WithError(err).Error("Failed to compensate EquipAsset operation")
-		return err
-	}
-
-	// Mark the failed step as compensated by removing it from the saga
-	failedStepIndex := s.FindFailedStepIndex()
-	if failedStepIndex != -1 {
-		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_index":     failedStepIndex,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("Failed to mark EquipAsset step as compensated")
-			return err
-		}
-
-		// Validate state consistency before updating cache
-		if err := s.ValidateStateConsistency(); err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("State consistency validation failed after EquipAsset compensation")
-			return err
-		}
-
-		GetCache().Put(p.t.Id(), s)
-	}
-
-	return nil
-}
-
-// compensateUnequipAsset handles compensation for a failed UnequipAsset operation
-// by performing the reverse operation (EquipAsset)
-func (p *ProcessorImpl) compensateUnequipAsset(s Saga, failedStep Step[any]) error {
-	// Extract the original payload
-	payload, ok := failedStep.Payload.(UnequipAssetPayload)
-	if !ok {
-		return fmt.Errorf("invalid payload for UnequipAsset compensation")
-	}
-
-	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
-		"character_id":   payload.CharacterId,
-		"source":         payload.Source,
-		"destination":    payload.Destination,
-		"tenant_id":      p.t.Id().String(),
-	}).Info("Compensating failed UnequipAsset operation with EquipAsset")
-
-	// Perform the reverse operation: equip from destination back to source
-	err := p.compP.RequestEquipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Destination, payload.Source)
-	if err != nil {
-		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
-			"tenant_id":      p.t.Id().String(),
-		}).WithError(err).Error("Failed to compensate UnequipAsset operation")
-		return err
-	}
-
-	// Mark the failed step as compensated by removing it from the saga
-	failedStepIndex := s.FindFailedStepIndex()
-	if failedStepIndex != -1 {
-		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_index":     failedStepIndex,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("Failed to mark UnequipAsset step as compensated")
-			return err
-		}
-
-		// Validate state consistency before updating cache
-		if err := s.ValidateStateConsistency(); err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("State consistency validation failed after UnequipAsset compensation")
-			return err
-		}
-
-		GetCache().Put(p.t.Id(), s)
-	}
-
-	return nil
-}
-
-// compensateCreateCharacter handles compensation for a failed CreateCharacter operation
-// Note: Character creation failures typically do not require compensation as the character
-// creation process is atomic. If partial creation occurred, the character service should
-// handle cleanup. This function exists for completeness and future extensibility.
-func (p *ProcessorImpl) compensateCreateCharacter(s Saga, failedStep Step[any]) error {
-	// Extract the original payload
-	payload, ok := failedStep.Payload.(CharacterCreatePayload)
-	if !ok {
-		return fmt.Errorf("invalid payload for CreateCharacter compensation")
-	}
-
-	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
-		"account_id":     payload.AccountId,
-		"character_name": payload.Name,
-		"world_id":       payload.WorldId,
-		"tenant_id":      p.t.Id().String(),
-	}).Info("Compensating failed CreateCharacter operation - no rollback action available")
-
-	// Note: Currently there is no character deletion command available
-	// in the character service, so we cannot perform actual rollback.
-	// The character service should handle cleanup of failed character creation internally.
-	// This compensation step simply acknowledges the failure and allows the saga to continue.
-
-	// Mark the failed step as compensated by removing it from the saga
-	failedStepIndex := s.FindFailedStepIndex()
-	if failedStepIndex != -1 {
-		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_index":     failedStepIndex,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("Failed to mark CreateCharacter step as compensated")
-			return err
-		}
-
-		// Validate state consistency before updating cache
-		if err := s.ValidateStateConsistency(); err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("State consistency validation failed after CreateCharacter compensation")
-			return err
-		}
-
-		GetCache().Put(p.t.Id(), s)
-	}
-
-	return nil
-}
-
-// CompensateCreateAndEquipAsset handles compensation for a failed CreateAndEquipAsset operation
-// This compound action has two phases:
-// 1. Asset creation (handled by handleCreateAndEquipAsset)
-// 2. Dynamic equipment step creation (handled by compartment consumer)
-//
-// Compensation scenarios:
-// - Phase 1 failure: No compensation needed since nothing was created
-// - Phase 2 failure: Need to destroy the created asset since it was successfully created but failed to equip
-//
-// Note: This function is called when the CreateAndEquipAsset step itself fails,
-// not when the dynamically created EquipAsset step fails (that uses compensateEquipAsset)
-func (p *ProcessorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[any]) error {
-	// Extract the original payload
-	payload, ok := failedStep.Payload.(CreateAndEquipAssetPayload)
-	if !ok {
-		return fmt.Errorf("invalid payload for CreateAndEquipAsset compensation")
-	}
-
-	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
-		"character_id":   payload.CharacterId,
-		"template_id":    payload.Item.TemplateId,
-		"quantity":       payload.Item.Quantity,
-		"tenant_id":      p.t.Id().String(),
-	}).Info("Compensating failed CreateAndEquipAsset operation")
-
-	// For CreateAndEquipAsset, we need to determine if the asset was actually created
-	// If the failure happened during the asset creation phase, no compensation is needed
-	// If the failure happened during the equipment phase, we need to destroy the created asset
-
-	// Check if there are any auto-generated equip steps in this saga
-	// If an auto-equip step exists, it means the asset was successfully created
-	// and the failure occurred during the equipment phase
-	autoEquipStepExists := false
-	for _, step := range s.Steps {
-		if step.Action == EquipAsset && strings.HasPrefix(step.StepId, "auto_equip_step_") {
-			autoEquipStepExists = true
-			break
-		}
-	}
-
-	if autoEquipStepExists {
-		// Asset was created but equipment failed - need to destroy the created asset
-		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
-			"character_id":   payload.CharacterId,
-			"template_id":    payload.Item.TemplateId,
-			"quantity":       payload.Item.Quantity,
-			"tenant_id":      p.t.Id().String(),
-		}).Info("Auto-equip step found - destroying created asset for compensation")
-
-		// Destroy the created asset
-		err := p.compP.RequestDestroyItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity)
-		if err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_id":        failedStep.StepId,
-				"character_id":   payload.CharacterId,
-				"template_id":    payload.Item.TemplateId,
-				"quantity":       payload.Item.Quantity,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("Failed to destroy created asset during CreateAndEquipAsset compensation")
-			return err
-		}
-
-		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
-			"character_id":   payload.CharacterId,
-			"template_id":    payload.Item.TemplateId,
-			"quantity":       payload.Item.Quantity,
-			"tenant_id":      p.t.Id().String(),
-		}).Info("Successfully destroyed created asset during CreateAndEquipAsset compensation")
-	} else {
-		// No auto-equip step found - asset creation failed, no compensation needed
-		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
-			"character_id":   payload.CharacterId,
-			"template_id":    payload.Item.TemplateId,
-			"quantity":       payload.Item.Quantity,
-			"tenant_id":      p.t.Id().String(),
-		}).Info("No auto-equip step found - asset creation failed, no compensation needed")
-	}
-
-	// Mark the failed step as compensated
-	failedStepIndex := s.FindFailedStepIndex()
-	if failedStepIndex != -1 {
-		if err := s.SetStepStatus(failedStepIndex, Pending); err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"step_index":     failedStepIndex,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("Failed to mark CreateAndEquipAsset step as compensated")
-			return err
-		}
-
-		// Validate state consistency before updating cache
-		if err := s.ValidateStateConsistency(); err != nil {
-			p.l.WithFields(logrus.Fields{
-				"transaction_id": s.TransactionId.String(),
-				"saga_type":      s.SagaType,
-				"tenant_id":      p.t.Id().String(),
-			}).WithError(err).Error("State consistency validation failed after CreateAndEquipAsset compensation")
-			return err
-		}
-
-		GetCache().Put(p.t.Id(), s)
-	}
-
-	return nil
-}
-
-// logActionError logs an error that occurred during action processing
-func (p *ProcessorImpl) logActionError(s Saga, st Step[any], err error, errorMsg string) {
-	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        st.StepId,
-		"tenant_id":      p.t.Id().String(),
-	}).WithError(err).Error(errorMsg)
-}
-
-// handleAwardAsset handles the AwardAsset and AwardInventory actions
-func (p *ProcessorImpl) handleAwardAsset(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AwardItemActionPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.compP.RequestCreateItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to award asset.")
-		return err
-	}
-
-	return nil
-}
-
-// handleAwardInventory is a wrapper for handleAwardAsset for backward compatibility
-// Deprecated: Use handleAwardAsset instead
-func (p *ProcessorImpl) handleAwardInventory(s Saga, st Step[any]) error {
-	return p.handleAwardAsset(s, st)
-}
-
-// handleWarpToRandomPortal handles the WarpToRandomPortal action
-func (p *ProcessorImpl) handleWarpToRandomPortal(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(WarpToRandomPortalPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	f, ok := field.FromId(payload.FieldId)
-	if !ok {
-		return errors.New("invalid field id")
-	}
-
-	err := p.charP.WarpRandomAndEmit(s.TransactionId, payload.CharacterId, f)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to warp to random portal.")
-		return err
-	}
-
-	return nil
-}
-
-// handleWarpToPortal handles the WarpToPortal action
-func (p *ProcessorImpl) handleWarpToPortal(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(WarpToPortalPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	f, ok := field.FromId(payload.FieldId)
-	if !ok {
-		return errors.New("invalid field id")
-	}
-
-	err := p.charP.WarpToPortalAndEmit(s.TransactionId, payload.CharacterId, f, model.FixedProvider(payload.PortalId))
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to warp to specific portal.")
-		return err
-	}
-
-	return nil
-}
-
-// handleAwardExperience handles the AwardExperience action
-func (p *ProcessorImpl) handleAwardExperience(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AwardExperiencePayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	eds := TransformExperienceDistributions(payload.Distributions)
-	err := p.charP.AwardExperienceAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, eds)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to award experience.")
-		return err
-	}
-
-	return nil
-}
-
-// handleAwardLevel handles the AwardLevel action
-func (p *ProcessorImpl) handleAwardLevel(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AwardLevelPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.charP.AwardLevelAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to award level.")
-		return err
-	}
-
-	return nil
-}
-
-// handleAwardMesos handles the AwardMesos action
-func (p *ProcessorImpl) handleAwardMesos(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AwardMesosPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.charP.AwardMesosAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.ActorId, payload.ActorType, payload.Amount)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to award mesos.")
-		return err
-	}
-
-	return nil
-}
-
-// handleDestroyAsset handles the DestroyAsset action
-func (p *ProcessorImpl) handleDestroyAsset(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(DestroyAssetPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.compP.RequestDestroyItem(s.TransactionId, payload.CharacterId, payload.TemplateId, payload.Quantity)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to destroy asset.")
-		return err
-	}
-
-	return nil
-}
-
-// handleEquipAsset handles the EquipAsset action
-func (p *ProcessorImpl) handleEquipAsset(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(EquipAssetPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.compP.RequestEquipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to equip asset.")
-		return err
-	}
-
-	return nil
-}
-
-// handleUnequipAsset handles the UnequipAsset action
-func (p *ProcessorImpl) handleUnequipAsset(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(UnequipAssetPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.compP.RequestUnequipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to unequip asset.")
-		return err
-	}
-
-	return nil
-}
-
-// handleChangeJob handles the ChangeJob action
-func (p *ProcessorImpl) handleChangeJob(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(ChangeJobPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.charP.ChangeJobAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.JobId)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to change job.")
-		return err
-	}
-
-	return nil
-}
-
-// handleCreateSkill handles the CreateSkill action
-func (p *ProcessorImpl) handleCreateSkill(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(CreateSkillPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.skillP.RequestCreateAndEmit(s.TransactionId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to create skill.")
-		return err
-	}
-
-	return nil
-}
-
-// handleUpdateSkill handles the UpdateSkill action
-func (p *ProcessorImpl) handleUpdateSkill(s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(UpdateSkillPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.skillP.RequestUpdateAndEmit(s.TransactionId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to update skill.")
-		return err
-	}
-
-	return nil
-}
-
-func TransformExperienceDistributions(source []ExperienceDistributions) []character2.ExperienceDistributions {
-	target := make([]character2.ExperienceDistributions, len(source))
-
-	for i, s := range source {
-		target[i] = character2.ExperienceDistributions{
-			ExperienceType: s.ExperienceType,
-			Amount:         s.Amount,
-			Attr1:          s.Attr1,
-		}
-	}
-
-	return target
-}
-
-// handleValidateCharacterState handles the ValidateCharacterState action
-func (p *ProcessorImpl) handleValidateCharacterState(s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(ValidateCharacterStatePayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Call the validation processor
-	result, err := p.validP.ValidateCharacterState(payload.CharacterId, payload.Conditions)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to validate character state.")
-		return err
-	}
-
-	// Check if validation passed
-	if !result.Passed() {
-		// If validation failed, mark the step as failed
-		err := fmt.Errorf("character state validation failed: %v", result.Details())
-		p.logActionError(s, st, err, "Character state validation failed.")
-		return err
-	}
-
-	return nil
-}
-
-// handleRequestGuildName handles the RequestGuildName action
-func (p *ProcessorImpl) handleRequestGuildName(s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(RequestGuildNamePayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Call the guild processor
-	err := p.guildP.RequestName(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to request guild name.")
-		return err
-	}
-
-	return nil
-}
-
-// handleRequestGuildEmblem handles the RequestGuildEmblem action
-func (p *ProcessorImpl) handleRequestGuildEmblem(s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(RequestGuildEmblemPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Call the guild processor
-	err := p.guildP.RequestEmblem(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to request guild emblem.")
-		return err
-	}
-
-	return nil
-}
-
-// handleRequestGuildDisband handles the RequestGuildDisband action
-func (p *ProcessorImpl) handleRequestGuildDisband(s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(RequestGuildDisbandPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Call the guild processor
-	err := p.guildP.RequestDisband(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to request guild disband.")
-		return err
-	}
-
-	return nil
-}
-
-// handleRequestGuildCapacityIncrease handles the RequestGuildCapacityIncrease action
-func (p *ProcessorImpl) handleRequestGuildCapacityIncrease(s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(RequestGuildCapacityIncreasePayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Call the guild processor
-	err := p.guildP.RequestCapacityIncrease(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to request guild capacity increase.")
-		return err
-	}
-
-	return nil
-}
-
-// handleCreateInvite handles the CreateInvite action
-func (p *ProcessorImpl) handleCreateInvite(s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(CreateInvitePayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Call the invite processor
-	err := p.inviteP.Create(s.TransactionId, payload.InviteType, payload.OriginatorId, payload.WorldId, payload.ReferenceId, payload.TargetId)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to create invitation.")
-		return err
-	}
-
-	return nil
-}
-
-// handleCreateCharacter handles the CreateCharacter action
-func (p *ProcessorImpl) handleCreateCharacter(s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(CharacterCreatePayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Call the character processor
-	err := p.charP.RequestCreateCharacter(s.TransactionId, payload.AccountId, payload.WorldId, payload.Name, payload.Level, payload.Strength, payload.Dexterity, payload.Intelligence, payload.Luck, payload.Hp, payload.Mp, payload.JobId, payload.Gender, payload.Face, payload.Hair, payload.Skin, payload.MapId)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to create character.")
-		return err
-	}
-
-	return nil
-}
-
-// handleCreateAndEquipAsset handles the CreateAndEquipAsset action
-// This is a compound action that first creates an asset (internally using award_asset semantics)
-// and then dynamically creates an equip_asset step when the creation succeeds
-func (p *ProcessorImpl) handleCreateAndEquipAsset(s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(CreateAndEquipAssetPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Step 1: Internal award_asset - Create the item using the same logic as handleAwardAsset
-	// Convert saga payload to compartment payload to avoid import cycle
-	compartmentPayload := compartment.CreateAndEquipAssetPayload{
-		CharacterId: payload.CharacterId,
-		Item: compartment.ItemPayload{
-			TemplateId: payload.Item.TemplateId,
-			Quantity:   payload.Item.Quantity,
-		},
-	}
-
-	err := p.compP.RequestCreateAndEquipAsset(s.TransactionId, compartmentPayload)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to create asset for create_and_equip_asset.")
-		return err
-	}
-
-	// Note: Step 2 (dynamic equip_asset step creation) will be handled by the compartment consumer
-	// when it receives the StatusEventTypeCreated event from the compartment service.
-	// The consumer will detect this is a CreateAndEquipAsset step and add the equip_asset step.
-
-	return nil
 }

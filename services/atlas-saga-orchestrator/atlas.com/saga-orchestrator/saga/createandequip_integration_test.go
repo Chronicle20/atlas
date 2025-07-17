@@ -454,12 +454,7 @@ func TestCreateAndEquipAssetCompensation(t *testing.T) {
 			tctx := tenant.WithContext(ctx, te)
 
 			// Create mock processors
-			charP := &mock.ProcessorMock{}
 			compP := &mock2.ProcessorMock{}
-			validP := &mock3.ProcessorMock{}
-
-			// Setup processor
-			processor := NewProcessor(logger, tctx).WithCharacterProcessor(charP).WithCompartmentProcessor(compP).WithValidationProcessor(validP)
 
 			// Configure mocks for compensation testing
 			compP.RequestCreateAndEquipAssetFunc = func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error {
@@ -488,7 +483,7 @@ func TestCreateAndEquipAssetCompensation(t *testing.T) {
 			}
 
 			// Test compensation
-			err := processor.compensateCreateAndEquipAsset(saga, failedStep)
+			err := NewCompensator(logger, tctx).WithCompartmentProcessor(compP).compensateCreateAndEquipAsset(saga, failedStep)
 
 			if tt.expectedCompensation == "none" {
 				assert.NoError(t, err, "Compensation should succeed for no-op scenarios")
@@ -573,12 +568,7 @@ func TestCreateAndEquipAssetPayloadValidation(t *testing.T) {
 			tctx := tenant.WithContext(ctx, te)
 
 			// Create mock processors
-			charP := &mock.ProcessorMock{}
 			compP := &mock2.ProcessorMock{}
-			validP := &mock3.ProcessorMock{}
-
-			// Setup processor
-			processor := NewProcessor(logger, tctx).WithCharacterProcessor(charP).WithCompartmentProcessor(compP).WithValidationProcessor(validP)
 
 			// Configure compartment processor mock
 			compP.RequestCreateAndEquipAssetFunc = func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error {
@@ -604,7 +594,7 @@ func TestCreateAndEquipAssetPayloadValidation(t *testing.T) {
 			}
 
 			// Test payload validation
-			err := processor.handleCreateAndEquipAsset(saga, step)
+			err := NewHandler(logger, tctx).WithCompartmentProcessor(compP).handleCreateAndEquipAsset(saga, step)
 
 			// Verify results
 			if tt.expectedError {

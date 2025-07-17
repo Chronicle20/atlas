@@ -6,22 +6,27 @@ import (
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_COMPARTMENT"
-	CommandEquip             = "EQUIP"
-	CommandUnequip           = "UNEQUIP"
-	CommandMove              = "MOVE"
-	CommandDrop              = "DROP"
-	CommandRequestReserve    = "REQUEST_RESERVE"
-	CommandConsume           = "CONSUME"
-	CommandDestroy           = "DESTROY"
-	CommandCancelReservation = "CANCEL_RESERVATION"
-	CommandIncreaseCapacity  = "INCREASE_CAPACITY"
-	CommandCreateAsset       = "CREATE_ASSET"
-	CommandRecharge          = "RECHARGE"
-	CommandMerge             = "MERGE"
-	CommandSort              = "SORT"
-	CommandAccept            = "ACCEPT"
-	CommandRelease           = "RELEASE"
+	EnvCommandTopic           = "COMMAND_TOPIC_COMPARTMENT"
+	CommandEquip              = "EQUIP"
+	CommandUnequip            = "UNEQUIP"
+	CommandMove               = "MOVE"
+	CommandDrop               = "DROP"
+	CommandRequestReserve     = "REQUEST_RESERVE"
+	CommandConsume            = "CONSUME"
+	CommandDestroy            = "DESTROY"
+	CommandCancelReservation  = "CANCEL_RESERVATION"
+	CommandIncreaseCapacity   = "INCREASE_CAPACITY"
+	CommandCreateAsset        = "CREATE_ASSET"
+	CommandRecharge           = "RECHARGE"
+	CommandMerge              = "MERGE"
+	CommandSort               = "SORT"
+	CommandAccept             = "ACCEPT"
+	CommandRelease            = "RELEASE"
+	CommandTypeCreate         = "CREATE"
+	CommandTypeDelete         = "DELETE"
+	CommandTypeEquip          = "EQUIP"
+	CommandTypeUnequip        = "UNEQUIP"
+	CommandTypeCreateAndEquip = "CREATE_AND_EQUIP"
 )
 
 type Command[E any] struct {
@@ -32,14 +37,31 @@ type Command[E any] struct {
 	Body          E         `json:"body"`
 }
 
+type CreateCommandBody struct {
+	TemplateId uint32 `json:"templateId"`
+	Quantity   uint32 `json:"quantity"`
+}
+
+type DeleteCommandBody struct {
+	TemplateId uint32 `json:"templateId"`
+	Quantity   uint32 `json:"quantity"`
+}
+
 type EquipCommandBody struct {
-	Source      int16 `json:"source"`
-	Destination int16 `json:"destination"`
+	InventoryType byte  `json:"inventoryType"`
+	Source        int16 `json:"source"`
+	Destination   int16 `json:"destination"`
 }
 
 type UnequipCommandBody struct {
-	Source      int16 `json:"source"`
-	Destination int16 `json:"destination"`
+	InventoryType byte  `json:"inventoryType"`
+	Source        int16 `json:"source"`
+	Destination   int16 `json:"destination"`
+}
+
+type CreateAndEquipCommandBody struct {
+	TemplateId uint32 `json:"templateId"`
+	Quantity   uint32 `json:"quantity"`
 }
 
 type MoveCommandBody struct {
@@ -128,8 +150,7 @@ const (
 	StatusEventTypeSortComplete         = "SORT_COMPLETE"
 	StatusEventTypeAccepted             = "ACCEPTED"
 	StatusEventTypeReleased             = "RELEASED"
-	StatusEventTypeEquipped             = "EQUIPPED"
-	StatusEventTypeUnequipped           = "UNEQUIPPED"
+	StatusEventTypeCreationFailed       = "CREATION_FAILED"
 	StatusEventTypeError                = "ERROR"
 
 	AcceptCommandFailed  = "ACCEPT_COMMAND_FAILED"
@@ -147,6 +168,13 @@ type StatusEvent[E any] struct {
 type CreatedStatusEventBody struct {
 	Type     byte   `json:"type"`
 	Capacity uint32 `json:"capacity"`
+	AssetId  uint32 `json:"assetId,omitempty"`
+	Quantity uint32 `json:"quantity,omitempty"`
+}
+
+type CreationFailedStatusEventBody struct {
+	ErrorCode string `json:"errorCode"`
+	Message   string `json:"message"`
 }
 
 type DeletedStatusEventBody struct {
@@ -192,14 +220,4 @@ type ReleasedEventBody struct {
 type ErrorEventBody struct {
 	ErrorCode     string    `json:"errorCode"`
 	TransactionId uuid.UUID `json:"transactionId"`
-}
-
-type EquippedEventBody struct {
-	Source      int16 `json:"source"`
-	Destination int16 `json:"destination"`
-}
-
-type UnequippedEventBody struct {
-	Source      int16 `json:"source"`
-	Destination int16 `json:"destination"`
 }

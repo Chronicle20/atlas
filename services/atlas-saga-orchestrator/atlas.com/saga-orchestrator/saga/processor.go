@@ -5,13 +5,15 @@ import (
 	"atlas-saga-orchestrator/compartment"
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
-	character2 "atlas-saga-orchestrator/kafka/message/character"
+	"atlas-saga-orchestrator/kafka/message/saga"
+	"atlas-saga-orchestrator/kafka/producer"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/validation"
 	"context"
 	"errors"
 	"fmt"
-	"github.com/Chronicle20/atlas-constants/field"
+	"time"
+
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -20,13 +22,26 @@ import (
 
 // Processor is the interface for saga processing
 type Processor interface {
+	WithCharacterProcessor(character.Processor) Processor
+	WithCompartmentProcessor(compartment.Processor) Processor
+	WithSkillProcessor(processor skill.Processor) Processor
+	WithValidationProcessor(validation.Processor) Processor
+	WithGuildProcessor(guild.Processor) Processor
+	WithInviteProcessor(invite.Processor) Processor
+
 	GetAll() ([]Saga, error)
 	AllProvider() model.Provider[[]Saga]
 	GetById(transactionId uuid.UUID) (Saga, error)
 	ByIdProvider(transactionId uuid.UUID) model.Provider[Saga]
+
 	Put(saga Saga) error
 	MarkFurthestCompletedStepFailed(transactionId uuid.UUID) error
+	MarkEarliestPendingStep(transactionId uuid.UUID, status Status) error
 	MarkEarliestPendingStepCompleted(transactionId uuid.UUID) error
+	StepCompleted(transactionId uuid.UUID, success bool) error
+	AddStep(transactionId uuid.UUID, step Step[any]) error
+	AddStepAfterCurrent(transactionId uuid.UUID, step Step[any]) error
+	Step(transactionId uuid.UUID) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -34,6 +49,8 @@ type ProcessorImpl struct {
 	l       logrus.FieldLogger
 	ctx     context.Context
 	t       tenant.Model
+	comp    Compensator
+	handle  Handler
 	charP   character.Processor
 	compP   compartment.Processor
 	skillP  skill.Processor
@@ -43,16 +60,116 @@ type ProcessorImpl struct {
 }
 
 // NewProcessor creates a new saga processor
-func NewProcessor(logger logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+func NewProcessor(logger logrus.FieldLogger, ctx context.Context) Processor {
+
 	return &ProcessorImpl{
 		l:       logger,
 		ctx:     ctx,
+		t:       tenant.MustFromContext(ctx),
+		comp:    NewCompensator(logger, ctx),
+		handle:  NewHandler(logger, ctx),
 		charP:   character.NewProcessor(logger, ctx),
 		compP:   compartment.NewProcessor(logger, ctx),
 		skillP:  skill.NewProcessor(logger, ctx),
 		validP:  validation.NewProcessor(logger, ctx),
 		guildP:  guild.NewProcessor(logger, ctx),
 		inviteP: invite.NewProcessor(logger, ctx),
+	}
+}
+
+func (p *ProcessorImpl) WithCharacterProcessor(charP character.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		comp:    p.comp.WithCharacterProcessor(charP),
+		handle:  p.handle.WithCharacterProcessor(charP),
+		charP:   charP,
+		compP:   p.compP,
+		skillP:  p.skillP,
+		validP:  p.validP,
+		guildP:  p.guildP,
+		inviteP: p.inviteP,
+	}
+}
+
+func (p *ProcessorImpl) WithCompartmentProcessor(compP compartment.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		comp:    p.comp.WithCompartmentProcessor(compP),
+		handle:  p.handle.WithCompartmentProcessor(compP),
+		charP:   p.charP,
+		compP:   compP,
+		skillP:  p.skillP,
+		validP:  p.validP,
+		guildP:  p.guildP,
+		inviteP: p.inviteP,
+	}
+}
+
+func (p *ProcessorImpl) WithSkillProcessor(skillP skill.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		comp:    p.comp.WithSkillProcessor(skillP),
+		handle:  p.handle.WithSkillProcessor(skillP),
+		charP:   p.charP,
+		compP:   p.compP,
+		skillP:  skillP,
+		validP:  p.validP,
+		guildP:  p.guildP,
+		inviteP: p.inviteP,
+	}
+}
+
+func (p *ProcessorImpl) WithValidationProcessor(validP validation.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		comp:    p.comp.WithValidationProcessor(validP),
+		handle:  p.handle.WithValidationProcessor(validP),
+		charP:   p.charP,
+		compP:   p.compP,
+		skillP:  p.skillP,
+		validP:  validP,
+		guildP:  p.guildP,
+		inviteP: p.inviteP,
+	}
+}
+
+func (p *ProcessorImpl) WithGuildProcessor(guildP guild.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		comp:    p.comp.WithGuildProcessor(guildP),
+		handle:  p.handle.WithGuildProcessor(guildP),
+		charP:   p.charP,
+		compP:   p.compP,
+		skillP:  p.skillP,
+		validP:  p.validP,
+		guildP:  guildP,
+		inviteP: p.inviteP,
+	}
+}
+
+func (p *ProcessorImpl) WithInviteProcessor(inviteP invite.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		comp:    p.comp.WithInviteProcessor(inviteP),
+		handle:  p.handle.WithInviteProcessor(inviteP),
+		charP:   p.charP,
+		compP:   p.compP,
+		skillP:  p.skillP,
+		validP:  p.validP,
+		guildP:  p.guildP,
+		inviteP: inviteP,
 	}
 }
 
@@ -90,6 +207,16 @@ func (p *ProcessorImpl) Put(saga Saga) error {
 		"tenant_id":      p.t.Id().String(),
 	}).Debug("Inserting saga into cache")
 
+	// Validate state consistency before inserting
+	if err := saga.ValidateStateConsistency(); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": saga.TransactionId.String(),
+			"saga_type":      saga.SagaType,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("State consistency validation failed before inserting saga")
+		return err
+	}
+
 	GetCache().Put(p.t.Id(), saga)
 
 	p.l.WithFields(logrus.Fields{
@@ -99,6 +226,64 @@ func (p *ProcessorImpl) Put(saga Saga) error {
 	}).Debug("Saga inserted into cache")
 
 	return p.Step(saga.TransactionId)
+}
+
+// AtomicUpdateSaga performs an atomic update of saga state with consistency validation
+func (p *ProcessorImpl) AtomicUpdateSaga(transactionId uuid.UUID, updateFunc func(*Saga) error) error {
+	s, err := p.GetById(transactionId)
+	if err != nil {
+		return err
+	}
+
+	// Create a copy for safe modification
+	sagaCopy := s
+
+	// Apply the update function
+	if err := updateFunc(&sagaCopy); err != nil {
+		return err
+	}
+
+	// Validate state consistency after update
+	if err := sagaCopy.ValidateStateConsistency(); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("State consistency validation failed in atomic update")
+		return err
+	}
+
+	// Update the cache atomically
+	GetCache().Put(p.t.Id(), sagaCopy)
+
+	return nil
+}
+
+// SafeSetStepStatus safely updates step status with validation and logging
+func (p *ProcessorImpl) SafeSetStepStatus(s *Saga, stepIndex int, status Status, operation string) error {
+	if err := s.SetStepStatus(stepIndex, status); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_index":     stepIndex,
+			"status":         status,
+			"operation":      operation,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("Failed to set step status safely")
+		return err
+	}
+
+	// Validate state consistency after status change
+	if err := s.ValidateStateConsistency(); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"operation":      operation,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("State consistency validation failed after safe status update")
+		return err
+	}
+
+	return nil
 }
 
 func (p *ProcessorImpl) StepCompleted(transactionId uuid.UUID, success bool) error {
@@ -145,8 +330,26 @@ func (p *ProcessorImpl) MarkFurthestCompletedStepFailed(transactionId uuid.UUID)
 		return nil
 	}
 
-	// Mark the step as failed
-	s.SetStepStatus(furthestCompletedIndex, Failed)
+	// Mark the step as failed with validation
+	if err := s.SetStepStatus(furthestCompletedIndex, Failed); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_index":     furthestCompletedIndex,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("Failed to set step status to failed")
+		return err
+	}
+
+	// Validate state consistency before updating cache
+	if err := s.ValidateStateConsistency(); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("State consistency validation failed after marking step as failed")
+		return err
+	}
 
 	// Update the saga in the cache
 	GetCache().Put(p.t.Id(), s)
@@ -159,6 +362,11 @@ func (p *ProcessorImpl) MarkFurthestCompletedStepFailed(transactionId uuid.UUID)
 	}).Debug("Marked furthest completed step as failed.")
 
 	return nil
+}
+
+// MarkEarliestPendingStepCompleted marks the earliest pending step as completed
+func (p *ProcessorImpl) MarkEarliestPendingStepCompleted(transactionId uuid.UUID) error {
+	return p.MarkEarliestPendingStep(transactionId, Completed)
 }
 
 // MarkEarliestPendingStep marks the earliest pending step
@@ -185,8 +393,27 @@ func (p *ProcessorImpl) MarkEarliestPendingStep(transactionId uuid.UUID, status 
 		return errors.New("no pending steps found")
 	}
 
-	// Mark the step
-	s.SetStepStatus(earliestPendingIndex, status)
+	// Mark the step with validation
+	if err := s.SetStepStatus(earliestPendingIndex, status); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_index":     earliestPendingIndex,
+			"status":         status,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("Failed to set step status")
+		return err
+	}
+
+	// Validate state consistency before updating cache
+	if err := s.ValidateStateConsistency(); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("State consistency validation failed after marking step")
+		return err
+	}
 
 	// Update the saga in the cache
 	GetCache().Put(p.t.Id(), s)
@@ -201,31 +428,171 @@ func (p *ProcessorImpl) MarkEarliestPendingStep(transactionId uuid.UUID, status 
 	return nil
 }
 
-// ActionHandler is a function type for handling different saga action types
-type ActionHandler func(p *ProcessorImpl, s Saga, st Step[any]) error
+// AddStep adds a new step to the saga with proper ordering and transaction management
+func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
+	s, err := p.GetById(transactionId)
+	if err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"tenant_id":      p.t.Id().String(),
+		}).Debug("Unable to locate saga for adding step.")
+		return err
+	}
 
-// actionHandlers maps action types to their handler functions
-var actionHandlers = map[Action]ActionHandler{
-	AwardInventory:               handleAwardAsset, // Deprecated: Use AwardAsset instead
-	AwardAsset:                   handleAwardAsset, // Preferred over AwardInventory
-	WarpToRandomPortal:           handleWarpToRandomPortal,
-	WarpToPortal:                 handleWarpToPortal,
-	AwardExperience:              handleAwardExperience,
-	AwardLevel:                   handleAwardLevel,
-	AwardMesos:                   handleAwardMesos,
-	DestroyAsset:                 handleDestroyAsset,
-	EquipAsset:                   handleEquipAsset,
-	UnequipAsset:                 handleUnequipAsset,
-	ChangeJob:                    handleChangeJob,
-	CreateSkill:                  handleCreateSkill,
-	UpdateSkill:                  handleUpdateSkill,
-	ValidateCharacterState:       handleValidateCharacterState,
-	RequestGuildName:             handleRequestGuildName,
-	RequestGuildEmblem:           handleRequestGuildEmblem,
-	RequestGuildDisband:          handleRequestGuildDisband,
-	RequestGuildCapacityIncrease: handleRequestGuildCapacityIncrease,
-	CreateInvite:                 handleCreateInvite,
-	CreateCharacter:              handleCreateCharacter,
+	// Validate that the saga is in a valid state for adding steps
+	if s.Failing() {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"tenant_id":      p.t.Id().String(),
+		}).Debug("Cannot add step to a failing saga.")
+		return errors.New("cannot add step to a failing saga")
+	}
+
+	// Find the index of the current step (earliest pending step)
+	currentStepIndex := s.FindEarliestPendingStepIndex()
+	if currentStepIndex == -1 {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"tenant_id":      p.t.Id().String(),
+		}).Debug("No pending steps found to add step after.")
+		return errors.New("no pending steps found")
+	}
+
+	// Validate step ID uniqueness within the saga
+	for _, existingStep := range s.Steps {
+		if existingStep.StepId == step.StepId {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_id":        step.StepId,
+				"tenant_id":      p.t.Id().String(),
+			}).Debug("Step ID already exists in saga.")
+			return fmt.Errorf("step ID '%s' already exists in saga", step.StepId)
+		}
+	}
+
+	// Insert the new step right after the current step to maintain proper ordering
+	insertIndex := currentStepIndex + 1
+
+	// Ensure the step has proper timestamps
+	if step.CreatedAt.IsZero() {
+		step.CreatedAt = time.Now()
+	}
+	if step.UpdatedAt.IsZero() {
+		step.UpdatedAt = time.Now()
+	}
+
+	// Expand the slice and insert the new step
+	s.Steps = append(s.Steps[:insertIndex], append([]Step[any]{step}, s.Steps[insertIndex:]...)...)
+
+	// Validate comprehensive state consistency after insertion
+	if err := s.ValidateStateConsistency(); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_id":        step.StepId,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("State consistency validation failed after step insertion")
+		return err
+	}
+
+	// Update the saga in the cache atomically
+	GetCache().Put(p.t.Id(), s)
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id":  s.TransactionId.String(),
+		"saga_type":       s.SagaType,
+		"step_id":         step.StepId,
+		"action":          step.Action,
+		"insert_index":    insertIndex,
+		"total_steps":     len(s.Steps),
+		"completed_steps": s.GetCompletedStepCount(),
+		"pending_steps":   s.GetPendingStepCount(),
+		"tenant_id":       p.t.Id().String(),
+	}).Debug("Added new step to saga with proper ordering.")
+
+	return nil
+}
+
+// AddStepAfterCurrent adds a new step to the saga's step list after the current step.
+func (p *ProcessorImpl) AddStepAfterCurrent(transactionId uuid.UUID, step Step[any]) error {
+	s, err := p.GetById(transactionId)
+	if err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"tenant_id":      p.t.Id().String(),
+		}).Debug("Unable to locate saga for prepending step.")
+		return err
+	}
+
+	// Validate that the saga is in a valid state for adding steps
+	if s.Failing() {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"tenant_id":      p.t.Id().String(),
+		}).Debug("Cannot prepend step to a failing saga.")
+		return errors.New("cannot prepend step to a failing saga")
+	}
+
+	// Validate step ID uniqueness within the saga
+	for _, existingStep := range s.Steps {
+		if existingStep.StepId == step.StepId {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_id":        step.StepId,
+				"tenant_id":      p.t.Id().String(),
+			}).Debug("Step ID already exists in saga.")
+			return fmt.Errorf("step ID '%s' already exists in saga", step.StepId)
+		}
+	}
+
+	// Ensure the step has proper timestamps
+	if step.CreatedAt.IsZero() {
+		step.CreatedAt = time.Now()
+	}
+	if step.UpdatedAt.IsZero() {
+		step.UpdatedAt = time.Now()
+	}
+
+	// Prepend the new step to the beginning of the steps slice
+	for i, st := range s.Steps {
+		if st.Status == Pending {
+			s.Steps = append(s.Steps[:i+1], append([]Step[any]{step}, s.Steps[i+1:]...)...)
+			break
+		}
+	}
+
+	// Validate comprehensive state consistency after insertion
+	if err := s.ValidateStateConsistency(); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_id":        step.StepId,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("State consistency validation failed after step prepend")
+		return err
+	}
+
+	// Update the saga in the cache atomically
+	GetCache().Put(p.t.Id(), s)
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id":  s.TransactionId.String(),
+		"saga_type":       s.SagaType,
+		"step_id":         step.StepId,
+		"action":          step.Action,
+		"insert_index":    0,
+		"total_steps":     len(s.Steps),
+		"completed_steps": s.GetCompletedStepCount(),
+		"pending_steps":   s.GetPendingStepCount(),
+		"tenant_id":       p.t.Id().String(),
+	}).Debug("Prepended new step to saga at the beginning.")
+
+	return nil
 }
 
 func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
@@ -244,7 +611,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			"saga_type":      s.SagaType,
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("Reverting saga step.")
-		return p.compensateFailedStep(s)
+		return p.comp.CompensateFailedStep(s)
 	}
 
 	st, ok := s.GetCurrentStep()
@@ -255,7 +622,17 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("No steps remaining to progress.")
 		GetCache().Remove(p.t.Id(), s.TransactionId)
-		// TODO complete saga
+
+		// Emit saga completion event
+		err := producer.ProviderImpl(p.l)(p.ctx)(saga.EnvStatusEventTopic)(CompletedStatusEventProvider(s.TransactionId))
+		if err != nil {
+			p.l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"tenant_id":      p.t.Id().String(),
+			}).Error("Failed to emit saga completion event.")
+		}
+
 		return nil
 	}
 
@@ -266,554 +643,11 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 	}).Debugf("Progressing saga step [%s].", st.StepId)
 
 	// Get the handler for this action type
-	handler, exists := actionHandlers[st.Action]
+	handler, exists := p.handle.GetHandler(st.Action)
 	if !exists {
 		return fmt.Errorf("unknown action type: %s", st.Action)
 	}
 
 	// Execute the handler
-	return handler(p, s, st)
-}
-
-// compensateFailedStep handles compensation for failed steps
-func (p *ProcessorImpl) compensateFailedStep(s Saga) error {
-	// Find the failed step
-	failedStepIndex := s.FindFailedStepIndex()
-	if failedStepIndex == -1 {
-		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"tenant_id":      p.t.Id().String(),
-		}).Debug("No failed step found for compensation.")
-		return nil
-	}
-
-	failedStep := s.Steps[failedStepIndex]
-	
-	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
-		"action":         failedStep.Action,
-		"tenant_id":      p.t.Id().String(),
-	}).Debug("Compensating failed step.")
-
-	// Perform compensation based on the action type
-	switch failedStep.Action {
-	case EquipAsset:
-		return p.compensateEquipAsset(s, failedStep)
-	case UnequipAsset:
-		return p.compensateUnequipAsset(s, failedStep)
-	case CreateCharacter:
-		return p.compensateCreateCharacter(s, failedStep)
-	default:
-		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
-			"action":         failedStep.Action,
-			"tenant_id":      p.t.Id().String(),
-		}).Debug("No compensation logic available for action type.")
-		// Mark step as compensated (remove failed status)
-		s.SetStepStatus(failedStepIndex, Pending)
-		GetCache().Put(p.t.Id(), s)
-		return nil
-	}
-}
-
-// compensateEquipAsset handles compensation for a failed EquipAsset operation
-// by performing the reverse operation (UnequipAsset)
-func (p *ProcessorImpl) compensateEquipAsset(s Saga, failedStep Step[any]) error {
-	// Extract the original payload
-	payload, ok := failedStep.Payload.(EquipAssetPayload)
-	if !ok {
-		return fmt.Errorf("invalid payload for EquipAsset compensation")
-	}
-
-	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
-		"character_id":   payload.CharacterId,
-		"source":         payload.Source,
-		"destination":    payload.Destination,
-		"tenant_id":      p.t.Id().String(),
-	}).Info("Compensating failed EquipAsset operation with UnequipAsset")
-
-	// Perform the reverse operation: unequip from destination back to source
-	err := p.compP.RequestUnequipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Destination, payload.Source)
-	if err != nil {
-		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
-			"tenant_id":      p.t.Id().String(),
-		}).WithError(err).Error("Failed to compensate EquipAsset operation")
-		return err
-	}
-
-	// Mark the failed step as compensated by removing it from the saga
-	failedStepIndex := s.FindFailedStepIndex()
-	if failedStepIndex != -1 {
-		s.SetStepStatus(failedStepIndex, Pending)
-		GetCache().Put(p.t.Id(), s)
-	}
-
-	return nil
-}
-
-// compensateUnequipAsset handles compensation for a failed UnequipAsset operation
-// by performing the reverse operation (EquipAsset)
-func (p *ProcessorImpl) compensateUnequipAsset(s Saga, failedStep Step[any]) error {
-	// Extract the original payload
-	payload, ok := failedStep.Payload.(UnequipAssetPayload)
-	if !ok {
-		return fmt.Errorf("invalid payload for UnequipAsset compensation")
-	}
-
-	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
-		"character_id":   payload.CharacterId,
-		"source":         payload.Source,
-		"destination":    payload.Destination,
-		"tenant_id":      p.t.Id().String(),
-	}).Info("Compensating failed UnequipAsset operation with EquipAsset")
-
-	// Perform the reverse operation: equip from destination back to source
-	err := p.compP.RequestEquipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Destination, payload.Source)
-	if err != nil {
-		p.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId.String(),
-			"saga_type":      s.SagaType,
-			"step_id":        failedStep.StepId,
-			"tenant_id":      p.t.Id().String(),
-		}).WithError(err).Error("Failed to compensate UnequipAsset operation")
-		return err
-	}
-
-	// Mark the failed step as compensated by removing it from the saga
-	failedStepIndex := s.FindFailedStepIndex()
-	if failedStepIndex != -1 {
-		s.SetStepStatus(failedStepIndex, Pending)
-		GetCache().Put(p.t.Id(), s)
-	}
-
-	return nil
-}
-
-// compensateCreateCharacter handles compensation for a failed CreateCharacter operation
-// Note: Character creation failures typically do not require compensation as the character
-// creation process is atomic. If partial creation occurred, the character service should
-// handle cleanup. This function exists for completeness and future extensibility.
-func (p *ProcessorImpl) compensateCreateCharacter(s Saga, failedStep Step[any]) error {
-	// Extract the original payload
-	payload, ok := failedStep.Payload.(CharacterCreatePayload)
-	if !ok {
-		return fmt.Errorf("invalid payload for CreateCharacter compensation")
-	}
-
-	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        failedStep.StepId,
-		"account_id":     payload.AccountId,
-		"character_name": payload.Name,
-		"world_id":       payload.WorldId,
-		"tenant_id":      p.t.Id().String(),
-	}).Info("Compensating failed CreateCharacter operation - no rollback action available")
-
-	// Note: Currently there is no character deletion command available
-	// in the character service, so we cannot perform actual rollback.
-	// The character service should handle cleanup of failed character creation internally.
-	// This compensation step simply acknowledges the failure and allows the saga to continue.
-
-	// Mark the failed step as compensated by removing it from the saga
-	failedStepIndex := s.FindFailedStepIndex()
-	if failedStepIndex != -1 {
-		s.SetStepStatus(failedStepIndex, Pending)
-		GetCache().Put(p.t.Id(), s)
-	}
-
-	return nil
-}
-
-// logActionError logs an error that occurred during action processing
-func (p *ProcessorImpl) logActionError(s Saga, st Step[any], err error, errorMsg string) {
-	p.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId.String(),
-		"saga_type":      s.SagaType,
-		"step_id":        st.StepId,
-		"tenant_id":      p.t.Id().String(),
-	}).WithError(err).Error(errorMsg)
-}
-
-// handleAwardAsset handles the AwardAsset and AwardInventory actions
-func handleAwardAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AwardItemActionPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.compP.RequestCreateItem(s.TransactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to award asset.")
-		return err
-	}
-
-	return nil
-}
-
-// handleAwardInventory is a wrapper for handleAwardAsset for backward compatibility
-// Deprecated: Use handleAwardAsset instead
-func handleAwardInventory(p *ProcessorImpl, s Saga, st Step[any]) error {
-	return handleAwardAsset(p, s, st)
-}
-
-// handleWarpToRandomPortal handles the WarpToRandomPortal action
-func handleWarpToRandomPortal(p *ProcessorImpl, s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(WarpToRandomPortalPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	f, ok := field.FromId(payload.FieldId)
-	if !ok {
-		return errors.New("invalid field id")
-	}
-
-	err := p.charP.WarpRandomAndEmit(s.TransactionId, payload.CharacterId, f)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to warp to random portal.")
-		return err
-	}
-
-	return nil
-}
-
-// handleWarpToPortal handles the WarpToPortal action
-func handleWarpToPortal(p *ProcessorImpl, s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(WarpToPortalPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	f, ok := field.FromId(payload.FieldId)
-	if !ok {
-		return errors.New("invalid field id")
-	}
-
-	err := p.charP.WarpToPortalAndEmit(s.TransactionId, payload.CharacterId, f, model.FixedProvider(payload.PortalId))
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to warp to specific portal.")
-		return err
-	}
-
-	return nil
-}
-
-// handleAwardExperience handles the AwardExperience action
-func handleAwardExperience(p *ProcessorImpl, s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AwardExperiencePayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	eds := TransformExperienceDistributions(payload.Distributions)
-	err := p.charP.AwardExperienceAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, eds)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to award experience.")
-		return err
-	}
-
-	return nil
-}
-
-// handleAwardLevel handles the AwardLevel action
-func handleAwardLevel(p *ProcessorImpl, s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AwardLevelPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.charP.AwardLevelAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.Amount)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to award level.")
-		return err
-	}
-
-	return nil
-}
-
-// handleAwardMesos handles the AwardMesos action
-func handleAwardMesos(p *ProcessorImpl, s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(AwardMesosPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.charP.AwardMesosAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.ActorId, payload.ActorType, payload.Amount)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to award mesos.")
-		return err
-	}
-
-	return nil
-}
-
-// handleDestroyAsset handles the DestroyAsset action
-func handleDestroyAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(DestroyAssetPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.compP.RequestDestroyItem(s.TransactionId, payload.CharacterId, payload.TemplateId, payload.Quantity)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to destroy asset.")
-		return err
-	}
-
-	return nil
-}
-
-// handleEquipAsset handles the EquipAsset action
-func handleEquipAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(EquipAssetPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.compP.RequestEquipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to equip asset.")
-		return err
-	}
-
-	return nil
-}
-
-// handleUnequipAsset handles the UnequipAsset action
-func handleUnequipAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(UnequipAssetPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.compP.RequestUnequipAsset(s.TransactionId, payload.CharacterId, byte(payload.InventoryType), payload.Source, payload.Destination)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to unequip asset.")
-		return err
-	}
-
-	return nil
-}
-
-// handleChangeJob handles the ChangeJob action
-func handleChangeJob(p *ProcessorImpl, s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(ChangeJobPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.charP.ChangeJobAndEmit(s.TransactionId, payload.WorldId, payload.CharacterId, payload.ChannelId, payload.JobId)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to change job.")
-		return err
-	}
-
-	return nil
-}
-
-// handleCreateSkill handles the CreateSkill action
-func handleCreateSkill(p *ProcessorImpl, s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(CreateSkillPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.skillP.RequestCreateAndEmit(s.TransactionId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to create skill.")
-		return err
-	}
-
-	return nil
-}
-
-// handleUpdateSkill handles the UpdateSkill action
-func handleUpdateSkill(p *ProcessorImpl, s Saga, st Step[any]) error {
-	payload, ok := st.Payload.(UpdateSkillPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	err := p.skillP.RequestUpdateAndEmit(s.TransactionId, payload.CharacterId, payload.SkillId, payload.Level, payload.MasterLevel, payload.Expiration)
-
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to update skill.")
-		return err
-	}
-
-	return nil
-}
-
-func TransformExperienceDistributions(source []ExperienceDistributions) []character2.ExperienceDistributions {
-	target := make([]character2.ExperienceDistributions, len(source))
-
-	for i, s := range source {
-		target[i] = character2.ExperienceDistributions{
-			ExperienceType: s.ExperienceType,
-			Amount:         s.Amount,
-			Attr1:          s.Attr1,
-		}
-	}
-
-	return target
-}
-
-// handleValidateCharacterState handles the ValidateCharacterState action
-func handleValidateCharacterState(p *ProcessorImpl, s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(ValidateCharacterStatePayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Call the validation processor
-	result, err := p.validP.ValidateCharacterState(payload.CharacterId, payload.Conditions)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to validate character state.")
-		return err
-	}
-
-	// Check if validation passed
-	if !result.Passed() {
-		// If validation failed, mark the step as failed
-		err := fmt.Errorf("character state validation failed: %v", result.Details())
-		p.logActionError(s, st, err, "Character state validation failed.")
-		return err
-	}
-
-	return nil
-}
-
-// handleRequestGuildName handles the RequestGuildName action
-func handleRequestGuildName(p *ProcessorImpl, s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(RequestGuildNamePayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Call the guild processor
-	err := p.guildP.RequestName(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to request guild name.")
-		return err
-	}
-
-	return nil
-}
-
-// handleRequestGuildEmblem handles the RequestGuildEmblem action
-func handleRequestGuildEmblem(p *ProcessorImpl, s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(RequestGuildEmblemPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Call the guild processor
-	err := p.guildP.RequestEmblem(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to request guild emblem.")
-		return err
-	}
-
-	return nil
-}
-
-// handleRequestGuildDisband handles the RequestGuildDisband action
-func handleRequestGuildDisband(p *ProcessorImpl, s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(RequestGuildDisbandPayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Call the guild processor
-	err := p.guildP.RequestDisband(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to request guild disband.")
-		return err
-	}
-
-	return nil
-}
-
-// handleRequestGuildCapacityIncrease handles the RequestGuildCapacityIncrease action
-func handleRequestGuildCapacityIncrease(p *ProcessorImpl, s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(RequestGuildCapacityIncreasePayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Call the guild processor
-	err := p.guildP.RequestCapacityIncrease(s.TransactionId, payload.WorldId, payload.ChannelId, payload.CharacterId)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to request guild capacity increase.")
-		return err
-	}
-
-	return nil
-}
-
-// handleCreateInvite handles the CreateInvite action
-func handleCreateInvite(p *ProcessorImpl, s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(CreateInvitePayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Call the invite processor
-	err := p.inviteP.Create(s.TransactionId, payload.InviteType, payload.OriginatorId, payload.WorldId, payload.ReferenceId, payload.TargetId)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to create invitation.")
-		return err
-	}
-
-	return nil
-}
-
-// handleCreateCharacter handles the CreateCharacter action
-func handleCreateCharacter(p *ProcessorImpl, s Saga, st Step[any]) error {
-	// Extract the payload
-	payload, ok := st.Payload.(CharacterCreatePayload)
-	if !ok {
-		return errors.New("invalid payload")
-	}
-
-	// Call the character processor
-	err := p.charP.RequestCreateCharacter(s.TransactionId, payload.AccountId, payload.Name, payload.WorldId, payload.ChannelId, payload.JobId, payload.Gender, payload.Face, payload.Hair, payload.HairColor, payload.Skin, payload.Top, payload.Bottom, payload.Shoes, payload.Weapon, payload.MapId)
-	if err != nil {
-		p.logActionError(s, st, err, "Unable to create character.")
-		return err
-	}
-
-	return nil
+	return handler(s, st)
 }

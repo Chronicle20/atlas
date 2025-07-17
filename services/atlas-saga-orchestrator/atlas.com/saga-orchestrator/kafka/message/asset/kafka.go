@@ -9,6 +9,7 @@ const (
 	EnvEventTopicStatus            = "EVENT_TOPIC_ASSET_STATUS"
 	StatusEventTypeCreated         = "CREATED"
 	StatusEventTypeDeleted         = "DELETED"
+	StatusEventTypeMoved           = "MOVED"
 	StatusEventTypeQuantityChanged = "QUANTITY_CHANGED"
 )
 
@@ -131,6 +132,10 @@ type PetReferenceData struct {
 }
 
 type DeletedStatusEventBody struct {
+}
+
+type MovedStatusEventBody struct {
+	OldSlot int16 `json:"oldSlot"`
 }
 
 type QuantityChangedEventBody struct {

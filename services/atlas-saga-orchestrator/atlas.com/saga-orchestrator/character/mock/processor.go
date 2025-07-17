@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
@@ -25,7 +26,7 @@ type ProcessorMock struct {
 	AwardMesosFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error
 	ChangeJobAndEmitFunc       func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
 	ChangeJobFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, jobId job.Id) error
-	RequestCreateCharacterFunc func(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, gender byte, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32, mapId uint32) error
+	RequestCreateCharacterFunc func(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error
 }
 
 // WarpRandomAndEmit is a mock implementation of the character.Processor.WarpRandomAndEmit method
@@ -137,9 +138,9 @@ func (m *ProcessorMock) ChangeJob(mb *message.Buffer) func(transactionId uuid.UU
 }
 
 // RequestCreateCharacter is a mock implementation of the character.Processor.RequestCreateCharacter method
-func (m *ProcessorMock) RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, name string, worldId byte, channelId byte, jobId uint32, gender byte, face uint32, hair uint32, hairColor uint32, skin uint32, top uint32, bottom uint32, shoes uint32, weapon uint32, mapId uint32) error {
+func (m *ProcessorMock) RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error {
 	if m.RequestCreateCharacterFunc != nil {
-		return m.RequestCreateCharacterFunc(transactionId, accountId, name, worldId, channelId, jobId, gender, face, hair, hairColor, skin, top, bottom, shoes, weapon, mapId)
+		return m.RequestCreateCharacterFunc(transactionId, accountId, worldId, name, level, strength, dexterity, intelligence, luck, hp, mp, jobId, gender, face, hair, skin, mapId)
 	}
 	return nil
 }

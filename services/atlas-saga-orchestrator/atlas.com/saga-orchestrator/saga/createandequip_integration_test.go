@@ -345,8 +345,8 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 						UpdatedAt: time.Now(),
 					}
 
-					err = processor.PrependStep(transactionId, equipStep)
-					assert.NoError(t, err, "Prepending auto-equip step should succeed")
+					err = processor.AddStepAfterCurrent(transactionId, equipStep)
+					assert.NoError(t, err, "Adding auto-equip step should succeed")
 				}
 			}
 

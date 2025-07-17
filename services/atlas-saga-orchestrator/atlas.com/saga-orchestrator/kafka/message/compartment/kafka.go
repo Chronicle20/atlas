@@ -6,26 +6,26 @@ import (
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_COMPARTMENT"
-	CommandEquip             = "EQUIP"
-	CommandUnequip           = "UNEQUIP"
-	CommandMove              = "MOVE"
-	CommandDrop              = "DROP"
-	CommandRequestReserve    = "REQUEST_RESERVE"
-	CommandConsume           = "CONSUME"
-	CommandDestroy           = "DESTROY"
-	CommandCancelReservation = "CANCEL_RESERVATION"
-	CommandIncreaseCapacity  = "INCREASE_CAPACITY"
-	CommandCreateAsset       = "CREATE_ASSET"
-	CommandRecharge          = "RECHARGE"
-	CommandMerge             = "MERGE"
-	CommandSort              = "SORT"
-	CommandAccept            = "ACCEPT"
-	CommandRelease           = "RELEASE"
-	CommandTypeCreate        = "CREATE"
-	CommandTypeDelete        = "DELETE"
-	CommandTypeEquip         = "EQUIP"
-	CommandTypeUnequip       = "UNEQUIP"
+	EnvCommandTopic           = "COMMAND_TOPIC_COMPARTMENT"
+	CommandEquip              = "EQUIP"
+	CommandUnequip            = "UNEQUIP"
+	CommandMove               = "MOVE"
+	CommandDrop               = "DROP"
+	CommandRequestReserve     = "REQUEST_RESERVE"
+	CommandConsume            = "CONSUME"
+	CommandDestroy            = "DESTROY"
+	CommandCancelReservation  = "CANCEL_RESERVATION"
+	CommandIncreaseCapacity   = "INCREASE_CAPACITY"
+	CommandCreateAsset        = "CREATE_ASSET"
+	CommandRecharge           = "RECHARGE"
+	CommandMerge              = "MERGE"
+	CommandSort               = "SORT"
+	CommandAccept             = "ACCEPT"
+	CommandRelease            = "RELEASE"
+	CommandTypeCreate         = "CREATE"
+	CommandTypeDelete         = "DELETE"
+	CommandTypeEquip          = "EQUIP"
+	CommandTypeUnequip        = "UNEQUIP"
 	CommandTypeCreateAndEquip = "CREATE_AND_EQUIP"
 )
 
@@ -150,8 +150,6 @@ const (
 	StatusEventTypeSortComplete         = "SORT_COMPLETE"
 	StatusEventTypeAccepted             = "ACCEPTED"
 	StatusEventTypeReleased             = "RELEASED"
-	StatusEventTypeEquipped             = "EQUIPPED"
-	StatusEventTypeUnequipped           = "UNEQUIPPED"
 	StatusEventTypeCreationFailed       = "CREATION_FAILED"
 	StatusEventTypeError                = "ERROR"
 
@@ -222,16 +220,4 @@ type ReleasedEventBody struct {
 type ErrorEventBody struct {
 	ErrorCode     string    `json:"errorCode"`
 	TransactionId uuid.UUID `json:"transactionId"`
-}
-
-type EquippedEventBody struct {
-	InventoryType byte  `json:"inventoryType,omitempty"`
-	Source        int16 `json:"source"`
-	Destination   int16 `json:"destination"`
-}
-
-type UnequippedEventBody struct {
-	InventoryType byte  `json:"inventoryType,omitempty"`
-	Source        int16 `json:"source"`
-	Destination   int16 `json:"destination"`
 }

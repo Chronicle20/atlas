@@ -29,8 +29,6 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentCreatedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentCreationFailedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentDeletedEvent)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentEquippedEvent)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentUnequippedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentErrorEvent)))
 	}
 }
@@ -68,25 +66,11 @@ func handleCompartmentDeletedEvent(l logrus.FieldLogger, ctx context.Context, e 
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
 }
 
-func handleCompartmentEquippedEvent(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.EquippedEventBody]) {
-	if e.Type != compartment.StatusEventTypeEquipped {
-		return
-	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
-}
-
-func handleCompartmentUnequippedEvent(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.UnequippedEventBody]) {
-	if e.Type != compartment.StatusEventTypeUnequipped {
-		return
-	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
-}
-
 func handleCompartmentErrorEvent(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.ErrorEventBody]) {
 	if e.Type != compartment.StatusEventTypeError {
 		return
 	}
-	
+
 	l.WithFields(logrus.Fields{
 		"transaction_id": e.TransactionId.String(),
 		"error_code":     e.Body.ErrorCode,

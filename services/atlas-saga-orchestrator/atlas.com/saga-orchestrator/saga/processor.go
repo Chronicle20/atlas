@@ -22,20 +22,25 @@ import (
 
 // Processor is the interface for saga processing
 type Processor interface {
-	WithCharacterProcessor(charP character.Processor) Processor
-	WithCompartmentProcessor(compP compartment.Processor) Processor
-	WithValidationProcessor(validP validation.Processor) Processor
+	WithCharacterProcessor(character.Processor) Processor
+	WithCompartmentProcessor(compartment.Processor) Processor
+	WithSkillProcessor(processor skill.Processor) Processor
+	WithValidationProcessor(validation.Processor) Processor
+	WithGuildProcessor(guild.Processor) Processor
+	WithInviteProcessor(invite.Processor) Processor
+
 	GetAll() ([]Saga, error)
 	AllProvider() model.Provider[[]Saga]
 	GetById(transactionId uuid.UUID) (Saga, error)
 	ByIdProvider(transactionId uuid.UUID) model.Provider[Saga]
+
 	Put(saga Saga) error
 	MarkFurthestCompletedStepFailed(transactionId uuid.UUID) error
 	MarkEarliestPendingStep(transactionId uuid.UUID, status Status) error
 	MarkEarliestPendingStepCompleted(transactionId uuid.UUID) error
 	StepCompleted(transactionId uuid.UUID, success bool) error
 	AddStep(transactionId uuid.UUID, step Step[any]) error
-	PrependStep(transactionId uuid.UUID, step Step[any]) error
+	AddStepAfterCurrent(transactionId uuid.UUID, step Step[any]) error
 	Step(transactionId uuid.UUID) error
 }
 
@@ -511,8 +516,8 @@ func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 	return nil
 }
 
-// PrependStep adds a new step to the beginning of the saga's step list
-func (p *ProcessorImpl) PrependStep(transactionId uuid.UUID, step Step[any]) error {
+// AddStepAfterCurrent adds a new step to the saga's step list after the current step.
+func (p *ProcessorImpl) AddStepAfterCurrent(transactionId uuid.UUID, step Step[any]) error {
 	s, err := p.GetById(transactionId)
 	if err != nil {
 		p.l.WithFields(logrus.Fields{
@@ -554,7 +559,12 @@ func (p *ProcessorImpl) PrependStep(transactionId uuid.UUID, step Step[any]) err
 	}
 
 	// Prepend the new step to the beginning of the steps slice
-	s.Steps = append([]Step[any]{step}, s.Steps...)
+	for i, st := range s.Steps {
+		if st.Status == Pending {
+			s.Steps = append(s.Steps[:i+1], append([]Step[any]{step}, s.Steps[i+1:]...)...)
+			break
+		}
+	}
 
 	// Validate comprehensive state consistency after insertion
 	if err := s.ValidateStateConsistency(); err != nil {

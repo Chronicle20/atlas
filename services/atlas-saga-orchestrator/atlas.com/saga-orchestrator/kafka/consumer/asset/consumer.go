@@ -6,6 +6,8 @@ import (
 	"atlas-saga-orchestrator/saga"
 	"context"
 	"fmt"
+	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -30,6 +32,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		t, _ = topic.EnvProvider(l)(asset2.EnvEventTopicStatus)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetQuantityUpdatedEvent)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMovedEvent)))
 	}
 }
 
@@ -39,7 +42,7 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 	}
 
 	sagaProcessor := saga.NewProcessor(l, ctx)
-	
+
 	// Get the saga to check if this is a CreateAndEquipAsset step
 	s, err := sagaProcessor.GetById(e.TransactionId)
 	if err != nil {
@@ -91,16 +94,17 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 		// Generate a unique step ID for the auto-equip step with proper timestamp format
 		// Format: auto_equip_step_<timestamp> where timestamp is Unix nanoseconds
 		autoEquipStepId := fmt.Sprintf("auto_equip_step_%d", time.Now().UnixNano())
-		
+
 		// Create the EquipAsset step
 		// Note: Using reasonable defaults for slot information since asset event doesn't provide it
 		// The item is typically created in the first available slot (assumption: slot 5)
 		// Equipment slot -1 is typically used for equipment
+		it, _ := inventory.TypeFromItemId(item.Id(e.TemplateId))
 		equipPayload := saga.EquipAssetPayload{
 			CharacterId:   createPayload.CharacterId,
-			InventoryType: 1,    // Default inventory type for equipment
-			Source:        5,    // Assumption: created item is in slot 5
-			Destination:   -1,   // Assumption: equip to slot -1
+			InventoryType: uint32(it),
+			Source:        e.Slot,
+			Destination:   -1, // Assumption: equip to slot -1
 		}
 
 		equipStep := saga.Step[any]{
@@ -112,8 +116,8 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 			UpdatedAt: time.Now(),
 		}
 
-		// Prepend the equip step to the saga (should be executed next)
-		err = sagaProcessor.PrependStep(e.TransactionId, equipStep)
+		// Add the equip step to the saga after the current step (should be executed next)
+		err = sagaProcessor.AddStepAfterCurrent(e.TransactionId, equipStep)
 		if err != nil {
 			l.WithFields(logrus.Fields{
 				"transaction_id":     e.TransactionId.String(),
@@ -121,20 +125,20 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 				"auto_equip_step_id": autoEquipStepId,
 				"step_id":            currentStep.StepId,
 				"error":              err.Error(),
-			}).Error("Failed to prepend equip step to saga for CreateAndEquipAsset - marking saga step as failed.")
+			}).Error("Failed to add the equip step to saga for CreateAndEquipAsset - marking saga step as failed.")
 			_ = sagaProcessor.StepCompleted(e.TransactionId, false)
 			return
 		}
 
 		l.WithFields(logrus.Fields{
-			"transaction_id":      e.TransactionId.String(),
-			"character_id":        e.CharacterId,
-			"auto_equip_step_id":  autoEquipStepId,
-			"inventory_type":      equipPayload.InventoryType,
-			"source_slot":         equipPayload.Source,
-			"destination_slot":    equipPayload.Destination,
-			"original_step_id":    currentStep.StepId,
-		}).Info("Successfully prepended auto-equip step for CreateAndEquipAsset action to be executed next.")
+			"transaction_id":     e.TransactionId.String(),
+			"character_id":       e.CharacterId,
+			"auto_equip_step_id": autoEquipStepId,
+			"inventory_type":     equipPayload.InventoryType,
+			"source_slot":        equipPayload.Source,
+			"destination_slot":   equipPayload.Destination,
+			"original_step_id":   currentStep.StepId,
+		}).Info("Successfully added auto-equip step for CreateAndEquipAsset action to be executed next.")
 	}
 
 	// Complete the current step (either regular creation or CreateAndEquipAsset)
@@ -143,6 +147,13 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 
 func handleAssetQuantityUpdatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.QuantityChangedEventBody]) {
 	if e.Type != asset2.StatusEventTypeQuantityChanged {
+		return
+	}
+	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+}
+
+func handleAssetMovedEvent(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.MovedStatusEventBody]) {
+	if e.Type != asset2.StatusEventTypeMoved {
 		return
 	}
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)

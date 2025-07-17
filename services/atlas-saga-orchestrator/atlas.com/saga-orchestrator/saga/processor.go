@@ -6,18 +6,21 @@ import (
 	"atlas-saga-orchestrator/guild"
 	"atlas-saga-orchestrator/invite"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
+	"atlas-saga-orchestrator/kafka/message/saga"
+	"atlas-saga-orchestrator/kafka/producer"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/validation"
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"strings"
-	"time"
 )
 
 // Processor is the interface for saga processing
@@ -362,7 +365,7 @@ func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 
 	// Insert the new step right after the current step to maintain proper ordering
 	insertIndex := currentStepIndex + 1
-	
+
 	// Ensure the step has proper timestamps
 	if step.CreatedAt.IsZero() {
 		step.CreatedAt = time.Now()
@@ -370,7 +373,7 @@ func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 	if step.UpdatedAt.IsZero() {
 		step.UpdatedAt = time.Now()
 	}
-	
+
 	// Expand the slice and insert the new step
 	s.Steps = append(s.Steps[:insertIndex], append([]Step[any]{step}, s.Steps[insertIndex:]...)...)
 
@@ -389,15 +392,15 @@ func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 	GetCache().Put(p.t.Id(), s)
 
 	p.l.WithFields(logrus.Fields{
-		"transaction_id":     s.TransactionId.String(),
-		"saga_type":          s.SagaType,
-		"step_id":            step.StepId,
-		"action":             step.Action,
-		"insert_index":       insertIndex,
-		"total_steps":        len(s.Steps),
-		"completed_steps":    s.GetCompletedStepCount(),
-		"pending_steps":      s.GetPendingStepCount(),
-		"tenant_id":          p.t.Id().String(),
+		"transaction_id":  s.TransactionId.String(),
+		"saga_type":       s.SagaType,
+		"step_id":         step.StepId,
+		"action":          step.Action,
+		"insert_index":    insertIndex,
+		"total_steps":     len(s.Steps),
+		"completed_steps": s.GetCompletedStepCount(),
+		"pending_steps":   s.GetPendingStepCount(),
+		"tenant_id":       p.t.Id().String(),
 	}).Debug("Added new step to saga with proper ordering.")
 
 	return nil
@@ -458,7 +461,17 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("No steps remaining to progress.")
 		GetCache().Remove(p.t.Id(), s.TransactionId)
-		// TODO complete saga
+		
+		// Emit saga completion event
+		err := producer.ProviderImpl(p.l)(p.ctx)(saga.EnvStatusEventTopic)(CompletedStatusEventProvider(s.TransactionId, s.TransactionId))
+		if err != nil {
+			p.l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"tenant_id":      p.t.Id().String(),
+			}).Error("Failed to emit saga completion event.")
+		}
+		
 		return nil
 	}
 
@@ -492,7 +505,7 @@ func (p *ProcessorImpl) compensateFailedStep(s Saga) error {
 	}
 
 	failedStep := s.Steps[failedStepIndex]
-	
+
 	p.l.WithFields(logrus.Fields{
 		"transaction_id": s.TransactionId.String(),
 		"saga_type":      s.SagaType,
@@ -751,7 +764,7 @@ func (p *ProcessorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[an
 	// For CreateAndEquipAsset, we need to determine if the asset was actually created
 	// If the failure happened during the asset creation phase, no compensation is needed
 	// If the failure happened during the equipment phase, we need to destroy the created asset
-	
+
 	// Check if there are any auto-generated equip steps in this saga
 	// If an auto-equip step exists, it means the asset was successfully created
 	// and the failure occurred during the equipment phase
@@ -1239,7 +1252,7 @@ func handleCreateAndEquipAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
 			Quantity:   payload.Item.Quantity,
 		},
 	}
-	
+
 	err := p.compP.RequestCreateAndEquipAsset(s.TransactionId, compartmentPayload)
 	if err != nil {
 		p.logActionError(s, st, err, "Unable to create asset for create_and_equip_asset.")

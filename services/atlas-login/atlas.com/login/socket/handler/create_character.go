@@ -68,6 +68,11 @@ func CreateCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			dexterity = r.ReadByte()
 			intelligence = r.ReadByte()
 			luck = r.ReadByte()
+		} else {
+			strength = 13
+			dexterity = 4
+			intelligence = 4
+			luck = 4
 		}
 
 		err := factory.NewProcessor(l, ctx).SeedCharacter(s.AccountId(), s.WorldId(), name, jobIndex, subJobIndex, face, hair, hairColor, skinColor, gender, top, bottom, shoes, weapon, strength, dexterity, intelligence, luck)

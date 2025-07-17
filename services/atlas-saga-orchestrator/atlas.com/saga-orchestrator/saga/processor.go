@@ -25,15 +25,51 @@ import (
 
 // Processor is the interface for saga processing
 type Processor interface {
+	WithCharacterProcessor(charP character.Processor) Processor
+	WithCompartmentProcessor(compP compartment.Processor) Processor
+	WithValidationProcessor(validP validation.Processor) Processor
 	GetAll() ([]Saga, error)
 	AllProvider() model.Provider[[]Saga]
 	GetById(transactionId uuid.UUID) (Saga, error)
 	ByIdProvider(transactionId uuid.UUID) model.Provider[Saga]
 	Put(saga Saga) error
 	MarkFurthestCompletedStepFailed(transactionId uuid.UUID) error
+	MarkEarliestPendingStep(transactionId uuid.UUID, status Status) error
 	MarkEarliestPendingStepCompleted(transactionId uuid.UUID) error
+	StepCompleted(transactionId uuid.UUID, success bool) error
 	AddStep(transactionId uuid.UUID, step Step[any]) error
 	PrependStep(transactionId uuid.UUID, step Step[any]) error
+	GetHandler(action Action) (ActionHandler, bool)
+	Step(transactionId uuid.UUID) error
+
+	compensateFailedStep(s Saga) error
+	compensateEquipAsset(s Saga, failedStep Step[any]) error
+	compensateUnequipAsset(s Saga, failedStep Step[any]) error
+	compensateCreateCharacter(s Saga, failedStep Step[any]) error
+	compensateCreateAndEquipAsset(s Saga, failedStep Step[any]) error
+
+	logActionError(s Saga, st Step[any], err error, errorMsg string)
+	handleAwardAsset(s Saga, st Step[any]) error
+	handleAwardInventory(s Saga, st Step[any]) error
+	handleWarpToRandomPortal(s Saga, st Step[any]) error
+	handleWarpToPortal(s Saga, st Step[any]) error
+	handleAwardExperience(s Saga, st Step[any]) error
+	handleAwardLevel(s Saga, st Step[any]) error
+	handleAwardMesos(s Saga, st Step[any]) error
+	handleDestroyAsset(s Saga, st Step[any]) error
+	handleEquipAsset(s Saga, st Step[any]) error
+	handleUnequipAsset(s Saga, st Step[any]) error
+	handleChangeJob(s Saga, st Step[any]) error
+	handleCreateSkill(s Saga, st Step[any]) error
+	handleUpdateSkill(s Saga, st Step[any]) error
+	handleValidateCharacterState(s Saga, st Step[any]) error
+	handleRequestGuildName(s Saga, st Step[any]) error
+	handleRequestGuildEmblem(s Saga, st Step[any]) error
+	handleRequestGuildDisband(s Saga, st Step[any]) error
+	handleRequestGuildCapacityIncrease(s Saga, st Step[any]) error
+	handleCreateInvite(s Saga, st Step[any]) error
+	handleCreateCharacter(s Saga, st Step[any]) error
+	handleCreateAndEquipAsset(s Saga, st Step[any]) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -50,7 +86,7 @@ type ProcessorImpl struct {
 }
 
 // NewProcessor creates a new saga processor
-func NewProcessor(logger logrus.FieldLogger, ctx context.Context) *ProcessorImpl {
+func NewProcessor(logger logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{
 		l:       logger,
 		ctx:     ctx,
@@ -61,6 +97,48 @@ func NewProcessor(logger logrus.FieldLogger, ctx context.Context) *ProcessorImpl
 		validP:  validation.NewProcessor(logger, ctx),
 		guildP:  guild.NewProcessor(logger, ctx),
 		inviteP: invite.NewProcessor(logger, ctx),
+	}
+}
+
+func (p *ProcessorImpl) WithCharacterProcessor(charP character.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		charP:   charP,
+		compP:   p.compP,
+		skillP:  p.skillP,
+		validP:  p.validP,
+		guildP:  p.guildP,
+		inviteP: p.inviteP,
+	}
+}
+
+func (p *ProcessorImpl) WithCompartmentProcessor(compP compartment.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		charP:   p.charP,
+		compP:   compP,
+		skillP:  p.skillP,
+		validP:  p.validP,
+		guildP:  p.guildP,
+		inviteP: p.inviteP,
+	}
+}
+
+func (p *ProcessorImpl) WithValidationProcessor(validP validation.Processor) Processor {
+	return &ProcessorImpl{
+		l:       p.l,
+		ctx:     p.ctx,
+		t:       p.t,
+		charP:   p.charP,
+		compP:   p.compP,
+		skillP:  p.skillP,
+		validP:  validP,
+		guildP:  p.guildP,
+		inviteP: p.inviteP,
 	}
 }
 
@@ -482,31 +560,55 @@ func (p *ProcessorImpl) PrependStep(transactionId uuid.UUID, step Step[any]) err
 }
 
 // ActionHandler is a function type for handling different saga action types
-type ActionHandler func(p *ProcessorImpl, s Saga, st Step[any]) error
+type ActionHandler func(s Saga, st Step[any]) error
 
-// actionHandlers maps action types to their handler functions
-var actionHandlers = map[Action]ActionHandler{
-	AwardInventory:               handleAwardAsset, // Deprecated: Use AwardAsset instead
-	AwardAsset:                   handleAwardAsset, // Preferred over AwardInventory
-	WarpToRandomPortal:           handleWarpToRandomPortal,
-	WarpToPortal:                 handleWarpToPortal,
-	AwardExperience:              handleAwardExperience,
-	AwardLevel:                   handleAwardLevel,
-	AwardMesos:                   handleAwardMesos,
-	DestroyAsset:                 handleDestroyAsset,
-	EquipAsset:                   handleEquipAsset,
-	UnequipAsset:                 handleUnequipAsset,
-	ChangeJob:                    handleChangeJob,
-	CreateSkill:                  handleCreateSkill,
-	UpdateSkill:                  handleUpdateSkill,
-	ValidateCharacterState:       handleValidateCharacterState,
-	RequestGuildName:             handleRequestGuildName,
-	RequestGuildEmblem:           handleRequestGuildEmblem,
-	RequestGuildDisband:          handleRequestGuildDisband,
-	RequestGuildCapacityIncrease: handleRequestGuildCapacityIncrease,
-	CreateInvite:                 handleCreateInvite,
-	CreateCharacter:              handleCreateCharacter,
-	CreateAndEquipAsset:          handleCreateAndEquipAsset,
+func (p *ProcessorImpl) GetHandler(action Action) (ActionHandler, bool) {
+	switch action {
+	case AwardInventory:
+		return p.handleAwardInventory, true
+	case AwardAsset:
+		return p.handleAwardAsset, true
+	case WarpToRandomPortal:
+		return p.handleWarpToRandomPortal, true
+	case WarpToPortal:
+		return p.handleWarpToPortal, true
+	case AwardExperience:
+		return p.handleAwardExperience, true
+	case AwardLevel:
+		return p.handleAwardLevel, true
+	case AwardMesos:
+		return p.handleAwardMesos, true
+	case DestroyAsset:
+		return p.handleDestroyAsset, true
+	case EquipAsset:
+		return p.handleEquipAsset, true
+	case UnequipAsset:
+		return p.handleUnequipAsset, true
+	case ChangeJob:
+		return p.handleChangeJob, true
+	case CreateSkill:
+		return p.handleCreateSkill, true
+	case UpdateSkill:
+		return p.handleUpdateSkill, true
+	case ValidateCharacterState:
+		return p.handleValidateCharacterState, true
+	case RequestGuildName:
+		return p.handleRequestGuildName, true
+	case RequestGuildEmblem:
+		return p.handleRequestGuildEmblem, true
+	case RequestGuildDisband:
+		return p.handleRequestGuildDisband, true
+	case RequestGuildCapacityIncrease:
+		return p.handleRequestGuildCapacityIncrease, true
+	case CreateInvite:
+		return p.handleCreateInvite, true
+	case CreateCharacter:
+		return p.handleCreateCharacter, true
+	case CreateAndEquipAsset:
+		return p.handleCreateAndEquipAsset, true
+
+	}
+	return nil, false
 }
 
 func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
@@ -557,13 +659,13 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 	}).Debugf("Progressing saga step [%s].", st.StepId)
 
 	// Get the handler for this action type
-	handler, exists := actionHandlers[st.Action]
+	handler, exists := p.GetHandler(st.Action)
 	if !exists {
 		return fmt.Errorf("unknown action type: %s", st.Action)
 	}
 
 	// Execute the handler
-	return handler(p, s, st)
+	return handler(s, st)
 }
 
 // compensateFailedStep handles compensation for failed steps
@@ -808,7 +910,7 @@ func (p *ProcessorImpl) compensateCreateCharacter(s Saga, failedStep Step[any]) 
 	return nil
 }
 
-// compensateCreateAndEquipAsset handles compensation for a failed CreateAndEquipAsset operation
+// CompensateCreateAndEquipAsset handles compensation for a failed CreateAndEquipAsset operation
 // This compound action has two phases:
 // 1. Asset creation (handled by handleCreateAndEquipAsset)
 // 2. Dynamic equipment step creation (handled by compartment consumer)
@@ -940,7 +1042,7 @@ func (p *ProcessorImpl) logActionError(s Saga, st Step[any], err error, errorMsg
 }
 
 // handleAwardAsset handles the AwardAsset and AwardInventory actions
-func handleAwardAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleAwardAsset(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(AwardItemActionPayload)
 	if !ok {
 		return errors.New("invalid payload")
@@ -958,12 +1060,12 @@ func handleAwardAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
 
 // handleAwardInventory is a wrapper for handleAwardAsset for backward compatibility
 // Deprecated: Use handleAwardAsset instead
-func handleAwardInventory(p *ProcessorImpl, s Saga, st Step[any]) error {
-	return handleAwardAsset(p, s, st)
+func (p *ProcessorImpl) handleAwardInventory(s Saga, st Step[any]) error {
+	return p.handleAwardAsset(s, st)
 }
 
 // handleWarpToRandomPortal handles the WarpToRandomPortal action
-func handleWarpToRandomPortal(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleWarpToRandomPortal(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(WarpToRandomPortalPayload)
 	if !ok {
 		return errors.New("invalid payload")
@@ -985,7 +1087,7 @@ func handleWarpToRandomPortal(p *ProcessorImpl, s Saga, st Step[any]) error {
 }
 
 // handleWarpToPortal handles the WarpToPortal action
-func handleWarpToPortal(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleWarpToPortal(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(WarpToPortalPayload)
 	if !ok {
 		return errors.New("invalid payload")
@@ -1007,7 +1109,7 @@ func handleWarpToPortal(p *ProcessorImpl, s Saga, st Step[any]) error {
 }
 
 // handleAwardExperience handles the AwardExperience action
-func handleAwardExperience(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleAwardExperience(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(AwardExperiencePayload)
 	if !ok {
 		return errors.New("invalid payload")
@@ -1025,7 +1127,7 @@ func handleAwardExperience(p *ProcessorImpl, s Saga, st Step[any]) error {
 }
 
 // handleAwardLevel handles the AwardLevel action
-func handleAwardLevel(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleAwardLevel(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(AwardLevelPayload)
 	if !ok {
 		return errors.New("invalid payload")
@@ -1042,7 +1144,7 @@ func handleAwardLevel(p *ProcessorImpl, s Saga, st Step[any]) error {
 }
 
 // handleAwardMesos handles the AwardMesos action
-func handleAwardMesos(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleAwardMesos(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(AwardMesosPayload)
 	if !ok {
 		return errors.New("invalid payload")
@@ -1059,7 +1161,7 @@ func handleAwardMesos(p *ProcessorImpl, s Saga, st Step[any]) error {
 }
 
 // handleDestroyAsset handles the DestroyAsset action
-func handleDestroyAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleDestroyAsset(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(DestroyAssetPayload)
 	if !ok {
 		return errors.New("invalid payload")
@@ -1076,7 +1178,7 @@ func handleDestroyAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
 }
 
 // handleEquipAsset handles the EquipAsset action
-func handleEquipAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleEquipAsset(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(EquipAssetPayload)
 	if !ok {
 		return errors.New("invalid payload")
@@ -1093,7 +1195,7 @@ func handleEquipAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
 }
 
 // handleUnequipAsset handles the UnequipAsset action
-func handleUnequipAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleUnequipAsset(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(UnequipAssetPayload)
 	if !ok {
 		return errors.New("invalid payload")
@@ -1110,7 +1212,7 @@ func handleUnequipAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
 }
 
 // handleChangeJob handles the ChangeJob action
-func handleChangeJob(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleChangeJob(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(ChangeJobPayload)
 	if !ok {
 		return errors.New("invalid payload")
@@ -1127,7 +1229,7 @@ func handleChangeJob(p *ProcessorImpl, s Saga, st Step[any]) error {
 }
 
 // handleCreateSkill handles the CreateSkill action
-func handleCreateSkill(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleCreateSkill(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(CreateSkillPayload)
 	if !ok {
 		return errors.New("invalid payload")
@@ -1144,7 +1246,7 @@ func handleCreateSkill(p *ProcessorImpl, s Saga, st Step[any]) error {
 }
 
 // handleUpdateSkill handles the UpdateSkill action
-func handleUpdateSkill(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleUpdateSkill(s Saga, st Step[any]) error {
 	payload, ok := st.Payload.(UpdateSkillPayload)
 	if !ok {
 		return errors.New("invalid payload")
@@ -1175,7 +1277,7 @@ func TransformExperienceDistributions(source []ExperienceDistributions) []charac
 }
 
 // handleValidateCharacterState handles the ValidateCharacterState action
-func handleValidateCharacterState(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleValidateCharacterState(s Saga, st Step[any]) error {
 	// Extract the payload
 	payload, ok := st.Payload.(ValidateCharacterStatePayload)
 	if !ok {
@@ -1201,7 +1303,7 @@ func handleValidateCharacterState(p *ProcessorImpl, s Saga, st Step[any]) error 
 }
 
 // handleRequestGuildName handles the RequestGuildName action
-func handleRequestGuildName(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleRequestGuildName(s Saga, st Step[any]) error {
 	// Extract the payload
 	payload, ok := st.Payload.(RequestGuildNamePayload)
 	if !ok {
@@ -1219,7 +1321,7 @@ func handleRequestGuildName(p *ProcessorImpl, s Saga, st Step[any]) error {
 }
 
 // handleRequestGuildEmblem handles the RequestGuildEmblem action
-func handleRequestGuildEmblem(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleRequestGuildEmblem(s Saga, st Step[any]) error {
 	// Extract the payload
 	payload, ok := st.Payload.(RequestGuildEmblemPayload)
 	if !ok {
@@ -1237,7 +1339,7 @@ func handleRequestGuildEmblem(p *ProcessorImpl, s Saga, st Step[any]) error {
 }
 
 // handleRequestGuildDisband handles the RequestGuildDisband action
-func handleRequestGuildDisband(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleRequestGuildDisband(s Saga, st Step[any]) error {
 	// Extract the payload
 	payload, ok := st.Payload.(RequestGuildDisbandPayload)
 	if !ok {
@@ -1255,7 +1357,7 @@ func handleRequestGuildDisband(p *ProcessorImpl, s Saga, st Step[any]) error {
 }
 
 // handleRequestGuildCapacityIncrease handles the RequestGuildCapacityIncrease action
-func handleRequestGuildCapacityIncrease(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleRequestGuildCapacityIncrease(s Saga, st Step[any]) error {
 	// Extract the payload
 	payload, ok := st.Payload.(RequestGuildCapacityIncreasePayload)
 	if !ok {
@@ -1273,7 +1375,7 @@ func handleRequestGuildCapacityIncrease(p *ProcessorImpl, s Saga, st Step[any]) 
 }
 
 // handleCreateInvite handles the CreateInvite action
-func handleCreateInvite(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleCreateInvite(s Saga, st Step[any]) error {
 	// Extract the payload
 	payload, ok := st.Payload.(CreateInvitePayload)
 	if !ok {
@@ -1291,7 +1393,7 @@ func handleCreateInvite(p *ProcessorImpl, s Saga, st Step[any]) error {
 }
 
 // handleCreateCharacter handles the CreateCharacter action
-func handleCreateCharacter(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleCreateCharacter(s Saga, st Step[any]) error {
 	// Extract the payload
 	payload, ok := st.Payload.(CharacterCreatePayload)
 	if !ok {
@@ -1311,7 +1413,7 @@ func handleCreateCharacter(p *ProcessorImpl, s Saga, st Step[any]) error {
 // handleCreateAndEquipAsset handles the CreateAndEquipAsset action
 // This is a compound action that first creates an asset (internally using award_asset semantics)
 // and then dynamically creates an equip_asset step when the creation succeeds
-func handleCreateAndEquipAsset(p *ProcessorImpl, s Saga, st Step[any]) error {
+func (p *ProcessorImpl) handleCreateAndEquipAsset(s Saga, st Step[any]) error {
 	// Extract the payload
 	payload, ok := st.Payload.(CreateAndEquipAssetPayload)
 	if !ok {

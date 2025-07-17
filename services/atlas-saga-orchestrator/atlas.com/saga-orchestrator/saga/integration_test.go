@@ -24,7 +24,7 @@ func TestCreateAndEquipAsset_CompleteIntegrationFlow(t *testing.T) {
 	// Setup
 	logger, hook := test.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
-	
+
 	ctx := context.Background()
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	tctx := tenant.WithContext(ctx, te)
@@ -41,16 +41,14 @@ func TestCreateAndEquipAsset_CompleteIntegrationFlow(t *testing.T) {
 		RequestEquipAssetFunc: func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {
 			// Verify auto-equip parameters
 			assert.Equal(t, uint32(12345), characterId)
-			assert.Equal(t, int16(5), source)      // Default source slot
+			assert.Equal(t, int16(5), source)       // Default source slot
 			assert.Equal(t, int16(-1), destination) // Default equip destination
 			return nil
 		},
 	}
 
 	// Create saga processor
-	processor := NewProcessor(logger, tctx)
-	processor.t = te
-	processor.compP = compP
+	processor := NewProcessor(logger, tctx).WithCompartmentProcessor(compP)
 
 	// Create saga with CreateAndEquipAsset step
 	transactionId := uuid.New()
@@ -60,9 +58,9 @@ func TestCreateAndEquipAsset_CompleteIntegrationFlow(t *testing.T) {
 		InitiatedBy:   "integration-test",
 		Steps: []Step[any]{
 			{
-				StepId:    "create-and-equip-step",
-				Status:    Pending,
-				Action:    CreateAndEquipAsset,
+				StepId: "create-and-equip-step",
+				Status: Pending,
+				Action: CreateAndEquipAsset,
 				Payload: CreateAndEquipAssetPayload{
 					CharacterId: 12345,
 					Item: ItemPayload{
@@ -94,7 +92,7 @@ func TestCreateAndEquipAsset_CompleteIntegrationFlow(t *testing.T) {
 		Source:        5,
 		Destination:   -1,
 	}
-	
+
 	equipStep := Step[any]{
 		StepId:    autoEquipStepId,
 		Status:    Pending,
@@ -103,21 +101,21 @@ func TestCreateAndEquipAsset_CompleteIntegrationFlow(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	err = processor.AddStep(transactionId, equipStep)
 	assert.NoError(t, err, "Should successfully add auto-equip step")
-	
+
 	// Step 3: Complete the CreateAndEquipAsset step
 	err = processor.MarkEarliestPendingStepCompleted(transactionId)
 	assert.NoError(t, err, "Should complete CreateAndEquipAsset step")
-	
+
 	// Step 4: Execute the auto-equip step
 	err = processor.Step(transactionId)
 	assert.NoError(t, err, "Auto-equip step should execute successfully")
-	
+
 	// Verify the equip method was called
 	assert.NotNil(t, compP.RequestEquipAssetFunc, "RequestEquipAsset should be defined")
-	
+
 	// Step 5: Complete the auto-equip step
 	err = processor.MarkEarliestPendingStepCompleted(transactionId)
 	assert.NoError(t, err, "Should complete auto-equip step")
@@ -144,7 +142,7 @@ func TestCreateAndEquipAsset_StepAddition(t *testing.T) {
 	// Setup
 	logger, hook := test.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
-	
+
 	ctx := context.Background()
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	tctx := tenant.WithContext(ctx, te)
@@ -157,9 +155,7 @@ func TestCreateAndEquipAsset_StepAddition(t *testing.T) {
 	}
 
 	// Create saga processor
-	processor := NewProcessor(logger, tctx)
-	processor.t = te
-	processor.compP = compP
+	processor := NewProcessor(logger, tctx).WithCompartmentProcessor(compP)
 
 	// Create saga with CreateAndEquipAsset step
 	transactionId := uuid.New()
@@ -169,9 +165,9 @@ func TestCreateAndEquipAsset_StepAddition(t *testing.T) {
 		InitiatedBy:   "integration-test",
 		Steps: []Step[any]{
 			{
-				StepId:    "create-and-equip-step",
-				Status:    Pending,
-				Action:    CreateAndEquipAsset,
+				StepId: "create-and-equip-step",
+				Status: Pending,
+				Action: CreateAndEquipAsset,
 				Payload: CreateAndEquipAssetPayload{
 					CharacterId: 12345,
 					Item: ItemPayload{
@@ -203,7 +199,7 @@ func TestCreateAndEquipAsset_StepAddition(t *testing.T) {
 		Source:        5,
 		Destination:   -1,
 	}
-	
+
 	equipStep := Step[any]{
 		StepId:    autoEquipStepId,
 		Status:    Pending,
@@ -212,7 +208,7 @@ func TestCreateAndEquipAsset_StepAddition(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	err = processor.AddStep(transactionId, equipStep)
 	assert.NoError(t, err, "Should successfully add auto-equip step")
 
@@ -253,7 +249,7 @@ func TestCreateAndEquipAsset_CompensationFlow(t *testing.T) {
 	// Setup
 	logger, hook := test.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
-	
+
 	ctx := context.Background()
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	tctx := tenant.WithContext(ctx, te)
@@ -276,9 +272,7 @@ func TestCreateAndEquipAsset_CompensationFlow(t *testing.T) {
 	}
 
 	// Create saga processor
-	processor := NewProcessor(logger, tctx)
-	processor.t = te
-	processor.compP = compP
+	processor := NewProcessor(logger, tctx).WithCompartmentProcessor(compP)
 
 	// Create saga with CreateAndEquipAsset step
 	transactionId := uuid.New()
@@ -288,9 +282,9 @@ func TestCreateAndEquipAsset_CompensationFlow(t *testing.T) {
 		InitiatedBy:   "compensation-test",
 		Steps: []Step[any]{
 			{
-				StepId:    "create-and-equip-step",
-				Status:    Pending,
-				Action:    CreateAndEquipAsset,
+				StepId: "create-and-equip-step",
+				Status: Pending,
+				Action: CreateAndEquipAsset,
 				Payload: CreateAndEquipAssetPayload{
 					CharacterId: 12345,
 					Item: ItemPayload{
@@ -310,13 +304,13 @@ func TestCreateAndEquipAsset_CompensationFlow(t *testing.T) {
 	// Execute creation successfully
 	err := processor.Step(transactionId)
 	assert.NoError(t, err, "Creation should succeed")
-	
+
 	// Add auto-equip step
 	autoEquipStepId := "auto_equip_step_test"
 	equipStep := Step[any]{
-		StepId:    autoEquipStepId,
-		Status:    Pending,
-		Action:    EquipAsset,
+		StepId: autoEquipStepId,
+		Status: Pending,
+		Action: EquipAsset,
 		Payload: EquipAssetPayload{
 			CharacterId:   12345,
 			InventoryType: 1,
@@ -326,7 +320,7 @@ func TestCreateAndEquipAsset_CompensationFlow(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	err = processor.AddStep(transactionId, equipStep)
 	assert.NoError(t, err, "Should add auto-equip step")
 
@@ -361,7 +355,7 @@ func TestCreateAndEquipAsset_AssetCreationFailure(t *testing.T) {
 	// Setup
 	logger, hook := test.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
-	
+
 	ctx := context.Background()
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	tctx := tenant.WithContext(ctx, te)
@@ -374,9 +368,7 @@ func TestCreateAndEquipAsset_AssetCreationFailure(t *testing.T) {
 	}
 
 	// Create saga processor
-	processor := NewProcessor(logger, tctx)
-	processor.t = te
-	processor.compP = compP
+	processor := NewProcessor(logger, tctx).WithCompartmentProcessor(compP)
 
 	// Create saga with CreateAndEquipAsset step
 	transactionId := uuid.New()
@@ -386,9 +378,9 @@ func TestCreateAndEquipAsset_AssetCreationFailure(t *testing.T) {
 		InitiatedBy:   "asset-creation-failure-test",
 		Steps: []Step[any]{
 			{
-				StepId:    "create-and-equip-step",
-				Status:    Pending,
-				Action:    CreateAndEquipAsset,
+				StepId: "create-and-equip-step",
+				Status: Pending,
+				Action: CreateAndEquipAsset,
 				Payload: CreateAndEquipAssetPayload{
 					CharacterId: 12345,
 					Item: ItemPayload{
@@ -439,7 +431,7 @@ func TestCreateAndEquipAsset_EquipPhaseFailure(t *testing.T) {
 	// Setup
 	logger, hook := test.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
-	
+
 	ctx := context.Background()
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	tctx := tenant.WithContext(ctx, te)
@@ -462,9 +454,7 @@ func TestCreateAndEquipAsset_EquipPhaseFailure(t *testing.T) {
 	}
 
 	// Create saga processor
-	processor := NewProcessor(logger, tctx)
-	processor.t = te
-	processor.compP = compP
+	processor := NewProcessor(logger, tctx).WithCompartmentProcessor(compP)
 
 	// Create saga with CreateAndEquipAsset step
 	transactionId := uuid.New()
@@ -474,9 +464,9 @@ func TestCreateAndEquipAsset_EquipPhaseFailure(t *testing.T) {
 		InitiatedBy:   "equip-phase-failure-test",
 		Steps: []Step[any]{
 			{
-				StepId:    "create-and-equip-step",
-				Status:    Pending,
-				Action:    CreateAndEquipAsset,
+				StepId: "create-and-equip-step",
+				Status: Pending,
+				Action: CreateAndEquipAsset,
 				Payload: CreateAndEquipAssetPayload{
 					CharacterId: 12345,
 					Item: ItemPayload{
@@ -501,9 +491,9 @@ func TestCreateAndEquipAsset_EquipPhaseFailure(t *testing.T) {
 	// This needs to happen BEFORE completing the CreateAndEquipAsset step
 	autoEquipStepId := "auto_equip_step_test"
 	equipStep := Step[any]{
-		StepId:    autoEquipStepId,
-		Status:    Pending,
-		Action:    EquipAsset,
+		StepId: autoEquipStepId,
+		Status: Pending,
+		Action: EquipAsset,
 		Payload: EquipAssetPayload{
 			CharacterId:   12345,
 			InventoryType: 1,
@@ -513,7 +503,7 @@ func TestCreateAndEquipAsset_EquipPhaseFailure(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	err = processor.AddStep(transactionId, equipStep)
 	assert.NoError(t, err, "Should add auto-equip step")
 
@@ -541,7 +531,7 @@ func TestCreateAndEquipAsset_EquipPhaseFailure(t *testing.T) {
 	// Verify the equip step is compensated
 	compensatedSaga, err := processor.GetById(transactionId)
 	assert.NoError(t, err, "Should be able to retrieve compensated saga")
-	
+
 	// Find the equip step and verify it's compensated
 	var equipStepFound bool
 	for _, step := range compensatedSaga.Steps {
@@ -572,7 +562,7 @@ func TestCreateAndEquipAsset_MultipleFailureRecovery(t *testing.T) {
 	// Setup
 	logger, hook := test.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
-	
+
 	ctx := context.Background()
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	tctx := tenant.WithContext(ctx, te)
@@ -604,9 +594,7 @@ func TestCreateAndEquipAsset_MultipleFailureRecovery(t *testing.T) {
 	}
 
 	// Create saga processor
-	processor := NewProcessor(logger, tctx)
-	processor.t = te
-	processor.compP = compP
+	processor := NewProcessor(logger, tctx).WithCompartmentProcessor(compP)
 
 	// Create saga with CreateAndEquipAsset step
 	transactionId := uuid.New()
@@ -616,9 +604,9 @@ func TestCreateAndEquipAsset_MultipleFailureRecovery(t *testing.T) {
 		InitiatedBy:   "multiple-failure-recovery-test",
 		Steps: []Step[any]{
 			{
-				StepId:    "create-and-equip-step",
-				Status:    Pending,
-				Action:    CreateAndEquipAsset,
+				StepId: "create-and-equip-step",
+				Status: Pending,
+				Action: CreateAndEquipAsset,
 				Payload: CreateAndEquipAssetPayload{
 					CharacterId: 12345,
 					Item: ItemPayload{
@@ -653,9 +641,9 @@ func TestCreateAndEquipAsset_MultipleFailureRecovery(t *testing.T) {
 	// Add auto-equip step before completing CreateAndEquipAsset
 	autoEquipStepId := "auto_equip_step_test"
 	equipStep := Step[any]{
-		StepId:    autoEquipStepId,
-		Status:    Pending,
-		Action:    EquipAsset,
+		StepId: autoEquipStepId,
+		Status: Pending,
+		Action: EquipAsset,
 		Payload: EquipAssetPayload{
 			CharacterId:   12345,
 			InventoryType: 1,
@@ -665,7 +653,7 @@ func TestCreateAndEquipAsset_MultipleFailureRecovery(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	err = processor.AddStep(transactionId, equipStep)
 	assert.NoError(t, err, "Should add auto-equip step")
 
@@ -696,7 +684,7 @@ func TestCreateAndEquipAsset_MultipleFailureRecovery(t *testing.T) {
 	finalSaga, err := processor.GetById(transactionId)
 	assert.NoError(t, err, "Should retrieve final saga")
 	assert.Equal(t, 2, len(finalSaga.Steps), "Should have 2 steps")
-	
+
 	for i, step := range finalSaga.Steps {
 		assert.Equal(t, Completed, step.Status, "Step %d should be completed", i)
 	}
@@ -713,7 +701,7 @@ func TestCreateAndEquipAsset_CompensationFailure(t *testing.T) {
 	// Setup
 	logger, hook := test.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
-	
+
 	ctx := context.Background()
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	tctx := tenant.WithContext(ctx, te)
@@ -735,9 +723,7 @@ func TestCreateAndEquipAsset_CompensationFailure(t *testing.T) {
 	}
 
 	// Create saga processor
-	processor := NewProcessor(logger, tctx)
-	processor.t = te
-	processor.compP = compP
+	processor := NewProcessor(logger, tctx).WithCompartmentProcessor(compP)
 
 	// Create saga with CreateAndEquipAsset step
 	transactionId := uuid.New()
@@ -747,9 +733,9 @@ func TestCreateAndEquipAsset_CompensationFailure(t *testing.T) {
 		InitiatedBy:   "compensation-failure-test",
 		Steps: []Step[any]{
 			{
-				StepId:    "create-and-equip-step",
-				Status:    Pending,
-				Action:    CreateAndEquipAsset,
+				StepId: "create-and-equip-step",
+				Status: Pending,
+				Action: CreateAndEquipAsset,
 				Payload: CreateAndEquipAssetPayload{
 					CharacterId: 12345,
 					Item: ItemPayload{
@@ -773,9 +759,9 @@ func TestCreateAndEquipAsset_CompensationFailure(t *testing.T) {
 	// Add auto-equip step before completing CreateAndEquipAsset
 	autoEquipStepId := "auto_equip_step_test"
 	equipStep := Step[any]{
-		StepId:    autoEquipStepId,
-		Status:    Pending,
-		Action:    EquipAsset,
+		StepId: autoEquipStepId,
+		Status: Pending,
+		Action: EquipAsset,
 		Payload: EquipAssetPayload{
 			CharacterId:   12345,
 			InventoryType: 1,
@@ -785,7 +771,7 @@ func TestCreateAndEquipAsset_CompensationFailure(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	err = processor.AddStep(transactionId, equipStep)
 	assert.NoError(t, err, "Should add auto-equip step")
 
@@ -828,7 +814,7 @@ func TestCreateAndEquipAsset_StateConsistencyValidation(t *testing.T) {
 	// Setup
 	logger, hook := test.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
-	
+
 	ctx := context.Background()
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	tctx := tenant.WithContext(ctx, te)
@@ -847,9 +833,7 @@ func TestCreateAndEquipAsset_StateConsistencyValidation(t *testing.T) {
 	}
 
 	// Create saga processor
-	processor := NewProcessor(logger, tctx)
-	processor.t = te
-	processor.compP = compP
+	processor := NewProcessor(logger, tctx).WithCompartmentProcessor(compP)
 
 	// Create saga with CreateAndEquipAsset step
 	transactionId := uuid.New()
@@ -859,9 +843,9 @@ func TestCreateAndEquipAsset_StateConsistencyValidation(t *testing.T) {
 		InitiatedBy:   "state-consistency-test",
 		Steps: []Step[any]{
 			{
-				StepId:    "create-and-equip-step",
-				Status:    Pending,
-				Action:    CreateAndEquipAsset,
+				StepId: "create-and-equip-step",
+				Status: Pending,
+				Action: CreateAndEquipAsset,
 				Payload: CreateAndEquipAssetPayload{
 					CharacterId: 12345,
 					Item: ItemPayload{
@@ -879,7 +863,7 @@ func TestCreateAndEquipAsset_StateConsistencyValidation(t *testing.T) {
 	GetCache().Put(te.Id(), saga)
 
 	// Test state consistency throughout failure and recovery process
-	
+
 	// 1. Initial state should be consistent
 	initialSaga, err := processor.GetById(transactionId)
 	assert.NoError(t, err, "Should retrieve initial saga")
@@ -888,7 +872,7 @@ func TestCreateAndEquipAsset_StateConsistencyValidation(t *testing.T) {
 	// 2. After successful execution
 	err = processor.Step(transactionId)
 	assert.NoError(t, err, "Step should succeed")
-	
+
 	afterStepSaga, err := processor.GetById(transactionId)
 	assert.NoError(t, err, "Should retrieve saga after step")
 	assert.NoError(t, afterStepSaga.ValidateStateConsistency(), "State should be consistent after step")
@@ -896,9 +880,9 @@ func TestCreateAndEquipAsset_StateConsistencyValidation(t *testing.T) {
 	// 3. After adding auto-equip step (before completion)
 	autoEquipStepId := "auto_equip_step_test"
 	equipStep := Step[any]{
-		StepId:    autoEquipStepId,
-		Status:    Pending,
-		Action:    EquipAsset,
+		StepId: autoEquipStepId,
+		Status: Pending,
+		Action: EquipAsset,
 		Payload: EquipAssetPayload{
 			CharacterId:   12345,
 			InventoryType: 1,
@@ -908,10 +892,10 @@ func TestCreateAndEquipAsset_StateConsistencyValidation(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	err = processor.AddStep(transactionId, equipStep)
 	assert.NoError(t, err, "Should add auto-equip step")
-	
+
 	afterAddStepSaga, err := processor.GetById(transactionId)
 	assert.NoError(t, err, "Should retrieve saga after step addition")
 	assert.NoError(t, afterAddStepSaga.ValidateStateConsistency(), "State should be consistent after step addition")
@@ -919,7 +903,7 @@ func TestCreateAndEquipAsset_StateConsistencyValidation(t *testing.T) {
 	// 4. After marking step as completed
 	err = processor.MarkEarliestPendingStepCompleted(transactionId)
 	assert.NoError(t, err, "Should complete step")
-	
+
 	afterCompletionSaga, err := processor.GetById(transactionId)
 	assert.NoError(t, err, "Should retrieve saga after completion")
 	assert.NoError(t, afterCompletionSaga.ValidateStateConsistency(), "State should be consistent after completion")
@@ -927,7 +911,7 @@ func TestCreateAndEquipAsset_StateConsistencyValidation(t *testing.T) {
 	// 5. After equip step fails
 	err = processor.Step(transactionId)
 	assert.Error(t, err, "Equip step should fail")
-	
+
 	// State should still be consistent even with failure
 	afterFailureSaga, err := processor.GetById(transactionId)
 	assert.NoError(t, err, "Should retrieve saga after failure")
@@ -936,7 +920,7 @@ func TestCreateAndEquipAsset_StateConsistencyValidation(t *testing.T) {
 	// 6. After marking step as failed
 	err = processor.MarkEarliestPendingStep(transactionId, Failed)
 	assert.NoError(t, err, "Should mark as failed")
-	
+
 	afterMarkFailedSaga, err := processor.GetById(transactionId)
 	assert.NoError(t, err, "Should retrieve saga after marking failed")
 	assert.NoError(t, afterMarkFailedSaga.ValidateStateConsistency(), "State should be consistent after marking failed")
@@ -944,7 +928,7 @@ func TestCreateAndEquipAsset_StateConsistencyValidation(t *testing.T) {
 	// 7. After compensation
 	err = processor.Step(transactionId)
 	assert.NoError(t, err, "Compensation should succeed")
-	
+
 	afterCompensationSaga, err := processor.GetById(transactionId)
 	assert.NoError(t, err, "Should retrieve saga after compensation")
 	assert.NoError(t, afterCompensationSaga.ValidateStateConsistency(), "State should be consistent after compensation")
@@ -952,7 +936,7 @@ func TestCreateAndEquipAsset_StateConsistencyValidation(t *testing.T) {
 	// Verify state transitions in logs
 	logEntries := hook.AllEntries()
 	assert.True(t, len(logEntries) > 0, "Should have log entries")
-	
+
 	// Look for state consistency validation logs
 	for _, entry := range logEntries {
 		if strings.Contains(entry.Message, "State consistency validation") {
@@ -971,7 +955,7 @@ func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
 	// Setup
 	logger, hook := test.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
-	
+
 	ctx := context.Background()
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	tctx := tenant.WithContext(ctx, te)
@@ -987,9 +971,7 @@ func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
 	}
 
 	// Create saga processor
-	processor := NewProcessor(logger, tctx)
-	processor.t = te
-	processor.compP = compP
+	processor := NewProcessor(logger, tctx).WithCompartmentProcessor(compP)
 
 	// Create saga with multiple steps including CreateAndEquipAsset
 	transactionId := uuid.New()
@@ -999,9 +981,9 @@ func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
 		InitiatedBy:   "dynamic-step-ordering-test",
 		Steps: []Step[any]{
 			{
-				StepId:    "step-1-validate",
-				Status:    Completed,
-				Action:    ValidateCharacterState,
+				StepId: "step-1-validate",
+				Status: Completed,
+				Action: ValidateCharacterState,
 				Payload: ValidateCharacterStatePayload{
 					CharacterId: 12345,
 					Conditions:  []validation.ConditionInput{},
@@ -1010,9 +992,9 @@ func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
 				UpdatedAt: time.Now(),
 			},
 			{
-				StepId:    "step-2-create-and-equip",
-				Status:    Pending,
-				Action:    CreateAndEquipAsset,
+				StepId: "step-2-create-and-equip",
+				Status: Pending,
+				Action: CreateAndEquipAsset,
 				Payload: CreateAndEquipAssetPayload{
 					CharacterId: 12345,
 					Item: ItemPayload{
@@ -1024,9 +1006,9 @@ func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
 				UpdatedAt: time.Now(),
 			},
 			{
-				StepId:    "step-3-final-action",
-				Status:    Pending,
-				Action:    AwardInventory,
+				StepId: "step-3-final-action",
+				Status: Pending,
+				Action: AwardInventory,
 				Payload: AwardItemActionPayload{
 					CharacterId: 12345,
 					Item: ItemPayload{
@@ -1064,7 +1046,7 @@ func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
 		Source:        5,
 		Destination:   -1,
 	}
-	
+
 	equipStep := Step[any]{
 		StepId:    autoEquipStepId,
 		Status:    Pending,
@@ -1073,7 +1055,7 @@ func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	err = processor.AddStep(transactionId, equipStep)
 	assert.NoError(t, err, "Should successfully add auto-equip step")
 
@@ -1126,9 +1108,9 @@ func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
 	// Add another step dynamically to ensure proper insertion
 	additionalStepId := "additional_step_" + fmt.Sprintf("%d", time.Now().Unix())
 	additionalStep := Step[any]{
-		StepId:    additionalStepId,
-		Status:    Pending,
-		Action:    AwardInventory,
+		StepId: additionalStepId,
+		Status: Pending,
+		Action: AwardInventory,
 		Payload: AwardItemActionPayload{
 			CharacterId: 12345,
 			Item: ItemPayload{
@@ -1139,7 +1121,7 @@ func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	err = processor.AddStep(transactionId, additionalStep)
 	assert.NoError(t, err, "Should successfully add additional step")
 
@@ -1156,7 +1138,7 @@ func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
 		"step-3-final-action",
 		additionalStepId,
 	}
-	
+
 	for i, expectedId := range expectedStepIds {
 		assert.Equal(t, expectedId, finalOrderingSaga.Steps[i].StepId, "Step %d should have correct ID", i)
 	}
@@ -1179,7 +1161,7 @@ func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
 	// Verify proper logging of dynamic step creation
 	logEntries := hook.AllEntries()
 	assert.True(t, len(logEntries) > 0, "Should have log entries")
-	
+
 	// Look for specific log entries about step addition
 	for _, entry := range logEntries {
 		if strings.Contains(entry.Message, "Step added") || strings.Contains(entry.Message, "Adding step") {
@@ -1198,7 +1180,7 @@ func TestCreateAndEquipAsset_DynamicStepOrderingConstraints(t *testing.T) {
 	// Setup
 	logger, hook := test.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
-	
+
 	ctx := context.Background()
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	tctx := tenant.WithContext(ctx, te)
@@ -1211,9 +1193,7 @@ func TestCreateAndEquipAsset_DynamicStepOrderingConstraints(t *testing.T) {
 	}
 
 	// Create saga processor
-	processor := NewProcessor(logger, tctx)
-	processor.t = te
-	processor.compP = compP
+	processor := NewProcessor(logger, tctx).WithCompartmentProcessor(compP)
 
 	// Create saga with CreateAndEquipAsset step
 	transactionId := uuid.New()
@@ -1223,9 +1203,9 @@ func TestCreateAndEquipAsset_DynamicStepOrderingConstraints(t *testing.T) {
 		InitiatedBy:   "step-ordering-constraints-test",
 		Steps: []Step[any]{
 			{
-				StepId:    "step-1",
-				Status:    Completed,
-				Action:    ValidateCharacterState,
+				StepId: "step-1",
+				Status: Completed,
+				Action: ValidateCharacterState,
 				Payload: ValidateCharacterStatePayload{
 					CharacterId: 12345,
 					Conditions:  []validation.ConditionInput{},
@@ -1234,9 +1214,9 @@ func TestCreateAndEquipAsset_DynamicStepOrderingConstraints(t *testing.T) {
 				UpdatedAt: time.Now(),
 			},
 			{
-				StepId:    "step-2",
-				Status:    Completed,
-				Action:    CreateAndEquipAsset,
+				StepId: "step-2",
+				Status: Completed,
+				Action: CreateAndEquipAsset,
 				Payload: CreateAndEquipAssetPayload{
 					CharacterId: 12345,
 					Item: ItemPayload{
@@ -1248,9 +1228,9 @@ func TestCreateAndEquipAsset_DynamicStepOrderingConstraints(t *testing.T) {
 				UpdatedAt: time.Now(),
 			},
 			{
-				StepId:    "step-3",
-				Status:    Pending,
-				Action:    AwardInventory,
+				StepId: "step-3",
+				Status: Pending,
+				Action: AwardInventory,
 				Payload: AwardItemActionPayload{
 					CharacterId: 12345,
 					Item: ItemPayload{
@@ -1270,9 +1250,9 @@ func TestCreateAndEquipAsset_DynamicStepOrderingConstraints(t *testing.T) {
 	// Test 1: Add auto-equip step after completed CreateAndEquipAsset step
 	autoEquipStepId := "auto_equip_step_after_completion"
 	equipStep := Step[any]{
-		StepId:    autoEquipStepId,
-		Status:    Pending,
-		Action:    EquipAsset,
+		StepId: autoEquipStepId,
+		Status: Pending,
+		Action: EquipAsset,
 		Payload: EquipAssetPayload{
 			CharacterId:   12345,
 			InventoryType: 1,
@@ -1282,7 +1262,7 @@ func TestCreateAndEquipAsset_DynamicStepOrderingConstraints(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	err := processor.AddStep(transactionId, equipStep)
 	assert.NoError(t, err, "Should successfully add auto-equip step after completion")
 
@@ -1303,9 +1283,9 @@ func TestCreateAndEquipAsset_DynamicStepOrderingConstraints(t *testing.T) {
 	// Test 3: Test multiple dynamic step additions
 	secondAutoEquipStepId := "second_auto_equip_step"
 	secondEquipStep := Step[any]{
-		StepId:    secondAutoEquipStepId,
-		Status:    Pending,
-		Action:    EquipAsset,
+		StepId: secondAutoEquipStepId,
+		Status: Pending,
+		Action: EquipAsset,
 		Payload: EquipAssetPayload{
 			CharacterId:   12345,
 			InventoryType: 2,
@@ -1315,7 +1295,7 @@ func TestCreateAndEquipAsset_DynamicStepOrderingConstraints(t *testing.T) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	
+
 	err = processor.AddStep(transactionId, secondEquipStep)
 	assert.NoError(t, err, "Should successfully add second auto-equip step")
 
@@ -1329,10 +1309,10 @@ func TestCreateAndEquipAsset_DynamicStepOrderingConstraints(t *testing.T) {
 		"step-1",
 		"step-2",
 		"step-3",
-		secondAutoEquipStepId,  // Second step was added after step-3
-		autoEquipStepId,        // First step was added after second step
+		secondAutoEquipStepId, // Second step was added after step-3
+		autoEquipStepId,       // First step was added after second step
 	}
-	
+
 	for i, expectedId := range expectedOrder {
 		assert.Equal(t, expectedId, finalSaga.Steps[i].StepId, "Step %d should have correct ID", i)
 	}
@@ -1359,7 +1339,7 @@ func TestCreateAndEquipAsset_DynamicStepOrderingConstraints(t *testing.T) {
 	// Verify the next step becomes current
 	afterFirstStepSaga, err := processor.GetById(transactionId)
 	assert.NoError(t, err, "Should retrieve saga after first step completion")
-	
+
 	currentStep, found = afterFirstStepSaga.GetCurrentStep()
 	assert.True(t, found, "Should find current step after first step")
 	assert.Equal(t, secondAutoEquipStepId, currentStep.StepId, "Current step should be second auto-equip step")

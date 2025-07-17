@@ -26,21 +26,21 @@ import (
 	"time"
 )
 
-// setupTestProcessor creates a ProcessorImpl with mock dependencies for testing
-func setupTestProcessor(charP character.Processor, compP compartment.Processor, validP ...validation.Processor) (*ProcessorImpl, *test.Hook) {
-	logger, hook := test.NewNullLogger()
-	logger.SetLevel(logrus.DebugLevel)
-
+func setupContext() (tenant.Model, context.Context) {
 	ctx := context.Background()
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	tctx := tenant.WithContext(ctx, te)
+	return te, tctx
+}
 
-	processor := NewProcessor(logger, tctx)
-	processor.t = te
-	processor.charP = charP
-	processor.compP = compP
+// setupTestProcessor creates a ProcessorImpl with mock dependencies for testing
+func setupTestProcessor(ctx context.Context, charP character.Processor, compP compartment.Processor, validP ...validation.Processor) (Processor, *test.Hook) {
+	logger, hook := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	processor := NewProcessor(logger, ctx).WithCharacterProcessor(charP).WithCompartmentProcessor(compP)
 	if len(validP) > 0 {
-		processor.validP = validP[0]
+		processor = processor.WithValidationProcessor(validP[0])
 	}
 	return processor, hook
 }
@@ -135,7 +135,8 @@ func TestHandleValidateCharacterState(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP, validP)
+			_, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mock
 			validP.ValidateCharacterStateFunc = func(characterId uint32, conditions []validation.ConditionInput) (validation.ValidationResult, error) {
@@ -165,7 +166,7 @@ func TestHandleValidateCharacterState(t *testing.T) {
 			}
 
 			// Execute
-			err := handleValidateCharacterState(processor, saga, step)
+			err := processor.handleValidateCharacterState(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -234,7 +235,8 @@ func TestHandleWarpToPortal(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP, validP)
+			_, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mock
 			charP.WarpToPortalAndEmitFunc = func(transactionId uuid.UUID, characterId uint32, f field.Model, pp model.Provider[uint32]) error {
@@ -274,7 +276,7 @@ func TestHandleWarpToPortal(t *testing.T) {
 			}
 
 			// Execute
-			err := handleWarpToPortal(processor, saga, step)
+			err := processor.handleWarpToPortal(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -338,7 +340,8 @@ func TestHandleWarpToRandomPortal(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP, validP)
+			_, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mock
 			charP.WarpRandomAndEmitFunc = func(transactionId uuid.UUID, characterId uint32, f field.Model) error {
@@ -373,7 +376,7 @@ func TestHandleWarpToRandomPortal(t *testing.T) {
 			}
 
 			// Execute
-			err := handleWarpToRandomPortal(processor, saga, step)
+			err := processor.handleWarpToRandomPortal(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -459,7 +462,8 @@ func TestHandleAwardAsset(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP, validP)
+			_, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mock
 			compP.RequestCreateItemFunc = func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
@@ -488,7 +492,7 @@ func TestHandleAwardAsset(t *testing.T) {
 			}
 
 			// Execute
-			err := handleAwardAsset(processor, saga, step)
+			err := processor.handleAwardAsset(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -546,7 +550,8 @@ func TestHandleAwardInventory(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP, validP)
+			_, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mock
 			compP.RequestCreateItemFunc = func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
@@ -575,7 +580,7 @@ func TestHandleAwardInventory(t *testing.T) {
 			}
 
 			// Execute
-			err := handleAwardInventory(processor, saga, step)
+			err := processor.handleAwardInventory(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -629,7 +634,8 @@ func TestHandleAwardLevel(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP, validP)
+			_, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mock
 			charP.AwardLevelAndEmitFunc = func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, amount byte) error {
@@ -659,7 +665,7 @@ func TestHandleAwardLevel(t *testing.T) {
 			}
 
 			// Execute
-			err := handleAwardLevel(processor, saga, step)
+			err := processor.handleAwardLevel(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -725,7 +731,8 @@ func TestHandleAwardExperience(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP, validP)
+			_, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mock
 			charP.AwardExperienceAndEmitFunc = func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, distributions []character2.ExperienceDistributions) error {
@@ -758,7 +765,7 @@ func TestHandleAwardExperience(t *testing.T) {
 			}
 
 			// Execute
-			err := handleAwardExperience(processor, saga, step)
+			err := processor.handleAwardExperience(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -816,7 +823,8 @@ func TestHandleAwardMesos(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP, validP)
+			_, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mock
 			charP.AwardMesosAndEmitFunc = func(transactionId uuid.UUID, worldId world.Id, characterId uint32, channelId channel.Id, actorId uint32, actorType string, amount int32) error {
@@ -848,7 +856,7 @@ func TestHandleAwardMesos(t *testing.T) {
 			}
 
 			// Execute
-			err := handleAwardMesos(processor, saga, step)
+			err := processor.handleAwardMesos(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -900,7 +908,8 @@ func TestHandleDestroyAsset(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP, validP)
+			_, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mock
 			compP.RequestDestroyItemFunc = func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32) error {
@@ -929,7 +938,7 @@ func TestHandleDestroyAsset(t *testing.T) {
 			}
 
 			// Execute
-			err := handleDestroyAsset(processor, saga, step)
+			err := processor.handleDestroyAsset(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -1045,7 +1054,8 @@ func TestHandleCreateCharacter(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP, validP)
+			_, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mock
 			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error {
@@ -1081,7 +1091,7 @@ func TestHandleCreateCharacter(t *testing.T) {
 			}
 
 			// Execute
-			err := handleCreateCharacter(processor, saga, step)
+			err := processor.handleCreateCharacter(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -1131,7 +1141,8 @@ func TestCharacterCreationSagaIntegration(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, hook := setupTestProcessor(charP, compP, validP)
+			te, ctx := setupContext()
+			processor, hook := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mocks
 			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error {
@@ -1146,9 +1157,9 @@ func TestCharacterCreationSagaIntegration(t *testing.T) {
 				InitiatedBy:   "integration-test",
 				Steps: []Step[any]{
 					{
-						StepId:    "create-character-step",
-						Status:    Pending,
-						Action:    CreateCharacter,
+						StepId: "create-character-step",
+						Status: Pending,
+						Action: CreateCharacter,
 						Payload: CharacterCreatePayload{
 							AccountId:    12345,
 							Name:         "IntegrationTestChar",
@@ -1178,8 +1189,8 @@ func TestCharacterCreationSagaIntegration(t *testing.T) {
 			}
 
 			// Store saga in cache for processing
-			GetCache().Put(processor.t.Id(), saga)
-			
+			GetCache().Put(te.Id(), saga)
+
 			// Execute saga processing
 			err := processor.Step(saga.TransactionId)
 
@@ -1206,36 +1217,36 @@ func TestCharacterCreationSagaIntegration(t *testing.T) {
 // TestCharacterCreationEventCorrelation tests the event correlation logic
 func TestCharacterCreationEventCorrelation(t *testing.T) {
 	tests := []struct {
-		name                  string
-		eventType            string
-		transactionId        uuid.UUID
-		expectedSuccess      bool
-		expectedStepCalled   bool
-		description          string
+		name               string
+		eventType          string
+		transactionId      uuid.UUID
+		expectedSuccess    bool
+		expectedStepCalled bool
+		description        string
 	}{
 		{
-			name:                "Success - character created event",
-			eventType:           "CREATED",
-			transactionId:       uuid.New(),
-			expectedSuccess:     true,
-			expectedStepCalled:  true,
-			description:         "CREATED event should mark saga step as completed",
+			name:               "Success - character created event",
+			eventType:          "CREATED",
+			transactionId:      uuid.New(),
+			expectedSuccess:    true,
+			expectedStepCalled: true,
+			description:        "CREATED event should mark saga step as completed",
 		},
 		{
-			name:                "Failure - character creation failed event",
-			eventType:           "CREATION_FAILED",
-			transactionId:       uuid.New(),
-			expectedSuccess:     false,
-			expectedStepCalled:  true,
-			description:         "CREATION_FAILED event should mark saga step as failed",
+			name:               "Failure - character creation failed event",
+			eventType:          "CREATION_FAILED",
+			transactionId:      uuid.New(),
+			expectedSuccess:    false,
+			expectedStepCalled: true,
+			description:        "CREATION_FAILED event should mark saga step as failed",
 		},
 		{
-			name:                "Failure - character error event",
-			eventType:           "ERROR",
-			transactionId:       uuid.New(),
-			expectedSuccess:     false,
-			expectedStepCalled:  true,
-			description:         "ERROR event should mark saga step as failed",
+			name:               "Failure - character error event",
+			eventType:          "ERROR",
+			transactionId:      uuid.New(),
+			expectedSuccess:    false,
+			expectedStepCalled: true,
+			description:        "ERROR event should mark saga step as failed",
 		},
 	}
 
@@ -1246,7 +1257,8 @@ func TestCharacterCreationEventCorrelation(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, hook := setupTestProcessor(charP, compP, validP)
+			_, ctx := setupContext()
+			processor, hook := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure saga processor mock to track StepCompleted calls
 			stepCompletedCalls := make([]struct {
@@ -1297,11 +1309,11 @@ func TestCharacterCreationEventCorrelation(t *testing.T) {
 // TestCharacterCreationSagaCompensation tests compensation scenarios
 func TestCharacterCreationSagaCompensation(t *testing.T) {
 	tests := []struct {
-		name            string
-		sagaSteps       []Action
-		failureAtStep   int
-		expectedResult  string
-		description     string
+		name           string
+		sagaSteps      []Action
+		failureAtStep  int
+		expectedResult string
+		description    string
 	}{
 		{
 			name:           "Single step character creation - no compensation needed",
@@ -1333,7 +1345,8 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP, validP)
+			te, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mocks to fail at specific step
 			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, worldId byte, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error {
@@ -1423,8 +1436,8 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 			}
 
 			// Store saga in cache for processing
-			GetCache().Put(processor.t.Id(), saga)
-			
+			GetCache().Put(te.Id(), saga)
+
 			// Execute saga processing
 			err := processor.Step(saga.TransactionId)
 
@@ -1435,7 +1448,7 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 			case "failed":
 				assert.Error(t, err)
 			case "compensating":
-				// For this test, since we're only running one step, 
+				// For this test, since we're only running one step,
 				// the first step (character creation) should succeed
 				assert.NoError(t, err)
 			default:
@@ -1505,7 +1518,8 @@ func TestCompensateCreateCharacter(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP, validP)
+			_, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Create test saga with failed step
 			transactionId := uuid.New()
@@ -1609,12 +1623,13 @@ func TestHandleEquipAsset(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
-			mockCompP := &mock2.ProcessorMock{
+			compP := &mock2.ProcessorMock{
 				RequestEquipAssetFunc: func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {
 					return tt.mockError
 				},
 			}
-			processor, _ := setupTestProcessor(nil, mockCompP)
+			_, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, nil, compP)
 
 			saga := Saga{
 				TransactionId: uuid.New(),
@@ -1633,7 +1648,7 @@ func TestHandleEquipAsset(t *testing.T) {
 			}
 
 			// Execute
-			err := handleEquipAsset(processor, saga, step)
+			err := processor.handleEquipAsset(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -1685,12 +1700,13 @@ func TestHandleUnequipAsset(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
-			mockCompP := &mock2.ProcessorMock{
+			compP := &mock2.ProcessorMock{
 				RequestUnequipAssetFunc: func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error {
 					return tt.mockError
 				},
 			}
-			processor, _ := setupTestProcessor(nil, mockCompP)
+			_, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, nil, compP)
 
 			saga := Saga{
 				TransactionId: uuid.New(),
@@ -1709,7 +1725,7 @@ func TestHandleUnequipAsset(t *testing.T) {
 			}
 
 			// Execute
-			err := handleUnequipAsset(processor, saga, step)
+			err := processor.handleUnequipAsset(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -1805,7 +1821,8 @@ func TestHandleCreateAndEquipAsset(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			processor, _ := setupTestProcessor(charP, compP, validP)
+			_, ctx := setupContext()
+			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mock - the function should convert saga payload to compartment payload
 			compP.RequestCreateAndEquipAssetFunc = func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error {
@@ -1834,7 +1851,7 @@ func TestHandleCreateAndEquipAsset(t *testing.T) {
 			}
 
 			// Execute
-			err := handleCreateAndEquipAsset(processor, saga, step)
+			err := processor.handleCreateAndEquipAsset(saga, step)
 
 			// Verify
 			if tt.expectError {
@@ -1862,7 +1879,8 @@ func TestHandleCreateAndEquipAsset_InvalidPayload(t *testing.T) {
 	compP := &mock2.ProcessorMock{}
 	validP := &mock3.ProcessorMock{}
 
-	processor, _ := setupTestProcessor(charP, compP, validP)
+	_, ctx := setupContext()
+	processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 	// Create test saga and step with invalid payload
 	transactionId := uuid.New()
@@ -1882,7 +1900,7 @@ func TestHandleCreateAndEquipAsset_InvalidPayload(t *testing.T) {
 	}
 
 	// Execute
-	err := handleCreateAndEquipAsset(processor, saga, step)
+	err := processor.handleCreateAndEquipAsset(saga, step)
 
 	// Verify
 	assert.Error(t, err)
@@ -1899,7 +1917,8 @@ func TestHandleCreateAndEquipAsset_PayloadConversion(t *testing.T) {
 	compP := &mock2.ProcessorMock{}
 	validP := &mock3.ProcessorMock{}
 
-	processor, _ := setupTestProcessor(charP, compP, validP)
+	_, ctx := setupContext()
+	processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 	// Test payload
 	sagaPayload := CreateAndEquipAssetPayload{
@@ -1935,7 +1954,7 @@ func TestHandleCreateAndEquipAsset_PayloadConversion(t *testing.T) {
 	}
 
 	// Execute
-	err := handleCreateAndEquipAsset(processor, saga, step)
+	err := processor.handleCreateAndEquipAsset(saga, step)
 
 	// Verify
 	assert.NoError(t, err)

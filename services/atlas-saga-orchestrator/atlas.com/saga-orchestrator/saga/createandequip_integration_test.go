@@ -21,13 +21,13 @@ import (
 // from saga processing to Kafka message handling
 func TestCreateAndEquipAssetIntegration(t *testing.T) {
 	tests := []struct {
-		name                             string
-		sagaPayload                      CreateAndEquipAssetPayload
-		compartmentRequestError          error
+		name                            string
+		sagaPayload                     CreateAndEquipAssetPayload
+		compartmentRequestError         error
 		expectedSagaStepStatus          Status
-		expectedCompartmentRequestCalls  int
-		expectedErrorContains            string
-		description                      string
+		expectedCompartmentRequestCalls int
+		expectedErrorContains           string
+		description                     string
 	}{
 		{
 			name: "Success - Valid CreateAndEquipAsset payload",
@@ -38,11 +38,11 @@ func TestCreateAndEquipAssetIntegration(t *testing.T) {
 					Quantity:   1,
 				},
 			},
-			compartmentRequestError:          nil,
+			compartmentRequestError:         nil,
 			expectedSagaStepStatus:          Pending, // Step remains pending until Kafka event
-			expectedCompartmentRequestCalls:  1,
-			expectedErrorContains:            "",
-			description:                      "Should successfully initiate CreateAndEquipAsset operation",
+			expectedCompartmentRequestCalls: 1,
+			expectedErrorContains:           "",
+			description:                     "Should successfully initiate CreateAndEquipAsset operation",
 		},
 		{
 			name: "Error - Invalid template ID",
@@ -53,11 +53,11 @@ func TestCreateAndEquipAssetIntegration(t *testing.T) {
 					Quantity:   1,
 				},
 			},
-			compartmentRequestError:          errors.New("invalid templateId"),
+			compartmentRequestError:         errors.New("invalid templateId"),
 			expectedSagaStepStatus:          Pending, // Step fails during execution
-			expectedCompartmentRequestCalls:  1,
-			expectedErrorContains:            "invalid templateId",
-			description:                      "Should fail when template ID is invalid",
+			expectedCompartmentRequestCalls: 1,
+			expectedErrorContains:           "invalid templateId",
+			description:                     "Should fail when template ID is invalid",
 		},
 		{
 			name: "Error - Compartment service unavailable",
@@ -68,11 +68,11 @@ func TestCreateAndEquipAssetIntegration(t *testing.T) {
 					Quantity:   1,
 				},
 			},
-			compartmentRequestError:          errors.New("compartment service unavailable"),
+			compartmentRequestError:         errors.New("compartment service unavailable"),
 			expectedSagaStepStatus:          Pending, // Step fails during execution
-			expectedCompartmentRequestCalls:  1,
-			expectedErrorContains:            "compartment service unavailable",
-			description:                      "Should fail when compartment service is unavailable",
+			expectedCompartmentRequestCalls: 1,
+			expectedErrorContains:           "compartment service unavailable",
+			description:                     "Should fail when compartment service is unavailable",
 		},
 		{
 			name: "Error - Character not found",
@@ -83,11 +83,11 @@ func TestCreateAndEquipAssetIntegration(t *testing.T) {
 					Quantity:   1,
 				},
 			},
-			compartmentRequestError:          errors.New("character not found"),
+			compartmentRequestError:         errors.New("character not found"),
 			expectedSagaStepStatus:          Pending, // Step fails during execution
-			expectedCompartmentRequestCalls:  1,
-			expectedErrorContains:            "character not found",
-			description:                      "Should fail when character is not found",
+			expectedCompartmentRequestCalls: 1,
+			expectedErrorContains:           "character not found",
+			description:                     "Should fail when character is not found",
 		},
 		{
 			name: "Success - Consumable item",
@@ -98,11 +98,11 @@ func TestCreateAndEquipAssetIntegration(t *testing.T) {
 					Quantity:   5,
 				},
 			},
-			compartmentRequestError:          nil,
+			compartmentRequestError:         nil,
 			expectedSagaStepStatus:          Pending, // Step remains pending until Kafka event
-			expectedCompartmentRequestCalls:  1,
-			expectedErrorContains:            "",
-			description:                      "Should successfully handle consumable items",
+			expectedCompartmentRequestCalls: 1,
+			expectedErrorContains:           "",
+			description:                     "Should successfully handle consumable items",
 		},
 	}
 
@@ -122,22 +122,18 @@ func TestCreateAndEquipAssetIntegration(t *testing.T) {
 			validP := &mock3.ProcessorMock{}
 
 			// Setup processor
-			processor := NewProcessor(logger, tctx)
-			processor.t = te
-			processor.charP = charP
-			processor.compP = compP
-			processor.validP = validP
+			processor := NewProcessor(logger, tctx).WithCharacterProcessor(charP).WithCompartmentProcessor(compP).WithValidationProcessor(validP)
 
 			// Configure compartment processor mock
 			compartmentRequestCalls := 0
 			compP.RequestCreateAndEquipAssetFunc = func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error {
 				compartmentRequestCalls++
-				
+
 				// Verify payload conversion
 				assert.Equal(t, tt.sagaPayload.CharacterId, payload.CharacterId)
 				assert.Equal(t, tt.sagaPayload.Item.TemplateId, payload.Item.TemplateId)
 				assert.Equal(t, tt.sagaPayload.Item.Quantity, payload.Item.Quantity)
-				
+
 				return tt.compartmentRequestError
 			}
 
@@ -160,7 +156,7 @@ func TestCreateAndEquipAssetIntegration(t *testing.T) {
 			}
 
 			// Store saga in cache
-			GetCache().Put(processor.t.Id(), saga)
+			GetCache().Put(te.Id(), saga)
 
 			// Execute saga step
 			err := processor.Step(saga.TransactionId)
@@ -204,15 +200,15 @@ func TestCreateAndEquipAssetIntegration(t *testing.T) {
 // TestCreateAndEquipAssetKafkaEventFlow tests the Kafka event flow for CreateAndEquipAsset
 func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 	tests := []struct {
-		name                     string
-		initialSagaPayload       CreateAndEquipAssetPayload
-		simulateCreatedEvent     bool
-		simulateEquippedEvent    bool
-		simulateErrorEvent       bool
-		expectedFinalStepCount   int
-		expectedSagaCompleted    bool
-		expectedAutoEquipStep    bool
-		description              string
+		name                   string
+		initialSagaPayload     CreateAndEquipAssetPayload
+		simulateCreatedEvent   bool
+		simulateEquippedEvent  bool
+		simulateErrorEvent     bool
+		expectedFinalStepCount int
+		expectedSagaCompleted  bool
+		expectedAutoEquipStep  bool
+		description            string
 	}{
 		{
 			name: "Success - Complete CreateAndEquipAsset flow",
@@ -223,13 +219,13 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 					Quantity:   1,
 				},
 			},
-			simulateCreatedEvent:     true,
-			simulateEquippedEvent:    true,
-			simulateErrorEvent:       false,
-			expectedFinalStepCount:   2, // Initial CreateAndEquipAsset + auto-generated EquipAsset
-			expectedSagaCompleted:    true,
-			expectedAutoEquipStep:    true,
-			description:              "Should complete full flow with auto-equip step",
+			simulateCreatedEvent:   true,
+			simulateEquippedEvent:  true,
+			simulateErrorEvent:     false,
+			expectedFinalStepCount: 2, // Initial CreateAndEquipAsset + auto-generated EquipAsset
+			expectedSagaCompleted:  true,
+			expectedAutoEquipStep:  true,
+			description:            "Should complete full flow with auto-equip step",
 		},
 		{
 			name: "Partial success - Asset created but equipment fails",
@@ -240,13 +236,13 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 					Quantity:   1,
 				},
 			},
-			simulateCreatedEvent:     true,
-			simulateEquippedEvent:    false,
-			simulateErrorEvent:       true,
-			expectedFinalStepCount:   2, // Initial CreateAndEquipAsset + auto-generated EquipAsset
-			expectedSagaCompleted:    false,
-			expectedAutoEquipStep:    true,
-			description:              "Should handle equipment failure after successful creation",
+			simulateCreatedEvent:   true,
+			simulateEquippedEvent:  false,
+			simulateErrorEvent:     true,
+			expectedFinalStepCount: 2, // Initial CreateAndEquipAsset + auto-generated EquipAsset
+			expectedSagaCompleted:  false,
+			expectedAutoEquipStep:  true,
+			description:            "Should handle equipment failure after successful creation",
 		},
 		{
 			name: "Failure - Asset creation fails",
@@ -257,13 +253,13 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 					Quantity:   1,
 				},
 			},
-			simulateCreatedEvent:     false,
-			simulateEquippedEvent:    false,
-			simulateErrorEvent:       true,
-			expectedFinalStepCount:   1, // Only initial CreateAndEquipAsset step
-			expectedSagaCompleted:    false,
-			expectedAutoEquipStep:    false,
-			description:              "Should handle asset creation failure",
+			simulateCreatedEvent:   false,
+			simulateEquippedEvent:  false,
+			simulateErrorEvent:     true,
+			expectedFinalStepCount: 1, // Only initial CreateAndEquipAsset step
+			expectedSagaCompleted:  false,
+			expectedAutoEquipStep:  false,
+			description:            "Should handle asset creation failure",
 		},
 	}
 
@@ -283,11 +279,7 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 			validP := &mock3.ProcessorMock{}
 
 			// Setup processor
-			processor := NewProcessor(logger, tctx)
-			processor.t = te
-			processor.charP = charP
-			processor.compP = compP
-			processor.validP = validP
+			processor := NewProcessor(logger, tctx).WithCharacterProcessor(charP).WithCompartmentProcessor(compP).WithValidationProcessor(validP)
 
 			// Configure compartment processor mock
 			compP.RequestCreateAndEquipAssetFunc = func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error {
@@ -316,11 +308,11 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 			}
 
 			// Store saga in cache
-			GetCache().Put(processor.t.Id(), saga)
+			GetCache().Put(te.Id(), saga)
 
 			// Phase 1: Execute initial CreateAndEquipAsset step
 			err := processor.Step(saga.TransactionId)
-			
+
 			if tt.simulateCreatedEvent {
 				assert.NoError(t, err, "Initial step should succeed")
 			} else {
@@ -332,17 +324,17 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 				// Simulate CREATED event - this would be handled by compartment consumer
 				// In real flow, this would trigger saga.StepCompleted(transactionId, true)
 				// and potentially add an auto-equip step
-				
+
 				// For this test, we'll simulate the behavior
 				err = processor.StepCompleted(transactionId, true)
 				assert.NoError(t, err, "StepCompleted should succeed")
-				
+
 				// Simulate auto-equip step addition (normally done by asset consumer)
 				if tt.expectedAutoEquipStep {
 					equipStep := Step[any]{
-						StepId:    "auto_equip_step_test",
-						Status:    Pending,
-						Action:    EquipAsset,
+						StepId: "auto_equip_step_test",
+						Status: Pending,
+						Action: EquipAsset,
 						Payload: EquipAssetPayload{
 							CharacterId:   tt.initialSagaPayload.CharacterId,
 							InventoryType: 1,
@@ -352,7 +344,7 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					}
-					
+
 					err = processor.PrependStep(transactionId, equipStep)
 					assert.NoError(t, err, "Prepending auto-equip step should succeed")
 				}
@@ -373,8 +365,8 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 			// Verify final saga state
 			finalSaga, err := processor.GetById(transactionId)
 			assert.NoError(t, err, "Should be able to retrieve final saga")
-			
-			assert.Equal(t, tt.expectedFinalStepCount, len(finalSaga.Steps), 
+
+			assert.Equal(t, tt.expectedFinalStepCount, len(finalSaga.Steps),
 				"Final saga should have expected number of steps")
 
 			// Verify auto-equip step was added if expected
@@ -401,7 +393,7 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 					break
 				}
 			}
-			assert.Equal(t, tt.expectedSagaCompleted, allCompleted, 
+			assert.Equal(t, tt.expectedSagaCompleted, allCompleted,
 				"Saga completion status should match expected")
 
 			// Verify logging
@@ -467,11 +459,7 @@ func TestCreateAndEquipAssetCompensation(t *testing.T) {
 			validP := &mock3.ProcessorMock{}
 
 			// Setup processor
-			processor := NewProcessor(logger, tctx)
-			processor.t = te
-			processor.charP = charP
-			processor.compP = compP
-			processor.validP = validP
+			processor := NewProcessor(logger, tctx).WithCharacterProcessor(charP).WithCompartmentProcessor(compP).WithValidationProcessor(validP)
 
 			// Configure mocks for compensation testing
 			compP.RequestCreateAndEquipAssetFunc = func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error {
@@ -501,7 +489,7 @@ func TestCreateAndEquipAssetCompensation(t *testing.T) {
 
 			// Test compensation
 			err := processor.compensateCreateAndEquipAsset(saga, failedStep)
-			
+
 			if tt.expectedCompensation == "none" {
 				assert.NoError(t, err, "Compensation should succeed for no-op scenarios")
 			} else {
@@ -533,11 +521,11 @@ func TestCreateAndEquipAssetCompensation(t *testing.T) {
 // TestCreateAndEquipAssetPayloadValidation tests payload validation in various scenarios
 func TestCreateAndEquipAssetPayloadValidation(t *testing.T) {
 	tests := []struct {
-		name            string
-		payload         interface{}
-		expectedError   bool
-		errorContains   string
-		description     string
+		name          string
+		payload       interface{}
+		expectedError bool
+		errorContains string
+		description   string
 	}{
 		{
 			name: "Valid payload",
@@ -553,11 +541,11 @@ func TestCreateAndEquipAssetPayloadValidation(t *testing.T) {
 			description:   "Should accept valid CreateAndEquipAssetPayload",
 		},
 		{
-			name:            "Invalid payload type",
-			payload:         "invalid-payload",
-			expectedError:   true,
-			errorContains:   "invalid payload",
-			description:     "Should reject non-CreateAndEquipAssetPayload types",
+			name:          "Invalid payload type",
+			payload:       "invalid-payload",
+			expectedError: true,
+			errorContains: "invalid payload",
+			description:   "Should reject non-CreateAndEquipAssetPayload types",
 		},
 		{
 			name: "Valid payload with different template",
@@ -590,11 +578,7 @@ func TestCreateAndEquipAssetPayloadValidation(t *testing.T) {
 			validP := &mock3.ProcessorMock{}
 
 			// Setup processor
-			processor := NewProcessor(logger, tctx)
-			processor.t = te
-			processor.charP = charP
-			processor.compP = compP
-			processor.validP = validP
+			processor := NewProcessor(logger, tctx).WithCharacterProcessor(charP).WithCompartmentProcessor(compP).WithValidationProcessor(validP)
 
 			// Configure compartment processor mock
 			compP.RequestCreateAndEquipAssetFunc = func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error {
@@ -620,7 +604,7 @@ func TestCreateAndEquipAssetPayloadValidation(t *testing.T) {
 			}
 
 			// Test payload validation
-			err := handleCreateAndEquipAsset(processor, saga, step)
+			err := processor.handleCreateAndEquipAsset(saga, step)
 
 			// Verify results
 			if tt.expectedError {

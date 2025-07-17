@@ -6,6 +6,7 @@ import (
 	"atlas-character-factory/kafka/consumer/asset"
 	"atlas-character-factory/kafka/consumer/character"
 	"atlas-character-factory/kafka/consumer/compartment"
+	"atlas-character-factory/kafka/consumer/saga"
 	"atlas-character-factory/logger"
 	"atlas-character-factory/service"
 	"atlas-character-factory/tracing"
@@ -55,7 +56,9 @@ func main() {
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
 	asset.InitConsumers(l)(cmf)(consumerGroupId)
+	saga.InitConsumers(l)(cmf)(consumerGroupId)
 	character.RegisterPersistentHandlers(l, tdm.Context())
+	saga.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	server.New(l).
 		WithContext(tdm.Context()).

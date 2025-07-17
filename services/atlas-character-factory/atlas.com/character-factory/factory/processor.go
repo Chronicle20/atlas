@@ -295,9 +295,10 @@ func BuildCharacterCreationFollowUpSaga(transactionId uuid.UUID, characterId uin
 			stepId := fmt.Sprintf("equip_%s", eq.name)
 			createAndEquipPayload := saga.CreateAndEquipAssetPayload{
 				CharacterId: characterId, // Use the actual character ID
-				TemplateId:  eq.templateId,
-				Source:      1, // Source is always 1 for creation
-				Destination: 0, // Destination is always 0 for creation
+				Item: saga.ItemPayload{
+					TemplateId: eq.templateId,
+					Quantity:   1,
+				},
 			}
 			builder.AddStep(stepId, saga.Pending, saga.CreateAndEquipAsset, createAndEquipPayload)
 		}
@@ -383,9 +384,10 @@ func buildCharacterCreationSaga(transactionId uuid.UUID, input RestModel, templa
 			stepId := fmt.Sprintf("equip_%s", eq.name)
 			createAndEquipPayload := saga.CreateAndEquipAssetPayload{
 				CharacterId: 0, // Will be set by orchestrator after character creation
-				TemplateId:  eq.templateId,
-				Source:      1, // Source is always 1 for creation
-				Destination: 0, // Destination is always 0 for creation
+				Item: saga.ItemPayload{
+					TemplateId: eq.templateId,
+					Quantity:   1,
+				},
 			}
 			builder.AddStep(stepId, saga.Pending, saga.CreateAndEquipAsset, createAndEquipPayload)
 		}

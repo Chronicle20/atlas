@@ -314,10 +314,8 @@ type CharacterCreatePayload struct {
 
 // CreateAndEquipAssetPayload represents the payload required to create and equip an asset to a character.
 type CreateAndEquipAssetPayload struct {
-	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
-	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item to create and equip
-	Source      int16  `json:"source"`      // Source inventory slot (always 1 for creation)
-	Destination int16  `json:"destination"` // Destination equipped slot (always 0 for creation)
+	CharacterId uint32      `json:"characterId"` // CharacterId associated with the action
+	Item        ItemPayload `json:"item"`        // Item to create and equip
 }
 
 // AwaitCharacterCreatedPayload represents the payload required to await character creation completion.

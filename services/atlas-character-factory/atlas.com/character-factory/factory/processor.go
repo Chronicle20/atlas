@@ -3,6 +3,7 @@ package factory
 import (
 	"atlas-character-factory/configuration"
 	"atlas-character-factory/configuration/tenant/characters/template"
+	job2 "atlas-character-factory/job"
 	"atlas-character-factory/saga"
 	"context"
 	"errors"
@@ -230,19 +231,26 @@ func buildCharacterCreationOnlySaga(transactionId uuid.UUID, input RestModel) sa
 
 	// Step 1: Create character
 	createCharacterPayload := saga.CharacterCreatePayload{
-		AccountId: input.AccountId,
-		Name:      input.Name,
-		WorldId:   input.WorldId,
-		ChannelId: 0, // Default channel
-		JobId:     input.JobIndex,
-		Face:      input.Face,
-		Hair:      input.Hair,
-		HairColor: input.HairColor,
-		Skin:      uint32(input.SkinColor),
-		Top:       input.Top,
-		Bottom:    input.Bottom,
-		Shoes:     input.Shoes,
-		Weapon:    input.Weapon,
+		AccountId:    input.AccountId,
+		WorldId:      input.WorldId,
+		Name:         input.Name,
+		Gender:       input.Gender,
+		Level:        input.Level,
+		Strength:     input.Strength,
+		Dexterity:    input.Dexterity,
+		Intelligence: input.Intelligence,
+		Luck:         input.Luck,
+		JobId:        job2.JobFromIndex(input.JobIndex, input.SubJobIndex),
+		Hp:           input.Hp,
+		Mp:           input.Mp,
+		Face:         input.Face,
+		Hair:         input.Hair + input.HairColor,
+		Skin:         uint32(input.SkinColor),
+		Top:          input.Top,
+		Bottom:       input.Bottom,
+		Shoes:        input.Shoes,
+		Weapon:       input.Weapon,
+		MapId:        input.MapId,
 	}
 
 	builder.AddStep("create_character", saga.Pending, saga.CreateCharacter, createCharacterPayload)
@@ -322,19 +330,26 @@ func buildCharacterCreationSaga(transactionId uuid.UUID, input RestModel, templa
 
 	// Step 1: Create character
 	createCharacterPayload := saga.CharacterCreatePayload{
-		AccountId: input.AccountId,
-		Name:      input.Name,
-		WorldId:   input.WorldId,
-		ChannelId: 0, // Default channel
-		JobId:     input.JobIndex,
-		Face:      input.Face,
-		Hair:      input.Hair,
-		HairColor: input.HairColor,
-		Skin:      uint32(input.SkinColor),
-		Top:       input.Top,
-		Bottom:    input.Bottom,
-		Shoes:     input.Shoes,
-		Weapon:    input.Weapon,
+		AccountId:    input.AccountId,
+		WorldId:      input.WorldId,
+		Name:         input.Name,
+		Gender:       input.Gender,
+		Level:        input.Level,
+		Strength:     input.Strength,
+		Dexterity:    input.Dexterity,
+		Intelligence: input.Intelligence,
+		Luck:         input.Luck,
+		JobId:        job2.JobFromIndex(input.JobIndex, input.SubJobIndex),
+		Hp:           input.Hp,
+		Mp:           input.Mp,
+		Face:         input.Face,
+		Hair:         input.Hair + input.HairColor,
+		Skin:         uint32(input.SkinColor),
+		Top:          input.Top,
+		Bottom:       input.Bottom,
+		Shoes:        input.Shoes,
+		Weapon:       input.Weapon,
+		MapId:        input.MapId,
 	}
 
 	builder.AddStep("create", saga.Pending, saga.CreateCharacter, createCharacterPayload)

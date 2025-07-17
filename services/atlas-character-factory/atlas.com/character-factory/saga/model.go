@@ -4,6 +4,7 @@ import (
 	"atlas-character-factory/validation"
 	"encoding/json"
 	"fmt"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -18,12 +19,12 @@ type Type string
 
 // Constants for different saga types
 const (
-	InventoryTransaction       Type = "inventory_transaction"
-	QuestReward                Type = "quest_reward"
-	TradeTransaction           Type = "trade_transaction"
-	CharacterCreation          Type = "character_creation"
-	CharacterCreationOnly      Type = "character_creation_only"
-	CharacterCreationFollowUp  Type = "character_creation_followup"
+	InventoryTransaction      Type = "inventory_transaction"
+	QuestReward               Type = "quest_reward"
+	TradeTransaction          Type = "trade_transaction"
+	CharacterCreation         Type = "character_creation"
+	CharacterCreationOnly     Type = "character_creation_only"
+	CharacterCreationFollowUp Type = "character_creation_followup"
 )
 
 // Saga represents the entire saga transaction.
@@ -289,19 +290,26 @@ type CreateInvitePayload struct {
 // CharacterCreatePayload represents the payload required to create a character.
 // Note: this does not include any character attributes, as those are determined by the character service.
 type CharacterCreatePayload struct {
-	AccountId uint32 `json:"accountId"` // AccountId associated with the action
-	Name      string `json:"name"`      // Name of the character to create
-	WorldId   byte   `json:"worldId"`   // WorldId associated with the action
-	ChannelId byte   `json:"channelId"` // ChannelId associated with the action
-	JobId     uint32 `json:"jobId"`     // JobId to create the character with
-	Face      uint32 `json:"face"`      // Face of the character
-	Hair      uint32 `json:"hair"`      // Hair of the character
-	HairColor uint32 `json:"hairColor"` // HairColor of the character
-	Skin      uint32 `json:"skin"`      // Skin of the character
-	Top       uint32 `json:"top"`       // Top of the character
-	Bottom    uint32 `json:"bottom"`    // Bottom of the character
-	Shoes     uint32 `json:"shoes"`     // Shoes of the character
-	Weapon    uint32 `json:"weapon"`    // Weapon of the character
+	AccountId    uint32  `json:"accountId"` // AccountId associated with the action
+	WorldId      byte    `json:"worldId"`   // WorldId associated with the action
+	Name         string  `json:"name"`      // Name of the character to create
+	Gender       byte    `json:"gender"`
+	Level        byte    `json:"level"`
+	Strength     uint16  `json:"strength"`
+	Dexterity    uint16  `json:"dexterity"`
+	Intelligence uint16  `json:"intelligence"`
+	Luck         uint16  `json:"luck"`
+	JobId        job.Id  `json:"jobId"` // JobId to create the character with
+	Hp           uint16  `json:"hp"`
+	Mp           uint16  `json:"mp"`
+	Face         uint32  `json:"face"`   // Face of the character
+	Hair         uint32  `json:"hair"`   // Hair of the character
+	Skin         uint32  `json:"skin"`   // Skin of the character
+	Top          uint32  `json:"top"`    // Top of the character
+	Bottom       uint32  `json:"bottom"` // Bottom of the character
+	Shoes        uint32  `json:"shoes"`  // Shoes of the character
+	Weapon       uint32  `json:"weapon"` // Weapon of the character
+	MapId        _map.Id `json:"mapId"`  // Starting map ID for the character
 }
 
 // CreateAndEquipAssetPayload represents the payload required to create and equip an asset to a character.
@@ -314,8 +322,8 @@ type CreateAndEquipAssetPayload struct {
 
 // AwaitCharacterCreatedPayload represents the payload required to await character creation completion.
 type AwaitCharacterCreatedPayload struct {
-	CharacterName     string `json:"characterName"`     // Name of the character being created
-	FollowUpSagaId    string `json:"followUpSagaId"`    // ID of the follow-up saga to trigger
+	CharacterName      string `json:"characterName"`                // Name of the character being created
+	FollowUpSagaId     string `json:"followUpSagaId"`               // ID of the follow-up saga to trigger
 	CreatedCharacterId uint32 `json:"createdCharacterId,omitempty"` // CharacterId once created (set by orchestrator)
 }
 

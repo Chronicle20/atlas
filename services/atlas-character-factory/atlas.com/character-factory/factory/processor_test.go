@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	tenantModel "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	tenantModel "github.com/Chronicle20/atlas-tenant"
 )
 
 func TestBuildCharacterCreationSaga(t *testing.T) {
@@ -488,9 +488,6 @@ func TestBuildCharacterCreationSaga_AllFieldsPresent(t *testing.T) {
 		if payload.WorldId != input.WorldId {
 			t.Errorf("WorldId mismatch: expected %d, got %d", input.WorldId, payload.WorldId)
 		}
-		if payload.ChannelId != 0 {
-			t.Errorf("ChannelId should default to 0, got %d", payload.ChannelId)
-		}
 		if payload.JobId != input.JobIndex {
 			t.Errorf("JobId mismatch: expected %d, got %d", input.JobIndex, payload.JobId)
 		}
@@ -595,7 +592,7 @@ func TestValidationFunctions(t *testing.T) {
 				if !validName("MaxLengthOK") {
 					t.Error("Expected 'MaxLengthOK' to be valid")
 				}
-				
+
 				// Invalid names
 				if validName("") {
 					t.Error("Expected empty string to be invalid")
@@ -650,12 +647,12 @@ func TestValidationFunctions(t *testing.T) {
 			name: "validOption",
 			testFunc: func(t *testing.T) {
 				options := []uint32{100, 200, 300}
-				
+
 				// Zero should always be valid
 				if !validOption(options, 0) {
 					t.Error("Expected 0 to be valid for any option list")
 				}
-				
+
 				// Valid options should be valid
 				if !validOption(options, 100) {
 					t.Error("Expected 100 to be valid")
@@ -666,7 +663,7 @@ func TestValidationFunctions(t *testing.T) {
 				if !validOption(options, 300) {
 					t.Error("Expected 300 to be valid")
 				}
-				
+
 				// Invalid options should be invalid
 				if validOption(options, 400) {
 					t.Error("Expected 400 to be invalid")
@@ -680,7 +677,7 @@ func TestValidationFunctions(t *testing.T) {
 			name: "validFace",
 			testFunc: func(t *testing.T) {
 				faces := []uint32{20000, 20001, 20002}
-				
+
 				if !validFace(faces, 0) {
 					t.Error("Expected 0 to be valid face")
 				}
@@ -696,7 +693,7 @@ func TestValidationFunctions(t *testing.T) {
 			name: "validHair",
 			testFunc: func(t *testing.T) {
 				hairs := []uint32{30000, 30001, 30002}
-				
+
 				if !validHair(hairs, 0) {
 					t.Error("Expected 0 to be valid hair")
 				}
@@ -712,7 +709,7 @@ func TestValidationFunctions(t *testing.T) {
 			name: "validHairColor",
 			testFunc: func(t *testing.T) {
 				hairColors := []uint32{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-				
+
 				if !validHairColor(hairColors, 0) {
 					t.Error("Expected 0 to be valid hair color")
 				}
@@ -728,7 +725,7 @@ func TestValidationFunctions(t *testing.T) {
 			name: "validSkinColor",
 			testFunc: func(t *testing.T) {
 				skinColors := []uint32{0, 1, 2, 3, 4}
-				
+
 				if !validSkinColor(skinColors, 0) {
 					t.Error("Expected 0 to be valid skin color")
 				}
@@ -744,7 +741,7 @@ func TestValidationFunctions(t *testing.T) {
 			name: "validTop",
 			testFunc: func(t *testing.T) {
 				tops := []uint32{1040000, 1040001, 1040002}
-				
+
 				if !validTop(tops, 0) {
 					t.Error("Expected 0 to be valid top")
 				}
@@ -760,7 +757,7 @@ func TestValidationFunctions(t *testing.T) {
 			name: "validBottom",
 			testFunc: func(t *testing.T) {
 				bottoms := []uint32{1060000, 1060001, 1060002}
-				
+
 				if !validBottom(bottoms, 0) {
 					t.Error("Expected 0 to be valid bottom")
 				}
@@ -776,7 +773,7 @@ func TestValidationFunctions(t *testing.T) {
 			name: "validShoes",
 			testFunc: func(t *testing.T) {
 				shoes := []uint32{1072000, 1072001, 1072002}
-				
+
 				if !validShoes(shoes, 0) {
 					t.Error("Expected 0 to be valid shoes")
 				}
@@ -792,7 +789,7 @@ func TestValidationFunctions(t *testing.T) {
 			name: "validWeapon",
 			testFunc: func(t *testing.T) {
 				weapons := []uint32{1302000, 1302001, 1302002}
-				
+
 				if !validWeapon(weapons, 0) {
 					t.Error("Expected 0 to be valid weapon")
 				}
@@ -964,10 +961,10 @@ func TestSagaProducerCreation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test that the saga producer creates a valid message provider
 			messageProvider := saga.CreateCommandProvider(tt.saga)
-			
+
 			// Call the provider to get the messages
 			messages, err := messageProvider()
-			
+
 			// Verify no error in message creation
 			if err != nil {
 				t.Errorf("Unexpected error creating Kafka message: %v", err)
@@ -1011,10 +1008,10 @@ func createMockContext(t *testing.T, accountId uint32) (context.Context, uuid.UU
 	if err != nil {
 		t.Fatalf("Failed to create test tenant: %v", err)
 	}
-	
+
 	// Add tenant to context
 	ctx := tenantModel.WithContext(context.Background(), testTenant)
-	
+
 	t.Logf("Mock context created with tenant %s", tenantId.String())
 	return ctx, tenantId
 }
@@ -1024,12 +1021,12 @@ func createMockContext(t *testing.T, accountId uint32) (context.Context, uuid.UU
 func TestCharacterCreationIntegrationWithOrchestrator(t *testing.T) {
 	t.Skip("This test requires tenant configuration and will cause log.Fatalf - skipping in normal test runs")
 	tests := []struct {
-		name               string
-		input              RestModel
-		mockTemplateConfig func() bool
-		expectError        bool
+		name                string
+		input               RestModel
+		mockTemplateConfig  func() bool
+		expectError         bool
 		expectTransactionId bool
-		expectedErrorMsg   string
+		expectedErrorMsg    string
 	}{
 		{
 			name: "successful character creation with orchestrator integration",
@@ -1110,14 +1107,14 @@ func TestCharacterCreationIntegrationWithOrchestrator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create mock context with tenant
 			ctx, tenantId := createMockContext(t, tt.input.AccountId)
-			
+
 			// Create logger
 			logger := logrus.New()
 			logger.SetLevel(logrus.DebugLevel)
-			
+
 			// Call the character creation function
 			transactionId, err := Create(logger)(ctx)(tt.input)
-			
+
 			// Verify error expectations
 			if tt.expectError {
 				if err == nil {
@@ -1130,20 +1127,20 @@ func TestCharacterCreationIntegrationWithOrchestrator(t *testing.T) {
 				t.Logf("Correctly caught expected error: %v", err)
 				return
 			}
-			
+
 			// For successful cases, verify results
 			if err != nil {
 				// Note: We expect saga emission to fail in unit tests due to missing Kafka
 				// But we can still verify the flow works up to that point
 				t.Logf("Note: Character creation failed at saga emission (expected in unit tests): %v", err)
-				
+
 				// Verify it's a Kafka-related error, not a validation error
 				if !isKafkaRelatedError(err) {
 					t.Errorf("Expected Kafka-related error but got: %v", err)
 				}
 				return
 			}
-			
+
 			// Verify transaction ID
 			if tt.expectTransactionId {
 				if transactionId == "" {
@@ -1157,7 +1154,7 @@ func TestCharacterCreationIntegrationWithOrchestrator(t *testing.T) {
 					}
 				}
 			}
-			
+
 			// Log success information
 			t.Logf("Integration test passed for tenant %s", tenantId.String())
 		})
@@ -1185,7 +1182,7 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 		Shoes:       1072001,
 		Weapon:      1302000,
 	}
-	
+
 	// Mock template with items and skills
 	template := template.RestModel{
 		JobIndex:    100,
@@ -1195,36 +1192,36 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 		Items:       []uint32{2000000, 2000001, 2000002},
 		Skills:      []uint32{1000, 1001, 1002},
 	}
-	
+
 	// Test saga construction
 	transactionId := uuid.New()
 	result := buildCharacterCreationSaga(transactionId, input, template)
-	
+
 	// Verify orchestrator-specific saga structure
 	t.Run("saga_structure_for_orchestrator", func(t *testing.T) {
 		// Verify saga type is set correctly for orchestrator
 		if result.SagaType != saga.CharacterCreation {
 			t.Errorf("Expected saga type 'character_creation', got '%s'", result.SagaType)
 		}
-		
+
 		// Verify transaction ID is set
 		if result.TransactionId != transactionId {
 			t.Errorf("Expected transaction ID %s, got %s", transactionId, result.TransactionId)
 		}
-		
+
 		// Verify initiated by field
 		expectedInitiatedBy := "account_3001"
 		if result.InitiatedBy != expectedInitiatedBy {
 			t.Errorf("Expected initiated by '%s', got '%s'", expectedInitiatedBy, result.InitiatedBy)
 		}
-		
+
 		// Verify step count: 1 create + 3 items + 4 equipment + 3 skills = 11 steps
 		expectedSteps := 11
 		if len(result.Steps) != expectedSteps {
 			t.Errorf("Expected %d steps for orchestrator, got %d", expectedSteps, len(result.Steps))
 		}
 	})
-	
+
 	t.Run("orchestrator_step_sequence", func(t *testing.T) {
 		// Verify the steps are in the correct order for orchestrator processing
 		expectedSequence := []struct {
@@ -1243,29 +1240,29 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 			{"create_skill_1", saga.CreateSkill},
 			{"create_skill_2", saga.CreateSkill},
 		}
-		
+
 		for i, expected := range expectedSequence {
 			if i >= len(result.Steps) {
 				t.Errorf("Missing step %d: expected %s", i, expected.stepType)
 				continue
 			}
-			
+
 			step := result.Steps[i]
 			if step.StepId != expected.stepType {
 				t.Errorf("Step %d: expected step ID '%s', got '%s'", i, expected.stepType, step.StepId)
 			}
-			
+
 			if step.Action != expected.action {
 				t.Errorf("Step %d: expected action '%s', got '%s'", i, expected.action, step.Action)
 			}
-			
+
 			// Verify all steps start as pending for orchestrator
 			if step.Status != saga.Pending {
 				t.Errorf("Step %d: expected status 'pending', got '%s'", i, step.Status)
 			}
 		}
 	})
-	
+
 	t.Run("orchestrator_payload_validation", func(t *testing.T) {
 		// Test the first step (character creation) payload
 		createStep := result.Steps[0]
@@ -1283,7 +1280,7 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 			if payload.JobId != input.JobIndex {
 				t.Errorf("Character create payload missing JobId: expected %d, got %d", input.JobIndex, payload.JobId)
 			}
-			
+
 			// Verify appearance fields
 			if payload.Face != input.Face {
 				t.Errorf("Character create payload missing Face: expected %d, got %d", input.Face, payload.Face)
@@ -1297,7 +1294,7 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 			if payload.Skin != uint32(input.SkinColor) {
 				t.Errorf("Character create payload missing Skin: expected %d, got %d", uint32(input.SkinColor), payload.Skin)
 			}
-			
+
 			// Verify equipment fields
 			if payload.Top != input.Top {
 				t.Errorf("Character create payload missing Top: expected %d, got %d", input.Top, payload.Top)
@@ -1311,12 +1308,7 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 			if payload.Weapon != input.Weapon {
 				t.Errorf("Character create payload missing Weapon: expected %d, got %d", input.Weapon, payload.Weapon)
 			}
-			
-			// Verify default values
-			if payload.ChannelId != 0 {
-				t.Errorf("Character create payload should default ChannelId to 0, got %d", payload.ChannelId)
-			}
-			
+
 			t.Logf("Character create payload validation passed for orchestrator")
 		} else {
 			t.Error("Character create step payload is not of correct type for orchestrator")
@@ -1327,10 +1319,10 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 // Helper function to check if error is related to Kafka connectivity
 func isKafkaRelatedError(err error) bool {
 	errMsg := err.Error()
-	return strings.Contains(errMsg, "connection refused") || 
-		   strings.Contains(errMsg, "max retry reached") || 
-		   strings.Contains(errMsg, "unable to emit") ||
-		   strings.Contains(errMsg, "Unable to emit")
+	return strings.Contains(errMsg, "connection refused") ||
+		strings.Contains(errMsg, "max retry reached") ||
+		strings.Contains(errMsg, "unable to emit") ||
+		strings.Contains(errMsg, "Unable to emit")
 }
 
 // TestErrorHandlingAndEdgeCases tests various error conditions and edge cases
@@ -1338,7 +1330,7 @@ func isKafkaRelatedError(err error) bool {
 func TestErrorHandlingAndEdgeCases(t *testing.T) {
 	// Test validation functions directly without going through Create function
 	// This avoids tenant configuration issues while still testing error handling
-	
+
 	t.Run("gender_validation_edge_cases", func(t *testing.T) {
 		tests := []struct {
 			name      string
@@ -1351,7 +1343,7 @@ func TestErrorHandlingAndEdgeCases(t *testing.T) {
 			{"invalid_gender_255", 255, true},
 			{"invalid_gender_254", 254, true},
 		}
-		
+
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				result := validGender(tt.gender)
@@ -1364,7 +1356,7 @@ func TestErrorHandlingAndEdgeCases(t *testing.T) {
 			})
 		}
 	})
-	
+
 	t.Run("validation_option_edge_cases", func(t *testing.T) {
 		tests := []struct {
 			name      string
@@ -1379,7 +1371,7 @@ func TestErrorHandlingAndEdgeCases(t *testing.T) {
 			{"empty_options_zero_selection", []uint32{}, 0, false},
 			{"empty_options_nonzero_selection", []uint32{}, 1, true},
 		}
-		
+
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				result := validOption(tt.options, tt.selection)
@@ -1392,7 +1384,7 @@ func TestErrorHandlingAndEdgeCases(t *testing.T) {
 			})
 		}
 	})
-	
+
 	t.Run("individual_validation_functions", func(t *testing.T) {
 		// Test each validation function with edge cases
 		testCases := []struct {
@@ -1403,7 +1395,7 @@ func TestErrorHandlingAndEdgeCases(t *testing.T) {
 				name: "validFace_edge_cases",
 				testFunc: func(t *testing.T) {
 					faces := []uint32{20000, 20001, 20002}
-					
+
 					if !validFace(faces, 0) {
 						t.Error("Expected face 0 to be valid (zero case)")
 					}
@@ -1425,7 +1417,7 @@ func TestErrorHandlingAndEdgeCases(t *testing.T) {
 				name: "validHair_edge_cases",
 				testFunc: func(t *testing.T) {
 					hairs := []uint32{30000, 30001, 30002}
-					
+
 					if !validHair(hairs, 0) {
 						t.Error("Expected hair 0 to be valid (zero case)")
 					}
@@ -1444,7 +1436,7 @@ func TestErrorHandlingAndEdgeCases(t *testing.T) {
 				name: "validHairColor_edge_cases",
 				testFunc: func(t *testing.T) {
 					hairColors := []uint32{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-					
+
 					if !validHairColor(hairColors, 0) {
 						t.Error("Expected hair color 0 to be valid (zero case)")
 					}
@@ -1463,7 +1455,7 @@ func TestErrorHandlingAndEdgeCases(t *testing.T) {
 				name: "validSkinColor_edge_cases",
 				testFunc: func(t *testing.T) {
 					skinColors := []uint32{0, 1, 2, 3, 4}
-					
+
 					if !validSkinColor(skinColors, 0) {
 						t.Error("Expected skin color 0 to be valid (zero case)")
 					}
@@ -1482,7 +1474,7 @@ func TestErrorHandlingAndEdgeCases(t *testing.T) {
 				name: "validTop_edge_cases",
 				testFunc: func(t *testing.T) {
 					tops := []uint32{1040000, 1040001, 1040002}
-					
+
 					if !validTop(tops, 0) {
 						t.Error("Expected top 0 to be valid (zero case)")
 					}
@@ -1501,7 +1493,7 @@ func TestErrorHandlingAndEdgeCases(t *testing.T) {
 				name: "validBottom_edge_cases",
 				testFunc: func(t *testing.T) {
 					bottoms := []uint32{1060000, 1060001, 1060002}
-					
+
 					if !validBottom(bottoms, 0) {
 						t.Error("Expected bottom 0 to be valid (zero case)")
 					}
@@ -1520,7 +1512,7 @@ func TestErrorHandlingAndEdgeCases(t *testing.T) {
 				name: "validShoes_edge_cases",
 				testFunc: func(t *testing.T) {
 					shoes := []uint32{1072000, 1072001, 1072002}
-					
+
 					if !validShoes(shoes, 0) {
 						t.Error("Expected shoes 0 to be valid (zero case)")
 					}
@@ -1539,7 +1531,7 @@ func TestErrorHandlingAndEdgeCases(t *testing.T) {
 				name: "validWeapon_edge_cases",
 				testFunc: func(t *testing.T) {
 					weapons := []uint32{1302000, 1302001, 1302002}
-					
+
 					if !validWeapon(weapons, 0) {
 						t.Error("Expected weapon 0 to be valid (zero case)")
 					}
@@ -1555,7 +1547,7 @@ func TestErrorHandlingAndEdgeCases(t *testing.T) {
 				},
 			},
 		}
-		
+
 		for _, tc := range testCases {
 			t.Run(tc.name, tc.testFunc)
 		}
@@ -1566,7 +1558,7 @@ func TestErrorHandlingAndEdgeCases(t *testing.T) {
 // This test documents the expected behavior but will be skipped in normal test runs
 func TestTenantConfigurationErrorCases(t *testing.T) {
 	t.Skip("This test requires tenant configuration and will cause log.Fatalf - skipping in normal test runs")
-	
+
 	// This test is documented for completeness but skipped due to tenant configuration requirements
 	// The actual validation logic is tested in the other test functions above
 	t.Logf("Comprehensive error handling tests were added covering:")
@@ -1582,17 +1574,17 @@ func TestTenantConfigurationErrorCases(t *testing.T) {
 // TestValidationBoundaryConditions tests edge cases in validation functions
 func TestValidationBoundaryConditions(t *testing.T) {
 	tests := []struct {
-		name          string
-		testFunc      func(t *testing.T)
-		description   string
+		name        string
+		testFunc    func(t *testing.T)
+		description string
 	}{
 		{
-			name: "validOption_empty_slice",
+			name:        "validOption_empty_slice",
 			description: "Test validOption with empty options slice",
 			testFunc: func(t *testing.T) {
 				// Empty options slice should only allow 0
 				emptyOptions := []uint32{}
-				
+
 				if !validOption(emptyOptions, 0) {
 					t.Error("Expected 0 to be valid with empty options")
 				}
@@ -1605,12 +1597,12 @@ func TestValidationBoundaryConditions(t *testing.T) {
 			},
 		},
 		{
-			name: "validOption_nil_slice",
+			name:        "validOption_nil_slice",
 			description: "Test validOption with nil options slice",
 			testFunc: func(t *testing.T) {
 				// Nil options slice should only allow 0
 				var nilOptions []uint32 = nil
-				
+
 				if !validOption(nilOptions, 0) {
 					t.Error("Expected 0 to be valid with nil options")
 				}
@@ -1620,11 +1612,11 @@ func TestValidationBoundaryConditions(t *testing.T) {
 			},
 		},
 		{
-			name: "validOption_single_element",
+			name:        "validOption_single_element",
 			description: "Test validOption with single element slice",
 			testFunc: func(t *testing.T) {
 				singleOptions := []uint32{42}
-				
+
 				if !validOption(singleOptions, 0) {
 					t.Error("Expected 0 to be valid with single element options")
 				}
@@ -1637,11 +1629,11 @@ func TestValidationBoundaryConditions(t *testing.T) {
 			},
 		},
 		{
-			name: "validOption_duplicates",
+			name:        "validOption_duplicates",
 			description: "Test validOption with duplicate values",
 			testFunc: func(t *testing.T) {
 				duplicateOptions := []uint32{100, 100, 200, 200, 300}
-				
+
 				if !validOption(duplicateOptions, 0) {
 					t.Error("Expected 0 to be valid with duplicate options")
 				}
@@ -1660,11 +1652,11 @@ func TestValidationBoundaryConditions(t *testing.T) {
 			},
 		},
 		{
-			name: "validOption_max_values",
+			name:        "validOption_max_values",
 			description: "Test validOption with maximum uint32 values",
 			testFunc: func(t *testing.T) {
 				maxOptions := []uint32{0, 1, 4294967295} // Max uint32
-				
+
 				if !validOption(maxOptions, 0) {
 					t.Error("Expected 0 to be valid with max value options")
 				}
@@ -1680,7 +1672,7 @@ func TestValidationBoundaryConditions(t *testing.T) {
 			},
 		},
 		{
-			name: "validGender_boundary",
+			name:        "validGender_boundary",
 			description: "Test gender validation boundary conditions",
 			testFunc: func(t *testing.T) {
 				// Test valid genders
@@ -1690,7 +1682,7 @@ func TestValidationBoundaryConditions(t *testing.T) {
 				if !validGender(1) {
 					t.Error("Expected gender 1 to be valid")
 				}
-				
+
 				// Test invalid genders
 				if validGender(2) {
 					t.Error("Expected gender 2 to be invalid")
@@ -1704,7 +1696,7 @@ func TestValidationBoundaryConditions(t *testing.T) {
 			},
 		},
 		{
-			name: "validJob_always_true",
+			name:        "validJob_always_true",
 			description: "Test job validation - currently always returns true",
 			testFunc: func(t *testing.T) {
 				// Current implementation always returns true
@@ -1740,7 +1732,7 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 		description string
 	}{
 		{
-			name: "nil_uuid_handling",
+			name:        "nil_uuid_handling",
 			description: "Test saga construction with nil UUID",
 			setupTest: func(t *testing.T) (uuid.UUID, RestModel, template.RestModel) {
 				input := RestModel{
@@ -1759,7 +1751,7 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 					Shoes:       1072001,
 					Weapon:      1302000,
 				}
-				
+
 				template := template.RestModel{
 					JobIndex:    100,
 					SubJobIndex: 0,
@@ -1768,12 +1760,12 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 					Items:       []uint32{2000000},
 					Skills:      []uint32{1000},
 				}
-				
+
 				return uuid.Nil, input, template
 			},
 		},
 		{
-			name: "empty_account_id",
+			name:        "empty_account_id",
 			description: "Test saga construction with zero account ID",
 			setupTest: func(t *testing.T) (uuid.UUID, RestModel, template.RestModel) {
 				input := RestModel{
@@ -1792,7 +1784,7 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 					Shoes:       1072001,
 					Weapon:      1302000,
 				}
-				
+
 				template := template.RestModel{
 					JobIndex:    100,
 					SubJobIndex: 0,
@@ -1801,12 +1793,12 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 					Items:       []uint32{2000000},
 					Skills:      []uint32{1000},
 				}
-				
+
 				return uuid.New(), input, template
 			},
 		},
 		{
-			name: "very_large_template_items",
+			name:        "very_large_template_items",
 			description: "Test saga construction with large number of template items",
 			setupTest: func(t *testing.T) (uuid.UUID, RestModel, template.RestModel) {
 				input := RestModel{
@@ -1825,13 +1817,13 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 					Shoes:       0,
 					Weapon:      0,
 				}
-				
+
 				// Create large number of template items
 				manyItems := make([]uint32, 1000)
 				for i := range manyItems {
 					manyItems[i] = uint32(2000000 + i)
 				}
-				
+
 				template := template.RestModel{
 					JobIndex:    100,
 					SubJobIndex: 0,
@@ -1840,12 +1832,12 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 					Items:       manyItems,
 					Skills:      []uint32{},
 				}
-				
+
 				return uuid.New(), input, template
 			},
 		},
 		{
-			name: "very_large_template_skills",
+			name:        "very_large_template_skills",
 			description: "Test saga construction with large number of template skills",
 			setupTest: func(t *testing.T) (uuid.UUID, RestModel, template.RestModel) {
 				input := RestModel{
@@ -1864,13 +1856,13 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 					Shoes:       0,
 					Weapon:      0,
 				}
-				
+
 				// Create large number of template skills
 				manySkills := make([]uint32, 1000)
 				for i := range manySkills {
 					manySkills[i] = uint32(1000 + i)
 				}
-				
+
 				template := template.RestModel{
 					JobIndex:    100,
 					SubJobIndex: 0,
@@ -1879,7 +1871,7 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 					Items:       []uint32{},
 					Skills:      manySkills,
 				}
-				
+
 				return uuid.New(), input, template
 			},
 		},
@@ -1888,26 +1880,26 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Logf("Testing: %s", tt.description)
-			
+
 			transactionId, input, template := tt.setupTest(t)
-			
+
 			// This should not panic, even with edge case inputs
 			result := buildCharacterCreationSaga(transactionId, input, template)
-			
+
 			// Verify basic saga structure is still valid
 			if result.TransactionId != transactionId {
 				t.Errorf("Expected transaction ID %s, got %s", transactionId, result.TransactionId)
 			}
-			
+
 			if result.SagaType != saga.CharacterCreation {
 				t.Errorf("Expected saga type %s, got %s", saga.CharacterCreation, result.SagaType)
 			}
-			
+
 			// Verify steps were created correctly
 			if len(result.Steps) == 0 {
 				t.Error("Expected at least one step (character creation)")
 			}
-			
+
 			// First step should always be character creation
 			if len(result.Steps) > 0 {
 				firstStep := result.Steps[0]
@@ -1918,7 +1910,7 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 					t.Errorf("Expected first step action %s, got %s", saga.CreateCharacter, firstStep.Action)
 				}
 			}
-			
+
 			// Verify all steps have timestamps
 			for i, step := range result.Steps {
 				if step.CreatedAt.IsZero() {
@@ -1928,7 +1920,7 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 					t.Errorf("Step %d missing UpdatedAt timestamp", i)
 				}
 			}
-			
+
 			t.Logf("Successfully handled edge case with %d steps", len(result.Steps))
 		})
 	}
@@ -1952,7 +1944,7 @@ func TestConcurrentSagaCreation(t *testing.T) {
 		Shoes:       1072001,
 		Weapon:      1302000,
 	}
-	
+
 	template := template.RestModel{
 		JobIndex:    100,
 		SubJobIndex: 0,
@@ -1961,10 +1953,10 @@ func TestConcurrentSagaCreation(t *testing.T) {
 		Items:       []uint32{2000000, 2000001},
 		Skills:      []uint32{1000, 1001},
 	}
-	
+
 	const numGoroutines = 100
 	results := make([]saga.Saga, numGoroutines)
-	
+
 	// Create sagas concurrently
 	for i := 0; i < numGoroutines; i++ {
 		go func(index int) {
@@ -1972,10 +1964,10 @@ func TestConcurrentSagaCreation(t *testing.T) {
 			results[index] = buildCharacterCreationSaga(transactionId, input, template)
 		}(i)
 	}
-	
+
 	// Wait a bit for all goroutines to complete
 	time.Sleep(100 * time.Millisecond)
-	
+
 	// Verify all sagas were created successfully
 	for i, result := range results {
 		if result.TransactionId == uuid.Nil {
@@ -1988,7 +1980,7 @@ func TestConcurrentSagaCreation(t *testing.T) {
 			t.Errorf("Saga %d has no steps", i)
 		}
 	}
-	
+
 	// Verify all transaction IDs are unique
 	transactionIds := make(map[uuid.UUID]bool)
 	for i, result := range results {
@@ -1997,6 +1989,6 @@ func TestConcurrentSagaCreation(t *testing.T) {
 		}
 		transactionIds[result.TransactionId] = true
 	}
-	
+
 	t.Logf("Successfully created %d unique sagas concurrently", numGoroutines)
 }

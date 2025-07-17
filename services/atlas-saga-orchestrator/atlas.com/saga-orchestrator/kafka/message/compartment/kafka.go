@@ -22,6 +22,11 @@ const (
 	CommandSort              = "SORT"
 	CommandAccept            = "ACCEPT"
 	CommandRelease           = "RELEASE"
+	CommandTypeCreate        = "CREATE"
+	CommandTypeDelete        = "DELETE"
+	CommandTypeEquip         = "EQUIP"
+	CommandTypeUnequip       = "UNEQUIP"
+	CommandTypeCreateAndEquip = "CREATE_AND_EQUIP"
 )
 
 type Command[E any] struct {
@@ -32,14 +37,31 @@ type Command[E any] struct {
 	Body          E         `json:"body"`
 }
 
+type CreateCommandBody struct {
+	TemplateId uint32 `json:"templateId"`
+	Quantity   uint32 `json:"quantity"`
+}
+
+type DeleteCommandBody struct {
+	TemplateId uint32 `json:"templateId"`
+	Quantity   uint32 `json:"quantity"`
+}
+
 type EquipCommandBody struct {
-	Source      int16 `json:"source"`
-	Destination int16 `json:"destination"`
+	InventoryType byte  `json:"inventoryType"`
+	Source        int16 `json:"source"`
+	Destination   int16 `json:"destination"`
 }
 
 type UnequipCommandBody struct {
-	Source      int16 `json:"source"`
-	Destination int16 `json:"destination"`
+	InventoryType byte  `json:"inventoryType"`
+	Source        int16 `json:"source"`
+	Destination   int16 `json:"destination"`
+}
+
+type CreateAndEquipCommandBody struct {
+	TemplateId uint32 `json:"templateId"`
+	Quantity   uint32 `json:"quantity"`
 }
 
 type MoveCommandBody struct {
@@ -148,6 +170,8 @@ type StatusEvent[E any] struct {
 type CreatedStatusEventBody struct {
 	Type     byte   `json:"type"`
 	Capacity uint32 `json:"capacity"`
+	AssetId  uint32 `json:"assetId,omitempty"`
+	Quantity uint32 `json:"quantity,omitempty"`
 }
 
 type CreationFailedStatusEventBody struct {
@@ -201,11 +225,13 @@ type ErrorEventBody struct {
 }
 
 type EquippedEventBody struct {
-	Source      int16 `json:"source"`
-	Destination int16 `json:"destination"`
+	InventoryType byte  `json:"inventoryType,omitempty"`
+	Source        int16 `json:"source"`
+	Destination   int16 `json:"destination"`
 }
 
 type UnequippedEventBody struct {
-	Source      int16 `json:"source"`
-	Destination int16 `json:"destination"`
+	InventoryType byte  `json:"inventoryType,omitempty"`
+	Source        int16 `json:"source"`
+	Destination   int16 `json:"destination"`
 }

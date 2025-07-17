@@ -1020,7 +1020,7 @@ func TestCreateAndEquipAssetStepBuilder(t *testing.T) {
 	})
 }
 
-func TestCreateAndEquipAssetPayloadValidation(t *testing.T) {
+func TestCreateAndEquipAssetPayloadEdgeCases(t *testing.T) {
 	// Test edge cases and validation scenarios for CreateAndEquipAssetPayload
 	t.Run("Edge case values", func(t *testing.T) {
 		testCases := []struct {

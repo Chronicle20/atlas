@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func TestBuildCharacterCreationSaga(t *testing.T) {
+func TestBuildCharacterCreationOnlySaga(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    RestModel
@@ -49,25 +49,24 @@ func TestBuildCharacterCreationSaga(t *testing.T) {
 			},
 			validate: func(t *testing.T, result saga.Saga) {
 				// Verify saga metadata
-				if result.SagaType != saga.CharacterCreation {
-					t.Errorf("Expected saga type %v, got %v", saga.CharacterCreation, result.SagaType)
+				if result.SagaType != saga.CharacterCreationOnly {
+					t.Errorf("Expected saga type %v, got %v", saga.CharacterCreationOnly, result.SagaType)
 				}
 
 				if result.InitiatedBy != "account_1001" {
 					t.Errorf("Expected initiatedBy 'account_1001', got '%s'", result.InitiatedBy)
 				}
 
-				// Verify we have the expected number of steps
-				// 1 create character + 3 award items + 4 equip assets + 2 create skills = 10 steps
-				expectedSteps := 1 + 3 + 4 + 2
+				// Verify we have only the character creation step
+				expectedSteps := 1
 				if len(result.Steps) != expectedSteps {
 					t.Errorf("Expected %d steps, got %d", expectedSteps, len(result.Steps))
 				}
 
 				// Verify first step is character creation
 				firstStep := result.Steps[0]
-				if firstStep.StepId != "create" {
-					t.Errorf("Expected first step ID 'create', got '%s'", firstStep.StepId)
+				if firstStep.StepId != "create_character" {
+					t.Errorf("Expected first step ID 'create_character', got '%s'", firstStep.StepId)
 				}
 				if firstStep.Action != saga.CreateCharacter {
 					t.Errorf("Expected first step action %v, got %v", saga.CreateCharacter, firstStep.Action)
@@ -114,106 +113,6 @@ func TestBuildCharacterCreationSaga(t *testing.T) {
 				} else {
 					t.Error("First step payload is not CharacterCreatePayload")
 				}
-
-				// Verify award item steps
-				for i := 0; i < 3; i++ {
-					stepIndex := 1 + i
-					step := result.Steps[stepIndex]
-					expectedStepId := "award_item_" + string(rune('0'+i))
-					if step.StepId != expectedStepId {
-						t.Errorf("Expected step ID '%s', got '%s'", expectedStepId, step.StepId)
-					}
-					if step.Action != saga.AwardAsset {
-						t.Errorf("Expected step action %v, got %v", saga.AwardAsset, step.Action)
-					}
-					if step.Status != saga.Pending {
-						t.Errorf("Expected step status %v, got %v", saga.Pending, step.Status)
-					}
-
-					if payload, ok := step.Payload.(saga.AwardItemActionPayload); ok {
-						if payload.CharacterId != 0 {
-							t.Errorf("Expected CharacterId 0 (to be set by orchestrator), got %d", payload.CharacterId)
-						}
-						expectedTemplateId := uint32(2000000 + i)
-						if payload.Item.TemplateId != expectedTemplateId {
-							t.Errorf("Expected TemplateId %d, got %d", expectedTemplateId, payload.Item.TemplateId)
-						}
-						if payload.Item.Quantity != 1 {
-							t.Errorf("Expected Quantity 1, got %d", payload.Item.Quantity)
-						}
-					} else {
-						t.Errorf("Step %d payload is not AwardItemActionPayload", stepIndex)
-					}
-				}
-
-				// Verify equipment steps
-				equipmentNames := []string{"top", "bottom", "shoes", "weapon"}
-				equipmentTemplateIds := []uint32{1040002, 1060002, 1072001, 1302000}
-				for i := 0; i < 4; i++ {
-					stepIndex := 4 + i
-					step := result.Steps[stepIndex]
-					expectedStepId := "equip_" + equipmentNames[i]
-					if step.StepId != expectedStepId {
-						t.Errorf("Expected step ID '%s', got '%s'", expectedStepId, step.StepId)
-					}
-					if step.Action != saga.CreateAndEquipAsset {
-						t.Errorf("Expected step action %v, got %v", saga.CreateAndEquipAsset, step.Action)
-					}
-					if step.Status != saga.Pending {
-						t.Errorf("Expected step status %v, got %v", saga.Pending, step.Status)
-					}
-
-					if payload, ok := step.Payload.(saga.CreateAndEquipAssetPayload); ok {
-						if payload.CharacterId != 0 {
-							t.Errorf("Expected CharacterId 0 (to be set by orchestrator), got %d", payload.CharacterId)
-						}
-						if payload.Item.TemplateId != equipmentTemplateIds[i] {
-							t.Errorf("Expected TemplateId %d, got %d", equipmentTemplateIds[i], payload.Item.TemplateId)
-						}
-						if payload.Item.Quantity != 1 {
-							t.Errorf("Expected Quantity 1, got %d", payload.Item.Quantity)
-						}
-					} else {
-						t.Errorf("Step %d payload is not CreateAndEquipAssetPayload", stepIndex)
-					}
-				}
-
-				// Verify skill creation steps
-				for i := 0; i < 2; i++ {
-					stepIndex := 8 + i
-					step := result.Steps[stepIndex]
-					expectedStepId := "create_skill_" + string(rune('0'+i))
-					if step.StepId != expectedStepId {
-						t.Errorf("Expected step ID '%s', got '%s'", expectedStepId, step.StepId)
-					}
-					if step.Action != saga.CreateSkill {
-						t.Errorf("Expected step action %v, got %v", saga.CreateSkill, step.Action)
-					}
-					if step.Status != saga.Pending {
-						t.Errorf("Expected step status %v, got %v", saga.Pending, step.Status)
-					}
-
-					if payload, ok := step.Payload.(saga.CreateSkillPayload); ok {
-						if payload.CharacterId != 0 {
-							t.Errorf("Expected CharacterId 0 (to be set by orchestrator), got %d", payload.CharacterId)
-						}
-						expectedSkillId := uint32(1000 + i)
-						if payload.SkillId != expectedSkillId {
-							t.Errorf("Expected SkillId %d, got %d", expectedSkillId, payload.SkillId)
-						}
-						if payload.Level != 1 {
-							t.Errorf("Expected Level 1, got %d", payload.Level)
-						}
-						if payload.MasterLevel != 0 {
-							t.Errorf("Expected MasterLevel 0, got %d", payload.MasterLevel)
-						}
-						if !payload.Expiration.IsZero() {
-							t.Errorf("Expected zero Expiration, got %v", payload.Expiration)
-						}
-					} else {
-						t.Errorf("Step %d payload is not CreateSkillPayload", stepIndex)
-					}
-				}
 			},
 		},
 		{
@@ -251,8 +150,8 @@ func TestBuildCharacterCreationSaga(t *testing.T) {
 
 				// Verify it's just the character creation step
 				firstStep := result.Steps[0]
-				if firstStep.StepId != "create" {
-					t.Errorf("Expected first step ID 'create', got '%s'", firstStep.StepId)
+				if firstStep.StepId != "create_character" {
+					t.Errorf("Expected first step ID 'create_character', got '%s'", firstStep.StepId)
 				}
 				if firstStep.Action != saga.CreateCharacter {
 					t.Errorf("Expected first step action %v, got %v", saga.CreateCharacter, firstStep.Action)
@@ -286,25 +185,19 @@ func TestBuildCharacterCreationSaga(t *testing.T) {
 				Skills:      []uint32{1002},
 			},
 			validate: func(t *testing.T, result saga.Saga) {
-				// 1 create character + 1 award item + 2 equip assets (top, weapon) + 1 create skill = 5 steps
-				expectedSteps := 1 + 1 + 2 + 1
+				// Only character creation step
+				expectedSteps := 1
 				if len(result.Steps) != expectedSteps {
 					t.Errorf("Expected %d steps, got %d", expectedSteps, len(result.Steps))
 				}
 
-				// Check that we only have equip steps for top and weapon
-				equipStepFound := map[string]bool{"equip_top": false, "equip_weapon": false}
-				for _, step := range result.Steps[2:4] { // Skip create and award steps
-					if step.Action == saga.CreateAndEquipAsset {
-						equipStepFound[step.StepId] = true
-					}
+				// Verify it's just the character creation step
+				firstStep := result.Steps[0]
+				if firstStep.StepId != "create_character" {
+					t.Errorf("Expected first step ID 'create_character', got '%s'", firstStep.StepId)
 				}
-
-				if !equipStepFound["equip_top"] {
-					t.Error("Expected equip_top step not found")
-				}
-				if !equipStepFound["equip_weapon"] {
-					t.Error("Expected equip_weapon step not found")
+				if firstStep.Action != saga.CreateCharacter {
+					t.Errorf("Expected first step action %v, got %v", saga.CreateCharacter, firstStep.Action)
 				}
 			},
 		},
@@ -313,7 +206,7 @@ func TestBuildCharacterCreationSaga(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			transactionId := uuid.New()
-			result := buildCharacterCreationSaga(transactionId, tt.input, tt.template)
+			result := buildCharacterCreationOnlySaga(transactionId, tt.input)
 
 			// Verify transaction ID
 			if result.TransactionId != transactionId {
@@ -326,11 +219,11 @@ func TestBuildCharacterCreationSaga(t *testing.T) {
 	}
 }
 
-func TestBuildCharacterCreationSaga_StepOrdering(t *testing.T) {
+func TestBuildCharacterCreationFollowUpSaga(t *testing.T) {
 	input := RestModel{
 		AccountId:   1001,
 		WorldId:     0,
-		Name:        "OrderTestChar",
+		Name:        "TestCharacter",
 		Gender:      0,
 		JobIndex:    100,
 		SubJobIndex: 0,
@@ -349,27 +242,82 @@ func TestBuildCharacterCreationSaga_StepOrdering(t *testing.T) {
 		SubJobIndex: 0,
 		MapId:       10000,
 		Gender:      0,
-		Items:       []uint32{2000000, 2000001},
-		Skills:      []uint32{1000, 1001},
+		Items:       []uint32{2000000, 2000001, 2000002}, // Sample items
+		Skills:      []uint32{1000, 1001},                // Sample skills
 	}
 
 	transactionId := uuid.New()
-	result := buildCharacterCreationSaga(transactionId, input, template)
+	characterId := uint32(12345)
+	result := BuildCharacterCreationFollowUpSaga(transactionId, characterId, input, template)
 
-	// Verify step ordering: create → award items → equip assets → create skills
+	// Verify saga metadata
+	if result.SagaType != saga.CharacterCreationFollowUp {
+		t.Errorf("Expected saga type %v, got %v", saga.CharacterCreationFollowUp, result.SagaType)
+	}
+
+	if result.InitiatedBy != "account_1001" {
+		t.Errorf("Expected initiatedBy 'account_1001', got '%s'", result.InitiatedBy)
+	}
+
+	// Verify we have the expected number of steps
+	// 3 award items + 4 equip assets + 2 create skills = 9 steps
+	expectedSteps := 3 + 4 + 2
+	if len(result.Steps) != expectedSteps {
+		t.Errorf("Expected %d steps, got %d", expectedSteps, len(result.Steps))
+	}
+
+	// Verify all steps have the correct character ID
+	for i, step := range result.Steps {
+		switch step.Action {
+		case saga.AwardAsset:
+			if payload, ok := step.Payload.(saga.AwardItemActionPayload); ok {
+				if payload.CharacterId != characterId {
+					t.Errorf("Step %d: Expected CharacterId %d, got %d", i, characterId, payload.CharacterId)
+				}
+			}
+		case saga.CreateAndEquipAsset:
+			if payload, ok := step.Payload.(saga.CreateAndEquipAssetPayload); ok {
+				if payload.CharacterId != characterId {
+					t.Errorf("Step %d: Expected CharacterId %d, got %d", i, characterId, payload.CharacterId)
+				}
+			}
+		case saga.CreateSkill:
+			if payload, ok := step.Payload.(saga.CreateSkillPayload); ok {
+				if payload.CharacterId != characterId {
+					t.Errorf("Step %d: Expected CharacterId %d, got %d", i, characterId, payload.CharacterId)
+				}
+			}
+		}
+	}
+}
+
+func TestBuildCharacterCreationOnlySaga_StepOrdering(t *testing.T) {
+	input := RestModel{
+		AccountId:   1001,
+		WorldId:     0,
+		Name:        "OrderTestChar",
+		Gender:      0,
+		JobIndex:    100,
+		SubJobIndex: 0,
+		Face:        20000,
+		Hair:        30000,
+		HairColor:   7,
+		SkinColor:   0,
+		Top:         1040002,
+		Bottom:      1060002,
+		Shoes:       1072001,
+		Weapon:      1302000,
+	}
+
+	transactionId := uuid.New()
+	result := buildCharacterCreationOnlySaga(transactionId, input)
+
+	// Verify step ordering: only create character
 	expectedStepOrder := []struct {
 		stepType string
 		action   saga.Action
 	}{
-		{"create", saga.CreateCharacter},
-		{"award_item_0", saga.AwardAsset},
-		{"award_item_1", saga.AwardAsset},
-		{"equip_top", saga.CreateAndEquipAsset},
-		{"equip_bottom", saga.CreateAndEquipAsset},
-		{"equip_shoes", saga.CreateAndEquipAsset},
-		{"equip_weapon", saga.CreateAndEquipAsset},
-		{"create_skill_0", saga.CreateSkill},
-		{"create_skill_1", saga.CreateSkill},
+		{"create_character", saga.CreateCharacter},
 	}
 
 	if len(result.Steps) != len(expectedStepOrder) {
@@ -396,7 +344,7 @@ func TestBuildCharacterCreationSaga_StepOrdering(t *testing.T) {
 	}
 }
 
-func TestBuildCharacterCreationSaga_EmptyTemplate(t *testing.T) {
+func TestBuildCharacterCreationOnlySaga_EmptyTemplate(t *testing.T) {
 	input := RestModel{
 		AccountId:   4001,
 		WorldId:     0,
@@ -414,18 +362,8 @@ func TestBuildCharacterCreationSaga_EmptyTemplate(t *testing.T) {
 		Weapon:      0,
 	}
 
-	// Empty template
-	template := template.RestModel{
-		JobIndex:    400,
-		SubJobIndex: 0,
-		MapId:       40000,
-		Gender:      0,
-		Items:       []uint32{},
-		Skills:      []uint32{},
-	}
-
 	transactionId := uuid.New()
-	result := buildCharacterCreationSaga(transactionId, input, template)
+	result := buildCharacterCreationOnlySaga(transactionId, input)
 
 	// Should only have character creation step
 	if len(result.Steps) != 1 {
@@ -433,15 +371,15 @@ func TestBuildCharacterCreationSaga_EmptyTemplate(t *testing.T) {
 	}
 
 	step := result.Steps[0]
-	if step.StepId != "create" {
-		t.Errorf("Expected step ID 'create', got '%s'", step.StepId)
+	if step.StepId != "create_character" {
+		t.Errorf("Expected step ID 'create_character', got '%s'", step.StepId)
 	}
 	if step.Action != saga.CreateCharacter {
 		t.Errorf("Expected action %v, got %v", saga.CreateCharacter, step.Action)
 	}
 }
 
-func TestBuildCharacterCreationSaga_AllFieldsPresent(t *testing.T) {
+func TestBuildCharacterCreationOnlySaga_AllFieldsPresent(t *testing.T) {
 	input := RestModel{
 		AccountId:   5001,
 		WorldId:     255,
@@ -459,7 +397,8 @@ func TestBuildCharacterCreationSaga_AllFieldsPresent(t *testing.T) {
 		Weapon:      1302999,
 	}
 
-	template := template.RestModel{
+	// Template not needed for character creation only saga test
+	_ = template.RestModel{
 		JobIndex:    500,
 		SubJobIndex: 1,
 		MapId:       50000,
@@ -469,7 +408,7 @@ func TestBuildCharacterCreationSaga_AllFieldsPresent(t *testing.T) {
 	}
 
 	transactionId := uuid.New()
-	result := buildCharacterCreationSaga(transactionId, input, template)
+	result := buildCharacterCreationOnlySaga(transactionId, input)
 
 	// Verify character create payload has all fields correctly mapped
 	createStep := result.Steps[0]
@@ -514,7 +453,7 @@ func TestBuildCharacterCreationSaga_AllFieldsPresent(t *testing.T) {
 	}
 }
 
-func TestBuildCharacterCreationSaga_Timestamps(t *testing.T) {
+func TestBuildCharacterCreationOnlySaga_Timestamps(t *testing.T) {
 	input := RestModel{
 		AccountId:   6001,
 		WorldId:     0,
@@ -532,7 +471,8 @@ func TestBuildCharacterCreationSaga_Timestamps(t *testing.T) {
 		Weapon:      0,
 	}
 
-	template := template.RestModel{
+	// Template not needed for character creation only saga test
+	_ = template.RestModel{
 		JobIndex:    100,
 		SubJobIndex: 0,
 		MapId:       10000,
@@ -543,7 +483,7 @@ func TestBuildCharacterCreationSaga_Timestamps(t *testing.T) {
 
 	beforeTime := time.Now()
 	transactionId := uuid.New()
-	result := buildCharacterCreationSaga(transactionId, input, template)
+	result := buildCharacterCreationOnlySaga(transactionId, input)
 	afterTime := time.Now()
 
 	// Verify all steps have proper timestamps
@@ -1187,42 +1127,79 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 		Skills:      []uint32{1000, 1001, 1002},
 	}
 
-	// Test saga construction
-	transactionId := uuid.New()
-	result := buildCharacterCreationSaga(transactionId, input, template)
+	// Test saga construction - now using the new two-saga approach
+	characterCreationTransactionId := uuid.New()
+	characterOnlyResult := buildCharacterCreationOnlySaga(characterCreationTransactionId, input)
 
-	// Verify orchestrator-specific saga structure
-	t.Run("saga_structure_for_orchestrator", func(t *testing.T) {
-		// Verify saga type is set correctly for orchestrator
-		if result.SagaType != saga.CharacterCreation {
-			t.Errorf("Expected saga type 'character_creation', got '%s'", result.SagaType)
+	followUpTransactionId := uuid.New()
+	characterId := uint32(12345) // Mock character ID
+	followUpResult := BuildCharacterCreationFollowUpSaga(followUpTransactionId, characterId, input, template)
+
+	// Verify character creation saga structure
+	t.Run("character_creation_saga_structure", func(t *testing.T) {
+		// Verify saga type
+		if characterOnlyResult.SagaType != saga.CharacterCreationOnly {
+			t.Errorf("Expected saga type 'character_creation_only', got '%s'", characterOnlyResult.SagaType)
 		}
 
-		// Verify transaction ID is set
-		if result.TransactionId != transactionId {
-			t.Errorf("Expected transaction ID %s, got %s", transactionId, result.TransactionId)
+		// Verify transaction ID
+		if characterOnlyResult.TransactionId != characterCreationTransactionId {
+			t.Errorf("Expected transaction ID %s, got %s", characterCreationTransactionId, characterOnlyResult.TransactionId)
 		}
 
 		// Verify initiated by field
 		expectedInitiatedBy := "account_3001"
-		if result.InitiatedBy != expectedInitiatedBy {
-			t.Errorf("Expected initiated by '%s', got '%s'", expectedInitiatedBy, result.InitiatedBy)
+		if characterOnlyResult.InitiatedBy != expectedInitiatedBy {
+			t.Errorf("Expected initiated by '%s', got '%s'", expectedInitiatedBy, characterOnlyResult.InitiatedBy)
 		}
 
-		// Verify step count: 1 create + 3 items + 4 equipment + 3 skills = 11 steps
-		expectedSteps := 11
-		if len(result.Steps) != expectedSteps {
-			t.Errorf("Expected %d steps for orchestrator, got %d", expectedSteps, len(result.Steps))
+		// Verify step count: 1 create character
+		expectedSteps := 1
+		if len(characterOnlyResult.Steps) != expectedSteps {
+			t.Errorf("Expected %d steps for character creation saga, got %d", expectedSteps, len(characterOnlyResult.Steps))
 		}
 	})
 
-	t.Run("orchestrator_step_sequence", func(t *testing.T) {
-		// Verify the steps are in the correct order for orchestrator processing
-		expectedSequence := []struct {
+	// Verify follow-up saga structure
+	t.Run("follow_up_saga_structure", func(t *testing.T) {
+		// Verify saga type
+		if followUpResult.SagaType != saga.CharacterCreationFollowUp {
+			t.Errorf("Expected saga type 'character_creation_followup', got '%s'", followUpResult.SagaType)
+		}
+
+		// Verify transaction ID
+		if followUpResult.TransactionId != followUpTransactionId {
+			t.Errorf("Expected transaction ID %s, got %s", followUpTransactionId, followUpResult.TransactionId)
+		}
+
+		// Verify step count: 3 items + 4 equipment + 3 skills = 10 steps
+		expectedSteps := 10
+		if len(followUpResult.Steps) != expectedSteps {
+			t.Errorf("Expected %d steps for follow-up saga, got %d", expectedSteps, len(followUpResult.Steps))
+		}
+	})
+
+	t.Run("character_creation_step_sequence", func(t *testing.T) {
+		// Verify character creation saga has only the create step
+		if len(characterOnlyResult.Steps) != 1 {
+			t.Errorf("Expected 1 step in character creation saga, got %d", len(characterOnlyResult.Steps))
+		}
+		
+		step := characterOnlyResult.Steps[0]
+		if step.StepId != "create_character" {
+			t.Errorf("Expected step ID 'create_character', got '%s'", step.StepId)
+		}
+		if step.Action != saga.CreateCharacter {
+			t.Errorf("Expected action CreateCharacter, got %v", step.Action)
+		}
+	})
+
+	t.Run("follow_up_step_sequence", func(t *testing.T) {
+		// Verify the follow-up saga steps are in the correct order
+		expectedFollowUpSequence := []struct {
 			stepType string
 			action   saga.Action
 		}{
-			{"create", saga.CreateCharacter},
 			{"award_item_0", saga.AwardAsset},
 			{"award_item_1", saga.AwardAsset},
 			{"award_item_2", saga.AwardAsset},
@@ -1235,13 +1212,13 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 			{"create_skill_2", saga.CreateSkill},
 		}
 
-		for i, expected := range expectedSequence {
-			if i >= len(result.Steps) {
+		for i, expected := range expectedFollowUpSequence {
+			if i >= len(followUpResult.Steps) {
 				t.Errorf("Missing step %d: expected %s", i, expected.stepType)
 				continue
 			}
 
-			step := result.Steps[i]
+			step := followUpResult.Steps[i]
 			if step.StepId != expected.stepType {
 				t.Errorf("Step %d: expected step ID '%s', got '%s'", i, expected.stepType, step.StepId)
 			}
@@ -1259,7 +1236,7 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 
 	t.Run("orchestrator_payload_validation", func(t *testing.T) {
 		// Test the first step (character creation) payload
-		createStep := result.Steps[0]
+		createStep := characterOnlyResult.Steps[0]
 		if payload, ok := createStep.Payload.(saga.CharacterCreatePayload); ok {
 			// Verify all required fields are present for orchestrator
 			if payload.AccountId != input.AccountId {
@@ -1875,18 +1852,18 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Logf("Testing: %s", tt.description)
 
-			transactionId, input, template := tt.setupTest(t)
+			transactionId, input, _ := tt.setupTest(t)
 
 			// This should not panic, even with edge case inputs
-			result := buildCharacterCreationSaga(transactionId, input, template)
+			result := buildCharacterCreationOnlySaga(transactionId, input)
 
 			// Verify basic saga structure is still valid
 			if result.TransactionId != transactionId {
 				t.Errorf("Expected transaction ID %s, got %s", transactionId, result.TransactionId)
 			}
 
-			if result.SagaType != saga.CharacterCreation {
-				t.Errorf("Expected saga type %s, got %s", saga.CharacterCreation, result.SagaType)
+			if result.SagaType != saga.CharacterCreationOnly {
+				t.Errorf("Expected saga type %s, got %s", saga.CharacterCreationOnly, result.SagaType)
 			}
 
 			// Verify steps were created correctly
@@ -1897,8 +1874,8 @@ func TestSagaConstructionErrorCases(t *testing.T) {
 			// First step should always be character creation
 			if len(result.Steps) > 0 {
 				firstStep := result.Steps[0]
-				if firstStep.StepId != "create" {
-					t.Errorf("Expected first step ID 'create', got '%s'", firstStep.StepId)
+				if firstStep.StepId != "create_character" {
+					t.Errorf("Expected first step ID 'create_character', got '%s'", firstStep.StepId)
 				}
 				if firstStep.Action != saga.CreateCharacter {
 					t.Errorf("Expected first step action %s, got %s", saga.CreateCharacter, firstStep.Action)
@@ -1939,7 +1916,8 @@ func TestConcurrentSagaCreation(t *testing.T) {
 		Weapon:      1302000,
 	}
 
-	template := template.RestModel{
+	// Template not needed for character creation only saga test
+	_ = template.RestModel{
 		JobIndex:    100,
 		SubJobIndex: 0,
 		MapId:       10000,
@@ -1955,7 +1933,7 @@ func TestConcurrentSagaCreation(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func(index int) {
 			transactionId := uuid.New()
-			results[index] = buildCharacterCreationSaga(transactionId, input, template)
+			results[index] = buildCharacterCreationOnlySaga(transactionId, input)
 		}(i)
 	}
 
@@ -1967,7 +1945,7 @@ func TestConcurrentSagaCreation(t *testing.T) {
 		if result.TransactionId == uuid.Nil {
 			t.Errorf("Saga %d has nil transaction ID", i)
 		}
-		if result.SagaType != saga.CharacterCreation {
+		if result.SagaType != saga.CharacterCreationOnly {
 			t.Errorf("Saga %d has wrong type: %s", i, result.SagaType)
 		}
 		if len(result.Steps) == 0 {

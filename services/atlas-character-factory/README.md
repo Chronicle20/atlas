@@ -18,18 +18,23 @@ A RESTful resource which provides character-factory services using saga-based or
 
 ## Character Creation Process
 
-The character creation process utilizes saga-based orchestration:
+The character creation process utilizes a two-phase saga-based orchestration approach:
 
 1. **Validation Phase**: The service validates character creation requests against configured templates
-2. **Saga Construction**: A `character_creation` saga is built with sequential steps:
-   - `create_character` - Creates the base character entity
-   - `award_asset` - Awards template-defined starting items
-   - `create_and_equip_asset` - Creates and equips starting equipment (Top, Bottom, Shoes, Weapon)
-   - `create_skill` - Creates starting skills for the character
-3. **Saga Emission**: The saga is sent to the Atlas Saga Orchestrator via Kafka
-4. **Response**: The client receives a `202 Accepted` response with a transaction ID for tracking
+2. **Character Creation Saga**: A single `character_creation_only` saga is created containing only the `create_character` step
+3. **Template Storage**: The service stores the template information (items, equipment, skills) for later use
+4. **Saga Emission**: The character creation saga is sent to the Atlas Saga Orchestrator via Kafka
+5. **Response**: The client receives a `202 Accepted` response with the character creation transaction ID for tracking
 
-The orchestrator handles all cross-service coordination, ensuring atomicity and fault tolerance.
+**Orchestrator-Handled Follow-up**:
+- When the character creation saga completes, the orchestrator emits a character created status event
+- The orchestrator detects this event and creates a follow-up saga (`character_creation_followup`) with:
+  - `award_asset` - Awards template-defined starting items
+  - `create_and_equip_asset` - Creates and equips starting equipment (Top, Bottom, Shoes, Weapon)
+  - `create_skill` - Creates starting skills for the character
+- The follow-up saga uses the actual character ID from the character created event
+
+The orchestrator handles all cross-service coordination, ensuring atomicity and fault tolerance. The two-phase approach allows the character creation to complete first, emit a character created event, and then automatically trigger the follow-up saga to handle items, equipment, and skills with the correct character ID.
 
 ## API
 

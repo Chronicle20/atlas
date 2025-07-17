@@ -18,10 +18,12 @@ type Type string
 
 // Constants for different saga types
 const (
-	InventoryTransaction Type = "inventory_transaction"
-	QuestReward          Type = "quest_reward"
-	TradeTransaction     Type = "trade_transaction"
-	CharacterCreation    Type = "character_creation"
+	InventoryTransaction       Type = "inventory_transaction"
+	QuestReward                Type = "quest_reward"
+	TradeTransaction           Type = "trade_transaction"
+	CharacterCreation          Type = "character_creation"
+	CharacterCreationOnly      Type = "character_creation_only"
+	CharacterCreationFollowUp  Type = "character_creation_followup"
 )
 
 // Saga represents the entire saga transaction.
@@ -128,6 +130,7 @@ const (
 	CreateInvite                 Action = "create_invite"
 	CreateCharacter              Action = "create_character"
 	CreateAndEquipAsset          Action = "create_and_equip_asset"
+	AwaitCharacterCreated        Action = "await_character_created"
 )
 
 // Step represents a single step within a saga.
@@ -309,6 +312,13 @@ type CreateAndEquipAssetPayload struct {
 	Destination int16  `json:"destination"` // Destination equipped slot (always 0 for creation)
 }
 
+// AwaitCharacterCreatedPayload represents the payload required to await character creation completion.
+type AwaitCharacterCreatedPayload struct {
+	CharacterName     string `json:"characterName"`     // Name of the character being created
+	FollowUpSagaId    string `json:"followUpSagaId"`    // ID of the follow-up saga to trigger
+	CreatedCharacterId uint32 `json:"createdCharacterId,omitempty"` // CharacterId once created (set by orchestrator)
+}
+
 type ExperienceDistributions struct {
 	ExperienceType string `json:"experienceType"`
 	Amount         uint32 `json:"amount"`
@@ -418,6 +428,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case CreateAndEquipAsset:
 		var payload CreateAndEquipAssetPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case AwaitCharacterCreated:
+		var payload AwaitCharacterCreatedPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

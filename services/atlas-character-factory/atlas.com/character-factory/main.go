@@ -55,6 +55,7 @@ func main() {
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
 	asset.InitConsumers(l)(cmf)(consumerGroupId)
+	character.RegisterPersistentHandlers(l, tdm.Context())
 
 	server.New(l).
 		WithContext(tdm.Context()).

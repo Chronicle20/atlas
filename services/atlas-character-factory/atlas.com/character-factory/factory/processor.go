@@ -7,11 +7,112 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
+
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"time"
 )
+
+// FollowUpSagaTemplate stores the template information needed to create a follow-up saga
+type FollowUpSagaTemplate struct {
+	TenantId uuid.UUID
+	Input    RestModel
+	Template template.RestModel
+}
+
+// FollowUpSagaTemplateStore provides thread-safe storage for follow-up saga templates
+type FollowUpSagaTemplateStore struct {
+	templates map[string]FollowUpSagaTemplate
+	mutex     sync.RWMutex
+}
+
+// Singleton instance
+var (
+	templateStoreInstance *FollowUpSagaTemplateStore
+	templateStoreOnce     sync.Once
+)
+
+// GetFollowUpSagaTemplateStore returns the singleton instance of the template store
+func GetFollowUpSagaTemplateStore() *FollowUpSagaTemplateStore {
+	templateStoreOnce.Do(func() {
+		templateStoreInstance = &FollowUpSagaTemplateStore{
+			templates: make(map[string]FollowUpSagaTemplate),
+		}
+	})
+	return templateStoreInstance
+}
+
+// Store stores the template information for later use when character created event is received
+func (s *FollowUpSagaTemplateStore) Store(tenantId uuid.UUID, characterName string, input RestModel, template template.RestModel) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// Store with tenant-aware key to avoid conflicts
+	key := fmt.Sprintf("%s:%s", tenantId.String(), characterName)
+	s.templates[key] = FollowUpSagaTemplate{
+		TenantId: tenantId,
+		Input:    input,
+		Template: template,
+	}
+
+	return nil
+}
+
+// Get retrieves the stored template information
+func (s *FollowUpSagaTemplateStore) Get(tenantId uuid.UUID, characterName string) (FollowUpSagaTemplate, bool) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	key := fmt.Sprintf("%s:%s", tenantId.String(), characterName)
+	template, exists := s.templates[key]
+	return template, exists
+}
+
+// Remove removes the stored template information after use
+func (s *FollowUpSagaTemplateStore) Remove(tenantId uuid.UUID, characterName string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	key := fmt.Sprintf("%s:%s", tenantId.String(), characterName)
+	delete(s.templates, key)
+}
+
+// Clear removes all stored templates (useful for testing)
+func (s *FollowUpSagaTemplateStore) Clear() {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.templates = make(map[string]FollowUpSagaTemplate)
+}
+
+// Size returns the number of stored templates
+func (s *FollowUpSagaTemplateStore) Size() int {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	return len(s.templates)
+}
+
+// storeFollowUpSagaTemplate stores the template information for later use when character created event is received
+func storeFollowUpSagaTemplate(ctx context.Context, characterName string, input RestModel, template template.RestModel) error {
+	t := tenant.MustFromContext(ctx)
+	store := GetFollowUpSagaTemplateStore()
+	return store.Store(t.Id(), characterName, input, template)
+}
+
+// GetFollowUpSagaTemplate retrieves the stored template information
+func GetFollowUpSagaTemplate(tenantId uuid.UUID, characterName string) (FollowUpSagaTemplate, bool) {
+	store := GetFollowUpSagaTemplateStore()
+	return store.Get(tenantId, characterName)
+}
+
+// RemoveFollowUpSagaTemplate removes the stored template information after use
+func RemoveFollowUpSagaTemplate(tenantId uuid.UUID, characterName string) {
+	store := GetFollowUpSagaTemplateStore()
+	store.Remove(tenantId, characterName)
+}
 
 func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel) (string, error) {
 	return func(ctx context.Context) func(input RestModel) (string, error) {
@@ -89,32 +190,130 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 				return "", errors.New("chosen weapon is not valid for job")
 			}
 
-			// Generate transaction ID for saga
-			transactionId := uuid.New()
-			l.Debugf("Beginning saga-based character creation for account [%d] in world [%d] with transaction [%s].", input.AccountId, input.WorldId, transactionId.String())
+			// Generate transaction ID for character creation saga
+			characterCreationId := uuid.New()
+			l.Debugf("Beginning character creation saga for account [%d] in world [%d] with transaction [%s].", input.AccountId, input.WorldId, characterCreationId.String())
 
-			// Build the character creation saga
-			characterSaga := buildCharacterCreationSaga(transactionId, input, template)
+			// Build the character creation only saga
+			characterOnlySaga := buildCharacterCreationOnlySaga(characterCreationId, input)
 
-			// Emit the saga to the orchestrator
+			// Store the template information for follow-up saga creation
+			// This will be used when the character created event is received
+			err = storeFollowUpSagaTemplate(ctx, input.Name, input, template)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to store follow-up saga template for character [%s].", input.Name)
+				return "", err
+			}
+
+			// Emit the character creation saga
 			sagaProcessor := saga.NewProcessor(l, ctx)
-			err = sagaProcessor.Create(characterSaga)
+			err = sagaProcessor.Create(characterOnlySaga)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to emit character creation saga for character [%s].", input.Name)
 				return "", err
 			}
 
-			l.Debugf("Character creation saga [%s] emitted successfully for character [%s].", transactionId.String(), input.Name)
-			return transactionId.String(), nil
+			l.Debugf("Character creation saga [%s] emitted successfully for character [%s].", characterCreationId.String(), input.Name)
+			return characterCreationId.String(), nil
 		}
 
 	}
 }
 
-// buildCharacterCreationSaga constructs a character creation saga with all necessary steps
-// This function replaces the previous async orchestration logic with a saga-based approach.
-// The saga orchestrator will execute these steps sequentially, ensuring atomicity and fault tolerance.
-// Steps are constructed based on the validated template configuration for the character's job and gender.
+// buildCharacterCreationOnlySaga constructs a saga that only creates the character.
+// This saga will complete when the character is created and will emit a character created event.
+func buildCharacterCreationOnlySaga(transactionId uuid.UUID, input RestModel) saga.Saga {
+	builder := saga.NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(saga.CharacterCreationOnly).
+		SetInitiatedBy(fmt.Sprintf("account_%d", input.AccountId))
+
+	// Step 1: Create character
+	createCharacterPayload := saga.CharacterCreatePayload{
+		AccountId: input.AccountId,
+		Name:      input.Name,
+		WorldId:   input.WorldId,
+		ChannelId: 0, // Default channel
+		JobId:     input.JobIndex,
+		Face:      input.Face,
+		Hair:      input.Hair,
+		HairColor: input.HairColor,
+		Skin:      uint32(input.SkinColor),
+		Top:       input.Top,
+		Bottom:    input.Bottom,
+		Shoes:     input.Shoes,
+		Weapon:    input.Weapon,
+	}
+
+	builder.AddStep("create_character", saga.Pending, saga.CreateCharacter, createCharacterPayload)
+
+	return builder.Build()
+}
+
+// BuildCharacterCreationFollowUpSaga constructs a saga that awards items, equipment, and skills for a created character.
+// This saga will be created after the character creation event is received and will use the actual character ID.
+func BuildCharacterCreationFollowUpSaga(transactionId uuid.UUID, characterId uint32, input RestModel, template template.RestModel) saga.Saga {
+	builder := saga.NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(saga.CharacterCreationFollowUp).
+		SetInitiatedBy(fmt.Sprintf("account_%d", input.AccountId))
+
+	// Step 1: Award assets for template items
+	for i, templateId := range template.Items {
+		stepId := fmt.Sprintf("award_item_%d", i)
+		awardAssetPayload := saga.AwardItemActionPayload{
+			CharacterId: characterId, // Use the actual character ID
+			Item: saga.ItemPayload{
+				TemplateId: templateId,
+				Quantity:   1,
+			},
+		}
+		builder.AddStep(stepId, saga.Pending, saga.AwardAsset, awardAssetPayload)
+	}
+
+	// Step 2: Create and equip assets for equipment (Top, Bottom, Shoes, Weapon)
+	equipment := []struct {
+		templateId uint32
+		name       string
+	}{
+		{input.Top, "top"},
+		{input.Bottom, "bottom"},
+		{input.Shoes, "shoes"},
+		{input.Weapon, "weapon"},
+	}
+
+	for _, eq := range equipment {
+		if eq.templateId != 0 { // Only add step if equipment is provided
+			stepId := fmt.Sprintf("equip_%s", eq.name)
+			createAndEquipPayload := saga.CreateAndEquipAssetPayload{
+				CharacterId: characterId, // Use the actual character ID
+				TemplateId:  eq.templateId,
+				Source:      1, // Source is always 1 for creation
+				Destination: 0, // Destination is always 0 for creation
+			}
+			builder.AddStep(stepId, saga.Pending, saga.CreateAndEquipAsset, createAndEquipPayload)
+		}
+	}
+
+	// Step 3: Create skills for starter skills
+	for i, skillId := range template.Skills {
+		stepId := fmt.Sprintf("create_skill_%d", i)
+		createSkillPayload := saga.CreateSkillPayload{
+			CharacterId: characterId, // Use the actual character ID
+			SkillId:     skillId,
+			Level:       1,           // Default level
+			MasterLevel: 0,           // Default master level
+			Expiration:  time.Time{}, // No expiration
+		}
+		builder.AddStep(stepId, saga.Pending, saga.CreateSkill, createSkillPayload)
+	}
+
+	return builder.Build()
+}
+
+// buildCharacterCreationSaga constructs a legacy combined character creation saga for backward compatibility.
+// This function is deprecated and maintained only for test compatibility.
+// New code should use buildCharacterCreationOnlySaga and buildCharacterCreationFollowUpSaga separately.
 func buildCharacterCreationSaga(transactionId uuid.UUID, input RestModel, template template.RestModel) saga.Saga {
 	builder := saga.NewBuilder().
 		SetTransactionId(transactionId).
@@ -183,8 +382,8 @@ func buildCharacterCreationSaga(transactionId uuid.UUID, input RestModel, templa
 		createSkillPayload := saga.CreateSkillPayload{
 			CharacterId: 0, // Will be set by orchestrator after character creation
 			SkillId:     skillId,
-			Level:       1,       // Default level
-			MasterLevel: 0,       // Default master level
+			Level:       1,           // Default level
+			MasterLevel: 0,           // Default master level
 			Expiration:  time.Time{}, // No expiration
 		}
 		builder.AddStep(stepId, saga.Pending, saga.CreateSkill, createSkillPayload)
@@ -250,16 +449,16 @@ func validName(name string) bool {
 	if len(name) < 1 || len(name) > 12 {
 		return false
 	}
-	
+
 	// Check for valid characters (alphanumeric and common symbols)
 	for _, char := range name {
-		if !((char >= 'a' && char <= 'z') || 
-			 (char >= 'A' && char <= 'Z') || 
-			 (char >= '0' && char <= '9') || 
-			 char == '_' || char == '-') {
+		if !((char >= 'a' && char <= 'z') ||
+			(char >= 'A' && char <= 'Z') ||
+			(char >= '0' && char <= '9') ||
+			char == '_' || char == '-') {
 			return false
 		}
 	}
-	
+
 	return true
 }

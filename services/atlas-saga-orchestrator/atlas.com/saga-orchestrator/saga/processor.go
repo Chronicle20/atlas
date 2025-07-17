@@ -33,6 +33,7 @@ type Processor interface {
 	MarkFurthestCompletedStepFailed(transactionId uuid.UUID) error
 	MarkEarliestPendingStepCompleted(transactionId uuid.UUID) error
 	AddStep(transactionId uuid.UUID, step Step[any]) error
+	PrependStep(transactionId uuid.UUID, step Step[any]) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -402,6 +403,80 @@ func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 		"pending_steps":   s.GetPendingStepCount(),
 		"tenant_id":       p.t.Id().String(),
 	}).Debug("Added new step to saga with proper ordering.")
+
+	return nil
+}
+
+// PrependStep adds a new step to the beginning of the saga's step list
+func (p *ProcessorImpl) PrependStep(transactionId uuid.UUID, step Step[any]) error {
+	s, err := p.GetById(transactionId)
+	if err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"tenant_id":      p.t.Id().String(),
+		}).Debug("Unable to locate saga for prepending step.")
+		return err
+	}
+
+	// Validate that the saga is in a valid state for adding steps
+	if s.Failing() {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"tenant_id":      p.t.Id().String(),
+		}).Debug("Cannot prepend step to a failing saga.")
+		return errors.New("cannot prepend step to a failing saga")
+	}
+
+	// Validate step ID uniqueness within the saga
+	for _, existingStep := range s.Steps {
+		if existingStep.StepId == step.StepId {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId.String(),
+				"saga_type":      s.SagaType,
+				"step_id":        step.StepId,
+				"tenant_id":      p.t.Id().String(),
+			}).Debug("Step ID already exists in saga.")
+			return fmt.Errorf("step ID '%s' already exists in saga", step.StepId)
+		}
+	}
+
+	// Ensure the step has proper timestamps
+	if step.CreatedAt.IsZero() {
+		step.CreatedAt = time.Now()
+	}
+	if step.UpdatedAt.IsZero() {
+		step.UpdatedAt = time.Now()
+	}
+
+	// Prepend the new step to the beginning of the steps slice
+	s.Steps = append([]Step[any]{step}, s.Steps...)
+
+	// Validate comprehensive state consistency after insertion
+	if err := s.ValidateStateConsistency(); err != nil {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId.String(),
+			"saga_type":      s.SagaType,
+			"step_id":        step.StepId,
+			"tenant_id":      p.t.Id().String(),
+		}).WithError(err).Error("State consistency validation failed after step prepend")
+		return err
+	}
+
+	// Update the saga in the cache atomically
+	GetCache().Put(p.t.Id(), s)
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id":  s.TransactionId.String(),
+		"saga_type":       s.SagaType,
+		"step_id":         step.StepId,
+		"action":          step.Action,
+		"insert_index":    0,
+		"total_steps":     len(s.Steps),
+		"completed_steps": s.GetCompletedStepCount(),
+		"pending_steps":   s.GetPendingStepCount(),
+		"tenant_id":       p.t.Id().String(),
+	}).Debug("Prepended new step to saga at the beginning.")
 
 	return nil
 }

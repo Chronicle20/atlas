@@ -28,7 +28,7 @@ import (
 type E2ETestEnvironment struct {
 	logger        logrus.FieldLogger
 	ctx           context.Context
-	tenant        tenant.Tenant
+	tenant        tenant.Model
 	sagaProcessor *saga.ProcessorImpl
 	charP         *mock.ProcessorMock
 	compP         *mock2.ProcessorMock
@@ -54,10 +54,6 @@ func setupE2EEnvironment(t *testing.T) *E2ETestEnvironment {
 
 	// Setup saga processor
 	sagaProcessor := saga.NewProcessor(logger, tctx)
-	sagaProcessor.SetTenant(te)
-	sagaProcessor.SetCharacterProcessor(charP)
-	sagaProcessor.SetCompartmentProcessor(compP)
-	sagaProcessor.SetValidationProcessor(validP)
 
 	return &E2ETestEnvironment{
 		logger:        logger,

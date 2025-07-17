@@ -43,6 +43,13 @@ func GetCache() Cache {
 	return instance
 }
 
+// ResetCache resets the singleton cache instance for testing
+func ResetCache() {
+	instance = &InMemoryCache{
+		tenantSagas: make(map[uuid.UUID]map[uuid.UUID]Saga),
+	}
+}
+
 // GetAll returns all sagas for a tenant
 func (c *InMemoryCache) GetAll(tenantId uuid.UUID) []Saga {
 	c.mutex.RLock()

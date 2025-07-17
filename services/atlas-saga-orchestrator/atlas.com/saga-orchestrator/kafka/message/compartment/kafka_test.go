@@ -1,6 +1,7 @@
 package compartment
 
 import (
+	"atlas-saga-orchestrator/kafka/message/asset"
 	"encoding/json"
 	"testing"
 	"time"
@@ -48,36 +49,6 @@ func TestStatusEventSerialization(t *testing.T) {
 			description: "Should serialize CreationFailedStatusEvent correctly",
 		},
 		{
-			name: "EquippedEventBody serialization",
-			event: StatusEvent[EquippedEventBody]{
-				TransactionId: uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
-				Type:          StatusEventTypeEquipped,
-				CharacterId:   12345,
-				CompartmentId: uuid.MustParse("00000000-0000-0000-0000-000000000000"),
-				Body: EquippedEventBody{
-					Source:      5,
-					Destination: -1,
-				},
-			},
-			expected: `{"transactionId":"550e8400-e29b-41d4-a716-446655440000","type":"EQUIPPED","characterId":12345,"compartmentId":"00000000-0000-0000-0000-000000000000","body":{"source":5,"destination":-1}}`,
-			description: "Should serialize EquippedEventBody correctly",
-		},
-		{
-			name: "UnequippedEventBody serialization",
-			event: StatusEvent[UnequippedEventBody]{
-				TransactionId: uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
-				Type:          StatusEventTypeUnequipped,
-				CharacterId:   12345,
-				CompartmentId: uuid.MustParse("00000000-0000-0000-0000-000000000000"),
-				Body: UnequippedEventBody{
-					Source:      -1,
-					Destination: 5,
-				},
-			},
-			expected: `{"transactionId":"550e8400-e29b-41d4-a716-446655440000","type":"UNEQUIPPED","characterId":12345,"compartmentId":"00000000-0000-0000-0000-000000000000","body":{"source":-1,"destination":5}}`,
-			description: "Should serialize UnequippedEventBody correctly",
-		},
-		{
 			name: "ErrorEventBody serialization",
 			event: StatusEvent[ErrorEventBody]{
 				TransactionId: uuid.MustParse("550e8400-e29b-41d4-a716-446655440000"),
@@ -111,18 +82,6 @@ func TestStatusEventSerialization(t *testing.T) {
 
 			case StatusEvent[CreationFailedStatusEventBody]:
 				var deserialized StatusEvent[CreationFailedStatusEventBody]
-				err = json.Unmarshal(jsonData, &deserialized)
-				assert.NoError(t, err, "Should deserialize without error")
-				assert.Equal(t, e, deserialized, "Deserialized event should match original")
-
-			case StatusEvent[EquippedEventBody]:
-				var deserialized StatusEvent[EquippedEventBody]
-				err = json.Unmarshal(jsonData, &deserialized)
-				assert.NoError(t, err, "Should deserialize without error")
-				assert.Equal(t, e, deserialized, "Deserialized event should match original")
-
-			case StatusEvent[UnequippedEventBody]:
-				var deserialized StatusEvent[UnequippedEventBody]
 				err = json.Unmarshal(jsonData, &deserialized)
 				assert.NoError(t, err, "Should deserialize without error")
 				assert.Equal(t, e, deserialized, "Deserialized event should match original")
@@ -186,18 +145,6 @@ func TestStatusEventTypeConstants(t *testing.T) {
 			eventType:   StatusEventTypeMergeComplete,
 			expected:    "MERGE_COMPLETE",
 			description: "Should have correct value for MERGE_COMPLETE event type",
-		},
-		{
-			name:        "StatusEventTypeEquipped",
-			eventType:   StatusEventTypeEquipped,
-			expected:    "EQUIPPED",
-			description: "Should have correct value for EQUIPPED event type",
-		},
-		{
-			name:        "StatusEventTypeUnequipped",
-			eventType:   StatusEventTypeUnequipped,
-			expected:    "UNEQUIPPED",
-			description: "Should have correct value for UNEQUIPPED event type",
 		},
 		{
 			name:        "StatusEventTypeError",
@@ -435,15 +382,17 @@ func TestCreateAndEquipEventFlow(t *testing.T) {
 						Destination:   -1,
 					},
 				},
-				// 4. Equipment success
-				StatusEvent[EquippedEventBody]{
+				// 4. Equipment success - represented as asset moved event
+				asset.StatusEvent[asset.MovedStatusEventBody]{
 					TransactionId: transactionId,
-					Type:          StatusEventTypeEquipped,
 					CharacterId:   characterId,
-					Body: EquippedEventBody{
-						InventoryType: 1,
-						Source:        5,
-						Destination:   -1,
+					CompartmentId: uuid.UUID{},
+					AssetId:       67890,
+					TemplateId:    1302000,
+					Slot:          -1, // Equipment slot
+					Type:          asset.StatusEventTypeMoved,
+					Body: asset.MovedStatusEventBody{
+						OldSlot: 5, // Moved from inventory slot 5 to equipment slot
 					},
 				},
 			},
@@ -552,9 +501,10 @@ func TestCreateAndEquipEventFlow(t *testing.T) {
 					assert.Contains(t, string(jsonData), "assetId")
 					assert.Equal(t, transactionId, e.TransactionId)
 					
-				case StatusEvent[EquippedEventBody]:
-					assert.Contains(t, string(jsonData), "EQUIPPED")
+				case asset.StatusEvent[asset.MovedStatusEventBody]:
+					assert.Contains(t, string(jsonData), "MOVED")
 					assert.Contains(t, string(jsonData), "transactionId")
+					assert.Contains(t, string(jsonData), "oldSlot")
 					assert.Equal(t, transactionId, e.TransactionId)
 					
 				case StatusEvent[CreationFailedStatusEventBody]:

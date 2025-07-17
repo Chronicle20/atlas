@@ -1,9 +1,9 @@
 package character
 
 import (
-	"atlas-character-factory/job"
 	"atlas-character-factory/rest"
 	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/Chronicle20/atlas-constants/job"
 )
 
 const (

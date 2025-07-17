@@ -1,48 +1,258 @@
 package factory
 
 import (
-	asset2 "atlas-character-factory/asset"
-	"atlas-character-factory/character"
-	compartment2 "atlas-character-factory/compartment"
 	"atlas-character-factory/configuration"
 	"atlas-character-factory/configuration/tenant/characters/template"
-	"atlas-character-factory/kafka/consumer/asset"
-	character2 "atlas-character-factory/kafka/consumer/character"
-	"atlas-character-factory/kafka/consumer/compartment"
-	"atlas-character-factory/kafka/message/seed"
-	"atlas-character-factory/kafka/producer"
-	seed2 "atlas-character-factory/kafka/producer/seed"
+	job2 "atlas-character-factory/job"
+	"atlas-character-factory/saga"
 	"context"
 	"errors"
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/item"
-	"github.com/Chronicle20/atlas-model/async"
-	"github.com/Chronicle20/atlas-model/model"
+	"fmt"
+	"sync"
+	"time"
+
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"sync"
-	"time"
 )
 
-func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel) error {
-	return func(ctx context.Context) func(input RestModel) error {
-		return func(input RestModel) error {
-			// TODO validate name again.
+// FollowUpSagaTemplate stores the template information needed to create a follow-up saga
+type FollowUpSagaTemplate struct {
+	TenantId                      uuid.UUID
+	Input                         RestModel
+	Template                      template.RestModel
+	CharacterCreationTransactionId uuid.UUID
+}
+
+// FollowUpSagaTemplateStore provides thread-safe storage for follow-up saga templates
+type FollowUpSagaTemplateStore struct {
+	templates map[string]FollowUpSagaTemplate
+	mutex     sync.RWMutex
+}
+
+// Singleton instance
+var (
+	templateStoreInstance *FollowUpSagaTemplateStore
+	templateStoreOnce     sync.Once
+)
+
+// GetFollowUpSagaTemplateStore returns the singleton instance of the template store
+func GetFollowUpSagaTemplateStore() *FollowUpSagaTemplateStore {
+	templateStoreOnce.Do(func() {
+		templateStoreInstance = &FollowUpSagaTemplateStore{
+			templates: make(map[string]FollowUpSagaTemplate),
+		}
+	})
+	return templateStoreInstance
+}
+
+// Store stores the template information for later use when character created event is received
+func (s *FollowUpSagaTemplateStore) Store(tenantId uuid.UUID, characterName string, input RestModel, template template.RestModel, characterCreationTransactionId uuid.UUID) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	// Store with tenant-aware key to avoid conflicts
+	key := fmt.Sprintf("%s:%s", tenantId.String(), characterName)
+	s.templates[key] = FollowUpSagaTemplate{
+		TenantId:                      tenantId,
+		Input:                         input,
+		Template:                      template,
+		CharacterCreationTransactionId: characterCreationTransactionId,
+	}
+
+	return nil
+}
+
+// Get retrieves the stored template information
+func (s *FollowUpSagaTemplateStore) Get(tenantId uuid.UUID, characterName string) (FollowUpSagaTemplate, bool) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	key := fmt.Sprintf("%s:%s", tenantId.String(), characterName)
+	template, exists := s.templates[key]
+	return template, exists
+}
+
+// Remove removes the stored template information after use
+func (s *FollowUpSagaTemplateStore) Remove(tenantId uuid.UUID, characterName string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	key := fmt.Sprintf("%s:%s", tenantId.String(), characterName)
+	delete(s.templates, key)
+}
+
+// Clear removes all stored templates (useful for testing)
+func (s *FollowUpSagaTemplateStore) Clear() {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.templates = make(map[string]FollowUpSagaTemplate)
+}
+
+// Size returns the number of stored templates
+func (s *FollowUpSagaTemplateStore) Size() int {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	return len(s.templates)
+}
+
+// storeFollowUpSagaTemplate stores the template information for later use when character created event is received
+func storeFollowUpSagaTemplate(ctx context.Context, characterName string, input RestModel, template template.RestModel, characterCreationTransactionId uuid.UUID) error {
+	t := tenant.MustFromContext(ctx)
+	store := GetFollowUpSagaTemplateStore()
+	return store.Store(t.Id(), characterName, input, template, characterCreationTransactionId)
+}
+
+// GetFollowUpSagaTemplate retrieves the stored template information
+func GetFollowUpSagaTemplate(tenantId uuid.UUID, characterName string) (FollowUpSagaTemplate, bool) {
+	store := GetFollowUpSagaTemplateStore()
+	return store.Get(tenantId, characterName)
+}
+
+// RemoveFollowUpSagaTemplate removes the stored template information after use
+func RemoveFollowUpSagaTemplate(tenantId uuid.UUID, characterName string) {
+	store := GetFollowUpSagaTemplateStore()
+	store.Remove(tenantId, characterName)
+}
+
+// SagaCompletionTracker tracks completion status for character creation saga pairs
+type SagaCompletionTracker struct {
+	TenantId                      uuid.UUID
+	AccountId                     uint32
+	CharacterId                   uint32
+	CharacterCreationTransactionId uuid.UUID
+	FollowUpSagaTransactionId     uuid.UUID
+	CharacterCreationCompleted    bool
+	FollowUpSagaCompleted         bool
+}
+
+// SagaCompletionTrackerStore provides thread-safe storage for saga completion tracking
+type SagaCompletionTrackerStore struct {
+	trackers map[uuid.UUID]*SagaCompletionTracker
+	mutex    sync.RWMutex
+}
+
+// Singleton instance for saga completion tracking
+var (
+	sagaTrackerStoreInstance *SagaCompletionTrackerStore
+	sagaTrackerStoreOnce     sync.Once
+)
+
+// GetSagaCompletionTrackerStore returns the singleton instance of the saga completion tracker store
+func GetSagaCompletionTrackerStore() *SagaCompletionTrackerStore {
+	sagaTrackerStoreOnce.Do(func() {
+		sagaTrackerStoreInstance = &SagaCompletionTrackerStore{
+			trackers: make(map[uuid.UUID]*SagaCompletionTracker),
+		}
+	})
+	return sagaTrackerStoreInstance
+}
+
+// StoreTrackerForCharacterCreation stores tracking information for character creation saga
+func (s *SagaCompletionTrackerStore) StoreTrackerForCharacterCreation(tenantId uuid.UUID, accountId uint32, characterCreationTransactionId uuid.UUID) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.trackers[characterCreationTransactionId] = &SagaCompletionTracker{
+		TenantId:                      tenantId,
+		AccountId:                     accountId,
+		CharacterCreationTransactionId: characterCreationTransactionId,
+		CharacterCreationCompleted:    false,
+		FollowUpSagaCompleted:         false,
+	}
+}
+
+// UpdateTrackerForFollowUpSaga updates the tracker with follow-up saga information
+func (s *SagaCompletionTrackerStore) UpdateTrackerForFollowUpSaga(characterCreationTransactionId uuid.UUID, followUpSagaTransactionId uuid.UUID, characterId uint32) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if tracker, exists := s.trackers[characterCreationTransactionId]; exists {
+		tracker.FollowUpSagaTransactionId = followUpSagaTransactionId
+		tracker.CharacterId = characterId
+		// Also store the tracker by follow-up saga transaction ID for easy lookup
+		s.trackers[followUpSagaTransactionId] = tracker
+	}
+}
+
+// MarkSagaCompleted marks a saga as completed and returns the tracker if both sagas are now complete
+func (s *SagaCompletionTrackerStore) MarkSagaCompleted(transactionId uuid.UUID) (*SagaCompletionTracker, bool) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if tracker, exists := s.trackers[transactionId]; exists {
+		// Check if this is the character creation saga or follow-up saga
+		if transactionId == tracker.CharacterCreationTransactionId {
+			tracker.CharacterCreationCompleted = true
+		} else if transactionId == tracker.FollowUpSagaTransactionId {
+			tracker.FollowUpSagaCompleted = true
+		}
+
+		// Check if both sagas are now complete
+		if tracker.CharacterCreationCompleted && tracker.FollowUpSagaCompleted {
+			// Remove both tracker entries since we're done
+			delete(s.trackers, tracker.CharacterCreationTransactionId)
+			if tracker.FollowUpSagaTransactionId != uuid.Nil {
+				delete(s.trackers, tracker.FollowUpSagaTransactionId)
+			}
+			return tracker, true
+		}
+	}
+
+	return nil, false
+}
+
+// Clear removes all stored trackers (useful for testing)
+func (s *SagaCompletionTrackerStore) Clear() {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.trackers = make(map[uuid.UUID]*SagaCompletionTracker)
+}
+
+// Size returns the number of stored trackers
+func (s *SagaCompletionTrackerStore) Size() int {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	return len(s.trackers)
+}
+
+// StoreFollowUpSagaTracking stores the follow-up saga tracking information
+func StoreFollowUpSagaTracking(characterCreationTransactionId uuid.UUID, followUpSagaTransactionId uuid.UUID, characterId uint32) {
+	store := GetSagaCompletionTrackerStore()
+	store.UpdateTrackerForFollowUpSaga(characterCreationTransactionId, followUpSagaTransactionId, characterId)
+}
+
+// MarkSagaCompleted marks a saga as completed and returns completion information
+func MarkSagaCompleted(transactionId uuid.UUID) (*SagaCompletionTracker, bool) {
+	store := GetSagaCompletionTrackerStore()
+	return store.MarkSagaCompleted(transactionId)
+}
+
+func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel) (string, error) {
+	return func(ctx context.Context) func(input RestModel) (string, error) {
+		return func(input RestModel) (string, error) {
+			// Validate character name
+			if !validName(input.Name) {
+				return "", errors.New("character name must be between 1 and 12 characters and contain only valid characters")
+			}
 
 			if !validGender(input.Gender) {
-				return errors.New("gender must be 0 or 1")
+				return "", errors.New("gender must be 0 or 1")
 			}
 
 			if !validJob(input.JobIndex, input.SubJobIndex) {
-				return errors.New("must provide valid job index")
+				return "", errors.New("must provide valid job index")
 			}
 
 			t := tenant.MustFromContext(ctx)
 			tc, err := configuration.GetTenantConfig(t.Id())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to find template validation configuration")
-				return err
+				return "", err
 			}
 
 			var found = false
@@ -55,139 +265,182 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(input RestModel
 			}
 			if !found {
 				l.WithError(err).Errorf("Unable to find template validation configuration")
-				return err
+				return "", err
 			}
 
 			if !validFace(template.Faces, input.Face) {
 				l.Errorf("Chosen face [%d] is not valid for job [%d].", input.Face, input.JobIndex)
-				return errors.New("chosen face is not valid for job")
+				return "", errors.New("chosen face is not valid for job")
 			}
 
 			if !validHair(template.Hairs, input.Hair) {
 				l.Errorf("Chosen hair [%d] is not valid for job [%d].", input.Hair, input.JobIndex)
-				return errors.New("chosen hair is not valid for job")
+				return "", errors.New("chosen hair is not valid for job")
 			}
 
 			if !validHairColor(template.HairColors, input.HairColor) {
 				l.Errorf("Chosen hair color [%d] is not valid for job [%d].", input.HairColor, input.JobIndex)
-				return errors.New("chosen hair color is not valid for job")
+				return "", errors.New("chosen hair color is not valid for job")
 			}
 
 			if !validSkinColor(template.SkinColors, uint32(input.SkinColor)) {
 				l.Errorf("Chosen skin color [%d] is not valid for job [%d]", input.SkinColor, input.JobIndex)
-				return errors.New("chosen skin color is not valid for job")
+				return "", errors.New("chosen skin color is not valid for job")
 			}
 
 			if !validTop(template.Tops, input.Top) {
 				l.Errorf("Chosen top [%d] is not valid for job [%d]", input.Top, input.JobIndex)
-				return errors.New("chosen top is not valid for job")
+				return "", errors.New("chosen top is not valid for job")
 			}
 
 			if !validBottom(template.Bottoms, input.Bottom) {
 				l.Errorf("Chosen bottom [%d] is not valid for job [%d]", input.Bottom, input.JobIndex)
-				return errors.New("chosen bottom is not valid for job")
+				return "", errors.New("chosen bottom is not valid for job")
 			}
 
 			if !validShoes(template.Shoes, input.Shoes) {
 				l.Errorf("Chosen shoes [%d] is not valid for job [%d]", input.Shoes, input.JobIndex)
-				return errors.New("chosen shoes is not valid for job")
+				return "", errors.New("chosen shoes is not valid for job")
 			}
 
 			if !validWeapon(template.Weapons, input.Weapon) {
 				l.Errorf("Chosen weapon [%d] is not valid for job [%d]", input.Weapon, input.JobIndex)
-				return errors.New("chosen weapon is not valid for job")
+				return "", errors.New("chosen weapon is not valid for job")
 			}
 
-			asyncCreate := func(actx context.Context, rchan chan uint32, echan chan error) {
-				character2.AwaitCreated(l)(input.Name)(actx, rchan, echan)
-				_, err = character.Create(l)(actx)(input.AccountId, input.WorldId, input.Name, input.Gender, template.MapId, input.JobIndex, input.SubJobIndex, input.Face, input.Hair, input.HairColor, input.SkinColor)
-				if err != nil {
-					l.WithError(err).Errorf("Unable to create character from seed.")
-					echan <- err
-				}
-			}
+			// Generate transaction ID for character creation saga
+			characterCreationId := uuid.New()
+			l.Debugf("Beginning character creation saga for account [%d] in world [%d] with transaction [%s].", input.AccountId, input.WorldId, characterCreationId.String())
 
-			l.Debugf("Beginning character creation for account [%d] in world [%d].", input.AccountId, input.WorldId)
+			// Build the character creation only saga
+			characterOnlySaga := buildCharacterCreationOnlySaga(characterCreationId, input)
 
-			cid, err := async.Await[uint32](model.FixedProvider[async.Provider[uint32]](asyncCreate), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
+			// Store the template information for follow-up saga creation
+			// This will be used when the character created event is received
+			err = storeFollowUpSagaTemplate(ctx, input.Name, input, template, characterCreationId)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to create character [%s].", input.Name)
-				return err
-			}
-			l.Debugf("Character [%d] created.", cid)
-
-			// prepare assets for creation.
-			assetMap := make(map[inventory.Type][]uint32)
-			for _, aid := range template.Items {
-				it, ok := inventory.TypeFromItemId(item.Id(aid))
-				if !ok {
-					continue
-				}
-				var as []uint32
-				if as, ok = assetMap[it]; !ok {
-					as = make([]uint32, 0)
-				}
-				assetMap[it] = append(as, aid)
+				l.WithError(err).Errorf("Unable to store follow-up saga template for character [%s].", input.Name)
+				return "", err
 			}
 
-			wg := sync.WaitGroup{}
-			var invErr error
-			for _, it := range inventory.Types {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+			// Store saga completion tracking information
+			sagaTrackerStore := GetSagaCompletionTrackerStore()
+			sagaTrackerStore.StoreTrackerForCharacterCreation(t.Id(), input.AccountId, characterCreationId)
 
-					ap := compartment.AwaitCreated(l)(cid, it, assetMap[it])
-					compartmentId, eqpErr := async.Await[uuid.UUID](model.FixedProvider(ap), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
-					if eqpErr != nil {
-						invErr = eqpErr
-					}
-
-					l.Debugf("Compartment [%s] of type [%d] created for character [%d].", compartmentId.String(), it, cid)
-					if it == inventory.TypeValueEquip {
-						l.Debugf("Creating equipment for character [%d]. Starting item processing.", cid)
-						equipment := []uint32{input.Top, input.Bottom, input.Shoes, input.Weapon}
-						for _, aid := range equipment {
-							var a asset2.Model
-							a, err = async.Await[asset2.Model](model.FixedProvider(asset.AwaitCreated(l)(cid, compartmentId, aid, it)), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
-							if err != nil {
-								invErr = eqpErr
-							}
-							asyncEquip := func(actx context.Context, rchan chan uint32, echan chan error) {
-								asset.AwaitSlotUpdate(l)(cid, compartmentId, a.Id())(actx, rchan, echan)
-								err = compartment2.NewProcessor(l, actx).EquipAsset(cid, it, a.Slot(), 0)
-								if err != nil {
-									l.WithError(err).Errorf("Unable to equip asset [%d] character for character [%d].", a.Id(), cid)
-									echan <- err
-								}
-							}
-							_, err = async.Await[uint32](model.FixedProvider[async.Provider[uint32]](asyncEquip), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
-							if err != nil {
-								invErr = eqpErr
-							}
-						}
-					}
-					l.Debugf("Processing assets destined for compartment [%s] for character [%d].", compartmentId.String(), cid)
-					for _, aid := range assetMap[it] {
-						_, err = async.Await[asset2.Model](model.FixedProvider(asset.AwaitCreated(l)(cid, compartmentId, aid, it)), async.SetTimeout(500*time.Millisecond), async.SetContext(ctx))()
-						if err != nil {
-							invErr = eqpErr
-						}
-					}
-				}()
+			// Emit the character creation saga
+			sagaProcessor := saga.NewProcessor(l, ctx)
+			err = sagaProcessor.Create(characterOnlySaga)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to emit character creation saga for character [%s].", input.Name)
+				return "", err
 			}
 
-			wg.Wait()
-			if invErr != nil {
-				return invErr
-			}
-
-			_ = producer.ProviderImpl(l)(ctx)(seed.EnvEventTopicStatus)(seed2.CreatedEventStatusProvider(input.AccountId, cid))
-			return nil
+			l.Debugf("Character creation saga [%s] emitted successfully for character [%s].", characterCreationId.String(), input.Name)
+			return characterCreationId.String(), nil
 		}
 
 	}
 }
+
+// buildCharacterCreationOnlySaga constructs a saga that only creates the character.
+// This saga will complete when the character is created and will emit a character created event.
+func buildCharacterCreationOnlySaga(transactionId uuid.UUID, input RestModel) saga.Saga {
+	builder := saga.NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(saga.CharacterCreationOnly).
+		SetInitiatedBy(fmt.Sprintf("account_%d", input.AccountId))
+
+	// Step 1: Create character
+	createCharacterPayload := saga.CharacterCreatePayload{
+		AccountId:    input.AccountId,
+		WorldId:      input.WorldId,
+		Name:         input.Name,
+		Gender:       input.Gender,
+		Level:        input.Level,
+		Strength:     input.Strength,
+		Dexterity:    input.Dexterity,
+		Intelligence: input.Intelligence,
+		Luck:         input.Luck,
+		JobId:        job2.JobFromIndex(input.JobIndex, input.SubJobIndex),
+		Hp:           input.Hp,
+		Mp:           input.Mp,
+		Face:         input.Face,
+		Hair:         input.Hair + input.HairColor,
+		Skin:         uint32(input.SkinColor),
+		Top:          input.Top,
+		Bottom:       input.Bottom,
+		Shoes:        input.Shoes,
+		Weapon:       input.Weapon,
+		MapId:        input.MapId,
+	}
+
+	builder.AddStep("create_character", saga.Pending, saga.CreateCharacter, createCharacterPayload)
+
+	return builder.Build()
+}
+
+// BuildCharacterCreationFollowUpSaga constructs a saga that awards items, equipment, and skills for a created character.
+// This saga will be created after the character creation event is received and will use the actual character ID.
+func BuildCharacterCreationFollowUpSaga(transactionId uuid.UUID, characterId uint32, input RestModel, template template.RestModel) saga.Saga {
+	builder := saga.NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(saga.CharacterCreationFollowUp).
+		SetInitiatedBy(fmt.Sprintf("account_%d", input.AccountId))
+
+	// Step 1: Award assets for template items
+	for i, templateId := range template.Items {
+		stepId := fmt.Sprintf("award_item_%d", i)
+		awardAssetPayload := saga.AwardItemActionPayload{
+			CharacterId: characterId, // Use the actual character ID
+			Item: saga.ItemPayload{
+				TemplateId: templateId,
+				Quantity:   1,
+			},
+		}
+		builder.AddStep(stepId, saga.Pending, saga.AwardAsset, awardAssetPayload)
+	}
+
+	// Step 2: Create and equip assets for equipment (Top, Bottom, Shoes, Weapon)
+	equipment := []struct {
+		templateId uint32
+		name       string
+	}{
+		{input.Top, "top"},
+		{input.Bottom, "bottom"},
+		{input.Shoes, "shoes"},
+		{input.Weapon, "weapon"},
+	}
+
+	for _, eq := range equipment {
+		if eq.templateId != 0 { // Only add step if equipment is provided
+			stepId := fmt.Sprintf("equip_%s", eq.name)
+			createAndEquipPayload := saga.CreateAndEquipAssetPayload{
+				CharacterId: characterId, // Use the actual character ID
+				Item: saga.ItemPayload{
+					TemplateId: eq.templateId,
+					Quantity:   1,
+				},
+			}
+			builder.AddStep(stepId, saga.Pending, saga.CreateAndEquipAsset, createAndEquipPayload)
+		}
+	}
+
+	// Step 3: Create skills for starter skills
+	for i, skillId := range template.Skills {
+		stepId := fmt.Sprintf("create_skill_%d", i)
+		createSkillPayload := saga.CreateSkillPayload{
+			CharacterId: characterId, // Use the actual character ID
+			SkillId:     skillId,
+			Level:       1,           // Default level
+			MasterLevel: 0,           // Default master level
+			Expiration:  time.Time{}, // No expiration
+		}
+		builder.AddStep(stepId, saga.Pending, saga.CreateSkill, createSkillPayload)
+	}
+
+	return builder.Build()
+}
+
 
 func validWeapon(weapons []uint32, weapon uint32) bool {
 	return validOption(weapons, weapon)
@@ -240,4 +493,22 @@ func validJob(jobIndex uint32, subJobIndex uint32) bool {
 
 func validGender(gender byte) bool {
 	return gender == 0 || gender == 1
+}
+
+func validName(name string) bool {
+	if len(name) < 1 || len(name) > 12 {
+		return false
+	}
+
+	// Check for valid characters (alphanumeric and common symbols)
+	for _, char := range name {
+		if !((char >= 'a' && char <= 'z') ||
+			(char >= 'A' && char <= 'Z') ||
+			(char >= '0' && char <= '9') ||
+			char == '_' || char == '-') {
+			return false
+		}
+	}
+
+	return true
 }

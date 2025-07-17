@@ -79,3 +79,21 @@ func GetSkillBook(jobId Id) int {
 	}
 	return 0
 }
+
+func FromIndex(jobIndex uint32, subJobIndex uint32) Id {
+	jobId := BeginnerId
+	if jobIndex == 0 {
+		jobId = NoblesseId
+	} else if jobIndex == 1 {
+		if subJobIndex == 0 {
+			jobId = BeginnerId
+		} else if subJobIndex == 1 {
+			//jobId = job.BladeRecruit TODO
+		}
+	} else if jobIndex == 2 {
+		jobId = LegendId
+	} else if jobIndex == 3 {
+		jobId = EvanId
+	}
+	return jobId
+}

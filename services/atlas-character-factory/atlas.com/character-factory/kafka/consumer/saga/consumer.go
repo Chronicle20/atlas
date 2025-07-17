@@ -1,12 +1,12 @@
 package saga
 
 import (
+	"atlas-character-factory/factory"
 	consumer2 "atlas-character-factory/kafka/consumer"
 	"atlas-character-factory/kafka/message/saga"
 	seedMessage "atlas-character-factory/kafka/message/seed"
-	"atlas-character-factory/kafka/producer/seed"
 	"atlas-character-factory/kafka/producer"
-	"atlas-character-factory/factory"
+	"atlas-character-factory/kafka/producer/seed"
 	"context"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -38,13 +38,13 @@ func handleSagaCompletedEvent(l logrus.FieldLogger, ctx context.Context, e saga.
 	}
 
 	// Mark the saga as completed and check if both sagas are now complete
-	tracker, bothComplete := factory.MarkSagaCompleted(e.Body.TransactionId)
+	tracker, bothComplete := factory.MarkSagaCompleted(e.TransactionId)
 	if !bothComplete {
-		l.Debugf("Saga [%s] completed, but waiting for the other saga to complete", e.Body.TransactionId.String())
+		l.Debugf("Saga [%s] completed, but waiting for the other saga to complete", e.TransactionId.String())
 		return
 	}
 
-	l.Debugf("Both character creation sagas completed for account [%d] character [%d], emitting seed completion event", 
+	l.Debugf("Both character creation sagas completed for account [%d] character [%d], emitting seed completion event",
 		tracker.AccountId, tracker.CharacterId)
 
 	// Emit seed completion event
@@ -52,11 +52,11 @@ func handleSagaCompletedEvent(l logrus.FieldLogger, ctx context.Context, e saga.
 	seedProducer := producer.ProviderImpl(l)(ctx)(seedMessage.EnvEventTopicStatus)
 	err := seedProducer(seedEventProvider)
 	if err != nil {
-		l.WithError(err).Errorf("Failed to emit seed completion event for account [%d] character [%d]", 
+		l.WithError(err).Errorf("Failed to emit seed completion event for account [%d] character [%d]",
 			tracker.AccountId, tracker.CharacterId)
 		return
 	}
 
-	l.Debugf("Seed completion event emitted successfully for account [%d] character [%d]", 
+	l.Debugf("Seed completion event emitted successfully for account [%d] character [%d]",
 		tracker.AccountId, tracker.CharacterId)
 }
